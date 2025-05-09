@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This document outlines the trademark policy for Ingedata Annotation Hub (IDAH). While the source code for Ingedata Annotation Hub (IDAH) is licensed under the Mozilla Public License 2.0 (MPL-2.0), the Ingedata Annotation Hub (IDAH) name, logo, and associated branding elements are protected trademarks owned by [Your Organization Name].
+This document outlines the trademark policy for Ingedata Annotation Hub (IDAH). While the source code for Ingedata Annotation Hub (IDAH) is licensed under the Mozilla Public License 2.0 (MPL-2.0), the Ingedata Annotation Hub (IDAH) name, logo, and associated branding elements are protected trademarks owned by Ingedata Pte Ltd.
 
 ## Allowed Uses
 
@@ -54,6 +54,6 @@ We may update this trademark policy from time to time. The most current version 
 
 ---
 
-Last updated: 2025-05-01
+Last updated: 2025-05-08
 
 Ingedata Pte Ltd.
