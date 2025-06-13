@@ -64,11 +64,15 @@
     let panX :number = $state(0)
     let panY :number = $state(0)
 
+    let ctrlPressed = $state(false)
     let isBbSelecting = $state(false)
     let bbStartX :number = $state(0)
     let bbStartY :number = $state(0)
     let bbEndX :number = $state(0)
     let bbEndY :number = $state(0)
+
+    let mouseX = $state(0)
+    let mouseY = $state(0)
 
     onMount(()=> {
         player = videojs(videoElement, options, () => {
@@ -183,9 +187,9 @@
     }
 
     function onMouseDown(e :MouseEvent) {        
-        if (e.ctrlKey) {
+        if (e.shiftKey) {
             panStart(e.offsetX, e.offsetY)
-        } else if (e.altKey) {
+        } else if (e.ctrlKey) {
             boundingBoxStart(e.offsetX, e.offsetY)
         }
     }
@@ -199,10 +203,13 @@
     }
 
     function onMouseMove(e :MouseEvent) {
+        mouseX = e.offsetX
+        mouseY = e.offsetY
+
         if (isPanning) {
-            panTo(e.offsetX, e.offsetY)
+            panTo(mouseX, mouseY)
         } else if (isBbSelecting) {
-            boundingBoxSelect(e.offsetX, e.offsetY)
+            boundingBoxSelect(mouseX, mouseY)
         }
     }
 
@@ -246,8 +253,19 @@
         isBbSelecting = false
     }
 
+    function onKeyDown(e :KeyboardEvent){
+        console.log('key down')
+        if (e.ctrlKey) {ctrlPressed = true}
+    }
+
+    function onKeyUp(e :KeyboardEvent){
+        console.log('key up')
+        if (!e.ctrlKey) {ctrlPressed = false}
+    }
+
 </script>
 <ul>
+    <li>mouse: { mouseX }/{ mouseY }</li>
     <li>isPanning: { isPanning }</li>
     <li>duration: { duration } seconds</li>
     <li>fps: { fps }</li>
@@ -257,6 +275,7 @@
     <li>Container size: { width } / { height }</li>
     <li>scale: { scale } </li>
     <li>Video size: {width * scale}/{height * scale}</li>
+    <li>Ctrl Pressed: {ctrlPressed}</li>
 </ul>
 
 <div style:overflow=hidden
@@ -266,6 +285,8 @@
      onmouseup={onMouseUp}
      onmousemove={onMouseMove}
      onwheel={onWheel}
+     onkeydown={onKeyDown}
+     onkeyup={onKeyUp}
      role="button"
      tabindex="-1"
      >
@@ -310,6 +331,10 @@
                 {/each}
             {/each}
         {/each}
+        {#if ctrlPressed}
+            <line x1={0} y1={mouseY - offsetY} x2={video_width} y2={mouseY - offsetY} stroke="red"/>
+            <line x1={mouseX - offsetX} y1={0} x2={mouseX - offsetX} y2={video_height} stroke="red"/>
+        {/if}
         {#if isBbSelecting}
             <polygon
                 vector-effect= "non-scaling-stroke"
