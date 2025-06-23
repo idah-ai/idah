@@ -1,0 +1,18 @@
+service_name: VERSE
+description: VERSE for Pulse
+plugins:
+  - name: http
+    config:
+      show_error_details: <%= ENV.fetch("LOG_SHOW_ERROR_DETAILS", "true") %>
+  - name: sequel
+    config:
+      mode: simple
+      db:
+        extensions:
+          - pg_json
+          - pg_array
+          - pg_enum
+        uri: <%= ENV.fetch("DATABASE_URI") %>
+
+logging:
+  level: <%= ENV.fetch("LOG_LEVEL", "info") %>

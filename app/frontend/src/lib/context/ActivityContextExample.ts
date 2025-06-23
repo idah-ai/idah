@@ -1,4 +1,4 @@
-import type { ActivityContext, ToolInfo } from './ActivityContext';
+import type { ActivityContext } from './ActivityContext';
 
 /**
  * Example of how to define an ActivityContext with annotation tools
@@ -81,7 +81,7 @@ const exampleActivityContext: ActivityContext = {
         minPoints: 3,
         maxPoints: 100,
         strokeColor: '#00FF00',
-        fillColor: 'rgba(0, 255, 0, 0.2)'
+        fillColor: 'rgba(12, 224, 47, 0.7)'
       },
 
       allowedFields: {

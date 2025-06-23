@@ -1,4 +1,3 @@
-import { act } from '@testing-library/svelte';
 import { type ActivityView } from './ActivityView';
 
 export const Registry = {

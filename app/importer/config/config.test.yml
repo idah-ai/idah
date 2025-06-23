@@ -1,0 +1,4 @@
+em:
+  adapter: local
+logging:
+  level: <%= ENV.fetch("LOG_LEVEL", "debug") %>
