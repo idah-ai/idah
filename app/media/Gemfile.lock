@@ -1,9 +1,10 @@
 GIT
   remote: https://github.com/verse-rb/verse-core
-  revision: 23d247f0771cfa6492d809b14610dd5072e21ae7
+  revision: 0a87034f4be597c05d38a6ba5c6b5905c8b44bee
   branch: master
   specs:
     verse-core (2.0.0)
+      logger (>= 1.0)
       verse-schema (>= 1)
 
 GIT
@@ -53,6 +54,7 @@ GEM
     jwt (2.7.1)
     language_server-protocol (3.17.0.5)
     lint_roller (1.1.0)
+    logger (1.7.0)
     method_source (1.1.0)
     msgpack (1.8.0)
     multi_json (1.15.0)
