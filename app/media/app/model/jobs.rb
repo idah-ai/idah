@@ -1,4 +1,4 @@
-module Job
+module Jobs
   class Record < Verse::Model::Record::Base
     field :id, type: Integer, primary: true
     field :job_class, type: String
@@ -55,5 +55,12 @@ module Job
       end
     end
 
+    def next_scheduled_time
+      table.select(
+        Sequel.lit("min(scheduled_at)")
+      ).where(
+        status: "pending"
+      ).first[:min]
+    end
   end
 end

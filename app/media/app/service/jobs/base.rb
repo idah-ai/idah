@@ -2,12 +2,10 @@ module Jobs
   class Base
     attr_reader :params
 
-    def inititalize(params)
+    def initialize(params)
       @params = params
     end
 
-    def run
-      raise NotImplementedError, "Subclasses must implement the run method"
-    end
+    def run = raise NotImplementedError
   end
 end

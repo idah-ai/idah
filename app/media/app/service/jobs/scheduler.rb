@@ -6,44 +6,70 @@ module Jobs
   class Scheduler < Verse::Service::Base
     include MonitorMixin
 
-    use jobs: Job::Repository
+    use jobs: Jobs::Repository
 
     def initialize
       super Verse::Auth::Context.new # Use system context
 
       @wait_cond = new_cond
+      @running = false
 
       @thread_pool = Jobs::ThreadPool.new(
         size: Verse.config.extra_fields.dig(:jobs, :concurrency) || 4
       )
       @scheduler = Thread.new(&method(:run))
+    end
 
-      @stop = false
+    def running
+      synchronize do
+        @running
+      end
+    end
+
+    def start
+      stop if running
+
+      synchronize{ @running = true }
+
+      @thread_pool = Jobs::ThreadPool.new(
+        size: Verse.config.extra_fields.dig(:jobs, :concurrency) || 4
+      )
+
+      @scheduler = Thread.new(&method(:run))
     end
 
     def run
       loop do
+        break unless running
+
         # Check for jobs available
         Verse.logger&.debug "Checking for jobs to run"
 
         # Pull more job if a thread is free.
-        if @thread_pool.free > 0
-          job = jobs.lock_available(@thread_pool.free)
-          # Process the job:
-          process(job) if job
+        free = @thread_pool.free
+        if free > 0
+          Verse.logger&.debug "Thread pool has #{free} free threads"
+          available_jobs = jobs.lock_available(free)
+          available_jobs.each(&method(:process))
         end
 
         # Check scheduled jobs
         time = jobs.next_scheduled_time
-        next_in = time.to_i - Time.now.to_i
-
-        break if @stop
 
         synchronize do
-          if next_in.nil? # No scheduled jobs, wait 10s
-            @wait_cond.wait(10)
-          elsif next_in > 0 # Scheduled job is ready, process immediately
-            @wait_cond.wait(next_in) if next_in > 0
+          if time.nil?
+            Verse.logger&.debug "No scheduled jobs found. Waiting 10s"
+            @wait_cond.wait(10) # Wait for 10 seconds if no jobs are scheduled
+          else
+            next_in = time.to_i - Time.now.to_i
+
+            if next_in <= 0
+              Verse.logger&.debug "Next scheduled job is ready to run"
+            else
+              Verse.logger&.debug "Next scheduled job in #{next_in} seconds"
+              # Wait until the next scheduled job is ready
+              @wait_cond.wait(next_in)
+            end
           end
         end
       end
@@ -54,7 +80,7 @@ module Jobs
 
       # Security in case of database poisoning,
       # to avoid running arbitrary code
-      unless klass.is_a?(Jobs::Base)
+      unless klass < Jobs::Base
         raise "Job class #{job.job_class} is not a valid Jobs::Base subclass"
       end
 
@@ -68,13 +94,22 @@ module Jobs
     end
 
     def stop
-      @stop = true
+      return unless running # Already stopped
+
       synchronize do
+        @running = false
         @wait_cond.signal # Wake up the thread if it's waiting
-        @scheduler.join # Wait for the scheduler thread to finish
-        @thread_pool.stop # Stop the thread pool
-        Verse.logger&.debug "Scheduler stopped"
       end
+
+      # I have no idea why I should signal twice,
+      # but whatever...
+      synchronize{ @wait_cond.signal }
+
+      @thread_pool.stop # Stop the thread pool
+
+      @scheduler.join # Wait for the scheduler thread to finish
+
+      Verse.logger&.debug "Scheduler stopped"
     end
 
     # On event, signal to stop waiting to try
