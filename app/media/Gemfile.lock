@@ -1,0 +1,170 @@
+GIT
+  remote: https://github.com/verse-rb/verse-core
+  revision: 23d247f0771cfa6492d809b14610dd5072e21ae7
+  branch: master
+  specs:
+    verse-core (2.0.0)
+      verse-schema (>= 1)
+
+GIT
+  remote: https://github.com/verse-rb/verse-http
+  revision: ba20a36121bb04007e2be1f6babc2a5ede79f342
+  branch: master
+  specs:
+    verse-http (0.1.0)
+      jwt (~> 2.7.1)
+      sinatra (~> 3.0)
+
+GIT
+  remote: https://github.com/verse-rb/verse-jsonapi
+  revision: e89a716761f62a7ab3a5f04358ebafde2c594108
+  branch: master
+  specs:
+    verse-jsonapi (0.1.0)
+
+GIT
+  remote: https://github.com/verse-rb/verse-sequel
+  revision: f27bf55f6638bf329b6ec6c0a3ac099c41c4fd12
+  branch: master
+  specs:
+    verse-sequel (0.1.0)
+      sequel (~> 5)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    addressable (2.8.7)
+      public_suffix (>= 2.0.2, < 7.0)
+    ast (2.4.3)
+    attr_chainable (1.0.0)
+    base64 (0.3.0)
+    bigdecimal (3.2.2)
+    bootsnap (1.18.6)
+      msgpack (~> 1.2)
+    coderay (1.1.3)
+    crack (1.0.0)
+      bigdecimal
+      rexml
+    diff-lcs (1.6.2)
+    docile (1.4.1)
+    dotenv (3.1.8)
+    hashdiff (1.2.0)
+    json (2.12.2)
+    jwt (2.7.1)
+    language_server-protocol (3.17.0.5)
+    lint_roller (1.1.0)
+    method_source (1.1.0)
+    msgpack (1.8.0)
+    multi_json (1.15.0)
+    mustermann (3.0.3)
+      ruby2_keywords (~> 0.0.1)
+    nio4r (2.7.4)
+    parallel (1.27.0)
+    parser (3.3.8.0)
+      ast (~> 2.4.1)
+      racc
+    pg (1.5.9)
+    prism (1.4.0)
+    pry (0.15.2)
+      coderay (~> 1.1)
+      method_source (~> 1.0)
+    public_suffix (6.0.2)
+    puma (5.6.9)
+      nio4r (~> 2.0)
+    racc (1.8.1)
+    rack (2.2.17)
+    rack-protection (3.2.0)
+      base64 (>= 0.1.0)
+      rack (~> 2.2, >= 2.2.4)
+    rack-test (2.2.0)
+      rack (>= 1.3)
+    rainbow (3.1.1)
+    rake (13.3.0)
+    regexp_parser (2.10.0)
+    rexml (3.4.1)
+    rspec (3.13.1)
+      rspec-core (~> 3.13.0)
+      rspec-expectations (~> 3.13.0)
+      rspec-mocks (~> 3.13.0)
+    rspec-core (3.13.5)
+      rspec-support (~> 3.13.0)
+    rspec-expectations (3.13.5)
+      diff-lcs (>= 1.2.0, < 2.0)
+      rspec-support (~> 3.13.0)
+    rspec-mocks (3.13.5)
+      diff-lcs (>= 1.2.0, < 2.0)
+      rspec-support (~> 3.13.0)
+    rspec-support (3.13.4)
+    rubocop (1.77.0)
+      json (~> 2.3)
+      language_server-protocol (~> 3.17.0.2)
+      lint_roller (~> 1.1.0)
+      parallel (~> 1.10)
+      parser (>= 3.3.0.2)
+      rainbow (>= 2.2.2, < 4.0)
+      regexp_parser (>= 2.9.3, < 3.0)
+      rubocop-ast (>= 1.45.1, < 2.0)
+      ruby-progressbar (~> 1.7)
+      unicode-display_width (>= 2.4.0, < 4.0)
+    rubocop-ast (1.45.1)
+      parser (>= 3.3.7.2)
+      prism (~> 1.4)
+    ruby-progressbar (1.13.0)
+    ruby2_keywords (0.0.5)
+    sequel (5.93.0)
+      bigdecimal
+    simplecov (0.22.0)
+      docile (~> 1.1)
+      simplecov-html (~> 0.11)
+      simplecov_json_formatter (~> 0.1)
+    simplecov-html (0.13.1)
+    simplecov_json_formatter (0.1.4)
+    sinatra (3.2.0)
+      mustermann (~> 3.0)
+      rack (~> 2.2, >= 2.2.4)
+      rack-protection (= 3.2.0)
+      tilt (~> 2.0)
+    sinatra-contrib (3.2.0)
+      multi_json (>= 0.0.2)
+      mustermann (~> 3.0)
+      rack-protection (= 3.2.0)
+      sinatra (= 3.2.0)
+      tilt (~> 2.0)
+    tilt (2.6.0)
+    unicode-display_width (3.1.4)
+      unicode-emoji (~> 4.0, >= 4.0.4)
+    unicode-emoji (4.0.4)
+    verse-schema (1.1.1)
+      attr_chainable (~> 1.0)
+    webmock (3.25.1)
+      addressable (>= 2.8.0)
+      crack (>= 0.3.2)
+      hashdiff (>= 0.4.0, < 2.0.0)
+    zeitwerk (2.7.3)
+
+PLATFORMS
+  ruby
+  x86_64-linux
+
+DEPENDENCIES
+  bootsnap (~> 1.16)
+  dotenv
+  pg
+  pry
+  puma (~> 5.6)
+  rack-test
+  rake
+  rspec (~> 3.0)
+  rubocop
+  simplecov
+  sinatra-contrib
+  verse-core!
+  verse-http!
+  verse-jsonapi!
+  verse-schema (~> 1.1)
+  verse-sequel!
+  webmock
+  zeitwerk
+
+BUNDLED WITH
+   2.6.7

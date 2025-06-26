@@ -14,6 +14,7 @@ require "simplecov"
 
 require "verse/spec"
 require "verse/http/spec"
+require "verse/sequel/spec"
 
 SimpleCov.start do
   add_group "Exposition", "app/expo"
@@ -41,29 +42,11 @@ ensure
 end
 
 RSpec.configure do |config|
-  Verse::Auth::Context.backend = Service::RoleBackend.new
+  # Verse::Auth::Context.backend = Service::RoleBackend.new
   Verse::Event::Dispatcher.event_mode = :immediate
 
   config.include Rack::Test::Methods
   config.include Verse::JsonApi::Deserializer
-
-  config.include SpecData::RepositoryHelper, type: :repository
-
-  config.around do |example|
-    usage = %i<repository>.include?(example.metadata[:type])
-    usage ||= example.metadata[:database]
-
-    if usage
-      Verse::Plugin[:sequel].client(:rw) do |db|
-        db.transaction do
-          db.rollback_on_exit
-          example.run
-        end
-      end
-    else
-      example.run
-    end
-  end
 
   Verse::Spec.add_user(:system, "system")
   Verse::Spec.add_user(:anonymous, "anonymous")

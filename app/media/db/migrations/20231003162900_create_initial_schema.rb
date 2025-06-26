@@ -6,8 +6,9 @@ Sequel.migration do
 
     Migration::Timestamps.install_updated_at_function
 
-    create_table(:files) do
+    create_table(:medias) do
       column :id, String, primary_key: true
+      column :key, String, null: false, index: true
 
       column :size, Integer, null: false
       column :mime_type, String, null: false
@@ -23,7 +24,7 @@ Sequel.migration do
     create_table(:jobs) do
       column :id, String, primary_key: true
 
-      column :job, String, null: false, index: true
+      column :job_class, String, null: false, index: true
       column :arguments, :jsonb, text: true, null: false
 
       column :priority, Integer, null: false, default: 0, index: true
