@@ -7,11 +7,11 @@ plugins:
   - name: sequel
     config:
       mode: simple
+      extensions:
+        - pg_json
+        - pg_array
+        - pg_enum
       db:
-        extensions:
-          - pg_json
-          - pg_array
-          - pg_enum
         uri: <%= ENV.fetch("DATABASE_URI") %>
 
 logging:
