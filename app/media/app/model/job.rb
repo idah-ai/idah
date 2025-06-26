@@ -1,6 +1,6 @@
 module Job
   class Record < Verse::Model::Record::Base
-    field :id, type: Integer, primary_key: true
+    field :id, type: Integer, primary: true
     field :job_class, type: String
 
     field :arguments, type: Hash
@@ -22,6 +22,8 @@ module Job
     self.table = "jobs"
     self.resource = "medias:jobs"
 
+    encoder :arguments, Verse::Sequel::JsonEncoder
+
     # Lock available jobs for processing, up to {count} jobs.
     # The jobs are locked for update and their status is set to "scheduled".
     #
@@ -34,18 +36,19 @@ module Job
     #
     def lock_available(count = 1, now: Time.now)
       transaction do
-        scope = table.for_update.skip_locked.limit(count)
+        scope = table.for_update.skip_locked
         jobs = index(
           {
             status: "pending",
             scheduled_at__lte: now
           },
           sort: '-priority',
-          scope:
+          items_per_page: count,
+          scope:,
         )
 
         jobs.each do |job|
-          update!(job.id, status: "scheduled")
+          update!(job.id, {status: "scheduled"})
         end
 
         jobs

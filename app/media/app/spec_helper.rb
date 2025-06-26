@@ -29,7 +29,6 @@ end
 require_relative "../config/boot"
 Verse.start(:test)
 
-
 def silent
   return unless (logger = Verse.logger)
 
@@ -50,7 +49,6 @@ RSpec.configure do |config|
 
   Verse::Spec.add_user(:system, "system")
   Verse::Spec.add_user(:anonymous, "anonymous")
-  Verse::Spec.add_user(:hr_staff, "hr_staff", scopes: { ou: ["MG"] })
 
   config.example_status_persistence_file_path = ".rspec_status"
 
