@@ -6,7 +6,7 @@ module Jobs
   class Scheduler < Verse::Service::Base
     include MonitorMixin
 
-    use jobs: JobRepository
+    use jobs: Job::Repository
 
     def initialize
       super Verse::Auth::Context.new # Use system context
@@ -14,7 +14,7 @@ module Jobs
       @wait_cond = new_cond
 
       @thread_pool = Jobs::ThreadPool.new(
-        size: Verse.config.extra_field.dig(:jobs, :concurrency) || 4
+        size: Verse.config.extra_fields.dig(:jobs, :concurrency) || 4
       )
       @scheduler = Thread.new(&method(:run))
 
@@ -24,7 +24,7 @@ module Jobs
     def run
       loop do
         # Check for jobs available
-        Verse.debug "Checking for jobs to run"
+        Verse.logger&.debug "Checking for jobs to run"
 
         # Pull more job if a thread is free.
         if @thread_pool.free > 0
@@ -49,13 +49,31 @@ module Jobs
       end
     end
 
+    def process(job)
+      klass = Verse::Util::Reflection.constantize(job.job_class)
+
+      # Security in case of database poisoning,
+      # to avoid running arbitrary code
+      unless klass.is_a?(Jobs::Base)
+        raise "Job class #{job.job_class} is not a valid Jobs::Base subclass"
+      end
+
+      Verse.logger&.debug {
+        "Processing job #{klass.name}:#{job.id} with arguments #{job.arguments.inspect[0..100]}"
+      }
+
+      @thread_pool.run do
+        klass.new(job.arguments).run
+      end
+    end
+
     def stop
       @stop = true
       synchronize do
         @wait_cond.signal # Wake up the thread if it's waiting
         @scheduler.join # Wait for the scheduler thread to finish
         @thread_pool.stop # Stop the thread pool
-        Verse.debug "Scheduler stopped"
+        Verse.logger&.debug "Scheduler stopped"
       end
     end
 
