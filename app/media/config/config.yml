@@ -1,4 +1,4 @@
-service_name: medias
+service_name: media
 description: Media Importer and Storage Service
 plugins:
   - name: http

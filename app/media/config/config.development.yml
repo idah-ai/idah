@@ -1,2 +1,2 @@
 logging:
-  level: debug
+  level: <%= ENV.fetch("LOG_LEVEL", "debug") %>
