@@ -32,7 +32,7 @@ module Job
     # @return [Array<Job>] the locked jobs. note that returned status is still "pending"
     #
     # @example
-    #   jobs = JobRepository.lock_available(5)
+    #   jobs = repo.lock_available(5)
     #
     def lock_available(count = 1, now: Time.now)
       transaction do
