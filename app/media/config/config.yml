@@ -1,5 +1,5 @@
-service_name: VERSE
-description: VERSE for Pulse
+service_name: medias
+description: Media Importer and Storage Service
 plugins:
   - name: http
     config:

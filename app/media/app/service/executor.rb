@@ -8,6 +8,12 @@ require "shellwords"
 class Executor
   include MonirorMixin
 
+  class << self
+    def instance
+      @instance ||= new
+    end
+  end
+
   # A simple executor that runs commands in a separate process using Open3.
   def initialize(max_instances=4)
     @processes = SizedQueue.new(max_instances)
