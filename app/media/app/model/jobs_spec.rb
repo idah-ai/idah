@@ -1,6 +1,5 @@
-RSpec.describe Job, database: true do
-
-  describe Job::Repository do
+RSpec.describe Jobs, database: true do
+  describe Jobs::Repository do
     subject{ described_class.new(Verse::Auth::Context.new) }
 
     let!(:job_creator) do
@@ -64,6 +63,29 @@ RSpec.describe Job, database: true do
 
         job1_updated = subject.find!(job1.id)
         expect(job1_updated.status).to eq("scheduled")
+      end
+    end
+
+    context "#next_scheduled_time" do
+      it "should return nil if no pending jobs" do
+        job_creator.call(status: "done")
+        expect(subject.next_scheduled_time).to be_nil
+      end
+
+      it "should return the minimum scheduled_at time" do
+        time = Time.now
+        job1 = job_creator.call(scheduled_at: time + 100)
+        job2 = job_creator.call(scheduled_at: time + 200)
+
+        expect(subject.next_scheduled_time.to_i).to eq((time+100).to_i)
+      end
+
+      it "should not consider non-pending jobs" do
+        time = Time.now
+        job1 = job_creator.call(scheduled_at: time + 100, status: "done")
+        job2 = job_creator.call(scheduled_at: time + 200)
+
+        expect(subject.next_scheduled_time.to_i).to eq((time+200).to_i)
       end
     end
   end
