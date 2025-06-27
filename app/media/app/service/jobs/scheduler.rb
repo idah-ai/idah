@@ -3,11 +3,11 @@
 require "monitor"
 
 module Jobs
-  module_function
-
-  attr_accessor :scheduler
-
   class Scheduler < Verse::Service::Base
+    class << self
+      attr_accessor :instance
+    end
+
     include MonitorMixin
 
     use jobs: Jobs::Repository
@@ -15,6 +15,7 @@ module Jobs
     def initialize
       super Verse::Auth::Context.new # Use system context
 
+      self.class.instance ||= self
       @wait_cond = new_cond
       @running = false
     end

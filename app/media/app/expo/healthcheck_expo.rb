@@ -13,11 +13,11 @@
       meta nodoc: true
     end
     def healthcheck
-      output HealthcheckService.run
+      output = HealthcheckService.run
 
       server.response.status = 500 unless output.success?
 
-      output.status
+      output.status.to_json
     end
 
     # Need verse-periodic gem.
