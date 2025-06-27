@@ -29,15 +29,18 @@ module Jobs
 
     def worker_loop
       loop do
+        break if @queue.closed?
+
         task = @queue.pop
 
-        synchronize{ @usage += 1 }
+        next if task.nil?
 
         begin
+          synchronize{ @usage += 1 }
           task.call
         rescue => e
-          Verse.error{ "Error in worker thread: [#{e.class.name}] #{e.message}" }
-          Verse.error{ e.backtrace.join("\n") }
+          Verse.logger&.error{ "Error in worker thread: [#{e.class.name}] #{e.message}" }
+          Verse.logger&.error{ e.backtrace.join("\n") }
         ensure
           synchronize{ @usage -= 1 }
         end
