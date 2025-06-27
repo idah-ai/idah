@@ -3,6 +3,10 @@
 require "monitor"
 
 module Jobs
+  module_function
+
+  attr_accessor :scheduler
+
   class Scheduler < Verse::Service::Base
     include MonitorMixin
 
@@ -60,7 +64,6 @@ module Jobs
 
             if next_in <= 0
               Verse.logger&.debug "Next scheduled job is ready to run"
-              return
             else
               Verse.logger&.debug "Next scheduled job in #{next_in} seconds"
               # Wait until the next scheduled job is ready
@@ -112,4 +115,5 @@ module Jobs
       end
     end
   end
+
 end
