@@ -5,15 +5,17 @@ require_relative "../../../app/service/jobs/scheduler"
 
 module Spec
   class CustomJob < Jobs::Base
-    attr_reader :ran
+    class << self
+      attr_accessor :ran
+    end
 
     def initialize(params)
       super(params)
-      @ran = false
+      self.class.ran = false
     end
 
     def run
-      @ran = true
+      self.class.ran = true
     end
   end
 end
@@ -42,6 +44,8 @@ RSpec.describe Jobs::Scheduler do
   subject { described_class.new }
 
   before do
+    Spec::CustomJob.ran = false
+
     allow(Jobs::ThreadPool).to receive(:new).and_return(thread_pool)
     allow(thread_pool).to receive(:free).and_return(1)
     allow(thread_pool).to receive(:stop)
@@ -66,15 +70,16 @@ RSpec.describe Jobs::Scheduler do
     context "when a job is available" do
       it "processes the job" do
         expect(job_repository).to receive(:lock_available).and_return([job1])
+        allow(job_repository).to receive(:next_scheduled_time).and_return(nil)
 
-        expect(thread_pool).to receive(:run) do |&block|
+        allow(thread_pool).to receive(:run) do |&block|
           block.call
         end
 
         subject.start
         sleep 0.01 # allow the thread to run
 
-        expect(job1).to have_received(:run)
+        expect(Spec::CustomJob.ran).to be true
       end
     end
 
@@ -82,15 +87,16 @@ RSpec.describe Jobs::Scheduler do
       let(:scheduled_time) { Time.now + 0.1 }
 
       before do
-        allow(job_repository).to receive(:next_scheduled_time).and_return(scheduled_time, nil)
+        allow(job_repository).to receive(:next_scheduled_time).and_return(scheduled_time)
       end
 
       it "waits for the scheduled time" do
         wait_cond = subject.instance_variable_get(:@wait_cond)
+        allow(job_repository).to receive(:lock_available).and_return([])
         # The time might not be exact, so we check that it's called with a value
         # close to the expected one.
         expect(wait_cond).to receive(:wait).with(be_within(0.1).of(0.1)).and_call_original
-        subject
+        subject.start
         sleep 0.11 # allow the thread to run and wait
       end
 
