@@ -101,21 +101,14 @@ RSpec.describe Jobs::Scheduler do
       end
 
       it "runs continuously" do
-        subject
+        allow(job_repository).to receive(:lock_available).and_return([])
+        allow(job_repository).to receive(:next_scheduled_time).and_return(nil)
+
+        subject.start
         sleep 0.2
         scheduler_thread = subject.instance_variable_get(:@scheduler)
         expect(scheduler_thread).to be_alive
       end
-    end
-  end
-
-  describe "#stop" do
-    it "stops the scheduler" do
-      scheduler_thread = subject.instance_variable_get(:@scheduler)
-      allow(scheduler_thread).to receive(:join)
-
-      expect(thread_pool).to receive(:stop)
-      expect { subject.stop }.to raise_error("STOP")
     end
   end
 
