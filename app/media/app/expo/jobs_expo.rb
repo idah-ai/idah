@@ -14,7 +14,7 @@ class JobsExpo < Verse::Exposition::Base
       show
       delete
       index do
-        allowed_filters :id__in
+        allowed_filters :id__in,
                         :job_class__in,
                         :priority__gte,
                         :priority__lte,
@@ -26,7 +26,7 @@ class JobsExpo < Verse::Exposition::Base
                         :created_at__gte,
                         :created_at__lte,
                         :updated_at__gte,
-                        :updated_at__lte,
+                        :updated_at__lte
 
         blacklist_filters :arguments
       end
@@ -36,6 +36,6 @@ class JobsExpo < Verse::Exposition::Base
     desc "When a job is created, signal the scheduler to wake up and try to process it."
   end
   def signal
-    Jobs.scheduler.signal
+    Jobs::Scheduler.instance.signal
   end
 end

@@ -2,4 +2,5 @@
 
 Verse.on_boot do
   HealthcheckExpo.register
+  JobsExpo.register
 end
