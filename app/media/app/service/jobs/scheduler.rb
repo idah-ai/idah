@@ -13,11 +13,6 @@ module Jobs
 
       @wait_cond = new_cond
       @running = false
-
-      @thread_pool = Jobs::ThreadPool.new(
-        size: Verse.config.extra_fields.dig(:jobs, :concurrency) || 4
-      )
-      @scheduler = Thread.new(&method(:run))
     end
 
     def running
@@ -61,10 +56,11 @@ module Jobs
             Verse.logger&.debug "No scheduled jobs found. Waiting 10s"
             @wait_cond.wait(10) # Wait for 10 seconds if no jobs are scheduled
           else
-            next_in = time.to_i - Time.now.to_i
+            next_in = time.to_f - Time.now.to_f
 
             if next_in <= 0
               Verse.logger&.debug "Next scheduled job is ready to run"
+              return
             else
               Verse.logger&.debug "Next scheduled job in #{next_in} seconds"
               # Wait until the next scheduled job is ready
@@ -100,10 +96,6 @@ module Jobs
         @running = false
         @wait_cond.signal # Wake up the thread if it's waiting
       end
-
-      # I have no idea why I should signal twice,
-      # but whatever...
-      synchronize{ @wait_cond.signal }
 
       @thread_pool.stop # Stop the thread pool
 
