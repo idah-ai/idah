@@ -8,10 +8,12 @@ Sequel.migration do
 
     create_table(:medias) do
       column :id, String, primary_key: true
-      column :key, String, null: false, default: "", index: true
+
+      column :resource, String, null: false, index: true
+      column :key, String, null: false, default: ""
 
       # unique index on key and id:
-      index [:key, :id], unique: true
+      index [:resource, :key], unique: true
 
       column :size, Integer, null: false
       column :mime_type, String, null: false
@@ -20,6 +22,9 @@ Sequel.migration do
       column :created_role, String
 
       column :public, TrueClass, null: false, default: false, index: true
+
+      # Able to use LIKE on media key.
+      index :key, opclass: :gin_trgm_ops, type: :gin
 
       Migration::Timestamps.timestamps(self, updated_at: false)
     end
