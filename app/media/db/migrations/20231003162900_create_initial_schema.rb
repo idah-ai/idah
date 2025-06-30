@@ -8,7 +8,7 @@ Sequel.migration do
 
     create_table(:medias) do
       column :id, String, primary_key: true
-      column :key, String, null: false
+      column :key, String, null: false, default: "", index: true
 
       # unique index on key and id:
       index [:key, :id], unique: true
