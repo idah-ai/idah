@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
-RSpec.describe JobsExpo, type: :exposition do
+RSpec.describe JobsExpo, type: :exposition, as: :system do
+  let(:now) { Time.now.utc }
+
   let(:job) {
     Jobs::Record.new({
       id: 1,
@@ -9,9 +11,9 @@ RSpec.describe JobsExpo, type: :exposition do
       arguments: [],
       priority: 1,
       retry_count: 0,
-      scheduled_at: Time.now,
-      created_at: Time.now,
-      updated_at: Time.now
+      scheduled_at: now,
+      created_at: now,
+      updated_at: now
      })
   }
 
@@ -22,21 +24,27 @@ RSpec.describe JobsExpo, type: :exposition do
 
     expect(last_response.status).to eq 200
     body = JSON.parse(last_response.body, symbolize_names: true)
-    expect(body.dig(:data, 0, :attributes)).to eq(
-      job.to_h.except(:id, :arguments)
-    )
+    record = deserialize body
+
+    expect(record[0].id). to eq "1"
+    expect(record[0].arguments).to eq([])
+    expect(record[0].error).to be_nil
+    expect(record[0].job_class).to eq "MyJob"
   end
 
   it "show" do
-    expect_any_instance_of(Jobs::Repository).to receive(:find).with(1).and_return(job)
+    expect_any_instance_of(Jobs::Repository).to receive(:find!).and_return(job)
 
     get "/jobs/1"
 
     expect(last_response.status).to eq 200
     body = JSON.parse(last_response.body, symbolize_names: true)
-    expect(body.dig(:data, :attributes)).to eq(
-      job.to_h.except(:id, :arguments)
-    )
+    record = deserialize body
+
+    expect(record.id). to eq "1"
+    expect(record.arguments).to eq([])
+    expect(record.error).to be_nil
+    expect(record.job_class).to eq "MyJob"
   end
 
   it "destroy" do

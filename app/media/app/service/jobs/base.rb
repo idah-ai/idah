@@ -1,9 +1,9 @@
 module Jobs
   class Base
-    attr_reader :params
+    attr_reader :arguments
 
-    def initialize(params)
-      @params = params
+    def initialize(arguments)
+      @arguments = arguments
     end
 
     def run = raise NotImplementedError

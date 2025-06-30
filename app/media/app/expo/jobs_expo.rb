@@ -9,6 +9,8 @@ class JobsExpo < Verse::Exposition::Base
     You can also filter jobs by various attributes such as status, priority, and scheduled time.
   MD
 
+  use_service Jobs::Service
+
   json_api Jobs::Record do
       # allowed_included "..."
       show
