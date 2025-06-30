@@ -39,8 +39,16 @@ module Jobs
         Verse.logger.info "Downloading media #{media.id} (#{media.key})"
 
         # Assuming we have a method to download the media
-        @local_media_path = Verse::Media.download(media.key)
-      end
+        Verse::Plugins[:shrine].with_storage do |storage|
+          file = storage.open(file_info.id)
+          # Copy the file to a temporary location:
+          temp_file_path = File.join(
+            Dir.tmpdir,
+            file_info.key
+          )
+        ensure
+          file.close
+        end
     end
   end
 end
