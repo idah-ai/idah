@@ -4,8 +4,8 @@ class JobsExpo < BaseExpo
   use_service Medias::Service
 
   desc <<-MD
-    Medias Expo
-    ========
+    # Medias Expo
+
     This exposition provides access to the media records in the system.
   MD
 
@@ -18,8 +18,8 @@ class JobsExpo < BaseExpo
 
   expose on_http(:get, "d/:resource(/:key)?", renderer: Verse::Http::Renderer::Stream) do
     desc <<-MD
-      Get Media by ID and Key
-      ------------------------
+      ## Get Media by ID and Key
+
       This endpoint retrieves a media record by its ID and optional key.
     MD
     input do
@@ -39,8 +39,8 @@ class JobsExpo < BaseExpo
 
   expose on_http(:post, "upload/:resource/(:key)?") do
     desc <<-MD
-      Upload Media
-      ------------
+      ## Upload Media
+
       This endpoint allows you to upload a media file.
       It expect form-data with a file field named `media`.
     MD

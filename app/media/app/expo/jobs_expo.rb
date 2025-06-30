@@ -2,8 +2,8 @@ class JobsExpo < Verse::Exposition::Base
   http_path "/jobs"
 
   desc <<-MD
-    Jobs Expo
-    ========
+    # Jobs Expo
+
     This exposition provides access to the job records in the system.
     It allows you to view, delete, and signal jobs.
     You can also filter jobs by various attributes such as status, priority, and scheduled time.
@@ -35,7 +35,8 @@ class JobsExpo < Verse::Exposition::Base
     end
 
   expose on_resource_event("medias:jobs", "created") do
-    desc "When a job is created, signal the scheduler to wake up and try to process it."
+    desc  "When a job is created, signal the scheduler to wake up"
+          "and try to process it."
   end
   def signal
     Jobs::Scheduler.instance.signal
