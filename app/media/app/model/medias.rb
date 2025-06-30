@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Medias
   class Record < Verse::Record::Base
     field :id, type: Integer, primary: true

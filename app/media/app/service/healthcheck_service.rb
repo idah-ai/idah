@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module HealthcheckService
   extend self
 
@@ -14,7 +16,7 @@ module HealthcheckService
         plugin.client do |db|
           db.execute("SELECT 1")
           status[plugin.name] = "OK"
-        rescue StandardError => e
+        rescue StandardError
           healthy = false
           status[plugin.name] = "FAILED"
         end
@@ -28,25 +30,23 @@ module HealthcheckService
         plugin.with_client do |client|
           client.ping
           status[plugin.name] = "OK"
-        rescue StandardError => e
+        rescue StandardError
           healthy = false
           status[plugin.name] = "FAILED"
         end
       end
     end
 
-    return Result.new(
+    Result.new(
       success?: healthy,
       status: status
     )
   rescue RuntimeError => e
     Verse.logger&.error "Healthcheck failed: #{e.message}"
 
-    return Result.new(
+    Result.new(
       success?: false,
       status: status
     )
   end
-
-
 end

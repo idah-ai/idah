@@ -1,5 +1,7 @@
+# frozen_string_literal: true
+
 module Jobs
-  class ThreadPool < Verse::Service::Base
+  class ThreadPool
     include MonitorMixin
 
     attr_reader :size, :usage
@@ -14,7 +16,7 @@ module Jobs
       @condition = new_cond
     end
 
-    def free =  @size - @usage
+    def free = @size - @usage
 
     def run(&block)
       @queue << block
@@ -38,7 +40,7 @@ module Jobs
         begin
           synchronize{ @usage += 1 }
           task.call
-        rescue => e
+        rescue StandardError => e
           Verse.logger&.error{ "Error in worker thread: [#{e.class.name}] #{e.message}" }
           Verse.logger&.error{ e.backtrace.join("\n") }
         ensure
@@ -49,6 +51,5 @@ module Jobs
         break if @queue.empty?
       end
     end
-
   end
 end

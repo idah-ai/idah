@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Jobs
   class Record < Verse::Model::Record::Base
     field :id, type: Integer, primary: true
@@ -42,13 +44,13 @@ module Jobs
             status: "pending",
             scheduled_at__lte: now
           },
-          sort: '-priority',
+          sort: "-priority",
           items_per_page: count,
           scope:,
         )
 
         jobs.each do |job|
-          update!(job.id, {status: "scheduled"})
+          update!(job.id, { status: "scheduled" })
         end
 
         jobs

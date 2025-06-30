@@ -37,7 +37,7 @@ Sequel.migration do
 
       column :priority, Integer, null: false, default: 0, index: true
 
-      column :status, String, null: false, index: true, default: 'pending'
+      column :status, String, null: false, index: true, default: "pending"
       column :progress, Float, null: false, default: 0.0 # from 0.0 to 1.0
       column :retry_count, Integer, null: false, default: 0
 
@@ -47,6 +47,5 @@ Sequel.migration do
 
       Migration::Timestamps.timestamps(self)
     end
-
   end
 end

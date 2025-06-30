@@ -1,6 +1,7 @@
+# frozen_string_literal: true
+
 RSpec.describe Medias::Service, as: :system do
   subject { described_class.new(current_auth_context) }
-
 
   let(:file_path) { "./spec_data/sample.mp4" }
 

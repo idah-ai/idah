@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Medias
   class Service < Verse::Service::Base
     use Medias::Repository
@@ -13,7 +15,7 @@ module Medias
       )
     end
 
-    def show(id, key, included: [])
+    def show(id, _key, included: [])
       repo.find!(id, included:)
     end
 
