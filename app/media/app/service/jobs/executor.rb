@@ -16,7 +16,7 @@ module Jobs
     end
 
     # A simple executor that runs commands in a separate process using Open3.
-    def initialize(max_instances=4)
+    def initialize(max_instances = 4)
       @processes = SizedQueue.new(max_instances)
       @end_signal = new_cond
     end
@@ -49,11 +49,9 @@ module Jobs
         end
 
         Open3.popen3(command) do |stdin, stdout, stderr, wait_thr|
-          begin
-            block.call(stdin, stdout, stderr, wait_thr)
-          rescue StandardError => e
-            block.call(nil, e.message)
-          end
+          block.call(stdin, stdout, stderr, wait_thr)
+        rescue StandardError => e
+          block.call(nil, e.message)
         end
       rescue ThreadError
         break # Exit loop if the queue is empty and no more commands are available.

@@ -1,6 +1,7 @@
+# frozen_string_literal: true
+
 module Jobs
   module Video
-
     ArgumentsSchema = Verse::Schema.define do
       field :media_id, type: String, required: true
 
@@ -9,12 +10,12 @@ module Jobs
     end
 
     class Job < Jobs::Base
-
       def medias
         @medias ||= Medias::Repository.new
       end
 
       def initialize(arguments = {})
+        super
         @arguments = Arguments.new(arguments)
       end
 
@@ -46,9 +47,12 @@ module Jobs
             Dir.tmpdir,
             file_info.key
           )
+
+          temp_file_path
         ensure
           file.close
         end
+      end
     end
   end
 end

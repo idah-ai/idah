@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class JobsExpo < BaseExpo
   http_path "/medias"
 
@@ -10,11 +12,8 @@ class JobsExpo < BaseExpo
   MD
 
   expose on_http(:get) do
-
   end
-  def index
-
-  end
+  def index; end
 
   expose on_http(:get, "d/:resource(/:key)?", renderer: Verse::Http::Renderer::Stream) do
     desc <<-MD
@@ -28,7 +27,7 @@ class JobsExpo < BaseExpo
       # Cannot use default, because variant will be sent as `nil`
       # by Sinatra. Here we transform it to `:original` if it's `nil`.
       field?(:key, [String, NilClass]).transform{ |v| v || "" }.meta(
-        description: "The key of the file to download;"
+        description: "The key of the file to download;" \
           " optional, default to empty string"
       )
     end
@@ -44,17 +43,17 @@ class JobsExpo < BaseExpo
       This endpoint allows you to upload a media file.
       It expect form-data with a file field named `media`.
     MD
-      input do
-        field(:media, Verse::Http::UploadedFile).meta(desc: "The media to upload")
+    input do
+      field(:media, Verse::Http::UploadedFile).meta(desc: "The media to upload")
 
-        field :resource, String
-        field(:key, [String, NilClass]).transform { |v| v || "" }.meta(
-          desc: "The key of the media; optional, default to empty string"
-        )
-      end
-      output Verse::JsonApi::Util.jsonapi_record(
-        Medias::Record
+      field :resource, String
+      field(:key, [String, NilClass]).transform { |v| v || "" }.meta(
+        desc: "The key of the media; optional, default to empty string"
       )
+    end
+    output Verse::JsonApi::Util.jsonapi_record(
+      Medias::Record
+    )
   end
   def upload
     media = params.media
@@ -63,5 +62,4 @@ class JobsExpo < BaseExpo
 
     service.upload(media, resource: resource, key: key)
   end
-
 end

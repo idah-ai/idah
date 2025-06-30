@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 RSpec.describe Jobs, database: true do
   describe Jobs::Repository do
     subject{ described_class.new(Verse::Auth::Context.new) }
@@ -19,7 +21,7 @@ RSpec.describe Jobs, database: true do
     context "#lock_available" do
       it "should only lock pending jobs" do
         job1 = job_creator.call(status: "pending")
-        job2 = job_creator.call(status: "done")
+        job_creator.call(status: "done")
 
         jobs = subject.lock_available(2)
 
@@ -27,7 +29,7 @@ RSpec.describe Jobs, database: true do
       end
 
       it "should not lock job scheduled in the future" do
-        job1 = job_creator.call(scheduled_at: Time.now + 3600)
+        job_creator.call(scheduled_at: Time.now + 3600)
         job2 = job_creator.call(scheduled_at: Time.now - 3600)
 
         jobs = subject.lock_available(2)
@@ -46,8 +48,8 @@ RSpec.describe Jobs, database: true do
       end
 
       it "should lock up to count jobs" do
-        job1 = job_creator.call()
-        job2 = job_creator.call()
+        job_creator.call
+        job_creator.call
 
         jobs = subject.lock_available(1)
 
@@ -55,7 +57,7 @@ RSpec.describe Jobs, database: true do
       end
 
       it "should update status to scheduled" do
-        job1 = job_creator.call()
+        job1 = job_creator.call
 
         jobs = subject.lock_available(1)
 
@@ -74,18 +76,18 @@ RSpec.describe Jobs, database: true do
 
       it "should return the minimum scheduled_at time" do
         time = Time.now
-        job1 = job_creator.call(scheduled_at: time + 100)
-        job2 = job_creator.call(scheduled_at: time + 200)
+        job_creator.call(scheduled_at: time + 100)
+        job_creator.call(scheduled_at: time + 200)
 
-        expect(subject.next_scheduled_time.to_i).to eq((time+100).to_i)
+        expect(subject.next_scheduled_time.to_i).to eq((time + 100).to_i)
       end
 
       it "should not consider non-pending jobs" do
         time = Time.now
-        job1 = job_creator.call(scheduled_at: time + 100, status: "done")
-        job2 = job_creator.call(scheduled_at: time + 200)
+        job_creator.call(scheduled_at: time + 100, status: "done")
+        job_creator.call(scheduled_at: time + 200)
 
-        expect(subject.next_scheduled_time.to_i).to eq((time+200).to_i)
+        expect(subject.next_scheduled_time.to_i).to eq((time + 200).to_i)
       end
     end
   end

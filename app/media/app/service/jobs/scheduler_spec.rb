@@ -26,7 +26,8 @@ RSpec.describe Jobs::Scheduler do
   }
 
   let(:job1) {
-    double("job",
+    double(
+      "job",
       id: 1,
       job_class: "Spec::CustomJob",
       arguments: { "foo" => "bar" },
