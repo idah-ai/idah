@@ -41,6 +41,13 @@ ensure
 end
 
 RSpec.configure do |config|
+  config.before :suite do
+    # Remove the files in tmp/storage/test
+    FileUtils.rm_rf(
+      Dir.glob("tmp/storage/test/*")
+    )
+  end
+
   # Verse::Auth::Context.backend = Service::RoleBackend.new
   Verse::Event::Dispatcher.event_mode = :immediate
 

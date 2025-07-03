@@ -9,6 +9,7 @@ Sequel.migration do
     create_table(:medias) do
       column :id, String, primary_key: true
 
+      column :filename, String, null: false
       column :resource, String, null: false, index: true
       column :key, String, null: false, default: ""
 

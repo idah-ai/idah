@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Medias
-  class Record < Verse::Record::Base
+  class Record < Verse::Model::Record::Base
     field :id, type: Integer, primary: true
 
     field :key, type: String
@@ -12,7 +12,7 @@ module Medias
     field :created_by, type: Integer
     field :created_role, type: String
 
-    field :public, type: Boolean
+    field :public, type: TrueClass
 
     field :created_at, type: Time
     field :updated_at, type: Time
