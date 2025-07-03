@@ -11,22 +11,23 @@ module Video
   ) do
     def ratio = width.to_f / height
 
-    def self.from_file(file)
+    def self.from_file(file_path)
       json = nil
       Executor.instance.call(
-        FFPROBE_COMMAND, file_path: file.path
+        FFPROBE_COMMAND, file_path:
       ) do |_, stdout, _|
         json = stdout.read
       end
 
       json = JSON.parse(json)
-      json_streams = json["streams"].find{ |stream|
+
+      json_streams = json["streams"]&.find{ |stream|
         stream["codec_type"] == "video"
       }
       json_format = json["format"]
 
       if json_streams.nil? || json_format.nil?
-        raise "Invalid video file: #{file.path}"
+        raise "Invalid video file: #{file_path}"
       end
 
       # From fractional to float:
