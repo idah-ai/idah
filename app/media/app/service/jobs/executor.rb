@@ -49,7 +49,9 @@ module Jobs
         end
 
         Open3.popen3(command) do |stdin, stdout, stderr, wait_thr|
-          block.call(stdin, stdout, stderr, wait_thr)
+          block.call(stdin, stdout, stderr)
+
+          wait_thr.value
         rescue StandardError => e
           block.call(nil, e.message)
         end
