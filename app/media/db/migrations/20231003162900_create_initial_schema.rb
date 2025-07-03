@@ -23,6 +23,7 @@ Sequel.migration do
       column :created_role, String
 
       column :public, TrueClass, null: false, default: false, index: true
+      column :meta, :jsonb, text: true, null: false, default: {}
 
       # Able to use LIKE on media key.
       index :key, opclass: :gin_trgm_ops, type: :gin
