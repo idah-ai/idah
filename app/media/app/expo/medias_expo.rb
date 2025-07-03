@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class JobsExpo < BaseExpo
+class MediasExpo < BaseExpo
   http_path "/medias"
 
   use_service Medias::Service
@@ -44,7 +44,7 @@ class JobsExpo < BaseExpo
       It expect form-data with a file field named `media`.
     MD
     input do
-      field(:media, Verse::Http::UploadedFile).meta(desc: "The media to upload")
+      field(:file, Verse::Http::UploadedFile).meta(desc: "The media to upload")
 
       field :resource, String
       field(:key, [String, NilClass]).transform { |v| v || "" }.meta(
@@ -56,10 +56,10 @@ class JobsExpo < BaseExpo
     )
   end
   def upload
-    media = params.media
+    file = params.file
     resource = params.resource
     key = params.key
 
-    service.upload(media, resource: resource, key: key)
+    service.upload(file, resource: resource, key: key)
   end
 end

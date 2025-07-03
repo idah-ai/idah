@@ -25,6 +25,8 @@ gem "sinatra-contrib"
 
 gem "bootsnap", "~> 1.16"
 
+gem "rmagick", "~> 6.0.1"
+
 group :test do
   gem "rack-test"
   gem "rspec", "~> 3.0"
