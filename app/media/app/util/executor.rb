@@ -74,7 +74,13 @@ class Executor
 
   def call_async(command, **opts, &block)
     promise = Promise.new
-    @processes << [escape(command, **opts), block, promise]
+
+    command_opts = opts.slice(*command.scan(/%\{(\w+)\}/).flatten.map(&:to_sym))
+    popen_opts = opts.except(*command_opts.keys)
+
+    escaped_command = escape(command, **command_opts)
+
+    @processes << [escaped_command, popen_opts, block, promise]
     promise
   end
 
@@ -90,11 +96,11 @@ class Executor
   def run
     synchronize{ @running = true }
     loop do
-      command, block, promise = @processes.pop
+      command, opts, block, promise = @processes.pop
 
       break if promise.nil? # Exit condition for the loop
 
-      Open3.popen3(command) do |stdin, stdout, stderr, wait_thr|
+      Open3.popen3(command, opts) do |stdin, stdout, stderr, wait_thr|
         block.call(stdin, stdout, stderr, wait_thr) if block
 
         value = wait_thr.value

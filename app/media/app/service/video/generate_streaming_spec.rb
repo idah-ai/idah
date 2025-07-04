@@ -3,7 +3,9 @@
 require "spec_helper"
 
 RSpec.describe Video::GenerateStreaming do
-  let(:file_path) { "spec_data/4k_sample.mp4" }
+  let(:file_path) {
+    "spec_data/sample.mp4"
+  }
 
   let(:arguments) do
     Video::Arguments.new(
