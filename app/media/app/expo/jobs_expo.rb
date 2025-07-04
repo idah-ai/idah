@@ -37,10 +37,19 @@ class JobsExpo < Verse::Exposition::Base
   end
 
   expose on_resource_event("medias:jobs", "created") do
-    desc "When a job is created, signal the scheduler to wake up"
-    "and try to process it."
+    desc "When a job is created, signal the scheduler to wake up" \
+      "and try to process it."
   end
-  def signal
+  def signal_on_created
     Jobs::Scheduler.instance.signal
   end
+
+  expose on_resource_event("medias:jobs", "rescheduled") do
+    desc "When a job is rescheduled, signal the scheduler to wake up" \
+      "and try to process it."
+  end
+  def signal_on_rescheduled
+    Jobs::Scheduler.instance.signal
+  end
+
 end

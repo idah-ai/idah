@@ -49,5 +49,7 @@ Sequel.migration do
 
       Migration::Timestamps.timestamps(self)
     end
+    Migration::Timestamps.trg_updated_at(self, :jobs)
+
   end
 end

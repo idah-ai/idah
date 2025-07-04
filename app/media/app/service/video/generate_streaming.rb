@@ -90,7 +90,6 @@ module Video
         streams:
       )
 
-      binding.pry
       # Set progress to 100%
       block&.call(1.0)
 

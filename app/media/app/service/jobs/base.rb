@@ -2,12 +2,42 @@
 
 module Jobs
   class Base
-    attr_reader :arguments
+    @max_retries = 0
 
-    def initialize(arguments)
+    class << self
+      attr_accessor :max_retries
+    end
+
+    attr_reader :job_id, :arguments
+
+    def initialize(job_id, arguments)
+      @job_id = job_id
       @arguments = arguments
     end
 
-    def run = raise NotImplementedError
+    def update_progress(value)
+      emit(:update_progress, value:)
+    end
+
+    def reschedule(in: 10)
+      emit(:reschedule, in:)
+    end
+
+    def error(message)
+      emit(:error, error:)
+    end
+
+    def emit(event, **args)
+      @command.call(
+        event, **args
+      )
+    end
+
+    def run(&block)
+      @command = block
+      run_impl
+    end
+
+    def run_impl = raise NotImplementedError
   end
 end

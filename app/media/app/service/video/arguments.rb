@@ -12,7 +12,7 @@ module Video
   }.freeze
 
   ArgumentsSchema = Verse::Schema.define do
-    field :media_id, String, required: true
+    field :resource, String, required: true
 
     field(:sizes,
           Array,
