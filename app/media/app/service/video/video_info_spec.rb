@@ -26,9 +26,9 @@ RSpec.describe Video::VideoInfo do
       let(:file_path) { "spec_data/repository_helper.rb" }
 
       it "raises an error" do
-        expect {
+        expect do
           described_class.from_file(file_path)
-        }.to raise_error("Invalid video file: #{file_path}")
+        end.to raise_error(/Failed to execute ffprobe/)
       end
     end
   end

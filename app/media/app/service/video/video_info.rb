@@ -14,10 +14,15 @@ module Video
 
     def self.from_file(file_path)
       json = nil
-      Executor.instance.call(
-        FFPROBE_COMMAND, file_path:
-      ) do |_, stdout, _|
-        json = stdout.read
+
+      begin
+        Executor.instance.call(
+          FFPROBE_COMMAND, file_path:
+        ) do |_, stdout, _|
+          json = stdout.read
+        end
+      rescue Executor::ExecutionError => e
+        raise "Failed to execute ffprobe: #{e.message}"
       end
 
       json = JSON.parse(json)
@@ -31,10 +36,6 @@ module Video
       }
 
       json_format = json["format"]
-
-      if json_streams.nil? || json_format.nil?
-        raise "Invalid video file: #{file_path}"
-      end
 
       # From fractional to float:
       fps = Rational(json_streams["r_frame_rate"]).to_f

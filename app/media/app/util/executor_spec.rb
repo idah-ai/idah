@@ -22,7 +22,7 @@ RSpec.describe Executor do
     context "with a successful command" do
       it "executes the command and yields stdin, stdout, and stderr" do
         output = nil
-        executor.call("echo 'hello'") do |_, stdout, _|
+        executor.call("echo 'hello'") do |_, stdout|
           output = stdout.read
         end
         expect(output).to eq("hello\n")
@@ -34,6 +34,18 @@ RSpec.describe Executor do
         expect {
           executor.call("false")
         }.to raise_error(Executor::ExecutionError)
+      end
+    end
+
+    context "with chdir option" do
+      it "executes the command in the specified directory" do
+        Dir.mktmpdir do |dir|
+          output = nil
+          executor.call("pwd", chdir: dir) do |_, stdout, _, _|
+            output = stdout.read.strip
+          end
+          expect(output).to eq(dir)
+        end
       end
     end
   end
