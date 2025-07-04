@@ -6,6 +6,7 @@ require "shellwords"
 
 # Run processes using popen3
 class Executor
+  class ExecutionError < StandardError; end
   include MonitorMixin
 
   class << self
@@ -14,11 +15,51 @@ class Executor
     end
   end
 
+  class Promise
+    include MonitorMixin
+
+    def initialize
+      @result = nil
+      @status = :running
+      @cond = new_cond
+    end
+
+    def value
+      synchronize do
+        case @status
+        when :done
+          return @result
+        when :error
+          Kernel.raise @result
+        when :running
+          @cond.wait
+          self.value
+        end
+      end
+    end
+
+    def resolve(value)
+      synchronize do
+        @result = value
+        @status = :done
+        @cond.signal
+      end
+    end
+
+    def raise(value)
+      synchronize do
+        @result = value
+        @status = :error
+        @cond.signal
+      end
+    end
+  end
+
   # A simple executor that runs commands in a separate process using Open3.
   def initialize(max_instances = 4)
     @processes = SizedQueue.new(max_instances)
     @end_signal = new_cond
-    Thread.new(&method(:run)) # Start the executor thread
+    @run_thread = Thread.new(&method(:run)) # Start the executor thread
   end
 
   def escape(command, **opts)
@@ -28,16 +69,20 @@ class Executor
   end
 
   def call(command, **opts, &block)
-    cond = new_cond
-    @processes << [escape(command, **opts), block, cond]
-    synchronize{ cond.wait }
+    call_async(command, **opts, &block).value
+  end
+
+  def call_async(command, **opts, &block)
+    promise = Promise.new
+    @processes << [escape(command, **opts), block, promise]
+    promise
   end
 
   def stop
     synchronize do
       return unless @running
 
-      @processes << [nil, nil] # Signal to stop the executor
+      @processes << nil # Signal to stop the executor
       @end_signal.wait # Wait for the executor to finish processing
     end
   end
@@ -45,18 +90,22 @@ class Executor
   def run
     synchronize{ @running = true }
     loop do
-      command, block, cond = @processes.pop
+      command, block, promise = @processes.pop
 
-      break if command.nil? && block.nil? # Exit condition for the loop
+      break if promise.nil? # Exit condition for the loop
 
       Open3.popen3(command) do |stdin, stdout, stderr, wait_thr|
-        block.call(stdin, stdout, stderr)
+        block.call(stdin, stdout, stderr, wait_thr) if block
 
-        wait_thr.value
+        value = wait_thr.value
+        if value.success?
+          promise.resolve(value)
+        else
+          e = ExecutionError.new(stderr.read)
+          promise.raise(ExecutionError.new(stderr.read))
+        end
       rescue StandardError => e
-        block.call(nil, e.message)
-      ensure
-        synchronize{ cond.signal } if cond
+        promise.raise(e)
       end
     rescue ThreadError
       break # Exit loop if the queue is empty and no more commands are available.

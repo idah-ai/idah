@@ -55,11 +55,13 @@ module Video
         stdout.each_line do |line|
           key, value = line.split("=")
           if key == "out_time_us"
+            # Give the progress output
             block&.call(time / video_info.duration)
           end
         end
       end
 
+      # Set progress to 100%
       block&.call(1.0)
     end
   end
