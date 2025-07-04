@@ -89,7 +89,52 @@ module Jobs
       }
 
       @thread_pool.run do
-        klass.new(job.arguments).run
+        begin
+
+          catch :stop do
+            klass.new(job.id, job.arguments).run do |command, **opts|
+              case command
+              when :update_progress
+                jobs.update_progress(job.id, opts[:value])
+              when :reschedule
+                reschedule_in = Time.now + opts.fetch(:in, 10) # Default to 10 seconds if not provided
+                jobs.reschedule(job.id, "pending", scheduled_at: reschedule_in)
+                throw :stop # Stop processing this job, it will be retried
+              when :error
+                error = opts[:error]
+
+                error_message = \
+                  if error.is_a?(String)
+                    error
+                  else
+                    "#{error.class} - #{error.message}"
+                  end
+
+                if job.retry_count < job.class.max_retries
+                  # Exponential backoff
+                  retry_delay = 5 * (2 ** (job.retry_count * 1.5)).to_i
+
+
+                  jobs.reschedule(
+                    job.id,
+                    scheduled_at: Time.now + retry_delay,
+                    error: error_message
+                  )
+                else
+                  jobs.error(job.id, error: error_message)
+                  Verse.logger&.error "Job #{job.id} failed after #{job.retry_count}"
+                end
+
+                throw :stop
+              end
+            end
+          end
+
+          jobs.update_progress(job.id, 1.0)
+        rescue => e
+          jobs.update_progress(job.id, 0.0)
+          raise e
+        end
       end
     end
 

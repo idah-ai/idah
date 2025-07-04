@@ -27,7 +27,7 @@ module Jobs
     encoder :arguments, Verse::Sequel::JsonEncoder
 
     # Lock available jobs for processing, up to {count} jobs.
-    # The jobs are locked for update and their status is set to "scheduled".
+    # The jobs are locked for update and their status is set to "running".
     #
     # @param count [Integer] the maximum number of jobs to lock
     # @param now [Time] the current time, used to filter jobs that are ready to be processed
@@ -50,10 +50,42 @@ module Jobs
         )
 
         jobs.each do |job|
-          update!(job.id, { status: "scheduled" })
+          update!(job.id, { status: "running" })
         end
 
         jobs
+      end
+    end
+
+    event(name: "progressed")
+    def update_progress(id, value)
+      no_event do # avoid updated event being dispatched
+        update(id, { progress: value })
+      end
+    end
+
+    event(name: "rescheduled")
+    def reschedule(id, scheduled_at: nil, error: nil)
+      no_event do # avoid updated event being dispatched
+        attr = {
+          status: "pending",
+          scheduled_at: scheduled_at || Time.now,
+          retry_count: Sequel.lit("retry_count + 1"),
+          progress: 0.0,
+          error:
+        }.compact
+
+        update(id, attr)
+      end
+    end
+
+    event(name: "errored")
+    def error(id, error)
+      no_event do # avoid updated event being dispatched
+        update(id, {
+          status: "error",
+          error: error
+        })
       end
     end
 

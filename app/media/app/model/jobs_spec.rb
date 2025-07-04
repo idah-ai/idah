@@ -56,7 +56,7 @@ RSpec.describe Jobs, database: true do
         expect(jobs.size).to eq(1)
       end
 
-      it "should update status to scheduled" do
+      it "should update status to running" do
         job1 = job_creator.call
 
         jobs = subject.lock_available(1)
@@ -64,7 +64,37 @@ RSpec.describe Jobs, database: true do
         expect(jobs.first.id).to eq(job1.id)
 
         job1_updated = subject.find!(job1.id)
-        expect(job1_updated.status).to eq("scheduled")
+        expect(job1_updated.status).to eq("running")
+      end
+    end
+
+    context "#update_progress" do
+      it "should update the progress of the job" do
+        job = job_creator.call
+        subject.update_progress(job.id, 0.5)
+        job_updated = subject.find!(job.id)
+        expect(job_updated.progress).to eq(0.5)
+      end
+    end
+
+    context "#reschedule" do
+      it "should update the status to pending and increment retry_count" do
+        job = job_creator.call(status: "running")
+        subject.reschedule(job.id, error: "some error")
+        job_updated = subject.find!(job.id)
+        expect(job_updated.status).to eq("pending")
+        expect(job_updated.retry_count).to eq(1)
+        expect(job_updated.error).to eq("some error")
+      end
+    end
+
+    context "#error" do
+      it "should update the status to error" do
+        job = job_creator.call
+        subject.error(job.id, "some error")
+        job_updated = subject.find!(job.id)
+        expect(job_updated.status).to eq("error")
+        expect(job_updated.error).to eq("some error")
       end
     end
 
