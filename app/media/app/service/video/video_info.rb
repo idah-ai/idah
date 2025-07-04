@@ -7,7 +7,8 @@ module Video
     :width,
     :height,
     :duration,
-    :fps
+    :fps,
+    :has_audio
   ) do
     def ratio = width.to_f / height
 
@@ -24,6 +25,11 @@ module Video
       json_streams = json["streams"]&.find{ |stream|
         stream["codec_type"] == "video"
       }
+
+      has_audio = json["streams"]&.any?{ |stream|
+        stream["codec_type"] == "audio"
+      }
+
       json_format = json["format"]
 
       if json_streams.nil? || json_format.nil?
@@ -40,7 +46,8 @@ module Video
         width:,
         height:,
         duration:,
-        fps:
+        fps:,
+        has_audio:
       )
     end
   end
