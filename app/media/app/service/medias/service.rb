@@ -30,7 +30,7 @@ module Medias
       end
     end
 
-    def upload(file, resource:, key:)
+    def upload(file, resource:, key: "")
       Verse::Plugin[:shrine].with_storage do |storage|
         # Verify that the resource/key combination is not already used:
         existing = files.find_by({ resource:, key: })

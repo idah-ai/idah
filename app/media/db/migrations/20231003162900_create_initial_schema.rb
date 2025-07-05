@@ -9,9 +9,10 @@ Sequel.migration do
     create_table(:medias) do
       column :id, String, primary_key: true
 
-      column :filename, String, null: false
       column :resource, String, null: false, index: true
       column :key, String, null: false, default: ""
+
+      column :filename, String, null: false
 
       # unique index on key and id:
       index [:resource, :key], unique: true
@@ -23,7 +24,7 @@ Sequel.migration do
       column :created_role, String
 
       column :public, TrueClass, null: false, default: false, index: true
-      column :meta, :jsonb, text: true, null: false, default: {}
+      column :meta, :jsonb, null: false, default: "{}"
 
       # Able to use LIKE on media key.
       index :key, opclass: :gin_trgm_ops, type: :gin
