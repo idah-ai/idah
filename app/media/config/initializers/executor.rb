@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # The process executor is used to run commands in a separate process, allowing for asynchronous execution and better resource management.
 # It uses a thread pool to manage multiple processes efficiently.
 EXECUTOR = Executor.new(4)

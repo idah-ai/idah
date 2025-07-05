@@ -51,5 +51,4 @@ class JobsExpo < Verse::Exposition::Base
   def signal_on_rescheduled
     Jobs::Scheduler.instance.signal
   end
-
 end

@@ -23,7 +23,7 @@ module Jobs
       emit(:reschedule, in:)
     end
 
-    def error(message)
+    def error(_message)
       emit(:error, error:)
     end
 
