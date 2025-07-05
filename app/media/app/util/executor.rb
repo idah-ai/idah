@@ -69,15 +69,18 @@ class Executor
   def call_async(command, **opts, &block)
     promise = Promise.new
 
-    command_opts = opts.slice(
-      *command.scan(/%\{(\w+)\}/).flatten.map(&:to_sym)
-    )
+    command_vars = \
+      command
+      .scan(/%[{<](\w+)[}>]/)
+      .flatten
+      .map(&:to_sym)
+      .uniq
 
     popen_opts = opts.except(
-      *command_opts.keys
+      *command_vars
     )
 
-    escaped_command = escape(command, **command_opts)
+    escaped_command = escape(command, **opts)
 
     @pool.run do
       Open3.popen3(escaped_command, popen_opts) do |stdin, stdout, stderr, wait_thr|

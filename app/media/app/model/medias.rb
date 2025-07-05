@@ -2,9 +2,12 @@
 
 module Medias
   class Record < Verse::Model::Record::Base
-    field :id, type: Integer, primary: true
+    field :id, type: String, primary: true
 
+    field :resource, type: String
     field :key, type: String
+
+    field :filename, type: String
 
     field :size, type: Integer
     field :mime_type, type: String
