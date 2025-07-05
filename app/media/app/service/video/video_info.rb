@@ -16,7 +16,7 @@ module Video
       json = nil
 
       begin
-        Executor.instance.call(
+        EXECUTOR.call(
           FFPROBE_COMMAND, file_path:
         ) do |_, stdout, _|
           json = stdout.read

@@ -3,7 +3,7 @@
 require "spec_helper"
 
 RSpec.describe Executor do
-  let(:executor) { described_class.new(1) }
+  let!(:executor) { described_class.new(1) }
 
   after do
     executor.stop
@@ -52,17 +52,16 @@ RSpec.describe Executor do
 
   describe "#stop" do
     it "stops the executor" do
-      # This is tricky to test directly, but we can check if the thread is alive.
-      # The executor starts a thread on initialization.
-      # After stopping, the thread should not be alive.
-      # We need to give it a moment to stop.
-      thread = executor.instance_variable_get(:@run_thread)
-      expect(thread).to be_alive
+      pool = executor.instance_variable_get(:@pool)
+      pool.instance_variable_get(:@workers).each do |worker|
+        expect(worker.alive?).to be true
+      end
 
       executor.stop
-      sleep 0.1 # Give it a moment to stop
 
-      expect(thread).not_to be_alive
+      pool.instance_variable_get(:@workers).each do |worker|
+        expect(worker.alive?).to be false
+      end
     end
   end
 end
