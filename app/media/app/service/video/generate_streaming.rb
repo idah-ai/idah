@@ -54,7 +54,12 @@ module Video
                      "-an "
                    end
 
-        master_m3u8 << "#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=#{bitrate.to_i * 1024},RESOLUTION=#{width_pixel}x#{height_pixel},FRAME-RATE=#{video_info.fps} playlist_#{size}.m3u8\n"
+        master_m3u8 <<
+          "#EXT-X-STREAM-INF:PROGRAM-ID=1," \
+          "BANDWIDTH=#{bitrate.to_i * 1024}," \
+          "RESOLUTION=#{width_pixel}x#{height_pixel}," \
+          "FRAME-RATE=#{video_info.fps} " \
+          "playlist_#{size}.m3u8\n"
 
         command <<
           "-hls_time #{arguments.streaming_time_per_segment} " \

@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
-# The process executor is used to run commands in a separate process, allowing for asynchronous execution and better resource management.
-# It uses a thread pool to manage multiple processes efficiently.
+# Setup executor for ffmpeg jobs.
 EXECUTOR = Executor.new(4)
 
 Verse.on_boot do
