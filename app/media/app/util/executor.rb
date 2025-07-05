@@ -26,7 +26,7 @@ class Executor
           Kernel.raise @result
         when :running
           @cond.wait
-          self.value
+          value
         end
       end
     end
@@ -70,8 +70,8 @@ class Executor
     promise = Promise.new
 
     command_opts = opts.slice(
-      *command.scan(/%\{(\w+)\}/
-    ).flatten.map(&:to_sym))
+      *command.scan(/%\{(\w+)\}/).flatten.map(&:to_sym)
+    )
 
     popen_opts = opts.except(
       *command_opts.keys
@@ -81,7 +81,7 @@ class Executor
 
     @pool.run do
       Open3.popen3(escaped_command, popen_opts) do |stdin, stdout, stderr, wait_thr|
-        block.call(stdin, stdout, stderr, wait_thr) if block
+        block&.call(stdin, stdout, stderr, wait_thr)
 
         value = wait_thr.value
 

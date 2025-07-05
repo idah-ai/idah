@@ -50,10 +50,12 @@ module Video
       # Upload the master m3u8 file:
       medias.transaction do
         # master.m3u8
-        record = medias.find_by({
-          resource: arguments.resource,
-          key: "master.m3u8"
-        })
+        record = medias.find_by(
+          {
+            resource: arguments.resource,
+            key: "master.m3u8"
+          }
+        )
 
         return if record
 
@@ -65,7 +67,7 @@ module Video
           storage.delete(file.id) if file
         end
 
-        record = medias.create(
+        medias.create(
           {
             resource: arguments.resource,
             key: key,
@@ -77,19 +79,17 @@ module Video
           }
         )
       end
-
     end
 
     def process_media
       Verse.logger.info "Processing media #{arguments.media_id}"
 
-      now = Time.now.utc
+      Time.now.utc
 
       output = Video::GenerateStreaming.generate(
         file_path,
         arguments
       ) do |progress|
-
       end
 
       upload_file(
@@ -113,7 +113,6 @@ module Video
           )
         end
       end
-
     end
   end
 end

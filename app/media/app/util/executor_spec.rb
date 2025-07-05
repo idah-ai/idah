@@ -11,7 +11,7 @@ RSpec.describe Executor do
 
   describe "#escape" do
     it "escapes the command with the given options" do
-      command = "echo %{message}"
+      command = "echo %<message>s"
       options = { message: "hello world" }
       escaped_command = executor.escape(command, **options)
       expect(escaped_command).to eq("echo hello\\ world")

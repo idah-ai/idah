@@ -82,10 +82,13 @@ module Jobs
     event(name: "errored")
     def error(id, error)
       no_event do # avoid updated event being dispatched
-        update(id, {
-          status: "error",
-          error: error
-        })
+        update(
+          id,
+          {
+            status: "error",
+            error: error
+          }
+        )
       end
     end
 

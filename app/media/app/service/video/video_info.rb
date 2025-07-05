@@ -1,7 +1,8 @@
-module Video
+# frozen_string_literal: true
 
+module Video
   FFPROBE_COMMAND =
-    "ffprobe -v quiet -print_format json -show_format -show_streams %{file_path}"
+    "ffprobe -v quiet -print_format json -show_format -show_streams %<file_path>s"
 
   VideoInfo = Data.define(
     :width,
