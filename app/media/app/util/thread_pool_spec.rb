@@ -1,9 +1,8 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require_relative "../../../app/service/jobs/thread_pool"
 
-RSpec.describe Jobs::ThreadPool do
+RSpec.describe ThreadPool do
   subject { described_class.new(size: 2) }
 
   after do

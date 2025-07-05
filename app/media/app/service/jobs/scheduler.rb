@@ -31,7 +31,7 @@ module Jobs
 
       synchronize{ @running = true }
 
-      @thread_pool = Jobs::ThreadPool.new(
+      @thread_pool = ThreadPool.new(
         size: Verse.config.extra_fields.dig(:jobs, :concurrency) || 4
       )
 
@@ -39,6 +39,8 @@ module Jobs
     end
 
     def run
+      Thread.current.name = "#{self.class.name} (#{Thread.current.object_id})"
+
       loop do
         break unless running
 

@@ -9,8 +9,8 @@ module Spec
       attr_accessor :ran
     end
 
-    def initialize(params)
-      super(params)
+    def initialize(job_id, arguments)
+      super
       self.class.ran = false
     end
 
@@ -39,7 +39,7 @@ RSpec.describe Jobs::Scheduler do
   }
 
   let(:thread_pool) {
-    double("Jobs::ThreadPool")
+    double("ThreadPool")
   }
 
   subject { described_class.new }
@@ -47,7 +47,7 @@ RSpec.describe Jobs::Scheduler do
   before do
     Spec::CustomJob.ran = false
 
-    allow(Jobs::ThreadPool).to receive(:new).and_return(thread_pool)
+    allow(ThreadPool).to receive(:new).and_return(thread_pool)
     allow(thread_pool).to receive(:free).and_return(1)
     allow(thread_pool).to receive(:stop)
 
@@ -72,6 +72,7 @@ RSpec.describe Jobs::Scheduler do
       it "processes the job" do
         expect(job_repository).to receive(:lock_available).and_return([job1])
         allow(job_repository).to receive(:next_scheduled_time).and_return(nil)
+        allow(job_repository).to receive(:update_progress).with(1, 1.0).and_return(true)
 
         allow(thread_pool).to receive(:run) do |&block|
           block.call
@@ -106,7 +107,7 @@ RSpec.describe Jobs::Scheduler do
         allow(job_repository).to receive(:next_scheduled_time).and_return(nil)
 
         subject.start
-        sleep 0.2
+        sleep 0.1
         scheduler_thread = subject.instance_variable_get(:@scheduler)
         expect(scheduler_thread).to be_alive
       end

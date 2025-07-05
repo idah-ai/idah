@@ -9,7 +9,7 @@ RSpec.describe Video::GenerateStreaming do
 
   let(:arguments) do
     Video::Arguments.new(
-      media_id: "123",
+      resource: "123",
       streaming_time_per_segment: 3
     )
   end

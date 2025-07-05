@@ -7,13 +7,6 @@ require "shellwords"
 # Run processes using popen3
 class Executor
   class ExecutionError < StandardError; end
-  include MonitorMixin
-
-  class << self
-    def instance
-      @instance ||= new
-    end
-  end
 
   class Promise
     include MonitorMixin
@@ -55,11 +48,12 @@ class Executor
     end
   end
 
+  attr_reader :instances
+
   # A simple executor that runs commands in a separate process using Open3.
   def initialize(max_instances = 4)
-    @processes = SizedQueue.new(max_instances)
-    @end_signal = new_cond
-    @run_thread = Thread.new(&method(:run)) # Start the executor thread
+    @instances = max_instances
+    start
   end
 
   def escape(command, **opts)
@@ -75,49 +69,45 @@ class Executor
   def call_async(command, **opts, &block)
     promise = Promise.new
 
-    command_opts = opts.slice(*command.scan(/%\{(\w+)\}/).flatten.map(&:to_sym))
-    popen_opts = opts.except(*command_opts.keys)
+    command_opts = opts.slice(
+      *command.scan(/%\{(\w+)\}/
+    ).flatten.map(&:to_sym))
+
+    popen_opts = opts.except(
+      *command_opts.keys
+    )
 
     escaped_command = escape(command, **command_opts)
 
-    @processes << [escaped_command, popen_opts, block, promise]
-    promise
-  end
-
-  def stop
-    synchronize do
-      return unless @running
-
-      @processes << nil # Signal to stop the executor
-      @end_signal.wait # Wait for the executor to finish processing
-    end
-  end
-
-  def run
-    synchronize{ @running = true }
-    loop do
-      command, opts, block, promise = @processes.pop
-
-      break if promise.nil? # Exit condition for the loop
-
-      Open3.popen3(command, opts) do |stdin, stdout, stderr, wait_thr|
+    @pool.run do
+      Open3.popen3(escaped_command, popen_opts) do |stdin, stdout, stderr, wait_thr|
         block.call(stdin, stdout, stderr, wait_thr) if block
 
         value = wait_thr.value
+
         if value.success?
           promise.resolve(value)
         else
-          e = ExecutionError.new(stderr.read)
-          promise.raise(ExecutionError.new(stderr.read))
+          promise.raise(
+            ExecutionError.new(stderr.read)
+          )
         end
       rescue StandardError => e
         promise.raise(e)
       end
-    rescue ThreadError
-      break # Exit loop if the queue is empty and no more commands are available.
     end
 
-    # Notify that the executor has finished processing all commands
-    synchronize{ @end_signal.signal; @running = false }
+    promise
+  end
+
+  def start
+    stop if @pool
+    @pool = ThreadPool.new(size: @instances)
+  end
+
+  def stop
+    return unless @pool
+
+    @pool.stop
   end
 end

@@ -62,7 +62,7 @@ module Video
         end
       end
 
-      Executor.instance.call(
+      EXECUTOR.call(
         command, chdir: dir, file_path:
       ) do |_, stdout|
         stdout.each_line do |line|
