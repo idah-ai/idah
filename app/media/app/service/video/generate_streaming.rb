@@ -59,7 +59,7 @@ module Video
           "BANDWIDTH=#{bitrate.to_i * 1024}," \
           "RESOLUTION=#{width_pixel}x#{height_pixel}," \
           "FRAME-RATE=#{video_info.fps} " \
-          "playlist_#{size}.m3u8\n"
+          "#{size}.m3u8\n"
 
         command <<
           "-hls_time #{arguments.streaming_time_per_segment} " \
