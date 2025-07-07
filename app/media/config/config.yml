@@ -26,6 +26,28 @@ plugins:
             region: <%= ENV.fetch("MEDIAS_FILES_REGION") %>
             prefix: files
             endpoint: <%= ENV.fetch("MEDIAS_FILES_ENDPOINT") %> # https://storage.googleapis.com
+  - name: redis
+    config:
+      url: <%= ENV.fetch("REDIS_STREAM_URL") %>
+      max_connections: 10
+
+kv_store:
+  adapter: Verse::Redis::KVStore
+  config:
+    plugin: :redis
+    key_prefix: "medias:keys"
+
+lock:
+  adapter: Verse::Redis::Lock
+  config:
+    plugin: redis
+    key_prefix: "medias:locks"
+
+counter:
+  adapter: Verse::Redis::Counter
+  config:
+    plugin: redis
+    key_prefix: "medias:counters"
 
 logging:
   level: <%= ENV.fetch("LOG_LEVEL", "info") %>
