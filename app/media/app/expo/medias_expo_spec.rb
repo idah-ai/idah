@@ -10,6 +10,11 @@ RSpec.describe MediasExpo, type: :exposition, as: :system do
         resource: "some-resource",
         key: "some-key",
         file_data: "{}",
+        filename: "sample.mp4",
+        size: 2,
+        mime_type: "video/mp4",
+        created_role: "system",
+        created_by: nil,
         created_at: now,
         updated_at: now
       }
@@ -20,22 +25,8 @@ RSpec.describe MediasExpo, type: :exposition, as: :system do
     it "without key" do
       expect_any_instance_of(Medias::Service).to receive(:show).with(
         "some-resource", ""
-      ).and_return(
-        Medias::Record.new(
-        {
-          id: "1",
-          resource: "some-resource",
-          key: "",
-          filename: "sample.mp4",
-          size: 123456,
-          mime_type: "video/mp4",
-          created_by: nil,
-          created_role: "system",
-          created_at: now,
-          updated_at: now
-        }
-        )
-      )
+      ).and_return(media)
+
       get "/medias/info/some-resource"
       expect(last_response.status).to eq 200
       body = JSON.parse(last_response.body, symbolize_names: true)
@@ -45,27 +36,45 @@ RSpec.describe MediasExpo, type: :exposition, as: :system do
     it "with key" do
       expect_any_instance_of(Medias::Service).to receive(:show).with(
         "some-resource", "some-key"
-      ).and_return(
-        Medias::Record.new(
-        {
-          id: "1",
-          resource: "some-resource",
-          key: "some-key",
-          filename: "sample.mp4",
-          size: 123456,
-          mime_type: "video/mp4",
-          created_by: nil,
-          created_role: "system",
-          created_at: now,
-          updated_at: now
-        }
-        )
-      )
+      ).and_return(media)
+
       get "/medias/info/some-resource/some-key"
 
       expect(last_response.status).to eq 200
       body = JSON.parse(last_response.body, symbolize_names: true)
       expect(body[:data]).not_to be_empty
+    end
+  end
+
+  context "#download" do
+    it "without key" do
+      expect_any_instance_of(Medias::Service).to receive(:show).with(
+        "some-resource", ""
+      ).and_return(media)
+
+      expect(media).to receive(:open).and_return(
+        StringIO.new("ab")
+      )
+
+      get "/medias/files/some-resource"
+
+      expect(last_response.status).to eq 200
+      expect(last_response.body).to eq("ab")
+    end
+
+    it "with key" do
+      expect_any_instance_of(Medias::Service).to receive(:show).with(
+        "some-resource", "some-key"
+      ).and_return(media)
+
+      expect(media).to receive(:open).and_return(
+        StringIO.new("ab")
+      )
+
+      get "/medias/files/some-resource/some-key"
+
+      expect(last_response.status).to eq 200
+      expect(last_response.body).to eq("ab")
     end
   end
 

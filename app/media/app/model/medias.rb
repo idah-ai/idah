@@ -19,6 +19,14 @@ module Medias
 
     field :created_at, type: Time
     field :updated_at, type: Time
+
+    def open
+      Verse::Plugin[:shrine].with_storage do |storage|
+        storage.open(id)
+      rescue Shrine::FileNotFound
+        raise Verse::Error::NotFound, "File not found"
+      end
+    end
   end
 
   class Repository < Verse::Sequel::Repository
