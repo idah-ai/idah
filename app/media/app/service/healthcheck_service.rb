@@ -9,9 +9,11 @@ module HealthcheckService
     status = {}
     healthy = true
 
+    plugins = Verse::Plugin.all.values
+
     if defined?(Verse::Sequel::Plugin)
-      Verse::Plugin.all.lazy.select do |plugin|
-        plugin.class < Verse::Sequel::Plugin
+      plugins.lazy.select do |plugin|
+        plugin.class <= Verse::Sequel::Plugin
       end.each do |plugin|
         plugin.client do |db|
           db.execute("SELECT 1")
@@ -24,8 +26,8 @@ module HealthcheckService
     end
 
     if defined?(Verse::Redis::Plugin)
-      Verse::Plugin.all.lazy.select do |plugin|
-        plugin.class < Verse::Redis::Plugin
+      plugins.lazy.select do |plugin|
+        plugin.class <= Verse::Redis::Plugin
       end.each do |plugin|
         plugin.with_client do |client|
           client.ping
