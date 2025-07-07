@@ -7,12 +7,11 @@ class ThreadPool
 
   def initialize(size: 4)
     @size = size
-    @workers = Array.new(size) { Thread.new(&method(:worker_loop)) }
-    @queue = Queue.new
-
     @usage = 0
-
+    @queue = Queue.new
     @condition = new_cond
+
+    @workers = Array.new(size) { Thread.new(&method(:worker_loop)) }
   end
 
   def free = @size - @usage
