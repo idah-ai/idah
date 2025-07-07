@@ -126,9 +126,13 @@ RSpec.describe MediasExpo, type: :exposition, as: :system do
 
     it "with key" do
       expect_any_instance_of(Medias::Service).to receive(:upload).with(
-        instance_of(Verse::Http::UploadedFile.class),
-        resource: "some-resource",
-        key: "some-key"
+        expect(file.filename).to eq("sample.mp4")
+        expect(file.type).to eq("video/mp4")
+        expect(file.name).to eq("file")
+        expect(resource).to eq("some-resource")
+        expect(key).to eq("some-key")
+
+        media
       ).and_return(media)
 
       post "/medias/files/some-resource/some-key", file: file
