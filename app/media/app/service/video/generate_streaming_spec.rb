@@ -14,9 +14,13 @@ RSpec.describe Video::GenerateStreaming do
     )
   end
 
+  let(:video_info) do
+    Video::VideoInfo.from_file(file_path)
+  end
+
   describe ".generate" do
     it "runs without errors" do
-      described_class.generate(file_path, arguments)
+      described_class.generate(file_path, video_info, arguments)
     end
   end
 end
