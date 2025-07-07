@@ -24,7 +24,7 @@ module Video
       v.all?{ |size| SCALE_FORMATS.key?(size) }
     end
 
-    # Generate frames
+    # Generate frames. Not implemented yet.
     field :generate_frames,
           TrueClass,
           default: false,
@@ -35,11 +35,6 @@ module Video
           default: "avif",
           desc: "Format of the generated frames. Supported formats: avif, webp, jpg, png"
 
-    # Streaming options
-    field :streaming_enable_m3u8,
-          TrueClass,
-          default: true,
-          desc: "Enable HLS streaming with m3u8 playlist. Will create the different files. Default is true."
     field :streaming_time_per_segment,
           Integer,
           default: 10,
