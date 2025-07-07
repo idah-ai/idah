@@ -2,10 +2,10 @@
 
 module Medias
   class Service < Verse::Service::Base
-    use files: Medias::Repository
+    use medias: Medias::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
-      files.index(
+      medias.index(
         filter,
         included: included,
         page: page,
@@ -16,25 +16,25 @@ module Medias
     end
 
     def show(resource, key, included: [])
-      files.find_by!({ resource:, key: }, included:)
+      medias.find_by!({ resource:, key: }, included:)
     end
 
     def delete(resource, key)
-      file = files.find_by!({ resource:, key: })
-      files.delete(file.id)
+      file = medias.find_by!({ resource:, key: })
+      medias.delete(file.id)
     end
 
     def create(record)
-      files.transaction do
-        record_id = files.create(record.attributes)
-        files.find!(record_id)
+      medias.transaction do
+        record_id = medias.create(record.attributes)
+        medias.find!(record_id)
       end
     end
 
     def upload(file, resource:, key: "")
       Verse::Plugin[:shrine].with_storage do |storage|
         # Verify that the resource/key combination is not already used:
-        existing = files.find_by({ resource:, key: })
+        existing = medias.find_by({ resource:, key: })
 
         if existing
           raise Verse::Error::ValidationFailed,
@@ -50,7 +50,7 @@ module Medias
 
         id = output.id
 
-        files.create(
+        medias.create(
           {
             id:,
             resource:,
@@ -63,7 +63,7 @@ module Medias
           }
         )
 
-        files.find!(id)
+        medias.find!(id)
       end
     end
   end

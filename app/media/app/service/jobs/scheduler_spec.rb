@@ -18,6 +18,24 @@ module Spec
       self.class.ran = true
     end
   end
+
+  class UpdateProgressJob < Jobs::Base
+    def run_impl
+      update_progress(0.5)
+    end
+  end
+
+  class RescheduleJob < Jobs::Base
+    def run_impl
+      reschedule(in: 60)
+    end
+  end
+
+  class ErrorJob < Jobs::Base
+    def run_impl
+      error("Something went wrong")
+    end
+  end
 end
 
 RSpec.describe Jobs::Scheduler do
@@ -35,6 +53,46 @@ RSpec.describe Jobs::Scheduler do
       status: "pending",
       scheduled_at: Time.now,
       retry_count: 0
+    )
+  }
+
+  let(:update_progress_job) {
+    double(
+      "job",
+      id: 2,
+      job_class: "Spec::UpdateProgressJob",
+      arguments: {},
+      priority: 0,
+      status: "pending",
+      scheduled_at: Time.now,
+      retry_count: 0
+    )
+  }
+
+  let(:reschedule_job) {
+    double(
+      "job",
+      id: 3,
+      job_class: "Spec::RescheduleJob",
+      arguments: {},
+      priority: 0,
+      status: "pending",
+      scheduled_at: Time.now,
+      retry_count: 0
+    )
+  }
+
+  let(:error_job) {
+    double(
+      "job",
+      id: 4,
+      job_class: "Spec::ErrorJob",
+      arguments: {},
+      priority: 0,
+      status: "pending",
+      scheduled_at: Time.now,
+      retry_count: 0,
+      class: double("job_class", max_retries: 0)
     )
   }
 
@@ -82,6 +140,57 @@ RSpec.describe Jobs::Scheduler do
         sleep 0.01 # allow the thread to run
 
         expect(Spec::CustomJob.ran).to be true
+      end
+    end
+
+    context "when a job uses `update_progress` command" do
+      it "updates the progress" do
+        expect(job_repository).to receive(:lock_available).and_return([update_progress_job])
+        allow(job_repository).to receive(:next_scheduled_time).and_return(nil)
+        expect(job_repository).to receive(:update_progress).with(2, 0.5)
+        # The job should complete and update progress to 1.0
+        expect(job_repository).to receive(:update_progress).with(2, 1.0)
+
+        allow(thread_pool).to receive(:run) do |&block|
+          block.call
+        end
+
+        subject.start
+        sleep 0.01 # allow the thread to run
+      end
+    end
+
+    context "when a job uses `reschedule` command" do
+      it "reschedules the job" do
+        expect(job_repository).to receive(:lock_available).and_return([reschedule_job])
+        allow(job_repository).to receive(:next_scheduled_time).and_return(nil)
+        expect(job_repository).to receive(:reschedule).with(3, "pending", scheduled_at: be_within(1).of(Time.now + 60))
+        # The job should not complete, so no update_progress to 1.0
+        expect(job_repository).not_to receive(:update_progress).with(3, 1.0)
+
+        allow(thread_pool).to receive(:run) do |&block|
+          block.call
+        end
+
+        subject.start
+        sleep 0.01 # allow the thread to run
+      end
+    end
+
+    context "when a job uses `error` command" do
+      it "sets the job as errored" do
+        expect(job_repository).to receive(:lock_available).and_return([error_job])
+        allow(job_repository).to receive(:next_scheduled_time).and_return(nil)
+        expect(job_repository).to receive(:error).with(4, error: "Something went wrong")
+        # The job should not complete, so no update_progress to 1.0
+        expect(job_repository).not_to receive(:update_progress).with(4, 1.0)
+
+        allow(thread_pool).to receive(:run) do |&block|
+          block.call
+        end
+
+        subject.start
+        sleep 0.01 # allow the thread to run
       end
     end
 
