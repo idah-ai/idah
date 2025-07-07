@@ -86,7 +86,8 @@ module Jobs
           id,
           {
             status: "error",
-            error: error
+            error: error,
+            progress: 0.0
           }
         )
       end

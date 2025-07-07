@@ -6,10 +6,12 @@ RSpec.describe HealthcheckService, type: :service, as: :system do
       it "returns a successful result" do
         result = described_class.run
         expect(result.success?).to be true
-        expect(result.status).to eq({
-                                      "sequel" => "OK",
-                                      "redis" => "OK"
-                                    })
+        expect(result.status).to eq(
+          {
+            "sequel" => "OK",
+            "redis" => "OK"
+          }
+        )
       end
     end
 
@@ -23,15 +25,17 @@ RSpec.describe HealthcheckService, type: :service, as: :system do
         allow_any_instance_of(
           Verse::Sequel::Plugin
         ).to receive(:client).and_yield(db)
-     end
+      end
 
       it "returns an unsuccessful result" do
         result = described_class.run
         expect(result.success?).to be false
-        expect(result.status).to eq({
-                                      "sequel" => "FAILED",
-                                      "redis" => "OK"
-                                    })
+        expect(result.status).to eq(
+          {
+            "sequel" => "FAILED",
+            "redis" => "OK"
+          }
+        )
       end
     end
 

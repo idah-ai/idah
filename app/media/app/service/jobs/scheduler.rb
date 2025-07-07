@@ -127,9 +127,11 @@ module Jobs
               throw :stop
             end
           end
-        end
 
-        jobs.update_progress(job.id, 1.0)
+          # If we reach here, the job has been processed successfully
+          jobs.update_progress(job.id, 1.0)
+          Verse.logger&.debug "Job #{job.id} processed successfully"
+        end
       rescue StandardError => e
         jobs.update_progress(job.id, 0.0)
         raise e
