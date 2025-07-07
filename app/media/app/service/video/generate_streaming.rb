@@ -14,10 +14,10 @@ module Video
       :m3u8, :fragments
     )
 
-    def generate(file_path, video_info, arguments, &block)
+    def call(file_path, video_info, arguments, tmpdir: nil, &block)
       file_path = File.absolute_path(file_path)
 
-      dir = Dir.mktmpdir("idah_vp")
+      tmpdir ||= Dir.mktmpdir("idah_vp")
 
       sizes = arguments.sizes
 
@@ -70,7 +70,7 @@ module Video
       end
 
       EXECUTOR.call(
-        command, chdir: dir, file_path:
+        command, chdir: tmpdir, file_path:
       ) do |_, stdout|
         stdout.each_line do |line|
           key, value = line.split("=")
@@ -84,19 +84,19 @@ module Video
       end
 
       # Generate the master m3u8 file
-      File.write("#{dir}/master.m3u8", master_m3u8)
+      File.write("#{tmpdir}/master.m3u8", master_m3u8)
 
       # List the files in the directory and reconnect them with the streams
       streams = accepted_dimensions.map do |size, _|
         Stream.new(
-          m3u8: "#{dir}/#{size}.m3u8",
-          fragments: Dir.glob("#{dir}/#{size}_*.ts")
+          m3u8: "#{tmpdir}/#{size}.m3u8",
+          fragments: Dir.glob("#{tmpdir}/#{size}_*.ts")
         )
       end
 
       output = FileOutput.new(
-        tmpdir: dir,
-        master_m3u8: "#{dir}/master.m3u8",
+        tmpdir:,
+        master_m3u8: "#{tmpdir}/master.m3u8",
         streams:
       )
 
