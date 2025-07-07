@@ -5,18 +5,19 @@ module Video
     module_function
 
     FileOutput = Data.define(
-      :master_m3u8, :streams
+      :tmpdir,
+      :master_m3u8,
+      :streams
     )
 
     Stream = Data.define(
       :m3u8, :fragments
     )
 
-    def generate(file_path, arguments, &block)
+    def generate(file_path, video_info, arguments, &block)
       file_path = File.absolute_path(file_path)
 
       dir = Dir.mktmpdir("idah_vp")
-      video_info = Video::VideoInfo.from_file(file_path)
 
       sizes = arguments.sizes
 
@@ -97,6 +98,7 @@ module Video
       end
 
       output = FileOutput.new(
+        tmpdir: dir,
         master_m3u8: "#{dir}/master.m3u8",
         streams:
       )

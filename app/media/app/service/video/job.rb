@@ -19,6 +19,10 @@ module Video
       output = process_media(file_path)
 
       upload_files(output)
+
+    ensure
+      # Clean up the temporary directory
+      FileUtils.rm_rf(output.tmpdir) if output&.tmpdir && File.exist?(output.tmpdir)
     end
 
     protected
@@ -95,7 +99,7 @@ module Video
 
           medias.table.db.after_rollback do
             Verse.logger.warn{
-              "Failed to upload #{file_path} to #{arguments.resource}/#{key}, deleting file from storage"
+              "Rollback called, deleting `#{arguments.resource}/#{key}` from storage"
             }
             storage.delete(file.id) if file
           end
@@ -121,8 +125,11 @@ module Video
 
       last_progress = Time.now.to_i
 
+      video_info = Video::VideoInfo.from_file(file_path)
+
       Video::GenerateStreaming.generate(
         file_path,
+        video_info,
         arguments
       ) do |progress|
         now = Time.now.to_i
