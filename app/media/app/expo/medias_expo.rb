@@ -50,10 +50,10 @@ class MediasExpo < BaseExpo
     end
   end
   def download
-    media = service.show(resource, key)
+    media = service.show(params[:resource], params[:key])
 
-    renderer.content_type = file.mime_type
-    server.response.headers["Content-Length"] = file.size
+    renderer.content_type = media.mime_type
+    server.response.headers["Content-Length"] = media.size
 
     media.open
   end
