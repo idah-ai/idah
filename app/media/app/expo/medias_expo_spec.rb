@@ -78,41 +78,62 @@ RSpec.describe MediasExpo, type: :exposition, as: :system do
     end
   end
 
-  it "index" do
-    get "/medias"
+  context "#info" do
+    it "without key" do
+      expect_any_instance_of(Medias::Service).to receive(:show).with(
+        "some-resource", ""
+      ).and_return(media)
 
-    expect_any_instance_of(Medias::Service).to receive(:index).and_return([])
+      get "/medias/info/some-resource"
 
-    expect(last_response.status).to eq 200
-    body = JSON.parse(last_response.body, symbolize_names: true)
-    expect(body[:data]).to eq([])
+      expect(last_response.status).to eq 200
+      body = JSON.parse(last_response.body, symbolize_names: true)
+      expect(body[:data]).not_to be_empty
+    end
+
+    it "with key" do
+      expect_any_instance_of(Medias::Service).to receive(:show).with(
+        "some-resource", "some-key"
+      ).and_return(media)
+
+      get "/medias/info/some-resource/some-key"
+
+      expect(last_response.status).to eq 200
+      body = JSON.parse(last_response.body, symbolize_names: true)
+      expect(body[:data]).not_to be_empty
+    end
   end
 
-  it "download" do
-    expect_any_instance_of(Medias::Service).to receive(:download).with("some-resource", "some-key").and_return("file-content")
+  context "#upload" do
+    let (:file) do
+      Rack::Test::UploadedFile.new("spec_data/sample.mp4", "video/mp4")
+    end
+    it "without key" do
+      expect_any_instance_of(Medias::Service).to receive(:upload) do |service, file, resource:, key:|
+        expect(file.filename).to eq("sample.mp4")
+        expect(file.type).to eq("video/mp4")
+        expect(file.name).to eq("file")
+        expect(resource).to eq("some-resource")
+        expect(key).to eq("")
 
-    get "/medias/d/some-resource/some-key"
+        media
+      end
 
-    expect(last_response.status).to eq 200
-    expect(last_response.body).to eq("file-content")
-  end
+      post "/medias/files/some-resource", file: file
 
-  it "upload" do
-    file = Rack::Test::UploadedFile.new("spec/fixtures/sample.mp4", "video/mp4")
-    expect_any_instance_of(Medias::Service).to receive(:upload).with(
-      instance_of(Hash),
-      resource: "some-resource",
-      key: "some-key"
-    ).and_return(media)
+      expect(last_response.status).to eq 200
+    end
 
-    post "/medias/upload/some-resource/some-key", file: file
+    it "with key" do
+      expect_any_instance_of(Medias::Service).to receive(:upload).with(
+        instance_of(Verse::Http::UploadedFile.class),
+        resource: "some-resource",
+        key: "some-key"
+      ).and_return(media)
 
-    expect(last_response.status).to eq 200
-    body = JSON.parse(last_response.body, symbolize_names: true)
-    record = deserialize body
+      post "/medias/files/some-resource/some-key", file: file
 
-    expect(record.id).to eq "1"
-    expect(record.resource).to eq "some-resource"
-    expect(record.key).to eq "some-key"
+      expect(last_response.status).to eq 200
+    end
   end
 end

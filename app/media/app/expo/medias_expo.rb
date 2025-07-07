@@ -78,10 +78,10 @@ class MediasExpo < BaseExpo
     )
   end
   def upload
-    file = params.file
-    resource = params.resource
-    key = params.key
-
-    service.upload(file, resource: resource, key: key)
+    service.upload(
+      params[:file],
+      resource: params[:resource],
+      key: params[:key]
+    )
   end
 end
