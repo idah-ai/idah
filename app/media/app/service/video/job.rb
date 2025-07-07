@@ -15,11 +15,20 @@ module Video
       # Store the media locally
       file_path = download_media
 
+      # Fetch important informations on the video
+      video_info = Video::VideoInfo.from_file(file_path)
+
       # Process the media
-      output = process_media(file_path)
+      output = process_media(file_path, video_info)
 
       upload_files(output)
 
+      # Generate thumbnail
+      if arguments.generate_thumbnail
+        Verse.logger&.info{ "Generating thumbnail for video" }
+        thumbnail_path = Video::GenerateThumbnail.(file_path, video_info, tmpdir: output.tmpdir)
+        upload_file(thumbnail_path, "thumbnail.jpg", "image/jpeg")
+      end
     ensure
       # Clean up the temporary directory
       FileUtils.rm_rf(output.tmpdir) if output&.tmpdir && File.exist?(output.tmpdir)
@@ -111,7 +120,7 @@ module Video
               key: key,
               filename: File.basename(file_path),
               size: file.size,
-              mime_type:,
+              mime_type: mime_type || file.mime_type,
               created_by: nil,
               created_role: "system"
             }
@@ -120,14 +129,12 @@ module Video
       end
     end
 
-    def process_media(file_path)
+    def process_media(file_path, video_info)
       Verse.logger.info{ "Processing media #{arguments.resource}..." }
 
       last_progress = Time.now.to_i
 
-      video_info = Video::VideoInfo.from_file(file_path)
-
-      Video::GenerateStreaming.generate(
+      Video::GenerateStreaming.(
         file_path,
         video_info,
         arguments
