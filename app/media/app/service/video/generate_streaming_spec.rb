@@ -20,7 +20,7 @@ RSpec.describe Video::GenerateStreaming do
 
   describe ".generate" do
     it "runs without errors" do
-      described_class.(file_path, video_info, arguments)
+      described_class.call(file_path, video_info, arguments)
     end
   end
 end

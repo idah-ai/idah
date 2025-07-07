@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Video
   module GenerateThumbnail
     module_function
@@ -10,14 +12,15 @@ module Video
       images = "10/#{video_info.duration}"
 
       command =
-        "ffmpeg -i %{file_path} "\
+        "ffmpeg -i %<file_path>s "\
         "-vf 'fps=#{images},scale=240:-1' "\
         "-fps_mode vfr -frames:v 10 -q:v 2 "\
         "thumb_%%02d.png -y"
 
       # No progress output
       EXECUTOR.call(
-        command, chdir: tmpdir,
+        command,
+        chdir: tmpdir,
         file_path:
       )
 
@@ -38,7 +41,8 @@ module Video
         canvas.composite!(
           img,
           Magick::NorthWestGravity,
-          idx * width, 0,
+          idx * width,
+          0,
           Magick::OverCompositeOp
         )
       end
@@ -50,6 +54,5 @@ module Video
 
       output
     end
-
   end
 end

@@ -16,11 +16,11 @@ module Medias
     end
 
     def show(resource, key, included: [])
-      files.find_by!({resource:, key:}, included:)
+      files.find_by!({ resource:, key: }, included:)
     end
 
     def delete(resource, key)
-      file = files.find_by!({resource:, key:})
+      file = files.find_by!({ resource:, key: })
       files.delete(file.id)
     end
 

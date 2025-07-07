@@ -26,7 +26,7 @@ module Video
       # Generate thumbnail
       if arguments.generate_thumbnail
         Verse.logger&.info{ "Generating thumbnail for video" }
-        thumbnail_path = Video::GenerateThumbnail.(file_path, video_info, tmpdir: output.tmpdir)
+        thumbnail_path = Video::GenerateThumbnail.call(file_path, video_info, tmpdir: output.tmpdir)
         upload_file(thumbnail_path, "thumbnail.jpg", "image/jpeg")
       end
     ensure
@@ -134,11 +134,7 @@ module Video
 
       last_progress = Time.now.to_i
 
-      Video::GenerateStreaming.(
-        file_path,
-        video_info,
-        arguments
-      ) do |progress|
+      Video::GenerateStreaming.call(file_path, video_info, arguments) do |progress|
         now = Time.now.to_i
 
         # Do not update too frequently (update to db)
