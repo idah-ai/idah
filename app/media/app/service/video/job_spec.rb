@@ -58,5 +58,12 @@ RSpec.describe Video::Job, type: :service, database: true do
       }
     )
     expect(fragment).to be_truthy
+
+    # Verify the thumbnail:
+    thumbnail = media_repo.find_by({
+      resource: "test",
+      key: "thumbnail.jpg"
+    })
+    expect(fragment).to be_truthy
   end
 end
