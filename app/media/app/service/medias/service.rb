@@ -15,12 +15,13 @@ module Medias
       )
     end
 
-    def show(id, _key, included: [])
-      files.find!(id, included:)
+    def show(resource, key, included: [])
+      files.find_by!({resource:, key:}, included:)
     end
 
-    def delete(id)
-      files.delete(id)
+    def delete(resource, key)
+      file = files.find_by!({resource:, key:})
+      files.delete(file.id)
     end
 
     def create(record)
