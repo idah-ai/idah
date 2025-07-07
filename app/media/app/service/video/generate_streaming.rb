@@ -78,9 +78,6 @@ module Video
 
           time = value.to_i / 1_000_000.0 # Convert microseconds to seconds
 
-          puts "Progress: #{time.round(2)} seconds"
-          puts "Progress %: #{(time / video_info.duration * 100).round(2)}%"
-
           # Give the progress output
           block&.call(time / video_info.duration)
         end

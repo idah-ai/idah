@@ -134,7 +134,7 @@ module Video
       ) do |progress|
         now = Time.now.to_i
 
-        # Do not update too frequently (call to db)
+        # Do not update too frequently (update to db)
         if now - last_progress > 10
           last_progress = now
           update_progress(progress * 0.9) # 90% to convert, 10% to upload
