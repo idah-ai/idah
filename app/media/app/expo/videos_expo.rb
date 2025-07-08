@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class VideosExpo < BaseExpo
   http_path "/videos"
 
