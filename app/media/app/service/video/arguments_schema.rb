@@ -1,5 +1,7 @@
+# frozen_string_literal: true
+
 module Video
-    SCALE_FORMATS = {
+  SCALE_FORMATS = {
     "240p" => [240, "400k", "96k"],
     "360p" => [360, "800k", "128k"],
     "480p" => [480, "1200k", "128k"],

@@ -35,19 +35,19 @@ kv_store:
   adapter: Verse::Redis::KVStore
   config:
     plugin: :redis
-    key_prefix: "medias:keys"
+    key_prefix: "media:keys"
 
 lock:
   adapter: Verse::Redis::Lock
   config:
     plugin: redis
-    key_prefix: "medias:locks"
+    key_prefix: "media:locks"
 
 counter:
   adapter: Verse::Redis::Counter
   config:
     plugin: redis
-    key_prefix: "medias:counters"
+    key_prefix: "media:counters"
 
 logging:
   level: <%= ENV.fetch("LOG_LEVEL", "info") %>
