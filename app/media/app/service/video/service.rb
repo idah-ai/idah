@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Video
   class Service < Verse::Service::Base
     # Start a video processing job.

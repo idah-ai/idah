@@ -44,7 +44,10 @@ Sequel.migration do
       column :progress, Float, null: false, default: 0.0 # from 0.0 to 1.0
       column :retry_count, Integer, null: false, default: 0
 
-      column :unicity, String, null: true, unique: true,
+      column :unicity,
+             String,
+             null: true,
+             unique: true,
              comment: "Unique identifier for the job, used to prevent duplicate jobs."
 
       column :error, String
