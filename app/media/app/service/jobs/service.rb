@@ -30,6 +30,30 @@ module Jobs
       end
     end
 
+    def create_job(
+      job_class,
+      arguments: {},
+      priority: 0,
+      scheduled_at: Time.now,
+      unicity: nil
+    )
+      repo.transaction do
+        record = {
+          job_class: job_class,
+          arguments: arguments,
+          priority: priority,
+          status: "pending",
+          scheduled_at: scheduled_at,
+          unicity:,
+          retry_count: 0,
+          progress: 0.0
+        }
+
+        record_id = repo.create(record)
+        repo.find!(record_id)
+      end
+    end
+
     def update(record)
       repo.update!(record.id, record.attributes)
       repo.find!(record.id)
