@@ -13,6 +13,7 @@ module Jobs
 
     field :retry_count, type: Integer
     field :error, type: String
+    field :unicity, type: String
 
     field :scheduled_at, type: Time
 
