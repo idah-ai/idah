@@ -17,6 +17,7 @@ class VideosExpo < BaseExpo
     end
   end
   def process
+    server.response.status = 201
     service.process(
       params[:data]
     )
