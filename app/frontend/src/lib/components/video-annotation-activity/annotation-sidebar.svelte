@@ -1,0 +1,97 @@
+<script lang="ts">
+    import type { Annotation, AnnotationContext, AnnotationValue } from "$lib/context/AnnotationContext"
+	import Sidebar from "../ui/sidebar/sidebar.svelte";
+	import Input from "../ui/input/input.svelte";
+	import CategoriesSelection from "./categories-selection.svelte";
+	import type { AllowedValueFields, ToolInfo } from "@/context/ActivityContext";
+	import { SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarHeader, SidebarInset, SidebarMenuButton, SidebarMenuItem } from "../ui/sidebar";
+	import type { VideoAnnotation, VideoMode, VideoShapeType } from "@/components/video-annotation-activity/VideoAnnotationContext";
+    let {
+        annotationValue,
+        annotations,
+        onEditValue,
+        onSelectAnnotation,
+        toolinfo,
+        mode,
+    } :{
+        annotationValue :AnnotationValue,
+        annotations: VideoAnnotation[],
+        onEditValue: (annotationValue: AnnotationValue, mode: VideoMode) => void,
+        onSelectAnnotation: (annotation :VideoAnnotation) => void,
+        toolinfo: ToolInfo,
+        mode: VideoMode
+     } = $props()
+
+    function categorySelection(mode: VideoMode, category?: string) {
+        if (category) {
+            onEditValue({
+                ...annotationValue, category
+            }, mode)
+        }
+        else {
+            onEditValue(
+                Object.fromEntries(
+                    Object.entries(annotationValue)
+                    .filter((
+                        [type, _]
+                    ) => type == 'categories')
+                ), mode
+            )
+        }
+
+    }
+</script>
+
+
+<Sidebar variant='inset' collapsible='none'>
+    {#if toolinfo[mode]}
+        <SidebarHeader />
+        <SidebarContent>
+            {#if toolinfo[mode].allowedFields.categories}
+                <SidebarGroup>
+                    <SidebarGroupContent>
+                        <CategoriesSelection
+                            {annotations}
+                            categories={toolinfo[mode].allowedFields.categories}
+                            selected={annotationValue.category}
+                            onSelectAnnotation={onSelectAnnotation}
+                            onSelect={(s) => categorySelection(mode, s)}
+                            required={toolinfo[mode].requiredFields?.includes('categories') || false}
+                        />
+                    </SidebarGroupContent>
+                </SidebarGroup>
+            {/if}
+        </SidebarContent>
+    {:else}
+        <SidebarHeader>
+            <Input placeholder="search"/>
+        </SidebarHeader>
+            <SidebarContent>
+                {#each Object.entries(toolinfo) as [type, tool]}
+                <SidebarGroup>
+                    <SidebarGroupLabel>{type}</SidebarGroupLabel>
+                    <SidebarGroupContent>
+
+                        {#if tool.allowedFields.categories}
+                        <CategoriesSelection
+                            {annotations}
+                            categories={tool.allowedFields.categories}
+                            selected={annotationValue.category}
+                            {onSelectAnnotation}
+                            onSelect={(s) => categorySelection(type, s)}
+                            required={tool.requiredFields?.includes('categories') || false}
+                        />
+                        {:else}
+                        <SidebarMenuItem>
+                            <SidebarMenuButton>
+                                {type} {tool}
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                        {/if}
+                     </SidebarGroupContent>
+                </SidebarGroup>
+                {/each}
+            </SidebarContent>
+        <SidebarFooter />
+    {/if}
+</Sidebar>
