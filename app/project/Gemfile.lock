@@ -1,9 +1,10 @@
 GIT
   remote: https://github.com/verse-rb/verse-core
-  revision: 6c2a20eb036e81f28183e41b6d8ad73d58fbbbe3
+  revision: e0745ed95e2e1d3496aabdb64895cb83545ed1b5
   branch: master
   specs:
     verse-core (2.0.0)
+      bigdecimal (>= 3.2.0)
       logger (>= 1.0)
       verse-schema (>= 1)
 

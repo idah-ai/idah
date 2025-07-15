@@ -23,7 +23,7 @@ Sequel.migration do
       # Type of dataset
       column :topology, String, null: false
 
-      column :labels, 'text[]', null: false, default: '[]'
+      column :labels, 'text[]', null: false, default: '{}'
 
       # Domain specific data, related to the topology
       column :configuration, :jsonb, text: true, null: false
@@ -52,7 +52,7 @@ Sequel.migration do
       column :assigned_to_id, :bigint, null: true, index: true
       Migration::Timestamps.timestamps(self)
     end
-    entries_trigger = Migration::Timestamps.trg_updated_at(self, :datasets)
+    entries_trigger = Migration::Timestamps.trg_updated_at(self, :entries)
 
     create_table(:annotations) do
       column :id, :bigserial, primary_key: true
@@ -74,13 +74,13 @@ Sequel.migration do
 
       Migration::Timestamps.timestamps(self)
     end
-    Migration::Timestamps.trg_updated_at(self, :datasets)
+    Migration::Timestamps.trg_updated_at(self, :annotations)
 
     create_table(:note_feeds) do
       column :id, :bigserial, primary_key: true
 
       foreign_key :annotation_id, :annotations, type: :bigint, null: false, index: true
-      foreign_key :created_by_id, :users, type: :bigint, null: false, index: true
+      column :created_by_id, :bigint, null: false, index: true
 
       # Position anchor, or annotation reference
       column :anchor_type, String, null: false, index: true
