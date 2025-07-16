@@ -13,6 +13,9 @@
 	import CommandManager from '@/command/CommandManager';
 	import Navbar from './video-annotation-activity/navbar.svelte';
 	import type { Command } from '@/command/Command';
+	import { Toaster } from './ui/sonner';
+	import Button from './ui/button/button.svelte';
+	import { showErrorToast } from '@/utils/error/error.toasts';
 
     let player: Video
     let player_container: HTMLDivElement|undefined = $state() // ...
@@ -177,6 +180,7 @@
 <div class="flex flex-col h-screen w-full">
     <Navbar context={videoActivityContext}/>
 
+    <Toaster position='bottom-center'/>
     <SidebarProvider
         class='min-h-0 w-full'
         style={
@@ -234,6 +238,7 @@
             <ResizableHandle withHandle />
 
             <ResizablePane defaultSize={40} minSize={10}>
+                <Button onclick={() => showErrorToast({})}>Toast</Button>
                 <Controls
                     onNextFrame={() => player.nextFrame()}
                     onTogglePlay={() => player.togglePlay()}
