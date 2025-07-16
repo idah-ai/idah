@@ -1,0 +1,51 @@
+import { Meta } from "@storybook/blocks"
+
+<Meta title="Data/DataSource" />
+
+# Data Source system
+
+The project use DataSource object as source coming from the backend. Any endpoints from
+the backend must follow [JSONApi format](https://jsonapi.org/).
+
+```typescript
+import {
+  RestCreateSource,
+  RestDeleteSource,
+  RestGetSource,
+  RestListSource,
+  RestUpdateSource
+} from "./rest_source"
+
+export type RestSource<T> = RestListSource<T> &
+  RestGetSource<T> &
+  RestUpdateSource<T> &
+  RestCreateSource<T> &
+  RestDeleteSource
+```
+
+## Definitions
+
+RestListSource
+
+- Define a source which is a collection of records
+
+RestGetSource
+
+- Define a source which is a single record
+
+RestUpdateSource
+
+- Define a source used to update a new record
+
+RestCreateSource
+
+- Define a source used to create a new record
+
+RestDeleteSource
+
+- Define a source used to delete an existing record
+
+## Testing using a local source
+
+The framework offers a local source called `MemoryDataSource` which can be used
+to test the UI without having to connect to a backend.

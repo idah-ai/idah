@@ -4,15 +4,10 @@
 	import Slider from "$lib/components/ui/slider/slider.svelte";
 	import Input from "../ui/input/input.svelte";
 	import ScrollArea from "../ui/scroll-area/scroll-area.svelte";
-	import { type VideoAnnotation } from "@/components/video-activity/VideoAnnotationContext";
+	import { type VideoAnnotation } from "@/components/video-annotation-activity/VideoAnnotationContext";
 	import Button from "../ui/button/button.svelte";
-	import { Label } from "../ui/select";
 	import MenubarLabel from "../ui/menubar/menubar-label.svelte";
-	import MenubarGroup from "../ui/menubar/menubar-group.svelte";
-	import MenubarItem from "../ui/menubar/menubar-item.svelte";
 	import MenubarTrigger from "../ui/menubar/menubar-trigger.svelte";
-	import MenubarContent from "../ui/menubar/menubar-content.svelte";
-	import { Menu } from "../ui/sidebar";
 
   let {
     onPreviousFrame,
@@ -115,7 +110,6 @@
     </Menubar.Root>
   </div>
 
-  <!-- <div class='h-full'> -->
     <ScrollArea class='h-full'>
       <Table.Root class='h-full'>
         <Table.Caption>Annotations List</Table.Caption>
@@ -166,7 +160,6 @@
                         style:display={'flex'}
                         >
 
-                          <!-- {#key annotation.shape.frames} -->
                           {#each annotation.shape.frames as f }
                           {#if f.frame >= range[0] && f.frame <= range[1]}
                             <div
@@ -199,20 +192,6 @@
                             </div>
                             {/if}
                             {/each}
-                          <!-- {/key} -->
-
-                        <!-- {Math.max(annotation.shape.start, range[0])} {Math.min(annotation.shape.end, range[1])} -->
-
-                        <!-- <div>
-                          {(Math.max(annotation.shape.start, range[0]) - range[0]) / (range[1] - range[0]) * 100}
-                          /
-                          {(Math.min(annotation.shape.end, range[1]) - range[0]) / (range[1] - range[0]) * 100}
-                          {
-                            ((Math.min(annotation.shape.end, range[1]) - range[0]) / (range[1] - range[0]) * 100)
-                            -
-                            ((Math.max(annotation.shape.start, range[0]) - range[0]) / (range[1] - range[0]) * 100)
-                          }
-                        </div> -->
                       </div>
 
                   {/if}
@@ -224,6 +203,5 @@
     </ScrollArea>
 
 
-  <!-- </div> -->
 </div>
 

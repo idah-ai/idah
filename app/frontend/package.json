@@ -39,6 +39,7 @@
 		"prettier-plugin-tailwindcss": "^0.6.12",
 		"svelte": "^5.34.3",
 		"svelte-check": "^4.2.1",
+		"svelte-sonner": "^1.0.5",
 		"tailwind-merge": "^3.3.1",
 		"tailwind-variants": "^1.0.0",
 		"tailwindcss": "^4.1.10",
@@ -56,6 +57,7 @@
 		]
 	},
 	"dependencies": {
+		"date-fns": "^4.1.0",
 		"mode-watcher": "^1.1.0"
 	}
 }
