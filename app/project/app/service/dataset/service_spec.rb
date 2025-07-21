@@ -42,15 +42,17 @@ RSpec.describe Dataset::Service, database: true do
   describe "#update" do
     it "updates a dataset" do
       dataset_id = repo.create(attributes)
-      record = deserialize({
-        data: {
-          type: "datasets",
-          id: dataset_id,
-          attributes: {
-            labels: ["cat", "dog", "bird"],
+      record = deserialize(
+        {
+          data: {
+            type: "datasets",
+            id: dataset_id,
+            attributes: {
+              labels: ["cat", "dog", "bird"],
+            }
           }
         }
-      })
+      )
 
       subject.update(record)
 

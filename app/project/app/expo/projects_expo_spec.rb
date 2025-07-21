@@ -6,14 +6,16 @@ RSpec.describe ProjectsExpo, type: :exposition, as: :system do
   let(:now) { Time.now.utc }
 
   let(:project_record) do
-    Project::Record.new({
-      id: 1,
-      name: "Test Project",
-      description: "A test project",
-      created_by_id: 1,
-      created_at: now,
-      updated_at: now
-    })
+    Project::Record.new(
+      {
+        id: 1,
+        name: "Test Project",
+        description: "A test project",
+        created_by_id: 1,
+        created_at: now,
+        updated_at: now
+      }
+    )
   end
 
   let(:project_data) do

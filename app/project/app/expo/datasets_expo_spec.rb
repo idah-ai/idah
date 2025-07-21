@@ -6,17 +6,19 @@ RSpec.describe DatasetsExpo, type: :exposition, as: :system do
   let(:now) { Time.now.utc }
 
   let(:dataset_record) do
-    Dataset::Record.new({
-      id: 1,
-      topology: "image_labeling",
-      labels: ["cat", "dog"],
-      configuration: { "width" => 100, "height" => 100 },
-      status: "pending",
-      progress: 0.0,
-      project_id: 1,
-      created_at: now,
-      updated_at: now
-    })
+    Dataset::Record.new(
+      {
+        id: 1,
+        topology: "image_labeling",
+        labels: ["cat", "dog"],
+        configuration: { "width" => 100, "height" => 100 },
+        status: "pending",
+        progress: 0.0,
+        project_id: 1,
+        created_at: now,
+        updated_at: now
+      }
+    )
   end
 
   let(:dataset_data) do

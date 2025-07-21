@@ -29,7 +29,7 @@ module Migration
         events: :update,
         each_row: true,
       )
-      return trigger_name
+      trigger_name
     end
 
     def timestamps(table, updated_at: true, index: true)

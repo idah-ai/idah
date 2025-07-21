@@ -53,15 +53,17 @@ RSpec.describe Entry::Service, database: true do
   describe "#update" do
     it "updates an entry" do
       entry_id = repo.create(attributes)
-      record = deserialize({
-        data: {
-          type: "entries",
-          id: entry_id,
-          attributes: {
-            status: "in_progress",
+      record = deserialize(
+        {
+          data: {
+            type: "entries",
+            id: entry_id,
+            attributes: {
+              status: "in_progress",
+            }
           }
         }
-      })
+      )
 
       subject.update(record)
 

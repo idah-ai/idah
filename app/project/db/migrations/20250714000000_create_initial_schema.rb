@@ -21,13 +21,18 @@ Sequel.migration do
     create_table(:datasets) do
       column :id, :bigserial, primary_key: true
 
-      foreign_key :project_id, :projects, type: :bigint, null: false, index: true,
-        on_delete: :cascade, on_update: :cascade
+      foreign_key :project_id,
+                  :projects,
+                  type: :bigint,
+                  null: false,
+                  index: true,
+                  on_delete: :cascade,
+                  on_update: :cascade
 
       # Type of dataset
       column :topology, String, null: false
 
-      column :labels, 'text[]', null: false, default: '{}'
+      column :labels, "text[]", null: false, default: "{}"
 
       # Domain specific data, related to the topology
       column :configuration, :jsonb, text: true, null: false
@@ -42,8 +47,13 @@ Sequel.migration do
     create_table(:entries) do
       column :id, :bigserial, primary_key: true
 
-      foreign_key :dataset_id, :datasets, type: :bigint, null: false, index: true,
-        on_delete: :cascade, on_update: :cascade
+      foreign_key :dataset_id,
+                  :datasets,
+                  type: :bigint,
+                  null: false,
+                  index: true,
+                  on_delete: :cascade,
+                  on_update: :cascade
 
       column :priority, Integer, null: false, default: 0, index: true
 
@@ -57,7 +67,7 @@ Sequel.migration do
 
       Migration::Timestamps.timestamps(self)
     end
-    entries_trigger = Migration::Timestamps.trg_updated_at(self, :entries)
+    Migration::Timestamps.trg_updated_at(self, :entries)
 
     create_table(:annotations) do
       column :id, :bigserial, primary_key: true
