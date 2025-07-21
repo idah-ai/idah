@@ -5,7 +5,6 @@ class HealthcheckExpo < Verse::Exposition::Base
 
   expose on_http(:get, "", auth: nil, renderer: Verse::Http::Renderer::Identity) do
     desc <<-MD
-    expose on_schedule("17 1 * * *", per_service: false)
       ## Health check
 
       Returns the status of dependencies such as Redis and PostgreSQL.
