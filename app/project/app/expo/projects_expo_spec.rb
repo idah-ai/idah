@@ -52,7 +52,7 @@ RSpec.describe ProjectsExpo, type: :exposition, as: :system do
   it "show" do
     expect(service).to receive(:show).with(1, included: []).and_return(project_record)
     get "/projects/1"
-    puts last_response.body
+
     expect(last_response.status).to eq 200
     body = JSON.parse(last_response.body, symbolize_names: true)
     record = deserialize(body)
