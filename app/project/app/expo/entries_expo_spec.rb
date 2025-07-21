@@ -6,15 +6,17 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
   let(:now) { Time.now.utc }
 
   let(:entry_record) do
-    Entry::Record.new({
-      id: 1,
-      priority: 1,
-      wf_step: "start",
-      status: "pending",
-      assigned_to_id: 1,
-      created_at: now,
-      updated_at: now
-    })
+    Entry::Record.new(
+      {
+        id: 1,
+        priority: 1,
+        wf_step: "start",
+        status: "pending",
+        assigned_to_id: 1,
+        created_at: now,
+        updated_at: now
+      }
+    )
   end
 
   let(:entry_data) do
