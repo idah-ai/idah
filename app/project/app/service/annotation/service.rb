@@ -20,13 +20,24 @@ module Annotation
     end
 
     def create(attributes)
-      id = annotations.create(attributes)
-      annotations.find!(id)
+      annotations.transaction do
+        id = annotations.create(attributes)
+        annotations.find!(id)
+      end
     end
 
     def update(record)
-      annotations.update!(record.id, record.attributes)
-      annotations.find!(record.id)
+      annotations.transaction do
+        annotations.update!(record.id, record.attributes)
+        annotations.find!(record.id)
+      end
+    end
+
+    def update_attr(id, attributes)
+      annotations.transaction do
+        annotations.update!(id, attributes)
+        annotations.find!(id)
+      end
     end
 
     def delete(id)

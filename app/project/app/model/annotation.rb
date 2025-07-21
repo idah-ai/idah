@@ -5,7 +5,6 @@ module Annotation
     field :id, type: Integer, primary: true
 
     field :entry_id, type: Integer, readonly: true
-    field :dataset_id, type: Integer, readonly: true
 
     field :type, type: String
     field :dimensions, type: Hash
