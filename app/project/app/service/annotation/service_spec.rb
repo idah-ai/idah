@@ -40,7 +40,7 @@ RSpec.describe Annotation::Service, database: true do
       entry_id: entry_id,
       type: "bounding_box",
       dimensions: { "x" => 10, "y" => 20, "width" => 30, "height" => 40 },
-      annotation: { "label" => "cat" },
+      annotation: { label: "cat" },
       created_by_id: 1
     }
   end
@@ -70,7 +70,7 @@ RSpec.describe Annotation::Service, database: true do
             type: "annotations",
             id: annotation_id,
             attributes: {
-              annotation: { "label" => "dog" },
+              annotation: { label: "dog" },
             }
           }
         }

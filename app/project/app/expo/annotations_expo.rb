@@ -12,4 +12,56 @@ class AnnotationsExpo < BaseExpo
     update
     delete
   end
+
+  # Offer RPC interface for annotations, less verbose and more convenient for
+  # fast updates and queries.
+  json_rpc http_path: "_rpc", batch_limit: 50
+
+  expose json_rpc_method(:show) do
+    input do
+      field(:id, Integer)
+    end
+  end
+  def rpc_show
+    service.show(params[:id])
+  end
+
+  RpcCreateSchema = Verse::Schema.define do
+    field(:entry_id, Integer)
+    field(:dimensions, Hash) # Open Hash
+    field(:annotation, Hash) # Open Hash
+
+    field(:type, String)
+  end
+
+  # Add the id as a required field for the update method
+  RpcUpdateSchema = Verse::Schema.define(RpcCreateSchema) do
+    field(:id, Integer)
+  end
+
+  expose json_rpc_method(:create) do
+    input RpcCreateSchema
+  end
+  def rpc_create
+    service.create(params)
+  end
+
+  expose json_rpc_method(:update) do
+    input RpcUpdateSchema
+  end
+  def rpc_update
+    service.update_attr(
+      params[:id],
+      params.except(:id)
+    )
+  end
+
+  expose json_rpc_method(:delete) do
+    input do
+      field(:id, Integer)
+    end
+  end
+  def rpc_delete
+    service.delete(params[:id])
+  end
 end

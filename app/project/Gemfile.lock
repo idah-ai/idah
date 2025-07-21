@@ -25,6 +25,15 @@ GIT
     verse-jsonapi (0.1.0)
 
 GIT
+  remote: https://github.com/verse-rb/verse-jsonrpc
+  revision: fe4504c0c30b2bbe5a74f9f9bcdcf5173a3e5f4e
+  branch: master
+  specs:
+    verse-jsonrpc (0.1.0)
+      attr_chainable (~> 1.0)
+      verse-schema (>= 1)
+
+GIT
   remote: https://github.com/verse-rb/verse-redis
   revision: b987017528965385eedb101ef1bf67eabfdcf025
   branch: master
@@ -207,6 +216,7 @@ DEPENDENCIES
   verse-core!
   verse-http!
   verse-jsonapi!
+  verse-jsonrpc!
   verse-redis!
   verse-schema (~> 1.1)
   verse-sequel!
