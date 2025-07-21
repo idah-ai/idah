@@ -6,10 +6,10 @@ module Project
 
     field :name, type: String
     field :description, type: String
-    field :created_by_id, type: Integer
+    field :created_by_id, type: Integer, readonly: true
 
-    field :created_at, type: Time
-    field :updated_at, type: Time
+    field :created_at, type: Time, readonly: true
+    field :updated_at, type: Time, readonly: true
   end
 
   class Repository < Verse::Sequel::Repository

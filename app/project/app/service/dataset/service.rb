@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
-module Project
+module Dataset
   class Service < Verse::Service::Base
-    use projects: Project::Repository
+    use datasets: Dataset::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
-      projects.index(
+      datasets.index(
         filter,
         included: included,
         page: page,
@@ -16,22 +16,21 @@ module Project
     end
 
     def show(id, included: [])
-      projects.find!(id, included: included)
+      datasets.find!(id, included: included)
     end
 
     def create(attributes)
-      attributes[:created_by_id] = auth_context.metadata[:id]
-      id = projects.create(attributes)
-      projects.find!(id)
+      id = datasets.create(attributes)
+      datasets.find!(id)
     end
 
     def update(record)
-      projects.update!(record.id, record.attributes)
-      projects.find!(record.id)
+      datasets.update!(record.id, record.attributes)
+      datasets.find!(record.id)
     end
 
     def delete(id)
-      projects.delete(id)
+      datasets.delete(id)
     end
   end
 end
