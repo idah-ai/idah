@@ -21,6 +21,9 @@ Sequel.migration do
     create_table(:datasets) do
       column :id, :bigserial, primary_key: true
 
+      foreign_key :project_id, :projects, type: :bigint, null: false, index: true,
+        on_delete: :cascade, on_update: :cascade
+
       # Type of dataset
       column :topology, String, null: false
 
@@ -32,15 +35,15 @@ Sequel.migration do
       column :status, String, null: false, index: true, default: "pending"
       column :progress, Float, null: false, default: 0.0 # from 0.0 to 1.0
 
-      foreign_key :project_id, :projects, type: :bigint, null: false, index: true,
-        on_delete: :cascade, on_update: :cascade
-
       Migration::Timestamps.timestamps(self)
     end
     Migration::Timestamps.trg_updated_at(self, :datasets)
 
     create_table(:entries) do
       column :id, :bigserial, primary_key: true
+
+      foreign_key :dataset_id, :datasets, type: :bigint, null: false, index: true,
+        on_delete: :cascade, on_update: :cascade
 
       column :priority, Integer, null: false, default: 0, index: true
 
@@ -51,6 +54,7 @@ Sequel.migration do
       column :status, String, null: false, index: true, default: "pending"
 
       column :assigned_to_id, :bigint, null: true, index: true
+
       Migration::Timestamps.timestamps(self)
     end
     entries_trigger = Migration::Timestamps.trg_updated_at(self, :entries)
@@ -59,7 +63,6 @@ Sequel.migration do
       column :id, :bigserial, primary_key: true
 
       foreign_key :entry_id, :entries, type: :bigint, null: false, index: true
-      foreign_key :dataset_id, :datasets, type: :bigint, null: false, index: true
 
       # Type of annotation, e.g. "bounding_box", "polygin", "timerange" etc.
       column :type, String, null: false, index: true

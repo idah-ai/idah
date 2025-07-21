@@ -17,6 +17,9 @@ module Dataset
 
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
+
+    belongs_to :project, repository: "Project::Repository", foreign_key: :project_id
+    has_many :entries, repository: "Entry::Repository", foreign_key: :dataset_id
   end
 
   class Repository < Verse::Sequel::Repository

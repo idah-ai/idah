@@ -4,4 +4,5 @@ Verse.on_boot do
   HealthcheckExpo.register
   ProjectsExpo.register
   DatasetsExpo.register
+  EntriesExpo.register
 end

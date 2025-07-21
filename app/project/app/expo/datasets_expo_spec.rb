@@ -48,6 +48,7 @@ RSpec.describe DatasetsExpo, type: :exposition, as: :system do
   it "index" do
     expect(service).to receive(:index).and_return([dataset_record])
     get "/datasets"
+
     expect(last_response.status).to eq 200
     body = JSON.parse(last_response.body, symbolize_names: true)
     record = deserialize(body)
