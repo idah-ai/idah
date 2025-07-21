@@ -7,14 +7,15 @@ Sequel.migration do
     Migration::Timestamps.install_updated_at_function
 
     create_table(:projects) do
-      column :id, :bigint, primary_key: true
+      column :id, :bigserial, primary_key: true
       column :name, String, null: false, index: true
 
       column :description, String, null: true
-      column :created_by_id, :bigint, null: false, index: true
+      column :created_by_id, :bigint, null: true, index: true
 
       Migration::Timestamps.timestamps(self)
     end
+
     Migration::Timestamps.trg_updated_at(self, :projects)
 
     create_table(:datasets) do
