@@ -40,6 +40,7 @@ export interface AnnotationObj<
   shape: Shape;
   value: Value;
   metadata: Metadata;
+  synced: Boolean;
 }
 
 export type Annotation = AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;

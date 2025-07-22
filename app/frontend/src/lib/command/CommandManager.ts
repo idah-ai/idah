@@ -74,6 +74,16 @@ const CommandManager = {
     this.currentIndex--;
   },
 
+  redo(times : number = 1) {
+    for (let i = 0; i < times; i++) { this.redoOnce(); }
+  },
+
+  redoOnce() {
+    if (this.currentIndex + 1 > this.commands.length - 1) { return; }
+
+    this.commands[this.currentIndex += 1].command.apply();
+  },
+
   size(){
     return this.commands.length;
   },

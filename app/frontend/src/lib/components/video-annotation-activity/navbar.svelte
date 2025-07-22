@@ -33,6 +33,9 @@
     <Button  onclick={() => { CommandManager.undo() }}>
         undo
     </Button>
+    <Button  onclick={() => { CommandManager.redo() }}>
+        redo
+    </Button>
     <Button onclick={() => console.log(CommandManager)}>
         log
     </Button>
