@@ -16,6 +16,13 @@
 	import { Toaster } from './ui/sonner';
 	import Button from './ui/button/button.svelte';
 	import { showErrorToast } from '@/utils/error/error.toasts';
+	import callQueue from './video-annotation-activity/call_queue';
+	import { createMemoryDataSource } from '@/data/MemoryDataSource';
+	import { AnnotationRecord } from '@/data/model/annotations/annotationRecord';
+	import { toast } from 'svelte-sonner';
+	import { uuidv7 } from 'uuidv7';
+	import type { DataParams } from '@/data/DataSource';
+	import { sleep } from '@/utils/delayed';
 
     let player: Video
     let player_container: HTMLDivElement|undefined = $state() // ...
@@ -30,30 +37,87 @@
 
     let annotations: Array<VideoAnnotation> = $state([])
 
-    let id = $state(0) // ..
+    let datasource = createMemoryDataSource(AnnotationRecord, {
+        delay: 2000,
+        error: false,
+        customMethods: {
+            async create(data: DataParams<AnnotationRecord>): Promise<string> {
+            await sleep(this.delay);
+
+            if (this.error) throw "error";
+
+            const id = data.attributes.metadata?.id
+
+            if (!id) throw 'no metadata.id'
+
+            data.attributes = { id, ...data.attributes };
+
+            this.data.push(data.attributes);
+
+            console.log(this.data)
+            return id;
+            },
+        }
+    })
+
     function addAnnotation(
         shape: VideoShape, value: AnnotationValue = {}
     ) {
-        let annotation = {
-            shape,
-            value,
-            metadata: { // \_o_/
-                id: (id += 1).toString(),
-                createdAt: new Date(),
-                updatedAt: new Date()
-            }
-        }
-         const cmd = {
+        const id = uuidv7()
+
+        const cmd = {
             name: 'new annotation',
             apply() {
+                const createdAt = new Date()
+                const annotation = {
+                    shape,
+                    value,
+                    metadata: { // \_o_/
+                        id,
+                        createdAt,
+                        updatedAt: createdAt
+                    },
+                    synced: false
+                }
                 annotations.push(annotation)
+                callQueue.register_call(() => {
+                    let p = datasource.create({attributes: annotation})
+                    .then(() => {
+                        let current = getAnnotationInfo(annotation.metadata.id)
+
+                        if (!current) return
+
+                        if (current.metadata.updatedAt == createdAt)
+                            current.synced = true
+                        })
+
+                    toast.promise(p, {
+                        loading: 'synchro new annotation',
+                        success: 'ok',
+                        error: 'ko'
+                    })
+
+                    return p
+                })
             },
             undo()
             {
-                if (annotation.metadata.id == selectedAnnotation?.metadata.id) selectedAnnotation = undefined
+                if (id == selectedAnnotation?.metadata.id) selectedAnnotation = undefined
                 annotations = annotations.filter((v) => {
-                    return v.metadata.id != annotation.metadata.id
+                    return v.metadata.id != id
                 })
+                callQueue.register_call(() => {
+                    let p = datasource.delete(id)
+
+                    toast.promise(p, {
+                        loading: 'synchro undo new annotation',
+                        success: 'ok',
+                        error: 'ko'
+                    })
+
+                    return p
+                })
+
             },
             isCombinable: () => false,
             combine: () => cmd
@@ -100,10 +164,10 @@
             const from = v.shape.frames.find(f => f.frame == selection.frame)
             const start = v.shape.start
             const end = v.shape.end
-
             const cmd:Command = {
                     name: 'add bounding box selection',
                     apply() {
+                        const updatedAt = new Date()
                         v.shape = {
                             ...v.shape,
                             start: v.shape.start <= selection.frame ? v.shape.start : selection.frame,
@@ -113,9 +177,31 @@
                                 selection
                             ]
                         }
+                        v.metadata.updatedAt = updatedAt
+                        v.synced = false
+                        callQueue.register_call(() => {
+                            let p = datasource.update(v.metadata.id, {attributes: {shape: v.shape}})
+                            .then(() => {
+                                let current = getAnnotationInfo(id)
+
+                                if (!current) return
+
+                                if (current.metadata.updatedAt == updatedAt)
+                                    current.synced = true
+                            })
+
+                            toast.promise(p, {
+                                loading: 'synchro update shape',
+                                success: 'ok',
+                                error: 'ko'
+                            })
+
+                            return p
+                        })
                     },
                     undo()
                     {
+                        const updatedAt = new Date()
                         v.shape = {
                             ...v.shape,
                             start,
@@ -125,6 +211,28 @@
                                 from
                             ] : v.shape.frames.filter(f => f.frame != selection.frame)
                         }
+                        v.metadata.updatedAt = updatedAt
+                        v.synced = false
+
+                        callQueue.register_call(() => {
+                            let p = datasource.update(v.metadata.id, {attributes: {shape: v.shape}})
+                            .then(() => {
+                                let current = getAnnotationInfo(id)
+
+                                if (!current) return
+
+                                if (current.metadata.updatedAt == updatedAt)
+                                    current.synced = true
+                            })
+
+                            toast.promise(p, {
+                                loading: 'synchro undo update shape',
+                                success: 'ok',
+                                error: 'ko'
+                            })
+
+                            return p
+                        })
                     },
                     isCombinable: () => false,
 
@@ -152,16 +260,56 @@
     function updateAnnotationValue(annotation:VideoAnnotation, value:AnnotationValue) {
         const annotation_id = annotation.metadata.id
         const value_from = annotation.value
-
         const cmd:Command = {
             name: 'update annotation value',
             apply() {
-                const annotation = getAnnotationInfo(annotation_id)
-                if (annotation) annotation.value = value
+                // const annotation = getAnnotationInfo(annotation_id)
+                const updatedAt = new Date()
+                if (annotation) {
+                    annotation.value = value
+                    annotation.metadata.updatedAt = updatedAt
+                    annotation.synced = false
+                    callQueue.register_call(() => {
+                        let p = datasource.update(annotation_id, {attributes: {value: value_from}})
+                        .then(() => {
+                            if (annotation.metadata.updatedAt == updatedAt)
+                                annotation.synced = true
+                        })
+
+                        toast.promise(p, {
+                            loading: 'synchro update value',
+                            success: 'ok',
+                            error: 'ko'
+                        })
+
+                        return p
+                    })
+
+                }
             },
             undo(){
-                const annotation = getAnnotationInfo(annotation_id)
-                if (annotation) annotation.value = value_from
+                // const annotation = getAnnotationInfo(annotation_id)
+                if (annotation) {
+                    const updatedAt = new Date()
+                    annotation.value = value_from
+                    annotation.metadata.updatedAt = updatedAt
+                    annotation.synced = false
+                    callQueue.register_call(() => {
+                        let p = datasource.update(annotation_id, {attributes: {value: value_from}})
+                        .then(() => {
+                            if (annotation.metadata.updatedAt == updatedAt)
+                                annotation.synced = true
+                        })
+
+                        toast.promise(p, {
+                            loading: 'synchro undo update value',
+                            success: 'synchro ok',
+                            error: 'synchro ko'
+                        })
+
+                        return p
+                    })
+                }
             },
             isCombinable: () => false,
             combine: (c)=> cmd
