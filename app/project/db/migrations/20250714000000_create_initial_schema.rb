@@ -7,7 +7,7 @@ Sequel.migration do
     Migration::Timestamps.install_updated_at_function
 
     create_table(:projects) do
-      column :id, :bigserial, primary_key: true
+      column :id, :uuidv7, primary_key: true
       column :name, String, null: false, index: true
 
       column :description, String, null: true
@@ -57,6 +57,8 @@ Sequel.migration do
 
       column :priority, Integer, null: false, default: 0, index: true
 
+      column :file_url, String, null: true
+
       # current workflow step, e.g. "start", "annotate", "review", "export"
       column :wf_step, String, null: false, index: true, default: "start"
 
@@ -74,13 +76,13 @@ Sequel.migration do
 
       foreign_key :entry_id, :entries, type: :bigint, null: false, index: true
 
-      # Type of annotation, e.g. "bounding_box", "polygin", "timerange" etc.
-      column :type, String, null: false, index: true
+      # Type of annotation, e.g. "bounding_box", "polygon", "timerange" etc.
+      column :type, String, null: false, index: true # video_bounding_box
 
       # Dimension of the annotation, e.g. coordinates or pixel mask.
       column :dimensions, :jsonb, text: true, null: false
 
-      # The actual annotation data, e.g. category, label...
+      # The actual annotation data, e.g. category, label, source...
       column :annotation, :jsonb, text: true, null: false
 
       # Annotator information

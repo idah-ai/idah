@@ -15,7 +15,7 @@ class AnnotationsExpo < BaseExpo
 
   # Offer RPC interface for annotations, less verbose and more convenient for
   # fast updates and queries.
-  json_rpc http_path: "_rpc", batch_limit: 50
+  json_rpc http_path: "_rpc", batch_limit: 50, batch_failure: :stop, http_opts: { auth: nil }
 
   expose json_rpc_method(:show) do
     input do
