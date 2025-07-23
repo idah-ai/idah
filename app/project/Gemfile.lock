@@ -26,7 +26,7 @@ GIT
 
 GIT
   remote: https://github.com/verse-rb/verse-jsonrpc
-  revision: fe4504c0c30b2bbe5a74f9f9bcdcf5173a3e5f4e
+  revision: 0e160b75bc2d8e1fc623727f2cdb193d4ab49867
   branch: master
   specs:
     verse-jsonrpc (0.1.0)
