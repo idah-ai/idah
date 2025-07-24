@@ -17,7 +17,7 @@ namespace :db do
     end
   end
 
-  desc "Reset database"
+  desc "Reset database. Remove existing database and create a new one"
   task reset: :environment do
     unless %w(staging development test).include?(ENV["APP_ENVIRONMENT"])
       raise "This is too dangerous to use in production! Create/Replace manually the database"
@@ -30,8 +30,19 @@ namespace :db do
     Sequel.connect(uri.to_s, logger: Logger.new($stdout)) do |db|
       drop_sql = "DROP DATABASE IF EXISTS #{db_to_create}"
       db.execute drop_sql
+    end
 
-      create_sql = "CREATE DATABASE #{db_to_create}"
+    Rake::Task["db:setup"].invoke
+  end
+
+  desc "Setup the database if not exists"
+  task setup: :environment do
+    uri = URI.parse(ENV.fetch("DATABASE_URI"))
+    db_to_create = uri.path[1..]
+    uri.path = "/postgres"
+
+    Sequel.connect(uri.to_s, logger: Logger.new($stdout)) do |db|
+      create_sql = "CREATE DATABASE IF NOT EXISTS #{db_to_create}"
       db.execute create_sql
     end
   end

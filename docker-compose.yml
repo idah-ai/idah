@@ -1,0 +1,19 @@
+services:
+  media:
+    build:
+      context: ./app/media
+      dockerfile: Dockerfile
+      args:
+        BUNDLE_WITHOUT: "" # Allow all groups for dev.
+        APP_ENVIRONMENT: development
+    environment:
+      - DATABASE_URI=postgres://postgres:postgres@host.docker.internal:5432/idah_media_development
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./app/media:/app
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: bundle exec rake db:setup || true && bundle exec puma
+    stdin_open: true
+    tty: true
