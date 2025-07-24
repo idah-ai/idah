@@ -20,8 +20,9 @@
     volume = $bindable(),
     onSetVolume,
     annotations,
-    selectedAnnotation = $bindable(),
-    onSelectAnnotation
+    selectedAnnotation,
+    onSelectAnnotation,
+    onDeleteAnnotation,
   }:{
     onPreviousFrame: () => void,
     onTogglePlay: () => void,
@@ -34,7 +35,8 @@
     onSetVolume: (volume: number) => void
     annotations: VideoAnnotation[],
     selectedAnnotation :VideoAnnotation|undefined,
-    onSelectAnnotation: (annotations:VideoAnnotation) => void
+    onSelectAnnotation: (annotations:VideoAnnotation) => void,
+    onDeleteAnnotation: (annotation: VideoAnnotation, frame?: number) => void,
   } = $props()
 
   let range = $derived([0, total_frames || 0])
@@ -90,7 +92,7 @@
           <path class='fill-secondary' d="M0.25 10.75C0.25 14.8917 3.60833 18.25 7.75 18.25C9.21667 18.25 10.5833 17.825 11.7417 17.1L10.525 15.8833C9.7 16.325 8.75 16.5833 7.75 16.5833C4.53333 16.5833 1.91667 13.9667 1.91667 10.75C1.91667 7.53333 4.53333 4.91667 7.75 4.91667H7.89167L6.575 6.24167L7.75 7.41667L11.0833 4.08333L7.75 0.75L6.56667 1.925L7.89167 3.25H7.75C3.60833 3.25 0.25 6.60833 0.25 10.75ZM7.75 10.75L12.75 15.75L17.75 10.75L12.75 5.75L7.75 10.75ZM12.75 13.3917L10.1083 10.75L12.75 8.10833L15.3917 10.75L12.75 13.3917Z"/>
         </svg>
       </Button>
-      <Button onclick={() => {
+      <!-- <Button onclick={() => {
           if (!selectedAnnotation) return console.warn('no selection to remove')
 
           let index = selectedAnnotation.shape.frames.findIndex((v) => v.frame == current_frame)
@@ -106,7 +108,16 @@
           <svg width="12" height="15" viewBox="0 0 12 15" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path class='fill-secondary' d="M9.33329 5V13.3333H2.66663V5H9.33329ZM8.08329 0H3.91663L3.08329 0.833333H0.166626V2.5H11.8333V0.833333H8.91663L8.08329 0ZM11 3.33333H0.999959V13.3333C0.999959 14.25 1.74996 15 2.66663 15H9.33329C10.25 15 11 14.25 11 13.3333V3.33333Z"/>
           </svg>
+      </Button> -->
+            <Button onclick={() => {
+            if (!selectedAnnotation) return
+            onDeleteAnnotation(selectedAnnotation, current_frame)
+          }}>
+          <svg width="12" height="15" viewBox="0 0 12 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path class='fill-secondary' d="M9.33329 5V13.3333H2.66663V5H9.33329ZM8.08329 0H3.91663L3.08329 0.833333H0.166626V2.5H11.8333V0.833333H8.91663L8.08329 0ZM11 3.33333H0.999959V13.3333C0.999959 14.25 1.74996 15 2.66663 15H9.33329C10.25 15 11 14.25 11 13.3333V3.33333Z"/>
+          </svg>
       </Button>
+
     </Menubar.Root>
   </div>
 
@@ -139,7 +150,18 @@
           {#each annotations as annotation :videoAnnotation}
             <Table.Row onclick={() => {onSelectAnnotation(annotation)}}
               data-state={selectedAnnotation == annotation? 'selected':''}>
-              <Table.Cell>{annotation.metadata.id}</Table.Cell>
+              <Table.Cell>
+                {
+                  [
+                    annotation.value.category?.split('/').reverse()[0],
+                    annotation.metadata.id
+                  ].filter(a => a).join(' - ')
+                }
+                <Button onclick={(e) => {
+                  e.stopPropagation()
+                  onDeleteAnnotation(annotation)
+                }}>X</Button>
+              </Table.Cell>
               <Table.Cell>
                   {#if annotation.shape.start <= range[1] && annotation.shape.end >= range[0]}
                       <div
