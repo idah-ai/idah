@@ -14,15 +14,11 @@
 	import Navbar from './video-annotation-activity/navbar.svelte';
 	import type { Command } from '@/command/Command';
 	import { Toaster } from './ui/sonner';
-	import Button from './ui/button/button.svelte';
-	import { showErrorToast } from '@/utils/error/error.toasts';
 	import callQueue from './video-annotation-activity/call_queue';
-	import { createMemoryDataSource } from '@/data/MemoryDataSource';
-	import { AnnotationRecord } from '@/data/model/annotations/annotationRecord';
+	import { annotationsMemoryDataSource } from '@/data/model/annotations/annotationRecord';
 	import { toast } from 'svelte-sonner';
 	import { uuidv7 } from 'uuidv7';
-	import type { DataParams } from '@/data/DataSource';
-	import { sleep } from '@/utils/delayed';
+
 
     let player: Video
     let player_container: HTMLDivElement|undefined = $state() // ...
@@ -37,33 +33,19 @@
 
     let annotations: Array<VideoAnnotation> = $state([])
 
-    let datasource = createMemoryDataSource(AnnotationRecord, {
-        delay: 2000,
-        error: false,
-        customMethods: {
-            async create(data: DataParams<AnnotationRecord>): Promise<string> {
-            await sleep(this.delay);
+    let datasource = $state(annotationsMemoryDataSource)
+    let datasource_error = $state(true)
 
-            if (this.error) throw "error";
-
-            const id = data.attributes.metadata?.id
-
-            if (!id) throw 'no metadata.id'
-
-            data.attributes = { id, ...data.attributes };
-
-            this.data.push(data.attributes);
-
-            console.log(this.data)
-            return id;
-            },
-        }
+    $effect(() => {
+        datasource.error = datasource_error
     })
 
     function addAnnotation(
         shape: VideoShape, value: AnnotationValue = {}
     ) {
         const id = uuidv7()
+        // shape = $state.snapshot(shape) as VideoShape
+        // value = $state.snapshot(value) as AnnotationValue
 
         const cmd = {
             name: 'new annotation',
@@ -126,7 +108,7 @@
     }
 
     function removeAnnotation(id: string){
-        const annotation = annotations.find((v) => v.metadata.id == id)
+        let annotation = annotations.find((v) => v.metadata.id == id)
 
         if (!annotation) return console.warn({removeAnnotation, annotation})
 
@@ -137,15 +119,53 @@
                 annotations = annotations.filter((v) => {
                     return v.metadata.id != id
                 })
+                callQueue.register_call(() => {
+                    let p = datasource.delete(id)
+
+                    toast.promise(p, {
+                        loading: 'synchro delete annotation',
+                        success: 'ok',
+                        error: 'ko'
+                    })
+
+                    return p
+                })
+
             },
             undo()
             {
+                const createdAt = new Date()
                 annotations = [
                     ...annotations.filter((v) => {
                         return v.metadata.id != id
                     }),
-                    annotation
+                    {...annotation, metadata: {
+                        ...annotation.metadata,
+                        createdAt,
+                        updatedAt: createdAt
+                    }, synced: false}
+
                 ]
+                callQueue.register_call(() => {
+                    let p = datasource.create({attributes: annotation})
+                    .then(() => {
+                        let current = getAnnotationInfo(annotation.metadata.id)
+
+                        if (!current) return
+
+                        if (current.metadata.updatedAt == createdAt)
+                            current.synced = true
+                        })
+
+                    toast.promise(p, {
+                        loading: 'synchro undo delete annotation',
+                        success: 'ok',
+                        error: 'ko'
+                    })
+
+                    return p
+                })
+
             },
             isCombinable: () => false,
             combine: () => cmd
@@ -157,16 +177,23 @@
     }
 
     function addSelection(id: string, selection: VideoFrameSelection) {
-            let v = getAnnotationInfo(id)
+            const v = getAnnotationInfo(id)
 
             if (!v) return console.warn({addSelection, annotation: v})
 
-            const from = v.shape.frames.find(f => f.frame == selection.frame)
+            selection = $state.snapshot(selection) as VideoFrameSelection
+
+            const from = $state(v.shape.frames.find(f => f.frame == selection.frame))
             const start = v.shape.start
             const end = v.shape.end
             const cmd:Command = {
                     name: 'add bounding box selection',
                     apply() {
+                        const v = getAnnotationInfo(id)
+
+                        if (!v) return toast.error('bounding box not found')
+
+                        console.log({selection})
                         const updatedAt = new Date()
                         v.shape = {
                             ...v.shape,
@@ -201,6 +228,10 @@
                     },
                     undo()
                     {
+                        const v = getAnnotationInfo(id)
+
+                        if (!v) return toast.error('bounding box not found')
+
                         const updatedAt = new Date()
                         v.shape = {
                             ...v.shape,
@@ -241,6 +272,106 @@
             CommandManager.add(cmd)
     }
 
+    function deleteSelection(annotation_id: string, frame: number) {
+        let annotation = getAnnotationInfo(annotation_id)
+
+        if (!annotation) return toast.error("cannot remove selection, annotation not found")
+
+
+        let index = annotation.shape.frames.findIndex((v) => v.frame == frame)
+        if (index == -1) return toast.warning('No frame to remove')
+
+        let selection = annotation.shape.frames[index]
+
+        const cmd:Command = {
+            name: 'delete bounding box keyframe',
+            apply() {
+                const updatedAt = new Date()
+                let annotation = getAnnotationInfo(annotation_id)
+
+                if (!annotation) return toast.error("cannot remove keyframe, annotation not found")
+
+                let index = annotation.shape.frames.findIndex((v) => v.frame == frame)
+                if (index == -1) return toast.warning('No frame to remove')
+
+                let newframes = annotation.shape.frames.filter((v) => v.frame != frame)
+                annotation.shape = {
+                    start: newframes.reduce((acc, v) => v.frame <= acc || acc == -1 ? v.frame : acc, -1),
+                    end: newframes.reduce((acc, v) => v.frame >= acc || acc == -1 ? v.frame : acc, -1),
+                    type: annotation.shape.type,
+                    frames: newframes
+                }
+                annotation.metadata.updatedAt = updatedAt
+
+                callQueue.register_call(() => {
+                    let p = datasource.update(annotation.metadata.id, {attributes: {shape: annotation.shape}})
+                    .then(() => {
+                        let current = getAnnotationInfo(annotation_id)
+
+                        if (!current) return
+
+                        if (current.metadata.updatedAt == updatedAt)
+                            current.synced = true
+                    })
+
+                    toast.promise(p, {
+                        loading: 'synchro undo update shape',
+                        success: 'ok',
+                        error: 'ko'
+                    })
+
+                    return p
+                })
+
+            }, undo() {
+                const updatedAt = new Date()
+                let annotation = getAnnotationInfo(annotation_id)
+
+                if (!annotation) return toast.error("cannot undo remove selection, annotation not found")
+
+                let newframes = [...annotation.shape.frames.filter((v) => v.frame != frame), selection]
+                annotation.shape = {
+                    start: newframes.reduce((acc, v) => v.frame <= acc || acc == -1 ? v.frame : acc, -1),
+                    end: newframes.reduce((acc, v) => v.frame >= acc || acc == -1 ? v.frame : acc, -1),
+                    type: annotation.shape.type,
+                    frames: newframes
+                }
+                annotation.metadata.updatedAt = updatedAt
+                annotation.synced = false
+
+                callQueue.register_call(() => {
+                    let p = datasource.update(annotation.metadata.id, {attributes: {shape: annotation.shape}})
+                    .then(() => {
+                        let current = getAnnotationInfo(annotation_id)
+
+                        if (!current) return
+
+                        if (current.metadata.updatedAt == updatedAt)
+                            current.synced = true
+                    })
+
+                    toast.promise(p, {
+                        loading: 'synchro undo update shape',
+                        success: 'ok',
+                        error: 'ko'
+                    })
+
+                    return p
+                })
+
+            },
+            isCombinable: () => false,
+            combine: (c) => cmd
+        }
+
+        CommandManager.add(cmd)
+    }
+
+    function onDeleteAnnotation(annotation: VideoAnnotation, frame?: number){
+        if (frame != undefined) deleteSelection(annotation.metadata.id, frame)
+        else removeAnnotation(annotation.metadata.id)
+    }
+
     function onShapeSelection(type: VideoShapeType, frame:number, points: Point[] = [],selectedId?:string){
         console.log({type, frame, points: $state.snapshot(points), selectedId})
         if (!selectedId) {
@@ -263,7 +394,7 @@
         const cmd:Command = {
             name: 'update annotation value',
             apply() {
-                // const annotation = getAnnotationInfo(annotation_id)
+                const annotation = getAnnotationInfo(annotation_id)
                 const updatedAt = new Date()
                 if (annotation) {
                     annotation.value = value
@@ -288,7 +419,7 @@
                 }
             },
             undo(){
-                // const annotation = getAnnotationInfo(annotation_id)
+                const annotation = getAnnotationInfo(annotation_id)
                 if (annotation) {
                     const updatedAt = new Date()
                     annotation.value = value_from
@@ -326,7 +457,11 @@
 </script>
 
 <div class="flex flex-col h-screen w-full">
-    <Navbar context={videoActivityContext}/>
+    <Navbar
+    {datasource}
+     context={videoActivityContext}
+     bind:error={datasource_error}
+     />
 
     <Toaster position='bottom-center'/>
     <SidebarProvider
@@ -386,7 +521,6 @@
             <ResizableHandle withHandle />
 
             <ResizablePane defaultSize={40} minSize={10}>
-                <Button onclick={() => showErrorToast({})}>Toast</Button>
                 <Controls
                     onNextFrame={() => player.nextFrame()}
                     onTogglePlay={() => player.togglePlay()}
@@ -400,6 +534,7 @@
                     annotations={annotations}
                     {selectedAnnotation}
                     onSelectAnnotation={selectAnnotation}
+                    onDeleteAnnotation={onDeleteAnnotation}
                 />
             </ResizablePane>
         </ResizablePaneGroup>

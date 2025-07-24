@@ -7,12 +7,21 @@
     import { toggleMode } from "mode-watcher";
 	import { MenubarMenu, MenubarTrigger } from "../ui/menubar";
 	import type { ActivityContext } from "@/context/ActivityContext";
+	import { AnnotationRecord, annotationsMemoryDataSource } from "@/data/model/annotations/annotationRecord";
+	import type { MemoryDataSource } from "@/data/MemoryDataSource";
+	import callQueue from "./call_queue";
 
     let {
-        context
+        context,
+        error = $bindable(false),
+        datasource = $bindable()
     } : {
-        context: ActivityContext
+        context: ActivityContext,
+        error: Boolean,
+        datasource: MemoryDataSource<AnnotationRecord>,
     } = $props()
+
+    let queue = $state(callQueue.length())
 </script>
 
 <Menubar>
@@ -39,4 +48,15 @@
     <Button onclick={() => console.log(CommandManager)}>
         log
     </Button>
+    <Button onclick={() => datasource.list().then(console.log)}>
+        log memory datasource
+    </Button>
+    <Button variant={error? 'destructive':'default'} onclick={() => error = !error}>
+        error
+    </Button>
+    <Button onclick={() => {callQueue.retry(); queue = callQueue.length()}}>
+        retry..? ({queue})
+    </Button>
+
+
 </Menubar>

@@ -1,4 +1,3 @@
-
 type Call = () => Promise<void|any>
 let calls:(Call)[] = []
 let processing = false
@@ -47,6 +46,7 @@ function retry() {
 }
 
 const callQueue = {
+    length: () => calls.length,
     register_call,
     retry
 }
