@@ -95,7 +95,7 @@
 </script>
 
 
-<div class='zoomable h-full w-full'
+<div class='zoomable bg-secondary h-full w-full'
     role="grid"
     tabindex="-1"
     bind:clientHeight={size[HEIGHT]}
@@ -115,7 +115,6 @@
         position: absolute;
         display: flexbox;
         overflow: hidden;
-        background-color: deeppink;
     }
     .target{
         background-color: chartreuse;

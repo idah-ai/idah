@@ -20,4 +20,26 @@ RecordFactory.registerTypes(
     AnnotationRecord,
 );
 
+export const annotationsMemoryDataSource = createMemoryDataSource(AnnotationRecord, {
+        delay: 250,
+        error: false,
+        customMethods: {
+            async create(data: DataParams<AnnotationRecord>): Promise<string> {
+            await sleep(this.delay);
+
+            if (this.error) throw "error";
+
+            const id = data.attributes.metadata?.id
+
+            if (!id) throw 'no metadata.id'
+
+            data.attributes = { id, ...data.attributes };
+
+            this.data.push(data.attributes);
+
+            console.log({createMemoryDataSource: this.data})
+            return id;
+            },
+        }
+    })
 
