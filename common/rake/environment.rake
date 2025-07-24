@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
 task :environment do
-  require_relative "../boot"
+  require "./config/boot"
   Verse.start(:task)
 end

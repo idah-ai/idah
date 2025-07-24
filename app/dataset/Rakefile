@@ -1,9 +1,4 @@
 # frozen_string_literal: true
 
-Dir.glob("app/common/rake/**.rake").each do |file|
-  load file
-end
-
-Dir.glob("config/tasks/**.rake").each do |file|
-  load file
-end
+Dir.glob("common/rake/**.rake").each(&method(:load))
+Dir.glob("config/tasks/**.rake").each(&method(:load))
