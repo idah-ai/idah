@@ -42,8 +42,14 @@ namespace :db do
     uri.path = "/postgres"
 
     Sequel.connect(uri.to_s, logger: Logger.new($stdout)) do |db|
-      create_sql = "CREATE DATABASE IF NOT EXISTS #{db_to_create}"
-      db.execute create_sql
+      output = db.select(
+        Sequel.lit("1 FROM pg_database WHERE datname = ?", db_to_create)
+      ).first
+
+      unless output
+        create_sql = "CREATE DATABASE #{db_to_create}"
+        db.execute create_sql
+      end
     end
   end
 

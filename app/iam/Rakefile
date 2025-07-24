@@ -1,7 +1,4 @@
 # frozen_string_literal: true
 
-COMMON_PATH = ENV["COMMON_PATH"] || File.expand_path("../../../common", __dir__)
-
-Dir.glob("config/tasks/**.rake").each do |file|
-  load file
-end
+Dir.glob("common/rake/**.rake").each(&method(:load))
+Dir.glob("config/tasks/**.rake").each(&method(:load))
