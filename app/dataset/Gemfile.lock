@@ -19,7 +19,7 @@ GIT
 
 GIT
   remote: https://github.com/verse-rb/verse-jsonapi
-  revision: 8edeacf2b634282689e6bf211bace87712d495a6
+  revision: 7bc934deae7cf0cc710ac005220c81a9c8f2d9d3
   branch: master
   specs:
     verse-jsonapi (0.1.0)
@@ -35,7 +35,7 @@ GIT
 
 GIT
   remote: https://github.com/verse-rb/verse-redis
-  revision: b987017528965385eedb101ef1bf67eabfdcf025
+  revision: a0f79fb1e8a6e79f5b53ddca3c293a08cd82dc74
   branch: master
   specs:
     verse-redis (0.1.0)
@@ -76,7 +76,7 @@ GEM
       et-orbi (~> 1, >= 1.2.11)
       raabro (~> 1.4)
     hashdiff (1.2.0)
-    json (2.13.0)
+    json (2.13.1)
     jwt (2.7.1)
     language_server-protocol (3.17.0.5)
     lint_roller (1.1.0)
@@ -88,7 +88,7 @@ GEM
       ruby2_keywords (~> 0.0.1)
     nio4r (2.7.4)
     parallel (1.27.0)
-    parser (3.3.8.0)
+    parser (3.3.9.0)
       ast (~> 2.4.1)
       racc
     pg (1.5.9)
@@ -128,7 +128,7 @@ GEM
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.13.0)
     rspec-support (3.13.4)
-    rubocop (1.78.0)
+    rubocop (1.79.0)
       json (~> 2.3)
       language_server-protocol (~> 3.17.0.2)
       lint_roller (~> 1.1.0)
@@ -136,8 +136,9 @@ GEM
       parser (>= 3.3.0.2)
       rainbow (>= 2.2.2, < 4.0)
       regexp_parser (>= 2.9.3, < 3.0)
-      rubocop-ast (>= 1.45.1, < 2.0)
+      rubocop-ast (>= 1.46.0, < 2.0)
       ruby-progressbar (~> 1.7)
+      tsort (>= 0.2.0)
       unicode-display_width (>= 2.4.0, < 4.0)
     rubocop-ast (1.46.0)
       parser (>= 3.3.7.2)
@@ -164,6 +165,7 @@ GEM
       sinatra (= 3.2.0)
       tilt (~> 2.0)
     tilt (2.6.1)
+    tsort (0.2.0)
     tzinfo (2.0.6)
       concurrent-ruby (~> 1.0)
     unicode-display_width (3.1.4)

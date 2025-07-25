@@ -1,5 +1,7 @@
 service_name: media
 description: Media Importer and Storage Service
+em:
+  adapter: redis
 plugins:
   - name: http
     config:

@@ -1,5 +1,7 @@
 service_name: project
 description: Project, batches and annotation management service
+em:
+  adapter: redis
 plugins:
   - name: http
     config:
