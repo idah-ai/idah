@@ -46,6 +46,9 @@ RSpec.configure do |config|
     FileUtils.rm_rf(
       Dir.glob("tmp/storage/test/*")
     )
+
+    ::SCHEDULER.start
+    ::EXECUTOR.start
   end
 
   # Verse::Auth::Context.backend = Service::RoleBackend.new

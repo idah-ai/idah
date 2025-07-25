@@ -25,7 +25,9 @@ RUN apt-get update && apt-get install -y \
 # Build arguments
 ARG BUNDLE_WITHOUT="development test"
 ARG APP_ENVIRONMENT
+
 ENV APP_ENVIRONMENT="$APP_ENVIRONMENT"
+ENV PORT=3000
 
 RUN mkdir -p /app
 
@@ -38,7 +40,5 @@ RUN bundle config set --local without "$BUNDLE_WITHOUT"
 RUN bundle install --jobs 20 --retry 5
 
 COPY . .
-
-ENV PORT=3000
 
 CMD ["bundle", "exec", "puma"]

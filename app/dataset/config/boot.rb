@@ -20,6 +20,7 @@ loader.push_dir(File.join(ENV["APP_PATH"], "app", "expo"))
 loader.push_dir(File.join(ENV["APP_PATH"], "app", "model"))
 loader.push_dir(File.join(ENV["APP_PATH"], "app", "service"))
 loader.push_dir(File.join(ENV["APP_PATH"], "app", "util"))
+loader.push_dir(File.join(ENV["APP_PATH"], "common", "lib"))
 
 loader.setup
 

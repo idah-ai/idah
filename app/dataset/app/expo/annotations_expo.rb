@@ -5,7 +5,7 @@ class AnnotationsExpo < BaseExpo
 
   use_service Annotation::Service
 
-  json_api Annotation::Record do
+  json_api Annotation::Record, http_opts: { auth:nil } do
     show
     index
     create
