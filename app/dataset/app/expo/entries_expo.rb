@@ -5,7 +5,7 @@ class EntriesExpo < BaseExpo
 
   use_service Entry::Service
 
-  json_api Entry::Record do
+  json_api Entry::Record, http_opts: { auth:nil } do
     show
     index
     create

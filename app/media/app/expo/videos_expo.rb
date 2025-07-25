@@ -5,7 +5,7 @@ class VideosExpo < BaseExpo
 
   use_service Video::Service
 
-  expose on_http(:post, "process") do
+  expose on_http(:post, "process", auth: nil) do
     desc <<-MD
       ## Process Video
 
