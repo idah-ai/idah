@@ -13,7 +13,7 @@ class JobsExpo < Verse::Exposition::Base
 
   use_service Jobs::Service
 
-  json_api Jobs::Record do
+  json_api Jobs::Record, http_opts: { auth: nil } do
     # allowed_included "..."
     show
     delete
@@ -41,7 +41,7 @@ class JobsExpo < Verse::Exposition::Base
       "and try to process it."
   end
   def signal_on_created
-    Jobs::Scheduler.instance.signal
+    SCHEDULER.signal
   end
 
   expose on_resource_event("medias:jobs", "rescheduled") do
@@ -49,6 +49,6 @@ class JobsExpo < Verse::Exposition::Base
       "and try to process it."
   end
   def signal_on_rescheduled
-    Jobs::Scheduler.instance.signal
+    SCHEDULER.signal
   end
 end
