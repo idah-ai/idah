@@ -38,9 +38,9 @@ class RoleBackend < Verse::Service::Base
 
     # Sort the sub_rights by mask:
     rights = sub_rights
-              .sort_by(&:mask)
-              .map(&:rights)
-              .sum(rights)
+             .sort_by(&:mask)
+             .map(&:rights)
+             .sum(rights)
 
     # Remove the duplicated actions, assuming that the last action has the proper scope:
     rights.reverse.uniq { |right| right.split(".", 2).first }

@@ -54,7 +54,7 @@ module Medias
           {
             id:,
             resource:,
-            filename: file.original_filename,
+            filename: file.filename || resource,
             key:,
             size: output.size,
             mime_type: output.mime_type || "application/octet-stream",
