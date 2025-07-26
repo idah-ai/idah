@@ -7,9 +7,12 @@ RSpec.describe Video::Job, type: :service, database: true do
   let(:media_repo){ Medias::Repository.new(Verse::Auth::Context[:system]) }
 
   let!(:media) do
-    file = Rack::Test::UploadedFile.new(
-      "spec_data/sample.mp4",
-      "video/mp4"
+    file = Verse::Http::UploadedFileStruct.new(
+      {
+        filename: "sample.mp4",
+        type: "video/mp4",
+        tempfile: File.open("spec_data/sample.mp4", "rb")
+      }
     )
 
     media_service.upload(

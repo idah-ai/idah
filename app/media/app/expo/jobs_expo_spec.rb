@@ -58,7 +58,7 @@ RSpec.describe JobsExpo, type: :exposition, as: :system do
   end
 
   it "signal" do
-    scheduler = double("scheduler")
+    double("scheduler")
     expect(SCHEDULER).to receive(:signal)
 
     Verse.publish_resource_event(

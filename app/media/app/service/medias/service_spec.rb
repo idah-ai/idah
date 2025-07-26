@@ -6,12 +6,19 @@ RSpec.describe Medias::Service, as: :system, database: true do
   let(:file_path) { "./spec_data/sample.mp4" }
 
   it "can upload file" do
+    file = File.open(file_path, "rb")
     subject.upload(
-      Rack::Test::UploadedFile.new(
-        file_path
+      Verse::Http::UploadedFileStruct.new(
+        {
+          filename: "test.mp4",
+          type: "application/octet-stream",
+          tempfile: File.open(file_path, "rb")
+        }
       ),
       resource: "test_resource",
       key: "test_key"
     )
+  ensure
+    file&.close
   end
 end
