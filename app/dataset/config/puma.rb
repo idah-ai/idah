@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-STDOUT.sync = true
-
 puma_workers = ENV.fetch("PUMA_WORKERS", 1).to_i
 
 if puma_workers <= 1
