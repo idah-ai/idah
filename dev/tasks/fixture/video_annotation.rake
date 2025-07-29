@@ -15,7 +15,7 @@ namespace :fixture do
     token = `docker-compose exec iam bundle exec rake token:generate`.chomp.split(' ').last
 
     # Upload the video to media service
-    media_uid = 16.times.map{ rand(0..36).to_s(36) }.join
+    media_uid = 16.times.map{ rand(0..36).to_s(36) }.join + ".mp4"
     media_api_url = [api_url, "media"].join("/")
     video_path = "app/media/spec_data/4k_sample.mp4"
     upload_response = HTTParty.post(
@@ -28,7 +28,7 @@ namespace :fixture do
     result = JSON.parse(upload_response.body, symbolize_names: true)
     assert(upload_response.code < 399, "Failed to upload video: #{upload_response.code} - #{upload_response.body}")
 
-    video_resource = result[:data][:resource]
+    video_resource = result[:data][:attributes][:resource]
 
     puts "Video uploaded with id: #{result[:video_resource]}"
 
@@ -36,8 +36,10 @@ namespace :fixture do
     process_response = HTTParty.post(
       "#{media_api_url}/videos/process",
       body: {
-        data: { resource: video_resource }
-      }
+        data: {
+          resource: video_resource
+        }
+      },
       headers: { "Authorization" => "Bearer #{token}" },
       verify: false
     )
@@ -46,6 +48,28 @@ namespace :fixture do
     result = JSON.parse(process_response.body, symbolize_names: true)
 
     puts "Video processing job created with id: #{result}"
+    job_id = result[:data][:id]
+
+    loop do
+      job_response = HTTParty.get(
+        "#{media_api_url}/jobs/#{job_id}",
+        headers: { "Authorization" => "Bearer #{token}" },
+        verify: false
+      )
+      assert(job_response.code < 399, "Failed to get job status: #{job_response.code} - #{job_response.body}")
+      job_result = JSON.parse(job_response.body, symbolize_names: true)
+
+      if job_result[:data][:attributes][:status] == "completed"
+        puts "Video processing completed successfully"
+        video_id = job_result[:data][:attributes][:video_id]
+        break
+      elsif job_result[:data][:attributes][:status] == "failed"
+        raise "Video processing failed"
+      end
+
+      puts "[#{job_result[:data][:attributes][:status]}] Progress = #{(job_result[:data][:attributes][:progress]*100).round}%"
+      sleep 1.0
+    end
     exit!
 
     # Create a project

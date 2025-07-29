@@ -61,7 +61,14 @@ module Jobs
     event(name: "progressed")
     def update_progress(id, value)
       no_event do # avoid updated event being dispatched
-        update(id, { progress: value })
+        update!(id, { progress: value })
+      end
+    end
+
+    event(name: "completed")
+    def complete(id)
+      no_event do # avoid updated event being dispatched
+        update!(id, { status: "completed", progress: 1.0 })
       end
     end
 
@@ -76,14 +83,14 @@ module Jobs
           error:
         }.compact
 
-        update(id, attr)
+        update!(id, attr)
       end
     end
 
     event(name: "errored")
     def error(id, error)
       no_event do # avoid updated event being dispatched
-        update(
+        update!(
           id,
           {
             status: "error",
