@@ -100,13 +100,11 @@ module Video
         streams:
       )
 
-      puts "output = #{output.inspect}"
       # Set progress to 100%
       block&.call(1.0, output)
 
       output
     ensure
-      puts "CLEAN?"
       # Clean up the temporary directory
       FileUtils.rm_rf(tmpdir) if tmpdir && File.exist?(tmpdir)
     end
