@@ -23,7 +23,6 @@ services:
       - DATABASE_URI=postgres://postgres:postgres@host.docker.internal:5432/idah_media_development
       - REDIS_STREAM_URL=redis://host.docker.internal:6379/0
       - EAGER_LOAD=1
-      - RUBY_UNBUFFERED=1
     ports:
       - "3000"
     volumes:
@@ -48,7 +47,6 @@ services:
       - DATABASE_URI=postgres://postgres:postgres@host.docker.internal:5432/idah_dataset_development
       - REDIS_STREAM_URL=redis://host.docker.internal:6379/0
       - EAGER_LOAD=1
-      - RUBY_UNBUFFERED=1
     ports:
       - "3000"
     volumes:
