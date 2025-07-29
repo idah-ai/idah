@@ -6,7 +6,7 @@ module Video
 
     def call(file_path, video_info, tmpdir: nil)
       file_path = File.absolute_path(file_path)
-      tmpdir ||= Dir.mktmpdir("idah_vp")
+      tmpdir ||= Dir.mktmpdir("idah-vp-")
 
       # 10 images during the whole duration of the video
       images = "10/#{video_info.duration}"
@@ -24,7 +24,10 @@ module Video
         file_path:
       )
 
-      compose(tmpdir)
+      yield compose(tmpdir)
+    ensure
+      # Clean up the temporary directory
+      FileUtils.rm_rf(tmpdir) if tmpdir && File.exist?(tmpdir)
     end
 
     def compose(tmpdir)

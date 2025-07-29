@@ -17,7 +17,7 @@ module Video
     def call(file_path, video_info, arguments, tmpdir: nil, &block)
       file_path = File.absolute_path(file_path)
 
-      tmpdir ||= Dir.mktmpdir("idah_vp")
+      tmpdir ||= Dir.mktmpdir("idah-vp-")
 
       sizes = arguments.sizes
 
@@ -73,7 +73,7 @@ module Video
         command, chdir: tmpdir, file_path:
       ) do |_, stdout|
         stdout.each_line do |line|
-          key, value = line.split("=")
+          key, value = line.chomp.split("=")
           next unless key == "out_time_us"
 
           time = value.to_i / 1_000_000.0 # Convert microseconds to seconds
@@ -100,10 +100,15 @@ module Video
         streams:
       )
 
+      puts "output = #{output.inspect}"
       # Set progress to 100%
-      block&.call(1.0)
+      block&.call(1.0, output)
 
       output
+    ensure
+      puts "CLEAN?"
+      # Clean up the temporary directory
+      FileUtils.rm_rf(tmpdir) if tmpdir && File.exist?(tmpdir)
     end
   end
 end

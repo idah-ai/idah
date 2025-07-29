@@ -4,5 +4,6 @@
 EXECUTOR = Executor.new(4)
 
 Verse.on_stop do
+  puts "Stopping executor..."
   EXECUTOR.stop
 end

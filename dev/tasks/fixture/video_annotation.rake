@@ -1,5 +1,6 @@
 require "httparty"
 require "json"
+require "pry"
 
 namespace :fixture do
 
@@ -23,18 +24,29 @@ namespace :fixture do
       body: { file: File.open(video_path) },
       verify: false
     )
-    assert(upload_response.code == 201, "Failed to upload video: #{upload_response.body}")
-    video_id = JSON.parse(upload_response.body)["id"]
-    assert(upload_response.code == 201, "Failed to upload video: #{upload_response.body}")
-    puts "Video uploaded with id: #{video_id}"
-    exit!
+    assert(upload_response.code < 399, "Failed to upload video: #{upload_response.code} - #{upload_response.body}")
+    result = JSON.parse(upload_response.body, symbolize_names: true)
+    assert(upload_response.code < 399, "Failed to upload video: #{upload_response.code} - #{upload_response.body}")
+
+    video_resource = result[:data][:resource]
+
+    puts "Video uploaded with id: #{result[:video_resource]}"
 
     # Process the video
-    HTTParty.post(
-      "#{media_api_url}/videos/#{video_id}/process",
-      headers: { "Authorization" => "Bearer #{token}" }
+    process_response = HTTParty.post(
+      "#{media_api_url}/videos/process",
+      body: {
+        data: { resource: video_resource }
+      }
+      headers: { "Authorization" => "Bearer #{token}" },
+      verify: false
     )
     puts "Video processing started"
+    assert(process_response.code < 399, "Failed to process video: #{upload_response.code} - #{upload_response.body}")
+    result = JSON.parse(process_response.body, symbolize_names: true)
+
+    puts "Video processing job created with id: #{result}"
+    exit!
 
     # Create a project
     dataset_api_url = "https://idah.localhost:8443/api/dataset/v1"

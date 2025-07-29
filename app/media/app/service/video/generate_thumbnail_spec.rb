@@ -10,18 +10,15 @@ RSpec.describe Video::GenerateThumbnail do
   describe ".generate" do
     it "runs without errors" do
       video_info = Video::VideoInfo.from_file(file_path)
-      output = described_class.call(file_path, video_info)
+      described_class.call(file_path, video_info) do |output|
+        expect(output).to be_a(String)
 
-      expect(output).to be_a(String)
-
-      # Open the file and
-      # Ensure the output is 240 x 10 width:
-      image = Magick::Image.read(output).first
-      expect(image.columns).to eq(2400)
-    ensure
-      # Clean up the generated files
-      FileUtils.rm_rf(File.dirname(output)) if output && File.exist?(output)
-      image.destroy! if image.respond_to?(:destroy!)
+        # Open the file and
+        # Ensure the output is 240 x 10 width:
+        image = Magick::Image.read(output).first
+        expect(image.columns).to eq(2400)
+        image.destroy! if image.respond_to?(:destroy!)
+      end
     end
   end
 end
