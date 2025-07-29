@@ -93,7 +93,7 @@ module Jobs
         update!(
           id,
           {
-            status: "error",
+            status: "errored",
             error: error,
             progress: 0.0
           }
