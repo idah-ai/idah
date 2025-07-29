@@ -1,2 +1,23 @@
 #!/bin/sh
 
+SERVICES="media dataset"
+
+case $1 in
+  migrate)
+    for service in $SERVICES; do
+      echo "Migrating $service service..."
+      docker compose run --rm $service ./dev-entrypoint.sh rake db:migrate
+    done
+    ;;
+  reset)
+    for service in $SERVICES; do
+      echo "Resetting $service service..."
+      docker compose run --rm $service ./dev-entrypoint.sh rake db:reset db:migrate
+    done
+    ;;
+  *)
+    echo "Unknown command: `$1`"
+    echo "Usage: $0 {reset}"
+    exit 1
+    ;;
+esac

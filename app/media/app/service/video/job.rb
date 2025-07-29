@@ -139,9 +139,9 @@ module Video
         now = Time.now.to_i
 
         # Do not update too frequently (update to db)
-        if now - last_progress > 10
+        if now - last_progress > 5
           last_progress = now
-          update_progress(progress * 0.9) # 90% to convert, 10% to upload
+          update_progress(progress * 0.99) # 99% to convert, 1% to upload :D
         end
 
         block.call(output) if output
