@@ -23,6 +23,8 @@ loader.push_dir(File.join(ENV["APP_PATH"], "app", "util"))
 
 loader.setup
 
+loader.eager_load if ENV["EAGER_LOAD"]
+
 require_relative "./routes"
 
 Dir[File.join(__dir__, "initializers/**.rb")].each do |file|

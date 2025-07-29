@@ -13,6 +13,7 @@ module Video
 
   ArgumentsSchema = Verse::Schema.define do
     field :resource, String, required: true
+    field? :key, String, default: ""
 
     field(
       :sizes,

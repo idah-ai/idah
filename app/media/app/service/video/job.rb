@@ -19,19 +19,18 @@ module Video
       video_info = Video::VideoInfo.from_file(file_path)
 
       # Process the media
-      output = process_media(file_path, video_info)
+      process_media(file_path, video_info) do |output|
+        upload_files(output)
 
-      upload_files(output)
+        # Generate thumbnail
+        if arguments.generate_thumbnail
+          Verse.logger&.info{ "Generating thumbnail for video" }
 
-      # Generate thumbnail
-      if arguments.generate_thumbnail
-        Verse.logger&.info{ "Generating thumbnail for video" }
-        thumbnail_path = Video::GenerateThumbnail.call(file_path, video_info, tmpdir: output.tmpdir)
-        upload_file(thumbnail_path, "thumbnail.jpg", "image/jpeg")
+          Video::GenerateThumbnail.call(file_path, video_info, tmpdir: output.tmpdir) do |thumbnail|
+            upload_file(thumbnail, "thumbnail.jpg", "image/jpeg")
+          end
+        end
       end
-    ensure
-      # Clean up the temporary directory
-      FileUtils.rm_rf(output.tmpdir) if output&.tmpdir && File.exist?(output.tmpdir)
     end
 
     protected
@@ -40,7 +39,7 @@ module Video
       media = medias.find_by(
         {
           resource: arguments.resource,
-          key: ""
+          key: arguments.key || ""
         }
       )
 
@@ -129,12 +128,14 @@ module Video
       end
     end
 
-    def process_media(file_path, video_info)
+    def process_media(file_path, video_info, &block)
       Verse.logger.info{ "Processing media #{arguments.resource}..." }
+
+      raise "no block given" unless block_given?
 
       last_progress = Time.now.to_i
 
-      Video::GenerateStreaming.call(file_path, video_info, arguments) do |progress|
+      Video::GenerateStreaming.call(file_path, video_info, arguments) do |progress, output|
         now = Time.now.to_i
 
         # Do not update too frequently (update to db)
@@ -142,6 +143,8 @@ module Video
           last_progress = now
           update_progress(progress * 0.9) # 90% to convert, 10% to upload
         end
+
+        block.call(output) if output
       end
     end
   end

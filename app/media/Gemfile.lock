@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/verse-rb/verse-core
-  revision: e741875ac44dfd201b5586ac359993c2fb9d649c
+  revision: f76dd9f6b74fc4be92d74c2de01c34d40f72bdbe
   branch: master
   specs:
     verse-core (2.0.0)
@@ -26,7 +26,7 @@ GIT
 
 GIT
   remote: https://github.com/verse-rb/verse-redis
-  revision: a0f79fb1e8a6e79f5b53ddca3c293a08cd82dc74
+  revision: b37e874d12f5ceef240d0afec6139094eba7ac72
   branch: master
   specs:
     verse-redis (0.1.0)
@@ -35,7 +35,7 @@ GIT
 
 GIT
   remote: https://github.com/verse-rb/verse-sequel
-  revision: f27bf55f6638bf329b6ec6c0a3ac099c41c4fd12
+  revision: be42683d0c2fdc010d304bdd490d7e0ec025db4e
   branch: master
   specs:
     verse-sequel (0.1.0)
