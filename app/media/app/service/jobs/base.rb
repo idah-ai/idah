@@ -36,6 +36,8 @@ module Jobs
     def run(&block)
       @command = block
       run_impl
+    rescue StandardError => e
+      error(e)
     end
 
     def run_impl = raise NotImplementedError

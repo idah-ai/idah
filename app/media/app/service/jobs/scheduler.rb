@@ -41,6 +41,7 @@ module Jobs
     def run
       Thread.current.name = "#{self.class.name} (#{Thread.current.object_id})"
 
+      Verse.logger&.debug "Starting scheduler with #{@thread_pool.size} threads"
       loop do
         break unless running
 
@@ -107,7 +108,7 @@ module Jobs
                 if error.is_a?(String)
                   error
                 else
-                  "#{error.class} - #{error.message}"
+                  "#{error.class}: #{error.message}"
                 end
 
               if job.retry_count < job.class.max_retries
@@ -129,11 +130,11 @@ module Jobs
           end
 
           # If we reach here, the job has been processed successfully
-          jobs.update_progress(job.id, 1.0)
+          jobs.complete(job.id)
           Verse.logger&.debug "Job #{job.id} processed successfully"
         end
       rescue StandardError => e
-        jobs.update_progress(job.id, 0.0)
+        jobs.error(job.id, error: [e.class.name, e.message].join(": "))
         raise e
       end
     end
