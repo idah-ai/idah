@@ -15,11 +15,11 @@ puts ENV["PUMA_WORKERS"]
 if ENV["PUMA_WORKERS"] &&
    ENV["PUMA_WORKERS"] == "1"
 
-   # If running in a single worker mode,
-   # start the scheduler immediately.
-   # Otherwise, puma on_worker_boot will handle it.
-   Verse.on_boot do
+  # If running in a single worker mode,
+  # start the scheduler immediately.
+  # Otherwise, puma on_worker_boot will handle it.
+  Verse.on_boot do
     SCHEDULER.start
     EXECUTOR.start
-   end
+  end
 end
