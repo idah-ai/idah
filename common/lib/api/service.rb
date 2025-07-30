@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class Api
   class Service
     attr_reader :parent, :name, :expositions
@@ -24,7 +26,6 @@ class Api
 
         exposition
       end
-
     end
   end
 end

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 Api[:idah].register(
   :media, :jobs, :show,
 ) do |**params|

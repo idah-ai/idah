@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class Api
   attr_accessor :base_path
 
@@ -17,14 +19,14 @@ class Api
     final_path = path.dup
 
     # Remove optional path segments if not present on data
-    path.scan(/(\(\/?%{\w+}\/?\)\?)/) do
+    path.scan(%r{(\(/?%{\w+}/?\)\?)}) do
       result = $1
-      match = result.match(/\/?%{(\w+)}\/?/)
+      match = result.match(%r{/?%{(\w+)}/?})
       final_path.gsub!(result, data[match[1].to_sym] ? match[0] : "")
     end
 
     path.gsub(/:\w+/) do |match|
-      key = match[1..-1].to_sym
+      key = match[1..].to_sym
 
       params.fetch(key) do
         raise ArgumentError, "Missing required parameter: #{key}"
