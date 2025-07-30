@@ -1,0 +1,17 @@
+# frozen_string_literal: true
+
+source "https://rubygems.org"
+
+git_source(:github) { |repo| "https://github.com/#{repo}" }
+
+gem "verse-core", github: "verse-rb/verse-core", branch: "master"
+gem "verse-http", github: "verse-rb/verse-http", branch: "features/migrate-to-sinatra-4"
+gem "verse-jsonapi", github: "verse-rb/verse-jsonapi", branch: "master"
+
+group :test do
+  gem "pry"
+
+  gem "rspec", "~> 3.0"
+  gem "simplecov"
+  gem "webmock", "~> 3.0"
+end

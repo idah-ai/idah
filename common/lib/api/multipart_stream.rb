@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
-require 'securerandom'
+require "securerandom"
 
-# Streaming class for multipart data
+class Api
+  # Streaming class for multipart data
   class MultipartStream
     def initialize(params, boundary)
       @params = params
@@ -67,7 +68,7 @@ require 'securerandom'
     def rewind
       @current_part = 0
       @current_position = 0
-      @current_file&.close if @current_file&.respond_to?(:close)
+      @current_file&.close if @current_file.respond_to?(:close)
       @current_file = nil
     end
 
@@ -82,9 +83,9 @@ require 'securerandom'
           content_type = get_content_type(value)
 
           # Add header part
-          header = "--#{@boundary}\r\n" +
-                  "Content-Disposition: form-data; name=\"#{key}\"; filename=\"#{filename}\"\r\n" +
-                  "Content-Type: #{content_type}\r\n\r\n"
+          header = "--#{@boundary}\r\n" \
+                   "Content-Disposition: form-data; name=\"#{key}\"; filename=\"#{filename}\"\r\n" \
+                   "Content-Type: #{content_type}\r\n\r\n"
           parts << { type: :string, content: header }
 
           # Add file part
@@ -98,9 +99,9 @@ require 'securerandom'
           parts << { type: :string, content: "\r\n" }
         else
           # Regular field
-          header = "--#{@boundary}\r\n" +
-                  "Content-Disposition: form-data; name=\"#{key}\"\r\n\r\n"
-          content = value.to_s + "\r\n"
+          header = "--#{@boundary}\r\n" \
+                   "Content-Disposition: form-data; name=\"#{key}\"\r\n\r\n"
+          content = "#{value}\r\n"
 
           parts << { type: :string, content: header + content }
         end
@@ -119,12 +120,14 @@ require 'securerandom'
     def get_filename(file)
       return file.original_filename if file.respond_to?(:original_filename)
       return File.basename(file.path) if file.respond_to?(:path)
-      'file'
+
+      "file"
     end
 
     def get_content_type(file)
       return file.content_type if file.respond_to?(:content_type)
-      'application/octet-stream'
+
+      "application/octet-stream"
     end
   end
 end

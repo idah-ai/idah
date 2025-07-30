@@ -1,8 +1,10 @@
-require 'cgi'
-require 'net/http'
-require 'json'
-require 'uri'
+# frozen_string_literal: true
 
+require "cgi"
+require "net/http"
+require "json"
+require "uri"
+require "pry"
 require_relative "./multipart_stream"
 
 class Api
@@ -35,6 +37,10 @@ class Api
       execute_request(:delete, path, headers: headers, params: params, options: options)
     end
 
+    def register(method_name, &block)
+      define_singleton_method(method_name, &block)
+    end
+
     private
 
     def execute_request(method, path, headers: {}, params: {}, options: {})
@@ -46,7 +52,7 @@ class Api
       # Extract path parameters
       path_params = []
       processed_path = path.gsub(/:\w+/) do |match|
-        symbol = match[1..-1].to_sym
+        symbol = match[1..].to_sym
         path_params << symbol
         params[symbol] || raise("Missing parameter: #{symbol}")
       end
@@ -63,13 +69,12 @@ class Api
 
       # Execute request
       http = Net::HTTP.new(uri.host, uri.port)
-      http.use_ssl = uri.scheme == 'https'
+      http.use_ssl = uri.scheme == "https"
 
-      response = http.request(request)
-      response
+      http.request(request)
     end
 
-    def build_uri(path, method, params, headers)
+    def build_uri(path, method, params, _headers)
       base_url = parent.base_url || raise("Base URL not configured")
       uri = URI.join(base_url, path)
 
@@ -77,7 +82,7 @@ class Api
       if [:get, :delete].include?(method) && !params.empty?
         query_params = params.map do |k, v|
           "#{CGI.escape(k.to_s)}=#{CGI.escape(v.to_s)}"
-        end.join('&')
+        end.join("&")
 
         uri.query = uri.query ? "#{uri.query}&#{query_params}" : query_params
       end
@@ -87,12 +92,12 @@ class Api
 
     def create_request(method, uri, headers, params)
       request_class = case method
-                     when :get then Net::HTTP::Get
-                     when :post then Net::HTTP::Post
-                     when :put then Net::HTTP::Put
-                     when :patch then Net::HTTP::Patch
-                     when :delete then Net::HTTP::Delete
-                     end
+                      when :get then Net::HTTP::Get
+                      when :post then Net::HTTP::Post
+                      when :put then Net::HTTP::Put
+                      when :patch then Net::HTTP::Patch
+                      when :delete then Net::HTTP::Delete
+                      end
 
       request = request_class.new(uri)
 
@@ -108,12 +113,12 @@ class Api
     end
 
     def set_request_body(request, params, headers)
-      content_type = headers['Content-Type'] || headers['content-type']
+      content_type = headers["Content-Type"] || headers["content-type"]
 
-      if content_type&.include?('multipart/form-data')
+      if content_type&.include?("multipart/form-data")
         # Handle multipart form data with streaming
         set_multipart_streaming_body(request, params)
-      elsif content_type&.include?('application/json') || params.is_a?(Hash)
+      elsif content_type&.include?("application/json") || params.is_a?(Hash)
         # Handle JSON body
         set_json_body(request, params, headers)
       else
@@ -125,9 +130,9 @@ class Api
     def set_json_body(request, params, headers)
       request.body = params.to_json
       # Add content-type if not present and body is a Hash
-      unless headers.key?('Content-Type') || headers.key?('content-type')
-        request['Content-Type'] = 'application/json'
-      end
+      return if headers.key?("Content-Type") || headers.key?("content-type")
+
+      request["Content-Type"] = "application/json"
     end
 
     def set_form_body(request, params)
@@ -136,11 +141,11 @@ class Api
 
     def set_multipart_streaming_body(request, params)
       boundary = "----FormBoundary#{SecureRandom.hex(16)}"
-      request['Content-Type'] = "multipart/form-data; boundary=#{boundary}"
+      request["Content-Type"] = "multipart/form-data; boundary=#{boundary}"
 
       # Calculate total content length
       content_length = calculate_multipart_length(params, boundary)
-      request['Content-Length'] = content_length.to_s
+      request["Content-Length"] = content_length.to_s
 
       # Set up streaming body
       request.body_stream = MultipartStream.new(params, boundary)
@@ -155,24 +160,23 @@ class Api
           content_type = get_content_type(value)
 
           # Header part length
-          header = "--#{boundary}\r\n" +
-                  "Content-Disposition: form-data; name=\"#{key}\"; filename=\"#{filename}\"\r\n" +
-                  "Content-Type: #{content_type}\r\n\r\n"
+          header = "--#{boundary}\r\n" \
+                   "Content-Disposition: form-data; name=\"#{key}\"; filename=\"#{filename}\"\r\n" \
+                   "Content-Type: #{content_type}\r\n\r\n"
           total_length += header.bytesize
 
           # File content length
           total_length += get_file_size(value)
 
           # Trailing CRLF
-          total_length += 2
         else
           # Regular field
-          header = "--#{boundary}\r\n" +
-                  "Content-Disposition: form-data; name=\"#{key}\"\r\n\r\n"
+          header = "--#{boundary}\r\n" \
+                   "Content-Disposition: form-data; name=\"#{key}\"\r\n\r\n"
           total_length += header.bytesize
           total_length += value.to_s.bytesize
-          total_length += 2 # CRLF
         end
+        total_length += 2
       end
 
       # Final boundary
@@ -188,22 +192,21 @@ class Api
     def get_filename(file)
       return file.original_filename if file.respond_to?(:original_filename)
       return File.basename(file.path) if file.respond_to?(:path)
-      'file'
+
+      "file"
     end
 
     def get_content_type(file)
       return file.content_type if file.respond_to?(:content_type)
-      'application/octet-stream'
+
+      "application/octet-stream"
     end
 
     def get_file_size(file)
       return file.size if file.respond_to?(:size)
       return file.stat.size if file.respond_to?(:stat)
+
       raise "Cannot determine file size for streaming"
     end
-
-    def register(method_name, &block)
-      define_singleton_method(method_name, &block)
-    end
   end
-
+end
