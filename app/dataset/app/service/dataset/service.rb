@@ -19,8 +19,11 @@ module Dataset
       datasets.find!(id, included: included)
     end
 
-    def create(attributes)
-      id = datasets.create(attributes)
+    def create(record)
+      id = datasets.create(
+        record.attributes
+      )
+
       datasets.find!(id)
     end
 

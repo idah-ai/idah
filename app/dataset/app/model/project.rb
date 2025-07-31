@@ -2,6 +2,8 @@
 
 module Project
   class Record < Verse::Model::Record::Base
+    type "dataset/projects"
+
     field :id, type: String, primary: true
 
     field :name, type: String

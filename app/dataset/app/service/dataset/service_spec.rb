@@ -25,7 +25,15 @@ RSpec.describe Dataset::Service, database: true do
 
   describe "#create" do
     it "creates a new dataset" do
-      dataset = subject.create(attributes)
+      record = deserialize(
+        {
+          data: {
+            type: "datasets",
+            attributes: attributes
+          }
+        }
+      )
+      dataset = subject.create(record)
       expect(dataset.topology).to eq("image_labeling")
       expect(dataset.labels).to eq(["cat", "dog"])
     end
@@ -33,7 +41,17 @@ RSpec.describe Dataset::Service, database: true do
 
   describe "#show" do
     it "shows a dataset" do
-      dataset_id = repo.create(attributes)
+      record = deserialize(
+        {
+          data: {
+            type: "datasets",
+            attributes: attributes
+          }
+        }
+      )
+
+      dataset_id = repo.create(record)
+
       found_dataset = subject.show(dataset_id)
       expect(found_dataset.id).to eq(dataset_id)
     end
@@ -42,6 +60,7 @@ RSpec.describe Dataset::Service, database: true do
   describe "#update" do
     it "updates a dataset" do
       dataset_id = repo.create(attributes)
+
       record = deserialize(
         {
           data: {
@@ -63,7 +82,15 @@ RSpec.describe Dataset::Service, database: true do
 
   describe "#delete" do
     it "deletes a dataset" do
-      dataset_id = repo.create(attributes)
+      record = deserialize(
+        {
+          data: {
+            type: "datasets",
+            attributes: attributes
+          }
+        }
+      )
+      dataset_id = repo.create(record)
       subject.delete(dataset_id)
       expect { repo.find!(dataset_id) }.to raise_error(Verse::Error::NotFound)
     end

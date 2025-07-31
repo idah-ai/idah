@@ -2,6 +2,8 @@
 
 module Medias
   class Record < Verse::Model::Record::Base
+    type "media/medias"
+
     field :id, type: String, primary: true
 
     field :resource, type: String

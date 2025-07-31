@@ -19,7 +19,7 @@ class AnnotationsExpo < BaseExpo
 
   expose json_rpc_method(:show) do
     input do
-      field(:id, Integer)
+      field(:id, String)
     end
   end
   def rpc_show
@@ -27,6 +27,7 @@ class AnnotationsExpo < BaseExpo
   end
 
   RpcCreateSchema = Verse::Schema.define do
+    field(:id, String).default { UUIDv7.generate }
     field(:entry_id, Integer)
     field(:dimensions, Hash) # Open Hash
     field(:annotation, Hash) # Open Hash
@@ -36,7 +37,7 @@ class AnnotationsExpo < BaseExpo
 
   # Add the id as a required field for the update method
   RpcUpdateSchema = Verse::Schema.define(RpcCreateSchema) do
-    field(:id, Integer)
+    field(:id, String)
   end
 
   expose json_rpc_method(:create) do

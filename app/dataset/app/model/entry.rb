@@ -2,6 +2,8 @@
 
 module Entry
   class Record < Verse::Model::Record::Base
+    type "dataset/entries"
+
     field :id, type: String, primary: true
 
     field :priority, type: Integer

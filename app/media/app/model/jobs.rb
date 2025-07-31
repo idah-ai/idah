@@ -2,6 +2,8 @@
 
 module Jobs
   class Record < Verse::Model::Record::Base
+    type "media/jobs"
+
     field :id, type: Integer, primary: true
     field :job_class, type: String
 

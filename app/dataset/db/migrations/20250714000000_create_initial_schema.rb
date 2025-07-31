@@ -97,6 +97,10 @@ Sequel.migration do
       column :configuration, :jsonb, text: true, null: false
 
       column :status, String, null: false, index: true, default: "pending"
+
+      # Related job for ingesting the dataset. Used to change the status of the dataset.
+      column :job_id, :bigint, null: true, index: true
+
       column :progress, Float, null: false, default: 0.0 # from 0.0 to 1.0
 
       Migration::Timestamps.timestamps(self)
