@@ -2,6 +2,8 @@
 
 module Dataset
   class Record < Verse::Model::Record::Base
+    type "dataset/datasets"
+
     field :id, type: String, primary: true
 
     field :labels, type: Array

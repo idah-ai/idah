@@ -2,6 +2,8 @@
 
 module Annotation
   class Record < Verse::Model::Record::Base
+    type "dataset/annotations"
+
     field :id, type: String, primary: true
 
     field :entry_id, type: Integer, readonly: true
