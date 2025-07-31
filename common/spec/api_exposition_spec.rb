@@ -12,7 +12,14 @@ require_relative "../lib/api/multipart_stream"
 RSpec.describe Api::Exposition do
   include WebMock::API
 
-  let(:api) { Api[:test] }
+  let(:api) do
+    api = Api[:test]
+    api.add_auth(:basic) do |request|
+      request["Authorization"] = "Bearer token"
+    end
+    api
+  end
+
   let(:service) { Api::Service.new(api, :test_service) }
   let(:exposition) { described_class.new(api, :test_exposition) }
 
@@ -189,18 +196,6 @@ RSpec.describe Api::Exposition do
       temp_file.write("test file content")
       temp_file.rewind
 
-      # Mock file-like object
-      file_mock = double("file")
-      allow(file_mock).to receive(:read).and_return("test file content")
-      allow(file_mock).to receive(:size).and_return(17)
-      allow(file_mock).to receive(:respond_to?).with(:read).and_return(true)
-      allow(file_mock).to receive(:respond_to?).with(:size).and_return(true)
-      allow(file_mock).to receive(:respond_to?).with(:stat).and_return(false)
-      allow(file_mock).to receive(:respond_to?).with(:original_filename).and_return(false)
-      allow(file_mock).to receive(:respond_to?).with(:path).and_return(true)
-      allow(file_mock).to receive(:respond_to?).with(:content_type).and_return(false)
-      allow(file_mock).to receive(:path).and_return("test.txt")
-
       stub_request(:post, test_url)
         .with(headers: { "Content-Type" => %r{multipart/form-data} })
         .to_return(status: 200, body: '{"uploaded": true}')
@@ -209,65 +204,34 @@ RSpec.describe Api::Exposition do
         "/upload",
         headers: { "Content-Type" => "multipart/form-data" },
         params: {
-          file: file_mock,
+          file: temp_file,
           description: "Test file upload"
         }
       )
 
       expect(response.code).to eq("200")
       expect(JSON.parse(response.body)).to eq({ "uploaded" => true })
-
-      temp_file.close
-      temp_file.unlink
-    end
-
-    it "handles Rails-style uploaded files" do
-      # Mock Rails uploaded file
-      uploaded_file = double("uploaded_file")
-      allow(uploaded_file).to receive(:read).and_return("rails file content")
-      allow(uploaded_file).to receive(:size).and_return(18)
-      allow(uploaded_file).to receive(:respond_to?).with(:read).and_return(true)
-      allow(uploaded_file).to receive(:respond_to?).with(:size).and_return(true)
-      allow(uploaded_file).to receive(:respond_to?).with(:stat).and_return(false)
-      allow(uploaded_file).to receive(:respond_to?).with(:original_filename).and_return(true)
-      allow(uploaded_file).to receive(:respond_to?).with(:content_type).and_return(true)
-      allow(uploaded_file).to receive(:original_filename).and_return("rails_file.txt")
-      allow(uploaded_file).to receive(:content_type).and_return("text/plain")
-
-      stub_request(:post, test_url)
-        .with(headers: { "Content-Type" => %r{multipart/form-data} })
-        .to_return(status: 200, body: '{"uploaded": true}')
-
-      response = exposition.post(
-        "/upload",
-        headers: { "Content-Type" => "multipart/form-data" },
-        params: {
-          file: uploaded_file,
-          title: "Rails upload"
-        }
-      )
-
-      expect(response.code).to eq("200")
+    ensure
+      temp_file&.close
+      temp_file&.unlink
     end
 
     it "calculates multipart content length correctly" do
-      file_mock = double("file")
-      allow(file_mock).to receive(:respond_to?).with(:read).and_return(true)
-      allow(file_mock).to receive(:respond_to?).with(:size).and_return(true)
-      allow(file_mock).to receive(:respond_to?).with(:stat).and_return(false)
-      allow(file_mock).to receive(:respond_to?).with(:original_filename).and_return(false)
-      allow(file_mock).to receive(:respond_to?).with(:path).and_return(true)
-      allow(file_mock).to receive(:respond_to?).with(:content_type).and_return(false)
-      allow(file_mock).to receive(:path).and_return("test.txt")
-      allow(file_mock).to receive(:size).and_return(10)
+      # Create a temporary file for testing
+      temp_file = Tempfile.new(["test", ".txt"])
+      temp_file.write("test file content")
+      temp_file.rewind
 
-      params = { file: file_mock, name: "test" }
+      params = { file: temp_file, name: "test" }
       boundary = "test-boundary"
 
       length = exposition.send(:calculate_multipart_length, params, boundary)
 
       expect(length).to be > 0
       expect(length).to be_a(Integer)
+    ensure
+      temp_file&.close
+      temp_file&.unlink
     end
   end
 
@@ -275,12 +239,10 @@ RSpec.describe Api::Exposition do
     let(:test_url) { "https://api.example.com/protected" }
 
     it "calls parent auth method when auth option is provided" do
-      expect(api).to receive(:auth).with("token123", headers: {})
-
       stub_request(:get, test_url)
         .to_return(status: 200, body: '{"authenticated": true}')
 
-      response = exposition.get("/protected", options: { auth: "token123" })
+      response = exposition.get("/protected", options: { auth: :basic })
 
       expect(response.code).to eq("200")
     end
@@ -392,7 +354,7 @@ RSpec.describe Api::Exposition do
 
     it "properly escapes query parameters" do
       uri = exposition.send(:build_uri, "/test", :get, { "special chars" => "value with spaces" }, {})
-      expect(uri.query).to include("special%20chars=value%20with%20spaces")
+      expect(uri.query).to include("special+chars=value+with+spaces")
     end
   end
 

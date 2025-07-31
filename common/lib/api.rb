@@ -1,9 +1,13 @@
 # frozen_string_literal: true
 
 class Api
-  attr_accessor :base_url
+  attr_accessor :base_url, :auths
 
   @providers = {}
+
+  def initialize
+    @auths = {}
+  end
 
   def self.[](provider)
     @providers[provider] ||= Api.new
@@ -12,6 +16,17 @@ class Api
   def register(service, exposition, method_name, &block)
     service = register_service(service)
     service.register(exposition, method_name, &block)
+  end
+
+  def auth(provider, request)
+    auth = @auths.fetch(provider) do
+      raise "Authentication for provider '#{provider}' not configured"
+    end
+    auth.call(request)
+  end
+
+  def add_auth(provider, &block)
+    @auths[provider] = block
   end
 
   private
