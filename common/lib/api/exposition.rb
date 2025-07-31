@@ -44,10 +44,6 @@ class Api
     private
 
     def execute_request(method, path, headers: {}, params: {}, options: {})
-      # Handle authentication if needed
-      unless options[:auth].nil?
-        parent.auth(options[:auth], headers: headers)
-      end
 
       # Extract path parameters
       path_params = []
@@ -66,6 +62,11 @@ class Api
 
       # Create HTTP request
       request = create_request(method, uri, headers, remaining_params)
+
+      # Handle authentication if needed
+      unless options[:auth].nil?
+        parent.auth(options[:auth], request)
+      end
 
       # Execute request
       http = Net::HTTP.new(uri.host, uri.port)
@@ -118,11 +119,14 @@ class Api
       if content_type&.include?("multipart/form-data")
         # Handle multipart form data with streaming
         set_multipart_streaming_body(request, params)
+      elsif content_type&.include?("application/x-www-form-urlencoded")
+        # Handle form-encoded body
+        set_form_body(request, params)
       elsif content_type&.include?("application/json") || params.is_a?(Hash)
-        # Handle JSON body
+        # Handle JSON body (default for Hash params when no content type specified)
         set_json_body(request, params, headers)
       else
-        # Handle form-encoded body
+        # Handle form-encoded body as fallback
         set_form_body(request, params)
       end
     end
