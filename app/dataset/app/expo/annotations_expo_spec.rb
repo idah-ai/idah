@@ -122,7 +122,7 @@ RSpec.describe AnnotationsExpo, type: :exposition, as: :system do
 
       expect(last_response.status).to eq 200
       body = JSON.parse(last_response.body, symbolize_names: true)
-      expect(body[:result][:id]).to eq 1
+      expect(body[:result][:id]).to eq uuid
     end
 
     it "create" do

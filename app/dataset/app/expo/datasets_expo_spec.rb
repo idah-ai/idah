@@ -5,10 +5,12 @@ require "spec_helper"
 RSpec.describe DatasetsExpo, type: :exposition, as: :system do
   let(:now) { Time.now.utc }
 
+  let(:uuid) { UUIDv7.generate}
+
   let(:dataset_record) do
     Dataset::Record.new(
       {
-        id: 1,
+        id: uuid,
         topology: "image_labeling",
         labels: ["cat", "dog"],
         configuration: { "width" => 100, "height" => 100 },
@@ -25,8 +27,8 @@ RSpec.describe DatasetsExpo, type: :exposition, as: :system do
     {
       data:
         {
-          type: "datasets",
-          id: "1",
+          type: "dataset/datasets",
+          id: uuid,
           attributes: {
             topology: "image_labeling",
             labels: ["cat", "dog"],
@@ -54,17 +56,18 @@ RSpec.describe DatasetsExpo, type: :exposition, as: :system do
     expect(last_response.status).to eq 200
     body = JSON.parse(last_response.body, symbolize_names: true)
     record = deserialize(body)
-    expect(record[0].id).to eq "1"
+    expect(record[0].id).to eq uuid
     expect(record[0].topology).to eq "image_labeling"
   end
 
   it "show" do
-    expect(service).to receive(:show).with(1, included: []).and_return(dataset_record)
-    get "/datasets/1"
+    expect(service).to receive(:show).with(uuid, included: []).and_return(dataset_record)
+    get "/datasets/#{uuid}"
+
     expect(last_response.status).to eq 200
     body = JSON.parse(last_response.body, symbolize_names: true)
     record = deserialize(body)
-    expect(record.id).to eq "1"
+    expect(record.id).to eq uuid
     expect(record.topology).to eq "image_labeling"
   end
 
@@ -77,18 +80,18 @@ RSpec.describe DatasetsExpo, type: :exposition, as: :system do
 
   it "update" do
     expect(service).to receive(:update) do |args|
-      expect(args.id).to eq 1
+      expect(args.id).to eq uuid
       expect(args.attributes[:labels]).to eq ["cat", "dog"]
       dataset_record
     end
 
-    patch "/datasets/1", dataset_data
+    patch "/datasets/#{uuid}", dataset_data
     expect(last_response.status).to eq 200
   end
 
   it "destroy" do
-    expect(service).to receive(:delete).with(1).and_return(true)
-    delete "/datasets/1"
+    expect(service).to receive(:delete).with(uuid).and_return(true)
+    delete "/datasets/#{uuid}"
 
     expect(last_response.status).to eq 204
   end
