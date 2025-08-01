@@ -4,8 +4,6 @@
 # UUID v7 Generator
 #
 module UUIDv7
-  require_relative "uuid_v7/generator"
-
   # Generate a new UUID v7
   #
   # @api public
@@ -19,3 +17,6 @@ module UUIDv7
     format("%08x-%04x-%04x-%04x-%04x%08x", *Generator.generate(timestamp))
   end
 end
+
+# Weird require due to Zeitwerk vs no autoloading in specs.
+require_relative "uuid_v7/generator" unless defined?(UUIDv7::Generator)
