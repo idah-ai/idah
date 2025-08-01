@@ -41,16 +41,7 @@ RSpec.describe Dataset::Service, database: true do
 
   describe "#show" do
     it "shows a dataset" do
-      record = deserialize(
-        {
-          data: {
-            type: "datasets",
-            attributes: attributes
-          }
-        }
-      )
-
-      dataset_id = repo.create(record)
+      dataset_id = repo.create(attributes)
 
       found_dataset = subject.show(dataset_id)
       expect(found_dataset.id).to eq(dataset_id)
@@ -82,15 +73,7 @@ RSpec.describe Dataset::Service, database: true do
 
   describe "#delete" do
     it "deletes a dataset" do
-      record = deserialize(
-        {
-          data: {
-            type: "datasets",
-            attributes: attributes
-          }
-        }
-      )
-      dataset_id = repo.create(record)
+      dataset_id = repo.create(attributes)
       subject.delete(dataset_id)
       expect { repo.find!(dataset_id) }.to raise_error(Verse::Error::NotFound)
     end

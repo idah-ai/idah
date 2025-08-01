@@ -5,10 +5,12 @@ require "spec_helper"
 RSpec.describe ProjectsExpo, type: :exposition, as: :system do
   let(:now) { Time.now.utc }
 
+  let(:uuid) { UUIDv7.generate }
+
   let(:project_record) do
     Project::Record.new(
       {
-        id: 1,
+        id: uuid,
         name: "Test Project",
         description: "A test project",
         created_by_id: 1,
@@ -22,8 +24,8 @@ RSpec.describe ProjectsExpo, type: :exposition, as: :system do
     {
       data:
         {
-          type: "projects",
-          id: "1",
+          type: "dataset/projects",
+          id: uuid,
           attributes: {
             name: "Test Project",
             description: "A test project",
@@ -47,18 +49,18 @@ RSpec.describe ProjectsExpo, type: :exposition, as: :system do
     expect(last_response.status).to eq 200
     body = JSON.parse(last_response.body, symbolize_names: true)
     record = deserialize(body)
-    expect(record[0].id).to eq "1"
+    expect(record[0].id).to eq uuid
     expect(record[0].name).to eq "Test Project"
   end
 
   it "show" do
-    expect(service).to receive(:show).with(1, included: []).and_return(project_record)
-    get "/projects/1"
+    expect(service).to receive(:show).with(uuid, included: []).and_return(project_record)
+    get "/projects/#{uuid}"
 
     expect(last_response.status).to eq 200
     body = JSON.parse(last_response.body, symbolize_names: true)
     record = deserialize(body)
-    expect(record.id).to eq "1"
+    expect(record.id).to eq uuid
     expect(record.name).to eq "Test Project"
   end
 
@@ -71,18 +73,18 @@ RSpec.describe ProjectsExpo, type: :exposition, as: :system do
 
   it "update" do
     expect(service).to receive(:update) do |args|
-      expect(args.id).to eq 1
+      expect(args.id).to eq uuid
       expect(args.attributes[:name]).to eq "Test Project"
       project_record
     end
 
-    patch "/projects/1", project_data
+    patch "/projects/#{uuid}", project_data
     expect(last_response.status).to eq 200
   end
 
   it "destroy" do
-    expect(service).to receive(:delete).with(1).and_return(true)
-    delete "/projects/1"
+    expect(service).to receive(:delete).with(uuid).and_return(true)
+    delete "/projects/#{uuid}"
 
     expect(last_response.status).to eq 204
   end
