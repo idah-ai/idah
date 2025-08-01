@@ -59,7 +59,7 @@ class AnnotationsExpo < BaseExpo
 
   expose json_rpc_method(:delete) do
     input do
-      field(:id, Integer)
+      field(:id, String)
     end
   end
   def rpc_delete
