@@ -10,6 +10,8 @@ SimpleCov.start do
   add_group "API", "lib/api"
 end
 
+COMMON_PATH = File.expand_path("..", __dir__)
+
 # Configure WebMock
 WebMock.disable_net_connect!(allow_localhost: true)
 
