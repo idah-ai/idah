@@ -5,10 +5,12 @@ require "spec_helper"
 RSpec.describe EntriesExpo, type: :exposition, as: :system do
   let(:now) { Time.now.utc }
 
+  let(:uuid) { UUIDv7.generate }
+
   let(:entry_record) do
     Entry::Record.new(
       {
-        id: 1,
+        id: uuid,
         priority: 1,
         wf_step: "start",
         status: "pending",
@@ -23,8 +25,8 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
     {
       data:
         {
-          type: "entries",
-          id: "1",
+          type: "dataset/entries",
+          id: uuid,
           attributes: {
             priority: 1,
             wf_step: "start",
@@ -49,17 +51,17 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
     expect(last_response.status).to eq 200
     body = JSON.parse(last_response.body, symbolize_names: true)
     record = deserialize(body)
-    expect(record[0].id).to eq "1"
+    expect(record[0].id).to eq uuid
     expect(record[0].status).to eq "pending"
   end
 
   it "show" do
-    expect(service).to receive(:show).with(1, included: []).and_return(entry_record)
-    get "/entries/1"
+    expect(service).to receive(:show).with(uuid, included: []).and_return(entry_record)
+    get "/entries/#{uuid}"
     expect(last_response.status).to eq 200
     body = JSON.parse(last_response.body, symbolize_names: true)
     record = deserialize(body)
-    expect(record.id).to eq "1"
+    expect(record.id).to eq uuid
     expect(record.status).to eq "pending"
   end
 
@@ -72,18 +74,18 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
 
   it "update" do
     expect(service).to receive(:update) do |args|
-      expect(args.id).to eq 1
+      expect(args.id).to eq uuid
       expect(args.attributes[:status]).to eq "pending"
       entry_record
     end
 
-    patch "/entries/1", entry_data
+    patch "/entries/#{uuid}", entry_data
     expect(last_response.status).to eq 200
   end
 
   it "destroy" do
-    expect(service).to receive(:delete).with(1).and_return(true)
-    delete "/entries/1"
+    expect(service).to receive(:delete).with(uuid).and_return(true)
+    delete "/entries/#{uuid}"
 
     expect(last_response.status).to eq 204
   end
