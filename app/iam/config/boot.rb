@@ -21,6 +21,8 @@ loader.push_dir(File.join(ENV["APP_PATH"], "app", "model"))
 loader.push_dir(File.join(ENV["APP_PATH"], "app", "service"))
 loader.push_dir(File.join(ENV["APP_PATH"], "app", "util"))
 
+loader.inflector.inflect("uuid_v7" => "UUIDv7")
+
 loader.setup
 
 loader.eager_load if ENV["EAGER_LOAD"]
