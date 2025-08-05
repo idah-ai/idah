@@ -70,21 +70,91 @@ namespace :fixture do
       puts "[#{job_result[:data][:attributes][:status]}] Progress = #{(job_result[:data][:attributes][:progress]*100).round}%"
       sleep 1.0
     end
-    exit!
 
     # Create a project
-    dataset_api_url = "https://idah.localhost:8443/api/dataset/v1"
+    dataset_api_url = "https://idah.localhost:8443/api/v1/dataset"
     project_response = HTTParty.post(
       "#{dataset_api_url}/projects",
       headers: { "Authorization" => "Bearer #{token}", "Content-Type" => "application/json" },
       body: {
-        name: "Video Annotation Fixture Project",
-        description: "A project created from a rake task for video annotation.",
-        data_type: "video"
+        data: {
+          type: "projects",
+          attributes: {
+            name: "Video Annotation Fixture Project",
+            description: "A project created from a rake task for video annotation.",
+          }
+        }
       }.to_json
     )
+
+    assert(project_response.code < 399, "Failed to create project: #{project_response.code} - #{project_response.body}")
+
     project_id = JSON.parse(project_response.body)["id"]
     puts "Project created with id: #{project_id}"
+
+    # Create a datasetq
+    dataset_response = HTTParty.post(
+      "#{dataset_api_url}/datasets",
+      headers: { "Authorization" => "Bearer #{token}", "Content-Type" => "application/json" },
+      body: {
+        data: {
+          type: "datasets",
+          attributes: {
+            topology: "video",
+            labels: ["demo", "fixture"]
+            configuration: {
+              properties: [
+                {
+                  id: "order",
+                  type: "integer",
+                  format: {
+                    minimum: 0,
+                    maximum: 1000
+                  }
+                  label: "Order",
+                  description: "Order of the annotation in the video",
+                  required: true
+                }
+              ],
+              categories: [
+                {
+                  id: "vehicle/car",
+                  label: "Car",
+                  type: "video:bounding_box",
+                  color: "#FF0000"
+                },
+                {
+                  id: "vehicle/bike",
+                  label: "Bike",
+                  type: "video:bounding_box",
+                  color: "#00FF00"
+                },
+                {
+                  id: "person",
+                  label: "Person",
+                  type: "video:bounding_box",
+                  color: "#0000FF"
+                },
+                {
+                  id: "vehicle/other",
+                  label: "Other Vehicle",
+                  type: "video:bounding_box",
+                  color: "#FFFF00"
+                },
+              ]
+            }
+          }
+          relationships: {
+            project: {
+              data: {
+                type: "projects",
+                id: project_id
+              }
+            }
+          }
+        }
+      }
+    )
 
     # Create an entry
     entry_response = HTTParty.post(
