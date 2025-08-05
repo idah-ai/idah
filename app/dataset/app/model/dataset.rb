@@ -11,6 +11,7 @@ module Dataset
     field :topology, type: String, readonly: true
 
     field :configuration, type: Hash, readonly: true
+    field :workflow, type: String, readonly: true
 
     field :status, type: String, readonly: true
     field :progress, type: Float, readonly: true
