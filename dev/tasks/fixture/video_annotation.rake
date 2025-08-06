@@ -102,6 +102,10 @@ namespace :fixture do
           attributes: {
             topology: "video",
             labels: ["demo", "fixture"]
+            workflow: {
+              type: "annotate_qc",
+              opts: { sample_rate: 1.0 }
+            },
             configuration: {
               properties: [
                 {
