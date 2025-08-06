@@ -2,7 +2,7 @@
 
 module Jobs
   class Record < Verse::Model::Record::Base
-    type "media/jobs"
+    type Resource::Media::Jobs
 
     field :id, type: Integer, primary: true
     field :job_class, type: String
@@ -25,7 +25,7 @@ module Jobs
 
   class Repository < Verse::Sequel::Repository
     self.table = "jobs"
-    self.resource = "medias:jobs"
+    self.resource = Resource::Media::Jobs
 
     encoder :arguments, Verse::Sequel::JsonEncoder
 

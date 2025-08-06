@@ -12,4 +12,11 @@ class EntriesExpo < BaseExpo
     update
     delete
   end
+
+  expose on_resource_event(Resource::Media::Jobs, :completed)
+  def on_job_updated(job)
+    job_id = message.content[:resource_id]
+
+    service.update_entry_on_job_completed(job_id)
+  end
 end

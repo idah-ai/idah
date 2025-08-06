@@ -28,7 +28,7 @@ RSpec.describe AnnotationsExpo, type: :exposition, as: :system do
     {
       data:
         {
-          type: "dataset/annotations",
+          type: Resource::Dataset::Annotations,
           # use UUIDv7:
           id: uuid,
           attributes: {

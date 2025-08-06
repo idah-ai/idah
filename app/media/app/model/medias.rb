@@ -2,7 +2,7 @@
 
 module Medias
   class Record < Verse::Model::Record::Base
-    type "media/medias"
+    type Resource::Media::Medias
 
     field :id, type: String, primary: true
 
@@ -33,6 +33,6 @@ module Medias
 
   class Repository < Verse::Sequel::Repository
     self.table = "medias"
-    self.resource = "medias:medias"
+    self.resource = Resource::Media::Medias
   end
 end
