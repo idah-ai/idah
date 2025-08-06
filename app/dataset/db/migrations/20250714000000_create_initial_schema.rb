@@ -89,20 +89,20 @@ Sequel.migration do
                   on_update: :cascade
 
       # Type of dataset
-      column :topology, String, null: false
+      column :modality, String, null: false
 
       column :labels, "text[]", null: false, default: "{}"
 
-      # Domain specific data, related to the topology
-      column :configuration, :jsonb, null: false
-
       # Workflow configuration
-      column :workflow, :jsonb, null: false
+      column :workflow_configuration, :jsonb, null: false
+
+      # Domain specific data, related to the modality
+      column :labeling_configuration, :jsonb, null: false
+
+      # Enable or disable the dataset
+      column :enabled, TrueClass, null: false, default: true
 
       column :status, String, null: false, index: true, default: "pending"
-
-      # Related job for ingesting the dataset. Used to change the status of the dataset.
-      column :job_id, :bigint, null: true, index: true
 
       column :progress, Float, null: false, default: 0.0 # from 0.0 to 1.0
 
@@ -123,11 +123,14 @@ Sequel.migration do
       column :priority, Integer, null: false, default: 0, index: true
 
       column :file_url, String, null: true
+      # Related job for ingesting the entry.
+      # Used to change the status of the entry, e.g. for videos.
+      column :job_id, :bigint, null: true, index: true
 
       # current workflow step, e.g. "start", "annotate", "review", "export"
       column :wf_step, String, null: false, index: true, default: "start"
 
-      # pending, assigned, in_progress, completed, errored
+      # processing, pending, assigned, in_progress, completed, errored
       column :status, String, null: false, index: true, default: "pending"
 
       column :assigned_to_id, :bigint, null: true, index: true

@@ -18,9 +18,10 @@ RSpec.describe Annotation::Service, database: true do
 
   let!(:dataset_id) do
     dataset_repo.create(
-      topology: "image_labeling",
+      modality: "image_labeling",
       labels: ["cat", "dog"],
-      configuration: { "width" => 100, "height" => 100 },
+      labeling_configuration: { "width" => 100, "height" => 100 },
+      workflow_configuration: {},
       project_id: project_id
     )
   end
