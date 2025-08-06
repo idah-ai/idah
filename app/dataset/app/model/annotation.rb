@@ -2,7 +2,7 @@
 
 module Annotation
   class Record < Verse::Model::Record::Base
-    type "dataset/annotations"
+    type Resource::Dataset::Annotations
 
     field :id, type: String, primary: true
 
@@ -21,7 +21,7 @@ module Annotation
 
   class Repository < Verse::Sequel::Repository
     self.table = "annotations"
-    self.resource = "project:annotations"
+    self.resource = Resource::Dataset::Annotations
 
     encoder :dimensions, Verse::Sequel::JsonEncoder
     encoder :annotation, Verse::Sequel::JsonEncoder

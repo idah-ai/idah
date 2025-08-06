@@ -11,7 +11,7 @@ RSpec.describe DatasetsExpo, type: :exposition, as: :system do
     Dataset::Record.new(
       {
         id: uuid,
-        topology: "image_labeling",
+        modality: "image_labeling",
         labels: ["cat", "dog"],
         configuration: { "width" => 100, "height" => 100 },
         status: "pending",
@@ -30,7 +30,7 @@ RSpec.describe DatasetsExpo, type: :exposition, as: :system do
           type: "dataset/datasets",
           id: uuid,
           attributes: {
-            topology: "image_labeling",
+            modality: "image_labeling",
             labels: ["cat", "dog"],
             configuration: { "width" => 100, "height" => 100 },
             status: "pending",
@@ -57,7 +57,7 @@ RSpec.describe DatasetsExpo, type: :exposition, as: :system do
     body = JSON.parse(last_response.body, symbolize_names: true)
     record = deserialize(body)
     expect(record[0].id).to eq uuid
-    expect(record[0].topology).to eq "image_labeling"
+    expect(record[0].modality).to eq "image_labeling"
   end
 
   it "show" do
@@ -68,7 +68,7 @@ RSpec.describe DatasetsExpo, type: :exposition, as: :system do
     body = JSON.parse(last_response.body, symbolize_names: true)
     record = deserialize(body)
     expect(record.id).to eq uuid
-    expect(record.topology).to eq "image_labeling"
+    expect(record.modality).to eq "image_labeling"
   end
 
   it "create" do

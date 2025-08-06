@@ -2,13 +2,13 @@
 
 module Dataset
   class Record < Verse::Model::Record::Base
-    type "dataset/datasets"
+    type Resource::Dataset::Datasets
 
     field :id, type: String, primary: true
 
     field :labels, type: Array
 
-    field :topology, type: String, readonly: true
+    field :modality, type: String, readonly: true
 
     field :configuration, type: Hash, readonly: true
     field :workflow, type: String, readonly: true
@@ -27,9 +27,10 @@ module Dataset
 
   class Repository < Verse::Sequel::Repository
     self.table = "datasets"
-    self.resource = "project:datasets"
+    self.resource = Resource::Dataset::Datasets
 
-    encoder :configuration, Verse::Sequel::JsonEncoder
+    encoder :labeling_configuration, Verse::Sequel::JsonEncoder
+    encoder :workflow_configuration, Verse::Sequel::JsonEncoder
     encoder :labels, Verse::Sequel::PgArrayEncoder
   end
 end
