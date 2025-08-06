@@ -2,7 +2,7 @@
 
 module Project
   class Record < Verse::Model::Record::Base
-    type "dataset/projects"
+    type Resource::Dataset::Projects
 
     field :id, type: String, primary: true
 
@@ -18,6 +18,6 @@ module Project
 
   class Repository < Verse::Sequel::Repository
     self.table = "projects"
-    self.resource = "project:projects"
+    self.resource = Resource::Dataset::Projects
   end
 end

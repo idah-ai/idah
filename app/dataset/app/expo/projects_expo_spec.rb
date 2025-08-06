@@ -24,7 +24,7 @@ RSpec.describe ProjectsExpo, type: :exposition, as: :system do
     {
       data:
         {
-          type: "dataset/projects",
+          type: Resource::Dataset::Datasets,
           id: uuid,
           attributes: {
             name: "Test Project",

@@ -2,7 +2,7 @@
 
 module Entry
   class Record < Verse::Model::Record::Base
-    type "dataset/entries"
+    type Resource::Dataset::Entries
 
     field :id, type: String, primary: true
 
@@ -22,6 +22,6 @@ module Entry
 
   class Repository < Verse::Sequel::Repository
     self.table = "entries"
-    self.resource = "project:entries"
+    self.resource = Resource::Dataset::Entries
   end
 end

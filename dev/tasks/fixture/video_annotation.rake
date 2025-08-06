@@ -100,13 +100,13 @@ namespace :fixture do
         data: {
           type: "datasets",
           attributes: {
-            topology: "video",
+            modality: "video",
             labels: ["demo", "fixture"]
-            workflow: {
+            workflow_configuration: {
               type: "annotate_qc",
               opts: { sample_rate: 1.0 }
             },
-            configuration: {
+            labeling_configuration: {
               properties: [
                 {
                   id: "order",
@@ -114,10 +114,11 @@ namespace :fixture do
                   format: {
                     minimum: 0,
                     maximum: 1000
-                  }
+                  },
                   label: "Order",
                   description: "Order of the annotation in the video",
-                  required: true
+                  required: true,
+                  selector: ["vehicle/*"],
                 }
               ],
               categories: [
