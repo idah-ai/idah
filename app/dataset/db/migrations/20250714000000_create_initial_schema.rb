@@ -94,7 +94,10 @@ Sequel.migration do
       column :labels, "text[]", null: false, default: "{}"
 
       # Domain specific data, related to the topology
-      column :configuration, :jsonb, text: true, null: false
+      column :configuration, :jsonb, null: false
+
+      # Workflow configuration
+      column :workflow, :jsonb, null: false
 
       column :status, String, null: false, index: true, default: "pending"
 

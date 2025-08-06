@@ -17,7 +17,7 @@ module Entry
     field :updated_at, type: Time, readonly: true
 
     belongs_to :dataset, repository: "Dataset::Repository", foreign_key: :dataset_id
-    # has_many :annotations, repository: "Annotation::Repository", foreign_key: :entry_id
+    has_many :annotations, repository: "Annotation::Repository", foreign_key: :entry_id
   end
 
   class Repository < Verse::Sequel::Repository
