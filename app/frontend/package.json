@@ -24,6 +24,7 @@
 		"@sveltejs/kit": "^2.21.5",
 		"@sveltejs/vite-plugin-svelte": "^5.1.0",
 		"@tailwindcss/vite": "^4.1.10",
+		"@tanstack/table-core": "^8.21.3",
 		"@testing-library/jest-dom": "^6.6.3",
 		"@testing-library/svelte": "^5.2.8",
 		"bits-ui": "^2.8.8",
@@ -39,6 +40,7 @@
 		"prettier-plugin-tailwindcss": "^0.6.12",
 		"svelte": "^5.34.3",
 		"svelte-check": "^4.2.1",
+		"svelte-sonner": "^1.0.5",
 		"tailwind-merge": "^3.3.1",
 		"tailwind-variants": "^1.0.0",
 		"tailwindcss": "^4.1.10",
@@ -56,6 +58,8 @@
 		]
 	},
 	"dependencies": {
-		"mode-watcher": "^1.1.0"
+		"date-fns": "^4.1.0",
+		"mode-watcher": "^1.1.0",
+		"uuidv7": "^1.0.2"
 	}
 }

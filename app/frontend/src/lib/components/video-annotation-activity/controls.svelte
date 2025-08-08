@@ -1,18 +1,14 @@
 <script lang='ts'>
-  import * as Table from "$lib/components/ui/table/index";
   import * as Menubar from "$lib/components/ui/menubar/index";
 	import Slider from "$lib/components/ui/slider/slider.svelte";
 	import Input from "../ui/input/input.svelte";
 	import ScrollArea from "../ui/scroll-area/scroll-area.svelte";
-	import { type VideoAnnotation } from "@/components/video-activity/VideoAnnotationContext";
+	import { type VideoAnnotation } from "@/components/video-annotation-activity/VideoAnnotationContext";
 	import Button from "../ui/button/button.svelte";
-	import { Label } from "../ui/select";
 	import MenubarLabel from "../ui/menubar/menubar-label.svelte";
-	import MenubarGroup from "../ui/menubar/menubar-group.svelte";
-	import MenubarItem from "../ui/menubar/menubar-item.svelte";
 	import MenubarTrigger from "../ui/menubar/menubar-trigger.svelte";
-	import MenubarContent from "../ui/menubar/menubar-content.svelte";
-	import { Menu } from "../ui/sidebar";
+	import TimelineTable from "./timeline-table/timeline-table.svelte";
+	import { Switch } from "../ui/switch";
 
   let {
     onPreviousFrame,
@@ -25,8 +21,9 @@
     volume = $bindable(),
     onSetVolume,
     annotations,
-    selectedAnnotation = $bindable(),
-    onSelectAnnotation
+    selectedAnnotation,
+    onSelectAnnotation,
+    onDeleteAnnotation,
   }:{
     onPreviousFrame: () => void,
     onTogglePlay: () => void,
@@ -39,14 +36,19 @@
     onSetVolume: (volume: number) => void
     annotations: VideoAnnotation[],
     selectedAnnotation :VideoAnnotation|undefined,
-    onSelectAnnotation: (annotations:VideoAnnotation) => void
+    onSelectAnnotation: (annotations:VideoAnnotation) => void,
+    onDeleteAnnotation: (annotation: VideoAnnotation, frame?: number) => void,
   } = $props()
 
-  let range = $derived([0, total_frames || 0])
+  let timeline_table:TimelineTable
+  let timeline_zoom = $state(1)
+  let scale = $state(100)
+  let tracking = $state(false)
+
 </script>
 
 <div class="h-full">
-  <div>
+
     <Menubar.Root>
       <Menubar.Menu>
 
@@ -86,9 +88,11 @@
         <MenubarLabel>
           frame:
         </MenubarLabel>
-        <Input type="number" min={0} max={total_frames} value={current_frame} oninputcapture={(e) => {
-          onSeekFrame(e.target.value)
-        }}/>/{total_frames}
+        <Input type="number" min={0} max={Math.max(0, total_frames - 1)} value={current_frame} oninputcapture={(e) => {
+          const v = Math.min(Math.max(0, total_frames - 1), parseInt(e.target.value) || 0)
+          onSeekFrame(v)
+          // timeline_table.setOffset(v - Math.floor(((scale * timeline_zoom) / 2)))
+        }} onchange={console.log}/>/{Math.max(0, total_frames - 1)}
       </Menubar.Menu>
       <Button>
         <svg width="18" height="19" viewBox="0 0 18 19" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -96,134 +100,43 @@
         </svg>
       </Button>
       <Button onclick={() => {
-          if (!selectedAnnotation) return console.warn('no selection to remove')
-
-          let index = selectedAnnotation.shape.frames.findIndex((v) => v.frame == current_frame)
-          if (index == -1) return console.warn('No frame to remove')
-          let newframes = selectedAnnotation.shape.frames.filter((v) => v.frame != current_frame)
-          selectedAnnotation.shape = {
-            start: newframes.reduce((acc, v) => v.frame <= acc || acc == -1 ? v.frame : acc, -1),
-            end: newframes.reduce((acc, v) => v.frame >= acc || acc == -1 ? v.frame : acc, -1),
-            type: selectedAnnotation.shape.type,
-            frames: newframes
-          }
-        }}>
+            if (!selectedAnnotation) return
+            onDeleteAnnotation(selectedAnnotation, current_frame)
+          }}>
           <svg width="12" height="15" viewBox="0 0 12 15" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path class='fill-secondary' d="M9.33329 5V13.3333H2.66663V5H9.33329ZM8.08329 0H3.91663L3.08329 0.833333H0.166626V2.5H11.8333V0.833333H8.91663L8.08329 0ZM11 3.33333H0.999959V13.3333C0.999959 14.25 1.74996 15 2.66663 15H9.33329C10.25 15 11 14.25 11 13.3333V3.33333Z"/>
           </svg>
       </Button>
-    </Menubar.Root>
-  </div>
-
-  <!-- <div class='h-full'> -->
-    <ScrollArea class='h-full'>
-      <Table.Root class='h-full'>
-        <Table.Caption>Annotations List</Table.Caption>
-        <Table.Header>
-          <Table.Row>
-            <Table.Head class="w-50">Annotations</Table.Head>
-            <Table.Head>
-              <div>Frames
-                <Slider type='single' min={range[0]} max={range[1]} step={1} value={current_frame} onValueChange={(e) => {
-                  console.error('seek frame slider', e)
-                  onSeekFrame(e)
-                }}/>
-              </div>
-              <div>
-                Range {range[0]}/{range[1]}
-                <Slider type='multiple'
-                    min={0}
-                    max={total_frames}
+      <Menubar.Menu>
+      <MenubarLabel>
+                scale {scale}
+      </MenubarLabel>
+                <Slider type='single'
+                    min={20}
+                    max={150}
                     step={1}
-                    bind:value={range}
+                    value={scale}
+                    onValueChange={(value) => timeline_table.setScale(value) }
                   />
-              </div>
-            </Table.Head>
-          </Table.Row>
-        </Table.Header>
-        <Table.Body>
-          {#each annotations as annotation :videoAnnotation}
-            <Table.Row onclick={() => {onSelectAnnotation(annotation)}}
-              data-state={selectedAnnotation == annotation? 'selected':''}>
-              <Table.Cell>{annotation.metadata.id}</Table.Cell>
-              <Table.Cell>
-                  {#if annotation.shape.start <= range[1] && annotation.shape.end >= range[0]}
-                      <div
-                        style:position=relative
-                        style:height='10px'
-                        style:left="{(Math.max(annotation.shape.start, range[0]) - range[0]) / (range[1] - range[0]) * 100}%"
-                        style:width='{
-                          (
-                            (
-                              (Math.min(annotation.shape.end, range[1]) - range[0])
-                              -
-                              (Math.max(annotation.shape.start, range[0]) - range[0])
-                              + 1
-                            ) / (range[1] - range[0] + 1) * 100
-                          )
-                        }%'
-                        style:background-color='rgb(14, 160, 160)'
-                        style:display={'flex'}
-                        >
-
-                          <!-- {#key annotation.shape.frames} -->
-                          {#each annotation.shape.frames as f }
-                          {#if f.frame >= range[0] && f.frame <= range[1]}
-                            <div
-                              role='button'
-                              tabindex=-1
-                              onkeypress={() => {
-                                onSeekFrame(f.frame)
-                                selectedAnnotation = annotation
-                              }}
-                              onclick={()=> {
-                                onSeekFrame(f.frame)
-                                selectedAnnotation = annotation
-                              }}
-                              style:transform='rotate(45deg)'
-                              style:position=absolute
-                              style:height=6px
-                              style:background-color="Chartreuse"
-                              style:border='1px solid DeepPink'
-                              style:top=2px
-                              style:left='calc({
-                                (
-                                (f.frame - Math.max(range[0], annotation.shape.start) + 1)
-                                  /
-                                (Math.min(range[1], annotation.shape.end) - Math.max(range[0], annotation.shape.start) + 1)
-                                )*100
-                              }% - 3px)'
-                              style:width={6}px
-                            >
-
-                            </div>
-                            {/if}
-                            {/each}
-                          <!-- {/key} -->
-
-                        <!-- {Math.max(annotation.shape.start, range[0])} {Math.min(annotation.shape.end, range[1])} -->
-
-                        <!-- <div>
-                          {(Math.max(annotation.shape.start, range[0]) - range[0]) / (range[1] - range[0]) * 100}
-                          /
-                          {(Math.min(annotation.shape.end, range[1]) - range[0]) / (range[1] - range[0]) * 100}
-                          {
-                            ((Math.min(annotation.shape.end, range[1]) - range[0]) / (range[1] - range[0]) * 100)
-                            -
-                            ((Math.max(annotation.shape.start, range[0]) - range[0]) / (range[1] - range[0]) * 100)
-                          }
-                        </div> -->
-                      </div>
-
-                  {/if}
-              </Table.Cell>
-            </Table.Row>
-          {/each}
-        </Table.Body>
-      </Table.Root>
+      </Menubar.Menu>
+      <Switch bind:checked={tracking}/>
+      <Input type="number" min={1} max={Math.ceil(total_frames/scale)} value={timeline_zoom} oninput={(e) => {
+          timeline_table.setTimelineZoom(parseInt(e.target.value) || 0)
+        }}/>
+    </Menubar.Root>
+    <ScrollArea class='h-[calc(100%-2.5em)]'>
+      <TimelineTable
+        bind:this={timeline_table}
+        {tracking}
+        {current_frame}
+        {total_frames}
+        {annotations}
+        {selectedAnnotation}
+        {onSeekFrame}
+        {onDeleteAnnotation}
+        {onSelectAnnotation}
+        onScaleChange={(s) => scale = s }
+        onTimelineZoomChange={(z) => timeline_zoom = z }
+      />
     </ScrollArea>
-
-
-  <!-- </div> -->
 </div>
-

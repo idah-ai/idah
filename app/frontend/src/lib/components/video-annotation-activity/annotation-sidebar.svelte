@@ -1,11 +1,11 @@
 <script lang="ts">
-    import type { Annotation, AnnotationContext, AnnotationValue } from "$lib/context/AnnotationContext"
+    import type { AnnotationValue } from "$lib/context/AnnotationContext"
 	import Sidebar from "../ui/sidebar/sidebar.svelte";
 	import Input from "../ui/input/input.svelte";
 	import CategoriesSelection from "./categories-selection.svelte";
-	import type { AllowedValueFields, ToolInfo } from "@/context/ActivityContext";
+	import type { ToolInfo } from "@/context/ActivityContext";
 	import { SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarHeader, SidebarInset, SidebarMenuButton, SidebarMenuItem } from "../ui/sidebar";
-	import type { VideoAnnotation, VideoMode, VideoShapeType } from "@/components/video-annotation-activity/VideoAnnotationContext";
+	import type { VideoAnnotation, VideoMode } from "@/components/video-annotation-activity/VideoAnnotationContext";
     let {
         annotationValue,
         annotations,
@@ -13,7 +13,9 @@
         onSelectAnnotation,
         toolinfo,
         mode,
+        current_frame,
     } :{
+        current_frame: number,
         annotationValue :AnnotationValue,
         annotations: VideoAnnotation[],
         onEditValue: (annotationValue: AnnotationValue, mode: VideoMode) => void,
@@ -52,6 +54,7 @@
                     <SidebarGroupContent>
                         <CategoriesSelection
                             {annotations}
+                            {current_frame}
                             categories={toolinfo[mode].allowedFields.categories}
                             selected={annotationValue.category}
                             onSelectAnnotation={onSelectAnnotation}
@@ -75,6 +78,7 @@
                         {#if tool.allowedFields.categories}
                         <CategoriesSelection
                             {annotations}
+                            {current_frame}
                             categories={tool.allowedFields.categories}
                             selected={annotationValue.category}
                             {onSelectAnnotation}
