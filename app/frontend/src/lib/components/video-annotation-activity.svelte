@@ -18,7 +18,7 @@
 	import { annotationsMemoryDataSource } from '@/data/model/annotations/annotationRecord';
 	import { toast } from 'svelte-sonner';
 	import { uuidv7 } from 'uuidv7';
-
+	import { onMount } from 'svelte';
 
     let player: Video
     let player_container: HTMLDivElement|undefined = $state() // ...
@@ -34,12 +34,18 @@
     let annotations: Array<VideoAnnotation> = $state([])
 
     let datasource = $state(annotationsMemoryDataSource)
-    let datasource_error = $state(true)
+    let datasource_error = $state(false)
 
     $effect(() => {
         datasource.error = datasource_error
     })
 
+    onMount(() => {
+        datasource.list().then(r => {
+            console.log(r)
+            annotations = r.data.map(a => Object.assign(a.attributes(), {synced: true})) as VideoAnnotation[]
+        })
+    })
     function addAnnotation(
         shape: VideoShape, value: AnnotationValue = {}
     ) {
@@ -59,9 +65,8 @@
                         createdAt,
                         updatedAt: createdAt
                     },
-                    synced: false
                 }
-                annotations.push(annotation)
+                annotations.push({...annotation, synced: false})
                 callQueue.register_call(() => {
                     let p = datasource.create({attributes: annotation})
                     .then(() => {
@@ -146,6 +151,7 @@
                     }, synced: false}
 
                 ]
+                console.log({annotations, annotation})
                 callQueue.register_call(() => {
                     let p = datasource.create({attributes: annotation})
                     .then(() => {
@@ -463,7 +469,7 @@
      bind:error={datasource_error}
      />
 
-    <Toaster position='bottom-center'/>
+    <Toaster position='top-center'/>
     <SidebarProvider
         class='min-h-0 w-full'
         style={
@@ -475,6 +481,7 @@
                 <AnnotationSidebar
                         {annotations}
                         {annotationValue}
+                        {current_frame}
                         onEditValue={(value: AnnotationValue, valueMode: VideoMode) => {
                             annotationValue = value
                             mode = valueMode
