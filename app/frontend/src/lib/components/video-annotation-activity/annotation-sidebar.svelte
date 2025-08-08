@@ -13,7 +13,9 @@
         onSelectAnnotation,
         toolinfo,
         mode,
+        current_frame,
     } :{
+        current_frame: number,
         annotationValue :AnnotationValue,
         annotations: VideoAnnotation[],
         onEditValue: (annotationValue: AnnotationValue, mode: VideoMode) => void,
@@ -52,6 +54,7 @@
                     <SidebarGroupContent>
                         <CategoriesSelection
                             {annotations}
+                            {current_frame}
                             categories={toolinfo[mode].allowedFields.categories}
                             selected={annotationValue.category}
                             onSelectAnnotation={onSelectAnnotation}
@@ -75,6 +78,7 @@
                         {#if tool.allowedFields.categories}
                         <CategoriesSelection
                             {annotations}
+                            {current_frame}
                             categories={tool.allowedFields.categories}
                             selected={annotationValue.category}
                             {onSelectAnnotation}

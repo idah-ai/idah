@@ -175,8 +175,6 @@
         <line
             x1={target_line[X]} y1={0} x2={target_line[X]} y2={height} stroke="chartreuse"/>
 
-        <text x="5" y="360" fill="chartreuse">frame: {frame}</text>
-
         <!-- draw annotation context -->
         {#each annotations as annotation}
             <!-- {@render annotationPath(annotation, frame)} -->
@@ -186,7 +184,7 @@
                         points={currentShape(annotation.shape, frame)||[]}
                         ratio={target_size}
                         offset={zoomInfo.offset}
-                        color={annotation.synced ? 'deeppink': 'grey'}
+                        color={annotation.synced ? '#FF1493': 'grey'}
                         onmousedown={ (e)=> {
                             console.error('clicked anyway')
                             if (mode == 'view'){

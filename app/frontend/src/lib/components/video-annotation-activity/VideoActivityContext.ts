@@ -5,13 +5,13 @@ const videoActivityContext: ActivityContext = {
     mode: 'edit',
     medias: {
         'main': {
-            // url: "src/assets/3727445-hd_1920_1080_30fps.mp4 ",
+            url: "src/assets/3727445-hd_1920_1080_30fps.mp4 ",
             // url: "src/assets/1263198-uhd_3840_2160_30fps.mp4",
             // url: 'http://playertest.longtailvideo.com/adaptive/wowzaid3/playlist.m3u8',
             // url: 'http://cdn-fms.rbs.com.br/vod/hls_sample1_manifest.m3u8',
             // url: 'http://sample.vodobox.net/skate_phantom_flex_4k/skate_phantom_flex_4k.m3u8',
             // url: 'https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8',
-            url: 'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8',
+            // url: 'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8',
             metadata: {}
         }
     },
