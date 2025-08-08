@@ -37,7 +37,7 @@
     }
     let duration = $state(0)
     let fps = $state(DEFAULT_FPS)
-    let frames = $derived(Math.floor(duration * fps))
+    let frames = $derived(Math.ceil(duration * fps))
     let volume = $state(0)
     let mediaTime = $state(0)
     let currentFrame = $derived(Math.round(mediaTime * fps))
@@ -86,6 +86,9 @@
         player.currentTime(frame / fps)
     }
 
+    export function isPlaying(){
+        return player ? player.paused() : false
+    }
     onMount(() => {
         player = videojs(element, options, () => {
            volume = (player.volume() || 0) * 100
