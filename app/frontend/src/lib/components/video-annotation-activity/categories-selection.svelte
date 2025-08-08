@@ -4,8 +4,10 @@
 	import Button from "../ui/button/button.svelte";
 	import { SidebarMenuButton, SidebarMenuItem } from "../ui/sidebar";
 	import type { VideoAnnotation } from "./VideoAnnotationContext";
+	import { Badge } from "../ui/badge";
 
-    let { annotations, categories, selected, onSelect, onSelectAnnotation, required = false } :{
+    let { current_frame, annotations, categories, selected, onSelect, onSelectAnnotation, required = false } :{
+        current_frame: number,
         annotations: VideoAnnotation[],
         categories: CategoriesDefinition,
         selected: string | undefined,
@@ -52,6 +54,16 @@ function categoryFullName(category: string, parent:string[]) { return [...parent
     <Collapsible open={selected?.startsWith(categoryFullName(category, parent))}>
         <CollapsibleTrigger>
             {category}
+            <Badge>
+                {
+                    annotations.filter(annotation =>
+                        annotation.value.category?.startsWith(
+                            categoryFullName(category, parent)
+                        ) && current_frame >= annotation.shape.start
+                        && current_frame <= annotation.shape.end
+                    ).length
+                }
+            </Badge>
         </CollapsibleTrigger>
             {#if selected == categoryFullName(category, parent) }
             <Button onclick={() => onSelect()}>-</Button>
@@ -79,6 +91,8 @@ function categoryFullName(category: string, parent:string[]) { return [...parent
 
                 {#each annotations.filter(
                     annotation => annotation.value.category == categoryFullName(category, parent)
+                        && current_frame >= annotation.shape.start
+                        && current_frame <= annotation.shape.end
                 )  as annotation, i}
                 <SidebarMenuItem>
                     <SidebarMenuButton onclick={() => onSelectAnnotation(annotation)}>
