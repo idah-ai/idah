@@ -25,7 +25,7 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
     {
       data:
         {
-          type: "dataset/entries",
+          type: Resource::Dataset::Entries,
           id: uuid,
           attributes: {
             priority: 1,
