@@ -27,7 +27,7 @@ RSpec.describe DatasetsExpo, type: :exposition, as: :system do
     {
       data:
         {
-          type: "dataset/datasets",
+          type: Resource::Dataset::Datasets,
           id: uuid,
           attributes: {
             modality: "image_labeling",
