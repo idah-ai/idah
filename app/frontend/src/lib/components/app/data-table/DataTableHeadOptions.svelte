@@ -6,6 +6,7 @@
 	import CommandItem from "$lib/components/ui/command/command-item.svelte";
 	import CommandList from "$lib/components/ui/command/command-list.svelte";
 	import CommandSeparator from "$lib/components/ui/command/command-separator.svelte";
+	import DateRangePickerField from "$lib/components/app/forms/fields/picker/DateRangePickerField.svelte";
 	import DataTableHeadLabel from "$lib/components/app/data-table/DataTableHeadLabel.svelte";
 	import { Popover, PopoverContent, PopoverTrigger } from "$lib/components/ui/popover";
 
@@ -54,6 +55,8 @@
 	let isSortedOrFiltered: boolean = $state(false);
 	let isSorted: boolean = $state(false);
 	let search: string = $state("");
+	let from: Date | null = $state(null);
+	let to: Date | null = $state(null);
 
 	// Functions
 	function openPopover(): void {
@@ -107,7 +110,7 @@
 						{:else if filterOptions?.filterBy === "multiple-select"}
 							Render Multiple Select Input
 						{:else if filterOptions?.filterBy === "date-range"}
-							Render Date Range Input
+							<DateRangePickerField name="{dataTableName}/filter/date-range" bind:from bind:to />
 						{:else if filterOptions?.filterBy === "datasource"}
 							Render Data Source Input
 						{/if}
