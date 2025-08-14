@@ -2849,11 +2849,14 @@ packages:
       svelte: 5.37.3
     dev: true
 
-<<<<<<< HEAD
-  svelte-sonner@1.0.5:
+  /svelte-sonner@1.0.5(svelte@5.37.3):
     resolution: {integrity: sha512-9dpGPFqKb/QWudYqGnEz93vuY+NgCEvyNvxoCLMVGw6sDN/3oVeKV1xiEirW2E1N3vJEyj5imSBNOGltQHA7mg==}
     peerDependencies:
       svelte: ^5.0.0
+    dependencies:
+      runed: 0.28.0(svelte@5.37.3)
+      svelte: 5.37.3
+    dev: true
 
   svelte-toolbelt@0.7.1:
     resolution:
@@ -3055,6 +3058,7 @@ packages:
   uuidv7@1.0.2:
     resolution: {integrity: sha512-8JQkH4ooXnm1JCIhqTMbtmdnYEn6oKukBxHn1Ic9878jMkL7daTI7anTExfY18VRCX7tcdn5quzvCb6EWrR8PA==}
     hasBin: true
+    dev: false
 
   varint@6.0.0:
     resolution: {integrity: sha512-cXEIW6cfr15lFv563k4GuVuW/fiwjknytD37jIOLSdSWuOI6WnO/oKwmP2FQTU2l01LP8/M5TSAJpzUaGe3uWg==}
