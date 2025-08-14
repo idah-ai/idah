@@ -233,6 +233,9 @@ onlyBuiltDependencies:
         version: 3.2.3(jiti@2.4.2)(jsdom@26.1.0)(lightningcss@1.30.1)
 =======
 dependencies:
+  date-fns:
+    specifier: ^4.1.0
+    version: 4.1.0
   mode-watcher:
     specifier: ^1.1.0
     version: 1.1.0(svelte@5.37.3)
@@ -1903,6 +1906,7 @@ packages:
     dev: true
 
 <<<<<<< HEAD
+<<<<<<< HEAD
   date-fns@4.1.0:
     resolution: {integrity: sha512-Ukq0owbQXxa/U3EGtsdVBkR1w7KOQ5gIBqdH2hkvknzZPYvBxb/aa6E8L7tmjFtkwZBu3UXBbjIgPo/Ez4xaNg==}
 
@@ -1910,6 +1914,13 @@ packages:
 ||||||| parent of 015d69f (feat: add Avatar, Dialog and DropdownMenu components with TypeScript support)
   debug@4.4.1:
 =======
+||||||| parent of b4914ff (feat: add DatePickerField component with date selection functionality and integrate date-fns for date formatting)
+=======
+  /date-fns@4.1.0:
+    resolution: {integrity: sha512-Ukq0owbQXxa/U3EGtsdVBkR1w7KOQ5gIBqdH2hkvknzZPYvBxb/aa6E8L7tmjFtkwZBu3UXBbjIgPo/Ez4xaNg==}
+    dev: false
+
+>>>>>>> b4914ff (feat: add DatePickerField component with date selection functionality and integrate date-fns for date formatting)
   /debug@4.4.1:
 >>>>>>> 015d69f (feat: add Avatar, Dialog and DropdownMenu components with TypeScript support)
     resolution: {integrity: sha512-KcKCqiftBJcZr++7ykoDIEwSa3XWowTfNPo92BYxjXiyYEVrUQh2aLyhxBCwww+heortUFxEJYcRzosstTEBYQ==}
