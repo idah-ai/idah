@@ -1,5 +1,5 @@
 <script lang="ts">
-	import AnnotationHeaderBar from "@/components/app/annotation/layout/AnnotationHeaderBar.svelte";
+	import AnnotationHeaderBar from "@/components/app/annotation/layout/header/AnnotationHeaderBar.svelte";
 	import SvgOverlay from "@/components/video-annotation-activity/svg-overlay.svelte";
 	import Controls from "./video-annotation-activity/controls.svelte";
 	import Video from "./video-annotation-activity/video.svelte";
