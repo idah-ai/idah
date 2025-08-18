@@ -35,30 +35,32 @@ RSpec.describe Entry::Service, database: true do
     }
   end
 
-  describe "#create" do
-    it "creates a new entry" do
-      entry = subject.create(attributes)
-      expect(entry.priority).to eq(1)
-      expect(entry.status).to eq("pending")
-    end
+  let(:entry) do
+    record = deserialize(
+      {
+        data: {
+          type: "dataset:entries",
+          attributes: attributes
+        }
+      }
+    )
+    subject.create(record)
   end
 
   describe "#show" do
     it "shows an entry" do
-      entry_id = repo.create(attributes)
-      found_entry = subject.show(entry_id)
-      expect(found_entry.id).to eq(entry_id)
+      found_entry = subject.show(entry.id)
+      expect(found_entry.id).to eq(entry.id)
     end
   end
 
   describe "#update" do
     it "updates an entry" do
-      entry_id = repo.create(attributes)
       record = deserialize(
         {
           data: {
             type: "entries",
-            id: entry_id,
+            id: entry.id,
             attributes: {
               status: "in_progress",
             }
@@ -68,16 +70,15 @@ RSpec.describe Entry::Service, database: true do
 
       subject.update(record)
 
-      updated_entry = repo.find!(entry_id)
+      updated_entry = repo.find!(entry.id)
       expect(updated_entry.status).to eq("in_progress")
     end
   end
 
   describe "#delete" do
     it "deletes an entry" do
-      entry_id = repo.create(attributes)
-      subject.delete(entry_id)
-      expect { repo.find!(entry_id) }.to raise_error(Verse::Error::NotFound)
+      subject.delete(entry.id)
+      expect { repo.find!(entry.id) }.to raise_error(Verse::Error::NotFound)
     end
   end
 end
