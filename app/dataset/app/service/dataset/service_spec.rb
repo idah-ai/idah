@@ -30,7 +30,15 @@ RSpec.describe Dataset::Service, database: true do
         {
           data: {
             type: "datasets",
-            attributes: attributes
+            attributes: attributes,
+            relationships: {
+              project: {
+                data: {
+                  type: "projects",
+                  id: project_id
+                }
+              }
+            }
           }
         }
       )

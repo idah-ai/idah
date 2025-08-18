@@ -8,7 +8,9 @@ class EntriesExpo < BaseExpo
   json_api Entry::Record, http_opts: { auth:nil } do
     show
     index
-    create
+    create do
+      authorized_relationships dataset: [:link]
+    end
     update
     delete
   end

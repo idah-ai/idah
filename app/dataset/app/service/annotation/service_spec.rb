@@ -48,7 +48,23 @@ RSpec.describe Annotation::Service, database: true do
 
   describe "#create" do
     it "creates a new annotation" do
-      annotation = subject.create(attributes)
+      record = deserialize(
+        {
+          data: {
+            type: "annotations",
+            attributes: attributes,
+            relationships: {
+              entry: {
+                data: {
+                  type: "dataset:entries",
+                  id: entry_id
+                }
+              }
+            }
+          }
+        }
+      )
+      annotation = subject.create(record)
       expect(annotation.type).to eq("bounding_box")
       expect(annotation.annotation).to eq({ label: "cat" })
     end
