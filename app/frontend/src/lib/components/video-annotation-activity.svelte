@@ -2,7 +2,6 @@
 	import { onMount } from "svelte";
 	import { toast } from "svelte-sonner";
 	import { uuidv7 } from "uuidv7";
-	import { Toaster } from "@/components/ui/sonner";
 
 	import AnnotationHeaderBar from "@/components/app/annotation/layout/header/AnnotationHeaderBar.svelte";
 	import AnnotationFooter from "@/components/app/annotation/layout/footer/AnnotationFooter.svelte";
@@ -464,7 +463,6 @@
 	<!-- TODO::Delete old NavBar when not needed -->
 	<Navbar {datasource} context={videoActivityContext} bind:error={datasource_error} />
 
-	<Toaster position="top-center" />
 	<SidebarProvider class="min-h-0 w-full" style={"height:calc(100% - 30px)"}>
 		<ResizablePaneGroup direction="vertical">
 			<ResizablePane class="flex h-full" defaultSize={60} minSize={10}>
