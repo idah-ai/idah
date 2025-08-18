@@ -90,7 +90,7 @@ namespace :fixture do
 
     assert(project_response.code < 399, "Failed to create project: #{project_response.code} - #{project_response.body}")
 
-    project_id = JSON.parse(project_response.body)["id"]
+    project_id = JSON.parse(project_response.body)["data"]["id"]
     puts "Project created with id: #{project_id}"
 
     # Create a datasetq
@@ -99,7 +99,7 @@ namespace :fixture do
       headers: { "Authorization" => "Bearer #{token}", "Content-Type" => "application/json" },
       body: {
         data: {
-          type: "datasets",
+          type: "dataset:datasets",
           attributes: {
             modality: "video",
             labels: ["demo", "fixture"],
@@ -153,15 +153,17 @@ namespace :fixture do
           relationships: {
             project: {
               data: {
-                type: "projects",
+                type: "dataset:projects",
                 id: project_id
               }
             }
           }
         }
-      },
+      }.to_json,
       verify: false
     )
+    assert(dataset_response.code < 399, "Failed to create dataset: #{dataset_response.code} - #{dataset_response.body}")
+    dataset_id = JSON.parse(dataset_response.body)["data"]["id"]
 
     # Create an entry
     entry_response = HTTParty.post(
@@ -172,12 +174,21 @@ namespace :fixture do
           type: "dataset:entries",
           attributes: {
             resource: video_resource,
+          },
+          relationships: {
+            dataset: {
+              data: {
+                type: "dataset:datasets",
+                id: dataset_id
+              }
+            }
           }
         }
       }.to_json,
       verify: false
     )
-    entry_id = JSON.parse(entry_response.body)["id"]
+    assert(entry_response.code < 399, "Failed to create entry: #{entry_response.code} - #{entry_response.body}")
+    entry_id = JSON.parse(entry_response.body)["data"]["id"]
     puts "Entry created with id: #{entry_id}"
 
     puts "Fixture generation complete!"

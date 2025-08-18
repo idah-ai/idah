@@ -19,7 +19,18 @@ module Annotation
       annotations.find!(id, included: included)
     end
 
-    def create(attributes)
+    def create(record)
+      attributes = record.attributes
+      attributes[:created_by_id] ||= auth_context.metadata[:id]
+      attributes[:id] = record.id || UUIDv7.generate
+
+      if record.entry
+        attributes[:entry_id] = record.entry.id
+      else
+        raise Verse::Error::ValidationFailed,
+          "entry relationship is required to create an annotation"
+      end
+
       annotations.transaction do
         id = annotations.create(attributes)
         annotations.find!(id)

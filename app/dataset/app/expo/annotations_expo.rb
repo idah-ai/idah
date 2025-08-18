@@ -8,7 +8,9 @@ class AnnotationsExpo < BaseExpo
   json_api Annotation::Record, http_opts: { auth:nil } do
     show
     index
-    create
+    create do
+      authorized_relationships entry: [:link]
+    end
     update
     delete
   end

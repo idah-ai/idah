@@ -40,7 +40,15 @@ RSpec.describe Entry::Service, database: true do
       {
         data: {
           type: "dataset:entries",
-          attributes: attributes
+          attributes: attributes,
+          relationships: {
+            dataset: {
+              data: {
+                type: "dataset:datasets",
+                id: dataset_id
+              }
+            }
+          }
         }
       }
     )
