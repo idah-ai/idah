@@ -1,38 +1,43 @@
 <script lang="ts">
+	import { onMount } from "svelte";
+	import { toast } from "svelte-sonner";
+	import { uuidv7 } from "uuidv7";
+	import { Toaster } from "@/components/ui/sonner";
+
 	import AnnotationHeaderBar from "@/components/app/annotation/layout/header/AnnotationHeaderBar.svelte";
+	import AnnotationFooter from "@/components/app/annotation/layout/footer/AnnotationFooter.svelte";
+	import AnnotationFooterToolbar from "@/components/app/annotation/layout/footer/AnnotationFooterToolbar.svelte";
+	import AnnotationSidebar from "@/components/video-annotation-activity/annotation-sidebar.svelte";
+	import CommandManager from "@/command/CommandManager";
+	import Controls from "@/components/video-annotation-activity/controls.svelte";
+	import Navbar from "@/components/video-annotation-activity/navbar.svelte";
+	import SidebarProvider from "@/components/ui/sidebar/sidebar-provider.svelte";
+	import SidebarInset from "@/components/ui/sidebar/sidebar-inset.svelte";
 	import SvgOverlay from "@/components/video-annotation-activity/svg-overlay.svelte";
-	import Controls from "./video-annotation-activity/controls.svelte";
-	import Video from "./video-annotation-activity/video.svelte";
+	import Video from "@/components/video-annotation-activity/video.svelte";
 	import videoActivityContext from "@/components/video-annotation-activity/VideoActivityContext";
+	import VideoController from "@/components/video-annotation-activity/VideoController.svelte";
 	import {
 		type Point,
 		type VideoAnnotation,
-		type VideoAnnotationContext,
 		type VideoMode,
 		type VideoShape,
 		type VideoShapeType,
 		type VideoFrameSelection,
 	} from "@/components/video-annotation-activity/VideoAnnotationContext";
-	import AnnotationSidebar from "./video-annotation-activity/annotation-sidebar.svelte";
-	import { ResizableHandle, ResizablePane, ResizablePaneGroup } from "./ui/resizable";
-	import SidebarProvider from "./ui/sidebar/sidebar-provider.svelte";
-	import SidebarInset from "./ui/sidebar/sidebar-inset.svelte";
-	import type { AnnotationValue } from "@/context/AnnotationContext";
-	import CommandManager from "@/command/CommandManager";
-	import Navbar from "./video-annotation-activity/navbar.svelte";
-	import type { Command } from "@/command/Command";
-	import { Toaster } from "./ui/sonner";
-	import callQueue from "./video-annotation-activity/call_queue";
+	import callQueue from "@/components/video-annotation-activity/call_queue";
+
+	import { ResizableHandle, ResizablePane, ResizablePaneGroup } from "@/components/ui/resizable";
 	import { annotationsMemoryDataSource } from "@/data/model/annotations/annotationRecord";
-	import { toast } from "svelte-sonner";
-	import { uuidv7 } from "uuidv7";
-	import { onMount } from "svelte";
+
+	import type { AnnotationValue } from "@/context/AnnotationContext";
+	import type { Command } from "@/command/Command";
 
 	let player: Video;
 	let player_container: HTMLDivElement | undefined = $state(); // ...
 	let volume: number = $state(0);
-	let current_frame = $state(0);
-	let total_frames = $state(0);
+	let currentFrame = $state(0);
+	let totalFrames = $state(0);
 
 	let mode: VideoMode = $state("view");
 
@@ -179,6 +184,7 @@
 		};
 		CommandManager.add(cmd);
 	}
+
 	function getAnnotationInfo(id: string) {
 		return annotations.find((v) => v.metadata.id == id);
 	}
@@ -454,6 +460,8 @@
 			selectedAnnotation = undefined;
 		}}
 	/>
+
+	<!-- TODO::Delete old NavBar when not needed -->
 	<Navbar {datasource} context={videoActivityContext} bind:error={datasource_error} />
 
 	<Toaster position="top-center" />
@@ -463,7 +471,7 @@
 				<AnnotationSidebar
 					{annotations}
 					{annotationValue}
-					{current_frame}
+					{currentFrame}
 					onEditValue={(value: AnnotationValue, valueMode: VideoMode) => {
 						annotationValue = value;
 						mode = valueMode;
@@ -480,7 +488,7 @@
 						{annotations}
 						selected={selectedAnnotation}
 						{mode}
-						frame={current_frame}
+						frame={currentFrame}
 						onSelectAnnotation={selectAnnotation}
 						onSelection={onShapeSelection}
 						target_container={player_container}
@@ -489,8 +497,8 @@
 							bind:this={player}
 							bind:element={player_container}
 							onFramesChange={(current, total) => {
-								current_frame = current;
-								total_frames = total;
+								currentFrame = current;
+								totalFrames = total;
 							}}
 							onVolumeChange={(v) => (volume = v)}
 							src={videoActivityContext.medias["main"].url}
@@ -502,21 +510,28 @@
 			<ResizableHandle withHandle />
 
 			<ResizablePane defaultSize={40} minSize={10}>
-				<Controls
-					onNextFrame={() => player.nextFrame()}
-					onTogglePlay={() => player.togglePlay()}
-					onPreviousFrame={() => player.previousFrame()}
-					onToggleMute={() => player.toggleMute()}
-					{current_frame}
-					{total_frames}
-					{volume}
-					onSetVolume={(v: number) => (volume = player.setVolume(v) || 0)}
-					onSeekFrame={(f: number) => player.seekToFrame(f)}
-					{annotations}
-					{selectedAnnotation}
-					onSelectAnnotation={selectAnnotation}
-					{onDeleteAnnotation}
-				/>
+				<AnnotationFooter>
+					<AnnotationFooterToolbar>
+						<VideoController {currentFrame} {totalFrames} bind:video={player} />
+					</AnnotationFooterToolbar>
+
+					<!-- TODO::Delete old Controls when not needed -->
+					<Controls
+						onNextFrame={() => player.nextFrame()}
+						onTogglePlay={() => player.togglePlay()}
+						onPreviousFrame={() => player.previousFrame()}
+						onToggleMute={() => player.toggleMute()}
+						{currentFrame}
+						{totalFrames}
+						{volume}
+						onSetVolume={(v: number) => (volume = player.setVolume(v) || 0)}
+						onSeekFrame={(f: number) => player.seekToFrame(f)}
+						{annotations}
+						{selectedAnnotation}
+						onSelectAnnotation={selectAnnotation}
+						{onDeleteAnnotation}
+					/>
+				</AnnotationFooter>
 			</ResizablePane>
 		</ResizablePaneGroup>
 	</SidebarProvider>
