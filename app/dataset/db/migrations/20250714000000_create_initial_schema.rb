@@ -122,7 +122,7 @@ Sequel.migration do
 
       column :priority, Integer, null: false, default: 0, index: true
 
-      column :file_url, String, null: true
+      column :resource, String, null: true
       # Related job for ingesting the entry.
       # Used to change the status of the entry, e.g. for videos.
       column :job_id, :bigint, null: true, index: true
