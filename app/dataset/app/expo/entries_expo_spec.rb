@@ -29,8 +29,6 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
           id: uuid,
           attributes: {
             priority: 1,
-            wf_step: "start",
-            status: "pending",
             assigned_to_id: 1,
             created_at: now.iso8601,
             updated_at: now.iso8601
@@ -75,7 +73,7 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
   it "update" do
     expect(service).to receive(:update) do |args|
       expect(args.id).to eq uuid
-      expect(args.attributes[:status]).to eq "pending"
+      expect(args.attributes[:priority]).to eq 1
       entry_record
     end
 

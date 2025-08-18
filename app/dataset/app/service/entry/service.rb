@@ -19,8 +19,10 @@ module Entry
       entries.find!(id, included: included)
     end
 
-    def create(attributes)
-      id = entries.create(attributes)
+    def create(record)
+      attr = record.attributes
+      attr[:id] = record.id || UUIDv7.generate
+      id = entries.create(attr)
       entries.find!(id)
     end
 
