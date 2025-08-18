@@ -1,8 +1,8 @@
 <script lang="ts">
-	import AnnotationHeaderBarActions from "@/components/app/annotation/layout/AnnotationHeaderBarActions.svelte";
-	import AnnotationHeaderBarBackButton from "@/components/app/annotation/layout/AnnotationHeaderBarBackButton.svelte";
-	import AnnotationHeaderBarMediaName from "@/components/app/annotation/layout/AnnotationHeaderBarMediaName.svelte";
-	import AnnotationHeaderBarTools from "@/components/app/annotation/layout/AnnotationHeaderBarTools.svelte";
+	import AnnotationHeaderBarActions from "@/components/app/annotation/layout/header/AnnotationHeaderBarActions.svelte";
+	import AnnotationHeaderBarBackButton from "@/components/app/annotation/layout/header/AnnotationHeaderBarBackButton.svelte";
+	import AnnotationHeaderBarMediaName from "@/components/app/annotation/layout/header/AnnotationHeaderBarMediaName.svelte";
+	import AnnotationHeaderBarTools from "@/components/app/annotation/layout/header/AnnotationHeaderBarTools.svelte";
 	import Separator from "@/components/ui/separator/separator.svelte";
 
 	import type { ActivityContext } from "@/context/ActivityContext";
