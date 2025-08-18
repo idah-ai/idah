@@ -4,7 +4,7 @@
 	import { InfoIcon, MessageCircleWarningIcon, Settings2Icon, SunMoonIcon } from "@lucide/svelte";
 
 	import { toggleMode } from "mode-watcher";
-	import type { AnnotationHeaderBarBaseTool } from "@/components/app/annotation/layout/AnnotationHeaderBar.types";
+	import type { AnnotationHeaderBarBaseTool } from "@/components/app/annotation/layout/header/AnnotationHeaderBar.types";
 
 	// Props
 	interface Props {}
