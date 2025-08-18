@@ -12,7 +12,7 @@ RSpec.describe Project::Service, database: true do
   let(:update_data) do
     {
       data: {
-        type: "projects",
+        type: "dataset:projects",
         id: "1",
         attributes: {
           name: "Test Project",
@@ -22,9 +22,22 @@ RSpec.describe Project::Service, database: true do
     }
   end
 
+  let(:create_data) do
+    {
+      data: {
+        type: "dataset:projects",
+        attributes: {
+          name: "Test Project",
+          description: "A test project"
+        }
+      }
+    }
+  end
+
   describe "#create" do
     it "creates a new project" do
-      project = subject.create(name: "Test Project", description: "A test project")
+      record = deserialize(create_data)
+      project = subject.create(record)
       expect(project.name).to eq("Test Project")
       expect(project.description).to eq("A test project")
       expect(project.created_by_id).to eq(nil)
