@@ -10,8 +10,8 @@ module Dataset
 
     field :modality, type: String, readonly: true
 
-    field :configuration, type: Hash, readonly: true
-    field :workflow, type: String, readonly: true
+    field :labeling_configuration, type: Hash
+    field :workflow_configuration, type: Hash
 
     field :status, type: String, readonly: true
     field :progress, type: Float, readonly: true

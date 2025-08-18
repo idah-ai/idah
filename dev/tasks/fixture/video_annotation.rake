@@ -153,6 +153,8 @@ namespace :fixture do
           relationships: {
             project: {
               data: {
+                labeling_configuration: {},
+                workflow_configuration: {},
                 type: "dataset:projects",
                 id: project_id
               }
