@@ -19,9 +19,10 @@ module Project
       projects.find!(id, included: included)
     end
 
-    def create(attributes)
-      attributes[:created_by_id] = auth_context.metadata[:id]
-      id = projects.create(attributes)
+    def create(record)
+      attr = record.attributes
+      attr[:id] = record.id || UUIDv7.generate
+      id = projects.create(attr)
       projects.find!(id)
     end
 
