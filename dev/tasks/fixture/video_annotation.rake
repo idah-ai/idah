@@ -174,8 +174,6 @@ namespace :fixture do
             resource: video_resource,
           }
         }
-        project_id: project_id,
-        video_id: video_resource
       }.to_json,
       verify: false
     )
