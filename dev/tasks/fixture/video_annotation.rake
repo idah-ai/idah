@@ -17,7 +17,7 @@ namespace :fixture do
     # Upload the video to media service
     media_uid = 16.times.map{ rand(0..36).to_s(36) }.join + ".mp4"
     media_api_url = [api_url, "media"].join("/")
-    video_path = "app/media/spec_data/4k_sample.mp4"
+    video_path = "app/media/spec_data/sample.mp4"
     upload_response = HTTParty.post(
       "#{media_api_url}/medias/files/#{media_uid}",
       headers: { "Authorization" => "Bearer #{token}" },
@@ -30,7 +30,7 @@ namespace :fixture do
 
     video_resource = result[:data][:attributes][:resource]
 
-    puts "Video uploaded with id: #{result[:video_resource]}"
+    puts "Video uploaded as resource: #{video_resource}"
 
     # Process the video
     process_response = HTTParty.post(
@@ -78,13 +78,14 @@ namespace :fixture do
       headers: { "Authorization" => "Bearer #{token}", "Content-Type" => "application/json" },
       body: {
         data: {
-          type: "projects",
+          type: "dataset:projects",
           attributes: {
             name: "Video Annotation Fixture Project",
             description: "A project created from a rake task for video annotation.",
           }
         }
-      }.to_json
+      }.to_json,
+      verify: false
     )
 
     assert(project_response.code < 399, "Failed to create project: #{project_response.code} - #{project_response.body}")
@@ -101,7 +102,7 @@ namespace :fixture do
           type: "datasets",
           attributes: {
             modality: "video",
-            labels: ["demo", "fixture"]
+            labels: ["demo", "fixture"],
             workflow_configuration: {
               type: "annotate_qc",
               opts: { sample_rate: 1.0 }
@@ -148,7 +149,7 @@ namespace :fixture do
                 },
               ]
             }
-          }
+          },
           relationships: {
             project: {
               data: {
@@ -158,7 +159,8 @@ namespace :fixture do
             }
           }
         }
-      }
+      },
+      verify: false
     )
 
     # Create an entry
@@ -167,8 +169,9 @@ namespace :fixture do
       headers: { "Authorization" => "Bearer #{token}", "Content-Type" => "application/json" },
       body: {
         project_id: project_id,
-        video_id: video_id
-      }.to_json
+        video_id: video_resource
+      }.to_json,
+      verify: false
     )
     entry_id = JSON.parse(entry_response.body)["id"]
     puts "Entry created with id: #{entry_id}"
