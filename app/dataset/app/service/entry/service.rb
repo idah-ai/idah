@@ -21,7 +21,17 @@ module Entry
 
     def create(record)
       attr = record.attributes
+
       attr[:id] = record.id || UUIDv7.generate
+
+      if record.dataset
+        attr[:dataset_id] = record.dataset.id
+      else
+        raise Verse::Error::ValidationFailed,
+          "dataset is required to create a dataset"
+      end
+
+
       id = entries.create(attr)
       entries.find!(id)
     end
