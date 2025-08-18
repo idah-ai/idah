@@ -168,6 +168,12 @@ namespace :fixture do
       "#{dataset_api_url}/entries",
       headers: { "Authorization" => "Bearer #{token}", "Content-Type" => "application/json" },
       body: {
+        data: {
+          type: "dataset:entries",
+          attributes: {
+            resource: video_resource,
+          }
+        }
         project_id: project_id,
         video_id: video_resource
       }.to_json,

@@ -8,10 +8,13 @@ module Entry
 
     field :priority, type: Integer
 
-    field :wf_step, type: String
-    field :status, type: String
+    field :wf_step, type: String, readonly: true
+    field :status, type: String, readonly: true
 
-    field :assigned_to_id, type: Integer
+    field :resource, type: String
+
+    # Add through assign method
+    field :assigned_to_id, type: Integer, readonly: true
 
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
