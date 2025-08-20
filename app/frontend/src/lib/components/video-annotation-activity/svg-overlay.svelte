@@ -153,8 +153,6 @@
         bind:clientHeight={height}
         bind:clientWidth={width}
         class="h-full w-full"
-        role='button'
-        tabindex=-1
         onmousemove={ (e) => {
             // const elementRect = svg.getBoundingClientRect();
 

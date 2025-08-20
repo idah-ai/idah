@@ -179,8 +179,6 @@
 {#snippet BoundingBoxHandle(bb: BoundingBox)}
     {#each boundingBoxHandle(bb) as point, handle}
         <circle
-            role="button"
-            tabindex="-1"
             onmousedown={(e) => {
                 e.stopPropagation()
                 remove_resizeable_points(bb, handle)
@@ -200,8 +198,6 @@
 
 
 <path
-    role='button'
-    tabindex=-1
     d={draw_cmd(boundingBox(bounding_box, cursor))}
     style:transform-origin={'top left'}
     style:transform={`translate(${offset[X]}px, ${offset[Y]}px) scale(${ratio[X]}, ${ratio[Y]})`}
