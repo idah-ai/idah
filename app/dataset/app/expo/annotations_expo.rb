@@ -30,11 +30,9 @@ class AnnotationsExpo < BaseExpo
 
   RpcCreateSchema = Verse::Schema.define do
     field(:id, String).default { UUIDv7.generate }
-    field(:entry_id, Integer)
+    field(:entry_id, String)
     field(:dimensions, Hash) # Open Hash
     field(:annotation, Hash) # Open Hash
-
-    field(:type, String)
   end
 
   # Add the id as a required field for the update method
@@ -46,7 +44,17 @@ class AnnotationsExpo < BaseExpo
     input RpcCreateSchema
   end
   def rpc_create
-    service.create(params)
+    service.create(Verse::JsonApi::Deserializer::deserialize({
+      data:{
+        id: params[:id],
+        attributes: params,
+        relationships: {
+          entry: {
+            data: { type: "entries", id: params[:entry_id] }
+          }
+        }
+      }
+    }))
   end
 
   expose json_rpc_method(:update) do
