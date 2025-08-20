@@ -7,14 +7,12 @@
     const DEFAULT_FPS = 30
 
     type Props = {
-        src: string,
         element?: HTMLDivElement,
         onFramesChange: (current:number, frames:number) => void
         onVolumeChange: (volume:number) => void
     }
 
     let {
-         src,
          element = $bindable(),
          onFramesChange,
     }: Props = $props()
@@ -30,9 +28,6 @@
             responsive: false,
             fluid: true,
             disablePictureInPicture: true,
-            sources: [{
-                src: src,
-            }]
             // poster:"",
     }
     let duration = $state(0)
@@ -52,6 +47,11 @@
         else {
             player.pause();
         }
+    }
+
+    export function update_src(type:string, src:string) {
+        player.src(src);
+        player.load()
     }
 
     export function nextFrame() {
@@ -98,13 +98,15 @@
                 duration = player.duration() || 0;
             })
 
+
             // player.qualityLevels().on('change', () => quality_check('qualityLevels on change'))
             // player.tech_.vhs.qualityLevels_.on('change', quality_check)
             player.on('durationchange', () => quality_check('durationchange'))
+            player.on('loadstart', () => quality_check('loadstart'))
+            player.on('sourceset', () => quality_check('sourceset'))
             player.on('loadedata', () => quality_check('loadedata'))
             player.on('loademetadata', () => quality_check('loademetadata'))
             player.on('resize', () => quality_check('resize'))
-
             player.on('timeupdate', () => {});
 
             player.on('play', () => {

@@ -6,9 +6,8 @@ module Annotation
 
     field :id, type: String, primary: true
 
-    field :entry_id, type: Integer, readonly: true
+    field :entry_id, type: String, readonly: true
 
-    field :type, type: String
     field :dimensions, type: Hash
     field :annotation, type: Hash
 

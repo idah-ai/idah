@@ -175,6 +175,7 @@ namespace :fixture do
         data: {
           type: "dataset:entries",
           attributes: {
+            dataset_id: JSON.parse(dataset_response.body)["data"]["id"],
             resource: video_resource,
           },
           relationships: {

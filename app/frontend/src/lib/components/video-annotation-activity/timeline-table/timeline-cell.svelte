@@ -4,7 +4,7 @@
 
     let {
         frame,
-        current_frame,
+        currentFrame,
         range,
         timeline_zoom,
         inSpan,
@@ -15,7 +15,7 @@
         ...restProps
     } : {
         frame: number,
-        current_frame: number,
+        currentFrame: number,
         range: [number, number],
         timeline_zoom: number,
         inSpan: boolean,
@@ -27,7 +27,7 @@
 </script>
 
 <div
-    class="border-t-0 border-b-0 hoverable inline-block border {Math.floor(current_frame/timeline_zoom) == Math.floor(frame/timeline_zoom) ? 'border-primary bg-primary' : hovered ? 'border-destructive' : inSpan? '' : 'border-primary'}"
+    class="border-t-0 border-b-0 hoverable inline-block border {Math.floor(currentFrame/timeline_zoom) == Math.floor(frame/timeline_zoom) ? 'border-primary bg-primary' : hovered ? 'border-destructive' : inSpan? '' : 'border-primary'}"
     style:box-sizing=border-box
 
     style:width={1 / ((range[1]-range[0] + (timeline_zoom - ((range[1]-range[0]) % timeline_zoom))) / 100) * timeline_zoom}%
