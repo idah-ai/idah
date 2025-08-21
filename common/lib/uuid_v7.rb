@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 #
 # From: https://github.com/sprql/uuid7-ruby/blob/master/lib/uuid7.rb
 # UUID v7 Generator

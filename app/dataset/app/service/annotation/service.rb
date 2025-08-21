@@ -28,7 +28,7 @@ module Annotation
         attributes[:entry_id] = record.entry.id
       else
         raise Verse::Error::ValidationFailed,
-          "entry relationship is required to create an annotation"
+              "entry relationship is required to create an annotation"
       end
 
       annotations.transaction do

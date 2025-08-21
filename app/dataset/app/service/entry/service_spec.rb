@@ -55,6 +55,144 @@ RSpec.describe Entry::Service, database: true do
     subject.create(record)
   end
 
+  describe "#create" do
+    context "when job_id is not provided" do
+      it "creates an entry with status ready" do
+        entry_record = deserialize(
+          {
+            data: {
+              type: "dataset:entries",
+              attributes: {},
+              relationships: {
+                dataset: {
+                  data: {
+                    type: "dataset:datasets",
+                    id: dataset_id
+                  }
+                }
+              }
+            }
+          }
+        )
+        result = subject.create(entry_record)
+        expect(result.status).to eq("ready")
+      end
+    end
+
+    context "when job_id is provided" do
+      let(:job_id) { 123 }
+      let(:entry_record) do
+        deserialize(
+          {
+            data: {
+              type: "dataset:entries",
+              attributes: {
+                job_id: job_id
+              },
+              relationships: {
+                dataset: {
+                  data: {
+                    type: "dataset:datasets",
+                    id: dataset_id
+                  }
+                }
+              }
+            }
+          }
+        )
+      end
+
+      context "when the job is done" do
+        before do
+          body = {
+            data: {
+              id: job_id,
+              type: "media:jobs",
+              attributes: {
+                status: "done"
+              }
+            }
+          }.to_json
+
+          stub_request(:get, "https://idah.example.com//api/media/jobs/123").
+         with(
+           headers: {
+          'Accept'=>'*/*',
+          'Accept-Encoding'=>'gzip;q=1.0,deflate;q=0.6,identity;q=0.3',
+          'Host'=>'idah.example.com',
+          'User-Agent'=>'Ruby'
+           }).to_return(status: 200, body:, headers: {})
+
+          allow(subject.entries).to receive(:after_commit).and_yield
+        end
+
+        it "creates an entry with status ready" do
+          result = subject.create(entry_record)
+          expect(result.status).to eq("ready")
+        end
+      end
+
+      context "when the job is not done" do
+        before do
+          stub_request(:get, "http://localhost:3001/jobs/#{job_id}").
+            to_return(status: 200,
+                      body: {
+                        data: {
+                          id: job_id,
+                          type: "media:jobs",
+                          attributes: { status: "running" }
+                        }
+                      }.to_json,
+                      headers: { "Content-Type" => "application/json" })
+        end
+
+        it "creates an entry with status pending" do
+          result = subject.create(entry_record)
+          expect(result.status).to eq("pending")
+        end
+      end
+    end
+  end
+
+  describe "#mark_entries_as_ready" do
+    let(:job_id) { 456 }
+
+    before do
+      repo.create(
+        {
+          dataset_id: dataset_id,
+          job_id: job_id,
+          status: "pending"
+        }
+      )
+
+      repo.create(
+        {
+          dataset_id: dataset_id,
+          job_id: job_id,
+          status: "pending"
+        }
+      )
+      repo.create(
+        {
+          dataset_id: dataset_id,
+          job_id: 789,
+          status: "pending"
+        }
+      )
+    end
+
+    it "marks entries with the given job_id as ready" do
+      subject.mark_entries_as_ready(job_id)
+
+      entries = repo.index({ job_id: job_id })
+      expect(entries.map(&:status)).to all(eq("ready"))
+
+      other_entry = repo.index({ job_id: 789 }).first
+      expect(other_entry.status).to eq("pending")
+    end
+  end
+
   describe "#show" do
     it "shows an entry" do
       found_entry = subject.show(entry.id)
