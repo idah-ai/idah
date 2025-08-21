@@ -23,6 +23,8 @@ SimpleCov.start do
 
   add_filter "app/journey"
   add_filter "config"
+  add_filter "common/lib"
+
   add_filter /_spec.rb$/
 end
 
