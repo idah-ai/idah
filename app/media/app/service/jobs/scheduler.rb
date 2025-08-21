@@ -45,13 +45,10 @@ module Jobs
       loop do
         break unless running
 
-        # Check for jobs available
-        Verse.logger&.debug "Checking for jobs to run"
-
         # Pull more job if a thread is free.
         free = @thread_pool.free
         if free > 0
-          Verse.logger&.debug "Thread pool has #{free} free threads"
+          Verse.logger&.debug "Job pooling (#{free} free threads)"
           available_jobs = jobs.lock_available(free)
           available_jobs.each(&method(:process))
         end
@@ -66,9 +63,7 @@ module Jobs
           else
             next_in = time.to_f - Time.now.to_f
 
-            if next_in <= 0
-              Verse.logger&.debug "Next scheduled job is ready to run"
-            else
+            if next_in > 0
               Verse.logger&.debug "Next scheduled job in #{next_in} seconds"
               # Wait until the next scheduled job is ready
               @wait_cond.wait(next_in)
@@ -87,12 +82,13 @@ module Jobs
         raise "Job class #{job.job_class} is not a valid Jobs::Base subclass"
       end
 
-      Verse.logger&.debug {
-        "Processing job #{klass.name}:#{job.id} with arguments #{job.arguments.inspect[0..100]}"
-      }
+      Verse.logger&.debug{ "Enqueuing job #{klass.name}:#{job.id} with arguments #{job.arguments.inspect[0..100]}" }
 
       @thread_pool.run do
         catch :stop do
+          Verse.logger&.info {
+            "Processing job #{klass.name}:#{job.id} with arguments #{job.arguments.inspect[0..100]}"
+          }
           klass.new(job.id, job.arguments).run do |command, **opts|
             case command
             when :update_progress

@@ -56,7 +56,6 @@ module Video
                    end
 
         rational_fps = video_info.fps.to_r.rationalize(0.0001)
-
         master_m3u8 <<
           "#EXT-X-STREAM-INF:PROGRAM-ID=1," \
           "BANDWIDTH=#{bitrate.to_i * 1024}," \
