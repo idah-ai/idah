@@ -5,7 +5,7 @@ require "spec_helper"
 RSpec.describe DatasetsExpo, type: :exposition, as: :system do
   let(:now) { Time.now.utc }
 
-  let(:uuid) { UUIDv7.generate}
+  let(:uuid) { UUIDv7.generate }
 
   let(:dataset_record) do
     Dataset::Record.new(
