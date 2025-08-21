@@ -58,8 +58,8 @@
    onMount(async () => {
         // for now
         $effect(() => {
-            if (url){
-                player?.update_src('application/x-mpegURL', url);//...
+            if (url && player && url != player?.source()){
+                player?.source(url);//...
             }
         })
         entriesBackendDataSource.list().then((r) => {
@@ -67,7 +67,7 @@
             url = [
                 'https://idah.localhost:8443/api/v1/media/medias/files',
                 r.data[0].attributes().resource,
-                // 'master.m3u8'
+                'master.m3u8'
             ].join('/')
         })
         annotationsBackendDataSource.list().then((r) => {
@@ -511,20 +511,6 @@
                         if (annotation.metadata.updatedAt == updatedAt)
                             annotation.synced = true;
                     })
-
-                    // callQueue.register_call(() => {
-                    //     let p = datasource.update(annotation_id, { attributes: { value: value_from } }).then(() => {
-                    //         if (annotation.metadata.updatedAt == updatedAt) annotation.synced = true;
-                    //     });
-
-                    //     toast.promise(p, {
-                    //         loading: "synchro undo update value",
-                    //         success: "synchro ok",
-                    //         error: "synchro ko",
-                    //     });
-
-                    //     return p;
-                    // });
                 }
             },
             isCombinable: () => false,
@@ -535,7 +521,6 @@
     }
 
     function selectAnnotation(annotation?: VideoAnnotation) {
-        console.debug({ selected: $state.snapshot(annotation), previous: selectedAnnotation });
         selectedAnnotation = annotation;
         mode = annotation?.shape.type || "view";
     }
@@ -602,15 +587,17 @@
 
                     <!-- TODO::Delete old Controls when not needed -->
                     <Controls
-                        onNextFrame={() => player.nextFrame()}
-                        onTogglePlay={() => player.togglePlay()}
-                        onPreviousFrame={() => player.previousFrame()}
-                        onToggleMute={() => player.toggleMute()}
+                        onNextFrame={() => player?.nextFrame()}
+                        onTogglePlay={() => player?.togglePlay()}
+                        onPreviousFrame={() => player?.previousFrame()}
+                        onToggleMute={() => player?.toggleMute()}
                         {currentFrame}
                         {totalFrames}
                         {volume}
-                        onSetVolume={(v: number) => (volume = player.setVolume(v) || 0)}
-                        onSeekFrame={(f: number) => player.seekToFrame(f)}
+                        onSetVolume={(v: number) => (volume = player?.setVolume(v) || 0)}
+                        onSeekFrame={(f) => {
+                            player?.seekToFrame(f)
+                        }}
                         {annotations}
                         {selectedAnnotation}
                         onSelectAnnotation={selectAnnotation}

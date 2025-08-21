@@ -39,6 +39,8 @@
     })
 
     function draw_cmd(path: Point[]) {
+        if (path.length == 0) return
+
         return [
             ...path.map((p, i) => `${i == 0 ? 'M' : 'L'}${p[X]} ${p[Y]}`),
             'Z' // closingpath ?
@@ -196,25 +198,30 @@
         {/each}
 {/snippet}
 
+{#snippet bb(path?: string)}
+    {#if path}
+        <path
+            d={path}
+            style:transform-origin={'top left'}
+            style:transform={`translate(${offset[X]}px, ${offset[Y]}px) scale(${ratio[X]}, ${ratio[Y]})`}
+            vector-effect= "non-scaling-stroke"
+            fill-opacity={0.25}
+            style:fill={color}
+            style:stroke={color}
+            style:stroke-width={'1'}
+            onmousedown={(e) => {
+                console.log({e, editable, editing: isEditing()})
+                if (editable && !panStart && !isEditing()) {
+                    e.stopPropagation()
+                    panStart = cursor
+                }
+                onmousedown?.(e)
+            }}
+            />
+    {/if}
+{/snippet}
 
-<path
-    d={draw_cmd(boundingBox(bounding_box, cursor))}
-    style:transform-origin={'top left'}
-    style:transform={`translate(${offset[X]}px, ${offset[Y]}px) scale(${ratio[X]}, ${ratio[Y]})`}
-    vector-effect= "non-scaling-stroke"
-    fill-opacity={0.25}
-    style:fill={color}
-    style:stroke={color}
-    style:stroke-width={'1'}
-    onmousedown={(e) => {
-        console.log({e, editable, editing: isEditing()})
-        if (editable && !panStart && !isEditing()) {
-            e.stopPropagation()
-            panStart = cursor
-        }
-        onmousedown?.(e)
-    }}
-    />
+{@render bb(draw_cmd(boundingBox(bounding_box, cursor)))}
 
 {#if editable && !isEditing()}
     {@render BoundingBoxHandle(boundingBox(bounding_box, cursor))}

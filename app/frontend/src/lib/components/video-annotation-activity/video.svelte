@@ -28,6 +28,9 @@
             responsive: false,
             fluid: true,
             disablePictureInPicture: true,
+            // sources: [
+            //     {src: 'https://idah.localhost:8443/api/v1/media/medias/files/410910ci5lpcck5qmh.mp4/master.m3u8'}
+            // ]
             // poster:"",
     }
     let duration = $state(0)
@@ -49,9 +52,8 @@
         }
     }
 
-    export function update_src(type:string, src:string) {
-        player.src(src);
-        player.load()
+    export function source(src?:any) {
+        return player.src(src);
     }
 
     export function nextFrame() {
@@ -92,7 +94,7 @@
     onMount(() => {
         player = videojs(element, options, () => {
            volume = (player.volume() || 0) * 100
-            quality_check()
+            quality_check('onMount')
 
             player.on('durationchange', () => {
                 duration = player.duration() || 0;
@@ -104,10 +106,17 @@
             player.on('durationchange', () => quality_check('durationchange'))
             player.on('loadstart', () => quality_check('loadstart'))
             player.on('sourceset', () => quality_check('sourceset'))
-            player.on('loadedata', () => quality_check('loadedata'))
-            player.on('loademetadata', () => quality_check('loademetadata'))
+            player.on('loadeddata', () => quality_check('loadeddata'))
+            player.on('loadedmetadata', () => quality_check('loadedmetadata'))
             player.on('resize', () => quality_check('resize'))
-            player.on('timeupdate', () => {});
+            player.on('timeupdate', () => {
+                mediaTime = player.currentTime() || 0
+            });
+        //    player.on('stalled', () => console.log('stalled'));
+        //    player.on('ready', () => console.log('ready'));
+        //    player.on('progress', () => console.log('progress'));
+        //    player.on('change', () => console.log('change'));
+        //    player.on('statechanged', () => console.log('statechanged'));
 
             player.on('play', () => {
                 raf = requestAnimationFrame(trackFrame)
@@ -122,11 +131,13 @@
             })
 
             player.on('seeked', () => {
+                // console.log({seeked: player.currentTime(), mediaTime})
                 mediaTime = player.currentTime() || 0
             })
 
-            player.on('seeking', () => {
-            })
+            // player.on('seeking', (e) => {
+            //     console.warn('seeking?')
+            // })
 
             player.on('suspend', () => {
             })
@@ -141,6 +152,7 @@
     }
 
     function quality_check(from?: string) {
+        // console.error(from)
         let qualityLevel = player.qualityLevels()[player.qualityLevels().selectedIndex]
 
         duration = player.duration() || 0;
