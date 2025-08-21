@@ -5,7 +5,7 @@ class EntriesExpo < BaseExpo
 
   use_service Entry::Service
 
-  json_api Entry::Record, http_opts: { auth:nil } do
+  json_api Entry::Record, http_opts: { auth: nil } do
     show
     index
     create do
@@ -16,9 +16,9 @@ class EntriesExpo < BaseExpo
   end
 
   expose on_resource_event(Resource::Media::Jobs, :completed)
-  def on_job_updated(job)
+  def on_job_updated(_job)
     job_id = message.content[:resource_id]
 
-    service.update_entry_on_job_completed(job_id)
+    service.mark_entries_as_ready(job_id)
   end
 end
