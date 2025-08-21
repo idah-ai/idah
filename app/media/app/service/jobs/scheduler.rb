@@ -86,7 +86,7 @@ module Jobs
 
       @thread_pool.run do
         catch :stop do
-          Verse.logger&.debug {
+          Verse.logger&.info {
             "Processing job #{klass.name}:#{job.id} with arguments #{job.arguments.inspect[0..100]}"
           }
           klass.new(job.id, job.arguments).run do |command, **opts|
