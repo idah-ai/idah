@@ -29,8 +29,6 @@ class Api
     @auths[provider] = block
   end
 
-  private
-
   def register_service(service_name)
     @services ||= {}
     @services.fetch(service_name) do

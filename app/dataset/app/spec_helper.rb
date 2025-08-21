@@ -54,6 +54,9 @@ RSpec.configure do |config|
   config.include Rack::Test::Methods
   config.include Verse::JsonApi::Deserializer
 
+  config.include RSpec::Mocks::ExampleMethods
+  config.include WebMock::API
+
   Verse::Spec.add_user(:system, "system")
   Verse::Spec.add_user(:anonymous, "anonymous")
 

@@ -24,16 +24,44 @@ module Entry
 
       attr[:id] = record.id || UUIDv7.generate
 
-      if record.dataset
-        attr[:dataset_id] = record.dataset.id
-      else
-        raise Verse::Error::ValidationFailed,
-          "dataset is required to create a dataset"
+      entries.transaction do
+        job_id = attr[:job_id]
+
+        attr[:status] = if job_id
+                          "pending"
+                        else
+                          "ready"
+                        end
+
+        if record.dataset
+          attr[:dataset_id] = record.dataset.id
+        else
+          raise Verse::Error::ValidationFailed,
+                "dataset is required to create a dataset"
+        end
+
+        id = entries.create(attr)
+
+        if job_id
+          # After we created, we check the job status
+          # and update the entry status accordingly.
+          # If the job is not done yet, we will update the
+          # status on event.
+          entries.after_commit do
+            job = Api[:idah].media.jobs.show(id: job_id)
+
+            if job.status == "done"
+              entries.update!(id, {status: "ready"})
+            end
+          end
+        end
+
+        entries.find!(id)
       end
+    end
 
-
-      id = entries.create(attr)
-      entries.find!(id)
+    def mark_entries_as_ready(job_id)
+      entries.mark_entries_as_ready(job_id)
     end
 
     def update(record)
