@@ -185,7 +185,6 @@
                 e.stopPropagation()
                 remove_resizeable_points(bb, handle)
             }}
-            onkeypress={console.log}
             cx={point[X] * ratio[X]} cy={point[Y] * ratio[Y]} r={5}
             style:transform-origin={'top left'}
             style:transform={`translate(${offset[X]}px, ${offset[Y]}px)`}
@@ -210,7 +209,6 @@
             style:stroke={color}
             style:stroke-width={'1'}
             onmousedown={(e) => {
-                console.log({e, editable, editing: isEditing()})
                 if (editable && !panStart && !isEditing()) {
                     e.stopPropagation()
                     panStart = cursor

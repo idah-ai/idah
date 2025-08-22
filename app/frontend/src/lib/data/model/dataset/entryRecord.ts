@@ -1,6 +1,6 @@
 import { createBackendDataSource } from "@/data/BackendDataSource";
 import { field, Record, RecordFactory, relationship, type } from "../Record";
-import type { AnnotationRecord } from "./annotationRecord";
+import type { DatasetRecord } from "./datasetRecord";
 
 @type("dataset:entries")
 export class EntryRecord extends Record {
@@ -12,7 +12,7 @@ export class EntryRecord extends Record {
   @field() public created_at!: Date;
   @field() public updated_at!: Date;
 
-  @relationship() public annotations!: AnnotationRecord;
+  @relationship() public dataset!: DatasetRecord;
 }
 
 RecordFactory.registerTypes(EntryRecord);

@@ -100,7 +100,6 @@
 				onSeekFrame(v);
 				// timeline_table.setOffset(v - Math.floor(((scale * timeline_zoom) / 2)))
 			}}
-			onchange={console.log}
 		/>/{Math.max(0, totalFrames - 1)}
 	</Menubar.Menu>
 	<Button>

@@ -1,6 +1,6 @@
 import { createBackendDataSource } from "@/data/BackendDataSource";
 import { field, Record, RecordFactory, relationship, type } from "../Record";
-import type { AnnotationRecord } from "./annotationRecord";
+import type { ProjectRecord } from "./projectRecord";
 
 @type("dataset:datasets")
 export class DatasetRecord extends Record {
@@ -12,12 +12,12 @@ export class DatasetRecord extends Record {
   @field() public progress!: Date;
   @field() public updated_at!: Date;
 
-  @relationship() public annotations!: AnnotationRecord;
+  @relationship() public project!: ProjectRecord;
 }
 
 RecordFactory.registerTypes(DatasetRecord);
 
-export const entriesJsonApiDataSource = createBackendDataSource(
+export const datasetsBackendDataSource = createBackendDataSource(
   DatasetRecord,
-  "https://idah.localhost:8443/api/v1/dataset/entries",
+  "https://idah.localhost:8443/api/v1/dataset/datasets",
 );

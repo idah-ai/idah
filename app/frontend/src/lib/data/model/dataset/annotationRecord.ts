@@ -1,13 +1,7 @@
 import type { AnnotationShape, AnnotationValue } from "@/context/AnnotationContext";
-import { field, Record, RecordFactory, type } from "../Record";
+import { field, Record, RecordFactory, relationship, type } from "../Record";
 import { createBackendDataSource } from "@/data/BackendDataSource";
-
-// @type('annotation')
-// export class AnnotationRecord extends Record {
-//     @field() public shape!: AnnotationShape
-//     @field() public value!: AnnotationValue
-//     @field() public metadata!: AnnotationMetadata
-// }
+import type { EntryRecord } from "./entryRecord";
 
 @type("dataset:annotations")
 export class AnnotationRecord extends Record {
@@ -17,6 +11,8 @@ export class AnnotationRecord extends Record {
   @field() public created_by_id!: string;
   @field() public created_at!: Date;
   @field() public updated_at!: Date;
+
+  @relationship() public entry!: EntryRecord;
 }
 
 RecordFactory.registerTypes(AnnotationRecord);

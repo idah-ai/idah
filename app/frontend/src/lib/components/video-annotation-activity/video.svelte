@@ -91,6 +91,11 @@
     export function isPlaying(){
         return player ? player.paused() : false
     }
+
+    export function playbackRate(value:number){
+        player.playbackRate(value)
+    }
+
     onMount(() => {
         player = videojs(element, options, () => {
            volume = (player.volume() || 0) * 100
