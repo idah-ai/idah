@@ -33,6 +33,8 @@
     import type { Command } from "@/command/Command";
     import { entriesBackendDataSource } from "@/data/model/dataset/entryRecord";
     import { sleep } from "@/utils/delayed";
+    import { projectsBackendDataSource } from "@/data/model/dataset/projectRecord";
+    import { datasetsBackendDataSource } from "@/data/model/dataset/datasetRecord";
 
     let player: Video|undefined = $state();
     let player_container: HTMLDivElement | undefined = $state(); // ...
@@ -62,33 +64,58 @@
                 player?.source(url);//...
             }
         })
-        entriesBackendDataSource.list().then((r) => {
-            entry_id = r.data[0].id
-            url = [
-                'https://idah.localhost:8443/api/v1/media/medias/files',
-                r.data[0].attributes().resource,
-                'master.m3u8'
-            ].join('/')
-        })
-        annotationsBackendDataSource.list().then((r) => {
-            annotations = r.data.map((a) => {
-                return {
-                    shape: a.dimensions as VideoShape,
-                    value: a.annotation,
-                    metadata: {
-                        id: a.id,
-                        updatedAt: a.updated_at,
-                        createdAt: a.created_at,
-                    }, synced: true
-                }
+
+        projectsBackendDataSource.list().then((projects) => {
+            console.log({projects})
+
+            datasetsBackendDataSource.list().then((datasets) => {
+                console.log({datasets})
+
+                entriesBackendDataSource.list().then((entries) => {
+                    console.log({entries})
+                    entry_id = entries.data[0].id
+                    url = [
+                        'https://idah.localhost:8443/api/v1/media/medias/files',
+                        entries.data[0].attributes().resource,
+                        'master.m3u8'
+                    ].join('/')
+
+                    fetchAnnotations()
+                })
             })
-        });
+        })
+
+        function fetchAnnotations(page = 1, itemsPerPage = 100){
+            annotationsBackendDataSource.list({
+                filters:{entry_id: entry_id}, // >?
+
+                pagination:{page, itemsPerPage}
+            }).then((r) => {
+                r.data.map((a) => {
+                    console.log({loadedAnnotation: a})
+                    return {
+                        shape: a.dimensions as VideoShape,
+                        value: a.annotation,
+                        metadata: {
+                            id: a.id,
+                            updatedAt: a.updated_at,
+                            createdAt: a.created_at,
+                        }, synced: true
+                    }
+                }).forEach(i => {
+                    // if created locally during loading ?
+                    if (annotations.find(a => a.metadata.id == i.metadata.id)){
+                        return
+                    }
+                    annotations.push(i)
+                });
+                if (r.data.length) fetchAnnotations(page + 1)
+            });
+        }
     });
 
     function addAnnotation(shape: VideoShape, value: AnnotationValue = {}) {
         const id = uuidv7();
-        // shape = $state.snapshot(shape) as VideoShape
-        // value = $state.snapshot(value) as AnnotationValue
 
         const cmd = {
             name: "new annotation",
@@ -242,7 +269,6 @@
 
                 if (!v) return toast.error("bounding box not found");
 
-                console.log({ selection });
                 const updatedAt = new Date();
                 v.shape = {
                     ...v.shape,
@@ -430,7 +456,6 @@
     }
 
     function onShapeSelection(type: VideoShapeType, frame: number, points: Point[] = [], selectedId?: string) {
-        console.log({ type, frame, points: $state.snapshot(points), selectedId });
         if (!selectedId) {
             let annotation_value_from = $state.snapshot(annotationValue) as AnnotationValue;
             addAnnotation(
@@ -563,7 +588,7 @@
                         onSelectAnnotation={selectAnnotation}
                         onSelection={onShapeSelection}
                         target_container={player_container}
-                    >
+                    > <!-- container context ?-->
                         <Video
                             bind:this={player}
                             bind:element={player_container}
