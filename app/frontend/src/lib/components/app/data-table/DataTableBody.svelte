@@ -1,11 +1,11 @@
 <script lang="ts">
-	import TableBody from "$/lib/components/ui/table/table-body.svelte";
-	import TableCell from "$/lib/components/ui/table/table-cell.svelte";
-	import TableRow from "$/lib/components/ui/table/table-row.svelte";
+	import TableBody from "@/components/ui/table/table-body.svelte";
+	import TableCell from "@/components/ui/table/table-cell.svelte";
+	import TableRow from "@/components/ui/table/table-row.svelte";
 
-	import { cn } from "$/lib/utils";
+	import { cn } from "@/utils";
 
-	import type { ColumnsSettings } from "$/lib/components/app/data-table/DataTable.types";
+	import type { ColumnsSettings } from "@/components/app/data-table/DataTable.types";
 
 	// Props
 	interface Props {

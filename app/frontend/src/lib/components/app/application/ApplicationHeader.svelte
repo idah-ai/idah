@@ -1,6 +1,6 @@
 <script lang="ts">
-	import SidebarTrigger from "$lib/components/ui/sidebar/sidebar-trigger.svelte";
-	import Separator from "$lib/components/ui/separator/separator.svelte";
+	import SidebarTrigger from "@/components/ui/sidebar/sidebar-trigger.svelte";
+	import Separator from "@/components/ui/separator/separator.svelte";
 </script>
 
 <header class="flex h-16 shrink-0 items-center gap-2">

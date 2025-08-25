@@ -1,14 +1,14 @@
 <script lang="ts">
-	import Button from "$lib/components/ui/button/button.svelte";
-	import Command from "$/lib/components/ui/command/command.svelte";
-	import CommandGroup from "$/lib/components/ui/command/command-group.svelte";
-	import CommandInput from "$/lib/components/ui/command/command-input.svelte";
-	import CommandItem from "$lib/components/ui/command/command-item.svelte";
-	import CommandList from "$lib/components/ui/command/command-list.svelte";
-	import CommandSeparator from "$lib/components/ui/command/command-separator.svelte";
-	import DateRangePickerField from "$lib/components/app/forms/fields/picker/DateRangePickerField.svelte";
-	import DataTableHeadLabel from "$lib/components/app/data-table/DataTableHeadLabel.svelte";
-	import { Popover, PopoverContent, PopoverTrigger } from "$lib/components/ui/popover";
+	import Button from "@/components/ui/button/button.svelte";
+	import Command from "@/components/ui/command/command.svelte";
+	import CommandGroup from "@/components/ui/command/command-group.svelte";
+	import CommandInput from "@/components/ui/command/command-input.svelte";
+	import CommandItem from "@/components/ui/command/command-item.svelte";
+	import CommandList from "@/components/ui/command/command-list.svelte";
+	import CommandSeparator from "@/components/ui/command/command-separator.svelte";
+	import DateRangePickerField from "@/components/app/forms/fields/picker/DateRangePickerField.svelte";
+	import DataTableHeadLabel from "@/components/app/data-table/DataTableHeadLabel.svelte";
+	import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 	import {
 		ArrowDownAZIcon,
@@ -19,8 +19,8 @@
 		type Icon as IconType,
 	} from "@lucide/svelte";
 
-	import type { ColumnSettings } from "$lib/components/app/data-table/DataTable.types";
-	import { cn } from "$/lib/utils";
+	import type { ColumnSettings } from "@/components/app/data-table/DataTable.types";
+	import { cn } from "@/utils";
 
 	// Props
 	interface Props {

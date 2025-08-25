@@ -1,12 +1,12 @@
 <script lang="ts">
-	import Button from "$/lib/components/ui/button/button.svelte";
-	import { Dialog } from "$/lib/components/ui/dialog";
-	import DialogClose from "$/lib/components/ui/dialog/dialog-close.svelte";
-	import DialogContent from "$/lib/components/ui/dialog/dialog-content.svelte";
-	import DialogDescription from "$/lib/components/ui/dialog/dialog-description.svelte";
-	import DialogFooter from "$/lib/components/ui/dialog/dialog-footer.svelte";
-	import DialogTitle from "$/lib/components/ui/dialog/dialog-title.svelte";
-	import ScrollArea from "$/lib/components/ui/scroll-area/scroll-area.svelte";
+	import Button from "@/components/ui/button/button.svelte";
+	import { Dialog } from "@/components/ui/dialog";
+	import DialogClose from "@/components/ui/dialog/dialog-close.svelte";
+	import DialogContent from "@/components/ui/dialog/dialog-content.svelte";
+	import DialogDescription from "@/components/ui/dialog/dialog-description.svelte";
+	import DialogFooter from "@/components/ui/dialog/dialog-footer.svelte";
+	import DialogTitle from "@/components/ui/dialog/dialog-title.svelte";
+	import ScrollArea from "@/components/ui/scroll-area/scroll-area.svelte";
 
 	import type { FormModalBaseProps } from "$lib/components/app/overlays/modals/FormModal.types";
 

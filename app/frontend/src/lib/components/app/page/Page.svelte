@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { onMount } from "svelte";
 
-	import ApplicationHeader from "$/lib/components/app/application/ApplicationHeader.svelte";
+	import ApplicationHeader from "@/components/app/application/ApplicationHeader.svelte";
 
-	import type { WithElementRef } from "$/lib/utils";
+	import type { WithElementRef } from "@/utils";
 	import type { HTMLAttributes } from "svelte/elements";
 
 	// Props

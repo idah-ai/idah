@@ -1,7 +1,7 @@
 <script lang="ts">
 	import Text from "$lib/components/ui/text/Text.svelte";
 
-	import type { WithElementRef } from "$/lib/utils";
+	import type { WithElementRef } from "@/utils";
 	import type { HTMLAttributes } from "svelte/elements";
 	import type { Snippet } from "svelte";
 

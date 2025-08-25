@@ -2,7 +2,7 @@
 	import type { WithElementRef } from "bits-ui";
 	import type { HTMLAttributes } from "svelte/elements";
 
-	import SidebarInset from "$lib/components/ui/sidebar/sidebar-inset.svelte";
+	import SidebarInset from "@/components/ui/sidebar/sidebar-inset.svelte";
 
 	// Props
 	let { children }: WithElementRef<HTMLAttributes<HTMLElement>> = $props();

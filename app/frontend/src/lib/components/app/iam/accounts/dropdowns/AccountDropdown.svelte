@@ -1,17 +1,17 @@
 <script lang="ts">
-	import AvatarFallback from "$/lib/components/ui/avatar/avatar-fallback.svelte";
-	import AvatarImage from "$/lib/components/ui/avatar/avatar-image.svelte";
-	import Avatar from "$/lib/components/ui/avatar/avatar.svelte";
-	import { DropdownMenu } from "$/lib/components/ui/dropdown-menu";
-	import DropdownMenuContent from "$/lib/components/ui/dropdown-menu/dropdown-menu-content.svelte";
-	import DropdownMenuGroup from "$/lib/components/ui/dropdown-menu/dropdown-menu-group.svelte";
-	import DropdownMenuItem from "$/lib/components/ui/dropdown-menu/dropdown-menu-item.svelte";
-	import DropdownMenuLabel from "$/lib/components/ui/dropdown-menu/dropdown-menu-label.svelte";
-	import DropdownMenuSeparator from "$/lib/components/ui/dropdown-menu/dropdown-menu-separator.svelte";
-	import DropdownMenuTrigger from "$/lib/components/ui/dropdown-menu/dropdown-menu-trigger.svelte";
-	import SidebarMenuButton from "$/lib/components/ui/sidebar/sidebar-menu-button.svelte";
+	import AvatarFallback from "@/components/ui/avatar/avatar-fallback.svelte";
+	import AvatarImage from "@/components/ui/avatar/avatar-image.svelte";
+	import Avatar from "@/components/ui/avatar/avatar.svelte";
+	import { DropdownMenu } from "@/components/ui/dropdown-menu";
+	import DropdownMenuContent from "@/components/ui/dropdown-menu/dropdown-menu-content.svelte";
+	import DropdownMenuGroup from "@/components/ui/dropdown-menu/dropdown-menu-group.svelte";
+	import DropdownMenuItem from "@/components/ui/dropdown-menu/dropdown-menu-item.svelte";
+	import DropdownMenuLabel from "@/components/ui/dropdown-menu/dropdown-menu-label.svelte";
+	import DropdownMenuSeparator from "@/components/ui/dropdown-menu/dropdown-menu-separator.svelte";
+	import DropdownMenuTrigger from "@/components/ui/dropdown-menu/dropdown-menu-trigger.svelte";
+	import SidebarMenuButton from "@/components/ui/sidebar/sidebar-menu-button.svelte";
 
-	import { useSidebar } from "$/lib/components/ui/sidebar";
+	import { useSidebar } from "@/components/ui/sidebar";
 
 	import { ChevronsUpDownIcon, CircleUserRoundIcon, LogOutIcon, SettingsIcon, SunMoonIcon } from "@lucide/svelte";
 

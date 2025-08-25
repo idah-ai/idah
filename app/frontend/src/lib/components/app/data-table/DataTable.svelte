@@ -1,18 +1,18 @@
 <script lang="ts">
-	import DataTableBody from "$/lib/components/app/data-table/DataTableBody.svelte";
-	import DataTableContent from "$/lib/components/app/data-table/DataTableContent.svelte";
-	import DataTableHeadLabel from "$/lib/components/app/data-table/DataTableHeadLabel.svelte";
-	import DataTableHeadOptions from "$/lib/components/app/data-table/DataTableHeadOptions.svelte";
-	import DataTableToggleColumns from "$/lib/components/app/data-table/DataTableToggleColumns.svelte";
-	import DataTableToolbarActions from "$/lib/components/app/data-table/DataTableToolbarActions.svelte";
-	import Table from "$/lib/components/ui/table/table.svelte";
-	import TableHead from "$/lib/components/ui/table/table-head.svelte";
-	import TableHeader from "$/lib/components/ui/table/table-header.svelte";
-	import TableRow from "$/lib/components/ui/table/table-row.svelte";
+	import DataTableBody from "@/components/app/data-table/DataTableBody.svelte";
+	import DataTableContent from "@/components/app/data-table/DataTableContent.svelte";
+	import DataTableHeadLabel from "@/components/app/data-table/DataTableHeadLabel.svelte";
+	import DataTableHeadOptions from "@/components/app/data-table/DataTableHeadOptions.svelte";
+	import DataTableToggleColumns from "@/components/app/data-table/DataTableToggleColumns.svelte";
+	import DataTableToolbarActions from "@/components/app/data-table/DataTableToolbarActions.svelte";
+	import Table from "@/components/ui/table/table.svelte";
+	import TableHead from "@/components/ui/table/table-head.svelte";
+	import TableHeader from "@/components/ui/table/table-header.svelte";
+	import TableRow from "@/components/ui/table/table-row.svelte";
 
-	import { cn } from "$/lib/utils";
+	import { cn } from "@/utils";
 
-	import type { DataTableBaseProps } from "$/lib/components/app/data-table/DataTable.types";
+	import type { DataTableBaseProps } from "@/components/app/data-table/DataTable.types";
 
 	// Props
 	interface Props extends DataTableBaseProps {}
