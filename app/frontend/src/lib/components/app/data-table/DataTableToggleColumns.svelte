@@ -1,16 +1,16 @@
 <script lang="ts">
-	import Button from "$/lib/components/ui/button/button.svelte";
+	import Button from "@/components/ui/button/button.svelte";
 	import {
 		DropdownMenu,
 		DropdownMenuCheckboxItem,
 		DropdownMenuContent,
 		DropdownMenuGroup,
 		DropdownMenuTrigger,
-	} from "$/lib/components/ui/dropdown-menu/index";
+	} from "@/components/ui/dropdown-menu/index";
 
 	import { Settings2Icon } from "@lucide/svelte";
 
-	import type { ColumnsSettings } from "$/lib/components/app/data-table/DataTable.types";
+	import type { ColumnsSettings } from "@/components/app/data-table/DataTable.types";
 
 	// Props
 	interface Props {

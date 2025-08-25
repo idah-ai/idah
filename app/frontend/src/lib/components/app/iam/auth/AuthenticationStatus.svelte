@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { onMount, type Snippet } from 'svelte';
+	import { onMount, type Snippet } from "svelte";
 
-	import ApplicationLoading from '$/lib/components/app/application/ApplicationLoading.svelte';
+	import ApplicationLoading from "@/components/app/application/ApplicationLoading.svelte";
 
-	import { cn } from '$/lib/utils';
+	import { cn } from "@/utils";
 
 	// Props
 	interface Props {
@@ -24,7 +24,7 @@
 	async function checkAuthStatus(): Promise<void> {}
 </script>
 
-<div class={cn('', className)}>
+<div class={cn("", className)}>
 	<!-- {#if loading}
 		{@render loading?.()}
 	{:else}

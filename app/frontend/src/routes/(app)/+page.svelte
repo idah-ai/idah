@@ -1,6 +1,6 @@
 <script lang="ts">
-	import Page from "$/lib/components/app/page/Page.svelte";
-	import PageHeader from "$/lib/components/app/page/PageHeader.svelte";
+	import Page from "@/components/app/page/Page.svelte";
+	import PageHeader from "@/components/app/page/PageHeader.svelte";
 </script>
 
 <Page name="home">

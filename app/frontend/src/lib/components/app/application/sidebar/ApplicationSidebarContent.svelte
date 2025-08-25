@@ -1,10 +1,10 @@
 <script lang="ts">
-	import SidebarContent from "$lib/components/ui/sidebar/sidebar-content.svelte";
-	import SidebarGroupLabel from "$lib/components/ui/sidebar/sidebar-group-label.svelte";
-	import SidebarGroup from "$lib/components/ui/sidebar/sidebar-group.svelte";
-	import SidebarMenu from "$lib/components/ui/sidebar/sidebar-menu.svelte";
-	import SidebarMenuButton from "$lib/components/ui/sidebar/sidebar-menu-button.svelte";
-	import SidebarMenuItem from "$lib/components/ui/sidebar/sidebar-menu-item.svelte";
+	import SidebarContent from "@/components/ui/sidebar/sidebar-content.svelte";
+	import SidebarGroupLabel from "@/components/ui/sidebar/sidebar-group-label.svelte";
+	import SidebarGroup from "@/components/ui/sidebar/sidebar-group.svelte";
+	import SidebarMenu from "@/components/ui/sidebar/sidebar-menu.svelte";
+	import SidebarMenuButton from "@/components/ui/sidebar/sidebar-menu-button.svelte";
+	import SidebarMenuItem from "@/components/ui/sidebar/sidebar-menu-item.svelte";
 
 	import { FileVideo2Icon, RocketIcon } from "@lucide/svelte";
 </script>

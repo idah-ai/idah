@@ -1,6 +1,6 @@
 <script lang="ts" module>
 	import type { HTMLAttributes } from "svelte/elements";
-	import { cn, type WithElementRef } from "$/lib/utils";
+	import { cn, type WithElementRef } from "@/utils";
 	import { tv, type VariantProps } from "tailwind-variants";
 
 	export const textVariants = tv({

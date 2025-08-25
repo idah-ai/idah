@@ -1,12 +1,12 @@
 <script lang="ts">
-	import Button from "$/lib/components/ui/button/button.svelte";
-	import DataTable from "$/lib/components/app/data-table/DataTable.svelte";
-	import Page from "$/lib/components/app/page/Page.svelte";
-	import PageHeader from "$/lib/components/app/page/PageHeader.svelte";
-	import ProjectFormModal from "$/lib/components/app/workflow/projects/overlays/ProjectFormModal.svelte";
+	import Button from "@/components/ui/button/button.svelte";
+	import DataTable from "@/components/app/data-table/DataTable.svelte";
+	import Page from "@/components/app/page/Page.svelte";
+	import PageHeader from "@/components/app/page/PageHeader.svelte";
+	import ProjectFormModal from "@/components/app/workflow/projects/overlays/ProjectFormModal.svelte";
 	import { PlusIcon } from "@lucide/svelte";
 
-	import { projectColumns } from "$/lib/components/app/workflow/projects/data-tables/project.columns";
+	import { projectColumns } from "@/components/app/workflow/projects/data-tables/project.columns";
 
 	// Variables
 	let openNewProjectModal: boolean = false;

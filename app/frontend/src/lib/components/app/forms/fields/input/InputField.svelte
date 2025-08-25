@@ -3,9 +3,9 @@
 	import FormFieldErrors from "$lib/components/app/forms/FormFieldErrors.svelte";
 	import FormFieldInfo from "$lib/components/app/forms/FormFieldInfo.svelte";
 	import FormFieldLabel from "$lib/components/app/forms/FormFieldLabel.svelte";
-	import Input from "$/lib/components/ui/input/input.svelte";
+	import Input from "@/components/ui/input/input.svelte";
 
-	import { cn } from "$/lib/utils";
+	import { cn } from "@/utils";
 
 	import type { FormFieldBaseProps } from "$lib/components/app/forms/FormField.types";
 

@@ -1,8 +1,8 @@
 <script lang="ts">
-	import SidebarHeader from "$lib/components/ui/sidebar/sidebar-header.svelte";
-	import SidebarMenu from "$lib/components/ui/sidebar/sidebar-menu.svelte";
-	import SidebarMenuItem from "$lib/components/ui/sidebar/sidebar-menu-item.svelte";
-	import SidebarMenuButton from "$lib/components/ui/sidebar/sidebar-menu-button.svelte";
+	import SidebarHeader from "@/components/ui/sidebar/sidebar-header.svelte";
+	import SidebarMenu from "@/components/ui/sidebar/sidebar-menu.svelte";
+	import SidebarMenuItem from "@/components/ui/sidebar/sidebar-menu-item.svelte";
+	import SidebarMenuButton from "@/components/ui/sidebar/sidebar-menu-button.svelte";
 </script>
 
 <SidebarHeader>
