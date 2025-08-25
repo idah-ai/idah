@@ -16,7 +16,7 @@
 	let { dataTableName, records, columns }: Props = $props();
 
 	// Variables
-	let hasRecords = records.length > 0;
+	let hasRecords = $derived(records.length > 0);
 </script>
 
 <TableBody>
@@ -24,11 +24,15 @@
 		{#each records as record}
 			<TableRow>
 				{#each Object.entries(columns) as [columnKey, columnSetting] (columnKey)}
-					{@const { dataType, cellComponent: CellComponent, visible } = columnSetting}
+					{@const { dataType, clickable, cellComponent: CellComponent, visible } = columnSetting}
 					{@const value = record[columnKey] || ""}
 
 					{#if visible}
-						<TableCell class="px-6 py-4">
+						<TableCell
+							class={cn("px-6 py-4", {
+								"cursor-pointer": clickable,
+							})}
+						>
 							{#if CellComponent}
 								<CellComponent this={columnSetting.cellComponent} {record} />
 							{:else if dataType === "string"}

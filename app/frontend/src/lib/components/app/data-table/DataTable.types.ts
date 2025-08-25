@@ -26,6 +26,7 @@ export type DataTableColumnFilterOperation =
 export interface ColumnSettings {
 	label: string;
 	dataType: DataTableColumnDataType;
+	clickable?: boolean;
 	sortable: boolean;
 	filterable: boolean;
 	filterOptions?: {

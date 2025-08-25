@@ -4,6 +4,7 @@ export const projectColumns: ColumnsSettings = {
 	name: {
 		label: "Project name",
 		dataType: "string",
+		clickable: true,
 		sortable: true,
 		filterable: true,
 		filterOptions: {
