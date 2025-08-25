@@ -7,12 +7,13 @@
   import AnnotationFooter from "@/components/app/annotation/layout/footer/AnnotationFooter.svelte";
   import AnnotationFooterToolbar from "@/components/app/annotation/layout/footer/AnnotationFooterToolbar.svelte";
   import AnnotationSidebar from "@/components/app/annotation/layout/sidebar/AnnotationSidebar.svelte";
+  import AnnotationIssueSidebar from "@/components/app/annotation/layout/sidebar/issue/AnnotationIssueSidebar.svelte";
+  import AnnotationLayout from "@/components/app/annotation/layout/AnnotationLayout.svelte";
   import LegacyAnnotationSidebar from "@/components/video-annotation-activity/annotation-sidebar.svelte";
   import CommandManager from "@/command/CommandManager";
   import Controls from "@/components/video-annotation-activity/controls.svelte";
   import Navbar from "@/components/video-annotation-activity/navbar.svelte";
-  import SidebarProvider from "@/components/ui/sidebar/sidebar-provider.svelte";
-  import SidebarInset from "@/components/ui/sidebar/sidebar-inset.svelte";
+  import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
   import SvgOverlay from "@/components/video-annotation-activity/svg-overlay.svelte";
   import Video from "@/components/video-annotation-activity/video.svelte";
   import videoActivityContext from "@/components/video-annotation-activity/VideoActivityContext";
@@ -45,6 +46,8 @@
   let annotationValue: AnnotationValue = $derived(selectedAnnotation?.value || {});
 
   let annotations: Array<VideoAnnotation> = $state([]);
+
+  let openIssueSidebar = $state(false);
 
   let datasource = $state(annotationsMemoryDataSource);
   let datasource_error = $state(false);
@@ -455,21 +458,24 @@
   }
 </script>
 
-<div class="flex h-screen w-full flex-col">
+<AnnotationLayout>
   <AnnotationHeaderBar
     context={videoActivityContext}
     bind:mode
     onSelectMode={() => {
       selectedAnnotation = undefined;
     }}
+    onToggleIssuesSidebar={() => {
+      openIssueSidebar = !openIssueSidebar;
+    }}
   />
 
   <!-- TODO::Delete old NavBar when not needed -->
-  <Navbar {datasource} context={videoActivityContext} bind:error={datasource_error} />
+  <!-- <Navbar {datasource} context={videoActivityContext} bind:error={datasource_error} /> -->
 
-  <SidebarProvider class="min-h-0 w-full" style={"height:calc(100% - 30px)"}>
-    <ResizablePaneGroup direction="vertical">
-      <ResizablePane class="flex h-full" defaultSize={60} minSize={10}>
+  <ResizablePaneGroup direction="vertical">
+    <ResizablePane class="flex h-full" defaultSize={60} minSize={10}>
+      <SidebarProvider>
         <AnnotationSidebar
           {annotations}
           {currentFrame}
@@ -487,21 +493,22 @@
         />
 
         <!-- TODO::Delete old AnnotationSideBar when not needed -->
-        <LegacyAnnotationSidebar
-          {annotations}
-          {annotationValue}
-          {currentFrame}
-          onEditValue={(value: AnnotationValue, valueMode: VideoMode) => {
-            annotationValue = value;
-            mode = valueMode;
-            if (selectedAnnotation) {
-              updateAnnotationValue(selectedAnnotation, value);
-            }
-          }}
-          onSelectAnnotation={selectAnnotation}
-          toolinfo={videoActivityContext.tools}
-          {mode}
-        />
+        <!-- <LegacyAnnotationSidebar
+        {annotations}
+        {annotationValue}
+        {currentFrame}
+        onEditValue={(value: AnnotationValue, valueMode: VideoMode) => {
+          annotationValue = value;
+          mode = valueMode;
+          if (selectedAnnotation) {
+            updateAnnotationValue(selectedAnnotation, value);
+          }
+        }}
+        onSelectAnnotation={selectAnnotation}
+        toolinfo={videoActivityContext.tools}
+        {mode}
+      /> -->
+
         <SidebarInset>
           <SvgOverlay
             {annotations}
@@ -524,34 +531,36 @@
             />
           </SvgOverlay>
         </SidebarInset>
-      </ResizablePane>
 
-      <ResizableHandle withHandle />
+        <AnnotationIssueSidebar bind:open={openIssueSidebar}></AnnotationIssueSidebar>
+      </SidebarProvider>
+    </ResizablePane>
 
-      <ResizablePane defaultSize={40} minSize={10}>
-        <AnnotationFooter>
-          <AnnotationFooterToolbar>
-            <VideoController {currentFrame} {totalFrames} bind:video={player} />
-          </AnnotationFooterToolbar>
+    <ResizableHandle withHandle />
 
-          <!-- TODO::Delete old Controls when not needed -->
-          <Controls
-            onNextFrame={() => player.nextFrame()}
-            onTogglePlay={() => player.togglePlay()}
-            onPreviousFrame={() => player.previousFrame()}
-            onToggleMute={() => player.toggleMute()}
-            {currentFrame}
-            {totalFrames}
-            {volume}
-            onSetVolume={(v: number) => (volume = player.setVolume(v) || 0)}
-            onSeekFrame={(f: number) => player.seekToFrame(f)}
-            {annotations}
-            {selectedAnnotation}
-            onSelectAnnotation={selectAnnotation}
-            {onDeleteAnnotation}
-          />
-        </AnnotationFooter>
-      </ResizablePane>
-    </ResizablePaneGroup>
-  </SidebarProvider>
-</div>
+    <ResizablePane defaultSize={40} minSize={10} class="z-50">
+      <AnnotationFooter>
+        <AnnotationFooterToolbar>
+          <VideoController {currentFrame} {totalFrames} bind:video={player} />
+        </AnnotationFooterToolbar>
+
+        <!-- TODO::Delete old Controls when not needed -->
+        <Controls
+          onNextFrame={() => player.nextFrame()}
+          onTogglePlay={() => player.togglePlay()}
+          onPreviousFrame={() => player.previousFrame()}
+          onToggleMute={() => player.toggleMute()}
+          {currentFrame}
+          {totalFrames}
+          {volume}
+          onSetVolume={(v: number) => (volume = player.setVolume(v) || 0)}
+          onSeekFrame={(f: number) => player.seekToFrame(f)}
+          {annotations}
+          {selectedAnnotation}
+          onSelectAnnotation={selectAnnotation}
+          {onDeleteAnnotation}
+        />
+      </AnnotationFooter>
+    </ResizablePane>
+  </ResizablePaneGroup>
+</AnnotationLayout>

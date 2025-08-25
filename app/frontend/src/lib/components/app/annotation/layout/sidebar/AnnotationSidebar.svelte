@@ -42,7 +42,7 @@
   let toolInfoOfCurrentMode = $derived(toolInfo[currentMode]);
 </script>
 
-<Sidebar variant="inset" collapsible="none" class="min-w-80">
+<Sidebar side="left" variant="inset" collapsible="none" class="min-w-80">
   <!-- ANNOTATION::SIDEBAR::HEADER -->
   <SidebarHeader>
     {#if !toolInfoOfCurrentMode}
@@ -51,7 +51,7 @@
   </SidebarHeader>
 
   <!-- ANNOTATION::SIDEBAR::CONTENT -->
-  <SidebarContent>
+  <SidebarContent class="max-h-[80vh]">
     {#if toolInfoOfCurrentMode && toolInfoOfCurrentMode.allowedFields.categories}
       <!-- TOOL INFO::ANNOTATION MODE -->
       <SidebarGroup>
