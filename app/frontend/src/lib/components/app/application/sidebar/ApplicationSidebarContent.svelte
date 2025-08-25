@@ -1,32 +1,47 @@
 <script lang="ts">
-	import SidebarContent from "@/components/ui/sidebar/sidebar-content.svelte";
-	import SidebarGroupLabel from "@/components/ui/sidebar/sidebar-group-label.svelte";
-	import SidebarGroup from "@/components/ui/sidebar/sidebar-group.svelte";
-	import SidebarMenu from "@/components/ui/sidebar/sidebar-menu.svelte";
-	import SidebarMenuButton from "@/components/ui/sidebar/sidebar-menu-button.svelte";
-	import SidebarMenuItem from "@/components/ui/sidebar/sidebar-menu-item.svelte";
+	import ApplicationSidebarMenuItem from "@/components/app/application/sidebar/ApplicationSidebarMenuItem.svelte";
+	import { SidebarContent, SidebarGroup, SidebarGroupContent } from "@/components/ui/sidebar";
+	import { BellIcon, LifeBuoyIcon, RocketIcon } from "@lucide/svelte";
 
-	import { FileVideo2Icon, RocketIcon } from "@lucide/svelte";
+	import type { ApplicationSidebarMenuItemProps } from "@/components/app/application/sidebar/ApplicationSidebarMenuItem.svelte";
+
+	// Variables
+	let primaryMenus: ApplicationSidebarMenuItemProps[] = $state([
+		{
+			label: "Projects",
+			href: "/projects",
+			icon: RocketIcon,
+		},
+	]);
+
+	let secondaryMenus: ApplicationSidebarMenuItemProps[] = $state([
+		{
+			label: "Notifications",
+			href: "/notifications",
+			icon: BellIcon,
+		},
+		{
+			label: "Support",
+			href: "/supports",
+			icon: LifeBuoyIcon,
+		},
+	]);
 </script>
 
 <SidebarContent>
 	<SidebarGroup>
-		<SidebarGroupLabel>Platform</SidebarGroupLabel>
-		<SidebarMenu>
-			<SidebarMenuItem>
-				<SidebarMenuButton>
-					{#snippet child({ props })}
-						<a href="/projects" {...props}>
-							<RocketIcon class="size-4" />
-							Projects
-						</a>
-						<a href="/video" {...props}>
-							<FileVideo2Icon class="size-4" />
-							Video Annotation
-						</a>
-					{/snippet}
-				</SidebarMenuButton>
-			</SidebarMenuItem>
-		</SidebarMenu>
+		<SidebarGroupContent>
+			{#each primaryMenus as item}
+				<ApplicationSidebarMenuItem {...item} />
+			{/each}
+		</SidebarGroupContent>
+	</SidebarGroup>
+
+	<SidebarGroup class="mt-auto">
+		<SidebarGroupContent>
+			{#each secondaryMenus as item}
+				<ApplicationSidebarMenuItem {...item} />
+			{/each}
+		</SidebarGroupContent>
 	</SidebarGroup>
 </SidebarContent>
