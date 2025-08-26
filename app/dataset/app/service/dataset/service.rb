@@ -23,13 +23,13 @@ module Dataset
       attr = record.attributes
 
       # attr[:created_by_id] ||= auth_context.metadata[:id]
-      attr[:id] =  record.id || UUIDv7.generate
+      attr[:id] = record.id || UUIDv7.generate
 
       if record.project
         attr[:project_id] = record.project.id
       else
         raise Verse::Error::ValidationFailed,
-          "project is required to create a dataset"
+              "project is required to create a dataset"
       end
 
       id = datasets.create(

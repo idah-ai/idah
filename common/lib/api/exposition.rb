@@ -44,7 +44,6 @@ class Api
     private
 
     def execute_request(method, path, headers: {}, params: {}, options: {})
-
       # Extract path parameters
       path_params = []
       processed_path = path.gsub(/:\w+/) do |match|
@@ -54,8 +53,7 @@ class Api
       end
 
       # Remove path params from params hash
-      remaining_params = params.dup
-      path_params.each { |param| remaining_params.delete(param) }
+      remaining_params = params.except(*path_params)
 
       # Build URI
       uri = build_uri(processed_path, method, remaining_params, headers)
@@ -64,15 +62,21 @@ class Api
       request = create_request(method, uri, headers, remaining_params)
 
       # Handle authentication if needed
-      unless options[:auth].nil?
+      if options[:auth]
         parent.auth(options[:auth], request)
       end
 
       # Execute request
       http = Net::HTTP.new(uri.host, uri.port)
-      http.use_ssl = uri.scheme == "https"
+      http.use_ssl = (uri.scheme == "https")
 
-      http.request(request)
+      response = http.request(request)
+
+      if response.code.to_i >= 400
+        raise "HTTP Error: #{response.code} - #{response.message}"
+      end
+
+      response
     end
 
     def build_uri(path, method, params, _headers)

@@ -23,6 +23,8 @@ SimpleCov.start do
 
   add_filter "app/journey"
   add_filter "config"
+  add_filter "common/lib"
+
   add_filter /_spec.rb$/
 end
 
@@ -53,6 +55,9 @@ RSpec.configure do |config|
 
   config.include Rack::Test::Methods
   config.include Verse::JsonApi::Deserializer
+
+  config.include RSpec::Mocks::ExampleMethods
+  config.include WebMock::API
 
   Verse::Spec.add_user(:system, "system")
   Verse::Spec.add_user(:anonymous, "anonymous")
