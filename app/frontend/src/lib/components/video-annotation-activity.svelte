@@ -9,7 +9,6 @@
     import AnnotationFooterToolbar from "@/components/app/annotation/layout/footer/AnnotationFooterToolbar.svelte";
     import AnnotationSidebar from "@/components/video-annotation-activity/annotation-sidebar.svelte";
     import CommandManager from "@/command/CommandManager";
-    import Controls from "@/components/video-annotation-activity/controls.svelte";
     import { JsonRpcDatasource } from "./video-annotation-activity/jsonrpc";
     import SidebarProvider from "@/components/ui/sidebar/sidebar-provider.svelte";
     import SidebarInset from "@/components/ui/sidebar/sidebar-inset.svelte";
@@ -35,6 +34,8 @@
     import { sleep } from "@/utils/delayed";
     import { projectsBackendDataSource } from "@/data/model/dataset/projectRecord";
     import { datasetsBackendDataSource } from "@/data/model/dataset/datasetRecord";
+    import { openIndexedDB } from "./video-annotation-activity/indexedDB";
+    import TimelineTable from "./video-annotation-activity/timeline-table/timeline-table.svelte";
 
     let player: Video|undefined = $state();
     let player_container: HTMLDivElement | undefined = $state(); // ...
@@ -51,9 +52,14 @@
 
     let entry_id = $state()
     let url = $state("")
+    let idb:IDBDatabase|undefined = $state()
 
+    let zoom = $state(100)
+    let scale = $state(1)
+    let timelineTable:TimelineTable
+    let videoController: VideoController
     const annotations_rpc = new JsonRpcDatasource(
-        "https://idah.localhost:8443/api/v1/dataset/annotations/_rpc",
+    "https://idah.localhost:8443/api/v1/dataset/annotations/_rpc",
         50
     );
 
@@ -80,7 +86,10 @@
                         'master.m3u8'
                     ].join('/')
 
-                    fetchAnnotations()
+                    openIndexedDB('dataset').then((db) => {
+                        idb = db
+                        fetchAnnotations()
+                    }, console.error)
                 })
             })
         })
@@ -92,7 +101,6 @@
                 pagination:{page, itemsPerPage}
             }).then((r) => {
                 r.data.map((a) => {
-                    console.log({loadedAnnotation: a})
                     return {
                         shape: a.dimensions as VideoShape,
                         value: a.annotation,
@@ -102,11 +110,21 @@
                             createdAt: a.created_at,
                         }, synced: true
                     }
-                }).forEach(i => {
+                }).forEach((i) => {
+                    // test
                     // if created locally during loading ?
                     if (annotations.find(a => a.metadata.id == i.metadata.id)){
                         return
                     }
+                    let atransaction = idb?.transaction("annotations", "readwrite")
+                    let astore = atransaction?.objectStore('annotations')
+                    astore?.add(i, i.metadata.id);
+                    i.shape.frames.forEach((k) => {
+                        let ktransaction = idb?.transaction("keyframes", "readwrite")
+                        let kstore = ktransaction?.objectStore('keyframes')
+                        kstore?.add(k, [i.metadata.id, k.frame]);
+                    })
+
                     annotations.push(i)
                 });
                 if (r.data.length) fetchAnnotations(page + 1)
@@ -607,26 +625,35 @@
             <ResizablePane defaultSize={40} minSize={10}>
                 <AnnotationFooter>
                     <AnnotationFooterToolbar>
-                        <VideoController {currentFrame} {totalFrames} bind:video={player} />
+                        <VideoController
+                            bind:this={videoController}
+                            {zoom}
+                            {scale}
+                            {currentFrame}
+                            {totalFrames}
+                            bind:video={player}
+                            onZoomChange={(z) => timelineTable.setZoom(z)}
+                            onScaleChange={(s) => timelineTable.setScale(s)}
+                        />
                     </AnnotationFooterToolbar>
 
-                    <!-- TODO::Delete old Controls when not needed -->
-                    <Controls
-                        onNextFrame={() => player?.nextFrame()}
-                        onTogglePlay={() => player?.togglePlay()}
-                        onPreviousFrame={() => player?.previousFrame()}
-                        onToggleMute={() => player?.toggleMute()}
+                    <TimelineTable
+                        bind:this={timelineTable}
+                        {scale}
+                        {zoom}
                         {currentFrame}
                         {totalFrames}
-                        {volume}
-                        onSetVolume={(v: number) => (volume = player?.setVolume(v) || 0)}
-                        onSeekFrame={(f) => {
-                            player?.seekToFrame(f)
-                        }}
                         {annotations}
                         {selectedAnnotation}
-                        onSelectAnnotation={selectAnnotation}
+                        onSeekFrame={(frame) => player?.seekToFrame(frame)}
                         {onDeleteAnnotation}
+                        onSelectAnnotation={selectAnnotation}
+                        onScaleChange={(s) => {
+                            scale = s
+                        }}
+                        onZoomChange={(z) => {
+                            zoom = z
+                        }}
                     />
                 </AnnotationFooter>
             </ResizablePane>
