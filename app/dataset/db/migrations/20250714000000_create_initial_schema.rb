@@ -81,7 +81,8 @@ Sequel.migration do
     create_table(:datasets) do
       column :id, :uuid, primary_key: true, default: Sequel.lit("uuid_generate_v7()")
 
-      foreign_key :project_id, :projects,
+      foreign_key :project_id,
+                  :projects,
                   type: :uuid,
                   null: false,
                   index: true,
@@ -113,7 +114,8 @@ Sequel.migration do
     create_table(:entries) do
       column :id, :uuid, primary_key: true, default: Sequel.lit("uuid_generate_v7()")
 
-      foreign_key :dataset_id, :datasets,
+      foreign_key :dataset_id,
+                  :datasets,
                   type: :uuid,
                   null: false,
                   index: true,
@@ -142,10 +144,11 @@ Sequel.migration do
     create_table(:annotations) do
       column :id, :uuid, primary_key: true, default: Sequel.lit("uuid_generate_v7()")
 
-      foreign_key :entry_id, :entries,
-        type: :uuid,
-        null: false,
-        index: true
+      foreign_key :entry_id,
+                  :entries,
+                  type: :uuid,
+                  null: false,
+                  index: true
 
       # Dimension of the annotation, e.g. coordinates or pixel mask.
       column :dimensions, :jsonb, text: true, null: false
@@ -163,20 +166,22 @@ Sequel.migration do
     create_table(:note_feeds) do
       column :id, :uuid, primary_key: true, default: Sequel.lit("uuid_generate_v7()")
 
-      foreign_key :entry_id, :entries,
-        type: :uuid,
-        null: false,
-        index: true,
-        on_delete: :cascade,
-        on_update: :cascade
+      foreign_key :entry_id,
+                  :entries,
+                  type: :uuid,
+                  null: false,
+                  index: true,
+                  on_delete: :cascade,
+                  on_update: :cascade
 
       # Optional annotation reference, based on the anchor type.
-      foreign_key :annotation_id, :annotations,
-        type: :uuid,
-        null: true,
-        index: true,
-        on_delete: :cascade,
-        on_update: :cascade
+      foreign_key :annotation_id,
+                  :annotations,
+                  type: :uuid,
+                  null: true,
+                  index: true,
+                  on_delete: :cascade,
+                  on_update: :cascade
 
       column :created_by_id, :bigint, null: false, index: true
 
@@ -197,10 +202,11 @@ Sequel.migration do
     create_table(:note_comments) do
       column :id, :uuid, primary_key: true, default: Sequel.lit("uuid_generate_v7()")
 
-      foreign_key :note_feed_id, :note_feeds,
-        type: :uuid,
-        null: false,
-        index: true
+      foreign_key :note_feed_id,
+                  :note_feeds,
+                  type: :uuid,
+                  null: false,
+                  index: true
 
       column :is_edited, :boolean, null: false, default: false
       column :content_md, String, null: false

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative "../lib/uuid_v7"
 
 RSpec.describe UUIDv7 do
@@ -14,6 +16,5 @@ RSpec.describe UUIDv7 do
 
       expect(uuid1).not_to eq(uuid2)
     end
-
   end
 end

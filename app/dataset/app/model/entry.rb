@@ -11,6 +11,8 @@ module Entry
     field :wf_step, type: String, readonly: true
     field :status, type: String, readonly: true
 
+    field :job_id, type: Integer
+
     field :resource, type: String
 
     # Add through assign method
@@ -26,5 +28,15 @@ module Entry
   class Repository < Verse::Sequel::Repository
     self.table = "entries"
     self.resource = Resource::Dataset::Entries
+
+    def mark_entries_as_ready(job_id)
+      entries = chunked_index({ job_id: job_id, status: "pending" })
+
+      transaction do
+        entries.each do |entry|
+          update!(entry.id, { status: "ready" })
+        end
+      end
+    end
   end
 end

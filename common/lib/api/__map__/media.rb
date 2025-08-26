@@ -2,11 +2,11 @@
 
 Api[:idah].register(
   :media, :jobs, :show,
-) do |**params|
-  output get(
+) do |id:|
+  output = get(
     "media/jobs/:id",
-    http_opts: { auth: nil },
-    params:
+    options: { auth: nil },
+    params: {id:}
   )
-  deserialize output
+  deserialize output.body
 end

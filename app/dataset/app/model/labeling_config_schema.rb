@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 LabelingConfigSchema = Verse.define do
   field :properties, Array do
     field(:id, String)
