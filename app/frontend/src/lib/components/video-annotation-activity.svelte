@@ -36,6 +36,7 @@
     import { datasetsBackendDataSource } from "@/data/model/dataset/datasetRecord";
     import { openIndexedDB } from "./video-annotation-activity/indexedDB";
     import TimelineTable from "./video-annotation-activity/timeline-table/timeline-table.svelte";
+    import ScrollArea from "./ui/scroll-area/scroll-area.svelte";
 
     let player: Video|undefined = $state();
     let player_container: HTMLDivElement | undefined = $state(); // ...
@@ -637,24 +638,26 @@
                         />
                     </AnnotationFooterToolbar>
 
-                    <TimelineTable
-                        bind:this={timelineTable}
-                        {scale}
-                        {zoom}
-                        {currentFrame}
-                        {totalFrames}
-                        {annotations}
-                        {selectedAnnotation}
-                        onSeekFrame={(frame) => player?.seekToFrame(frame)}
-                        {onDeleteAnnotation}
-                        onSelectAnnotation={selectAnnotation}
-                        onScaleChange={(s) => {
-                            scale = s
-                        }}
-                        onZoomChange={(z) => {
-                            zoom = z
-                        }}
-                    />
+                    <ScrollArea class="h-[calc(100%-3.4em)]">
+                        <TimelineTable
+                            bind:this={timelineTable}
+                            {scale}
+                            {zoom}
+                            {currentFrame}
+                            {totalFrames}
+                            {annotations}
+                            {selectedAnnotation}
+                            onSeekFrame={(frame) => player?.seekToFrame(frame)}
+                            {onDeleteAnnotation}
+                            onSelectAnnotation={selectAnnotation}
+                            onScaleChange={(s) => {
+                                scale = s
+                            }}
+                            onZoomChange={(z) => {
+                                zoom = z
+                            }}
+                        />
+                    </ScrollArea>
                 </AnnotationFooter>
             </ResizablePane>
         </ResizablePaneGroup>
