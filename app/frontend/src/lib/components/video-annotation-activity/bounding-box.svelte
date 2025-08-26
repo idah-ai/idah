@@ -7,7 +7,7 @@
         points,
         editable = false,
         cursor,
-        color = 'deeppink',
+        color,
         onChange,
         onmousedown
     } : {
@@ -98,7 +98,6 @@
 
     function pan(points: BoundingBox, from: Point, to:Point): BoundingBox {
         const delta = [to[X] - from[X], to[Y] - from[Y]]
-        console.log(delta)
         return points.map(p => [p[X] + delta[X], p[Y] + delta[Y]]) as BoundingBox
     }
 
@@ -189,10 +188,10 @@
             style:transform-origin={'top left'}
             style:transform={`translate(${offset[X]}px, ${offset[Y]}px)`}
             vector-effect= "non-scaling-stroke"
-            style:stroke ={'blue'}
+            style:stroke ={'#EAB308'}
             style:stroke-width= {1}
-            style:fill ={'blue'}
-            fill-opacity={0.3}
+            style:fill ={'#EAB308'}
+            fill-opacity={1}
         />
         {/each}
 {/snippet}
@@ -204,10 +203,10 @@
             style:transform-origin={'top left'}
             style:transform={`translate(${offset[X]}px, ${offset[Y]}px) scale(${ratio[X]}, ${ratio[Y]})`}
             vector-effect= "non-scaling-stroke"
-            fill-opacity={0.25}
+            fill-opacity={0.40}
             style:fill={color}
             style:stroke={color}
-            style:stroke-width={'1'}
+            style:stroke-width={'2'}
             onmousedown={(e) => {
                 if (editable && !panStart && !isEditing()) {
                     e.stopPropagation()

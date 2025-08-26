@@ -16,6 +16,8 @@
 
 	let {
 		tracking = false,
+        scale = 1,
+        zoom = 1,
 		currentFrame,
 		totalFrames,
 		annotations,
@@ -23,10 +25,12 @@
 		onSeekFrame,
 		onDeleteAnnotation,
 		onSelectAnnotation,
+		onZoomChange,
 		onScaleChange,
-		onTimelineZoomChange,
 	}: {
 		tracking?: boolean;
+        scale: number;
+        zoom: number;
 		currentFrame: number;
 		totalFrames: number;
 		selectedAnnotation?: VideoAnnotation;
@@ -34,15 +38,15 @@
 		onSeekFrame: (frame: number) => void;
 		onSelectAnnotation: (annotation: VideoAnnotation) => void;
 		onDeleteAnnotation: (VideoAnnotation: VideoAnnotation, frame?: number) => void;
-		onScaleChange?: (scale: number) => void;
-		onTimelineZoomChange?: (zoom: number) => void;
+		onZoomChange?: (zoom: number) => void;
+		onScaleChange?: (zoom: number) => void;
 	} = $props();
 
 	$effect(() => {
-		onScaleChange?.(scale);
+		onZoomChange?.(zoom);
 	});
 	$effect(() => {
-		onTimelineZoomChange?.(timeline_zoom);
+		onScaleChange?.(scale);
 	});
 
 	// $effect(() => {
@@ -54,9 +58,7 @@
 	//     }
 	// })
 
-	let timeline_zoom = $state(1);
-	let scale = $state(100);
-	let range_span = $derived(Math.min(timeline_zoom * scale, totalFrames));
+	let range_span = $derived(Math.min(scale * zoom, totalFrames));
 
 	let pos_offset: number = $state(0);
 	let range: [number, number] = $derived([pos_offset, pos_offset + range_span]);
@@ -68,14 +70,14 @@
 		pos_offset = Math.max(0, Math.min(Math.ceil(totalFrames - (range_span + 1)), offset || 0));
 	}
 
-	export function setScale(value: number) {
+	export function setZoom(value: number) {
 		const s = Math.min(150, Math.max(1, Math.round(value)));
-		timeline_zoom = Math.min(timeline_zoom, Math.ceil(totalFrames / s));
-		scale = s;
+		scale = Math.min(scale, Math.ceil(totalFrames / s));
+		zoom = s;
 	}
 
-	export function setTimelineZoom(value: number) {
-		timeline_zoom = Math.max(1, Math.min(Math.ceil(totalFrames / scale), value));
+	export function setScale(value: number) {
+		scale = Math.max(1, Math.min(Math.ceil(totalFrames / zoom), value));
 	}
 </script>
 
@@ -88,19 +90,19 @@
 			setTimeout(() => (wheelthrottling = false), 10);
 
 			if (e.ctrlKey && e.shiftKey) {
-				setScale(scale - e.deltaY);
+				setZoom(zoom - e.deltaY);
 			} else if (e.ctrlKey) {
-				delta = Math.ceil(e.deltaY);
+				delta = e.deltaY ? (e.deltaY > 0 ? 1 : -1) : 0 // for now
 				let c_hovered = $state.snapshot(hovered_column);
-				let c = c_hovered != undefined ? Math.ceil((c_hovered - pos_offset) / timeline_zoom) : 0;
+				let c = c_hovered != undefined ? Math.ceil((c_hovered - pos_offset) / scale) : 0;
 
-				setTimelineZoom(timeline_zoom + delta);
+				setScale(scale + delta);
 				if (c_hovered != undefined) {
-					setOffset(c_hovered - c * timeline_zoom);
+					setOffset(c_hovered - c * scale);
 				}
 			} else {
 				delta = e.shiftKey ? e.deltaY : e.deltaX;
-				setOffset(Math.floor(pos_offset + delta * timeline_zoom));
+				setOffset(Math.floor(pos_offset + delta * scale));
 				if (hovered_column != undefined) {
 					hovered_column += pos_offset - from;
 				}
@@ -115,11 +117,11 @@
 			<TableHead class="w-100"></TableHead>
 			<TableHead class="p-0">
 				<div class="bg-secondary border-primary relative h-5" style:border-bottom="solid 1px">
-					{#each [...Array(range[1] - range[0] + (timeline_zoom - (range_span % timeline_zoom)))].map((v, i) => i) as i}
+					{#each [...Array(range[1] - range[0] + (scale - (range_span % scale)))].map((v, i) => i) as i}
 						{#if Math.floor(i + range[0]) == currentFrame}
 							<div
 								class="bg-primary text-secondary border-primary absolute top-0 z-10"
-								style:left="{(i / (range[1] - range[0] + (timeline_zoom - (range_span % timeline_zoom)))) * 100}%"
+								style:left="{(i / (range[1] - range[0] + (scale - (range_span % scale)))) * 100}%"
 								style:border-left="solid 1px"
 							>
 								{i + range[0]}
@@ -127,25 +129,25 @@
 						{:else if i + range[0] == hovered_column}
 							<div
 								class="bg-destructive absolute top-0 z-10 border"
-								style:left="{(i / (range[1] - range[0] + (timeline_zoom - (range_span % timeline_zoom)))) * 100}%"
+								style:left="{(i / (range[1] - range[0] + (scale - (range_span % scale)))) * 100}%"
 								style:border-left="solid 1px"
 							>
 								{i + range[0]}
 							</div>
-						{:else if i % (Math.floor(scale / Math.min(scale, 20)) * Math.ceil((range[1] - range[0]) / scale)) == 0}
+						{:else if i % (Math.floor(zoom / Math.min(zoom, 20)) * Math.ceil((range[1] - range[0]) / zoom)) == 0}
 							<div
 								class="border-primary absolute top-0"
 								style:border-left="solid 1px"
-								style:left="{(i / (range[1] - range[0] + (timeline_zoom - (range_span % timeline_zoom)))) * 100}%"
+								style:left="{(i / (range[1] - range[0] + (scale - (range_span % scale)))) * 100}%"
 							>
 								{i + range[0]}
 							</div>
-						{:else if i % (1 * Math.ceil((range[1] - range[0]) / scale)) == 0}
+						{:else if i % (1 * Math.ceil((range[1] - range[0]) / zoom)) == 0}
 							<div
 								class="border-primary absolute bottom-0"
 								style:height="0.6em"
 								style:border-left="solid 1px"
-								style:left="calc({(i / (range[1] - range[0] + (timeline_zoom - (range_span % timeline_zoom)))) * 100}%)"
+								style:left="calc({(i / (range[1] - range[0] + (scale - (range_span % scale)))) * 100}%)"
 							></div>
 						{/if}
 					{/each}
@@ -186,26 +188,34 @@
 				data-state={selectedAnnotation == annotation ? "selected" : ""}
 			>
 				<TableCell
-					class="p-0"
+					class="hoverable p-0"
 					ondblclick={() => {
 						pos_offset = annotation.shape.start;
 						onSeekFrame(annotation.shape.start);
 					}}
 				>
 					{[annotation.value.category?.split("/").reverse()[0], annotation.metadata.id].filter((a) => a).join(" - ")}
+
 					<Button
+                        class='hovered'
 						onclick={(e) => {
 							e.stopPropagation();
 							onDeleteAnnotation(annotation);
-						}}>X</Button
-					>
+						}}>
+                        <svg class='h-100' viewBox="0 0 12 15" xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                class="fill-secondary"
+                                d="M9.33329 5V13.3333H2.66663V5H9.33329ZM8.08329 0H3.91663L3.08329 0.833333H0.166626V2.5H11.8333V0.833333H8.91663L8.08329 0ZM11 3.33333H0.999959V13.3333C0.999959 14.25 1.74996 15 2.66663 15H9.33329C10.25 15 11 14.25 11 13.3333V3.33333Z"
+                            />
+                        </svg>
+                    </Button>
 				</TableCell>
 				<TableCell class="p-0">
 					<Timeline
 						{annotation}
 						{currentFrame}
 						{range}
-						{timeline_zoom}
+						{scale}
 						hoveredColumnChange={(column) => (hovered_column = column)}
 						{hovered_column}
 						{onSeekFrame}
@@ -213,6 +223,17 @@
 					/>
 				</TableCell>
 			</TableRow>
-		{/each}
+            <style>
+                .hoverable:hover .hovered {
+                    display:inline-block
+                }
+                .hoverable .hovered {
+                    display:none
+                }
+
+            </style>
+            {/each}
 	</TableBody>
 </Table>
+
+
