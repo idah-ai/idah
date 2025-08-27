@@ -6,9 +6,14 @@
 
 	// Props
 	interface Props extends FormModalBaseProps {}
-	let { action, open = $bindable(), title, modalTitle, modalDescription }: Props = $props();
+	let { action, open = $bindable(), title }: Props = $props();
+
+	// Functions
+	function resetForm(): void {}
+
+	async function submit(): Promise<void> {}
 </script>
 
-<FormModal {action} {title} onCancel={() => {}} onConfirm={() => {}} bind:open>
+<FormModal {action} {title} onCancel={resetForm} onConfirm={submit} bind:open>
 	<ProjectForm></ProjectForm>
 </FormModal>
