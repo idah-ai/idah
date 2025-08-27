@@ -21,7 +21,7 @@
 	// Variables
 	let columns = $state(_columns);
 	let haveSomeHidableColumns: boolean = $derived(Object.values(columns).some((column) => column.hidable));
-	let records: Record<string, string>[] = $state([]);
+	let records: Record<string, unknown>[] = $state([]);
 	records = getSampleData();
 
 	// Functions
@@ -30,7 +30,9 @@
 
 		for (let index = 0; index <= 10; index++) {
 			const cols = Object.keys(columns);
-			let data: Record<string, string> = {};
+			let data: Record<string, unknown> = {};
+
+			data["id"] = index + 1;
 
 			for (const col of cols) {
 				if (columns[col].visible) {
