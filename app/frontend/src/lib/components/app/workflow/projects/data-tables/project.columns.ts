@@ -1,3 +1,5 @@
+import ProjectNameCell from "@/components/app/workflow/projects/data-tables/ProjectNameCell.svelte";
+
 import type { ColumnsSettings } from "$lib/components/app/data-table/DataTable.types";
 
 export const projectColumns: ColumnsSettings = {
@@ -14,6 +16,7 @@ export const projectColumns: ColumnsSettings = {
 		},
 		visible: true,
 		hidable: false,
+		cellComponent: ProjectNameCell,
 	},
 	lables: {
 		label: "Labels",
