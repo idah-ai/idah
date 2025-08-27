@@ -5,7 +5,7 @@ export type FormModalAction = "create" | "update";
 
 export interface FormModalBaseProps extends ModalBaseProps {
 	action: FormModalAction;
-	title: string;
+	title?: string;
 	description?: string;
 	loading?: boolean;
 	actions?: Snippet;
