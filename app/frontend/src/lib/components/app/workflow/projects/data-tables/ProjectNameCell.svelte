@@ -7,6 +7,6 @@
 	let { record: project }: Props = $props();
 </script>
 
-<Link href="/projects/{project.id}" showIcon>
+<Link href="/projects/{project.id}/tasks" showIcon>
 	{project.name}
 </Link>
