@@ -62,7 +62,7 @@
 	});
 </script>
 
-<FormField class={cn("", className)}>
+<FormField id={name} class={cn("", className)}>
 	{#if slotLabel}
 		{@render slotLabel()}
 	{:else}

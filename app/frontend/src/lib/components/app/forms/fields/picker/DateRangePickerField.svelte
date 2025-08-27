@@ -23,6 +23,7 @@
 		onEndValueChanged?: (value: DateValue | undefined) => void;
 	}
 	let {
+		name,
 		label,
 		disabled = false,
 		required = false,
@@ -70,7 +71,7 @@
 	}
 </script>
 
-<FormField class={cn("", className)}>
+<FormField id={name} class={cn("", className)}>
 	{#if slotLabel}
 		{@render slotLabel()}
 	{:else}
