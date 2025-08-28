@@ -24,7 +24,7 @@
 	let columns = $state(_columns);
 	let haveSomeHidableColumns: boolean = $derived(Object.values(columns).some((column) => column.hidable));
 	let records: Record<string, unknown>[] = $state([]);
-	records = getSampleData();
+	// records = getSampleData();
 
 	// Functions
 	function getSampleData() {
