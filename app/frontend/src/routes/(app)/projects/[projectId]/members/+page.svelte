@@ -10,7 +10,7 @@
 	let openNewProjectMemberFormModal: boolean = $state(false);
 </script>
 
-<DataTable id="project-members" name="project members" columns={projectMemberColumns}>
+<DataTable id="project-members" name="member" columns={projectMemberColumns}>
 	{#snippet actions()}
 		<Button onclick={() => (openNewProjectMemberFormModal = true)}>
 			<PlusIcon class="size-4" />

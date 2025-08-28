@@ -1,4 +1,5 @@
 <script lang="ts">
+	import DataTableEmpty from "@/components/app/data-table/DataTableEmpty.svelte";
 	import TableBody from "@/components/ui/table/table-body.svelte";
 	import TableCell from "@/components/ui/table/table-cell.svelte";
 	import TableRow from "@/components/ui/table/table-row.svelte";
@@ -14,50 +15,48 @@
 		columns: ColumnsSettings;
 	}
 	let { dataTableName, records, columns }: Props = $props();
-
-	// Variables
-	let hasRecords = $derived(records.length > 0);
 </script>
 
 <TableBody>
-	{#if hasRecords}
-		{#each records as record}
-			<TableRow>
-				{#each Object.entries(columns) as [columnKey, columnSetting] (columnKey)}
-					{@const { dataType, clickable, cellComponent: CellComponent, visible } = columnSetting}
-					{@const value = record[columnKey] || ""}
-
-					{#if visible}
-						<TableCell
-							class={cn("px-6 py-4", {
-								"cursor-pointer": clickable,
-							})}
-						>
-							{#if CellComponent}
-								<CellComponent this={columnSetting.cellComponent} {record} />
-							{:else if dataType === "string"}
-								{value}
-							{:else if dataType === "number"}
-								{value}
-							{:else if dataType === "email"}
-								{value}
-							{:else if dataType === "date"}
-								{value}
-							{:else if dataType === "datetime"}
-								{value}
-							{:else if dataType === "time"}
-								{value}
-							{:else if dataType === "enum"}
-								{value}
-							{/if}
-						</TableCell>
-					{/if}
-				{/each}
-			</TableRow>
-		{/each}
-	{:else}
+	<!-- {#if hasRecords} -->
+	{#each records as record}
 		<TableRow>
-			<TableCell>No {dataTableName || "records"} found.</TableCell>
+			{#each Object.entries(columns) as [columnKey, columnSetting] (columnKey)}
+				{@const { dataType, clickable, cellComponent: CellComponent, visible } = columnSetting}
+				{@const value = record[columnKey] || ""}
+
+				{#if visible}
+					<TableCell
+						class={cn("px-6 py-4", {
+							"cursor-pointer": clickable,
+						})}
+					>
+						{#if CellComponent}
+							<CellComponent {record} />
+						{:else if dataType === "string"}
+							{value}
+						{:else if dataType === "number"}
+							{value}
+						{:else if dataType === "email"}
+							{value}
+						{:else if dataType === "date"}
+							{value}
+						{:else if dataType === "datetime"}
+							{value}
+						{:else if dataType === "time"}
+							{value}
+						{:else if dataType === "enum"}
+							{value}
+						{/if}
+					</TableCell>
+				{/if}
+			{/each}
 		</TableRow>
-	{/if}
+	{:else}
+		<TableRow class="min-h-[50vh] h-[50vh]">
+			<TableCell colspan={Object.keys(columns).length}>
+				<DataTableEmpty {dataTableName} />
+			</TableCell>
+		</TableRow>
+	{/each}
 </TableBody>
