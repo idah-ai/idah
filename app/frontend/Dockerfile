@@ -1,4 +1,4 @@
-FROM node:18-alpine
+FROM node:20-alpine
 
 RUN npm install -g pnpm@10.14
 
@@ -6,8 +6,9 @@ ENV LOCAL_APP_PATH .
 ENV APP_PATH /app/frontend
 
 RUN mkdir -p $APP_PATH
+RUN mkdir -p $APP_PATH/src
 
-COPY $LOCAL_APP_PATH/package.json $LOCAL_APP_PATH/pnpm-lock.yaml $APP_PATH/
+COPY $LOCAL_APP_PATH $APP_PATH
 
 WORKDIR $APP_PATH
 
