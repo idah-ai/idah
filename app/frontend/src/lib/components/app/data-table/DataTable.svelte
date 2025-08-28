@@ -53,7 +53,7 @@
 	}
 </script>
 
-<div id="data-table-container" class="flex w-full flex-col gap-2">
+<div id="data-table-container" class="flex flex-1 flex-col gap-2">
 	<DataTableHeader>
 		<!-- DATA TABLE::TITLE -->
 		{#if title}
