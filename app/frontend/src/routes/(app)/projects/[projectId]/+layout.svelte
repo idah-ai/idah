@@ -5,6 +5,7 @@
 
 	import Page from "@/components/app/page/Page.svelte";
 	import PageHeader from "@/components/app/page/PageHeader.svelte";
+	import ProjectDropdownMenu from "@/components/app/workflow/projects/dropdowns/ProjectDropdownMenu.svelte";
 	import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 	import { projectTabs, type ProjectTab } from "@/components/app/workflow/projects/tabs/project.tabs";
@@ -38,7 +39,11 @@
 </script>
 
 <Page name="project-detail">
-	<PageHeader title="Video Tracking" />
+	<PageHeader title="Video Tracking">
+		{#snippet actions()}
+			<ProjectDropdownMenu />
+		{/snippet}
+	</PageHeader>
 
 	<Tabs bind:value={activeTab}>
 		<TabsList>
