@@ -57,6 +57,7 @@ export interface DataTableBaseProps {
 	 */
 	id: string;
 	name: string;
+	title?: string;
 	// dataSource
 	// listOptions
 	columns: ColumnsSettings;
