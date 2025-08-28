@@ -1,6 +1,7 @@
 <script lang="ts">
 	import DataTableBody from "@/components/app/data-table/DataTableBody.svelte";
 	import DataTableContent from "@/components/app/data-table/DataTableContent.svelte";
+	import DataTableHeader from "@/components/app/data-table/DataTableHeader.svelte";
 	import DataTableHeadLabel from "@/components/app/data-table/DataTableHeadLabel.svelte";
 	import DataTableHeadOptions from "@/components/app/data-table/DataTableHeadOptions.svelte";
 	import DataTableToggleColumns from "@/components/app/data-table/DataTableToggleColumns.svelte";
@@ -9,6 +10,7 @@
 	import TableHead from "@/components/ui/table/table-head.svelte";
 	import TableHeader from "@/components/ui/table/table-header.svelte";
 	import TableRow from "@/components/ui/table/table-row.svelte";
+	import Text from "@/components/ui/text/Text.svelte";
 
 	import { cn } from "@/utils";
 
@@ -16,7 +18,7 @@
 
 	// Props
 	interface Props extends DataTableBaseProps {}
-	let { id, name: dataTableName, columns: _columns, hidePagination, actions }: Props = $props();
+	let { id, name: dataTableName, title, columns: _columns, hidePagination, actions }: Props = $props();
 
 	// Variables
 	let columns = $state(_columns);
@@ -52,14 +54,21 @@
 </script>
 
 <div id="data-table-container" class="flex w-full flex-col gap-2">
-	<!-- DATA TABLE::ACTIONS -->
-	<DataTableToolbarActions>
-		{#if haveSomeHidableColumns}
-			<DataTableToggleColumns {columns} />
+	<DataTableHeader>
+		<!-- DATA TABLE::TITLE -->
+		{#if title}
+			<Text size="h3" weight="semibold">{title}</Text>
 		{/if}
 
-		{@render actions?.()}
-	</DataTableToolbarActions>
+		<!-- DATA TABLE::ACTIONS -->
+		<DataTableToolbarActions>
+			{#if haveSomeHidableColumns}
+				<DataTableToggleColumns {columns} />
+			{/if}
+
+			{@render actions?.()}
+		</DataTableToolbarActions>
+	</DataTableHeader>
 
 	<!-- DATA TABLE::TABLE -->
 	<DataTableContent>
