@@ -8,7 +8,10 @@
 	import ProjectDropdownMenu from "@/components/app/workflow/projects/dropdowns/ProjectDropdownMenu.svelte";
 	import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+	import { projectBreadcrumb } from "@/components/app/page/PageBreadcrumb.constants";
 	import { projectTabs, type ProjectTab } from "@/components/app/workflow/projects/tabs/project.tabs";
+
+	import type { PageBreadcrumbItem } from "@/components/app/page/PageBreadcrumb.svelte";
 
 	// Props
 	interface Props {
@@ -19,6 +22,7 @@
 	// Variables
 	let projectId: string = page.params.projectId as string;
 	let activeTab: ProjectTab = $derived(page.url.pathname.split("/").pop() as ProjectTab);
+	let breadcrumbs: PageBreadcrumbItem[] = $state([projectBreadcrumb, { label: projectId }]);
 
 	// Lifecycle
 	onMount(() => {
@@ -38,7 +42,7 @@
 	}
 </script>
 
-<Page name="project-detail">
+<Page name="project-detail" {breadcrumbs}>
 	<PageHeader title="Video Tracking">
 		{#snippet actions()}
 			<ProjectDropdownMenu />
