@@ -1,3 +1,6 @@
+import ProjectNameCell from "@/components/app/workflow/projects/data-tables/ProjectNameCell.svelte";
+import ProjectRowActionCell from "@/components/app/workflow/projects/data-tables/ProjectRowActionCell.svelte";
+
 import type { ColumnsSettings } from "$lib/components/app/data-table/DataTable.types";
 
 export const projectColumns: ColumnsSettings = {
@@ -14,6 +17,7 @@ export const projectColumns: ColumnsSettings = {
 		},
 		visible: true,
 		hidable: false,
+		cellComponent: ProjectNameCell,
 	},
 	lables: {
 		label: "Labels",
@@ -66,5 +70,14 @@ export const projectColumns: ColumnsSettings = {
 		},
 		visible: true,
 		hidable: true,
+	},
+	actions: {
+		label: "Actions",
+		dataType: "string",
+		sortable: false,
+		filterable: false,
+		visible: true,
+		hidable: false,
+		cellComponent: ProjectRowActionCell,
 	},
 };

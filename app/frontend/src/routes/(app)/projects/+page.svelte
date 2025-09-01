@@ -6,13 +6,17 @@
 	import ProjectFormModal from "@/components/app/workflow/projects/overlays/ProjectFormModal.svelte";
 	import { PlusIcon } from "@lucide/svelte";
 
+	import { projectBreadcrumb } from "@/components/app/page/PageBreadcrumb.constants";
 	import { projectColumns } from "@/components/app/workflow/projects/data-tables/project.columns";
 
+	import type { PageBreadcrumbItem } from "@/components/app/page/PageBreadcrumb.svelte";
+
 	// Variables
-	let openNewProjectModal: boolean = false;
+	let openNewProjectModal: boolean = $state(false);
+	let breadcrumbs: PageBreadcrumbItem[] = $state([projectBreadcrumb]);
 </script>
 
-<Page name="projects">
+<Page name="projects" {breadcrumbs}>
 	<PageHeader title="Projects">
 		{#snippet actions()}
 			<Button onclick={() => (openNewProjectModal = true)}>

@@ -5,6 +5,7 @@
 
 	import type { WithElementRef } from "@/utils";
 	import type { HTMLAttributes } from "svelte/elements";
+	import type { PageBreadcrumbItem } from "@/components/app/page/PageBreadcrumb.svelte";
 
 	// Props
 	type Props = WithElementRef<HTMLAttributes<HTMLElement>> & {
@@ -14,8 +15,9 @@
 		// scopes: Scope[];
 		// roles: Role[];
 		redirectTo?: string;
+		breadcrumbs: PageBreadcrumbItem[];
 	};
-	let { ref, children, name, redirectTo = "/" }: Props = $props();
+	let { ref, children, name, redirectTo = "/", breadcrumbs }: Props = $props();
 
 	// Variables
 	let hasAccess: boolean = $state(false);
@@ -32,7 +34,7 @@
 </script>
 
 {#if hasAccess}
-	<ApplicationHeader />
+	<ApplicationHeader {breadcrumbs} />
 
 	<section id={name} bind:this={ref} class="flex flex-col gap-4">
 		{@render children?.()}

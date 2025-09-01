@@ -39,7 +39,7 @@ export interface ColumnSettings {
 	align?: "left" | "center" | "right";
 	visible: boolean;
 	hidable: boolean;
-	cellComponent?: Component;
+	cellComponent?: Component<DataTableCellBaseProps, {}, "">;
 	cellComponentProps?: Record<string, any>;
 	cellOptions?: {
 		enums: LabelValue<string | number | boolean>[];
@@ -57,6 +57,7 @@ export interface DataTableBaseProps {
 	 */
 	id: string;
 	name: string;
+	title?: string;
 	// dataSource
 	// listOptions
 	columns: ColumnsSettings;
@@ -64,4 +65,8 @@ export interface DataTableBaseProps {
 
 	// Snippets
 	actions?: Snippet;
+}
+
+export interface DataTableCellBaseProps {
+	record: Record<string, unknown>;
 }
