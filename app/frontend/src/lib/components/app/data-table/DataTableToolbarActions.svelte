@@ -6,6 +6,6 @@
 	let { class: className, children }: WithElementRef<HTMLAttributes<HTMLDivElement>> = $props();
 </script>
 
-<div id="data-table-toolbar-actions" class={cn("flex items-center justify-end gap-4", className)}>
+<div id="data-table-toolbar-actions" class={cn("ml-auto flex items-center justify-end gap-4", className)}>
 	{@render children?.()}
 </div>

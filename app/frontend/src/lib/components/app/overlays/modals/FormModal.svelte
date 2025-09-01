@@ -41,7 +41,7 @@
 	function getConfirmButtonProps(): ConfirmButtonProps {
 		switch (action) {
 			case "create":
-				return { label: `Create ${title}`, loadingLabel: `Creating ${title.toLocaleLowerCase()}...` };
+				return { label: `Create ${title}`, loadingLabel: `Creating ${title?.toLocaleLowerCase()}...` };
 			case "update":
 				return { label: `Save Changes`, loadingLabel: `Saving...` };
 		}
