@@ -4,6 +4,7 @@
 	import DataTableHeader from "@/components/app/data-table/DataTableHeader.svelte";
 	import DataTableHeadLabel from "@/components/app/data-table/DataTableHeadLabel.svelte";
 	import DataTableHeadOptions from "@/components/app/data-table/DataTableHeadOptions.svelte";
+	import DataTablePaginator from "@/components/app/data-table/DataTablePaginator.svelte";
 	import DataTableToggleColumns from "@/components/app/data-table/DataTableToggleColumns.svelte";
 	import DataTableToolbarActions from "@/components/app/data-table/DataTableToolbarActions.svelte";
 	import Table from "@/components/ui/table/table.svelte";
@@ -23,8 +24,12 @@
 	// Variables
 	let columns = $state(_columns);
 	let haveSomeHidableColumns: boolean = $derived(Object.values(columns).some((column) => column.hidable));
-	let records: Record<string, unknown>[] = $state([]);
-	// records = getSampleData();
+ 
+	let currentPage: number = $state(1);
+	let itemsPerPage: number = $state(10);
+  
+	let records: Record<string, string>[] = $state([]);
+	records = getSampleData();
 
 	// Functions
 	function getSampleData() {
@@ -107,4 +112,7 @@
 	</DataTableContent>
 
 	<!-- DATA TABLE::PAGINATION -->
+	{#if !hidePagination}
+		<DataTablePaginator bind:page={currentPage} bind:itemsPerPage />
+	{/if}
 </div>
