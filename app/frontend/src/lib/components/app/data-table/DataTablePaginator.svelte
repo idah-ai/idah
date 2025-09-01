@@ -72,7 +72,7 @@
 
 	<!-- DATA TABLE::PAGINATION CONTROLS -->
 	<div id="data-table-paginator-controls" class="flex items-center justify-end gap-2">
-		<Pagination count={100} bind:page perPage={Number(itemsPerPage)}>
+		<Pagination class="justify-end" count={100} bind:page perPage={Number(itemsPerPage)}>
 			{#snippet children({ pages, currentPage })}
 				<PaginationContent>
 					<!-- PREVIOUS BUTTON -->

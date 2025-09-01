@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Copyable from "@/components/app/texts/Copyable.svelte";
 	import DataTableEmpty from "@/components/app/data-table/DataTableEmpty.svelte";
 	import TableBody from "@/components/ui/table/table-body.svelte";
 	import TableCell from "@/components/ui/table/table-cell.svelte";
@@ -36,9 +37,9 @@
 						{:else if dataType === "string"}
 							{value}
 						{:else if dataType === "number"}
-							{value}
+							{Number(value)}
 						{:else if dataType === "email"}
-							{value}
+							<Copyable title="email" value={value as string} />
 						{:else if dataType === "date"}
 							{value}
 						{:else if dataType === "datetime"}

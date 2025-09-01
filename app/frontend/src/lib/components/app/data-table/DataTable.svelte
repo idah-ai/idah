@@ -24,11 +24,11 @@
 	// Variables
 	let columns = $state(_columns);
 	let haveSomeHidableColumns: boolean = $derived(Object.values(columns).some((column) => column.hidable));
- 
+
 	let currentPage: number = $state(1);
 	let itemsPerPage: number = $state(10);
-  
-	let records: Record<string, string>[] = $state([]);
+
+	let records: Record<string, unknown>[] = $state([]);
 	records = getSampleData();
 
 	// Functions
@@ -42,8 +42,29 @@
 			data["id"] = index + 1;
 
 			for (const col of cols) {
-				if (columns[col].visible) {
-					data[col] = `Sample ${col} ${index}`;
+				const { visible, dataType } = columns[col];
+				const order = index + 1;
+
+				if (visible) {
+					switch (dataType) {
+						case "string":
+							data[col] = `${col}_${order}`;
+							break;
+						case "number":
+							data[col] = Math.floor(Math.random() * 100 * order);
+							break;
+						case "email":
+							data[col] = `example_${order}@email.com`;
+							break;
+						case "date":
+						case "datetime":
+						case "time":
+							data[col] = new Date(Date.now() + order * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+							break;
+						default:
+							data[col] = `${col}_${order}`;
+							break;
+					}
 				}
 			}
 
