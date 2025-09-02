@@ -9,16 +9,16 @@
 		CommandList,
 		CommandSeparator,
 	} from "@/components/ui/command";
-	import FormField from "$lib/components/app/forms/FormField.svelte";
-	import FormFieldErrors from "$lib/components/app/forms/FormFieldErrors.svelte";
-	import FormFieldInfo from "$lib/components/app/forms/FormFieldInfo.svelte";
-	import FormFieldLabel from "$lib/components/app/forms/FormFieldLabel.svelte";
+	import FormField from "@/components/app/forms/form-field.svelte";
+	import FormFieldErrors from "@/components/app/forms/form-field-errors.svelte";
+	import FormFieldInfo from "@/components/app/forms/form-field-info.svelte";
+	import FormFieldLabel from "@/components/app/forms/form-field-label.svelte";
 	import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 	import { cn } from "@/utils";
 	import { CheckIcon, ChevronsUpDownIcon, RotateCcwIcon } from "@lucide/svelte";
 
-	import type { SelectFieldBaseProps } from "$lib/components/app/forms/FormField.types";
+	import type { SelectFieldBaseProps } from "@/components/app/forms/form-field.types";
 	import type { LabelValue } from "@/components/app/ComponentApp.types";
 
 	// Props

@@ -1,4 +1,4 @@
-import type { FormFieldBaseProps } from "@/components/app/forms/FormField.types";
+import type { FormFieldBaseProps } from "@/components/app/forms/form-field.types";
 
 export interface DateFieldBaseProps extends FormFieldBaseProps {
 	placeholderDateFormat?: string;

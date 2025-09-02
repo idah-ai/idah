@@ -5,7 +5,7 @@
 	import CommandItem from "@/components/ui/command/command-item.svelte";
 	import CommandList from "@/components/ui/command/command-list.svelte";
 	import CommandSeparator from "@/components/ui/command/command-separator.svelte";
-	import DateRangePickerField from "@/components/app/forms/fields/picker/DateRangePickerField.svelte";
+	import DateRangePickerField from "@/components/app/forms/fields/picker/date-range-picker-field.svelte";
 	import DataTableHeadLabel from "@/components/app/data-table/data-table-head-label.svelte";
 	import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 

@@ -1,13 +1,13 @@
 <script lang="ts">
-	import FormField from "$lib/components/app/forms/FormField.svelte";
-	import FormFieldErrors from "$lib/components/app/forms/FormFieldErrors.svelte";
-	import FormFieldInfo from "$lib/components/app/forms/FormFieldInfo.svelte";
-	import FormFieldLabel from "$lib/components/app/forms/FormFieldLabel.svelte";
+	import FormField from "@/components/app/forms/form-field.svelte";
+	import FormFieldErrors from "@/components/app/forms/form-field-errors.svelte";
+	import FormFieldInfo from "@/components/app/forms/form-field-info.svelte";
+	import FormFieldLabel from "@/components/app/forms/form-field-label.svelte";
 	import Input from "@/components/ui/input/input.svelte";
 
 	import { cn } from "@/utils";
 
-	import type { FormFieldBaseProps } from "$lib/components/app/forms/FormField.types";
+	import type { FormFieldBaseProps } from "@/components/app/forms/form-field.types";
 
 	// Props
 	interface Props extends FormFieldBaseProps {

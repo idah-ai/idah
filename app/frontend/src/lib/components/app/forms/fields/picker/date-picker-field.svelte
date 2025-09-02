@@ -3,17 +3,17 @@
 
 	import Button from "@/components/ui/button/button.svelte";
 	import Calendar from "@/components/ui/calendar/calendar.svelte";
-	import FormField from "@/components/app/forms/FormField.svelte";
-	import FormFieldLabel from "@/components/app/forms/FormFieldLabel.svelte";
-	import FormFieldInfo from "@/components/app/forms/FormFieldInfo.svelte";
-	import FormFieldErrors from "@/components/app/forms/FormFieldErrors.svelte";
+	import FormField from "@/components/app/forms/form-field.svelte";
+	import FormFieldLabel from "@/components/app/forms/form-field-label.svelte";
+	import FormFieldInfo from "@/components/app/forms/form-field-info.svelte";
+	import FormFieldErrors from "@/components/app/forms/form-field-errors.svelte";
 	import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 	import { cn } from "@/utils";
 	import { CalendarIcon } from "@lucide/svelte";
 	import { CalendarDate, DateFormatter, getLocalTimeZone, type DateValue } from "@internationalized/date";
 
-	import type { DateFieldBaseProps } from "@/components/app/forms/fields/picker/DateField.types";
+	import type { DateFieldBaseProps } from "@/components/app/forms/fields/picker/date-field.types";
 
 	// Props
 	interface Props extends DateFieldBaseProps {

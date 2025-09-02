@@ -1,9 +1,10 @@
 <script lang="ts">
 	import Button from "@/components/ui/button/button.svelte";
-	import Form from "@/components/app/forms/Form.svelte";
-	import InputField from "@/components/app/forms/fields/input/InputField.svelte";
+	import Form from "@/components/app/forms/form.svelte";
+	import InputField from "@/components/app/forms/fields/input/input-field.svelte";
+	import SingleSelectField from "@/components/app/forms/fields/select/single-select-field.svelte";
+
 	import { PlusIcon, Trash2Icon } from "@lucide/svelte";
-	import SingleSelectField from "@/components/app/forms/fields/select/SingleSelectField.svelte";
 
 	// Props
 	interface Props {
