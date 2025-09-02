@@ -1,8 +1,8 @@
 <script lang="ts">
-	import Page from "@/components/app/page/Page.svelte";
-	import PageHeader from "@/components/app/page/PageHeader.svelte";
+	import PageProvider from "@/components/app/page/page-provider.svelte";
+	import PageHeader from "@/components/app/page/page-header.svelte";
 </script>
 
-<Page name="home">
+<PageProvider name="home" breadcrumbs={[]}>
 	<PageHeader title="Home"></PageHeader>
-</Page>
+</PageProvider>
