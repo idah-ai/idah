@@ -1,7 +1,7 @@
 <script lang="ts">
-	import Form from "$lib/components/app/forms/Form.svelte";
-	import InputField from "$lib/components/app/forms/fields/input/InputField.svelte";
-	import TextareaField from "$lib/components/app/forms/fields/input/TextareaField.svelte";
+	import Form from "@/components/app/forms/form.svelte";
+	import InputField from "@/components/app/forms/fields/input/input-field.svelte";
+	import TextareaField from "@/components/app/forms/fields/input/textarea-field.svelte";
 
 	// Variables
 	let resource = "project";

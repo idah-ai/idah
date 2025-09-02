@@ -2,10 +2,10 @@
 	import { format } from "date-fns";
 
 	import Button from "@/components/ui/button/button.svelte";
-	import FormField from "@/components/app/forms/FormField.svelte";
-	import FormFieldErrors from "@/components/app/forms/FormFieldErrors.svelte";
-	import FormFieldInfo from "@/components/app/forms/FormFieldInfo.svelte";
-	import FormFieldLabel from "@/components/app/forms/FormFieldLabel.svelte";
+	import FormField from "@/components/app/forms/form-field.svelte";
+	import FormFieldErrors from "@/components/app/forms/form-field-errors.svelte";
+	import FormFieldInfo from "@/components/app/forms/form-field-info.svelte";
+	import FormFieldLabel from "@/components/app/forms/form-field-label.svelte";
 	import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 	import RangeCalendar from "@/components/ui/range-calendar/range-calendar.svelte";
 
@@ -14,7 +14,7 @@
 	import { CalendarDate, DateFormatter, type DateValue } from "@internationalized/date";
 
 	import type { DateRange } from "bits-ui";
-	import type { DateFieldBaseProps } from "@/components/app/forms/fields/picker/DateField.types";
+	import type { DateFieldBaseProps } from "@/components/app/forms/fields/picker/date-field.types";
 
 	// Props
 	interface Props extends DateFieldBaseProps {
