@@ -6,6 +6,8 @@
 
 	import type { VideoAnnotation } from "@/components/video-annotation-activity/VideoAnnotationContext";
 	import type { CategoriesDefinition, CategoryDefinition } from "@/context/ActivityContext";
+    import SidebarMenuSubButton from "../ui/sidebar/sidebar-menu-sub-button.svelte";
+    import { cn } from "@/utils";
 
 	let {
 		currentFrame,
@@ -50,6 +52,39 @@
 	}
 </script>
 
+{#snippet annotationSelection(
+    annotation: VideoAnnotation,
+    name: string,
+    annotationCategory?: string,
+)}
+    <SidebarMenuItem class='delete_hover'>
+        <SidebarMenuButton onclick={() => onSelectAnnotation(annotation)}>
+            {name}
+            {#if selected && selected == annotationCategory}
+                <SidebarMenuSubButton class={'hover_deleted'} onclick={() => onSelect()}>
+                    <svg class='h-100' viewBox="0 0 12 15" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            class="fill-primary"
+                            d="M9.33329 5V13.3333H2.66663V5H9.33329ZM8.08329 0H3.91663L3.08329 0.833333H0.166626V2.5H11.8333V0.833333H8.91663L8.08329 0ZM11 3.33333H0.999959V13.3333C0.999959 14.25 1.74996 15 2.66663 15H9.33329C10.25 15 11 14.25 11 13.3333V3.33333Z"
+                        />
+                    </svg>
+                </SidebarMenuSubButton>
+            {/if}
+        </SidebarMenuButton>
+    </SidebarMenuItem>
+
+    <style>
+    .delete_hover .hover_deleted {
+        display: none;
+    }
+
+    .delete_hover:hover .hover_deleted {
+        display: inline-block;
+    }
+</style>
+
+{/snippet}
+
 {#snippet categorySelection(
 	category: string,
 	subCategories: CategoryDefinition[] | undefined,
@@ -57,11 +92,10 @@
 	selected: string | undefined,
 	parent: string[] = [],
 )}
-	<!-- {required ? (selected ? (selected.startsWith(categoryFullName(category, parent)) ? 'bg-green-300': 'bg-green-200') : 'bg-red-200') : selected?.startsWith(categoryFullName(category, parent)) ? 'bg-green-200': 'light'} -->
-	<Collapsible open={selected?.startsWith(categoryFullName(category, parent))}>
-		<CollapsibleTrigger>
+	<Collapsible >
+		<CollapsibleTrigger onclick={() => onSelect(categoryFullName(category, parent))}>
 			{category}
-			<Badge>
+			<Badge variant='secondary'>
 				{annotations.filter(
 					(annotation) =>
 						annotation.value.category?.startsWith(categoryFullName(category, parent)) &&
@@ -70,15 +104,13 @@
 				).length}
 			</Badge>
 		</CollapsibleTrigger>
-		{#if selected == categoryFullName(category, parent)}
-			<Button onclick={() => onSelect()}>-</Button>
-		{/if}
-		{#if selected != categoryFullName(category, parent)}
-			<Button onclick={() => onSelect(categoryFullName(category, parent))}>+</Button>
-		{/if}
 
 		<CollapsibleContent style={"margin-left:10px"}>
-			{#if subCategories}
+			{#each annotations.filter((annotation) => annotation.value.category == categoryFullName(category, parent) && currentFrame >= annotation.shape.start && currentFrame <= annotation.shape.end) as annotation, i}
+                {@render annotationSelection(annotation, annotation.value.label || `${category}_${i}`, categoryFullName(category, parent))}
+			{/each}
+
+            {#if subCategories}
 				{#each subCategories as subCategory}
 					{@render categorySelection(subCategory.name, subCategory.nestedCategories, onSelect, selected, [
 						...parent,
@@ -86,17 +118,14 @@
 					])}
 				{/each}
 			{/if}
-
-			{#each annotations.filter((annotation) => annotation.value.category == categoryFullName(category, parent) && currentFrame >= annotation.shape.start && currentFrame <= annotation.shape.end) as annotation, i}
-				<SidebarMenuItem>
-					<SidebarMenuButton onclick={() => onSelectAnnotation(annotation)}>
-						{annotation.value.label || `${category}_${i}`}
-					</SidebarMenuButton>
-				</SidebarMenuItem>
-			{/each}
 		</CollapsibleContent>
 	</Collapsible>
 {/snippet}
+
+{#each annotations.filter((annotation) => !annotation.value.category && currentFrame >= annotation.shape.start && currentFrame <= annotation.shape.end) as annotation, i}
+    {@render annotationSelection(annotation, annotation.value.label || annotation.metadata.id)}
+{/each}
+
 
 {#each Object.entries(categories) as [category, subCategory]}
 	{@render categorySelection(category, subCategory, onSelect, selected)}
