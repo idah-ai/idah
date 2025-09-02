@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount, type Snippet } from "svelte";
 
-	import ApplicationLoading from "@/components/app/application/ApplicationLoading.svelte";
+	import ApplicationLoading from "@/components/app/application/application-loading.svelte";
 
 	import { cn } from "@/utils";
 

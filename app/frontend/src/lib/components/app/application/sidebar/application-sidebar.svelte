@@ -1,9 +1,9 @@
 <script lang="ts">
 	import type { ComponentProps } from "svelte";
 
-	import ApplicationSidebarContent from "@/components/app/application/sidebar/ApplicationSidebarContent.svelte";
-	import ApplicationSidebarHeader from "@/components/app/application/sidebar/ApplicationSidebarHeader.svelte";
-	import ApplicationSidebarFooter from "@/components/app/application/sidebar/ApplicationSidebarFooter.svelte";
+	import ApplicationSidebarContent from "@/components/app/application/sidebar/application-sidebar-content.svelte";
+	import ApplicationSidebarHeader from "@/components/app/application/sidebar/application-sidebar-header.svelte";
+	import ApplicationSidebarFooter from "@/components/app/application/sidebar/application-sidebar-footer.svelte";
 	import Sidebar from "@/components/ui/sidebar/sidebar.svelte";
 	import SidebarRail from "@/components/ui/sidebar/sidebar-rail.svelte";
 
