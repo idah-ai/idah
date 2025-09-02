@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Button from "@/components/ui/button/button.svelte";
-	import ResponseBlock from "@/components/app/blocks/ResponseBlock.svelte";
+	import ResponseBlock from "@/components/app/blocks/response-block.svelte";
 
 	import { InboxIcon, PlusIcon } from "@lucide/svelte";
 
