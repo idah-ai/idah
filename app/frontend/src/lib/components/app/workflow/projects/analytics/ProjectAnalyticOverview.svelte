@@ -1,7 +1,7 @@
 <script lang="ts">
-	import StatsCard from "@/components/app/cards/StatsCard.svelte";
-	import StackedProgressBar from "@/components/app/charts/bars/StackedProgressBar.svelte";
 	import DataTable from "@/components/app/data-table/DataTable.svelte";
+	import MetricCard from "@/components/app/cards/metric-card.svelte";
+	import StackedProgressBar from "@/components/app/charts/bars/StackedProgressBar.svelte";
 
 	import { projectAnalyticOverviewColumns } from "@/components/app/workflow/projects/analytics/data-tables/project-analytic.columns";
 
@@ -17,11 +17,11 @@
 <div class="grid w-full gap-4">
 	<!-- METRICS CARD -->
 	<div class="grid grid-cols-1 gap-4 lg:grid-cols-3 xl:grid-cols-5">
-		<StatsCard title="Total" value="45,789" />
-		<StatsCard title="Remaning" value="3,205" />
-		<StatsCard title="Annotated" value="68,683" />
-		<StatsCard title="Reviewed" value="34,799" />
-		<StatsCard title="Skipped" value="5" />
+		<MetricCard title="Total" value="45,789" />
+		<MetricCard title="Remaning" value="3,205" />
+		<MetricCard title="Annotated" value="68,683" />
+		<MetricCard title="Reviewed" value="34,799" />
+		<MetricCard title="Skipped" value="5" />
 	</div>
 
 	<!-- STACKED PROGRESS BAR -->
