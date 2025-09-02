@@ -1,5 +1,5 @@
 <script lang="ts">
-	import ProjectDropdownMenu from "@/components/app/workflow/projects/dropdowns/ProjectDropdownMenu.svelte";
+	import ProjectDropdownMenu from "@/components/app/projects/dropdowns/project-dropdown-menu.svelte";
 
 	// Props
 	interface Props {

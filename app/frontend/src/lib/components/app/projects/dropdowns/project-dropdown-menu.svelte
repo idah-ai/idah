@@ -8,7 +8,7 @@
 		DropdownMenuItem,
 		DropdownMenuTrigger,
 	} from "@/components/ui/dropdown-menu";
-	import ProjectFormModal from "@/components/app/workflow/projects/overlays/ProjectFormModal.svelte";
+	import ProjectFormModal from "@/components/app/projects/overlays/project-form-modal.svelte";
 
 	import { EllipsisVerticalIcon, SquarePenIcon, Trash2Icon } from "@lucide/svelte";
 

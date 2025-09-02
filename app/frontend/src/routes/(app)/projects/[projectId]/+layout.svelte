@@ -5,11 +5,11 @@
 
 	import PageProvider from "@/components/app/page/page-provider.svelte";
 	import PageHeader from "@/components/app/page/page-header.svelte";
-	import ProjectDropdownMenu from "@/components/app/workflow/projects/dropdowns/ProjectDropdownMenu.svelte";
+	import ProjectDropdownMenu from "@/components/app/projects/dropdowns/project-dropdown-menu.svelte";
 	import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 	import { projectBreadcrumb } from "@/components/app/page/page-breadcrumb.constants";
-	import { projectTabs, type ProjectTab } from "@/components/app/workflow/projects/tabs/project.tabs";
+	import { projectTabs, type ProjectTab } from "@/components/app/projects/tabs/project.tabs";
 
 	import type { PageBreadcrumbItem } from "@/components/app/page/page-breadcrumb.svelte";
 

@@ -1,5 +1,5 @@
 import type { Snippet } from "svelte";
-import type { LabelValue } from "@/components/app/ComponentApp.types";
+import type { LabelValue } from "@/components/app/component.types";
 
 export interface FormFieldBaseProps {
 	name: string;

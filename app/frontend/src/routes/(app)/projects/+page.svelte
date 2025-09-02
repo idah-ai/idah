@@ -3,11 +3,11 @@
 	import DataTable from "@/components/app/data-table/data-table.svelte";
 	import PageProvider from "@/components/app/page/page-provider.svelte";
 	import PageHeader from "@/components/app/page/page-header.svelte";
-	import ProjectFormModal from "@/components/app/workflow/projects/overlays/ProjectFormModal.svelte";
+	import ProjectFormModal from "@/components/app/projects/overlays/project-form-modal.svelte";
 	import { PlusIcon } from "@lucide/svelte";
 
 	import { projectBreadcrumb } from "@/components/app/page/page-breadcrumb.constants";
-	import { projectColumns } from "@/components/app/workflow/projects/data-tables/project.columns";
+	import { projectColumns } from "@/components/app/projects/data-tables/project.columns";
 
 	import type { PageBreadcrumbItem } from "@/components/app/page/page-breadcrumb.svelte";
 
