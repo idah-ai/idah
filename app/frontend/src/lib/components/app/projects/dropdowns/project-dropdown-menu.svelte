@@ -12,10 +12,24 @@
 
 	import { EllipsisVerticalIcon, SquarePenIcon, Trash2Icon } from "@lucide/svelte";
 
+	import type { DropdownMenuItemBaseProps } from "@/components/app/dropdown-menu/dropdown-menu.types";
+
 	// Variables
-	const menus = [
-		{ label: "Edit", icon: SquarePenIcon, action: () => (openEditProjectFormModal = true) },
-		{ label: "Delete", icon: Trash2Icon, action: () => (openConfirmDeleteProjectModal = true) },
+	const menus: DropdownMenuItemBaseProps[] = [
+		{
+			label: "Edit",
+			icon: SquarePenIcon,
+			action: () => {
+				openEditProjectFormModal = true;
+			},
+		},
+		{
+			label: "Delete",
+			icon: Trash2Icon,
+			action: () => {
+				openConfirmDeleteProjectModal = true;
+			},
+		},
 	];
 
 	let openEditProjectFormModal: boolean = $state(false);

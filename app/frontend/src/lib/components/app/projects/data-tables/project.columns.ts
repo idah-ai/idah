@@ -33,7 +33,7 @@ export const projectColumns: ColumnsSettings = {
 		hidable: false,
 	},
 	rows: {
-		label: "Rows",
+		label: "Data Rows",
 		dataType: "number",
 		sortable: true,
 		filterable: true,
@@ -71,8 +71,8 @@ export const projectColumns: ColumnsSettings = {
 		visible: true,
 		hidable: true,
 	},
-	actions: {
-		label: "Actions",
+	action: {
+		label: "Action",
 		dataType: "string",
 		sortable: false,
 		filterable: false,
