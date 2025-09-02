@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Button from "@/components/ui/button/button.svelte";
-	import ConfirmModal from "@/components/app/overlays/modals/ConfirmModal.svelte";
+	import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
 	import {
 		DropdownMenu,
 		DropdownMenuContent,

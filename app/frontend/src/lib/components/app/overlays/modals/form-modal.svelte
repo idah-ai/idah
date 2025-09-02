@@ -8,7 +8,7 @@
 	import DialogTitle from "@/components/ui/dialog/dialog-title.svelte";
 	import ScrollArea from "@/components/ui/scroll-area/scroll-area.svelte";
 
-	import type { FormModalBaseProps } from "$lib/components/app/overlays/modals/FormModal.types";
+	import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
 
 	// Props
 	interface Props extends FormModalBaseProps {}

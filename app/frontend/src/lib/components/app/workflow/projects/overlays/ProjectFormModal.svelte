@@ -1,8 +1,8 @@
 <script lang="ts">
-	import FormModal from "$lib/components/app/overlays/modals/FormModal.svelte";
+	import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
 	import ProjectForm from "$lib/components/app/workflow/projects/forms/ProjectForm.svelte";
 
-	import type { FormModalBaseProps } from "$lib/components/app/overlays/modals/FormModal.types";
+	import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
 
 	// Props
 	interface Props extends FormModalBaseProps {}
