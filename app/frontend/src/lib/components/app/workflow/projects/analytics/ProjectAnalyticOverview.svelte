@@ -1,7 +1,7 @@
 <script lang="ts">
 	import DataTable from "@/components/app/data-table/DataTable.svelte";
 	import MetricCard from "@/components/app/cards/metric-card.svelte";
-	import StackedProgressBar from "@/components/app/charts/bars/StackedProgressBar.svelte";
+	import StackedProgressBar from "@/components/app/charts/bars/stacked-progress-bar.svelte";
 
 	import { projectAnalyticOverviewColumns } from "@/components/app/workflow/projects/analytics/data-tables/project-analytic.columns";
 
