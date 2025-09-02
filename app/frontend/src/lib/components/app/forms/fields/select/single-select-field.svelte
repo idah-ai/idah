@@ -1,14 +1,6 @@
 <script lang="ts">
 	import Button from "@/components/ui/button/button.svelte";
-	import {
-		Command,
-		CommandEmpty,
-		CommandGroup,
-		CommandInput,
-		CommandItem,
-		CommandList,
-		CommandSeparator,
-	} from "@/components/ui/command";
+	import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 	import FormField from "@/components/app/forms/form-field.svelte";
 	import FormFieldErrors from "@/components/app/forms/form-field-errors.svelte";
 	import FormFieldInfo from "@/components/app/forms/form-field-info.svelte";
@@ -16,7 +8,7 @@
 	import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 	import { cn } from "@/utils";
-	import { CheckIcon, ChevronsUpDownIcon, RotateCcwIcon } from "@lucide/svelte";
+	import { CheckIcon, ChevronsUpDownIcon, CircleXIcon, RotateCcwIcon } from "@lucide/svelte";
 
 	import type { SelectFieldBaseProps } from "@/components/app/forms/form-field.types";
 	import type { LabelValue } from "@/components/app/component.types";
@@ -54,7 +46,8 @@
 		open = false;
 	}
 
-	function clearValue(): void {
+	function clearValue(event: MouseEvent): void {
+		event.stopPropagation();
 		value = null;
 	}
 </script>
@@ -76,7 +69,17 @@
 						<span class="text-muted-foreground">{placeholder}</span>
 					{/if}
 
-					<ChevronsUpDownIcon class="ml-auto size-4 shrink-0 opacity-50" />
+					<div class={cn("ml-auto inline-flex items-center gap-2")}>
+						<button
+							type="button"
+							class={cn("cursor-pointer", clearable && selectedValue ? "opacity-50" : "opacity-0")}
+							onclick={clearValue}
+						>
+							<CircleXIcon class="size-4 shrink-0" />
+						</button>
+
+						<ChevronsUpDownIcon class="size-4 shrink-0 opacity-50" />
+					</div>
 				</Button>
 			{/snippet}
 		</PopoverTrigger>
@@ -101,16 +104,6 @@
 							</CommandItem>
 						{/each}
 					</CommandGroup>
-
-					{#if clearable}
-						<CommandSeparator />
-						<CommandGroup>
-							<CommandItem onSelect={clearValue}>
-								<RotateCcwIcon class="mr-2 size-4" />
-								Clear selection
-							</CommandItem>
-						</CommandGroup>
-					{/if}
 				</CommandList>
 			</Command>
 		</PopoverContent>
