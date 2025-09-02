@@ -1,3 +1,6 @@
+import ProjectMemberRoleCell from "@/components/app/projects/members/data-tables/project-member-role-cell.svelte";
+import ProjectMemberRowActionCell from "@/components/app/projects/members/data-tables/project-member-row-action-cell.svelte";
+
 import type { ColumnsSettings } from "@/components/app/data-table/data-table.types";
 
 export const projectMemberColumns: ColumnsSettings = {
@@ -56,6 +59,7 @@ export const projectMemberColumns: ColumnsSettings = {
 		},
 		visible: true,
 		hidable: false,
+		cellComponent: ProjectMemberRoleCell,
 	},
 	action: {
 		label: "Action",
@@ -65,5 +69,6 @@ export const projectMemberColumns: ColumnsSettings = {
 		filterable: false,
 		visible: true,
 		hidable: false,
+		cellComponent: ProjectMemberRowActionCell,
 	},
 };
