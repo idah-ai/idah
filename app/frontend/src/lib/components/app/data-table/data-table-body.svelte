@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Copyable from "@/components/app/texts/Copyable.svelte";
+	import Copyable from "@/components/app/texts/copyable.svelte";
 	import DataTableEmpty from "@/components/app/data-table/data-table-empty.svelte";
 	import TableBody from "@/components/ui/table/table-body.svelte";
 	import TableCell from "@/components/ui/table/table-cell.svelte";
