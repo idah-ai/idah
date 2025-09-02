@@ -61,8 +61,8 @@ module Video
           "BANDWIDTH=#{bitrate.to_i * 1024}," \
           "RESOLUTION=#{width_pixel}x#{height_pixel}," \
           "CODECS=\"avc1.42E01E,mp4a.40.2\"," \
-          "FRAME-RATE=#{rational_fps.numerator}/#{rational_fps.denominator} " \
-          "#{size}.m3u8\n"
+          "FRAME-RATE=#{rational_fps.numerator}/#{rational_fps.denominator}" \
+          "\n#{size}.m3u8\n"
 
         command <<
           "-hls_time #{arguments.streaming_time_per_segment} " \

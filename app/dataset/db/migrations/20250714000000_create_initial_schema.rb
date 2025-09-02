@@ -150,9 +150,6 @@ Sequel.migration do
                   null: false,
                   index: true
 
-      # Type of annotation, e.g. "bounding_box", "polygon", "timerange" etc.
-      column :type, String, null: false, index: true # video_bounding_box
-
       # Dimension of the annotation, e.g. coordinates or pixel mask.
       column :dimensions, :jsonb, text: true, null: false
 
@@ -160,7 +157,7 @@ Sequel.migration do
       column :annotation, :jsonb, text: true, null: false
 
       # Annotator information
-      column :created_by_id, :bigint, null: false, index: true
+      column :created_by_id, :bigint, null: true, index: true
 
       Migration::Timestamps.timestamps(self)
     end

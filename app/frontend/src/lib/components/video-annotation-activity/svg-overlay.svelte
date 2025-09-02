@@ -172,8 +172,6 @@
 		bind:clientHeight={height}
 		bind:clientWidth={width}
 		class="h-full w-full"
-		role="button"
-		tabindex="-1"
 		onmousemove={(e) => {
 			// const elementRect = svg.getBoundingClientRect();
 
@@ -191,8 +189,8 @@
 		}}
 		{...restProps}
 	>
-		<line x1={0} y1={target_line[Y]} x2={width} y2={target_line[Y]} stroke="chartreuse" />
-		<line x1={target_line[X]} y1={0} x2={target_line[X]} y2={height} stroke="chartreuse" />
+		<line x1={0} y1={target_line[Y]} x2={width} y2={target_line[Y]} stroke="#06B6D4" />
+		<line x1={target_line[X]} y1={0} x2={target_line[X]} y2={height} stroke="#06B6D4" />
 
 		<!-- draw annotation context -->
 		{#each annotations as annotation}
@@ -203,7 +201,7 @@
 						points={currentShape(annotation.shape, frame) || []}
 						ratio={target_size}
 						offset={zoomInfo.offset}
-						color={annotation.synced ? "#FF1493" : "grey"}
+						color={annotation.synced ? "#E2E8F0" : "grey"}
 						onmousedown={(e) => {
 							console.error("clicked anyway");
 							if (mode == "view") {
@@ -224,7 +222,7 @@
 				offset={zoomInfo.offset}
 				cursor={cursor_downscaled}
 				editable={true}
-				color={"chartreuse"}
+				color={"#FEF9C340"}
 				onChange={(bb) => {
 					onSelection("bounding-box", frame, bb, selected?.metadata.id);
 					if (!selected) points = [];
