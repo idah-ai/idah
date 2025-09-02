@@ -1,5 +1,5 @@
 <script lang="ts">
-	import DataTable from "@/components/app/data-table/DataTable.svelte";
+	import DataTable from "@/components/app/data-table/data-table.svelte";
 	import MetricCard from "@/components/app/cards/metric-card.svelte";
 	import StackedProgressBar from "@/components/app/charts/bars/stacked-progress-bar.svelte";
 

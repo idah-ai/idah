@@ -10,7 +10,7 @@
 
 	import { Settings2Icon } from "@lucide/svelte";
 
-	import type { ColumnsSettings } from "@/components/app/data-table/DataTable.types";
+	import type { ColumnsSettings } from "@/components/app/data-table/data-table.types";
 
 	// Props
 	interface Props {

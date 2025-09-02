@@ -1,5 +1,5 @@
 <script lang="ts">
-	import DataTable from "@/components/app/data-table/DataTable.svelte";
+	import DataTable from "@/components/app/data-table/data-table.svelte";
 
 	import { projectTaskColumns } from "@/components/app/workflow/projects/tasks/data-tables/project-task.columns";
 </script>

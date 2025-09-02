@@ -1,4 +1,4 @@
-import type { ColumnsSettings } from "$lib/components/app/data-table/DataTable.types";
+import type { ColumnsSettings } from "@/components/app/data-table/data-table.types";
 
 export const projectMemberColumns: ColumnsSettings = {
 	email: {

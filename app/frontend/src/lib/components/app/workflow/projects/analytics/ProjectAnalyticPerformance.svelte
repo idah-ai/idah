@@ -2,7 +2,7 @@
 	import { format, subDays } from "date-fns";
 
 	import Button from "@/components/ui/button/button.svelte";
-	import DataTable from "@/components/app/data-table/DataTable.svelte";
+	import DataTable from "@/components/app/data-table/data-table.svelte";
 	import {
 		DropdownMenu,
 		DropdownMenuContent,
