@@ -2,7 +2,7 @@
 	import type { HTMLAttributes } from "svelte/elements";
 	import type { WithElementRef } from "@/utils";
 
-	import AccountDropdown from "@/components/app/iam/accounts/dropdowns/AccountDropdown.svelte";
+	import AccountDropdown from "@/components/app/iam/accounts/dropdowns/account-dropdown.svelte";
 
 	import SidebarFooter from "@/components/ui/sidebar/sidebar-footer.svelte";
 	import SidebarMenu from "@/components/ui/sidebar/sidebar-menu.svelte";
