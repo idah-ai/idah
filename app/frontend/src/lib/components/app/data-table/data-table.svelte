@@ -1,12 +1,12 @@
 <script lang="ts">
-	import DataTableBody from "@/components/app/data-table/DataTableBody.svelte";
-	import DataTableContent from "@/components/app/data-table/DataTableContent.svelte";
-	import DataTableHeader from "@/components/app/data-table/DataTableHeader.svelte";
-	import DataTableHeadLabel from "@/components/app/data-table/DataTableHeadLabel.svelte";
-	import DataTableHeadOptions from "@/components/app/data-table/DataTableHeadOptions.svelte";
-	import DataTablePaginator from "@/components/app/data-table/DataTablePaginator.svelte";
-	import DataTableToggleColumns from "@/components/app/data-table/DataTableToggleColumns.svelte";
-	import DataTableToolbarActions from "@/components/app/data-table/DataTableToolbarActions.svelte";
+	import DataTableBody from "@/components/app/data-table/data-table-body.svelte";
+	import DataTableContent from "@/components/app/data-table/data-table-content.svelte";
+	import DataTableHeader from "@/components/app/data-table/data-table-header.svelte";
+	import DataTableHeadLabel from "@/components/app/data-table/data-table-head-label.svelte";
+	import DataTableHeadOptions from "@/components/app/data-table/data-table-head-options.svelte";
+	import DataTablePaginator from "@/components/app/data-table/data-table-paginator.svelte";
+	import DataTableToggleColumns from "@/components/app/data-table/data-table-toggle-columns.svelte";
+	import DataTableToolbarActions from "@/components/app/data-table/data-table-toolbar-actions.svelte";
 	import Table from "@/components/ui/table/table.svelte";
 	import TableHead from "@/components/ui/table/table-head.svelte";
 	import TableHeader from "@/components/ui/table/table-header.svelte";
@@ -15,7 +15,7 @@
 
 	import { cn } from "@/utils";
 
-	import type { DataTableBaseProps } from "@/components/app/data-table/DataTable.types";
+	import type { DataTableBaseProps } from "@/components/app/data-table/data-table.types";
 
 	// Props
 	interface Props extends DataTableBaseProps {}

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Button from "@/components/ui/button/button.svelte";
-	import DataTable from "@/components/app/data-table/DataTable.svelte";
+	import DataTable from "@/components/app/data-table/data-table.svelte";
 	import Page from "@/components/app/page/Page.svelte";
 	import PageHeader from "@/components/app/page/PageHeader.svelte";
 	import ProjectFormModal from "@/components/app/workflow/projects/overlays/ProjectFormModal.svelte";

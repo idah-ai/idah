@@ -1,6 +1,7 @@
 <script lang="ts">
-	import type { DataTableCellBaseProps } from "@/components/app/data-table/DataTable.types";
 	import Link from "@/components/ui/text/Link.svelte";
+
+	import type { DataTableCellBaseProps } from "@/components/app/data-table/data-table.types";
 
 	// Props
 	interface Props extends DataTableCellBaseProps {}

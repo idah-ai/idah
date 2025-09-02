@@ -1,7 +1,7 @@
 import ProjectNameCell from "@/components/app/workflow/projects/data-tables/ProjectNameCell.svelte";
 import ProjectRowActionCell from "@/components/app/workflow/projects/data-tables/ProjectRowActionCell.svelte";
 
-import type { ColumnsSettings } from "$lib/components/app/data-table/DataTable.types";
+import type { ColumnsSettings } from "@/components/app/data-table/data-table.types";
 
 export const projectColumns: ColumnsSettings = {
 	name: {

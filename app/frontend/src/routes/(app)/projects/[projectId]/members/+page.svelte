@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Button from "@/components/ui/button/button.svelte";
-	import DataTable from "@/components/app/data-table/DataTable.svelte";
+	import DataTable from "@/components/app/data-table/data-table.svelte";
 	import ProjectMemberFormModal from "@/components/app/workflow/projects/members/overlays/ProjectMemberFormModal.svelte";
 
 	import { projectMemberColumns } from "@/components/app/workflow/projects/members/data-tables/project-member.columns";
