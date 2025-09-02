@@ -1,13 +1,13 @@
 <script lang="ts">
 	import Button from "@/components/ui/button/button.svelte";
-	import PageBreadcrumb from "@/components/app/page/PageBreadcrumb.svelte";
+	import PageBreadcrumb from "@/components/app/page/page-breadcrumb.svelte";
 	import Separator from "@/components/ui/separator/separator.svelte";
 	import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 	import { PanelLeftCloseIcon, PanelLeftOpenIcon } from "@lucide/svelte";
 	import { useSidebar } from "@/components/ui/sidebar";
 
-	import type { PageBreadcrumbItem } from "@/components/app/page/PageBreadcrumb.svelte";
+	import type { PageBreadcrumbItem } from "@/components/app/page/page-breadcrumb.svelte";
 
 	// Props
 	interface Props {

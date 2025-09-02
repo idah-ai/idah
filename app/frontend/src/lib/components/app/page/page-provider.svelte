@@ -5,7 +5,7 @@
 
 	import type { WithElementRef } from "@/utils";
 	import type { HTMLAttributes } from "svelte/elements";
-	import type { PageBreadcrumbItem } from "@/components/app/page/PageBreadcrumb.svelte";
+	import type { PageBreadcrumbItem } from "@/components/app/page/page-breadcrumb.svelte";
 
 	// Props
 	type Props = WithElementRef<HTMLAttributes<HTMLElement>> & {

@@ -3,15 +3,15 @@
 	import { goto } from "$app/navigation";
 	import { page } from "$app/state";
 
-	import Page from "@/components/app/page/Page.svelte";
-	import PageHeader from "@/components/app/page/PageHeader.svelte";
+	import PageProvider from "@/components/app/page/page-provider.svelte";
+	import PageHeader from "@/components/app/page/page-header.svelte";
 	import ProjectDropdownMenu from "@/components/app/workflow/projects/dropdowns/ProjectDropdownMenu.svelte";
 	import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-	import { projectBreadcrumb } from "@/components/app/page/PageBreadcrumb.constants";
+	import { projectBreadcrumb } from "@/components/app/page/page-breadcrumb.constants";
 	import { projectTabs, type ProjectTab } from "@/components/app/workflow/projects/tabs/project.tabs";
 
-	import type { PageBreadcrumbItem } from "@/components/app/page/PageBreadcrumb.svelte";
+	import type { PageBreadcrumbItem } from "@/components/app/page/page-breadcrumb.svelte";
 
 	// Props
 	interface Props {
@@ -42,7 +42,7 @@
 	}
 </script>
 
-<Page name="project-detail" {breadcrumbs}>
+<PageProvider name="project-detail" {breadcrumbs}>
 	<PageHeader title="Video Tracking">
 		{#snippet actions()}
 			<ProjectDropdownMenu />
@@ -58,4 +58,4 @@
 	</Tabs>
 
 	{@render children()}
-</Page>
+</PageProvider>
