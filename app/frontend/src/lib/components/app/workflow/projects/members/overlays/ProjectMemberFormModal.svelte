@@ -1,10 +1,10 @@
 <script lang="ts">
 	import Button from "@/components/ui/button/button.svelte";
 	import DialogTitle from "@/components/ui/dialog/dialog-title.svelte";
-	import FormModal from "@/components/app/overlays/modals/FormModal.svelte";
+	import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
 	import ProjectMemberForm from "@/components/app/workflow/projects/members/forms/ProjectMemberForm.svelte";
 
-	import type { FormModalBaseProps } from "@/components/app/overlays/modals/FormModal.types";
+	import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
 
 	// Props
 	interface Props extends FormModalBaseProps {}

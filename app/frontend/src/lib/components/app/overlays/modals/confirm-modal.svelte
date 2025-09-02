@@ -8,7 +8,7 @@
 		AlertDialogHeader,
 		AlertDialogTitle,
 	} from "@/components/ui/alert-dialog";
-	import type { ConfirmModalBaseProps } from "@/components/app/overlays/modals/ConfirmModal.types";
+	import type { ConfirmModalBaseProps } from "@/components/app/overlays/modals/confirm-modal.types";
 	import Button from "@/components/ui/button/button.svelte";
 
 	// Props
