@@ -1,9 +1,9 @@
 <script lang="ts">
-	import ApplicationSidebarMenuItem from "@/components/app/application/sidebar/ApplicationSidebarMenuItem.svelte";
+	import ApplicationSidebarMenuItem from "@/components/app/application/sidebar/application-sidebar-menu-item.svelte";
 	import { SidebarContent, SidebarGroup, SidebarGroupContent } from "@/components/ui/sidebar";
 	import { BellIcon, LifeBuoyIcon, RocketIcon } from "@lucide/svelte";
 
-	import type { ApplicationSidebarMenuItemProps } from "@/components/app/application/sidebar/ApplicationSidebarMenuItem.svelte";
+	import type { ApplicationSidebarMenuItemProps } from "@/components/app/application/sidebar/application-sidebar-menu-item.svelte";
 
 	// Variables
 	let primaryMenus: ApplicationSidebarMenuItemProps[] = $state([
