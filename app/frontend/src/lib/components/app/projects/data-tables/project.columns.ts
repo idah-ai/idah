@@ -1,5 +1,5 @@
-import ProjectNameCell from "@/components/app/workflow/projects/data-tables/ProjectNameCell.svelte";
-import ProjectRowActionCell from "@/components/app/workflow/projects/data-tables/ProjectRowActionCell.svelte";
+import ProjectNameCell from "@/components/app/projects/data-tables/project-name-cell.svelte";
+import ProjectRowActionCell from "@/components/app/projects/data-tables/project-row-action-cell.svelte";
 
 import type { ColumnsSettings } from "@/components/app/data-table/data-table.types";
 

@@ -1,5 +1,5 @@
 import type { Component, Snippet } from "svelte";
-import type { LabelValue } from "$lib/components/app/ComponentApp.types";
+import type { LabelValue } from "@/components/app/component.types";
 
 export type DataTableColumnDataType = "string" | "number" | "date" | "datetime" | "email" | "file" | "time" | "enum";
 

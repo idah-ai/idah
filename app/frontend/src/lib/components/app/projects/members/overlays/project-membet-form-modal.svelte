@@ -2,7 +2,7 @@
 	import Button from "@/components/ui/button/button.svelte";
 	import DialogTitle from "@/components/ui/dialog/dialog-title.svelte";
 	import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
-	import ProjectMemberForm from "@/components/app/workflow/projects/members/forms/ProjectMemberForm.svelte";
+	import ProjectMemberForm from "@/components/app/projects/members/forms/project-membet-form.svelte";
 
 	import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
 

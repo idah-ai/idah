@@ -11,7 +11,7 @@
 		DropdownMenuTrigger,
 	} from "@/components/ui/dropdown-menu";
 
-	import { projectAnalyticMemberPerformanceColumns } from "@/components/app/workflow/projects/analytics/data-tables/project-analytic.columns";
+	import { projectAnalyticMemberPerformanceColumns } from "@/components/app/projects/analytics/data-tables/project-analytic.columns";
 	import { ChevronsUpDownIcon } from "@lucide/svelte";
 
 	// Variables

@@ -20,7 +20,7 @@
 
 	import { ChevronsUpDownIcon } from "@lucide/svelte";
 
-	import type { LabelValue } from "@/components/app/ComponentApp.types";
+	import type { LabelValue } from "@/components/app/component.types";
 
 	// Props
 	interface Props {

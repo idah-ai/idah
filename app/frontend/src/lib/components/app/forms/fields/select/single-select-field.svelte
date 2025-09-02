@@ -19,7 +19,7 @@
 	import { CheckIcon, ChevronsUpDownIcon, RotateCcwIcon } from "@lucide/svelte";
 
 	import type { SelectFieldBaseProps } from "@/components/app/forms/form-field.types";
-	import type { LabelValue } from "@/components/app/ComponentApp.types";
+	import type { LabelValue } from "@/components/app/component.types";
 
 	// Props
 	interface Props extends SelectFieldBaseProps {
