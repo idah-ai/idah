@@ -1,63 +1,64 @@
-<script lang="ts">
-	import Copyable from "@/components/app/texts/copyable.svelte";
-	import DataTableEmpty from "@/components/app/data-table/data-table-empty.svelte";
-	import TableBody from "@/components/ui/table/table-body.svelte";
-	import TableCell from "@/components/ui/table/table-cell.svelte";
-	import TableRow from "@/components/ui/table/table-row.svelte";
+<script lang="ts" generics="T extends Record">
+  import Copyable from "@/components/app/texts/copyable.svelte";
+  import DataTableEmpty from "@/components/app/data-table/data-table-empty.svelte";
+  import DateText from "@/components/app/texts/date-text.svelte";
+  import TableBody from "@/components/ui/table/table-body.svelte";
+  import TableCell from "@/components/ui/table/table-cell.svelte";
+  import TableRow from "@/components/ui/table/table-row.svelte";
 
-	import { cn } from "@/utils";
+  import { cn } from "@/utils";
 
-	import type { ColumnsSettings } from "@/components/app/data-table/data-table.types";
+  import { Record } from "@/data/model/Record";
+  import type { ColumnsSettings, TableData } from "@/components/app/data-table/data-table.types";
 
-	// Props
-	interface Props {
-		dataTableName: string;
-		records: Record<string, unknown>[];
-		columns: ColumnsSettings;
-	}
-	let { dataTableName, records, columns }: Props = $props();
+  // Props
+  interface Props<T extends Record> {
+    dataTableName: string;
+    tableData: TableData<T>;
+    columns: ColumnsSettings<T>;
+  }
+  let { dataTableName, tableData, columns }: Props<T> = $props();
 </script>
 
 <TableBody>
-	<!-- {#if hasRecords} -->
-	{#each records as record}
-		<TableRow>
-			{#each Object.entries(columns) as [columnKey, columnSetting] (columnKey)}
-				{@const { dataType, clickable, cellComponent: CellComponent, visible } = columnSetting}
-				{@const value = record[columnKey] || ""}
+  {#each tableData.response.data as record}
+    <TableRow>
+      {#each Object.entries(columns) as [columnKey, columnSetting] (columnKey)}
+        {@const { dataType, clickable, cellComponent: CellComponent, visible } = columnSetting}
+        {@const value = record[columnKey] || ""}
 
-				{#if visible}
-					<TableCell
-						class={cn("px-6 py-4", {
-							"cursor-pointer": clickable,
-						})}
-					>
-						{#if CellComponent}
-							<CellComponent {record} />
-						{:else if dataType === "string"}
-							{value}
-						{:else if dataType === "number"}
-							{Number(value)}
-						{:else if dataType === "email"}
-							<Copyable title="email" value={value as string} />
-						{:else if dataType === "date"}
-							{value}
-						{:else if dataType === "datetime"}
-							{value}
-						{:else if dataType === "time"}
-							{value}
-						{:else if dataType === "enum"}
-							{value}
-						{/if}
-					</TableCell>
-				{/if}
-			{/each}
-		</TableRow>
-	{:else}
-		<TableRow class="min-h-[50vh] h-[50vh]">
-			<TableCell colspan={Object.keys(columns).length}>
-				<DataTableEmpty {dataTableName} />
-			</TableCell>
-		</TableRow>
-	{/each}
+        {#if visible}
+          <TableCell
+            class={cn("px-6 py-4", {
+              "cursor-pointer": clickable,
+            })}
+          >
+            {#if CellComponent}
+              <CellComponent {record} contexts={tableData.contexts} />
+            {:else if dataType === "string"}
+              {value}
+            {:else if dataType === "number"}
+              {Number(value)}
+            {:else if dataType === "email"}
+              <Copyable title="email" value={value as string} />
+            {:else if dataType === "date"}
+              <DateText size="sm" showTooltip datetime={value as Date} datetimeFormat="MMM dd, yyyy" />
+            {:else if dataType === "datetime"}
+              <DateText size="sm" showTooltip datetime={value as Date} datetimeFormat="MMM dd, yyyy HH:mm:ss" />
+            {:else if dataType === "time"}
+              <DateText size="sm" showTooltip datetime={value as Date} datetimeFormat="HH:mm:ss" />
+            {:else if dataType === "enum"}
+              {value}
+            {/if}
+          </TableCell>
+        {/if}
+      {/each}
+    </TableRow>
+  {:else}
+    <TableRow class="min-h-[50vh] h-[50vh]">
+      <TableCell colspan={Object.keys(columns).length}>
+        <DataTableEmpty {dataTableName} />
+      </TableCell>
+    </TableRow>
+  {/each}
 </TableBody>
