@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { Loader2Icon } from "@lucide/svelte";
+  import Spinner from "@/components/app/loading/spinner.svelte";
 </script>
 
 <div class="flex min-h-screen items-center justify-center">
-  <Loader2Icon class="size-10 animate-spin" />
+  <Spinner size="xl" />
 </div>

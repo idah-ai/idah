@@ -13,11 +13,10 @@
 
   // Props
   interface Props<T extends Record> {
-    dataTableName: string;
     tableData: TableData<T>;
     columns: ColumnsSettings<T>;
   }
-  let { dataTableName, tableData, columns }: Props<T> = $props();
+  let { tableData, columns }: Props<T> = $props();
 </script>
 
 <TableBody>
@@ -55,10 +54,6 @@
       {/each}
     </TableRow>
   {:else}
-    <TableRow class="min-h-[50vh] h-[50vh]">
-      <TableCell colspan={Object.keys(columns).length}>
-        <DataTableEmpty {dataTableName} />
-      </TableCell>
-    </TableRow>
+    <DataTableEmpty />
   {/each}
 </TableBody>

@@ -1,11 +1,13 @@
 <script lang="ts" generics="T extends Record">
-  import { onDestroy, onMount } from "svelte";
+  import { onDestroy, onMount, setContext } from "svelte";
 
   import DataTableBody from "@/components/app/data-table/data-table-body.svelte";
   import DataTableContent from "@/components/app/data-table/data-table-content.svelte";
+  import DataTableError from "@/components/app/data-table/data-table-error.svelte";
   import DataTableHeader from "@/components/app/data-table/data-table-header.svelte";
   import DataTableHeadLabel from "@/components/app/data-table/data-table-head-label.svelte";
   import DataTableHeadOptions from "@/components/app/data-table/data-table-head-options.svelte";
+  import DataTableLoading from "@/components/app/data-table/data-table-loading.svelte";
   import DataTablePaginator from "@/components/app/data-table/data-table-paginator.svelte";
   import DataTableToggleColumns from "@/components/app/data-table/data-table-toggle-columns.svelte";
   import DataTableToolbarActions from "@/components/app/data-table/data-table-toolbar-actions.svelte";
@@ -42,6 +44,10 @@
     actions,
   }: Props = $props();
 
+  // Contexts
+  setContext("columns", _columns);
+  setContext("dataTableName", dataTableName);
+
   // Variables
   let tableState: TableState<T> = getTableState(id);
   let tableData: TableData<T> = $state({
@@ -65,8 +71,6 @@
 
   let currentPage: number = $state(1);
   let itemsPerPage: number = $state(10);
-
-  $inspect(tableData);
 
   // Lifecycle
   onMount(async () => {
@@ -153,8 +157,7 @@
                 {#if !filterable && !sortable}
                   <DataTableHeadLabel>{label}</DataTableHeadLabel>
                 {:else}
-                  <DataTableHeadOptions {dataTableName} {columnKey} {columnSetting} onHide={hideColumn}
-                  ></DataTableHeadOptions>
+                  <DataTableHeadOptions {columnKey} {columnSetting} onHide={hideColumn}></DataTableHeadOptions>
                 {/if}
               </TableHead>
             {/if}
@@ -164,11 +167,13 @@
 
       <!-- DATA TABLE::TABLE::ROWS -->
 
-      <!-- {#if loading}
-					 <DataTableBodyLoading></DataTableBodyLoading>
-					 {:else} -->
-      <DataTableBody {dataTableName} {tableData} {columns}></DataTableBody>
-      <!-- {/if} -->
+      {#if tableData.status === "loading"}
+        <DataTableLoading />
+      {:else if tableData.status === "loaded"}
+        <DataTableBody {tableData} {columns}></DataTableBody>
+      {:else}
+        <DataTableError />
+      {/if}
     </Table>
   </DataTableContent>
 
