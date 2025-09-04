@@ -8,8 +8,9 @@
 
   import { projectBreadcrumb } from "@/components/app/page/page-breadcrumb.constants";
   import { projectColumns } from "@/components/app/projects/data-tables/project.columns";
-  import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/project-record";
+  import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
+  import { refetches } from "@/utils/refetch";
 
   import type { PageBreadcrumbItem } from "@/components/app/page/page-breadcrumb.svelte";
   import type { CollectionResponse } from "@/data/model/types";
@@ -49,19 +50,21 @@
     {/snippet}
   </PageHeader>
 
-  <DataTable
-    id="projects"
-    name="project"
-    columns={projectColumns}
-    dataSource={projectsBackendDataSource}
-    listOptions={{
-      fields: {
-        "dataset:projects": ["name", "description", "updated_at"],
-      },
-      sort: ["-created_at"],
-    }}
-    {onLoadSetContexts}
-  />
+  {#key $refetches.projects.list}
+    <DataTable
+      id="projects"
+      name="project"
+      columns={projectColumns}
+      dataSource={projectsBackendDataSource}
+      listOptions={{
+        fields: {
+          "dataset:projects": ["name", "description", "updated_at"],
+        },
+        sort: ["-created_at"],
+      }}
+      {onLoadSetContexts}
+    />
+  {/key}
 </PageProvider>
 
 <ProjectFormModal title="Project" action="create" bind:open={openNewProjectModal} />
