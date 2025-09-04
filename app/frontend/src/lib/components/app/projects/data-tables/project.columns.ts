@@ -5,7 +5,7 @@ import ProjectCompletedCell from "@/components/app/projects/data-tables/project-
 import ProjectRowActionCell from "@/components/app/projects/data-tables/project-row-action-cell.svelte";
 
 import type { ColumnsSettings } from "@/components/app/data-table/data-table.types";
-import type { ProjectRecord } from "@/data/model/dataset/project-record";
+import type { ProjectRecord } from "@/data/model/dataset/projects/project-record";
 
 export const projectColumns: ColumnsSettings<ProjectRecord> = {
   name: {

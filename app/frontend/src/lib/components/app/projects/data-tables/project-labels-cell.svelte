@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { DataTableCellBaseProps } from "@/components/app/data-table/data-table.types";
   import type { DatasetRecord } from "@/data/model/dataset/dataset-record";
-  import type { ProjectRecord } from "@/data/model/dataset/project-record";
+  import type { ProjectRecord } from "@/data/model/dataset/projects/project-record";
 
   // Props
   interface Props extends DataTableCellBaseProps<ProjectRecord> {}
