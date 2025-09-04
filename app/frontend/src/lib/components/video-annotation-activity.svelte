@@ -32,7 +32,7 @@
   import type { Command } from "@/command/Command";
   import { entriesBackendDataSource } from "@/data/model/dataset/entryRecord";
   import { sleep } from "@/utils/delayed";
-  import { projectsBackendDataSource } from "@/data/model/dataset/project-record";
+  import { projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { openIndexedDB } from "./video-annotation-activity/indexedDB";
   import TimelineTable from "./video-annotation-activity/timeline-table/timeline-table.svelte";
