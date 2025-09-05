@@ -35,9 +35,9 @@
     const defaultProjectTab: ProjectTab = "tasks";
 
     if (!currentTab) {
-      goto(`/projects/${projectId}/${defaultProjectTab}`);
+      goto(`/projects/${projectId}/${defaultProjectTab}`, { replaceState: true });
     } else {
-      goto(`/projects/${projectId}/${currentTab.value}`);
+      goto(`/projects/${projectId}/${currentTab.value}`, { replaceState: true });
     }
   });
 
