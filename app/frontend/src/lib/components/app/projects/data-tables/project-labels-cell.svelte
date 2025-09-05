@@ -14,4 +14,4 @@
   );
 </script>
 
-{dataset?.labels.length}
+{dataset?.labels.length || 0}

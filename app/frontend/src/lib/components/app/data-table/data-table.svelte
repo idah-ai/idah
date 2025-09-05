@@ -22,6 +22,8 @@
 
   import type {
     DataTableBaseProps,
+    FilterDataSourceParams,
+    SortDataSourceParams,
     TableData,
     TablePreferences,
     TableState,
@@ -78,8 +80,14 @@
   });
 
   onDestroy(
-    tableState.tableData.subscribe((d) => {
-      tableData = d;
+    tableState.tableData.subscribe((data) => {
+      tableData = data;
+    }),
+  );
+
+  onDestroy(
+    tableState.tablePreferences.subscribe((prefs) => {
+      tablePreferences = prefs;
     }),
   );
 
@@ -90,8 +98,17 @@
 
     try {
       let listOpts: ListOptions = { ...listOptions };
+
+      /** Merge filters from tablePreferences and listOptions */
+      const mergedFilters = { ...listOptions?.filters, ...tablePreferences.filters };
+
+      /** Merged sort from tablePreferences and listOptions */
+      const mergedSort = [...(listOptions?.sort || []), ...(tablePreferences.sort || [])];
+
+      /** Remove `undefined` value from mergedFilters */
+      listOpts.filters = Object.fromEntries(Object.entries(mergedFilters).filter(([_, value]) => value !== undefined));
       listOpts.pagination = { page: currentPage, itemsPerPage: itemsPerPage };
-      listOpts.sort = listOpts.sort || ["-id"];
+      listOpts.sort = mergedSort.length > 0 ? mergedSort : ["-id"];
       listOpts.count = true;
 
       const response = await dataSource.list(listOpts);
@@ -115,6 +132,64 @@
       tableState.tableData.update((state) => ({ ...state, status: "error", error: error }));
       throw error;
     }
+  }
+
+  async function filterDataSource(params: FilterDataSourceParams): Promise<void> {
+    const { filters } = params;
+
+    tableState.tablePreferences.update((prefs) => {
+      const updatedFilters = { ...prefs.filters };
+
+      for (const [key, value] of Object.entries(filters)) {
+        if (value === undefined) {
+          delete updatedFilters[key];
+        } else {
+          updatedFilters[key] = value;
+        }
+      }
+
+      return {
+        ...prefs,
+        filters: updatedFilters,
+        pagination: { ...prefs.pagination, page: 1 }, // Reset to first page on filter
+      };
+    });
+
+    await fetchData();
+  }
+
+  async function sortDataSource(params: SortDataSourceParams): Promise<void> {
+    const { columnKey, sortDirection } = params;
+    const sortPrefix: string = sortDirection === "desc" ? "-" : "";
+    const sortKey: string = `${sortPrefix}${columnKey}`;
+
+    /** Update TablePreferences */
+    tableState.tablePreferences.update((prefs) => {
+      if (sortDirection === "none") {
+        /** Remove all sortKey from TablePreferences */
+        return {
+          ...prefs,
+          sort: prefs.sort.filter((currentSorting) => !currentSorting.endsWith(columnKey)),
+        };
+      } else {
+        /** Add or update sortKey to TablePreferences */
+        if (prefs.sort.some((currentSorting) => currentSorting.endsWith(columnKey))) {
+          // If the column is already sorted, replace it with the new sortKey
+          return {
+            ...prefs,
+            sort: prefs.sort.map((currentSorting) => (currentSorting.endsWith(columnKey) ? sortKey : currentSorting)),
+          };
+        } else {
+          // If the column is not sorted yet, add the new sortKey
+          return {
+            ...prefs,
+            sort: [...prefs.sort, sortKey],
+          };
+        }
+      }
+    });
+
+    await fetchData();
   }
 
   function hideColumn(columnToHide: string): void {
@@ -155,17 +230,22 @@
                 )}
               >
                 {#if !filterable && !sortable}
-                  <DataTableHeadLabel>{label}</DataTableHeadLabel>
+                  <DataTableHeadLabel class="px-4">{label}</DataTableHeadLabel>
                 {:else}
-                  <DataTableHeadOptions {columnKey} {columnSetting} onHide={hideColumn}></DataTableHeadOptions>
+                  <DataTableHeadOptions
+                    {columnKey}
+                    {columnSetting}
+                    {tablePreferences}
+                    onFilter={filterDataSource}
+                    onSort={sortDataSource}
+                    onHide={hideColumn}
+                  ></DataTableHeadOptions>
                 {/if}
               </TableHead>
             {/if}
           {/each}
         </TableRow>
       </TableHeader>
-
-      <!-- DATA TABLE::TABLE::ROWS -->
 
       {#if tableData.status === "loading"}
         <DataTableLoading />

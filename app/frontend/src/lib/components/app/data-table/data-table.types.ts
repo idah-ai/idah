@@ -103,3 +103,12 @@ export interface TableState<T extends Record> {
   tableData: Writable<TableData<T>>;
   tablePreferences: Writable<TablePreferences>;
 }
+
+export interface FilterDataSourceParams {
+  filters: Filters;
+}
+
+export interface SortDataSourceParams {
+  columnKey: string;
+  sortDirection: "asc" | "desc" | "none";
+}

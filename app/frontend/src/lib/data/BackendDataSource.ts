@@ -23,7 +23,7 @@ export function encodeModel<T extends Record>(model: RecordClass<T>, data: DataP
   });
 
   const payload: Hash = {
-    data: { type: model.type }
+    data: { type: model.type },
   };
 
   if (data.attributes.id) {
@@ -54,7 +54,7 @@ export interface BackendDataSource<T extends Record> extends DataSource<T> {
 export function createBackendDataSource<T extends Record, CustomMethods>(
   recordClass: RecordClass<T>,
   basePath: string,
-  customMethods?: CustomMethods
+  customMethods?: CustomMethods,
 ): BackendDataSource<T> & CustomMethods {
   let obj = <BackendDataSource<T> & CustomMethods>{
     recordClass: recordClass,
@@ -64,7 +64,7 @@ export function createBackendDataSource<T extends Record, CustomMethods>(
       const out = await fetch(this.basePath, {
         method: "POST",
         body: encodeModel(this.recordClass, data),
-        headers: { "Content-Type": "application/vnd.api+json" }
+        headers: { "Content-Type": "application/vnd.api+json" },
       });
 
       const body = await out.json();
@@ -114,7 +114,7 @@ export function createBackendDataSource<T extends Record, CustomMethods>(
         body = cacheValue;
       } else {
         const out = await fetch(resourcePath(this.basePath, id, params), {
-          method: "GET"
+          method: "GET",
         });
 
         body = await out.json();
@@ -135,7 +135,7 @@ export function createBackendDataSource<T extends Record, CustomMethods>(
 
     async list(
       options: ListOptions = {},
-      nextBody: CollectionResponse<T> = { data: [], meta: {} }
+      nextBody: CollectionResponse<T> = { data: [], meta: {} },
     ): Promise<CollectionResponse<T>> {
       const params = <Hash>{};
       let body: Hash;
@@ -148,9 +148,10 @@ export function createBackendDataSource<T extends Record, CustomMethods>(
       if (options.pagination) {
         params["page"] = {
           number: options.pagination.page,
-          size: options.pagination.itemsPerPage
+          size: options.pagination.itemsPerPage,
         };
       }
+      if (options.count) params["count"] = options.count;
 
       // Cache Management
       const useCache = !options.noCache;
@@ -170,7 +171,7 @@ export function createBackendDataSource<T extends Record, CustomMethods>(
         body = cacheValue;
       } else {
         const out = await fetch(resourcePath(this.basePath, null, params), {
-          method: "GET"
+          method: "GET",
         });
 
         body = await out.json();
@@ -187,8 +188,8 @@ export function createBackendDataSource<T extends Record, CustomMethods>(
               ...options,
               pagination: {
                 page: options.pagination.page + 1,
-                itemsPerPage: options.pagination.itemsPerPage
-              }
+                itemsPerPage: options.pagination.itemsPerPage,
+              },
             });
           }
         }
@@ -213,7 +214,7 @@ export function createBackendDataSource<T extends Record, CustomMethods>(
       const out = await fetch(resourcePath(this.basePath, id), {
         method: "PATCH",
         body: encodeModel(this.recordClass, data),
-        headers: { "Content-Type": "application/vnd.api+json" }
+        headers: { "Content-Type": "application/vnd.api+json" },
       });
 
       const body = await out.json();
@@ -243,7 +244,7 @@ export function createBackendDataSource<T extends Record, CustomMethods>(
       clearCache(cacheIdKey);
 
       return true;
-    }
+    },
   };
 
   obj = Object.assign(obj, customMethods || {});

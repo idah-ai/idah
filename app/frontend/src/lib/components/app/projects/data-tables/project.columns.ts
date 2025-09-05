@@ -26,13 +26,8 @@ export const projectColumns: ColumnsSettings<ProjectRecord> = {
   lables: {
     label: "Labels",
     dataType: "number",
-    sortable: true,
-    filterable: true,
-    filterOptions: {
-      filterKey: "labels",
-      filterBy: "number-range",
-      filterOperation: "match",
-    },
+    sortable: false,
+    filterable: false,
     visible: true,
     hidable: false,
     cellComponent: ProjectLabelsCell,
@@ -40,13 +35,8 @@ export const projectColumns: ColumnsSettings<ProjectRecord> = {
   rows: {
     label: "Data Rows",
     dataType: "number",
-    sortable: true,
-    filterable: true,
-    filterOptions: {
-      filterKey: "rows",
-      filterBy: "number-range",
-      filterOperation: "match",
-    },
+    sortable: false,
+    filterable: false,
     visible: true,
     hidable: false,
     cellComponent: ProjectDataRowsCell,
@@ -54,13 +44,8 @@ export const projectColumns: ColumnsSettings<ProjectRecord> = {
   completed: {
     label: "Completed",
     dataType: "number",
-    sortable: true,
-    filterable: true,
-    filterOptions: {
-      filterKey: "completed",
-      filterBy: "number-range",
-      filterOperation: "match",
-    },
+    sortable: false,
+    filterable: false,
     visible: true,
     hidable: false,
     cellComponent: ProjectCompletedCell,
@@ -71,7 +56,7 @@ export const projectColumns: ColumnsSettings<ProjectRecord> = {
     sortable: true,
     filterable: true,
     filterOptions: {
-      filterKey: "updated",
+      filterKey: "updated_at",
       filterBy: "date-range",
       filterOperation: "match",
     },
