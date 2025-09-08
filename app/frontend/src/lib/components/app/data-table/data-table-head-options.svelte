@@ -7,12 +7,13 @@
   import CommandItem from "@/components/ui/command/command-item.svelte";
   import CommandList from "@/components/ui/command/command-list.svelte";
   import CommandSeparator from "@/components/ui/command/command-separator.svelte";
-  import DateRangePickerField from "@/components/app/forms/fields/picker/date-range-picker-field.svelte";
   import DataTableHeadLabel from "@/components/app/data-table/data-table-head-label.svelte";
   import { Input } from "@/components/ui/input";
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+  import RangeCalendar from "@/components/ui/range-calendar/range-calendar.svelte";
 
   import { cn } from "@/utils";
+  import { CalendarDate, parseDate } from "@internationalized/date";
   import { delayedInput } from "@/utils/delayed";
   import {
     ArrowDownAZIcon,
@@ -33,7 +34,6 @@
   } from "@/components/app/data-table/data-table.types";
   import type { Record } from "@/data/model/Record";
   import type { DateRange } from "bits-ui";
-  import { getLocalTimeZone } from "@internationalized/date";
 
   // Contexts
   const dataTableName: string = getContext("dataTableName");
@@ -104,6 +104,19 @@
   let isSortedDesc: boolean = $derived(tablePreferences.sort.includes(`-${columnKey}`));
   let isSortedOrFiltered: boolean = $derived(isFiltered || isSorted);
 
+  let filteredStartDate: string | undefined = $derived(
+    tablePreferences.filters[`${filterOptions?.filterKey || columnKey}__gte`],
+  );
+  let filteredEndDate: string | undefined = $derived(
+    tablePreferences.filters[`${filterOptions?.filterKey || columnKey}__lte`],
+  );
+  let filteredStartDateValue: CalendarDate | undefined = $derived(
+    filteredStartDate ? parseDate(filteredStartDate.split(" ")[0]) : undefined,
+  );
+  let filteredEndDateValue: CalendarDate | undefined = $derived(
+    filteredEndDate ? parseDate(filteredEndDate.split(" ")[0]) : undefined,
+  );
+
   // Functions
   function openPopover(): void {
     openDataTableHeadOptions = true;
@@ -127,13 +140,13 @@
 
   function filterByDateRange(dateRange: DateRange): void {
     if (dateRange.start && dateRange.end) {
-      const startDateStr = dateRange.start.toDate(getLocalTimeZone()).toISOString().split("T")[0];
-      const endDateStr = dateRange.end.toDate(getLocalTimeZone()).toISOString().split("T")[0];
+      const formattedStartDate = dateRange.start.toString().concat(" 00:00:00");
+      const formattedEndDate = dateRange.end.toString().concat(" 23:59:59");
 
       onFilter({
         filters: {
-          [`${filterKey}__gte`]: startDateStr,
-          [`${filterKey}__lte`]: endDateStr,
+          [`${filterKey}__gte`]: formattedStartDate,
+          [`${filterKey}__lte`]: formattedEndDate,
         },
       });
     }
@@ -193,9 +206,9 @@
     {/snippet}
   </PopoverTrigger>
 
-  <PopoverContent align="start" class="p-0">
+  <PopoverContent align="start" class="max-w-60 p-0">
     <Command>
-      <CommandList>
+      <CommandList class="min-h-fit">
         <!-- FILTER -->
         {#if filterable}
           <CommandGroup heading="Filter">
@@ -218,12 +231,15 @@
             {:else if filterOptions?.filterBy === "multiple-select"}
               Render Multiple Select Input
             {:else if filterOptions?.filterBy === "date-range"}
-              <DateRangePickerField
-                name="{dataTableName}/filter/date-range"
-                from={tablePreferences.filters[`${filterOptions.filterKey || columnKey}__gte`]}
-                to={tablePreferences.filters[`${filterOptions.filterKey || columnKey}__lte`]}
-                onValueChanged={filterByDateRange}
-              />
+              <div class="flex flex-col items-center">
+                <RangeCalendar
+                  value={{
+                    start: filteredStartDateValue,
+                    end: filteredEndDateValue,
+                  }}
+                  onValueChange={filterByDateRange}
+                ></RangeCalendar>
+              </div>
             {:else if filterOptions?.filterBy === "datasource"}
               Render Data Source Input
             {/if}
