@@ -21,15 +21,6 @@
   let description = $derived(project.description);
 
   // Functions
-  function handleInput(
-    event: Event & {
-      currentTarget: EventTarget & (HTMLInputElement | HTMLTextAreaElement);
-    },
-    key: string,
-  ) {
-    project[key] = event.currentTarget.value;
-  }
-
   $effect(() => {
     onValueChange({ name, description });
   });
@@ -37,13 +28,22 @@
 
 <Form>
   <!-- PROJECT::NAME -->
-  <InputField name="{resource}/name" label="Name" placeholder="Enter project name" bind:value={name} />
+  <InputField
+    name="{resource}/name"
+    label="Name"
+    placeholder="Enter project name"
+    required
+    errors={project.errors["name"]}
+    bind:value={name}
+  />
 
   <!-- PROJECT::DESCRIPTION -->
   <TextareaField
     name="{resource}/description"
     label="Description"
     placeholder="Enter project description"
+    required
+    errors={project.errors["description"]}
     bind:value={description}
   />
 </Form>

@@ -57,7 +57,7 @@
     onSort,
     onHide,
   }: Props = $props();
-  let { label, align, filterable, hidable, sortable, filterComponent, filterOptions } = columnSetting;
+  let { label, filterable, hidable, sortable, filterComponent, filterOptions } = columnSetting;
 
   // Variables
   interface SortOptionItem {
