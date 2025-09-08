@@ -134,6 +134,10 @@
     }
   }
 
+  function resetToFirstPage(): void {
+    currentPage = 1;
+  }
+
   async function filterDataSource(params: FilterDataSourceParams): Promise<void> {
     const { filters } = params;
 
@@ -148,10 +152,13 @@
         }
       }
 
+      /** Reset to first page when filters are applied */
+      resetToFirstPage();
+
       return {
         ...prefs,
         filters: updatedFilters,
-        pagination: { ...prefs.pagination, page: 1 }, // Reset to first page on filter
+        pagination: { ...prefs.pagination, page: currentPage },
       };
     });
 
@@ -188,6 +195,31 @@
         }
       }
     });
+
+    await fetchData();
+  }
+
+  async function changePage(changeToPage: number): Promise<void> {
+    currentPage = changeToPage;
+
+    tableState.tablePreferences.update((prefs) => ({
+      ...prefs,
+      pagination: { ...prefs.pagination, page: changeToPage },
+    }));
+
+    await fetchData();
+  }
+
+  async function setItemsPerPage(selectedItemsPerPage: number): Promise<void> {
+    itemsPerPage = selectedItemsPerPage;
+
+    /** Reset to first page when filters are applied */
+    resetToFirstPage();
+
+    tableState.tablePreferences.update((prefs) => ({
+      ...prefs,
+      pagination: { ...prefs.pagination, page: currentPage, itemsPerPage: selectedItemsPerPage },
+    }));
 
     await fetchData();
   }
@@ -259,6 +291,13 @@
 
   <!-- DATA TABLE::PAGINATION -->
   {#if !hidePagination}
-    <DataTablePaginator bind:page={currentPage} bind:itemsPerPage />
+    <DataTablePaginator
+      page={currentPage}
+      {itemsPerPage}
+      count={tableData.response.meta?.count || 1000}
+      hasMore={tableData.response.meta?.more || false}
+      onPageChange={changePage}
+      onItemsPerPageSelect={setItemsPerPage}
+    />
   {/if}
 </div>
