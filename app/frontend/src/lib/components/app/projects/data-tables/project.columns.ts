@@ -61,7 +61,7 @@ export const projectColumns: ColumnsSettings<ProjectRecord> = {
       filterOperation: "match",
     },
     visible: true,
-    hidable: true,
+    hidable: false,
   },
   action: {
     label: "Action",
