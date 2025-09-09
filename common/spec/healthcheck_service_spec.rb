@@ -1,6 +1,16 @@
 # frozen_string_literal: true
 
+require_relative "../lib/healthcheck_service"
+
 RSpec.describe HealthcheckService, type: :service, as: :system do
+  before do
+    Verse.start(
+      config_path: "spec/spec_data/config.yml"
+    )
+  end
+
+  after { Verse.stop }
+
   describe ".run" do
     context "when all services are healthy" do
       it "returns a successful result" do
