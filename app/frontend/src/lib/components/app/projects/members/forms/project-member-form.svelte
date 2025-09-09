@@ -52,7 +52,6 @@
           { label: "Admin", value: "Admin" },
         ]}
         required
-        clearable
         searchable
         searchPlaceholder="Search a role"
         bind:value={member.role}

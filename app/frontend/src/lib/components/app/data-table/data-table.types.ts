@@ -73,6 +73,7 @@ export interface DataTableBaseProps<T extends Record> {
 
   // Functions
   onLoadSetContexts?: (response: CollectionResponse<T>) => Promise<Hash>;
+  onNewRecord?: () => Promise<void> | void;
 
   // Snippets
   actions?: Snippet;

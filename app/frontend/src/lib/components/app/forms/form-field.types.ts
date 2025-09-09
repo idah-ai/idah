@@ -2,27 +2,28 @@ import type { Snippet } from "svelte";
 import type { LabelValue } from "@/components/app/component.types";
 
 export interface FormFieldBaseProps {
-	name: string;
+  name: string;
 
-	label?: string;
-	placeholder?: string;
-	required?: boolean;
-	disabled?: boolean;
-	readonly?: boolean;
+  label?: string;
+  placeholder?: string;
+  required?: boolean;
+  disabled?: boolean;
+  readonly?: boolean;
 
-	info?: string;
-	errors?: string[];
+  info?: string;
+  errors?: string[];
 
-	class?: string | null;
+  class?: string | null;
 
-	slotLabel?: Snippet;
-	slotInfo?: Snippet;
-	slotErrors?: Snippet;
+  slotLabel?: Snippet;
+  slotInfo?: Snippet;
+  slotErrors?: Snippet;
 }
 
 export interface SelectFieldBaseProps extends FormFieldBaseProps {
-	choices: LabelValue<string>[];
-	searchable?: boolean;
-	searchPlaceholder?: string;
-	clearable?: boolean;
+  choices: LabelValue<string>[];
+  searchable?: boolean;
+  searchPlaceholder?: string;
+  clearable?: boolean;
+  onValueChange?: (value: string) => Promise<void> | void;
 }
