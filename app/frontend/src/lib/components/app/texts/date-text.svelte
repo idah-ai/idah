@@ -7,7 +7,7 @@
   // Props
   interface Props {
     // Props::DateText
-    datetime: Date;
+    datetime: Date | null;
     datetimeFormat: string;
     showDistance?: boolean;
     showTooltip?: boolean;
@@ -34,7 +34,9 @@
   const tooltipValue = $derived(showDistance ? formattedDate : formattedDistance);
 
   // Functions
-  function formatDistance(date: Date): string {
+  function formatDistance(date: Date | null): string {
+    if (!date) return "-";
+
     const formattedDistance = formatDistanceToNow(date, { includeSeconds: false, addSuffix: true });
 
     if (isAfter(date, today)) {
@@ -44,7 +46,9 @@
     }
   }
 
-  function formatDate(date: Date): string {
+  function formatDate(date: Date | null): string {
+    if (!date) return "-";
+
     return format(date, datetimeFormat);
   }
 </script>

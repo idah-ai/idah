@@ -39,7 +39,11 @@
             {:else if dataType === "number"}
               {Number(value)}
             {:else if dataType === "email"}
-              <Copyable title="email" value={value as string} />
+              {#if value}
+                <Copyable title="email" value={value as string} />
+              {:else}
+                -
+              {/if}
             {:else if dataType === "date"}
               <DateText size="sm" showTooltip datetime={value as Date} datetimeFormat="MMM dd, yyyy" />
             {:else if dataType === "datetime"}

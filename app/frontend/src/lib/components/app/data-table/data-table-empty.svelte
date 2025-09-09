@@ -13,6 +13,7 @@
   // Contexts
   const columns: ColumnsSettings<T> = getContext("columns");
   const dataTableName: string = getContext("dataTableName");
+  const onNewRecord: (() => Promise<void> | void) | undefined = getContext("onNewRecord");
 </script>
 
 <TableRow class="h-[50vh] min-h-[50vh]">
@@ -23,10 +24,12 @@
       icon={InboxIcon}
     >
       {#snippet actions()}
-        <Button class="capitalize">
-          <PlusIcon class="size-4" />
-          Add {dataTableName}
-        </Button>
+        {#if onNewRecord}
+          <Button class="capitalize" onclick={onNewRecord}>
+            <PlusIcon class="size-4" />
+            Add {dataTableName}
+          </Button>
+        {/if}
       {/snippet}
     </ResponseBlock>
   </TableCell>

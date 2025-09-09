@@ -1,123 +1,125 @@
 <script lang="ts">
-	import Button from "@/components/ui/button/button.svelte";
-	import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-	import FormField from "@/components/app/forms/form-field.svelte";
-	import FormFieldErrors from "@/components/app/forms/form-field-errors.svelte";
-	import FormFieldInfo from "@/components/app/forms/form-field-info.svelte";
-	import FormFieldLabel from "@/components/app/forms/form-field-label.svelte";
-	import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+  import Button from "@/components/ui/button/button.svelte";
+  import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+  import FormField from "@/components/app/forms/form-field.svelte";
+  import FormFieldErrors from "@/components/app/forms/form-field-errors.svelte";
+  import FormFieldInfo from "@/components/app/forms/form-field-info.svelte";
+  import FormFieldLabel from "@/components/app/forms/form-field-label.svelte";
+  import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
-	import { cn } from "@/utils";
-	import { CheckIcon, ChevronsUpDownIcon, CircleXIcon, RotateCcwIcon } from "@lucide/svelte";
+  import { cn } from "@/utils";
+  import { CheckIcon, ChevronsUpDownIcon, CircleXIcon, RotateCcwIcon } from "@lucide/svelte";
 
-	import type { SelectFieldBaseProps } from "@/components/app/forms/form-field.types";
-	import type { LabelValue } from "@/components/app/component.types";
+  import type { SelectFieldBaseProps } from "@/components/app/forms/form-field.types";
+  import type { LabelValue } from "@/components/app/component.types";
 
-	// Props
-	interface Props extends SelectFieldBaseProps {
-		value: string | number | null;
-	}
-	let {
-		choices,
-		value = $bindable(null),
-		name,
-		label,
-		placeholder = "Select an option",
-		searchable = false,
-		searchPlaceholder = "Search an option",
-		clearable = false,
-		disabled = false,
-		required = false,
-		info,
-		errors,
-		class: className,
-		slotLabel,
-		slotInfo,
-		slotErrors,
-	}: Props = $props();
+  // Props
+  interface Props extends SelectFieldBaseProps {
+    value: string | number | null;
+  }
+  let {
+    choices,
+    value = $bindable(null),
+    name,
+    label,
+    placeholder = "Select an option",
+    searchable = false,
+    searchPlaceholder = "Search an option",
+    clearable = false,
+    disabled = false,
+    required = false,
+    info,
+    errors,
+    class: className,
+    onValueChange,
+    slotLabel,
+    slotInfo,
+    slotErrors,
+  }: Props = $props();
 
-	// Variables
-	let open: boolean = $state(false);
-	let selectedValue = $derived(choices.find((choice) => choice.value == value));
+  // Variables
+  let open: boolean = $state(false);
+  let selectedValue = $derived(choices.find((choice) => choice.value == value));
 
-	// Functions
-	function select(choice: LabelValue<string>): void {
-		value = choice.value;
-		open = false;
-	}
+  // Functions
+  async function select(choice: LabelValue<string>): Promise<void> {
+    value = choice.value;
+    open = false;
+    await onValueChange?.(value);
+  }
 
-	function clearValue(event: MouseEvent): void {
-		event.stopPropagation();
-		value = null;
-	}
+  function clearValue(event: MouseEvent): void {
+    event.stopPropagation();
+    value = null;
+  }
 </script>
 
 <FormField id={name} class={cn("", className)}>
-	{#if slotLabel}
-		{@render slotLabel()}
-	{:else}
-		<FormFieldLabel {required}>{label}</FormFieldLabel>
-	{/if}
+  {#if slotLabel}
+    {@render slotLabel()}
+  {:else}
+    <FormFieldLabel {required}>{label}</FormFieldLabel>
+  {/if}
 
-	<Popover bind:open>
-		<PopoverTrigger>
-			{#snippet child({ props })}
-				<Button variant="outline" class="justify-between" role="combobox" aria-expanded={open} {...props}>
-					{#if selectedValue}
-						{selectedValue.label}
-					{:else}
-						<span class="text-muted-foreground">{placeholder}</span>
-					{/if}
+  <Popover bind:open>
+    <PopoverTrigger>
+      {#snippet child({ props })}
+        <Button variant="outline" class="justify-between" role="combobox" aria-expanded={open} {...props}>
+          {#if selectedValue}
+            {selectedValue.label}
+          {:else}
+            <span class="text-muted-foreground">{placeholder}</span>
+          {/if}
 
-					<div class={cn("ml-auto inline-flex items-center gap-2")}>
-						<button
-							type="button"
-							class={cn("cursor-pointer", clearable && selectedValue ? "opacity-50" : "opacity-0")}
-							onclick={clearValue}
-						>
-							<CircleXIcon class="size-4 shrink-0" />
-						</button>
+          <div class={cn("ml-auto inline-flex items-center gap-2")}>
+            <button
+              type="button"
+              class={cn("cursor-pointer", clearable && selectedValue ? "opacity-50" : "opacity-0")}
+              onclick={clearValue}
+            >
+              <CircleXIcon class="size-4 shrink-0" />
+            </button>
 
-						<ChevronsUpDownIcon class="size-4 shrink-0 opacity-50" />
-					</div>
-				</Button>
-			{/snippet}
-		</PopoverTrigger>
+            <ChevronsUpDownIcon class="size-4 shrink-0 opacity-50" />
+          </div>
+        </Button>
+      {/snippet}
+    </PopoverTrigger>
 
-		<PopoverContent align="start" class="p-0">
-			<Command>
-				{#if searchable}
-					<CommandInput placeholder={searchPlaceholder} />
-				{/if}
+    <PopoverContent align="start" class="p-0">
+      <Command>
+        {#if searchable}
+          <CommandInput placeholder={searchPlaceholder} />
+        {/if}
 
-				<CommandList>
-					<CommandEmpty>No option found.</CommandEmpty>
-					<CommandGroup>
-						{#each choices as choice (choice.value)}
-							<CommandItem value={choice.value} onSelect={() => select(choice)}>
-								<CheckIcon
-									class={cn("mr-2 size-4", {
-										"opacity-0": choice.value !== value,
-									})}
-								/>
-								{choice.label}
-							</CommandItem>
-						{/each}
-					</CommandGroup>
-				</CommandList>
-			</Command>
-		</PopoverContent>
-	</Popover>
+        <CommandList>
+          <CommandEmpty>No option found.</CommandEmpty>
+          <CommandGroup>
+            {#each choices as choice (choice.value)}
+              <CommandItem value={choice.value} onSelect={() => select(choice)}>
+                <CheckIcon
+                  class={cn("mr-2 size-4", {
+                    "opacity-0": choice.value !== value,
+                  })}
+                />
+                {choice.label}
+              </CommandItem>
+            {/each}
+          </CommandGroup>
+        </CommandList>
+      </Command>
+    </PopoverContent>
+  </Popover>
 
-	{#if slotInfo}
-		{@render slotInfo()}
-	{:else}
-		<FormFieldInfo>{info}</FormFieldInfo>
-	{/if}
+  {#if slotInfo}
+    {@render slotInfo()}
+  {:else}
+    <FormFieldInfo>{info}</FormFieldInfo>
+  {/if}
 
-	{#if slotErrors}
-		{@render slotErrors()}
-	{:else}
-		<FormFieldErrors {errors}></FormFieldErrors>
-	{/if}
+  {#if slotErrors}
+    {@render slotErrors()}
+  {:else}
+    <FormFieldErrors {errors}></FormFieldErrors>
+  {/if}
 </FormField>
