@@ -60,6 +60,7 @@
 	"dependencies": {
 		"date-fns": "^4.1.0",
 		"mode-watcher": "^1.1.0",
-		"uuidv7": "^1.0.2"
+		"uuidv7": "^1.0.2",
+		"zod": "^4.1.5"
 	}
 }
