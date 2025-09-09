@@ -105,9 +105,12 @@
       /** Merged sort from tablePreferences and listOptions */
       const mergedSort = [...(listOptions?.sort || []), ...(tablePreferences.sort || [])];
 
+      /** Merged pagination from tablePreferences and listOptions */
+      const mergedPagination = { ...listOptions?.pagination, ...tablePreferences.pagination };
+
       /** Remove `undefined` value from mergedFilters */
       listOpts.filters = Object.fromEntries(Object.entries(mergedFilters).filter(([_, value]) => value !== undefined));
-      listOpts.pagination = { page: currentPage, itemsPerPage: itemsPerPage };
+      listOpts.pagination = mergedPagination;
       listOpts.sort = mergedSort.length > 0 ? mergedSort : ["-id"];
       listOpts.count = true;
 
@@ -125,7 +128,7 @@
       /** Update TablePreferences */
       tableState.tablePreferences.update((prefs) => ({
         ...prefs,
-        pagination: { ...prefs.pagination, ...listOptions?.pagination },
+        pagination: { ...prefs.pagination, ...mergedPagination },
       }));
     } catch (error) {
       /** Set TableData status to 'error'*/
@@ -292,8 +295,8 @@
   <!-- DATA TABLE::PAGINATION -->
   {#if !hidePagination}
     <DataTablePaginator
-      page={currentPage}
-      {itemsPerPage}
+      page={tablePreferences.pagination.page || currentPage}
+      itemsPerPage={tablePreferences.pagination.itemsPerPage || itemsPerPage}
       count={tableData.response.meta?.count || 1000}
       hasMore={tableData.response.meta?.more || false}
       onPageChange={changePage}
