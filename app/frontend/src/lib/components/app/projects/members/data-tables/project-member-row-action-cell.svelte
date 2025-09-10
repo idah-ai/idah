@@ -8,8 +8,10 @@
 
   import { ProjectMemberRecord, projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
 
+  import type { DataTableCellBaseProps } from "@/components/app/data-table/data-table.types";
+
   // Props
-  interface Props {
+  interface Props extends DataTableCellBaseProps<ProjectMemberRecord> {
     record: ProjectMemberRecord;
   }
   let { record: projectMember }: Props = $props();

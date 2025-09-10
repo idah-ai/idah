@@ -18,6 +18,7 @@
 
   // Variables
   let projectId: string | undefined = $derived(page.params.projectId);
+  let submitting: boolean = $state(false);
   let members: Array<{ email: string; role: string }> = $state([{ email: "", role: "" }]);
 
   // Functions
@@ -43,15 +44,18 @@
     }
 
     $refetches.projectMembers.list++;
+    closeThisModal();
     toast.success(`${members.length} member(s) invite sent!`);
   }
 
   async function submit(): Promise<void> {
+    submitting = true;
+
     try {
       await createProjectMember();
     } catch (error) {
     } finally {
-      closeThisModal();
+      submitting = false;
     }
   }
 </script>

@@ -14,6 +14,11 @@
   // Variables
   let projectId: string | undefined = $derived(page.params.projectId);
   let openNewProjectMemberFormModal: boolean = $state(false);
+
+  // Functions
+  function openNewProjectMemberModal(): void {
+    openNewProjectMemberFormModal = true;
+  }
 </script>
 
 {#key $refetches.projectMembers.list}
@@ -30,12 +35,10 @@
         project_id: projectId,
       },
     }}
-    onNewRecord={() => {
-      openNewProjectMemberFormModal = true;
-    }}
+    onNewRecord={openNewProjectMemberModal}
   >
     {#snippet actions()}
-      <Button onclick={() => (openNewProjectMemberFormModal = true)}>
+      <Button onclick={openNewProjectMemberModal}>
         <PlusIcon class="size-4" />
         Invite Members
       </Button>

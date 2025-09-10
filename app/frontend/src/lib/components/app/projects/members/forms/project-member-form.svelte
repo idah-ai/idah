@@ -5,6 +5,7 @@
   import SingleSelectField from "@/components/app/forms/fields/select/single-select-field.svelte";
 
   import { PlusIcon, Trash2Icon } from "@lucide/svelte";
+  import { ProjectMemberRecord } from "@/data/model/dataset/projects/members/record";
 
   // Props
   interface Props {
@@ -13,7 +14,7 @@
   let { members = $bindable() }: Props = $props();
 
   // Variables
-  const resource: string = "Resource::Dataset::Projects";
+  const resource: string = ProjectMemberRecord.type;
 
   // Functions
   function addMember(): void {

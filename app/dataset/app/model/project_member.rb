@@ -16,8 +16,8 @@ module ProjectMember
 
     field :invited_by_id, type: Integer    
 
-    field :created_at, type: Time
-    field :updated_at, type: Time
+    field :created_at, type: Time, readonly: true
+    field :updated_at, type: Time, readonly: true
 
     belongs_to :project, repository: "Project::Repository", foreign_key: :project_id
   end
