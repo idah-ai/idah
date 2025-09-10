@@ -1,4 +1,5 @@
 <script lang="ts">
+  import CheckboxField from "@/components/app/forms/fields/input/checkbox-field.svelte";
   import Form from "@/components/app/forms/form.svelte";
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
 
@@ -49,4 +50,12 @@
   />
 
   <!-- ACCOUNT::ENABLED -->
+  <CheckboxField
+    name="{resource}/enabled"
+    label="Enable account"
+    info="Allow this account to access the application"
+    bordered
+    required
+    bind:checked={enabled}
+  ></CheckboxField>
 </Form>
