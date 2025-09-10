@@ -7,15 +7,18 @@
 
   import { cn } from "@/utils";
 
+  import type { HTMLInputTypeAttribute } from "svelte/elements";
   import type { FormFieldBaseProps } from "@/components/app/forms/form-field.types";
 
   // Props
   interface Props extends FormFieldBaseProps {
+    type?: HTMLInputTypeAttribute;
     value: string | null;
   }
   let {
     value = $bindable(null),
     name,
+    type = "text",
     label,
     placeholder,
     disabled = false,
@@ -37,7 +40,7 @@
     <FormFieldLabel {required}>{label}</FormFieldLabel>
   {/if}
 
-  <Input {name} {placeholder} {disabled} {readonly} {required} bind:value />
+  <Input {name} {type} {placeholder} {disabled} {readonly} {required} bind:value />
 
   {#if slotInfo}
     {@render slotInfo()}
