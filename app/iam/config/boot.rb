@@ -29,8 +29,6 @@ loader.inflector.inflect("uuid_v7" => "UUIDv7")
 
 loader.setup
 
-loader.eager_load if ENV["EAGER_LOAD"]
-
 require_relative "./routes"
 
 Dir[File.join(__dir__, "initializers/**.rb")].each do |file|

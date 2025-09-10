@@ -24,6 +24,13 @@ Sequel.migration do
     end
     Migration::Timestamps.trg_updated_at(self, :users)
 
+    create_table(:teams) do
+      column :id, :bigint, primary_key: true
+      column :name, String
+      Migration::Timestamps.timestamps(self)
+    end
+    Migration::Timestamps.trg_updated_at(self, :teams)
+
     create_table(:user_teams) do
       column :id, :bigint, primary_key: true
       foreign_key :user_id, :users,
@@ -37,14 +44,9 @@ Sequel.migration do
         null: false,
         on_delete: :cascade,
         on_update: :cascade
-    end
-    Migration::Timestamps.trg_updated_at(self, :teams)
 
-    create_table(:teams) do
-      column :id, :bigint, primary_key: true
-      column :name, String
       Migration::Timestamps.timestamps(self)
     end
-    Migration::Timestamps.trg_updated_at(self, :teams)
+    Migration::Timestamps.trg_updated_at(self, :user_teams)
   end
 end

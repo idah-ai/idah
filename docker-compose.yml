@@ -8,6 +8,7 @@ services:
       - ./dev/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./dev/nginx/ssl:/etc/nginx/ssl:ro
     depends_on:
+      - frontend
       - media
       - dataset
       - iam
@@ -63,6 +64,7 @@ services:
     command: ./dev-entrypoint.sh puma
     stdin_open: true
     tty: true
+
   dataset:
     build:
       context: ./app/dataset
@@ -87,6 +89,7 @@ services:
     command: ./dev-entrypoint.sh puma
     stdin_open: true
     tty: true
+
   frontend:
     build:
       context: ./app/frontend
@@ -104,6 +107,7 @@ services:
     command: pnpm run dev  --host
     stdin_open: true
     tty: true
+
 volumes:
   bundler_cache:
 
