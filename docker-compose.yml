@@ -36,6 +36,7 @@ services:
       - app-network
     extra_hosts:
       - "host.docker.internal:host-gateway"
+      - "idah.localhost:host-gateway"
     command: ./dev-entrypoint.sh puma
     stdin_open: true
     tty: true
@@ -61,6 +62,7 @@ services:
       - app-network
     extra_hosts:
       - "host.docker.internal:host-gateway"
+      - "idah.localhost:host-gateway"
     command: ./dev-entrypoint.sh puma
     stdin_open: true
     tty: true
@@ -84,6 +86,7 @@ services:
       - bundler_cache:/usr/local/bundle
     extra_hosts:
       - "host.docker.internal:host-gateway"
+      - "idah.localhost:host-gateway"
     networks:
       - app-network
     command: ./dev-entrypoint.sh puma
