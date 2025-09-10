@@ -6,40 +6,33 @@ Sequel.migration do
 
     Migration::Timestamps.install_updated_at_function
 
-    create_table(:users) do
-      column :id, :bigint, primary_key: true
+    create_table(:accounts) do
+      primary_key :id, :bigserial
 
       column :name, String
-      column :email, String, index: true
+      column :email, String, null: false, index: true
 
       column :hashed_password, String, null: true
       column :sso_channel, String, null: true
 
       column :enabled, TrueClass, index: true
 
-      column :roles, "text[]"
-      index [:roles], type: :gin
+      column :joined_at, Time, null: true
 
       Migration::Timestamps.timestamps(self)
     end
-    Migration::Timestamps.trg_updated_at(self, :users)
+    Migration::Timestamps.trg_updated_at(self, :accounts)
 
-    create_table(:teams) do
-      column :id, :bigint, primary_key: true
-      column :name, String
-      Migration::Timestamps.timestamps(self)
-    end
-    Migration::Timestamps.trg_updated_at(self, :teams)
+    create_table(:account_teams) do
+      primary_key :id, :bigserial
 
-    create_table(:user_teams) do
-      column :id, :bigint, primary_key: true
-      foreign_key :user_id, :users,
+      foreign_key :account_id, :accounts,
         type: :bigint,
         null: false,
         on_delete: :cascade,
         on_update: :cascade
 
-      foreign_key :team_id, :teams,
+      foreign_key :team_id, :account_teams,
         type: :bigint,
         null: false,
         on_delete: :cascade,
@@ -47,6 +40,6 @@ Sequel.migration do
 
       Migration::Timestamps.timestamps(self)
     end
-    Migration::Timestamps.trg_updated_at(self, :user_teams)
+    Migration::Timestamps.trg_updated_at(self, :account_teams)
   end
 end
