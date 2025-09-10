@@ -31,6 +31,7 @@ services:
     volumes:
       - ./app/iam:/app
       - ./app/iam/common:/app/common
+      - ./dev/nginx/ssl/cert.pem:/etc/ssl/certs/ca-certificates.crt
       - bundler_cache:/usr/local/bundle
     networks:
       - app-network
@@ -83,6 +84,7 @@ services:
     volumes:
       - ./app/dataset:/app
       - ./app/dataset/common:/app/common
+      - ./dev/nginx/ssl/cert.pem:/etc/ssl/certs/ca-certificates.crt
       - bundler_cache:/usr/local/bundle
     extra_hosts:
       - "host.docker.internal:host-gateway"

@@ -2,12 +2,13 @@
 
 Api[:idah].register(
   :iam, :accounts, :index,
-) do
+) do |params = {}|
   output = get(
     "iam/accounts",
     options: { auth: nil },
-    params: { filters: {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false }
+    params:
   )
+
   deserialize output.body
 end
 
