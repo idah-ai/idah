@@ -1,29 +1,49 @@
 <script lang="ts">
-	import SingleSelectField from "@/components/app/forms/fields/select/single-select-field.svelte";
+  import SingleSelectField from "@/components/app/forms/fields/select/single-select-field.svelte";
 
-	import type { DataTableCellBaseProps } from "@/components/app/data-table/data-table.types";
+  import { humanize } from "@/utils/string";
+  import { toast } from "svelte-sonner";
+  import { ProjectMemberRecord, projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
 
-	// Props
-	interface Props extends DataTableCellBaseProps {}
-	let { record: projectMember }: Props = $props();
+  import type { DataTableCellBaseProps } from "@/components/app/data-table/data-table.types";
 
-	// Variables
-	const resource: string = "Resource::Dataset::Projects";
+  // Props
+  interface Props extends DataTableCellBaseProps<ProjectMemberRecord> {}
+  let { record: projectMember }: Props = $props();
+
+  // Variables
+  const resource: string = "Resource::Dataset::Projects";
+
+  let projectMemberRole = $derived(projectMember.role);
+
+  // Functions
+  async function updateProjectMemberRole(newRole: string): Promise<void> {
+    try {
+      await projectMembersBackendDataSource.update(projectMember.id, {
+        attributes: {
+          role: newRole,
+        },
+      });
+      toast.success(`${humanize(newRole)} role assigned to ${projectMember.email}`);
+    } catch (error) {
+      toast.error("Project member role updated");
+    }
+  }
 </script>
 
 <SingleSelectField
-	name="{resource}/role"
-	class="flex-1"
-	placeholder="Select a role"
-	choices={[
-		{ label: "Annotator", value: "annotator" },
-		{ label: "Reviewer", value: "reviewer" },
-		{ label: "Project Manager", value: "project_manager" },
-		{ label: "Admin", value: "Admin" },
-	]}
-	required
-	clearable
-	searchable
-	searchPlaceholder="Search a role"
-	bind:value={projectMember.role}
+  name="{resource}/role"
+  class="flex-1"
+  placeholder="Select a role"
+  choices={[
+    { label: "Annotator", value: "annotator" },
+    { label: "Reviewer", value: "reviewer" },
+    { label: "Project Manager", value: "project_manager" },
+    { label: "Admin", value: "Admin" },
+  ]}
+  required
+  searchable
+  searchPlaceholder="Search a role"
+  onValueChange={updateProjectMemberRole}
+  bind:value={projectMemberRole}
 />
