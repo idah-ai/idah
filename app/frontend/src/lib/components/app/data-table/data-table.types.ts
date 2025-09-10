@@ -9,7 +9,16 @@ import type { Record } from "@/data/model/Record";
 import type { Filters } from "@/data/filtering";
 import type { Writable } from "svelte/store";
 
-export type DataTableColumnDataType = "string" | "number" | "date" | "datetime" | "email" | "file" | "time" | "enum";
+export type DataTableColumnDataType =
+  | "string"
+  | "boolean"
+  | "number"
+  | "date"
+  | "datetime"
+  | "email"
+  | "file"
+  | "time"
+  | "enum";
 
 export type DataTableColumnFilterBy =
   | "string"
