@@ -8,9 +8,9 @@ module ProjectMember
 
     field :project_id, type: String, readonly: true
     
-    field :account_id, type: [Integer, NilClass], readonly: true
+    field :account_id, type: Integer, readonly: true
     field :name, type: [String, NilClass]
-    field :email, type: [String, NilClass]
+    field :email, type: String
 
     field :role, type: String
 
