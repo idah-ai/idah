@@ -6,9 +6,11 @@
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
   import ProjectMemberForm from "@/components/app/projects/members/forms/project-member-form.svelte";
 
-  import { projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
   import { refetches } from "@/utils/refetch";
   import { toast } from "svelte-sonner";
+
+  import { accountsBackendDataSource } from "@/data/model/iam/accounts/record";
+  import { projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
 
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
 
@@ -31,21 +33,41 @@
   }
 
   async function createProjectMember(): Promise<void> {
-    for (const member of members) {
-      await projectMembersBackendDataSource.create({
-        attributes: {
-          project_id: projectId!,
-          user_id: "1",
-          email: member.email,
-          role: member.role,
-          invited_by_id: "1",
-        },
-      });
-    }
+    try {
+      for (const member of members) {
+        const { email, role } = member;
+        /** Check if member is already invited */
+        const existingAccount = await accountsBackendDataSource.list({ filters: { email: email } });
+        let accountId: string;
 
-    $refetches.projectMembers.list++;
-    closeThisModal();
-    toast.success(`${members.length} member(s) invite sent!`);
+        if (!existingAccount.data.length) {
+          /** If account does not exist, create an account first */
+          const createdAccount = await accountsBackendDataSource.create({
+            attributes: { email: email, enabled: true },
+          });
+          accountId = createdAccount.data.id;
+        } else {
+          accountId = existingAccount.data[0].id;
+        }
+
+        await projectMembersBackendDataSource.create({
+          attributes: {
+            project_id: projectId!,
+            account_id: accountId,
+            email,
+            role,
+            invited_by_id: "1",
+          },
+        });
+      }
+
+      $refetches.projectMembers.list++;
+      closeThisModal();
+      toast.success(`${members.length} member(s) invite sent!`);
+    } catch (error) {
+      toast.error("Failed to send invite. Please try again.");
+      throw error;
+    }
   }
 
   async function submit(): Promise<void> {
