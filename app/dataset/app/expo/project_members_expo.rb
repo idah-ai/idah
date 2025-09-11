@@ -5,6 +5,16 @@ class ProjectMembersExpo < BaseExpo
 
   use_service ProjectMember::Service
 
+  extend Expo::Util::DuplicateFieldHelper
+
+  duplicate "iam:accounts",
+            repository_class: ProjectMember::Repository,
+            foreign_key: :account_id,
+            fields: {
+              name: :name,
+              email: :email
+            }
+
   json_api ProjectMember::Record, http_opts: { auth: nil } do
     index do
       allowed_filters :email__match,
