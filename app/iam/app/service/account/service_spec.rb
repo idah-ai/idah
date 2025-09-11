@@ -54,14 +54,14 @@ RSpec.describe Account::Service, database: true do
             type: Resource::Iam::Accounts,
             id: account_id,
             attributes: {
-              name: "Updated Text Account Name"
+              name: "Updated Test Account Name"
             }
           }
         }
       )
 
       updated_account = subject.update(record)
-      expect(updated_account.name).to eq("Updated Text Account Name")
+      expect(updated_account.name).to eq("Updated Test Account Name")
     end
   end
 

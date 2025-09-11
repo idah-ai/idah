@@ -26,7 +26,7 @@
       });
       toast.success(`${humanize(newRole)} role assigned to ${projectMember.email}`);
     } catch (error) {
-      toast.error("Project member role updated");
+      toast.error("Failed to update project member role");
     }
   }
 </script>
