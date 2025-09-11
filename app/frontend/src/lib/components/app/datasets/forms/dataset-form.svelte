@@ -18,7 +18,7 @@
 
   // Variables::Reactive
   let name = $derived(dataset.name);
-  let modaity = $derived(dataset.modaity || "");
+  let modality = $derived(dataset.modality || "");
 
   // Options for select fields
   const modalityOptions = [
@@ -32,7 +32,7 @@
   $effect(() => {
     onValueChange({
       name,
-      modaity,
+      modality,
     });
   });
 </script>
@@ -45,7 +45,7 @@
     placeholder="Enter dataset name"
     required
     errors={dataset.errors?.["name"]}
-    bind:value={dataset.name}
+    bind:value={name}
   />
 
   <!-- DATASET::MODALITY -->
@@ -56,6 +56,6 @@
     choices={modalityOptions}
     required
     errors={dataset.errors?.["modality"]}
-    bind:value={modaity}
+    bind:value={modality}
   />
 </Form>

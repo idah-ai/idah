@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { page } from "$app/state";
 
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
   import DatasetForm from "@/components/app/datasets/forms/dataset-form.svelte";
@@ -17,6 +18,7 @@
   let { action, open = $bindable(), title, datasetRecord }: Props = $props();
 
   // Variables
+  let projectId: string | undefined = $derived(page.params.projectId);
   let newRecord: boolean = $derived(action === "create");
   let submitting: boolean = $state(false);
 
@@ -53,10 +55,20 @@
       attributes: {
         name: dataset.name,
         modality: dataset.modality,
+        labeling_configuration: {},
+        workflow_configuration: {},
+      },
+      relationships: {
+        project: {
+          data: {
+            type: "datasets:projects",
+            id: projectId!,
+          },
+        },
       },
     });
 
-    goto(`/datasets/${createdDatasetRes.data.id}`);
+    goto(`datasets/${createdDatasetRes.data.id}/tasks`);
 
     $refetches.datasets.list++;
     open = false;

@@ -3,7 +3,7 @@
   import DataTable from "@/components/app/data-table/data-table.svelte";
   import PageProvider from "@/components/app/page/page-provider.svelte";
   import PageHeader from "@/components/app/page/page-header.svelte";
-  import DatasetFormModal from "@/components/app/projects/overlays/dataset-form-modal.svelte";
+  import DatasetFormModal from "@/components/app/datasets/overlays/dataset-form-modal.svelte";
   import { PlusIcon } from "@lucide/svelte";
   import { page } from "$app/state";
 

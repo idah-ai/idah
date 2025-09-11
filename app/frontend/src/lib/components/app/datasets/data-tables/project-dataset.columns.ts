@@ -1,6 +1,7 @@
 import type { ColumnsSettings } from "@/components/app/data-table/data-table.types";
 
 import ProjectDatasetNameCell from "@/components/app/datasets/data-tables/project-dataset-name-cell.svelte";
+import ProjectDatasetRowActionCell from "@/components/app/datasets/data-tables/project-dataset-row-action-cell.svelte";
 
 export const projectDatasetColumns: ColumnsSettings = {
 	name: {
@@ -87,5 +88,14 @@ export const projectDatasetColumns: ColumnsSettings = {
 		},
 		visible: true,
 		hidable: false,
+	},
+	action: {
+		label: "Action",
+		dataType: "string",
+		sortable: false,
+		filterable: false,
+		visible: true,
+		hidable: false,
+		cellComponent: ProjectDatasetRowActionCell,
 	},
 };
