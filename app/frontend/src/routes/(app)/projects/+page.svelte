@@ -22,6 +22,10 @@
   let breadcrumbs: PageBreadcrumbItem[] = $state([projectBreadcrumb]);
 
   // Functions
+  function openNewProjectFormModal(): void {
+    openNewProjectModal = true;
+  }
+
   async function onLoadSetContexts<T extends Record = ProjectRecord>(response: CollectionResponse<T>): Promise<Hash> {
     /** Fetch related datasets from projectIds */
     const projectIds = Array.from(new Set(response.data.map((project) => project.id)));
@@ -43,7 +47,7 @@
 <PageProvider name="projects" {breadcrumbs}>
   <PageHeader title="Projects">
     {#snippet actions()}
-      <Button onclick={() => (openNewProjectModal = true)}>
+      <Button onclick={openNewProjectFormModal}>
         <PlusIcon class="size-4" />
         New Project
       </Button>
@@ -62,6 +66,7 @@
         },
         sort: ["-created_at"],
       }}
+      onNewRecord={openNewProjectFormModal}
       {onLoadSetContexts}
     />
   {/key}
