@@ -45,7 +45,7 @@
 
 {#key $refetches.projectMembers.list}
   <DataTable
-    id="project-members"
+    id="project-members-{projectId}"
     name="member"
     columns={projectMemberColumns}
     dataSource={projectMembersBackendDataSource}
