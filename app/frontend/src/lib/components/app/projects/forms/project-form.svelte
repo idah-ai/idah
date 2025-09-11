@@ -14,7 +14,7 @@
   let { project, onValueChange }: Props = $props();
 
   // Variables
-  let resource = "project";
+  let resource: string = ProjectRecord.type;
 
   // Variables::Reactive
   let name = $derived(project.name);
