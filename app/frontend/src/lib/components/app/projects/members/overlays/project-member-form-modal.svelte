@@ -13,6 +13,7 @@
   import { projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
 
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
+  import { createMultipleProjectMembersSchema } from "@/data/model/dataset/projects/members/schema";
 
   // Props
   interface Props extends FormModalBaseProps {}
@@ -22,6 +23,10 @@
   let projectId: string | undefined = $derived(page.params.projectId);
   let submitting: boolean = $state(false);
   let members: Array<{ email: string; role: string }> = $state([{ email: "", role: "" }]);
+  let disabledSubmitButton: boolean = $derived.by(() => {
+    const validated = createMultipleProjectMembersSchema.safeParse(members);
+    return !validated.success;
+  });
 
   // Functions
   function closeThisModal(): void {
@@ -92,6 +97,6 @@
   <ProjectMemberForm bind:members />
 
   {#snippet confirm()}
-    <Button disabled={members.length === 0} onclick={submit}>Send Invite</Button>
+    <Button disabled={disabledSubmitButton} onclick={submit}>Send Invite</Button>
   {/snippet}
 </FormModal>
