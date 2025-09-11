@@ -4,8 +4,12 @@
   import { tv, type VariantProps } from "tailwind-variants";
 
   export const spinnerVariants = tv({
-    base: "text-primary animate-spin",
+    base: "animate-spin",
     variants: {
+      variant: {
+        default: "text-primary",
+        "primary-foreground": "text-primary-foreground",
+      },
       size: {
         default: "size-6",
         sm: "size-4",
@@ -15,19 +19,22 @@
       },
     },
     defaultVariants: {
+      variant: "default",
       size: "default",
     },
   });
 
+  export type SpinnerVariant = VariantProps<typeof spinnerVariants>["variant"];
   export type SpinnerSize = VariantProps<typeof spinnerVariants>["size"];
 
   export type SpinnerProps = {
+    variant?: SpinnerVariant;
     size?: SpinnerSize;
   };
 </script>
 
 <script lang="ts">
-  let { size = "default" }: SpinnerProps = $props();
+  let { size = "default", variant = "default" }: SpinnerProps = $props();
 </script>
 
-<Loader2Icon class={cn(spinnerVariants({ size }))} />
+<Loader2Icon class={cn(spinnerVariants({ size, variant }))} />

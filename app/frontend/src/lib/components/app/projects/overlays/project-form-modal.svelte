@@ -5,11 +5,11 @@
   import ProjectForm from "@/components/app/projects/forms/project-form.svelte";
 
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
+  import { projectSchema } from "@/data/model/dataset/projects/project-schema";
   import { refetches } from "@/utils/refetch";
 
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
   import type { Hash } from "@/utils/types";
-  import { projectSchema } from "@/data/model/dataset/projects/project-schema";
 
   // Props
   interface Props extends FormModalBaseProps {
