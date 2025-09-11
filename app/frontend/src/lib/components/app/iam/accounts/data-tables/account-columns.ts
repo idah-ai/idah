@@ -43,8 +43,12 @@ export const accountColumns: ColumnsSettings<AccountRecord> = {
     filterable: true,
     filterOptions: {
       filterKey: "enabled",
-      filterBy: "single-select",
+      filterBy: "boolean",
       filterOperation: "eq",
+      choices: [
+        { label: "Enabled", value: true },
+        { label: "Disabled", value: false },
+      ],
     },
     visible: true,
     hidable: false,
