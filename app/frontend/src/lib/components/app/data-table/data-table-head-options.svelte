@@ -141,7 +141,7 @@
     });
   }
 
-  function filterByBoolean(value: boolean): void {
+  function filterByBoolean(value: string | number | boolean): void {
     onFilter({
       filters: {
         [filterKey]: value,
@@ -263,7 +263,7 @@
             {:else if filterOptions?.filterBy === "boolean"}
               {#if filterOptions.choices}
                 {#each filterOptions.choices as choice (choice.value)}
-                  <CommandItem onclick={() => filterByBoolean(choice.value as boolean)}>
+                  <CommandItem onclick={() => filterByBoolean(choice.value)}>
                     <CheckIcon
                       class={cn("mr-2 size-4", {
                         "opacity-0": tablePreferences.filters[filterKey] !== choice.value,

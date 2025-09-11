@@ -12,7 +12,7 @@ module Account
     field :hashed_password, type: [String, NilClass], visible: false, readonly: true
     field :sso_channel, type: [String, NilClass]
 
-    field :enabled, type: TrueClass
+    field :enabled, type: [TrueClass, FalseClass]
 
     field :joined_at, type: [Time, NilClass]
 
