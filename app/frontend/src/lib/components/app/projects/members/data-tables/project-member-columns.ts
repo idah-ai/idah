@@ -1,5 +1,4 @@
 import ProjectMemberRoleCell from "@/components/app/projects/members/data-tables/project-member-role-cell.svelte";
-import ProjectMemberJoinedAtCell from "@/components/app/projects/members/data-tables/project-member-joined-at-cell.svelte";
 import ProjectMemberRowActionCell from "@/components/app/projects/members/data-tables/project-member-row-action-cell.svelte";
 
 import { projectMemberRoles, type ProjectMemberRecord } from "@/data/model/dataset/projects/members/record";
@@ -34,16 +33,6 @@ export const projectMemberColumns: ColumnsSettings<ProjectMemberRecord> = {
     },
     visible: true,
     hidable: false,
-  },
-  joined_at: {
-    label: "Joined date",
-    dataType: "datetime",
-    clickable: false,
-    sortable: false,
-    filterable: false,
-    visible: true,
-    hidable: false,
-    cellComponent: ProjectMemberJoinedAtCell,
   },
   role: {
     label: "Role",
