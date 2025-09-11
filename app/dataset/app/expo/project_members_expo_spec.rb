@@ -29,6 +29,7 @@ RSpec.describe ProjectMembersExpo, type: :exposition, as: :system do
         attributes: {
           project_id: uuid,
           account_id: 1,
+          email: "annotator@email.com",
           role: "annotator",
           invited_by_id: 1,
         }

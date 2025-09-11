@@ -9,7 +9,7 @@
   import { refetches } from "@/utils/refetch";
   import { toast } from "svelte-sonner";
 
-  import { accountsBackendDataSource } from "@/data/model/iam/accounts/record";
+  import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
   import { projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
 
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
@@ -36,27 +36,29 @@
     try {
       for (const member of members) {
         const { email, role } = member;
+        let account: AccountRecord;
+
         /** Check if member is already invited */
         const existingAccount = await accountsBackendDataSource.list({ filters: { email: email } });
-        let accountId: string;
 
         if (!existingAccount.data.length) {
           /** If account does not exist, create an account first */
           const createdAccount = await accountsBackendDataSource.create({
             attributes: { email: email, enabled: true },
           });
-          accountId = createdAccount.data.id;
+          account = createdAccount.data;
         } else {
-          accountId = existingAccount.data[0].id;
+          account = existingAccount.data[0];
         }
 
         await projectMembersBackendDataSource.create({
           attributes: {
             project_id: projectId!,
-            account_id: accountId,
+            account_id: Number(account.id),
+            name: account.name,
             email,
             role,
-            invited_by_id: "1",
+            invited_by_id: 1,
           },
         });
       }

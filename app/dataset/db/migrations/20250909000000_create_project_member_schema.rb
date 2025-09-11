@@ -9,9 +9,9 @@ Sequel.migration do
 
       foreign_key :project_id, :projects, type: :uuid, null: false, index: true, on_delete: :cascade, on_update: :cascade
 
-      column :account_id, :bigint, index: true, null: false
+      column :account_id, :bigint, null: false, index: true
       column :name, String
-      column :email, String, index: true
+      column :email, String, null: false, index: true
 
       column :role, String, null: false
 
