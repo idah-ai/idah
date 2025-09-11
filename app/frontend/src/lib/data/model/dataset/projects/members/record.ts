@@ -33,5 +33,5 @@ export const projectMemberRoles = [
   { label: "Annotator", value: "annotator" },
   { label: "Reviewer", value: "reviewer" },
   { label: "Project Manager", value: "project_manager" },
-  { label: "Admin", value: "Admin" },
+  { label: "Admin", value: "admin" },
 ];
