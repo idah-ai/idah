@@ -23,6 +23,14 @@ Sequel.migration do
     end
     Migration::Timestamps.trg_updated_at(self, :accounts)
 
+    create_table(:teams) do
+      primary_key :id, :bigserial
+      
+      column :name, String
+      Migration::Timestamps.timestamps(self)
+    end
+    Migration::Timestamps.trg_updated_at(self, :teams)
+
     create_table(:account_teams) do
       primary_key :id, :bigserial
 
@@ -32,7 +40,7 @@ Sequel.migration do
         on_delete: :cascade,
         on_update: :cascade
 
-      foreign_key :team_id, :account_teams,
+      foreign_key :team_id, :teams,
         type: :bigint,
         null: false,
         on_delete: :cascade,

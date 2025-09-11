@@ -1,4 +1,4 @@
-# fronzen_string_literal: true
+# frozen_string_literal: true
 
 module Account
   class Service < Verse::Service::Base
