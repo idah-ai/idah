@@ -7,6 +7,7 @@
   import DialogFooter from "@/components/ui/dialog/dialog-footer.svelte";
   import DialogTitle from "@/components/ui/dialog/dialog-title.svelte";
   import ScrollArea from "@/components/ui/scroll-area/scroll-area.svelte";
+  import Spinner from "@/components/app/loading/spinner.svelte";
 
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
 
@@ -17,6 +18,7 @@
     open = $bindable(),
     title,
     description,
+    loading,
     onCancel,
     onConfirm,
     modalTitle,
@@ -95,7 +97,12 @@
             {@render confirm()}
           {:else}
             <Button class="gap-2" onclick={handleClickConfirm}>
-              {confirmButtonProps.label}
+              {#if loading}
+                <Spinner variant="primary-foreground" size="sm" />
+                {confirmButtonProps.loadingLabel}
+              {:else}
+                {confirmButtonProps.label}
+              {/if}
             </Button>
           {/if}
         </div>
