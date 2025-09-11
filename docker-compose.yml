@@ -60,6 +60,23 @@ services:
     command: ./dev-entrypoint.sh puma
     stdin_open: true
     tty: true
+  frontend:
+    build:
+      context: ./app/frontend
+      dockerfile: Dockerfile
+      args:
+        BUNDLE_WITHOUT: "" # Allow all groups for dev.
+        APP_ENVIRONMENT: development
+    ports:
+      - "5173"
+    volumes:
+      - ./app/frontend:/app/frontend
+      - /app/frontend/node_modules
+    networks:
+      - app-network
+    command: pnpm run dev  --host
+    stdin_open: true
+    tty: true
 volumes:
   bundler_cache:
 

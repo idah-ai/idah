@@ -17,7 +17,7 @@ namespace :fixture do
     # Upload the video to media service
     media_uid = 16.times.map{ rand(0..36).to_s(36) }.join + ".mp4"
     media_api_url = [api_url, "media"].join("/")
-    video_path = "app/media/spec_data/sample.mp4"
+    video_path = "app/media/spec_data/4k_sample.mp4"
     upload_response = HTTParty.post(
       "#{media_api_url}/medias/files/#{media_uid}",
       headers: { "Authorization" => "Bearer #{token}" },
@@ -175,6 +175,7 @@ namespace :fixture do
         data: {
           type: "dataset:entries",
           attributes: {
+            dataset_id: JSON.parse(dataset_response.body)["data"]["id"],
             resource: video_resource,
           },
           relationships: {

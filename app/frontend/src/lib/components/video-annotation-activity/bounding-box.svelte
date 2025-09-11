@@ -7,7 +7,7 @@
         points,
         editable = false,
         cursor,
-        color = 'deeppink',
+        color,
         onChange,
         onmousedown
     } : {
@@ -39,6 +39,8 @@
     })
 
     function draw_cmd(path: Point[]) {
+        if (path.length == 0) return
+
         return [
             ...path.map((p, i) => `${i == 0 ? 'M' : 'L'}${p[X]} ${p[Y]}`),
             'Z' // closingpath ?
@@ -96,7 +98,6 @@
 
     function pan(points: BoundingBox, from: Point, to:Point): BoundingBox {
         const delta = [to[X] - from[X], to[Y] - from[Y]]
-        console.log(delta)
         return points.map(p => [p[X] + delta[X], p[Y] + delta[Y]]) as BoundingBox
     }
 
@@ -179,46 +180,45 @@
 {#snippet BoundingBoxHandle(bb: BoundingBox)}
     {#each boundingBoxHandle(bb) as point, handle}
         <circle
-            role="button"
-            tabindex="-1"
             onmousedown={(e) => {
                 e.stopPropagation()
                 remove_resizeable_points(bb, handle)
             }}
-            onkeypress={console.log}
             cx={point[X] * ratio[X]} cy={point[Y] * ratio[Y]} r={5}
             style:transform-origin={'top left'}
             style:transform={`translate(${offset[X]}px, ${offset[Y]}px)`}
             vector-effect= "non-scaling-stroke"
-            style:stroke ={'blue'}
+            style:stroke ={'#EAB308'}
             style:stroke-width= {1}
-            style:fill ={'blue'}
-            fill-opacity={0.3}
+            style:fill ={'#EAB308'}
+            fill-opacity={1}
         />
         {/each}
 {/snippet}
 
+{#snippet bb(path?: string)}
+    {#if path}
+        <path
+            d={path}
+            style:transform-origin={'top left'}
+            style:transform={`translate(${offset[X]}px, ${offset[Y]}px) scale(${ratio[X]}, ${ratio[Y]})`}
+            vector-effect= "non-scaling-stroke"
+            fill-opacity={0.40}
+            style:fill={color}
+            style:stroke={color}
+            style:stroke-width={'2'}
+            onmousedown={(e) => {
+                if (editable && !panStart && !isEditing()) {
+                    e.stopPropagation()
+                    panStart = cursor
+                }
+                onmousedown?.(e)
+            }}
+            />
+    {/if}
+{/snippet}
 
-<path
-    role='button'
-    tabindex=-1
-    d={draw_cmd(boundingBox(bounding_box, cursor))}
-    style:transform-origin={'top left'}
-    style:transform={`translate(${offset[X]}px, ${offset[Y]}px) scale(${ratio[X]}, ${ratio[Y]})`}
-    vector-effect= "non-scaling-stroke"
-    fill-opacity={0.25}
-    style:fill={color}
-    style:stroke={color}
-    style:stroke-width={'1'}
-    onmousedown={(e) => {
-        console.log({e, editable, editing: isEditing()})
-        if (editable && !panStart && !isEditing()) {
-            e.stopPropagation()
-            panStart = cursor
-        }
-        onmousedown?.(e)
-    }}
-    />
+{@render bb(draw_cmd(boundingBox(bounding_box, cursor)))}
 
 {#if editable && !isEditing()}
     {@render BoundingBoxHandle(boundingBox(bounding_box, cursor))}
