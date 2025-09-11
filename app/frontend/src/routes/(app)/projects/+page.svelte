@@ -7,7 +7,7 @@
   import { PlusIcon } from "@lucide/svelte";
 
   import { projectBreadcrumb } from "@/components/app/page/page-breadcrumb.constants";
-  import { projectColumns } from "@/components/app/projects/data-tables/project.columns";
+  import { projectColumns } from "@/components/app/projects/data-tables/project-columns";
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { refetches } from "@/utils/refetch";
