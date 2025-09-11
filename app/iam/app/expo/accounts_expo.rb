@@ -15,6 +15,8 @@ class AccountsExpo < BaseExpo
                       :joined_at__lte,
                       :created_at__gte,
                       :created_at__lte
+
+      blacklist_filters :hashed_password
     end
 
     show
