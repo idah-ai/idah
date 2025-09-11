@@ -7,7 +7,10 @@ class ProjectsExpo < BaseExpo
 
   json_api Project::Record, http_opts: { auth: nil } do
     show
-    index
+    index do
+      allowed_filters :name__match, :updated_at__gte, :updated_at__lte
+    end
+
     create
     update
     delete

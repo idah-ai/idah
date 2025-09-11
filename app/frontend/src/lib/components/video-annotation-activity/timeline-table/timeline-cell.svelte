@@ -4,9 +4,9 @@
 
     let {
         frame,
-        current_frame,
+        currentFrame,
         range,
-        timeline_zoom,
+        scale,
         inSpan,
         keyframes,
         hovered,
@@ -15,9 +15,9 @@
         ...restProps
     } : {
         frame: number,
-        current_frame: number,
+        currentFrame: number,
         range: [number, number],
-        timeline_zoom: number,
+        scale: number,
         inSpan: boolean,
         keyframes: number[],
         hovered: boolean,
@@ -27,21 +27,21 @@
 </script>
 
 <div
-    class="border-t-0 border-b-0 hoverable inline-block border {Math.floor(current_frame/timeline_zoom) == Math.floor(frame/timeline_zoom) ? 'border-primary bg-primary' : hovered ? 'border-destructive' : inSpan? '' : 'border-primary'}"
+    class="border-t-0 border-b-0 hoverable inline-block border {Math.floor(currentFrame/scale) == Math.floor(frame/scale) ? 'border-[grey] bg-primary' : hovered ? 'border-destructive' : inSpan? '' : 'border-[grey]'}"
     style:box-sizing=border-box
 
-    style:width={1 / ((range[1]-range[0] + (timeline_zoom - ((range[1]-range[0]) % timeline_zoom))) / 100) * timeline_zoom}%
+    style:width={1 / ((range[1]-range[0] + (scale - ((range[1]-range[0]) % scale))) / 100) * scale}%
     style:height=100%
     onclick={() => onSeekFrame(frame)}
     {...restProps}
 >
     <div class='py-1' style:height=100%>
     {#if inSpan}
-        <div class='relative' style:background-color='chartreuse' style:height=100%>
+        <div class='relative' style:background-color='#CFFAFE' style:height=100%>
         {#if keyframes.length}
                 <Popover>
                 <PopoverTrigger class='absolute top-0 h-full w-full pt-0'>
-                    <div style='margin:auto' style:background-color='deeppink'  style:height=25% style:width=50%></div>
+                    <div style='margin:auto' style:background-color='#06B6D4'  style:height=25% style:width=50%></div>
                 </PopoverTrigger>
                     <PopoverContent>
                     <ul>

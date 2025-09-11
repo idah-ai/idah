@@ -1,11 +1,14 @@
 <script lang="ts">
-	import '../app.css';
-	let { children } = $props();
-	import { ModeWatcher } from "mode-watcher";
+  import "../app.css";
+  // import { ModeWatcher } from "mode-watcher";
+  import { Toaster } from "@/components/ui/sonner";
+
+  // Props
+  let { children } = $props();
 </script>
 
-
-<!-- <main> -->
-	 <ModeWatcher />
-	{@render children?.()}
-<!-- </main> -->
+<main class="bg-background relative flex min-h-screen flex-col">
+  <!-- <ModeWatcher /> -->
+  <Toaster position="top-right" />
+  {@render children?.()}
+</main>

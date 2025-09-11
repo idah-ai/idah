@@ -19,14 +19,17 @@ export interface DataParams<T> {
   relationships?: Partial<Hash>;
 }
 
+export type Sort = Array<string>;
+
 export type ListOptions = {
   filters?: Filters;
   included?: Included;
   pagination?: Pagination;
   fields?: Field;
-  sort?: string[];
+  sort?: Sort;
   all?: boolean;
   noCache?: boolean; // By default, the cache is used
+  count?: boolean; // By default, count is false
 };
 
 export type GetOptions = {
