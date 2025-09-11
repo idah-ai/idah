@@ -17,7 +17,7 @@ RSpec.describe ProjectMember::Service, database: true do
   let(:attributes) do
     {
       project_id: project_id,
-      user_id: 1,
+      account_id: 1,
       role: "annotator",
       invited_by_id: 1
     }
@@ -44,7 +44,7 @@ RSpec.describe ProjectMember::Service, database: true do
 
       projectMember = subject.create(record)
       expect(projectMember.project_id).to eq(project_id)
-      expect(projectMember.user_id).to eq(1)
+      expect(projectMember.account_id).to eq(1)
       expect(projectMember.role).to eq("annotator")
     end
   end

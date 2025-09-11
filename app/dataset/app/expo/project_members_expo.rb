@@ -7,7 +7,11 @@ class ProjectMembersExpo < BaseExpo
 
   json_api ProjectMember::Record, http_opts: { auth: nil } do
     index do
-      allowed_filters :email__match, :role__in, :created_at__gte, :created_at__lte
+      allowed_filters :email__match,
+                      :account_id,
+                      :role__in,
+                      :created_at__gte,
+                      :created_at__lte
     end
 
     show

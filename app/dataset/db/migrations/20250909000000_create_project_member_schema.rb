@@ -9,7 +9,7 @@ Sequel.migration do
 
       foreign_key :project_id, :projects, type: :uuid, null: false, index: true, on_delete: :cascade, on_update: :cascade
 
-      column :user_id, :bigint, index: true, null: false
+      column :account_id, :bigint, index: true, null: false
       column :name, String
       column :email, String, index: true
 
@@ -17,7 +17,7 @@ Sequel.migration do
 
       column :invited_by_id, :bigint, null: false
       
-      index [:project_id, :user_id]
+      index [:project_id, :account_id]
       index [:project_id, :role]
 
       Migration::Timestamps.timestamps(self)
