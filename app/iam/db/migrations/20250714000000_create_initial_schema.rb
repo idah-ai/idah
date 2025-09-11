@@ -10,7 +10,7 @@ Sequel.migration do
       primary_key :id, :bigserial
 
       column :name, String
-      column :email, String, null: false, index: true
+      column :email, String, unique: true, null: false, index: true
 
       column :hashed_password, String, null: true
       column :sso_channel, String, null: true

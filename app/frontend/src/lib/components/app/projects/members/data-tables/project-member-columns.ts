@@ -40,11 +40,6 @@ export const projectMemberColumns: ColumnsSettings<ProjectMemberRecord> = {
     clickable: false,
     sortable: false,
     filterable: false,
-    // filterOptions: {
-    //   filterKey: "joined_at",
-    //   filterBy: "date-range",
-    //   filterOperation: "match",
-    // },
     visible: true,
     hidable: false,
     cellComponent: ProjectMemberJoinedAtCell,

@@ -8,15 +8,13 @@ import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
 export class ProjectMemberRecord extends Record {
   @field() public project_id!: string;
 
-  @field() public user_id!: string;
+  @field() public account_id!: string;
   @field() public name!: string;
   @field() public email!: string;
 
   @field() public role!: string;
 
-  @field({ transformer: Transformers.Time }) public invited_at!: Date;
   @field() public invited_by_id!: string;
-  @field({ transformer: Transformers.Time }) public joined_at!: Date | null;
 
   @field({ transformer: Transformers.Time }) public created_at!: Date;
   @field({ transformer: Transformers.Time }) public updated_at!: Date;
