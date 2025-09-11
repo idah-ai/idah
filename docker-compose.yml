@@ -70,7 +70,8 @@ services:
     ports:
       - "5173"
     volumes:
-      - ./app/frontend/src:/app/frontend/src
+      - ./app/frontend:/app/frontend
+      - /app/frontend/node_modules
     networks:
       - app-network
     command: pnpm run dev  --host
