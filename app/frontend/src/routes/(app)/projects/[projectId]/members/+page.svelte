@@ -9,11 +9,8 @@
   import { PlusIcon } from "@lucide/svelte";
   import { refetches } from "@/utils/refetch";
 
-  import { ProjectMemberRecord, projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
-  import { accountsBackendDataSource } from "@/data/model/iam/accounts/record";
+  import { projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
 
-  import type { CollectionResponse } from "@/data/model/types";
-  import type { Hash } from "@/utils/types";
   import type { Record } from "@/data/model/Record";
 
   // Variables
@@ -23,23 +20,6 @@
   // Functions
   function openNewProjectMemberModal(): void {
     openNewProjectMemberFormModal = true;
-  }
-
-  async function onLoadSetContexts<T extends Record = ProjectMemberRecord>(
-    response: CollectionResponse<T>,
-  ): Promise<Hash> {
-    /** Fetch related accounts from accountIds */
-    const accountIds = Array.from(new Set(response.data.map((member) => member.account_id).filter((id) => id)));
-    const accountsRes = await accountsBackendDataSource.list({
-      fields: {
-        "iam:accounts": ["joined_at"],
-      },
-      filters: {
-        id__in: accountIds,
-      },
-    });
-
-    return { accounts: accountsRes.data };
   }
 </script>
 
@@ -55,7 +35,6 @@
       },
     }}
     onNewRecord={openNewProjectMemberModal}
-    {onLoadSetContexts}
   >
     {#snippet actions()}
       <Button onclick={openNewProjectMemberModal}>

@@ -3,7 +3,11 @@
 
   import { humanize } from "@/utils/string";
   import { toast } from "svelte-sonner";
-  import { ProjectMemberRecord, projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
+  import {
+    ProjectMemberRecord,
+    projectMemberRoles,
+    projectMembersBackendDataSource,
+  } from "@/data/model/dataset/projects/members/record";
 
   import type { DataTableCellBaseProps } from "@/components/app/data-table/data-table.types";
 
@@ -35,13 +39,7 @@
   name="{resource}/role"
   class="flex-1"
   placeholder="Select a role"
-  choices={[
-    { label: "Annotator", value: "annotator" },
-    { label: "Reviewer", value: "reviewer" },
-    { label: "Project Manager", value: "project_manager" },
-    { label: "Admin", value: "Admin" },
-  ]}
-  required
+  choices={projectMemberRoles}
   searchable
   searchPlaceholder="Search a role"
   onValueChange={updateProjectMemberRole}
