@@ -12,7 +12,7 @@ RSpec.describe ProjectMembersExpo, type: :exposition, as: :system do
       {
         id: 1,
         project_id: uuid,
-        user_id: 1,
+        account_id: 1,
         role: "annotator",
         invited_by_id: 1,
         created_at: now,
@@ -28,7 +28,7 @@ RSpec.describe ProjectMembersExpo, type: :exposition, as: :system do
         id: "1",
         attributes: {
           project_id: uuid,
-          user_id: 1,
+          account_id: 1,
           role: "annotator",
           invited_by_id: 1,
         }
@@ -51,7 +51,7 @@ RSpec.describe ProjectMembersExpo, type: :exposition, as: :system do
     records = deserialize(body)
 
     expect(records[0].id).to eq "1"
-    expect(records[0].user_id).to eq 1
+    expect(records[0].account_id).to eq 1
     expect(records[0].role).to eq "annotator"
   end
 
@@ -64,7 +64,7 @@ RSpec.describe ProjectMembersExpo, type: :exposition, as: :system do
     record = deserialize(body)
     
     expect(record.id).to eq "1"
-    expect(record.user_id).to eq 1
+    expect(record.account_id).to eq 1
     expect(record.role).to eq "annotator"
   end
 
@@ -77,7 +77,7 @@ RSpec.describe ProjectMembersExpo, type: :exposition, as: :system do
     created_record = deserialize(body)
 
     expect(created_record.id).to eq "1"
-    expect(created_record.user_id).to eq 1
+    expect(created_record.account_id).to eq 1
     expect(created_record.role).to eq "annotator"
   end
 
