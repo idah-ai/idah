@@ -5,7 +5,7 @@
   import SingleSelectField from "@/components/app/forms/fields/select/single-select-field.svelte";
 
   import { PlusIcon, Trash2Icon } from "@lucide/svelte";
-  import { ProjectMemberRecord } from "@/data/model/dataset/projects/members/record";
+  import { ProjectMemberRecord, projectMemberRoles } from "@/data/model/dataset/projects/members/record";
 
   // Props
   interface Props {
@@ -46,12 +46,7 @@
         class="flex-1"
         label="Role"
         placeholder="Select a role"
-        choices={[
-          { label: "Annotator", value: "annotator" },
-          { label: "Reviewer", value: "reviewer" },
-          { label: "Project Manager", value: "project_manager" },
-          { label: "Admin", value: "Admin" },
-        ]}
+        choices={projectMemberRoles}
         required
         searchable
         searchPlaceholder="Search a role"

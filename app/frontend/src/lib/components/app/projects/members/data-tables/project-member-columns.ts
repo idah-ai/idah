@@ -2,8 +2,9 @@ import ProjectMemberRoleCell from "@/components/app/projects/members/data-tables
 import ProjectMemberJoinedAtCell from "@/components/app/projects/members/data-tables/project-member-joined-at-cell.svelte";
 import ProjectMemberRowActionCell from "@/components/app/projects/members/data-tables/project-member-row-action-cell.svelte";
 
+import { projectMemberRoles, type ProjectMemberRecord } from "@/data/model/dataset/projects/members/record";
+
 import type { ColumnsSettings } from "@/components/app/data-table/data-table.types";
-import type { ProjectMemberRecord } from "@/data/model/dataset/projects/members/record";
 
 export const projectMemberColumns: ColumnsSettings<ProjectMemberRecord> = {
   email: {
@@ -53,7 +54,8 @@ export const projectMemberColumns: ColumnsSettings<ProjectMemberRecord> = {
     filterOptions: {
       filterKey: "role",
       filterBy: "multiple-select",
-      filterOperation: "match",
+      filterOperation: "in",
+      choices: projectMemberRoles,
     },
     visible: true,
     hidable: false,
