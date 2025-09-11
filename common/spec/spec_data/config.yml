@@ -1,0 +1,42 @@
+service_name: common
+description: Common library for the microservices. This configuration is only here for running specs
+em:
+  adapter: redis
+plugins:
+  - name: http
+    config:
+      show_error_details: <%= ENV.fetch("LOG_SHOW_ERROR_DETAILS", "true") %>
+  - name: sequel
+    config:
+      mode: simple
+      extensions:
+        - pg_json
+        - pg_array
+        - pg_enum
+      db:
+        uri: <%= ENV.fetch("DATABASE_URI") %>
+  - name: redis
+    config:
+      url: <%= ENV.fetch("REDIS_STREAM_URL") %>
+      max_connections: 10
+
+kv_store:
+  adapter: Verse::Redis::KVStore
+  config:
+    plugin: :redis
+    key_prefix: "common:keys"
+
+lock:
+  adapter: Verse::Redis::Lock
+  config:
+    plugin: redis
+    key_prefix: "common:locks"
+
+counter:
+  adapter: Verse::Redis::Counter
+  config:
+    plugin: redis
+    key_prefix: "common:counters"
+
+logging:
+  level: <%= ENV.fetch("LOG_LEVEL", "info") %>

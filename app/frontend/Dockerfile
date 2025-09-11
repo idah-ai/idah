@@ -1,16 +1,15 @@
-FROM node:20-alpine
+FROM node:bullseye-slim
 
-RUN npm install -g pnpm@10.14
+RUN npm install -g pnpm@10.15.1
 
-ENV LOCAL_APP_PATH .
-ENV APP_PATH /app/frontend
+ENV LOCAL_APP_PATH=.
+ENV APP_PATH=/app/frontend
 
-RUN mkdir -p $APP_PATH
 RUN mkdir -p $APP_PATH/src
 
 COPY $LOCAL_APP_PATH $APP_PATH
 
 WORKDIR $APP_PATH
 
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --force
 RUN pnpm svelte-kit sync

@@ -1,0 +1,133 @@
+import type { ColumnsSettings } from "@/components/app/data-table/data-table.types";
+
+export const projectAnalyticOverviewColumns: ColumnsSettings = {
+	label: {
+		label: "Label",
+		dataType: "string",
+		clickable: false,
+		sortable: true,
+		filterable: true,
+		filterOptions: {
+			filterKey: "label",
+			filterBy: "string",
+			filterOperation: "match",
+		},
+		visible: true,
+		hidable: false,
+	},
+	count: {
+		label: "Count",
+		dataType: "string",
+		clickable: false,
+		sortable: true,
+		filterable: true,
+		filterOptions: {
+			filterKey: "count",
+			filterBy: "number-range",
+			filterOperation: "match",
+		},
+		visible: true,
+		hidable: false,
+	},
+	progress: {
+		label: "Progress",
+		dataType: "number",
+		clickable: false,
+		sortable: true,
+		filterable: true,
+		filterOptions: {
+			filterKey: "progress",
+			filterBy: "number-range",
+			filterOperation: "match",
+		},
+		visible: true,
+		hidable: false,
+	},
+};
+
+export const projectAnalyticMemberPerformanceColumns: ColumnsSettings = {
+	email: {
+		label: "Member email",
+		dataType: "string",
+		clickable: false,
+		sortable: true,
+		filterable: true,
+		filterOptions: {
+			filterKey: "email",
+			filterBy: "string",
+			filterOperation: "match",
+		},
+		visible: true,
+		hidable: false,
+	},
+	label: {
+		label: "Labeled",
+		dataType: "number",
+		clickable: false,
+		sortable: true,
+		filterable: true,
+		filterOptions: {
+			filterKey: "label",
+			filterBy: "number-range",
+			filterOperation: "match",
+		},
+		visible: true,
+		hidable: false,
+	},
+	labelling_time: {
+		label: "Labelling time",
+		dataType: "number",
+		clickable: false,
+		sortable: true,
+		filterable: true,
+		filterOptions: {
+			filterKey: "labelling_time",
+			filterBy: "number-range",
+			filterOperation: "match",
+		},
+		visible: true,
+		hidable: false,
+	},
+	reviewed: {
+		label: "Reviewed",
+		dataType: "number",
+		clickable: false,
+		sortable: true,
+		filterable: true,
+		filterOptions: {
+			filterKey: "reviewed",
+			filterBy: "number-range",
+			filterOperation: "match",
+		},
+		visible: true,
+		hidable: false,
+	},
+	reviewing_time: {
+		label: "Reviewing time",
+		dataType: "number",
+		clickable: false,
+		sortable: true,
+		filterable: true,
+		filterOptions: {
+			filterKey: "reviewing_time",
+			filterBy: "number-range",
+			filterOperation: "match",
+		},
+		visible: true,
+		hidable: false,
+	},
+	number_of_annotation: {
+		label: "Number of annotations",
+		dataType: "number",
+		clickable: false,
+		sortable: true,
+		filterable: true,
+		filterOptions: {
+			filterKey: "number_of_annotation",
+			filterBy: "number-range",
+			filterOperation: "match",
+		},
+		visible: true,
+		hidable: false,
+	},
+};

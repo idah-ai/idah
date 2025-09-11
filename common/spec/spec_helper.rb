@@ -1,8 +1,23 @@
 # frozen_string_literal: true
 
+require "dotenv"
+
+# COMMON_PATH = ENV["COMMON_PATH"] || File.expand_path("../../../../common", __dir__)
+
+Dotenv.load(".env", ".env.test")
+
 require "rspec"
 require "webmock/rspec"
 require "simplecov"
+
+require "bundler"
+Bundler.require(:default, "test")
+
+require "zeitwerk"
+
+loader = Zeitwerk::Loader.new
+loader.inflector.inflect("uuid_v7" => "UUIDv7")
+loader.setup
 
 # Start SimpleCov for code coverage
 SimpleCov.start do
