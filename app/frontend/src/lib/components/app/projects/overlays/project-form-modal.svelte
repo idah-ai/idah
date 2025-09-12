@@ -92,7 +92,7 @@
 
       if (!validated.success) {
         fieldErrors = getFieldErrors(validated.error);
-        throw new Error("Validation Error");
+        throw new Error("Failed to submit form");
       }
 
       if (newRecord) {
@@ -102,7 +102,9 @@
       }
     } catch (error) {
       if (error instanceof Error) {
-        toast.error(error.message);
+        toast.error(error.message, {
+          description: "Please check the fields and try again.",
+        });
       }
     } finally {
       submitting = false;
