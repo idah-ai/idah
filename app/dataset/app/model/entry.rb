@@ -6,6 +6,8 @@ module Entry
 
     field :id, type: String, primary: true
 
+    field :dataset_id, type: Integer, readonly: true
+
     field :priority, type: Integer
 
     field :wf_step, type: String, readonly: true
