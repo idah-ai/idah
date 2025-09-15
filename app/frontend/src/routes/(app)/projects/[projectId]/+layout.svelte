@@ -8,8 +8,6 @@
   import PageLoading from "@/components/app/page/page-loading.svelte";
   import ProjectDropdownMenu from "@/components/app/projects/dropdowns/project-dropdown-menu.svelte";
   import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-  import Button from "@/components/ui/button/button.svelte";
-  import { PlusIcon } from "@lucide/svelte";
 
   import { projectBreadcrumb } from "@/components/app/page/page-breadcrumb.constants";
   import { projectTabs, type ProjectTab } from "@/components/app/projects/tabs/project.tabs";
@@ -61,7 +59,7 @@
 
   async function updateBreadcrumbs(): Promise<void> {
     if (isDatasetPage) {
-      const pathSegments = page.url.pathname.split('/');
+      const pathSegments = page.url.pathname.split("/");
       const datasetId = pathSegments[4];
       // Fetch dataset name for breadcrumb
       try {
@@ -74,7 +72,7 @@
           projectBreadcrumb,
           { label: project.name },
           { label: "Datasets", href: `/projects/${projectId}/datasets` },
-          { label: datasetRes.data.name }
+          { label: datasetRes.data.name },
         ];
       } catch {
         breadcrumbs = [projectBreadcrumb, { label: project.name }];

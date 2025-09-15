@@ -1,7 +1,7 @@
-import type { Hash } from "$/lib/utils/types";
 import { createBackendDataSource } from "@/data/BackendDataSource";
 import { field, Record, RecordFactory, relationship, type } from "@/data/model/Record";
 import type { ProjectRecord } from "@/data/model/dataset/projects/project-record";
+import type { Hash } from "@/utils/types";
 
 @type("dataset:datasets")
 export class DatasetRecord extends Record {
