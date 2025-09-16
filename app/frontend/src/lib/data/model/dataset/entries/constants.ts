@@ -20,3 +20,6 @@ export const entryStatuses: EntryStatusBadgeProps[] = [
   { label: "Pending", value: "pending", variant: "outline" },
   { label: "Ready", value: "ready", variant: "default" },
 ];
+
+interface EntryWorkflowStep extends LabelValue<string, EntryRecord> {}
+export const entryWorkflowSteps: EntryWorkflowStep[] = [{ label: "Start", value: "start" }];
