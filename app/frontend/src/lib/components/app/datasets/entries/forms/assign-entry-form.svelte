@@ -7,15 +7,15 @@
 
   // Props
   interface Props extends FormBaseProps {
-    entry: EntryRecord;
+    selectedMember: number | null;
   }
-  let { entry, onValueChange }: Props = $props();
+  let { selectedMember, onValueChange }: Props = $props();
 
   // Variables
   const resource: string = EntryRecord.type;
 
   // Variables::Reactive
-  let assignedToId = $derived(entry.assigned_to_id);
+  let assignedToId = $derived(selectedMember);
 
   // Functions
   $effect(() => {

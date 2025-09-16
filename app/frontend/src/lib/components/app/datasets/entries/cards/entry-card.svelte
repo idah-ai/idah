@@ -1,6 +1,7 @@
 <script lang="ts">
   import { AspectRatio } from "@/components/ui/aspect-ratio";
   import { Card, CardContent } from "@/components/ui/card";
+  import Checkbox from "@/components/ui/checkbox/checkbox.svelte";
   import DateText from "@/components/app/texts/date-text.svelte";
   import EntryDropdownMenu from "@/components/app/datasets/entries/dropdown-menus/entry-dropdown-menu.svelte";
   import EntryPriority from "@/components/app/datasets/entries/badges/entry-priority.svelte";
@@ -12,12 +13,19 @@
   // Props
   interface Props {
     entry: EntryRecord;
+    selectedRows: string[];
+    onRowSelect: (selectedId: string) => void;
   }
-  let { entry }: Props = $props();
+  let { entry, selectedRows, onRowSelect }: Props = $props();
 </script>
 
 <Card>
   <CardContent class="flex flex-row gap-4">
+    <!-- CHECKBOX -->
+    <div class="my-auto">
+      <Checkbox checked={selectedRows.includes(entry.id)} onCheckedChange={() => onRowSelect(entry.id)}></Checkbox>
+    </div>
+
     <!-- THUMBNAIL -->
     <div class="h-full w-[240px]">
       <AspectRatio ratio={16 / 9} class="bg-muted rounded-lg">

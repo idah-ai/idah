@@ -80,7 +80,7 @@
   </DropdownMenuContent>
 </DropdownMenu>
 
-<AssignEntryFormModal action="update" {entryRecord} bind:open={openAssignEntryFormModal}></AssignEntryFormModal>
+<AssignEntryFormModal action="update" entryIds={[entry.id]} bind:open={openAssignEntryFormModal}></AssignEntryFormModal>
 
 <ConfirmModal
   title="Delete task"
