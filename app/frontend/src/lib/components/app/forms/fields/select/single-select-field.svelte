@@ -42,7 +42,7 @@
   let selectedValue = $derived(choices.find((choice) => choice.value == value));
 
   // Functions
-  async function select(choice: LabelValue<string>): Promise<void> {
+  async function select(choice: LabelValue<string | number>): Promise<void> {
     value = choice.value;
     open = false;
     await onValueChange?.(value);
@@ -96,7 +96,7 @@
           <CommandEmpty>No option found.</CommandEmpty>
           <CommandGroup>
             {#each choices as choice (choice.value)}
-              <CommandItem value={choice.value} onSelect={() => select(choice)}>
+              <CommandItem value={String(choice.value)} onSelect={() => select(choice)}>
                 <CheckIcon
                   class={cn("mr-2 size-4", {
                     "opacity-0": choice.value !== value,
