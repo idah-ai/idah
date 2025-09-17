@@ -1,14 +1,14 @@
 <script lang="ts">
+  import FileUpload from "@/components/app/forms/fields/upload/file-upload.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
   import Button from "@/components/ui/button/button.svelte";
 
   import { refetches } from "@/utils/refetch";
+  import { toast } from "svelte-sonner";
 
   import { EntryRecord } from "@/data/model/dataset/entries/record";
 
-  import type { Hash } from "@/utils/types";
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
-  import { toast } from "svelte-sonner";
 
   // Props
   interface Props extends FormModalBaseProps {}
@@ -16,6 +16,7 @@
 
   // Variables
   let submitting: boolean = $state(false);
+  let selectedMedia: File | null = $state(null);
   let entry: EntryRecord = $derived(
     new EntryRecord({
       type: EntryRecord.type,
@@ -31,7 +32,9 @@
     });
   }
 
-  function setValue(value: Hash): void {}
+  function handleFilesSelected(selectedFile: File): void {
+    selectedMedia = selectedFile;
+  }
 
   async function importMedia(): Promise<void> {
     toast.success("Tasks successfully uploaded!");
@@ -51,7 +54,21 @@
   }
 </script>
 
-<FormModal {action} {title} loading={submitting} onCancel={resetForm} onConfirm={submit} bind:open>
+<FormModal
+  {action}
+  {title}
+  description="Import media from your computer"
+  loading={submitting}
+  onCancel={resetForm}
+  onConfirm={submit}
+  bind:open
+>
+  <FileUpload
+    class="py-12"
+    acceptedFileTypes={[".mp4", ".mkv", ".3gp", ".avi", ".m4v", ".mov", ".webm"]}
+    onFileSelected={handleFilesSelected}
+  ></FileUpload>
+
   {#snippet confirm()}
     <Button onclick={submit}>Upload</Button>
   {/snippet}
