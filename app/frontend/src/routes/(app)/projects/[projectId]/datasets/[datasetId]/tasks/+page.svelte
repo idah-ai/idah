@@ -95,6 +95,10 @@
   });
 
   // Functions
+  function openNewTaskFormModal(): void {
+    openNewTaskModal = true;
+  }
+
   async function fetchEntries(): Promise<void> {
     response = await entriesBackendDataSource.list(listOptions);
   }
@@ -251,9 +255,9 @@
           {/if}
         </div>
 
-        <Button onclick={() => (openNewTaskModal = true)}>
+        <Button onclick={openNewTaskFormModal}>
           <PlusIcon class="size-4" />
-          New Task
+          Add Task
         </Button>
       </div>
 
@@ -317,7 +321,14 @@
               icon={LayoutListIcon}
               title={isFiltering ? "No tasks found" : "No tasks yet"}
               description={isFiltering ? "Try adjusting your filters." : "Please add task to get started."}
-            ></ResponseBlock>
+            >
+              {#snippet actions()}
+                <Button onclick={openNewTaskFormModal}>
+                  <PlusIcon class="size-4" />
+                  Add Task
+                </Button>
+              {/snippet}
+            </ResponseBlock>
           </CardContent>
         </Card>
       {/each}
