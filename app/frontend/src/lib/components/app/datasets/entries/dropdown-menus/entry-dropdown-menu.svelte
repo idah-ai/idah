@@ -9,12 +9,12 @@
     DropdownMenuItem,
     DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu";
+  import UpdateEntryPriorityFormModal from "@/components/app/datasets/entries/overlays/update-entry-priority-form-modal.svelte";
 
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
+  import { getEntryDropdownMenuActions } from "@/components/app/datasets/entries/dropdown-menus/entry-dropdown-menu";
   import { refetches } from "@/utils/refetch";
-  import { EllipsisVerticalIcon, Trash2Icon, UserRoundPlusIcon } from "@lucide/svelte";
-
-  import type { DropdownMenuItemBaseProps } from "@/components/app/dropdown-menu/dropdown-menu.types";
+  import { EllipsisVerticalIcon } from "@lucide/svelte";
 
   // Props
   interface Props {
@@ -26,32 +26,30 @@
   let entryRecord: EntryRecord | undefined = $state(undefined);
 
   // Variables
-  const menus: DropdownMenuItemBaseProps[] = [
-    {
-      label: "Assign to",
-      icon: UserRoundPlusIcon,
-      action: async () => {
-        const entryRes = await entriesBackendDataSource.get(entry.id, {
-          noCache: true,
-        });
-
-        entryRecord = entryRes.data;
-        openAssignEntryFormModal = true;
-      },
+  const menus = getEntryDropdownMenuActions({
+    onAssign: openAssignEntryModal,
+    onSetPriority: () => {
+      openSetPriorityModal = true;
     },
-    {
-      label: "Delete",
-      icon: Trash2Icon,
-      action: () => {
-        openConfirmDeleteTaskModal = true;
-      },
+    onDelete: () => {
+      openConfirmDeleteTaskModal = true;
     },
-  ];
+  });
 
   let openAssignEntryFormModal: boolean = $state(false);
+  let openSetPriorityModal: boolean = $state(false);
   let openConfirmDeleteTaskModal: boolean = $state(false);
 
   // Functions
+  async function openAssignEntryModal() {
+    const entryRes = await entriesBackendDataSource.get(entry.id, {
+      noCache: true,
+    });
+
+    entryRecord = entryRes.data;
+    openAssignEntryFormModal = true;
+  }
+
   async function deleteTask() {
     await entriesBackendDataSource.delete(entry.id);
     $refetches.entries.list++;
@@ -80,8 +78,14 @@
   </DropdownMenuContent>
 </DropdownMenu>
 
+<!-- MODAL::ASSIGN ANNOTATOR  -->
 <AssignEntryFormModal action="update" entryIds={[entry.id]} bind:open={openAssignEntryFormModal}></AssignEntryFormModal>
 
+<!-- MODAL::SET PRIORITY -->
+<UpdateEntryPriorityFormModal action="update" entryIds={[entry.id]} bind:open={openSetPriorityModal}
+></UpdateEntryPriorityFormModal>
+
+<!-- MODAL::CONFIRM DELETE -->
 <ConfirmModal
   title="Delete task"
   description="Are you sure you want to delete this task?"

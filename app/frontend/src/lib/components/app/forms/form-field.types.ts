@@ -1,5 +1,5 @@
 import type { Snippet } from "svelte";
-import type { LabelValue } from "@/components/app/component.types";
+import type { LabelValue } from "@/utils/types";
 
 export interface FormFieldBaseProps {
   name: string;
@@ -21,7 +21,7 @@ export interface FormFieldBaseProps {
 }
 
 export interface SelectFieldBaseProps extends FormFieldBaseProps {
-  choices: LabelValue<string>[];
+  choices: LabelValue<string | number>[];
   searchable?: boolean;
   searchPlaceholder?: string;
   clearable?: boolean;

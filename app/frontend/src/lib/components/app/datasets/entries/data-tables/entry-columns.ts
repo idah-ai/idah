@@ -63,18 +63,4 @@ export const entryColumns: ColumnsSettings<EntryRecord> = {
     visible: true,
     hidable: false,
   },
-  label: {
-    label: "Label",
-    dataType: "string",
-    clickable: false,
-    sortable: true,
-    filterable: true,
-    filterOptions: {
-      filterKey: "label",
-      filterBy: "string",
-      filterOperation: "match",
-    },
-    visible: true,
-    hidable: false,
-  },
 };
