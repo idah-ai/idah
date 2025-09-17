@@ -33,6 +33,12 @@ module Medias
 
   class Repository < Verse::Sequel::Repository
     self.table = "medias"
-    self.resource = Resource::Media::Medias
+    self.resource = "media:medias"
+
+    # event(name: "created")
+    # def create(attributes)
+    #   # Ensure id is set
+    #   super(attributes)
+    # end
   end
 end
