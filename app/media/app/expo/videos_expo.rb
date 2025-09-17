@@ -25,4 +25,27 @@ class VideosExpo < BaseExpo
       params[:data]
     )
   end
+
+  expose on_resource_event("media:medias", "created") do
+    # Handle the event when a media resource is created
+    desc "When a new media is created, start a video processing job if applicable."
+  end
+  def on_media_created
+    media_content = message.content
+    # binding.pry
+    puts "Media created event received: #{media_content.inspect}"
+    media = media_content.dig(:args, 0)
+    # Only process video files
+    return unless media.mime_type.start_with?("video/")
+    puts "New video media created: #{media.inspect}"
+    # Start a video processing job
+    service.process(
+      resource: media.id,
+      key: media.key,
+      mime_type: media.mime_type,
+      size: media.size,
+      url: media.url,
+      # Add any other necessary parameters here
+    )
+  end
 end

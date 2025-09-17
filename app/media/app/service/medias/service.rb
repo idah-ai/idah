@@ -3,6 +3,7 @@
 module Medias
   class Service < Verse::Service::Base
     use medias: Medias::Repository
+    use_system video_service: Video::Service
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       medias.index(
@@ -35,7 +36,7 @@ module Medias
       Verse::Plugin[:shrine].with_storage do |storage|
         # Verify that the resource/key combination is not already used:
         existing = medias.find_by({ resource:, key: })
-
+        binding.pry
         if existing
           raise Verse::Error::ValidationFailed,
                 "Resource #{resource} with key #{key} already exists"
@@ -62,6 +63,10 @@ module Medias
             created_role: metadata[:role]&.to_s
           }
         )
+        binding.pry
+        # video_service.process({
+        #   resource:,
+        # }) if output.mime_type.start_with?("video/")
 
         medias.find!(id)
       end
