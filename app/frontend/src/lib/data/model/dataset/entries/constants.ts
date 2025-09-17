@@ -17,9 +17,19 @@ export interface EntryStatusBadgeProps extends LabelValue<string, EntryRecord> {
 }
 
 export const entryStatuses: EntryStatusBadgeProps[] = [
-  { label: "Pending", value: "pending", variant: "outline" },
+  { label: "Processing", value: "processing", variant: "secondary" },
+  { label: "Pending", value: "pending", variant: "secondary" },
   { label: "Ready", value: "ready", variant: "default" },
+  { label: "Assigned", value: "assigned", variant: "outline" },
+  { label: "In Progress", value: "in_progress", variant: "outline" },
+  { label: "Completed", value: "completed", variant: "outline" },
+  { label: "Errored", value: "errored", variant: "destructive" },
 ];
 
 interface EntryWorkflowStep extends LabelValue<string, EntryRecord> {}
-export const entryWorkflowSteps: EntryWorkflowStep[] = [{ label: "Start", value: "start" }];
+export const entryWorkflowSteps: EntryWorkflowStep[] = [
+  { label: "Start", value: "start" },
+  { label: "Annotate", value: "annotate" },
+  { label: "Review", value: "review" },
+  { label: "Export", value: "export" },
+];

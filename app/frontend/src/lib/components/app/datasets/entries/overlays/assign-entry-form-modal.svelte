@@ -44,7 +44,7 @@
 <FormModal
   {action}
   {title}
-  description="Assign selected member to {selectedEntryCount > 1 ? `${selectedEntryCount} task` : 'task'}"
+  description="Assign selected member to {selectedEntryCount > 1 ? `${selectedEntryCount} tasks` : 'task'}"
   loading={submitting}
   onCancel={resetForm}
   onConfirm={submit}

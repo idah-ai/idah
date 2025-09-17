@@ -20,28 +20,26 @@
   import PageHeader from "@/components/app/page/page-header.svelte";
   import ResponseBlock from "@/components/app/blocks/response-block.svelte";
   import Spinner from "@/components/app/loading/spinner.svelte";
+  import UpdateEntryPriorityFormModal from "@/components/app/datasets/entries/overlays/update-entry-priority-form-modal.svelte";
 
   import {
     ArrowDownAZIcon,
     ArrowDownZAIcon,
     ArrowUpDownIcon,
     ChevronsUpDownIcon,
-    FlagIcon,
     FunnelIcon,
     LayoutListIcon,
     PlusIcon,
-    Trash2Icon,
-    UserRoundPlusIcon,
   } from "@lucide/svelte";
 
   import { cn } from "@/utils";
   import { entryColumns } from "@/components/app/datasets/entries/data-tables/entry-columns";
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
+  import { getEntryDropdownMenuActions } from "@/components/app/datasets/entries/dropdown-menus/entry-dropdown-menu";
   import { refetches } from "@/utils/refetch";
   import { Record } from "@/data/model/Record";
 
   import type { CollectionResponse } from "@/data/model/types";
-  import type { DropdownMenuItemBaseProps } from "@/components/app/dropdown-menu/dropdown-menu.types";
   import type { ListOptions } from "@/data/DataSource";
   import type {
     ColumnSettings,
@@ -84,30 +82,17 @@
   let isFilteringOrSorting: boolean = $derived(isFiltering || isSorting);
   let isRowSelected: boolean = $derived(selectedRowsCount > 0);
 
-  const bulkActions: DropdownMenuItemBaseProps[] = [
-    {
-      label: "Assign Annotator",
-      icon: UserRoundPlusIcon,
-      action: () => {
-        openAssignEntryFormModal = true;
-      },
+  const bulkActions = getEntryDropdownMenuActions({
+    onAssign: () => {
+      openAssignEntryFormModal = true;
     },
-
-    {
-      label: "Set Priority",
-      icon: FlagIcon,
-      action: () => {
-        openSetPriorityModal = true;
-      },
+    onSetPriority: () => {
+      openSetPriorityModal = true;
     },
-    {
-      label: "Delete",
-      icon: Trash2Icon,
-      action: () => {
-        openConfirmDeleteTasksModal = true;
-      },
+    onDelete: () => {
+      openConfirmDeleteTasksModal = true;
     },
-  ];
+  });
 
   // Functions
   async function fetchEntries(): Promise<void> {
@@ -273,7 +258,7 @@
       </div>
 
       {#if showFilterAndSortingSection}
-        <div class="grid w-full grid-cols-1 gap-4 md:grid-cols-5">
+        <div class="grid w-full grid-cols-1 gap-4 md:grid-cols-4">
           {#each Object.entries(entryColumns) as [columnKey, columnSetting] (columnKey)}
             <FilterSortDropdownMenu
               {columnKey}
@@ -318,34 +303,36 @@
 </PageHeader>
 
 <!-- LIST OF TASKS (ENTRY) -->
-{#await fetchEntries()}
-  <Spinner></Spinner>
-{:then _}
-  <div class="grid grid-cols-1 gap-4">
-    {#each response.data as entry (entry.id)}
-      <EntryCard {entry} {selectedRows} onRowSelect={selectRow}></EntryCard>
-    {:else}
-      <Card>
-        <CardContent class="min-h-64 flex items-center justify-center">
-          <ResponseBlock
-            icon={LayoutListIcon}
-            title={isFiltering ? "No tasks found" : "No tasks yet"}
-            description={isFiltering ? "Try adjusting your filters." : "Please add task to get started."}
-          ></ResponseBlock>
-        </CardContent>
-      </Card>
-    {/each}
-  </div>
+{#key $refetches.entries.list}
+  {#await fetchEntries()}
+    <Spinner></Spinner>
+  {:then _}
+    <div class="grid grid-cols-1 gap-4">
+      {#each response.data as entry (entry.id)}
+        <EntryCard {entry} {selectedRows} onRowSelect={selectRow}></EntryCard>
+      {:else}
+        <Card>
+          <CardContent class="min-h-64 flex items-center justify-center">
+            <ResponseBlock
+              icon={LayoutListIcon}
+              title={isFiltering ? "No tasks found" : "No tasks yet"}
+              description={isFiltering ? "Try adjusting your filters." : "Please add task to get started."}
+            ></ResponseBlock>
+          </CardContent>
+        </Card>
+      {/each}
+    </div>
 
-  <AppPaginator
-    page={listOptions.pagination?.page || currentPage}
-    itemsPerPage={listOptions.pagination?.itemsPerPage || itemsPerPage}
-    count={response.meta?.count || 1000}
-    hasMore={response.meta?.more || false}
-    onPageChange={changePage}
-    onItemsPerPageSelect={setItemsPerPage}
-  ></AppPaginator>
-{/await}
+    <AppPaginator
+      page={listOptions.pagination?.page || currentPage}
+      itemsPerPage={listOptions.pagination?.itemsPerPage || itemsPerPage}
+      count={response.meta?.count || 1000}
+      hasMore={response.meta?.more || false}
+      onPageChange={changePage}
+      onItemsPerPageSelect={setItemsPerPage}
+    ></AppPaginator>
+  {/await}
+{/key}
 
 <!-- MODAL::ADD TASK -->
 <CreateEntryFormModal action="create" title="Task" bind:open={openNewTaskModal}></CreateEntryFormModal>
@@ -355,6 +342,8 @@
 ></AssignEntryFormModal>
 
 <!-- MODAL::SET PRIORITY -->
+<UpdateEntryPriorityFormModal action="update" entryIds={selectedRows} bind:open={openSetPriorityModal}
+></UpdateEntryPriorityFormModal>
 
 <!-- MODAL::CONFIRM DELETE -->
 <ConfirmModal
