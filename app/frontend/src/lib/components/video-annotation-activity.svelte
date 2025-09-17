@@ -30,7 +30,7 @@
 
   import type { AnnotationValue } from "@/context/AnnotationContext";
   import type { Command } from "@/command/Command";
-  import { entriesBackendDataSource } from "@/data/model/dataset/entryRecord";
+  import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
   import { sleep } from "@/utils/delayed";
   import { projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
