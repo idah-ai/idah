@@ -40,11 +40,10 @@ class VideosExpo < BaseExpo
     puts "New video media created: #{media.inspect}"
     # Start a video processing job
     service.process(
-      resource: media.id,
+      resource: media.resource,
       key: media.key,
       mime_type: media.mime_type,
       size: media.size,
-      url: media.url,
       # Add any other necessary parameters here
     )
   end
