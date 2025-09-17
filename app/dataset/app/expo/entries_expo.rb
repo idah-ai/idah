@@ -7,7 +7,12 @@ class EntriesExpo < BaseExpo
 
   json_api Entry::Record, http_opts: { auth: nil } do
     show
-    index
+    index do
+      allowed_filters :status__in,
+                      :priority__in,
+                      :assigned_to_id,
+                      :wf_step__in
+    end
     create do
       authorized_relationships dataset: [:link]
     end
