@@ -1,7 +1,10 @@
 <script lang="ts">
+  import Badge from "@/components/ui/badge/badge.svelte";
+  import Button from "@/components/ui/button/button.svelte";
   import FileUpload from "@/components/app/forms/fields/upload/file-upload.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
-  import Button from "@/components/ui/button/button.svelte";
+  import Spinner from "@/components/app/loading/spinner.svelte";
+  import Text from "@/components/ui/text/Text.svelte";
 
   import { mediaBackendDataSource } from "@/data/model/media/medias/medias-record";
   import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
@@ -19,15 +22,22 @@
   let { action, title, open = $bindable() }: Props = $props();
 
   // Variables
-  let submitting: boolean = $state(false);
-  let selectedMedia: File | null = $state(null);
+  let datasetId = page.params.datasetId as string;
+  let uploading: boolean = $state(false);
+  let selectedMedias: FileList | null = $state(null);
   let entry: EntryRecord = $derived(
     new EntryRecord({
       type: EntryRecord.type,
       attributes: {},
     }),
   );
-  let datasetId = page.params.datasetId as string;
+
+  interface UploadStatuses {
+    uuid: string;
+    media: File;
+    status: "uploading" | "success" | "error";
+  }
+  let uploadStatuses: Array<UploadStatuses> = $state([]);
 
   // Functions
   function resetForm(): void {
@@ -37,47 +47,55 @@
     });
   }
 
-  function handleFilesSelected(selectedFile: File): void {
-    selectedMedia = selectedFile;
-    console.log("Selected file:", selectedMedia);
-
-  }
-
-  function generateRandomUUID(length: number = 16): string {
-    let result = '';
-    for (let i = 0; i < length; i++) {
-      result += Math.floor(Math.random() * 36).toString(36);
-    }
-    return result;
+  function handleFilesSelected(selectedFiles: FileList): void {
+    selectedMedias = selectedFiles;
   }
 
   function getFileExtension(filename: string): string {
-    const lastDotIndex = filename.lastIndexOf('.');
-    return lastDotIndex !== -1 ? filename.substring(lastDotIndex) : '';
+    const lastDotIndex = filename.lastIndexOf(".");
+    return lastDotIndex !== -1 ? filename.substring(lastDotIndex) : "";
   }
 
-  async function importMedia(): Promise<void> {
-    // Generate random UUID with file extension
-    const randomUUID = generateRandomUUID(16);
-    const fileExtension = getFileExtension(selectedMedia.name);
-    const resourceKey = `${randomUUID}${fileExtension}`;
+  async function uploadMedia(): Promise<void> {
+    if (!selectedMedias || selectedMedias.length === 0) {
+      toast.error("No media selected for upload.");
+      return;
+    }
 
-    const mediaRes = await mediaBackendDataSource.upload(selectedMedia, resourceKey);
+    /** Generate an upload statuses */
+    uploadStatuses = Array.from(selectedMedias).map((media) => ({
+      uuid: crypto.randomUUID().replace(/-/g, "").substring(0, 16),
+      media: media,
+      status: "uploading" as const,
+    }));
 
-    const createdEntryRes = await entriesBackendDataSource.create({
-      attributes: {
-        resource: mediaRes.data.resource,
-        status: "pending",
-      },
-      relationships: {
-        dataset: {
-          data: {
-            type: "datasets:datasets",
-            id: datasetId,
+    for (const media of uploadStatuses) {
+      try {
+        const fileExtension = getFileExtension(media.media.name);
+        const resourceKey = `${media.uuid}${fileExtension}`;
+
+        const createdMedia = await mediaBackendDataSource.upload(media.media, resourceKey);
+
+        const createdEntryRes = await entriesBackendDataSource.create({
+          attributes: {
+            resource: createdMedia.data.resource,
+            status: "pending",
           },
-        },
-      },
-    });
+          relationships: {
+            dataset: {
+              data: {
+                type: "datasets:datasets",
+                id: datasetId,
+              },
+            },
+          },
+        });
+
+        media.status = "success";
+      } catch (error) {
+        media.status = "error";
+      }
+    }
 
     toast.success("Tasks successfully uploaded!");
     $refetches.entries.list++;
@@ -85,13 +103,13 @@
   }
 
   async function submit(): Promise<void> {
-    submitting = true;
+    uploading = true;
 
     try {
-      await importMedia();
+      await uploadMedia();
     } catch (error) {
     } finally {
-      submitting = false;
+      uploading = false;
     }
   }
 </script>
@@ -100,16 +118,36 @@
   {action}
   {title}
   description="Import media from your computer"
-  loading={submitting}
+  loading={uploading}
   onCancel={resetForm}
   onConfirm={submit}
   bind:open
 >
-  <FileUpload
-    class="py-12"
-    acceptedFileTypes={[".mp4", ".mkv", ".3gp", ".avi", ".m4v", ".mov", ".webm"]}
-    onFileSelected={handleFilesSelected}
-  ></FileUpload>
+  {#if uploading}
+    <div class="flex w-full flex-col gap-4">
+      {#each uploadStatuses as { uuid, media, status } (uuid)}
+        <div class="flex w-full gap-4">
+          <Text size="sm">{media.name}</Text>
+
+          <div class="ml-auto">
+            {#if status === "uploading"}
+              <Spinner></Spinner>
+            {:else if status === "success"}
+              <Badge class="rounded-lg">Uploaded</Badge>
+            {:else if status === "error"}
+              <Badge variant="destructive" class="rounded-lg">Error</Badge>
+            {/if}
+          </div>
+        </div>
+      {/each}
+    </div>
+  {:else}
+    <FileUpload
+      class="py-12"
+      acceptedFileTypes={[".mp4", ".mkv", ".3gp", ".avi", ".m4v", ".mov", ".webm"]}
+      onFilesSelected={handleFilesSelected}
+    ></FileUpload>
+  {/if}
 
   {#snippet confirm()}
     <Button onclick={submit}>Upload</Button>
