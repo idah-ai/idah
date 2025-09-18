@@ -34,7 +34,6 @@
       icon: SquarePenIcon,
       action: async () => {
         const datasetRes = await fetchDataset();
-        console.log(datasetRes);
 
         datasetRecord = datasetRes.data;
         openEditDatasetFormModal = true;

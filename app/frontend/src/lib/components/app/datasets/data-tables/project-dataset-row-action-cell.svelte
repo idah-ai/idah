@@ -7,7 +7,6 @@
     record: DatasetRecord;
   }
   let { record: dataset }: Props = $props();
-  console.log(dataset);
 </script>
 
 <ProjectDatasetDropdownMenu datasetId={dataset.id} projectId={dataset._jsonapiData?.relationships?.project.data.id} />
