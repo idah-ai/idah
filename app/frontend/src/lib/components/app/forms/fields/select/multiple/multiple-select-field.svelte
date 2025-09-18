@@ -44,13 +44,13 @@
 
   // Functions
   async function select(choice: LabelValue<string | number>): Promise<void> {
-    // values = choice.value;
     if (values.includes(choice.value)) {
       values = values.filter((value) => value !== choice.value);
     } else {
       values = [...values, choice.value];
     }
     open = false;
+    await onValueChange?.(choice.value);
   }
 
   function clearValue(event: MouseEvent): void {
