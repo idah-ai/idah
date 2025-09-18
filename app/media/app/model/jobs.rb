@@ -25,7 +25,7 @@ module Jobs
 
   class Repository < Verse::Sequel::Repository
     self.table = "jobs"
-    self.resource = "media:jobs"
+    self.resource = Resource::Media::Jobs
 
     encoder :arguments, Verse::Sequel::JsonEncoder
 
