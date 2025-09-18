@@ -1,0 +1,44 @@
+{
+  "dataset": {
+    "id": "1",
+    "name": "dataset 01",
+    "topology": "video",
+    "metadata": "this should be some kind of a metadata",
+    "entries": [
+      {
+        "id": null,
+        "media_url": null,
+        "annotations": [
+          {
+            "id": null,
+            "type": "bounding_box",
+            "dimensions": null,
+            "category": "category"
+          },
+          {
+            "id": null,
+            "type": "bounding_box",
+            "dimensions": null,
+            "category": "category"
+          }
+        ]
+      },
+      {
+        "id": null,
+        "media_url": null,
+        "annotations": [
+          {
+            "id": null,
+            "type": "bounding_box",
+            "dimensions": null,
+            "category": "category"
+          }
+        ]
+      }
+    ]
+  },
+  "metadata": {
+    "type": "datset",
+    "version": "1.0"
+  }
+}
