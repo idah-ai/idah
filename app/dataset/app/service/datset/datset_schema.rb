@@ -11,8 +11,8 @@ module Dataset
   DatasetSchema = Verse.define do
     field(:id, String) # PK, CHECK(length(id) <= 64)
     field(:name, String)
-    field(:topology, String)
-    field?(:metadata, String)
+    field(:topology, String) # Data topology, ex: imageset, video, etc.
+    field?(:metadata, String) # Such as allowed annotation types, domain specific data
     field?(:entries, Array, of: EntrySchema)
   end
 
@@ -26,15 +26,16 @@ module Dataset
 
   EntrySchema = Verse.define do
     field(:id, String) # PK, CHECK(length(id) <= 64)
-    field(:media_url, String)
+    field(:media_url, String) # resource ?
     field?(:metadata, String)
     field?(:annotations, Array, of: AnnotationSchema)
   end
 
   AnnotationSchema = Verse.define do
     field(:id, String) # PK, CHECK(length(id) <= 64)
-    field(:type, String)
+    field(:type, String) # Type of annotation, e.g., bounding_box, segmentation
     field(:dimensions, String)
+    # field?(:annotation, String) # is this needed ?
     field?(:category, String)
     field?(:metadata, String)
   end
