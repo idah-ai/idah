@@ -65,7 +65,7 @@
       projectBreadcrumb,
       { label: project.name, href: `/projects/${projectId}` },
       { label: "Datasets", href: `/projects/${projectId}/datasets` },
-      { label: dataset.name }
+      { label: dataset.name },
     ];
   }
 
