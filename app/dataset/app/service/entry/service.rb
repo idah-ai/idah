@@ -54,7 +54,7 @@ module Entry
             job = Api[:idah].media.jobs.show(id: job_id)
 
             if job.status == "completed"
-              entries.update!(id, {status: "ready"})
+              entries.update!(id, { status: "ready" })
             end
           end
         else

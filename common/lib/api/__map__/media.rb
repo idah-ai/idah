@@ -6,7 +6,7 @@ Api[:idah].register(
   output = get(
     "media/jobs/:id",
     options: { auth: nil },
-    params: {id:}
+    params: { id: }
   )
   deserialize output.body
 end
