@@ -18,7 +18,7 @@ namespace :fixture do
     media_uid = 16.times.map{ rand(0..36).to_s(36) }.join + ".mp4"
     media_api_url = [api_url, "media"].join("/")
     video_path = "app/media/spec_data/4k_sample.mp4"
-    binding.pry
+
     upload_response = HTTParty.post(
       "#{media_api_url}/medias/files/#{media_uid}",
       headers: { "Authorization" => "Bearer #{token}" },

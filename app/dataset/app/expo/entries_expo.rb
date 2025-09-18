@@ -30,33 +30,12 @@ class EntriesExpo < BaseExpo
   expose on_resource_event("media:jobs", "created")
   def on_job_created
     job_content = message.content
-    # When a new job is created, we don't need to do anything special.
-    # But we can log it or perform other actions if needed.
-    puts "Job created: #{job_content} with status #{job_content[:status]}"
 
     job_resource = job_content.dig(:args, 0, :arguments, :resource)
     job_id = job_content[:resource_id]
+
     return unless job_id && job_resource
 
-    puts "Creating entry for job #{job_id} and resource #{job_resource}"
-
-    attributes = {
-      resource: job_resource,
-      job_id: job_id,
-    }
-
-    record = Verse::JsonApi::Struct.new(
-      {
-        type: Resource::Dataset::Entries,
-        attributes: attributes,
-        relationships: {
-          dataset: Verse::JsonApi::Struct.new(
-            { type: Resource::Dataset::Datasets, id: UUIDv7.generate }
-          ),
-        },
-      }
-    )
-    # create a new entry for this job
-    service.create(record)
+    service.update_entries_job(job_id, job_resource)
   end
 end

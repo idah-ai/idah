@@ -49,6 +49,7 @@ export function resourcePath(basePath: string, id: string | null, queryPath?: Ha
 export interface BackendDataSource<T extends Record> extends DataSource<T> {
   recordClass: RecordClass<T>;
   basePath: string;
+  upload(file: File, resource: string, key?: string): Promise<RecordResponse<T> | JsonApiErrorResponse>;
 }
 
 export function createBackendDataSource<T extends Record, CustomMethods>(
@@ -60,7 +61,7 @@ export function createBackendDataSource<T extends Record, CustomMethods>(
     recordClass: recordClass,
     basePath: basePath,
 
-    async create(data: DataParams<T>): Promise<RecordResponse | JsonApiErrorResponse> {
+    async create(data: DataParams<T>): Promise<RecordResponse<T> | JsonApiErrorResponse> {
       const out = await fetch(this.basePath, {
         method: "POST",
         body: encodeModel(this.recordClass, data),
@@ -244,6 +245,38 @@ export function createBackendDataSource<T extends Record, CustomMethods>(
       clearCache(cacheIdKey);
 
       return true;
+    },
+
+    async upload(file: File, resource: string, key: string = ""): Promise<RecordResponse<T> | JsonApiErrorResponse> {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const uploadPath = key ? `${this.basePath}/files/${resource}/${key}` : `${this.basePath}/files/${resource}`;
+
+      const out = await fetch(uploadPath, {
+        method: "POST",
+        body: formData,
+      });
+
+      const body = await out.json();
+
+      // Cache Management
+      const cacheIndexKey = resourcePath(this.basePath, null, undefined);
+      clearCache(cacheIndexKey);
+
+      if (body && body.errors) {
+        if (body.errors.length > 0) {
+          body.errors.forEach((err: Hash<string>) => {
+            showErrorToast({ title: err.title, message: err.detail, error: err });
+          });
+        }
+
+        return Promise.reject(parseSingleElementError({ status: out.status, errors: body.errors }));
+      }
+
+      if (body && body.data) return Promise.resolve(parseSingleElementReturn<T>(body));
+
+      throw "No data returned";
     },
   };
 

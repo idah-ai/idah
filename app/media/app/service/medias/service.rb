@@ -36,7 +36,7 @@ module Medias
       Verse::Plugin[:shrine].with_storage do |storage|
         # Verify that the resource/key combination is not already used:
         existing = medias.find_by({ resource:, key: })
-        binding.pry
+
         if existing
           raise Verse::Error::ValidationFailed,
                 "Resource #{resource} with key #{key} already exists"
@@ -63,11 +63,6 @@ module Medias
             created_role: metadata[:role]&.to_s
           }
         )
-        binding.pry
-        # video_service.process({
-        #   resource:,
-        # }) if output.mime_type.start_with?("video/")
-
         medias.find!(id)
       end
     end

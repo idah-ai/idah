@@ -3,6 +3,10 @@
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
   import Button from "@/components/ui/button/button.svelte";
 
+  import { mediaBackendDataSource } from "@/data/model/media/medias/medias-record";
+  import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
+  import { page } from "$app/state";
+
   import { refetches } from "@/utils/refetch";
   import { toast } from "svelte-sonner";
 
@@ -23,6 +27,7 @@
       attributes: {},
     }),
   );
+  let datasetId = page.params.datasetId as string;
 
   // Functions
   function resetForm(): void {
@@ -34,9 +39,46 @@
 
   function handleFilesSelected(selectedFile: File): void {
     selectedMedia = selectedFile;
+    console.log("Selected file:", selectedMedia);
+
+  }
+
+  function generateRandomUUID(length: number = 16): string {
+    let result = '';
+    for (let i = 0; i < length; i++) {
+      result += Math.floor(Math.random() * 36).toString(36);
+    }
+    return result;
+  }
+
+  function getFileExtension(filename: string): string {
+    const lastDotIndex = filename.lastIndexOf('.');
+    return lastDotIndex !== -1 ? filename.substring(lastDotIndex) : '';
   }
 
   async function importMedia(): Promise<void> {
+    // Generate random UUID with file extension
+    const randomUUID = generateRandomUUID(16);
+    const fileExtension = getFileExtension(selectedMedia.name);
+    const resourceKey = `${randomUUID}${fileExtension}`;
+
+    const mediaRes = await mediaBackendDataSource.upload(selectedMedia, resourceKey);
+
+    const createdEntryRes = await entriesBackendDataSource.create({
+      attributes: {
+        resource: mediaRes.data.resource,
+        status: "pending",
+      },
+      relationships: {
+        dataset: {
+          data: {
+            type: "datasets:datasets",
+            id: datasetId,
+          },
+        },
+      },
+    });
+
     toast.success("Tasks successfully uploaded!");
     $refetches.entries.list++;
     open = false;
