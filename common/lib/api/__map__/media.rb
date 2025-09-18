@@ -10,3 +10,14 @@ Api[:idah].register(
   )
   deserialize output.body
 end
+
+Api[:idah].register(
+  :media, :videos, :process,
+) do |attributes:|
+  output = post(
+    "media/videos/process",
+    options: { auth: nil },
+    params: { data: attributes }
+  )
+  deserialize output.body
+end

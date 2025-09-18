@@ -79,15 +79,20 @@ class Api
       response
     end
 
+    def to_query(hash, prefix = nil)
+      hash.flat_map do |k, v|
+        key = prefix ? "#{prefix}[#{k}]" : k.to_s
+        v.is_a?(Hash) ? to_query(v, key) : [[key, v]]
+      end
+    end
+
     def build_uri(path, method, params, _headers)
       base_url = parent.base_url || raise("Base URL not configured")
       uri = URI.join(base_url, path)
 
       # For GET and DELETE, add params as query string
       if [:get, :delete].include?(method) && !params.empty?
-        query_params = params.map do |k, v|
-          "#{CGI.escape(k.to_s)}=#{CGI.escape(v.to_s)}"
-        end.join("&")
+        query_params = URI.encode_www_form(to_query(params))
 
         uri.query = uri.query ? "#{uri.query}&#{query_params}" : query_params
       end
