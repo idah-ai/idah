@@ -8,7 +8,7 @@
 
   // Props
   interface Props extends FileUploadBaseProps {}
-  let { class: className, acceptedFileTypes = null, onFileSelected, slotSelectedFile, slotInfo }: Props = $props();
+  let { class: className, acceptedFileTypes = null, onFilesSelected, slotSelectedFiles, slotInfo }: Props = $props();
 
   // Variables
   let fileInput: HTMLInputElement;
@@ -50,7 +50,7 @@
     selectedFiles = target.files;
 
     if (selectedFiles) {
-      onFileSelected(selectedFiles[0]);
+      onFilesSelected(selectedFiles);
     }
   };
 </script>
@@ -70,6 +70,7 @@
 >
   <input
     bind:this={fileInput}
+    multiple
     type="file"
     class="hidden"
     accept={acceptedFileTypesString}
@@ -77,8 +78,8 @@
     disabled={uploading}
   />
 
-  {#if slotSelectedFile}
-    {@render slotSelectedFile({ selectedFiles })}
+  {#if slotSelectedFiles}
+    {@render slotSelectedFiles({ selectedFiles })}
   {:else}
     <Text class="text-accent-foreground" size="sm" weight="semibold">
       {#if selectedFiles}
