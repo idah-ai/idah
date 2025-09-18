@@ -12,9 +12,9 @@ module ProjectMember
     field :name, type: [String, NilClass]
     field :email, type: String
 
-    field :role, type: String
+    field :role, type: String, readonly: true
 
-    field :invited_by_id, type: Integer    
+    field :invited_by_id, type: Integer, readonly: true
 
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
