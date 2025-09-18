@@ -25,19 +25,28 @@ module Entry
       attr[:id] = record.id || UUIDv7.generate
 
       entries.transaction do
+        entry = entries.find_by({ resource: attr[:resource] })
+
+        if entry
+          raise Verse::Error::ValidationFailed,
+                "Entry with resource #{attr[:resource]} already exists"
+        end
+
         job_id = attr[:job_id]
 
-        attr[:status] = if job_id
-                          "pending"
-                        else
-                          "ready"
-                        end
+        unless attr[:status]
+          attr[:status] = if job_id
+                            "pending"
+                          else
+                            "ready"
+                          end
+        end
 
         if record.dataset
           attr[:dataset_id] = record.dataset.id
         else
           raise Verse::Error::ValidationFailed,
-                "dataset is required to create a dataset"
+                "dataset is required to create an entry"
         end
 
         id = entries.create(attr)
@@ -71,6 +80,22 @@ module Entry
 
     def delete(id)
       entries.delete(id)
+    end
+
+    def update_entries_job(job_id, resource)
+      entries.transaction do
+        entry = entries.find_by({ resource: })
+
+        raise Verse::Error::NotFound, "Entry with resource #{resource} not found" unless entry
+
+        if entry.job_id && entry.job_id != job_id
+          raise Verse::Error::ValidationFailed,
+                "Entry with resource #{resource} already has a different job_id #{entry.job_id}"
+        end
+
+        entries.update!(entry.id, { job_id: })
+        entries.find!(entry.id)
+      end
     end
   end
 end
