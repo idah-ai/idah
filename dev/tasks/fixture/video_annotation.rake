@@ -12,12 +12,13 @@ namespace :fixture do
 
     api_url = "https://idah.localhost:8443/api/v1"
     # Get the token from the iam service
-    token = `docker-compose exec iam bundle exec rake token:generate`.chomp.split(' ').last
+    token = `docker compose exec iam bundle exec rake token:generate`.chomp.split(' ').last
 
     # Upload the video to media service
     media_uid = 16.times.map{ rand(0..36).to_s(36) }.join + ".mp4"
     media_api_url = [api_url, "media"].join("/")
     video_path = "app/media/spec_data/4k_sample.mp4"
+
     upload_response = HTTParty.post(
       "#{media_api_url}/medias/files/#{media_uid}",
       headers: { "Authorization" => "Bearer #{token}" },
@@ -101,6 +102,7 @@ namespace :fixture do
         data: {
           type: "dataset:datasets",
           attributes: {
+            name: "Video Annotation Fixture Dataset",
             modality: "video",
             labels: ["demo", "fixture"],
             workflow_configuration: {

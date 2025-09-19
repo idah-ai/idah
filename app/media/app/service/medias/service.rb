@@ -3,6 +3,7 @@
 module Medias
   class Service < Verse::Service::Base
     use medias: Medias::Repository
+    use_system video_service: Video::Service
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       medias.index(
@@ -62,7 +63,6 @@ module Medias
             created_role: metadata[:role]&.to_s
           }
         )
-
         medias.find!(id)
       end
     end

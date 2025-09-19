@@ -2,10 +2,12 @@
   import { AspectRatio } from "@/components/ui/aspect-ratio";
   import { Card, CardContent } from "@/components/ui/card";
   import Checkbox from "@/components/ui/checkbox/checkbox.svelte";
+  import DataDisplay from "@/components/app/texts/data-display.svelte";
   import DateText from "@/components/app/texts/date-text.svelte";
   import EntryDropdownMenu from "@/components/app/datasets/entries/dropdown-menus/entry-dropdown-menu.svelte";
   import EntryPriority from "@/components/app/datasets/entries/badges/entry-priority.svelte";
   import EntryStatus from "@/components/app/datasets/entries/badges/entry-status.svelte";
+  import ProjectMemberAvatar from "@/components/app/projects/members/avatars/project-member-avatar.svelte";
   import Text from "@/components/ui/text/Text.svelte";
 
   import { EntryRecord } from "@/data/model/dataset/entries/record";
@@ -39,21 +41,19 @@
       <Text size="sm" weight="light">{entry.resource}</Text>
 
       <div class="flex flex-col items-start">
-        <DateText
-          datetime={entry.created_at}
-          datetimeFormat="'Created at:' MMM dd, yyyy"
-          size="sm"
-          weight="light"
-          showTooltip
-        ></DateText>
+        <DataDisplay label="Created at">
+          {#snippet slotValue()}
+            <DateText datetime={entry.created_at} datetimeFormat="MMM dd, yyyy" size="sm" weight="light" showTooltip
+            ></DateText>
+          {/snippet}
+        </DataDisplay>
 
-        <DateText
-          datetime={entry.updated_at}
-          datetimeFormat="'Updated at:' MMM dd, yyyy"
-          size="sm"
-          weight="light"
-          showTooltip
-        ></DateText>
+        <DataDisplay label="Updated at">
+          {#snippet slotValue()}
+            <DateText datetime={entry.updated_at} datetimeFormat="MMM dd, yyyy" size="sm" weight="light" showTooltip
+            ></DateText>
+          {/snippet}
+        </DataDisplay>
       </div>
 
       <!-- PRIORITY AT -->
@@ -62,8 +62,12 @@
 
     <!-- STAGE & ASSIGNED TO -->
     <div class="my-auto flex flex-1 flex-col gap-2">
-      <Text size="sm" weight="light">Stage: {entry.wf_step}</Text>
-      <Text size="sm" weight="light">Assigned to: {entry.assigned_to_id || "-"}</Text>
+      <DataDisplay label="Stage" value={entry.wf_step}></DataDisplay>
+      <DataDisplay label="Assigned to">
+        {#snippet slotValue()}
+          <ProjectMemberAvatar memberId={entry.assigned_to_id}></ProjectMemberAvatar>
+        {/snippet}
+      </DataDisplay>
     </div>
 
     <!-- STATUS & ACTIONS -->

@@ -1,38 +1,39 @@
-FROM ruby:3.4.3-alpine
+FROM ruby:3.4.2-slim
 
-RUN apk add --update --no-cache \
-  build-base \
-  postgresql-dev \
-  tzdata \
-  git \
-  libxml2-dev \
-  libxslt-dev \
-  shared-mime-info \
-  file \
-  && rm -rf /var/cache/apk/*
+ENV DEBIAN_FRONTEND=noninteractive
+ENV BUNDLE_SILENCE_ROOT_WARNING=1
 
+RUN apt-get update && apt-get install -y \
+    # Basic build tools
+    build-essential \
+    pkg-config \
+    # pgSQL client libraries
+    libpq-dev \
+    # Additional useful packages
+    curl \
+    wget \
+    git \
+    # Clean up apt cache to reduce image size
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Build arguments
+ARG BUNDLE_WITHOUT="development test"
 ARG APP_ENVIRONMENT
 
-ENV APP_ENVIRONMENT $APP_ENVIRONMENT
-ENV LOCAL_APP_PATH ./app/v3/VERSE
-ENV LOCAL_COMMON_PATH ./common
+ENV APP_ENVIRONMENT="$APP_ENVIRONMENT"
+ENV PORT=3000
 
-ENV APP_PATH /app/VERSE
-ENV COMMON_PATH /app/common
+RUN mkdir -p /app
 
-ENV PORT 3000
+WORKDIR /app
 
-COPY $LOCAL_COMMON_PATH $COMMON_PATH
-
-RUN mkdir -p $APP_PATH
-WORKDIR $APP_PATH
-
-COPY $LOCAL_APP_PATH/Gemfile $LOCAL_APP_PATH/Gemfile.lock ./
+COPY Gemfile* .
 
 RUN bundle config set force_ruby_platform true
-RUN bundle config set --local without 'development test'
+RUN bundle config set --local without "$BUNDLE_WITHOUT"
 RUN bundle install --jobs 20 --retry 5
 
-COPY $LOCAL_APP_PATH .
+COPY . .
 
 CMD ["bundle", "exec", "puma"]

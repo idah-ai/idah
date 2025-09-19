@@ -6,6 +6,10 @@ interface Refetch {
 }
 
 interface Refetches {
+  /** IAM */
+  accounts: Refetch;
+
+  /** DATASET */
   projects: Refetch;
   projectMembers: Refetch;
   datasets: Refetch;
@@ -13,6 +17,13 @@ interface Refetches {
 }
 
 export const refetches = writable<Refetches>({
+  /** IAM */
+  accounts: {
+    list: 0,
+    get: 0,
+  },
+
+  /** DATASET */
   projects: {
     list: 0,
     get: 0,

@@ -3,7 +3,7 @@
   import DialogTitle from "@/components/ui/dialog/dialog-title.svelte";
   import Form from "@/components/app/forms/form.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
-  import SingleSelectField from "@/components/app/forms/fields/select/single-select-field.svelte";
+  import SingleSelectField from "@/components/app/forms/fields/select/single/single-select-field.svelte";
 
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
   import { entryPriorities } from "@/data/model/dataset/entries/constants";
@@ -14,14 +14,15 @@
 
   // Props
   interface Props extends FormModalBaseProps {
+    entryRecord?: EntryRecord;
     entryIds: string[];
   }
-  let { action, open = $bindable(), title = "Set Priority", entryIds }: Props = $props();
+  let { action, open = $bindable(), title = "Set Priority", entryRecord, entryIds }: Props = $props();
 
   // Variables
   let resource: string = EntryRecord.type;
   let submitting: boolean = $state(false);
-  let selectedPriority: number | null = $state(null);
+  let selectedPriority: number | null = $state(entryRecord?.priority ?? null);
   let selectedEntryCount: number = $derived(entryIds.length);
 
   // Functions

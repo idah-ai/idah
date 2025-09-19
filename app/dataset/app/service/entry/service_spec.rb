@@ -115,13 +115,14 @@ RSpec.describe Entry::Service, database: true do
           }.to_json
 
           stub_request(:get, "https://idah.example.com//api/media/jobs/123").
-         with(
-           headers: {
-          'Accept'=>'*/*',
-          'Accept-Encoding'=>'gzip;q=1.0,deflate;q=0.6,identity;q=0.3',
-          'Host'=>'idah.example.com',
-          'User-Agent'=>'Ruby'
-           }).to_return(status: 200, body:, headers: {})
+            with(
+              headers: {
+                "Accept" => "*/*",
+                "Accept-Encoding" => "gzip;q=1.0,deflate;q=0.6,identity;q=0.3",
+                "Host" => "idah.example.com",
+                "User-Agent" => "Ruby"
+              }
+            ).to_return(status: 200, body:, headers: {})
 
           allow(subject.entries).to receive(:after_commit).and_yield
         end
@@ -218,6 +219,27 @@ RSpec.describe Entry::Service, database: true do
 
       updated_entry = repo.find!(entry.id)
       expect(updated_entry.status).to eq("in_progress")
+    end
+  end
+
+  describe "#assign_member" do
+    it "assigns a member to an entry" do
+      record = deserialize(
+        {
+          data: {
+            type: "entries",
+            id: entry.id,
+            attributes: {
+              assigned_to_id: 2,
+            }
+          }
+        }
+      )
+
+      subject.assign_member(record.id, 2)
+
+      updated_entry = repo.find!(record.id)
+      expect(updated_entry.assigned_to_id).to eq(2)
     end
   end
 

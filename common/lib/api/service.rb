@@ -3,8 +3,8 @@
 class Api
   class Service
     attr_reader :parent,
-      :name,
-      :expositions
+                :name,
+                :expositions
 
     attr_accessor :base_path
 

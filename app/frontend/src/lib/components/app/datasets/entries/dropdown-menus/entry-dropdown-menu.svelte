@@ -79,10 +79,11 @@
 </DropdownMenu>
 
 <!-- MODAL::ASSIGN ANNOTATOR  -->
-<AssignEntryFormModal action="update" entryIds={[entry.id]} bind:open={openAssignEntryFormModal}></AssignEntryFormModal>
+<AssignEntryFormModal action="update" entryRecord={entry} entryIds={[entry.id]} bind:open={openAssignEntryFormModal}
+></AssignEntryFormModal>
 
 <!-- MODAL::SET PRIORITY -->
-<UpdateEntryPriorityFormModal action="update" entryIds={[entry.id]} bind:open={openSetPriorityModal}
+<UpdateEntryPriorityFormModal action="update" entryRecord={entry} entryIds={[entry.id]} bind:open={openSetPriorityModal}
 ></UpdateEntryPriorityFormModal>
 
 <!-- MODAL::CONFIRM DELETE -->
