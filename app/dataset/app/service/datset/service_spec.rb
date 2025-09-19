@@ -26,10 +26,14 @@ RSpec.describe Datset::Service, database: true do
     )
   end
 
+  describe "#import" do
+    it "import and create records from datset structure" do
+      subject.import(file_path: "", project_id: "")
+    end
+  end
+
   describe "#export" do
     it "generate a correct datset structure" do
-      
-
       subject.export(dataset_id)
     end
   end

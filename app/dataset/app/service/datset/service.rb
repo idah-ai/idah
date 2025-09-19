@@ -6,17 +6,64 @@ module Datset
         entry_repo: Entry::Repository,
         annotation_repo: Annotation::Repository
 
+    # TODO: to be tested
     # import a datset file
-    def import()
+    def import(file_path:, project_id:)
       # 1. receive .datset file and project id
       # 2. read file content and validate with DatsetSchema
-      # 3. in transaction, create dataset, entries, annotations
-      # 4. return created dataset
-      pass
+      # TODO: properly read from file store
+      datset_data = JSON.parse(File.read("exported.datset")).transform_keys(&:to_sym)
+      dataset_data = datset_data[:dataset].transform_keys(&:to_sym)
+
+      dataset_repo.transaction do
+        # 3. in transaction, create dataset, entries, annotations
+        # create dataset
+        # dataset = dataset_repo.create(dataset_data)
+        dataset_id = dataset_repo.create({
+          # project_id:,
+          project_id: "019960aa-f756-71e1-8397-899be8413bb5", # mocking param
+          name: dataset_data[:name],
+          modality: dataset_data[:topology],
+          workflow_configuration: {},
+          labeling_configuration: {},
+        })
+
+        # TODO: check how UUIDs are supposed to be
+        # create entries and their annotations
+        dataset_data[:entries].each do |entry_data|
+          entry_data = entry_data.transform_keys(&:to_sym)
+          # create the entry
+          entry_id = entry_repo.create(
+            id: entry_data[:id],
+            dataset_id: dataset_id,
+            resource: entry_data[:media_url]
+            # add other entry fields as needed
+          )
+          
+          # create annotations for this entry
+          entry_data[:annotations].each do |annotation_data|
+            annotation_data = annotation_data.transform_keys(&:to_sym)
+            annotation_repo.create(
+              id: annotation_data[:id],
+              entry_id: entry_id,
+              # type: annotation_data[:type],
+              # dimensions: annotation_data[:dimensions],
+              dimensions: {}, # mocking dimensions
+              # category: annotation_data[:category]
+              # annotation: annotation_data[:annotation],
+              annotation: {}, # mocking annotation
+              # add other annotation fields as needed
+            )
+          end
+        end
+
+        # 4. return created dataset
+        dataset_repo.find!(dataset_id)
+      end
     end
 
     # export into a datset file
-    def export(id)
+    def export(dataset_id)
       # prep data to DatsetSchema
       dataset = dataset_repo.find!("019960ab-1e80-78bf-b4d2-ebc62a6d3805") # testing id
       # mocking dataset
