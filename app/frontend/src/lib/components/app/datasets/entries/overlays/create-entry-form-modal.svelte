@@ -76,7 +76,11 @@
 
         const createdMedia = await mediaBackendDataSource.upload(media.media, resourceKey);
 
-        const createdEntryRes = await entriesBackendDataSource.create({
+        if (!("data" in createdMedia)) {
+          throw new Error("Media upload failed");
+        }
+
+        await entriesBackendDataSource.create({
           attributes: {
             resource: createdMedia.data.resource,
             status: "pending",
