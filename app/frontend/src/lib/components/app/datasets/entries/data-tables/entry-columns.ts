@@ -1,3 +1,5 @@
+import FilterByProjectMember from "@/components/app/data-table/filters/filter-by-project-member.svelte";
+
 import { entryPriorities, entryStatuses, entryWorkflowSteps } from "@/data/model/dataset/entries/constants";
 
 import type { ColumnsSettings } from "@/components/app/data-table/data-table.types";
@@ -43,10 +45,11 @@ export const entryColumns: ColumnsSettings<EntryRecord> = {
     filterOptions: {
       filterKey: "assigned_to_id",
       filterBy: "datasource",
-      filterOperation: "in",
+      filterOperation: "eq",
     },
     visible: true,
     hidable: false,
+    filterComponent: FilterByProjectMember,
   },
   wf_step: {
     label: "Stage",

@@ -8,18 +8,19 @@
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
   import { cn } from "@/utils";
-  import { CheckIcon, ChevronsUpDownIcon, CircleXIcon } from "@lucide/svelte";
+  import { CheckIcon, ChevronsUpDownIcon, CircleXIcon, RotateCcwIcon } from "@lucide/svelte";
 
   import type { SelectFieldBaseProps } from "@/components/app/forms/form-field.types";
   import type { LabelValue } from "@/components/app/component.types";
+  import Badge from "@/components/ui/badge/badge.svelte";
 
   // Props
   interface Props extends SelectFieldBaseProps {
-    value: string | number | null;
+    values: Array<string | number | null>;
   }
   let {
     choices,
-    value = $bindable(null),
+    values = $bindable([]),
     name,
     label,
     placeholder = "Select an option",
@@ -39,18 +40,22 @@
 
   // Variables
   let open: boolean = $state(false);
-  let selectedValue = $derived(choices.find((choice) => choice.value == value));
+  let selectedValues = $derived(choices.filter((choice) => values.includes(choice.value)));
 
   // Functions
-  async function select(choice: LabelValue<string>): Promise<void> {
-    value = choice.value;
+  async function select(choice: LabelValue<string | number>): Promise<void> {
+    if (values.includes(choice.value)) {
+      values = values.filter((value) => value !== choice.value);
+    } else {
+      values = [...values, choice.value];
+    }
     open = false;
-    await onValueChange?.(value);
+    await onValueChange?.(choice.value);
   }
 
   function clearValue(event: MouseEvent): void {
     event.stopPropagation();
-    value = null;
+    values = [];
   }
 </script>
 
@@ -65,8 +70,10 @@
     <PopoverTrigger>
       {#snippet child({ props })}
         <Button variant="outline" class="justify-between" role="combobox" aria-expanded={open} {...props}>
-          {#if selectedValue}
-            {selectedValue.label}
+          {#if selectedValues.length > 0}
+            {#each selectedValues as selected}
+              <Badge>{selected.label}</Badge>
+            {/each}
           {:else}
             <span class="text-muted-foreground">{placeholder}</span>
           {/if}
@@ -74,7 +81,7 @@
           <div class={cn("ml-auto inline-flex items-center gap-2")}>
             <button
               type="button"
-              class={cn("cursor-pointer", clearable && selectedValue ? "opacity-50" : "opacity-0")}
+              class={cn("cursor-pointer", clearable && selectedValues ? "opacity-50" : "opacity-0")}
               onclick={clearValue}
             >
               <CircleXIcon class="size-4 shrink-0" />
@@ -96,10 +103,10 @@
           <CommandEmpty>No option found.</CommandEmpty>
           <CommandGroup>
             {#each choices as choice (choice.value)}
-              <CommandItem value={choice.value} onSelect={() => select(choice)}>
+              <CommandItem value={String(choice.value)} onSelect={() => select(choice)}>
                 <CheckIcon
                   class={cn("mr-2 size-4", {
-                    "opacity-0": choice.value !== value,
+                    "opacity-0": !values.includes(choice.value),
                   })}
                 />
                 {choice.label}

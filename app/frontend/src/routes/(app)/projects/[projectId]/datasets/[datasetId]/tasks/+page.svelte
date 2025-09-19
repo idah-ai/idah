@@ -73,6 +73,7 @@
     filters: {
       dataset_id: datasetId,
     },
+    sort: ["-created_at"],
     count: true,
   });
   let isFiltering: boolean = $derived(

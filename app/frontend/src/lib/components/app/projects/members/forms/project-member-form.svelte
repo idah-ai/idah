@@ -2,9 +2,10 @@
   import Button from "@/components/ui/button/button.svelte";
   import Form from "@/components/app/forms/form.svelte";
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
-  import SingleSelectField from "@/components/app/forms/fields/select/single-select-field.svelte";
+  import SingleSelectField from "@/components/app/forms/fields/select/single/single-select-field.svelte";
 
   import { PlusIcon, Trash2Icon } from "@lucide/svelte";
+  import { ProjectMemberRecord, projectMemberRoles } from "@/data/model/dataset/projects/members/record";
 
   // Props
   interface Props {
@@ -13,7 +14,7 @@
   let { members = $bindable() }: Props = $props();
 
   // Variables
-  const resource: string = "Resource::Dataset::Projects";
+  const resource: string = ProjectMemberRecord.type;
 
   // Functions
   function addMember(): void {
@@ -45,12 +46,7 @@
         class="flex-1"
         label="Role"
         placeholder="Select a role"
-        choices={[
-          { label: "Annotator", value: "annotator" },
-          { label: "Reviewer", value: "reviewer" },
-          { label: "Project Manager", value: "project_manager" },
-          { label: "Admin", value: "Admin" },
-        ]}
+        choices={projectMemberRoles}
         required
         searchable
         searchPlaceholder="Search a role"

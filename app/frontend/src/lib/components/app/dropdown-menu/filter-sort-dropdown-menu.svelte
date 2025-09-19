@@ -239,7 +239,7 @@
         <CommandGroup heading="Filter">
           {#if filterComponent}
             {@const FilterComponent = filterComponent}
-            <FilterComponent this={filterComponent}></FilterComponent>
+            <FilterComponent {columnSetting} {onFilter}></FilterComponent>
           {:else if filterOptions?.filterBy === "string"}
             {@const filterKey = `${columnKey}__${filterOptions.filterOperation || "match"}`}
             <div class="pb-2">
