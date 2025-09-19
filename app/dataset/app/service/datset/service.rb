@@ -6,22 +6,29 @@ module Datset
         entry_repo: Entry::Repository,
         annotation_repo: Annotation::Repository
 
-
     # import a datset file
     def import
+      # 1. receive .datset file and project id
+      # 2. read file content and validate with DatsetSchema
+      # 3. in transaction, create dataset, entries, annotations
+      # 4. return created dataset
       pass
     end
 
     # export into a datset file
-    def export
+    def export(id)
       # prep data to DatsetSchema
-      dataset = Dataset::Record.new({
-        id: "1",
+      # dataset = Dataset::Record.new({
+      #   id: "1",
         # name: ,
         # topology: "video",
-      })
+      # })
       # datasets = dataset_repo.index({}) # TOFIX: should accept this as input ? or some id ?
-      
+      # dataset = dataset_repo.find!(id)
+      dataset = dataset_repo.find!("019960ab-1e80-78bf-b4d2-ebc62a6d3805") # testing id
+
+      binding.pry
+
       entry_1 = Entry::Record.new({ id: "e1" })
       entry_2 = Entry::Record.new({ id: "e2" })
       # entries = entry_repo.index({}) # find with some kind of id ?
@@ -39,8 +46,8 @@ module Datset
       formatted_datset = {
         dataset: { # this layer is not needed if we are stricting only 1 dataset ?
           id: dataset.id,
-          name: "dataset 01", # dataset.name is missing from record ?
-          topology: "video", # dataset.topology is missing from record ?
+          name: dataset.name,
+          topology: dataset.modality,
           metadata: "this should be some kind of a metadata",
           entries: []
         },
@@ -65,7 +72,8 @@ module Datset
               id: annotation[:id],
               type: "bounding_box", # annotation.type ?
               dimensions: annotation.dimensions,
-              category: "category", # annotation.category ?
+              category: "category", # Q: annotation.category ?
+              # annotation: "", # Q: is this needed ?
               # metadata:,
             }
           end
