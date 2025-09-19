@@ -11,6 +11,8 @@ class EntriesExpo < BaseExpo
       allowed_filters :status__in,
                       :priority__in,
                       :assigned_to_id,
+                      :assigned_to_id__eq,
+                      :assigned_to_id__in,
                       :wf_step__in
     end
     create do
