@@ -1,0 +1,334 @@
+<script lang="ts" generics="T extends Record">
+  import Button from "@/components/ui/button/button.svelte";
+  import { Command, CommandGroup, CommandItem, CommandSeparator } from "@/components/ui/command";
+  import { Input } from "@/components/ui/input";
+  import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+  import RangeCalendar from "@/components/ui/range-calendar/range-calendar.svelte";
+
+  import { cn } from "@/utils";
+  import { CalendarDate, parseDate } from "@internationalized/date";
+  import { delayedInput } from "@/utils/delayed";
+  import { Record } from "@/data/model/Record";
+  import {
+    ArrowDownAZIcon,
+    ArrowDownZAIcon,
+    ArrowUpDownIcon,
+    CheckIcon,
+    EyeOffIcon,
+    FunnelIcon,
+    FunnelXIcon,
+    SquareCheckBigIcon,
+    SquareIcon,
+    type Icon as IconType,
+  } from "@lucide/svelte";
+
+  import type { DateRange } from "bits-ui";
+  import type { Filters } from "@/data/filtering";
+  import type { Sort } from "@/data/DataSource";
+  import type { Snippet } from "svelte";
+  import type {
+    ColumnSettings,
+    FilterDataSourceParams,
+    SortDataSourceParams,
+  } from "@/components/app/data-table/data-table.types";
+
+  // Props
+  interface Props<T extends Record> {
+    columnKey: string;
+    columnSetting: ColumnSettings<T>;
+
+    // DataSource
+    filters: Filters;
+    sort: Sort;
+
+    // Functions
+    onFilter: (params: FilterDataSourceParams) => Promise<void>;
+    onSort: (params: SortDataSourceParams) => Promise<void>;
+    onHide(columnKey: string): void;
+
+    // Slots
+    trigger?: Snippet<
+      [
+        {
+          label: string;
+          sortable: boolean;
+          filterable: boolean;
+          isSorting: boolean;
+          isSortingAsc: boolean;
+          isSortingDesc: boolean;
+          isFiltering: boolean;
+        },
+      ]
+    >;
+  }
+  let {
+    columnKey,
+    columnSetting,
+
+    // DataSource
+    filters,
+    sort,
+
+    // Functions
+    onFilter,
+    onSort,
+    onHide,
+
+    // Slots
+    trigger,
+  }: Props<T> = $props();
+
+  // Variables
+  let openDropdown: boolean = $state(false);
+
+  let { label, filterable, hidable, sortable, filterComponent, filterOptions } = columnSetting;
+  let filterKey: string = $derived(`${filterOptions?.filterKey || columnKey}`);
+  let filterKeyWithOperation: string = $derived(
+    filterOptions?.filterOperation ? `${filterKey}__${filterOptions.filterOperation}` : filterKey,
+  );
+
+  let isFiltering = $derived(filterKey in filters || filterKeyWithOperation in filters);
+  let isSorting = $derived(sort.some((s) => s.endsWith(columnKey)));
+  let isSortingAsc = $derived(sort.includes(columnKey));
+  let isSortingDesc = $derived(sort.includes(`-${columnKey}`));
+  let isFilteringOrSorting = $derived(isFiltering || isSorting);
+
+  let filteredStartDate: string | undefined = $derived(filters[`${filterOptions?.filterKey || columnKey}__gte`]);
+  let filteredEndDate: string | undefined = $derived(filters[`${filterOptions?.filterKey || columnKey}__lte`]);
+  let filteredStartDateValue: CalendarDate | undefined = $derived(
+    filteredStartDate ? parseDate(filteredStartDate.split(" ")[0]) : undefined,
+  );
+  let filteredEndDateValue: CalendarDate | undefined = $derived(
+    filteredEndDate ? parseDate(filteredEndDate.split(" ")[0]) : undefined,
+  );
+
+  interface SortOptionItem {
+    label: string;
+    value: string;
+    icon: typeof IconType;
+    onSelect: () => Promise<void> | void;
+  }
+  const sortOptionItems: SortOptionItem[] = [
+    {
+      label: "Sort A-Z",
+      value: columnKey,
+      icon: ArrowDownAZIcon,
+      onSelect: async () => onSort({ columnKey: columnKey, sortDirection: "asc" }),
+    },
+    {
+      label: "Sort Z-A",
+      value: `-${columnKey}`,
+      icon: ArrowDownZAIcon,
+      onSelect: async () => onSort({ columnKey: columnKey, sortDirection: "desc" }),
+    },
+    {
+      label: "Clear sorting",
+      value: "none",
+      icon: ArrowUpDownIcon,
+      onSelect: async () => {
+        onSort({ columnKey: columnKey, sortDirection: "none" });
+        closeDropdown();
+      },
+    },
+  ];
+
+  // Functions
+  function closeDropdown(): void {
+    openDropdown = false;
+  }
+
+  function filterByInput(event: Event & { currentTarget: EventTarget & HTMLInputElement }): void {
+    const value = event.currentTarget.value;
+
+    delayedInput(value, 300).then((searchValue) => {
+      onFilter({
+        filters: {
+          [filterKeyWithOperation]: searchValue,
+        },
+      });
+    });
+  }
+
+  function filterByBoolean(value: string | number | boolean): void {
+    onFilter({
+      filters: {
+        [filterKey]: value,
+      },
+    });
+  }
+
+  function filterByMultipleSelect(value: boolean | string): void {
+    const filterKey = `${filterOptions?.filterKey || columnKey}`;
+    const filterKeyWithOperation = `${filterKey}__${filterOptions?.filterOperation || "in"}`;
+    const currentValues: (string | boolean)[] = filters[filterKeyWithOperation] || [];
+    let updatedValues: (string | boolean)[];
+
+    if (currentValues.includes(value)) {
+      updatedValues = currentValues.filter((currentValue) => currentValue !== value);
+    } else {
+      updatedValues = [...currentValues, value];
+    }
+
+    onFilter({ filters: { [filterKeyWithOperation]: updatedValues.length > 0 ? updatedValues : undefined } });
+  }
+
+  function filterByDateRange(dateRange: DateRange): void {
+    if (dateRange.start && dateRange.end) {
+      const formattedStartDate = dateRange.start.toString().concat(" 00:00:00");
+      const formattedEndDate = dateRange.end.toString().concat(" 23:59:59");
+
+      onFilter({
+        filters: {
+          [`${filterKey}__gte`]: formattedStartDate,
+          [`${filterKey}__lte`]: formattedEndDate,
+        },
+      });
+    }
+  }
+
+  function clearFilter(): void {
+    const filterKey = `${filterOptions?.filterKey || columnKey}`;
+    const filterKeyWithOperation = `${filterKey}__${filterOptions?.filterOperation || "in"}`;
+
+    onFilter({
+      filters: {
+        [filterKey]: undefined,
+        [`${filterKey}__gte`]: undefined,
+        [`${filterKey}__lte`]: undefined,
+        [filterKeyWithOperation]: undefined,
+      },
+    });
+  }
+</script>
+
+<Popover bind:open={openDropdown}>
+  <PopoverTrigger>
+    {#if trigger}
+      {@render trigger({ label, sortable, filterable, isSorting, isSortingAsc, isSortingDesc, isFiltering })}
+    {:else}
+      <Button
+        variant={isFilteringOrSorting ? "default" : "ghost"}
+        class={cn(
+          "data-[state=open]:bg-primary data-[state=open]:text-primary-foreground hover:bg-primary hover:text-primary-foreground my-2 gap-2 font-normal",
+          isFilteringOrSorting ? "text-primary-foreground" : "text-primary",
+        )}
+      >
+        {#if isFiltering}
+          <FunnelIcon class="size-4"></FunnelIcon>
+        {/if}
+
+        {label}
+
+        {#if sortable || filterable}
+          {#if isSortingAsc}
+            <ArrowDownAZIcon class="size-4" />
+          {:else if isSortingDesc}
+            <ArrowDownZAIcon class="size-4" />
+          {:else}
+            <ArrowUpDownIcon class="size-4" />
+          {/if}
+        {/if}
+      </Button>
+    {/if}
+  </PopoverTrigger>
+
+  <PopoverContent align="start" class="max-w-60 p-0">
+    <Command>
+      <!-- FILTER -->
+      {#if filterable}
+        <CommandGroup heading="Filter">
+          {#if filterComponent}
+            {@const FilterComponent = filterComponent}
+            <FilterComponent this={filterComponent}></FilterComponent>
+          {:else if filterOptions?.filterBy === "string"}
+            {@const filterKey = `${columnKey}__${filterOptions.filterOperation || "match"}`}
+            <div class="pb-2">
+              <Input placeholder="Search {label.toLowerCase()}" value={filters[filterKey]} oninput={filterByInput} />
+            </div>
+          {:else if filterOptions?.filterBy === "boolean"}
+            {#if filterOptions.choices}
+              {#each filterOptions.choices as choice (choice.value)}
+                <CommandItem onclick={() => filterByBoolean(choice.value)}>
+                  <CheckIcon
+                    class={cn("mr-2 size-4", {
+                      "opacity-0": filters[filterKey] !== choice.value,
+                    })}
+                  ></CheckIcon>
+
+                  {choice.label}
+                </CommandItem>
+              {/each}
+            {:else}
+              Please provide choices for boolean filter
+            {/if}
+          {:else if filterOptions?.filterBy === "number-range"}
+            Render Number Range Input
+          {:else if filterOptions?.filterBy === "single-select"}
+            Render Single Select Input
+          {:else if filterOptions?.filterBy === "multiple-select"}
+            {#if filterOptions.choices}
+              {#each filterOptions.choices as choice (choice.value)}
+                {@const isSelected = filters[filterKeyWithOperation]?.includes(choice.value)}
+
+                <CommandItem
+                  class={cn("", { "bg-primary/10": isSelected })}
+                  onclick={() => filterByMultipleSelect(choice.value as boolean)}
+                >
+                  {#if isSelected}
+                    <SquareCheckBigIcon class="mr-2 size-4" />
+                  {:else}
+                    <SquareIcon class="mr-2 size-4" />
+                  {/if}
+
+                  {choice.label}
+                </CommandItem>
+              {/each}
+            {:else}
+              Please provide choices for multiple select filter
+            {/if}
+          {:else if filterOptions?.filterBy === "date-range"}
+            <div class="flex flex-col items-center">
+              <RangeCalendar
+                value={{
+                  start: filteredStartDateValue,
+                  end: filteredEndDateValue,
+                }}
+                onValueChange={filterByDateRange}
+              ></RangeCalendar>
+            </div>
+          {:else if filterOptions?.filterBy === "datasource"}
+            Render Data Source Input
+          {/if}
+
+          <CommandItem disabled={!isFiltering} onclick={clearFilter}>
+            <FunnelXIcon class="size-4" />
+            Clear filter
+          </CommandItem>
+        </CommandGroup>
+      {/if}
+
+      <!-- SORT -->
+      {#if sortable}
+        <CommandGroup heading="Sort">
+          {#each sortOptionItems as { label, value, icon: Icon, onSelect } (value)}
+            <CommandItem disabled={sort.includes(value)} onclick={onSelect}>
+              <Icon class="size-4" />
+              {label}
+            </CommandItem>
+          {/each}
+        </CommandGroup>
+      {/if}
+
+      <!-- HIDE -->
+      {#if hidable}
+        <CommandSeparator />
+        <CommandGroup heading="Hide">
+          <CommandItem onclick={() => onHide(columnKey)}>
+            <EyeOffIcon class="size-4" />
+            Hide column {label.toLowerCase()}
+          </CommandItem>
+        </CommandGroup>
+      {/if}
+    </Command>
+  </PopoverContent>
+</Popover>

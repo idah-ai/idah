@@ -1,0 +1,15 @@
+<script lang="ts">
+  import Badge from "@/components/ui/badge/badge.svelte";
+
+  import { AccountRecord } from "@/data/model/iam/accounts/record";
+
+  import type { DataTableCellBaseProps } from "@/components/app/data-table/data-table.types";
+
+  // Props
+  interface Props extends DataTableCellBaseProps<AccountRecord> {}
+  let { record: account }: Props = $props();
+</script>
+
+<Badge variant={account.enabled ? "default" : "destructive"}>
+  {account.enabled ? "Enabled" : "Disabled"}
+</Badge>

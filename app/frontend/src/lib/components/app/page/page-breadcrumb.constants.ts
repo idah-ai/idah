@@ -2,4 +2,8 @@ import type { PageBreadcrumbItem } from "@/components/app/page/page-breadcrumb.s
 
 export const homeBreadcrumb: PageBreadcrumbItem = { label: "Home", href: "/" };
 
+/** IAM */
+export const accountBreadcrumb: PageBreadcrumbItem = { label: "Accounts", href: "/accounts" };
+
+/** DATASETS */
 export const projectBreadcrumb: PageBreadcrumbItem = { label: "Projects", href: "/projects" };

@@ -8,7 +8,7 @@
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
   import { cn } from "@/utils";
-  import { CheckIcon, ChevronsUpDownIcon, CircleXIcon, RotateCcwIcon } from "@lucide/svelte";
+  import { CheckIcon, ChevronsUpDownIcon, CircleXIcon } from "@lucide/svelte";
 
   import type { SelectFieldBaseProps } from "@/components/app/forms/form-field.types";
   import type { LabelValue } from "@/components/app/component.types";
