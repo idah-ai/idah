@@ -3,7 +3,6 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
 
-  import PageProvider from "@/components/app/page/page-provider.svelte";
   import PageHeader from "@/components/app/page/page-header.svelte";
   import PageLoading from "@/components/app/page/page-loading.svelte";
   import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -65,7 +64,7 @@
       projectBreadcrumb,
       { label: project.name, href: `/projects/${projectId}` },
       { label: "Datasets", href: `/projects/${projectId}/datasets` },
-      { label: dataset.name }
+      { label: dataset.name },
     ];
   }
 

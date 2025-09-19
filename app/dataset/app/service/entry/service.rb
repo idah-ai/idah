@@ -111,5 +111,12 @@ module Entry
         entries.find!(entry.id)
       end
     end
+
+    def assign_member(id, assigned_to_id)
+      entries.transaction do
+        entries.update!(id, { assigned_to_id: })
+        entries.find!(id)
+      end
+    end
   end
 end
