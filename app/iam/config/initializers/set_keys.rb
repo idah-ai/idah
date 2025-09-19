@@ -4,7 +4,7 @@
 
 # Key can be public or private. If public, the service won't be able to
 # forge new tokens, but will be able to validate them.
-key_path = ENV.fetch("SERVICE_JWT_KEY")
+key_path = ENV.fetch("SERVICE_JWT_PUBLIC_KEY")
 
 # content of the env variable can be a path to a file or the key itself
 # Expected PEM file.

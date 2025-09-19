@@ -12,6 +12,8 @@ Dotenv.load(".env", ".env.#{current_env}")
 require "bundler"
 Bundler.require(:default, current_env)
 
+COMMON_PATH = File.expand_path("../../../common", __dir__)
+
 ENV["APP_PATH"] = File.expand_path("..", __dir__)
 
 require "zeitwerk"
@@ -21,12 +23,11 @@ loader.push_dir(File.join(ENV["APP_PATH"], "app", "expo"))
 loader.push_dir(File.join(ENV["APP_PATH"], "app", "model"))
 loader.push_dir(File.join(ENV["APP_PATH"], "app", "service"))
 loader.push_dir(File.join(ENV["APP_PATH"], "app", "util"))
+loader.push_dir(File.join(ENV["APP_PATH"], "common", "lib"))
 
 loader.inflector.inflect("uuid_v7" => "UUIDv7")
 
 loader.setup
-
-loader.eager_load if ENV["EAGER_LOAD"]
 
 require_relative "./routes"
 
