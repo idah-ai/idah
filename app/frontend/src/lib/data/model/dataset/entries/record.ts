@@ -67,7 +67,7 @@ export const entriesBackendDataSource = createBackendDataSource(EntryRecord, ent
     id: string;
     memberId: number;
   }): Promise<RecordResponse<EntryRecord> | JsonApiErrorResponse> => {
-    const res = await fetch(`${entryBasePath}/${params.id}/${params.memberId}/assign`, {
+    const res = await fetch(`${entryBasePath}/${params.id}/assign`, {
       method: "PATCH",
       body: encodeModel(EntryRecord, { attributes: { assigned_to_id: params.memberId } }),
       headers: { "Content-Type": "application/vnd.api+json" },

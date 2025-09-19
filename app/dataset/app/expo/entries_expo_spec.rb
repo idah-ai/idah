@@ -83,10 +83,11 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
 
   it "assign member" do
     expect(service).to receive(:assign_member) do |args|
+      expect(args.attributes[:assigned_to_id]).to eq 1
       entry_record
     end
 
-    patch "/entries/#{uuid}/1/assign", {
+    patch "/entries/#{uuid}/assign", {
       data: {
         type: Resource::Dataset::Entries,
         id: uuid,

@@ -110,9 +110,9 @@ module Entry
       end
     end
 
-    def assign_member(id, project_member_id)
+    def assign_member(id, assigned_to_id)
       entries.transaction do
-        entries.update!(id, { assigned_to_id: project_member_id })
+        entries.update!(id, { assigned_to_id: })
         entries.find!(id)
       end
     end
