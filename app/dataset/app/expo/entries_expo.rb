@@ -22,16 +22,20 @@ class EntriesExpo < BaseExpo
     delete
   end
 
-  expose on_http(:patch, "/:id/:member_id/assign", auth: nil) do
+  expose on_http(:patch, "/:id/assign", auth: nil) do
     desc "Assign a project member to an entry"
     input do
       field :id, String
-      field :member_id, Integer
+      field :data, Hash do
+        field :attributes, Hash do
+          field :assigned_to_id, Integer
+        end
+      end
     end
   end
   def assign_member
     id = params[:id]
-    member_id = params[:member_id]
+    member_id = params.dig(:data, :attributes, :assigned_to_id)
 
     service.assign_member(id, member_id)
   end
