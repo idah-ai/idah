@@ -14,14 +14,15 @@
 
   // Props
   interface Props extends FormModalBaseProps {
+    entryRecord?: EntryRecord;
     entryIds: string[];
   }
-  let { action, open = $bindable(), title = "Set Priority", entryIds }: Props = $props();
+  let { action, open = $bindable(), title = "Set Priority", entryRecord, entryIds }: Props = $props();
 
   // Variables
   let resource: string = EntryRecord.type;
   let submitting: boolean = $state(false);
-  let selectedPriority: number | null = $state(null);
+  let selectedPriority: number | null = $state(entryRecord?.priority ?? null);
   let selectedEntryCount: number = $derived(entryIds.length);
 
   // Functions
