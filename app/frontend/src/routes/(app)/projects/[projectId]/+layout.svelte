@@ -32,7 +32,7 @@
   // Lifecycle
   onMount(() => {
     const currentTab = projectTabs.find((tab) => tab.value === activeTab);
-    const defaultProjectTab: ProjectTab = "tasks";
+    const defaultProjectTab: ProjectTab = "members";
 
     if (!currentTab) {
       goto(`/projects/${projectId}/${defaultProjectTab}`, { replaceState: true });
