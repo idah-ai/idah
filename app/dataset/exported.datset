@@ -6,17 +6,17 @@
     "metadata": "this should be some kind of a metadata",
     "entries": [
       {
-        "id": "e1",
+        "id": "019960ab-c6cd-72d0-aaaa-1440d6bc09fa",
         "media_url": null,
         "annotations": [
           {
-            "id": "a11",
+            "id": "019960ab-c6cd-aaaa-ab4f-1440d6bc09fa",
             "type": "bounding_box",
             "dimensions": null,
             "category": "category"
           },
           {
-            "id": "a12",
+            "id": "019960ab-c6cd-bbbb-ab4f-1440d6bc09fa",
             "type": "bounding_box",
             "dimensions": null,
             "category": "category"
@@ -24,11 +24,11 @@
         ]
       },
       {
-        "id": "e2",
+        "id": "019960ab-c6cd-72d0-case-1440d6bc09fa",
         "media_url": null,
         "annotations": [
           {
-            "id": "a21",
+            "id": "019960ab-c6cd-cccc-ab4f-1440d6bc09fa",
             "type": "bounding_box",
             "dimensions": null,
             "category": "category"
