@@ -81,6 +81,23 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
     expect(last_response.status).to eq 200
   end
 
+  it "assign member" do
+    expect(service).to receive(:assign_member) do |args|
+      entry_record
+    end
+
+    patch "/entries/#{uuid}/1/assign", {
+      data: {
+        type: Resource::Dataset::Entries,
+        id: uuid,
+        attributes: {
+          assigned_to_id: 1,
+        }
+      }
+    }
+    expect(last_response.status).to eq 200
+  end
+
   it "destroy" do
     expect(service).to receive(:delete).with(uuid).and_return(true)
     delete "/entries/#{uuid}"

@@ -20,6 +20,20 @@ class EntriesExpo < BaseExpo
     delete
   end
 
+  expose on_http(:patch, "/:id/:member_id/assign", auth: nil) do
+    desc "Assign a project member to an entry"
+    input do
+      field :id, String
+      field :member_id, Integer
+    end
+  end
+  def assign_member
+    id = params[:id]
+    member_id = params[:member_id]
+
+    service.assign_member(id, member_id)
+  end
+
   expose on_resource_event(Resource::Media::Jobs, "completed")
   def on_job_updated
     job_id = message.content[:resource_id]
