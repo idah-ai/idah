@@ -8,3 +8,5 @@ Api[:idah].base_url = \
   [ENV.fetch("IDAH_URL"), "api/v1/"].join("/")
 
 Api[:idah].register_service(:media).base_path = "media"
+
+Api[:idah].register_service(:iam).base_path = "iam"
