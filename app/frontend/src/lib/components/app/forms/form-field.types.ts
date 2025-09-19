@@ -1,5 +1,7 @@
 import type { Snippet } from "svelte";
 import type { LabelValue } from "@/utils/types";
+import type { DataSource, ListOptions } from "@/data/DataSource";
+import type { Record } from "@/data/model/Record";
 
 export interface FormFieldBaseProps {
   name: string;
@@ -25,5 +27,21 @@ export interface SelectFieldBaseProps extends FormFieldBaseProps {
   searchable?: boolean;
   searchPlaceholder?: string;
   clearable?: boolean;
-  onValueChange?: (value: string) => Promise<void> | void;
+  onValueChange?: (value: string | number) => Promise<void> | void;
+
+  slotTrigger?: Snippet<
+    [
+      {
+        selectedChoice: LabelValue<string | number> | undefined;
+        clearable: boolean;
+        disabled: boolean;
+      },
+    ]
+  >;
+  slotChoice?: Snippet<[{ choice: LabelValue<string | number> }]>;
+}
+
+export interface SelectDataSourceFieldBaseProps<T extends Record> extends Omit<SelectFieldBaseProps, "choices"> {
+  dataSource: DataSource<T>;
+  listOptions?: ListOptions;
 }
