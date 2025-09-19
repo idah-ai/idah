@@ -7,7 +7,7 @@ module Datset
         annotation_repo: Annotation::Repository
 
     # import a datset file
-    def import
+    def import()
       # 1. receive .datset file and project id
       # 2. read file content and validate with DatsetSchema
       # 3. in transaction, create dataset, entries, annotations
@@ -18,27 +18,27 @@ module Datset
     # export into a datset file
     def export(id)
       # prep data to DatsetSchema
+      dataset = dataset_repo.find!("019960ab-1e80-78bf-b4d2-ebc62a6d3805") # testing id
+      # mocking dataset
       # dataset = Dataset::Record.new({
       #   id: "1",
         # name: ,
         # topology: "video",
       # })
-      # datasets = dataset_repo.index({}) # TOFIX: should accept this as input ? or some id ?
-      # dataset = dataset_repo.find!(id)
-      dataset = dataset_repo.find!("019960ab-1e80-78bf-b4d2-ebc62a6d3805") # testing id
 
-      binding.pry
+      entries = entry_repo.index({dataset_id: dataset.id}) # find with some kind of id ?
+      # mocking entries
+      # entry_1 = Entry::Record.new({ id: "e1" })
+      # entry_2 = Entry::Record.new({ id: "e2" })
+      # entries = [entry_1, entry_2] # sort by id ? created_at ? updated_at ?
 
-      entry_1 = Entry::Record.new({ id: "e1" })
-      entry_2 = Entry::Record.new({ id: "e2" })
-      # entries = entry_repo.index({}) # find with some kind of id ?
-      entries = [entry_1, entry_2] # sort by id ? created_at ? updated_at ?
-      
-      annotation_1_1 = Annotation::Record.new({ id: "a11", entry_id: "e1"})
-      annotation_1_2 = Annotation::Record.new({ id: "a12", entry_id: "e1"})
-      annotation_2_1 = Annotation::Record.new({ id: "a21", entry_id: "e2"})
-      # annotations = annotation_repo.index({entry_id__in: entries_ids}) # sort by id ? created_at ? updated_at ?
-      annotations = [annotation_1_1, annotation_1_2, annotation_2_1]
+      # sort by id ? created_at ? updated_at ?
+      annotations = annotation_repo.index({entry_id__in: entries.map(&:id)})
+      # mocking annotations
+      # annotation_1_1 = Annotation::Record.new({ id: "a11", entry_id: "e1"})
+      # annotation_1_2 = Annotation::Record.new({ id: "a12", entry_id: "e1"})
+      # annotation_2_1 = Annotation::Record.new({ id: "a21", entry_id: "e2"})
+      # annotations = [annotation_1_1, annotation_1_2, annotation_2_1]
       
       # - 1. turn records into datset schema
       # TODO - 2. verify the schema (on structure building section)
@@ -55,19 +55,13 @@ module Datset
         metadata: { "type": "datset", "version": "1.0" } # this is default datset metadata
       }
 
-      # Loop through each entry
+      # loop through each entry
       entries.each do |entry|
-        # Filter annotations for this entry
-        entry_annotations = annotations.select do |anno|
-          anno[:entry_id] == entry[:id]
-        end
-
-        # Build the entry object with annotations
-        formatted_datset[:dataset][:entries] << {
+        formatted_datset[:dataset][:entries] << { # add entries into dataset
           id: entry[:id],
           media_url: entry.resource,
-          # metadata:,
-          annotations: entry_annotations.map do |annotation|
+          annotations: annotations.filter_map do |annotation| # build the entry object with annotations
+            next unless annotation[:entry_id] == entry[:id]
             {
               id: annotation[:id],
               type: "bounding_box", # annotation.type ?
