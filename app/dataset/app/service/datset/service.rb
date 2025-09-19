@@ -40,7 +40,7 @@ module Datset
         dataset: { # this layer is not needed if we are stricting only 1 dataset ?
           id: dataset.id,
           name: "dataset 01", # dataset.name is missing from record ?
-          topology: "video", # dataset.topology is missing from record ?
+          topology: "video", # dataset.topology is missing from record ? --> *modality*
           metadata: "this should be some kind of a metadata",
           entries: []
         },
