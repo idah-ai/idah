@@ -33,6 +33,6 @@ module Medias
 
   class Repository < Verse::Sequel::Repository
     self.table = "medias"
-    self.resource = "media:medias"
+    self.resource = Resource::Media::Medias
   end
 end

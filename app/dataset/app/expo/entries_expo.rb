@@ -20,14 +20,14 @@ class EntriesExpo < BaseExpo
     delete
   end
 
-  expose on_resource_event("media:jobs", "completed")
+  expose on_resource_event(Resource::Media::Jobs, "completed")
   def on_job_updated
     job_id = message.content[:resource_id]
 
     service.mark_entries_as_ready(job_id)
   end
 
-  expose on_resource_event("media:jobs", "created")
+  expose on_resource_event(Resource::Media::Jobs, "created")
   def on_job_created
     job_content = message.content
 
