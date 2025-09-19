@@ -43,7 +43,7 @@ module Entry
 
         id = entries.create(attr)
 
-        entry = entries.find!(id)
+        # entry = entries.find!(id)
 
         if job_id
           # After we created, we check the job status
@@ -60,24 +60,26 @@ module Entry
         else
           # If there is no job, we can start processing right away
           # depending on the dataset modality
-          entry_dataset_modality = datasets.find!(entry.dataset_id).modality
+          entries.after_commit do
+            entry_dataset_modality = datasets.find!(record.dataset.id).modality
 
-          if entry_dataset_modality == "video"
-            Api[:idah].media.videos.process(
-              attributes: {
-                resource: entry.resource,
-                sizes: ["240p", "360p", "480p", "720p", "1080p", "1440p", "2160p"],
-                generate_frames: false,
-                generate_thumbnail: true,
-                generate_frame_format: "avif",
-                generate_frame_framerate: 6,
-                streaming_time_per_segment: 10
-              }
-            )
+            if entry_dataset_modality == "video"
+              Api[:idah].media.videos.process(
+                attributes: {
+                  resource: record.resource,
+                  sizes: ["240p", "360p", "480p", "720p", "1080p", "1440p", "2160p"],
+                  generate_frames: false,
+                  generate_thumbnail: true,
+                  generate_frame_format: "avif",
+                  generate_frame_framerate: 6,
+                  streaming_time_per_segment: 10
+                }
+              )
+            end
           end
         end
 
-        entry
+        entries.find!(id)
       end
     end
 
