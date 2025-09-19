@@ -12,6 +12,7 @@
   import { projectBreadcrumb } from "@/components/app/page/page-breadcrumb.constants";
   import { projectTabs, type ProjectTab } from "@/components/app/projects/tabs/project.tabs";
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
+  import { datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
 
   import type { PageBreadcrumbItem } from "@/components/app/page/page-breadcrumb.svelte";
 
@@ -25,6 +26,10 @@
   let projectId: string = page.params.projectId as string;
   let activeTab: ProjectTab = $derived(page.url.pathname.split("/").pop() as ProjectTab);
   let breadcrumbs: PageBreadcrumbItem[] = $state([projectBreadcrumb]);
+  let openNewProjectModal: boolean = $state(false);
+
+  // Reactive variables
+  let isDatasetPage = $derived(page.url.pathname.split("/").length > 4);
 
   // Records
   let project: ProjectRecord = $state(new ProjectRecord());
@@ -32,7 +37,7 @@
   // Lifecycle
   onMount(() => {
     const currentTab = projectTabs.find((tab) => tab.value === activeTab);
-    const defaultProjectTab: ProjectTab = "tasks";
+    const defaultProjectTab: ProjectTab = "datasets";
 
     if (!currentTab) {
       goto(`/projects/${projectId}/${defaultProjectTab}`, { replaceState: true });
@@ -49,8 +54,40 @@
       },
     });
     project = projectRes.data;
-    breadcrumbs = [projectBreadcrumb, { label: project.name }];
+    updateBreadcrumbs();
   }
+
+  async function updateBreadcrumbs(): Promise<void> {
+    if (isDatasetPage) {
+      const pathSegments = page.url.pathname.split("/");
+      const datasetId = pathSegments[4];
+      // Fetch dataset name for breadcrumb
+      try {
+        const datasetRes = await datasetsBackendDataSource.get(datasetId, {
+          fields: {
+            "dataset:datasets": ["name"],
+          },
+        });
+        breadcrumbs = [
+          projectBreadcrumb,
+          { label: project.name },
+          { label: "Datasets", href: `/projects/${projectId}/datasets` },
+          { label: datasetRes.data.name },
+        ];
+      } catch {
+        breadcrumbs = [projectBreadcrumb, { label: project.name }];
+      }
+    } else {
+      breadcrumbs = [projectBreadcrumb, { label: project.name }];
+    }
+  }
+
+  // Reactive effect to update breadcrumbs when route changes
+  $effect(() => {
+    if (project.name) {
+      updateBreadcrumbs();
+    }
+  });
 
   function handleTabChange(value: ProjectTab): void {
     goto(`/projects/${projectId}/${value}`);
@@ -61,19 +98,21 @@
   <PageLoading />
 {:then _}
   <PageProvider name="project-detail" {breadcrumbs}>
-    <PageHeader title={project.name}>
-      {#snippet actions()}
-        <ProjectDropdownMenu {projectId} />
-      {/snippet}
-    </PageHeader>
+    {#if !isDatasetPage}
+      <PageHeader title={project.name}>
+        {#snippet actions()}
+          <ProjectDropdownMenu {projectId} />
+        {/snippet}
+      </PageHeader>
 
-    <Tabs bind:value={activeTab}>
-      <TabsList>
-        {#each projectTabs as { label, value } (value)}
-          <TabsTrigger {value} onclick={() => handleTabChange(value)}>{label}</TabsTrigger>
-        {/each}
-      </TabsList>
-    </Tabs>
+      <Tabs bind:value={activeTab}>
+        <TabsList>
+          {#each projectTabs as { label, value } (value)}
+            <TabsTrigger {value} onclick={() => handleTabChange(value)}>{label}</TabsTrigger>
+          {/each}
+        </TabsList>
+      </Tabs>
+    {/if}
 
     {@render children()}
   </PageProvider>
