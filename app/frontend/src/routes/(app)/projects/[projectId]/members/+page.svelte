@@ -1,9 +1,5 @@
 <script lang="ts">
   import { page } from "$app/state";
-  
-	import Button from "@/components/ui/button/button.svelte";
-	import DataTable from "@/components/app/data-table/data-table.svelte";
-	import ProjectMemberFormModal from "@/components/app/projects/members/overlays/project-member-form-modal.svelte";
 
   import Button from "@/components/ui/button/button.svelte";
   import DataTable from "@/components/app/data-table/data-table.svelte";
