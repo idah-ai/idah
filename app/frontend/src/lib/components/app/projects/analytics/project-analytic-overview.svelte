@@ -18,7 +18,7 @@
 	<!-- METRICS CARD -->
 	<div class="grid grid-cols-1 gap-4 lg:grid-cols-3 xl:grid-cols-5">
 		<MetricCard title="Total" value="45,789" />
-		<MetricCard title="Remaining" value="3,205" />
+		<MetricCard title="Remaning" value="3,205" />
 		<MetricCard title="Annotated" value="68,683" />
 		<MetricCard title="Reviewed" value="34,799" />
 		<MetricCard title="Skipped" value="5" />
