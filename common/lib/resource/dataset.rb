@@ -3,6 +3,7 @@
 module Resource
   module Dataset
     Projects = "dataset:projects"
+    ProjectMembers = "dataset:project_members"
     Datasets = "dataset:datasets"
     Entries = "dataset:entries"
     Annotations = "dataset:annotations"
