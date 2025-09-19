@@ -1,4 +1,6 @@
 <script lang="ts" generics="T extends Record">
+  import { onMount } from "svelte";
+
   import Button from "@/components/ui/button/button.svelte";
   import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
   import FormField from "@/components/app/forms/form-field.svelte";
@@ -21,6 +23,7 @@
     value: string | number | null;
   }
   let {
+    displayKey,
     dataSource,
     listOptions,
     value = $bindable(null),
@@ -48,10 +51,22 @@
   // Type
   type Choice = LabelValue<string | number, T>;
 
+  // Lifecycle
+  onMount(async () => {
+    /** Get selected choice if value is defined */
+    if (value) {
+      const choiceRes = await dataSource.get(String(value));
+      selectedChoice = {
+        label: choiceRes.data[displayKey],
+        value: choiceRes.data.id,
+        data: choiceRes.data,
+      };
+    }
+  });
+
   // Variables
   let open: boolean = $state(false);
   let choices: Choice[] = $state([]);
-  // let selectedValue
   let selectedChoice = $derived(choices.find((choice) => choice.value == value));
 
   // Functions
@@ -78,7 +93,7 @@
     const response = await dataSource.list(listOpts);
 
     return response.data.map((item) => ({
-      label: item.name,
+      label: item[displayKey],
       value: item.id,
       data: item,
     }));
@@ -151,7 +166,7 @@
                   <CommandItem onclick={() => select(choice)}>
                     <CheckIcon
                       class={cn("mr-2 size-4", {
-                        "opacity-0": choice.value !== value,
+                        "opacity-0": choice.value != value,
                       })}
                     ></CheckIcon>
 
