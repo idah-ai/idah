@@ -222,6 +222,27 @@ RSpec.describe Entry::Service, database: true do
     end
   end
 
+  describe "#assign_member" do
+    it "assigns a member to an entry" do
+      record = deserialize(
+        {
+          data: {
+            type: "entries",
+            id: entry.id,
+            attributes: {
+              assigned_to_id: 2,
+            }
+          }
+        }
+      )
+
+      subject.assign_member(record.id, 2)
+
+      updated_entry = repo.find!(record.id)
+      expect(updated_entry.assigned_to_id).to eq(2)
+    end
+  end
+
   describe "#delete" do
     it "deletes an entry" do
       subject.delete(entry.id)
