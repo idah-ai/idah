@@ -11,7 +11,8 @@ module Datset
       # 1. receive .datset file and project id
       # 2. read file content and validate with DatsetSchema
       # TODO: properly read from file store
-      datset_data = JSON.parse(File.read("exported.datset")).transform_keys(&:to_sym)
+      datset_data = JSON.parse(File.read(file_path)).transform_keys(&:to_sym)
+      # datset_data = JSON.parse(File.read("exported.datset")).transform_keys(&:to_sym) # mocking file path
       dataset_data = datset_data[:dataset].transform_keys(&:to_sym)
       # TODO: check/process metadata ?
       # TODO: DatsetSchema validation ?
@@ -20,8 +21,8 @@ module Datset
       dataset_repo.transaction do
         # create dataset
         dataset_id = dataset_repo.create({
-          # project_id:,
-          project_id: "019960aa-f756-71e1-8397-899be8413bb5", # mocking param
+          project_id:,
+          # project_id: "019960aa-f756-71e1-8397-899be8413bb5", # mocking param
           name: dataset_data[:name],
           modality: dataset_data[:topology],
           workflow_configuration: {},
@@ -77,7 +78,7 @@ module Datset
         dataset: { # this layer is not needed if we are stricting only 1 dataset ?
           id: dataset.id,
           name: dataset.name,
-          topology: dataset.modality,
+          topology: dataset.modality, # topology = modality ?
           metadata: "this should be some kind of a metadata",
           entries: []
         },
@@ -95,8 +96,8 @@ module Datset
             {
               id: annotation[:id],
               type: "bounding_box", # annotation.type ?
-              dimensions: annotation.dimensions,
               category: "category", # Q: annotation.category ?
+              dimensions: annotation.dimensions,
               # annotation: "", # Q: is this needed ?
               # metadata:,
             }
