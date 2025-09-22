@@ -12,7 +12,7 @@
 		type VideoMode,
 		type VideoShape,
 		type VideoShapeType,
-	} from "@/components/video-annotation-activity/VideoAnnotationContext";
+	} from "./VideoAnnotationContext";
 	import Zoomable from "./zoomable.svelte";
 	import BoundingBox, { type ToolSelection } from "./bounding-box.svelte";
 
@@ -20,7 +20,7 @@
 		annotations: Array<VideoAnnotation>;
 		frame: number;
 		selected: VideoAnnotation | undefined;
-		mode: VideoMode;
+		mode: string;
 		target_container: HTMLDivElement; // ..
 		children: Snippet;
 		onclick?: (e: MouseEvent) => void;
@@ -196,7 +196,7 @@
 		{#each annotations as annotation}
 			<!-- {@render annotationPath(annotation, frame)} -->
 			{#if annotation != selected}
-				{#if annotation.shape.type == "bounding-box"}
+				{#if annotation.shape.type == "video:bounding_box"}
 					<BoundingBox
 						points={currentShape(annotation.shape, frame) || []}
 						ratio={target_size}
@@ -214,7 +214,7 @@
 			{/if}
 		{/each}
 		<!-- draw selection -->
-		{#if mode == "bounding-box"}
+		{#if mode == "video:bounding_box"}
 			<BoundingBox
 				bind:this={tool_selection}
 				{points}
@@ -224,7 +224,7 @@
 				editable={true}
 				color={"#FEF9C340"}
 				onChange={(bb) => {
-					onSelection("bounding-box", frame, bb, selected?.metadata.id);
+					onSelection("video:bounding_box", frame, bb, selected?.metadata.id);
 					if (!selected) points = [];
 				}}
 				onmousedown={(e) => {

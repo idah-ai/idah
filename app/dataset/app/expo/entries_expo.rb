@@ -6,7 +6,8 @@ class EntriesExpo < BaseExpo
   use_service Entry::Service
 
   json_api Entry::Record, http_opts: { auth: nil } do
-    show
+   allowed_included "dataset"
+   show
     index
     create do
       authorized_relationships dataset: [:link]
