@@ -25,25 +25,15 @@
   let selectedEntryCount: number = $derived(entryIds.length);
 
   // Functions
-  function resetForm(): void {
-    // selectedMember = null;
-  }
-
   function setValue(value: Hash): void {
     selectedMember = value.assigned_to_id;
   }
 
   async function assignMember(): Promise<void> {
-    if (entryIds.length === 0) return;
+    if (entryIds.length === 0 || !selectedMember) return;
 
     for (const entryId of entryIds) {
-      console.log(entryId);
-
-      await entriesBackendDataSource.update(entryId, {
-        attributes: {
-          assigned_to_id: selectedMember,
-        },
-      });
+      await entriesBackendDataSource.assign({ id: entryId, memberId: selectedMember });
     }
 
     toast.success("Member assigned successfully");
@@ -68,7 +58,7 @@
   {title}
   description="Assign selected member to {selectedEntryCount > 1 ? `${selectedEntryCount} tasks` : 'task'}"
   loading={submitting}
-  onCancel={resetForm}
+  onCancel={() => {}}
   onConfirm={submit}
   bind:open
 >
