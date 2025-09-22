@@ -4,20 +4,19 @@
 	import Separator from "@/components/ui/separator/separator.svelte";
 	import { MousePointer2, RedoIcon, UndoIcon, BoxSelectIcon } from "@lucide/svelte";
 	import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+    import type { AnnotationHeaderBarBaseTool } from "./AnnotationHeaderBar.types";
 
-	import type { AnnotationHeaderBarBaseTool } from "@/components/app/annotation/layout/header/AnnotationHeaderBar.types";
-	import type { VideoMode } from "@/components/video-annotation-activity/VideoAnnotationContext";
 
 	// Props
 	interface Props {
-		mode: VideoMode;
-		onSelectMode: (selectedMode: VideoMode) => void;
+		mode: string;
+		onSelectMode: (selectedMode: string) => void;
 	}
 	let { mode = $bindable(), onSelectMode }: Props = $props();
 
 	// Variables
 	interface HeaderBarModeTool extends AnnotationHeaderBarBaseTool {
-		type: VideoMode;
+		type: string;
 	}
 
 	const tools: HeaderBarModeTool[] = [
@@ -32,11 +31,11 @@
 		},
 		{
 			label: "Bounding Box",
-			type: "bounding-box",
+			type: "video:bounding_box",
 			icon: BoxSelectIcon,
 			handleClick: () => {
-				mode = "bounding-box";
-				onSelectMode("bounding-box");
+				mode = "video:bounding_box";
+				onSelectMode("video:bounding_box");
 			},
 		},
 	];

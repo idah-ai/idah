@@ -1,13 +1,12 @@
 <script lang="ts">
 	import Badge from "@/components/ui/badge/badge.svelte";
-	import Button from "@/components/ui/button/button.svelte";
 	import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 	import { SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
 
-	import type { VideoAnnotation } from "@/components/video-annotation-activity/VideoAnnotationContext";
-	import type { CategoriesDefinition, CategoryDefinition } from "@/context/ActivityContext";
-    import SidebarMenuSubButton from "../ui/sidebar/sidebar-menu-sub-button.svelte";
-    import { cn } from "@/utils";
+    import type { CategoryConfiguration, VideoAnnotation } from "./VideoAnnotationContext";
+    import SidebarMenuSubButton from "@/components/ui/sidebar/sidebar-menu-sub-button.svelte";
+    import type {CategoryDefinition } from "@/context/ActivityContext";
+    import { onMount } from "svelte";
 
 	let {
 		currentFrame,
@@ -16,40 +15,48 @@
 		selected,
 		onSelect,
 		onSelectAnnotation,
-		required = false,
 	}: {
 		currentFrame: number;
 		annotations: VideoAnnotation[];
-		categories: CategoriesDefinition;
+		categories: CategoryConfiguration[];
 		selected: string | undefined;
 		onSelect: (selection?: string) => void;
 		onSelectAnnotation: (annotation: VideoAnnotation) => void;
-		required: boolean;
 	} = $props();
 
-	// console.log(getAllCategories(categories))
+    function buildAcc(acc :CategoryDefinition[], ids:string[], configuration:CategoryConfiguration):CategoryDefinition[] {
+        if (ids.length == 1) {
+            acc.push({
+                id: configuration.id,
+                name: configuration.label,
+                description: configuration.description,
+            })
+        } else {
+            const index = acc.findIndex(a => configuration.id )
 
-	function getAllCategories(CategoriesDefinition: CategoriesDefinition): string[] {
-		return Object.entries(categories)
-			.flatMap(([category, subCategories]) => allSubCategories(category, subCategories))
-			.map((c) => c.join("/"));
-	}
+            if (index == -1) {
+                acc.push({
+                    id: ids.length ? ids[0] : configuration.id.replace(ids.join('/'),''),
+                    name: ids.length ? ids[0] : configuration.id.replace(ids.join('/'),''),
+                    nestedCategories: buildAcc([], ids.slice(1, Infinity), configuration)
+                })
+            } else {
+                acc[index].nestedCategories = buildAcc(acc[index].nestedCategories || [], ids.slice(1, Infinity), configuration)
+            }
+        }
+        return acc
+    }
 
-	function allSubCategories(
-		category: string,
-		subCategories: CategoryDefinition[] | undefined,
-		parent: string[] = [],
-	): string[][] {
-		if (subCategories) {
-			return subCategories.flatMap((c) => allSubCategories(c.name, c.nestedCategories, [...parent, category]));
-		} else {
-			return [[...parent, category]];
-		}
-	}
+    let categoriesTree:CategoryDefinition[] = categories.reduce<CategoryDefinition[]>((acc, category_configuration) => {
+            return buildAcc(acc, category_configuration.id.split('/'), category_configuration)
+        }, [])
+
 
 	function categoryFullName(category: string, parent: string[]) {
 		return [...parent, category].join("/");
 	}
+
+    $effect(() => console.log({annotations}))
 </script>
 
 {#snippet annotationSelection(
@@ -127,6 +134,10 @@
 {/each}
 
 
-{#each Object.entries(categories) as [category, subCategory]}
+<!-- {#each Object.entries(categories) as [category, subCategory]}
 	{@render categorySelection(category, subCategory, onSelect, selected)}
+{/each} -->
+
+{#each categoriesTree as category}
+	{@render categorySelection(category.id, category.nestedCategories, onSelect, selected)}
 {/each}

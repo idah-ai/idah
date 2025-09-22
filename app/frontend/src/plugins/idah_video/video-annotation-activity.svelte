@@ -1,42 +1,34 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  import { toast } from "svelte-sonner";
-  import { uuidv7 } from "uuidv7";
-  import { Toaster } from "@/components/ui/sonner";
+    import { onMount } from "svelte";
+    import { toast } from "svelte-sonner";
+    import { uuidv7 } from "uuidv7";
+    import { Toaster } from "@/components/ui/sonner";
 
-  import AnnotationHeaderBar from "@/components/app/annotation/layout/header/AnnotationHeaderBar.svelte";
-  import AnnotationFooter from "@/components/app/annotation/layout/footer/AnnotationFooter.svelte";
-  import AnnotationFooterToolbar from "@/components/app/annotation/layout/footer/AnnotationFooterToolbar.svelte";
-  import AnnotationSidebar from "@/components/video-annotation-activity/annotation-sidebar.svelte";
-  import CommandManager from "@/command/CommandManager";
-  import { JsonRpcDatasource } from "./video-annotation-activity/jsonrpc";
-  import SidebarProvider from "@/components/ui/sidebar/sidebar-provider.svelte";
-  import SidebarInset from "@/components/ui/sidebar/sidebar-inset.svelte";
-  import SvgOverlay from "@/components/video-annotation-activity/svg-overlay.svelte";
-  import Video from "@/components/video-annotation-activity/video.svelte";
-  import videoActivityContext from "@/components/video-annotation-activity/VideoActivityContext";
-  import VideoController from "@/components/video-annotation-activity/VideoController.svelte";
-  import {
-    type Point,
-    type VideoAnnotation,
-    type VideoMode,
-    type VideoShape,
-    type VideoShapeType,
-    type VideoFrameSelection,
-  } from "@/components/video-annotation-activity/VideoAnnotationContext";
+    import CommandManager from "@/command/CommandManager";
+    import { JsonRpcDatasource } from "./video-annotation-activity/jsonrpc";
+    import SidebarProvider from "@/components/ui/sidebar/sidebar-provider.svelte";
+    import SidebarInset from "@/components/ui/sidebar/sidebar-inset.svelte";
 
-  import { ResizableHandle, ResizablePane, ResizablePaneGroup } from "@/components/ui/resizable";
-  import { annotationsBackendDataSource } from "@/data/model/dataset/annotationRecord";
+    import { ResizableHandle, ResizablePane, ResizablePaneGroup } from "@/components/ui/resizable";
+    import { AnnotationRecord, annotationsBackendDataSource } from "@/data/model/dataset/annotationRecord";
 
-  import type { AnnotationValue } from "@/context/AnnotationContext";
-  import type { Command } from "@/command/Command";
-  import { entriesBackendDataSource } from "@/data/model/dataset/entryRecord";
-  import { sleep } from "@/utils/delayed";
-  import { projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
-  import { datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
-  import { openIndexedDB } from "./video-annotation-activity/indexedDB";
-  import TimelineTable from "./video-annotation-activity/timeline-table/timeline-table.svelte";
-  import ScrollArea from "./ui/scroll-area/scroll-area.svelte";
+    import type { AnnotationValue } from "@/context/AnnotationContext";
+    import type { Command } from "@/command/Command";
+    import { openIndexedDB } from "./video-annotation-activity/indexedDB";
+    import TimelineTable from "./video-annotation-activity/timeline-table/timeline-table.svelte";
+    import type { IActivityContext, IAnnotation } from "@/plugin/interface/Activity";
+    import Video from "./video-annotation-activity/video.svelte";
+    import type { Point, VideoAnnotation, VideoFrameSelection, VideoMode, VideoShape, VideoShapeType } from "./video-annotation-activity/VideoAnnotationContext";
+    import VideoController from "./video-annotation-activity/VideoController.svelte";
+    import AnnotationSidebar from "./video-annotation-activity/annotation-sidebar.svelte";
+    import SvgOverlay from "./video-annotation-activity/svg-overlay.svelte";
+    import { ScrollArea } from "@/components/ui/scroll-area";
+    import AnnotationHeaderBar from "./layout/header/AnnotationHeaderBar.svelte";
+    import AnnotationFooter from "./layout/footer/AnnotationFooter.svelte";
+    import AnnotationFooterToolbar from "./layout/footer/AnnotationFooterToolbar.svelte";
+  let {
+    context
+  }: {context: IActivityContext} = $props()
 
   let player: Video | undefined = $state();
   let player_container: HTMLDivElement | undefined = $state(); // ...
@@ -44,22 +36,21 @@
   let currentFrame = $state(0);
   let totalFrames = $state(0);
 
-  let mode: VideoMode = $state("view");
+  let mode: string = $state("view");
 
   let selectedAnnotation: VideoAnnotation | undefined = $state();
   let annotationValue: AnnotationValue = $derived(selectedAnnotation?.value || {});
 
   let annotations: Array<VideoAnnotation> = $state([]);
 
-  let entry_id = $state();
-  let url = $state("");
+  let entry_id = $state(context.id);
+  let url = $state(context.mediaUrl);
   let idb: IDBDatabase | undefined = $state();
 
   let zoom = $state(100);
   let scale = $state(1);
   let timelineTable: TimelineTable;
   let videoController: VideoController;
-  const annotations_rpc = new JsonRpcDatasource("https://idah.localhost:8443/api/v1/dataset/annotations/_rpc", 50);
 
   onMount(async () => {
     // for now
@@ -69,39 +60,19 @@
       }
     });
 
-    projectsBackendDataSource.list().then((projects) => {
-      console.log({ projects });
 
-      datasetsBackendDataSource.list().then((datasets) => {
-        console.log({ datasets });
-
-        entriesBackendDataSource.list().then((entries) => {
-          console.log({ entries });
-          entry_id = entries.data[0].id;
-          url = [
-            "https://idah.localhost:8443/api/v1/media/medias/files",
-            entries.data[0].attributes().resource,
-            "master.m3u8",
-          ].join("/");
-
-          openIndexedDB("dataset").then((db) => {
-            idb = db;
-            fetchAnnotations();
-          }, console.error);
-        });
-      });
-    });
+    openIndexedDB("dataset").then((db) => {
+        idb = db;
+        fetchAnnotations();
+    }, console.error);
 
     function fetchAnnotations(page = 1, itemsPerPage = 100) {
-      annotationsBackendDataSource
-        .list({
-          filters: { entry_id: entry_id }, // >?
-
-          pagination: { page, itemsPerPage },
-        })
-        .then((r) => {
-          r.data
-            .map((a) => {
+let a :IAnnotation;
+        context.annotations.list(
+          { entry_id: entry_id },
+          { page, itemsPerPage },
+        ).then((r) => {
+            (r as AnnotationRecord[]).map((a) => {
               return {
                 shape: a.dimensions as VideoShape,
                 value: a.annotation,
@@ -130,7 +101,9 @@
 
               annotations.push(i);
             });
-          if (r.data.length) fetchAnnotations(page + 1);
+
+            if (r.length) fetchAnnotations(page + 1);
+
         });
     }
   });
@@ -155,15 +128,7 @@
         };
         annotations.push({ ...annotation, synced: false });
 
-        let p = annotations_rpc.call({
-          method: "create",
-          params: {
-            id: annotation.metadata.id,
-            entry_id,
-            dimensions: annotation.shape,
-            annotation: annotation.value,
-          },
-        });
+        let p = context.annotations.create(id, annotation.shape, annotation.value)
 
         toast.promise(p, {
           loading: "synchro create annotation",
@@ -181,7 +146,8 @@
         annotations = annotations.filter((v) => {
           return v.metadata.id != id;
         });
-        let p = annotations_rpc.call({ method: "delete", params: { id } });
+
+        let p = context.annotations.delete(id)
 
         toast.promise(p, {
           loading: "synchro undo create annotation",
@@ -207,7 +173,8 @@
         annotations = annotations.filter((v) => {
           return v.metadata.id != id;
         });
-        let p = annotations_rpc.call({ method: "delete", params: { id } });
+
+        let p = context.annotations.delete(id)
 
         toast.promise(p, {
           loading: "synchro delete annotation",
@@ -232,15 +199,7 @@
           },
         ];
 
-        let p = annotations_rpc.call({
-          method: "create",
-          params: {
-            id: annotation.metadata.id,
-            entry_id,
-            dimensions: annotation.shape,
-            annotation: annotation.value,
-          },
-        });
+        let p = context.annotations.create(id, annotation.shape, annotation.value)
 
         toast.promise(p, {
           loading: "synchro undo delete annotation",
@@ -288,15 +247,11 @@
         v.metadata.updatedAt = updatedAt;
         v.synced = false;
 
-        let p = annotations_rpc.call({
-          method: "update",
-          params: {
+        let p = context.annotations.update({
             id: v.metadata.id,
-            entry_id,
             dimensions: v.shape,
-            annotation: v.value,
-          },
-        });
+            annotation: v.value
+        })
 
         toast.promise(p, {
           loading: "synchro add bounding box",
@@ -324,15 +279,12 @@
         v.metadata.updatedAt = updatedAt;
         v.synced = false;
 
-        let p = annotations_rpc.call({
-          method: "update",
-          params: {
+
+        let p = context.annotations.update({
             id: v.metadata.id,
-            entry_id,
             dimensions: v.shape,
-            annotation: v.value,
-          },
-        });
+            annotation: v.value
+        })
 
         toast.promise(p, {
           loading: "synchro undo add bounding box",
@@ -380,25 +332,23 @@
         };
         annotation.metadata.updatedAt = updatedAt;
 
-        let p = annotations_rpc.call({
-          method: "update",
-          params: {
+        let p = context.annotations.update({
             id: annotation.metadata.id,
-            entry_id,
             dimensions: annotation.shape,
-            annotation: annotation.value,
-          },
-        });
+            annotation: annotation.value
+        })
 
         toast.promise(p, {
           loading: "synchro delete selection",
           success: "synchro delete selection OK",
           error: "synchro delete selection KO",
         });
+
         p.then(() => {
           if (annotation.metadata.updatedAt == updatedAt) annotation.synced = true;
         });
-      },
+
+    },
       undo() {
         const updatedAt = new Date();
         let annotation = getAnnotationInfo(annotation_id);
@@ -415,15 +365,13 @@
         annotation.metadata.updatedAt = updatedAt;
         annotation.synced = false;
 
-        let p = annotations_rpc.call({
-          method: "update",
-          params: {
-            id: annotation.metadata.id,
-            entry_id,
-            dimensions: annotation.shape,
-            annotation: annotation.value,
-          },
-        });
+        let p = context.annotations.update(
+            {
+                id: annotation.metadata.id,
+                dimensions: annotation.shape,
+                annotation: annotation.value,
+            }
+        )
 
         toast.promise(p, {
           loading: "synchro undo delete selection",
@@ -477,15 +425,15 @@
           annotation.value = value;
           annotation.metadata.updatedAt = updatedAt;
           annotation.synced = false;
-          let p = annotations_rpc.call({
-            method: "update",
-            params: {
+
+          let p = context.annotations.update(
+            {
               id: annotation.metadata.id,
-              entry_id,
               dimensions: annotation.shape,
               annotation: value,
-            },
-          });
+            }
+          )
+
           toast.promise(p, {
             loading: "synchro update annotation value",
             success: "synchro update annotation value OK",
@@ -499,30 +447,26 @@
       undo() {
         const annotation = getAnnotationInfo(annotation_id);
         if (annotation) {
-          const updatedAt = new Date();
-          annotation.value = value_from;
-          annotation.metadata.updatedAt = updatedAt;
-          annotation.synced = false;
-          let p = annotations_rpc.call({
-            method: "update",
-            params: {
-              id: annotation.metadata.id,
-              entry_id,
-              dimensions: annotation.shape,
-              annotation: value_from,
-              type: annotation.shape.type,
-            },
-          });
+            const updatedAt = new Date();
+            annotation.value = value_from;
+            annotation.metadata.updatedAt = updatedAt;
+            annotation.synced = false;
 
-          toast.promise(p, {
-            loading: "synchro undo update annotation value",
-            success: "synchro undo update annotation value OK",
-            error: "synchro undo update annotation value KO",
-          });
+            let p = context.annotations.update({
+                id: annotation.metadata.id,
+                dimensions: annotation.shape,
+                annotation: value_from
+            })
 
-          p.then(() => {
-            if (annotation.metadata.updatedAt == updatedAt) annotation.synced = true;
-          });
+            toast.promise(p, {
+                loading: "synchro undo update annotation value",
+                success: "synchro undo update annotation value OK",
+                error: "synchro undo update annotation value KO",
+            });
+
+            p.then(() => {
+                if (annotation.metadata.updatedAt == updatedAt) annotation.synced = true;
+            });
         }
       },
       isCombinable: () => false,
@@ -540,7 +484,7 @@
 
 <div class="flex h-screen w-full flex-col">
   <AnnotationHeaderBar
-    context={videoActivityContext}
+    {context}
     bind:mode
     onSelectMode={() => {
       selectedAnnotation = undefined;
@@ -555,7 +499,7 @@
           {annotations}
           {annotationValue}
           {currentFrame}
-          onEditValue={(value: AnnotationValue, valueMode: VideoMode) => {
+          onEditValue={(value: AnnotationValue, valueMode: string) => {
             annotationValue = value;
             mode = valueMode;
             if (selectedAnnotation) {
@@ -563,7 +507,7 @@
             }
           }}
           onSelectAnnotation={selectAnnotation}
-          toolinfo={videoActivityContext.tools}
+          {context}
           {mode}
         />
         <SidebarInset>

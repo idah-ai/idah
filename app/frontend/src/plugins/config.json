@@ -1,0 +1,12 @@
+{
+  "plugins": [
+    {
+      "name": "idah_video",
+      "src": "local"
+    },
+    {
+      "name": "idah_video_player_test",
+      "src": "local"
+    }
+  ]
+}

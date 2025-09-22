@@ -5,7 +5,7 @@ import type { ProjectRecord } from "@/data/model/dataset/projects/project-record
 @type("dataset:datasets")
 export class DatasetRecord extends Record {
   @field() public labels!: Array<string>;
-  @field() public modaity!: string;
+  @field() public modality!: string;
   @field() public labeling_configuration!: string;
   @field() public workflow_configuration!: string;
   @field() public status!: string;
