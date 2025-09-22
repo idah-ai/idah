@@ -6,6 +6,8 @@ RSpec.describe Datset::Service, database: true do
   let(:auth_context){ Verse::Auth::Context.new }
   let(:project_repo) { Project::Repository.new(auth_context) }
   let(:dataset_repo) { Dataset::Repository.new(auth_context) }
+  let(:entry_repo) { Entry::Repository.new(auth_context) }
+  let(:annotation) { Annotation::Repository.new(auth_context)}
 
   subject { described_class.new(auth_context) }
 
