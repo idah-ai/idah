@@ -1,10 +1,7 @@
 import { annotationsBackendDataSource } from "@/data/model/dataset/annotationRecord";
-import { JsonRpcDatasource } from "../../plugins/idah_video/video-annotation-activity/jsonrpc";
+import { JsonRpcDatasource } from "../../plugins/idah-video/video-annotation-activity/jsonrpc";
 import type { IAnnotation, IAnnotationDriver } from "./interface/Activity";
 import { sleep } from "@/utils/delayed";
-
-// for now to register it
-import { datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
 
 const annotations_rpc = new JsonRpcDatasource("https://idah.localhost:8443/api/v1/dataset/annotations/_rpc", 50);
 

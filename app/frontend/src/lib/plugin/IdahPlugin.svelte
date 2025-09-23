@@ -1,46 +1,30 @@
 <script lang="ts">
-    import { onDestroy, onMount } from "svelte";
+    import { getContext, onDestroy, onMount } from "svelte";
     import type { IActivityContext, IActivityView } from "./interface/Activity";
-    import { PluginManager } from "./PluginManager";
-    import { sleep } from "@/utils/delayed";
+    import Button from "@/components/ui/button/button.svelte";
 
-    import config from '../../plugins/config.json' // ?
-
-    let {context}:{context:IActivityContext} = $props()
+    let {context, plugin_id}:{context:IActivityContext, plugin_id: string} = $props()
     let container: HTMLElement
 
+    import { Tooltip, TooltipProvider } from "@/components/ui/tooltip";
+    import TooltipTrigger from "@/components/ui/tooltip/tooltip-trigger.svelte";
+    import TooltipContent from "@/components/ui/tooltip/tooltip-content.svelte";
+    import type { PluginManager } from "./PluginManager";
+    import { goto } from "$app/navigation";
     let plugin: IActivityView|undefined = $state()
 
-    const pluginManager = new PluginManager(context)
-
-    console.debug('loading plugins')
-    let pluginsLoad = Promise.all(config.plugins.map((plugin_config: {name:string, src: string}, i) => {
-        console.debug("loading", plugin_config)
-        return new Promise<void>((resolve, reject) => {
-            pluginManager.load(plugin_config).then(
-                (plugin) => {
-                    resolve(plugin.init(context));
-                }, reject
-            )
-        })
-    }))
-
+    let pluginManager:PluginManager = getContext('idah-plugin-manager')
+    let plugins: IActivityView[] = $state([])
 
     onMount(() => {
-        pluginsLoad.then(() => {
-            sleep(1000).then(() => { // test purpose
-                // what if multiple plugin found ?
-                const plugins = pluginManager.getAllPlugins().filter((p) => p.type == context.type)
+        pluginManager.loadedPromise.then(() => {
+            console.log({plugin_id})
+            plugin = pluginManager.getPlugin(plugin_id)
+            console.log({plugin})
+            if (!plugin) return console.error("plugin not found for", context)
 
-                plugin = plugins.reverse().at(0) //...
-
-                console.debug("mounting plugin", $state.snapshot(plugin))
-
-                if (!plugin) return console.error("plugin not found for", context)
-
-                plugin.render?.(container)
-            })
-
+            console.debug("mounting plugin", $state.snapshot(plugin))
+            plugin.render?.(container, context)
         })
     })
 
@@ -52,6 +36,33 @@
 
 
 <div bind:this={container}>
-    Unplugged Container
+    {#await pluginManager.loadedPromise}
+        Loading Plugins
+    {:then}
+    {#if plugins.length}
+        <h3>Available Plugins</h3>
+        <TooltipProvider>
+            <ul>
+                {#each plugins as plugin}
+                    <li>
+                        <Tooltip>
+                            <TooltipTrigger>
+                                <Button onclick={() => goto(`plugin/${plugin.name}`)}>
+                                    {plugin.label}
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                {plugin.description}
+                            </TooltipContent>
+                        </Tooltip>
+
+                    </li>
+                {/each}
+            </ul>
+        </TooltipProvider>
+    {:else}
+        No available plugin
+    {/if}
+    {/await}
 </div>
 

@@ -103,7 +103,7 @@ export interface IActivityView {
   get type(): string;
 
   // Initialize the activity with the given context and parent element
-  init(context: IActivityContext);
-  render?(parent: HTMLElement);
+  init();
+  render?(parent: HTMLElement, context: IActivityContext);
   close?();
 }

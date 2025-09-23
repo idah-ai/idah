@@ -2,8 +2,6 @@ import type { IActivityContext, IActivityView } from "@/plugin/interface/Activit
 import VideoPlugin from "./VideoPlugin.svelte";
 import { mount, unmount } from "svelte";
 
-let context: IActivityContext | undefined;
-
 let mounted: any;
 
 const idah_video: IActivityView = {
@@ -13,12 +11,11 @@ const idah_video: IActivityView = {
   version: "1.0",
   type: "video",
 
-  init(_context: IActivityContext) {
-    context = _context;
-    console.debug("Initializing Plugin", { this: this, context });
+  init() {
+    console.debug("Initializing Plugin", { this: this });
   },
 
-  render(parent: HTMLElement) {
+  render(parent: HTMLElement, context: IActivityContext) {
     console.debug("Rendering Plugin", { this: this, context, parent });
 
     if (!parent || !context) return console.error("Missing:", { parent, context });
@@ -30,7 +27,7 @@ const idah_video: IActivityView = {
   },
 
   close() {
-    console.debug("Closing Plugin", { this: this, context, parent, mounted });
+    console.debug("Closing Plugin", { this: this, parent, mounted });
     if (mounted) {
       unmount(mounted);
     }

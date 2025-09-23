@@ -1,29 +1,42 @@
-import type { IActivityContext, IActivityView } from "./interface/Activity";
+import type { IActivityView } from "./interface/Activity";
 
+type PluginConfig = { name: string; src: string };
+type PluginsConfig = { plugins: PluginConfig[] };
 export class PluginManager {
   private plugins: Map<string, IActivityView> = new Map();
+  loadedPromise: Promise<void>;
+  PLUGINS_PATH = "../../plugins";
 
-  private context: IActivityContext;
-
-  constructor(context: IActivityContext) {
-    this.context = context;
+  constructor(config: PluginsConfig = { plugins: [] }) {
+    this.loadedPromise = new Promise<void>((resolve, reject) => {
+      console.debug("loading plugins");
+      Promise.all(
+        config.plugins.map((plugin_config: { name: string; src: string }) => {
+          return new Promise<IActivityView>((plugin_resolve, plugin_reject) => {
+            this.register(plugin_config).then((plugin) => plugin_resolve(plugin), plugin_reject);
+          });
+        }),
+      ).then(
+        (plugins) => resolve(console.log({ this: this, plugins })),
+        () => reject(console.error),
+      );
+    });
   }
 
-  PLUGIN_LOCAL_PATH = "../../plugins";
-
-  load(config: { name: string; src: string }): Promise<IActivityView> {
+  register(config: PluginConfig): Promise<IActivityView> {
+    console.debug("register", config);
     let plugin: IActivityView;
 
     return new Promise<IActivityView>(async (resolve, reject) => {
       switch (config.src) {
         case "local":
-          plugin = (await import([this.PLUGIN_LOCAL_PATH, config.name].join("/"))).default;
+          plugin = (await import([this.PLUGINS_PATH, config.name].join("/"))).default;
           break;
         case "npm":
-          reject(console.error("todo"));
+          return reject(console.error("todo"));
           break;
         default:
-          reject(console.error("undefined src type for plugin:", config));
+          return reject(console.error("undefined src type for plugin:", config));
       }
 
       if (!plugin) {
@@ -36,6 +49,7 @@ export class PluginManager {
 
       this.plugins.set(plugin.name, plugin); // type <> name/id
 
+      console.log({ resolved: { plugin } });
       resolve(plugin);
     });
   }
@@ -48,7 +62,11 @@ export class PluginManager {
     return Array.from(this.plugins.values());
   }
 
-  unload(id: string): void {
+  getPluginsForType(type: string): IActivityView[] {
+    return Array.from(this.plugins.values().filter((p) => p.type == type));
+  }
+
+  unregister(id: string): void {
     const plugin = this.plugins.get(id);
     if (plugin && plugin.close) {
       plugin.close();

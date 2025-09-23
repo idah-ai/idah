@@ -1,6 +1,6 @@
 import { createBackendDataSource } from "@/data/BackendDataSource";
 import { field, Record, RecordFactory, relationship, type } from "@/data/model/Record";
-import type { ProjectRecord } from "@/data/model/dataset/projects/project-record";
+import { projectsBackendDataSource, type ProjectRecord } from "@/data/model/dataset/projects/project-record";
 
 @type("dataset:datasets")
 export class DatasetRecord extends Record {
