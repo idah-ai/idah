@@ -1,93 +1,221 @@
 <script lang="ts" module>
+  import Badge from "@/components/ui/badge/badge.svelte";
   import Button from "@/components/ui/button/button.svelte";
-  import Input from "@/components/ui/input/input.svelte";
+  import { Command, CommandGroup, CommandItem } from "@/components/ui/command";
+  import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+  } from "@/components/ui/dropdown-menu";
+  import HoverCards from "@/components/app/hover-cards/hover-cards.svelte";
+  import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import Kbd from "@/components/app/texts/kbd.svelte";
+  import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
   import Text from "@/components/ui/text/Text.svelte";
-  import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+  import Tooltips from "@/components/app/tooltips/tooltips.svelte";
 
   import { cn } from "@/utils";
+  import { labelColors } from "@/components/app/datasets/labels/label-color";
 
-  import { Layers2Icon, PlusIcon, SquareDashedMousePointerIcon, Trash2Icon } from "@lucide/svelte";
+  import {
+    CheckIcon,
+    EllipsisVerticalIcon,
+    LassoIcon,
+    PlusIcon,
+    SquareDashedMousePointerIcon,
+    SquareIcon,
+    Trash2Icon,
+  } from "@lucide/svelte";
 
-  export interface TreeItem {
-    id: string;
-    parent: string | null;
-    type: string;
-    label: string;
-    color: string;
-    children: TreeItem[];
-  }
+  import type { TreeItem } from "@/data/model/dataset/dataset-record";
+  import type { LabelCategoryConfiguration, LabelingConfiguration } from "@/data/model/dataset/types";
 
   interface TreeNodeProps {
+    labelConfig: LabelingConfiguration;
     node: TreeItem;
     level: number;
-    onAddCategory: (parentId?: string) => void;
+    onAddCategory: (nodeId?: string) => void;
+    onEditCategory: (category: LabelCategoryConfiguration) => void;
+    onEditCategoryId: (oldId: string, newId: string) => void;
     onRemoveCategory: (categoryId: string) => void;
   }
 
   // Variables
-  let editLabel: boolean = $state(false);
+  const annotationTypes = [
+    { label: "Bounding Box", value: "bounding_box", icon: SquareIcon },
+    { label: "Polygon", value: "polygon", icon: LassoIcon },
+  ];
 
   export { TreeNode };
 </script>
 
 {#snippet TreeNode(props: TreeNodeProps)}
-  {@const { node, level, onAddCategory, onRemoveCategory } = props}
+  {@const { labelConfig, node, level, onAddCategory, onEditCategory, onEditCategoryId, onRemoveCategory } = props}
+  {@const isLastNode = node.children.length === 0}
+  {@const assignedProperties = labelConfig.properties.filter((property) =>
+    property.selector.some((s) => node.id.startsWith(s.split("*")[0])),
+  )}
 
   <div id={node.id} class={cn("flex items-center gap-2")} style:margin-left={`${(level - 1) * 3}rem`}>
     <!-- TREE::NODE -->
-    <div class="border-border e flex w-full items-center gap-2 rounded-lg border">
-      <div class="rounded-bl-md rounded-tl-md bg-amber-500 p-4">
-        {#if node.type?.includes("video")}
-          <SquareDashedMousePointerIcon class="size-4"></SquareDashedMousePointerIcon>
-        {:else}
-          <Layers2Icon class="size-4"></Layers2Icon>
-        {/if}
-      </div>
+    <div class="border-border e flex w-full items-center gap-2 rounded-lg border py-1 pl-4 pr-2">
+      {#if isLastNode}
+        <Popover>
+          <PopoverTrigger>
+            <Button variant="ghost" class="gap-4">
+              <div
+                class="inline-flex size-7 shrink-0 items-center justify-center rounded-sm text-sm [&_svg]:pointer-events-none [&_svg]:shrink-0"
+                style:background-color={node.color}
+                style:color={node?.text_color || "#FFFFFF"}
+              >
+                {#if node.type?.includes("bounding_box")}
+                  <SquareDashedMousePointerIcon class="size-4"></SquareDashedMousePointerIcon>
+                {:else}
+                  <LassoIcon class="size-4"></LassoIcon>
+                {/if}
+              </div>
 
-      {#if !editLabel}
-        <button onclick={() => (editLabel = true)}>
-          <Text>{node.label}</Text>
-        </button>
+              <Kbd>⌘ {node.label.charAt(0)}</Kbd>
+
+              {node.label}
+            </Button>
+          </PopoverTrigger>
+
+          <PopoverContent align="start" class="p-0">
+            <Command>
+              <CommandGroup heading="Type">
+                {#each annotationTypes as { label, value, icon: Icon } (value)}
+                  <CommandItem
+                    onclick={() =>
+                      onEditCategory({
+                        id: node.id,
+                        type: `${node.type.split(":")[0]}:${value}`,
+                        color: node.color,
+                        text_color: node.text_color,
+                        label: node.label,
+                      })}
+                  >
+                    <Icon class="size-4"></Icon>
+
+                    {label}
+
+                    {#if node.type.includes(value)}
+                      <CheckIcon class="ml-auto size-4"></CheckIcon>
+                    {/if}
+                  </CommandItem>
+                {/each}
+              </CommandGroup>
+
+              <CommandGroup heading="Shortcut Key"></CommandGroup>
+
+              <CommandGroup heading="ID">
+                <InputField
+                  name="{node.id}/id"
+                  value={node.id}
+                  onblur={(e) => {
+                    const value = e.currentTarget.value;
+                    onEditCategoryId(node.id, value.toLocaleLowerCase());
+                  }}
+                ></InputField>
+              </CommandGroup>
+
+              <CommandGroup heading="Label">
+                <InputField
+                  name="{node.id}/label"
+                  value={node.label}
+                  oninput={(e) => {
+                    const value = e.currentTarget.value;
+                    onEditCategory({
+                      id: node.id,
+                      type: node.type,
+                      color: node.color,
+                      text_color: node.text_color,
+                      label: value,
+                    });
+                  }}
+                ></InputField>
+              </CommandGroup>
+
+              <CommandGroup heading="Color">
+                <div class="grid grid-cols-5 gap-1 px-2">
+                  {#each labelColors as { label, color, text_color } (color)}
+                    <Tooltips delayDuration={0}>
+                      {#snippet trigger()}
+                        <button
+                          class="inline-flex size-6 items-center justify-center rounded-lg border"
+                          style="background-color: {color}; color: {text_color}"
+                          onclick={() =>
+                            onEditCategory({
+                              id: node.id,
+                              type: node.type,
+                              color: color,
+                              text_color: text_color,
+                              label: node.label,
+                            })}
+                        >
+                          {#if node.color === color}
+                            <CheckIcon class="size-4"></CheckIcon>
+                          {/if}
+                        </button>
+                      {/snippet}
+
+                      {#snippet content()}
+                        {label}
+                      {/snippet}
+                    </Tooltips>
+                  {/each}
+                </div>
+              </CommandGroup>
+            </Command>
+          </PopoverContent>
+        </Popover>
       {:else}
-        <Input
-          type="text"
-          class="w-60"
-          value={node.label}
-          onblur={() => {
-            editLabel = false;
-          }}
-        />
+        <Text size="sm" weight="semibold">{node.label}</Text>
       {/if}
 
-      <div class="ml-auto flex items-center justify-end gap-2 px-4">
-        <Tooltip>
-          <TooltipTrigger>
-            <Kbd>⌘ {node.label.charAt(0)}</Kbd>
-          </TooltipTrigger>
+      <div class="ml-auto flex items-center justify-end gap-2">
+        <!-- ASSIGNED PROPERTIES::ONLY SHOW WHEN ASSIGNED -->
+        {#if assignedProperties.length > 0}
+          <HoverCards openDelay={200}>
+            {#snippet trigger()}
+              <Badge variant="outline" class="cursor-pointer rounded-lg">
+                {assignedProperties.length > 1 ? `${assignedProperties.length} Properties` : "1 Property"}
+              </Badge>
+            {/snippet}
 
-          <TooltipContent>Assign a shortcut</TooltipContent>
-        </Tooltip>
+            {#snippet content()}
+              <div class="flex flex-col gap-2">
+                {#each assignedProperties as property (property.id)}
+                  <span>{property.label}</span>
+                {/each}
+              </div>
+            {/snippet}
+          </HoverCards>
+        {/if}
 
-        <Tooltip>
-          <TooltipTrigger>
-            <Button variant="ghost" size="icon" onclick={() => onAddCategory(node.id)}>
-              <PlusIcon class="size-4"></PlusIcon>
+        <DropdownMenu>
+          <DropdownMenuTrigger>
+            <Button variant="ghost" size="icon">
+              <EllipsisVerticalIcon class="size-4"></EllipsisVerticalIcon>
             </Button>
-          </TooltipTrigger>
+          </DropdownMenuTrigger>
 
-          <TooltipContent>Add Sub-category</TooltipContent>
-        </Tooltip>
+          <DropdownMenuContent align="end">
+            <DropdownMenuGroup>
+              <DropdownMenuItem onclick={() => onAddCategory(node.id)}>
+                <PlusIcon class="size-4"></PlusIcon>
+                Add Sub-category
+              </DropdownMenuItem>
 
-        <Tooltip>
-          <TooltipTrigger>
-            <Button variant="ghost" size="icon" onclick={() => onRemoveCategory(node.id)}>
-              <Trash2Icon class="size-4"></Trash2Icon>
-            </Button>
-          </TooltipTrigger>
-
-          <TooltipContent>Delete</TooltipContent>
-        </Tooltip>
+              <DropdownMenuItem onclick={() => onRemoveCategory(node.id)}>
+                <Trash2Icon class="size-4"></Trash2Icon>
+                Remove
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   </div>
@@ -96,9 +224,12 @@
     {#each node.children as child}
       {@const level = child.id.split("/").length}
       {@render TreeNode({
+        labelConfig: props.labelConfig,
         node: child,
         level: level,
         onAddCategory: onAddCategory,
+        onEditCategory: onEditCategory,
+        onEditCategoryId: onEditCategoryId,
         onRemoveCategory: onRemoveCategory,
       })}
     {/each}
