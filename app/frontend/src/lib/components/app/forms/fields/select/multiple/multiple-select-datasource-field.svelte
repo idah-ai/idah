@@ -1,12 +1,13 @@
 <script lang="ts" generics="T extends Record">
   import Button from "@/components/ui/button/button.svelte";
+  import CommandInput from "@/components/ui/command/command-input.svelte";
   import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
   import FormField from "@/components/app/forms/form-field.svelte";
   import FormFieldErrors from "@/components/app/forms/form-field-errors.svelte";
   import FormFieldInfo from "@/components/app/forms/form-field-info.svelte";
   import FormFieldLabel from "@/components/app/forms/form-field-label.svelte";
-  import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
   import Spinner from "@/components/app/loading/spinner.svelte";
+  import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
   import { cn } from "@/utils";
   import { CheckIcon, ChevronsUpDownIcon, CircleXIcon } from "@lucide/svelte";
@@ -30,6 +31,9 @@
     clearable = false,
     disabled = false,
     required = false,
+    searchable = false,
+    searchPlaceholder = "Search an option",
+    searchValue = $bindable(""),
     info,
     errors,
     class: className,
@@ -73,6 +77,11 @@
     /** Set default sort */
     if (!listOpts.sort) listOpts.sort = ["-id"];
 
+    if (searchable && searchValue) {
+      if (!listOpts.filters) listOpts.filters = {};
+      listOpts.filters["name__match"] = searchValue;
+    }
+
     const response = await dataSource.list(listOpts);
 
     return response.data.map((item) => ({
@@ -83,17 +92,13 @@
   }
 
   async function select(choice: Choice): Promise<void> {
-
-
-
-      if (values.find((v) => v == choice.value)) {
+    if (values.find((v) => v == choice.value)) {
       values = values.filter((value) => value != choice.value);
     } else {
       values = [...values, choice.value];
     }
     open = false;
     await onValueChange?.(choice.value);
-
   }
 </script>
 
@@ -140,6 +145,10 @@
 
     <PopoverContent align="start" class="p-0">
       <Command>
+        {#if searchable}
+          <CommandInput placeholder={searchPlaceholder} bind:value={searchValue} />
+        {/if}
+
         <CommandList>
           <CommandEmpty>No option found.</CommandEmpty>
           <CommandGroup>
@@ -151,11 +160,11 @@
                   {@render slotChoice({ choice })}
                 {:else}
                   <CommandItem onclick={() => select(choice)}>
-                     <CheckIcon
-                  class={cn("mr-2 size-4", {
-                    "opacity-0": !values.includes(choice.value),
-                  })}
-                />
+                    <CheckIcon
+                      class={cn("mr-2 size-4", {
+                        "opacity-0": !values.includes(choice.value),
+                      })}
+                    />
                     {choice.label}
                   </CommandItem>
                 {/if}
