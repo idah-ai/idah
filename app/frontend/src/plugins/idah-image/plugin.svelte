@@ -1,6 +1,6 @@
 <script lang="ts">
     import type { IActivityContext } from "@/plugin/interface/Activity";
-    import Video from "../idah_video/video-annotation-activity/video.svelte"
+    import Video from "../idah-video/video-annotation-activity/video.svelte"
     import { onMount } from "svelte";
 
     let {context}:{context: IActivityContext} = $props()
@@ -13,11 +13,9 @@
     })
 </script>
 
-    <Video
-        bind:this={player}
-        bind:element={player_container}
-        onFramesChange={console.log}
-        onVolumeChange={console.log}
-    />
+<div>
+    plugin idah-image
+</div>
+
 
 

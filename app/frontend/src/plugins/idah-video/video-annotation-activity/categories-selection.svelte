@@ -6,7 +6,6 @@
     import type { CategoryConfiguration, VideoAnnotation } from "./VideoAnnotationContext";
     import SidebarMenuSubButton from "@/components/ui/sidebar/sidebar-menu-sub-button.svelte";
     import type {CategoryDefinition } from "@/context/ActivityContext";
-    import { onMount } from "svelte";
 
 	let {
 		currentFrame,
@@ -132,11 +131,6 @@
 {#each annotations.filter((annotation) => !annotation.value.category && currentFrame >= annotation.shape.start && currentFrame <= annotation.shape.end) as annotation, i}
     {@render annotationSelection(annotation, annotation.value.label || annotation.metadata.id)}
 {/each}
-
-
-<!-- {#each Object.entries(categories) as [category, subCategory]}
-	{@render categorySelection(category, subCategory, onSelect, selected)}
-{/each} -->
 
 {#each categoriesTree as category}
 	{@render categorySelection(category.id, category.nestedCategories, onSelect, selected)}
