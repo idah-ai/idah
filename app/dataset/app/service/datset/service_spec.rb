@@ -80,8 +80,6 @@ RSpec.describe Datset::Service, database: true do
 
       created_dataset = subject.import(file_path: "testing_file_path.datset", project_id: project_id)
 
-      binding.pry
-
       # expectations: dataset
       expect(created_dataset.name).to eq("testing dataset 01")
 
@@ -97,9 +95,10 @@ RSpec.describe Datset::Service, database: true do
     end
   end
 
-  describe "#export" do
+  describe "#create_datset" do
     it "generate a correct datset structure" do
-      subject.export(dataset_id)
+      # TODO: prep test data for dataset, entries, annotations
+      subject.create_datset("019960ab-1e80-78bf-b4d2-ebc62a6d3805") # mocking id
     end
   end
 end
