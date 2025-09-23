@@ -12,7 +12,7 @@
   } from "@/components/ui/dropdown-menu";
   import DatasetFormModal from "@/components/app/datasets/overlays/dataset-form-modal.svelte";
 
-  import { EllipsisVerticalIcon, SquarePenIcon, Trash2Icon } from "@lucide/svelte";
+  import { EllipsisVerticalIcon, FileUpIcon, SquarePenIcon, Trash2Icon } from "@lucide/svelte";
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
 
@@ -44,6 +44,13 @@
       icon: Trash2Icon,
       action: () => {
         openConfirmDeleteDatasetModal = true;
+      },
+    },
+    {
+      label: "Export",
+      icon: FileUpIcon,
+      action: () => {
+        // open export confirmation box ? with editable name field ? and call export
       },
     },
   ];

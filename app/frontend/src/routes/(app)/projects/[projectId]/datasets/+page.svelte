@@ -9,7 +9,7 @@
   import { projectDatasetColumns } from "@/components/app/datasets/data-tables/project-dataset.columns";
   import { datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { refetches } from "@/utils/refetch";
-  import { PlusIcon } from "@lucide/svelte";
+  import { FileDownIcon, PlusIcon } from "@lucide/svelte";
 
   // Variables
   let projectId: string = page.params.projectId as string;
@@ -18,10 +18,16 @@
 
 <PageHeader title="Datasets">
   {#snippet actions()}
-    <Button onclick={() => (openNewDatasetModal = true)}>
-      <PlusIcon class="size-4" />
-      New Dataset
-    </Button>
+    <div class="flex items-center gap-4">
+      <Button onclick={() => (openNewDatasetModal = true)}>
+        <PlusIcon class="size-4" />
+        New Dataset
+      </Button>
+      <Button> <!-- open file import modal and call import -->
+        <FileDownIcon class="size-4" />
+        Import Dataset
+      </Button>
+    </div>
   {/snippet}
 </PageHeader>
 
