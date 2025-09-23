@@ -3,6 +3,7 @@
 
   import Button from "@/components/ui/button/button.svelte";
   import EmptyLabelResponseBlock from "@/components/app/datasets/labels/blocks/empty-label-response-block.svelte";
+  import LabelEditor from "@/components/app/datasets/labels/label-editor.svelte";
   import PageHeader from "@/components/app/page/page-header.svelte";
   import PageLoading from "@/components/app/page/page-loading.svelte";
 
@@ -13,8 +14,12 @@
   import { labelTabs, type LabelTab } from "@/components/app/datasets/labels/tabs/label.tabs";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
 
-  import type { LabelingConfiguration } from "@/data/model/dataset/types";
-  import LabelTree from "@/components/app/datasets/labels/trees/label-tree.svelte";
+  import type {
+    LabelCategoryConfiguration,
+    LabelingConfiguration,
+    LabelPropertyConfiguration,
+  } from "@/data/model/dataset/types";
+  import { labelColors } from "@/components/app/datasets/labels/label-color";
 
   // Variables
   let projectId: string = page.params.projectId as string;
@@ -22,6 +27,8 @@
 
   let saving: boolean = $state(false);
   let currentTab: LabelTab = $state("manual");
+  let modality: string = $state("video");
+  let defaultCategoryType: string = $derived(`${modality}:bounding_box`);
   let labelConfig: LabelingConfiguration | undefined = $state(undefined);
   let isAlreadyDefineLabelConfig: boolean = $derived.by(() => {
     if (!labelConfig) return false;
@@ -30,14 +37,24 @@
 
     return true;
   });
+  let usedColors = $derived.by(() => {
+    return labelConfig ? labelConfig.categories.map((cat) => cat.color) : [];
+  });
+  const availableColors = $derived(labelColors.filter((color) => !usedColors.includes(color.color)));
+  const firstAvailableColor = $derived.by(() => {
+    return availableColors.length
+      ? availableColors[0].color
+      : labelColors[Math.floor(Math.random() * labelColors.length)].color;
+  });
 
   // Functions
   async function fetchData(): Promise<void> {
     const datasetRes = await datasetsBackendDataSource.get(datasetId, {
       fields: {
-        [DatasetRecord.type]: ["labeling_configuration"],
+        [DatasetRecord.type]: ["modality", "labeling_configuration"],
       },
     });
+    modality = datasetRes.data.modality;
     labelConfig = datasetRes.data.labeling_configuration;
   }
 
@@ -57,23 +74,132 @@
     }
   }
 
-  function addNewCategory(parentId?: string) {
+  function addNewCategory(nodeId?: string) {
     if (!labelConfig) return;
 
+    const newId = new Date().getTime().toString();
+
+    /** Add a new root category, if nodeId is not provided */
+    if (!nodeId) {
+      labelConfig.categories.push({
+        id: `${newId}`,
+        type: defaultCategoryType,
+        label: "New Category",
+        color: firstAvailableColor,
+      });
+      return;
+    }
+
+    const parentCategories = labelConfig.categories.filter((cat) => cat.id.startsWith(nodeId));
+    /** Add a new sub-category, if parent category not exists */
+    if (!parentCategories.length) {
+      labelConfig.categories.push({
+        id: `${nodeId}/${newId}`,
+        label: `${nodeId}/${newId}`,
+        type: defaultCategoryType,
+        color: firstAvailableColor,
+      });
+      return;
+    }
+
+    /** Add a new sub-category, if parent category exists */
+    if (parentCategories.length === 1) {
+      const parentCategoryIndex = labelConfig.categories.findIndex((cat) => cat.id === nodeId);
+      if (parentCategoryIndex !== -1) {
+        /** Update the existing one with newId */
+        labelConfig.categories[parentCategoryIndex] = {
+          ...labelConfig.categories[parentCategoryIndex],
+          id: `${labelConfig.categories[parentCategoryIndex].id}/${newId}`,
+        };
+      } else {
+        /** Just in case, if not found, add a new one */
+        labelConfig.categories.push({
+          id: `${nodeId}/${newId}`,
+          label: `${nodeId}/${newId}`,
+          type: defaultCategoryType,
+          color: firstAvailableColor,
+        });
+      }
+
+      return;
+    }
+
+    /** Add a new sub-category, if multiple parent categories exist */
     labelConfig.categories.push({
-      id: parentId
-        ? `${parentId}/new_category_${labelConfig.categories.length + 1}`
-        : `new_category_${labelConfig.categories.length + 1}`,
-      type: "image",
-      label: `New Category ${labelConfig.categories.length + 1}`,
-      color: "#000000",
+      id: `${nodeId}/${newId}`,
+      label: `${nodeId}/${newId}`,
+      type: defaultCategoryType,
+      color: firstAvailableColor,
     });
   }
 
-  function removeCategory(id: string) {
+  function editCategory(category: LabelCategoryConfiguration) {
     if (!labelConfig) return;
 
-    labelConfig.categories = labelConfig.categories.filter((cat) => !cat.id.includes(id));
+    const categoryToUpdateIndex = labelConfig.categories.findIndex((cat) => cat.id === category.id);
+
+    if (categoryToUpdateIndex >= 0) {
+      labelConfig.categories[categoryToUpdateIndex] = category;
+    } else {
+      labelConfig.categories.push(category);
+    }
+  }
+
+  function editCategoryId(oldId: string, newId: string) {
+    if (!labelConfig) return;
+
+    const categoryToUpdateIndex = labelConfig.categories.findIndex((cat) => cat.id === oldId);
+
+    if (categoryToUpdateIndex >= 0) {
+      labelConfig.categories[categoryToUpdateIndex].id = newId;
+      labelConfig.categories[categoryToUpdateIndex].label = newId;
+    }
+  }
+
+  function removeCategory(categoryId: string) {
+    if (!labelConfig) return;
+
+    // Filter out the exact category with the given ID
+    // This will only remove the exact match, keeping any parent categories
+    labelConfig.categories = labelConfig.categories.filter((cat) => !cat.id.includes(categoryId));
+
+    // Check if we need to create a parent category
+    const categoryPaths = categoryId.split("/");
+    if (categoryPaths.length > 1) {
+      // Create the parent path by removing the last segment
+      const parentPath = categoryPaths.slice(0, -1).join("/");
+
+      // Check if the parent category already exists
+      const parentExists = labelConfig.categories.some((cat) => cat.id === parentPath);
+
+      // If parent doesn't exist, create it
+      if (!parentExists) {
+        labelConfig.categories.push({
+          id: parentPath,
+          label: parentPath,
+          type: defaultCategoryType,
+          color: firstAvailableColor,
+        });
+      }
+    }
+  }
+
+  function setProperty(property: LabelPropertyConfiguration) {
+    if (!labelConfig) return;
+
+    const propertyToUpdateIndex = labelConfig.properties.findIndex((p) => p.id === property.id);
+
+    if (propertyToUpdateIndex >= 0) {
+      labelConfig.properties[propertyToUpdateIndex] = property;
+    } else {
+      labelConfig.properties.push(property);
+    }
+  }
+
+  function removeProperty(propertyId: string) {
+    if (!labelConfig) return;
+
+    labelConfig.properties = labelConfig.properties.filter((p) => p.id !== propertyId);
   }
 </script>
 
@@ -104,7 +230,15 @@
 
     <TabsContent value="manual">
       {#if isAlreadyDefineLabelConfig && labelConfig}
-        <LabelTree {labelConfig} onAddCategory={addNewCategory} onRemoveCategory={removeCategory}></LabelTree>
+        <LabelEditor
+          {labelConfig}
+          onAddCategory={addNewCategory}
+          onEditCategory={editCategory}
+          onEditCategoryId={editCategoryId}
+          onRemoveCategory={removeCategory}
+          onSetProperty={setProperty}
+          onRemoveProperty={removeProperty}
+        ></LabelEditor>
       {:else}
         <EmptyLabelResponseBlock onNewLabel={() => {}}></EmptyLabelResponseBlock>
       {/if}

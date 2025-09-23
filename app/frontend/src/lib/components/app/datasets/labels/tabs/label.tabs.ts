@@ -4,6 +4,5 @@ export type LabelTab = "manual" | "properties" | "json";
 
 export const labelTabs: BaseTabs<LabelTab> = [
   { label: "Manual Edition", value: "manual" },
-  { label: "Properties", value: "properties" },
   { label: "JSON", value: "json" },
 ];
