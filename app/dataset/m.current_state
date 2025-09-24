@@ -1,0 +1,30 @@
+
+[1mFrom:[0m /app/app/service/annotation_workflow/service.rb:22 AnnotationWorkflow::Service#start_annotation:
+
+    [1;34m10[0m: [32mdef[0m [1;34mstart_annotation[0m(entry_id)
+    [1;34m11[0m:   entries.transaction [32mdo[0m
+    [1;34m12[0m:     entry = entries.find!(entry_id)
+    [1;34m13[0m: 
+    [1;34m14[0m:     [1;34m# Use AASM to transition to annotation phase[0m
+    [1;34m15[0m:     [32munless[0m entry.may_begin_annotation?
+    [1;34m16[0m:       raise [1;34;4mVerse[0m::[1;34;4mError[0m::[1;34;4mValidationFailed[0m,
+    [1;34m17[0m:             [31m[1;31m"[0m[31mCannot start annotation for entry in current state: #{entry.aasm.current_state}[0m[31m[1;31m"[0m[31m[0m
+    [1;34m18[0m:     [32mend[0m
+    [1;34m19[0m: 
+    [1;34m20[0m:     [1;34m# Trigger AASM event which will automatically persist state changes[0m
+    [1;34m21[0m:     entry.begin_annotation!
+ => [1;34m22[0m:     binding.pry
+    [1;34m23[0m:     [1;34m# Return updated entry with workflow context[0m
+    [1;34m24[0m:     updated_entry = entries.find!(entry_id, [35mincluded[0m: [[33m:dataset[0m, [33m:annotations[0m])
+    [1;34m25[0m: 
+    [1;34m26[0m:     {
+    [1;34m27[0m:       [35mentry[0m: updated_entry,
+    [1;34m28[0m:       [35mworkflow_step[0m: updated_entry.wf_step,
+    [1;34m29[0m:       [35mstatus[0m: updated_entry.status,
+    [1;34m30[0m:       [35mavailable_actions[0m: updated_entry.available_actions,
+    [1;34m31[0m:       [35mprogress[0m: updated_entry.workflow_progress,
+    [1;34m32[0m:       [35mmessage[0m: [31m[1;31m"[0m[31mAnnotation workflow started successfully[1;31m"[0m[31m[0m
+    [1;34m33[0m:     }
+    [1;34m34[0m:   [32mend[0m
+    [1;34m35[0m: [32mend[0m
+
