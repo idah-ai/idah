@@ -1,6 +1,3 @@
-import { sleep } from "@/utils/delayed";
-import { uuidv7 } from "uuidv7";
-
 type JsonRpcMethod = {
   method: string;
   params?: any;
@@ -25,6 +22,11 @@ type JsonRpcResponse = {
   error?: JsonRpcError;
 };
 
+type JSONRpcBatchConfig = {
+  size: number;
+  time: number;
+};
+
 export class JsonRpcDatasource {
   queue: Array<{
     JsonRpcMethod: JsonRpcMethod;
@@ -34,10 +36,10 @@ export class JsonRpcDatasource {
   processing = false;
   batch_size: number;
   base_url: string;
-  constructor(base_url: string, batch_size = 200) {
+  constructor(base_url: string, config: JSONRpcBatchConfig = { size: 10, time: 1000 }) {
     this.base_url = base_url;
-    this.batch_size = batch_size;
-    setInterval(this.process.bind(this), 30000);
+    this.batch_size = config.size;
+    setInterval(this.process.bind(this), config.time);
   }
 
   call(JsonRpcMethod: JsonRpcMethod): Promise<JsonRpcError | any> {
@@ -60,7 +62,7 @@ export class JsonRpcDatasource {
   private flush() {
     if (this.queue.length > 0) {
       this.processing = true;
-      let batch: Array<{
+      const batch: Array<{
         id: string;
         JsonRpcMethod: JsonRpcMethod;
         onResolve?: (r: JsonRpcResult) => void;
@@ -121,7 +123,7 @@ export class JsonRpcDatasource {
 
         if (response == undefined) return reject(batch);
 
-        let failed: Array<{
+        const failed: Array<{
           JsonRpcMethod: JsonRpcMethod;
           onResolve?: (r: JsonRpcResult) => void;
           onReject?: (r: JsonRpcError) => void;

@@ -1,9 +1,8 @@
 import { annotationsBackendDataSource } from "@/data/model/dataset/annotationRecord";
 import { JsonRpcDatasource } from "../../plugins/idah-video/video-annotation-activity/jsonrpc";
 import type { IAnnotation, IAnnotationDriver } from "./interface/Activity";
-import { sleep } from "@/utils/delayed";
 
-const annotations_rpc = new JsonRpcDatasource("https://idah.localhost:8443/api/v1/dataset/annotations/_rpc", 50);
+const annotations_rpc = new JsonRpcDatasource("https://idah.localhost:8443/api/v1/dataset/annotations/_rpc");
 
 export function createAnnotationDriver(entry_id: string): IAnnotationDriver {
   return {
@@ -20,18 +19,15 @@ export function createAnnotationDriver(entry_id: string): IAnnotationDriver {
     },
     list(filter, pagination) {
       return new Promise<IAnnotation[]>((resolve, reject) => {
-        sleep(2000).then(() => {
-          // test purpose
-          annotationsBackendDataSource
-            .list({
-              filters: { ...filter, entry_id },
-              pagination,
-            })
-            .then(
-              (v) => resolve(v.data),
-              (v) => reject(v.error),
-            );
-        });
+        annotationsBackendDataSource
+          .list({
+            filters: { ...filter, entry_id },
+            pagination,
+          })
+          .then(
+            (v) => resolve(v.data),
+            (v) => reject(v.error),
+          );
       });
     },
     update({ id, dimensions, annotation }) {

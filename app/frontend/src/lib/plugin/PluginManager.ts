@@ -17,7 +17,7 @@ export class PluginManager {
           });
         }),
       ).then(
-        (plugins) => resolve(console.log({ this: this, plugins })),
+        (plugins) => resolve(console.log({ PluginManager: this, plugins })),
         () => reject(console.error),
       );
     });

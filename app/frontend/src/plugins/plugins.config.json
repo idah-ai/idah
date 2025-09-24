@@ -5,6 +5,10 @@
       "src": "local"
     },
     {
+      "name": "idah-video-player",
+      "src": "local"
+    },
+    {
       "name": "idah-image",
       "src": "local"
     }

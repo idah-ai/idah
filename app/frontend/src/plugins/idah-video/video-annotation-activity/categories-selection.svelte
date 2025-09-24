@@ -6,56 +6,64 @@
     import type { CategoryConfiguration, VideoAnnotation } from "./VideoAnnotationContext";
     import SidebarMenuSubButton from "@/components/ui/sidebar/sidebar-menu-sub-button.svelte";
     import type {CategoryDefinition } from "@/context/ActivityContext";
+    import type { AnnotationsIndexedDB } from "./indexedDB";
+    import { annotationsCategory, idb_updated_at, uncategorizedAnnotations } from "./idb_store.svelte";
+    import { set } from "date-fns";
 
 	let {
+        type,
 		currentFrame,
-		annotations,
 		categories,
 		selected,
 		onSelect,
 		onSelectAnnotation,
+        db,
 	}: {
+        type: string,
 		currentFrame: number;
-		annotations: VideoAnnotation[];
 		categories: CategoryConfiguration[];
 		selected: string | undefined;
 		onSelect: (selection?: string) => void;
-		onSelectAnnotation: (annotation: VideoAnnotation) => void;
+		onSelectAnnotation: (annotation: VideoAnnotation) => void,
+        db?: AnnotationsIndexedDB
 	} = $props();
 
-    function buildAcc(acc :CategoryDefinition[], ids:string[], configuration:CategoryConfiguration):CategoryDefinition[] {
+    let categoriesTree:CategoryDefinition[] = categories.reduce<CategoryDefinition[]>((acc, category_configuration) => {
+            return buildTree(acc, category_configuration.id.split('/'), category_configuration)
+        }, [])
+
+    function buildTree(acc :CategoryDefinition[], ids:string[], configuration:CategoryConfiguration):CategoryDefinition[] {
         if (ids.length == 1) {
             acc.push({
                 id: configuration.id,
                 name: configuration.label,
                 description: configuration.description,
+                requiredNested: false
             })
         } else {
-            const index = acc.findIndex(a => configuration.id )
+            const index = acc.findIndex(a => configuration.id.startsWith(a.id) )
 
             if (index == -1) {
                 acc.push({
-                    id: ids.length ? ids[0] : configuration.id.replace(ids.join('/'),''),
-                    name: ids.length ? ids[0] : configuration.id.replace(ids.join('/'),''),
-                    nestedCategories: buildAcc([], ids.slice(1, Infinity), configuration)
+                    id: configuration.id.replace(
+                        ids.join('/'),
+                        ids.at(0) || ''
+                    ),
+                    name: ids[0],
+                    nestedCategories: buildTree([], ids.slice(1, Infinity), configuration),
+                    requiredNested: true
                 })
             } else {
-                acc[index].nestedCategories = buildAcc(acc[index].nestedCategories || [], ids.slice(1, Infinity), configuration)
+                acc[index].nestedCategories = buildTree(acc[index].nestedCategories || [], ids.slice(1, Infinity), configuration)
             }
         }
         return acc
     }
 
-    let categoriesTree:CategoryDefinition[] = categories.reduce<CategoryDefinition[]>((acc, category_configuration) => {
-            return buildAcc(acc, category_configuration.id.split('/'), category_configuration)
-        }, [])
-
-
-	function categoryFullName(category: string, parent: string[]) {
-		return [...parent, category].join("/");
-	}
-
-    $effect(() => console.log({annotations}))
+    let uncategorized_promise = $derived.by(async () => {
+        $idb_updated_at
+        return $uncategorizedAnnotations = (await db?.getAllIndex('category')) || []
+    })
 </script>
 
 {#snippet annotationSelection(
@@ -92,35 +100,57 @@
 {/snippet}
 
 {#snippet categorySelection(
-	category: string,
+	category: CategoryDefinition,
 	subCategories: CategoryDefinition[] | undefined,
 	onSelect: (selection?: string) => void,
 	selected: string | undefined,
 	parent: string[] = [],
 )}
-	<Collapsible >
-		<CollapsibleTrigger onclick={() => onSelect(categoryFullName(category, parent))}>
-			{category}
-			<Badge variant='secondary'>
-				{annotations.filter(
-					(annotation) =>
-						annotation.value.category?.startsWith(categoryFullName(category, parent)) &&
-						currentFrame >= annotation.shape.start &&
-						currentFrame <= annotation.shape.end,
-				).length}
+
+	<Collapsible>
+		<CollapsibleTrigger onclick={() => {if(!category.requiredNested) onSelect(category.id)}}>
+			{category.name}
+                {#if db && category && $idb_updated_at}
+                    {#key $idb_updated_at}
+            			<Badge variant='secondary'>
+                        {#await db.getAllStartingWith('category', category.id)}
+                            ...
+                        {:then anns}
+                            {anns.filter(
+                                (annotation) =>
+                                    currentFrame >= annotation.shape.start &&
+                                    currentFrame <= annotation.shape.end &&
+                                    annotation.shape.type == type
+                            ).length}
+                        {/await}
 			</Badge>
+                   {/key}
+                {/if}
 		</CollapsibleTrigger>
 
 		<CollapsibleContent style={"margin-left:10px"}>
-			{#each annotations.filter((annotation) => annotation.value.category == categoryFullName(category, parent) && currentFrame >= annotation.shape.start && currentFrame <= annotation.shape.end) as annotation, i}
-                {@render annotationSelection(annotation, annotation.value.label || `${category}_${i}`, categoryFullName(category, parent))}
-			{/each}
+            {#key $idb_updated_at}
+                {#if db && category}
+                    {#await db.getAllIndex('category', category.id)}
+                        ...
+                    {:then anns}
+                        {#each anns.filter(
+                                (annotation) =>
+                                    currentFrame >= annotation.shape.start &&
+                                    currentFrame <= annotation.shape.end &&
+                                    annotation.shape.type == type
+                            ) as annotation, i}
+                            {@render annotationSelection(annotation, annotation.value.label || `${category.name}_${i}`, category.id)}
+                        {/each}
+                    {/await}
+                {/if}
+            {/key}
 
             {#if subCategories}
 				{#each subCategories as subCategory}
-					{@render categorySelection(subCategory.name, subCategory.nestedCategories, onSelect, selected, [
+					{@render categorySelection(subCategory, subCategory.nestedCategories, onSelect, selected, [
 						...parent,
-						category,
+						category.id.split('/').slice(parent.length)[0]
 					])}
 				{/each}
 			{/if}
@@ -128,10 +158,43 @@
 	</Collapsible>
 {/snippet}
 
-{#each annotations.filter((annotation) => !annotation.value.category && currentFrame >= annotation.shape.start && currentFrame <= annotation.shape.end) as annotation, i}
-    {@render annotationSelection(annotation, annotation.value.label || annotation.metadata.id)}
-{/each}
+
+{#if db}
+    {#key [db, $idb_updated_at]}
+        {#await uncategorized_promise}
+            {#each $uncategorizedAnnotations.filter((annotation) => {
+                return currentFrame >= annotation.shape.start &&
+                currentFrame <= annotation.shape.end &&
+                annotation.shape.type == type
+            })as annotation}
+                {@render annotationSelection(annotation, annotation.value.label || annotation.metadata.id)}
+            {/each}
+        {:then annotations}
+            {#each annotations.filter((annotation) => {
+                return currentFrame >= annotation.shape.start &&
+                currentFrame <= annotation.shape.end &&
+                annotation.shape.type == type
+            })as annotation}
+                {@render annotationSelection(annotation, annotation.value.label || annotation.metadata.id)}
+            {/each}
+        {/await}
+    {/key}
+    <!-- {#key [db, $idb_updated_at]}
+        {#await db.getAllIndex('category')}
+            loading...
+        {:then uncategorizedAnnotations}
+            {#each uncategorizedAnnotations.filter((annotation) => {
+                return currentFrame >= annotation.shape.start &&
+                currentFrame <= annotation.shape.end &&
+                annotation.shape.type == type
+            })as annotation}
+                {@render annotationSelection(annotation, annotation.value.label || annotation.metadata.id)}
+            {/each}
+        {/await}
+
+    {/key} -->
+{/if}
 
 {#each categoriesTree as category}
-	{@render categorySelection(category.id, category.nestedCategories, onSelect, selected)}
+    {@render categorySelection(category, category.nestedCategories, onSelect, selected)}
 {/each}
