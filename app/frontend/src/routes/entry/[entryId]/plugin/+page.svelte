@@ -1,9 +1,7 @@
 <script lang="ts">
     import { entriesBackendDataSource } from "@/data/model/dataset/entryRecord";
     import { activityContextForEntry } from "@/plugin/ActivityContext";
-    import IdahPlugin from "@/plugin/IdahPlugin.svelte";
     import type { IActivityContext, IActivityView } from "@/plugin/interface/Activity";
-    import { sleep } from "@/utils/delayed";
     import { getContext, onMount } from "svelte";
     import { page } from "$app/state";
     import type { PluginManager } from "@/plugin/PluginManager";

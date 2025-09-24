@@ -13,14 +13,16 @@
 	} from "@/components/ui/table";
 	import type { VideoAnnotation } from "../VideoAnnotationContext";
 	import Timeline from "./timeline.svelte";
+    import type { AnnotationsIndexedDB } from "../indexedDB";
+    import { idb_updated_at } from "../idb_store.svelte";
 
 	let {
+        db,
 		tracking = false,
         scale = 1,
         zoom = 1,
 		currentFrame,
 		totalFrames,
-		annotations,
 		selectedAnnotation,
 		onSeekFrame,
 		onDeleteAnnotation,
@@ -28,13 +30,13 @@
 		onZoomChange,
 		onScaleChange,
 	}: {
+        db: AnnotationsIndexedDB | undefined,
 		tracking?: boolean;
         scale: number;
         zoom: number;
 		currentFrame: number;
 		totalFrames: number;
 		selectedAnnotation?: VideoAnnotation;
-		annotations: VideoAnnotation[];
 		onSeekFrame: (frame: number) => void;
 		onSelectAnnotation: (annotation: VideoAnnotation) => void;
 		onDeleteAnnotation: (VideoAnnotation: VideoAnnotation, frame?: number) => void;
@@ -179,60 +181,68 @@
 		</TableFooter>
 	{/if}
 	<TableBody>
-		{#each annotations as annotation: videoAnnotation}
-			<TableRow
-				class="border-0"
-				onclick={() => {
-					onSelectAnnotation(annotation);
-				}}
-				data-state={selectedAnnotation == annotation ? "selected" : ""}
-			>
-				<TableCell
-					class="hoverable p-0"
-					ondblclick={() => {
-						pos_offset = annotation.shape.start;
-						onSeekFrame(annotation.shape.start);
-					}}
-				>
-					{[annotation.value.category?.split("/").reverse()[0], annotation.metadata.id].filter((a) => a).join(" - ")}
+    {#key $idb_updated_at}
+        {#await db?.getAllStore('annotations')}
+            ...
+        {:then annotations}
+            {#if annotations}
+                {#each annotations as annotation}
+                    <TableRow
+                        class="border-0"
+                        onclick={() => {
+                            onSelectAnnotation(annotation);
+                        }}
+                        data-state={selectedAnnotation?.metadata.id == annotation.metadata.id ? "selected" : ""}
+                    >
+                        <TableCell
+                            class="hoverable p-0"
+                            ondblclick={() => {
+                                pos_offset = annotation.shape.start;
+                                onSeekFrame(annotation.shape.start);
+                            }}
+                        >
+                            {[annotation.value.category?.split("/").reverse()[0], annotation.metadata.id].filter((a) => a).join(" - ")}
 
-					<Button
-                        class='hovered'
-						onclick={(e) => {
-							e.stopPropagation();
-							onDeleteAnnotation(annotation);
-						}}>
-                        <svg class='h-100' viewBox="0 0 12 15" xmlns="http://www.w3.org/2000/svg">
-                            <path
-                                class="fill-secondary"
-                                d="M9.33329 5V13.3333H2.66663V5H9.33329ZM8.08329 0H3.91663L3.08329 0.833333H0.166626V2.5H11.8333V0.833333H8.91663L8.08329 0ZM11 3.33333H0.999959V13.3333C0.999959 14.25 1.74996 15 2.66663 15H9.33329C10.25 15 11 14.25 11 13.3333V3.33333Z"
+                            <Button
+                                class='hovered'
+                                onclick={(e) => {
+                                    e.stopPropagation();
+                                    onDeleteAnnotation(annotation);
+                                }}>
+                                <svg class='h-100' viewBox="0 0 12 15" xmlns="http://www.w3.org/2000/svg">
+                                    <path
+                                        class="fill-secondary"
+                                        d="M9.33329 5V13.3333H2.66663V5H9.33329ZM8.08329 0H3.91663L3.08329 0.833333H0.166626V2.5H11.8333V0.833333H8.91663L8.08329 0ZM11 3.33333H0.999959V13.3333C0.999959 14.25 1.74996 15 2.66663 15H9.33329C10.25 15 11 14.25 11 13.3333V3.33333Z"
+                                    />
+                                </svg>
+                            </Button>
+                        </TableCell>
+                        <TableCell class="p-0">
+                            <Timeline
+                                {annotation}
+                                {currentFrame}
+                                {range}
+                                {scale}
+                                hoveredColumnChange={(column) => (hovered_column = column)}
+                                {hovered_column}
+                                {onSeekFrame}
+                                {onDeleteAnnotation}
                             />
-                        </svg>
-                    </Button>
-				</TableCell>
-				<TableCell class="p-0">
-					<Timeline
-						{annotation}
-						{currentFrame}
-						{range}
-						{scale}
-						hoveredColumnChange={(column) => (hovered_column = column)}
-						{hovered_column}
-						{onSeekFrame}
-						{onDeleteAnnotation}
-					/>
-				</TableCell>
-			</TableRow>
-            <style>
-                .hoverable:hover .hovered {
-                    display:inline-block
-                }
-                .hoverable .hovered {
-                    display:none
-                }
+                        </TableCell>
+                    </TableRow>
+                    <style>
+                        .hoverable:hover .hovered {
+                            display:inline-block
+                        }
+                        .hoverable .hovered {
+                            display:none
+                        }
 
-            </style>
-            {/each}
+                    </style>
+                {/each}
+            {/if}
+        {/await}
+    {/key}
 	</TableBody>
 </Table>
 
