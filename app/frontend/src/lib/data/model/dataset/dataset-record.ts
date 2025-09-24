@@ -3,7 +3,7 @@ import { field, Record, RecordFactory, relationship, type } from "@/data/model/R
 
 import type { ProjectRecord } from "@/data/model/dataset/projects/project-record";
 import type { Hash } from "@/utils/types";
-import type { LabelingConfiguration } from "@/data/model/dataset/types";
+import type { LabelingConfiguration } from "@/data/model/dataset/labels";
 import { humanize } from "@/utils/string";
 
 @type("dataset:datasets")

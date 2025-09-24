@@ -13,7 +13,7 @@
   // Props
   interface Props extends FormFieldBaseProps {
     type?: HTMLInputTypeAttribute;
-    value: number | null;
+    value: number | null | undefined;
     oninput?: FormEventHandler<HTMLInputElement>;
   }
   let {

@@ -8,11 +8,11 @@
 
   import { BoltIcon, PlusIcon } from "@lucide/svelte";
 
-  import type { LabelingConfiguration, LabelPropertyConfiguration } from "@/data/model/dataset/types";
+  import type { LabelingConfiguration, PropertyField } from "@/data/model/dataset/labels";
 
   // Props
   interface Props {
-    onSetProperty: (property: LabelPropertyConfiguration) => void;
+    onSetProperty: (property: PropertyField) => void;
     onRemoveProperty: (propertyId: string) => void;
   }
   let { onSetProperty, onRemoveProperty }: Props = $props();
@@ -31,6 +31,7 @@
       format: {
         minimum: null,
         maximum: null,
+        step: 1,
         options: [],
       },
       selector: [],
@@ -45,20 +46,22 @@
   </Button>
 {/snippet}
 
-{#each labelConfig.properties as property, index (index)}
-  <PropertyCard {property} {onSetProperty} {onRemoveProperty}></PropertyCard>
-{:else}
-  <Card>
-    <CardContent>
-      <ResponseBlock icon={BoltIcon} title="No Properties Yet" description="Add a property to get started">
-        {#snippet actions()}
-          {@render AddNewPropertyButton()}
-        {/snippet}
-      </ResponseBlock>
-    </CardContent>
-  </Card>
-{/each}
+<div class="flex flex-col gap-4">
+  {#each labelConfig.properties as property, index (index)}
+    <PropertyCard {property} {onSetProperty} {onRemoveProperty}></PropertyCard>
+  {:else}
+    <Card>
+      <CardContent>
+        <ResponseBlock icon={BoltIcon} title="No Properties Yet" description="Create properties to get started">
+          {#snippet actions()}
+            {@render AddNewPropertyButton()}
+          {/snippet}
+        </ResponseBlock>
+      </CardContent>
+    </Card>
+  {/each}
 
-{#if labelConfig.properties.length > 0}
-  {@render AddNewPropertyButton()}
-{/if}
+  {#if labelConfig.properties.length > 0}
+    {@render AddNewPropertyButton()}
+  {/if}
+</div>

@@ -17,7 +17,6 @@
   import Tooltips from "@/components/app/tooltips/tooltips.svelte";
 
   import { cn } from "@/utils";
-  import { labelColors } from "@/components/app/datasets/labels/label-color";
 
   import {
     CheckIcon,
@@ -30,14 +29,14 @@
   } from "@lucide/svelte";
 
   import type { TreeItem } from "@/data/model/dataset/dataset-record";
-  import type { LabelCategoryConfiguration, LabelingConfiguration } from "@/data/model/dataset/types";
+  import { labelColors, fieldTypes, type CategoryField, type LabelingConfiguration } from "@/data/model/dataset/labels";
 
   interface TreeNodeProps {
     labelConfig: LabelingConfiguration;
     node: TreeItem;
     level: number;
     onAddCategory: (nodeId?: string) => void;
-    onEditCategory: (category: LabelCategoryConfiguration) => void;
+    onEditCategory: (category: CategoryField) => void;
     onEditCategoryId: (oldId: string, newId: string) => void;
     onRemoveCategory: (categoryId: string) => void;
   }
@@ -64,23 +63,31 @@
       {#if isLastNode}
         <Popover>
           <PopoverTrigger>
-            <Button variant="ghost" class="gap-4">
-              <div
-                class="inline-flex size-7 shrink-0 items-center justify-center rounded-sm text-sm [&_svg]:pointer-events-none [&_svg]:shrink-0"
-                style:background-color={node.color}
-                style:color={node?.text_color || "#FFFFFF"}
-              >
-                {#if node.type?.includes("bounding_box")}
-                  <SquareDashedMousePointerIcon class="size-4"></SquareDashedMousePointerIcon>
-                {:else}
-                  <LassoIcon class="size-4"></LassoIcon>
-                {/if}
-              </div>
+            <Tooltips delayDuration={500}>
+              {#snippet trigger()}
+                <Button variant="ghost" class="cursor-pointer gap-4">
+                  <div
+                    class="inline-flex size-7 shrink-0 items-center justify-center rounded-sm text-sm [&_svg]:pointer-events-none [&_svg]:shrink-0"
+                    style:background-color={node.color}
+                    style:color={node?.text_color || "#FFFFFF"}
+                  >
+                    {#if node.type?.includes("bounding_box")}
+                      <SquareDashedMousePointerIcon class="size-4"></SquareDashedMousePointerIcon>
+                    {:else}
+                      <LassoIcon class="size-4"></LassoIcon>
+                    {/if}
+                  </div>
 
-              <Kbd>⌘ {node.label.charAt(0)}</Kbd>
+                  <Kbd>⌘ {node.label.charAt(0)}</Kbd>
 
-              {node.label}
-            </Button>
+                  {node.label}
+                </Button>
+              {/snippet}
+
+              {#snippet content()}
+                Edit "{node.label}"
+              {/snippet}
+            </Tooltips>
           </PopoverTrigger>
 
           <PopoverContent align="start" class="p-0">
@@ -110,17 +117,6 @@
 
               <CommandGroup heading="Shortcut Key"></CommandGroup>
 
-              <CommandGroup heading="ID">
-                <InputField
-                  name="{node.id}/id"
-                  value={node.id}
-                  onblur={(e) => {
-                    const value = e.currentTarget.value;
-                    onEditCategoryId(node.id, value.toLocaleLowerCase());
-                  }}
-                ></InputField>
-              </CommandGroup>
-
               <CommandGroup heading="Label">
                 <InputField
                   name="{node.id}/label"
@@ -134,6 +130,17 @@
                       text_color: node.text_color,
                       label: value,
                     });
+                  }}
+                ></InputField>
+              </CommandGroup>
+
+              <CommandGroup heading="ID">
+                <InputField
+                  name="{node.id}/id"
+                  value={node.id}
+                  onblur={(e) => {
+                    const value = e.currentTarget.value;
+                    onEditCategoryId(node.id, value.toLocaleLowerCase());
                   }}
                 ></InputField>
               </CommandGroup>
@@ -178,7 +185,7 @@
       <div class="ml-auto flex items-center justify-end gap-2">
         <!-- ASSIGNED PROPERTIES::ONLY SHOW WHEN ASSIGNED -->
         {#if assignedProperties.length > 0}
-          <HoverCards openDelay={200}>
+          <HoverCards align="center" openDelay={200} contentClass="p-2">
             {#snippet trigger()}
               <Badge variant="outline" class="cursor-pointer rounded-lg">
                 {assignedProperties.length > 1 ? `${assignedProperties.length} Properties` : "1 Property"}
@@ -187,8 +194,17 @@
 
             {#snippet content()}
               <div class="flex flex-col gap-2">
+                <Text size="sm" weight="semibold">Assigned Properties</Text>
+
                 {#each assignedProperties as property (property.id)}
-                  <span>{property.label}</span>
+                  {@const fieldType = fieldTypes.find((type) => type.value === property.type)}
+                  <div class="hover:bg-secondary flex items-center gap-2 rounded-md p-2">
+                    {#if fieldType}
+                      <fieldType.icon class="size-4"></fieldType.icon>
+                    {/if}
+
+                    <Text size="sm">{property.label}</Text>
+                  </div>
                 {/each}
               </div>
             {/snippet}
