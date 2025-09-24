@@ -7,12 +7,12 @@
   import { constructTree } from "@/data/model/dataset/dataset-record";
   import { PlusIcon } from "@lucide/svelte";
 
-  import type { LabelCategoryConfiguration, LabelingConfiguration } from "@/data/model/dataset/types";
+  import type { CategoryField, LabelingConfiguration } from "@/data/model/dataset/labels";
 
   // Props
   interface Props {
     onAddCategory: (nodeId?: string) => void;
-    onEditCategory: (category: LabelCategoryConfiguration) => void;
+    onEditCategory: (category: CategoryField) => void;
     onEditCategoryId: (oldId: string, newId: string) => void;
     onRemoveCategory: (categoryId: string) => void;
   }

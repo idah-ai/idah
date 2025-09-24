@@ -6,27 +6,24 @@
   import LabelEditor from "@/components/app/datasets/labels/label-editor.svelte";
   import PageHeader from "@/components/app/page/page-header.svelte";
   import PageLoading from "@/components/app/page/page-loading.svelte";
-
   import Spinner from "@/components/app/loading/spinner.svelte";
-  import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
   import { toast } from "svelte-sonner";
-  import { labelTabs, type LabelTab } from "@/components/app/datasets/labels/tabs/label.tabs";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
 
-  import type {
-    LabelCategoryConfiguration,
-    LabelingConfiguration,
-    LabelPropertyConfiguration,
-  } from "@/data/model/dataset/types";
-  import { labelColors } from "@/components/app/datasets/labels/label-color";
+  import {
+    labelColors,
+    type CategoryField,
+    type LabelingConfiguration,
+    type PropertyField,
+    type TagField,
+  } from "@/data/model/dataset/labels";
 
   // Variables
   let projectId: string = page.params.projectId as string;
   let datasetId: string = page.params.datasetId as string;
 
   let saving: boolean = $state(false);
-  let currentTab: LabelTab = $state("manual");
   let modality: string = $state("video");
   let defaultCategoryType: string = $derived(`${modality}:bounding_box`);
   let labelConfig: LabelingConfiguration | undefined = $state(undefined);
@@ -133,7 +130,7 @@
     });
   }
 
-  function editCategory(category: LabelCategoryConfiguration) {
+  function editCategory(category: CategoryField) {
     if (!labelConfig) return;
 
     const categoryToUpdateIndex = labelConfig.categories.findIndex((cat) => cat.id === category.id);
@@ -184,7 +181,7 @@
     }
   }
 
-  function setProperty(property: LabelPropertyConfiguration) {
+  function setProperty(property: PropertyField) {
     if (!labelConfig) return;
 
     const propertyToUpdateIndex = labelConfig.properties.findIndex((p) => p.id === property.id);
@@ -201,57 +198,59 @@
 
     labelConfig.properties = labelConfig.properties.filter((p) => p.id !== propertyId);
   }
+
+  function setTag(tag: TagField) {
+    if (!labelConfig) return;
+
+    if (!labelConfig.taggings) {
+      labelConfig.taggings = [];
+    }
+
+    const tagToUpdateIndex = labelConfig.taggings.findIndex((t) => t.id === tag.id);
+
+    if (tagToUpdateIndex >= 0) {
+      labelConfig.taggings[tagToUpdateIndex] = tag;
+    } else {
+      labelConfig.taggings.push(tag);
+    }
+  }
+
+  function removeTag(tagId: string) {
+    if (!labelConfig || !labelConfig.taggings) return;
+
+    labelConfig.taggings = labelConfig.taggings.filter((t) => t.id !== tagId);
+  }
 </script>
 
 {#await fetchData()}
   <PageLoading></PageLoading>
 {:then _}
-  <Tabs bind:value={currentTab}>
-    <PageHeader title="Label">
-      {#snippet slotTitle()}
-        <div class="flex flex-col items-center justify-between gap-4 md:flex-row">
-          <TabsList>
-            {#each labelTabs as { label, value } (value)}
-              <TabsTrigger {value}>{label}</TabsTrigger>
-            {/each}
-          </TabsList>
-        </div>
+  <PageHeader title="Label">
+    {#snippet slotTitle()}
+      <Button disabled={saving} class="ml-auto" onclick={saveLabelConfigChanges}>
+        {#if saving}
+          <Spinner></Spinner>
+          Saving
+        {:else}
+          Save
+        {/if}
+      </Button>
+    {/snippet}
+  </PageHeader>
 
-        <Button disabled={saving} onclick={saveLabelConfigChanges}>
-          {#if saving}
-            <Spinner></Spinner>
-            Saving
-          {:else}
-            Save
-          {/if}
-        </Button>
-      {/snippet}
-    </PageHeader>
-
-    <TabsContent value="manual">
-      {#if isAlreadyDefineLabelConfig && labelConfig}
-        <LabelEditor
-          {labelConfig}
-          onAddCategory={addNewCategory}
-          onEditCategory={editCategory}
-          onEditCategoryId={editCategoryId}
-          onRemoveCategory={removeCategory}
-          onSetProperty={setProperty}
-          onRemoveProperty={removeProperty}
-        ></LabelEditor>
-      {:else}
-        <EmptyLabelResponseBlock onNewLabel={() => {}}></EmptyLabelResponseBlock>
-      {/if}
-    </TabsContent>
-
-    <TabsContent value="json">
-      {#if isAlreadyDefineLabelConfig}
-        <pre>
-          {JSON.stringify(labelConfig, null, 2)}
-        </pre>
-      {:else}
-        <EmptyLabelResponseBlock onNewLabel={() => {}}></EmptyLabelResponseBlock>
-      {/if}
-    </TabsContent>
-  </Tabs>
+  {#if isAlreadyDefineLabelConfig && labelConfig}
+    <LabelEditor
+      {labelConfig}
+      onAddCategory={addNewCategory}
+      onEditCategory={editCategory}
+      onEditCategoryId={editCategoryId}
+      onRemoveCategory={removeCategory}
+      onSetProperty={setProperty}
+      onRemoveProperty={removeProperty}
+      onSetTag={setTag}
+      onRemoveTag={removeTag}
+    ></LabelEditor>
+  {:else}
+    <EmptyLabelResponseBlock onNewLabel={() => {}}></EmptyLabelResponseBlock>
+  {/if}
 {/await}
