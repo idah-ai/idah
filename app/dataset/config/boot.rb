@@ -2,6 +2,7 @@
 
 current_env = ENV["APP_ENVIRONMENT"] ||= "development"
 require "dotenv"
+require "pry"
 
 # COMMON_PATH = ENV["COMMON_PATH"] || File.expand_path("../../../../common", __dir__)
 

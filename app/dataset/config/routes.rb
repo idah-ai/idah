@@ -4,6 +4,7 @@ Verse.on_boot do
   [
     HealthcheckExpo,
     ProjectsExpo,
+    ProjectMembersExpo,
     DatasetsExpo,
     EntriesExpo,
     AnnotationsExpo

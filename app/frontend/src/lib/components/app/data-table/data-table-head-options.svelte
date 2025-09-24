@@ -19,10 +19,13 @@
     ArrowDownAZIcon,
     ArrowDownZAIcon,
     ArrowUpDownIcon,
+    CheckIcon,
     ChevronsUpDownIcon,
     EyeOffIcon,
     FunnelIcon,
     FunnelXIcon,
+    SquareCheckBigIcon,
+    SquareIcon,
     type Icon as IconType,
   } from "@lucide/svelte";
 
@@ -138,6 +141,14 @@
     });
   }
 
+  function filterByBoolean(value: string | number | boolean): void {
+    onFilter({
+      filters: {
+        [filterKey]: value,
+      },
+    });
+  }
+
   function filterByDateRange(dateRange: DateRange): void {
     if (dateRange.start && dateRange.end) {
       const formattedStartDate = dateRange.start.toString().concat(" 00:00:00");
@@ -152,6 +163,23 @@
     }
   }
 
+  function filterByMultipleSelect(value: string | number | boolean): void {
+    let currentValues: Array<string | number | boolean> = tablePreferences.filters[filterKeyWithOperation] || [];
+    let newValues: Array<string | number | boolean> = [];
+
+    if (currentValues.includes(value)) {
+      newValues = currentValues.filter((currentValue) => currentValue !== value);
+    } else {
+      newValues = [...currentValues, value];
+    }
+
+    onFilter({
+      filters: {
+        [filterKeyWithOperation]: newValues.length ? newValues : undefined,
+      },
+    });
+  }
+
   function clearFilter(): void {
     switch (filterOptions?.filterBy) {
       case "date-range":
@@ -162,6 +190,14 @@
           },
         });
         break;
+
+      case "boolean":
+      case "single-select":
+        onFilter({
+          filters: {
+            [filterKey]: undefined,
+          },
+        });
 
       default:
         onFilter({
@@ -224,12 +260,47 @@
                   oninput={filterByInput}
                 />
               </div>
+            {:else if filterOptions?.filterBy === "boolean"}
+              {#if filterOptions.choices}
+                {#each filterOptions.choices as choice (choice.value)}
+                  <CommandItem onclick={() => filterByBoolean(choice.value)}>
+                    <CheckIcon
+                      class={cn("mr-2 size-4", {
+                        "opacity-0": tablePreferences.filters[filterKey] !== choice.value,
+                      })}
+                    ></CheckIcon>
+
+                    {choice.label}
+                  </CommandItem>
+                {/each}
+              {:else}
+                Please provide choices for boolean filter
+              {/if}
             {:else if filterOptions?.filterBy === "number-range"}
               Render Number Range Input
             {:else if filterOptions?.filterBy === "single-select"}
               Render Single Select Input
             {:else if filterOptions?.filterBy === "multiple-select"}
-              Render Multiple Select Input
+              {#if filterOptions.choices}
+                {#each filterOptions.choices as choice (choice.value)}
+                  {@const isSelected = tablePreferences.filters[filterKeyWithOperation]?.includes(choice.value)}
+
+                  <CommandItem
+                    class={cn("", { "bg-primary/10": isSelected })}
+                    onclick={() => filterByMultipleSelect(choice.value as boolean)}
+                  >
+                    {#if isSelected}
+                      <SquareCheckBigIcon class="mr-2 size-4" />
+                    {:else}
+                      <SquareIcon class="mr-2 size-4" />
+                    {/if}
+
+                    {choice.label}
+                  </CommandItem>
+                {/each}
+              {:else}
+                Please provide choices for multiple select filter
+              {/if}
             {:else if filterOptions?.filterBy === "date-range"}
               <div class="flex flex-col items-center">
                 <RangeCalendar
