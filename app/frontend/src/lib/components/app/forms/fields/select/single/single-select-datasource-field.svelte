@@ -1,6 +1,7 @@
 <script lang="ts" generics="T extends Record">
   import Button from "@/components/ui/button/button.svelte";
   import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
+  import CommandInput from "@/components/ui/command/command-input.svelte";
   import FormField from "@/components/app/forms/form-field.svelte";
   import FormFieldErrors from "@/components/app/forms/form-field-errors.svelte";
   import FormFieldInfo from "@/components/app/forms/form-field-info.svelte";
@@ -29,6 +30,8 @@
     placeholder = "Select an option",
     searchable = false,
     searchPlaceholder = "Search an option",
+    searchValue = $bindable(""),
+
     clearable = false,
     disabled = false,
     required = false,
@@ -74,6 +77,11 @@
 
     /** Set default sort */
     if (!listOpts.sort) listOpts.sort = ["-id"];
+
+    if (searchable && searchValue) {
+      if (!listOpts.filters) listOpts.filters = {};
+      listOpts.filters["name__match"] = searchValue;
+    }
 
     const response = await dataSource.list(listOpts);
 
@@ -134,9 +142,9 @@
 
     <PopoverContent align="start" class="p-0">
       <Command>
-        <!-- {#if searchable}
-          <CommandInput placeholder={searchPlaceholder}></CommandInput>
-        {/if} -->
+        {#if searchable}
+          <CommandInput placeholder={searchPlaceholder} bind:value={searchValue}></CommandInput>
+        {/if}
 
         <CommandList>
           <CommandEmpty>No option found.</CommandEmpty>
