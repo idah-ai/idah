@@ -77,7 +77,7 @@
         </div>
         <Separator></Separator>
 
-        <div class="flex w-full flex-col">
+        <div class="flex w-full flex-col px-2 py-1">
           {#each treeItems as treeNode, index (index)}
             {@render CategoryTreeNode({ node: treeNode, level: 1 })}
           {/each}

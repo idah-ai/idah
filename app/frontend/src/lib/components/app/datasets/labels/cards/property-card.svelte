@@ -1,14 +1,12 @@
 <script lang="ts">
-  import Button from "@/components/ui/button/button.svelte";
   import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
   import CheckboxField from "@/components/app/forms/fields/input/checkbox-field.svelte";
   import Input from "@/components/ui/input/input.svelte";
   import PropertyOptions from "@/components/app/datasets/labels/properties/property-options.svelte";
   import PropertySelectors from "@/components/app/datasets/labels/properties/property-selectors.svelte";
   import PropertyTypeDropdownMenu from "@/components/app/datasets/labels/dropdown-menus/property-type-dropdown-menu.svelte";
+  import RemovePropertyButton from "@/components/app/datasets/labels/buttons/remove-property-button.svelte";
   import ToggleShowContentButton from "@/components/app/datasets/labels/buttons/toggle-show-content-button.svelte";
-
-  import { Trash2Icon } from "@lucide/svelte";
 
   import { fieldTypes, type PropertyField, type FieldType } from "@/data/model/dataset/labels";
   import type { Hash } from "@/utils/types";
@@ -23,7 +21,7 @@
 
   // Variables
   let { id, label, required, type, selector } = $derived(property);
-  let showContent: boolean = $state(true);
+  let showContent: boolean = $state(false);
   let editingLabel: boolean = $state(false);
 
   let selectedFieldType: FieldType | undefined = $derived(fieldTypes.find((t) => t.value === type));
@@ -127,9 +125,7 @@
       ></CheckboxField>
 
       <!-- HEADER::REMOVE BUTTON -->
-      <Button variant="ghost" size="icon" onclick={() => onRemoveProperty(id)}>
-        <Trash2Icon class="size-4"></Trash2Icon>
-      </Button>
+      <RemovePropertyButton propertyKey="property" onClick={() => onRemoveProperty(id)}></RemovePropertyButton>
     </div>
   </CardHeader>
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Tooltips from "@/components/app/tooltips/tooltips.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import {
     DropdownMenu,
@@ -18,14 +19,22 @@
 </script>
 
 <DropdownMenu>
-  <DropdownMenuTrigger>
-    <Button variant="secondary" size="icon" class="cursor-pointer">
-      {#if selectedFieldType}
-        {@const SelectedTypeIcon = selectedFieldType.icon}
-        <SelectedTypeIcon class="size-4"></SelectedTypeIcon>
-      {/if}
-    </Button>
-  </DropdownMenuTrigger>
+  <Tooltips>
+    {#snippet trigger()}
+      <DropdownMenuTrigger>
+        <Button variant="secondary" size="icon" class="cursor-pointer">
+          {#if selectedFieldType}
+            {@const SelectedTypeIcon = selectedFieldType.icon}
+            <SelectedTypeIcon class="size-4"></SelectedTypeIcon>
+          {/if}
+        </Button>
+      </DropdownMenuTrigger>
+    {/snippet}
+
+    {#snippet content()}
+      Change property type
+    {/snippet}
+  </Tooltips>
 
   <DropdownMenuContent>
     <DropdownMenuGroup>
