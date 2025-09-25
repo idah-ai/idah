@@ -78,9 +78,6 @@
         const resourceKey = `${file.uuid}${fileExtension}`;
 
         // uploading the file
-        // TODO: upload to proper file store, not media's
-        // const createdDatset = await mediaBackendDataSource.upload(file.datset, resourceKey);
-        // TODO: call backend's .datset import
         const createdDatset = await datasetsBackendDataSource.import(file.datset, resourceKey, projectId);
         if (!("data" in createdDatset)) {
           throw new Error("Datset import failed");
@@ -103,6 +100,7 @@
 
     try {
       await importDatset(projectId);
+      $refetches.datasets.list++;
     } catch (error) {
     } finally {
       uploading = false;
