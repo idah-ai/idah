@@ -6,6 +6,17 @@ module Datset
         entry_repo: Entry::Repository,
         annotation_repo: Annotation::Repository
 
+    # process the .datset file
+    def process
+      # save to file store as temp file ?
+      pass
+    end
+
+    # delete the .datset file
+    def delete
+      pass
+    end
+
     # import a datset file
     def import(resource:, project_id:)
       binding.pry
@@ -37,7 +48,7 @@ module Datset
             resource: entry_data[:media_url]
             # add other entry fields as needed
           )
-          
+
           # create annotations for this entry
           entry_data[:annotations].each do |annotation_data|
             annotation_data = annotation_data.transform_keys(&:to_sym)
@@ -65,6 +76,9 @@ module Datset
       # export as .datset
       # TODO: save file in a proper file store, currently just write here
       File.write("#{dataset_id}.datset", JSON.pretty_generate(datset))
+
+      # 1. cloud-hosted: return download link for .datset file
+      # 2. self-hosted: save file to designated directory
     end
 
     def create_datset(dataset_id)
