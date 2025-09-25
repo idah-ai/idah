@@ -3,29 +3,29 @@
   import FormFieldErrors from "@/components/app/forms/form-field-errors.svelte";
   import FormFieldInfo from "@/components/app/forms/form-field-info.svelte";
   import FormFieldLabel from "@/components/app/forms/form-field-label.svelte";
-  import Textarea from "@/components/ui/textarea/textarea.svelte";
+  import Input from "@/components/ui/input/input.svelte";
 
   import { cn } from "@/utils";
 
+  import type { FormEventHandler, HTMLInputTypeAttribute } from "svelte/elements";
   import type { FormFieldBaseProps } from "@/components/app/forms/form-field.types";
-  import type { FormEventHandler } from "svelte/elements";
 
   // Props
   interface Props extends FormFieldBaseProps {
-    value: string | null;
-    rows?: number;
-    oninput?: FormEventHandler<HTMLTextAreaElement>;
+    type?: HTMLInputTypeAttribute;
+    value: number | null | undefined;
+    oninput?: FormEventHandler<HTMLInputElement>;
   }
   let {
     value = $bindable(null),
     oninput,
     name,
+    type = "number",
     label,
     placeholder,
     disabled = false,
     required = false,
     readonly,
-    rows = 4,
     info,
     errors,
     class: className,
@@ -42,7 +42,7 @@
     <FormFieldLabel {required}>{label}</FormFieldLabel>
   {/if}
 
-  <Textarea {name} {placeholder} {disabled} {readonly} {required} {rows} bind:value {oninput} />
+  <Input {name} {type} {placeholder} {disabled} {readonly} {required} bind:value {oninput} />
 
   {#if slotInfo}
     {@render slotInfo()}

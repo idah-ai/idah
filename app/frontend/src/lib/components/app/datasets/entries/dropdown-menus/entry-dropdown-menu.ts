@@ -1,6 +1,6 @@
 import { FlagIcon, Trash2Icon, UserRoundPlusIcon } from "@lucide/svelte";
 
-import type { DropdownMenuItemBaseProps } from "@/components/app/dropdown-menu/dropdown-menu.types";
+import type { DropdownMenuItemBaseProps } from "@/components/app/dropdown-menus/dropdown-menu.types";
 
 interface Params {
   onAssign: () => Promise<void> | void;
