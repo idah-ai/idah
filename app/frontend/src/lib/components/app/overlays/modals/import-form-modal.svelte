@@ -79,13 +79,12 @@
 
         // uploading the file
         // TODO: upload to proper file store, not media's
-        const createdDatset = await mediaBackendDataSource.upload(file.datset, resourceKey);
+        // const createdDatset = await mediaBackendDataSource.upload(file.datset, resourceKey);
+        // TODO: call backend's .datset import
+        const createdDatset = await datasetsBackendDataSource.import(file.datset, resourceKey, projectId);
         if (!("data" in createdDatset)) {
           throw new Error("Datset import failed");
         }
-
-        // TODO: call backend's .datset import
-        await datasetsBackendDataSource.import(resourceKey, projectId);
 
         file.status = "success";
       } catch (error) {

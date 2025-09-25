@@ -17,17 +17,34 @@ class DatasetsExpo < BaseExpo
     delete
   end
 
-  # TODO: handle auth ?
-  # import dataset(s) with .datset file
+  # # TODO: handle auth ?
+  # # import dataset(s) with .datset file
+  # expose on_http(:post, "/import", auth: nil) do
+  #   desc "Import dataset(s) with uploaded .datset file"
+  #   input do
+  #     field :resource, String
+  #     field :project_id, String
+  #   end
+  # end
+  # def import
+  #   binding.pry
+  #   datset_service.import(resource: params[:resource], project_id: params[:project_id])
+  # end
+
   expose on_http(:post, "/import", auth: nil) do
-    desc "Import dataset(s) with uploaded .datset file"
+    desc <<-MD
+    MD
     input do
-      field :resource, String
-      field :project_id, String
+      field(:file, Verse::Http::UploadedFile).meta(desc: "The .datset file to import")
+      field(:resource, String)
+      field(:project_id, String)
     end
   end
   def import
-    binding.pry
-    datset_service.import(resource: params[:resource], project_id: params[:project_id])
+    datset_service.import(
+      file: params[:file],
+      resource: params[:resource],
+      project_id: params[:project_id],
+    )
   end
 end

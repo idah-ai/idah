@@ -31,10 +31,12 @@ export const datasetsBackendDataSource = createBackendDataSource(
   datasetsBasePath,
   {
     import: async (
+      file: File,
       resource: string,
       projectId: string,
     ): Promise<RecordResponse<DatasetRecord> | JsonApiErrorResponse> => {
       const formData = new FormData();
+      formData.append("file", file);
       formData.append("resource", resource);
       formData.append("project_id", projectId);
 

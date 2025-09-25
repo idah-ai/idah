@@ -18,7 +18,44 @@ module Datset
     end
 
     # import a datset file
-    def import(resource:, project_id:)
+    def import(file:, resource:, project_id:)
+      Verse::Plugin[:shrine].with_storage do |storage|
+        binding.pry
+
+        # # Verify that the resource/key combination is not already used:
+        # existing = medias.find_by({ resource:, key: })
+
+        # if existing
+        #   raise Verse::Error::ValidationFailed,
+        #         "Resource #{resource} with key #{key} already exists"
+        # end
+
+        # Upload the file to the storage:
+        output = storage.upload(
+          file.tempfile
+        )
+
+        binding.pry
+
+        metadata = auth_context.metadata
+
+        id = output.id
+
+        medias.create(
+          {
+            id:,
+            resource:,
+            filename: file.filename || resource,
+            key:,
+            size: output.size,
+            mime_type: output.mime_type || "application/octet-stream",
+            created_by: metadata[:id],
+            created_role: metadata[:role]&.to_s
+          }
+        )
+        medias.find!(id)
+      end
+
       binding.pry
       # 1. receive .datset file and project id
       # 2. read file content and validate with DatsetSchema
@@ -30,13 +67,15 @@ module Datset
       # 3. in transaction, create dataset, entries, annotations
       dataset_repo.transaction do
         # create dataset
-        dataset_id = dataset_repo.create({
-          project_id:,
-          name: dataset_data[:name],
-          modality: dataset_data[:topology],
-          workflow_configuration: {},
-          labeling_configuration: {},
-        })
+        dataset_id = dataset_repo.create(
+          {
+            project_id:,
+            name: dataset_data[:name],
+            modality: dataset_data[:modality],
+            workflow_configuration: {},
+            labeling_configuration: {},
+          }
+        )
 
         # create entries and their annotations
         dataset_data[:entries].each do |entry_data|
@@ -94,7 +133,7 @@ module Datset
         dataset: { # this layer is not needed if we are stricting only 1 dataset ?
           id: dataset.id,
           name: dataset.name,
-          topology: dataset.modality, # topology = modality ?
+          modality: dataset.modality, # topology = modality ?
           metadata: "this should be some kind of a metadata",
           entries: []
         },
@@ -152,7 +191,7 @@ module Datset
     DatasetSchema = Verse::Schema.define do
       field(:id, String) # PK, CHECK(length(id) <= 64)
       field(:name, String)
-      field(:topology, String) # Data topology, ex: imageset, video, etc.
+      field(:modality, String) # Data topology, ex: imageset, video, etc.
       field?(:metadata, String) # Such as allowed annotation types, domain specific data
       field?(:entries, Array, of: EntrySchema)
     end
