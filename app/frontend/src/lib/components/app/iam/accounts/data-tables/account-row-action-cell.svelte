@@ -17,7 +17,7 @@
   import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
 
   import type { DataTableCellBaseProps } from "@/components/app/data-table/data-table.types";
-  import type { DropdownMenuItemBaseProps } from "@/components/app/dropdown-menu/dropdown-menu.types";
+  import type { DropdownMenuItemBaseProps } from "@/components/app/dropdown-menus/dropdown-menu.types";
 
   // Props
   interface Props extends DataTableCellBaseProps<AccountRecord> {}
