@@ -18,53 +18,24 @@ module Datset
     end
 
     # import a datset file
+    # TODO: recheck if resource is needed
     def import(file:, resource:, project_id:)
+      datset_data = {}
       Verse::Plugin[:shrine].with_storage do |storage|
-        binding.pry
-
-        # # Verify that the resource/key combination is not already used:
-        # existing = medias.find_by({ resource:, key: })
-
-        # if existing
-        #   raise Verse::Error::ValidationFailed,
-        #         "Resource #{resource} with key #{key} already exists"
-        # end
-
-        # Upload the file to the storage:
-        output = storage.upload(
-          file.tempfile
-        )
-
-        binding.pry
-
-        metadata = auth_context.metadata
-
-        id = output.id
-
-        medias.create(
-          {
-            id:,
-            resource:,
-            filename: file.filename || resource,
-            key:,
-            size: output.size,
-            mime_type: output.mime_type || "application/octet-stream",
-            created_by: metadata[:id],
-            created_role: metadata[:role]&.to_s
-          }
-        )
-        medias.find!(id)
+        uploaded_file = storage.open(storage.upload(file.tempfile).id)
+        uploaded_content = JSON.parse(uploaded_file.read)
+        datset_data = uploaded_content.transform_keys(&:to_sym)
       end
 
-      binding.pry
       # 1. receive .datset file and project id
       # 2. read file content and validate with DatsetSchema
       # TODO: properly read from file store
-      datset_data = JSON.parse(File.read(resource)).transform_keys(&:to_sym)
       dataset_data = datset_data[:dataset].transform_keys(&:to_sym)
       # TODO: check/process metadata ?
 
       # 3. in transaction, create dataset, entries, annotations
+      # TODO: generate uuids if not exist ?
+      # TODO: handle insertion of media/job ?
       dataset_repo.transaction do
         # create dataset
         dataset_id = dataset_repo.create(
@@ -127,7 +98,7 @@ module Datset
 
       entries = entry_repo.index({dataset_id: dataset.id}) # sort by id ? created_at ? updated_at ?
       annotations = annotation_repo.index({entry_id__in: entries.map(&:id)}) # sort by id ? created_at ? updated_at ?
-      
+
       # turn records into datset schema
       formatted_datset = {
         dataset: { # this layer is not needed if we are stricting only 1 dataset ?
@@ -148,6 +119,7 @@ module Datset
           media_url: entry.resource,
           annotations: annotations.filter_map do |annotation| # build the entry object with annotations
             next unless annotation[:entry_id] == entry[:id]
+
             {
               id: annotation[:id],
               type: "bounding_box", # annotation.type ?
