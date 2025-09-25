@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Tooltips from "@/components/app/tooltips/tooltips.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import { ChevronDownIcon, ChevronRightIcon } from "@lucide/svelte";
 
@@ -10,10 +11,18 @@
   let { showContent, onClick }: Props = $props();
 </script>
 
-<Button variant="ghost" size="icon" onclick={onClick}>
-  {#if showContent}
-    <ChevronDownIcon class="size-4"></ChevronDownIcon>
-  {:else}
-    <ChevronRightIcon class="size-4"></ChevronRightIcon>
-  {/if}
-</Button>
+<Tooltips>
+  {#snippet trigger()}
+    <Button variant="ghost" size="icon" onclick={onClick}>
+      {#if showContent}
+        <ChevronDownIcon class="size-4"></ChevronDownIcon>
+      {:else}
+        <ChevronRightIcon class="size-4"></ChevronRightIcon>
+      {/if}
+    </Button>
+  {/snippet}
+
+  {#snippet content()}
+    {showContent ? "Hide" : "Show"} Content
+  {/snippet}
+</Tooltips>

@@ -18,6 +18,7 @@
     type PropertyField,
     type TagField,
   } from "@/data/model/dataset/labels";
+  import { SaveIcon } from "@lucide/svelte";
 
   // Variables
   let projectId: string = page.params.projectId as string;
@@ -27,6 +28,10 @@
   let modality: string = $state("video");
   let defaultCategoryType: string = $derived(`${modality}:bounding_box`);
   let labelConfig: LabelingConfiguration | undefined = $state(undefined);
+  let initialLabelConfig: LabelingConfiguration | undefined = $state(undefined);
+  let isLabelConfigChanged: boolean = $derived.by(() => {
+    return JSON.stringify(labelConfig) !== JSON.stringify(initialLabelConfig);
+  });
   let isAlreadyDefineLabelConfig: boolean = $derived.by(() => {
     if (!labelConfig) return false;
 
@@ -53,16 +58,19 @@
     });
     modality = datasetRes.data.modality;
     labelConfig = datasetRes.data.labeling_configuration;
+    initialLabelConfig = JSON.parse(JSON.stringify(labelConfig));
   }
 
   async function saveLabelConfigChanges(): Promise<void> {
     saving = true;
     try {
-      await datasetsBackendDataSource.update(datasetId, {
+      const updatedDatasetRes = await datasetsBackendDataSource.update(datasetId, {
         attributes: {
           labeling_configuration: labelConfig,
         },
       });
+      labelConfig = updatedDatasetRes.data.labeling_configuration;
+      initialLabelConfig = JSON.parse(JSON.stringify(labelConfig));
       toast.success("Labeling configuration changes saved successfully.");
     } catch (error) {
       toast.error("Failed to save labeling configuration changes.");
@@ -227,12 +235,13 @@
 {:then _}
   <PageHeader title="Label">
     {#snippet slotTitle()}
-      <Button disabled={saving} class="ml-auto" onclick={saveLabelConfigChanges}>
+      <Button disabled={saving || !isLabelConfigChanged} class="ml-auto" onclick={saveLabelConfigChanges}>
         {#if saving}
           <Spinner></Spinner>
           Saving
         {:else}
-          Save
+          <SaveIcon class="size-4"></SaveIcon>
+          Save Changes
         {/if}
       </Button>
     {/snippet}
