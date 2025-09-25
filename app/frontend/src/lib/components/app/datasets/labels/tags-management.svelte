@@ -39,7 +39,7 @@
 </script>
 
 {#snippet AddNewTagButton()}
-  <Button variant="outline" onclick={addNewTag}>
+  <Button onclick={addNewTag}>
     <PlusIcon class="size-4"></PlusIcon>
     New Tag
   </Button>

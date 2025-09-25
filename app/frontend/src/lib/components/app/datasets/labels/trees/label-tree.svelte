@@ -1,7 +1,9 @@
 <script lang="ts">
   import { getContext } from "svelte";
 
+  import { Card, CardContent } from "@/components/ui/card";
   import Button from "@/components/ui/button/button.svelte";
+  import ResponseBlock from "@/components/app/blocks/response-block.svelte";
   import { TreeNode } from "@/components/app/datasets/labels/trees/label-tree-node.svelte";
 
   import { constructTree } from "@/data/model/dataset/dataset-record";
@@ -25,6 +27,13 @@
   let treeItems = $derived(constructTree(labelConfig));
 </script>
 
+{#snippet AddNewCategoryButton()}
+  <Button onclick={() => onAddCategory()}>
+    <PlusIcon class="size-4"></PlusIcon>
+    New Category
+  </Button>
+{/snippet}
+
 <div class="flex w-full flex-col gap-4">
   <div id="trees" class="flex w-full flex-col gap-4">
     {#each treeItems as treeNode, index (index)}
@@ -37,13 +46,22 @@
         onEditCategoryId,
         onRemoveCategory,
       })}
+    {:else}
+      <Card>
+        <CardContent>
+          <ResponseBlock icon={PlusIcon} title="No categories Yet" description="Create category to get started">
+            {#snippet actions()}
+              {@render AddNewCategoryButton()}
+            {/snippet}
+          </ResponseBlock>
+        </CardContent>
+      </Card>
     {/each}
   </div>
 
-  <div>
-    <Button variant="outline" onclick={() => onAddCategory()}>
-      <PlusIcon class="size-4"></PlusIcon>
-      New Category
-    </Button>
-  </div>
+  {#if treeItems.length > 0}
+    <div>
+      {@render AddNewCategoryButton()}
+    </div>
+  {/if}
 </div>

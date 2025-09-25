@@ -2,7 +2,6 @@
   import { page } from "$app/state";
 
   import Button from "@/components/ui/button/button.svelte";
-  import EmptyLabelResponseBlock from "@/components/app/datasets/labels/blocks/empty-label-response-block.svelte";
   import LabelEditor from "@/components/app/datasets/labels/label-editor.svelte";
   import PageHeader from "@/components/app/page/page-header.svelte";
   import PageLoading from "@/components/app/page/page-loading.svelte";
@@ -32,16 +31,13 @@
   let isLabelConfigChanged: boolean = $derived.by(() => {
     return JSON.stringify(labelConfig) !== JSON.stringify(initialLabelConfig);
   });
-  let isAlreadyDefineLabelConfig: boolean = $derived.by(() => {
-    if (!labelConfig) return false;
 
-    if (!Object.values(labelConfig.categories).length) return false;
-
-    return true;
-  });
   let usedColors = $derived.by(() => {
     return labelConfig ? labelConfig.categories.map((cat) => cat.color) : [];
   });
+
+  $inspect(labelConfig);
+
   const availableColors = $derived(labelColors.filter((color) => !usedColors.includes(color.color)));
   const firstAvailableColor = $derived.by(() => {
     return availableColors.length
@@ -69,8 +65,7 @@
           labeling_configuration: labelConfig,
         },
       });
-      labelConfig = updatedDatasetRes.data.labeling_configuration;
-      initialLabelConfig = JSON.parse(JSON.stringify(labelConfig));
+      initialLabelConfig = JSON.parse(JSON.stringify(updatedDatasetRes.data.labeling_configuration));
       toast.success("Labeling configuration changes saved successfully.");
     } catch (error) {
       toast.error("Failed to save labeling configuration changes.");
@@ -187,6 +182,37 @@
         });
       }
     }
+
+    // Remove the category from property selectors
+    if (labelConfig.properties && labelConfig.properties.length > 0) {
+      labelConfig.properties = labelConfig.properties.map((property) => {
+        // Filter out selectors that match the removed category
+        // This handles both exact matches and wildcard patterns
+        const updatedSelector = property.selector.filter((selector) => {
+          // Remove exact matches
+          if (selector === categoryId) {
+            return false;
+          }
+
+          // Remove wildcard patterns that include the category
+          if (selector === `${categoryId}/*`) {
+            return false;
+          }
+
+          // Remove if the selector is a child of the removed category
+          if (selector.startsWith(`${categoryId}/`)) {
+            return false;
+          }
+
+          return true;
+        });
+
+        return {
+          ...property,
+          selector: updatedSelector,
+        };
+      });
+    }
   }
 
   function setProperty(property: PropertyField) {
@@ -247,19 +273,15 @@
     {/snippet}
   </PageHeader>
 
-  {#if isAlreadyDefineLabelConfig && labelConfig}
-    <LabelEditor
-      {labelConfig}
-      onAddCategory={addNewCategory}
-      onEditCategory={editCategory}
-      onEditCategoryId={editCategoryId}
-      onRemoveCategory={removeCategory}
-      onSetProperty={setProperty}
-      onRemoveProperty={removeProperty}
-      onSetTag={setTag}
-      onRemoveTag={removeTag}
-    ></LabelEditor>
-  {:else}
-    <EmptyLabelResponseBlock onNewLabel={() => {}}></EmptyLabelResponseBlock>
-  {/if}
+  <LabelEditor
+    {labelConfig}
+    onAddCategory={addNewCategory}
+    onEditCategory={editCategory}
+    onEditCategoryId={editCategoryId}
+    onRemoveCategory={removeCategory}
+    onSetProperty={setProperty}
+    onRemoveProperty={removeProperty}
+    onSetTag={setTag}
+    onRemoveTag={removeTag}
+  ></LabelEditor>
 {/await}
