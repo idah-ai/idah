@@ -4,7 +4,7 @@
   import Button from "@/components/ui/button/button.svelte";
   import DataTable from "@/components/app/data-table/data-table.svelte";
   import DatasetFormModal from "@/components/app/datasets/overlays/dataset-form-modal.svelte";
-  import ImportFormModal from "@/components/app/overlays/modals/import-form-modal.svelte";
+  import ImportFormModal from "@/components/app/datasets/overlays/import-form-modal.svelte";
   import PageHeader from "@/components/app/page/page-header.svelte";
 
   import { projectDatasetColumns } from "@/components/app/datasets/data-tables/project-dataset.columns";

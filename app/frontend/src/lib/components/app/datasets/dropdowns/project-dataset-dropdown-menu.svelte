@@ -11,9 +11,9 @@
     DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu";
   import DatasetFormModal from "@/components/app/datasets/overlays/dataset-form-modal.svelte";
+  import ExportModal from "../overlays/export-modal.svelte";
 
   import { EllipsisVerticalIcon, FileUpIcon, SquarePenIcon, Trash2Icon } from "@lucide/svelte";
-  import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
 
   import { refetches } from "@/utils/refetch";
@@ -49,8 +49,11 @@
     {
       label: "Export",
       icon: FileUpIcon,
-      action: () => {
-        // open export confirmation box ? with editable name field ? and call export
+      action: async () => {
+        const datasetRes = await fetchDataset();
+
+        datasetRecord = datasetRes.data;
+        openExportDatasetModal = true;
       },
     },
   ];
@@ -58,6 +61,7 @@
   let datasetRecord: DatasetRecord | undefined = $state(undefined);
   let openEditDatasetFormModal: boolean = $state(false);
   let openConfirmDeleteDatasetModal: boolean = $state(false);
+  let openExportDatasetModal: boolean = $state(false);
 
   // Functions
   async function fetchDataset() {
@@ -106,3 +110,11 @@
   onConfirm={deleteDataset}
   bind:open={openConfirmDeleteDatasetModal}
 ></ConfirmModal>
+
+<!-- fetch dataset name for description/confirmation/file name edit -->
+<ExportModal
+  title="Export Dataset"
+  description="Confirm to export the dataset: "
+  {datasetRecord}
+  bind:open={openExportDatasetModal} />
+<!-- onConfirm={exportDataset} -->

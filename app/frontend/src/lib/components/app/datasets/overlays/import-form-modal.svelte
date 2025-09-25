@@ -6,9 +6,7 @@
   import Spinner from "@/components/app/loading/spinner.svelte";
   import Text from "@/components/ui/text/Text.svelte";
 
-  import { mediaBackendDataSource } from "@/data/model/media/medias/medias-record";
   import { datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
-  import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
   import { page } from "$app/state";
 
   import { refetches } from "@/utils/refetch";
@@ -90,7 +88,7 @@
     }
 
     // TODO: handle error/failure properly
-    toast.success("Tasks successfully uploaded!");
+    toast.success("Dataset is successfully imported.");
     $refetches.entries.list++;
     open = false;
   }
