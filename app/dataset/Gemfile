@@ -11,6 +11,7 @@ gem "verse-jsonrpc", github: "verse-rb/verse-jsonrpc", branch: "master"
 gem "verse-redis", github: "verse-rb/verse-redis", branch: "master"
 gem "verse-schema", "~> 1.1"
 gem "verse-sequel", github: "verse-rb/verse-sequel", branch: "master"
+gem "verse-shrine", github: "verse-rb/verse-shrine", branch: "master"
 
 gem "pg"
 

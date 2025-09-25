@@ -15,6 +15,20 @@ plugins:
         - pg_enum
       db:
         uri: <%= ENV.fetch("DATABASE_URI") %>
+  # TODO: fix ENV for .datset files
+  - name: shrine
+    config:
+      storages:
+        - name: default
+          adapter: s3
+          config:
+            bucket: <%= ENV.fetch("MEDIAS_FILES_BUCKET") %>
+            access_key_id: <%= ENV.fetch("MEDIAS_FILES_ACCESS_KEY_ID") %>
+            secret_access_key: <%= ENV.fetch("MEDIAS_FILES_SECRET_ACCESS_KEY") %>
+            public: false
+            region: <%= ENV.fetch("MEDIAS_FILES_REGION") %>
+            prefix: files
+            endpoint: <%= ENV.fetch("MEDIAS_FILES_ENDPOINT") %> # https://storage.googleapis.com
   - name: redis
     config:
       url: <%= ENV.fetch("REDIS_STREAM_URL") %>
