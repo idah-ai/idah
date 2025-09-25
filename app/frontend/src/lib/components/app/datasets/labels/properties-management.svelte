@@ -40,7 +40,7 @@
 </script>
 
 {#snippet AddNewPropertyButton()}
-  <Button variant="outline" onclick={addNewProperty}>
+  <Button onclick={addNewProperty}>
     <PlusIcon class="size-4"></PlusIcon>
     New Property
   </Button>

@@ -97,6 +97,7 @@
           <InputField
             class="flex-1"
             name="{id}/option_{index}/id"
+            label={index ? undefined : "ID"}
             placeholder="ID"
             value={option.id}
             oninput={(e) =>
@@ -110,6 +111,7 @@
           <InputField
             class="flex-1"
             name="{id}/option_{index}/label"
+            label={index ? undefined : "Label"}
             placeholder="Label"
             value={option.label}
             oninput={(e) =>

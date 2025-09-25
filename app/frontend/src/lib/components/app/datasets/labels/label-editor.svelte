@@ -17,7 +17,7 @@
 
   // Props
   interface Props {
-    labelConfig: LabelingConfiguration;
+    labelConfig: LabelingConfiguration | undefined;
 
     // Category
     onAddCategory: (nodeId?: string) => void;
@@ -66,6 +66,7 @@
 <div class="grid grid-cols-1 gap-8 pt-4 md:grid-cols-6">
   <div class="col-span-1 flex flex-col gap-4 md:col-span-4">
     <Text size="h2" weight="semibold">Categories</Text>
+
     <LabelTree {onAddCategory} {onEditCategory} {onEditCategoryId} {onRemoveCategory}></LabelTree>
   </div>
 
