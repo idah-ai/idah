@@ -7,11 +7,12 @@ module Datset
         annotation_repo: Annotation::Repository
 
     # import a datset file
-    def import(file_path:, project_id:)
+    def import(resource:, project_id:)
+      binding.pry
       # 1. receive .datset file and project id
       # 2. read file content and validate with DatsetSchema
       # TODO: properly read from file store
-      datset_data = JSON.parse(File.read(file_path)).transform_keys(&:to_sym)
+      datset_data = JSON.parse(File.read(resource)).transform_keys(&:to_sym)
       dataset_data = datset_data[:dataset].transform_keys(&:to_sym)
       # TODO: check/process metadata ?
 
