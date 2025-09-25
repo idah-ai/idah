@@ -4,6 +4,7 @@
   import Button from "@/components/ui/button/button.svelte";
   import DataTable from "@/components/app/data-table/data-table.svelte";
   import DatasetFormModal from "@/components/app/datasets/overlays/dataset-form-modal.svelte";
+  import ImportFormModal from "@/components/app/overlays/modals/import-form-modal.svelte";
   import PageHeader from "@/components/app/page/page-header.svelte";
 
   import { projectDatasetColumns } from "@/components/app/datasets/data-tables/project-dataset.columns";
@@ -14,6 +15,7 @@
   // Variables
   let projectId: string = page.params.projectId as string;
   let openNewDatasetModal: boolean = $state(false);
+  let openNewImportModal: boolean = $state(false);
 </script>
 
 <PageHeader title="Datasets">
@@ -23,7 +25,7 @@
         <PlusIcon class="size-4" />
         New Dataset
       </Button>
-      <Button> <!-- open file import modal and call import -->
+      <Button variant="secondary" onclick={() => (openNewImportModal = true)}>
         <FileDownIcon class="size-4" />
         Import Dataset
       </Button>
@@ -51,3 +53,4 @@
 {/key}
 
 <DatasetFormModal title="Dataset" action="create" bind:open={openNewDatasetModal} />
+<ImportFormModal title=".datset file" action="create" bind:open={openNewImportModal} />
