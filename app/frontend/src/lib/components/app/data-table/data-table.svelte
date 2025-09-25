@@ -109,7 +109,7 @@
 
       /** Merged pagination from tablePreferences and listOptions */
       const mergedPagination = { ...listOptions?.pagination, ...tablePreferences.pagination };
-
+    
       /** Remove `undefined` value from mergedFilters */
       listOpts.filters = Object.fromEntries(Object.entries(mergedFilters).filter(([_, value]) => value !== undefined));
       listOpts.pagination = mergedPagination;
@@ -217,7 +217,7 @@
 
   async function setItemsPerPage(selectedItemsPerPage: number): Promise<void> {
     itemsPerPage = selectedItemsPerPage;
-
+    
     /** Reset to first page when filters are applied */
     resetToFirstPage();
 
@@ -299,7 +299,7 @@
     <DataTablePaginator
       page={tablePreferences.pagination.page || currentPage}
       itemsPerPage={tablePreferences.pagination.itemsPerPage || itemsPerPage}
-      count={tableData.response.meta?.count || 1000}
+      count={tableData.response.meta?.count || 0}
       hasMore={tableData.response.meta?.more || false}
       onPageChange={changePage}
       onItemsPerPageSelect={setItemsPerPage}
