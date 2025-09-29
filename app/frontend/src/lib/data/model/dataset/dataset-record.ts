@@ -6,7 +6,13 @@ import { humanize } from "@/utils/string";
 import type { ProjectRecord } from "@/data/model/dataset/projects/project-record";
 import type { Hash } from "@/utils/types";
 import type { LabelingConfiguration } from "@/data/model/dataset/labels";
-import { type DatasetStatusBadgeProps, datasetsStatuses } from "@/data/model/dataset/datasets/constants";
+import {
+  type DatasetModalityBadgeProps,
+  type DatasetStatusBadgeProps,
+  datasetsModalities,
+  datasetsStatuses,
+} from "@/data/model/dataset/datasets/constants";
+import { Layers2Icon } from "@lucide/svelte";
 
 @type("dataset:datasets")
 export class DatasetRecord extends Record {
@@ -21,6 +27,19 @@ export class DatasetRecord extends Record {
   @field() public created_at!: string;
 
   @relationship() public project!: ProjectRecord;
+
+  public get modalityBadge(): DatasetModalityBadgeProps {
+    const defaultBadgeProps: DatasetModalityBadgeProps = {
+      label: humanize(this.modality),
+      value: this.modality,
+      icon: Layers2Icon,
+      variant: "outline",
+    };
+
+    const foundDatasetModality = datasetsModalities.find((m) => m.value === this.modality);
+
+    return foundDatasetModality ?? defaultBadgeProps;
+  }
 
   public get statusBadge(): DatasetStatusBadgeProps {
     const defaultBadgeProps: DatasetStatusBadgeProps = {
