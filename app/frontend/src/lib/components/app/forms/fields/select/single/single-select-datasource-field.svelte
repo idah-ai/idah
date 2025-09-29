@@ -136,12 +136,12 @@
           onclick={openPopover}
         >
           {#if selectedChoice}
-           <span class="truncate">{selectedChoice.label}</span>
+            <span class="truncate">{selectedChoice.label}</span>
           {:else}
             <span class="text-muted-foreground">{placeholder}</span>
           {/if}
 
-          <div class="ml-auto inline-flex items-center gap-2 ">
+          <div class="ml-auto inline-flex items-center gap-2">
             <button
               type="button"
               class={cn("cursor-pointer", clearable && selectedChoice ? "opacity-50" : "opacity-0")}
@@ -173,12 +173,10 @@
                   {@render slotChoice({ choice })}
                 {:else}
                   <CommandItem onclick={() => select(choice)}>
-                    <CheckIcon
-                      class={cn("mr-2 size-4", {
-                        "opacity-0": choice.value != value,
-                      })}
-                    ></CheckIcon>
-
+                    {#if choice.value == value}
+                      <CheckIcon class={cn("mr-1 size-4")}></CheckIcon>
+                    {/if}
+                    
                     {choice.label}
                   </CommandItem>
                 {/if}
