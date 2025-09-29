@@ -1,10 +1,12 @@
 import { createBackendDataSource } from "@/data/BackendDataSource";
 import { field, Record, RecordFactory, relationship, type } from "@/data/model/Record";
 
+import { humanize } from "@/utils/string";
+
 import type { ProjectRecord } from "@/data/model/dataset/projects/project-record";
 import type { Hash } from "@/utils/types";
 import type { LabelingConfiguration } from "@/data/model/dataset/labels";
-import { humanize } from "@/utils/string";
+import { type DatasetStatusBadgeProps, datasetsStatuses } from "@/data/model/dataset/datasets/constants";
 
 @type("dataset:datasets")
 export class DatasetRecord extends Record {
@@ -19,6 +21,18 @@ export class DatasetRecord extends Record {
   @field() public created_at!: string;
 
   @relationship() public project!: ProjectRecord;
+
+  public get statusBadge(): DatasetStatusBadgeProps {
+    const defaultBadgeProps: DatasetStatusBadgeProps = {
+      label: "Pending",
+      value: "pending",
+      variant: "outline",
+    };
+
+    const foundDatasetStatus = datasetsStatuses.find((s) => s.value === this.status);
+
+    return foundDatasetStatus ?? defaultBadgeProps;
+  }
 }
 
 RecordFactory.registerTypes(DatasetRecord);

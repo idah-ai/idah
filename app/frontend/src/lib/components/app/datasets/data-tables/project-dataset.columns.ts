@@ -1,4 +1,5 @@
 import ProjectDatasetNameCell from "@/components/app/datasets/data-tables/project-dataset-name-cell.svelte";
+import ProjectDatasetStatusCell from "@/components/app/datasets/data-tables/project-dataset-status-cell.svelte";
 import ProjectDatasetRowActionCell from "@/components/app/datasets/data-tables/project-dataset-row-action-cell.svelte";
 
 import { DatasetRecord } from "@/data/model/dataset/dataset-record";
@@ -34,6 +35,7 @@ export const projectDatasetColumns: ColumnsSettings<DatasetRecord> = {
     },
     visible: true,
     hidable: false,
+    cellComponent: ProjectDatasetStatusCell,
   },
   progress: {
     label: "Progress",
