@@ -54,6 +54,7 @@
     label="Modality"
     placeholder="Select modality"
     choices={modalityOptions}
+    searchKeyWithOperation="label__match"
     required
     errors={dataset.errors?.["modality"]}
     bind:value={modality}

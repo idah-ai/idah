@@ -7,6 +7,7 @@
   import FormFieldErrors from "@/components/app/forms/form-field-errors.svelte";
   import FormFieldInfo from "@/components/app/forms/form-field-info.svelte";
   import FormFieldLabel from "@/components/app/forms/form-field-label.svelte";
+  import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
   import Spinner from "@/components/app/loading/spinner.svelte";
 
@@ -93,7 +94,7 @@
     /** Set default sort */
     if (!listOpts.sort) listOpts.sort = ["-id"];
 
-    if (searchable && searchValue) {
+    if (searchValue) {
       if (!listOpts.filters) listOpts.filters = {};
       listOpts.filters[searchKeyWithOperation] = searchValue;
     }
@@ -158,7 +159,12 @@
     <PopoverContent align="start" class="w-auto p-0">
       <Command>
         {#if searchable}
-          <CommandInput placeholder={searchPlaceholder} bind:value={searchValue}></CommandInput>
+          <InputField
+            name="search/single/select"
+            placeholder={searchPlaceholder}
+            value={searchValue}
+            oninput={(e) => (searchValue = e.currentTarget.value)}
+          ></InputField>
         {/if}
 
         <CommandList>
