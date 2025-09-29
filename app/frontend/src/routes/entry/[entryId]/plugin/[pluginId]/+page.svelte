@@ -1,9 +1,10 @@
 <script lang="ts">
     import IdahPlugin from "@/plugin/IdahPlugin.svelte";
     import type { IActivityContext, IActivityView } from "@/plugin/interface/Activity";
-    import { getContext, onMount } from "svelte";
     import { page } from "$app/state";
-    import { entriesBackendDataSource } from "@/data/model/dataset/entryRecord";
+    // resolve records registration
+    import { datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
+    import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
     import { activityContextForEntry } from "@/plugin/ActivityContext";
     import type { PluginManager } from "@/plugin/PluginManager";
 
@@ -11,14 +12,15 @@
     let plugin_id: string = page.params.pluginId as string;
 
 
-    console.log("pluginID page")
+    console.debug("loading plugin context")
     let contextPromise = new Promise<IActivityContext>((resolve, reject) => {
         entriesBackendDataSource
             .get(entry_id, { included: ["dataset"] })
             .then(
                 (entry) => {
-                    console.log(entry)
-                    resolve(activityContextForEntry(entry.data))
+                    const context = activityContextForEntry(entry.data)
+                    console.log({context})
+                    resolve(context)
                 },
                 (entry) => {
                     console.error({error: entry})
@@ -26,7 +28,6 @@
                 }
             )
     })
-    console.log("promise", contextPromise)
 </script>
 
 {#await contextPromise}

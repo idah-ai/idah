@@ -18,12 +18,10 @@
 
     onMount(() => {
         pluginManager.loadedPromise.then(() => {
-            console.log({plugin_id})
             plugin = pluginManager.getPlugin(plugin_id)
-            console.log({plugin})
-            if (!plugin) return console.error("plugin not found for", context)
+            if (!plugin) return console.error("plugin not found", {plugin_id})
 
-            console.debug("mounting plugin", $state.snapshot(plugin))
+            console.debug("Mounting plugin", $state.snapshot(plugin))
             plugin.render?.(container, context)
         })
     })

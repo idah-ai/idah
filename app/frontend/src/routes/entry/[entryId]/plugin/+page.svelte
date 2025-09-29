@@ -1,5 +1,6 @@
 <script lang="ts">
-    import { entriesBackendDataSource } from "@/data/model/dataset/entryRecord";
+    import { datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
+    import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
     import { activityContextForEntry } from "@/plugin/ActivityContext";
     import type { IActivityContext, IActivityView } from "@/plugin/interface/Activity";
     import { getContext, onMount } from "svelte";

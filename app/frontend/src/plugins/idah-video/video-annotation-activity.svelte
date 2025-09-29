@@ -9,7 +9,7 @@
     import SidebarInset from "@/components/ui/sidebar/sidebar-inset.svelte";
 
     import { ResizableHandle, ResizablePane, ResizablePaneGroup } from "@/components/ui/resizable";
-    import { AnnotationRecord, annotationsBackendDataSource } from "@/data/model/dataset/annotationRecord";
+    import { AnnotationRecord, annotationsBackendDataSource } from "@/data/model/dataset/annotations/record";
 
     import type { AnnotationValue } from "@/context/AnnotationContext";
     import type { Command } from "@/command/Command";
