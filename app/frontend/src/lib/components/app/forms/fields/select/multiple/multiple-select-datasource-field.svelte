@@ -5,8 +5,9 @@
   import FormFieldErrors from "@/components/app/forms/form-field-errors.svelte";
   import FormFieldInfo from "@/components/app/forms/form-field-info.svelte";
   import FormFieldLabel from "@/components/app/forms/form-field-label.svelte";
-  import Spinner from "@/components/app/loading/spinner.svelte";
+  import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+  import Spinner from "@/components/app/loading/spinner.svelte";
 
   import { cn } from "@/utils";
   import { CheckIcon, ChevronsUpDownIcon, CircleXIcon } from "@lucide/svelte";
@@ -146,7 +147,12 @@
     <PopoverContent align="start" class="w-auto p-0">
       <Command>
         {#if searchable}
-          <CommandInput placeholder={searchPlaceholder} bind:value={searchValue} />
+          <InputField
+            name="search/multiple/select"
+            placeholder={searchPlaceholder}
+            value={searchValue}
+            oninput={(e) => (searchValue = e.currentTarget.value)}
+          ></InputField>
         {/if}
 
         <CommandList>
@@ -161,8 +167,8 @@
                 {:else}
                   <CommandItem onclick={() => select(choice)}>
                     <CheckIcon
-                      class={cn("mr-1 size-4", {
-                        "opacity-0": !values.includes(choice.value),
+                      class={cn("mr-2 size-4", {
+                        "opacity-0": !values.find((v) => v == choice.value),
                       })}
                     ></CheckIcon>
 
