@@ -16,7 +16,7 @@
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { refetches } from "@/utils/refetch";
 
-  import type { DropdownMenuItemBaseProps } from "@/components/app/dropdown-menu/dropdown-menu.types";
+  import type { DropdownMenuItemBaseProps } from "@/components/app/dropdown-menus/dropdown-menu.types";
 
   // Props
   interface Props {
