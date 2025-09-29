@@ -1,6 +1,10 @@
 import ProjectDatasetNameCell from "@/components/app/datasets/data-tables/project-dataset-name-cell.svelte";
+import ProjectDatasetModalityCell from "@/components/app/datasets/data-tables/project-dataset-modality-cell.svelte";
+import ProjectDatasetProgressCell from "@/components/app/datasets/data-tables/project-dataset-progress-cell.svelte";
+import ProjectDatasetStatusCell from "@/components/app/datasets/data-tables/project-dataset-status-cell.svelte";
 import ProjectDatasetRowActionCell from "@/components/app/datasets/data-tables/project-dataset-row-action-cell.svelte";
 
+import { datasetsModalities, datasetsStatuses } from "@/data/model/dataset/datasets/constants";
 import { DatasetRecord } from "@/data/model/dataset/dataset-record";
 
 import type { ColumnsSettings } from "@/components/app/data-table/data-table.types";
@@ -31,9 +35,11 @@ export const projectDatasetColumns: ColumnsSettings<DatasetRecord> = {
       filterKey: "status",
       filterBy: "multiple-select",
       filterOperation: "in",
+      choices: datasetsStatuses,
     },
     visible: true,
     hidable: false,
+    cellComponent: ProjectDatasetStatusCell,
   },
   progress: {
     label: "Progress",
@@ -48,20 +54,23 @@ export const projectDatasetColumns: ColumnsSettings<DatasetRecord> = {
     },
     visible: true,
     hidable: false,
+    cellComponent: ProjectDatasetProgressCell,
   },
   modality: {
     label: "Media Type",
-    dataType: "string",
+    dataType: "enum",
     clickable: false,
     sortable: true,
     filterable: true,
     filterOptions: {
       filterKey: "modality",
-      filterBy: "string",
-      filterOperation: "match",
+      filterBy: "multiple-select",
+      filterOperation: "in",
+      choices: datasetsModalities,
     },
     visible: true,
     hidable: false,
+    cellComponent: ProjectDatasetModalityCell,
   },
   created_at: {
     label: "Created at",

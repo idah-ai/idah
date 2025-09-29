@@ -87,6 +87,15 @@
   let filterKeyWithOperation: string = $derived(
     filterOptions?.filterOperation ? `${filterKey}__${filterOptions.filterOperation}` : filterKey,
   );
+  let popoverAlignment: "start" | "center" = $derived.by(() => {
+    if (!filterOptions?.filterBy) return "start";
+
+    if (["date-range"].includes(filterOptions.filterBy)) {
+      return "center";
+    }
+
+    return "start";
+  });
 
   let isFiltering = $derived(Object.keys(filters).some((key) => key.startsWith(filterKey)));
   let isSorting = $derived(sort.some((s) => s.endsWith(columnKey)));
@@ -240,6 +249,7 @@
     {:else}
       <Button
         variant={isFilteringOrSorting ? "default" : "ghost"}
+        data-state={openDropdown ? "open" : "closed"}
         class={cn(
           "data-[state=open]:bg-primary data-[state=open]:text-primary-foreground hover:bg-primary hover:text-primary-foreground my-2 gap-2 font-normal",
           isFilteringOrSorting ? "text-primary-foreground" : "text-primary",
@@ -264,7 +274,7 @@
     {/if}
   </PopoverTrigger>
 
-  <PopoverContent align="start" class="max-w-60 p-0">
+  <PopoverContent align={popoverAlignment} class="w-auto min-w-60 p-0">
     <Command>
       <!-- FILTER -->
       {#if filterable}
@@ -294,7 +304,7 @@
               Please provide choices for boolean filter
             {/if}
           {:else if filterOptions?.filterBy === "number-range"}
-            <div class="px-2} flex items-center gap-2">
+            <div class="flex items-center gap-2 px-2">
               <!-- MIN -->
               <NumberField
                 name={filterKeyWithOperation}
@@ -334,12 +344,14 @@
               Please provide choices for multiple select filter
             {/if}
           {:else if filterOptions?.filterBy === "date-range"}
-            <div class="flex flex-col items-center">
+            <div class="flex min-w-fit flex-col items-center">
               <RangeCalendar
                 value={{
                   start: filteredStartDateValue,
                   end: filteredEndDateValue,
                 }}
+                weekStartsOn={1}
+                numberOfMonths={2}
                 onValueChange={filterByDateRange}
               ></RangeCalendar>
             </div>
