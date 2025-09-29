@@ -19,7 +19,7 @@ module Datset
 
     # import a datset file
     # TODO: recheck if resource is needed
-    def import(file:, resource:, project_id:)
+    def import(file:, project_id:)
       datset_data = {}
       Verse::Plugin[:shrine].with_storage do |storage|
         uploaded_file = storage.open(storage.upload(file.tempfile).id)
@@ -93,11 +93,11 @@ module Datset
 
     def create_datset(dataset_id)
       # prep data to datset structure
-      dataset = dataset_repo.find!("dataset_id") # testing id
+      dataset = dataset_repo.find!(dataset_id) # testing id
       # TODO: handle not found error
 
-      entries = entry_repo.index({dataset_id: dataset.id}) # sort by id ? created_at ? updated_at ?
-      annotations = annotation_repo.index({entry_id__in: entries.map(&:id)}) # sort by id ? created_at ? updated_at ?
+      entries = entry_repo.index({ dataset_id: dataset.id }) # sort by id ? created_at ? updated_at ?
+      annotations = annotation_repo.index({ entry_id__in: entries.map(&:id) }) # sort by id ? created_at ? updated_at ?
 
       # turn records into datset schema
       formatted_datset = {

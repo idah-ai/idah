@@ -79,6 +79,12 @@
     $refetches.datasets.list++;
     openConfirmDeleteDatasetModal = false;
   }
+
+  async function exportDataset(): Promise<void> {
+    await datasetsBackendDataSource.export(datasetId);
+    openExportDatasetModal = false;
+    // TODO: open modal when finish or download given exported file
+  }
 </script>
 
 <DropdownMenu>
@@ -116,5 +122,6 @@
   title="Export Dataset"
   description="Confirm to export the dataset: "
   {datasetRecord}
+  onConfirm={exportDataset}
   bind:open={openExportDatasetModal} />
 <!-- onConfirm={exportDataset} -->

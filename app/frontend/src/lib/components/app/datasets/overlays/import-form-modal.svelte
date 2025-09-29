@@ -51,11 +51,6 @@
     selectedDatset = selectedFiles;
   }
 
-  function getFileExtension(filename: string): string {
-    const lastDotIndex = filename.lastIndexOf(".");
-    return lastDotIndex !== -1 ? filename.substring(lastDotIndex) : "";
-  }
-
   async function importDatset(projectId: string): Promise<void> {
     if (!selectedDatset || selectedDatset.length === 0) {
       toast.error("No .datset file selected for import.");
@@ -72,13 +67,10 @@
     // TODO: currently aligning with entry adding modal, subject to change
     for (const file of importStatuses) {
       try {
-        const fileExtension = getFileExtension(file.datset.name);
-        const resourceKey = `${file.uuid}${fileExtension}`;
-
-        // uploading the file
-        const createdDatset = await datasetsBackendDataSource.import(file.datset, resourceKey, projectId);
+        // importing the file
+        const createdDatset = await datasetsBackendDataSource.import(file.datset, projectId);
         if (!("data" in createdDatset)) {
-          throw new Error("Datset import failed");
+          throw new Error("Datset file import failed");
         }
 
         file.status = "success";

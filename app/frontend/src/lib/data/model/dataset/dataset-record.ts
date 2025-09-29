@@ -70,12 +70,10 @@ export const datasetsBackendDataSource = createBackendDataSource(
   {
     import: async (
       file: File,
-      resource: string,
       projectId: string,
     ): Promise<RecordResponse<DatasetRecord> | JsonApiErrorResponse> => {
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("resource", resource);
       formData.append("project_id", projectId);
 
       const importPath = `${datasetsBasePath}/import`;
@@ -102,6 +100,40 @@ export const datasetsBackendDataSource = createBackendDataSource(
       }
 
       if (body && body.data) return Promise.resolve(parseSingleElementReturn<DatasetRecord>(body));
+
+      throw "No data returned";
+    },
+    export: async (
+      datasetId: string,
+    ) => {
+      // const formData = new FormData();
+      // formData.append("datasetId", datasetId);
+
+      // console.log("datasetId: ", datasetId)
+
+      const exportPath = `${datasetsBasePath}/export/${datasetId}`;
+
+      const out = await fetch(exportPath, {
+        method: "GET",
+      });
+
+      const body = await out.json();
+
+      // Cache Management
+      const cacheIndexKey = resourcePath(datasetsBasePath, null, undefined);
+      clearCache(cacheIndexKey);
+
+      if (body && body.errors) {
+        if (body.errors.length > 0) {
+          body.errors.forEach((err: Hash<string>) => {
+            showErrorToast({ title: err.title, message: err.detail, error: err });
+          });
+        }
+
+        return Promise.reject(parseSingleElementError({ status: out.status, errors: body.errors }));
+      }
+
+      if (body && body.data) return;
 
       throw "No data returned";
     },

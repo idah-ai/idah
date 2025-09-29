@@ -38,15 +38,27 @@ class DatasetsExpo < BaseExpo
     MD
     input do
       field(:file, Verse::Http::UploadedFile).meta(desc: "The .datset file to import")
-      field(:resource, String)
       field(:project_id, String)
     end
   end
   def import
     datset_service.import(
       file: params[:file],
-      resource: params[:resource],
       project_id: params[:project_id],
     )
+  end
+
+  expose on_http(:get, "/export/:dataset_id", auth: nil) do
+    desc <<-MD
+    MD
+    input do
+      field(:dataset_id, String)
+    end
+  end
+  def export
+    datset_service.export(params[:dataset_id])
+
+    # TODO: properly handling response output
+    server.status 200
   end
 end
