@@ -101,9 +101,7 @@ module Entry
 
     def update_entries_job(job_id, resource)
       entries.transaction do
-        entry = entries.find_by({ resource: })
-
-        raise Verse::Error::NotFound, "Entry with resource #{resource} not found" unless entry
+        entry = entries.find_by!({ resource: })
 
         if entry.job_id && entry.job_id != job_id
           raise Verse::Error::ValidationFailed,
