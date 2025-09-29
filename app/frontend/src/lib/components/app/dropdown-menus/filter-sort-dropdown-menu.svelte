@@ -32,7 +32,6 @@
     FilterDataSourceParams,
     SortDataSourceParams,
   } from "@/components/app/data-table/data-table.types";
-  import FilterSortSingleSelect from "@/components/app/single-select/filter-sort-single-select.svelte";
 
   // Props
   interface Props<T extends Record> {
