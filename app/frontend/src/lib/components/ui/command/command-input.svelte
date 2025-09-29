@@ -2,7 +2,6 @@
   import { Command as CommandPrimitive } from "bits-ui";
   import SearchIcon from "@lucide/svelte/icons/search";
   import { cn } from "$lib/utils.js";
-
   let {
     ref = $bindable(null),
     class: className,
@@ -16,11 +15,11 @@
   <CommandPrimitive.Input
     data-slot="command-input"
     class={cn(
-      "placeholder:text-muted-foreground flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-hidden disabled:cursor-not-allowed disabled:opacity-50",
+      "placeholder:text-muted-foreground outline-hidden flex h-10 w-full rounded-md bg-transparent py-3 text-sm disabled:cursor-not-allowed disabled:opacity-50",
       className,
     )}
+    bind:ref
     {...restProps}
     bind:value
-    {ref}
   />
 </div>

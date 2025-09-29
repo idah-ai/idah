@@ -31,7 +31,7 @@
     FilterDataSourceParams,
     SortDataSourceParams,
   } from "@/components/app/data-table/data-table.types";
-    import FilterSortSingleSelect from "@/components/app/single-select/filter-sort-single-select.svelte";
+  import FilterSortSingleSelect from "@/components/app/single-select/filter-sort-single-select.svelte";
 
   // Props
   interface Props<T extends Record> {
@@ -264,8 +264,6 @@
             {/if}
           {:else if filterOptions?.filterBy === "number-range"}
             Render Number Range Input
-          {:else if filterOptions?.filterBy === "single-select"}
-          <FilterSortSingleSelect></FilterSortSingleSelect>
           {:else if filterOptions?.filterBy === "multiple-select"}
             {#if filterOptions.choices}
               {#each filterOptions.choices as choice (choice.value)}
