@@ -1,4 +1,4 @@
-import { annotationsBackendDataSource } from "@/data/model/dataset/annotationRecord";
+import { annotationsBackendDataSource } from "@/data/model/dataset/annotations/record";
 import { JsonRpcDatasource } from "../../plugins/idah-video/video-annotation-activity/jsonrpc";
 import type { IAnnotation, IAnnotationDriver } from "./interface/Activity";
 
