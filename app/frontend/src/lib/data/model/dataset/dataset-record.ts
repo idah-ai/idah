@@ -4,10 +4,20 @@ import { showErrorToast } from "@/utils/error/error.toasts";
 import { parseSingleElementError, parseSingleElementReturn } from "@/data/model/json_api";
 import { field, Record, RecordFactory, relationship, type } from "@/data/model/Record";
 
-import type { ProjectRecord } from "@/data/model/dataset/projects/project-record";
+import { humanize } from "@/utils/string";
+
+import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
+import { EntryRecord } from "@/data/model/dataset/entries/record";
+
 import type { Hash } from "@/utils/types";
 import type { LabelingConfiguration } from "@/data/model/dataset/labels";
-import { humanize } from "@/utils/string";
+import {
+  type DatasetModalityBadgeProps,
+  type DatasetStatusBadgeProps,
+  datasetsModalities,
+  datasetsStatuses,
+} from "@/data/model/dataset/datasets/constants";
+import { Layers2Icon } from "@lucide/svelte";
 
 @type("dataset:datasets")
 export class DatasetRecord extends Record {
@@ -17,11 +27,37 @@ export class DatasetRecord extends Record {
   @field() public labeling_configuration!: LabelingConfiguration;
   @field() public workflow_configuration!: Hash;
   @field() public status!: string;
-  @field() public progress!: Date;
+  @field() public progress!: number;
   @field() public updated_at!: Date;
   @field() public created_at!: string;
 
   @relationship() public project!: ProjectRecord;
+  @relationship() public entries!: EntryRecord[];
+
+  public get modalityBadge(): DatasetModalityBadgeProps {
+    const defaultBadgeProps: DatasetModalityBadgeProps = {
+      label: humanize(this.modality),
+      value: this.modality,
+      icon: Layers2Icon,
+      variant: "outline",
+    };
+
+    const foundDatasetModality = datasetsModalities.find((m) => m.value === this.modality);
+
+    return foundDatasetModality ?? defaultBadgeProps;
+  }
+
+  public get statusBadge(): DatasetStatusBadgeProps {
+    const defaultBadgeProps: DatasetStatusBadgeProps = {
+      label: "Pending",
+      value: "pending",
+      variant: "outline",
+    };
+
+    const foundDatasetStatus = datasetsStatuses.find((s) => s.value === this.status);
+
+    return foundDatasetStatus ?? defaultBadgeProps;
+  }
 }
 
 RecordFactory.registerTypes(DatasetRecord);

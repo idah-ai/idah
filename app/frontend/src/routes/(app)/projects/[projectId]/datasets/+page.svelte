@@ -8,9 +8,13 @@
   import PageHeader from "@/components/app/page/page-header.svelte";
 
   import { projectDatasetColumns } from "@/components/app/datasets/data-tables/project-dataset.columns";
-  import { datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
+  import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
+  import { EntryRecord } from "@/data/model/dataset/entries/record";
+  import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
   import { refetches } from "@/utils/refetch";
   import { FileDownIcon, PlusIcon } from "@lucide/svelte";
+
+  import type { Record } from "@/data/model/Record";
 
   // Variables
   let projectId: string = page.params.projectId as string;
@@ -41,12 +45,14 @@
     dataSource={datasetsBackendDataSource}
     listOptions={{
       fields: {
-        "dataset:datasets": ["name", "status", "modality", "progress", "created_at", "updated_at"],
-        "dataset:projects": ["name"],
+        [DatasetRecord.type]: ["name", "status", "modality", "progress", "created_at", "updated_at"],
+        [ProjectRecord.type]: ["name"],
+        [EntryRecord.type]: ["status"],
       },
       filters: {
         project_id: projectId,
       },
+      included: ["entries"],
       sort: ["-created_at"],
     }}
   />

@@ -24,7 +24,6 @@ export type DataTableColumnFilterBy =
   | "string"
   | "boolean"
   | "number-range"
-  | "single-select"
   | "multiple-select"
   | "date-range"
   | "datasource";
