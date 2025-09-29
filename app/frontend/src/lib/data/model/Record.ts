@@ -1,7 +1,6 @@
 import { identity, type Hash, type Constructor } from "@/utils/types";
 import type { IncludeList } from "@/data/model/includes";
 import type { FieldOptions, JsonApiRecord, JsonApiReference, RelationshipOptions } from "@/data/model/types";
-import { camelToSnake } from "@/utils/string";
 
 export function field(opts: FieldOptions = {}) {
   const transformerFunction = opts.transformer || { from: identity };
@@ -29,7 +28,6 @@ export function relationship(opts: RelationshipOptions = {}) {
   const buildObject = (target: Record, record: JsonApiReference) => {
     const includeList = target._includeList;
 
-    console.log({ opts, target, includeList, record });
     if (!includeList) throw `Include list not found`;
 
     const object = includeList.find(record.id || "", record.type);
@@ -45,7 +43,7 @@ export function relationship(opts: RelationshipOptions = {}) {
         // Convert camelCase to snake_case
         // as relationships are stored in snake_case in the JSON API response
 
-        key = opts.key || key; // key = camelToSnake(key);
+        key = opts.key || key;
 
         if (this._relationshipCached[key]) {
           return this._relationshipCached[key];
