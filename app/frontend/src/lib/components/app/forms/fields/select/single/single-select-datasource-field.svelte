@@ -23,19 +23,20 @@
   interface Props extends SelectDataSourceFieldBaseProps<T> {
     value: string | number | null;
   }
+
   let {
     displayKey,
     dataSource,
     listOptions,
-    value = $bindable(null),
+    value = null,
     name,
     label,
     placeholder = "Select an option",
     searchable = false,
     searchPlaceholder = "Search an option",
     searchValue = $bindable(""),
-
     clearable = false,
+    searchKeyWithOperation = null,
     disabled = false,
     required = false,
     info,
@@ -95,7 +96,7 @@
 
     if (searchable && searchValue) {
       if (!listOpts.filters) listOpts.filters = {};
-      listOpts.filters["name__match"] = searchValue;
+      listOpts.filters[searchKeyWithOperation || "name__match"] = searchValue;
     }
 
     const response = await dataSource.list(listOpts);

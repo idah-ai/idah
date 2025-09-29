@@ -28,6 +28,8 @@ export interface SelectFieldBaseProps extends FormFieldBaseProps {
   searchPlaceholder?: string;
   searchValue?: string;
   clearable?: boolean;
+  searchKeyWithOperation?: string | null;
+
   onValueChange?: (value: string | number) => Promise<void> | void;
 
   slotTrigger?: Snippet<
