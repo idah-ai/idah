@@ -129,19 +129,19 @@
       {:else}
         <Button
           variant="outline"
-          class="w-full justify-between"
+          class="w-full justify-between truncate"
           {disabled}
           role="combobox"
           aria-expanded={open}
           onclick={openPopover}
         >
           {#if selectedChoice}
-            {selectedChoice.label}
+           <span class="truncate">{selectedChoice.label}</span>
           {:else}
             <span class="text-muted-foreground">{placeholder}</span>
           {/if}
 
-          <div class="ml-auto inline-flex items-center gap-2">
+          <div class="ml-auto inline-flex items-center gap-2 ">
             <button
               type="button"
               class={cn("cursor-pointer", clearable && selectedChoice ? "opacity-50" : "opacity-0")}
