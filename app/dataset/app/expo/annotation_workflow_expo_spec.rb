@@ -56,13 +56,13 @@ RSpec.describe AnnotationWorkflowExpo, type: :exposition, database: true, as: :s
     }
 
     expect(last_response.status).to eq 200
-    # body = JSON.parse(last_response.body, symbolize_names: true)
-    # expect(body[:entry][:id]).to eq entry_id
-    # expect(body[:workflow_step]).to eq "annotation"
-    # expect(body[:status]).to eq "in_progress"
-    # expect(body[:available_actions]).to include("submit_annotation", "reset_workflow")
-    # expect(body[:progress]).to eq 0.5
-    # expect(body[:message]).to eq "Annotation workflow started successfully"
+    body = JSON.parse(last_response.body, symbolize_names: true)[:data]
+    expect(body[:entry][:id]).to eq entry_id
+    expect(body[:workflow_step]).to eq "annotate"
+    expect(body[:status]).to eq "in_progress"
+    expect(body[:available_actions]).to include("submit_annotation", "reset_workflow")
+    expect(body[:progress]).to eq 0.5
+    expect(body[:message]).to eq "Annotation workflow started successfully"
   end
 
   it "submit annotation" do
@@ -85,7 +85,8 @@ RSpec.describe AnnotationWorkflowExpo, type: :exposition, database: true, as: :s
     }
 
     expect(last_response.status).to eq 200
-    body = JSON.parse(last_response.body, symbolize_names: true)
+    body = JSON.parse(last_response.body, symbolize_names: true)[:data]
+
     expect(body[:entry][:id]).to eq started_entry
     expect(body[:workflow_step]).to eq "done"
     expect(body[:status]).to eq "completed"

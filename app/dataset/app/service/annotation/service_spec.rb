@@ -39,7 +39,6 @@ RSpec.describe Annotation::Service, database: true do
   let(:attributes) do
     {
       entry_id: entry_id,
-      type: "bounding_box",
       dimensions: { "x" => 10, "y" => 20, "width" => 30, "height" => 40 },
       annotation: { label: "cat" },
       created_by_id: 1
@@ -65,7 +64,6 @@ RSpec.describe Annotation::Service, database: true do
         }
       )
       annotation = subject.create(record)
-      # expect(annotation.type).to eq("bounding_box")
       expect(annotation.annotation).to eq({ label: "cat" })
     end
   end

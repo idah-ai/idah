@@ -31,7 +31,8 @@ RSpec.describe Entry::Service, database: true do
       wf_step: "start",
       status: "pending",
       assigned_to_id: 1,
-      dataset_id: dataset_id
+      dataset_id: dataset_id,
+      resource: "http://example.com/video.mp4"
     }
   end
 
@@ -115,9 +116,7 @@ RSpec.describe Entry::Service, database: true do
           {
             data: {
               type: "dataset:entries",
-              attributes: {
-                job_id: job_id
-              },
+              attributes: attributes.merge(job_id: job_id),
               relationships: {
                 dataset: {
                   data: {
@@ -229,7 +228,7 @@ RSpec.describe Entry::Service, database: true do
         {
           data: {
             type: "dataset:entries",
-            attributes: attributes.merge(priority: 2),
+            attributes: attributes.merge(priority: 2, resource: "http://example.com/video2.mp4"),
             relationships: {
               dataset: {
                 data: {
@@ -245,8 +244,11 @@ RSpec.describe Entry::Service, database: true do
     end
 
     it "returns all entries when no filter is provided" do
+      entry
       result = subject.index
+
       expect(result.count).to be >= 2
+      expect(result.map(&:id)).to include(entry.id, entry2.id)
     end
 
     it "filters entries by dataset_id" do

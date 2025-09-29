@@ -26,6 +26,11 @@ module Entry
       attr[:id] = record.id || UUIDv7.generate
 
       entries.transaction do
+        unless attr[:resource]
+          raise Verse::Error::ValidationFailed,
+                "resource is required to create an entry"
+        end
+
         if entries.find_by({ resource: attr[:resource] })
           raise Verse::Error::ValidationFailed,
                 "Entry with resource #{attr[:resource]} already exists"
@@ -42,8 +47,6 @@ module Entry
         attr[:status] ||= job_id ? "pending" : "ready"
 
         id = entries.create(attr)
-
-        # entry = entries.find!(id)
 
         if job_id
           # After we created, we check the job status
