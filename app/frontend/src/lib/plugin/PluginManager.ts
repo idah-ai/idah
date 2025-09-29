@@ -30,7 +30,7 @@ export class PluginManager {
     return new Promise<IActivityView>(async (resolve, reject) => {
       switch (config.src) {
         case "local":
-          plugin = (await import([this.PLUGINS_PATH, config.name].join("/"))).default;
+          plugin = (await globImport[[this.PLUGINS_PATH, config.name, "index.ts"].join("/")]()).default;
           break;
         case "npm":
           return reject(console.error("todo"));
