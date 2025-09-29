@@ -148,7 +148,7 @@
       <Command>
         {#if searchable}
           <InputField
-            name="search/multiple/select"
+            name="filter/multiple-select/{searchKeyWithOperation}"
             placeholder={searchPlaceholder}
             value={searchValue}
             oninput={(e) => (searchValue = e.currentTarget.value)}
