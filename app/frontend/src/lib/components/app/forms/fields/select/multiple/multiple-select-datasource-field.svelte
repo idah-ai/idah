@@ -1,7 +1,6 @@
 <script lang="ts" generics="T extends Record">
   import Button from "@/components/ui/button/button.svelte";
-  import CommandInput from "@/components/ui/command/command-input.svelte";
-  import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
+  import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList, CommandInput } from "@/components/ui/command";
   import FormField from "@/components/app/forms/form-field.svelte";
   import FormFieldErrors from "@/components/app/forms/form-field-errors.svelte";
   import FormFieldInfo from "@/components/app/forms/form-field-info.svelte";
@@ -29,7 +28,7 @@
     label,
     placeholder = "Select an option",
     clearable = false,
-    searchKeyWithOperation = null,
+    searchKeyWithOperation,
     disabled = false,
     required = false,
     searchable = false,
@@ -80,7 +79,7 @@
 
     if (searchable && searchValue) {
       if (!listOpts.filters) listOpts.filters = {};
-      listOpts.filters[searchKeyWithOperation || "name__match"] = searchValue;
+      listOpts.filters[searchKeyWithOperation] = searchValue;
     }
 
     const response = await dataSource.list(listOpts);
@@ -144,7 +143,7 @@
       {/if}
     </PopoverTrigger>
 
-    <PopoverContent align="start" class="p-0">
+    <PopoverContent align="start" class="w-auto p-0">
       <Command>
         {#if searchable}
           <CommandInput placeholder={searchPlaceholder} bind:value={searchValue} />
@@ -160,11 +159,13 @@
                 {#if slotChoice}
                   {@render slotChoice({ choice })}
                 {:else}
-                  <CommandItem class="flex w-full gap-0" onclick={() => select(choice)}>
-                     {#if values.includes(choice.value)}
-                      <CheckIcon class={cn("mr-1 size-4")}></CheckIcon>
-                    {/if}
-                    
+                  <CommandItem onclick={() => select(choice)}>
+                    <CheckIcon
+                      class={cn("mr-1 size-4", {
+                        "opacity-0": !values.includes(choice.value),
+                      })}
+                    ></CheckIcon>
+
                     {choice.label}
                   </CommandItem>
                 {/if}

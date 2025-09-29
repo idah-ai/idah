@@ -2,8 +2,7 @@
   import { onMount } from "svelte";
 
   import Button from "@/components/ui/button/button.svelte";
-  import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
-  import CommandInput from "@/components/ui/command/command-input.svelte";
+  import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList, CommandInput } from "@/components/ui/command";
   import FormField from "@/components/app/forms/form-field.svelte";
   import FormFieldErrors from "@/components/app/forms/form-field-errors.svelte";
   import FormFieldInfo from "@/components/app/forms/form-field-info.svelte";
@@ -36,7 +35,7 @@
     searchPlaceholder = "Search an option",
     searchValue = $bindable(""),
     clearable = false,
-    searchKeyWithOperation = null,
+    searchKeyWithOperation,
     disabled = false,
     required = false,
     info,
@@ -96,7 +95,7 @@
 
     if (searchable && searchValue) {
       if (!listOpts.filters) listOpts.filters = {};
-      listOpts.filters[searchKeyWithOperation || "name__match"] = searchValue;
+      listOpts.filters[searchKeyWithOperation] = searchValue;
     }
 
     const response = await dataSource.list(listOpts);
@@ -129,7 +128,7 @@
       {:else}
         <Button
           variant="outline"
-          class="w-full justify-between truncate"
+          class="w-full justify-between"
           {disabled}
           role="combobox"
           aria-expanded={open}
@@ -156,7 +155,7 @@
       {/if}
     </PopoverTrigger>
 
-    <PopoverContent align="start" class="p-0">
+    <PopoverContent align="start" class="w-auto p-0">
       <Command>
         {#if searchable}
           <CommandInput placeholder={searchPlaceholder} bind:value={searchValue}></CommandInput>
@@ -172,11 +171,13 @@
                 {#if slotChoice}
                   {@render slotChoice({ choice })}
                 {:else}
-                  <CommandItem class="flex w-full gap-0" onclick={() => select(choice)}>
-                    {#if choice.value == value}
-                      <CheckIcon class={cn("mr-1 size-4")}></CheckIcon>
-                    {/if}
-  
+                  <CommandItem onclick={() => select(choice)}>
+                    <CheckIcon
+                      class={cn("mr-1 size-4", {
+                        "opacity-0": choice.value != value,
+                      })}
+                    ></CheckIcon>
+
                     {choice.label}
                   </CommandItem>
                 {/if}
