@@ -11,15 +11,13 @@
 
   // Props
   interface Props extends DataTableFilterBaseProps<EntryRecord> {}
-  let { columnSetting, onFilter }: Props = $props();
+  let { columnSetting, filters, onFilter }: Props = $props();
 
   // Varibles
   const resource: string = ProjectMemberRecord.type;
   const filterKey: string = columnSetting.filterOptions?.filterKey || "project_member_id";
   const filterOperation: DataTableColumnFilterOperation = columnSetting.filterOptions?.filterOperation || "eq";
   const filterKeyWithOperation: string = `${filterKey}__${filterOperation}`;
-
-  let selectedValue: number | null = $state(null);
 
   // Functions
   function handleFilter(value: string | number): void {
@@ -35,6 +33,7 @@
   name="{resource}/project_member_id"
   dataSource={projectMembersBackendDataSource}
   displayKey="email"
-  value={selectedValue}
+  value={filters[filterKeyWithOperation]}
   onValueChange={handleFilter}
+  searchKeyWithOperation="email__match"
 ></SingleSelectDatasourceField>

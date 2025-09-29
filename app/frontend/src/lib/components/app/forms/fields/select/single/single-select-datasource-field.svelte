@@ -173,7 +173,7 @@
                 {:else}
                   <CommandItem onclick={() => select(choice)}>
                     <CheckIcon
-                      class={cn("mr-1 size-4", {
+                      class={cn("mr-2 size-4", {
                         "opacity-0": choice.value != value,
                       })}
                     ></CheckIcon>
