@@ -1,4 +1,5 @@
 import type { IActivityView } from "./interface/Activity";
+const globImport = import.meta.glob("../../plugins/*/index.ts");
 
 type PluginConfig = { name: string; src: string };
 type PluginsConfig = { plugins: PluginConfig[] };
@@ -26,7 +27,6 @@ export class PluginManager {
   register(config: PluginConfig): Promise<IActivityView> {
     console.debug("register", config);
     let plugin: IActivityView;
-
     return new Promise<IActivityView>(async (resolve, reject) => {
       switch (config.src) {
         case "local":

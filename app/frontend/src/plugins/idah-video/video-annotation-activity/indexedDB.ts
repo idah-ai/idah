@@ -1,13 +1,4 @@
-import type { Annotation } from "@/context/AnnotationContext";
-import {
-  type VideoAnnotation,
-  type KeyFrame,
-  type Point,
-  X,
-  Y,
-  type VideoShape,
-  type VideoFrameSelection,
-} from "./VideoAnnotationContext";
+import { type VideoAnnotation, type Point, X, Y, type VideoFrameSelection } from "./VideoAnnotationContext";
 
 //test
 let s = {
@@ -45,7 +36,7 @@ export async function annotationsIndexedDB(name: string, stores: StoresDefinitio
       resolve(new AnnotationsIndexedDB(DBOpenRequest.result));
     };
 
-    DBOpenRequest.onupgradeneeded = (_) => {
+    DBOpenRequest.onupgradeneeded = () => {
       console.info("upgrade Database.");
 
       Object.entries(stores).forEach(([store, indexes]) => {
@@ -194,12 +185,12 @@ export class AnnotationsIndexedDB {
     });
   }
 
-  getAllIndex(key: string, value?: string) {
+  getAllIndex(key: string, value?: string | null) {
     return new Promise<VideoAnnotation[]>((resolve, reject) => {
       const transaction = this.db.transaction("annotations", "readonly");
       const store = transaction.objectStore("annotations").index(key);
-      const keyRange = IDBKeyRange.only(value || "null"); //......
 
+      const keyRange = value != undefined ? IDBKeyRange.only(value == null ? "null" : value) : undefined;
       const request = store.getAll(keyRange);
 
       request.onsuccess = () => {
@@ -321,6 +312,79 @@ export class AnnotationsIndexedDB {
               }
               annotationsCursor.continue();
             }
+          };
+        }
+      };
+
+      transaction.onerror = () => {
+        reject(transaction.error);
+      };
+      transaction.oncomplete = () => {
+        resolve(result);
+      };
+    });
+  }
+
+  bounded_frames(start: number, end: number) {
+    return new Promise<VideoAnnotation[]>((resolve, reject) => {
+      const transaction = this.db.transaction(["annotations", "keyframes"]);
+
+      const annotationsStore = transaction.objectStore("annotations").index("range");
+      const keyFramesStore = transaction.objectStore("keyframes");
+
+      const annotationsRange = IDBKeyRange.bound([0, start], [end, Infinity]);
+      const annotationsRequest = annotationsStore.openCursor(annotationsRange);
+
+      const result: VideoAnnotation[] = [];
+      annotationsRequest.onsuccess = () => {
+        const annotationsCursor = annotationsRequest.result;
+        if (annotationsCursor) {
+          const annotation = annotationsCursor.value;
+          const keyFramePrevRange = IDBKeyRange.upperBound([annotation.metadata.id, start]);
+          const keyframePrevRequest = keyFramesStore.openCursor(keyFramePrevRange, "prev");
+
+          const boundary: VideoFrameSelection[] = [];
+          keyframePrevRequest.onsuccess = () => {
+            const keyframePrevCursor = keyframePrevRequest.result;
+
+            if (keyframePrevCursor) {
+              if (keyframePrevCursor.value.annotation == annotation.metadata.id) {
+                boundary[0] = keyframePrevCursor.value;
+              }
+            }
+
+            const keyFrameNextRange = IDBKeyRange.lowerBound([annotation.metadata.id, end]);
+            const keyframeNextRequest = keyFramesStore.openCursor(keyFrameNextRange, "next");
+
+            keyframeNextRequest.onsuccess = () => {
+              const keyFrameNextCursor = keyframeNextRequest.result;
+
+              if (keyFrameNextCursor) {
+                if (keyFrameNextCursor.value.annotation == annotation.metadata.id) {
+                  boundary[1] = keyFrameNextCursor.value;
+                }
+              }
+              //   if (boundary[0] && boundary[1]) {
+              const range = IDBKeyRange.bound(
+                [annotation.metadata.id, boundary[0]?.frame || start],
+                [annotation.metadata.id, boundary[1]?.frame || end],
+              );
+              const response = keyFramesStore.getAll(range);
+
+              response.onsuccess = () => {
+                annotation.shape = {
+                  ...annotation.shape,
+                  frames: response.result,
+                };
+                result.push(annotation);
+              };
+
+              response.onerror = () => {
+                reject(response.error);
+              };
+              //   }
+            };
+            annotationsCursor.continue();
           };
         }
       };

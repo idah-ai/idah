@@ -12,7 +12,6 @@
     import { AnnotationRecord, annotationsBackendDataSource } from "@/data/model/dataset/annotationRecord";
 
     import type { AnnotationValue } from "@/context/AnnotationContext";
-    import type { Command } from "@/command/Command";
     import { annotationsIndexedDB, AnnotationsIndexedDB } from "./video-annotation-activity/indexedDB";
     import TimelineTable from "./video-annotation-activity/timeline-table/timeline-table.svelte";
     import type { IActivityContext, IAnnotation } from "@/plugin/interface/Activity";
@@ -26,7 +25,11 @@
     import AnnotationFooter from "./layout/footer/AnnotationFooter.svelte";
     import AnnotationFooterToolbar from "./layout/footer/AnnotationFooterToolbar.svelte";
     import { boundingBoxes, idb_updated_at } from "./video-annotation-activity/idb_store.svelte";
-  let {
+    import { registerVisualModeShortcuts } from "./video-annotation-activity/shortcut";
+    import { ShortcutManager } from "@/shortcut/ShortcutManager";
+    import * as Command from "$lib/components/ui/command/index.js";
+
+    let {
     context
   }: {context: IActivityContext} = $props()
 
@@ -36,7 +39,7 @@
   let currentFrame = $state(0);
   let totalFrames = $state(0);
 
-  let mode: string = $state("view");
+  let mode: string = $state("visual");
 
   let selectedAnnotation: VideoAnnotation | undefined = $state();
   let annotationValue: AnnotationValue = $derived(selectedAnnotation?.value || {});
@@ -51,6 +54,53 @@
 
   let annotationsIDB:AnnotationsIndexedDB|undefined = $state()
 
+  let commandOpen = $state(true)
+  registerVisualModeShortcuts({
+    player: () => player,
+    toggleCommandCB: () => { commandOpen = !commandOpen },
+    flush: () => context.annotations.flush(),
+    switch_mode: (_mode: string) => { mode = _mode },
+    zoom: {in: () => overlay.zoomIn(), out: () => overlay.zoomOut()}
+    })
+
+  window.onkeydown = (e) => {
+    const current_mode = ShortcutManager.getCurrentMode()
+    const keymap = ShortcutManager.keyMap[current_mode]
+
+    if (!keymap) return console.error("no keymap found for", {current_mode})
+
+    console.log(e)
+    const modifier_keys = [
+        e.altKey && "Alt",
+        e.ctrlKey && "Control",
+        e.metaKey && "Meta",
+        e.shiftKey && "Shift",
+    ].sort()
+
+    console.log(`Key${e.key}`, e)
+    const shortcut_keys = ([
+        "Control", "Alt", "Shift", "Meta"
+    ].includes(e.key) ? [undefined] : e.code.startsWith("Key") ? [
+        e.key.toLocaleUpperCase(), e.key.toLocaleLowerCase()
+    ] : [e.code]).map(k => [...modifier_keys, k].filter(k=>k).join('+'))
+
+    console.log({shortcut_keys})
+    for (let index = 0; index < shortcut_keys.length; index++) {
+        let shortcut_key = shortcut_keys[index];
+
+        let shortcut = keymap[shortcut_key]
+
+        if (!shortcut) continue
+
+        e.preventDefault()
+        shortcut.action()
+        console.log({shortcut_key, shortcut})
+
+        break;
+    }
+
+  }
+
   onMount(async () => {
     $boundingBoxes = []
 
@@ -62,13 +112,11 @@
     });
 
     annotationsIndexedDB(['idah-video', 'entry', entry_id].join(':')).then((idb) => {
-        annotationsIDB = idb
-        $idb_updated_at = new Date()
-
         fetchAnnotations(idb)
     }, console.error)
 
     function fetchAnnotations(db:AnnotationsIndexedDB, page = 1, itemsPerPage = 100) {
+        console.debug('fetching anotations', {db, page, itemsPerPage})
         context.annotations.list(
           { entry_id: entry_id },
           { page, itemsPerPage },
@@ -91,11 +139,17 @@
                 }
             })
 
+            console.debug('fetched', d)
+
             if (d.length) {
+                console.debug('adding to db')
                 db.addAnnotations(d).then(() => {
                     $idb_updated_at = new Date()
+                    console.debug('added at', {$idb_updated_at})
                     fetchAnnotations(db, page + 1)
                 })
+            } else {
+                annotationsIDB = db
             }
         });
     }
@@ -131,7 +185,8 @@
         p.then(async () => {
             let a = await annotationsIDB?.get('annotations', id)
 
-            if (a && a.metadata.updatedAt == createdAt){
+
+            if (a && a.metadata.updatedAt.valueOf() == createdAt.valueOf()){
                 a.synced = true;
                 await annotationsIDB?.addAnnotations([a])
                 $idb_updated_at = new Date()
@@ -178,6 +233,8 @@
           success: "synchro delete annotation OK",
           error: "synchro delete annotation KO",
         });
+
+        p.then(() => $idb_updated_at = new Date())
       },
       async undo() {
         const createdAt = new Date();
@@ -202,7 +259,9 @@
           error: "synchro undo delete annotation KO",
         });
         p.then(async () => {
-          if (annotation.metadata.updatedAt == createdAt) {
+          let annotation = await annotationsIDB?.get('annotations', id)
+
+          if (annotation?.metadata.updatedAt.valueOf() == createdAt.valueOf()) {
             annotation.synced = true;
             await annotationsIDB?.addAnnotations([annotation])
             $idb_updated_at = new Date()
@@ -509,12 +568,32 @@
 
   function selectAnnotation(annotation?: VideoAnnotation) {
     selectedAnnotation = annotation;
-    mode = annotation?.shape.type || "view";
+    mode = annotation?.shape.type || "visual";
   }
+
+  let overlay: SvgOverlay;
+
 </script>
 
 <div class="flex h-screen w-full flex-col">
-  <AnnotationHeaderBar
+    {#key [ShortcutManager.currentMode, ShortcutManager.getCurrentMode()]}
+        <Command.CommandDialog bind:open={commandOpen} accesskey={ShortcutManager.getCurrentMode()}>
+            <Command.Input placeholder="Type a command or search..."/>
+            <Command.List>
+                    <Command.Empty>No results found.</Command.Empty>
+                        <Command.Group heading={`MODE: ${ShortcutManager.getCurrentMode()}`}>
+                            {#each Object.entries(ShortcutManager.keyMap[ShortcutManager.getCurrentMode()]||[]) as [k, v]}
+                                <Command.Item onclick={() => v.action()}>
+                                    <span>{v.name} ({v.description})</span>
+                                    <Command.CommandShortcut>{k}</Command.CommandShortcut>
+                                </Command.Item>
+                            {/each}
+                        </Command.Group>
+                    <Command.Separator />
+            </Command.List>
+        </Command.CommandDialog>
+    {/key}
+          <AnnotationHeaderBar
     {context}
     bind:mode
     onSelectMode={() => {
@@ -522,7 +601,6 @@
     }}
   />
 
-  <Toaster position="bottom-right" />
   <SidebarProvider class="min-h-0 w-full" style={"height:calc(100% - 30px)"}>
     <ResizablePaneGroup direction="vertical">
       <ResizablePane class="flex h-full" defaultSize={60} minSize={10}>
@@ -543,6 +621,7 @@
         />
         <SidebarInset>
           <SvgOverlay
+            bind:this={overlay}
             db={annotationsIDB}
             selected={selectedAnnotation}
             {mode}

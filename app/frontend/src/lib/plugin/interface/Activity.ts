@@ -44,6 +44,7 @@ export interface IAnnotationDriver {
   update(ann: IAnnotation): Promise<void>;
   delete(id: string): Promise<void>;
   list(filter: any, pagination: any): Promise<Array<IAnnotation>>;
+  flush(): void;
 }
 
 export interface INoteDriver {
