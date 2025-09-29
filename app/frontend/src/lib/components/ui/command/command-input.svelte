@@ -2,6 +2,7 @@
   import { Command as CommandPrimitive } from "bits-ui";
   import SearchIcon from "@lucide/svelte/icons/search";
   import { cn } from "$lib/utils.js";
+
   let {
     ref = $bindable(null),
     class: className,
