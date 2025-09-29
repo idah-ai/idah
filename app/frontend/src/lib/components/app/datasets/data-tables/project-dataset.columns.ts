@@ -1,5 +1,6 @@
 import ProjectDatasetNameCell from "@/components/app/datasets/data-tables/project-dataset-name-cell.svelte";
 import ProjectDatasetModalityCell from "@/components/app/datasets/data-tables/project-dataset-modality-cell.svelte";
+import ProjectDatasetProgressCell from "@/components/app/datasets/data-tables/project-dataset-progress-cell.svelte";
 import ProjectDatasetStatusCell from "@/components/app/datasets/data-tables/project-dataset-status-cell.svelte";
 import ProjectDatasetRowActionCell from "@/components/app/datasets/data-tables/project-dataset-row-action-cell.svelte";
 
@@ -53,6 +54,7 @@ export const projectDatasetColumns: ColumnsSettings<DatasetRecord> = {
     },
     visible: true,
     hidable: false,
+    cellComponent: ProjectDatasetProgressCell,
   },
   modality: {
     label: "Media Type",
