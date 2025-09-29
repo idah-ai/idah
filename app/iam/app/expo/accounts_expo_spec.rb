@@ -33,7 +33,7 @@ RSpec.describe AccountsExpo, type: :exposition, as: :system do
     }
   end
 
-  let(:service) { instance_double(Account::Service)}
+  let(:service) { instance_double(Account::Service) }
 
   before do
     allow(Account::Service).to receive(:new).and_return(service)
@@ -82,7 +82,7 @@ RSpec.describe AccountsExpo, type: :exposition, as: :system do
     expect(service).to receive(:update) do |args|
       expect(args.id).to eq 1
       expect(args.attributes[:name]).to eq "Test User"
-      expect(args.attributes[:email]).to eq "test@example.com"
+      expect(args.attributes[:enabled]).to eq true
       account_record
     end
 
