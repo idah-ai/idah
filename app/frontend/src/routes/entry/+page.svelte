@@ -1,6 +1,6 @@
 <script lang='ts'>
     import { datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
-    import { entriesBackendDataSource } from "@/data/model/dataset/entryRecord";
+    import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
     import { projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
     import { onMount } from "svelte";
 

@@ -1,5 +1,5 @@
 import type { AnnotationShape, AnnotationValue } from "@/context/AnnotationContext";
-import { field, Record, RecordFactory, relationship, type } from "../Record";
+import { field, Record, RecordFactory, relationship, type } from "@/data/model/Record";
 import { createBackendDataSource } from "@/data/BackendDataSource";
 import type { EntryRecord } from "@/data/model/dataset/entries/record";
 
