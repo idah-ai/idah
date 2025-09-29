@@ -160,7 +160,7 @@
       <Command>
         {#if searchable}
           <InputField
-            name="search/single/select"
+            name="filter/single-select/{searchKeyWithOperation}"
             placeholder={searchPlaceholder}
             value={searchValue}
             oninput={(e) => (searchValue = e.currentTarget.value)}
