@@ -8,7 +8,7 @@ RSpec.describe Account::Service, database: true do
   subject { described_class.new(auth_context) }
 
   let(:account_repo) { Account::Repository.new(auth_context) }
- 
+
   let(:attributes) do
     {
       name: "Test Account Name",
