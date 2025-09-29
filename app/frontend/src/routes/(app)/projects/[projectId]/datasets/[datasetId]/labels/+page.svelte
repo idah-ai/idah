@@ -36,8 +36,6 @@
     return labelConfig ? labelConfig.categories.map((cat) => cat.color) : [];
   });
 
-  $inspect(labelConfig);
-
   const availableColors = $derived(labelColors.filter((color) => !usedColors.includes(color.color)));
   const firstAvailableColor = $derived.by(() => {
     return availableColors.length
