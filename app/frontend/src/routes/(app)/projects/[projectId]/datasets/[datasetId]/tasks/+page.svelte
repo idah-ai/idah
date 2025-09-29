@@ -15,7 +15,7 @@
     DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu";
   import EntryCard from "@/components/app/datasets/entries/cards/entry-card.svelte";
-  import FilterSortDropdownMenu from "@/components/app/dropdown-menu/filter-sort-dropdown-menu.svelte";
+  import FilterSortDropdownMenu from "@/components/app/dropdown-menus/filter-sort-dropdown-menu.svelte";
   import Input from "@/components/ui/input/input.svelte";
   import PageHeader from "@/components/app/page/page-header.svelte";
   import ResponseBlock from "@/components/app/blocks/response-block.svelte";

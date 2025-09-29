@@ -1,5 +1,5 @@
 <script lang="ts" generics="T extends Record">
-  import FilterSortDropdownMenu from "@/components/app/dropdown-menu/filter-sort-dropdown-menu.svelte";
+  import FilterSortDropdownMenu from "@/components/app/dropdown-menus/filter-sort-dropdown-menu.svelte";
 
   import type { Record } from "@/data/model/Record";
   import type {

@@ -9,10 +9,11 @@
   import ProjectDropdownMenu from "@/components/app/projects/dropdowns/project-dropdown-menu.svelte";
   import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+  import { humanize } from "@/utils/string";
   import { projectBreadcrumb } from "@/components/app/page/page-breadcrumb.constants";
   import { projectTabs, type ProjectTab } from "@/components/app/projects/tabs/project.tabs";
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
-  import { datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
+  import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
 
   import type { PageBreadcrumbItem } from "@/components/app/page/page-breadcrumb.svelte";
 
@@ -26,7 +27,6 @@
   let projectId: string = page.params.projectId as string;
   let activeTab: ProjectTab = $derived(page.url.pathname.split("/").pop() as ProjectTab);
   let breadcrumbs: PageBreadcrumbItem[] = $state([projectBreadcrumb]);
-  let openNewProjectModal: boolean = $state(false);
 
   // Reactive variables
   let isDatasetPage = $derived(page.url.pathname.split("/").length > 4);
@@ -46,6 +46,10 @@
     }
   });
 
+  $effect(() => {
+    updateBreadcrumbs(page.url.pathname);
+  });
+
   // Functions
   async function fetchProject(): Promise<void> {
     const projectRes = await projectsBackendDataSource.get(projectId, {
@@ -54,40 +58,42 @@
       },
     });
     project = projectRes.data;
-    updateBreadcrumbs();
+    updateBreadcrumbs(page.url.pathname);
   }
 
-  async function updateBreadcrumbs(): Promise<void> {
-    if (isDatasetPage) {
-      const pathSegments = page.url.pathname.split("/");
-      const datasetId = pathSegments[4];
-      // Fetch dataset name for breadcrumb
-      try {
-        const datasetRes = await datasetsBackendDataSource.get(datasetId, {
-          fields: {
-            "dataset:datasets": ["name"],
-          },
-        });
-        breadcrumbs = [
-          projectBreadcrumb,
-          { label: project.name },
-          { label: "Datasets", href: `/projects/${projectId}/datasets` },
-          { label: datasetRes.data.name },
-        ];
-      } catch {
-        breadcrumbs = [projectBreadcrumb, { label: project.name }];
+  async function updateBreadcrumbs(pathname: string): Promise<void> {
+    const pathSegments = pathname.split("/");
+    const projectSegment = pathSegments[3] as ProjectTab;
+    const projectSegmentId = pathSegments[4] as string;
+    const currentProjectTab = projectTabs.find((tab) => tab.value === projectSegment);
+
+    const projectDetailFallbackBreadcrumbs = [
+      projectBreadcrumb,
+      { label: project.name, href: `/projects/${projectId}/${projectSegment}` },
+      { label: currentProjectTab?.label || humanize(projectSegment), href: `/projects/${projectId}/${projectSegment}` },
+    ];
+
+    if (projectSegmentId) {
+      switch (projectSegment) {
+        case "datasets":
+          /** Get dataset name to show in breadcrumb */
+          const datasetRes = await datasetsBackendDataSource.get(projectSegmentId, {
+            fields: {
+              [DatasetRecord.type]: ["name"],
+            },
+          });
+          breadcrumbs = [
+            ...projectDetailFallbackBreadcrumbs,
+            { label: datasetRes.data.name, href: `/projects/${projectId}/datasets/${projectSegmentId}` },
+          ];
+          break;
+        case "members":
+          break;
       }
     } else {
-      breadcrumbs = [projectBreadcrumb, { label: project.name }];
+      breadcrumbs = projectDetailFallbackBreadcrumbs;
     }
   }
-
-  // Reactive effect to update breadcrumbs when route changes
-  $effect(() => {
-    if (project.name) {
-      updateBreadcrumbs();
-    }
-  });
 
   function handleTabChange(value: ProjectTab): void {
     goto(`/projects/${projectId}/${value}`);
