@@ -60,7 +60,7 @@ export function createBackendDataSource<T extends Record, CustomMethods>(
     recordClass: recordClass,
     basePath: basePath,
 
-    async create(data: DataParams<T>): Promise<RecordResponse | JsonApiErrorResponse> {
+    async create(data: DataParams<T>): Promise<RecordResponse<T> | JsonApiErrorResponse> {
       const out = await fetch(this.basePath, {
         method: "POST",
         body: encodeModel(this.recordClass, data),

@@ -57,7 +57,7 @@ export function capitalizeText(str: string, capitalizeFirstWord: boolean = true)
 
 export function humanize(
   str: string,
-  options: HumanizeOption = { capitalize: true, capitalizeFirstWord: true }
+  options: HumanizeOption = { capitalize: true, capitalizeFirstWord: true },
 ): string {
   const underscorized: string = underscorize(str);
   const sentence: string = underscorized.replace(/_/g, " ");
@@ -88,4 +88,28 @@ export async function generateHash(message: string): Promise<string> {
 
 export function truncate(str: string, length: number = 20): string {
   return str.length > length ? str.slice(0, length) + "..." : str;
+}
+
+export function getAvatarFallback(str: string): string {
+  function getNameParts(str: string) {
+    if (str.includes(".")) {
+      const nameParts = str.split(".");
+      if (nameParts.length >= 2) {
+        return nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0);
+      }
+
+      return nameParts[0].charAt(0);
+    }
+
+    return str.charAt(0);
+  }
+
+  /** In case the string is like email */
+  if (str.includes("@")) {
+    const nameInEmail = str.split("@")[0];
+    return getNameParts(nameInEmail).toUpperCase();
+  }
+
+  /** Get the first letter of the string and capitalize it */
+  return str.charAt(0).toUpperCase();
 }

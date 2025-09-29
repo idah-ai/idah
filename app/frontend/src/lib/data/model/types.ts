@@ -15,9 +15,15 @@ export type JsonApiRecord<T extends Hash> = JsonApiReference & {
   };
 };
 
+export type JsonApiMeta = {
+  count?: number;
+  more?: boolean;
+  [key: string]: unknown;
+};
+
 export type LinkObject = {
   href: string;
-  meta?: Hash;
+  meta?: JsonApiMeta;
 };
 
 export type Link = string | LinkObject;
@@ -53,7 +59,7 @@ export type RecordResponse<T extends Record = Record> = {
 
 export type CollectionResponse<T extends Record = Record> = {
   data: T[];
-  meta?: Hash;
+  meta?: JsonApiMeta;
 };
 
 export type FieldOptions = {
@@ -68,6 +74,6 @@ export type FieldOptions = {
 
 export type RelationshipOptions = {
   key?: string;
-}
+};
 
 export type CustomMethodResponse<T extends Record = Record> = Promise<RecordResponse<T> | JsonApiErrorResponse>;
