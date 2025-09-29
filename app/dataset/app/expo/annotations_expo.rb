@@ -44,17 +44,21 @@ class AnnotationsExpo < BaseExpo
     input RpcCreateSchema
   end
   def rpc_create
-    service.create(Verse::JsonApi::Deserializer::deserialize({
-      data:{
-        id: params[:id],
-        attributes: params,
-        relationships: {
-          entry: {
-            data: { type: "entries", id: params[:entry_id] }
+    service.create(
+      Verse::JsonApi::Deserializer.deserialize(
+        {
+          data: {
+            id: params[:id],
+            attributes: params,
+            relationships: {
+              entry: {
+                data: { type: "entries", id: params[:entry_id] }
+              }
+            }
           }
         }
-      }
-    }))
+      )
+    )
   end
 
   expose json_rpc_method(:update) do
