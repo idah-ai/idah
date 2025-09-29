@@ -55,7 +55,11 @@
       attributes: {
         name: dataset.name,
         modality: dataset.modality,
-        labeling_configuration: {},
+        labeling_configuration: {
+          categories: [],
+          properties: [],
+          taggings: [],
+        },
         workflow_configuration: {},
       },
       relationships: {
