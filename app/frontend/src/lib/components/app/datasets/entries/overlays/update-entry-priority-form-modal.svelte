@@ -3,7 +3,7 @@
   import DialogTitle from "@/components/ui/dialog/dialog-title.svelte";
   import Form from "@/components/app/forms/form.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
-  import SingleSelectField from "@/components/app/forms/fields/select/single-select-field.svelte";
+  import SingleSelectField from "@/components/app/forms/fields/select/single/single-select-field.svelte";
 
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
   import { entryPriorities } from "@/data/model/dataset/entries/constants";

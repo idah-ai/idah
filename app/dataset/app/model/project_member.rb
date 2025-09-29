@@ -7,7 +7,7 @@ module ProjectMember
     field :id, type: Integer, primary: true
 
     field :project_id, type: String, readonly: true
-    
+
     field :account_id, type: Integer, readonly: true
     field :name, type: [String, NilClass]
     field :email, type: String

@@ -3,37 +3,49 @@
   import Button from "@/components/ui/button/button.svelte";
   import DialogTitle from "@/components/ui/dialog/dialog-title.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
+  import Spinner from "@/components/app/loading/spinner.svelte";
+
+  import { refetches } from "@/utils/refetch";
+  import { toast } from "svelte-sonner";
+  import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
 
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
   import type { Hash } from "@/utils/types";
 
   // Props
   interface Props extends FormModalBaseProps {
+    entryRecord?: EntryRecord;
     entryIds: string[];
   }
-  let { action, open = $bindable(), title = "Assign to", entryIds }: Props = $props();
+  let { action, open = $bindable(), title = "Assign to", entryRecord, entryIds }: Props = $props();
 
   // Variables
   let submitting: boolean = $state(false);
-  let selectedMember: number | null = $state(null);
+  let selectedMember: number | null = $state(entryRecord?.assigned_to_id ?? null);
   let selectedEntryCount: number = $derived(entryIds.length);
 
   // Functions
-  function resetForm(): void {
-    selectedMember = null;
-  }
-
   function setValue(value: Hash): void {
     selectedMember = value.assigned_to_id;
   }
 
-  async function assignMemberToEntry(): Promise<void> {}
+  async function assignMember(): Promise<void> {
+    if (entryIds.length === 0 || !selectedMember) return;
+
+    for (const entryId of entryIds) {
+      await entriesBackendDataSource.assign({ id: entryId, memberId: selectedMember });
+    }
+
+    toast.success("Member assigned successfully");
+    $refetches.entries.list++;
+    open = false;
+  }
 
   async function submit(): Promise<void> {
     submitting = true;
 
     try {
-      await assignMemberToEntry();
+      await assignMember();
     } catch (error) {
     } finally {
       submitting = false;
@@ -46,7 +58,7 @@
   {title}
   description="Assign selected member to {selectedEntryCount > 1 ? `${selectedEntryCount} tasks` : 'task'}"
   loading={submitting}
-  onCancel={resetForm}
+  onCancel={() => {}}
   onConfirm={submit}
   bind:open
 >
@@ -57,6 +69,13 @@
   <AssignEntryForm {selectedMember} onValueChange={setValue}></AssignEntryForm>
 
   {#snippet confirm()}
-    <Button disabled onclick={submit}>Assign</Button>
+    <Button disabled={submitting || !selectedMember} onclick={submit}>
+      {#if submitting}
+        <Spinner></Spinner>
+        Assigning...
+      {:else}
+        Assign
+      {/if}
+    </Button>
   {/snippet}
 </FormModal>
