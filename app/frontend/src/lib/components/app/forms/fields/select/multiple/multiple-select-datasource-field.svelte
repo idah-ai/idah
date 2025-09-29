@@ -24,11 +24,12 @@
   let {
     dataSource,
     listOptions,
-    values = $bindable([]),
+    values = [],
     name,
     label,
     placeholder = "Select an option",
     clearable = false,
+    searchKeyWithOperation = null,
     disabled = false,
     required = false,
     searchable = false,
@@ -79,7 +80,7 @@
 
     if (searchable && searchValue) {
       if (!listOpts.filters) listOpts.filters = {};
-      listOpts.filters["name__match"] = searchValue;
+      listOpts.filters[searchKeyWithOperation || "name__match"] = searchValue;
     }
 
     const response = await dataSource.list(listOpts);
