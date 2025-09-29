@@ -2,6 +2,7 @@
   import Button from "@/components/ui/button/button.svelte";
   import { Command, CommandGroup, CommandItem, CommandSeparator } from "@/components/ui/command";
   import { Input } from "@/components/ui/input";
+  import NumberField from "@/components/app/forms/fields/input/number-field.svelte";
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
   import RangeCalendar from "@/components/ui/range-calendar/range-calendar.svelte";
 
@@ -88,7 +89,7 @@
     filterOptions?.filterOperation ? `${filterKey}__${filterOptions.filterOperation}` : filterKey,
   );
 
-  let isFiltering = $derived(filterKey in filters || filterKeyWithOperation in filters);
+  let isFiltering = $derived(Object.keys(filters).some((key) => key.startsWith(filterKey)));
   let isSorting = $derived(sort.some((s) => s.endsWith(columnKey)));
   let isSortingAsc = $derived(sort.includes(columnKey));
   let isSortingDesc = $derived(sort.includes(`-${columnKey}`));
@@ -147,6 +148,37 @@
           [filterKeyWithOperation]: searchValue,
         },
       });
+    });
+  }
+
+  function filterByNumber(
+    control: "min" | "max",
+    event: Event & { currentTarget: EventTarget & HTMLInputElement },
+  ): void {
+    const value = event.currentTarget.value;
+    const isMin = control === "min";
+    const isMax = control === "max";
+
+    /** If value is empty, clear the filter */
+    if (value === "") {
+      onFilter({
+        filters: {
+          [`${filterKey}__gte`]: isMin ? undefined : filters[`${filterKey}__gte`],
+          [`${filterKey}__lte`]: isMax ? undefined : filters[`${filterKey}__lte`],
+        },
+      });
+      return;
+    }
+
+    /** Get the current filter values */
+    const minValue = isMin ? Number(value) : filters[`${filterKey}__gte`] || undefined;
+    const maxValue = isMax ? Number(value) : filters[`${filterKey}__lte`] || undefined;
+
+    onFilter({
+      filters: {
+        [`${filterKey}__gte`]: minValue,
+        [`${filterKey}__lte`]: maxValue,
+      },
     });
   }
 
@@ -240,7 +272,7 @@
         <CommandGroup heading="Filter">
           {#if filterComponent}
             {@const FilterComponent = filterComponent}
-            <FilterComponent this={filterComponent}></FilterComponent>
+            <FilterComponent {columnSetting} {onFilter}></FilterComponent>
           {:else if filterOptions?.filterBy === "string"}
             {@const filterKey = `${columnKey}__${filterOptions.filterOperation || "match"}`}
             <div class="pb-2">
@@ -263,7 +295,24 @@
               Please provide choices for boolean filter
             {/if}
           {:else if filterOptions?.filterBy === "number-range"}
-            Render Number Range Input
+            <div class="px-2} flex items-center gap-2">
+              <!-- MIN -->
+              <NumberField
+                name={filterKeyWithOperation}
+                label="Min"
+                placeholder="Minimum"
+                value={filters[`${filterKey}__gte`]}
+                oninput={(e) => filterByNumber("min", e)}
+              ></NumberField>
+              <!-- MAX -->
+              <NumberField
+                name={filterKeyWithOperation}
+                label="Max"
+                placeholder="Maximum"
+                value={filters[`${filterKey}__lte`]}
+                oninput={(e) => filterByNumber("max", e)}
+              ></NumberField>
+            </div>
           {:else if filterOptions?.filterBy === "multiple-select"}
             {#if filterOptions.choices}
               {#each filterOptions.choices as choice (choice.value)}

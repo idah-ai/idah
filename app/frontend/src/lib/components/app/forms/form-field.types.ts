@@ -43,6 +43,7 @@ export interface SelectFieldBaseProps extends FormFieldBaseProps {
 }
 
 export interface SelectDataSourceFieldBaseProps<T extends Record> extends Omit<SelectFieldBaseProps, "choices"> {
+  displayKey: keyof T;
   dataSource: DataSource<T>;
   listOptions?: ListOptions;
 }
