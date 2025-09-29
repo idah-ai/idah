@@ -90,6 +90,7 @@ export interface DataTableBaseProps<T extends Record> {
 
 export interface DataTableFilterBaseProps<T extends Record> {
   columnSetting: ColumnSettings<T>;
+  filters: Filters;
   onFilter: (params: FilterDataSourceParams) => Promise<void> | void;
 }
 
