@@ -2,7 +2,7 @@
   import Button from "@/components/ui/button/button.svelte";
   import Form from "@/components/app/forms/form.svelte";
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
-  import SingleSelectField from "@/components/app/forms/fields/select/single-select-field.svelte";
+  import SingleSelectField from "@/components/app/forms/fields/select/single/single-select-field.svelte";
 
   import { PlusIcon, Trash2Icon } from "@lucide/svelte";
   import { ProjectMemberRecord, projectMemberRoles } from "@/data/model/dataset/projects/members/record";

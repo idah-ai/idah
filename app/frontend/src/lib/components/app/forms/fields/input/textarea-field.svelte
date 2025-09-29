@@ -8,14 +8,17 @@
   import { cn } from "@/utils";
 
   import type { FormFieldBaseProps } from "@/components/app/forms/form-field.types";
+  import type { FormEventHandler } from "svelte/elements";
 
   // Props
   interface Props extends FormFieldBaseProps {
     value: string | null;
     rows?: number;
+    oninput?: FormEventHandler<HTMLTextAreaElement>;
   }
   let {
     value = $bindable(null),
+    oninput,
     name,
     label,
     placeholder,
@@ -39,7 +42,7 @@
     <FormFieldLabel {required}>{label}</FormFieldLabel>
   {/if}
 
-  <Textarea {name} {placeholder} {disabled} {readonly} {required} {rows} bind:value />
+  <Textarea {name} {placeholder} {disabled} {readonly} {required} {rows} bind:value {oninput} />
 
   {#if slotInfo}
     {@render slotInfo()}
