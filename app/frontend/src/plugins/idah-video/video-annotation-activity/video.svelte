@@ -44,6 +44,8 @@
         onFramesChange?.(currentFrame, frames)
     })
 
+    export const getFrames = () => frames
+
     export function togglePlay() {
         if (player.paused())
             player.play();
@@ -56,20 +58,20 @@
         return player.src(src);
     }
 
-    export function nextFrame() {
+    export function nextFrame(count = 1) {
         if (!fps) console.error({fps, nextFrame})
 
         if (!player.paused())
             player.pause()
-        player.currentTime((currentFrame + 1) / fps)
+        player.currentTime((currentFrame + count) / fps)
     }
 
-    export function previousFrame() {
+    export function previousFrame(count = 1) {
         if (!fps) console.error({fps, nextFrame})
 
         if (!player.paused())
             player.pause()
-        player.currentTime((currentFrame - 1) / fps)
+        player.currentTime((currentFrame - count) / fps)
     }
 
     export function toggleMute() {
