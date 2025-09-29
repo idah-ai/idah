@@ -160,12 +160,11 @@
                 {#if slotChoice}
                   {@render slotChoice({ choice })}
                 {:else}
-                  <CommandItem onclick={() => select(choice)}>
-                    <CheckIcon
-                      class={cn("mr-2 size-4", {
-                        "opacity-0": !values.includes(choice.value),
-                      })}
-                    />
+                  <CommandItem class="flex w-full gap-0" onclick={() => select(choice)}>
+                     {#if values.includes(choice.value)}
+                      <CheckIcon class={cn("mr-1 size-4")}></CheckIcon>
+                    {/if}
+                    
                     {choice.label}
                   </CommandItem>
                 {/if}
