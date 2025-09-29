@@ -26,6 +26,7 @@ module AnnotationWorkflow
         })
 
         updated_entry = entries.find!(entry_id, included: [:dataset, :annotations])
+        updated_entry.aasm.current_state = updated_entry.wf_step.to_sym
 
         {
           entry: updated_entry,
@@ -62,6 +63,7 @@ module AnnotationWorkflow
         })
         # Return submission result
         updated_entry = entries.find!(entry_id, included: [:dataset, :annotations])
+        updated_entry.aasm.current_state = updated_entry.wf_step.to_sym
 
         {
           entry: updated_entry,
@@ -108,6 +110,7 @@ module AnnotationWorkflow
         })
         # Return updated entry with workflow context
         updated_entry = entries.find!(entry_id, included: [:dataset, :annotations])
+        updated_entry.aasm.current_state = updated_entry.wf_step.to_sym
 
         {
           entry: updated_entry,
