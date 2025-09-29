@@ -18,7 +18,7 @@ Api[:idah].register(
   output = get(
     "iam/accounts/:id",
     options: { auth: nil },
-    params: {id:}
+    params: { id: }
   )
   deserialize output.body
 end

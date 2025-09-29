@@ -7,7 +7,13 @@ Sequel.migration do
     create_table(:project_members) do
       primary_key :id, :bigserial
 
-      foreign_key :project_id, :projects, type: :uuid, null: false, index: true, on_delete: :cascade, on_update: :cascade
+      foreign_key :project_id,
+                  :projects,
+                  type: :uuid,
+                  null: false,
+                  index: true,
+                  on_delete: :cascade,
+                  on_update: :cascade
 
       column :account_id, :bigint, null: false, index: true
       column :name, String
@@ -16,7 +22,7 @@ Sequel.migration do
       column :role, String, null: false
 
       column :invited_by_id, :bigint, null: false
-      
+
       index [:project_id, :account_id]
       index [:project_id, :role]
 

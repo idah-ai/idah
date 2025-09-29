@@ -1,7 +1,7 @@
 import type { AnnotationShape, AnnotationValue } from "@/context/AnnotationContext";
 import { field, Record, RecordFactory, relationship, type } from "../Record";
 import { createBackendDataSource } from "@/data/BackendDataSource";
-import { entriesBackendDataSource, type EntryRecord } from "./entryRecord";
+import type { EntryRecord } from "@/data/model/dataset/entries/record";
 
 @type("dataset:annotations")
 export class AnnotationRecord extends Record {
