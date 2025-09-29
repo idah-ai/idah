@@ -25,7 +25,6 @@ RSpec.describe AnnotationWorkflowExpo, type: :exposition, database: true, as: :s
     )
   end
 
-
   let(:annotation_data) do
     [
       {
@@ -47,13 +46,14 @@ RSpec.describe AnnotationWorkflowExpo, type: :exposition, database: true, as: :s
   end
 
   it "start annotation workflow" do
-    post "/annotation_workflow/start", {
-      data: {
-        attributes: {
-          entry_id: entry_id
-        }
-      }
-    }
+    post "/annotation_workflow/start",
+         {
+           data: {
+             attributes: {
+               entry_id: entry_id
+             }
+           }
+         }
 
     expect(last_response.status).to eq 200
     body = JSON.parse(last_response.body, symbolize_names: true)[:data]
@@ -74,15 +74,16 @@ RSpec.describe AnnotationWorkflowExpo, type: :exposition, database: true, as: :s
       status: "in_progress"
     )
 
-    post "/annotation_workflow/submit", {
-      data: {
-        attributes: {
-          entry_id: started_entry,
-          annotator_id:,
-          annotation_data: annotation_data
-        }
-      }
-    }
+    post "/annotation_workflow/submit",
+         {
+           data: {
+             attributes: {
+               entry_id: started_entry,
+               annotator_id:,
+               annotation_data: annotation_data
+             }
+           }
+         }
 
     expect(last_response.status).to eq 200
     body = JSON.parse(last_response.body, symbolize_names: true)[:data]

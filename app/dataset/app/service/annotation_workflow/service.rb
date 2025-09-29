@@ -21,9 +21,12 @@ module AnnotationWorkflow
         entry.begin_annotation!
 
         # Return updated entry with workflow context
-        entries.update!(entry_id, {
-          wf_step: entry.aasm.current_state.to_s, status: "in_progress"
-        })
+        entries.update!(
+          entry_id,
+          {
+            wf_step: entry.aasm.current_state.to_s, status: "in_progress"
+          }
+        )
 
         updated_entry = entries.find!(entry_id, included: [:dataset, :annotations])
         updated_entry.aasm.current_state = updated_entry.wf_step.to_sym
@@ -58,9 +61,12 @@ module AnnotationWorkflow
         # Trigger AASM event which will automatically persist state changes
         entry.submit_annotation!
         # Return updated entry with workflow context
-        entries.update!(entry_id, {
-          wf_step: entry.aasm.current_state.to_s, status: "completed"
-        })
+        entries.update!(
+          entry_id,
+          {
+            wf_step: entry.aasm.current_state.to_s, status: "completed"
+          }
+        )
         # Return submission result
         updated_entry = entries.find!(entry_id, included: [:dataset, :annotations])
         updated_entry.aasm.current_state = updated_entry.wf_step.to_sym
@@ -105,9 +111,12 @@ module AnnotationWorkflow
         # Trigger AASM event which will automatically persist state changes
         entry.reset_workflow!
 
-        entries.update!(entry_id, {
-          wf_step: entry.aasm.current_state.to_s, status: "ready"
-        })
+        entries.update!(
+          entry_id,
+          {
+            wf_step: entry.aasm.current_state.to_s, status: "ready"
+          }
+        )
         # Return updated entry with workflow context
         updated_entry = entries.find!(entry_id, included: [:dataset, :annotations])
         updated_entry.aasm.current_state = updated_entry.wf_step.to_sym
