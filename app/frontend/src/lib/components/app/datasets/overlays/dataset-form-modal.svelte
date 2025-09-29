@@ -108,5 +108,5 @@
 </script>
 
 <FormModal {action} {title} loading={submitting} onCancel={resetForm} onConfirm={submit} bind:open>
-  <DatasetForm {dataset} onValueChange={setValue}></DatasetForm>
+  <DatasetForm {dataset} {newRecord} onValueChange={setValue}></DatasetForm>
 </FormModal>
