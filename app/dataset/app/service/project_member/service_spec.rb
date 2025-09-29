@@ -43,11 +43,11 @@ RSpec.describe ProjectMember::Service, database: true do
         }
       )
 
-      projectMember = subject.create(record)
-      expect(projectMember.project_id).to eq(project_id)
-      expect(projectMember.account_id).to eq(1)
-      expect(projectMember.email).to eq("annotator@email.com")
-      expect(projectMember.role).to eq("annotator")
+      project_member = subject.create(record)
+      expect(project_member.project_id).to eq(project_id)
+      expect(project_member.account_id).to eq(1)
+      expect(project_member.email).to eq("annotator@email.com")
+      expect(project_member.role).to eq("annotator")
     end
   end
 
@@ -80,14 +80,14 @@ RSpec.describe ProjectMember::Service, database: true do
 
       updated_project_member = project_member_repo.find!(project_member_id)
       expect(updated_project_member.role).to eq("admin")
-    end  
+    end
   end
-  
+
   describe "#delete" do
     it "deletes a project member" do
       project_member_id = project_member_repo.create(attributes)
       subject.delete(project_member_id)
-      expect { project_member_repo.find!(project_member_id)}.to raise_error(Verse::Error::NotFound)
+      expect { project_member_repo.find!(project_member_id) }.to raise_error(Verse::Error::NotFound)
     end
   end
 end

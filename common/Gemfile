@@ -7,8 +7,8 @@ git_source(:github) { |repo| "https://github.com/#{repo}" }
 gem "verse-core", github: "verse-rb/verse-core", branch: "master"
 gem "verse-http", github: "verse-rb/verse-http", branch: "features/migrate-to-sinatra-4"
 gem "verse-jsonapi", github: "verse-rb/verse-jsonapi", branch: "master"
-gem "verse-sequel", github: "verse-rb/verse-sequel", branch: "master"
 gem "verse-redis", github: "verse-rb/verse-redis", branch: "master"
+gem "verse-sequel", github: "verse-rb/verse-sequel", branch: "master"
 
 gem "msgpack"
 gem "pg"

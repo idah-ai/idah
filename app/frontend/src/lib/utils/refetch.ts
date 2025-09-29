@@ -12,6 +12,8 @@ interface Refetches {
   /** DATASET */
   projects: Refetch;
   projectMembers: Refetch;
+  datasets: Refetch;
+  entries: Refetch;
 }
 
 export const refetches = writable<Refetches>({
@@ -27,6 +29,14 @@ export const refetches = writable<Refetches>({
     get: 0,
   },
   projectMembers: {
+    list: 0,
+    get: 0,
+  },
+  datasets: {
+    list: 0,
+    get: 0,
+  },
+  entries: {
     list: 0,
     get: 0,
   },
