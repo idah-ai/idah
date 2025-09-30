@@ -200,7 +200,7 @@ jobs:
           path: ${{ env.IAM_DIR }}/coverage
 
   dataset:
-    name: DATASET Service
+    name: Dataset Service
     if: ${{ needs.changes.outputs.dataset == 'true' }}
     needs: changes
     runs-on: ubuntu-latest

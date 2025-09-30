@@ -2,7 +2,6 @@
 # frozen_string_literal: true
 
 require "json"
-require "pry"
 
 COVERAGE_PATH = File.expand_path("./coverage/.last_run.json", Dir.pwd)
 COVERAGE_MIN = 90
