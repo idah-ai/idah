@@ -73,7 +73,7 @@
     filters: {
       dataset_id: datasetId,
     },
-    sort: ["-created_at"],
+    sort: ["priority"],
     count: true,
   });
   let isFiltering: boolean = $derived(
@@ -267,7 +267,7 @@
           {#each Object.entries(entryColumns) as [columnKey, columnSetting] (columnKey)}
             <FilterSortDropdownMenu
               {columnKey}
-              columnSetting={columnSetting as ColumnSettings<Record>}
+              columnSetting={columnSetting as ColumnSettings<EntryRecord>}
               filters={listOptions.filters || {}}
               sort={listOptions.sort || []}
               onFilter={filterEntries}

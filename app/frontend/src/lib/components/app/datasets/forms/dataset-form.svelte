@@ -55,7 +55,7 @@
     label="Modality"
     placeholder="Select modality"
     choices={modalityOptions}
-    required
+    required={!newRecord}
     disabled={!newRecord}
     errors={dataset.errors?.["modality"]}
     bind:value={modality}

@@ -3,13 +3,35 @@ import type { LabelValue } from "@/utils/types";
 import type { EntryRecord } from "@/data/model/dataset/entries/record";
 
 export interface EntryPriorityBadgeProps extends LabelValue<number, EntryRecord> {
+  iconColor: string;
   variant: BadgeVariant;
 }
 
 export const entryPriorities: EntryPriorityBadgeProps[] = [
-  { label: "High", value: -1, variant: "destructive" },
-  { label: "Medium", value: 0, variant: "outline" },
-  { label: "Low", value: 1, variant: "secondary" },
+  {
+    label: "Urgent",
+    value: -2,
+    iconColor: "#FF4500", // OrangeRed
+    variant: "destructive",
+  },
+  {
+    label: "High",
+    value: -1,
+    iconColor: "#FFA500", // Orange
+    variant: "destructive",
+  },
+  {
+    label: "Medium",
+    value: 0,
+    iconColor: "#1E90FF", // DodgerBlue
+    variant: "outline",
+  },
+  {
+    label: "Low",
+    value: 1,
+    iconColor: "#D3D3D3", // Lightgray
+    variant: "secondary",
+  },
 ];
 
 export interface EntryStatusBadgeProps extends LabelValue<string, EntryRecord> {
