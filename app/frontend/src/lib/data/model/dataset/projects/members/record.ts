@@ -26,7 +26,7 @@ RecordFactory.registerTypes(ProjectMemberRecord);
 
 export const projectMembersBackendDataSource = createBackendDataSource(
   ProjectMemberRecord,
-  "https://idah.localhost:8443/api/v1/dataset/project_members",
+  `${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/project_members`,
 );
 
 export const projectMemberRoles = [

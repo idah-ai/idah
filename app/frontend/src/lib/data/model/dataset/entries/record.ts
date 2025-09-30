@@ -58,7 +58,7 @@ export class EntryRecord extends Record {
   }
 }
 
-const entryBasePath: string = "https://idah.localhost:8443/api/v1/dataset/entries";
+const entryBasePath: string = `${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/entries`;
 
 RecordFactory.registerTypes(EntryRecord);
 
