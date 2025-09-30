@@ -81,10 +81,10 @@
   {#if slotSelectedFiles}
     {@render slotSelectedFiles({ selectedFiles })}
   {:else}
-    <Text class="text-accent-foreground" size="sm" weight="semibold">
+    <Text class="text-accent-foreground text-wrap" size="sm" weight="semibold">
       {#if selectedFiles}
         {#each selectedFiles as selectedFile (selectedFile.name)}
-          {selectedFile.name}
+          <span class="line-clamp-1">{selectedFile.name}</span>
         {/each}
       {:else}
         Drag and drop files here or
