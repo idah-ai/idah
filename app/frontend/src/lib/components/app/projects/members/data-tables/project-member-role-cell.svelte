@@ -11,6 +11,6 @@
   let { record: projectMember }: Props = $props();
 </script>
 
-<Badge variant="outline" class="rounded-lg">
+<Badge variant="outline">
   {projectMemberRoles.find((role) => role.value === projectMember.role)?.label || humanize(projectMember.role)}
 </Badge>

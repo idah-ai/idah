@@ -166,7 +166,6 @@
       <Badge
         variant="secondary"
         class={cn(
-          "rounded-lg",
           allPropertiesHasBeenAddedToVisibleIf ? "text-muted-foreground cursor-not-allowed" : "cursor-pointer",
         )}
         onclick={() => {

@@ -195,7 +195,7 @@
         {#if assignedProperties.length > 0}
           <HoverCards align="center" openDelay={200} contentClass="p-2">
             {#snippet trigger()}
-              <Badge variant="outline" class="cursor-pointer rounded-lg">
+              <Badge variant="outline" class="cursor-pointer">
                 {assignedProperties.length > 1 ? `${assignedProperties.length} Properties` : "1 Property"}
               </Badge>
             {/snippet}
