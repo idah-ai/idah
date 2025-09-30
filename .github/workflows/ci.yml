@@ -188,7 +188,7 @@ jobs:
           POSTGRES_CREDENTIALS: postgres:postgres
 
       - name: Check Code Coverage
-        if: ${{ steps.filter.outputs.ruby == 'true' }}
+        if: ${{ steps.filter.outputs.ruby == 'true' || (steps.filter.outputs.ruby == 'true' && failure()) }}
         run: |
           common/bin/check-coverage
 

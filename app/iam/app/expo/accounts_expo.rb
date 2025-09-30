@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-# Test CI
+
 class AccountsExpo < BaseExpo
   http_path "/accounts"
 
