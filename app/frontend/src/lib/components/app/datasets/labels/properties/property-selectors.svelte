@@ -49,7 +49,7 @@
   </Button>
 
   {#if node.children.length}
-    {#each node.children as child}
+    {#each node.children as child (child.id)}
       {@const nextLevel = level + 1}
       {@render CategoryTreeNode({ node: child, level: nextLevel })}
     {/each}

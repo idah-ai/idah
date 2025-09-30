@@ -95,6 +95,7 @@
 
 {#await fetchData()}
   <LoadingEntryCard></LoadingEntryCard>
+  <!-- @typescript-eslint/no-unused-vars -->
 {:then _}
   <Card class="hover:bg-primary/5 hover:shadow-primary/10 group transition-shadow hover:shadow-md">
     <CardContent class="flex flex-row gap-4">

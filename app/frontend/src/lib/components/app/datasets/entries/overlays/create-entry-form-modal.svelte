@@ -18,8 +18,7 @@
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
 
   // Props
-  interface Props extends FormModalBaseProps {}
-  let { action, title, open = $bindable() }: Props = $props();
+  let { action, title, open = $bindable() }: FormModalBaseProps = $props();
 
   // Variables
   let datasetId = page.params.datasetId as string;
@@ -97,6 +96,7 @@
 
         media.status = "success";
       } catch (error) {
+        console.error(error);
         media.status = "error";
       }
     }
@@ -112,6 +112,7 @@
     try {
       await uploadMedia();
     } catch (error) {
+      console.error(error);
     } finally {
       uploading = false;
     }
