@@ -18,13 +18,13 @@ export const entryPriorities: EntryPriorityBadgeProps[] = [
     label: "High",
     value: -1,
     iconColor: "#FFA500", // Orange
-    variant: "destructive",
+    variant: "info",
   },
   {
     label: "Medium",
     value: 0,
     iconColor: "#1E90FF", // DodgerBlue
-    variant: "outline",
+    variant: "default",
   },
   {
     label: "Low",
