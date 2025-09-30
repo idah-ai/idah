@@ -62,7 +62,7 @@ RSpec.describe JobsExpo, type: :exposition, as: :system do
     expect(SCHEDULER).to receive(:signal)
 
     Verse.publish_resource_event(
-      resource_type: "medias:jobs",
+      resource_type: "media:jobs",
       resource_id: 1,
       event: "created",
       payload: {}
