@@ -40,7 +40,7 @@ end
 
 RSpec.describe Jobs::Scheduler do
   let(:job_repository) {
-    double("JobRepository")
+    Jobs::Repository.new(Verse::Auth::Context[:system])
   }
 
   let(:job1) {
@@ -108,6 +108,7 @@ RSpec.describe Jobs::Scheduler do
     allow(ThreadPool).to receive(:new).and_return(thread_pool)
     allow(thread_pool).to receive(:free).and_return(1)
     allow(thread_pool).to receive(:stop)
+    allow(thread_pool).to receive(:size).and_return(2)
 
     # Stub the repository
     allow(subject).to receive(:jobs).and_return(job_repository)
