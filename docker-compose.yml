@@ -99,8 +99,8 @@ services:
     build:
       context: ./app/frontend
       dockerfile: Dockerfile
-      args:
-        VITE_IDAH_HOST: https://idah.localhost:8443
+    environment:
+      VITE_IDAH_HOST: https://idah.localhost:8443
     ports:
       - "5173"
     volumes:
