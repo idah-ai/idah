@@ -1,7 +1,5 @@
 import ProjectNameCell from "@/components/app/projects/data-tables/project-name-cell.svelte";
-import ProjectLabelsCell from "@/components/app/projects/data-tables/project-labels-cell.svelte";
-import ProjectDataRowsCell from "@/components/app/projects/data-tables/project-data-rows-cell.svelte";
-import ProjectCompletedCell from "@/components/app/projects/data-tables/project-completed-cell.svelte";
+import ProjectDatasetsCell from "@/components/app/projects/data-tables/project-datasets-cell.svelte";
 import ProjectRowActionCell from "@/components/app/projects/data-tables/project-row-action-cell.svelte";
 
 import type { ColumnsSettings } from "@/components/app/data-table/data-table.types";
@@ -23,40 +21,22 @@ export const projectColumns: ColumnsSettings<ProjectRecord> = {
     hidable: false,
     cellComponent: ProjectNameCell,
   },
-  lables: {
-    label: "Labels",
+  datasets: {
+    label: "Data Sets",
     dataType: "number",
     sortable: false,
     filterable: false,
     visible: true,
     hidable: false,
-    cellComponent: ProjectLabelsCell,
+    cellComponent: ProjectDatasetsCell,
   },
-  rows: {
-    label: "Data Rows",
-    dataType: "number",
-    sortable: false,
-    filterable: false,
-    visible: true,
-    hidable: false,
-    cellComponent: ProjectDataRowsCell,
-  },
-  completed: {
-    label: "Completed",
-    dataType: "number",
-    sortable: false,
-    filterable: false,
-    visible: true,
-    hidable: false,
-    cellComponent: ProjectCompletedCell,
-  },
-  updated_at: {
-    label: "Updated",
+  created_at: {
+    label: "Created At",
     dataType: "datetime",
     sortable: true,
     filterable: true,
     filterOptions: {
-      filterKey: "updated_at",
+      filterKey: "created_at",
       filterBy: "date-range",
       filterOperation: "match",
     },
