@@ -137,9 +137,9 @@
             {#if status === "uploading"}
               <Spinner></Spinner>
             {:else if status === "success"}
-              <Badge class="rounded-lg">Uploaded</Badge>
+              <Badge>Uploaded</Badge>
             {:else if status === "error"}
-              <Badge variant="destructive" class="rounded-lg">Error</Badge>
+              <Badge variant="destructive">Error</Badge>
             {/if}
           </div>
         </div>

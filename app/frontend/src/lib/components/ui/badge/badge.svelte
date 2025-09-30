@@ -2,7 +2,7 @@
   import { type VariantProps, tv } from "tailwind-variants";
 
   export const badgeVariants = tv({
-    base: "focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive inline-flex w-fit shrink-0 items-center justify-center gap-1 overflow-hidden whitespace-nowrap rounded-md border px-2 py-0.5 text-xs font-medium transition-[color,box-shadow] focus-visible:ring-[3px] [&>svg]:pointer-events-none [&>svg]:size-3",
+    base: "focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive inline-flex w-fit shrink-0 items-center justify-center gap-1 overflow-hidden whitespace-nowrap border px-2 py-0.5 text-xs font-medium transition-[color,box-shadow] focus-visible:ring-[3px] [&>svg]:pointer-events-none [&>svg]:size-3",
     variants: {
       variant: {
         default: "bg-primary text-primary-foreground [a&]:hover:bg-primary/90 border-transparent",
@@ -14,13 +14,22 @@
         success: "bg-green-600 text-primary-foreground [a&]:hover:bg-green-600/90 border-transparent",
         info: "bg-sky-200 text-secondary-foreground [a&]:hover:bg-sky-200/90 border-transparent",
       },
+      rounded: {
+        none: "rounded-none",
+        sm: "rounded-sm",
+        md: "rounded-md",
+        default: "rounded-lg",
+        full: "rounded-full",
+      },
     },
     defaultVariants: {
       variant: "default",
+      rounded: "default",
     },
   });
 
   export type BadgeVariant = VariantProps<typeof badgeVariants>["variant"];
+  export type BadgeRounded = VariantProps<typeof badgeVariants>["rounded"];
 </script>
 
 <script lang="ts">
@@ -32,10 +41,12 @@
     href,
     class: className,
     variant = "default",
+    rounded = "default",
     children,
     ...restProps
   }: WithElementRef<HTMLAnchorAttributes> & {
     variant?: BadgeVariant;
+    rounded?: BadgeRounded;
   } = $props();
 </script>
 
@@ -44,7 +55,7 @@
   bind:this={ref}
   data-slot="badge"
   {href}
-  class={cn(badgeVariants({ variant }), className)}
+  class={cn(badgeVariants({ variant, rounded }), className)}
   {...restProps}
 >
   {@render children?.()}
