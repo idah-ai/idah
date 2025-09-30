@@ -6,11 +6,14 @@
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
   import ProjectMemberForm from "@/components/app/projects/members/forms/project-member-form.svelte";
 
-  import { projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
   import { refetches } from "@/utils/refetch";
   import { toast } from "svelte-sonner";
 
+  import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
+  import { projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
+
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
+  import { createMultipleProjectMembersSchema } from "@/data/model/dataset/projects/members/schema";
 
   // Props
   interface Props extends FormModalBaseProps {}
@@ -18,7 +21,12 @@
 
   // Variables
   let projectId: string | undefined = $derived(page.params.projectId);
+  let submitting: boolean = $state(false);
   let members: Array<{ email: string; role: string }> = $state([{ email: "", role: "" }]);
+  let disabledSubmitButton: boolean = $derived.by(() => {
+    const validated = createMultipleProjectMembersSchema.safeParse(members);
+    return !validated.success;
+  });
 
   // Functions
   function closeThisModal(): void {
@@ -30,28 +38,53 @@
   }
 
   async function createProjectMember(): Promise<void> {
-    for (const member of members) {
-      await projectMembersBackendDataSource.create({
-        attributes: {
-          project_id: projectId!,
-          user_id: "1",
-          email: member.email,
-          role: member.role,
-          invited_by_id: "1",
-        },
-      });
-    }
+    try {
+      for (const member of members) {
+        const { email, role } = member;
+        let account: AccountRecord;
 
-    $refetches.projectMembers.list++;
-    toast.success(`${members.length} member(s) invite sent!`);
+        /** Check if member is already invited */
+        const existingAccount = await accountsBackendDataSource.list({ filters: { email: email } });
+
+        if (!existingAccount.data.length) {
+          /** If account does not exist, create an account first */
+          const createdAccount = await accountsBackendDataSource.create({
+            attributes: { email: email, enabled: true },
+          });
+          account = createdAccount.data;
+        } else {
+          account = existingAccount.data[0];
+        }
+
+        await projectMembersBackendDataSource.create({
+          attributes: {
+            project_id: projectId!,
+            account_id: Number(account.id),
+            name: account.name,
+            email,
+            role,
+            invited_by_id: 1,
+          },
+        });
+      }
+
+      $refetches.projectMembers.list++;
+      closeThisModal();
+      toast.success(`${members.length} member(s) invite sent!`);
+    } catch (error) {
+      toast.error("Failed to send invite. Please try again.");
+      throw error;
+    }
   }
 
   async function submit(): Promise<void> {
+    submitting = true;
+
     try {
       await createProjectMember();
     } catch (error) {
     } finally {
-      closeThisModal();
+      submitting = false;
     }
   }
 </script>
@@ -64,6 +97,6 @@
   <ProjectMemberForm bind:members />
 
   {#snippet confirm()}
-    <Button disabled={members.length === 0} onclick={submit}>Send Invite</Button>
+    <Button disabled={disabledSubmitButton} onclick={submit}>Send Invite</Button>
   {/snippet}
 </FormModal>

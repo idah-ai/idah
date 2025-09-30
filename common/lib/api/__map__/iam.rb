@@ -1,0 +1,35 @@
+# frozen_string_literal: true
+
+Api[:idah].register(
+  :iam, :accounts, :index,
+) do |params = {}|
+  output = get(
+    "iam/accounts",
+    options: { auth: nil },
+    params:
+  )
+
+  deserialize output.body
+end
+
+Api[:idah].register(
+  :iam, :accounts, :show,
+) do |id:|
+  output = get(
+    "iam/accounts/:id",
+    options: { auth: nil },
+    params: { id: }
+  )
+  deserialize output.body
+end
+
+Api[:idah].register(
+  :iam, :accounts, :create,
+) do |attributes:|
+  output = post(
+    "iam/accounts",
+    options: { auth: nil },
+    body: { data: { type: "iam:accounts", attributes: } }
+  )
+  deserialize output.body
+end

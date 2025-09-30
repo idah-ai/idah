@@ -61,7 +61,7 @@
       },
     });
 
-    goto(`/projects/${createdProjectRes.data.id}/tasks`);
+    goto(`/projects/${createdProjectRes.data.id}/datasets`);
 
     $refetches.projects.list++;
     open = false;

@@ -12,11 +12,13 @@
   // Props
   interface Props extends FormFieldBaseProps {
     bordered?: boolean;
-    value: boolean;
+    checked: boolean;
+    onCheckedChange?: (checked: boolean) => void;
   }
   let {
     bordered = false,
-    value = $bindable(false),
+    checked = $bindable(false),
+    onCheckedChange,
     name,
     label,
     disabled = false,
@@ -42,7 +44,7 @@
     className,
   )}
 >
-  <Checkbox {name} {disabled} {readonly} {required} bind:checked={value} />
+  <Checkbox {name} {disabled} {readonly} {required} bind:checked {onCheckedChange} />
 
   <div class="grid flex-1 gap-1.5 font-normal">
     {#if slotLabel}
@@ -53,13 +55,13 @@
 
     {#if slotInfo}
       {@render slotInfo()}
-    {:else}
+    {:else if info}
       <FormFieldInfo>{info}</FormFieldInfo>
     {/if}
 
     {#if slotErrors}
       {@render slotErrors()}
-    {:else}
+    {:else if errors}
       <FormFieldErrors {errors}></FormFieldErrors>
     {/if}
   </div>

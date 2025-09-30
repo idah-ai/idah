@@ -7,16 +7,20 @@
 
   import { cn } from "@/utils";
 
-  import type { HTMLInputTypeAttribute } from "svelte/elements";
+  import type { FormEventHandler, HTMLInputTypeAttribute } from "svelte/elements";
   import type { FormFieldBaseProps } from "@/components/app/forms/form-field.types";
 
   // Props
   interface Props extends FormFieldBaseProps {
     type?: HTMLInputTypeAttribute;
     value: string | null;
+    oninput?: FormEventHandler<HTMLInputElement> | null | undefined;
+    onblur?: FormEventHandler<HTMLInputElement> | null | undefined;
   }
   let {
     value = $bindable(null),
+    oninput = undefined,
+    onblur = undefined,
     name,
     type = "text",
     label,
@@ -40,7 +44,7 @@
     <FormFieldLabel {required}>{label}</FormFieldLabel>
   {/if}
 
-  <Input {name} {type} {placeholder} {disabled} {readonly} {required} bind:value />
+  <Input {name} {type} {placeholder} {disabled} {readonly} {required} bind:value {oninput} {onblur} />
 
   {#if slotInfo}
     {@render slotInfo()}
