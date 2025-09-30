@@ -7,12 +7,13 @@
   import EntryDropdownMenu from "@/components/app/datasets/entries/dropdown-menus/entry-dropdown-menu.svelte";
   import EntryPriority from "@/components/app/datasets/entries/badges/entry-priority.svelte";
   import EntryStatus from "@/components/app/datasets/entries/badges/entry-status.svelte";
+  import Link from "@/components/ui/text/Link.svelte";
+  import LoadingEntryCard from "@/components/app/datasets/entries/cards/loading-entry-card.svelte";
   import ProjectMemberAvatar from "@/components/app/projects/members/avatars/project-member-avatar.svelte";
   import Text from "@/components/ui/text/Text.svelte";
 
   import { EntryRecord } from "@/data/model/dataset/entries/record";
   import { mediaBackendDataSource } from "@/data/model/media/medias/medias-record";
-  import Link from "@/components/ui/text/Link.svelte";
 
   // Props
   interface Props {
@@ -93,7 +94,7 @@
 </script>
 
 {#await fetchData()}
-  <div>Loading...</div>
+  <LoadingEntryCard></LoadingEntryCard>
 {:then _}
   <Card class="hover:bg-primary/5 hover:shadow-primary/10 group transition-shadow hover:shadow-md">
     <CardContent class="flex flex-row gap-4">
