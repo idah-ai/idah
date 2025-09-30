@@ -59,7 +59,7 @@
 
   <div id={node.id} class={cn("flex items-center gap-2")} style:margin-left={`${(level - 1) * 3}rem`}>
     <!-- TREE::NODE -->
-    <div class="border-border flex w-full items-center gap-2 rounded-lg border py-1 pl-4 pr-2">
+    <div class="border-border flex w-full items-center gap-2 rounded-lg border py-1 pr-2 pl-4">
       {#if isLastNode}
         <Popover>
           <PopoverTrigger>
