@@ -8,12 +8,6 @@ module Datset
 
     # TODO: figure out how to handle different hosting option
 
-    # process the .datset file
-    def process
-      # save to file store as temp file ?
-      pass
-    end
-
     # delete the .datset file
     # the processed file should not need to be kept for
     # 1. after importing, regardless of being successful or failed
@@ -25,22 +19,20 @@ module Datset
     # import a datset file
     # TODO: recheck if resource is needed
     def import(file:, project_id:)
+      # 1. receive .datset file and project id
       datset_data = {}
+      # 2. read file content and validate with DatsetSchema
       Verse::Plugin[:shrine].with_storage do |storage|
         uploaded_file = storage.open(storage.upload(file.tempfile).id)
         uploaded_content = JSON.parse(uploaded_file.read)
         datset_data = uploaded_content.transform_keys(&:to_sym)
       end
 
-      # 1. receive .datset file and project id
-      # 2. read file content and validate with DatsetSchema
-      # TODO: properly read from file store
       dataset_data = datset_data[:dataset].transform_keys(&:to_sym)
       # TODO: check/process metadata ?
 
       # 3. in transaction, create dataset, entries, annotations
-      # TODO: generate uuids if not exist ?
-      # TODO: handle insertion of media/job ?
+      # TODO: handle insertion of media/job ? download through links ? upload and match/find with resource name/id ?
       dataset_repo.transaction do
         # create dataset
         dataset_id = dataset_repo.create(
@@ -49,7 +41,7 @@ module Datset
             name: dataset_data[:name],
             modality: dataset_data[:modality],
             workflow_configuration: {},
-            labeling_configuration: {},
+            labeling_configuration: {}, # TODO: recheck if labeling config import is possible/feasible
           }
         )
 
@@ -58,23 +50,19 @@ module Datset
           entry_data = entry_data.transform_keys(&:to_sym)
           # create the entry
           entry_id = entry_repo.create(
-            id: entry_data[:id],
             dataset_id: dataset_id,
             resource: entry_data[:media_url]
-            # add other entry fields as needed
           )
 
           # create annotations for this entry
           entry_data[:annotations].each do |annotation_data|
             annotation_data = annotation_data.transform_keys(&:to_sym)
+            annotation_data[:dimensions][:type] = annotation_data[:type]
             annotation_repo.create(
-              id: annotation_data[:id],
               entry_id: entry_id,
-              # type: annotation_data[:type],
               # category: annotation_data[:category]
               dimensions: annotation_data[:dimensions] || {},
-              annotation: annotation_data[:annotation] || {}, # Q: is this needed to be imported ?
-              # add other annotation fields as needed
+              annotation: annotation_data[:annotation] || {},
             )
           end
         end
@@ -85,11 +73,12 @@ module Datset
     end
 
     # export into a datset file
+    # TODO: might need to wait for pending media jobs ?
     def export(dataset_id)
       datset = create_datset(dataset_id)
 
       # export as .datset
-      # TODO: save file in a proper file store, currently just write here
+      # TODO: save file in a proper file store, currently just write here, look at medias/video service
       File.write("#{dataset_id}.datset", JSON.pretty_generate(datset)) # temporary implementation, save as local file
 
       # 1. cloud-hosted: return download link for .datset file
@@ -113,8 +102,7 @@ module Datset
           metadata: "this should be some kind of a metadata",
           entries: []
         },
-        # "media": {}, # optional ? or from media service ?
-        metadata: { "type": "datset", "version": "1.0" } # this is default datset metadata
+        # "media": {}, # still not sure how to handle actual media,  from media service ? optional ?
       }
 
       # loop through each entry
