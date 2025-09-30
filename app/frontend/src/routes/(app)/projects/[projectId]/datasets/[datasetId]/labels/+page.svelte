@@ -21,7 +21,6 @@
   import { slugify } from "@/utils/string";
 
   // Variables
-  let projectId: string = page.params.projectId as string;
   let datasetId: string = page.params.datasetId as string;
 
   let saving: boolean = $state(false);
@@ -67,6 +66,7 @@
       initialLabelConfig = JSON.parse(JSON.stringify(updatedDatasetRes.data.labeling_configuration));
       toast.success("Labeling configuration changes saved successfully.");
     } catch (error) {
+      console.error(error);
       toast.error("Failed to save labeling configuration changes.");
     } finally {
       saving = false;

@@ -88,14 +88,14 @@
     align="end"
     sideOffset={4}
   >
-    {#each dropdownMenus as { group, showGroupLabel, items }, index}
+    {#each dropdownMenus as { group, showGroupLabel, items }, index (index)}
       {@const isLastgroup = index === dropdownMenus.length - 1}
       <DropdownMenuGroup>
         {#if showGroupLabel}
           <DropdownMenuLabel>{group}</DropdownMenuLabel>
         {/if}
 
-        {#each items as { label, icon: Icon, action }}
+        {#each items as { label, icon: Icon, action }, index (index)}
           <DropdownMenuItem onclick={action}>
             <Icon />
             {label}

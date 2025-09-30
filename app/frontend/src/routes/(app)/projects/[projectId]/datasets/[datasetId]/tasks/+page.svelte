@@ -37,7 +37,6 @@
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
   import { getEntryDropdownMenuActions } from "@/components/app/datasets/entries/dropdown-menus/entry-dropdown-menu";
   import { refetches } from "@/utils/refetch";
-  import { Record } from "@/data/model/Record";
 
   import type { CollectionResponse } from "@/data/model/types";
   import type { ListOptions } from "@/data/DataSource";

@@ -64,7 +64,7 @@
 
   <DropdownMenuContent align="end">
     <DropdownMenuGroup>
-      {#each menus as { label, icon: Icon, action }}
+      {#each menus as { label, icon: Icon, action }, index (index)}
         <DropdownMenuItem onclick={action}>
           <Icon class="size-4" />
           {label}

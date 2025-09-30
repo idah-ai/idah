@@ -16,8 +16,6 @@
   let acceptedFileTypesString: string | null = $derived(acceptedFileTypes ? acceptedFileTypes.join(", ") : null);
   let selectedFiles: FileList | null = $state(null);
 
-  let isDragOver: boolean = $state(false);
-
   // Functions
   function openChooseFile() {
     if (fileInput) {
@@ -25,18 +23,13 @@
     }
   }
 
-  function handleDragOver(event: DragEvent): void {
-    isDragOver = true;
-    event.preventDefault();
-  }
+  function handleDragOver(event: DragEvent): void {}
 
   function handleDragLeave(event: DragEvent): void {
-    isDragOver = false;
     event.preventDefault();
   }
 
   function handleDrop(event: DragEvent): void {
-    isDragOver = false;
     event.preventDefault();
 
     const newFiles = event.dataTransfer?.files;
