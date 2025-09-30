@@ -1,0 +1,116 @@
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+# This workflow will download a prebuilt Ruby version, install dependencies and run tests with Rake
+# For more information see: https://github.com/marketplace/actions/setup-ruby-jruby-and-truffleruby
+
+name: CI
+
+on:
+  pull_request:
+    paths:
+      - "app/**"
+    types:
+      # Trigger the workflow only when PR is ready for review
+      - ready_for_review
+      - synchronize
+      - opened
+      - reopened
+
+env:
+  FRONTEND_DIR: ./app/frontend
+  IAM_DIR: ./app/iam
+  MEDIA_DIR: ./app/media
+  DATASET_DIR: ./app/dataset
+
+concurrency:
+  group: ${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: Changes
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      iam: ${{ steps.filter.outputs.iam }}
+      media: ${{ steps.filter.outputs.media }}
+      dataset: ${{ steps.filter.outputs.dataset }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - added|modified: '${{ env.FRONTEND_DIR }}/**'
+            iam:
+              - added|modified: '${{ env.IAM_DIR }}/**'
+            media:
+              - added|modified: '${{ env.MEDIA_DIR }}/**'
+            dataset:
+              - added|modified: '${{ env.DATASET_DIR }}/**'
+
+  
+  pulse-frontend:
+    name: Pulse Frontend
+    if: ${{ needs.changes.outputs.frontend == 'true' }}
+    needs: changes
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.FRONTEND_DIR }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          list-files: shell
+          filters: |
+            js:
+              - added|modified: '${{ env.FRONTEND_DIR }}/**/*.js'
+              - added|modified: '${{ env.FRONTEND_DIR }}/**/*.ts'
+              - added|modified: '${{ env.FRONTEND_DIR }}/**/*.svelte'
+            svelte:
+              - added|modified: '${{ env.FRONTEND_DIR }}/**/*.svelte'
+              - added|modified: '${{ env.FRONTEND_DIR }}/**/*.scss'
+
+      - name: Format Changed files
+        id: filter-format
+        run: |
+          echo "js_files=$(echo "${{ steps.filter.outputs.js_files }}" | sed -r 's/app\/frontend\/+//g')" >> $GITHUB_OUTPUT
+          echo "svelte_files=$(echo "${{ steps.filter.outputs.svelte_files }}" | sed -r 's/app\/frontend\/+//g')" >> $GITHUB_OUTPUT
+
+      - uses: actions/cache@v4
+        if: ${{ steps.filter.outputs.js == 'true' }}
+        with:
+          path: "**/node_modules"
+          key: ${{ runner.os }}-pulse-modules-${{ hashFiles('**/pnpm-lock.yaml') }}
+
+      - name: Setup Node
+        if: ${{ steps.filter.outputs.js == 'true' }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: 24
+
+      - name: Install modules
+        if: ${{ steps.filter.outputs.js == 'true' }}
+        run: |
+          npm install -g pnpm@10.15.1
+          pnpm install
+
+      - name: Run ESLint
+        if: ${{ steps.filter.outputs.js == 'true' }}
+        run: |
+          pnpm run eslint ${{ steps.filter-format.outputs.js_files }}
+
+      - name: Run Prettier Check
+        if: ${{ steps.filter.outputs.svelte == 'true' }}
+        run: |
+          pnpm run stylelint ${{ steps.filter-format.outputs.svelte_files }}
+
+      - name: Run Svelte Check
+        if: ${{ steps.filter.outputs.js == 'true' }}
+        run: |
+          pnpm run check --output human
