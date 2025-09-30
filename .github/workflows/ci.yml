@@ -53,8 +53,8 @@ jobs:
               - added|modified: '${{ env.DATASET_DIR }}/**'
 
   
-  pulse-frontend:
-    name: Pulse Frontend
+  frontend:
+    name: Frontend
     if: ${{ needs.changes.outputs.frontend == 'true' }}
     needs: changes
     runs-on: ubuntu-latest
@@ -86,7 +86,7 @@ jobs:
         if: ${{ steps.filter.outputs.js == 'true' }}
         with:
           path: "**/node_modules"
-          key: ${{ runner.os }}-pulse-modules-${{ hashFiles('**/pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-frontend-modules-${{ hashFiles('**/pnpm-lock.yaml') }}
 
       - name: Setup Node
         if: ${{ steps.filter.outputs.js == 'true' }}
@@ -114,3 +114,87 @@ jobs:
         if: ${{ steps.filter.outputs.js == 'true' }}
         run: |
           pnpm run check --output human
+
+      - name: Run Unit Tests
+        if: ${{ steps.filter.outputs.js == 'true' }}
+        run: |
+          pnpm test
+
+  iam:
+    name: IAM Service
+    if: ${{ needs.changes.outputs.iam == 'true' }}
+    needs: changes
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.IAM_DIR }}
+    services:
+      postgres:
+        image: postgres:17
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          list-files: shell
+          filters: |
+            ruby:
+              - added|modified: '${{ env.IAM_DIR }}/Gemfile.lock'
+              - added|modified: '${{ env.IAM_DIR }}/**/*.rb'
+              - added|modified: '${{ env.IAM_DIR }}/**/*.rake'
+
+      - name: Format Changed files
+        id: filter-format
+        run: |
+          echo "ruby_files=$(echo '${{ steps.filter.outputs.ruby_files }}' | sed -r 's/app\/iam\/+//g')" >> $GITHUB_OUTPUT
+
+      - uses: ruby/setup-ruby@v1
+        if: ${{ steps.filter.outputs.ruby == 'true'  }}
+        with:
+          # runs 'bundle install' and caches installed gems automatically
+          bundler-cache: true
+          working-directory: ${{ env.IAM_DIR }}
+        env:
+          APP_ENVIRONMENT: test
+
+      - name: Setup Database
+        if: ${{ steps.filter.outputs.ruby == 'true' }}
+        run: |
+          bundle exec rake db:test:prepare
+        env:
+          APP_ENVIRONMENT: test
+          POSTGRES_CREDENTIALS: postgres:postgres
+
+      - name: Run Rubocop
+        if: ${{ steps.filter.outputs.ruby == 'true' || (steps.filter.outputs.ruby == 'true' && failure()) }}
+        run: |
+          bundle exec rubocop --force-exclusion ${{ steps.filter-format.outputs.ruby_files }}
+        env:
+          APP_ENVIRONMENT: test
+
+      - name: Run RSpec
+        if: ${{ steps.filter.outputs.ruby == 'true' || (steps.filter.outputs.ruby == 'true' && failure()) }}
+        run: LOG_LEVEL=error bundle exec rspec --fail-fast
+        env:
+          CI: true
+          APP_ENVIRONMENT: test
+          POSTGRES_CREDENTIALS: postgres:postgres
+
+      - name: Check Code Coverage
+        if: ${{ steps.filter.outputs.ruby == 'true' }}
+        run: |
+          common/bin/check-coverage
+
+      - name: Upload Code Coverage
+        if: ${{ steps.filter.outputs.ruby == 'true' || (steps.filter.outputs.ruby == 'true' && failure()) }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: iam-code-coverage
+          path: ${{ env.IAM_DIR }}/coverage
