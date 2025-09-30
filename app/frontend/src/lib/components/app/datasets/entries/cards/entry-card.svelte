@@ -12,6 +12,7 @@
 
   import { EntryRecord } from "@/data/model/dataset/entries/record";
   import { mediaBackendDataSource } from "@/data/model/media/medias/medias-record";
+  import Link from "@/components/ui/text/Link.svelte";
 
   // Props
   interface Props {
@@ -137,13 +138,15 @@
       <!-- INFO -->
       <div class="flex flex-1 flex-col gap-6">
         <!-- RESOURCE -->
-        <Text
-          size="sm"
-          weight="medium"
+        <Link
+          href="##"
           class="group-hover:text-primary group-hover:cursor-pointer group-hover:underline group-hover:underline-offset-4"
+          showIcon
         >
-          {entry.resource}
-        </Text>
+          <Text size="sm" weight="medium">
+            {entry.resource}
+          </Text>
+        </Link>
 
         <div class="flex flex-col items-start">
           <DataDisplay label="Created at">

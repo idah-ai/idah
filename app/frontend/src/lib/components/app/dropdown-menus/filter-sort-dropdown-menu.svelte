@@ -418,7 +418,7 @@
                   <Button
                     variant="ghost"
                     size="sm"
-                    class="font-normal"
+                    class="hover:bg-primary/10 font-normal"
                     onclick={() => filterByDateRangePreset(key as keyof typeof datePresets)}
                   >
                     {preset.label}
