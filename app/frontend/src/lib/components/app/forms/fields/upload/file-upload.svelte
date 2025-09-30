@@ -7,8 +7,13 @@
   import type { ChangeEventHandler } from "svelte/elements";
 
   // Props
-  interface Props extends FileUploadBaseProps {}
-  let { class: className, acceptedFileTypes = null, onFilesSelected, slotSelectedFiles, slotInfo }: Props = $props();
+  let {
+    class: className,
+    acceptedFileTypes = null,
+    onFilesSelected,
+    slotSelectedFiles,
+    slotInfo,
+  }: FileUploadBaseProps = $props();
 
   // Variables
   let fileInput: HTMLInputElement;

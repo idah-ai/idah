@@ -7,8 +7,7 @@
   import type { DataTableCellBaseProps } from "@/components/app/data-table/data-table.types";
 
   // Props
-  interface Props extends DataTableCellBaseProps<ProjectMemberRecord> {}
-  let { record: projectMember }: Props = $props();
+  let { record: projectMember }: DataTableCellBaseProps<ProjectMemberRecord> = $props();
 </script>
 
 <Badge variant="outline">

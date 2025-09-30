@@ -100,7 +100,7 @@
         await updateProject();
       }
     } catch (error) {
-      // Handle unexpected errors
+      console.error(error);
     } finally {
       submitting = false;
     }

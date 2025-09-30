@@ -245,46 +245,59 @@
     let filterEndDate: Date;
 
     switch (preset) {
-      case "today":
+      case "today": {
         filterStartDate = today;
         filterEndDate = today;
         break;
-      case "yesterday":
+      }
+
+      case "yesterday": {
         const yesterday = addDays(today, -1);
         filterStartDate = yesterday;
         filterEndDate = yesterday;
         break;
-      case "thisWeek":
+      }
+
+      case "thisWeek": {
         const weekStartDate = startOfWeek(today, { weekStartsOn: 2 });
         const weekEndDate = endOfWeek(today, { weekStartsOn: 2 });
         filterStartDate = weekStartDate;
         filterEndDate = weekEndDate;
         break;
-      case "lastWeek":
+      }
+
+      case "lastWeek": {
         const lastWeek = addDays(today, -7);
         const lastWeekStartDate = startOfWeek(lastWeek, { weekStartsOn: 2 });
         const lastWeekEndDate = endOfWeek(lastWeek, { weekStartsOn: 2 });
         filterStartDate = lastWeekStartDate;
         filterEndDate = lastWeekEndDate;
         break;
-      case "thisMonth":
+      }
+
+      case "thisMonth": {
         const thisMonthStartDate = new Date(today.getFullYear(), today.getMonth(), 1);
         const thisMonthEndDate = endOfMonth(today);
         filterStartDate = thisMonthStartDate;
         filterEndDate = thisMonthEndDate;
         break;
-      case "lastMonth":
+      }
+
+      case "lastMonth": {
         const lastMonth = addMonths(today, -1);
         const lastMonthStartDate = new Date(lastMonth.getFullYear(), lastMonth.getMonth(), 1);
         const lastMonthEndDate = endOfMonth(lastMonth);
         filterStartDate = lastMonthStartDate;
         filterEndDate = lastMonthEndDate;
         break;
-      default:
+      }
+
+      default: {
         // For other presets, just set both dates to today as a fallback
         filterStartDate = today;
         filterEndDate = today;
         break;
+      }
     }
 
     onFilter({
