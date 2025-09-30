@@ -110,10 +110,10 @@ jobs:
         run: |
           pnpm prettier --check ${{ steps.filter-format.outputs.js_files }}
 
-      # - name: Run Svelte Check
-      #   if: ${{ steps.filter.outputs.js == 'true' }}
-      #   run: |
-      #     pnpm run check --output human
+      - name: Run Svelte Check
+        if: ${{ steps.filter.outputs.js == 'true' }}
+        run: |
+          pnpm run check --output human
 
       - name: Run Unit Tests
         if: ${{ steps.filter.outputs.js == 'true' }}
@@ -267,7 +267,7 @@ jobs:
           POSTGRES_CREDENTIALS: postgres:postgres
 
       - name: Check Code Coverage
-        if: ${{ steps.filter.outputs.ruby == 'true' || (steps.filter.outputs.ruby == 'true' && failure()) }}
+        if: ${{ steps.filter.outputs.ruby == 'true' }}
         run: |
           cp -r ../../common/bin ./bin && bin/check-coverage
 
@@ -355,7 +355,7 @@ jobs:
           POSTGRES_CREDENTIALS: postgres:postgres
 
       - name: Check Code Coverage
-        if: ${{ steps.filter.outputs.ruby == 'true' || (steps.filter.outputs.ruby == 'true' && failure()) }}
+        if: ${{ steps.filter.outputs.ruby == 'true' }}
         run: |
           cp -r ../../common/bin ./bin && bin/check-coverage
 
