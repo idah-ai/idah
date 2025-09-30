@@ -103,12 +103,12 @@ jobs:
       - name: Run ESLint
         if: ${{ steps.filter.outputs.js == 'true' }}
         run: |
-          pnpm run eslint ${{ steps.filter-format.outputs.js_files }}
+          pnpm eslint ${{ steps.filter-format.outputs.js_files }}
 
       - name: Run Prettier Check
-        if: ${{ steps.filter.outputs.svelte == 'true' }}
+        if: ${{ steps.filter.outputs.js == 'true' }}
         run: |
-          pnpm run stylelint ${{ steps.filter-format.outputs.svelte_files }}
+          pnpm prettier --check ${{ steps.filter-format.outputs.js_files }}
 
       - name: Run Svelte Check
         if: ${{ steps.filter.outputs.js == 'true' }}
