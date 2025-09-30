@@ -19,5 +19,5 @@ RecordFactory.registerTypes(AnnotationRecord);
 
 export const annotationsBackendDataSource = createBackendDataSource(
   AnnotationRecord,
-  "https://idah.localhost:8443/api/v1/dataset/annotations",
+  `${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/annotations`,
 );

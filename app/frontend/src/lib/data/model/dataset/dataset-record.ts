@@ -61,7 +61,7 @@ RecordFactory.registerTypes(DatasetRecord);
 
 export const datasetsBackendDataSource = createBackendDataSource(
   DatasetRecord,
-  "https://idah.localhost:8443/api/v1/dataset/datasets",
+  `${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/datasets`,
 );
 
 export interface TreeItem {

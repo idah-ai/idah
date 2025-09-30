@@ -59,7 +59,7 @@
   let scale = $state(1);
   let timelineTable: TimelineTable;
   let videoController: VideoController;
-  const annotations_rpc = new JsonRpcDatasource("https://idah.localhost:8443/api/v1/dataset/annotations/_rpc", 50);
+  const annotations_rpc = new JsonRpcDatasource(`${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/annotations/_rpc`, 50);
 
   onMount(async () => {
     // for now
@@ -79,7 +79,7 @@
           console.log({ entries });
           entry_id = entries.data[0].id;
           url = [
-            "https://idah.localhost:8443/api/v1/media/medias/files",
+            `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files`,
             entries.data[0].attributes().resource,
             "master.m3u8",
           ].join("/");
