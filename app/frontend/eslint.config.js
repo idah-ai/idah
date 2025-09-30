@@ -8,6 +8,7 @@ import ts from 'typescript-eslint';
 import svelteConfig from './svelte.config.js';
 
 const gitignorePath = fileURLToPath(new URL('./.gitignore', import.meta.url));
+const isDev = process.env.NODE_ENV === "development";
 
 export default ts.config(
 	includeIgnoreFile(gitignorePath),
@@ -20,7 +21,17 @@ export default ts.config(
 		languageOptions: {
 			globals: { ...globals.browser, ...globals.node }
 		},
-		rules: { 'no-undef': 'off' }
+		rules: {
+			'no-undef': 'off',
+			'@typescript-eslint/no-unused-vars': [
+				isDev ? 'warn' : 'error',
+				{
+					argsIgnorePattern: '^_',
+					varsIgnorePattern: '^_',
+					caughtErrorsIgnorePattern: '^_'
+				}
+			]
+		}
 	},
 	{
 		files: ['**/*.svelte', '**/*.svelte.ts', '**/*.svelte.js'],
