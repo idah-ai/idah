@@ -14,8 +14,6 @@
   import { refetches } from "@/utils/refetch";
   import { FileDownIcon, PlusIcon } from "@lucide/svelte";
 
-  import type { Record } from "@/data/model/Record";
-
   // Variables
   let projectId: string = page.params.projectId as string;
   let openNewDatasetModal: boolean = $state(false);
