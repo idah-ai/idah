@@ -36,7 +36,7 @@ export function encodeModel<T extends Record>(model: RecordClass<T>, data: DataP
   return JSON.stringify(payload);
 }
 
-export function resourcePath(basePath: string, id: string | null, queryPath?: Hash): string {
+export function resourcePath(basePath: string, id: string | null = null, queryPath?: Hash): string {
   let uri = id ? `${basePath}/${id}` : basePath;
 
   if (queryPath) {

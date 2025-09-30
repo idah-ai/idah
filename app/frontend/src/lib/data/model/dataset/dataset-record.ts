@@ -8,6 +8,7 @@ import { humanize } from "@/utils/string";
 
 import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
 import { EntryRecord } from "@/data/model/dataset/entries/record";
+import type { JsonApiErrorResponse, RecordResponse } from "@/data/model/types";
 
 import type { Hash } from "@/utils/types";
 import type { LabelingConfiguration } from "@/data/model/dataset/labels";
@@ -85,9 +86,7 @@ export const datasetsBackendDataSource = createBackendDataSource(
 
       const body = await out.json();
 
-      // Cache Management
-      const cacheIndexKey = resourcePath(datasetsBasePath, null, undefined);
-      clearCache(cacheIndexKey);
+      clearCache(resourcePath(datasetsBasePath));
 
       if (body && body.errors) {
         if (body.errors.length > 0) {
@@ -114,9 +113,7 @@ export const datasetsBackendDataSource = createBackendDataSource(
 
       const body = await out.json();
 
-      // Cache Management
-      const cacheIndexKey = resourcePath(datasetsBasePath, null, undefined);
-      clearCache(cacheIndexKey);
+      clearCache(resourcePath(datasetsBasePath));
 
       if (body && body.errors) {
         if (body.errors.length > 0) {
