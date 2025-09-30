@@ -28,7 +28,9 @@
     }
   }
 
-  function handleDragOver(event: DragEvent): void {}
+  function handleDragOver(event: DragEvent): void {
+    event.preventDefault();
+  }
 
   function handleDragLeave(event: DragEvent): void {
     event.preventDefault();
