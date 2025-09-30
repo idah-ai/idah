@@ -75,7 +75,7 @@
 </DropdownMenu>
 
 <!-- MODAL::ASSIGN ANNOTATOR  -->
-<AssignEntryFormModal action="update" entryRecord={entry} entryIds={[entry.id]} bind:open={openAssignEntryFormModal}
+<AssignEntryFormModal action="update" {entryRecord} entryIds={[entry.id]} bind:open={openAssignEntryFormModal}
 ></AssignEntryFormModal>
 
 <!-- MODAL::CONFIRM DELETE -->

@@ -245,7 +245,7 @@
   </div>
 
   {#if node.children.length}
-    {#each node.children as child}
+    {#each node.children as child (child.id)}
       {@const level = child.id.split("/").length}
       {@render TreeNode({
         labelConfig: props.labelConfig,
