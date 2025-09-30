@@ -13,16 +13,13 @@
 
   // Props
   interface Props {
-    propertyKey: "properties" | "taggings";
     property: FieldBase;
     onSetValue: (valueToSet: Hash) => void;
   }
-  let { propertyKey, property, onSetValue }: Props = $props();
-
-  // Contexts
+  let { property, onSetValue }: Props = $props();
 
   // Variables
-  let { id, description, type, format, visible_if } = $derived(property);
+  let { id, description, type, format } = $derived(property);
 
   // let propertyKeyChoices = $derived(
   //   labelConfig[propertyKey].map((property) => ({
@@ -166,7 +163,6 @@
       <Badge
         variant="secondary"
         class={cn(
-          "rounded-lg",
           allPropertiesHasBeenAddedToVisibleIf ? "text-muted-foreground cursor-not-allowed" : "cursor-pointer",
         )}
         onclick={() => {

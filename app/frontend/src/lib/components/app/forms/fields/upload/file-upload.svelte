@@ -7,16 +7,19 @@
   import type { ChangeEventHandler } from "svelte/elements";
 
   // Props
-  interface Props extends FileUploadBaseProps {}
-  let { class: className, acceptedFileTypes = null, onFilesSelected, slotSelectedFiles, slotInfo }: Props = $props();
+  let {
+    class: className,
+    acceptedFileTypes = null,
+    onFilesSelected,
+    slotSelectedFiles,
+    slotInfo,
+  }: FileUploadBaseProps = $props();
 
   // Variables
   let fileInput: HTMLInputElement;
   let uploading: boolean = $state(false);
   let acceptedFileTypesString: string | null = $derived(acceptedFileTypes ? acceptedFileTypes.join(", ") : null);
   let selectedFiles: FileList | null = $state(null);
-
-  let isDragOver: boolean = $state(false);
 
   // Functions
   function openChooseFile() {
@@ -26,17 +29,14 @@
   }
 
   function handleDragOver(event: DragEvent): void {
-    isDragOver = true;
     event.preventDefault();
   }
 
   function handleDragLeave(event: DragEvent): void {
-    isDragOver = false;
     event.preventDefault();
   }
 
   function handleDrop(event: DragEvent): void {
-    isDragOver = false;
     event.preventDefault();
 
     const newFiles = event.dataTransfer?.files;
@@ -81,10 +81,10 @@
   {#if slotSelectedFiles}
     {@render slotSelectedFiles({ selectedFiles })}
   {:else}
-    <Text class="text-accent-foreground" size="sm" weight="semibold">
+    <Text class="text-accent-foreground text-wrap" size="sm" weight="semibold">
       {#if selectedFiles}
         {#each selectedFiles as selectedFile (selectedFile.name)}
-          {selectedFile.name}
+          <span class="line-clamp-1">{selectedFile.name}</span>
         {/each}
       {:else}
         Drag and drop files here or
