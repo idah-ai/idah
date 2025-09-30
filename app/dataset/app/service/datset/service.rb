@@ -167,7 +167,7 @@ module Datset
     DatsetSchema = Verse::Schema.define do
       field(:dataset, DatasetSchema) # just one or multiple ?
       field?(:media, MediaSchema) # just one or multiple ?
-      field(:metadata, Hash).default({ "type": "datset", "version": "1.0" })
+      field(:metadata, Hash).default({ type: "datset", version: "1.0" })
     end
   end
 end
