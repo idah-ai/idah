@@ -13,8 +13,6 @@
   import { refetches } from "@/utils/refetch";
   import { toast } from "svelte-sonner";
 
-  import { EntryRecord } from "@/data/model/dataset/entries/record";
-
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
 
   // Props
@@ -24,12 +22,6 @@
   let datasetId = page.params.datasetId as string;
   let uploading: boolean = $state(false);
   let selectedMedias: FileList | null = $state(null);
-  let entry: EntryRecord = $derived(
-    new EntryRecord({
-      type: EntryRecord.type,
-      attributes: {},
-    }),
-  );
 
   interface UploadStatuses {
     uuid: string;
@@ -40,10 +32,9 @@
 
   // Functions
   function resetForm(): void {
-    entry = new EntryRecord({
-      type: EntryRecord.type,
-      attributes: {},
-    });
+    selectedMedias = null;
+    uploadStatuses = [];
+    uploading = false;
   }
 
   function handleFilesSelected(selectedFiles: FileList): void {

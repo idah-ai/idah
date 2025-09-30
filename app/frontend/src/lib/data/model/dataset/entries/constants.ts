@@ -48,7 +48,9 @@ export const entryStatuses: EntryStatusBadgeProps[] = [
   { label: "Errored", value: "errored", variant: "destructive" },
 ];
 
-interface EntryWorkflowStep extends LabelValue<string, EntryRecord> {}
+interface EntryWorkflowStep extends LabelValue<string, EntryRecord> {
+  variant?: BadgeVariant;
+}
 export const entryWorkflowSteps: EntryWorkflowStep[] = [
   { label: "Start", value: "start" },
   { label: "Annotate", value: "annotate" },
