@@ -32,7 +32,7 @@
 
 <div
   class={cn(
-    "bg-background border-input ring-offset-background focus-within:ring-ring gap-none flex w-full items-center rounded-md border shadow-sm focus-within:outline-none focus-within:ring-1",
+    "bg-background border-input ring-offset-background focus-within:ring-ring gap-none flex w-full items-center rounded-md border shadow-sm focus-within:ring-1 focus-within:outline-none",
     className,
   )}
 >
@@ -43,7 +43,7 @@
   <input
     bind:this={ref}
     data-slot="input"
-    class="placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-full rounded-md bg-transparent px-3 py-1 text-base transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+    class="placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-full rounded-md bg-transparent px-3 py-1 text-base transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
     {type}
     bind:value
     {...restProps}
