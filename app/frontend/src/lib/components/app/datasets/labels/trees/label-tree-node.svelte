@@ -117,12 +117,31 @@
 
               <CommandGroup heading="Shortcut Key"></CommandGroup>
 
+              {@const idParts = node.id.split("/")}
+              {@const parentParts = idParts.splice(0, idParts.length - 1)}
+              {@const parentPath = parentParts.join("/")}
+              <CommandGroup heading="ID">
+                <InputField
+                  name="{node.id}/id"
+                  class="px-2"
+                  prefix={parentPath ? `${parentPath}/` : ""}
+                  value={idParts[idParts.length - 1]}
+                  oninput={(e) => {
+                    const value = e.currentTarget.value;
+                    const newValue = parentPath ? `${parentPath}/${value}` : value;
+                    onEditCategoryId(node.id, newValue);
+                  }}
+                ></InputField>
+              </CommandGroup>
+
               <CommandGroup heading="Label">
                 <InputField
                   name="{node.id}/label"
+                  class="px-2"
                   value={node.label}
                   oninput={(e) => {
                     const value = e.currentTarget.value;
+
                     onEditCategory({
                       id: node.id,
                       type: node.type,
@@ -130,17 +149,6 @@
                       text_color: node.text_color,
                       label: value,
                     });
-                  }}
-                ></InputField>
-              </CommandGroup>
-
-              <CommandGroup heading="ID">
-                <InputField
-                  name="{node.id}/id"
-                  value={node.id}
-                  onblur={(e) => {
-                    const value = e.currentTarget.value;
-                    onEditCategoryId(node.id, value.toLocaleLowerCase());
                   }}
                 ></InputField>
               </CommandGroup>
