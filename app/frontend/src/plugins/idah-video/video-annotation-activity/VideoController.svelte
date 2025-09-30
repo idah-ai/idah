@@ -21,9 +21,9 @@
         DropdownMenuTrigger,
     } from "@/components/ui/dropdown-menu";
     import Slider from "@/components/ui/slider/slider.svelte";
-    import Video from "@/components/video-annotation-activity/video.svelte";
 
     import type { ChangeEventHandler } from "svelte/elements";
+    import Video from "./video.svelte";
 
     // Props
     interface Props {

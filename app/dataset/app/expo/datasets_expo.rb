@@ -8,7 +8,7 @@ class DatasetsExpo < BaseExpo
     datset_service: Datset::Service
 
   json_api Dataset::Record, http_opts: { auth: nil } do
-    allowed_included "entries"
+    allowed_included "entries", "project"
 
     show
     index

@@ -38,7 +38,9 @@
     <!-- INFO -->
     <div class="flex flex-1 flex-col gap-6">
       <!-- RESOURCE -->
-      <Text size="sm" weight="light">{entry.resource}</Text>
+      <Text size="sm" weight="light">
+        <a href="/entry/{entry.id}/plugin">{entry.resource}</a>
+      </Text>
 
       <div class="flex flex-col items-start">
         <DataDisplay label="Created at">

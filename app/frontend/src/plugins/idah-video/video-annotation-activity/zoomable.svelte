@@ -1,6 +1,6 @@
 <script lang='ts'>
 	import { type Snippet } from "svelte";
-	import { HEIGHT, WIDTH, X, Y, type Point, type VideoMode } from "@/components/video-annotation-activity/VideoAnnotationContext";
+	import { HEIGHT, WIDTH, X, Y, type Point, type VideoMode } from "./VideoAnnotationContext";
 
     let offset: Point = $state([0, 0])
     let size : Point = $state([0, 0])
@@ -16,7 +16,7 @@
         children,
         onZoomChange,
     }: {
-        mode: VideoMode,
+        mode: string,
         children: Snippet,
         onZoomChange:(
             scale: number,

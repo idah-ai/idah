@@ -9,19 +9,19 @@
 		type Point,
 		type VideoAnnotation,
 		type VideoFrameSelection,
-		type VideoMode,
 		type VideoShape,
-		type VideoShapeType,
-	} from "@/components/video-annotation-activity/VideoAnnotationContext";
+	} from "./VideoAnnotationContext";
 	import Zoomable from "./zoomable.svelte";
 	import BoundingBox, { type ToolSelection } from "./bounding-box.svelte";
+    import { boundingBoxes, idb_updated_at } from "./idb_store.svelte";
+    import type { AnnotationsIndexedDB } from "./indexedDB";
 
 	type Props = {
-		annotations: Array<VideoAnnotation>;
 		frame: number;
 		selected: VideoAnnotation | undefined;
-		mode: VideoMode;
+		mode: string;
 		target_container: HTMLDivElement; // ..
+        db?: AnnotationsIndexedDB,
 		children: Snippet;
 		onclick?: (e: MouseEvent) => void;
 		onSelectAnnotation: (annotation?: VideoAnnotation) => void;
@@ -29,15 +29,15 @@
 		onmousedown?: (e: MouseEvent) => void;
 		onmousemove?: (e: MouseEvent) => void;
 		onwheel?: (e: WheelEvent) => void;
-		onSelection: (type: VideoShapeType, frame: number, points?: Point[], id?: string) => void;
+		onSelection: (type: string, frame: number, points?: Point[], id?: string) => void;
 	};
 
 	let {
-		annotations,
 		frame,
 		selected,
 		mode,
 		target_container,
+        db,
 		onSelectAnnotation,
 		onSelection, // valid shape output
 		children,
@@ -50,6 +50,13 @@
 		scale: 1,
 		offset: [0, 0],
 	});
+
+    let annotations_promise = $derived.by(async () => {
+        $idb_updated_at
+
+        return $boundingBoxes = await db?.interpolated_annotations(frame) || []
+    })
+
 	let height = $state(0);
 	let width = $state(0);
 	let mouse: Point = $state([0, 0]);
@@ -162,12 +169,14 @@
 </script>
 
 <div class="svg-overlay flex-1">
-	<div>
-		<Zoomable bind:this={zoom} {mode} onZoomChange={(scale, offset) => (zoomInfo = { scale, offset })}>
-			{@render children?.()}
-		</Zoomable>
-	</div>
-	<!-- bind:this={svg} -->
+    <div>
+        <Zoomable
+            bind:this={zoom}
+            {mode}
+            onZoomChange={(scale, offset) => zoomInfo = {scale, offset}}>
+            {@render children?.()}
+        </Zoomable>
+    </div>
 	<svg
 		bind:clientHeight={height}
 		bind:clientWidth={width}
@@ -189,32 +198,56 @@
 		}}
 		{...restProps}
 	>
-		<line x1={0} y1={target_line[Y]} x2={width} y2={target_line[Y]} stroke="#06B6D4" />
-		<line x1={target_line[X]} y1={0} x2={target_line[X]} y2={height} stroke="#06B6D4" />
+        {#if width && height} <!-- prevent display issue on load for now -->
+            <line x1={0} y1={target_line[Y]} x2={width} y2={target_line[Y]}/>
+            <line x1={target_line[X]} y1={0} x2={target_line[X]} y2={height}/>
+        {/if}
 
 		<!-- draw annotation context -->
-		{#each annotations as annotation}
-			<!-- {@render annotationPath(annotation, frame)} -->
-			{#if annotation != selected}
-				{#if annotation.shape.type == "bounding-box"}
-					<BoundingBox
-						points={currentShape(annotation.shape, frame) || []}
-						ratio={target_size}
-						offset={zoomInfo.offset}
-						color={annotation.synced ? "#E2E8F0" : "grey"}
-						onmousedown={(e) => {
-							console.error("clicked anyway");
-							if (mode == "view") {
-								e.stopPropagation();
-								onSelectAnnotation(annotation);
-							}
-						}}
-					/>
-				{/if}
-			{/if}
-		{/each}
+            {#await annotations_promise}
+                    {#each $boundingBoxes as annotation}
+                        {#if annotation.metadata.id != selected?.metadata.id}
+                            {#if annotation.shape.type == "video:bounding_box"}
+                                <BoundingBox
+                                    points={annotation.shape.frames[0].points}
+                                    ratio={target_size}
+                                    offset={zoomInfo.offset}
+                                    color={'deeppink'}
+                                    onmousedown={ (e)=> {
+                                        if (mode == 'view'){
+                                            e.stopPropagation()
+                                            onSelectAnnotation(annotation)
+                                        }
+                                    }}
+                                />, frame
+                            {/if}
+                        {/if}
+                    {/each}
+           {:then annotations}
+                {#if annotations}
+                    {#each annotations as annotation}
+                        {#if annotation.metadata.id != selected?.metadata.id}
+                            {#if annotation.shape.type == "video:bounding_box"}
+                                <BoundingBox
+                                    points={annotation.shape.frames[0].points}
+                                    ratio={target_size}
+                                    offset={zoomInfo.offset}
+                                    color={annotation.synced ? '#E2E8F0': 'grey'}
+                                    onmousedown={ (e)=> {
+                                        if (mode == 'view'){
+                                            e.stopPropagation()
+                                            onSelectAnnotation(annotation)
+                                        }
+                                    }}
+                                />
+                            {/if}
+                        {/if}
+                    {/each}
+                {/if}
+            {/await}
+
 		<!-- draw selection -->
-		{#if mode == "bounding-box"}
+		{#if mode == "video:bounding_box"}
 			<BoundingBox
 				bind:this={tool_selection}
 				{points}
@@ -224,8 +257,8 @@
 				editable={true}
 				color={"#FEF9C340"}
 				onChange={(bb) => {
-					onSelection("bounding-box", frame, bb, selected?.metadata.id);
-					if (!selected) points = [];
+                    onSelection('video:bounding_box', frame, bb, selected?.metadata.id)
+                    points = bb
 				}}
 				onmousedown={(e) => {
 					console.error("clicked anyway");
