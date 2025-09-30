@@ -181,13 +181,18 @@
 )}
   <Collapsible>
     <CollapsibleTrigger
-      class="flex w-full items-center justify-between p-2 hover:cursor-pointer"
+      class={cn(
+        "focus:bg-accent flex w-full items-center justify-between p-2",
+        !category.requiredNested ? "hover:cursor-pointer" : "",
+      )}
       onclick={() => {
         if (category.nestedCategories) {
           // Toggle the category open state
           openStates[category.id] = !openStates[category.id];
         }
-        if (!category.requiredNested) onSelect(category.id);
+        if (!category.requiredNested) {
+          onSelect(category.id);
+        }
       }}
     >
       {@render showCategoryTitle(category, !!category.nestedCategories, open)}
@@ -208,6 +213,7 @@
         {/key}
       {/if}
     </CollapsibleTrigger>
+
     <CollapsibleContent class="ml-5" hidden={!open}>
       {#key $idb_updated_at}
         {#if db && category}
