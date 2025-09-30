@@ -9,7 +9,6 @@
     DropdownMenuItem,
     DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu";
-  import UpdateEntryPriorityFormModal from "@/components/app/datasets/entries/overlays/update-entry-priority-form-modal.svelte";
 
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
   import { getEntryDropdownMenuActions } from "@/components/app/datasets/entries/dropdown-menus/entry-dropdown-menu";
@@ -28,16 +27,13 @@
   // Variables
   const menus = getEntryDropdownMenuActions({
     onAssign: openAssignEntryModal,
-    onSetPriority: () => {
-      openSetPriorityModal = true;
-    },
+    onSetPriority: () => {},
     onDelete: () => {
       openConfirmDeleteTaskModal = true;
     },
-  });
+  }).filter((m) => m.label !== "Set Priority");
 
   let openAssignEntryFormModal: boolean = $state(false);
-  let openSetPriorityModal: boolean = $state(false);
   let openConfirmDeleteTaskModal: boolean = $state(false);
 
   // Functions
@@ -81,10 +77,6 @@
 <!-- MODAL::ASSIGN ANNOTATOR  -->
 <AssignEntryFormModal action="update" entryRecord={entry} entryIds={[entry.id]} bind:open={openAssignEntryFormModal}
 ></AssignEntryFormModal>
-
-<!-- MODAL::SET PRIORITY -->
-<UpdateEntryPriorityFormModal action="update" entryRecord={entry} entryIds={[entry.id]} bind:open={openSetPriorityModal}
-></UpdateEntryPriorityFormModal>
 
 <!-- MODAL::CONFIRM DELETE -->
 <ConfirmModal
