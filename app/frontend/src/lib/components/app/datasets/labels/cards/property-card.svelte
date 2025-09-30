@@ -132,7 +132,7 @@
   <!-- CONTENT -->
   {#if showContent}
     <CardContent class="flex flex-col gap-4 px-0">
-      <PropertyOptions propertyKey="properties" {property} onSetValue={setProperty}></PropertyOptions>
+      <PropertyOptions {property} onSetValue={setProperty}></PropertyOptions>
 
       <PropertySelectors {selector} onSelectCategory={assignCategory}></PropertySelectors>
     </CardContent>
