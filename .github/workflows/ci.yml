@@ -190,7 +190,7 @@ jobs:
       - name: Check Code Coverage
         if: ${{ steps.filter.outputs.ruby == 'true' || (steps.filter.outputs.ruby == 'true' && failure()) }}
         run: |
-          common/bin/check-coverage
+          cp -r ../../common/app/bin ./bin && bin/check-coverage
 
       - name: Upload Code Coverage
         if: ${{ steps.filter.outputs.ruby == 'true' || (steps.filter.outputs.ruby == 'true' && failure()) }}
