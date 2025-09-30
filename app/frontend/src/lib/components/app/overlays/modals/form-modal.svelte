@@ -14,7 +14,6 @@
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
 
   // Props
-  interface Props extends FormModalBaseProps {}
   let {
     action,
     open = $bindable(),
@@ -28,7 +27,7 @@
     actions,
     confirm,
     children,
-  }: Props = $props();
+  }: FormModalBaseProps = $props();
 
   // Types
   interface ConfirmButtonProps {
