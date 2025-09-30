@@ -28,7 +28,7 @@
 
         {#if visible}
           <TableCell
-            class={cn("px-6 py-4", {
+            class={cn("px-5 py-4", {
               "cursor-pointer": clickable,
             })}
           >
