@@ -106,11 +106,6 @@ export const datasetsBackendDataSource = createBackendDataSource(
     export: async (
       datasetId: string,
     ) => {
-      // const formData = new FormData();
-      // formData.append("datasetId", datasetId);
-
-      // console.log("datasetId: ", datasetId)
-
       const exportPath = `${datasetsBasePath}/export/${datasetId}`;
 
       const out = await fetch(exportPath, {
