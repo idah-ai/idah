@@ -154,6 +154,13 @@
   {/if}
 
   {#snippet confirm()}
-    <Button onclick={submit}>Upload</Button>
+    <Button disabled={!selectedMedias || selectedMedias.length === 0} onclick={submit}>
+      {#if uploading}
+        <Spinner></Spinner>
+        Uploading...
+      {:else}
+        Upload
+      {/if}
+    </Button>
   {/snippet}
 </FormModal>

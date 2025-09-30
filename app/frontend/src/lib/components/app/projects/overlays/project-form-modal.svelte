@@ -8,7 +8,6 @@
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { createProjectSchema, updateProjectSchema } from "@/data/model/dataset/projects/schema";
   import { refetches } from "@/utils/refetch";
-  import { toast } from "svelte-sonner";
 
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
   import type { Hash } from "@/utils/types";
@@ -101,11 +100,7 @@
         await updateProject();
       }
     } catch (error) {
-      if (error instanceof Error) {
-        toast.error(error.message, {
-          description: "Please check the fields and try again.",
-        });
-      }
+      // Handle unexpected errors
     } finally {
       submitting = false;
     }
