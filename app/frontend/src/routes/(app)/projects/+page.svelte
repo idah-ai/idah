@@ -62,7 +62,7 @@
       dataSource={projectsBackendDataSource}
       listOptions={{
         fields: {
-          "dataset:projects": ["name", "description", "updated_at"],
+          "dataset:projects": ["name", "description", "created_at"],
         },
         sort: ["-created_at"],
       }}

@@ -3,7 +3,9 @@ import { field, Record, RecordFactory, relationship, type } from "@/data/model/R
 
 import { humanize } from "@/utils/string";
 
-import type { ProjectRecord } from "@/data/model/dataset/projects/project-record";
+import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
+import { EntryRecord } from "@/data/model/dataset/entries/record";
+
 import type { Hash } from "@/utils/types";
 import type { LabelingConfiguration } from "@/data/model/dataset/labels";
 import {
@@ -22,11 +24,12 @@ export class DatasetRecord extends Record {
   @field() public labeling_configuration!: LabelingConfiguration;
   @field() public workflow_configuration!: Hash;
   @field() public status!: string;
-  @field() public progress!: Date;
+  @field() public progress!: number;
   @field() public updated_at!: Date;
   @field() public created_at!: string;
 
   @relationship() public project!: ProjectRecord;
+  @relationship() public entries!: EntryRecord[];
 
   public get modalityBadge(): DatasetModalityBadgeProps {
     const defaultBadgeProps: DatasetModalityBadgeProps = {
