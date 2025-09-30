@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { onMount } from "svelte";
+
   import Button from "@/components/ui/button/button.svelte";
   import { Dialog } from "@/components/ui/dialog";
   import DialogClose from "@/components/ui/dialog/dialog-close.svelte";
@@ -12,7 +14,6 @@
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
 
   // Props
-  interface Props extends FormModalBaseProps {}
   let {
     action,
     open = $bindable(),
@@ -26,7 +27,7 @@
     actions,
     confirm,
     children,
-  }: Props = $props();
+  }: FormModalBaseProps = $props();
 
   // Types
   interface ConfirmButtonProps {
@@ -64,6 +65,22 @@
       await onCancel?.();
     }
   }
+
+  // Lifecycle
+  onMount(() => {
+    function handlePressEnter(event: KeyboardEvent) {
+      if (event.key === "Enter" && !event.shiftKey && !loading) {
+        event.preventDefault();
+        handleClickConfirm();
+      }
+    }
+
+    window.addEventListener("keydown", handlePressEnter);
+
+    return () => {
+      window.removeEventListener("keydown", handlePressEnter);
+    };
+  });
 </script>
 
 <Dialog bind:open onOpenChangeComplete={handleOpenChangeComplete}>
