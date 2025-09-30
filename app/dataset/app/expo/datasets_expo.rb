@@ -19,20 +19,6 @@ class DatasetsExpo < BaseExpo
     delete
   end
 
-  # # TODO: handle auth ?
-  # # import dataset(s) with .datset file
-  # expose on_http(:post, "/import", auth: nil) do
-  #   desc "Import dataset(s) with uploaded .datset file"
-  #   input do
-  #     field :resource, String
-  #     field :project_id, String
-  #   end
-  # end
-  # def import
-  #   binding.pry
-  #   datset_service.import(resource: params[:resource], project_id: params[:project_id])
-  # end
-
   expose on_http(:post, "/import", auth: nil) do
     desc <<-MD
     MD
@@ -48,6 +34,7 @@ class DatasetsExpo < BaseExpo
     )
   end
 
+  # exporting a dataset, multiple should be possible with different params (project_id ? array of dataset_ids ?)
   expose on_http(:get, "/export/:dataset_id", auth: nil) do
     desc <<-MD
     MD
@@ -58,7 +45,7 @@ class DatasetsExpo < BaseExpo
   def export
     datset_service.export(params[:dataset_id])
 
-    # TODO: properly handling response output
+    # TODO: properly handling export response output
     server.status 200
   end
 end
