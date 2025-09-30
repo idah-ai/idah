@@ -8,6 +8,5 @@ Verse.on_boot do
     DatasetsExpo,
     EntriesExpo,
     AnnotationsExpo,
-    AnnotationWorkflowExpo,
   ].each(&:register)
 end

@@ -119,5 +119,30 @@ module Entry
         entries.find!(id)
       end
     end
+
+    # POST /api/v1/dataset/entries/:id/submit
+    def submit(entry_id, **opts)
+      entries.transaction do
+        entry = entries.find!(entry_id, included: [:dataset])
+        dataset = datasets.find!(entry.dataset_id)
+        workflow = dataset.workflow.new(entry, **opts)
+
+        workflow.submit!
+        entries.update!(entry.id, { wf_step: workflow.aasm.current_state.to_s })
+        entries.find!(entry.id, included: [:dataset, :annotations])
+      end
+    end
+
+    def error(entry_id, **opts)
+      entries.transaction do
+        entry = entries.find!(entry_id, included: [:dataset])
+        dataset = datasets.find!(entry.dataset_id)
+        workflow = dataset.workflow.new(entry, **opts)
+
+        workflow.error!
+        entries.update!(entry.id, { wf_step: workflow.aasm.current_state.to_s })
+        entries.find!(entry.id, included: [:dataset, :annotations])
+      end
+    end
   end
 end
