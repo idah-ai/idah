@@ -1,4 +1,5 @@
 <script lang="ts">
+  // Test CI
   import "../app.css";
   // import { ModeWatcher } from "mode-watcher";
   import { Toaster } from "@/components/ui/sonner";
