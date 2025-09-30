@@ -65,7 +65,3 @@
     </div>
   {/if}
 </div>
-
-<pre>
-    {JSON.stringify(labelConfig.categories, null, 2)}
-</pre>

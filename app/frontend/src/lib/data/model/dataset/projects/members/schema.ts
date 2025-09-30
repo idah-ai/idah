@@ -7,8 +7,8 @@ export const projectMemberSchema = z.object({
   account_id: z.number(),
 
   name: z.string().nullable(),
-  email: z.email(),
-  role: z.enum(Object.values(projectMemberRoles).map((role) => role.value)),
+  email: z.email("Make sure to provide a valid email address."),
+  role: z.enum(projectMemberRoles.map((role) => role.value)),
 
   invited_by_id: z.number(),
 

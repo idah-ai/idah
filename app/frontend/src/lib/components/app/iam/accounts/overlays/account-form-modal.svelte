@@ -5,6 +5,8 @@
   import { refetches } from "@/utils/refetch";
   import { toast } from "svelte-sonner";
 
+  import { createAccountSchema, updateAccountSchema } from "@/data/model/iam/accounts/schema";
+  import { getFieldErrors, validateData, type ZodSchema } from "@/utils/validate";
   import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
 
   import type { Hash } from "@/utils/types";
@@ -18,6 +20,7 @@
 
   // Variables
   let newRecord: boolean = $derived(action === "create");
+  let fieldErrors: Hash = $state({});
   let submitting: boolean = $state(false);
 
   let account: AccountRecord = $derived(
@@ -40,6 +43,7 @@
   }
 
   function resetForm(): void {
+    fieldErrors = {};
     account = new AccountRecord({
       type: AccountRecord.type,
       attributes: {
@@ -99,15 +103,30 @@
   }
 
   async function submit(): Promise<void> {
+    fieldErrors = {};
     submitting = true;
+    const schema: ZodSchema = newRecord ? createAccountSchema : updateAccountSchema;
 
     try {
+      const validated = validateData(schema, {
+        name: account.name,
+        email: account.email,
+        sso_channel: account.sso_channel,
+        enabled: account.enabled,
+      });
+
+      if (!validated.success) {
+        fieldErrors = getFieldErrors(validated.error);
+        throw new Error("Failed to submit form");
+      }
+
       if (newRecord) {
         await createAccount();
       } else {
         await updateAccount();
       }
     } catch (error) {
+      // Handle unexpected errors
     } finally {
       submitting = false;
     }
@@ -115,5 +134,5 @@
 </script>
 
 <FormModal {action} {title} loading={submitting} onCancel={resetForm} onConfirm={submit} bind:open>
-  <AccountForm {account} onValueChange={setValue} />
+  <AccountForm {account} {fieldErrors} onValueChange={setValue} />
 </FormModal>
