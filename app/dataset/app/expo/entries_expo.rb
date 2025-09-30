@@ -40,6 +40,40 @@ class EntriesExpo < BaseExpo
     service.assign_member(id, member_id)
   end
 
+  # POST /api/v1/dataset/entries/:id/submit
+  expose on_http(:post, "/:id/submit", auth: nil) do
+    desc "Submit workflow event for an entry"
+    input do
+      field :id, String
+      field :data, Hash, optional: true do
+        field :attributes, Hash, optional: true
+      end
+    end
+  end
+  def submit
+    entry_id = params[:id]
+    opts = params.dig(:data, :attributes) || {}
+
+    service.submit(entry_id, **opts)
+  end
+
+  # POST /api/v1/dataset/entries/:id/error
+  expose on_http(:post, "/:id/error", auth: nil) do
+    desc "Trigger error event for an entry"
+    input do
+      field :id, String
+      field :data, Hash, optional: true do
+        field :attributes, Hash, optional: true
+      end
+    end
+  end
+  def error
+    entry_id = params[:id]
+    opts = params.dig(:data, :attributes) || {}
+
+    service.error(entry_id, **opts)
+  end
+
   expose on_resource_event(Resource::Media::Jobs, "completed")
   def on_job_updated
     job_id = message.content[:resource_id]
