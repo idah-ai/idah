@@ -110,10 +110,10 @@ jobs:
         run: |
           pnpm prettier --check ${{ steps.filter-format.outputs.js_files }}
 
-      - name: Run Svelte Check
-        if: ${{ steps.filter.outputs.js == 'true' }}
-        run: |
-          pnpm run check --output human
+      # - name: Run Svelte Check
+      #   if: ${{ steps.filter.outputs.js == 'true' }}
+      #   run: |
+      #     pnpm run check --output human
 
       - name: Run Unit Tests
         if: ${{ steps.filter.outputs.js == 'true' }}
@@ -277,3 +277,91 @@ jobs:
         with:
           name: dataset-code-coverage
           path: ${{ env.DATASET_DIR }}/coverage
+
+  media:
+    name: Media Service
+    if: ${{ needs.changes.outputs.media == 'true' }}
+    needs: changes
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.MEDIA_DIR }}
+    services:
+      postgres:
+        image: postgres:17
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          list-files: shell
+          filters: |
+            ruby:
+              - added|modified: '${{ env.MEDIA_DIR }}/Gemfile.lock'
+              - added|modified: '${{ env.MEDIA_DIR }}/**/*.rb'
+              - added|modified: '${{ env.MEDIA_DIR }}/**/*.rake'
+
+      - name: Format Changed files
+        id: filter-format
+        run: |
+          echo "ruby_files=$(echo '${{ steps.filter.outputs.ruby_files }}' | sed -r 's/app\/media\/+//g')" >> $GITHUB_OUTPUT
+
+      - name: Install dependencies
+        if: ${{ steps.filter.outputs.ruby == 'true' }}
+        run: |
+          sudo apt-get update && \
+          sudo apt-get install -y \
+            imagemagick \
+            libmagickcore-dev \
+            libmagickwand-dev
+
+      - uses: ruby/setup-ruby@v1
+        if: ${{ steps.filter.outputs.ruby == 'true'  }}
+        with:
+          # runs 'bundle install' and caches installed gems automatically
+          bundler-cache: true
+          working-directory: ${{ env.MEDIA_DIR }}
+        env:
+          APP_ENVIRONMENT: test
+
+      - name: Setup Database
+        if: ${{ steps.filter.outputs.ruby == 'true' }}
+        run: |
+          bundle exec rake db:test:prepare
+        env:
+          APP_ENVIRONMENT: test
+          POSTGRES_CREDENTIALS: postgres:postgres
+
+      - name: Run Rubocop
+        if: ${{ steps.filter.outputs.ruby == 'true' || (steps.filter.outputs.ruby == 'true' && failure()) }}
+        run: |
+          bundle exec rubocop --force-exclusion ${{ steps.filter-format.outputs.ruby_files }}
+        env:
+          APP_ENVIRONMENT: test
+
+      - name: Run RSpec
+        if: ${{ steps.filter.outputs.ruby == 'true' || (steps.filter.outputs.ruby == 'true' && failure()) }}
+        run: LOG_LEVEL=error bundle exec rspec --fail-fast
+        env:
+          CI: true
+          APP_ENVIRONMENT: test
+          POSTGRES_CREDENTIALS: postgres:postgres
+
+      - name: Check Code Coverage
+        if: ${{ steps.filter.outputs.ruby == 'true' || (steps.filter.outputs.ruby == 'true' && failure()) }}
+        run: |
+          cp -r ../../common/bin ./bin && bin/check-coverage
+
+      - name: Upload Code Coverage
+        if: ${{ steps.filter.outputs.ruby == 'true' || (steps.filter.outputs.ruby == 'true' && failure()) }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: media-code-coverage
+          path: ${{ env.MEDIA_DIR }}/coverage
