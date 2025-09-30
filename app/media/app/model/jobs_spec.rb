@@ -93,7 +93,7 @@ RSpec.describe Jobs, database: true do
         job = job_creator.call
         subject.error(job.id, "some error")
         job_updated = subject.find!(job.id)
-        expect(job_updated.status).to eq("error")
+        expect(job_updated.status).to eq("errored")
         expect(job_updated.error).to eq("some error")
       end
     end

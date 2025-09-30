@@ -5,6 +5,7 @@ module Dataset
     type Resource::Dataset::Datasets
 
     field :id, type: String, primary: true
+    field :name, type: String
 
     field :labels, type: Array
 

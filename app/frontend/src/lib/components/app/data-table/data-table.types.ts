@@ -22,8 +22,8 @@ export type DataTableColumnDataType =
 
 export type DataTableColumnFilterBy =
   | "string"
+  | "boolean"
   | "number-range"
-  | "single-select"
   | "multiple-select"
   | "date-range"
   | "datasource";
@@ -52,7 +52,7 @@ export interface ColumnSettings<T extends Record> {
     filterOperation: DataTableColumnFilterOperation;
     choices?: LabelValue<string | number | boolean>[];
   };
-  filterComponent?: Component;
+  filterComponent?: Component<DataTableFilterBaseProps<T>, {}, "">;
   align?: "left" | "center" | "right";
   visible: boolean;
   hidable: boolean;
@@ -86,6 +86,11 @@ export interface DataTableBaseProps<T extends Record> {
 
   // Snippets
   actions?: Snippet;
+}
+
+export interface DataTableFilterBaseProps<T extends Record> {
+  columnSetting: ColumnSettings<T>;
+  onFilter: (params: FilterDataSourceParams) => Promise<void> | void;
 }
 
 export interface DataTableCellBaseProps<T extends Record> {

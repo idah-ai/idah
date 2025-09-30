@@ -1,5 +1,8 @@
 service_name: iam
 description: User, role, team management service
+
+em:
+  adapter: redis
 plugins:
   - name: http
     config:

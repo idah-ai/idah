@@ -44,7 +44,7 @@ GIT
 
 GIT
   remote: https://github.com/verse-rb/verse-sequel
-  revision: f27bf55f6638bf329b6ec6c0a3ac099c41c4fd12
+  revision: 2e314732e0b7d5205cfe201e7ec1b3beeb7d3c7c
   branch: master
   specs:
     verse-sequel (0.1.0)
@@ -97,7 +97,7 @@ GEM
       coderay (~> 1.1)
       method_source (~> 1.0)
     public_suffix (6.0.2)
-    puma (5.6.9)
+    puma (6.6.1)
       nio4r (~> 2.0)
     raabro (1.4.0)
     racc (1.8.1)
@@ -149,7 +149,7 @@ GEM
       prism (~> 1.4)
     ruby-progressbar (1.13.0)
     ruby2_keywords (0.0.5)
-    sequel (5.94.0)
+    sequel (5.96.0)
       bigdecimal
     simplecov (0.22.0)
       docile (~> 1.1)
@@ -194,7 +194,7 @@ DEPENDENCIES
   dotenv
   pg
   pry
-  puma (~> 5.6)
+  puma (~> 6)
   rack (~> 3.1)
   rack-test
   rake
