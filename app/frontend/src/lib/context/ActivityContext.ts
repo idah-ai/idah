@@ -1,3 +1,4 @@
+import type { CategoryConfiguration } from "../../plugins/idah-video/video-annotation-activity/VideoAnnotationContext";
 import type { AnnotationContext } from "./AnnotationContext";
 
 /*
@@ -11,13 +12,14 @@ export type MediaInfo = {
   };
 };
 
-export type CategoryDefinition = {
+export interface CategoryDefinition {
   id: string;
   name: string; // Name of the category
   description?: string; // Description of the category
   requiredNested?: boolean; // true = this category requires a subcategory
   nestedCategories?: CategoryDefinition[]; // Subcategories
-};
+  data: CategoryConfiguration;
+}
 /**
  * Represents a category with its subcategories
  */
