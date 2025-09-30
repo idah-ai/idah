@@ -55,7 +55,11 @@
       attributes: {
         name: dataset.name,
         modality: dataset.modality,
-        labeling_configuration: {},
+        labeling_configuration: {
+          categories: [],
+          properties: [],
+          taggings: [],
+        },
         workflow_configuration: {},
       },
       relationships: {
@@ -104,5 +108,5 @@
 </script>
 
 <FormModal {action} {title} loading={submitting} onCancel={resetForm} onConfirm={submit} bind:open>
-  <DatasetForm {dataset} onValueChange={setValue}></DatasetForm>
+  <DatasetForm {dataset} {newRecord} onValueChange={setValue}></DatasetForm>
 </FormModal>

@@ -13,7 +13,6 @@
   import DatasetFormModal from "@/components/app/datasets/overlays/dataset-form-modal.svelte";
 
   import { EllipsisVerticalIcon, SquarePenIcon, Trash2Icon } from "@lucide/svelte";
-  import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
 
   import { refetches } from "@/utils/refetch";
