@@ -6,6 +6,8 @@ module Datset
         entry_repo: Entry::Repository,
         annotation_repo: Annotation::Repository
 
+    # TODO: figure out how to handle different hosting option
+
     # process the .datset file
     def process
       # save to file store as temp file ?
@@ -13,6 +15,9 @@ module Datset
     end
 
     # delete the .datset file
+    # the processed file should not need to be kept for
+    # 1. after importing, regardless of being successful or failed
+    # 2. after exported if hosted by us (no need to delete if self/locally hosted, can be kept in local directory)
     def delete
       pass
     end
@@ -85,7 +90,7 @@ module Datset
 
       # export as .datset
       # TODO: save file in a proper file store, currently just write here
-      File.write("#{dataset_id}.datset", JSON.pretty_generate(datset))
+      File.write("#{dataset_id}.datset", JSON.pretty_generate(datset)) # temporary implementation, save as local file
 
       # 1. cloud-hosted: return download link for .datset file
       # 2. self-hosted: save file to designated directory
@@ -122,13 +127,14 @@ module Datset
 
             {
               id: annotation[:id],
-              type: "bounding_box", # annotation.type ?
-              category: "category", # Q: annotation.category ?
+              type: annotation.dimensions[:type], # annotation.type ?
+              # category: "category", # Q: annotation.category ?
               dimensions: annotation.dimensions,
-              # annotation: "", # Q: is this needed ?
+              annotation: annotation.annotation, # Q: is this needed ?
               # metadata:,
             }
-          end
+          end,
+          # metadata:,
         }
       end
 
@@ -139,9 +145,9 @@ module Datset
     AnnotationSchema = Verse::Schema.define do
       field(:id, String) # PK, CHECK(length(id) <= 64)
       field(:type, String) # Type of annotation, e.g., bounding_box, segmentation
-      field(:dimensions, String)
-      # field?(:annotation, String) # is this needed ?
-      field?(:category, String)
+      field(:dimensions, Hash) # TODO: recheck data type
+      field?(:annotation, Hash) # TODO: recheck data type
+      field?(:category, String) # labeling ? tagging ?
       field?(:metadata, String)
     end
 
@@ -152,6 +158,7 @@ module Datset
       field?(:annotations, Array, of: AnnotationSchema)
     end
 
+    # TODO: still not sure how to handle actual files in imported/exported datset
     MediaSchema = Verse::Schema.define do
       field(:id, String) # PK
       field(:key, String) # PK
@@ -168,7 +175,7 @@ module Datset
       field?(:entries, Array, of: EntrySchema)
     end
 
-    # Datset file structure (in JSON ?)
+    # Datset file structure (in JSON ? or SQLite ?)
     DatsetSchema = Verse::Schema.define do
       field(:dataset, DatasetSchema) # just one or multiple ?
       field?(:media, MediaSchema) # just one or multiple ?
