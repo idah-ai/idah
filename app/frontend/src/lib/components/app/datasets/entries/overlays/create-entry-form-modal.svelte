@@ -13,24 +13,15 @@
   import { refetches } from "@/utils/refetch";
   import { toast } from "svelte-sonner";
 
-  import { EntryRecord } from "@/data/model/dataset/entries/record";
-
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
 
   // Props
-  interface Props extends FormModalBaseProps {}
-  let { action, title, open = $bindable() }: Props = $props();
+  let { action, title, open = $bindable() }: FormModalBaseProps = $props();
 
   // Variables
   let datasetId = page.params.datasetId as string;
   let uploading: boolean = $state(false);
   let selectedMedias: FileList | null = $state(null);
-  let entry: EntryRecord = $derived(
-    new EntryRecord({
-      type: EntryRecord.type,
-      attributes: {},
-    }),
-  );
 
   interface UploadStatuses {
     uuid: string;
@@ -41,10 +32,9 @@
 
   // Functions
   function resetForm(): void {
-    entry = new EntryRecord({
-      type: EntryRecord.type,
-      attributes: {},
-    });
+    selectedMedias = null;
+    uploadStatuses = [];
+    uploading = false;
   }
 
   function handleFilesSelected(selectedFiles: FileList): void {
@@ -97,6 +87,7 @@
 
         media.status = "success";
       } catch (error) {
+        console.error(error);
         media.status = "error";
       }
     }
@@ -112,6 +103,7 @@
     try {
       await uploadMedia();
     } catch (error) {
+      console.error(error);
     } finally {
       uploading = false;
     }
@@ -137,9 +129,9 @@
             {#if status === "uploading"}
               <Spinner></Spinner>
             {:else if status === "success"}
-              <Badge class="rounded-lg">Uploaded</Badge>
+              <Badge>Uploaded</Badge>
             {:else if status === "error"}
-              <Badge variant="destructive" class="rounded-lg">Error</Badge>
+              <Badge variant="destructive">Error</Badge>
             {/if}
           </div>
         </div>
@@ -154,6 +146,13 @@
   {/if}
 
   {#snippet confirm()}
-    <Button onclick={submit}>Upload</Button>
+    <Button disabled={!selectedMedias || selectedMedias.length === 0} onclick={submit}>
+      {#if uploading}
+        <Spinner></Spinner>
+        Uploading...
+      {:else}
+        Upload
+      {/if}
+    </Button>
   {/snippet}
 </FormModal>

@@ -14,11 +14,15 @@
   interface Props extends FormFieldBaseProps {
     type?: HTMLInputTypeAttribute;
     value: string | null;
+    prefix?: string;
+    suffix?: string;
     oninput?: FormEventHandler<HTMLInputElement> | null | undefined;
     onblur?: FormEventHandler<HTMLInputElement> | null | undefined;
   }
   let {
     value = $bindable(null),
+    prefix = undefined,
+    suffix = undefined,
     oninput = undefined,
     onblur = undefined,
     name,
@@ -44,7 +48,7 @@
     <FormFieldLabel {required}>{label}</FormFieldLabel>
   {/if}
 
-  <Input {name} {type} {placeholder} {disabled} {readonly} {required} bind:value {oninput} {onblur} />
+  <Input {name} {type} {placeholder} {disabled} {readonly} {required} {prefix} {suffix} bind:value {oninput} {onblur} />
 
   {#if slotInfo}
     {@render slotInfo()}

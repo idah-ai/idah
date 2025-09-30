@@ -5,7 +5,9 @@
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
   import DatasetForm from "@/components/app/datasets/forms/dataset-form.svelte";
 
+  import { createDatasetSchema, updateDatasetSchema } from "@/data/model/dataset/datasets/schema";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
+  import { getFieldErrors, validateData, type ZodSchema } from "@/utils/validate";
   import { refetches } from "@/utils/refetch";
 
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
@@ -20,6 +22,7 @@
   // Variables
   let projectId: string | undefined = $derived(page.params.projectId);
   let newRecord: boolean = $derived(action === "create");
+  let fieldErrors: Hash = $state({});
   let submitting: boolean = $state(false);
 
   let dataset: DatasetRecord = $derived(
@@ -36,6 +39,7 @@
 
   // Functions
   function resetForm(): void {
+    fieldErrors = {};
     dataset = new DatasetRecord({
       type: "datasets:datasets",
       attributes: {
@@ -72,7 +76,7 @@
       },
     });
 
-    goto(`datasets/${createdDatasetRes.data.id}/tasks`);
+    goto(`/projects/${projectId}/datasets/${createdDatasetRes.data.id}/tasks`);
 
     $refetches.datasets.list++;
     open = false;
@@ -91,16 +95,28 @@
   }
 
   async function submit(): Promise<void> {
+    fieldErrors = {};
     submitting = true;
+    const schema: ZodSchema = newRecord ? createDatasetSchema : updateDatasetSchema;
 
     try {
-      // const validated = datasetSchema.safeParse(dataset);
+      const validated = validateData(schema, {
+        name: dataset.name,
+        modality: dataset.modality,
+      });
+
+      if (!validated.success) {
+        fieldErrors = getFieldErrors(validated.error);
+        throw new Error("Failed to submit form");
+      }
+
       if (newRecord) {
         await createDataset();
       } else {
         await updateDataset();
       }
     } catch (error) {
+      console.error(error);
     } finally {
       submitting = false;
     }
@@ -108,5 +124,5 @@
 </script>
 
 <FormModal {action} {title} loading={submitting} onCancel={resetForm} onConfirm={submit} bind:open>
-  <DatasetForm {dataset} {newRecord} onValueChange={setValue}></DatasetForm>
+  <DatasetForm {dataset} {fieldErrors} {newRecord} onValueChange={setValue}></DatasetForm>
 </FormModal>
