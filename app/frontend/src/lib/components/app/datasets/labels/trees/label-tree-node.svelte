@@ -59,7 +59,7 @@
 
   <div id={node.id} class={cn("flex items-center gap-2")} style:margin-left={`${(level - 1) * 3}rem`}>
     <!-- TREE::NODE -->
-    <div class="border-border flex w-full items-center gap-2 rounded-lg border py-1 pr-2 pl-4">
+    <div class="border-border flex w-full items-center gap-2 rounded-lg border py-1 pl-4 pr-2">
       {#if isLastNode}
         <Popover>
           <PopoverTrigger>
@@ -126,7 +126,7 @@
                   class="px-2"
                   prefix={parentPath ? `${parentPath}/` : ""}
                   value={idParts[idParts.length - 1]}
-                  oninput={(e) => {
+                  onblur={(e) => {
                     const value = e.currentTarget.value;
                     const newValue = parentPath ? `${parentPath}/${value}` : value;
                     onEditCategoryId(node.id, newValue);
@@ -139,7 +139,7 @@
                   name="{node.id}/label"
                   class="px-2"
                   value={node.label}
-                  oninput={(e) => {
+                  onblur={(e) => {
                     const value = e.currentTarget.value;
 
                     onEditCategory({
