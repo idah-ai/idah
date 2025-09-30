@@ -49,7 +49,7 @@
   </Button>
 
   {#if node.children.length}
-    {#each node.children as child}
+    {#each node.children as child (child.id)}
       {@const nextLevel = level + 1}
       {@render CategoryTreeNode({ node: child, level: nextLevel })}
     {/each}
@@ -64,7 +64,7 @@
 
     <Popover bind:open>
       <PopoverTrigger>
-        <Badge variant="secondary" class="rounded-lg">
+        <Badge variant="secondary">
           <PlusIcon class="size-4"></PlusIcon>
           Assign Category
           <ChevronsUpDownIcon class="size-4"></ChevronsUpDownIcon>
@@ -88,7 +88,7 @@
 
   <div class="flex flex-wrap items-center gap-2 px-6">
     {#each selector as selector, index (index)}
-      <Badge variant="outline" class="rounded-lg font-mono">{selector}</Badge>
+      <Badge variant="outline" class="font-mono">{selector}</Badge>
     {/each}
   </div>
 </div>
