@@ -30,11 +30,8 @@
   } = $props();
 
   let categoriesTree: CategoryDefinition[] = categories.reduce<CategoryDefinition[]>((acc, category_configuration) => {
-    console.log({ acc, category_configuration });
-
     return buildTree(acc, category_configuration.id.split("/"), category_configuration);
   }, []);
-  $inspect({ categoriesTree });
 
   function buildTree(
     acc: CategoryDefinition[],
@@ -49,6 +46,7 @@
         name: configuration.label,
         description: configuration.description,
         requiredNested: false,
+        data: configuration,
       });
     } else {
       const index = acc.findIndex((a) => configuration.id.startsWith(a.id));
@@ -59,6 +57,7 @@
           name: ids[0],
           nestedCategories: buildTree([], ids.slice(1, Infinity), configuration),
           requiredNested: true,
+          data: configuration,
         });
       } else {
         acc[index].nestedCategories = buildTree(
@@ -78,9 +77,10 @@
 </script>
 
 {#snippet annotationSelection(annotation: VideoAnnotation, name: string, annotationCategory?: string)}
+  {console.log({ annotation })}
   <SidebarMenuItem class="delete_hover list-none">
     <SidebarMenuButton class="justify-between" onclick={() => onSelectAnnotation(annotation)}>
-      {@render showIcon(name)}
+      <!-- {@render showIcon(name)} -->
 
       {#if selected && selected == annotationCategory}
         <SidebarMenuSubButton class={"hover_deleted"} onclick={() => onSelect()}>
@@ -135,7 +135,7 @@
   </style>
 {/snippet}
 
-{#snippet showIcon(categoryName: string, haveChildren: boolean = false)}
+{#snippet showCategoryTitle(category: CategoryDefinition, haveChildren: boolean = false)}
   <div class="flex items-center gap-2">
     <svg
       class={cn({
@@ -159,14 +159,14 @@
 
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path
-        class="stroke-gray-500"
         d="M6.66667 4.58333H13.3333M6.66667 4.58333C6.66667 5.73393 5.73393 6.66667 4.58333 6.66667M6.66667 4.58333C6.66667 3.43274 5.73393 2.5 4.58333 2.5C3.43274 2.5 2.5 3.43274 2.5 4.58333C2.5 5.73393 3.43274 6.66667 4.58333 6.66667M13.3333 4.58333C13.3333 5.73393 14.2661 6.66667 15.4167 6.66667M13.3333 4.58333C13.3333 3.43274 14.2661 2.5 15.4167 2.5C16.5673 2.5 17.5 3.43274 17.5 4.58333C17.5 5.73393 16.5673 6.66667 15.4167 6.66667M15.4167 6.66667V13.3333M15.4167 13.3333C14.2661 13.3333 13.3333 14.2661 13.3333 15.4167M15.4167 13.3333C16.5673 13.3333 17.5 14.2661 17.5 15.4167C17.5 16.5673 16.5673 17.5 15.4167 17.5C14.2661 17.5 13.3333 16.5673 13.3333 15.4167M13.3333 15.4167H6.66667M6.66667 15.4167C6.66667 16.5673 5.73393 17.5 4.58333 17.5C3.43274 17.5 2.5 16.5673 2.5 15.4167C2.5 14.2661 3.43274 13.3333 4.58333 13.3333M6.66667 15.4167C6.66667 14.2661 5.73393 13.3333 4.58333 13.3333M4.58333 13.3333V6.66667"
+        stroke={category.data.color || "var(--color-gray-500)"}
         stroke-width="1.5"
         stroke-linecap="round"
         stroke-linejoin="round"
       />
     </svg>
-    {categoryName}
+    {category.name}
   </div>
 {/snippet}
 
@@ -177,6 +177,7 @@
   selected: string | undefined,
   parent: string[] = [],
 )}
+  {console.log({ category })}
   <Collapsible>
     <CollapsibleTrigger
       class={cn("flex w-full items-center justify-between p-2 hover:cursor-pointer")}
@@ -184,7 +185,7 @@
         if (!category.requiredNested) onSelect(category.id);
       }}
     >
-      {@render showIcon(category.name, !!subCategories?.length)}
+      {@render showCategoryTitle(category, !!subCategories?.length)}
 
       {#if db && category && $idb_updated_at}
         {#key $idb_updated_at}
