@@ -56,6 +56,19 @@
           account = existingAccount.data[0];
         }
 
+        /** Check if member is already in the project */
+        const existingProjectMember = await projectMembersBackendDataSource.list({
+          filters: {
+            project_id: projectId,
+            account_id: account.id,
+          },
+        });
+
+        if (existingProjectMember.data.length) {
+          // Re-invite existing member
+          continue;
+        }
+
         await projectMembersBackendDataSource.create({
           attributes: {
             project_id: projectId!,
