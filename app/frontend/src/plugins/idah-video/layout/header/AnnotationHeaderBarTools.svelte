@@ -21,12 +21,12 @@
 
 	const tools: HeaderBarModeTool[] = [
 		{
-			label: "View",
-			type: "view",
+			label: "Visual",
+			type: "visual",
 			icon: MousePointer2,
 			handleClick: () => {
-				mode = "view";
-				onSelectMode("view");
+				mode = "visual";
+				onSelectMode("visual");
 			},
 		},
 		{

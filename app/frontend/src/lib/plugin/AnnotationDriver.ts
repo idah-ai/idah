@@ -46,5 +46,9 @@ export function createAnnotationDriver(entry_id: string): IAnnotationDriver {
     delete(id) {
       return annotations_rpc.call({ method: "delete", params: { id } });
     },
+
+    flush() {
+      return annotations_rpc.process();
+    },
   };
 }

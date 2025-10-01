@@ -44,6 +44,7 @@ export interface IAnnotationDriver {
   update(ann: IAnnotation): Promise<void>;
   delete(id: string): Promise<void>;
   list(filter: any, pagination: any): Promise<Array<IAnnotation>>;
+  flush(): void;
 }
 
 export interface INoteDriver {
@@ -81,6 +82,9 @@ export interface IActivityContext {
 
   // Driver for fetching and updating notes
   get notes(): INoteDriver;
+
+  // Return to previous step of the workflow
+  back(): void;
 
   // Submit to the next step of the workflow
   submit(): Promise<void>;

@@ -45,6 +45,13 @@
         panOrigin = undefined
     }
 
+    export function zoomIn() {
+        console.log("zoomin")
+    }
+    export function zoomOut() {
+        console.log("zoomout")
+    }
+
     function zoomAt(x:number, y:number, step:number) {
         let ox = (x - offset[X]) / zoom.current
         let oy = (y - offset[Y]) / zoom.current
@@ -85,7 +92,7 @@
 
     export function mouseMove(e :MouseEvent) {
         switch (mode) {
-            case "view":
+            case "visual":
             case "bounding-box":
             case "bounding-polygon":
             default:
@@ -93,7 +100,6 @@
         }
     }
 </script>
-
 
 <div class='zoomable bg-secondary h-full w-full'
     role="grid"

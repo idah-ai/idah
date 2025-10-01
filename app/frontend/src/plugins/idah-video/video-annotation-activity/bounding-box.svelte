@@ -206,6 +206,7 @@
             fill-opacity={0.40}
             style:fill={color}
             style:stroke={color}
+            style:stroke-opacity={1}
             style:stroke-width={'2'}
             onmousedown={(e) => {
                 if (editable && !panStart && !isEditing()) {
