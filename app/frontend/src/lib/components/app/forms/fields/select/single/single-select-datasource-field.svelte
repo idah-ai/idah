@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
 
   import Button from "@/components/ui/button/button.svelte";
-  import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList, CommandInput } from "@/components/ui/command";
+  import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
   import FormField from "@/components/app/forms/form-field.svelte";
   import FormFieldErrors from "@/components/app/forms/form-field-errors.svelte";
   import FormFieldInfo from "@/components/app/forms/form-field-info.svelte";

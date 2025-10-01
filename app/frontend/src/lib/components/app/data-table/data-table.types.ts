@@ -40,6 +40,7 @@ export type DataTableColumnFilterOperation =
   | "contains"
   | "match";
 
+/** eslint-disabled-next-line @typescript-eslint/no-empty-object-type */
 export interface ColumnSettings<T extends Record> {
   label: string;
   dataType: DataTableColumnDataType;
