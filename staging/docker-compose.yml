@@ -80,6 +80,7 @@ services:
       - DATABASE_URI=postgres://postgres:postgres@host.docker.internal:5432/idah_media_development
       - REDIS_STREAM_URL=redis://host.docker.internal:6379/0
       - EAGER_LOAD=1
+    cpus: 0.5
     ports:
       - "3000"
     volumes:
