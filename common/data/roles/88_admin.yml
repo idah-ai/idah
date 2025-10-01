@@ -1,0 +1,6 @@
+admin:
+  title: "Admin"
+  description: "Administrator"
+  assignable: true
+  rights:
+    - "*.*.*"
