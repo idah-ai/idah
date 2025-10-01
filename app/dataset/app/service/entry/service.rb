@@ -133,7 +133,7 @@ module Entry
             wf_step: entry_workflow.aasm.current_state.to_s,
             status: entry_workflow.aasm.current_state == :done ? "completed" : "in_progress"
           }
-      )
+        )
         entries.find!(entry.id, included: [:dataset, :annotations])
       end
     end
