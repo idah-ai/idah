@@ -46,6 +46,7 @@
     onNewRecord,
     actions,
     emptyState,
+    filteredState,
   }: Props = $props();
 
   // Contexts
@@ -53,6 +54,7 @@
   setContext("dataTableName", dataTableName);
   setContext("onNewRecord", onNewRecord);
   setContext("emptyState", emptyState);
+  setContext("filteredState", filteredState);
 
   // Variables
   let tableState: TableState<T> = getTableState(id);
@@ -74,6 +76,7 @@
 
   let columns = $state(_columns);
   let haveSomeHidableColumns: boolean = $derived(Object.values(columns).some((column) => column.hidable));
+  let isFiltering: boolean = $derived(Object.keys(tablePreferences.filters).length > 0);
 
   let currentPage: number = $state(1);
   let itemsPerPage: number = $state(10);
@@ -289,7 +292,7 @@
       {#if tableData.status === "loading"}
         <DataTableLoading />
       {:else if tableData.status === "loaded"}
-        <DataTableBody {tableData} {columns}></DataTableBody>
+        <DataTableBody {tableData} {columns} {isFiltering}></DataTableBody>
       {:else}
         <DataTableError />
       {/if}

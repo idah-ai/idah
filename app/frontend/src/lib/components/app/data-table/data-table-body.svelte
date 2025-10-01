@@ -15,8 +15,9 @@
   interface Props<T extends Record> {
     tableData: TableData<T>;
     columns: ColumnsSettings<T>;
+    isFiltering: boolean;
   }
-  let { tableData, columns }: Props<T> = $props();
+  let { tableData, columns, isFiltering }: Props<T> = $props();
 </script>
 
 <TableBody>
@@ -58,6 +59,6 @@
       {/each}
     </TableRow>
   {:else}
-    <DataTableEmpty />
+    <DataTableEmpty {isFiltering} />
   {/each}
 </TableBody>

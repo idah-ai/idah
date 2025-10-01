@@ -47,9 +47,5 @@
   </div>
 
   <!-- RESPONSE BLOCK::ACTIONS -->
-  {#if actions}
-    {@render actions?.()}
-  {:else}
-    <Button class="capitalize">Action</Button>
-  {/if}
+  {@render actions?.()}
 </div>
