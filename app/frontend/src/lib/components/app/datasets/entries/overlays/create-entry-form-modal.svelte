@@ -147,7 +147,7 @@
   {#snippet confirm()}
     <Button disabled={!selectedMedias || selectedMedias.length === 0} onclick={submit}>
       {#if uploading}
-        <Spinner></Spinner>
+        <Spinner variant="primary-foreground"></Spinner>
         Uploading...
       {:else}
         Upload

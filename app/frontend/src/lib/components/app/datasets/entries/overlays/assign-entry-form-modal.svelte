@@ -73,7 +73,7 @@
   {#snippet confirm()}
     <Button disabled={submitting || !selectedMember} onclick={submit}>
       {#if submitting}
-        <Spinner></Spinner>
+        <Spinner variant="primary-foreground"></Spinner>
         Assigning...
       {:else}
         Assign

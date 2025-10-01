@@ -14,10 +14,10 @@
 
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
   import { createMultipleProjectMembersSchema } from "@/data/model/dataset/projects/members/schema";
+  import Spinner from "@/components/app/loading/spinner.svelte";
 
   // Props
-  interface Props extends FormModalBaseProps {}
-  let { action, open = $bindable() }: Props = $props();
+  let { action, open = $bindable() }: FormModalBaseProps = $props();
 
   // Variables
   let projectId: string | undefined = $derived(page.params.projectId);
@@ -96,6 +96,7 @@
     try {
       await createProjectMember();
     } catch (error) {
+      console.error(error);
     } finally {
       submitting = false;
     }
@@ -110,6 +111,13 @@
   <ProjectMemberForm bind:members />
 
   {#snippet confirm()}
-    <Button disabled={disabledSubmitButton} onclick={submit}>Send Invite</Button>
+    <Button disabled={disabledSubmitButton} onclick={submit}>
+      {#if submitting}
+        <Spinner variant="primary-foreground"></Spinner>
+        Sending...
+      {:else}
+        Send Invite
+      {/if}
+    </Button>
   {/snippet}
 </FormModal>
