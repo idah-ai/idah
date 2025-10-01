@@ -53,8 +53,6 @@
     meta: {},
   });
 
-  $inspect({ response });
-
   // Variables
   let datasetId = page.params.datasetId as string;
   let currentPage: number = $state(1);
