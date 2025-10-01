@@ -10,16 +10,20 @@
   import type { EntryRecord } from "@/data/model/dataset/entries/record";
 
   // Props
-  interface Props extends DataTableFilterBaseProps<EntryRecord> {}
-  let { columnSetting, onFilter }: Props = $props();
+  let { columnSetting, contexts, filters, onFilter }: DataTableFilterBaseProps<EntryRecord> = $props();
 
-  // Varibles
+  // Contexts
+  if (!contexts || !("projectId" in contexts)) {
+    throw new Error("`projectId` is required in contexts for FilterByProjectMember");
+  }
+
+  let { projectId } = contexts as { projectId: string };
+
+  // Variables
   const resource: string = ProjectMemberRecord.type;
   const filterKey: string = columnSetting.filterOptions?.filterKey || "project_member_id";
   const filterOperation: DataTableColumnFilterOperation = columnSetting.filterOptions?.filterOperation || "eq";
   const filterKeyWithOperation: string = `${filterKey}__${filterOperation}`;
-
-  let selectedValue: number | null = $state(null);
 
   // Functions
   function handleFilter(value: string | number): void {
@@ -34,7 +38,14 @@
 <SingleSelectDatasourceField
   name="{resource}/project_member_id"
   dataSource={projectMembersBackendDataSource}
+  listOptions={{
+    filters: {
+      project_id: projectId,
+    },
+  }}
   displayKey="email"
-  value={selectedValue}
+  searchable
+  searchKeyWithOperation="email__match"
+  value={filters[filterKeyWithOperation]}
   onValueChange={handleFilter}
 ></SingleSelectDatasourceField>

@@ -13,6 +13,7 @@
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
   import { getEntryDropdownMenuActions } from "@/components/app/datasets/entries/dropdown-menus/entry-dropdown-menu";
   import { refetches } from "@/utils/refetch";
+  import { toast } from "svelte-sonner";
   import { EllipsisVerticalIcon } from "@lucide/svelte";
 
   // Props
@@ -48,6 +49,7 @@
 
   async function deleteTask() {
     await entriesBackendDataSource.delete(entry.id);
+    toast.success("Task successfully deleted!");
     $refetches.entries.list++;
     openConfirmDeleteTaskModal = false;
   }
