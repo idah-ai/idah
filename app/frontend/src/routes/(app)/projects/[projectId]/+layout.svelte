@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, type Snippet } from "svelte";
+  import type { Snippet } from "svelte";
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
 
