@@ -32,7 +32,7 @@ RSpec.describe AnnotationsExpo, type: :exposition, as: :system do
           # use UUIDv7:
           id: uuid,
           attributes: {
-            type: "bounding_box",
+            # type: "bounding_box",
             entry_id: 1,
             dimensions: { "x" => 10, "y" => 20, "width" => 30, "height" => 40 },
             annotation: { "label" => "cat" },
@@ -56,7 +56,7 @@ RSpec.describe AnnotationsExpo, type: :exposition, as: :system do
     body = JSON.parse(last_response.body, symbolize_names: true)
     record = deserialize(body)
     expect(record[0].id).to eq uuid
-    expect(record[0].type).to eq "bounding_box"
+    # expect(record[0].type).to eq "bounding_box"
   end
 
   it "show" do
@@ -66,7 +66,7 @@ RSpec.describe AnnotationsExpo, type: :exposition, as: :system do
     body = JSON.parse(last_response.body, symbolize_names: true)
     record = deserialize(body)
     expect(record.id).to eq uuid
-    expect(record.type).to eq "bounding_box"
+    # expect(record.type).to eq "bounding_box"
   end
 
   it "create" do

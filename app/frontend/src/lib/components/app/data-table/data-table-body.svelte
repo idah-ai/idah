@@ -15,12 +15,13 @@
   interface Props<T extends Record> {
     tableData: TableData<T>;
     columns: ColumnsSettings<T>;
+    isFiltering: boolean;
   }
-  let { tableData, columns }: Props<T> = $props();
+  let { tableData, columns, isFiltering }: Props<T> = $props();
 </script>
 
 <TableBody>
-  {#each tableData.response.data as record}
+  {#each tableData.response.data as record (record.id)}
     <TableRow>
       {#each Object.entries(columns) as [columnKey, columnSetting] (columnKey)}
         {@const { dataType, clickable, cellComponent: CellComponent, visible } = columnSetting}
@@ -28,7 +29,7 @@
 
         {#if visible}
           <TableCell
-            class={cn("px-6 py-4", {
+            class={cn("px-5 py-4", {
               "cursor-pointer": clickable,
             })}
           >
@@ -58,6 +59,6 @@
       {/each}
     </TableRow>
   {:else}
-    <DataTableEmpty />
+    <DataTableEmpty {isFiltering} />
   {/each}
 </TableBody>
