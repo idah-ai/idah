@@ -105,7 +105,7 @@ services:
       - "5173"
     volumes:
       - ./app/frontend:/app/frontend
-      - /app/frontend/node_modules
+      - node_modules:/app/frontend/node_modules
     networks:
       - app-network
     command: pnpm run dev  --host
@@ -114,6 +114,7 @@ services:
 
 volumes:
   bundler_cache:
+  node_modules:
 
 networks:
   app-network:
