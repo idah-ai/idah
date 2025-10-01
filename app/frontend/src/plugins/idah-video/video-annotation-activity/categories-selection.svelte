@@ -35,6 +35,7 @@
 
   // Variables
   let openStates = $state<Record<string, boolean>>({});
+  let forceRender = $state(0); // Force re-render trigger
 
   let categoriesTree: CategoryDefinition[] = categories.reduce<CategoryDefinition[]>((acc, category_configuration) => {
     return buildTree(acc, category_configuration.id.split("/"), category_configuration);
@@ -79,6 +80,12 @@
       }
     }
     return acc;
+  }
+
+  async function haveAnnotationsInCategory(categoryId: string): Promise<boolean> {
+    if (!db || !categoryId) return false;
+
+    return (await db.getAllIndex("category", categoryId)).length > 0;
   }
 </script>
 
@@ -186,41 +193,52 @@
   open: boolean = false,
 )}
   <Collapsible>
-    <CollapsibleTrigger
-      class={cn(
-        "focus:bg-accent flex w-full items-center justify-between p-2",
-        !category.requiredNested ? "hover:cursor-pointer" : "",
-      )}
-      onclick={() => {
-        if (category.nestedCategories) {
-          // Toggle the category open state
-          openStates[category.id] = !openStates[category.id];
-        }
-        if (!category.requiredNested) {
-          onSelect(category.id);
-        }
-      }}
-    >
-      {@render showCategoryTitle(category, !!category.nestedCategories, open)}
-      {#if db && category && $idb_updated_at}
-        {#key $idb_updated_at}
-          <Badge variant="secondary">
-            {#await db.getAllStartingWith("category", category.id)}
-              ...
-            {:then anns}
-              {anns.filter(
-                (annotation) =>
-                  currentFrame >= annotation.shape.start &&
-                  currentFrame <= annotation.shape.end &&
-                  annotation.shape.type == type,
-              ).length}
-            {/await}
-          </Badge>
-        {/key}
-      {/if}
-    </CollapsibleTrigger>
+    {#key forceRender}
+      {#await haveAnnotationsInCategory(category.id) then hasAnnotations}
+        <CollapsibleTrigger
+          class={cn(
+            "focus:bg-accent flex w-full items-center justify-between p-2",
+            !category.requiredNested ? "hover:cursor-pointer" : "",
+          )}
+          onclick={() => {
+            if (category.nestedCategories || hasAnnotations) {
+              // Toggle the category open state
+              openStates[category.id] = !openStates[category.id];
+            }
+            if (!category.requiredNested) {
+              onSelect(category.id);
+            }
+            // Force re-render of annotation counts
+            forceRender++;
+          }}
+        >
+          {@render showCategoryTitle(
+            category,
+            !!category.nestedCategories || hasAnnotations,
+            openStates[category.id] || false,
+          )}
 
-    <CollapsibleContent class="ml-5" hidden={!open}>
+          {#if db && category && $idb_updated_at}
+            {#key $idb_updated_at}
+              <Badge variant="secondary">
+                {#await db.getAllStartingWith("category", category.id)}
+                  ...
+                {:then anns}
+                  {anns.filter(
+                    (annotation) =>
+                      currentFrame >= annotation.shape.start &&
+                      currentFrame <= annotation.shape.end &&
+                      annotation.shape.type == type,
+                  ).length}
+                {/await}
+              </Badge>
+            {/key}
+          {/if}
+        </CollapsibleTrigger>
+      {/await}
+    {/key}
+
+    <CollapsibleContent class="ml-5" hidden={!openStates[category.id]}>
       {#key $idb_updated_at}
         {#if db && category}
           {#await db.getAllIndex("category", category.id)}
