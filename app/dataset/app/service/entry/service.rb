@@ -120,7 +120,6 @@ module Entry
       end
     end
 
-    # POST /api/v1/dataset/entries/:id/submit
     def submit(entry_id, **opts)
       entries.transaction do
         entry = entries.find!(entry_id, included: [:dataset])

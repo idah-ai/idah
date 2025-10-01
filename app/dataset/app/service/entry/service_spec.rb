@@ -362,4 +362,166 @@ RSpec.describe Entry::Service, database: true do
       end
     end
   end
+
+  describe "#submit" do
+    let!(:test_entry) do
+      repo.create(
+        {
+          dataset_id: dataset_id,
+          resource: "test-video.mp4",
+          status: "ready",
+          wf_step: "start"
+        }
+      )
+    end
+
+    context "when transitioning from start to annotate" do
+      it "updates the entry workflow step and status" do
+        result = subject.submit(test_entry)
+
+        expect(result.wf_step).to eq("annotate")
+        expect(result.status).to eq("in_progress")
+        expect(result.id).to eq(test_entry)
+      end
+
+      it "includes dataset and annotations in the result" do
+        result = subject.submit(test_entry)
+
+        expect(result.dataset).not_to be_nil
+        expect(result.dataset.id).to eq(dataset_id)
+      end
+    end
+
+    context "when transitioning from annotate to review" do
+      before do
+        repo.update!(test_entry, { wf_step: "annotate" })
+        # Mock random to always trigger sampling
+        allow_any_instance_of(Workflow::Entry).to receive(:rand).and_return(0.5)
+      end
+
+      it "transitions to review when should_sample? returns true" do
+        # Set sample_rate to 1 to ensure sampling
+        dataset_repo.update!(dataset_id, { workflow_configuration: { "sample_rate" => 1 } })
+
+        result = subject.submit(test_entry)
+
+        expect(result.wf_step).to eq("review")
+        expect(result.status).to eq("in_progress")
+      end
+    end
+
+    context "when transitioning from annotate to done" do
+      before do
+        repo.update!(test_entry, { wf_step: "annotate" })
+        # Mock random to not trigger sampling
+        allow_any_instance_of(Workflow::Entry).to receive(:rand).and_return(0.5)
+      end
+
+      it "transitions to done when should_sample? returns false" do
+        # Set sample_rate to 0 to ensure no sampling
+        dataset_repo.update!(dataset_id, { workflow_configuration: { "sample_rate" => 0 } })
+
+        result = subject.submit(test_entry)
+
+        expect(result.wf_step).to eq("done")
+        expect(result.status).to eq("completed")
+      end
+    end
+
+    context "when transitioning from review to done" do
+      before do
+        repo.update!(test_entry, { wf_step: "review" })
+      end
+
+      it "transitions to done when approved is true" do
+        result = subject.submit(test_entry, approved: true)
+
+        expect(result.wf_step).to eq("done")
+        expect(result.status).to eq("completed")
+      end
+    end
+
+    context "when transitioning from review to annotate" do
+      before do
+        repo.update!(test_entry, { wf_step: "review" })
+      end
+
+      it "transitions back to annotate when approved is false" do
+        result = subject.submit(test_entry, approved: false)
+
+        expect(result.wf_step).to eq("annotate")
+        expect(result.status).to eq("in_progress")
+      end
+    end
+
+    context "when entry does not exist" do
+      it "raises a not found error" do
+        expect { subject.submit(UUIDv7.generate) }
+          .to raise_error(Verse::Error::NotFound)
+      end
+    end
+
+    context "when review step is missing approved option" do
+      before do
+        repo.update!(test_entry, { wf_step: "review" })
+      end
+
+      it "raises a validation error" do
+        expect { subject.submit(test_entry) }
+          .to raise_error(Verse::Error::ValidationFailed, /Missing required option :approved/)
+      end
+    end
+  end
+
+  describe "#error" do
+    let!(:test_entry) do
+      repo.create(
+        {
+          dataset_id: dataset_id,
+          resource: "test-video.mp4",
+          status: "in_progress",
+          wf_step: "annotate"
+        }
+      )
+    end
+
+    context "when transitioning from annotate to error" do
+      it "updates the entry to error state" do
+        result = subject.error(test_entry)
+
+        expect(result.wf_step).to eq("error")
+        expect(result.status).to eq("errored")
+        expect(result.id).to eq(test_entry)
+      end
+    end
+
+    context "when transitioning from review to error" do
+      before do
+        repo.update!(test_entry, { wf_step: "review" })
+      end
+
+      it "updates the entry to error state" do
+        result = subject.error(test_entry)
+
+        expect(result.wf_step).to eq("error")
+        expect(result.status).to eq("errored")
+      end
+    end
+
+    context "when passing optional parameters" do
+      it "accepts additional options" do
+        result = subject.error(test_entry, message: "Processing failed")
+
+        expect(result.wf_step).to eq("error")
+        expect(result.status).to eq("errored")
+      end
+    end
+
+    context "when entry does not exist" do
+      it "raises a not found error" do
+        expect { subject.error(UUIDv7.generate) }
+          .to raise_error(Verse::Error::NotFound)
+      end
+    end
+  end
 end
