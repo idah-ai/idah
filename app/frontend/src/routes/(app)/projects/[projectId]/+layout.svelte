@@ -37,16 +37,16 @@
   let { name, description } = $derived(project);
 
   // Lifecycle
-  onMount(() => {
-    const currentTab = projectTabs.find((tab) => tab.value === activeTab);
-    const defaultProjectTab: ProjectTab = "datasets";
+  // onMount(() => {
+  //   const currentTab = projectTabs.find((tab) => tab.value === activeTab);
+  //   const defaultProjectTab: ProjectTab = "datasets";
 
-    if (!currentTab) {
-      goto(`/projects/${projectId}/${defaultProjectTab}`, { replaceState: true });
-    } else {
-      goto(`/projects/${projectId}/${currentTab.value}`, { replaceState: true });
-    }
-  });
+  //   if (!currentTab) {
+  //     goto(`/projects/${projectId}/${defaultProjectTab}`, { replaceState: true });
+  //   } else {
+  //     goto(`/projects/${projectId}/${currentTab.value}`, { replaceState: true });
+  //   }
+  // });
 
   $effect(() => {
     updateBreadcrumbs(page.url.pathname);
