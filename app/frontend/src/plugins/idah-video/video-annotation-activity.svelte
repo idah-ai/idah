@@ -117,11 +117,7 @@
 
     annotationsIndexedDB(["idah-video", "entry", entry_id].join(":")).then((idb) => {
       annotationsIDB = idb;
-      toast.promise(fetchAnnotations(idb), {
-        loading: "Fetch Annotations",
-        success: "Fetch complete",
-        error: "Error Fetching annotations",
-      });
+      fetchAnnotations(idb);
     }, console.error);
 
     function fetchAnnotations(db: AnnotationsIndexedDB, page = 1, itemsPerPage = 100): Promise<void> {
@@ -188,11 +184,6 @@
 
         let p = context.annotations.create(id, annotation.shape, annotation.value);
 
-        toast.promise(p, {
-          loading: "synchro create annotation",
-          success: "synchro create annotation OK",
-          error: "synchro create annotation KO",
-        });
         p.then(async () => {
           let a = await annotationsIDB?.get("annotations", id);
 
@@ -210,12 +201,6 @@
         $idb_updated_at = new Date();
 
         let p = context.annotations.delete(id);
-
-        toast.promise(p, {
-          loading: "synchro undo create annotation",
-          success: "synchro undo create annotation OK",
-          error: "synchro undo create annotation KO",
-        });
       },
       isCombinable: () => false,
       combine: () => cmd,
@@ -263,11 +248,6 @@
 
         let p = context.annotations.create(id, annotation.shape, annotation.value);
 
-        toast.promise(p, {
-          loading: "synchro undo delete annotation",
-          success: "synchro undo delete annotation OK",
-          error: "synchro undo delete annotation KO",
-        });
         p.then(async () => {
           let annotation = await annotationsIDB?.get("annotations", id);
 
@@ -320,11 +300,6 @@
           annotation: v.value,
         });
 
-        toast.promise(p, {
-          loading: "synchro add bounding box",
-          success: "synchro add bounding box OK",
-          error: "synchro add bounding box KO",
-        });
         p.then(async () => {
           if (v.metadata.updatedAt == updatedAt) {
             v.synced = true;
@@ -359,11 +334,6 @@
           annotation: v.value,
         });
 
-        toast.promise(p, {
-          loading: "synchro undo add bounding box",
-          success: "synchro undo add bounding box OK",
-          error: "synchro undo add bounding box KO",
-        });
         p.then(async () => {
           if (v.metadata.updatedAt == updatedAt) {
             v.synced = true;
@@ -417,12 +387,6 @@
           annotation: annotation.value,
         });
 
-        toast.promise(p, {
-          loading: "synchro delete selection",
-          success: "synchro delete selection OK",
-          error: "synchro delete selection KO",
-        });
-
         p.then(async () => {
           if (annotation.metadata.updatedAt == updatedAt) {
             annotation.synced = true;
@@ -453,12 +417,6 @@
           id: annotation.metadata.id,
           dimensions: annotation.shape,
           annotation: annotation.value,
-        });
-
-        toast.promise(p, {
-          loading: "synchro undo delete selection",
-          success: "synchro undo delete selection OK",
-          error: "synchro undo delete selection KO",
         });
 
         p.then(async () => {
@@ -523,11 +481,6 @@
             annotation: value,
           });
 
-          toast.promise(p, {
-            loading: "synchro update annotation value",
-            success: "synchro update annotation value OK",
-            error: "synchro update annotation value KO",
-          });
           p.then(async () => {
             if (annotation.metadata.updatedAt == updatedAt) {
               annotation.synced = true;
@@ -549,12 +502,6 @@
             id: annotation.metadata.id,
             dimensions: annotation.shape,
             annotation: value_from,
-          });
-
-          toast.promise(p, {
-            loading: "synchro undo update annotation value",
-            success: "synchro undo update annotation value OK",
-            error: "synchro undo update annotation value KO",
           });
 
           p.then(async () => {

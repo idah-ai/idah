@@ -23,7 +23,7 @@ export function activityContextForEntry(entry: EntryRecord): IActivityContext {
     workflowStep: entry.wf_step,
     status: entry.status,
     config: entry.dataset.labeling_configuration,
-    mediaUrl: ["https://idah.localhost:8443/api/v1/media/medias/files", entry.resource, "master.m3u8"].join("/"),
+    mediaUrl: [`${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files`, entry.resource, "master.m3u8"].join("/"),
     user: {
       id: 0,
       email: "",
