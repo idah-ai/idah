@@ -44,7 +44,8 @@ export interface FieldBase {
     // readonly?: boolean;
     minimum: number | null;
     maximum: number | null;
-    step: number;
+    step: number | null;
+    info: string | null;
     options: Array<LabelPropertyOption>;
   };
   visible_if?: {

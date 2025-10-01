@@ -18,7 +18,7 @@
     type TagField,
   } from "@/data/model/dataset/labels";
   import { SaveIcon } from "@lucide/svelte";
-  import { slugify } from "@/utils/string";
+  import { humanize, slugify } from "@/utils/string";
 
   // Variables
   let datasetId: string = page.params.datasetId as string;
@@ -96,7 +96,7 @@
     if (!parentCategories.length) {
       labelConfig.categories.push({
         id: `${nodeId}/${currentTime}`,
-        label: `${nodeId}/${currentTime}`,
+        label: newLabel,
         type: defaultCategoryType,
         color: firstAvailableColor,
       });
@@ -111,12 +111,13 @@
         labelConfig.categories[parentCategoryIndex] = {
           ...labelConfig.categories[parentCategoryIndex],
           id: `${labelConfig.categories[parentCategoryIndex].id}/${currentTime}`,
+          label: newLabel,
         };
       } else {
         /** Just in case, if not found, add a new one */
         labelConfig.categories.push({
           id: `${nodeId}/${currentTime}`,
-          label: `${nodeId}/${currentTime}`,
+          label: newLabel,
           type: defaultCategoryType,
           color: firstAvailableColor,
         });
@@ -128,7 +129,7 @@
     /** Add a new sub-category, if multiple parent categories exist */
     labelConfig.categories.push({
       id: `${nodeId}/${currentTime}`,
-      label: `${nodeId}/${currentTime}`,
+      label: newLabel,
       type: defaultCategoryType,
       color: firstAvailableColor,
     });
@@ -141,12 +142,12 @@
 
     if (categoryToUpdateIndex >= 0) {
       const existingCategory = labelConfig.categories[categoryToUpdateIndex];
-      // labelConfig.categories[categoryToUpdateIndex] = category;
       const slugifiedLabel: string = slugify(category.label);
       const newId = existingCategory.id.split("/").slice(0, -1).concat(slugifiedLabel).join("/");
 
       labelConfig.categories[categoryToUpdateIndex] = {
         ...existingCategory,
+        ...category,
         label: category.label,
         id: newId,
       };
@@ -186,7 +187,7 @@
       if (!parentExists) {
         labelConfig.categories.push({
           id: parentPath,
-          label: parentPath,
+          label: humanize(parentPath),
           type: defaultCategoryType,
           color: firstAvailableColor,
         });
@@ -231,7 +232,10 @@
     const propertyToUpdateIndex = labelConfig.properties.findIndex((p) => p.id === property.id);
 
     if (propertyToUpdateIndex >= 0) {
-      labelConfig.properties[propertyToUpdateIndex] = property;
+      labelConfig.properties[propertyToUpdateIndex] = {
+        ...property,
+        id: slugify(property.label),
+      };
     } else {
       labelConfig.properties.push(property);
     }
@@ -253,7 +257,10 @@
     const tagToUpdateIndex = labelConfig.taggings.findIndex((t) => t.id === tag.id);
 
     if (tagToUpdateIndex >= 0) {
-      labelConfig.taggings[tagToUpdateIndex] = tag;
+      labelConfig.taggings[tagToUpdateIndex] = {
+        ...tag,
+        id: slugify(tag.label),
+      };
     } else {
       labelConfig.taggings.push(tag);
     }
@@ -277,7 +284,7 @@
           Saving
         {:else}
           <SaveIcon class="size-4"></SaveIcon>
-          Save Changes
+          {isLabelConfigChanged ? "Save Changes" : "Saved"}
         {/if}
       </Button>
     {/snippet}
