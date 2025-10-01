@@ -1,0 +1,6 @@
+reviewer:
+  title: "Reviewer"
+  description: "Reviewer"
+  assignable: true
+  rights:
+    - dataset.project.read.member

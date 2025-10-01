@@ -4,4 +4,38 @@
 anonymous:
   assignable: false
   rights:
-    - "*.*.*"
+    # - "*.*.*"
+
+    # WIP: annotator role
+
+    - "dataset:projects.create.member"
+    - "dataset:projects.read.member"
+    - "dataset:projects.update.member"
+    - "dataset:projects.delete.member"
+
+    # TODO: review scopes
+
+    - "dataset:project_members.create.*"
+    - "dataset:project_members.read.*"
+    - "dataset:project_members.update.*"
+    - "dataset:project_members.delete.*"
+
+    - "dataset:datasets.create.*"
+    - "dataset:datasets.read.*"
+    - "dataset:datasets.update.*"
+    - "dataset:datasets.delete.*"
+
+    - "dataset:entries.create.*"
+    - "dataset:entries.read.*"
+    - "dataset:entries.update.*"
+    - "dataset:entries.delete.*"
+
+    - "dataset:annotations.create.*"
+    - "dataset:annotations.read.*"
+    - "dataset:annotations.update.*"
+    - "dataset:annotations.delete.*"
+
+    - "media:*.create.*"
+    - "media:*.read.*"
+    - "media:*.update.*"
+    - "media:*.delete.*"
