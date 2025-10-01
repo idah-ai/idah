@@ -34,11 +34,13 @@
     FilterDataSourceParams,
     SortDataSourceParams,
   } from "@/components/app/data-table/data-table.types";
+  import type { Hash } from "@/utils/types";
 
   // Props
   interface Props<T extends Record> {
     columnKey: string;
     columnSetting: ColumnSettings<T>;
+    contexts?: Hash;
 
     // DataSource
     filters: Filters;
@@ -67,6 +69,7 @@
   let {
     columnKey,
     columnSetting,
+    contexts,
 
     // DataSource
     filters,
@@ -362,7 +365,7 @@
         <CommandGroup heading="Filter">
           {#if filterComponent}
             {@const FilterComponent = filterComponent}
-            <FilterComponent {columnSetting} {filters} {onFilter}></FilterComponent>
+            <FilterComponent {columnSetting} {filters} {contexts} {onFilter}></FilterComponent>
           {:else if filterOptions?.filterBy === "string"}
             {@const filterKey = `${columnKey}__${filterOptions.filterOperation || "match"}`}
             <div class="pb-2">

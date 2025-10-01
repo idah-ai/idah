@@ -12,6 +12,7 @@
   import { humanize } from "@/utils/string";
   import { projectBreadcrumb } from "@/components/app/page/page-breadcrumb.constants";
   import { projectTabs, type ProjectTab } from "@/components/app/projects/tabs/project.tabs";
+  import { refetches } from "@/utils/refetch";
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
 
@@ -33,6 +34,7 @@
 
   // Records
   let project: ProjectRecord = $state(new ProjectRecord());
+  let { name, description } = $derived(project);
 
   // Lifecycle
   onMount(() => {
@@ -75,7 +77,7 @@
 
     if (projectSegmentId) {
       switch (projectSegment) {
-        case "datasets":
+        case "datasets": {
           /** Get dataset name to show in breadcrumb */
           const datasetRes = await datasetsBackendDataSource.get(projectSegmentId, {
             fields: {
@@ -87,8 +89,11 @@
             { label: datasetRes.data.name, href: `/projects/${projectId}/datasets/${projectSegmentId}` },
           ];
           break;
-        case "members":
+        }
+
+        case "members": {
           break;
+        }
       }
     } else {
       breadcrumbs = projectDetailFallbackBreadcrumbs;
@@ -100,26 +105,28 @@
   }
 </script>
 
-{#await fetchProject()}
-  <PageLoading />
-{:then _}
-  <PageProvider name="project-detail" {breadcrumbs}>
-    {#if !isDatasetPage}
-      <PageHeader title={project.name}>
-        {#snippet actions()}
-          <ProjectDropdownMenu {projectId} />
-        {/snippet}
-      </PageHeader>
+{#key $refetches.projects.get}
+  {#await fetchProject()}
+    <PageLoading />
+  {:then _}
+    <PageProvider name="project-detail" {breadcrumbs}>
+      {#if !isDatasetPage}
+        <PageHeader title={name} {description}>
+          {#snippet actions()}
+            <ProjectDropdownMenu {projectId} />
+          {/snippet}
+        </PageHeader>
 
-      <Tabs bind:value={activeTab}>
-        <TabsList>
-          {#each projectTabs as { label, value } (value)}
-            <TabsTrigger {value} onclick={() => handleTabChange(value)}>{label}</TabsTrigger>
-          {/each}
-        </TabsList>
-      </Tabs>
-    {/if}
+        <Tabs bind:value={activeTab}>
+          <TabsList>
+            {#each projectTabs as { label, value } (value)}
+              <TabsTrigger {value} onclick={() => handleTabChange(value)}>{label}</TabsTrigger>
+            {/each}
+          </TabsList>
+        </Tabs>
+      {/if}
 
-    {@render children()}
-  </PageProvider>
-{/await}
+      {@render children()}
+    </PageProvider>
+  {/await}
+{/key}

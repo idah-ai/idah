@@ -75,6 +75,7 @@
     });
 
     $refetches.projects.list++;
+    $refetches.projects.get++;
     open = false;
   }
 
