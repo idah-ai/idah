@@ -209,14 +209,14 @@
         {#if annotations}
           {#each annotations as annotation}
             <TableRow
-              class="border-0 py-1"
+              class="hoverable h-full border-0 py-1 hover:cursor-pointer focus:bg-gray-500"
               onclick={() => {
                 onSelectAnnotation(annotation);
               }}
               data-state={selectedAnnotation?.metadata.id == annotation.metadata.id ? "selected" : ""}
             >
               <TableCell
-                class="hoverable flex justify-between p-0"
+                class="flex justify-between p-0"
                 ondblclick={() => {
                   pos_offset = annotation.shape.start;
                   onSeekFrame(annotation.shape.start);
@@ -240,6 +240,7 @@
                   <Trash2 />
                 </Button>
               </TableCell>
+
               <TableCell class="p-0">
                 <Timeline
                   {annotation}
@@ -256,6 +257,7 @@
             <style>
               .hoverable:hover .hovered {
                 display: inline-block;
+                cursor: pointer;
               }
               .hoverable .hovered {
                 display: none;
