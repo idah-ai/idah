@@ -83,8 +83,14 @@
 
   async function haveAnnotationsInCategory(categoryId: string): Promise<boolean> {
     if (!db || !categoryId) return false;
+    const allAnnotations = await db.getAllStartingWith("category", categoryId);
+    const filterAnnotations = allAnnotations.filter((annotation) => {
+      return (
+        currentFrame >= annotation.shape.start && currentFrame <= annotation.shape.end && annotation.shape.type == type
+      );
+    });
 
-    return (await db.getAllIndex("category", categoryId)).length > 0;
+    return filterAnnotations.length > 0;
   }
 </script>
 
