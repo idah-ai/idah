@@ -206,6 +206,7 @@
           class={cn(
             "focus:bg-accent flex w-full items-center justify-between p-2",
             !category.requiredNested ? "hover:cursor-pointer" : "",
+            { "bg-gray-100": selected == category.id },
           )}
           onclick={() => {
             if (category.nestedCategories || hasAnnotations) {
