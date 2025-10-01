@@ -82,6 +82,7 @@ RSpec.describe AccountsExpo, type: :exposition, as: :system do
     expect(service).to receive(:update) do |args|
       expect(args.id).to eq 1
       expect(args.attributes[:name]).to eq "Test User"
+      expect(args.attributes[:email]).to eq nil # Email is readonly
       expect(args.attributes[:enabled]).to eq true
       account_record
     end
