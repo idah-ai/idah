@@ -6,8 +6,8 @@ class EntriesExpo < BaseExpo
   use_service Entry::Service
 
   json_api Entry::Record, http_opts: { auth: nil } do
-   allowed_included "dataset", "dataset.project"
-   show
+    allowed_included "dataset", "dataset.project"
+    show
     index do
       allowed_filters :status__in,
                       :priority__in,
