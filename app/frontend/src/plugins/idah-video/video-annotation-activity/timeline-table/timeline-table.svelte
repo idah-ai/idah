@@ -103,7 +103,7 @@
       included: ["dataset"],
     });
     const labelingConfiguration = entryResponse?.data.dataset.labeling_configuration;
-    const index = getSelectedAnnotationIndex(annotations, selected);
+    const index = await getSelectedAnnotationIndex(categoryId, selected.metadata.id);
     const titleName = labelingConfiguration?.categories?.find((c) => c.id === categoryId)?.label || categoryId;
 
     return [titleName, index].join("_");
@@ -112,11 +112,9 @@
   async function getSelectedAnnotationIndex(categoryId: string, annotationId: string) {
     if (!db) return 0;
 
-    const res = (await db.getAllIndex("category", categoryId)).findIndex(
-      (annotation) => annotation.metadata.id === annotationId,
+    return (await db.getAllIndex("category", categoryId)).findIndex(
+      (annotation) => annotation.metadata.id == annotationId,
     ) as number;
-
-    return res;
   }
 </script>
 
