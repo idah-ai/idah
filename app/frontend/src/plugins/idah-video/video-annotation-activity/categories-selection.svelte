@@ -1,16 +1,17 @@
 <script lang="ts">
   import Badge from "@/components/ui/badge/badge.svelte";
+  import Button from "@/components/ui/button/button.svelte";
   import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+  import { cn } from "@/utils";
+  import { Eye, LockOpen, Trash2 } from "@lucide/svelte";
+  import { idb_updated_at, uncategorizedAnnotations } from "./idb_store.svelte";
   import { SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
 
   import type { CategoryConfiguration, VideoAnnotation } from "./VideoAnnotationContext";
   import type { CategoryDefinition } from "@/context/ActivityContext";
   import type { AnnotationsIndexedDB } from "./indexedDB";
-  import { idb_updated_at, uncategorizedAnnotations } from "./idb_store.svelte";
-  import Button from "@/components/ui/button/button.svelte";
-  import { Eye, LockOpen, Trash2 } from "@lucide/svelte";
-  import { cn } from "@/utils";
 
+  // Props
   let {
     type,
     currentFrame,
@@ -188,7 +189,6 @@
   onSelect: (selection?: string) => void,
   selected: string | undefined,
   parent: string[] = [],
-  open: boolean = false,
 )}
   <Collapsible>
     {#key forceRender}
@@ -251,14 +251,10 @@
 
       {#if subCategories}
         {#each subCategories as subCategory}
-          {@render categorySelection(
-            subCategory,
-            subCategory.nestedCategories,
-            onSelect,
-            selected,
-            [...parent, category.id.split("/").slice(parent.length)[0]],
-            openStates[subCategory.id] || false,
-          )}
+          {@render categorySelection(subCategory, subCategory.nestedCategories, onSelect, selected, [
+            ...parent,
+            category.id.split("/").slice(parent.length)[0],
+          ])}
           <!-- pass managed open state for children -->
         {/each}
       {/if}

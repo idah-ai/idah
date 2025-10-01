@@ -1,5 +1,9 @@
 <script lang="ts">
   import { Button } from "@/components/ui/button";
+  import { boundingBoxes } from "../idb_store.svelte";
+  import { DatasetRecord } from "@/data/model/dataset/dataset-record";
+  import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
+  import { page } from "$app/state";
   import { Slider } from "@/components/ui/slider";
   import {
     Table,
@@ -11,11 +15,11 @@
     TableHeader,
     TableRow,
   } from "@/components/ui/table";
-  import type { VideoAnnotation } from "../VideoAnnotationContext";
   import Timeline from "./timeline.svelte";
-  import type { AnnotationsIndexedDB } from "../indexedDB";
-  import { boundingBoxes, idb_updated_at } from "../idb_store.svelte";
+  import Trash_2 from "@lucide/svelte/icons/trash-2";
+  import type { VideoAnnotation } from "../VideoAnnotationContext";
 
+  // Props
   let {
     tracking = false,
     scale = 1,
@@ -82,7 +86,11 @@
     scale = Math.max(1, Math.min(Math.ceil(totalFrames / zoom), value));
   }
 
-  async function getCategoryName(categoryId: string | undefined) {
+  async function getCategoryName(
+    categoryId: string | undefined,
+    annotations: VideoAnnotation[],
+    selected: VideoAnnotation,
+  ) {
     if (!categoryId) return "Uncategorized";
     const entryId = page.params.entryId as string;
     const entryResponse = await entriesBackendDataSource.get(entryId, {
@@ -92,7 +100,10 @@
       included: ["dataset"],
     });
     const labelingConfiguration = entryResponse?.data.dataset.labeling_configuration;
-    return labelingConfiguration?.categories?.find((c) => c.id === categoryId)?.label || categoryId;
+    const index = getSelectedAnnotationIndex(annotations, selected);
+    const titleName = labelingConfiguration?.categories?.find((c) => c.id === categoryId)?.label || categoryId;
+
+    return [titleName, index].join(" - ");
   }
 
   function getSelectedAnnotationIndex(annotations: VideoAnnotation[], selected: VideoAnnotation) {
@@ -110,13 +121,17 @@
       data-state={selectedAnnotation?.metadata.id == annotation.metadata.id ? "selected" : ""}
     >
       <TableCell
-        class="hoverable p-0"
+        class="hoverable flex items-center justify-between p-0"
         ondblclick={() => {
           pos_offset = annotation.shape.start;
           onSeekFrame(annotation.shape.start);
         }}
       >
-        {[annotation.value.category?.split("/").reverse()[0], annotation.metadata.id].filter((a) => a).join(" - ")}
+        {#await getCategoryName(annotation.value.category, annotations, annotation)}
+          <span>Loading...</span>
+        {:then title}
+          <span class="px-2">{title}</span>
+        {/await}
 
         <Button
           class="hovered"
@@ -125,12 +140,7 @@
             onDeleteAnnotation(annotation);
           }}
         >
-          <svg class="h-100" viewBox="0 0 12 15" xmlns="http://www.w3.org/2000/svg">
-            <path
-              class="fill-secondary"
-              d="M9.33329 5V13.3333H2.66663V5H9.33329ZM8.08329 0H3.91663L3.08329 0.833333H0.166626V2.5H11.8333V0.833333H8.91663L8.08329 0ZM11 3.33333H0.999959V13.3333C0.999959 14.25 1.74996 15 2.66663 15H9.33329C10.25 15 11 14.25 11 13.3333V3.33333Z"
-            />
-          </svg>
+          <Trash_2></Trash_2>
         </Button>
       </TableCell>
       <TableCell class="p-0">
