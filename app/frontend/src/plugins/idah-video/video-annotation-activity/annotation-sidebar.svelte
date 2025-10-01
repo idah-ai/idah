@@ -29,6 +29,7 @@
     annotationValue,
     onEditValue,
     onSelectAnnotation,
+    onDeleteAnnotation,
     context,
     mode,
     currentFrame,
@@ -38,6 +39,7 @@
     annotationValue: AnnotationValue;
     onEditValue: (annotationValue: AnnotationValue, mode: string) => void;
     onSelectAnnotation: (annotation: VideoAnnotation) => void;
+    onDeleteAnnotation: (annotation: VideoAnnotation) => void;
     context: IActivityContext;
     mode: string;
     db?: AnnotationsIndexedDB;
@@ -122,6 +124,7 @@
                 categories={items as CategoryConfiguration[]}
                 selected={annotationValue.category}
                 {onSelectAnnotation}
+                {onDeleteAnnotation}
                 onSelect={(s) => categorySelection(category, s)}
               />
             </SidebarGroupContent>
