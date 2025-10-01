@@ -40,7 +40,6 @@ export type DataTableColumnFilterOperation =
   | "contains"
   | "match";
 
-/** eslint-disabled-next-line @typescript-eslint/no-empty-object-type */
 export interface ColumnSettings<T extends Record> {
   label: string;
   dataType: DataTableColumnDataType;
@@ -53,10 +52,14 @@ export interface ColumnSettings<T extends Record> {
     filterOperation: DataTableColumnFilterOperation;
     choices?: LabelValue<string | number | boolean>[];
   };
+
+  /** eslint-disable-next-line @typescript-eslint/no-empty-object-type */
   filterComponent?: Component<DataTableFilterBaseProps<T>, {}, "">;
   align?: "left" | "center" | "right";
   visible: boolean;
   hidable: boolean;
+
+  /** eslint-disable-next-line @typescript-eslint/no-empty-object-type */
   cellComponent?: Component<DataTableCellBaseProps<T>, {}, "">;
   cellComponentProps?: Hash;
   cellOptions?: {
