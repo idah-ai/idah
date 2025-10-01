@@ -7,6 +7,7 @@
   import FormFieldErrors from "@/components/app/forms/form-field-errors.svelte";
   import FormFieldInfo from "@/components/app/forms/form-field-info.svelte";
   import FormFieldLabel from "@/components/app/forms/form-field-label.svelte";
+  import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
   import Spinner from "@/components/app/loading/spinner.svelte";
 
@@ -22,17 +23,20 @@
   interface Props extends SelectDataSourceFieldBaseProps<T> {
     value: string | number | null;
   }
+
   let {
     displayKey,
     dataSource,
     listOptions,
-    value = $bindable(null),
+    value = null,
     name,
     label,
     placeholder = "Select an option",
     searchable = false,
     searchPlaceholder = "Search an option",
+    searchValue = $bindable(""),
     clearable = false,
+    searchKeyWithOperation,
     disabled = false,
     required = false,
     info,
@@ -90,6 +94,11 @@
     /** Set default sort */
     if (!listOpts.sort) listOpts.sort = ["-id"];
 
+    if (searchValue) {
+      if (!listOpts.filters) listOpts.filters = {};
+      listOpts.filters[searchKeyWithOperation] = searchValue;
+    }
+
     const response = await dataSource.list(listOpts);
 
     return response.data.map((item) => ({
@@ -127,7 +136,7 @@
           onclick={openPopover}
         >
           {#if selectedChoice}
-            {selectedChoice.label}
+            <span class="truncate">{selectedChoice.label}</span>
           {:else}
             <span class="text-muted-foreground">{placeholder}</span>
           {/if}
@@ -147,11 +156,16 @@
       {/if}
     </PopoverTrigger>
 
-    <PopoverContent align="start" class="p-0">
+    <PopoverContent align="start" class="w-auto p-0">
       <Command>
-        <!-- {#if searchable}
-          <CommandInput placeholder={searchPlaceholder}></CommandInput>
-        {/if} -->
+        {#if searchable}
+          <InputField
+            name="filter/single-select/{searchKeyWithOperation}"
+            placeholder={searchPlaceholder}
+            value={searchValue}
+            oninput={(e) => (searchValue = e.currentTarget.value)}
+          ></InputField>
+        {/if}
 
         <CommandList>
           <CommandEmpty>No option found.</CommandEmpty>

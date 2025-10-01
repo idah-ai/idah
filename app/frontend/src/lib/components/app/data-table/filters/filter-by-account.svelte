@@ -1,7 +1,7 @@
 <script lang="ts">
   import SingleSelectDatasourceField from "@/components/app/forms/fields/select/single/single-select-datasource-field.svelte";
 
-  import { ProjectMemberRecord, projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
+  import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
 
   import type {
     DataTableColumnFilterOperation,
@@ -12,9 +12,9 @@
   // Props
   let { columnSetting, filters, onFilter }: DataTableFilterBaseProps<EntryRecord> = $props();
 
-  // Varibles
-  const resource: string = ProjectMemberRecord.type;
-  const filterKey: string = columnSetting.filterOptions?.filterKey || "project_member_id";
+  // Variables
+  const resource: string = AccountRecord.type;
+  const filterKey: string = columnSetting.filterOptions?.filterKey || "account_id";
   const filterOperation: DataTableColumnFilterOperation = columnSetting.filterOptions?.filterOperation || "eq";
   const filterKeyWithOperation: string = `${filterKey}__${filterOperation}`;
 
@@ -29,10 +29,10 @@
 </script>
 
 <SingleSelectDatasourceField
-  name="{resource}/project_member_id"
-  dataSource={projectMembersBackendDataSource}
-  displayKey="email"
+  name="{resource}/account_id"
+  dataSource={accountsBackendDataSource}
+  displayKey="name"
   value={filters[filterKeyWithOperation]}
-  onValueChange={handleFilter}
   searchKeyWithOperation="email__match"
+  onValueChange={handleFilter}
 ></SingleSelectDatasourceField>
