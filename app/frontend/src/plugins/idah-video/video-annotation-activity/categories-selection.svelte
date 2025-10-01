@@ -262,45 +262,25 @@
   </Collapsible>
 {/snippet}
 
-<Collapsible>
-  <CollapsibleTrigger>
-    Cagegories
-    {#key $idb_updated_at}
-      <Badge variant="secondary">
-        {#await db?.getAllIndex("category")}
-          ...
-        {:then anns}
-          {anns?.filter(
-            (annotation) =>
-              currentFrame >= annotation.shape.start &&
-              currentFrame <= annotation.shape.end &&
-              annotation.shape.type == type,
-          ).length}
-        {/await}
-      </Badge>
-    {/key}
-  </CollapsibleTrigger>
-  <CollapsibleContent style={"margin-left:10px"}>
-    {#if db}
-      {#key [db, $idb_updated_at]}
-        {#await uncategorized_promise}
-          {#each $uncategorizedAnnotations.filter((annotation) => {
-            return currentFrame >= annotation.shape.start && currentFrame <= annotation.shape.end && annotation.shape.type == type;
-          }) as annotation}
-            {@render annotationSelection(annotation, annotation.value.label || annotation.metadata.id)}
-          {/each}
-        {:then annotations}
-          {#each annotations.filter((annotation) => {
-            return currentFrame >= annotation.shape.start && currentFrame <= annotation.shape.end && annotation.shape.type == type;
-          }) as annotation}
-            {@render annotationSelection(annotation, annotation.value.label || annotation.metadata.id)}
-          {/each}
-        {/await}
-      {/key}
-    {/if}
+<!-- Main component template -->
+{#if db}
+  {#key [db, $idb_updated_at]}
+    {#await uncategorized_promise}
+      {#each $uncategorizedAnnotations.filter((annotation) => {
+        return currentFrame >= annotation.shape.start && currentFrame <= annotation.shape.end && annotation.shape.type == type;
+      }) as annotation}
+        {@render annotationSelection(annotation, annotation.value.label || annotation.metadata.id)}
+      {/each}
+    {:then annotations}
+      {#each annotations.filter((annotation) => {
+        return currentFrame >= annotation.shape.start && currentFrame <= annotation.shape.end && annotation.shape.type == type;
+      }) as annotation}
+        {@render annotationSelection(annotation, annotation.value.label || annotation.metadata.id)}
+      {/each}
+    {/await}
+  {/key}
+{/if}
 
-    {#each categoriesTree as category}
-      {@render categorySelection(category, category.nestedCategories, onSelect, selected)}
-    {/each}
-  </CollapsibleContent>
-</Collapsible>
+{#each categoriesTree as category}
+  {@render categorySelection(category, category.nestedCategories, onSelect, selected)}
+{/each}
