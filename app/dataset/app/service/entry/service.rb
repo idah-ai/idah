@@ -8,16 +8,16 @@ module Entry
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       entries.index(
         filter,
-        included: included,
-        page: page,
-        items_per_page: items_per_page,
-        sort: sort,
-        query_count: query_count
+        included:,
+        page:,
+        items_per_page:,
+        sort:,
+        query_count:
       )
     end
 
     def show(id, included: [])
-      entries.find!(id, included: included)
+      entries.find!(id, included:)
     end
 
     def create(record)

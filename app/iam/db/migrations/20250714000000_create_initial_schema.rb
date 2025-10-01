@@ -25,8 +25,8 @@ Sequel.migration do
 
     create_table(:teams) do
       primary_key :id, :bigserial
-
       column :name, String
+
       Migration::Timestamps.timestamps(self)
     end
     Migration::Timestamps.trg_updated_at(self, :teams)

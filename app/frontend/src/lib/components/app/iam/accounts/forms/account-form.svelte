@@ -11,7 +11,7 @@
   interface Props extends FormBaseProps {
     account: AccountRecord;
   }
-  let { account, onValueChange }: Props = $props();
+  let { account, fieldErrors, onValueChange }: Props = $props();
 
   // Variables
   let resource: string = AccountRecord.type;
@@ -34,7 +34,7 @@
     label="Name"
     placeholder="E.g. John Doe"
     required
-    errors={account.errors["name"]}
+    errors={fieldErrors["name"]}
     bind:value={name}
   />
 
@@ -45,7 +45,7 @@
     placeholder="E.g. john.doe@example.com"
     type="email"
     required
-    errors={account.errors["email"]}
+    errors={fieldErrors["email"]}
     bind:value={email}
   />
 
@@ -56,6 +56,7 @@
     info="Allow this account to access the application"
     bordered
     required
+    errors={fieldErrors["enabled"]}
     bind:checked={enabled}
   ></CheckboxField>
 </Form>

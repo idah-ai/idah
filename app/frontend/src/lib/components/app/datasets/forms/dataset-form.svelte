@@ -10,8 +10,9 @@
   // Props
   interface Props extends FormBaseProps {
     dataset: DatasetRecord;
+    newRecord: boolean;
   }
-  let { dataset, onValueChange }: Props = $props();
+  let { dataset, newRecord, fieldErrors, onValueChange }: Props = $props();
 
   // Variables
   let resource = "dataset";
@@ -44,7 +45,7 @@
     label="Name"
     placeholder="Enter dataset name"
     required
-    errors={dataset.errors?.["name"]}
+    errors={fieldErrors["name"]}
     bind:value={name}
   />
 
@@ -54,8 +55,9 @@
     label="Modality"
     placeholder="Select modality"
     choices={modalityOptions}
-    required
-    errors={dataset.errors?.["modality"]}
+    required={newRecord}
+    disabled={!newRecord}
+    errors={fieldErrors["modality"]}
     bind:value={modality}
   />
 </Form>
