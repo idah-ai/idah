@@ -1,5 +1,4 @@
 <script lang="ts">
-  import Button from "@/components/ui/button/button.svelte";
   import Text from "@/components/ui/text/Text.svelte";
   import { cn } from "@/utils";
 

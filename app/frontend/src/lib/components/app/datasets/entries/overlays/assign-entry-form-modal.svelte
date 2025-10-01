@@ -48,6 +48,7 @@
     try {
       await assignMember();
     } catch (error) {
+      console.error(error);
     } finally {
       submitting = false;
     }
