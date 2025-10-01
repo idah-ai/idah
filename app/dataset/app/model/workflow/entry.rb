@@ -29,7 +29,7 @@ module Workflow
 
     def sample_rate
       # Get sample rate from dataset workflow configuration
-      @entry.dataset.workflow_configuration["sample_rate"] || 1
+      @entry.dataset.workflow_configuration[:sample_rate] || 1
     end
 
     def should_sample?

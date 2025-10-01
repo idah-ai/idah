@@ -62,8 +62,10 @@ class EntriesExpo < BaseExpo
     desc "Trigger error event for an entry"
     input do
       field :id, String
-      field? :data, Hash do
-        field? :attributes, Hash
+      field :data, Hash do
+        field :attributes, Hash do
+          field :message, String
+        end
       end
     end
   end
