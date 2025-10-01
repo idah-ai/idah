@@ -24,9 +24,32 @@ export class MediaRecord extends Record {
 
 RecordFactory.registerTypes(MediaRecord);
 
-const mediaBasePath = "https://idah.localhost:8443/api/v1/media/medias";
+const mediaBasePath = `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias`;
 
 export const mediaBackendDataSource = createBackendDataSource(MediaRecord, mediaBasePath, {
+  // getInfo: async() => {},
+  getFiles: async (params: { resource: string; key?: string }): Promise<string> => {
+    const { resource, key } = params;
+    const getFilesPath = key ? `${mediaBasePath}/files/${resource}/${key}` : `${mediaBasePath}/files/${resource}`;
+    const response = await fetch(getFilesPath, {
+      method: "GET",
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch file: ${response.statusText}`);
+    }
+
+    if (!response.body) {
+      throw new Error("Response body is null");
+    }
+
+    // Convert ReadableStream to Blob
+    const blob = await response.blob();
+
+    // Create a blob URL that can be used in an <img> tag
+    const blobUrl = URL.createObjectURL(blob);
+    return blobUrl;
+  },
   upload: async (
     file: File,
     resource: string,

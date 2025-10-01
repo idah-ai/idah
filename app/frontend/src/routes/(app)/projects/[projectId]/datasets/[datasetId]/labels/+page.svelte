@@ -18,9 +18,9 @@
     type TagField,
   } from "@/data/model/dataset/labels";
   import { SaveIcon } from "@lucide/svelte";
+  import { slugify } from "@/utils/string";
 
   // Variables
-  let projectId: string = page.params.projectId as string;
   let datasetId: string = page.params.datasetId as string;
 
   let saving: boolean = $state(false);
@@ -35,8 +35,6 @@
   let usedColors = $derived.by(() => {
     return labelConfig ? labelConfig.categories.map((cat) => cat.color) : [];
   });
-
-  $inspect(labelConfig);
 
   const availableColors = $derived(labelColors.filter((color) => !usedColors.includes(color.color)));
   const firstAvailableColor = $derived.by(() => {
@@ -68,23 +66,26 @@
       initialLabelConfig = JSON.parse(JSON.stringify(updatedDatasetRes.data.labeling_configuration));
       toast.success("Labeling configuration changes saved successfully.");
     } catch (error) {
+      console.error(error);
       toast.error("Failed to save labeling configuration changes.");
     } finally {
       saving = false;
     }
   }
 
-  function addNewCategory(nodeId?: string) {
+  function addCategory(nodeId?: string) {
     if (!labelConfig) return;
 
-    const newId = new Date().getTime().toString();
+    const currentTime = new Date().getTime().toString();
+    const newLabel = "New Category";
+    const newId = slugify(`${newLabel} ${currentTime}`);
 
     /** Add a new root category, if nodeId is not provided */
     if (!nodeId) {
       labelConfig.categories.push({
-        id: `${newId}`,
+        id: newId,
         type: defaultCategoryType,
-        label: "New Category",
+        label: newLabel,
         color: firstAvailableColor,
       });
       return;
@@ -94,8 +95,8 @@
     /** Add a new sub-category, if parent category not exists */
     if (!parentCategories.length) {
       labelConfig.categories.push({
-        id: `${nodeId}/${newId}`,
-        label: `${nodeId}/${newId}`,
+        id: `${nodeId}/${currentTime}`,
+        label: `${nodeId}/${currentTime}`,
         type: defaultCategoryType,
         color: firstAvailableColor,
       });
@@ -106,16 +107,16 @@
     if (parentCategories.length === 1) {
       const parentCategoryIndex = labelConfig.categories.findIndex((cat) => cat.id === nodeId);
       if (parentCategoryIndex !== -1) {
-        /** Update the existing one with newId */
+        /** Update the existing one with currentTime */
         labelConfig.categories[parentCategoryIndex] = {
           ...labelConfig.categories[parentCategoryIndex],
-          id: `${labelConfig.categories[parentCategoryIndex].id}/${newId}`,
+          id: `${labelConfig.categories[parentCategoryIndex].id}/${currentTime}`,
         };
       } else {
         /** Just in case, if not found, add a new one */
         labelConfig.categories.push({
-          id: `${nodeId}/${newId}`,
-          label: `${nodeId}/${newId}`,
+          id: `${nodeId}/${currentTime}`,
+          label: `${nodeId}/${currentTime}`,
           type: defaultCategoryType,
           color: firstAvailableColor,
         });
@@ -126,8 +127,8 @@
 
     /** Add a new sub-category, if multiple parent categories exist */
     labelConfig.categories.push({
-      id: `${nodeId}/${newId}`,
-      label: `${nodeId}/${newId}`,
+      id: `${nodeId}/${currentTime}`,
+      label: `${nodeId}/${currentTime}`,
       type: defaultCategoryType,
       color: firstAvailableColor,
     });
@@ -139,7 +140,16 @@
     const categoryToUpdateIndex = labelConfig.categories.findIndex((cat) => cat.id === category.id);
 
     if (categoryToUpdateIndex >= 0) {
-      labelConfig.categories[categoryToUpdateIndex] = category;
+      const existingCategory = labelConfig.categories[categoryToUpdateIndex];
+      // labelConfig.categories[categoryToUpdateIndex] = category;
+      const slugifiedLabel: string = slugify(category.label);
+      const newId = existingCategory.id.split("/").slice(0, -1).concat(slugifiedLabel).join("/");
+
+      labelConfig.categories[categoryToUpdateIndex] = {
+        ...existingCategory,
+        label: category.label,
+        id: newId,
+      };
     } else {
       labelConfig.categories.push(category);
     }
@@ -152,7 +162,7 @@
 
     if (categoryToUpdateIndex >= 0) {
       labelConfig.categories[categoryToUpdateIndex].id = newId;
-      labelConfig.categories[categoryToUpdateIndex].label = newId;
+      // labelConfig.categories[categoryToUpdateIndex].label = newId;
     }
   }
 
@@ -275,7 +285,7 @@
 
   <LabelEditor
     {labelConfig}
-    onAddCategory={addNewCategory}
+    onAddCategory={addCategory}
     onEditCategory={editCategory}
     onEditCategoryId={editCategoryId}
     onRemoveCategory={removeCategory}
