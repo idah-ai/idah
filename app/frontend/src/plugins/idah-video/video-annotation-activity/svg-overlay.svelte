@@ -205,7 +205,7 @@
                                     points={currentShape(annotation.shape, frame) || []}
                                     ratio={target_size}
                                     offset={zoomInfo.offset}
-                                    color={'deeppink'}
+                                    color={annotation.synced ? '#E2E8F0': 'grey'}
                                     onmousedown={ (e)=> {
                                         if (mode == 'visual'){
                                             e.stopPropagation()

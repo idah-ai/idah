@@ -30,7 +30,7 @@ const CommonInjecter = (context: KeyMapContext) => {
   return (b) => {
     b.on([b.Alt], "S", flushAction, "Flush", "flush action");
     b.on([b.Ctrl], "Z", undoAction, "Undo", "Undo last action");
-    b.on(null, "Meta", toggleCommand, "Commands Dialog", "Toggle this commands dialog");
+    b.on([b.Ctrl], "Space", toggleCommand, "Commands Dialog", "Toggle this commands dialog");
 
     b.on([b.Ctrl, b.Shift], "Z", redoAction, "Redo", "Redo last undone action if any");
     // b.on(null, "D", enterMode(ShortcutManager.defaultMode, true), "Default View", "Reset View");
