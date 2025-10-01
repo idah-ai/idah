@@ -1,0 +1,7 @@
+{
+  "type": "idah-plugin",
+  "name": "idah-video-annotation",
+  "version": "1.0.0",
+  "description": "A web application for annotating videos with bounding boxes and labels.",
+  "frontendMountingPoint": "src/index.js"
+}

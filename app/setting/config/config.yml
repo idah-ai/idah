@@ -1,0 +1,55 @@
+service_name: setting
+description: Setting and Plugins Management Service
+em:
+  adapter: redis
+plugins:
+  - name: http
+    config:
+      show_error_details: <%= ENV.fetch("LOG_SHOW_ERROR_DETAILS", "true") %>
+  - name: sequel
+    config:
+      mode: simple
+      extensions:
+        - pg_json
+        - pg_array
+        - pg_enum
+      db:
+        uri: <%= ENV.fetch("DATABASE_URI") %>
+  - name: shrine
+    config:
+      storages:
+        - name: default
+          adapter: s3
+          config:
+            bucket: <%= ENV.fetch("MEDIAS_FILES_BUCKET") %>
+            access_key_id: <%= ENV.fetch("MEDIAS_FILES_ACCESS_KEY_ID") %>
+            secret_access_key: <%= ENV.fetch("MEDIAS_FILES_SECRET_ACCESS_KEY") %>
+            public: false
+            region: <%= ENV.fetch("MEDIAS_FILES_REGION") %>
+            prefix: files
+            endpoint: <%= ENV.fetch("MEDIAS_FILES_ENDPOINT") %> # https://storage.googleapis.com
+  - name: redis
+    config:
+      url: <%= ENV.fetch("REDIS_STREAM_URL") %>
+      max_connections: 10
+
+kv_store:
+  adapter: Verse::Redis::KVStore
+  config:
+    plugin: :redis
+    key_prefix: "setting:keys"
+
+lock:
+  adapter: Verse::Redis::Lock
+  config:
+    plugin: redis
+    key_prefix: "setting:locks"
+
+counter:
+  adapter: Verse::Redis::Counter
+  config:
+    plugin: redis
+    key_prefix: "setting:counters"
+
+logging:
+  level: <%= ENV.fetch("LOG_LEVEL", "info") %>
