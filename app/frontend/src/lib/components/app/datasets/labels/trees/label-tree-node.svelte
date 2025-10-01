@@ -1,7 +1,7 @@
 <script lang="ts" module>
   import Badge from "@/components/ui/badge/badge.svelte";
   import Button from "@/components/ui/button/button.svelte";
-  import { Command, CommandGroup, CommandItem } from "@/components/ui/command";
+  import { Command, CommandGroup } from "@/components/ui/command";
   import {
     DropdownMenu,
     DropdownMenuContent,
@@ -13,6 +13,7 @@
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import Kbd from "@/components/app/texts/kbd.svelte";
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+  import SingleSelectField from "@/components/app/forms/fields/select/single/single-select-field.svelte";
   import Text from "@/components/ui/text/Text.svelte";
   import Tooltips from "@/components/app/tooltips/tooltips.svelte";
 
@@ -90,29 +91,24 @@
             </Tooltips>
           </PopoverTrigger>
 
-          <PopoverContent align="start" class="p-0">
+          <PopoverContent align="center" side="right" class="p-0">
             <Command>
               <CommandGroup heading="Type">
-                {#each annotationTypes as { label, value, icon: Icon } (value)}
-                  <CommandItem
-                    onclick={() =>
-                      onEditCategory({
-                        id: node.id,
-                        type: `${node.type.split(":")[0]}:${value}`,
-                        color: node.color,
-                        text_color: node.text_color,
-                        label: node.label,
-                      })}
-                  >
-                    <Icon class="size-4"></Icon>
-
-                    {label}
-
-                    {#if node.type.includes(value)}
-                      <CheckIcon class="ml-auto size-4"></CheckIcon>
-                    {/if}
-                  </CommandItem>
-                {/each}
+                <SingleSelectField
+                  name="{node.id}/type"
+                  class="px-2"
+                  choices={annotationTypes.map((t) => ({ label: t.label, value: t.value }))}
+                  value={node.type.split(":")[1]}
+                  onValueChange={(value) => {
+                    onEditCategory({
+                      id: node.id,
+                      type: `${node.type.split(":")[0]}:${value}`,
+                      color: node.color,
+                      text_color: node.text_color,
+                      label: node.label,
+                    });
+                  }}
+                ></SingleSelectField>
               </CommandGroup>
 
               <CommandGroup heading="Shortcut Key"></CommandGroup>

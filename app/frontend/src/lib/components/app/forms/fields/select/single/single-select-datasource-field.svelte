@@ -18,6 +18,7 @@
   import type { LabelValue } from "@/utils/types";
   import type { Record } from "@/data/model/Record";
   import type { ListOptions } from "@/data/DataSource";
+  import type { FormEventHandler } from "svelte/elements";
 
   // Props
   interface Props extends SelectDataSourceFieldBaseProps<T> {
@@ -26,6 +27,7 @@
 
   let {
     displayKey,
+    valueKey = "id" as keyof T,
     dataSource,
     listOptions,
     value = null,
@@ -62,7 +64,7 @@
       const choiceRes = await dataSource.get(String(value));
       selectedChoice = {
         label: choiceRes.data[displayKey],
-        value: choiceRes.data.id,
+        value: choiceRes.data[valueKey],
         data: choiceRes.data,
       };
     }
@@ -95,18 +97,25 @@
     if (!listOpts.sort) listOpts.sort = ["-id"];
 
     if (searchValue) {
-      if (!listOpts.filters) listOpts.filters = {};
-      listOpts.filters[searchKeyWithOperation] = searchValue;
+      listOpts.filters = {
+        ...listOpts.filters,
+        [searchKeyWithOperation]: searchValue,
+      };
     }
 
     const response = await dataSource.list(listOpts);
 
     return response.data.map((item) => ({
       label: item[displayKey],
-      value: item.id,
+      value: item[valueKey],
       data: item,
     }));
   }
+
+  const filterChoices: FormEventHandler<HTMLInputElement> = async (event) => {
+    searchValue = event.currentTarget.value;
+    choices = await fetchChoices();
+  };
 
   async function select(choice: Choice): Promise<void> {
     value = choice.value;
@@ -156,20 +165,21 @@
       {/if}
     </PopoverTrigger>
 
-    <PopoverContent align="start" class="w-auto p-0">
+    <PopoverContent align="start" class="w-auto min-w-64 p-0">
       <Command>
-        {#if searchable}
-          <InputField
-            name="filter/single-select/{searchKeyWithOperation}"
-            placeholder={searchPlaceholder}
-            value={searchValue}
-            oninput={(e) => (searchValue = e.currentTarget.value)}
-          ></InputField>
-        {/if}
-
         <CommandList>
-          <CommandEmpty>No option found.</CommandEmpty>
           <CommandGroup>
+            {#if searchable}
+              <InputField
+                name="filter/single-select/{searchKeyWithOperation}"
+                placeholder={searchPlaceholder}
+                value={searchValue}
+                oninput={filterChoices}
+              ></InputField>
+            {/if}
+
+            <CommandEmpty>No option found.</CommandEmpty>
+
             {#await initialFetchChoices()}
               <Spinner></Spinner>
             {:then _}

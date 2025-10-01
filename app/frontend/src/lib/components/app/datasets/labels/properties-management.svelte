@@ -7,6 +7,7 @@
   import PropertyCard from "@/components/app/datasets/labels/cards/property-card.svelte";
 
   import { BoltIcon, PlusIcon } from "@lucide/svelte";
+  import { slugify } from "@/utils/string";
 
   import type { LabelingConfiguration, PropertyField } from "@/data/model/dataset/labels";
 
@@ -22,9 +23,12 @@
 
   // Functions
   function addNewProperty() {
+    const propertyExists = labelConfig.properties && labelConfig.properties.length > 0;
+    const newPropertyLabel: string = `Property ${propertyExists ? labelConfig.properties.length + 1 : 1}`;
+
     onSetProperty({
-      id: crypto.randomUUID(),
-      label: `Property ${labelConfig.properties.length + 1}`,
+      id: slugify(newPropertyLabel),
+      label: newPropertyLabel,
       type: "text",
       description: "",
       required: false,
@@ -32,6 +36,7 @@
         minimum: null,
         maximum: null,
         step: 1,
+        info: null,
         options: [],
       },
       selector: [],

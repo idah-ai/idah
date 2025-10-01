@@ -6,11 +6,13 @@
     ColumnSettings,
     FilterDataSourceParams,
     SortDataSourceParams,
+    TableData,
     TablePreferences,
   } from "@/components/app/data-table/data-table.types";
 
   // Props
   interface Props {
+    tableData: TableData<T>;
     columnKey: string;
     columnSetting: ColumnSettings<T>;
     tablePreferences: TablePreferences;
@@ -20,6 +22,7 @@
     onHide: (columnKey: string) => void;
   }
   let {
+    tableData,
     columnKey,
     columnSetting,
     tablePreferences,
@@ -31,6 +34,7 @@
 </script>
 
 <FilterSortDropdownMenu
+  contexts={tableData.contexts}
   {columnKey}
   {columnSetting}
   filters={tablePreferences.filters}
@@ -39,4 +43,3 @@
   {onSort}
   {onHide}
 ></FilterSortDropdownMenu>
-
