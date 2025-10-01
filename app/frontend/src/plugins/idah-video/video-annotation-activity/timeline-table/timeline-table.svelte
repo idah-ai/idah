@@ -121,7 +121,7 @@
       data-state={selectedAnnotation?.metadata.id == annotation.metadata.id ? "selected" : ""}
     >
       <TableCell
-        class="hoverable flex items-center justify-between p-0"
+        class="hoverable flex justify-between p-0"
         ondblclick={() => {
           pos_offset = annotation.shape.start;
           onSeekFrame(annotation.shape.start);
