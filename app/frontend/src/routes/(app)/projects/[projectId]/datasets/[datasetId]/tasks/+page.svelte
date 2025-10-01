@@ -37,6 +37,7 @@
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
   import { getEntryDropdownMenuActions } from "@/components/app/datasets/entries/dropdown-menus/entry-dropdown-menu";
   import { refetches } from "@/utils/refetch";
+  import { toast } from "svelte-sonner";
 
   import type { CollectionResponse } from "@/data/model/types";
   import type { ListOptions } from "@/data/DataSource";
@@ -206,9 +207,24 @@
   }
 
   async function deleteTasks(): Promise<void> {
+    for (const entryId of selectedRows) {
+      await entriesBackendDataSource.delete(entryId);
+    }
+
+    toast.success(`${selectedRowsCount} Task(s) successfully deleted.`);
+
+    selectedRows = [];
     $refetches.entries.list++;
+    openConfirmDeleteTasksModal = false;
   }
 </script>
+
+{#snippet AddTaskButton()}
+  <Button onclick={openNewTaskFormModal}>
+    <PlusIcon class="size-4"></PlusIcon>
+    Add Task
+  </Button>
+{/snippet}
 
 <PageHeader title="Datasets">
   {#snippet slotTitle()}
@@ -255,16 +271,16 @@
           {/if}
         </div>
 
-        <Button onclick={openNewTaskFormModal}>
-          <PlusIcon class="size-4" />
-          Add Task
-        </Button>
+        {@render AddTaskButton()}
       </div>
 
       {#if showFilterAndSortingSection}
         <div class="grid w-full grid-cols-1 gap-4 md:grid-cols-4">
           {#each Object.entries(entryColumns) as [columnKey, columnSetting] (columnKey)}
             <FilterSortDropdownMenu
+              contexts={{
+                projectId: page.params.projectId,
+              }}
               {columnKey}
               columnSetting={columnSetting as ColumnSettings<EntryRecord>}
               filters={listOptions.filters || {}}
@@ -323,10 +339,9 @@
               description={isFiltering ? "Try adjusting your filters." : "Please add task to get started."}
             >
               {#snippet actions()}
-                <Button onclick={openNewTaskFormModal}>
-                  <PlusIcon class="size-4" />
-                  Add Task
-                </Button>
+                {#if !isFiltering}
+                  {@render AddTaskButton()}
+                {/if}
               {/snippet}
             </ResponseBlock>
           </CardContent>
