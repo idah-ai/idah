@@ -29,7 +29,7 @@
             fluid: true,
             disablePictureInPicture: true,
             // sources: [
-            //     {src: 'https://idah.localhost:8443/api/v1/media/medias/files/410910ci5lpcck5qmh.mp4/master.m3u8'}
+            //     {src: `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files/410910ci5lpcck5qmh.mp4/master.m3u8`}
             // ]
             // poster:"",
     }
