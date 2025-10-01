@@ -125,7 +125,7 @@
                 selected={annotationValue.category}
                 {onSelectAnnotation}
                 {onDeleteAnnotation}
-                onSelect={(s) => categorySelection(category, s)}
+                onSelect={(selectedCategoryId) => categorySelection(mode, selectedCategoryId)}
               />
             </SidebarGroupContent>
           </SidebarGroup>

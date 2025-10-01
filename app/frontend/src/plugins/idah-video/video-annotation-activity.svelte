@@ -534,9 +534,9 @@
           onEditValue={(value: AnnotationValue, valueMode: string) => {
             annotationValue = value;
             mode = valueMode;
-            if (selectedAnnotation) {
-              updateAnnotationValue(selectedAnnotation, value);
-            }
+            // if (selectedAnnotation) {
+            //   updateAnnotationValue(selectedAnnotation, value);
+            // }
           }}
           onSelectAnnotation={selectAnnotation}
           {onDeleteAnnotation}
