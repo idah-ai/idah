@@ -539,6 +539,7 @@
             }
           }}
           onSelectAnnotation={selectAnnotation}
+          {onDeleteAnnotation}
           {context}
           {mode}
         />

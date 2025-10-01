@@ -20,6 +20,7 @@
     selected,
     onSelect,
     onSelectAnnotation,
+    onDeleteAnnotation,
     db,
   }: {
     type: string;
@@ -28,6 +29,7 @@
     selected: string | undefined;
     onSelect: (selection?: string) => void;
     onSelectAnnotation: (annotation: VideoAnnotation) => void;
+    onDeleteAnnotation: (annotation: VideoAnnotation) => void;
     db?: AnnotationsIndexedDB;
   } = $props();
 
@@ -101,7 +103,14 @@
             <LockOpen color="var(--color-gray-500)" />
           </Button>
 
-          <Button variant="ghost" size="icon" onclick={() => onSelect()}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onclick={(e) => {
+              e.stopPropagation();
+              onDeleteAnnotation(annotation);
+            }}
+          >
             <Trash2 color="var(--color-gray-500)" />
           </Button>
 
