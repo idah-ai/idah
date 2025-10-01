@@ -210,6 +210,13 @@
   }
 </script>
 
+{#snippet AddTaskButton()}
+  <Button onclick={openNewTaskFormModal}>
+    <PlusIcon class="size-4"></PlusIcon>
+    Add Task
+  </Button>
+{/snippet}
+
 <PageHeader title="Datasets">
   {#snippet slotTitle()}
     <div class="grid w-full gap-4">
@@ -255,10 +262,7 @@
           {/if}
         </div>
 
-        <Button onclick={openNewTaskFormModal}>
-          <PlusIcon class="size-4" />
-          Add Task
-        </Button>
+        {@render AddTaskButton()}
       </div>
 
       {#if showFilterAndSortingSection}
@@ -323,10 +327,9 @@
               description={isFiltering ? "Try adjusting your filters." : "Please add task to get started."}
             >
               {#snippet actions()}
-                <Button onclick={openNewTaskFormModal}>
-                  <PlusIcon class="size-4" />
-                  Add Task
-                </Button>
+                {#if !isFiltering}
+                  {@render AddTaskButton()}
+                {/if}
               {/snippet}
             </ResponseBlock>
           </CardContent>
