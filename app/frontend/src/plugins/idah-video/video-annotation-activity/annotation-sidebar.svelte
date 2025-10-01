@@ -36,7 +36,7 @@
   }: {
     currentFrame: number;
     annotationValue: AnnotationValue;
-    onEditValue: (annotationValue: AnnotationValue, mode: CategoryDefinition) => void;
+    onEditValue: (annotationValue: AnnotationValue, mode: string) => void;
     onSelectAnnotation: (annotation: VideoAnnotation) => void;
     context: IActivityContext;
     mode: string;
