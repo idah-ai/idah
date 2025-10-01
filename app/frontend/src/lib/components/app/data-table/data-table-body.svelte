@@ -21,7 +21,7 @@
 </script>
 
 <TableBody>
-  {#each tableData.response.data as record}
+  {#each tableData.response.data as record (record.id)}
     <TableRow>
       {#each Object.entries(columns) as [columnKey, columnSetting] (columnKey)}
         {@const { dataType, clickable, cellComponent: CellComponent, visible } = columnSetting}

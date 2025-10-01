@@ -33,7 +33,6 @@
   import { getTableState } from "@/components/app/data-table/data-table.stores.svelte";
 
   // Props
-  interface Props extends DataTableBaseProps<T> {}
   let {
     id,
     name: dataTableName,
@@ -47,7 +46,7 @@
     actions,
     emptyState,
     filteredState,
-  }: Props = $props();
+  }: DataTableBaseProps<T> = $props();
 
   // Contexts
   setContext("columns", _columns);

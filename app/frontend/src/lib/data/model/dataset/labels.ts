@@ -57,6 +57,7 @@ export interface PropertyField extends FieldBase {
   selector: Array<string>;
 }
 
+/* eslint-disable-next-line @typescript-eslint/no-empty-object-type */
 export interface TagField extends FieldBase {}
 
 export interface LabelingConfiguration {
