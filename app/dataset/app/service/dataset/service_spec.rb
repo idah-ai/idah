@@ -26,13 +26,13 @@ RSpec.describe Dataset::Service, database: true do
 
   describe "#index" do
     it "returns all datasets" do
-      dataset_id_1 = repo.create(attributes)
-      dataset_id_2 = repo.create(attributes.merge(labels: ["bird", "fish"]))
+      dataset1_id = repo.create(attributes)
+      dataset2_id = repo.create(attributes.merge(labels: ["bird", "fish"]))
 
       result = subject.index
 
       expect(result.count).to eq(2)
-      expect(result.map(&:id)).to include(dataset_id_1, dataset_id_2)
+      expect(result.map(&:id)).to include(dataset1_id, dataset2_id)
     end
 
     it "returns datasets with pagination" do
@@ -45,13 +45,13 @@ RSpec.describe Dataset::Service, database: true do
     end
 
     it "returns datasets with filter" do
-      dataset_id_1 = repo.create(attributes)
+      dataset1_id = repo.create(attributes)
       repo.create(attributes.merge(labels: ["bird", "fish"]))
 
-      result = subject.index({ id: dataset_id_1 })
+      result = subject.index({ id: dataset1_id })
 
       expect(result.count).to eq(1)
-      expect(result.first.id).to eq(dataset_id_1)
+      expect(result.first.id).to eq(dataset1_id)
     end
   end
 
