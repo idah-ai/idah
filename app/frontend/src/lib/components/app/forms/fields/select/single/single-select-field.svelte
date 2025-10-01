@@ -64,7 +64,7 @@
   <Popover bind:open>
     <PopoverTrigger>
       {#snippet child({ props })}
-        <Button variant="outline" class="justify-between" role="combobox" aria-expanded={open} {...props}>
+        <Button variant="outline" class="justify-between" {disabled} role="combobox" aria-expanded={open} {...props}>
           {#if selectedValue}
             {selectedValue.label}
           {:else}

@@ -99,9 +99,8 @@ services:
     build:
       context: ./app/frontend
       dockerfile: Dockerfile
-      args:
-        BUNDLE_WITHOUT: "" # Allow all groups for dev.
-        APP_ENVIRONMENT: development
+    environment:
+      VITE_IDAH_HOST: https://idah.localhost:8443
     ports:
       - "5173"
     volumes:
