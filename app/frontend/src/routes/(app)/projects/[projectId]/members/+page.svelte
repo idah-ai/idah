@@ -12,6 +12,7 @@
   import { projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
 
   import type { Record } from "@/data/model/Record";
+  import ResponseBlock from "@/components/app/blocks/response-block.svelte";
 
   // Variables
   let projectId: string | undefined = $derived(page.params.projectId);
@@ -22,6 +23,13 @@
     openNewProjectMemberFormModal = true;
   }
 </script>
+
+{#snippet InviteMemberButton()}
+  <Button onclick={openNewProjectMemberModal}>
+    <PlusIcon class="size-4"></PlusIcon>
+    Invite Members
+  </Button>
+{/snippet}
 
 {#key $refetches.projectMembers.list}
   <DataTable
@@ -37,10 +45,15 @@
     onNewRecord={openNewProjectMemberModal}
   >
     {#snippet actions()}
-      <Button onclick={openNewProjectMemberModal}>
-        <PlusIcon class="size-4" />
-        Invite Members
-      </Button>
+      {@render InviteMemberButton()}
+    {/snippet}
+
+    {#snippet emptyState()}
+      <ResponseBlock title="No Project Members" description="Please add members to get started" icon={PlusIcon}>
+        {#snippet actions()}
+          {@render InviteMemberButton()}
+        {/snippet}
+      </ResponseBlock>
     {/snippet}
   </DataTable>
 {/key}

@@ -86,6 +86,7 @@ export interface DataTableBaseProps<T extends Record> {
 
   // Snippets
   actions?: Snippet;
+  emptyState?: Snippet;
 }
 
 export interface DataTableFilterBaseProps<T extends Record> {
