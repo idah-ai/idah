@@ -17,7 +17,7 @@
          onFramesChange,
     }: Props = $props()
 
-    let player: Player;
+    let player: videojs = $state();
     let options = {
             controls: false,
             preload: "auto",
@@ -29,7 +29,7 @@
             fluid: true,
             disablePictureInPicture: true,
             // sources: [
-            //     {src: 'https://idah.localhost:8443/api/v1/media/medias/files/410910ci5lpcck5qmh.mp4/master.m3u8'}
+            //     {src: `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files/410910ci5lpcck5qmh.mp4/master.m3u8`}
             // ]
             // poster:"",
     }
@@ -44,6 +44,8 @@
         onFramesChange?.(currentFrame, frames)
     })
 
+    export const getFrames = () => frames
+
     export function togglePlay() {
         if (player.paused())
             player.play();
@@ -56,20 +58,20 @@
         return player.src(src);
     }
 
-    export function nextFrame() {
+    export function nextFrame(count = 1) {
         if (!fps) console.error({fps, nextFrame})
 
         if (!player.paused())
             player.pause()
-        player.currentTime((currentFrame + 1) / fps)
+        player.currentTime((currentFrame + count) / fps)
     }
 
-    export function previousFrame() {
+    export function previousFrame(count = 1) {
         if (!fps) console.error({fps, nextFrame})
 
         if (!player.paused())
             player.pause()
-        player.currentTime((currentFrame - 1) / fps)
+        player.currentTime((currentFrame - count) / fps)
     }
 
     export function toggleMute() {
@@ -89,7 +91,7 @@
     }
 
     export function isPlaying(){
-        return player ? player.paused() : false
+        return player ? !player.paused() : false
     }
 
     export function playbackRate(value:number){

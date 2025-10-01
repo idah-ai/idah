@@ -8,7 +8,7 @@ import type {
 export type Point = [number, number];
 
 export type VideoShapeType = "video:bounding_box" | "video:bounding_polygon";
-export type VideoMode = "view" | VideoShapeType;
+export type VideoMode = "visual" | VideoShapeType;
 
 export type VideoAnnotation = AnnotationObj<VideoShape, AnnotationValue, AnnotationMetadata>;
 export type VideoFrameSelection = {

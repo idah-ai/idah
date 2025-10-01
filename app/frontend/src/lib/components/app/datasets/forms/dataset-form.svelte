@@ -55,6 +55,7 @@
     label="Modality"
     placeholder="Select modality"
     choices={modalityOptions}
+    searchKeyWithOperation="label__match"
     required={newRecord}
     disabled={!newRecord}
     errors={fieldErrors["modality"]}

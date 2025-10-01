@@ -4,11 +4,14 @@
   import { InfoIcon, MessageCircleWarningIcon, Settings2Icon, SunMoonIcon } from "@lucide/svelte";
 
   import { toggleMode } from "mode-watcher";
-  import type { AnnotationHeaderBarBaseTool } from "@/components/app/annotation/layout/header/AnnotationHeaderBar.types";
+  import type { IActivityContext } from "@/plugin/interface/Activity";
+  import type { AnnotationHeaderBarBaseTool } from "./AnnotationHeaderBar.types";
 
   // Props
-  interface Props {}
-  let {}: Props = $props();
+  interface Props {
+    context: IActivityContext;
+  }
+  let { context }: Props = $props();
 
   // Variables
   let menus: AnnotationHeaderBarBaseTool[] = [
@@ -54,5 +57,5 @@
 
   <Button variant="outline" class="border-primary text-primary hover:text-primary">Skip</Button>
 
-  <Button>Submit</Button>
+  <Button onclick={context.submit}>Submit</Button>
 </div>
