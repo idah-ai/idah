@@ -12,7 +12,7 @@ module ProjectMember
     field :name, type: [String, NilClass]
     field :email, type: String
 
-    field :role, type: String, readonly: true
+    field :role, type: String, readonly: true # TODO: remove ?
 
     field :invited_by_id, type: Integer, readonly: true
 
