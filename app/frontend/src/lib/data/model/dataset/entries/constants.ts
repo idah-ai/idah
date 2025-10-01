@@ -18,7 +18,7 @@ export const entryPriorities: EntryPriorityBadgeProps[] = [
     label: "High",
     value: -1,
     iconColor: "#FFA500", // Orange
-    variant: "info",
+    variant: "warning",
   },
   {
     label: "Medium",

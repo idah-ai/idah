@@ -6,6 +6,7 @@
   import ResponseBlock from "@/components/app/blocks/response-block.svelte";
   import TaggingCard from "@/components/app/datasets/labels/cards/tagging-card.svelte";
 
+  import { slugify } from "@/utils/string";
   import { PlusIcon, TagIcon } from "@lucide/svelte";
 
   import type { LabelingConfiguration, TagField } from "@/data/model/dataset/labels";
@@ -22,9 +23,12 @@
 
   // Functions
   function addNewTag() {
+    const taggingExists = labelConfig.taggings && labelConfig.taggings.length > 0;
+    const newTagLabel: string = `Tag ${taggingExists ? labelConfig.taggings.length + 1 : 1}`;
+
     onSetTag({
-      id: crypto.randomUUID(),
-      label: `New Tag`,
+      id: slugify(newTagLabel),
+      label: newTagLabel,
       type: "text",
       description: "",
       required: false,
@@ -33,6 +37,7 @@
         maximum: 0,
         options: [],
         step: 1,
+        info: null,
       },
     });
   }

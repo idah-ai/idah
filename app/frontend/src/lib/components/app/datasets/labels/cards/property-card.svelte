@@ -1,7 +1,6 @@
 <script lang="ts">
-  import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+  import { Card, CardContent, CardHeader } from "@/components/ui/card";
   import CheckboxField from "@/components/app/forms/fields/input/checkbox-field.svelte";
-  import Input from "@/components/ui/input/input.svelte";
   import PropertyOptions from "@/components/app/datasets/labels/properties/property-options.svelte";
   import PropertySelectors from "@/components/app/datasets/labels/properties/property-selectors.svelte";
   import PropertyTypeDropdownMenu from "@/components/app/datasets/labels/dropdown-menus/property-type-dropdown-menu.svelte";
@@ -22,7 +21,6 @@
   // Variables
   let { id, label, required, type, selector } = $derived(property);
   let showContent: boolean = $state(false);
-  let editingLabel: boolean = $state(false);
 
   let selectedFieldType: FieldType | undefined = $derived(fieldTypes.find((t) => t.value === type));
 
@@ -95,26 +93,11 @@
     <!-- HEADER::TOGGLE SHOW CONTENT -->
     <ToggleShowContentButton {showContent} onClick={toggleContent}></ToggleShowContentButton>
 
-    <!-- HEADER::SELECT TYPE -->
-    <PropertyTypeDropdownMenu {selectedFieldType} onSetType={setProperty}></PropertyTypeDropdownMenu>
+    <!-- HEADER::SELECT TYPE & TITLE -->
+    <PropertyTypeDropdownMenu {label} {selectedFieldType} onSetLabel={setProperty} onSetType={setProperty}
+    ></PropertyTypeDropdownMenu>
 
-    <!-- HEADER::EDITABLE TITLE -->
-    <button class="cursor-text" onclick={() => (editingLabel = true)}>
-      {#if editingLabel}
-        <Input
-          class="w-32"
-          name="{id}/label"
-          autofocus
-          value={label}
-          onblur={() => (editingLabel = false)}
-          oninput={(e) => setProperty({ label: e.currentTarget.value })}
-        ></Input>
-      {:else}
-        <CardTitle>{label}</CardTitle>
-      {/if}
-    </button>
-
-    <div class="ml-auto flex items-center gap-2">
+    <div class="ml-auto flex shrink-0 items-center gap-2">
       <!-- HEADER::REQUIRED -->
       <CheckboxField
         name="{id}/required"

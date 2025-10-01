@@ -21,6 +21,7 @@
 
   // Variables
   let submitting: boolean = $state(false);
+  let fieldErrors: Hash = $state({});
   let selectedMember: number | null = $state(entryRecord?.assigned_to_id ?? null);
   let selectedEntryCount: number = $derived(entryIds.length);
 
@@ -47,6 +48,7 @@
     try {
       await assignMember();
     } catch (error) {
+      console.error(error);
     } finally {
       submitting = false;
     }
@@ -56,7 +58,7 @@
 <FormModal
   {action}
   {title}
-  description="Assign selected member to {selectedEntryCount > 1 ? `${selectedEntryCount} tasks` : 'task'}"
+  description="Assign {selectedEntryCount > 1 ? `${selectedEntryCount} tasks` : 'task'} to a member"
   loading={submitting}
   onCancel={() => {}}
   onConfirm={submit}
@@ -66,12 +68,12 @@
     <DialogTitle>{title}</DialogTitle>
   {/snippet}
 
-  <AssignEntryForm {selectedMember} onValueChange={setValue}></AssignEntryForm>
+  <AssignEntryForm {selectedMember} {fieldErrors} onValueChange={setValue}></AssignEntryForm>
 
   {#snippet confirm()}
     <Button disabled={submitting || !selectedMember} onclick={submit}>
       {#if submitting}
-        <Spinner></Spinner>
+        <Spinner variant="primary-foreground"></Spinner>
         Assigning...
       {:else}
         Assign
