@@ -2,6 +2,18 @@
   import Input from "@/components/ui/input/input.svelte";
   import Sidebar from "@/components/ui/sidebar/sidebar.svelte";
 
+  import CategoriesSelection from "./categories-selection.svelte";
+  import SidebarHeader from "@/components/ui/sidebar/sidebar-header.svelte";
+  import SidebarContent from "@/components/ui/sidebar/sidebar-content.svelte";
+  import SidebarGroup from "@/components/ui/sidebar/sidebar-group.svelte";
+  import SidebarGroupContent from "@/components/ui/sidebar/sidebar-group-content.svelte";
+  import Tabs from "@/components/ui/tabs/tabs.svelte";
+  import TabsList from "@/components/ui/tabs/tabs-list.svelte";
+  import TabsTrigger from "@/components/ui/tabs/tabs-trigger.svelte";
+
+  import { videoAnnotationTabs, type VideoAnnotationTab } from "./tabs/video-annotation-activity.tabs";
+
+  import type { AnnotationsIndexedDB } from "./indexedDB";
   import type { AnnotationValue } from "$lib/context/AnnotationContext";
   import type {
     CategoryConfiguration,
@@ -9,17 +21,10 @@
     TaggingConfiguration,
     VideoAnnotation,
   } from "./VideoAnnotationContext";
-  import SidebarHeader from "@/components/ui/sidebar/sidebar-header.svelte";
-  import SidebarContent from "@/components/ui/sidebar/sidebar-content.svelte";
-  import SidebarGroup from "@/components/ui/sidebar/sidebar-group.svelte";
-  import SidebarGroupContent from "@/components/ui/sidebar/sidebar-group-content.svelte";
-  import SidebarGroupLabel from "@/components/ui/sidebar/sidebar-group-label.svelte";
-  import CategoriesSelection from "./categories-selection.svelte";
-
   import type { IActivityContext } from "@/plugin/interface/Activity";
-  import type { AnnotationsIndexedDB } from "./indexedDB";
-  import type { VideoAnnotationTab } from "./tabs/video-annotation-activity.tabs";
+  import type { CategoryDefinition } from "@/context/ActivityContext";
 
+  // Props
   let {
     annotationValue,
     onEditValue,
@@ -31,7 +36,7 @@
   }: {
     currentFrame: number;
     annotationValue: AnnotationValue;
-    onEditValue: (annotationValue: AnnotationValue, mode: string) => void;
+    onEditValue: (annotationValue: AnnotationValue, mode: CategoryDefinition) => void;
     onSelectAnnotation: (annotation: VideoAnnotation) => void;
     context: IActivityContext;
     mode: string;
@@ -86,21 +91,20 @@
   }
 
   //   For checking activeTab
-  //   function handleTabChange(value: VideoAnnotationTab): void {
-  //     activeTab = value;
-  //   }
+  function handleTabChange(value: VideoAnnotationTab): void {
+    activeTab = value;
+  }
 </script>
 
-<Sidebar variant="inset" collapsible="none">
+<Sidebar variant="inset" collapsible="none" class="w-sm">
   <SidebarHeader>
-    <!-- Hide for checking with Prae again -->
-    <!-- <Tabs bind:value={activeTab}>
+    <Tabs bind:value={activeTab}>
       <TabsList class="w-full">
         {#each videoAnnotationTabs as { label, value } (value)}
           <TabsTrigger {value} onclick={() => handleTabChange(value)}>{label}</TabsTrigger>
         {/each}
       </TabsList>
-    </Tabs> -->
+    </Tabs>
 
     <Input placeholder="Search observable" />
   </SidebarHeader>
@@ -110,7 +114,6 @@
       {#if activeTab === category}
         {#each Object.entries(categoryList) as [type, items]}
           <SidebarGroup>
-            <SidebarGroupLabel>{type}</SidebarGroupLabel>
             <SidebarGroupContent>
               <CategoriesSelection
                 {db}
