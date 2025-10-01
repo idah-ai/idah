@@ -54,7 +54,22 @@
 
     <!-- PROPERTY OPTIONS::TYPE::TEXT -->
     {#if type === "text"}
-      <!-- content here -->
+      <div class="grid grid-cols-2 gap-2">
+        <NumberField
+          name="{id}/minimum"
+          label="Minimum"
+          placeholder="e.g. 0"
+          value={format.minimum}
+          oninput={(e) => onSetValue({ format: { ...format, minimum: e.currentTarget.valueAsNumber } })}
+        ></NumberField>
+        <NumberField
+          name="{id}/maximum"
+          label="Maximum"
+          placeholder="e.g. 100"
+          value={format.maximum}
+          oninput={(e) => onSetValue({ format: { ...format, maximum: e.currentTarget.valueAsNumber } })}
+        ></NumberField>
+      </div>
     {/if}
 
     <!-- PROPERTY OPTIONS::TYPE::INTEGER -->
@@ -65,7 +80,6 @@
           label="Minimum"
           placeholder="e.g. 0"
           value={format.minimum}
-          required
           oninput={(e) => onSetValue({ format: { ...format, minimum: e.currentTarget.valueAsNumber } })}
         ></NumberField>
         <NumberField
@@ -73,7 +87,6 @@
           label="Maximum"
           placeholder="e.g. 100"
           value={format.maximum}
-          required
           oninput={(e) => onSetValue({ format: { ...format, maximum: e.currentTarget.valueAsNumber } })}
         ></NumberField>
         <NumberField
@@ -81,7 +94,6 @@
           label="Step"
           placeholder="e.g. 0.5"
           value={format.step}
-          required
           oninput={(e) => onSetValue({ format: { ...format, step: e.currentTarget.valueAsNumber } })}
         ></NumberField>
       </div>
@@ -152,6 +164,15 @@
         Add Option
       </Button>
     {/if}
+
+    <InputField
+      name="{id}/info"
+      class="col-span-1 md:col-span-2"
+      label="Info"
+      placeholder="e.g. Enter a valid email address"
+      value={format.info}
+      oninput={(e) => onSetValue({ format: { ...format, info: e.currentTarget.value } })}
+    ></InputField>
   </div>
 
   <!-- PROPERTY::CONDITIONAL VISIBLE -->
