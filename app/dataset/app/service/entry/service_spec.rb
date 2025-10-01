@@ -250,7 +250,7 @@ RSpec.describe Entry::Service, database: true do
     it "returns all entries when no filter is provided" do
       result = subject.index
 
-      expect(result.count).to be >= 2
+      expect(result.count).to eq(2)
     end
 
     it "filters entries by dataset_id" do
