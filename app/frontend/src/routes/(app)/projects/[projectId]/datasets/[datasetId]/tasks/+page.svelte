@@ -37,6 +37,7 @@
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
   import { getEntryDropdownMenuActions } from "@/components/app/datasets/entries/dropdown-menus/entry-dropdown-menu";
   import { refetches } from "@/utils/refetch";
+  import { toast } from "svelte-sonner";
 
   import type { CollectionResponse } from "@/data/model/types";
   import type { ListOptions } from "@/data/DataSource";
@@ -206,7 +207,15 @@
   }
 
   async function deleteTasks(): Promise<void> {
+    for (const entryId of selectedRows) {
+      await entriesBackendDataSource.delete(entryId);
+    }
+
+    toast.success(`${selectedRowsCount} Task(s) successfully deleted.`);
+
+    selectedRows = [];
     $refetches.entries.list++;
+    openConfirmDeleteTasksModal = false;
   }
 </script>
 
