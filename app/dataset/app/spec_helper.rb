@@ -61,6 +61,7 @@ RSpec.configure do |config|
 
   Verse::Spec.add_user(:system, "system")
   Verse::Spec.add_user(:anonymous, "anonymous")
+  Verse::Spec.add_user(:project_manager, "project_manager", user_data: { id: 2 })
 
   config.example_status_persistence_file_path = ".rspec_status"
 
