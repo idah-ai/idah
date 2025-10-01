@@ -278,6 +278,9 @@
         <div class="grid w-full grid-cols-1 gap-4 md:grid-cols-4">
           {#each Object.entries(entryColumns) as [columnKey, columnSetting] (columnKey)}
             <FilterSortDropdownMenu
+              contexts={{
+                projectId: page.params.projectId,
+              }}
               {columnKey}
               columnSetting={columnSetting as ColumnSettings<EntryRecord>}
               filters={listOptions.filters || {}}
