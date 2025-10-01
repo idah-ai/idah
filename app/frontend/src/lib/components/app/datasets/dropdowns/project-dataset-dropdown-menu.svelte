@@ -11,7 +11,7 @@
     DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu";
   import DatasetFormModal from "@/components/app/datasets/overlays/dataset-form-modal.svelte";
-  import ExportModal from "../overlays/export-modal.svelte";
+  import ExportModal from "@/components/app/datasets/overlays/export-modal.svelte";
 
   import { EllipsisVerticalIcon, FileUpIcon, SquarePenIcon, Trash2Icon } from "@lucide/svelte";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
@@ -98,7 +98,7 @@
 
   <DropdownMenuContent align="end">
     <DropdownMenuGroup>
-      {#each menus as { label: label, icon: Icon, action: action }}
+      {#each menus as { label, icon: Icon, action }}
         <DropdownMenuItem onclick={action}>
           <Icon class="size-4" />
           {label}
@@ -117,11 +117,10 @@
   bind:open={openConfirmDeleteDatasetModal}
 ></ConfirmModal>
 
-<!-- fetch dataset name for description/confirmation/file name edit -->
+<!-- TODO: should we allow editing the exporting file/dataset name ? -->
 <ExportModal
   title="Export Dataset"
   description="Confirm to export the dataset: "
   {datasetRecord}
   onConfirm={exportDataset}
   bind:open={openExportDatasetModal} />
-<!-- onConfirm={exportDataset} -->
