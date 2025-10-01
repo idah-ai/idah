@@ -17,7 +17,7 @@
          onFramesChange,
     }: Props = $props()
 
-    let player: Player;
+    let player: videojs = $state();
     let options = {
             controls: false,
             preload: "auto",
@@ -91,7 +91,7 @@
     }
 
     export function isPlaying(){
-        return player ? player.paused() : false
+        return player ? !player.paused() : false
     }
 
     export function playbackRate(value:number){

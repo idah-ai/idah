@@ -28,12 +28,12 @@ const CommonInjecter = (context: KeyMapContext) => {
   };
 
   return (b) => {
-    b.on([b.Ctrl], "S", flushAction, "Flush", "flush action");
+    b.on([b.Alt], "S", flushAction, "Flush", "flush action");
     b.on([b.Ctrl], "Z", undoAction, "Undo", "Undo last action");
     b.on(null, "Meta", toggleCommand, "Commands Dialog", "Toggle this commands dialog");
 
     b.on([b.Ctrl, b.Shift], "Z", redoAction, "Redo", "Redo last undone action if any");
-    b.on(null, "D", enterMode(ShortcutManager.defaultMode, true), "Default View", "Reset View");
+    // b.on(null, "D", enterMode(ShortcutManager.defaultMode, true), "Default View", "Reset View");
   };
 };
 
@@ -83,12 +83,12 @@ const createVisualModeKeyMap = (context: KeyMapContext) => {
     console.log("endFrame executed");
   };
 
-  const enterMode = (mode: string, replace: boolean = false) => {
-    return () => {
-      ShortcutManager.enterMode(mode, replace);
-      context.switch_mode(mode);
-    };
-  };
+  //   const enterMode = (mode: string, replace: boolean = false) => {
+  //     return () => {
+  //       ShortcutManager.enterMode(mode, replace);
+  //       context.switch_mode(mode);
+  //     };
+  //   };
 
   const keyMap = KeyMapBuilder((b) => {
     CommonInjecter(context)(b);
@@ -97,9 +97,9 @@ const createVisualModeKeyMap = (context: KeyMapContext) => {
     b.on(null, "ArrowLeft", previousFrame, "Previous", "go to the previous frame");
     b.on([b.Ctrl, b.Alt], "ArrowRight", endFrame, "End", "go to the starting frame");
     b.on([b.Ctrl, b.Alt], "ArrowLeft", startFrame, "Start", "go to the ending frame");
-    b.on(null, "B", enterMode("video:bounding_box"), "Bounding box", "Enter Bouding box mode");
-    b.on(null, "+", () => context.zoom.in(), "Zoom in", "Zoom In");
-    b.on(null, "-", () => context.zoom.out(), "Zoom Out", "Zoom Out");
+    // b.on(null, "B", enterMode("video:bounding_box"), "Bounding box", "Enter Bouding box mode");
+    // b.on(null, "+", () => context.zoom.in(), "Zoom in", "Zoom In");
+    // b.on(null, "-", () => context.zoom.out(), "Zoom Out", "Zoom Out");
   });
 
   return keyMap;

@@ -36,7 +36,7 @@ export class JsonRpcDatasource {
   processing = false;
   batch_size: number;
   base_url: string;
-  constructor(base_url: string, config: JSONRpcBatchConfig = { size: 200, time: 100000 }) {
+  constructor(base_url: string, config: JSONRpcBatchConfig = { size: 200, time: 5000 }) {
     this.base_url = base_url;
     this.batch_size = config.size;
     setInterval(this.process.bind(this), config.time);

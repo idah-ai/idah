@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { type Snippet } from "svelte";
+	import { onDestroy, type Snippet } from "svelte";
 	import {
 		HEIGHT,
 		ORIGIN,
@@ -13,15 +13,14 @@
 	} from "./VideoAnnotationContext";
 	import Zoomable from "./zoomable.svelte";
 	import BoundingBox, { type ToolSelection } from "./bounding-box.svelte";
-    import { bbrange, boundingBoxes, idb_updated_at } from "./idb_store.svelte";
-    import type { AnnotationsIndexedDB } from "./indexedDB";
+    import { boundingBoxes } from "./idb_store.svelte";
 
 	type Props = {
 		frame: number;
 		selected: VideoAnnotation | undefined;
 		mode: string;
 		target_container: HTMLDivElement; // ..
-        db?: AnnotationsIndexedDB,
+        annotations_promise: Promise<VideoAnnotation[]>,
 		children: Snippet;
 		onclick?: (e: MouseEvent) => void;
 		onSelectAnnotation: (annotation?: VideoAnnotation) => void;
@@ -37,7 +36,7 @@
 		selected,
 		mode,
 		target_container,
-        db,
+        annotations_promise,
 		onSelectAnnotation,
 		onSelection, // valid shape output
 		children,
@@ -50,25 +49,6 @@
 		scale: 1,
 		offset: [0, 0],
 	});
-
-
-    let bufferSize = 120
-    let annotations_promise = $derived.by(async () => {
-        $idb_updated_at
-
-        console.log("derive svg ", $bbrange, $boundingBoxes)
-        if ((frame >= $bbrange.min && frame < $bbrange.max - 30)) {
-            return new Promise<VideoAnnotation[]>((resolve, _) => {
-                resolve($boundingBoxes)
-            })
-        } else {
-            if (db) {
-                $boundingBoxes = await db.bounded_frames(frame, frame + bufferSize) || []
-                $bbrange = {min: frame, max: frame + bufferSize}
-            }
-            return $boundingBoxes
-    }
-    })
 
 	let height = $state(0);
 	let width = $state(0);
@@ -237,27 +217,6 @@
                         {/if}
                     {/each}
            {:then annotations}
-                <!-- {console.warn('then', annotations,  $boundingBoxes )}
-                {#each $boundingBoxes as annotation}
-                        {#if annotation.metadata.id != selected?.metadata.id}
-                            {#if annotation.shape.type == "video:bounding_box"}
-                                <BoundingBox
-                                    points={currentShape(annotation.shape, frame) || []}
-                                    ratio={target_size}
-                                    offset={zoomInfo.offset}
-                                    color={'deeppink'}
-                                    onmousedown={ (e)=> {
-                                        if (mode == 'visual'){
-                                            e.stopPropagation()
-                                            onSelectAnnotation(annotation)
-                                        }
-                                    }}
-                                />, frame
-                            {/if}
-                        {/if}
-                    {/each}
-                    {console.log('render' ,{annotations})} -->
-                {#if annotations}
                     {#each annotations as annotation}
                         {#if annotation.metadata.id != selected?.metadata.id}
                             {#if annotation.shape.type == "video:bounding_box"}
@@ -276,8 +235,7 @@
                             {/if}
                         {/if}
                     {/each}
-                {/if}
-            {/await}
+             {/await}
 
 			<BoundingBox
 				bind:this={tool_selection}

@@ -15,7 +15,7 @@
     console.debug("loading plugin context")
     let contextPromise = new Promise<IActivityContext>((resolve, reject) => {
         entriesBackendDataSource
-            .get(entry_id, { included: ["dataset"] })
+            .get(entry_id, { included: ["dataset.project"] })
             .then(
                 (entry) => {
                     const context = activityContextForEntry(entry.data)

@@ -1,6 +1,7 @@
-import type { EntryRecord } from "@/data/model/dataset/entryRecord";
 import type { IActivityContext, INote, INoteDriver } from "./interface/Activity";
 import { createAnnotationDriver } from "./AnnotationDriver";
+import { goto } from "$app/navigation";
+import type { EntryRecord } from "@/data/model/dataset/entries/record";
 
 const noteDriver: INoteDriver = {
   create(position, content) {
@@ -32,6 +33,10 @@ export function activityContextForEntry(entry: EntryRecord): IActivityContext {
     userRole: "",
     annotations: createAnnotationDriver(entry.id),
     notes: noteDriver,
+    back() {
+      const path = `/projects/${entry.dataset.project.id}/datasets/${entry.dataset.id}/tasks`;
+      goto(path);
+    },
     submit() {
       return new Promise<void>((resolve, reject) => {
         reject("todo");
