@@ -36,7 +36,7 @@
     onScaleChange,
     db,
   }: {
-    annotations_promise: VideoAnnotation[];
+    annotations_promise: Promise<VideoAnnotation[]>;
     tracking?: boolean;
     scale: number;
     zoom: number;
