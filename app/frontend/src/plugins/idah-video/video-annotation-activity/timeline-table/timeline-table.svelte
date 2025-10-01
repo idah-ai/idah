@@ -18,6 +18,7 @@
   import Timeline from "./timeline.svelte";
   import Trash_2 from "@lucide/svelte/icons/trash-2";
   import type { VideoAnnotation } from "../VideoAnnotationContext";
+  import type { AnnotationsIndexedDB } from "../indexedDB";
 
   // Props
   let {
@@ -33,6 +34,7 @@
     onSelectAnnotation,
     onZoomChange,
     onScaleChange,
+    db,
   }: {
     annotations_promise: VideoAnnotation[];
     tracking?: boolean;
@@ -46,6 +48,7 @@
     onDeleteAnnotation: (VideoAnnotation: VideoAnnotation, frame?: number) => void;
     onZoomChange?: (zoom: number) => void;
     onScaleChange?: (zoom: number) => void;
+    db?: AnnotationsIndexedDB;
   } = $props();
 
   $effect(() => {
@@ -103,11 +106,17 @@
     const index = getSelectedAnnotationIndex(annotations, selected);
     const titleName = labelingConfiguration?.categories?.find((c) => c.id === categoryId)?.label || categoryId;
 
-    return [titleName, index].join(" - ");
+    return [titleName, index].join("_");
   }
 
-  function getSelectedAnnotationIndex(annotations: VideoAnnotation[], selected: VideoAnnotation) {
-    return annotations.findIndex((a) => a.metadata.id === selected.metadata.id);
+  async function getSelectedAnnotationIndex(categoryId: string, annotationId: string) {
+    if (!db) return 0;
+
+    const res = (await db.getAllIndex("category", categoryId)).findIndex(
+      (annotation) => annotation.metadata.id === annotationId,
+    ) as number;
+
+    return res;
   }
 </script>
 
