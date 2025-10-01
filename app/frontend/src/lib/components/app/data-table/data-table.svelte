@@ -33,7 +33,6 @@
   import { getTableState } from "@/components/app/data-table/data-table.stores.svelte";
 
   // Props
-  interface Props extends DataTableBaseProps<T> {}
   let {
     id,
     name: dataTableName,
@@ -45,7 +44,7 @@
     onLoadSetContexts = async () => ({}),
     onNewRecord,
     actions,
-  }: Props = $props();
+  }: DataTableBaseProps<T> = $props();
 
   // Contexts
   setContext("columns", _columns);
@@ -109,7 +108,7 @@
 
       /** Merged pagination from tablePreferences and listOptions */
       const mergedPagination = { ...listOptions?.pagination, ...tablePreferences.pagination };
-    
+
       /** Remove `undefined` value from mergedFilters */
       listOpts.filters = Object.fromEntries(Object.entries(mergedFilters).filter(([_, value]) => value !== undefined));
       listOpts.pagination = mergedPagination;
@@ -217,7 +216,7 @@
 
   async function setItemsPerPage(selectedItemsPerPage: number): Promise<void> {
     itemsPerPage = selectedItemsPerPage;
-    
+
     /** Reset to first page when filters are applied */
     resetToFirstPage();
 

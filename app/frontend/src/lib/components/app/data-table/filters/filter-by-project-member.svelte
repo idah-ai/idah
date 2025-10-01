@@ -10,8 +10,7 @@
   import type { EntryRecord } from "@/data/model/dataset/entries/record";
 
   // Props
-  interface Props extends DataTableFilterBaseProps<EntryRecord> {}
-  let { columnSetting, filters, onFilter }: Props = $props();
+  let { columnSetting, filters, onFilter }: DataTableFilterBaseProps<EntryRecord> = $props();
 
   // Varibles
   const resource: string = ProjectMemberRecord.type;

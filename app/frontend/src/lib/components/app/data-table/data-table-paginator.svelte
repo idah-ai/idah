@@ -94,7 +94,7 @@
             </PaginationItem>
           {/if}
 
-          {#each pages as page}
+          {#each pages as page, index (index)}
             {#if page.type === "ellipsis"}
               <PaginationItem>
                 <PaginationEllipsis />
