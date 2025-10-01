@@ -5,8 +5,8 @@ services:
       - "8080:80"
       - "8443:443"
     volumes:
-      - ./dev/nginx/nginx-staging.conf:/etc/nginx/nginx.conf:ro
-      - ./dev/nginx/.htpasswd:/etc/nginx/.htpasswd:ro
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./.htpasswd:/etc/nginx/.htpasswd:ro
     depends_on:
       - frontend
       - media
@@ -45,7 +45,7 @@ services:
 
   iam:
     build:
-      context: ./app/iam
+      context: ../app/iam
       dockerfile: Dockerfile
       args:
         BUNDLE_WITHOUT: "" # Allow all groups for dev.
@@ -57,9 +57,8 @@ services:
     ports:
       - "3000"
     volumes:
-      - ./app/iam:/app
-      - ./app/iam/common:/app/common
-      - ./dev/nginx/ssl/cert.pem:/etc/ssl/certs/ca-certificates.crt
+      - ../app/iam:/app
+      - ../app/iam/common:/app/common
       - bundler_cache:/usr/local/bundle
     networks:
       - app-network
@@ -72,7 +71,7 @@ services:
 
   media:
     build:
-      context: ./app/media
+      context: ../app/media
       dockerfile: Dockerfile
       args:
         BUNDLE_WITHOUT: "" # Allow all groups for dev.
@@ -84,8 +83,8 @@ services:
     ports:
       - "3000"
     volumes:
-      - ./app/media:/app
-      - ./app/media/common:/app/common
+      - ../app/media:/app
+      - ../app/media/common:/app/common
       - bundler_cache:/usr/local/bundle
     networks:
       - app-network
@@ -98,7 +97,7 @@ services:
 
   dataset:
     build:
-      context: ./app/dataset
+      context: ../app/dataset
       dockerfile: Dockerfile
       args:
         BUNDLE_WITHOUT: "" # Allow all groups for dev.
@@ -110,9 +109,8 @@ services:
     ports:
       - "3000"
     volumes:
-      - ./app/dataset:/app
-      - ./app/dataset/common:/app/common
-      - ./dev/nginx/ssl/cert.pem:/etc/ssl/certs/ca-certificates.crt
+      - ../app/dataset:/app
+      - ../app/dataset/common:/app/common
       - bundler_cache:/usr/local/bundle
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -125,18 +123,12 @@ services:
 
   frontend:
     build:
-      context: ./app/frontend
-      dockerfile: Dockerfile
-    environment:
-      VITE_IDAH_HOST: http://localhost:8080
+      context: ../.
+      dockerfile: ./staging/Dockerfile.frontend
     ports:
-      - "5173"
-    volumes:
-      - ./app/frontend:/app/frontend
-      - /app/frontend/node_modules
+      - "3000"
     networks:
       - app-network
-    command: pnpm run dev  --host
     stdin_open: true
     tty: true
 
