@@ -53,14 +53,12 @@ export interface ColumnSettings<T extends Record> {
     choices?: LabelValue<string | number | boolean>[];
   };
 
-  /** eslint-disable-next-line @typescript-eslint/no-empty-object-type */
-  filterComponent?: Component<DataTableFilterBaseProps<T>, {}, "">;
+  filterComponent?: Component<DataTableFilterBaseProps<T>, object, "">;
   align?: "left" | "center" | "right";
   visible: boolean;
   hidable: boolean;
 
-  /** eslint-disable-next-line @typescript-eslint/no-empty-object-type */
-  cellComponent?: Component<DataTableCellBaseProps<T>, {}, "">;
+  cellComponent?: Component<DataTableCellBaseProps<T>, object, "">;
   cellComponentProps?: Hash;
   cellOptions?: {
     enums: LabelValue<string | number | boolean>[];
