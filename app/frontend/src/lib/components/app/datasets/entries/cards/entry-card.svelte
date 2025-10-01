@@ -93,6 +93,7 @@
   });
 </script>
 
+
 {#await fetchData()}
   <LoadingEntryCard></LoadingEntryCard>
 {:then _}
@@ -140,7 +141,7 @@
       <div class="flex flex-1 flex-col gap-6">
         <!-- RESOURCE -->
         <Link
-          href="##"
+          href="/entry/{entry.id}/plugin"
           class="group-hover:text-primary group-hover:cursor-pointer group-hover:underline group-hover:underline-offset-4"
           showIcon
         >
