@@ -83,6 +83,9 @@ export interface IActivityContext {
   // Driver for fetching and updating notes
   get notes(): INoteDriver;
 
+  // Return to previous step of the workflow
+  back(): void;
+
   // Submit to the next step of the workflow
   submit(): Promise<void>;
 

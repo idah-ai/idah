@@ -7,8 +7,7 @@
     import SidebarMenuSubButton from "@/components/ui/sidebar/sidebar-menu-sub-button.svelte";
     import type {CategoryDefinition } from "@/context/ActivityContext";
     import type { AnnotationsIndexedDB } from "./indexedDB";
-    import { annotationsCategory, idb_updated_at, uncategorizedAnnotations } from "./idb_store.svelte";
-    import { set } from "date-fns";
+    import { idb_updated_at, uncategorizedAnnotations } from "./idb_store.svelte";
 
 	let {
         type,
@@ -62,7 +61,7 @@
 
     let uncategorized_promise = $derived.by(async () => {
         $idb_updated_at
-        return $uncategorizedAnnotations = (await db?.getAllIndex('category', null)) || []
+        return $uncategorizedAnnotations = (await db?.getAllIndex('category', "null")) || []
     })
 </script>
 

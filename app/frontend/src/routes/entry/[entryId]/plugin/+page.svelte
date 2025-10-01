@@ -18,7 +18,7 @@
 
     onMount(() => {
         entriesBackendDataSource
-            .get(entryId, {included: ["dataset"]})
+            .get(entryId, {included: ["dataset.project"]})
             .then(async entry => {
                     context = activityContextForEntry(entry.data)
                     let _plugins = pluginManager.getPluginsForType(context.type)

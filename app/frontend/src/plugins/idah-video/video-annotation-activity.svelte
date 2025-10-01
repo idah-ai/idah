@@ -54,13 +54,13 @@
 
   let annotationsIDB:AnnotationsIndexedDB|undefined = $state()
 
-  let commandOpen = $state(true)
+  let commandOpen = $state(false)
   registerVisualModeShortcuts({
     player: () => player,
     toggleCommandCB: () => { commandOpen = !commandOpen },
     flush: () => context.annotations.flush(),
-    switch_mode: (_mode: string) => { mode = _mode },
-    zoom: {in: () => overlay.zoomIn(), out: () => overlay.zoomOut()}
+    switch_mode: (_mode: string) => {},
+    zoom: {in: () => {}, out: () => {}}
     })
 
   window.onkeydown = (e) => {
@@ -69,7 +69,6 @@
 
     if (!keymap) return console.error("no keymap found for", {current_mode})
 
-    console.log(e)
     const modifier_keys = [
         e.altKey && "Alt",
         e.ctrlKey && "Control",
@@ -77,14 +76,12 @@
         e.shiftKey && "Shift",
     ].sort()
 
-    console.log(`Key${e.key}`, e)
     const shortcut_keys = ([
         "Control", "Alt", "Shift", "Meta"
     ].includes(e.key) ? [undefined] : e.code.startsWith("Key") ? [
         e.key.toLocaleUpperCase(), e.key.toLocaleLowerCase()
     ] : [e.code]).map(k => [...modifier_keys, k].filter(k=>k).join('+'))
 
-    console.log({shortcut_keys})
     for (let index = 0; index < shortcut_keys.length; index++) {
         let shortcut_key = shortcut_keys[index];
 
@@ -95,7 +92,6 @@
         e.preventDefault()
         shortcut.action()
         console.log({shortcut_key, shortcut})
-
         break;
     }
 
@@ -112,47 +108,52 @@
     });
 
     annotationsIndexedDB(['idah-video', 'entry', entry_id].join(':')).then((idb) => {
-        fetchAnnotations(idb)
+        annotationsIDB = idb
+        toast.promise(fetchAnnotations(idb), {
+          loading: "Fetch Annotations",
+          success: "Fetch complete",
+          error: "Error Fetching annotations",
+        });
     }, console.error)
 
-    function fetchAnnotations(db:AnnotationsIndexedDB, page = 1, itemsPerPage = 100) {
-        console.debug('fetching anotations', {db, page, itemsPerPage})
-        context.annotations.list(
-          { entry_id: entry_id },
-          { page, itemsPerPage },
-        ).then((r) => {
-            let d = (r as AnnotationRecord[]).map((a) => {
-                return {
-                    shape: {
-                        ...(a.dimensions as VideoShape),
-                        range: [a.dimensions.start, a.dimensions.end]
-                    },
-                    value: {
-                        ...a.annotation,
-                        category: a.annotation.category || "null" //........
-                    },
-                    metadata: {
-                        id: a.id,
-                        updatedAt: a.updated_at,
-                        createdAt: a.created_at,
-                    }, synced: true,
-                }
-            })
-
-            console.debug('fetched', d)
-
-            if (d.length) {
-                console.debug('adding to db')
-                db.addAnnotations(d).then(() => {
-                    $idb_updated_at = new Date()
-                    console.debug('added at', {$idb_updated_at})
-                    fetchAnnotations(db, page + 1)
+    function fetchAnnotations(db:AnnotationsIndexedDB, page = 1, itemsPerPage = 100): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
+            context.annotations.list(
+            { entry_id: entry_id },
+            { page, itemsPerPage },
+            ).then((r) => {
+                let d = (r as AnnotationRecord[]).map((a) => {
+                    return {
+                        shape: {
+                            ...(a.dimensions as VideoShape),
+                            range: [a.dimensions.start, a.dimensions.end]
+                        },
+                        value: {
+                            ...a.annotation,
+                            category: a.annotation.category || "null" //........
+                        },
+                        metadata: {
+                            id: a.id,
+                            updatedAt: a.updated_at,
+                            createdAt: a.created_at,
+                        }, synced: true,
+                    }
                 })
-            } else {
-                annotationsIDB = db
-            }
-        });
-    }
+
+                console.debug('fetched', d)
+                if (d.length) {
+                    console.debug('adding to db')
+                    db.addAnnotations(d).then(() => {
+                        $idb_updated_at = new Date()
+                        console.debug('added at', {$idb_updated_at})
+                        fetchAnnotations(db, page + 1).then(resolve, reject)
+                    })
+                } else {
+                    resolve()
+                }
+            });
+        }
+    )}
   });
 
   function addAnnotation(shape: VideoShape, value: AnnotationValue = {}) {
@@ -172,6 +173,7 @@
           },
           synced: false,
         };
+        selectedAnnotation = annotation
         await annotationsIDB?.addAnnotations([annotation])
         $idb_updated_at = new Date()
 
@@ -184,7 +186,6 @@
         });
         p.then(async () => {
             let a = await annotationsIDB?.get('annotations', id)
-
 
             if (a && a.metadata.updatedAt.valueOf() == createdAt.valueOf()){
                 a.synced = true;
@@ -573,10 +574,20 @@
 
   let overlay: SvgOverlay;
 
+let annotations_promise:Promise<VideoAnnotation[]> = $derived.by(() => {
+    $idb_updated_at
+    if (!annotationsIDB) return new Promise((_,ko) => ko('no database'))
+
+    let p = annotationsIDB.getAllStore("annotations")
+
+    p.then((anns) => $boundingBoxes = anns)
+
+    return p
+});
 </script>
 
 <div class="flex h-screen w-full flex-col">
-    {#key [ShortcutManager.currentMode, ShortcutManager.getCurrentMode()]}
+    {#key [ShortcutManager, ShortcutManager.currentMode, ShortcutManager.getCurrentMode()]}
         <Command.CommandDialog bind:open={commandOpen} accesskey={ShortcutManager.getCurrentMode()}>
             <Command.Input placeholder="Type a command or search..."/>
             <Command.List>
@@ -593,13 +604,11 @@
             </Command.List>
         </Command.CommandDialog>
     {/key}
-          <AnnotationHeaderBar
-    {context}
-    bind:mode
-    onSelectMode={() => {
-      selectedAnnotation = undefined;
-    }}
-  />
+    <AnnotationHeaderBar
+        {context}
+        bind:mode
+        onSelectMode={() => { selectedAnnotation = undefined; }}
+    />
 
   <SidebarProvider class="min-h-0 w-full" style={"height:calc(100% - 30px)"}>
     <ResizablePaneGroup direction="vertical">
@@ -622,7 +631,7 @@
         <SidebarInset>
           <SvgOverlay
             bind:this={overlay}
-            db={annotationsIDB}
+            annotations_promise={annotations_promise}
             selected={selectedAnnotation}
             {mode}
             frame={currentFrame}
@@ -664,6 +673,7 @@
           <ScrollArea class="h-[calc(100%-3.4em)]">
             <TimelineTable
               bind:this={timelineTable}
+              annotations_promise={annotations_promise}
               db={annotationsIDB}
               {scale}
               {zoom}
