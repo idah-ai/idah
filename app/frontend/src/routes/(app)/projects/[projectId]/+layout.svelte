@@ -77,7 +77,7 @@
 
     if (projectSegmentId) {
       switch (projectSegment) {
-        case "datasets":
+        case "datasets": {
           /** Get dataset name to show in breadcrumb */
           const datasetRes = await datasetsBackendDataSource.get(projectSegmentId, {
             fields: {
@@ -89,8 +89,11 @@
             { label: datasetRes.data.name, href: `/projects/${projectId}/datasets/${projectSegmentId}` },
           ];
           break;
-        case "members":
+        }
+
+        case "members": {
           break;
+        }
       }
     } else {
       breadcrumbs = projectDetailFallbackBreadcrumbs;
