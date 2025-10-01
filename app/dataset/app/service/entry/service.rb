@@ -124,11 +124,16 @@ module Entry
     def submit(entry_id, **opts)
       entries.transaction do
         entry = entries.find!(entry_id, included: [:dataset])
-        dataset = datasets.find!(entry.dataset_id)
-        workflow = dataset.workflow.new(entry, **opts)
+        entry_workflow = entry.dataset.workflow.new(entry, **opts)
 
-        workflow.submit!
-        entries.update!(entry.id, { wf_step: workflow.aasm.current_state.to_s })
+        entry_workflow.submit!
+        entries.update!(
+          entry.id,
+          {
+            wf_step: entry_workflow.aasm.current_state.to_s,
+            status: entry_workflow.aasm.current_state == :done ? "completed" : "in_progress"
+          }
+      )
         entries.find!(entry.id, included: [:dataset, :annotations])
       end
     end
@@ -136,11 +141,16 @@ module Entry
     def error(entry_id, **opts)
       entries.transaction do
         entry = entries.find!(entry_id, included: [:dataset])
-        dataset = datasets.find!(entry.dataset_id)
-        workflow = dataset.workflow.new(entry, **opts)
+        entry_workflow = entry.dataset.workflow.new(entry, **opts)
 
-        workflow.error!
-        entries.update!(entry.id, { wf_step: workflow.aasm.current_state.to_s })
+        entry_workflow.error!
+        entries.update!(
+          entry.id,
+          {
+            wf_step: entry_workflow.aasm.current_state.to_s,
+            status: "errored"
+          }
+        )
         entries.find!(entry.id, included: [:dataset, :annotations])
       end
     end
