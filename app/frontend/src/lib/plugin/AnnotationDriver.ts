@@ -2,7 +2,7 @@ import { annotationsBackendDataSource } from "@/data/model/dataset/annotations/r
 import { JsonRpcDatasource } from "../../plugins/idah-video/video-annotation-activity/jsonrpc";
 import type { IAnnotation, IAnnotationDriver } from "./interface/Activity";
 
-const annotations_rpc = new JsonRpcDatasource("https://idah.localhost:8443/api/v1/dataset/annotations/_rpc");
+const annotations_rpc = new JsonRpcDatasource(`${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/annotations/_rpc`);
 
 export function createAnnotationDriver(entry_id: string): IAnnotationDriver {
   return {
