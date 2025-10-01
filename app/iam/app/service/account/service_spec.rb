@@ -8,7 +8,7 @@ RSpec.describe Account::Service, database: true do
   subject { described_class.new(auth_context) }
 
   let(:account_repo) { Account::Repository.new(auth_context) }
- 
+
   let(:attributes) do
     {
       name: "Test Account Name",
@@ -23,15 +23,15 @@ RSpec.describe Account::Service, database: true do
         {
           data: {
             type: Resource::Iam::Accounts,
-            attributes: attributes,
+            attributes:,
           }
         }
       )
 
-      createdAccount = subject.create(record)
-      expect(createdAccount.name).to eql("Test Account Name")
-      expect(createdAccount.email).to eq("test@example.com")
-      expect(createdAccount.enabled).to eq(true)
+      created_account = subject.create(record)
+      expect(created_account.name).to eql("Test Account Name")
+      expect(created_account.email).to eq("test@example.com")
+      expect(created_account.enabled).to eq(true)
     end
   end
 
