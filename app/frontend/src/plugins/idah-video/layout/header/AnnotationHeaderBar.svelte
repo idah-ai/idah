@@ -2,7 +2,6 @@
 	import Separator from "@/components/ui/separator/separator.svelte";
 
     import type { IActivityContext } from "@/plugin/interface/Activity";
-    import type { VideoMode } from "../../video-annotation-activity/VideoAnnotationContext";
     import AnnotationHeaderBarBackButton from "./AnnotationHeaderBarBackButton.svelte";
     import AnnotationHeaderBarMediaName from "./AnnotationHeaderBarMediaName.svelte";
     import AnnotationHeaderBarTools from "./AnnotationHeaderBarTools.svelte";
@@ -21,7 +20,7 @@
 	<!-- LEFT::NAVIGATIONS -->
 	<div id="navigations" class="flex h-full items-center gap-2">
 		<!-- BACK BUTTON -->
-		<AnnotationHeaderBarBackButton />
+		<AnnotationHeaderBarBackButton {context}/>
 
 		<Separator orientation="vertical" />
 
@@ -33,5 +32,5 @@
 	<AnnotationHeaderBarTools {onSelectMode} bind:mode />
 
 	<!-- RIGHT::ACTIONS -->
-	<AnnotationHeaderBarActions />
+	<AnnotationHeaderBarActions {context} />
 </nav>
