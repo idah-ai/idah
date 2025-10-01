@@ -36,6 +36,10 @@ class Workflow::Entry < Workflow::Base
   end
 
   def approved?
+    unless @submit_opts.key?(:approved)
+      raise Verse::Error::ValidationFailed, "Missing required option :approved for review step"
+    end
+
     @submit_opts[:approved]
   end
 end

@@ -45,8 +45,8 @@ class EntriesExpo < BaseExpo
     desc "Submit workflow event for an entry"
     input do
       field :id, String
-      field :data, Hash, optional: true do
-        field :attributes, Hash, optional: true
+      field? :data, Hash do
+        field? :attributes, Hash
       end
     end
   end
@@ -62,8 +62,8 @@ class EntriesExpo < BaseExpo
     desc "Trigger error event for an entry"
     input do
       field :id, String
-      field :data, Hash, optional: true do
-        field :attributes, Hash, optional: true
+      field? :data, Hash do
+        field? :attributes, Hash
       end
     end
   end
