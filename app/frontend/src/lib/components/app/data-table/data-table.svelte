@@ -274,6 +274,7 @@
                   <DataTableHeadLabel class="px-4">{label}</DataTableHeadLabel>
                 {:else}
                   <DataTableHeadOptions
+                    {tableData}
                     {columnKey}
                     {columnSetting}
                     {tablePreferences}
