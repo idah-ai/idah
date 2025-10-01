@@ -1,16 +1,14 @@
 import { identity, type Hash, type Constructor } from "@/utils/types";
 import type { IncludeList } from "@/data/model/includes";
 import type { FieldOptions, JsonApiRecord, JsonApiReference, RelationshipOptions } from "@/data/model/types";
-import { camelToSnake } from "@/utils/string";
 
 export function field(opts: FieldOptions = {}) {
   const transformerFunction = opts.transformer || { from: identity };
 
   // eslint-disable-next-line  @typescript-eslint/no-explicit-any
-  return function (target: any, key: string) :void {
+  return function (target: any, key: string): void {
     const fields: { [name: string]: FieldOptions } = (target.constructor.fields ||= {});
     fields[key] = opts;
-
 
     Object.defineProperty(target, key, {
       get: function (this: Record) {
@@ -21,7 +19,7 @@ export function field(opts: FieldOptions = {}) {
       set: function (this: Record, value: any) {
         const model = this._jsonapiData as JsonApiRecord<Hash>;
         model.attributes[opts.key || key] = value;
-      }
+      },
     });
   };
 }
@@ -45,7 +43,7 @@ export function relationship(opts: RelationshipOptions = {}) {
         // Convert camelCase to snake_case
         // as relationships are stored in snake_case in the JSON API response
 
-        key = opts.key || key// key = camelToSnake(key);
+        key = opts.key || key;
 
         if (this._relationshipCached[key]) {
           return this._relationshipCached[key];
@@ -67,7 +65,7 @@ export function relationship(opts: RelationshipOptions = {}) {
             return (this._relationshipCached[key] = buildObject(this, relationshipData));
           }
         }
-      }
+      },
     });
   };
 }
@@ -108,7 +106,7 @@ export class Record {
     } else {
       this._jsonapiData = {
         type: (this.constructor as typeof Record).type,
-        attributes: {}
+        attributes: {},
       };
     }
     this.errors = {};

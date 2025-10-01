@@ -10,7 +10,7 @@
  * ```
  */
 
-import type { KeyMap } from './ShortcutManager';
+import type { KeyMap } from "./ShortcutManager";
 
 type ModifierKey = string;
 type ActionKey = string;
@@ -20,7 +20,7 @@ type Action = () => void;
 class Builder {
   // Modifier key constants
   readonly Shift: ModifierKey = "Shift";
-  readonly Ctrl: ModifierKey = "Ctrl";
+  readonly Ctrl: ModifierKey = "Control";
   readonly Alt: ModifierKey = "Alt";
   readonly Meta: ModifierKey = "Meta"; // Command key on Mac, Windows key on Windows
 
@@ -34,19 +34,13 @@ class Builder {
    * @param name Name for the shortcut
    * @param description Description for the shortcut
    */
-  on(
-    modifiers: ModifierKey[] | null,
-    key: ActionKey,
-    action: Action,
-    name: string,
-    description: string
-  ): Builder {
+  on(modifiers: ModifierKey[] | null, key: ActionKey, action: Action, name: string, description: string): Builder {
     const keyCombination = this.buildKeyCombination(modifiers, key);
 
     this.keyMap[keyCombination] = {
       name,
       description,
-      action
+      action,
     };
 
     return this;
@@ -65,7 +59,7 @@ class Builder {
 
     // Sort modifiers to ensure consistent key combinations
     const sortedModifiers = [...modifiers].sort();
-    return `${sortedModifiers.join('+')}+${key}`;
+    return `${sortedModifiers.join("+")}+${key}`;
   }
 
   /**
