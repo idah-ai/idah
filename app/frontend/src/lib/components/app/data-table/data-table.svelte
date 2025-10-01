@@ -33,7 +33,6 @@
   import { getTableState } from "@/components/app/data-table/data-table.stores.svelte";
 
   // Props
-  interface Props extends DataTableBaseProps<T> {}
   let {
     id,
     name: dataTableName,
@@ -45,7 +44,7 @@
     onLoadSetContexts = async () => ({}),
     onNewRecord,
     actions,
-  }: Props = $props();
+  }: DataTableBaseProps<T> = $props();
 
   // Contexts
   setContext("columns", _columns);
@@ -299,7 +298,7 @@
     <DataTablePaginator
       page={tablePreferences.pagination.page || currentPage}
       itemsPerPage={tablePreferences.pagination.itemsPerPage || itemsPerPage}
-      count={tableData.response.meta?.count || 1000}
+      count={tableData.response.meta?.count || 0}
       hasMore={tableData.response.meta?.more || false}
       onPageChange={changePage}
       onItemsPerPageSelect={setItemsPerPage}

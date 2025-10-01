@@ -24,7 +24,7 @@ export class MediaRecord extends Record {
 
 RecordFactory.registerTypes(MediaRecord);
 
-const mediaBasePath = "https://idah.localhost:8443/api/v1/media/medias";
+const mediaBasePath = `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias`;
 
 export const mediaBackendDataSource = createBackendDataSource(MediaRecord, mediaBasePath, {
   // getInfo: async() => {},

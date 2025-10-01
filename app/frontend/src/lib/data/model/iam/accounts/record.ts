@@ -21,5 +21,5 @@ RecordFactory.registerTypes(AccountRecord);
 
 export const accountsBackendDataSource = createBackendDataSource(
   AccountRecord,
-  "https://idah.localhost:8443/api/v1/iam/accounts",
+  `${import.meta.env.VITE_IDAH_HOST}/api/v1/iam/accounts`,
 );

@@ -15,5 +15,5 @@ RecordFactory.registerTypes(ProjectRecord);
 
 export const projectsBackendDataSource = createBackendDataSource(
   ProjectRecord,
-  "https://idah.localhost:8443/api/v1/dataset/projects",
+  `${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/projects`,
 );
