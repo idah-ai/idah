@@ -94,7 +94,6 @@
 
     toast.success("Tasks successfully uploaded!");
     $refetches.entries.list++;
-    open = false;
   }
 
   async function submit(): Promise<void> {
