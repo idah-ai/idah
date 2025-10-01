@@ -303,7 +303,7 @@
     <DataTablePaginator
       page={tablePreferences.pagination.page || currentPage}
       itemsPerPage={tablePreferences.pagination.itemsPerPage || itemsPerPage}
-      count={tableData.response.meta?.count || 1000}
+      count={tableData.response.meta?.count || 0}
       hasMore={tableData.response.meta?.more || false}
       onPageChange={changePage}
       onItemsPerPageSelect={setItemsPerPage}

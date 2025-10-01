@@ -362,7 +362,7 @@
         <CommandGroup heading="Filter">
           {#if filterComponent}
             {@const FilterComponent = filterComponent}
-            <FilterComponent {columnSetting} {onFilter}></FilterComponent>
+            <FilterComponent {columnSetting} {filters} {onFilter}></FilterComponent>
           {:else if filterOptions?.filterBy === "string"}
             {@const filterKey = `${columnKey}__${filterOptions.filterOperation || "match"}`}
             <div class="pb-2">
