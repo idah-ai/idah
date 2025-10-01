@@ -420,7 +420,6 @@
     let points = $state.snapshot(_points) as Point[];
     if (!selectedId) {
       let annotation_value_from = $state.snapshot(annotationValue) as AnnotationValue;
-      console.log(annotation_value_from);
 
       addAnnotation(
         {
