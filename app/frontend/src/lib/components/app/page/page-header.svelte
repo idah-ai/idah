@@ -16,8 +16,8 @@
   let { ref, title, description, slotTitle, slotDescription, actions }: Props = $props();
 </script>
 
-<div bind:this={ref} class="flex items-center justify-between gap-4">
-  <div class="flex flex-col gap-1">
+<div bind:this={ref} class="flex w-full items-center justify-between">
+  <div class="flex w-full flex-col gap-1">
     {#if slotTitle}
       {@render slotTitle()}
     {:else if title}
@@ -31,7 +31,9 @@
     {/if}
   </div>
 
-  {#if actions}
-    {@render actions()}
-  {/if}
+  <div class="flex items-center justify-end gap-2">
+    {#if actions}
+      {@render actions()}
+    {/if}
+  </div>
 </div>
