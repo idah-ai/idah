@@ -45,12 +45,14 @@
     onLoadSetContexts = async () => ({}),
     onNewRecord,
     actions,
+    emptyState,
   }: Props = $props();
 
   // Contexts
   setContext("columns", _columns);
   setContext("dataTableName", dataTableName);
   setContext("onNewRecord", onNewRecord);
+  setContext("emptyState", emptyState);
 
   // Variables
   let tableState: TableState<T> = getTableState(id);
