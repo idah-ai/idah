@@ -1,0 +1,7 @@
+project_manager:
+  assignable: false
+  rights:
+    - "dataset:projects.create.*"
+    - "dataset:projects.read.own"
+    - "dataset:projects.update.own"
+    - "dataset:projects.delete.own"

@@ -1,0 +1,4 @@
+annotator:
+  assignable: false
+  rights:
+    - "dataset:projects.read.member"
