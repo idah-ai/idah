@@ -578,8 +578,9 @@
       selectedAnnotation = undefined;
     }}
   />
-        <Popover open={showPopOver} onOpenChange={(open) => showPopOver = open}>
-
+        <Popover open={showPopOver} onOpenChange={(open) => {
+            showPopOver = open
+        }}>
             <PopoverTrigger></PopoverTrigger>
             <PopoverContent>
                     <AnnotationSidebar
@@ -590,7 +591,7 @@
                             annotationValue = value;
                             mode = valueMode;
                             if (selectedAnnotation) {
-                            updateAnnotationValue(selectedAnnotation, value);
+                                updateAnnotationValue(selectedAnnotation, value);
                             }
                         }}
                         onSelectAnnotation={selectAnnotation}
@@ -601,6 +602,8 @@
                     />
                     <Button onclick={() => {
                         showPopOver=false
+                        annotationValue={}
+                        selectAnnotation()
                     }}>Cancel</Button>
                     <Button onclick={()=> {
                         showPopOver = false
@@ -619,9 +622,11 @@
           onEditValue={(value: AnnotationValue, valueMode: string) => {
             annotationValue = value;
             mode = valueMode;
-            // if (selectedAnnotation) {
-            //   updateAnnotationValue(selectedAnnotation, value);
-            // }
+            console.log({annotationValue, mode, selectedAnnotation})
+            if (selectedAnnotation) {
+              selectedAnnotation.value = value
+              updateAnnotationValue(selectedAnnotation, value);
+            }
           }}
           onSelectAnnotation={selectAnnotation}
           {onDeleteAnnotation}

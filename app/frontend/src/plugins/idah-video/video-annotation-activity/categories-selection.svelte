@@ -10,6 +10,7 @@
   import type { CategoryConfiguration, VideoAnnotation } from "./VideoAnnotationContext";
   import type { CategoryDefinition } from "@/context/ActivityContext";
   import type { AnnotationsIndexedDB } from "./indexedDB";
+  import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger } from "@/components/ui/select";
 
   // Props
   let {
@@ -283,7 +284,28 @@
 
 {#if selected_id && selected_category}
     {#if categoriesTree && findCategory(categoriesTree, selected_category)}
-        {@render showCategoryTitle(findCategory(categoriesTree, selected_category), false, false)}
+
+        <Select type="single" onValueChange={(category_id) => {
+            console.log(findCategory(categoriesTree, category_id))
+            onSelect(findCategory(categoriesTree, category_id))
+        }}>
+            <SelectTrigger class="w-[180px]">
+                {@render showCategoryTitle(findCategory(categoriesTree, selected_category), false, false)}
+            </SelectTrigger>
+            <SelectContent>
+                <SelectGroup>
+                    <SelectLabel>categories</SelectLabel>
+                        {#each categories as category}
+                            <SelectItem
+                                value={category.id}
+                                label={category.label}
+                            >
+                                {category.label}
+                            </SelectItem>
+                        {/each}
+                    </SelectGroup>
+            </SelectContent>
+        </Select>
     {/if}
 {:else}
     <Collapsible open={!!selected_category}>
