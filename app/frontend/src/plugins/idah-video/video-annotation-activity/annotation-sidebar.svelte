@@ -108,19 +108,19 @@
 </script>
 
 <Sidebar variant="inset" collapsible="none" class="w-sm">
-  <SidebarHeader>
+  <!-- <SidebarHeader>
     {#if !tools.has(mode)}
       <Input placeholder="Search observable" oninput={(e) => searchCategory(e)} />
     {/if}
-  </SidebarHeader>
+  </SidebarHeader> -->
   <SidebarContent>
     {#await filteredTools}
       <p class="p-4 text-sm text-gray-500">Searching...</p>
-    {:then searchedTools}
-      {#if searchedTools.size === 0}
+    {:then resultTools}
+      {#if resultTools.size === 0}
         <p class="p-4 text-sm text-gray-500">No results found</p>
       {:else}
-        {#each searchedTools as [tool, categories]}
+        {#each resultTools as [tool, categories]}
           {#if !tools.has(mode) || tool == mode}
             <SidebarGroup>
               <SidebarGroupContent>
