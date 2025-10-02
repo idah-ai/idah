@@ -35,6 +35,10 @@
   import { registerVisualModeShortcuts } from "./video-annotation-activity/shortcut";
   import { ShortcutManager } from "@/shortcut/ShortcutManager";
   import * as Command from "$lib/components/ui/command/index.js";
+    import { Popover } from "@/components/ui/popover";
+    import PopoverContent from "@/components/ui/popover/popover-content.svelte";
+    import PopoverTrigger from "@/components/ui/popover/popover-trigger.svelte";
+    import Button from "@/components/ui/button/button.svelte";
 
   let { context }: { context: IActivityContext } = $props();
 
@@ -439,21 +443,29 @@
     else removeAnnotation(annotation.metadata.id);
   }
 
+  let shapeSelectionArgs: [type:string, frame: number, _points: Point[], selectedId?: string]|undefined= $state()
+
   function onShapeSelection(type: string, frame: number, _points: Point[] = [], selectedId?: string) {
     let points = $state.snapshot(_points) as Point[];
     if (!selectedId) {
       let annotation_value_from = $state.snapshot(annotationValue) as AnnotationValue;
 
-      addAnnotation(
-        {
-          type,
-          start: frame,
-          end: frame,
+      // todo proper validation
+      if (annotationValue.category) {
+        addAnnotation(
+            {
+            type,
+            start: frame,
+            end: frame,
 
-          frames: [{ frame, points }],
-        },
-        annotation_value_from,
-      );
+            frames: [{ frame, points }],
+            },
+            annotation_value_from,
+        );
+      } else {
+        shapeSelectionArgs = [type, frame, _points, selectedId]
+        showPopOver= true
+      }
     } else {
       addSelection(selectedId, { frame, points });
     }
@@ -537,6 +549,8 @@
 
     return p;
   });
+
+    let showPopOver = $state(false)
 </script>
 
 <div class="flex h-screen w-full flex-col">
@@ -564,6 +578,39 @@
       selectedAnnotation = undefined;
     }}
   />
+        <Popover open={showPopOver} onOpenChange={(open) => {
+            showPopOver = open
+        }}>
+            <PopoverTrigger></PopoverTrigger>
+            <PopoverContent>
+                    <AnnotationSidebar
+                        db={annotationsIDB}
+                        {annotationValue}
+                        {currentFrame}
+                        onEditValue={(value: AnnotationValue, valueMode: string) => {
+                            annotationValue = value;
+                            mode = valueMode;
+                            if (selectedAnnotation) {
+                                updateAnnotationValue(selectedAnnotation, value);
+                            }
+                        }}
+                        onSelectAnnotation={selectAnnotation}
+                        {onDeleteAnnotation}
+                        {context}
+                        {mode}
+                        selected_id={selectedAnnotation?.metadata.id}
+                    />
+                    <Button onclick={() => {
+                        showPopOver=false
+                        annotationValue={}
+                        selectAnnotation()
+                    }}>Cancel</Button>
+                    <Button onclick={()=> {
+                        showPopOver = false
+                        if (shapeSelectionArgs) onShapeSelection(...shapeSelectionArgs)
+                    }} disabled={!shapeSelectionArgs}>Confirm</Button>
+            </PopoverContent>
+        </Popover>
 
   <SidebarProvider class="min-h-0 w-full" style={"height:calc(100% - 30px)"}>
     <ResizablePaneGroup direction="vertical">
@@ -575,14 +622,17 @@
           onEditValue={(value: AnnotationValue, valueMode: string) => {
             annotationValue = value;
             mode = valueMode;
-            // if (selectedAnnotation) {
-            //   updateAnnotationValue(selectedAnnotation, value);
-            // }
+            console.log({annotationValue, mode, selectedAnnotation})
+            if (selectedAnnotation) {
+              selectedAnnotation.value = value
+              updateAnnotationValue(selectedAnnotation, value);
+            }
           }}
           onSelectAnnotation={selectAnnotation}
           {onDeleteAnnotation}
           {context}
           {mode}
+          selected_id={selectedAnnotation?.metadata.id}
         />
         <SidebarInset>
           <SvgOverlay
