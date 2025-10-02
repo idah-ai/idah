@@ -127,19 +127,19 @@
         {name}
       </div>
 
-      <!-- {#if selected_category && selected_category == annotationCategory} -->
-      <Button
-        variant="ghost"
-        size="icon"
-        class="hover_button"
-        onclick={(e) => {
-          e.stopPropagation();
-          onDeleteAnnotation(annotation);
-        }}
-      >
-        <Trash2 color="var(--color-gray-500)" />
-      </Button>
-      <!-- {/if} -->
+      {#if selected_category && selected_category == annotationCategory}
+        <Button
+          variant="ghost"
+          size="icon"
+          class="hover_button"
+          onclick={(e) => {
+            e.stopPropagation();
+            onDeleteAnnotation(annotation);
+          }}
+        >
+          <Trash2 color="var(--color-gray-500)" />
+        </Button>
+      {/if}
     </SidebarMenuButton>
   </SidebarMenuItem>
 
