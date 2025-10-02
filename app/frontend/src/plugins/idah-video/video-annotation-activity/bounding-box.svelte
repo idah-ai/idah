@@ -201,7 +201,7 @@
       style:transform-origin={"top left"}
       style:transform={`translate(${offset[X]}px, ${offset[Y]}px) scale(${ratio[X]}, ${ratio[Y]})`}
       vector-effect="non-scaling-stroke"
-      class="cursor-move"
+      class={editable ? "cursor-move" : "cursor-pointer"}
       fill-opacity="0.4"
       style:fill={color}
       style:stroke={color}
