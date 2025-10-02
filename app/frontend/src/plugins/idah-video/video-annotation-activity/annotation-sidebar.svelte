@@ -75,12 +75,13 @@
   };
 
   // Functions
-  function categorySelection(mode: string, category?: string) {
+  function categorySelection(mode: string, category?: CategoryDefinition) {
     if (category) {
       onEditValue(
         {
-          ...annotationValue,
-          category,
+          category: category.id,
+          label: category.name,
+          attributes: category,
         },
         mode,
       );
@@ -125,7 +126,7 @@
                 selected={annotationValue.category}
                 {onSelectAnnotation}
                 {onDeleteAnnotation}
-                onSelect={(selectedCategoryId) => categorySelection(mode, selectedCategoryId)}
+                onSelect={(selectedCategory) => categorySelection(mode, selectedCategory)}
               />
             </SidebarGroupContent>
           </SidebarGroup>
