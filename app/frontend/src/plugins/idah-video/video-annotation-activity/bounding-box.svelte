@@ -185,9 +185,9 @@
       style:transform-origin={"top left"}
       style:transform={`translate(${offset[X]}px, ${offset[Y]}px) scale(${ratio[X]}, ${ratio[Y]})`}
       vector-effect="non-scaling-stroke"
-      class="cursor-pointer transition-all duration-200"
+      class="cursor-pointer"
+      fill-opacity="0.4"
       style:fill={color}
-      style:fill-opacity="0.3"
       style:stroke={color}
       style:stroke-opacity="1"
       style:stroke-width="2"
