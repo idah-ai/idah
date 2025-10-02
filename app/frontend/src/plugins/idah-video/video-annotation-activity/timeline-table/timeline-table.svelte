@@ -34,7 +34,7 @@
     db,
   }: {
     annotations_promise: Promise<VideoAnnotation[]>;
-    tracking?: boolean;
+    // tracking?: boolean;
     scale: number;
     zoom: number;
     currentFrame: number;
