@@ -53,6 +53,26 @@
     return acc;
   }, new Map<string, CategoryConfiguration[]>());
 
+  let searchValue = $state("");
+  let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+
+  let filteredTools = $derived.by(async () => {
+    if (!searchValue) return tools;
+
+    return new Promise<Map<string, CategoryConfiguration[]>>((resolve) => {
+      const filtered = new Map<string, CategoryConfiguration[]>();
+      for (const [toolType, categories] of tools) {
+        const matchingCategories = categories.filter((category) =>
+          category.label.toLowerCase().includes(searchValue.toLowerCase()),
+        );
+        if (matchingCategories.length > 0) {
+          filtered.set(toolType, matchingCategories);
+        }
+      }
+      resolve(filtered);
+    });
+  });
+
   // Functions
   function categorySelection(mode: string, category?: CategoryDefinition) {
     if (category) {
@@ -71,32 +91,54 @@
       );
     }
   }
+
+  function searchCategory(e: Event) {
+    const value = (e.currentTarget as HTMLInputElement).value;
+
+    // Clear existing timer
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+    }
+
+    // Set new timer for debounced search (300ms delay)
+    debounceTimer = setTimeout(() => {
+      searchValue = value;
+    }, 200);
+  }
 </script>
 
 <Sidebar variant="inset" collapsible="none" class="w-sm">
   <SidebarHeader>
     {#if !tools.has(mode)}
-      <Input placeholder="Search observable" />
+      <Input placeholder="Search observable" oninput={(e) => searchCategory(e)} />
     {/if}
   </SidebarHeader>
   <SidebarContent>
-    {#each tools as [tool, categories]}
-      {#if !tools.has(mode) || tool == mode}
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <CategoriesSelection
-              {db}
-              type={tool}
-              {currentFrame}
-              {categories}
-              selected={annotationValue.category}
-              {onSelectAnnotation}
-              {onDeleteAnnotation}
-              onSelect={(s) => categorySelection(tool, s)}
-            />
-          </SidebarGroupContent>
-        </SidebarGroup>
+    {#await filteredTools}
+      <p class="p-4 text-sm text-gray-500">Searching...</p>
+    {:then searchedTools}
+      {#if searchedTools.size === 0}
+        <p class="p-4 text-sm text-gray-500">No results found</p>
+      {:else}
+        {#each searchedTools as [tool, categories]}
+          {#if !tools.has(mode) || tool == mode}
+            <SidebarGroup>
+              <SidebarGroupContent>
+                <CategoriesSelection
+                  {db}
+                  type={tool}
+                  {currentFrame}
+                  {categories}
+                  selected={annotationValue.category}
+                  {onSelectAnnotation}
+                  {onDeleteAnnotation}
+                  onSelect={(s) => categorySelection(tool, s)}
+                />
+              </SidebarGroupContent>
+            </SidebarGroup>
+          {/if}
+        {/each}
       {/if}
-    {/each}
+    {/await}
   </SidebarContent>
 </Sidebar>
