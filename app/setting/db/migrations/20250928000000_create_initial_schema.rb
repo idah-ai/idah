@@ -16,7 +16,7 @@ Sequel.migration do
     end
     Migration::Timestamps.trg_updated_at(self, :settings)
 
-    create_table(:user_settings) do
+    create_table(:account_settings) do
       column :id, :bigserial, primary_key: true
 
       column :account_id, :bigint, null: true, index: true
@@ -29,7 +29,7 @@ Sequel.migration do
 
       Migration::Timestamps.timestamps(self)
     end
-    Migration::Timestamps.trg_updated_at(self, :user_settings)
+    Migration::Timestamps.trg_updated_at(self, :account_settings)
 
     create_table(:plugins) do
       column :id, :bigserial, primary_key: true
