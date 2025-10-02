@@ -292,8 +292,8 @@
 
 <div class="flex-col">
   {#if selected_id && selected_category}
-    <div class="flex gap-2 py-2">
-      <Text class="text-gray-500" weight="medium">Category</Text>
+    <div class="flex pb-1">
+      <Text class="text-gray-700" weight="medium" size="sm">Category</Text>
     </div>
 
     {@const foundCategory = findCategory(categoriesTree, selected_category)}
@@ -321,7 +321,7 @@
     {/if}
   {:else}
     <div class="flex gap-2 py-2">
-      <Text class="text-gray-500" weight="medium">Categories</Text>
+      <Text class="text-gray-500" weight="semibold">Categories</Text>
 
       {#key $idb_updated_at}
         <Badge class={cn({ "bg-gray-300": !!selected_category })} variant="secondary">
