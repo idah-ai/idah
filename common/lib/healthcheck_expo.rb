@@ -25,7 +25,7 @@ class HealthcheckExpo < Verse::Exposition::Base
   # Need verse-periodic gem.
   if respond_to?(:on_schedule)
     # Every day at 1.17am, run a memory maintenance task and compact the memory.
-    # This run on each service instance.
+    # This run on each service instance.HealthcheckExpo
     expose on_schedule(
       ENV.fetch(
         "GC_COMPACT_CRON_RULE", "17 1 * * *"
