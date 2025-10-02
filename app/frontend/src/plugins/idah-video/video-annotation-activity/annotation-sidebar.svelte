@@ -2,29 +2,23 @@
   import Input from "@/components/ui/input/input.svelte";
   import Sidebar from "@/components/ui/sidebar/sidebar.svelte";
 
-  import CategoriesSelection from "./categories-selection.svelte";
+  import type { AnnotationValue } from "$lib/context/AnnotationContext";
+  import type {
+    CategoryConfiguration,
+    LabellingConfiguration,
+    PropertyConfiguration,
+    VideoAnnotation,
+    VideoMode,
+  } from "./VideoAnnotationContext";
   import SidebarHeader from "@/components/ui/sidebar/sidebar-header.svelte";
   import SidebarContent from "@/components/ui/sidebar/sidebar-content.svelte";
   import SidebarGroup from "@/components/ui/sidebar/sidebar-group.svelte";
   import SidebarGroupContent from "@/components/ui/sidebar/sidebar-group-content.svelte";
-  import Tabs from "@/components/ui/tabs/tabs.svelte";
-  import TabsList from "@/components/ui/tabs/tabs-list.svelte";
-  import TabsTrigger from "@/components/ui/tabs/tabs-trigger.svelte";
-
-  import { videoAnnotationTabs, type VideoAnnotationTab } from "./tabs/video-annotation-activity.tabs";
-
-  import type { AnnotationsIndexedDB } from "./indexedDB";
-  import type { AnnotationValue } from "$lib/context/AnnotationContext";
-  import type {
-    CategoryConfiguration,
-    PropertyConfiguration,
-    TaggingConfiguration,
-    VideoAnnotation,
-  } from "./VideoAnnotationContext";
+  import SidebarGroupLabel from "@/components/ui/sidebar/sidebar-group-label.svelte";
+  import CategoriesSelection from "./categories-selection.svelte";
   import type { IActivityContext } from "@/plugin/interface/Activity";
-  import type { CategoryDefinition } from "@/context/ActivityContext";
+  import type { AnnotationsIndexedDB } from "./indexedDB";
 
-  // Props
   let {
     annotationValue,
     onEditValue,
@@ -45,43 +39,25 @@
     db?: AnnotationsIndexedDB;
   } = $props();
 
-  // Variables
-  let activeTab = $state<VideoAnnotationTab>("categories");
+  let tools = (context.config as LabellingConfiguration).categories.reduce((acc, v: CategoryConfiguration) => {
+    if (!acc.has(v.type)) acc.set(v.type, [v]);
+    else {
+      let categories = acc.get(v.type);
 
-  let tools = {
-    taggings: (context.config.taggings ?? []).reduce(
-      (acc: Record<string, TaggingConfiguration[]>, item: TaggingConfiguration) => {
-        (acc[item.type] ??= []).push(item);
-        return acc;
-      },
-      {},
-    ),
+      if (categories) categories.push(v);
+      else categories = [v];
 
-    categories: (context.config.categories ?? []).reduce(
-      (acc: Record<string, CategoryConfiguration[]>, item: CategoryConfiguration) => {
-        (acc[item.type] ??= []).push(item);
-        return acc;
-      },
-      {},
-    ),
+      acc.set(v.type, categories);
+    }
+    return acc;
+  }, new Map<string, CategoryConfiguration[]>());
 
-    properties: (context.config.properties ?? []).reduce(
-      (acc: Record<string, PropertyConfiguration[]>, item: PropertyConfiguration) => {
-        (acc[item.type] ??= []).push(item);
-        return acc;
-      },
-      {},
-    ),
-  };
-
-  // Functions
-  function categorySelection(mode: string, category?: CategoryDefinition) {
+  function categorySelection(mode: string, category?: string) {
     if (category) {
       onEditValue(
         {
-          category: category.id,
-          label: category.name,
-          attributes: category,
+          ...annotationValue,
+          category,
         },
         mode,
       );
@@ -92,45 +68,32 @@
       );
     }
   }
-
-  //   For checking activeTab
-  function handleTabChange(value: VideoAnnotationTab): void {
-    activeTab = value;
-  }
 </script>
 
-<Sidebar variant="inset" collapsible="none" class="w-sm">
+<Sidebar variant="inset" collapsible="none">
   <SidebarHeader>
-    <Tabs bind:value={activeTab}>
-      <TabsList class="w-full">
-        {#each videoAnnotationTabs as { label, value } (value)}
-          <TabsTrigger {value} onclick={() => handleTabChange(value)}>{label}</TabsTrigger>
-        {/each}
-      </TabsList>
-    </Tabs>
-
-    <Input placeholder="Search observable" />
+    {#if !tools.has(mode)}
+      <Input placeholder="search" />
+    {/if}
   </SidebarHeader>
-
   <SidebarContent>
-    {#each Object.entries(tools) as [category, categoryList]}
-      {#if activeTab === category}
-        {#each Object.entries(categoryList) as [type, items]}
-          <SidebarGroup>
-            <SidebarGroupContent>
-              <CategoriesSelection
-                {db}
-                {type}
-                {currentFrame}
-                categories={items as CategoryConfiguration[]}
-                selected={annotationValue.category}
-                {onSelectAnnotation}
-                {onDeleteAnnotation}
-                onSelect={(selectedCategory) => categorySelection(mode, selectedCategory)}
-              />
-            </SidebarGroupContent>
-          </SidebarGroup>
-        {/each}
+    {#each tools as [tool, categories]}
+      {#if !tools.has(mode) || tool == mode}
+        <SidebarGroup>
+          <SidebarGroupLabel>{tool}</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <CategoriesSelection
+              {db}
+              type={tool}
+              {currentFrame}
+              {categories}
+              selected={annotationValue.category}
+              {onSelectAnnotation}
+              {onDeleteAnnotation}
+              onSelect={(s) => categorySelection(tool, s)}
+            />
+          </SidebarGroupContent>
+        </SidebarGroup>
       {/if}
     {/each}
   </SidebarContent>

@@ -3,7 +3,7 @@
   import Button from "@/components/ui/button/button.svelte";
   import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
   import { cn } from "@/utils";
-  import { Eye, LockOpen, Trash2 } from "@lucide/svelte";
+  import { Trash2 } from "@lucide/svelte";
   import { idb_updated_at, uncategorizedAnnotations } from "./idb_store.svelte";
   import { SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
 
@@ -111,10 +111,6 @@
 
       {#if selected && selected == annotationCategory}
         <div class="hover_button flex gap-0">
-          <Button variant="ghost" size="icon">
-            <LockOpen color="var(--color-gray-500)" />
-          </Button>
-
           <Button
             variant="ghost"
             size="icon"
@@ -124,10 +120,6 @@
             }}
           >
             <Trash2 color="var(--color-gray-500)" />
-          </Button>
-
-          <Button variant="ghost" size="icon">
-            <Eye color="var(--color-gray-500)" />
           </Button>
         </div>
       {/if}
