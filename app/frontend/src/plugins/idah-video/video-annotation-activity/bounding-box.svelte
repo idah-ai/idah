@@ -190,7 +190,7 @@
       style:fill-opacity="0.3"
       style:stroke={color}
       style:stroke-opacity="1"
-      style:stroke-width="3px"
+      style:stroke-width="2"
       onmousedown={(e) => {
         if (editable && !panStart && !isEditing()) {
           e.stopPropagation();
