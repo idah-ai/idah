@@ -76,14 +76,13 @@
 <Sidebar variant="inset" collapsible="none" class="w-sm">
   <SidebarHeader>
     {#if !tools.has(mode)}
-      <Input placeholder="search" />
+      <Input placeholder="Search observable" />
     {/if}
   </SidebarHeader>
   <SidebarContent>
     {#each tools as [tool, categories]}
       {#if !tools.has(mode) || tool == mode}
         <SidebarGroup>
-          <SidebarGroupLabel>{tool}</SidebarGroupLabel>
           <SidebarGroupContent>
             <CategoriesSelection
               {db}
