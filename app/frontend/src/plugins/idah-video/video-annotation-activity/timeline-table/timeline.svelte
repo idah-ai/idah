@@ -26,7 +26,7 @@
 
 <div class="" style:height="2em">
   {#if Math.ceil((range[1] - range[0]) / scale) + 1 > 0}
-    {#each Array(Math.ceil((range[1] - range[0]) / scale) + 1) as u, i}
+    {#each Array(Math.ceil((range[1] - range[0]) / scale) + 1) as _u, i (i)}
       <TimelineCell
         frame={range[0] + i * scale}
         {currentFrame}

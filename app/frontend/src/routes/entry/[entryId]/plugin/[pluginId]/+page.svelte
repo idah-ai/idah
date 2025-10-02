@@ -1,13 +1,14 @@
 <script lang="ts">
-  import IdahPlugin from "@/plugin/IdahPlugin.svelte";
-  import type { IActivityContext, IActivityView } from "@/plugin/interface/Activity";
   import { page } from "$app/state";
-  // resolve records registration
-  import { datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
+
+  import IdahPlugin from "@/plugin/IdahPlugin.svelte";
+
   import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
   import { activityContextForEntry } from "@/plugin/ActivityContext";
-  import type { PluginManager } from "@/plugin/PluginManager";
 
+  import type { IActivityContext } from "@/plugin/interface/Activity";
+
+  // Variables
   let entry_id: string = page.params.entryId as string;
   let plugin_id: string = page.params.pluginId as string;
 

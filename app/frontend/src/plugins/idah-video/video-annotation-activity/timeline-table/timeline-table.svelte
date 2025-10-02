@@ -19,7 +19,7 @@
 
   // Props
   let {
-    tracking = false,
+    // tracking = false,
     scale = 1,
     zoom = 1,
     currentFrame,
@@ -116,7 +116,7 @@
 </script>
 
 {#snippet row(annotations: VideoAnnotation[])}
-  {#each annotations as annotation}
+  {#each annotations as annotation (annotation.metadata.id)}
     {@const isSelected = selectedAnnotation?.metadata.id == annotation.metadata.id}
     <TableRow
       class={cn("border-b-0", {
@@ -204,12 +204,12 @@
     if (delta || e.ctrlKey || e.shiftKey || e.altKey) e.preventDefault();
   }}
 >
-  <TableHeader class="sticky z-10" style={"inset-block-start:0"}>
+  <TableHeader class="sticky z-10" style="inset-block-start: 0">
     <TableRow>
       <TableHead class="w-100"></TableHead>
       <TableHead class="p-0">
         <div class="text-muted-foreground relative h-5 border-b">
-          {#each [...Array(range[1] - range[0] + (scale - (range_span % scale)))].map((v, i) => i) as i}
+          {#each [...Array(range[1] - range[0] + (scale - (range_span % scale)))].map((v, i) => i) as i (i)}
             {@const width = (1 / ((range[1] - range[0] + (scale - (range_span % scale))) / 100)) * scale}
             {@const isSelected = Math.floor(i + range[0]) == currentFrame}
             {@const isHovered = i + range[0] == hovered_column}
@@ -258,7 +258,7 @@
     </TableRow>
   </TableHeader>
   {#if range_span != totalFrames}
-    <TableFooter class="sticky z-10" style={"inset-block-end:0"}>
+    <TableFooter class="sticky z-10" style="inset-block-end: 0">
       <TableRow>
         <TableCell></TableCell>
         <TableCell>
