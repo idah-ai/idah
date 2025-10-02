@@ -10,13 +10,16 @@
   import type { CategoryConfiguration, VideoAnnotation } from "./VideoAnnotationContext";
   import type { CategoryDefinition } from "@/context/ActivityContext";
   import type { AnnotationsIndexedDB } from "./indexedDB";
+  import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger } from "@/components/ui/select";
 
   // Props
   let {
     type,
     currentFrame,
     categories,
-    selected,
+    selected_category,
+    selected_id,
+    toolMode,
     onSelect,
     onSelectAnnotation,
     onDeleteAnnotation,
@@ -25,7 +28,9 @@
     type: string;
     currentFrame: number;
     categories: CategoryConfiguration[];
-    selected: string | undefined;
+    toolMode: boolean;
+    selected_category: string | undefined;
+    selected_id: string | undefined;
     onSelect: (category?: CategoryDefinition) => void;
     onSelectAnnotation: (annotation: VideoAnnotation) => void;
     onDeleteAnnotation: (annotation: VideoAnnotation) => void;
@@ -39,11 +44,6 @@
   let categoriesTree: CategoryDefinition[] = categories.reduce<CategoryDefinition[]>((acc, category_configuration) => {
     return buildTree(acc, category_configuration.id.split("/"), category_configuration);
   }, []);
-
-  let uncategorized_promise = $derived.by(async () => {
-    $idb_updated_at;
-    return ($uncategorizedAnnotations = (await db?.getAllIndex("category", "null")) || []);
-  });
 
   // Functions
   function buildTree(
@@ -92,6 +92,19 @@
 
     return filterAnnotations.length > 0;
   }
+
+  function findCategory(categories: CategoryDefinition[], category: string): CategoryDefinition | undefined {
+    const found = categories.find((c) => category.startsWith(c.id));
+
+    if (!found) return;
+
+    if (found.id != category) {
+      if (found.nestedCategories) return findCategory(found.nestedCategories, category);
+      else return;
+    }
+
+    return found;
+  }
 </script>
 
 {#snippet annotationSelection(annotation: VideoAnnotation, name: string, annotationCategory?: string)}
@@ -114,7 +127,7 @@
         {name}
       </div>
 
-      {#if selected && selected == annotationCategory}
+      {#if selected_category && selected_category == annotationCategory}
         <Button
           variant="ghost"
           size="icon"
@@ -204,7 +217,7 @@
   selected: string | undefined,
   parent: string[] = [],
 )}
-  <Collapsible open={openStates[category.id] || false}>
+  <Collapsible open={!!category}>
     {#key forceRender}
       {#await haveAnnotationsInCategory(category.id) then hasAnnotations}
         <CollapsibleTrigger
@@ -252,7 +265,7 @@
 
     <CollapsibleContent class="ml-5" hidden={!openStates[category.id]}>
       {#key $idb_updated_at}
-        {#if db && category}
+        {#if !toolMode && db && category}
           {#await db.getAllIndex("category", category.id)}
             ...
           {:then anns}
@@ -276,25 +289,53 @@
   </Collapsible>
 {/snippet}
 
-<!-- Main component template -->
-{#if db}
-  {#key [db, $idb_updated_at]}
-    {#await uncategorized_promise}
-      {#each $uncategorizedAnnotations.filter((annotation) => {
-        return currentFrame >= annotation.shape.start && currentFrame <= annotation.shape.end && annotation.shape.type == type;
-      }) as annotation}
-        {@render annotationSelection(annotation, annotation.value.label || annotation.metadata.id)}
+{#if selected_id && selected_category}
+  {#if categoriesTree && findCategory(categoriesTree, selected_category)}
+    <Select
+      type="single"
+      onValueChange={(category_id) => {
+        console.log(findCategory(categoriesTree, category_id));
+        onSelect(findCategory(categoriesTree, category_id));
+      }}
+    >
+      <SelectTrigger class="w-[180px]">
+        {@render showCategoryTitle(findCategory(categoriesTree, selected_category), false, false)}
+      </SelectTrigger>
+      <SelectContent>
+        <SelectGroup>
+          <SelectLabel>categories</SelectLabel>
+          {#each categories as category}
+            <SelectItem value={category.id} label={category.label}>
+              {category.label}
+            </SelectItem>
+          {/each}
+        </SelectGroup>
+      </SelectContent>
+    </Select>
+  {/if}
+{:else}
+  <Collapsible open={!!selected_category}>
+    <CollapsibleTrigger>
+      Categories
+      {#key $idb_updated_at}
+        <Badge class={cn({ "bg-primary": !!selected_category })} variant="secondary">
+          {#await db?.getAllIndex("category")}
+            ...
+          {:then anns}
+            {anns?.filter(
+              (annotation) =>
+                currentFrame >= annotation.shape.start &&
+                currentFrame <= annotation.shape.end &&
+                annotation.shape.type == type,
+            ).length}
+          {/await}
+        </Badge>
+      {/key}
+    </CollapsibleTrigger>
+    <CollapsibleContent style={"margin-left:10px"}>
+      {#each categoriesTree as category}
+        {@render categorySelection(category, category.nestedCategories, onSelect, selected_category)}
       {/each}
-    {:then annotations}
-      {#each annotations.filter((annotation) => {
-        return currentFrame >= annotation.shape.start && currentFrame <= annotation.shape.end && annotation.shape.type == type;
-      }) as annotation}
-        {@render annotationSelection(annotation, annotation.value.label || annotation.metadata.id)}
-      {/each}
-    {/await}
-  {/key}
+    </CollapsibleContent>
+  </Collapsible>
 {/if}
-
-{#each categoriesTree as category}
-  {@render categorySelection(category, category.nestedCategories, onSelect, selected)}
-{/each}
