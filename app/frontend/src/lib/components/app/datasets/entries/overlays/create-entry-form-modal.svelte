@@ -1,6 +1,7 @@
 <script lang="ts">
   import Badge from "@/components/ui/badge/badge.svelte";
   import Button from "@/components/ui/button/button.svelte";
+  import DialogClose from "@/components/ui/dialog/dialog-close.svelte";
   import FileUpload from "@/components/app/forms/fields/upload/file-upload.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
   import Spinner from "@/components/app/loading/spinner.svelte";
@@ -19,16 +20,29 @@
   let { action, title, open = $bindable() }: FormModalBaseProps = $props();
 
   // Variables
-  let datasetId = page.params.datasetId as string;
-  let uploading: boolean = $state(false);
-  let selectedMedias: FileList | null = $state(null);
-
   interface UploadStatuses {
     uuid: string;
     media: File;
     status: "uploading" | "success" | "error";
   }
   let uploadStatuses: Array<UploadStatuses> = $state([]);
+
+  let datasetId = page.params.datasetId as string;
+  let uploading: boolean = $state(false);
+  let selectedMedias: FileList | null = $state(null);
+  let showUploadStatus: boolean = $derived(uploadStatuses.length > 0);
+
+  let disabledUploadButton: boolean = $derived.by(() => {
+    if (!selectedMedias) return true;
+
+    if (!selectedMedias.length) return true;
+
+    if (uploading) return true;
+
+    if (showUploadStatus) return true;
+
+    return false;
+  });
 
   // Functions
   function resetForm(): void {
@@ -118,7 +132,7 @@
   onConfirm={submit}
   bind:open
 >
-  {#if uploading}
+  {#if showUploadStatus}
     <div class="flex w-full flex-col gap-4">
       {#each uploadStatuses as { uuid, media, status } (uuid)}
         <div class="flex w-full gap-4">
@@ -144,14 +158,21 @@
     ></FileUpload>
   {/if}
 
-  {#snippet confirm()}
-    <Button disabled={!selectedMedias || selectedMedias.length === 0} onclick={submit}>
-      {#if uploading}
-        <Spinner variant="primary-foreground"></Spinner>
-        Uploading...
-      {:else}
-        Upload
-      {/if}
-    </Button>
+  {#snippet actions()}
+    <!-- Only show actions when not uploading -->
+    {#if !showUploadStatus}
+      <DialogClose>
+        <Button variant="outline" class="w-full lg:w-auto" onclick={resetForm}>Cancel</Button>
+      </DialogClose>
+
+      <Button disabled={disabledUploadButton} onclick={submit}>
+        {#if uploading}
+          <Spinner variant="primary-foreground"></Spinner>
+          Uploading...
+        {:else}
+          Upload
+        {/if}
+      </Button>
+    {:else}{/if}
   {/snippet}
 </FormModal>
