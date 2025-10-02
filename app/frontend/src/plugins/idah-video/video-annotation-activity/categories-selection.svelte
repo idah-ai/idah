@@ -11,6 +11,8 @@
   import type { CategoryDefinition } from "@/context/ActivityContext";
   import type { AnnotationsIndexedDB } from "./indexedDB";
   import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger } from "@/components/ui/select";
+  import { Title } from "@/components/ui/alert-dialog";
+  import Text from "@/components/ui/text/Text.svelte";
 
   // Props
   let {
@@ -288,32 +290,57 @@
   </Collapsible>
 {/snippet}
 
-{#if selected_id && selected_category}
-  {@const foundCategory = findCategory(categoriesTree, selected_category)}
-  {#if categoriesTree && foundCategory}
-    <Select
-      type="single"
-      onValueChange={(category_id) => {
-        onSelect(findCategory(categoriesTree, category_id));
-      }}
-    >
-      <SelectTrigger class="w-full">
-        {@render showCategoryTitle(foundCategory, false, false)}
-      </SelectTrigger>
-      <SelectContent>
-        <SelectGroup>
-          <SelectLabel>categories</SelectLabel>
-          {#each categories as category}
-            <SelectItem value={category.id} label={category.label}>
-              {category.label}
-            </SelectItem>
-          {/each}
-        </SelectGroup>
-      </SelectContent>
-    </Select>
+<div class="flex-col">
+  {#if selected_id && selected_category}
+    <div class="flex gap-2 py-2">
+      <Text class="text-gray-500" weight="medium">Category</Text>
+    </div>
+
+    {@const foundCategory = findCategory(categoriesTree, selected_category)}
+    {#if categoriesTree && foundCategory}
+      <Select
+        type="single"
+        onValueChange={(category_id) => {
+          onSelect(findCategory(categoriesTree, category_id));
+        }}
+      >
+        <SelectTrigger class="w-full">
+          {@render showCategoryTitle(foundCategory, false, false)}
+        </SelectTrigger>
+        <SelectContent>
+          <SelectGroup>
+            <SelectLabel>categories</SelectLabel>
+            {#each categories as category}
+              <SelectItem value={category.id} label={category.label}>
+                {category.label}
+              </SelectItem>
+            {/each}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
+    {/if}
+  {:else}
+    <div class="flex gap-2 py-2">
+      <Text class="text-gray-500" weight="medium">Categories</Text>
+
+      {#key $idb_updated_at}
+        <Badge class={cn({ "bg-gray-300": !!selected_category })} variant="secondary">
+          {#await db?.getAllIndex("category")}
+            ...
+          {:then anns}
+            {anns?.filter(
+              (annotation) =>
+                currentFrame >= annotation.shape.start &&
+                currentFrame <= annotation.shape.end &&
+                annotation.shape.type == type,
+            ).length}
+          {/await}
+        </Badge>
+      {/key}
+    </div>
+
+    {#each categoriesTree as category}
+      {@render categorySelection(category, category.nestedCategories, onSelect, selected_category)}
+    {/each}
   {/if}
-{:else}
-  {#each categoriesTree as category}
-    {@render categorySelection(category, category.nestedCategories, onSelect, selected_category)}
-  {/each}
-{/if}
+</div>
