@@ -58,9 +58,8 @@ RSpec.describe ProjectMember, database: true do
 
     describe "scope definitions" do
       context "scope: all", as: :system do
-        # subject { described_class.new(current_auth_context) }
         before do
-          @test_rights = ["dataset:project_members.*.*"]
+          @test_rights = ["#{described_class.resource}.*.*"]
         end
         subject { described_class.new(Verse::Auth::Context.new(@test_rights)) }
         it "returns all project members" do
@@ -73,7 +72,7 @@ RSpec.describe ProjectMember, database: true do
       # scope: memberships that are in the same project as the user
       context "scope: same_project" do
         before do
-          @test_rights = ["dataset:project_members.read.same_project"]
+          @test_rights = ["#{described_class.resource}.read.same_project"]
           @test_account_id = 2
         end
         subject { described_class.new(Verse::Auth::Context.new(@test_rights, metadata: { id: @test_account_id })) }
@@ -91,7 +90,7 @@ RSpec.describe ProjectMember, database: true do
       # scope: user's membership
       context "scope: own" do
         before do
-          @test_rights = ["dataset:project_members.read.own"]
+          @test_rights = ["#{described_class.resource}.read.own"]
           @test_account_id = 2
         end
         subject { described_class.new(Verse::Auth::Context.new(@test_rights, metadata: { id: @test_account_id })) }
