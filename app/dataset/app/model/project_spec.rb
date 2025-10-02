@@ -23,17 +23,17 @@ RSpec.describe Project, database: true do
     }
 
     describe "scope definitions" do
-      context "#scope:all", as: :system do
+      context "scope: all", as: :system do
         subject { described_class.new(current_auth_context) }
         it "returns all projects" do
-          projects = system_repo.index({})
+          projects = subject.index({})
 
           expect(projects.size).to eq(2)
         end
       end
 
       # scope: projects the user owns/creates
-      context "#scope:own", as: :project_manager do
+      context "scope: own", as: :project_manager do
         subject { described_class.new(current_auth_context) }
         before do
           @created_project = system_repo.find!(
@@ -51,7 +51,7 @@ RSpec.describe Project, database: true do
       end
 
       # scope: projects the user is a member of
-      context "#scope:member", as: :annotator do
+      context "scope: member", as: :annotator do
         subject { described_class.new(current_auth_context) }
         before do
           @testing_project = test_project2

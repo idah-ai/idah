@@ -3,4 +3,6 @@ reviewer:
   description: "Reviewer"
   assignable: true
   rights:
-    - dataset.project.read.member
+    - "dataset:projects.read.member"
+    - "dataset:project_members.read.same_project"
+    - "dataset:project_members.delete.own"
