@@ -4,9 +4,8 @@
   import { DatasetRecord } from "@/data/model/dataset/dataset-record";
   import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
   import { page } from "$app/state";
-  import { Slider } from "@/components/ui/slider";
   import Spinner from "@/components/app/loading/spinner.svelte";
-  import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+  import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
   import Text from "@/components/ui/text/Text.svelte";
   import Timeline from "./timeline.svelte";
 
@@ -197,14 +196,37 @@
         }
       }
 
+      /** Handle Shift + Scroll to slide left or right */
       if (e.shiftKey) {
-        // console.log("scroll", e.wheelDeltaX);
+        const isScrollUp = e.deltaX < 0;
+        const isScrollDown = e.deltaX > 0;
+        const next = range_span / 2;
+
+        if (isScrollUp) {
+          setOffset(range[1] - next);
+        } else if (isScrollDown) {
+          setOffset(range[0] - next);
+        }
+      }
+
+      /** Handle CMD + Scroll to zoom in or out */
+      if (e.metaKey) {
+        const isScrollUp = e.deltaY < 0;
+        const isScrollDown = e.deltaY > 0;
+
+        const next = scale * (zoom / 10);
+
+        if (isScrollUp) {
+          setZoom(zoom + next);
+        } else if (isScrollDown) {
+          setZoom(zoom - next);
+        }
       }
     }
-    if (delta || e.ctrlKey || e.shiftKey || e.altKey) e.preventDefault();
+    if (delta || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) e.preventDefault();
   }}
 >
-  <TableHeader class="sticky z-10" style="inset-block-start: 0">
+  <TableHeader class="sticky z-10 bg-white" style="inset-block-start: 0">
     <TableRow>
       <TableHead class="w-100"></TableHead>
       <TableHead class="p-0">
@@ -220,7 +242,7 @@
 
             {#if isSelected}
               <div
-                class="border-border bg-primary text-primary-foreground absolute top-0 z-10 border-l"
+                class="border-border text-primary absolute top-0 z-20 border-b border-l bg-white"
                 style:width="{width}%"
                 style:padding-left="0.125rem"
                 style:left="{startLeftPosition}%"
@@ -229,7 +251,7 @@
               </div>
             {:else if isHovered}
               <div
-                class="border-border text-primary bg-primary-foreground absolute top-0 z-10 border-l"
+                class="border-border text-primary bg-primary/20 absolute top-0 z-10 border-l"
                 style:width="{width}%"
                 style:padding-left="0.125rem"
                 style:left="{startLeftPosition}%"
@@ -238,7 +260,7 @@
               </div>
             {:else if isDefault}
               <div
-                class="border-border absolute top-0 border-l"
+                class="border-border text-muted-foreground/50 absolute top-0 border-l"
                 style:width="{width}%"
                 style:padding-left="0.125rem"
                 style:left="{startLeftPosition}%"
@@ -257,7 +279,8 @@
       </TableHead>
     </TableRow>
   </TableHeader>
-  {#if range_span != totalFrames}
+
+  <!-- {#if range_span != totalFrames}
     <TableFooter class="sticky z-10" style="inset-block-end: 0">
       <TableRow>
         <TableCell></TableCell>
@@ -269,6 +292,8 @@
             step={1}
             value={range}
             onValueChange={(v) => {
+              console.log(v);
+
               if (v[0] == range[0]) {
                 setOffset(v[1] - range_span);
               } else {
@@ -279,7 +304,7 @@
         </TableCell>
       </TableRow>
     </TableFooter>
-  {/if}
+  {/if} -->
 
   <TableBody>
     {#await annotations_promise}

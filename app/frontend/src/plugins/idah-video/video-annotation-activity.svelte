@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, setContext } from "svelte";
   import { toast } from "svelte-sonner";
   import { uuidv7 } from "uuidv7";
   import { Toaster } from "@/components/ui/sonner";
@@ -35,8 +35,12 @@
   import { registerVisualModeShortcuts } from "./video-annotation-activity/shortcut";
   import { ShortcutManager } from "@/shortcut/ShortcutManager";
   import * as Command from "$lib/components/ui/command/index.js";
+  import type { LabelingConfiguration } from "@/data/model/dataset/labels";
+  import { page } from "$app/state";
+  import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
+  import { DatasetRecord } from "@/data/model/dataset/dataset-record";
 
-  let { context }: { context: IActivityContext } = $props();
+  let { context, labelConfig }: { context: IActivityContext; labelConfig: LabelingConfiguration } = $props();
 
   let player: Video | undefined = $state();
   let player_container: HTMLDivElement | undefined = $state(); // ...
@@ -58,6 +62,8 @@
   let videoController: VideoController;
 
   let annotationsIDB: AnnotationsIndexedDB | undefined = $state();
+
+  setContext("labelConfig", labelConfig);
 
   let commandOpen = $state(false);
   registerVisualModeShortcuts({

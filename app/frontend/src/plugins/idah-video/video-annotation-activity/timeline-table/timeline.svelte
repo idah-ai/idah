@@ -24,7 +24,7 @@
   } = $props();
 </script>
 
-<div class="" style:height="2em">
+<div class="h-8">
   {#if Math.ceil((range[1] - range[0]) / scale) + 1 > 0}
     {#each Array(Math.ceil((range[1] - range[0]) / scale) + 1) as _u, i (i)}
       <TimelineCell
