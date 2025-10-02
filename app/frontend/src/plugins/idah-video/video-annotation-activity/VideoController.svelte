@@ -161,10 +161,10 @@
         placeholder="Frame"
         min={0}
         max={Math.max(0, totalFrames - 1)}
+        suffix={`/ ${Math.max(0, totalFrames - 1)}`}
         value={currentFrame}
         onchange={seekToFrame}
       />
-      <span>/ {Math.max(0, totalFrames - 1)}</span>
     </div>
   </div>
 
@@ -174,10 +174,12 @@
   <!-- CONTAINER::RIGHT -->
   <div class="flex items-center gap-2">
     <!-- VIDEO::ZOOM ADJUSTER (ZOOM IN / ZOOM OUT) -->
-    <div class="flex items-center gap-1">
+    <div class="flex items-center gap-2">
       <Tooltips align="center">
         {#snippet trigger()}
-          <ZoomOutIcon class="size-5" />
+          <Button variant="outline" size="icon" onclick={() => onZoomChange(zoom - 1)}>
+            <ZoomOutIcon class="size-4" />
+          </Button>
         {/snippet}
 
         {#snippet content()}
@@ -190,7 +192,9 @@
 
       <Tooltips align="center">
         {#snippet trigger()}
-          <ZoomInIcon class="size-5" />
+          <Button variant="outline" size="icon" onclick={() => onZoomChange(zoom + 1)}>
+            <ZoomInIcon class="size-4" />
+          </Button>
         {/snippet}
 
         {#snippet content()}
@@ -210,7 +214,7 @@
           {/snippet}
 
           {#snippet content()}
-            Scale
+            Zoom scale
           {/snippet}
         </Tooltips>
       </PopoverTrigger>
