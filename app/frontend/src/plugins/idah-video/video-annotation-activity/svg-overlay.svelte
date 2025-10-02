@@ -242,7 +242,7 @@
       offset={zoomInfo.offset}
       cursor={cursor_downscaled}
       editable={mode == "video:bounding_box"}
-      color={selected?.value.attributes?.data.color || "#FEF9C340"}
+      color={selected?.value.attributes?.data.color || "gray"}
       onChange={(bb) => {
         onSelection("video:bounding_box", frame, bb, selected?.metadata.id);
         points = bb;
