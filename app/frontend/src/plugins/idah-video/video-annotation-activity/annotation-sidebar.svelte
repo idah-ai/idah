@@ -3,18 +3,11 @@
   import Sidebar from "@/components/ui/sidebar/sidebar.svelte";
 
   import type { AnnotationValue } from "$lib/context/AnnotationContext";
-  import type {
-    CategoryConfiguration,
-    LabellingConfiguration,
-    PropertyConfiguration,
-    VideoAnnotation,
-    VideoMode,
-  } from "./VideoAnnotationContext";
+  import type { CategoryConfiguration, LabellingConfiguration, VideoAnnotation } from "./VideoAnnotationContext";
   import SidebarHeader from "@/components/ui/sidebar/sidebar-header.svelte";
   import SidebarContent from "@/components/ui/sidebar/sidebar-content.svelte";
   import SidebarGroup from "@/components/ui/sidebar/sidebar-group.svelte";
   import SidebarGroupContent from "@/components/ui/sidebar/sidebar-group-content.svelte";
-  import SidebarGroupLabel from "@/components/ui/sidebar/sidebar-group-label.svelte";
   import CategoriesSelection from "./categories-selection.svelte";
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import type { AnnotationsIndexedDB } from "./indexedDB";
