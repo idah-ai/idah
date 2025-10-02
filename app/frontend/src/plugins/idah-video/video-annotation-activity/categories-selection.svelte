@@ -110,7 +110,7 @@
 {#snippet annotationSelection(annotation: VideoAnnotation, name: string, annotationCategory?: string)}
   <SidebarMenuItem class="item_hover list-none p-1">
     <SidebarMenuButton
-      class={cn("ml-5 w-full justify-between px-5 hover:cursor-pointer")}
+      class={cn("ml-2 w-full justify-between px-1 hover:cursor-pointer")}
       onclick={() => onSelectAnnotation(annotation)}
     >
       <div class="flex gap-2">
@@ -159,7 +159,9 @@
   <div class="flex items-center gap-2">
     <Button
       variant="ghost"
-      class="p-0 hover:cursor-pointer"
+      class={cn("p-0 hover:cursor-pointer", {
+        hidden: !haveChildren,
+      })}
       onclick={(e) => {
         e.stopPropagation();
         if (category.nestedCategories || haveChildren) {
@@ -309,7 +311,6 @@
         </SelectTrigger>
         <SelectContent>
           <SelectGroup>
-            <SelectLabel>categories</SelectLabel>
             {#each categories as category}
               <SelectItem value={category.id} label={category.label}>
                 {category.label}
