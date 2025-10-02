@@ -29,6 +29,7 @@
     mode,
     currentFrame,
     db,
+        selected_id
   }: {
     currentFrame: number;
     annotationValue: AnnotationValue;
@@ -38,6 +39,7 @@
     context: IActivityContext;
     mode: string;
     db?: AnnotationsIndexedDB;
+        selected_id?: string
   } = $props();
 
   let tools = (context.config as LabellingConfiguration).categories.reduce((acc, v: CategoryConfiguration) => {
@@ -45,6 +47,7 @@
     else {
       let categories = acc.get(v.type);
 
+      console.log(v)
       if (categories) categories.push(v);
       else categories = [v];
 
@@ -74,30 +77,50 @@
 </script>
 
 <Sidebar variant="inset" collapsible="none" class="w-sm">
-  <SidebarHeader>
-    {#if !tools.has(mode)}
-      <Input placeholder="search" />
-    {/if}
-  </SidebarHeader>
-  <SidebarContent>
-    {#each tools as [tool, categories]}
-      {#if !tools.has(mode) || tool == mode}
-        <SidebarGroup>
-          <SidebarGroupLabel>{tool}</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <CategoriesSelection
-              {db}
-              type={tool}
-              {currentFrame}
-              {categories}
-              selected={annotationValue.category}
-              {onSelectAnnotation}
-              {onDeleteAnnotation}
-              onSelect={(s) => categorySelection(tool, s)}
-            />
-          </SidebarGroupContent>
-        </SidebarGroup>
-      {/if}
-    {/each}
-  </SidebarContent>
+    <SidebarHeader>
+        {#if !tools.has(mode)}
+            <Input placeholder="search" />
+        {/if}
+    </SidebarHeader>
+    <SidebarContent>
+        {#each tools as [tool, categories]}
+            {#if !tools.has(mode) || mode == 'visual'}
+                <SidebarGroup>
+                    <SidebarGroupLabel>{tool}</SidebarGroupLabel>
+                    <SidebarGroupContent>
+                        <CategoriesSelection
+                            {db}
+                            toolMode={tool == mode}
+                            type={tool}
+                            {currentFrame}
+                            {categories}
+                            selected_category={annotationValue.category}
+                            selected_id={selected_id}
+                            {onSelectAnnotation}
+                            {onDeleteAnnotation}
+                            onSelect={(s) => categorySelection(tool, s)}
+                        />
+                    </SidebarGroupContent>
+                </SidebarGroup>
+            {:else if tool == mode}
+                <SidebarGroup>
+                    <SidebarGroupLabel>{tool}</SidebarGroupLabel>
+                    <SidebarGroupContent>
+                        <CategoriesSelection
+                            {db}
+                            toolMode={tool == mode}
+                            type={tool}
+                            {currentFrame}
+                            {categories}
+                            selected_category={annotationValue.category}
+                            selected_id={selected_id}
+                            {onSelectAnnotation}
+                            {onDeleteAnnotation}
+                            onSelect={(s) => categorySelection(tool, s)}
+                        />
+                    </SidebarGroupContent>
+                </SidebarGroup>
+            {/if}
+        {/each}
+    </SidebarContent>
 </Sidebar>
