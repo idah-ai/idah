@@ -200,11 +200,12 @@
       if (e.shiftKey) {
         const isScrollUp = e.deltaX < 0;
         const isScrollDown = e.deltaX > 0;
-        const next = range_span / 2;
 
         if (isScrollUp) {
-          setOffset(range[1] - next);
+          const next = Math.floor(range_span / 4);
+          setOffset(range[0] + next);
         } else if (isScrollDown) {
+          const next = Math.floor(range_span / 4);
           setOffset(range[0] - next);
         }
       }
@@ -246,6 +247,7 @@
                 style:width="{width}%"
                 style:padding-left="0.125rem"
                 style:left="{startLeftPosition}%"
+                onclick={onSeekFrame(i + range[0])}
               >
                 {i + range[0]}
               </div>
@@ -255,6 +257,7 @@
                 style:width="{width}%"
                 style:padding-left="0.125rem"
                 style:left="{startLeftPosition}%"
+                onclick={onSeekFrame(i + range[0])}
               >
                 {i + range[0]}
               </div>
@@ -264,6 +267,7 @@
                 style:width="{width}%"
                 style:padding-left="0.125rem"
                 style:left="{startLeftPosition}%"
+                onclick={onSeekFrame(i + range[0])}
               >
                 {i + range[0]}
               </div>
@@ -272,6 +276,7 @@
                 class="border-border absolute bottom-0 border-l"
                 style:height="0.6em"
                 style:left="calc({startLeftPosition}%)"
+                onclick={onSeekFrame(i + range[0])}
               ></div>
             {/if}
           {/each}
