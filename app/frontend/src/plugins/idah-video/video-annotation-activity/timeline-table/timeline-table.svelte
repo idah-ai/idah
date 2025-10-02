@@ -246,6 +246,7 @@
                 style:width="{width}%"
                 style:padding-left="0.125rem"
                 style:left="{startLeftPosition}%"
+                onclick={onSeekFrame(i + range[0])}
               >
                 {i + range[0]}
               </div>
@@ -255,6 +256,7 @@
                 style:width="{width}%"
                 style:padding-left="0.125rem"
                 style:left="{startLeftPosition}%"
+                onclick={onSeekFrame(i + range[0])}
               >
                 {i + range[0]}
               </div>
@@ -264,6 +266,7 @@
                 style:width="{width}%"
                 style:padding-left="0.125rem"
                 style:left="{startLeftPosition}%"
+                onclick={onSeekFrame(i + range[0])}
               >
                 {i + range[0]}
               </div>
@@ -272,6 +275,7 @@
                 class="border-border absolute bottom-0 border-l"
                 style:height="0.6em"
                 style:left="calc({startLeftPosition}%)"
+                onclick={onSeekFrame(i + range[0])}
               ></div>
             {/if}
           {/each}
