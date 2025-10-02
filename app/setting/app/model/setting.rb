@@ -21,17 +21,21 @@ module Setting
 
     query
     def get(key, default: nil)
-      find(key:)&.value || default
+      find_by({key:})&.value || default
     end
 
     event(name: "updated")
     def set(key, value)
       table = scoped(:update)
 
+      value = Sequel.lit("?::jsonb", value.to_json)
+
       table.insert_conflict(
         target: %i[key],
         update: { value: }
-      ).insert({ key:, value: }).returning_all.first
+      ).insert({ key:, value: })
+
+      true
     end
   end
 end

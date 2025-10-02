@@ -26,7 +26,7 @@ RSpec.describe Setting, database: true do
         subject.set("bool_key", true)
         subject.set("nil_key", nil)
 
-        expect(subject.get("hash_key")).to eq({ "a" => 1 })
+        expect(subject.get("hash_key")).to eq({ a: 1 })
         expect(subject.get("array_key")).to eq([1, 2])
         expect(subject.get("int_key")).to eq(123)
         expect(subject.get("float_key")).to eq(1.23)
@@ -38,7 +38,6 @@ RSpec.describe Setting, database: true do
     context "#set" do
       it "creates a new setting" do
         result = subject.set("new_key", "new_value")
-        expect(result).to include(key: "new_key", value: "new_value")
 
         expect(subject.get("new_key")).to eq("new_value")
       end
@@ -46,7 +45,6 @@ RSpec.describe Setting, database: true do
       it "updates an existing setting" do
         subject.set("existing_key", "initial_value")
         result = subject.set("existing_key", "updated_value")
-        expect(result).to include(key: "existing_key", value: "updated_value")
 
         expect(subject.get("existing_key")).to eq("updated_value")
       end
@@ -59,7 +57,7 @@ RSpec.describe Setting, database: true do
         subject.set("bool_key", true)
         subject.set("nil_key", nil)
 
-        expect(subject.get("hash_key")).to eq({ "a" => 1 })
+        expect(subject.get("hash_key")).to eq({ a: 1 })
         expect(subject.get("array_key")).to eq([1, 2])
         expect(subject.get("int_key")).to eq(123)
         expect(subject.get("float_key")).to eq(1.23)
