@@ -1,5 +1,5 @@
 annotator:
-  assignable: false
+  assignable: true
   rights:
     - "dataset:projects.read.member"
     - "dataset:project_members.read.same_project"
