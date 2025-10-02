@@ -49,13 +49,19 @@
   onclick={() => onSeekFrame(frame)}
   {...restProps}
 >
+  <!-- style:background-color="#fef9c2" -->
   {#if inSpan}
-    <div class="relative" style:background-color="#fef9c2" style:height="80%" style:margin-top="8%">
+    <div
+      class={cn("relative", isHovered || isSelected ? "bg-primary/5" : "bg-[#fef9c2]")}
+      style:height="80%"
+      style:margin-top="5%"
+    >
       {#if keyframes.length}
         <ContextMenu>
-          <ContextMenuTrigger class="absolute top-2.5 h-full w-full pt-0">
-            <div style="margin:auto" style:background-color="#06B6D4" style:height="25%" style:width="50%"></div>
+          <ContextMenuTrigger class="absolute top-1 h-full w-full pt-0">
+            <div style="margin:auto" style:background-color="#06B6D4" style:height="75%" style:width="75%"></div>
           </ContextMenuTrigger>
+
           <ContextMenuContent>
             {#each keyframes as keyframe, index (index)}
               <ContextMenuItem onclick={() => onSeekFrame?.(keyframe)}>
