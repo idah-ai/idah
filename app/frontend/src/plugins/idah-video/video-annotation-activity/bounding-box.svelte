@@ -155,6 +155,21 @@
 
     bounding_box = BB_HANDLE_POINTS[handle_index].map((i) => bb[i]) as BoundingBox;
   }
+
+  function getHandleCursor(handle_index: number): string {
+    const cursors = [
+      "nwse-resize", // 0: bottom-right corner
+      "ns-resize", // 1: bottom edge
+      "nesw-resize", // 2: bottom-left corner
+      "ew-resize", // 3: left edge
+      "nwse-resize", // 4: top-left corner
+      "ns-resize", // 5: top edge
+      "nesw-resize", // 6: top-right corner
+      "ew-resize", // 7: right edge
+    ];
+
+    return cursors[handle_index] || "default";
+  }
 </script>
 
 {#snippet BoundingBoxHandle(bb: BoundingBox)}
@@ -169,6 +184,7 @@
       r={5}
       style:transform-origin={"top left"}
       style:transform={`translate(${offset[X]}px, ${offset[Y]}px)`}
+      style:cursor={getHandleCursor(handle)}
       vector-effect="non-scaling-stroke"
       style:stroke={color}
       style:stroke-width={1}
@@ -185,7 +201,7 @@
       style:transform-origin={"top left"}
       style:transform={`translate(${offset[X]}px, ${offset[Y]}px) scale(${ratio[X]}, ${ratio[Y]})`}
       vector-effect="non-scaling-stroke"
-      class="cursor-pointer"
+      class={editable ? "cursor-move" : "cursor-pointer"}
       fill-opacity="0.4"
       style:fill={color}
       style:stroke={color}

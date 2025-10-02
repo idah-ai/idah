@@ -11,6 +11,8 @@
   import type { CategoryDefinition } from "@/context/ActivityContext";
   import type { AnnotationsIndexedDB } from "./indexedDB";
   import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger } from "@/components/ui/select";
+  import { Title } from "@/components/ui/alert-dialog";
+  import Text from "@/components/ui/text/Text.svelte";
 
   // Props
   let {
@@ -19,7 +21,6 @@
     categories,
     selected_category,
     selected_id,
-    toolMode,
     onSelect,
     onSelectAnnotation,
     onDeleteAnnotation,
@@ -28,7 +29,6 @@
     type: string;
     currentFrame: number;
     categories: CategoryConfiguration[];
-    toolMode: boolean,
     selected_category: string | undefined;
     selected_id: string | undefined;
     onSelect: (category?: CategoryDefinition) => void;
@@ -93,20 +93,17 @@
     return filterAnnotations.length > 0;
   }
 
-  function findCategory(categories: CategoryDefinition[], category: string) :CategoryDefinition |undefined {
+  function findCategory(categories: CategoryDefinition[], category: string): CategoryDefinition | undefined {
+    const found = categories.find((c) => category.startsWith(c.id));
 
-    const found = categories.find(c => category.startsWith(c.id))
+    if (!found) return;
 
-    if (!found) return
-
-
-    if (found.id != category){
-        if (found.nestedCategories)
-            return findCategory(found.nestedCategories, category)
-        else return
+    if (found.id != category) {
+      if (found.nestedCategories) return findCategory(found.nestedCategories, category);
+      else return;
     }
 
-    return found
+    return found;
   }
 </script>
 
@@ -160,25 +157,37 @@
 
 {#snippet showCategoryTitle(category: CategoryDefinition, haveChildren: boolean = false, open: boolean = false)}
   <div class="flex items-center gap-2">
-    <svg
-      class={cn("transition-transform duration-200", {
-        "opacity-0": !haveChildren,
-        "rotate-90": open,
-      })}
-      width="16"
-      height="16"
-      viewBox="0 0 16 16"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
+    <Button
+      variant="ghost"
+      class="p-0 hover:cursor-pointer"
+      onclick={(e) => {
+        e.stopPropagation();
+        if (category.nestedCategories || haveChildren) {
+          // Toggle the category open state
+          openStates[category.id] = !openStates[category.id];
+        }
+      }}
     >
-      <path
-        class="stroke-gray-500"
-        d="M6 12L10 8L6 4"
-        stroke-width="1.5"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      />
-    </svg>
+      <svg
+        class={cn("transition-transform duration-200", {
+          "opacity-0": !haveChildren,
+          "rotate-90": open,
+        })}
+        width="16"
+        height="16"
+        viewBox="0 0 16 16"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          class="stroke-gray-500"
+          d="M6 12L10 8L6 4"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </Button>
 
     <svg
       class={cn("", {
@@ -208,35 +217,35 @@
   selected: string | undefined,
   parent: string[] = [],
 )}
-  <Collapsible open={!!category}>
-    {#key forceRender}
-      {#await haveAnnotationsInCategory(category.id) then hasAnnotations}
-        <CollapsibleTrigger
-          class={cn(
-            "flex w-full items-center justify-between p-2",
-            !category.requiredNested ? "hover:bg-accent hover:cursor-pointer" : "",
-            { "rounded-sm border-2 border-blue-300 bg-blue-200": selected == category.id },
-          )}
-          onclick={() => {
-            if (category.nestedCategories || hasAnnotations) {
-              // Toggle the category open state
-              openStates[category.id] = !openStates[category.id];
-            }
-            if (!category.requiredNested) {
-              onSelect(category);
-            }
-            // Force re-render of annotation counts
-            forceRender++;
-          }}
-        >
-          {@render showCategoryTitle(
-            category,
-            !!category.nestedCategories || hasAnnotations,
-            openStates[category.id] || false,
-          )}
+  <Collapsible open={openStates[category.id] || false}>
+    {#await haveAnnotationsInCategory(category.id) then hasAnnotations}
+      <CollapsibleTrigger
+        class={cn(
+          "flex w-full items-center justify-between",
+          !category.requiredNested ? "hover:bg-accent hover:cursor-pointer" : "",
+          { "bg-primary-foreground border-1 rounded-sm border-blue-300": selected == category.id },
+        )}
+        onclick={(e) => {
+          // Prevent default toggle behavior
+          e.preventDefault();
+          e.stopPropagation();
 
-          {#if db && category && $idb_updated_at}
-            {#key $idb_updated_at}
+          if (!category.requiredNested) {
+            onSelect(category);
+          }
+          // Force re-render of annotation counts
+          forceRender++;
+        }}
+      >
+        {@render showCategoryTitle(
+          category,
+          !!category.nestedCategories || hasAnnotations,
+          openStates[category.id] || false,
+        )}
+
+        {#if db && category && $idb_updated_at}
+          {#key $idb_updated_at}
+            {#key forceRender}
               <Badge variant="secondary">
                 {#await db.getAllStartingWith("category", category.id)}
                   ...
@@ -250,19 +259,19 @@
                 {/await}
               </Badge>
             {/key}
-          {/if}
-        </CollapsibleTrigger>
-      {/await}
-    {/key}
+          {/key}
+        {/if}
+      </CollapsibleTrigger>
+    {/await}
 
-    <CollapsibleContent class="ml-5" hidden={!openStates[category.id]}>
+    <CollapsibleContent class="ml-5">
       {#key $idb_updated_at}
-        {#if !toolMode && db && category}
+        {#if db && category}
           {#await db.getAllIndex("category", category.id)}
             ...
           {:then anns}
             {#each anns.filter((annotation) => currentFrame >= annotation.shape.start && currentFrame <= annotation.shape.end && annotation.shape.type == type) as annotation, i}
-              {@render annotationSelection(annotation, annotation.value.label || `${category.name}_${i}`, category.id)}
+              {@render annotationSelection(annotation, `${category.name}_${i}`, category.id)}
             {/each}
           {/await}
         {/if}
@@ -281,57 +290,57 @@
   </Collapsible>
 {/snippet}
 
+<div class="flex-col">
+  {#if selected_id && selected_category}
+    <div class="flex pb-1">
+      <Text class="text-gray-700" weight="medium" size="sm">Category</Text>
+    </div>
 
-{#if selected_id && selected_category}
-    {#if categoriesTree && findCategory(categoriesTree, selected_category)}
-
-        <Select type="single" onValueChange={(category_id) => {
-            console.log(findCategory(categoriesTree, category_id))
-            onSelect(findCategory(categoriesTree, category_id))
-        }}>
-            <SelectTrigger class="w-[180px]">
-                {@render showCategoryTitle(findCategory(categoriesTree, selected_category), false, false)}
-            </SelectTrigger>
-            <SelectContent>
-                <SelectGroup>
-                    <SelectLabel>categories</SelectLabel>
-                        {#each categories as category}
-                            <SelectItem
-                                value={category.id}
-                                label={category.label}
-                            >
-                                {category.label}
-                            </SelectItem>
-                        {/each}
-                    </SelectGroup>
-            </SelectContent>
-        </Select>
-    {/if}
-{:else}
-    <Collapsible open={!!selected_category}>
-        <CollapsibleTrigger>
-            Categories
-            {#key $idb_updated_at}
-                <Badge class={cn({"bg-primary":!!selected_category})} variant='secondary'>
-                {#await db?.getAllIndex('category')}
-                    ...
-                {:then anns}
-                    {anns?.filter(
-                        (annotation) =>
-                            currentFrame >= annotation.shape.start &&
-                            currentFrame <= annotation.shape.end &&
-                            annotation.shape.type == type
-                    ).length}
-                {/await}
-                </Badge>
-            {/key}
-
-        </CollapsibleTrigger>
-        <CollapsibleContent style={"margin-left:10px"}>
-            {#each categoriesTree as category}
-                {@render categorySelection(category, category.nestedCategories, onSelect, selected_category)}
+    {@const foundCategory = findCategory(categoriesTree, selected_category)}
+    {#if categoriesTree && foundCategory}
+      <Select
+        type="single"
+        onValueChange={(category_id) => {
+          onSelect(findCategory(categoriesTree, category_id));
+        }}
+      >
+        <SelectTrigger class="w-full">
+          {@render showCategoryTitle(foundCategory, false, false)}
+        </SelectTrigger>
+        <SelectContent>
+          <SelectGroup>
+            <SelectLabel>categories</SelectLabel>
+            {#each categories as category}
+              <SelectItem value={category.id} label={category.label}>
+                {category.label}
+              </SelectItem>
             {/each}
-        </CollapsibleContent>
-    </Collapsible>
-{/if}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
+    {/if}
+  {:else}
+    <div class="flex gap-2 py-2">
+      <Text class="text-gray-500" weight="semibold">Categories</Text>
 
+      {#key $idb_updated_at}
+        <Badge class={cn({ "bg-gray-300": !!selected_category })} variant="secondary">
+          {#await db?.getAllIndex("category")}
+            ...
+          {:then anns}
+            {anns?.filter(
+              (annotation) =>
+                currentFrame >= annotation.shape.start &&
+                currentFrame <= annotation.shape.end &&
+                annotation.shape.type == type,
+            ).length}
+          {/await}
+        </Badge>
+      {/key}
+    </div>
+
+    {#each categoriesTree as category}
+      {@render categorySelection(category, category.nestedCategories, onSelect, selected_category)}
+    {/each}
+  {/if}
+</div>
