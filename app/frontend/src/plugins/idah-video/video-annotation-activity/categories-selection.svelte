@@ -96,7 +96,6 @@
 
     const found = categories.find(c => category.startsWith(c.id))
 
-    if (!found) console.log(categories.map(c => c.id), category)
     if (!found) return
 
 
