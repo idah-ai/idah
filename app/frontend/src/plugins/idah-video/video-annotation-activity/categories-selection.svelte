@@ -96,7 +96,7 @@
 
 {#snippet annotationSelection(annotation: VideoAnnotation, name: string, annotationCategory?: string)}
   <SidebarMenuItem class="item_hover list-none p-1">
-    <SidebarMenuButton class={cn("ml-5 w-full justify-between p-1")} onclick={() => onSelectAnnotation(annotation)}>
+    <SidebarMenuButton class={cn("ml-5 w-full justify-between px-5")} onclick={() => onSelectAnnotation(annotation)}>
       <div class="flex gap-2">
         <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
           <path
