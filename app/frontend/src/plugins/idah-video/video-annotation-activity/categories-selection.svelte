@@ -159,7 +159,9 @@
   <div class="flex items-center gap-2">
     <Button
       variant="ghost"
-      class="p-0 hover:cursor-pointer"
+      class={cn("p-0 hover:cursor-pointer", {
+        hidden: !haveChildren,
+      })}
       onclick={(e) => {
         e.stopPropagation();
         if (category.nestedCategories || haveChildren) {
@@ -309,7 +311,6 @@
         </SelectTrigger>
         <SelectContent>
           <SelectGroup>
-            <SelectLabel>categories</SelectLabel>
             {#each categories as category}
               <SelectItem value={category.id} label={category.label}>
                 {category.label}
