@@ -591,7 +591,7 @@
     }}
   >
     <PopoverTrigger></PopoverTrigger>
-    <PopoverContent>
+    <PopoverContent class="w-max">
       <AnnotationSidebar
         db={annotationsIDB}
         {annotationValue}
