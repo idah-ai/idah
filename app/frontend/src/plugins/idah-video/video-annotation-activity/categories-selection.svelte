@@ -110,7 +110,7 @@
 {#snippet annotationSelection(annotation: VideoAnnotation, name: string, annotationCategory?: string)}
   <SidebarMenuItem class="item_hover list-none p-1">
     <SidebarMenuButton
-      class={cn("ml-5 w-full justify-between px-5 hover:cursor-pointer")}
+      class={cn("ml-2 w-full justify-between px-1 hover:cursor-pointer")}
       onclick={() => onSelectAnnotation(annotation)}
     >
       <div class="flex gap-2">
@@ -127,19 +127,19 @@
         {name}
       </div>
 
-      {#if selected_category && selected_category == annotationCategory}
-        <Button
-          variant="ghost"
-          size="icon"
-          class="hover_button"
-          onclick={(e) => {
-            e.stopPropagation();
-            onDeleteAnnotation(annotation);
-          }}
-        >
-          <Trash2 color="var(--color-gray-500)" />
-        </Button>
-      {/if}
+      <!-- {#if selected_category && selected_category == annotationCategory} -->
+      <Button
+        variant="ghost"
+        size="icon"
+        class="hover_button"
+        onclick={(e) => {
+          e.stopPropagation();
+          onDeleteAnnotation(annotation);
+        }}
+      >
+        <Trash2 color="var(--color-gray-500)" />
+      </Button>
+      <!-- {/if} -->
     </SidebarMenuButton>
   </SidebarMenuItem>
 

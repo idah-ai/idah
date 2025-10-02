@@ -104,7 +104,7 @@
   }
 </script>
 
-<Sidebar variant="inset" collapsible="none" class="w-sm">
+<Sidebar variant="inset" collapsible="none" class="w-xs">
   <!-- <SidebarHeader>
     {#if !tools.has(mode)}
       <Input placeholder="search" />
