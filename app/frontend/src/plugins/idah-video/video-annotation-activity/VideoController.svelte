@@ -207,7 +207,7 @@
       <DropdownMenuContent>
         <DropdownMenuGroup>
           <DropdownMenuLabel>Video Speed</DropdownMenuLabel>
-          {#each videoSpeeds as { label, value }}
+          {#each videoSpeeds as { label, value } (value)}
             <DropdownMenuItem onclick={() => selectVideoSpeed(value)}>{label}</DropdownMenuItem>
           {/each}
         </DropdownMenuGroup>

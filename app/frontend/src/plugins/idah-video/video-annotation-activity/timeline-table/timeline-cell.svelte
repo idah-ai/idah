@@ -54,7 +54,7 @@
             </PopoverTrigger>
             <PopoverContent>
               <ul>
-                {#each keyframes as keyframe}
+                {#each keyframes as keyframe, index (index)}
                   <li>
                     <Button onclick={() => onSeekFrame?.(keyframe)}>Seek to {keyframe}</Button>
                     <Button onclick={() => onDeleteFrame?.(keyframe)}>X</Button>
