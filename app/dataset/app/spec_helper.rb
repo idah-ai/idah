@@ -25,7 +25,7 @@ SimpleCov.start do
   add_filter "config"
   add_filter "common/lib"
 
-  add_filter /_spec.rb$/
+  add_filter "/_spec.rb$/"
 end
 
 require_relative "../config/boot"
