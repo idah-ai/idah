@@ -200,11 +200,12 @@
       if (e.shiftKey) {
         const isScrollUp = e.deltaX < 0;
         const isScrollDown = e.deltaX > 0;
-        const next = range_span / 2;
 
         if (isScrollUp) {
-          setOffset(range[1] - next);
+          const next = Math.floor(range_span / 4);
+          setOffset(range[0] + next);
         } else if (isScrollDown) {
+          const next = Math.floor(range_span / 4);
           setOffset(range[0] - next);
         }
       }
