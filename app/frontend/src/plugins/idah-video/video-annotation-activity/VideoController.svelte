@@ -152,6 +152,12 @@
   <div class="flex items-center gap-2">
     <!-- VIDEO::ZOOM ADJUSTER (ZOOM IN / ZOOM OUT) -->
     <Popover>
+      <PopoverTrigger>
+        <Button variant="outline" size="icon">
+          <ZoomInIcon class="size-4" />
+        </Button>
+      </PopoverTrigger>
+
       <PopoverContent side="top" align="center" class="max-w-10 px-2">
         <Slider
           type="single"

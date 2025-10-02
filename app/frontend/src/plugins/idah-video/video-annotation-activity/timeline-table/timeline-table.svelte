@@ -5,18 +5,15 @@
   import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
   import { page } from "$app/state";
   import { Slider } from "@/components/ui/slider";
-  import {
-    Table,
-    TableBody,
-    TableCaption,
-    TableCell,
-    TableFooter,
-    TableHead,
-    TableHeader,
-    TableRow,
-  } from "@/components/ui/table";
+  import Spinner from "@/components/app/loading/spinner.svelte";
+  import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+  import Text from "@/components/ui/text/Text.svelte";
   import Timeline from "./timeline.svelte";
-  import Trash_2 from "@lucide/svelte/icons/trash-2";
+
+  import { cn } from "@/utils";
+  import { humanize } from "@/utils/string";
+  import { Trash2Icon } from "@lucide/svelte";
+
   import type { VideoAnnotation } from "../VideoAnnotationContext";
   import type { AnnotationsIndexedDB } from "../indexedDB";
 
@@ -120,36 +117,43 @@
 
 {#snippet row(annotations: VideoAnnotation[])}
   {#each annotations as annotation}
+    {@const isSelected = selectedAnnotation?.metadata.id == annotation.metadata.id}
     <TableRow
-      class="border-0"
-      onclick={() => {
-        onSelectAnnotation(annotation);
-      }}
-      data-state={selectedAnnotation?.metadata.id == annotation.metadata.id ? "selected" : ""}
+      class={cn("border-b-0", {
+        "bg-primary-foreground": isSelected,
+      })}
     >
       <TableCell
-        class="hoverable flex justify-between p-0"
-        ondblclick={() => {
+        class="p-0"
+        onclick={() => {
+          onSelectAnnotation(annotation);
           pos_offset = annotation.shape.start;
           onSeekFrame(annotation.shape.start);
         }}
       >
-        {#await getCategoryName(annotation.value.category, annotations, annotation)}
-          <span>Loading...</span>
-        {:then title}
-          <span class="px-2">{title}</span>
-        {/await}
+        <button class={cn("group flex w-full cursor-pointer items-center px-2 py-1")}>
+          {#await getCategoryName(annotation.value.category, annotations, annotation)}
+            <Spinner size="sm"></Spinner>
+          {:then title}
+            <Text size="sm">{humanize(title)}</Text>
+          {/await}
 
-        <Button
-          class="hovered"
-          onclick={(e) => {
-            e.stopPropagation();
-            onDeleteAnnotation(annotation);
-          }}
-        >
-          <Trash_2></Trash_2>
-        </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            class={cn("ml-auto size-6 opacity-0 transition-opacity duration-200 ease-in-out group-hover:opacity-100", {
+              "opacity-100": isSelected,
+            })}
+            onclick={(e) => {
+              e.stopPropagation();
+              onDeleteAnnotation(annotation);
+            }}
+          >
+            <Trash2Icon class="size-3"></Trash2Icon>
+          </Button>
+        </button>
       </TableCell>
+
       <TableCell class="p-0">
         <Timeline
           {annotation}
@@ -163,16 +167,9 @@
         />
       </TableCell>
     </TableRow>
-    <style>
-      .hoverable:hover .hovered {
-        display: inline-block;
-      }
-      .hoverable .hovered {
-        display: none;
-      }
-    </style>
   {/each}
 {/snippet}
+
 <Table
   onwheel={(e: WheelEvent) => {
     let from = $state.snapshot(pos_offset) as number;
@@ -199,47 +196,60 @@
           hovered_column += pos_offset - from;
         }
       }
+
+      if (e.shiftKey) {
+        // console.log("scroll", e.wheelDeltaX);
+      }
     }
     if (delta || e.ctrlKey || e.shiftKey || e.altKey) e.preventDefault();
   }}
 >
-  <TableCaption>Annotations List</TableCaption>
   <TableHeader class="sticky z-10" style={"inset-block-start:0"}>
     <TableRow>
       <TableHead class="w-100"></TableHead>
       <TableHead class="p-0">
-        <div class="bg-secondary border-primary relative h-5" style:border-bottom="solid 1px">
+        <div class="text-muted-foreground relative h-5 border-b">
           {#each [...Array(range[1] - range[0] + (scale - (range_span % scale)))].map((v, i) => i) as i}
-            {#if Math.floor(i + range[0]) == currentFrame}
+            {@const width = (1 / ((range[1] - range[0] + (scale - (range_span % scale))) / 100)) * scale}
+            {@const isSelected = Math.floor(i + range[0]) == currentFrame}
+            {@const isHovered = i + range[0] == hovered_column}
+            {@const isDefault =
+              i % (Math.floor(zoom / Math.min(zoom, 20)) * Math.ceil((range[1] - range[0]) / zoom)) == 0}
+            {@const isTick = i % (1 * Math.ceil((range[1] - range[0]) / zoom)) == 0}
+            {@const startLeftPosition = (i / (range[1] - range[0] + (scale - (range_span % scale)))) * 100}
+
+            {#if isSelected}
               <div
-                class="bg-primary text-secondary border-primary absolute top-0 z-10"
-                style:left="{(i / (range[1] - range[0] + (scale - (range_span % scale)))) * 100}%"
-                style:border-left="solid 1px"
+                class="border-border bg-primary text-primary-foreground absolute top-0 z-10 border-l"
+                style:width="{width}%"
+                style:padding-left="0.125rem"
+                style:left="{startLeftPosition}%"
               >
                 {i + range[0]}
               </div>
-            {:else if i + range[0] == hovered_column}
+            {:else if isHovered}
               <div
-                class="bg-destructive absolute top-0 z-10 border"
-                style:left="{(i / (range[1] - range[0] + (scale - (range_span % scale)))) * 100}%"
-                style:border-left="solid 1px"
+                class="border-border text-primary bg-primary-foreground absolute top-0 z-10 border-l"
+                style:width="{width}%"
+                style:padding-left="0.125rem"
+                style:left="{startLeftPosition}%"
               >
                 {i + range[0]}
               </div>
-            {:else if i % (Math.floor(zoom / Math.min(zoom, 20)) * Math.ceil((range[1] - range[0]) / zoom)) == 0}
+            {:else if isDefault}
               <div
-                class="border-primary absolute top-0"
-                style:border-left="solid 1px"
-                style:left="{(i / (range[1] - range[0] + (scale - (range_span % scale)))) * 100}%"
+                class="border-border absolute top-0 border-l"
+                style:width="{width}%"
+                style:padding-left="0.125rem"
+                style:left="{startLeftPosition}%"
               >
                 {i + range[0]}
               </div>
-            {:else if i % (1 * Math.ceil((range[1] - range[0]) / zoom)) == 0}
+            {:else if isTick}
               <div
-                class="border-primary absolute bottom-0"
+                class="border-border absolute bottom-0 border-l"
                 style:height="0.6em"
-                style:border-left="solid 1px"
-                style:left="calc({(i / (range[1] - range[0] + (scale - (range_span % scale)))) * 100}%)"
+                style:left="calc({startLeftPosition}%)"
               ></div>
             {/if}
           {/each}
@@ -270,6 +280,7 @@
       </TableRow>
     </TableFooter>
   {/if}
+
   <TableBody>
     {#await annotations_promise}
       {@render row($boundingBoxes)}
