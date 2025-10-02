@@ -273,7 +273,8 @@
             {:else if isTick}
               <div
                 class="border-border absolute bottom-0 border-l"
-                style:height="0.6em"
+                style:height=100%
+                style:width=100%
                 style:left="calc({startLeftPosition}%)"
                 onclick={onSeekFrame(i + range[0])}
               ></div>
