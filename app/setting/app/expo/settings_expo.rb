@@ -1,8 +1,7 @@
 # frozen_string_literal: true
 
-class SettingExpo < BaseExpo
-  http_path "/setting"
+class SettingsExpo < BaseExpo
+  http_path "/settings"
 
-  use_service Setting::Service
-
+  use_service Settings::Service
 end
