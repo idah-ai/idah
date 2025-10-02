@@ -23,8 +23,12 @@ RSpec.describe Project, database: true do
     }
 
     describe "scope definitions" do
-      context "scope: all", as: :system do
-        subject { described_class.new(current_auth_context) }
+      context "scope: all" do
+        before do
+          @test_rights = ["#{described_class.resource}.*.*"]
+        end
+        subject { described_class.new(Verse::Auth::Context.new(@test_rights)) }
+
         it "returns all projects" do
           projects = subject.index({})
 
@@ -33,8 +37,13 @@ RSpec.describe Project, database: true do
       end
 
       # scope: projects the user owns/creates
-      context "scope: own", as: :project_manager do
-        subject { described_class.new(current_auth_context) }
+      context "scope: own" do
+        before do
+          @test_rights = ["#{described_class.resource}.*.own"]
+          @test_account_id = 2
+        end
+        subject { described_class.new(Verse::Auth::Context.new(@test_rights, metadata: { id: @test_account_id })) }
+
         before do
           @created_project = system_repo.find!(
             subject.create(
@@ -42,6 +51,7 @@ RSpec.describe Project, database: true do
             )
           )
         end
+
         it "returns projects the user owns/creates" do
           own_projects = subject.index({})
 
@@ -51,14 +61,19 @@ RSpec.describe Project, database: true do
       end
 
       # scope: projects the user is a member of
-      context "scope: member", as: :annotator do
-        subject { described_class.new(current_auth_context) }
+      context "scope: member" do
+        before do
+          @test_rights = ["#{described_class.resource}.*.member", "#{ProjectMember::Repository.resource}.*.*"]
+          @test_account_id = 1
+        end
+        subject { described_class.new(Verse::Auth::Context.new(@test_rights, metadata: { id: @test_account_id })) }
+
         before do
           @testing_project = test_project2
           project_member_repo.find!(
             project_member_repo.create(
               project_id: @testing_project.id,
-              account_id: current_auth_context.metadata[:id],
+              account_id: @test_account_id,
               name: "annotator_member",
               email: "annotator@email.com",
             )
