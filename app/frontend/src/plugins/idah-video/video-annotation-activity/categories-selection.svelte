@@ -96,7 +96,10 @@
 
 {#snippet annotationSelection(annotation: VideoAnnotation, name: string, annotationCategory?: string)}
   <SidebarMenuItem class="item_hover list-none p-1">
-    <SidebarMenuButton class={cn("ml-5 w-full justify-between px-5")} onclick={() => onSelectAnnotation(annotation)}>
+    <SidebarMenuButton
+      class={cn("ml-5 w-full justify-between px-5 hover:cursor-pointer")}
+      onclick={() => onSelectAnnotation(annotation)}
+    >
       <div class="flex gap-2">
         <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
           <path
@@ -110,6 +113,7 @@
 
         {name}
       </div>
+
       {#if selected && selected == annotationCategory}
         <Button
           variant="ghost"
@@ -162,7 +166,7 @@
 
     <svg
       class={cn("", {
-        "opacity-0": category.requiredNested,
+        hidden: category.requiredNested,
       })}
       width="20"
       height="20"
@@ -193,8 +197,8 @@
       {#await haveAnnotationsInCategory(category.id) then hasAnnotations}
         <CollapsibleTrigger
           class={cn(
-            "focus:bg-accent flex w-full items-center justify-between p-2",
-            !category.requiredNested ? "hover:cursor-pointer" : "",
+            "flex w-full items-center justify-between p-2",
+            !category.requiredNested ? "hover:bg-accent hover:cursor-pointer" : "",
             { "rounded-sm border-2 border-blue-300 bg-blue-200": selected == category.id },
           )}
           onclick={() => {
