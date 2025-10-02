@@ -70,6 +70,8 @@
 
   // Functions
   function categorySelection(mode: string, category?: CategoryDefinition) {
+    console.log("selected", { mode, category });
+
     if (category) {
       onEditValue(
         {
@@ -103,48 +105,28 @@
 </script>
 
 <Sidebar variant="inset" collapsible="none" class="w-sm">
-  <SidebarHeader>
+  <!-- <SidebarHeader>
     {#if !tools.has(mode)}
       <Input placeholder="search" />
     {/if}
-  </SidebarHeader>
+  </SidebarHeader> -->
   <SidebarContent>
     {#each tools as [tool, categories]}
-      {#if !tools.has(mode) || mode == "visual"}
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <CategoriesSelection
-              {db}
-              toolMode={tool == mode}
-              type={tool}
-              {currentFrame}
-              {categories}
-              selected_category={annotationValue.category}
-              {selected_id}
-              {onSelectAnnotation}
-              {onDeleteAnnotation}
-              onSelect={(s) => categorySelection(tool, s)}
-            />
-          </SidebarGroupContent>
-        </SidebarGroup>
-      {:else if tool == mode}
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <CategoriesSelection
-              {db}
-              toolMode={tool == mode}
-              type={tool}
-              {currentFrame}
-              {categories}
-              selected_category={annotationValue.category}
-              {selected_id}
-              {onSelectAnnotation}
-              {onDeleteAnnotation}
-              onSelect={(s) => categorySelection(tool, s)}
-            />
-          </SidebarGroupContent>
-        </SidebarGroup>
-      {/if}
+      <SidebarGroup>
+        <SidebarGroupContent>
+          <CategoriesSelection
+            {db}
+            type={tool}
+            {currentFrame}
+            {categories}
+            selected_category={annotationValue.category}
+            {selected_id}
+            {onSelectAnnotation}
+            {onDeleteAnnotation}
+            onSelect={(s) => categorySelection(tool, s)}
+          />
+        </SidebarGroupContent>
+      </SidebarGroup>
     {/each}
   </SidebarContent>
 </Sidebar>

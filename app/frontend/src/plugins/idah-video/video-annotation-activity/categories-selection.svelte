@@ -19,7 +19,6 @@
     categories,
     selected_category,
     selected_id,
-    toolMode,
     onSelect,
     onSelectAnnotation,
     onDeleteAnnotation,
@@ -28,7 +27,6 @@
     type: string;
     currentFrame: number;
     categories: CategoryConfiguration[];
-    toolMode: boolean;
     selected_category: string | undefined;
     selected_id: string | undefined;
     onSelect: (category?: CategoryDefinition) => void;
@@ -217,34 +215,35 @@
   selected: string | undefined,
   parent: string[] = [],
 )}
-  <Collapsible open={!!category}>
-    {#key forceRender}
-      {#await haveAnnotationsInCategory(category.id) then hasAnnotations}
-        <CollapsibleTrigger
-          class={cn(
-            "flex w-full items-center justify-between",
-            !category.requiredNested ? "hover:bg-accent hover:cursor-pointer" : "",
-            { "bg-primary-foreground border-1 rounded-sm border-blue-300": selected == category.id },
-          )}
-          onclick={(e) => {
-            // Prevent default toggle behavior
-            e.preventDefault();
+  <Collapsible open={openStates[category.id] || false}>
+    {#await haveAnnotationsInCategory(category.id) then hasAnnotations}
+      <CollapsibleTrigger
+        class={cn(
+          "flex w-full items-center justify-between",
+          !category.requiredNested ? "hover:bg-accent hover:cursor-pointer" : "",
+          { "bg-primary-foreground border-1 rounded-sm border-blue-300": selected == category.id },
+        )}
+        onclick={(e) => {
+          // Prevent default toggle behavior
+          e.preventDefault();
+          e.stopPropagation();
 
-            if (!category.requiredNested) {
-              onSelect(category);
-            }
-            // Force re-render of annotation counts
-            forceRender++;
-          }}
-        >
-          {@render showCategoryTitle(
-            category,
-            !!category.nestedCategories || hasAnnotations,
-            openStates[category.id] || false,
-          )}
+          if (!category.requiredNested) {
+            onSelect(category);
+          }
+          // Force re-render of annotation counts
+          forceRender++;
+        }}
+      >
+        {@render showCategoryTitle(
+          category,
+          !!category.nestedCategories || hasAnnotations,
+          openStates[category.id] || false,
+        )}
 
-          {#if db && category && $idb_updated_at}
-            {#key $idb_updated_at}
+        {#if db && category && $idb_updated_at}
+          {#key $idb_updated_at}
+            {#key forceRender}
               <Badge variant="secondary">
                 {#await db.getAllStartingWith("category", category.id)}
                   ...
@@ -258,14 +257,14 @@
                 {/await}
               </Badge>
             {/key}
-          {/if}
-        </CollapsibleTrigger>
-      {/await}
-    {/key}
+          {/key}
+        {/if}
+      </CollapsibleTrigger>
+    {/await}
 
-    <CollapsibleContent class="ml-5" hidden={!openStates[category.id]}>
+    <CollapsibleContent class="ml-5">
       {#key $idb_updated_at}
-        {#if !toolMode && db && category}
+        {#if db && category}
           {#await db.getAllIndex("category", category.id)}
             ...
           {:then anns}
@@ -290,16 +289,16 @@
 {/snippet}
 
 {#if selected_id && selected_category}
-  {#if categoriesTree && findCategory(categoriesTree, selected_category)}
+  {@const foundCategory = findCategory(categoriesTree, selected_category)}
+  {#if categoriesTree && foundCategory}
     <Select
       type="single"
       onValueChange={(category_id) => {
-        console.log(findCategory(categoriesTree, category_id));
         onSelect(findCategory(categoriesTree, category_id));
       }}
     >
-      <SelectTrigger class="w-[180px]">
-        {@render showCategoryTitle(findCategory(categoriesTree, selected_category), false, false)}
+      <SelectTrigger class="w-full">
+        {@render showCategoryTitle(foundCategory, false, false)}
       </SelectTrigger>
       <SelectContent>
         <SelectGroup>
@@ -314,28 +313,7 @@
     </Select>
   {/if}
 {:else}
-  <Collapsible open={!!selected_category}>
-    <CollapsibleTrigger>
-      Categories
-      {#key $idb_updated_at}
-        <Badge class={cn({ "bg-primary": !!selected_category })} variant="secondary">
-          {#await db?.getAllIndex("category")}
-            ...
-          {:then anns}
-            {anns?.filter(
-              (annotation) =>
-                currentFrame >= annotation.shape.start &&
-                currentFrame <= annotation.shape.end &&
-                annotation.shape.type == type,
-            ).length}
-          {/await}
-        </Badge>
-      {/key}
-    </CollapsibleTrigger>
-    <CollapsibleContent style={"margin-left:10px"}>
-      {#each categoriesTree as category}
-        {@render categorySelection(category, category.nestedCategories, onSelect, selected_category)}
-      {/each}
-    </CollapsibleContent>
-  </Collapsible>
+  {#each categoriesTree as category}
+    {@render categorySelection(category, category.nestedCategories, onSelect, selected_category)}
+  {/each}
 {/if}
