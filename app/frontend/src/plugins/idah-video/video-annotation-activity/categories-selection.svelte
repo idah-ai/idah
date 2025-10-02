@@ -1,206 +1,285 @@
 <script lang="ts">
-	import Badge from "@/components/ui/badge/badge.svelte";
-	import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-	import { SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
+  import Badge from "@/components/ui/badge/badge.svelte";
+  import Button from "@/components/ui/button/button.svelte";
+  import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+  import { cn } from "@/utils";
+  import { Trash2 } from "@lucide/svelte";
+  import { idb_updated_at, uncategorizedAnnotations } from "./idb_store.svelte";
+  import { SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
 
-    import type { CategoryConfiguration, VideoAnnotation } from "./VideoAnnotationContext";
-    import SidebarMenuSubButton from "@/components/ui/sidebar/sidebar-menu-sub-button.svelte";
-    import type {CategoryDefinition } from "@/context/ActivityContext";
-    import type { AnnotationsIndexedDB } from "./indexedDB";
-    import { idb_updated_at, uncategorizedAnnotations } from "./idb_store.svelte";
+  import type { CategoryConfiguration, VideoAnnotation } from "./VideoAnnotationContext";
+  import type { CategoryDefinition } from "@/context/ActivityContext";
+  import type { AnnotationsIndexedDB } from "./indexedDB";
 
-	let {
-        type,
-		currentFrame,
-		categories,
-		selected,
-		onSelect,
-		onSelectAnnotation,
-        db,
-	}: {
-        type: string,
-		currentFrame: number;
-		categories: CategoryConfiguration[];
-		selected: string | undefined;
-		onSelect: (selection?: string) => void;
-		onSelectAnnotation: (annotation: VideoAnnotation) => void,
-        db?: AnnotationsIndexedDB
-	} = $props();
+  // Props
+  let {
+    type,
+    currentFrame,
+    categories,
+    selected,
+    onSelect,
+    onSelectAnnotation,
+    onDeleteAnnotation,
+    db,
+  }: {
+    type: string;
+    currentFrame: number;
+    categories: CategoryConfiguration[];
+    selected: string | undefined;
+    onSelect: (category?: CategoryDefinition) => void;
+    onSelectAnnotation: (annotation: VideoAnnotation) => void;
+    onDeleteAnnotation: (annotation: VideoAnnotation) => void;
+    db?: AnnotationsIndexedDB;
+  } = $props();
 
-    let categoriesTree:CategoryDefinition[] = categories.reduce<CategoryDefinition[]>((acc, category_configuration) => {
-            return buildTree(acc, category_configuration.id.split('/'), category_configuration)
-        }, [])
+  // Variables
+  let openStates = $state<Record<string, boolean>>({});
+  let forceRender = $state(0); // Force re-render trigger
 
-    function buildTree(acc :CategoryDefinition[], ids:string[], configuration:CategoryConfiguration):CategoryDefinition[] {
-        if (ids.length == 1) {
-            acc.push({
-                id: configuration.id,
-                name: configuration.label,
-                description: configuration.description,
-                requiredNested: false
-            })
-        } else {
-            const index = acc.findIndex(a => configuration.id.startsWith(a.id) )
+  let categoriesTree: CategoryDefinition[] = categories.reduce<CategoryDefinition[]>((acc, category_configuration) => {
+    return buildTree(acc, category_configuration.id.split("/"), category_configuration);
+  }, []);
 
-            if (index == -1) {
-                acc.push({
-                    id: configuration.id.replace(
-                        ids.join('/'),
-                        ids.at(0) || ''
-                    ),
-                    name: ids[0],
-                    nestedCategories: buildTree([], ids.slice(1, Infinity), configuration),
-                    requiredNested: true
-                })
-            } else {
-                acc[index].nestedCategories = buildTree(acc[index].nestedCategories || [], ids.slice(1, Infinity), configuration)
-            }
-        }
-        return acc
+  let uncategorized_promise = $derived.by(async () => {
+    $idb_updated_at;
+    return ($uncategorizedAnnotations = (await db?.getAllIndex("category", "null")) || []);
+  });
+
+  // Functions
+  function buildTree(
+    acc: CategoryDefinition[],
+    ids: string[],
+    configuration: CategoryConfiguration,
+  ): CategoryDefinition[] {
+    if (ids.length == 1) {
+      acc.push({
+        id: configuration.id,
+        name: configuration.label,
+        description: configuration.description,
+        requiredNested: false,
+        data: configuration,
+      });
+    } else {
+      const index = acc.findIndex((a) => configuration.id.startsWith(a.id));
+
+      if (index == -1) {
+        acc.push({
+          id: configuration.id.replace(ids.join("/"), ids.at(0) || ""),
+          name: ids[0],
+          nestedCategories: buildTree([], ids.slice(1, Infinity), configuration),
+          requiredNested: true,
+          data: configuration,
+        });
+      } else {
+        acc[index].nestedCategories = buildTree(
+          acc[index].nestedCategories || [],
+          ids.slice(1, Infinity),
+          configuration,
+        );
+      }
     }
+    return acc;
+  }
 
-    let uncategorized_promise = $derived.by(async () => {
-        $idb_updated_at
-        return $uncategorizedAnnotations = (await db?.getAllIndex('category', "null")) || []
-    })
+  async function haveAnnotationsInCategory(categoryId: string): Promise<boolean> {
+    if (!db || !categoryId) return false;
+    const allAnnotations = await db.getAllStartingWith("category", categoryId);
+    const filterAnnotations = allAnnotations.filter((annotation) => {
+      return (
+        currentFrame >= annotation.shape.start && currentFrame <= annotation.shape.end && annotation.shape.type == type
+      );
+    });
+
+    return filterAnnotations.length > 0;
+  }
 </script>
 
-{#snippet annotationSelection(
-    annotation: VideoAnnotation,
-    name: string,
-    annotationCategory?: string,
-)}
-    <SidebarMenuItem class='delete_hover'>
-        <SidebarMenuButton onclick={() => onSelectAnnotation(annotation)}>
-            {name}
-            {#if selected && selected == annotationCategory}
-                <SidebarMenuSubButton class={'hover_deleted'} onclick={() => onSelect()}>
-                    <svg class='h-100' viewBox="0 0 12 15" xmlns="http://www.w3.org/2000/svg">
-                        <path
-                            class="fill-primary"
-                            d="M9.33329 5V13.3333H2.66663V5H9.33329ZM8.08329 0H3.91663L3.08329 0.833333H0.166626V2.5H11.8333V0.833333H8.91663L8.08329 0ZM11 3.33333H0.999959V13.3333C0.999959 14.25 1.74996 15 2.66663 15H9.33329C10.25 15 11 14.25 11 13.3333V3.33333Z"
-                        />
-                    </svg>
-                </SidebarMenuSubButton>
-            {/if}
-        </SidebarMenuButton>
-    </SidebarMenuItem>
+{#snippet annotationSelection(annotation: VideoAnnotation, name: string, annotationCategory?: string)}
+  <SidebarMenuItem class="item_hover list-none p-1">
+    <SidebarMenuButton class={cn("ml-5 w-full justify-between px-5")} onclick={() => onSelectAnnotation(annotation)}>
+      <div class="flex gap-2">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path
+            d="M6.66667 4.58333H13.3333M6.66667 4.58333C6.66667 5.73393 5.73393 6.66667 4.58333 6.66667M6.66667 4.58333C6.66667 3.43274 5.73393 2.5 4.58333 2.5C3.43274 2.5 2.5 3.43274 2.5 4.58333C2.5 5.73393 3.43274 6.66667 4.58333 6.66667M13.3333 4.58333C13.3333 5.73393 14.2661 6.66667 15.4167 6.66667M13.3333 4.58333C13.3333 3.43274 14.2661 2.5 15.4167 2.5C16.5673 2.5 17.5 3.43274 17.5 4.58333C17.5 5.73393 16.5673 6.66667 15.4167 6.66667M15.4167 6.66667V13.3333M15.4167 13.3333C14.2661 13.3333 13.3333 14.2661 13.3333 15.4167M15.4167 13.3333C16.5673 13.3333 17.5 14.2661 17.5 15.4167C17.5 16.5673 16.5673 17.5 15.4167 17.5C14.2661 17.5 13.3333 16.5673 13.3333 15.4167M13.3333 15.4167H6.66667M6.66667 15.4167C6.66667 16.5673 5.73393 17.5 4.58333 17.5C3.43274 17.5 2.5 16.5673 2.5 15.4167C2.5 14.2661 3.43274 13.3333 4.58333 13.3333M6.66667 15.4167C6.66667 14.2661 5.73393 13.3333 4.58333 13.3333M4.58333 13.3333V6.66667"
+            stroke="var(--color-gray-500)"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
 
-    <style>
-    .delete_hover .hover_deleted {
-        display: none;
+        {name}
+      </div>
+      {#if selected && selected == annotationCategory}
+        <Button
+          variant="ghost"
+          size="icon"
+          class="hover_button"
+          onclick={(e) => {
+            e.stopPropagation();
+            onDeleteAnnotation(annotation);
+          }}
+        >
+          <Trash2 color="var(--color-gray-500)" />
+        </Button>
+      {/if}
+    </SidebarMenuButton>
+  </SidebarMenuItem>
+
+  <style>
+    .item_hover .hover_button {
+      display: none;
     }
 
-    .delete_hover:hover .hover_deleted {
-        display: inline-block;
+    .item_hover:hover .hover_button {
+      display: inline-flex;
+      cursor: pointer;
     }
-</style>
+  </style>
+{/snippet}
 
+{#snippet showCategoryTitle(category: CategoryDefinition, haveChildren: boolean = false, open: boolean = false)}
+  <div class="flex items-center gap-2">
+    <svg
+      class={cn("transition-transform duration-200", {
+        "opacity-0": !haveChildren,
+        "rotate-90": open,
+      })}
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        class="stroke-gray-500"
+        d="M6 12L10 8L6 4"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </svg>
+
+    <svg
+      class={cn("", {
+        "opacity-0": category.requiredNested,
+      })}
+      width="20"
+      height="20"
+      viewBox="0 0 20 20"
+      fill="none"
+    >
+      <path
+        d="M6.66667 4.58333H13.3333M6.66667 4.58333C6.66667 5.73393 5.73393 6.66667 4.58333 6.66667M6.66667 4.58333C6.66667 3.43274 5.73393 2.5 4.58333 2.5C3.43274 2.5 2.5 3.43274 2.5 4.58333C2.5 5.73393 3.43274 6.66667 4.58333 6.66667M13.3333 4.58333C13.3333 5.73393 14.2661 6.66667 15.4167 6.66667M13.3333 4.58333C13.3333 3.43274 14.2661 2.5 15.4167 2.5C16.5673 2.5 17.5 3.43274 17.5 4.58333C17.5 5.73393 16.5673 6.66667 15.4167 6.66667M15.4167 6.66667V13.3333M15.4167 13.3333C14.2661 13.3333 13.3333 14.2661 13.3333 15.4167M15.4167 13.3333C16.5673 13.3333 17.5 14.2661 17.5 15.4167C17.5 16.5673 16.5673 17.5 15.4167 17.5C14.2661 17.5 13.3333 16.5673 13.3333 15.4167M13.3333 15.4167H6.66667M6.66667 15.4167C6.66667 16.5673 5.73393 17.5 4.58333 17.5C3.43274 17.5 2.5 16.5673 2.5 15.4167C2.5 14.2661 3.43274 13.3333 4.58333 13.3333M6.66667 15.4167C6.66667 14.2661 5.73393 13.3333 4.58333 13.3333M4.58333 13.3333V6.66667"
+        stroke={category.data.color || "var(--color-gray-500)"}
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </svg>
+    {category.name}
+  </div>
 {/snippet}
 
 {#snippet categorySelection(
-	category: CategoryDefinition,
-	subCategories: CategoryDefinition[] | undefined,
-	onSelect: (selection?: string) => void,
-	selected: string | undefined,
-	parent: string[] = [],
+  category: CategoryDefinition,
+  subCategories: CategoryDefinition[] | undefined,
+  onSelect: (category?: CategoryDefinition) => void,
+  selected: string | undefined,
+  parent: string[] = [],
 )}
+  <Collapsible>
+    {#key forceRender}
+      {#await haveAnnotationsInCategory(category.id) then hasAnnotations}
+        <CollapsibleTrigger
+          class={cn(
+            "focus:bg-accent flex w-full items-center justify-between p-2",
+            !category.requiredNested ? "hover:cursor-pointer" : "",
+            { "rounded-sm border-2 border-blue-300 bg-blue-200": selected == category.id },
+          )}
+          onclick={() => {
+            if (category.nestedCategories || hasAnnotations) {
+              // Toggle the category open state
+              openStates[category.id] = !openStates[category.id];
+            }
+            if (!category.requiredNested) {
+              onSelect(category);
+            }
+            // Force re-render of annotation counts
+            forceRender++;
+          }}
+        >
+          {@render showCategoryTitle(
+            category,
+            !!category.nestedCategories || hasAnnotations,
+            openStates[category.id] || false,
+          )}
 
-	<Collapsible>
-		<CollapsibleTrigger onclick={() => {if(!category.requiredNested) onSelect(category.id)}}>
-			{category.name}
-                {#if db && category && $idb_updated_at}
-                    {#key $idb_updated_at}
-            			<Badge variant='secondary'>
-                        {#await db.getAllStartingWith('category', category.id)}
-                            ...
-                        {:then anns}
-                            {anns.filter(
-                                (annotation) =>
-                                    currentFrame >= annotation.shape.start &&
-                                    currentFrame <= annotation.shape.end &&
-                                    annotation.shape.type == type
-                            ).length}
-                        {/await}
-			</Badge>
-                   {/key}
-                {/if}
-		</CollapsibleTrigger>
-
-		<CollapsibleContent style={"margin-left:10px"}>
+          {#if db && category && $idb_updated_at}
             {#key $idb_updated_at}
-                {#if db && category}
-                    {#await db.getAllIndex('category', category.id)}
-                        ...
-                    {:then anns}
-                        {#each anns.filter(
-                                (annotation) =>
-                                    currentFrame >= annotation.shape.start &&
-                                    currentFrame <= annotation.shape.end &&
-                                    annotation.shape.type == type
-                            ) as annotation, i}
-                            {@render annotationSelection(annotation, annotation.value.label || `${category.name}_${i}`, category.id)}
-                        {/each}
-                    {/await}
-                {/if}
+              <Badge variant="secondary">
+                {#await db.getAllStartingWith("category", category.id)}
+                  ...
+                {:then anns}
+                  {anns.filter(
+                    (annotation) =>
+                      currentFrame >= annotation.shape.start &&
+                      currentFrame <= annotation.shape.end &&
+                      annotation.shape.type == type,
+                  ).length}
+                {/await}
+              </Badge>
             {/key}
+          {/if}
+        </CollapsibleTrigger>
+      {/await}
+    {/key}
 
-            {#if subCategories}
-				{#each subCategories as subCategory}
-					{@render categorySelection(subCategory, subCategory.nestedCategories, onSelect, selected, [
-						...parent,
-						category.id.split('/').slice(parent.length)[0]
-					])}
-				{/each}
-			{/if}
-		</CollapsibleContent>
-	</Collapsible>
+    <CollapsibleContent class="ml-5" hidden={!openStates[category.id]}>
+      {#key $idb_updated_at}
+        {#if db && category}
+          {#await db.getAllIndex("category", category.id)}
+            ...
+          {:then anns}
+            {#each anns.filter((annotation) => currentFrame >= annotation.shape.start && currentFrame <= annotation.shape.end && annotation.shape.type == type) as annotation, i}
+              {@render annotationSelection(annotation, annotation.value.label || `${category.name}_${i}`, category.id)}
+            {/each}
+          {/await}
+        {/if}
+      {/key}
+
+      {#if subCategories}
+        {#each subCategories as subCategory}
+          {@render categorySelection(subCategory, subCategory.nestedCategories, onSelect, selected, [
+            ...parent,
+            category.id.split("/").slice(parent.length)[0],
+          ])}
+          <!-- pass managed open state for children -->
+        {/each}
+      {/if}
+    </CollapsibleContent>
+  </Collapsible>
 {/snippet}
 
-<Collapsible>
-    <CollapsibleTrigger>
-        Cagegories
-        {#key $idb_updated_at}
-            <Badge variant='secondary'>
-            {#await db?.getAllIndex('category')}
-                ...
-            {:then anns}
-                {anns?.filter(
-                    (annotation) =>
-                        currentFrame >= annotation.shape.start &&
-                        currentFrame <= annotation.shape.end &&
-                        annotation.shape.type == type
-                ).length}
-            {/await}
-            </Badge>
-        {/key}
+<!-- Main component template -->
+{#if db}
+  {#key [db, $idb_updated_at]}
+    {#await uncategorized_promise}
+      {#each $uncategorizedAnnotations.filter((annotation) => {
+        return currentFrame >= annotation.shape.start && currentFrame <= annotation.shape.end && annotation.shape.type == type;
+      }) as annotation}
+        {@render annotationSelection(annotation, annotation.value.label || annotation.metadata.id)}
+      {/each}
+    {:then annotations}
+      {#each annotations.filter((annotation) => {
+        return currentFrame >= annotation.shape.start && currentFrame <= annotation.shape.end && annotation.shape.type == type;
+      }) as annotation}
+        {@render annotationSelection(annotation, annotation.value.label || annotation.metadata.id)}
+      {/each}
+    {/await}
+  {/key}
+{/if}
 
-    </CollapsibleTrigger>
-    <CollapsibleContent style={"margin-left:10px"}>
-        {#if db}
-            {#key [db, $idb_updated_at]}
-                {#await uncategorized_promise}
-                    {#each $uncategorizedAnnotations.filter((annotation) => {
-                        return currentFrame >= annotation.shape.start &&
-                        currentFrame <= annotation.shape.end &&
-                        annotation.shape.type == type
-                    })as annotation}
-                        {@render annotationSelection(annotation, annotation.value.label || annotation.metadata.id)}
-                    {/each}
-                {:then annotations}
-                    {#each annotations.filter((annotation) => {
-                        return currentFrame >= annotation.shape.start &&
-                        currentFrame <= annotation.shape.end &&
-                        annotation.shape.type == type
-                    })as annotation}
-                        {@render annotationSelection(annotation, annotation.value.label || annotation.metadata.id)}
-                    {/each}
-                {/await}
-            {/key}
-        {/if}
-
-        {#each categoriesTree as category}
-            {@render categorySelection(category, category.nestedCategories, onSelect, selected)}
-        {/each}
-    </CollapsibleContent>
-</Collapsible>
+{#each categoriesTree as category}
+  {@render categorySelection(category, category.nestedCategories, onSelect, selected)}
+{/each}
