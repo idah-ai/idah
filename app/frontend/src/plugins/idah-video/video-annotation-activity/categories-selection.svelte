@@ -144,25 +144,37 @@
 
 {#snippet showCategoryTitle(category: CategoryDefinition, haveChildren: boolean = false, open: boolean = false)}
   <div class="flex items-center gap-2">
-    <svg
-      class={cn("transition-transform duration-200", {
-        "opacity-0": !haveChildren,
-        "rotate-90": open,
-      })}
-      width="16"
-      height="16"
-      viewBox="0 0 16 16"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
+    <Button
+      variant="ghost"
+      class="p-0 hover:cursor-pointer"
+      onclick={(e) => {
+        e.stopPropagation();
+        if (category.nestedCategories || haveChildren) {
+          // Toggle the category open state
+          openStates[category.id] = !openStates[category.id];
+        }
+      }}
     >
-      <path
-        class="stroke-gray-500"
-        d="M6 12L10 8L6 4"
-        stroke-width="1.5"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      />
-    </svg>
+      <svg
+        class={cn("transition-transform duration-200", {
+          "opacity-0": !haveChildren,
+          "rotate-90": open,
+        })}
+        width="16"
+        height="16"
+        viewBox="0 0 16 16"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          class="stroke-gray-500"
+          d="M6 12L10 8L6 4"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </Button>
 
     <svg
       class={cn("", {
@@ -192,20 +204,19 @@
   selected: string | undefined,
   parent: string[] = [],
 )}
-  <Collapsible>
+  <Collapsible open={openStates[category.id] || false}>
     {#key forceRender}
       {#await haveAnnotationsInCategory(category.id) then hasAnnotations}
         <CollapsibleTrigger
           class={cn(
-            "flex w-full items-center justify-between p-2",
+            "flex w-full items-center justify-between",
             !category.requiredNested ? "hover:bg-accent hover:cursor-pointer" : "",
-            { "rounded-sm border-2 border-blue-300 bg-blue-200": selected == category.id },
+            { "bg-primary-foreground border-1 rounded-sm border-blue-300": selected == category.id },
           )}
-          onclick={() => {
-            if (category.nestedCategories || hasAnnotations) {
-              // Toggle the category open state
-              openStates[category.id] = !openStates[category.id];
-            }
+          onclick={(e) => {
+            // Prevent default toggle behavior
+            e.preventDefault();
+
             if (!category.requiredNested) {
               onSelect(category);
             }
@@ -246,7 +257,7 @@
             ...
           {:then anns}
             {#each anns.filter((annotation) => currentFrame >= annotation.shape.start && currentFrame <= annotation.shape.end && annotation.shape.type == type) as annotation, i}
-              {@render annotationSelection(annotation, annotation.value.label || `${category.name}_${i}`, category.id)}
+              {@render annotationSelection(annotation, `${category.name}_${i}`, category.id)}
             {/each}
           {/await}
         {/if}
