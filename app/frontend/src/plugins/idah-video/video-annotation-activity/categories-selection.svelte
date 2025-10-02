@@ -162,7 +162,7 @@
 
     <svg
       class={cn("", {
-        "opacity-0": category.requiredNested,
+        hidden: category.requiredNested,
       })}
       width="20"
       height="20"
