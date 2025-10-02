@@ -18,6 +18,7 @@
   import CategoriesSelection from "./categories-selection.svelte";
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import type { AnnotationsIndexedDB } from "./indexedDB";
+  import type { CategoryDefinition } from "@/context/ActivityContext";
 
   let {
     annotationValue,
@@ -52,12 +53,14 @@
     return acc;
   }, new Map<string, CategoryConfiguration[]>());
 
-  function categorySelection(mode: string, category?: string) {
+  // Functions
+  function categorySelection(mode: string, category?: CategoryDefinition) {
     if (category) {
       onEditValue(
         {
-          ...annotationValue,
-          category,
+          category: category.id,
+          label: category.name,
+          attributes: category,
         },
         mode,
       );
@@ -70,7 +73,7 @@
   }
 </script>
 
-<Sidebar variant="inset" collapsible="none">
+<Sidebar variant="inset" collapsible="none" class="w-sm">
   <SidebarHeader>
     {#if !tools.has(mode)}
       <Input placeholder="search" />
