@@ -8,10 +8,7 @@ anonymous:
 
     # WIP: annotator role
 
-    - "dataset:projects.create.member"
     - "dataset:projects.read.member"
-    - "dataset:projects.update.member"
-    - "dataset:projects.delete.member"
 
     # TODO: review scopes
 
