@@ -8,7 +8,7 @@
     delayDuration?: number;
     align?: "start" | "center" | "end";
     side?: "top" | "right" | "bottom" | "left";
-    trigger: Snippet;
+    trigger: Snippet<[{ props: Record<string, unknown> }]>;
     content: Snippet;
   }
   let { delayDuration = 200, align = "start", side = undefined, trigger, content }: Props = $props();
@@ -16,7 +16,9 @@
 
 <Tooltip {delayDuration}>
   <TooltipTrigger>
-    {@render trigger()}
+    {#snippet child({ props })}
+      {@render trigger({ props })}
+    {/snippet}
   </TooltipTrigger>
 
   <TooltipContent {align} {side}>
