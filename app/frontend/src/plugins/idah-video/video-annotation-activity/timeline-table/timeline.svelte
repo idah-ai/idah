@@ -7,8 +7,8 @@
     currentFrame,
     range,
     scale,
-    hovered_column,
-    hoveredColumnChange,
+    hoveredColumn,
+    onCellHover,
     onSeekFrame,
     onDeleteAnnotation,
     ...restProps
@@ -17,19 +17,29 @@
     currentFrame: number;
     range: [number, number];
     scale: number;
-    hovered_column?: number;
-    hoveredColumnChange: (column?: number) => void;
+    hoveredColumn?: number;
+    onCellHover: (column?: number) => void;
     onSeekFrame: (frame: number) => void;
     onDeleteAnnotation: (annotation: VideoAnnotation, frame: number) => void;
   } = $props();
+
+  // Variables
+  let frameCells = $derived(Math.ceil((range[1] - range[0]) / scale) + 1);
+
+  // Functions
+  function setHoveredColumn(column?: number) {
+    onCellHover(column);
+  }
 </script>
 
 <div class="h-8">
-  {#if Math.ceil((range[1] - range[0]) / scale) + 1 > 0}
-    {#each Array(Math.ceil((range[1] - range[0]) / scale) + 1) as _u, i (i)}
+  {#if frameCells > 0}
+    {#each Array(frameCells) as _u, i (i)}
+      {@const currentFrameInCell = range[0] + i * scale}
+
       <TimelineCell
         {annotation}
-        frame={range[0] + i * scale}
+        frame={currentFrameInCell}
         {currentFrame}
         {range}
         {scale}
@@ -40,16 +50,10 @@
           .filter((s) => Math.floor((s.frame - range[0]) / scale) == i)
           .map((s) => s.frame)}
         onDeleteFrame={(frame) => onDeleteAnnotation(annotation, frame)}
-        hovered={hovered_column == range[0] + i * scale}
-        onmouseover={() => {
-          hoveredColumnChange(range[0] + i * scale);
-        }}
-        onmouseenter={() => {
-          hoveredColumnChange(range[0] + i * scale);
-        }}
-        onmouseleave={() => {
-          hoveredColumnChange(undefined);
-        }}
+        hovered={hoveredColumn == currentFrameInCell}
+        onmouseover={() => setHoveredColumn(currentFrameInCell)}
+        onmouseenter={() => setHoveredColumn(currentFrameInCell)}
+        onmouseleave={() => setHoveredColumn(undefined)}
         {...restProps}
       />
     {/each}
