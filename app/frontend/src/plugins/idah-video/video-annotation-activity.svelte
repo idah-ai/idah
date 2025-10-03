@@ -557,6 +557,7 @@
   });
 
   let showPopOver = $state(false);
+  let videoResizedAt = $state(new Date())
 </script>
 
 <div class="flex h-screen w-full flex-col">
@@ -657,11 +658,15 @@
             onSelectAnnotation={selectAnnotation}
             onSelection={onShapeSelection}
             target_container={player_container}
+            {videoResizedAt}
           >
             <!-- container context ?-->
             <Video
               bind:this={player}
               bind:element={player_container}
+              onResize={() => {
+                videoResizedAt = new Date()
+              }}
               onFramesChange={(current, total) => {
                 currentFrame = current;
                 totalFrames = total;

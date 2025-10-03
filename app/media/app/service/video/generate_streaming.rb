@@ -55,13 +55,12 @@ module Video
                      "-an "
                    end
 
-        rational_fps = video_info.fps.to_r.rationalize(0.0001)
         master_m3u8 <<
           "#EXT-X-STREAM-INF:PROGRAM-ID=1," \
           "BANDWIDTH=#{bitrate.to_i * 1024}," \
           "RESOLUTION=#{width_pixel}x#{height_pixel}," \
           "CODECS=\"avc1.42E01E,mp4a.40.2\"," \
-          "FRAME-RATE=#{rational_fps.numerator}/#{rational_fps.denominator}" \
+          "FRAME-RATE=#{video_info.fps}" \
           "\n#{size}.m3u8\n"
 
         command <<
