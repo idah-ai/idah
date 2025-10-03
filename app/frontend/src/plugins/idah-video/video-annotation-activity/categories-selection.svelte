@@ -39,7 +39,18 @@
   } = $props();
 
   // Variables
-  let openStates = $state<Record<string, boolean>>({});
+  let openStates = $state<Record<string, boolean>>(
+    categories.reduce<Record<string, boolean>>((acc, category) => {
+      if (category.id.includes("/")) {
+        const parts = category.id.split("/");
+        for (let i = 0; i < parts.length - 1; i++) {
+          const parentPath = parts.slice(0, i + 1).join("/");
+          acc[parentPath] = true;
+        }
+      }
+      return acc;
+    }, {}),
+  );
   let forceRender = $state(0); // Force re-render trigger
 
   let categoriesTree: CategoryDefinition[] = categories.reduce<CategoryDefinition[]>((acc, category_configuration) => {
