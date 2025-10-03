@@ -228,11 +228,11 @@
     {#key forceRender}
       {#await haveAnnotationsInCategory(category.id) then hasAnnotations}
         <CollapsibleTrigger
-          class={cn(
-            "flex w-full items-center justify-between",
-            !category.requiredNested ? "hover:bg-accent hover:cursor-pointer" : "",
-            { "bg-primary-foreground border-1 rounded-sm border-blue-300": selected == category.id },
-          )}
+          class={cn("flex w-full items-center justify-between", {
+            "bg-primary-foreground border-1 rounded-sm border-blue-300": selected == category.id,
+            "hover:bg-primary-foreground hover:cursor-pointer hover:rounded-sm": !category.requiredNested,
+            "hover:bg-accent hover:cursor-pointer hover:rounded-sm": category.requiredNested,
+          })}
           onclick={(e) => {
             // Prevent default toggle behavior
             e.preventDefault();
