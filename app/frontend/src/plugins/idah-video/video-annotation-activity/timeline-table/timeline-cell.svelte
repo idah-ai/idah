@@ -8,6 +8,7 @@
 
   import type { VideoAnnotation } from "../VideoAnnotationContext";
   import type { LabelingConfiguration } from "@/data/model/dataset/labels";
+  import type { HTMLAttributes } from "svelte/elements";
 
   let {
     annotation,
@@ -21,7 +22,7 @@
     onSeekFrame,
     onDeleteFrame,
     ...restProps
-  }: {
+  }: HTMLAttributes<HTMLDivElement> & {
     annotation: VideoAnnotation;
     frame: number;
     currentFrame: number;
@@ -54,9 +55,9 @@
 </script>
 
 <div
-  class={cn("inline-block h-full", {
-    "bg-primary/10": isSelected,
-    "bg-primary/20": isHovered,
+  class={cn("inline-block h-full border-b", {
+    "bg-primary/20": isSelected,
+    "bg-primary/10": isHovered,
   })}
   style:box-sizing="border-box"
   style:width="{cellWidth}%"
@@ -68,14 +69,14 @@
       class={cn("relative my-[20%] h-4/5", {
         "bg-primary/5": isHovered || isSelected,
       })}
-      style:background-color={categoryColor ? categoryColor + "20" : "#FEF9C2"}
+      style:background-color={categoryColor ? categoryColor + "30" : "#FEF9C2"}
     >
       {#if keyframes.length}
         <ContextMenu>
           <ContextMenuTrigger class="absolute top-1 h-full w-full pt-0">
             <div
               class="m-auto h-3/4 w-3/4 cursor-context-menu"
-              style:background-color={categoryColor ? categoryColor + "75" : "#FF0000"}
+              style:background-color={categoryColor ? categoryColor : "#FF0000"}
             ></div>
           </ContextMenuTrigger>
 
