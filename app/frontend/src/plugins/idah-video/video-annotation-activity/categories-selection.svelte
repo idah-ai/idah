@@ -249,6 +249,7 @@
             // Force re-render of annotation counts
             forceRender++;
           }}
+          disabled={toolMode}
         >
           {@render showCategoryTitle(
             category,
