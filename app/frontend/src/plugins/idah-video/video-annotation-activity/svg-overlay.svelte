@@ -211,7 +211,7 @@
               offset={zoomInfo.offset}
               color={annotation.value.attributes?.data.color || "grey"}
               onmousedown={(e) => {
-                if (mode == "visual") {
+                if (mode == "visual" || selected) {
                   e.stopPropagation();
                   onSelectAnnotation(annotation);
                 }
@@ -230,7 +230,7 @@
               offset={zoomInfo.offset}
               color={annotation.value.attributes?.data.color || "grey"}
               onmousedown={(e) => {
-                if (mode == "visual") {
+                if (mode == "visual" || selected) {
                   e.stopPropagation();
                   onSelectAnnotation(annotation);
                 }
