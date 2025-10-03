@@ -3,12 +3,12 @@
 
   import { Button } from "@/components/ui/button";
   import Spinner from "@/components/app/loading/spinner.svelte";
-  import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+  import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
   import Text from "@/components/ui/text/Text.svelte";
 
   import { cn } from "@/utils";
   import { humanize } from "@/utils/string";
-  import { Trash2Icon, ZoomOut } from "@lucide/svelte";
+  import { Trash2Icon } from "@lucide/svelte";
   import type { LabelingConfiguration } from "@/data/model/dataset/labels";
 
   import Timeline from "./timeline.svelte";
