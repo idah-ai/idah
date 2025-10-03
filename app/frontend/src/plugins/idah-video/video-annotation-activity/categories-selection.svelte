@@ -158,14 +158,14 @@
 
 {#snippet showCategoryTitle(category: CategoryDefinition, haveChildren: boolean = false, open: boolean = false)}
   <div
-    class={cn(" flex items-center gap-2", {
-      "my-2": !haveChildren,
+    class={cn("flex items-center gap-2", {
+      "p-2": !haveChildren || toolMode,
     })}
   >
     <Button
       variant="ghost"
       class={cn("p-0 hover:cursor-pointer", {
-        hidden: !haveChildren,
+        hidden: !haveChildren || toolMode,
       })}
       onclick={(e) => {
         e.stopPropagation();
@@ -224,7 +224,7 @@
   selected: string | undefined,
   parent: string[] = [],
 )}
-  <Collapsible open={!!category}>
+  <Collapsible open={toolMode ? !!category : openStates[category.id] || false}>
     {#key forceRender}
       {#await haveAnnotationsInCategory(category.id) then hasAnnotations}
         <CollapsibleTrigger
@@ -236,7 +236,6 @@
           onclick={(e) => {
             // Prevent default toggle behavior
             e.preventDefault();
-            e.stopPropagation();
 
             if (!category.requiredNested) {
               onSelect(category);
