@@ -1,11 +1,16 @@
 <script lang="ts">
+  import { getContext } from "svelte";
+
   import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu";
 
   import { cn } from "@/utils";
   import { ArrowLeftRightIcon, Trash2Icon } from "@lucide/svelte";
-  import { getContext } from "svelte";
+
+  import type { VideoAnnotation } from "../VideoAnnotationContext";
+  import type { LabelingConfiguration } from "@/data/model/dataset/labels";
 
   let {
+    annotation,
     frame,
     currentFrame,
     range,
@@ -17,6 +22,7 @@
     onDeleteFrame,
     ...restProps
   }: {
+    annotation: VideoAnnotation;
     frame: number;
     currentFrame: number;
     range: [number, number];
@@ -29,14 +35,22 @@
   } = $props();
 
   // Contexts
-  const labelConfig = getContext("labelConfig");
+  const labelConfig: LabelingConfiguration = getContext("labelConfig");
 
   // Variables
+  let categoryColor: string | undefined = $derived(getCategory(annotation.value.category)?.color);
   let cellWidth: number = $derived(
     (1 / ((range[1] - range[0] + (scale - ((range[1] - range[0]) % scale))) / 100)) * scale,
   );
   let isSelected: boolean = $derived(Math.floor(currentFrame / scale) == Math.floor(frame / scale));
   let isHovered: boolean = $derived(hovered && !isSelected);
+
+  // Functions
+  function getCategory(categoryId: string | undefined) {
+    if (!categoryId) return undefined;
+
+    return labelConfig.categories.find((cat) => cat.id === categoryId);
+  }
 </script>
 
 <div
@@ -49,17 +63,20 @@
   onclick={() => onSeekFrame(frame)}
   {...restProps}
 >
-  <!-- style:background-color="#fef9c2" -->
   {#if inSpan}
     <div
-      class={cn("relative", isHovered || isSelected ? "bg-primary/5" : "bg-[#fef9c2]")}
-      style:height="80%"
-      style:margin-top="5%"
+      class={cn("relative my-[20%] h-4/5", {
+        "bg-primary/5": isHovered || isSelected,
+      })}
+      style:background-color={categoryColor ? categoryColor + "20" : "#FEF9C2"}
     >
       {#if keyframes.length}
         <ContextMenu>
           <ContextMenuTrigger class="absolute top-1 h-full w-full pt-0">
-            <div style="margin:auto" style:background-color="#06B6D4" style:height="75%" style:width="75%"></div>
+            <div
+              class="m-auto h-3/4 w-3/4 cursor-context-menu"
+              style:background-color={categoryColor ? categoryColor + "75" : "#FF0000"}
+            ></div>
           </ContextMenuTrigger>
 
           <ContextMenuContent>

@@ -1,18 +1,18 @@
 <script lang="ts">
+  import { getContext } from "svelte";
+
   import { Button } from "@/components/ui/button";
-  import { boundingBoxes } from "../idb_store.svelte";
-  import { DatasetRecord } from "@/data/model/dataset/dataset-record";
-  import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
-  import { page } from "$app/state";
   import Spinner from "@/components/app/loading/spinner.svelte";
   import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
   import Text from "@/components/ui/text/Text.svelte";
-  import Timeline from "./timeline.svelte";
 
   import { cn } from "@/utils";
   import { humanize } from "@/utils/string";
   import { Trash2Icon } from "@lucide/svelte";
+  import type { LabelingConfiguration } from "@/data/model/dataset/labels";
 
+  import Timeline from "./timeline.svelte";
+  import { boundingBoxes } from "../idb_store.svelte";
   import type { VideoAnnotation } from "../VideoAnnotationContext";
   import type { AnnotationsIndexedDB } from "../indexedDB";
 
@@ -46,6 +46,9 @@
     onScaleChange?: (zoom: number) => void;
     db?: AnnotationsIndexedDB;
   } = $props();
+
+  // Contexts
+  let labelConfig: LabelingConfiguration = getContext("labelConfig");
 
   $effect(() => {
     onZoomChange?.(zoom);
@@ -85,24 +88,19 @@
     scale = Math.max(1, Math.min(Math.ceil(totalFrames / zoom), value));
   }
 
-  async function getCategoryName(
-    categoryId: string | undefined,
-    annotations: VideoAnnotation[],
-    selected: VideoAnnotation,
-  ) {
-    if (!categoryId) return "Uncategorized";
-    const entryId = page.params.entryId as string;
-    const entryResponse = await entriesBackendDataSource.get(entryId, {
-      fields: {
-        [DatasetRecord.type]: ["labeling_configuration"],
-      },
-      included: ["dataset"],
-    });
-    const labelingConfiguration = entryResponse?.data.dataset.labeling_configuration;
-    const index = await getSelectedAnnotationIndex(categoryId, selected.metadata.id);
-    const titleName = labelingConfiguration?.categories?.find((c) => c.id === categoryId)?.label || categoryId;
+  function getCategory(categoryId: string) {
+    return labelConfig.categories.find((cat) => cat.id === categoryId);
+  }
 
-    return [titleName, index].join("_");
+  async function getCategoryName(categoryId: string | undefined, selected: VideoAnnotation) {
+    if (!categoryId) return "Uncategorized";
+
+    const selectedCategory = getCategory(categoryId);
+
+    const selectedAnnotationIndex = await getSelectedAnnotationIndex(categoryId, selected.metadata.id);
+    const selectedCategoryName = selectedCategory?.label || categoryId;
+
+    return [selectedCategoryName, selectedAnnotationIndex].join("_");
   }
 
   async function getSelectedAnnotationIndex(categoryId: string, annotationId: string) {
@@ -119,28 +117,28 @@
     {@const isSelected = selectedAnnotation?.metadata.id == annotation.metadata.id}
     <TableRow
       class={cn("border-b-0", {
-        "bg-primary-foreground": isSelected,
+        "bg-primary-foreground border-primary/30 border-b border-t": isSelected,
       })}
     >
       <TableCell
-        class="p-0"
+        class="justify-end border-r p-0"
         onclick={() => {
           onSelectAnnotation(annotation);
           pos_offset = annotation.shape.start;
           onSeekFrame(annotation.shape.start);
         }}
       >
-        <button class={cn("group flex w-full cursor-pointer items-center px-2 py-1")}>
-          {#await getCategoryName(annotation.value.category, annotations, annotation)}
+        <button class={cn("group flex w-full cursor-pointer items-center justify-end px-2 py-1")}>
+          {#await getCategoryName(annotation.value.category, annotation)}
             <Spinner size="sm"></Spinner>
           {:then title}
-            <Text size="sm">{humanize(title)}</Text>
+            <Text size="sm" weight={isSelected ? "semibold" : "normal"}>{humanize(title)}</Text>
           {/await}
 
           <Button
             variant="ghost"
             size="icon"
-            class={cn("ml-auto size-6 opacity-0 transition-opacity duration-200 ease-in-out group-hover:opacity-100", {
+            class={cn("ml-2 size-6 opacity-0 transition-opacity duration-200 ease-in-out group-hover:opacity-100", {
               "opacity-100": isSelected,
             })}
             onclick={(e) => {
@@ -229,7 +227,10 @@
 >
   <TableHeader class="sticky z-10 bg-white" style="inset-block-start: 0">
     <TableRow>
-      <TableHead class="w-100"></TableHead>
+      <!-- HEADER::ANNOTATIONS -->
+      <TableHead class="w-80"></TableHead>
+
+      <!-- HEADER::TIMELINES -->
       <TableHead class="p-0">
         <div class="text-muted-foreground relative h-5 border-b">
           {#each [...Array(range[1] - range[0] + (scale - (range_span % scale)))].map((v, i) => i) as i (i)}
@@ -242,43 +243,44 @@
             {@const startLeftPosition = (i / (range[1] - range[0] + (scale - (range_span % scale)))) * 100}
 
             {#if isSelected}
-              <div
+              <button
                 class="border-border text-primary absolute top-0 z-20 border-b border-l bg-white"
                 style:width="{width}%"
                 style:padding-left="0.125rem"
                 style:left="{startLeftPosition}%"
-                onclick={onSeekFrame(i + range[0])}
+                onclick={() => onSeekFrame(i + range[0])}
               >
                 {i + range[0]}
-              </div>
+              </button>
             {:else if isHovered}
-              <div
+              <button
                 class="border-border text-primary bg-primary/20 absolute top-0 z-10 border-l"
                 style:width="{width}%"
                 style:padding-left="0.125rem"
                 style:left="{startLeftPosition}%"
-                onclick={onSeekFrame(i + range[0])}
+                onclick={() => onSeekFrame(i + range[0])}
               >
                 {i + range[0]}
-              </div>
+              </button>
             {:else if isDefault}
-              <div
+              <button
                 class="border-border text-muted-foreground/50 absolute top-0 border-l"
                 style:width="{width}%"
                 style:padding-left="0.125rem"
                 style:left="{startLeftPosition}%"
-                onclick={onSeekFrame(i + range[0])}
+                onclick={() => onSeekFrame(i + range[0])}
               >
                 {i + range[0]}
-              </div>
+              </button>
             {:else if isTick}
-              <div
+              <button
+                aria-label="tick"
                 class="border-border absolute bottom-0 border-l"
-                style:height=100%
-                style:width=100%
+                style:height="100%"
+                style:width="100%"
                 style:left="calc({startLeftPosition}%)"
-                onclick={onSeekFrame(i + range[0])}
-              ></div>
+                onclick={() => onSeekFrame(i + range[0])}
+              ></button>
             {/if}
           {/each}
         </div>
