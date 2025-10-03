@@ -20,6 +20,7 @@
     keyframes,
     hovered,
     onSeekFrame,
+    onSelectAnnotation,
     onDeleteFrame,
     ...restProps
   }: HTMLAttributes<HTMLDivElement> & {
@@ -32,6 +33,7 @@
     keyframes: number[];
     hovered: boolean;
     onSeekFrame: (frame: number) => void;
+    onSelectAnnotation: (annotation: VideoAnnotation) => void;
     onDeleteFrame: (frame: number) => void;
   } = $props();
 
@@ -55,27 +57,30 @@
 </script>
 
 <div
-  class={cn("inline-block h-full border-b", {
+  class={cn("inline-block h-full border-b py-1", {
     "bg-primary/20": isSelected,
     "bg-primary/10": isHovered,
   })}
   style:box-sizing="border-box"
   style:width="{cellWidth}%"
-  onclick={() => onSeekFrame(frame)}
+  onclick={() => {
+    onSeekFrame(frame);
+    onSelectAnnotation(annotation);
+  }}
   {...restProps}
 >
   {#if inSpan}
     <div
-      class={cn("relative my-[20%] h-4/5", {
+      class={cn("relative h-full", {
         "bg-primary/5": isHovered || isSelected,
       })}
       style:background-color={categoryColor ? categoryColor + "30" : "#FEF9C2"}
     >
       {#if keyframes.length}
         <ContextMenu>
-          <ContextMenuTrigger class="absolute top-1 h-full w-full pt-0">
+          <ContextMenuTrigger class="absolute top-[3px] h-full w-full pt-0">
             <div
-              class="m-auto h-3/4 w-3/4 cursor-context-menu"
+              class="m-auto h-3/4 w-3/4 cursor-context-menu rounded"
               style:background-color={categoryColor ? categoryColor : "#FF0000"}
             ></div>
           </ContextMenuTrigger>

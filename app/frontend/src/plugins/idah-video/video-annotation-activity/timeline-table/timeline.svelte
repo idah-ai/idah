@@ -10,6 +10,7 @@
     hoveredColumn,
     onCellHover,
     onSeekFrame,
+    onSelectAnnotation,
     onDeleteAnnotation,
     ...restProps
   }: {
@@ -20,6 +21,7 @@
     hoveredColumn?: number;
     onCellHover: (column?: number) => void;
     onSeekFrame: (frame: number) => void;
+    onSelectAnnotation: (annotation: VideoAnnotation) => void;
     onDeleteAnnotation: (annotation: VideoAnnotation, frame: number) => void;
   } = $props();
 
@@ -49,6 +51,7 @@
         keyframes={annotation.shape.frames
           .filter((s) => Math.floor((s.frame - range[0]) / scale) == i)
           .map((s) => s.frame)}
+        {onSelectAnnotation}
         onDeleteFrame={(frame) => onDeleteAnnotation(annotation, frame)}
         hovered={hoveredColumn == currentFrameInCell}
         onmouseover={() => setHoveredColumn(currentFrameInCell)}
