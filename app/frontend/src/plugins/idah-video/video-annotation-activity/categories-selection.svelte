@@ -159,13 +159,13 @@
 {#snippet showCategoryTitle(category: CategoryDefinition, haveChildren: boolean = false, open: boolean = false)}
   <div
     class={cn("flex items-center gap-2", {
-      "p-2": !haveChildren || toolMode,
+      "p-2": !haveChildren,
     })}
   >
     <Button
       variant="ghost"
       class={cn("p-0 hover:cursor-pointer", {
-        hidden: !haveChildren || toolMode,
+        hidden: !haveChildren,
       })}
       onclick={(e) => {
         e.stopPropagation();
@@ -174,11 +174,12 @@
           openStates[category.id] = !openStates[category.id];
         }
       }}
+      disabled={toolMode}
     >
       <svg
         class={cn("transition-transform duration-200", {
           "opacity-0": !haveChildren,
-          "rotate-90": open,
+          "rotate-90": open || toolMode,
         })}
         width="16"
         height="16"
