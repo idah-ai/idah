@@ -4,14 +4,13 @@
   import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
   import { cn } from "@/utils";
   import { Trash2 } from "@lucide/svelte";
-  import { idb_updated_at, uncategorizedAnnotations } from "./idb_store.svelte";
+  import { idb_updated_at } from "./idb_store.svelte";
   import { SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
 
   import type { CategoryConfiguration, VideoAnnotation } from "./VideoAnnotationContext";
   import type { CategoryDefinition } from "@/context/ActivityContext";
   import type { AnnotationsIndexedDB } from "./indexedDB";
   import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger } from "@/components/ui/select";
-  import { Title } from "@/components/ui/alert-dialog";
   import Text from "@/components/ui/text/Text.svelte";
 
   // Props
@@ -21,6 +20,7 @@
     categories,
     selected_category,
     selected_id,
+    toolMode,
     onSelect,
     onSelectAnnotation,
     onDeleteAnnotation,
@@ -29,6 +29,7 @@
     type: string;
     currentFrame: number;
     categories: CategoryConfiguration[];
+    toolMode: boolean;
     selected_category: string | undefined;
     selected_id: string | undefined;
     onSelect: (category?: CategoryDefinition) => void;
@@ -110,7 +111,7 @@
 {#snippet annotationSelection(annotation: VideoAnnotation, name: string, annotationCategory?: string)}
   <SidebarMenuItem class="item_hover list-none p-1">
     <SidebarMenuButton
-      class={cn("ml-2 w-full justify-between px-1 hover:cursor-pointer")}
+      class={cn("ml-5 w-full justify-between px-5 hover:cursor-pointer")}
       onclick={() => onSelectAnnotation(annotation)}
     >
       <div class="flex gap-2">
@@ -156,11 +157,15 @@
 {/snippet}
 
 {#snippet showCategoryTitle(category: CategoryDefinition, haveChildren: boolean = false, open: boolean = false)}
-  <div class="flex items-center gap-2">
+  <div
+    class={cn("flex items-center gap-2", {
+      "p-2": !haveChildren || toolMode,
+    })}
+  >
     <Button
       variant="ghost"
       class={cn("p-0 hover:cursor-pointer", {
-        hidden: !haveChildren,
+        hidden: !haveChildren || toolMode,
       })}
       onclick={(e) => {
         e.stopPropagation();
@@ -219,35 +224,39 @@
   selected: string | undefined,
   parent: string[] = [],
 )}
-  <Collapsible open={openStates[category.id] || false}>
-    {#await haveAnnotationsInCategory(category.id) then hasAnnotations}
-      <CollapsibleTrigger
-        class={cn(
-          "flex w-full items-center justify-between",
-          !category.requiredNested ? "hover:bg-accent hover:cursor-pointer" : "",
-          { "bg-primary-foreground border-1 rounded-sm border-blue-300": selected == category.id },
-        )}
-        onclick={(e) => {
-          // Prevent default toggle behavior
-          e.preventDefault();
-          e.stopPropagation();
+  <Collapsible open={toolMode ? !!category : openStates[category.id] || false}>
+    {#key forceRender}
+      {#await haveAnnotationsInCategory(category.id) then hasAnnotations}
+        <CollapsibleTrigger
+          class={cn("flex w-full items-center justify-between", {
+            "bg-primary-foreground border-1 rounded-sm border-blue-300": selected == category.id,
+            "hover:bg-primary-foreground hover:cursor-pointer hover:rounded-sm": !category.requiredNested,
+            "hover:bg-accent hover:cursor-pointer hover:rounded-sm": category.requiredNested,
+          })}
+          onclick={(e) => {
+            // Prevent default toggle behavior
+            e.preventDefault();
 
-          if (!category.requiredNested) {
-            onSelect(category);
-          }
-          // Force re-render of annotation counts
-          forceRender++;
-        }}
-      >
-        {@render showCategoryTitle(
-          category,
-          !!category.nestedCategories || hasAnnotations,
-          openStates[category.id] || false,
-        )}
+            if (!category.requiredNested) {
+              onSelect(category);
+            }
 
-        {#if db && category && $idb_updated_at}
-          {#key $idb_updated_at}
-            {#key forceRender}
+            if (category.nestedCategories) {
+              // Toggle the category open state
+              openStates[category.id] = !openStates[category.id];
+            }
+            // Force re-render of annotation counts
+            forceRender++;
+          }}
+        >
+          {@render showCategoryTitle(
+            category,
+            !!category.nestedCategories || hasAnnotations,
+            openStates[category.id] || false,
+          )}
+
+          {#if db && category && $idb_updated_at}
+            {#key $idb_updated_at}
               <Badge variant="secondary">
                 {#await db.getAllStartingWith("category", category.id)}
                   ...
@@ -261,14 +270,14 @@
                 {/await}
               </Badge>
             {/key}
-          {/key}
-        {/if}
-      </CollapsibleTrigger>
-    {/await}
+          {/if}
+        </CollapsibleTrigger>
+      {/await}
+    {/key}
 
-    <CollapsibleContent class="ml-5">
+    <CollapsibleContent class="ml-5" hidden={!openStates[category.id]}>
       {#key $idb_updated_at}
-        {#if db && category}
+        {#if !toolMode && db && category}
           {#await db.getAllIndex("category", category.id)}
             ...
           {:then anns}
