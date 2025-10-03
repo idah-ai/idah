@@ -3,15 +3,15 @@
   import Button from "@/components/ui/button/button.svelte";
   import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
   import { cn } from "@/utils";
-  import { ChevronRight, PlusIcon, Trash2 } from "@lucide/svelte";
+  import { ChevronRight, CircleSmallIcon, PlusIcon, Trash2Icon } from "@lucide/svelte";
   import { idb_updated_at } from "./idb_store.svelte";
+  import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger } from "@/components/ui/select";
   import { SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
+  import Text from "@/components/ui/text/Text.svelte";
 
   import type { CategoryConfiguration, VideoAnnotation } from "./VideoAnnotationContext";
   import type { CategoryDefinition } from "@/context/ActivityContext";
   import type { AnnotationsIndexedDB } from "./indexedDB";
-  import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger } from "@/components/ui/select";
-  import Text from "@/components/ui/text/Text.svelte";
 
   // Props
   let {
@@ -39,7 +39,18 @@
   } = $props();
 
   // Variables
-  let openStates = $state<Record<string, boolean>>({});
+  let openStates = $state<Record<string, boolean>>(
+    categories.reduce<Record<string, boolean>>((acc, category) => {
+      if (category.id.includes("/")) {
+        const parts = category.id.split("/");
+        for (let i = 0; i < parts.length - 1; i++) {
+          const parentPath = parts.slice(0, i + 1).join("/");
+          acc[parentPath] = true;
+        }
+      }
+      return acc;
+    }, {}),
+  );
   let forceRender = $state(0); // Force re-render trigger
 
   let categoriesTree: CategoryDefinition[] = categories.reduce<CategoryDefinition[]>((acc, category_configuration) => {
@@ -128,19 +139,19 @@
         {name}
       </div>
 
-      {#if selected_category && selected_category == annotationCategory}
-        <Button
-          variant="ghost"
-          size="icon"
-          class="hover_button"
-          onclick={(e) => {
-            e.stopPropagation();
-            onDeleteAnnotation(annotation);
-          }}
-        >
-          <Trash2 color="var(--color-gray-500)" />
-        </Button>
-      {/if}
+      <!-- {#if selected_category && selected_category == annotationCategory} -->
+      <Button
+        variant="ghost"
+        size="icon"
+        class="hover_button"
+        onclick={(e) => {
+          e.stopPropagation();
+          onDeleteAnnotation(annotation);
+        }}
+      >
+        <Trash2Icon color="var(--color-gray-500)" />
+      </Button>
+      <!-- {/if} -->
     </SidebarMenuButton>
   </SidebarMenuItem>
 
@@ -165,7 +176,7 @@
     <Button
       variant="ghost"
       class={cn("p-0 hover:cursor-pointer", {
-        hidden: !haveChildren && !toolMode,
+        hidden: (!haveChildren && !toolMode) || selected_id,
       })}
       onclick={(e) => {
         e.stopPropagation();
@@ -178,7 +189,9 @@
     >
       {@const selectedCategory = selected_category == category.id}
       {#if selectedCategory && toolMode && !selected_id}
-        <PlusIcon class="text-primary size-4"></PlusIcon>
+        <PlusIcon class="text-primary size-4 " strokeWidth={4}></PlusIcon>
+      {:else if !category.nestedCategories && toolMode && !selected_id}
+        <CircleSmallIcon class="fill-gray-400 stroke-gray-400"></CircleSmallIcon>
       {:else}
         {@const parentOpen = category.nestedCategories && toolMode}
         <ChevronRight
@@ -299,12 +312,12 @@
 
 <div class="flex-col">
   {#if selected_id && selected_category}
-    <div class="flex pb-1">
-      <Text class="text-gray-700" weight="medium" size="sm">Category</Text>
-    </div>
-
     {@const foundCategory = findCategory(categoriesTree, selected_category)}
     {#if categoriesTree && foundCategory}
+      <div class="flex pb-1">
+        <Text class="text-gray-700" weight="medium" size="sm">Category</Text>
+      </div>
+
       <Select
         type="single"
         onValueChange={(category_id) => {
