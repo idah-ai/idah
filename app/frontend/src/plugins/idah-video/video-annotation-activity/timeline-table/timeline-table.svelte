@@ -3,7 +3,7 @@
 
   import { Button } from "@/components/ui/button";
   import Spinner from "@/components/app/loading/spinner.svelte";
-  import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+  import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
   import Text from "@/components/ui/text/Text.svelte";
 
   import { cn } from "@/utils";
@@ -49,6 +49,9 @@
 
   // Contexts
   let labelConfig: LabelingConfiguration = getContext("labelConfig");
+
+  // Variables
+  let isResizing: boolean = $state(false);
 
   $effect(() => {
     onZoomChange?.(zoom);
@@ -114,6 +117,21 @@
       (annotation) => annotation.metadata.id == annotationId,
     ) as number;
   }
+
+  function scrollHorizontal(e: MouseEvent) {
+    if (isResizing) {
+      const isScrollToTheRight = e.movementX < 0;
+      const isScrollToTheLeft = e.movementX > 0;
+
+      if (isScrollToTheRight) {
+        const next = Math.floor(range_span / 10);
+        setOffset(range[0] - next);
+      } else if (isScrollToTheLeft) {
+        const next = Math.floor(range_span / 10);
+        setOffset(range[0] + next);
+      }
+    }
+  }
 </script>
 
 {#snippet row(annotations: VideoAnnotation[])}
@@ -167,6 +185,7 @@
           onCellHover={(column) => (hoveredColumn = column)}
           {hoveredColumn}
           {onSeekFrame}
+          {onSelectAnnotation}
           {onDeleteAnnotation}
         />
       </TableCell>
@@ -239,7 +258,20 @@
 
       <!-- HEADER::TIMELINES -->
       <TableHead class="p-0">
-        <div class="text-muted-foreground relative h-5 border-b">
+        <div
+          role="scrollbar"
+          aria-controls="timeline-table"
+          aria-valuenow={pos_offset}
+          tabindex="0"
+          class="text-muted-foreground relative h-5 border-b"
+          onmousedowncapture={() => {
+            isResizing = true;
+          }}
+          onmousemove={scrollHorizontal}
+          onmouseupcapture={() => {
+            isResizing = false;
+          }}
+        >
           {#each [...Array(range[1] - range[0] + (scale - (range_span % scale)))].map((v, i) => i) as i (i)}
             {@const thisFrame = i + range[0]}
             {@const width = (1 / ((range[1] - range[0] + (scale - (range_span % scale))) / 100)) * scale}
@@ -252,7 +284,7 @@
 
             {#if isSelected}
               <button
-                class="border-border text-primary absolute top-0 z-20 border-b border-l bg-white"
+                class="border-border text-primary absolute top-0 z-20 cursor-col-resize border-b border-l bg-white"
                 style:width="{width}%"
                 style:padding-left="0.125rem"
                 style:left="{startLeftPosition}%"
@@ -262,7 +294,7 @@
               </button>
             {:else if isHovered}
               <button
-                class="border-border text-primary bg-primary/20 absolute top-0 z-10 border-l"
+                class="border-border text-primary bg-primary/20 absolute top-0 z-10 cursor-col-resize border-l"
                 style:width="{width}%"
                 style:padding-left="0.125rem"
                 style:left="{startLeftPosition}%"
@@ -272,7 +304,7 @@
               </button>
             {:else if isDefault}
               <button
-                class="border-border text-muted-foreground/50 absolute top-0 border-l"
+                class="border-border text-muted-foreground/50 absolute top-0 cursor-col-resize border-l"
                 style:width="{width}%"
                 style:padding-left="0.125rem"
                 style:left="{startLeftPosition}%"
@@ -283,7 +315,7 @@
             {:else if isTick}
               <button
                 aria-label="tick"
-                class="border-border absolute bottom-0 border-l"
+                class="border-border absolute bottom-0 cursor-col-resize border-l"
                 style:height="100%"
                 style:width="100%"
                 style:left="calc({startLeftPosition}%)"
