@@ -72,7 +72,7 @@
   let range: [number, number] = $derived([pos_offset, pos_offset + range_span]);
 
   let wheelthrottling = $state(false);
-  let hovered_column: number | undefined = $state();
+  let hoveredColumn: number | undefined = $state();
 
   export function setOffset(offset: number) {
     pos_offset = Math.max(0, Math.min(Math.ceil(totalFrames - (range_span + 1)), offset || 0));
@@ -86,6 +86,10 @@
 
   export function setScale(value: number) {
     scale = Math.max(1, Math.min(Math.ceil(totalFrames / zoom), value));
+  }
+
+  function seekToFrame(frameToGo: number) {
+    onSeekFrame(frameToGo);
   }
 
   function getCategory(categoryId: string) {
@@ -113,15 +117,18 @@
 </script>
 
 {#snippet row(annotations: VideoAnnotation[])}
-  {#each annotations as annotation (annotation.metadata.id)}
+  {#each annotations as annotation, index (annotation.metadata.id)}
     {@const isSelected = selectedAnnotation?.metadata.id == annotation.metadata.id}
+    {@const isLastIndex = index == annotations.length - 1}
     <TableRow
       class={cn("border-b-0", {
         "bg-primary-foreground border-primary/30 border-b border-t": isSelected,
       })}
     >
       <TableCell
-        class="justify-end border-r p-0"
+        class={cn("justify-end border-r p-0", {
+          "border-b": isLastIndex,
+        })}
         onclick={() => {
           onSelectAnnotation(annotation);
           pos_offset = annotation.shape.start;
@@ -157,8 +164,8 @@
           {currentFrame}
           {range}
           {scale}
-          hoveredColumnChange={(column) => (hovered_column = column)}
-          {hovered_column}
+          onCellHover={(column) => (hoveredColumn = column)}
+          {hoveredColumn}
           {onSeekFrame}
           {onDeleteAnnotation}
         />
@@ -179,7 +186,7 @@
         setZoom(zoom - e.deltaY);
       } else if (e.ctrlKey) {
         delta = e.deltaY ? (e.deltaY > 0 ? 1 : -1) : 0; // for now
-        let c_hovered = $state.snapshot(hovered_column);
+        let c_hovered = $state.snapshot(hoveredColumn);
         let c = c_hovered != undefined ? Math.ceil((c_hovered - pos_offset) / scale) : 0;
 
         setScale(scale + delta);
@@ -189,8 +196,8 @@
       } else {
         delta = e.shiftKey ? e.deltaY : e.deltaX;
         setOffset(Math.floor(pos_offset + delta * scale));
-        if (hovered_column != undefined) {
-          hovered_column += pos_offset - from;
+        if (hoveredColumn != undefined) {
+          hoveredColumn += pos_offset - from;
         }
       }
 
@@ -234,9 +241,10 @@
       <TableHead class="p-0">
         <div class="text-muted-foreground relative h-5 border-b">
           {#each [...Array(range[1] - range[0] + (scale - (range_span % scale)))].map((v, i) => i) as i (i)}
+            {@const thisFrame = i + range[0]}
             {@const width = (1 / ((range[1] - range[0] + (scale - (range_span % scale))) / 100)) * scale}
-            {@const isSelected = Math.floor(i + range[0]) == currentFrame}
-            {@const isHovered = i + range[0] == hovered_column}
+            {@const isSelected = Math.floor(thisFrame) == currentFrame}
+            {@const isHovered = thisFrame == hoveredColumn}
             {@const isDefault =
               i % (Math.floor(zoom / Math.min(zoom, 20)) * Math.ceil((range[1] - range[0]) / zoom)) == 0}
             {@const isTick = i % (1 * Math.ceil((range[1] - range[0]) / zoom)) == 0}
@@ -248,9 +256,9 @@
                 style:width="{width}%"
                 style:padding-left="0.125rem"
                 style:left="{startLeftPosition}%"
-                onclick={() => onSeekFrame(i + range[0])}
+                onclick={() => seekToFrame(thisFrame)}
               >
-                {i + range[0]}
+                {thisFrame}
               </button>
             {:else if isHovered}
               <button
@@ -258,9 +266,9 @@
                 style:width="{width}%"
                 style:padding-left="0.125rem"
                 style:left="{startLeftPosition}%"
-                onclick={() => onSeekFrame(i + range[0])}
+                onclick={() => seekToFrame(thisFrame)}
               >
-                {i + range[0]}
+                {thisFrame}
               </button>
             {:else if isDefault}
               <button
@@ -268,9 +276,9 @@
                 style:width="{width}%"
                 style:padding-left="0.125rem"
                 style:left="{startLeftPosition}%"
-                onclick={() => onSeekFrame(i + range[0])}
+                onclick={() => seekToFrame(thisFrame)}
               >
-                {i + range[0]}
+                {thisFrame}
               </button>
             {:else if isTick}
               <button
@@ -279,7 +287,7 @@
                 style:height="100%"
                 style:width="100%"
                 style:left="calc({startLeftPosition}%)"
-                onclick={() => onSeekFrame(i + range[0])}
+                onclick={() => seekToFrame(thisFrame)}
               ></button>
             {/if}
           {/each}
