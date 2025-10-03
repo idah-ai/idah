@@ -249,7 +249,6 @@
             // Force re-render of annotation counts
             forceRender++;
           }}
-          disabled={category.nestedCategories ? true : false}
         >
           {@render showCategoryTitle(
             category,
