@@ -8,7 +8,7 @@
 
   import { cn } from "@/utils";
   import { humanize } from "@/utils/string";
-  import { Trash2Icon } from "@lucide/svelte";
+  import { Trash2Icon, ZoomOut } from "@lucide/svelte";
   import type { LabelingConfiguration } from "@/data/model/dataset/labels";
 
   import Timeline from "./timeline.svelte";
@@ -53,13 +53,6 @@
   // Variables
   let isResizing: boolean = $state(false);
 
-  $effect(() => {
-    onZoomChange?.(zoom);
-  });
-  $effect(() => {
-    onScaleChange?.(scale);
-  });
-
   // $effect(() => {
   //     if (tracking) {
   //         if (currentFrame < pos_offset)
@@ -85,10 +78,12 @@
     const s = Math.min(150, Math.max(1, Math.round(value)));
     scale = Math.min(scale, Math.ceil(totalFrames / s));
     zoom = s;
+    onZoomChange?.(zoom);
   }
 
   export function setScale(value: number) {
     scale = Math.max(1, Math.min(Math.ceil(totalFrames / zoom), value));
+    onScaleChange?.(scale);
   }
 
   function seekToFrame(frameToGo: number) {
@@ -118,6 +113,22 @@
     ) as number;
   }
 
+  function scrollRight(next: number) {
+    setOffset(range[0] - next);
+  }
+
+  function scrollLeft(next: number) {
+    setOffset(range[0] + next);
+  }
+
+  function zoomIn(next: number) {
+    setZoom(zoom + next);
+  }
+
+  function zoomOut(next: number) {
+    setZoom(zoom - next);
+  }
+
   function scrollHorizontal(e: MouseEvent) {
     if (isResizing) {
       const isScrollToTheRight = e.movementX < 0;
@@ -125,10 +136,10 @@
 
       if (isScrollToTheRight) {
         const next = Math.floor(range_span / 10);
-        setOffset(range[0] - next);
+        scrollRight(next);
       } else if (isScrollToTheLeft) {
         const next = Math.floor(range_span / 10);
-        setOffset(range[0] + next);
+        scrollLeft(next);
       }
     }
   }
@@ -144,7 +155,7 @@
       })}
     >
       <TableCell
-        class={cn("justify-end border-r p-0", {
+        class={cn("justify-end p-0", {
           "border-b": isLastIndex,
         })}
         onclick={() => {
@@ -225,12 +236,12 @@
         const isScrollUp = e.deltaX < 0;
         const isScrollDown = e.deltaX > 0;
 
+        const next = Math.floor(range_span / 4);
+
         if (isScrollUp) {
-          const next = Math.floor(range_span / 4);
-          setOffset(range[0] + next);
+          scrollRight(next);
         } else if (isScrollDown) {
-          const next = Math.floor(range_span / 4);
-          setOffset(range[0] - next);
+          scrollLeft(next);
         }
       }
 
@@ -239,31 +250,31 @@
         const isScrollUp = e.deltaY < 0;
         const isScrollDown = e.deltaY > 0;
 
-        const next = scale * (zoom / 10);
+        const to = scale * (zoom / 10);
 
         if (isScrollUp) {
-          setZoom(zoom + next);
+          zoomIn(to);
         } else if (isScrollDown) {
-          setZoom(zoom - next);
+          zoomOut(to);
         }
       }
     }
     if (delta || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) e.preventDefault();
   }}
 >
-  <TableHeader class="sticky z-10 bg-white" style="inset-block-start: 0">
+  <TableHeader class="bg-background sticky z-10" style="inset-block-start: 0">
     <TableRow>
       <!-- HEADER::ANNOTATIONS -->
-      <TableHead class="w-80"></TableHead>
+      <TableHead class="h-5 w-80"></TableHead>
 
       <!-- HEADER::TIMELINES -->
-      <TableHead class="p-0">
+      <TableHead class="h-5 p-0">
         <div
           role="scrollbar"
           aria-controls="timeline-table"
           aria-valuenow={pos_offset}
           tabindex="0"
-          class="text-muted-foreground relative h-5 border-b"
+          class="text-muted-foreground relative h-5"
           onmousedowncapture={() => {
             isResizing = true;
           }}
@@ -284,7 +295,7 @@
 
             {#if isSelected}
               <button
-                class="border-border text-primary absolute top-0 z-20 cursor-col-resize border-b border-l bg-white"
+                class="border-border text-primary bg-background absolute top-0 z-20 cursor-col-resize border-b border-l"
                 style:width="{width}%"
                 style:padding-left="0.125rem"
                 style:left="{startLeftPosition}%"
@@ -316,9 +327,9 @@
               <button
                 aria-label="tick"
                 class="border-border absolute bottom-0 cursor-col-resize border-l"
-                style:height="100%"
+                style:height="60%"
                 style:width="100%"
-                style:left="calc({startLeftPosition}%)"
+                style:left="{startLeftPosition}%"
                 onclick={() => seekToFrame(thisFrame)}
               ></button>
             {/if}
@@ -327,32 +338,6 @@
       </TableHead>
     </TableRow>
   </TableHeader>
-
-  <!-- {#if range_span != totalFrames}
-    <TableFooter class="sticky z-10" style="inset-block-end: 0">
-      <TableRow>
-        <TableCell></TableCell>
-        <TableCell>
-          <Slider
-            type="multiple"
-            min={0}
-            max={Math.max(0, totalFrames - 1)}
-            step={1}
-            value={range}
-            onValueChange={(v) => {
-              console.log(v);
-
-              if (v[0] == range[0]) {
-                setOffset(v[1] - range_span);
-              } else {
-                setOffset(v[0]);
-              }
-            }}
-          />
-        </TableCell>
-      </TableRow>
-    </TableFooter>
-  {/if} -->
 
   <TableBody>
     {#await annotations_promise}
