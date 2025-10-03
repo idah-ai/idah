@@ -121,7 +121,7 @@
       })}
     >
       <TableCell
-        class="justify-end p-0"
+        class="justify-end border-r p-0"
         onclick={() => {
           onSelectAnnotation(annotation);
           pos_offset = annotation.shape.start;
