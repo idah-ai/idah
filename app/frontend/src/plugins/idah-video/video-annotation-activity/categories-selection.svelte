@@ -3,7 +3,7 @@
   import Button from "@/components/ui/button/button.svelte";
   import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
   import { cn } from "@/utils";
-  import { ChevronRight, PlusIcon, Trash2 } from "@lucide/svelte";
+  import { ChevronRight, CircleSmallIcon, PlusIcon, Trash2Icon } from "@lucide/svelte";
   import { idb_updated_at } from "./idb_store.svelte";
   import { SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
 
@@ -138,7 +138,7 @@
             onDeleteAnnotation(annotation);
           }}
         >
-          <Trash2 color="var(--color-gray-500)" />
+          <Trash2Icon color="var(--color-gray-500)" />
         </Button>
       {/if}
     </SidebarMenuButton>
@@ -165,7 +165,7 @@
     <Button
       variant="ghost"
       class={cn("p-0 hover:cursor-pointer", {
-        hidden: !haveChildren && !toolMode,
+        hidden: (!haveChildren && !toolMode) || selected_id,
       })}
       onclick={(e) => {
         e.stopPropagation();
@@ -178,7 +178,9 @@
     >
       {@const selectedCategory = selected_category == category.id}
       {#if selectedCategory && toolMode && !selected_id}
-        <PlusIcon class="text-primary size-4"></PlusIcon>
+        <PlusIcon class="text-primary size-4 " strokeWidth={4}></PlusIcon>
+      {:else if !category.nestedCategories && toolMode && !selected_id}
+        <CircleSmallIcon class="fill-gray-400 stroke-gray-400"></CircleSmallIcon>
       {:else}
         {@const parentOpen = category.nestedCategories && toolMode}
         <ChevronRight
@@ -299,12 +301,12 @@
 
 <div class="flex-col">
   {#if selected_id && selected_category}
-    <div class="flex pb-1">
-      <Text class="text-gray-700" weight="medium" size="sm">Category</Text>
-    </div>
-
     {@const foundCategory = findCategory(categoriesTree, selected_category)}
     {#if categoriesTree && foundCategory}
+      <div class="flex pb-1">
+        <Text class="text-gray-700" weight="medium" size="sm">Category</Text>
+      </div>
+
       <Select
         type="single"
         onValueChange={(category_id) => {
