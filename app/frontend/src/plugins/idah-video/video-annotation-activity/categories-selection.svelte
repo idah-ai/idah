@@ -240,6 +240,11 @@
             if (!category.requiredNested) {
               onSelect(category);
             }
+
+            if (category.nestedCategories) {
+              // Toggle the category open state
+              openStates[category.id] = !openStates[category.id];
+            }
             // Force re-render of annotation counts
             forceRender++;
           }}
