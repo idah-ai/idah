@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onDestroy, type Snippet } from "svelte";
+  import { onDestroy, onMount, type Snippet } from "svelte";
   import {
     HEIGHT,
     ORIGIN,
@@ -29,6 +29,7 @@
     onmousemove?: (e: MouseEvent) => void;
     onwheel?: (e: WheelEvent) => void;
     onSelection: (type: string, frame: number, points?: Point[], id?: string) => void;
+    videoResizedAt: Date
   };
 
   let {
@@ -40,6 +41,7 @@
     onSelectAnnotation,
     onSelection, // valid shape output
     children,
+    videoResizedAt,
     ...restProps
   }: Props = $props();
   let zoomInfo: {
@@ -49,6 +51,7 @@
     scale: 1,
     offset: [0, 0],
   });
+
 
   let height = $state(0);
   let width = $state(0);
@@ -69,12 +72,15 @@
     return shape ? currentShape(shape, frame) || [] : [];
   });
 
-  let target_size: Point = $derived.by(() => {
+  function updatedSize():Point {
+    videoResizedAt; // (... update on change)
     let target_dom_rect = target_container?.getBoundingClientRect();
     zoomInfo; // (... update on change)
 
     return !target_dom_rect ? ORIGIN : [target_dom_rect.width, target_dom_rect.height];
-  });
+  }
+
+  let target_size: Point = $derived.by(updatedSize);
 
   let cursor = $derived([mouse[X] - zoomInfo.offset[X], mouse[Y] - zoomInfo.offset[Y]]);
 
