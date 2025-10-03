@@ -2,27 +2,27 @@
   import { onMount, setContext } from "svelte";
   import { toast } from "svelte-sonner";
   import { uuidv7 } from "uuidv7";
-  import { Toaster } from "@/components/ui/sonner";
 
+  import Button from "@/components/ui/button/button.svelte";
   import CommandManager from "@/command/CommandManager";
+  import * as Command from "$lib/components/ui/command/index.js";
+  import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
   import SidebarProvider from "@/components/ui/sidebar/sidebar-provider.svelte";
   import SidebarInset from "@/components/ui/sidebar/sidebar-inset.svelte";
 
   import { ResizableHandle, ResizablePane, ResizablePaneGroup } from "@/components/ui/resizable";
-  import { AnnotationRecord, annotationsBackendDataSource } from "@/data/model/dataset/annotations/record";
+  import { AnnotationRecord } from "@/data/model/dataset/annotations/record";
 
   import type { AnnotationValue } from "@/context/AnnotationContext";
   import { annotationsIndexedDB, AnnotationsIndexedDB } from "./video-annotation-activity/indexedDB";
   import TimelineTable from "./video-annotation-activity/timeline-table/timeline-table.svelte";
-  import type { IActivityContext, IAnnotation } from "@/plugin/interface/Activity";
+  import type { IActivityContext } from "@/plugin/interface/Activity";
   import Video from "./video-annotation-activity/video.svelte";
   import type {
     Point,
     VideoAnnotation,
     VideoFrameSelection,
-    VideoMode,
     VideoShape,
-    VideoShapeType,
   } from "./video-annotation-activity/VideoAnnotationContext";
   import VideoController from "./video-annotation-activity/VideoController.svelte";
   import AnnotationSidebar from "./video-annotation-activity/annotation-sidebar.svelte";
@@ -34,15 +34,8 @@
   import { boundingBoxes, idb_updated_at } from "./video-annotation-activity/idb_store.svelte";
   import { registerVisualModeShortcuts } from "./video-annotation-activity/shortcut";
   import { ShortcutManager } from "@/shortcut/ShortcutManager";
-  import * as Command from "$lib/components/ui/command/index.js";
+
   import type { LabelingConfiguration } from "@/data/model/dataset/labels";
-  import { page } from "$app/state";
-  import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
-  import { DatasetRecord } from "@/data/model/dataset/dataset-record";
-  import { Popover } from "@/components/ui/popover";
-  import PopoverContent from "@/components/ui/popover/popover-content.svelte";
-  import PopoverTrigger from "@/components/ui/popover/popover-trigger.svelte";
-  import Button from "@/components/ui/button/button.svelte";
 
   let { context, labelConfig }: { context: IActivityContext; labelConfig: LabelingConfiguration } = $props();
 
