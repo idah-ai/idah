@@ -232,7 +232,7 @@
           class={cn("flex w-full items-center justify-between", {
             "bg-primary-foreground border-1 rounded-sm border-blue-300": selected == category.id,
             "hover:bg-primary-foreground hover:cursor-pointer hover:rounded-sm": !category.requiredNested,
-            "hover:bg-accent hover:cursor-pointer hover:rounded-sm": category.requiredNested,
+            "hover:bg-accent hover:cursor-pointer hover:rounded-sm": category.requiredNested && !toolMode,
           })}
           onclick={(e) => {
             // Prevent default toggle behavior
@@ -249,7 +249,7 @@
             // Force re-render of annotation counts
             forceRender++;
           }}
-          disabled={toolMode}
+          disabled={category.nestedCategories ? true : false}
         >
           {@render showCategoryTitle(
             category,
