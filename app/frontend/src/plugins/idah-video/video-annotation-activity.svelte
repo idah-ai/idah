@@ -291,6 +291,9 @@
           end: v.shape.end >= selection.frame ? v.shape.end : selection.frame,
           frames: [...v.shape.frames.filter((f) => f.frame != selection.frame), selection],
         };
+        selectedAnnotation = undefined;
+        selectedAnnotation = v
+
         v.metadata.updatedAt = updatedAt;
         v.synced = false;
 
@@ -383,6 +386,9 @@
         annotation.metadata.updatedAt = updatedAt;
         await annotationsIDB?.deleteKeyFrame(annotation, frame);
         $idb_updated_at = new Date();
+
+        selectedAnnotation = undefined;
+        selectedAnnotation = annotation
 
         let p = context.annotations.update({
           id: annotation.metadata.id,
