@@ -5,13 +5,13 @@
   import { cn } from "@/utils";
   import { ChevronRight, CircleSmallIcon, PlusIcon, Trash2Icon } from "@lucide/svelte";
   import { idb_updated_at } from "./idb_store.svelte";
+  import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger } from "@/components/ui/select";
   import { SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
+  import Text from "@/components/ui/text/Text.svelte";
 
   import type { CategoryConfiguration, VideoAnnotation } from "./VideoAnnotationContext";
   import type { CategoryDefinition } from "@/context/ActivityContext";
   import type { AnnotationsIndexedDB } from "./indexedDB";
-  import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger } from "@/components/ui/select";
-  import Text from "@/components/ui/text/Text.svelte";
 
   // Props
   let {
@@ -139,19 +139,19 @@
         {name}
       </div>
 
-      {#if selected_category && selected_category == annotationCategory}
-        <Button
-          variant="ghost"
-          size="icon"
-          class="hover_button"
-          onclick={(e) => {
-            e.stopPropagation();
-            onDeleteAnnotation(annotation);
-          }}
-        >
-          <Trash2Icon color="var(--color-gray-500)" />
-        </Button>
-      {/if}
+      <!-- {#if selected_category && selected_category == annotationCategory} -->
+      <Button
+        variant="ghost"
+        size="icon"
+        class="hover_button"
+        onclick={(e) => {
+          e.stopPropagation();
+          onDeleteAnnotation(annotation);
+        }}
+      >
+        <Trash2Icon color="var(--color-gray-500)" />
+      </Button>
+      <!-- {/if} -->
     </SidebarMenuButton>
   </SidebarMenuItem>
 
