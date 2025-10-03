@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { VideoAnnotation } from "../VideoAnnotationContext";
   import TimelineCell from "./timeline-cell.svelte";
+  import type { VideoAnnotation } from "../VideoAnnotationContext";
 
   let {
     annotation,
@@ -28,6 +28,7 @@
   {#if Math.ceil((range[1] - range[0]) / scale) + 1 > 0}
     {#each Array(Math.ceil((range[1] - range[0]) / scale) + 1) as _u, i (i)}
       <TimelineCell
+        {annotation}
         frame={range[0] + i * scale}
         {currentFrame}
         {range}
