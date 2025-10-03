@@ -1,10 +1,8 @@
 <script lang="ts">
-  import Input from "@/components/ui/input/input.svelte";
   import Sidebar from "@/components/ui/sidebar/sidebar.svelte";
 
   import type { AnnotationValue } from "$lib/context/AnnotationContext";
   import type { CategoryConfiguration, LabellingConfiguration, VideoAnnotation } from "./VideoAnnotationContext";
-  import SidebarHeader from "@/components/ui/sidebar/sidebar-header.svelte";
   import SidebarContent from "@/components/ui/sidebar/sidebar-content.svelte";
   import SidebarGroup from "@/components/ui/sidebar/sidebar-group.svelte";
   import SidebarGroupContent from "@/components/ui/sidebar/sidebar-group-content.svelte";
@@ -70,8 +68,6 @@
 
   // Functions
   function categorySelection(mode: string, category?: CategoryDefinition) {
-    console.log("selected", { mode, category });
-
     if (category) {
       onEditValue(
         {
@@ -112,21 +108,41 @@
   </SidebarHeader> -->
   <SidebarContent>
     {#each tools as [tool, categories]}
-      <SidebarGroup>
-        <SidebarGroupContent>
-          <CategoriesSelection
-            {db}
-            type={tool}
-            {currentFrame}
-            {categories}
-            selected_category={annotationValue.category}
-            {selected_id}
-            {onSelectAnnotation}
-            {onDeleteAnnotation}
-            onSelect={(s) => categorySelection(tool, s)}
-          />
-        </SidebarGroupContent>
-      </SidebarGroup>
+      {#if !tools.has(mode) || mode == "visual"}
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <CategoriesSelection
+              {db}
+              toolMode={tool == mode}
+              type={tool}
+              {currentFrame}
+              {categories}
+              selected_category={annotationValue.category}
+              {selected_id}
+              {onSelectAnnotation}
+              {onDeleteAnnotation}
+              onSelect={(s) => categorySelection(tool, s)}
+            />
+          </SidebarGroupContent>
+        </SidebarGroup>
+      {:else if tool == mode}
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <CategoriesSelection
+              {db}
+              toolMode={tool == mode}
+              type={tool}
+              {currentFrame}
+              {categories}
+              selected_category={annotationValue.category}
+              {selected_id}
+              {onSelectAnnotation}
+              {onDeleteAnnotation}
+              onSelect={(s) => categorySelection(tool, s)}
+            />
+          </SidebarGroupContent>
+        </SidebarGroup>
+      {/if}
     {/each}
   </SidebarContent>
 </Sidebar>
