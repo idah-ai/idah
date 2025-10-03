@@ -3,7 +3,7 @@
   import Button from "@/components/ui/button/button.svelte";
   import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
   import { cn } from "@/utils";
-  import { Trash2 } from "@lucide/svelte";
+  import { ChevronRight, PlusIcon, Trash2 } from "@lucide/svelte";
   import { idb_updated_at } from "./idb_store.svelte";
   import { SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
 
@@ -159,13 +159,13 @@
 {#snippet showCategoryTitle(category: CategoryDefinition, haveChildren: boolean = false, open: boolean = false)}
   <div
     class={cn("flex items-center gap-2", {
-      "p-2": !haveChildren,
+      "p-2": !haveChildren && !toolMode,
     })}
   >
     <Button
       variant="ghost"
       class={cn("p-0 hover:cursor-pointer", {
-        hidden: !haveChildren,
+        hidden: !haveChildren && !toolMode,
       })}
       onclick={(e) => {
         e.stopPropagation();
@@ -176,25 +176,20 @@
       }}
       disabled={toolMode}
     >
-      <svg
-        class={cn("transition-transform duration-200", {
-          "opacity-0": !haveChildren,
-          "rotate-90": open || toolMode,
-        })}
-        width="16"
-        height="16"
-        viewBox="0 0 16 16"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path
-          class="stroke-gray-500"
-          d="M6 12L10 8L6 4"
-          stroke-width="1.5"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      </svg>
+      {@const selectedCategory = selected_category == category.id}
+      {#if selectedCategory && toolMode && !selected_id}
+        <PlusIcon class="text-primary size-4"></PlusIcon>
+      {:else}
+        {@const parentOpen = category.nestedCategories && toolMode}
+        <ChevronRight
+          class={cn("size-4", {
+            "opacity-0": !haveChildren,
+            "rotate-90": open || parentOpen,
+            "stroke-blue-300": selectedCategory,
+            "stroke-gray-500": !selectedCategory,
+          })}
+        ></ChevronRight>
+      {/if}
     </Button>
 
     <svg
