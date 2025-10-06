@@ -37,7 +37,9 @@
 
   import type { LabelingConfiguration } from "@/data/model/dataset/labels";
 
-  let { context, labelConfig }: { context: IActivityContext; labelConfig: LabelingConfiguration } = $props();
+  let { context }: { context: IActivityContext} = $props();
+
+  let labelConfig = $derived(context.config)
 
   let player: Video | undefined = $state();
   let player_container: HTMLDivElement | undefined = $state(); // ...
