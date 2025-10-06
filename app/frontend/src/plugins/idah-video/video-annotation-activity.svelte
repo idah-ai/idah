@@ -55,8 +55,7 @@
 
   // Variables
   let player: Video | undefined = $state();
-  let player_container: HTMLDivElement | undefined = $state(); // ...
-  let volume: number = $state(0);
+  let player_container: HTMLDivElement | undefined = $state();
   let currentFrame = $state(0);
   let totalFrames = $state(0);
 
@@ -684,7 +683,7 @@
                 currentFrame = current;
                 totalFrames = total;
               }}
-              onVolumeChange={(v) => (volume = v)}
+              onVolumeChange={() => {}}
             />
           </SvgOverlay>
         </SidebarInset>
