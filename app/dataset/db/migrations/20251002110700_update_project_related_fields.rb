@@ -13,5 +13,9 @@ Sequel.migration do
       set_column_allow_null :invited_by_id
       set_column_default :invited_by_id, nil
     end
+
+    alter_table(:datasets) do
+      add_column :created_by_id, :bigint, null: true, index: true
+    end
   end
 end
