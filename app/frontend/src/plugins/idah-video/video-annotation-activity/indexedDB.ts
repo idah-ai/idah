@@ -136,7 +136,6 @@ export class AnnotationsIndexedDB {
           keyframesRequest.onsuccess = () => {
             const keyframes = keyframesRequest.result;
 
-            console.log({ keyframes });
             annotation.shape.frames = keyframes;
 
             Astore.put(annotation, annotation.metadata.id);
