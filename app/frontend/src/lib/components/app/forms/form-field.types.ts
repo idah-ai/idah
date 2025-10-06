@@ -26,7 +26,9 @@ export interface SelectFieldBaseProps extends FormFieldBaseProps {
   choices: LabelValue<string | number>[];
   searchable?: boolean;
   searchPlaceholder?: string;
+  searchValue?: string;
   clearable?: boolean;
+
   onValueChange?: (value: string | number) => Promise<void> | void;
 
   slotTrigger?: Snippet<
@@ -43,6 +45,8 @@ export interface SelectFieldBaseProps extends FormFieldBaseProps {
 
 export interface SelectDataSourceFieldBaseProps<T extends Record> extends Omit<SelectFieldBaseProps, "choices"> {
   displayKey: keyof T;
+  valueKey?: keyof T;
   dataSource: DataSource<T>;
   listOptions?: ListOptions;
+  searchKeyWithOperation: string;
 }

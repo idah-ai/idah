@@ -130,6 +130,7 @@ export const datasetsBackendDataSource = createBackendDataSource(
       throw "No data returned";
     },
   }
+  `${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/datasets`,
 );
 
 export interface TreeItem {

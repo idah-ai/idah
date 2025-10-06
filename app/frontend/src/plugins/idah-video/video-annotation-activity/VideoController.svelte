@@ -7,9 +7,11 @@
     FastForwardIcon,
     PauseIcon,
     PlayIcon,
+    RulerIcon,
     Volume2Icon,
     VolumeXIcon,
     ZoomInIcon,
+    ZoomOutIcon,
   } from "@lucide/svelte";
   import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
   import {
@@ -21,6 +23,8 @@
     DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu";
   import Slider from "@/components/ui/slider/slider.svelte";
+  import Text from "@/components/ui/text/Text.svelte";
+  import Tooltips from "@/components/app/tooltips/tooltips.svelte";
 
   import type { ChangeEventHandler } from "svelte/elements";
   import Video from "./video.svelte";
@@ -130,71 +134,6 @@
       </PopoverContent>
     </Popover>
 
-    <!-- VIDEO::FRAME ADJUSTER -->
-    <div class="inline-flex items-center gap-1 whitespace-nowrap">
-      <Input
-        type="number"
-        class="min-w-24"
-        placeholder="Frame"
-        min={0}
-        max={Math.max(0, totalFrames - 1)}
-        value={currentFrame}
-        onchange={seekToFrame}
-      />
-      <span>/ {Math.max(0, totalFrames - 1)}</span>
-    </div>
-  </div>
-
-  <!-- CONTAINER::CENTER -->
-  <Button variant="outline" class="border-primary text-primary hover:text-primary">Auto Track</Button>
-
-  <!-- CONTAINER::RIGHT -->
-  <div class="flex items-center gap-2">
-    <!-- VIDEO::ZOOM ADJUSTER (ZOOM IN / ZOOM OUT) -->
-    <Popover>
-      <PopoverTrigger>
-        <Button variant="outline" size="icon">
-          <ZoomInIcon class="size-4" />
-        </Button>
-      </PopoverTrigger>
-
-      <PopoverContent side="top" align="center" class="max-w-10 px-2">
-        <Slider
-          type="single"
-          orientation="vertical"
-          min={20}
-          max={150}
-          step={1}
-          value={zoom}
-          onValueChange={onZoomChange}
-        />
-        <!-- Will implement zoom functionality later when we separate TimelineTable from Controls component -->
-        <!-- onValueChange={(value) => timeline_table.setScale(value)} -->
-      </PopoverContent>
-    </Popover>
-    <!-- VIDEO::SCALE ADJUSTER (SCALE DOWN / SCALE UP) -->
-    <Popover>
-      <PopoverTrigger>
-        <Button variant="outline" size="icon">
-          <ZoomInIcon class="size-4" />
-        </Button>
-      </PopoverTrigger>
-
-      <PopoverContent side="top" align="center" class="max-w-10 px-2">
-        <Slider
-          type="single"
-          orientation="vertical"
-          min={1}
-          max={Math.ceil(totalFrames / zoom)}
-          step={1}
-          value={scale}
-          onValueChange={onScaleChange}
-        />
-        <!-- Will implement zoom functionality later when we separate TimelineTable from Controls component -->
-        <!-- onValueChange={(value) => timeline_table.setScale(value)} -->
-      </PopoverContent>
-    </Popover>
-
     <!-- VIDEO::SPEED -->
     <DropdownMenu>
       <DropdownMenuTrigger>
@@ -207,11 +146,92 @@
       <DropdownMenuContent>
         <DropdownMenuGroup>
           <DropdownMenuLabel>Video Speed</DropdownMenuLabel>
-          {#each videoSpeeds as { label, value }}
+          {#each videoSpeeds as { label, value } (value)}
             <DropdownMenuItem onclick={() => selectVideoSpeed(value)}>{label}</DropdownMenuItem>
           {/each}
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
+
+    <!-- VIDEO::FRAME ADJUSTER -->
+    <div class="inline-flex items-center gap-1 whitespace-nowrap">
+      <Input
+        type="number"
+        class="min-w-24"
+        placeholder="Frame"
+        min={0}
+        max={Math.max(0, totalFrames - 1)}
+        suffix={`/ ${Math.max(0, totalFrames - 1)}`}
+        value={currentFrame}
+        onchange={seekToFrame}
+      />
+    </div>
+  </div>
+
+  <!-- CONTAINER::CENTER -->
+  <!-- <Button variant="outline" class="border-primary text-primary hover:text-primary">Auto Track</Button> -->
+
+  <!-- CONTAINER::RIGHT -->
+  <div class="flex items-center gap-2">
+    <!-- VIDEO::ZOOM ADJUSTER (ZOOM IN / ZOOM OUT) -->
+    <div class="flex items-center gap-2">
+      <Tooltips align="center">
+        {#snippet trigger()}
+          <Button variant="outline" size="icon" onclick={() => onZoomChange(zoom - 1)}>
+            <ZoomOutIcon class="size-4" />
+          </Button>
+        {/snippet}
+
+        {#snippet content()}
+          Zoom in
+        {/snippet}
+      </Tooltips>
+
+      <Slider class="min-w-[200px]" type="single" min={20} max={150} step={1} value={zoom} onValueChange={onZoomChange}
+      ></Slider>
+
+      <Tooltips align="center">
+        {#snippet trigger()}
+          <Button variant="outline" size="icon" onclick={() => onZoomChange(zoom + 1)}>
+            <ZoomInIcon class="size-4" />
+          </Button>
+        {/snippet}
+
+        {#snippet content()}
+          Zoom out
+        {/snippet}
+      </Tooltips>
+    </div>
+
+    <!-- VIDEO::SCALE ADJUSTER (SCALE DOWN / SCALE UP) -->
+    <Popover>
+      <PopoverTrigger>
+        <Tooltips align="center">
+          {#snippet trigger()}
+            <Button variant="outline" size="icon">
+              <RulerIcon class="size-4"></RulerIcon>
+            </Button>
+          {/snippet}
+
+          {#snippet content()}
+            Zoom scale
+          {/snippet}
+        </Tooltips>
+      </PopoverTrigger>
+
+      <PopoverContent side="top" align="center" class="flex max-w-10 flex-col items-center gap-2 px-2">
+        <Text class="text-muted-foreground">{scale}</Text>
+
+        <Slider
+          type="single"
+          orientation="vertical"
+          min={1}
+          max={Math.ceil(totalFrames / zoom)}
+          step={1}
+          value={scale}
+          onValueChange={onScaleChange}
+        />
+      </PopoverContent>
+    </Popover>
   </div>
 </div>

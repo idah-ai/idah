@@ -1,79 +1,79 @@
 <script lang="ts">
-  import Input from "@/components/ui/input/input.svelte";
   import Sidebar from "@/components/ui/sidebar/sidebar.svelte";
 
   import type { AnnotationValue } from "$lib/context/AnnotationContext";
-  import type {
-    CategoryConfiguration,
-    PropertyConfiguration,
-    TaggingConfiguration,
-    VideoAnnotation,
-  } from "./VideoAnnotationContext";
-  import SidebarHeader from "@/components/ui/sidebar/sidebar-header.svelte";
+  import type { CategoryConfiguration, LabellingConfiguration, VideoAnnotation } from "./VideoAnnotationContext";
   import SidebarContent from "@/components/ui/sidebar/sidebar-content.svelte";
   import SidebarGroup from "@/components/ui/sidebar/sidebar-group.svelte";
   import SidebarGroupContent from "@/components/ui/sidebar/sidebar-group-content.svelte";
-  import SidebarGroupLabel from "@/components/ui/sidebar/sidebar-group-label.svelte";
   import CategoriesSelection from "./categories-selection.svelte";
-
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import type { AnnotationsIndexedDB } from "./indexedDB";
-  import type { VideoAnnotationTab } from "./tabs/video-annotation-activity.tabs";
+  import type { CategoryDefinition } from "@/context/ActivityContext";
 
   let {
     annotationValue,
     onEditValue,
     onSelectAnnotation,
+    onDeleteAnnotation,
     context,
     mode,
     currentFrame,
     db,
+    selected_id,
   }: {
     currentFrame: number;
     annotationValue: AnnotationValue;
     onEditValue: (annotationValue: AnnotationValue, mode: string) => void;
     onSelectAnnotation: (annotation: VideoAnnotation) => void;
+    onDeleteAnnotation: (annotation: VideoAnnotation) => void;
     context: IActivityContext;
     mode: string;
     db?: AnnotationsIndexedDB;
+    selected_id?: string;
   } = $props();
 
-  // Variables
-  let activeTab = $state<VideoAnnotationTab>("categories");
+  let tools = (context.config as LabellingConfiguration).categories.reduce((acc, v: CategoryConfiguration) => {
+    if (!acc.has(v.type)) acc.set(v.type, [v]);
+    else {
+      let categories = acc.get(v.type);
 
-  let tools = {
-    taggings: (context.config.taggings ?? []).reduce(
-      (acc: Record<string, TaggingConfiguration[]>, item: TaggingConfiguration) => {
-        (acc[item.type] ??= []).push(item);
-        return acc;
-      },
-      {},
-    ),
+      if (categories) categories.push(v);
+      else categories = [v];
 
-    categories: (context.config.categories ?? []).reduce(
-      (acc: Record<string, CategoryConfiguration[]>, item: CategoryConfiguration) => {
-        (acc[item.type] ??= []).push(item);
-        return acc;
-      },
-      {},
-    ),
+      acc.set(v.type, categories);
+    }
+    return acc;
+  }, new Map<string, CategoryConfiguration[]>());
 
-    properties: (context.config.properties ?? []).reduce(
-      (acc: Record<string, PropertyConfiguration[]>, item: PropertyConfiguration) => {
-        (acc[item.type] ??= []).push(item);
-        return acc;
-      },
-      {},
-    ),
-  };
+  let searchValue = $state("");
+  let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+
+  let filteredTools = $derived.by(async () => {
+    if (!searchValue) return tools;
+
+    return new Promise<Map<string, CategoryConfiguration[]>>((resolve) => {
+      const filtered = new Map<string, CategoryConfiguration[]>();
+      for (const [toolType, categories] of tools) {
+        const matchingCategories = categories.filter((category) =>
+          category.label.toLowerCase().includes(searchValue.toLowerCase()),
+        );
+        if (matchingCategories.length > 0) {
+          filtered.set(toolType, matchingCategories);
+        }
+      }
+      resolve(filtered);
+    });
+  });
 
   // Functions
-  function categorySelection(mode: string, category?: string) {
+  function categorySelection(mode: string, category?: CategoryDefinition) {
     if (category) {
       onEditValue(
         {
-          ...annotationValue,
-          category,
+          category: category.id,
+          label: category.name,
+          attributes: category,
         },
         mode,
       );
@@ -85,45 +85,63 @@
     }
   }
 
-  //   For checking activeTab
-  //   function handleTabChange(value: VideoAnnotationTab): void {
-  //     activeTab = value;
-  //   }
+  function searchCategory(e: Event) {
+    const value = (e.currentTarget as HTMLInputElement).value;
+
+    // Clear existing timer
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+    }
+
+    // Set new timer for debounced search (300ms delay)
+    debounceTimer = setTimeout(() => {
+      searchValue = value;
+    }, 200);
+  }
 </script>
 
-<Sidebar variant="inset" collapsible="none">
-  <SidebarHeader>
-    <!-- Hide for checking with Prae again -->
-    <!-- <Tabs bind:value={activeTab}>
-      <TabsList class="w-full">
-        {#each videoAnnotationTabs as { label, value } (value)}
-          <TabsTrigger {value} onclick={() => handleTabChange(value)}>{label}</TabsTrigger>
-        {/each}
-      </TabsList>
-    </Tabs> -->
-
-    <Input placeholder="Search observable" />
-  </SidebarHeader>
-
+<Sidebar variant="inset" collapsible="none" class="w-xs">
+  <!-- <SidebarHeader>
+    {#if !tools.has(mode)}
+      <Input placeholder="search" />
+    {/if}
+  </SidebarHeader> -->
   <SidebarContent>
-    {#each Object.entries(tools) as [category, categoryList]}
-      {#if activeTab === category}
-        {#each Object.entries(categoryList) as [type, items]}
-          <SidebarGroup>
-            <SidebarGroupLabel>{type}</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <CategoriesSelection
-                {db}
-                {type}
-                {currentFrame}
-                categories={items as CategoryConfiguration[]}
-                selected={annotationValue.category}
-                {onSelectAnnotation}
-                onSelect={(s) => categorySelection(category, s)}
-              />
-            </SidebarGroupContent>
-          </SidebarGroup>
-        {/each}
+    {#each tools as [tool, categories]}
+      {#if !tools.has(mode) || mode == "visual"}
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <CategoriesSelection
+              {db}
+              toolMode={tool == mode}
+              type={tool}
+              {currentFrame}
+              {categories}
+              selected_category={annotationValue.category}
+              {selected_id}
+              {onSelectAnnotation}
+              {onDeleteAnnotation}
+              onSelect={(s) => categorySelection(tool, s)}
+            />
+          </SidebarGroupContent>
+        </SidebarGroup>
+      {:else if tool == mode}
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <CategoriesSelection
+              {db}
+              toolMode={tool == mode}
+              type={tool}
+              {currentFrame}
+              {categories}
+              selected_category={annotationValue.category}
+              {selected_id}
+              {onSelectAnnotation}
+              {onDeleteAnnotation}
+              onSelect={(s) => categorySelection(tool, s)}
+            />
+          </SidebarGroupContent>
+        </SidebarGroup>
       {/if}
     {/each}
   </SidebarContent>

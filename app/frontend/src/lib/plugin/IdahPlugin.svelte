@@ -6,15 +6,10 @@
     let {context, plugin_id}:{context:IActivityContext, plugin_id: string} = $props()
     let container: HTMLElement
 
-    import { Tooltip, TooltipProvider } from "@/components/ui/tooltip";
-    import TooltipTrigger from "@/components/ui/tooltip/tooltip-trigger.svelte";
-    import TooltipContent from "@/components/ui/tooltip/tooltip-content.svelte";
     import type { PluginManager } from "./PluginManager";
-    import { goto } from "$app/navigation";
     let plugin: IActivityView|undefined = $state()
 
     let pluginManager:PluginManager = getContext('idah-plugin-manager')
-    let plugins: IActivityView[] = $state([])
 
     onMount(() => {
         pluginManager.loadedPromise.then(() => {
@@ -37,30 +32,13 @@
     {#await pluginManager.loadedPromise}
         Loading Plugins
     {:then}
-    {#if plugins.length}
-        <h3>Available Plugins</h3>
-        <TooltipProvider>
-            <ul>
-                {#each plugins as plugin}
-                    <li>
-                        <Tooltip>
-                            <TooltipTrigger>
-                                <Button onclick={() => goto(`plugin/${plugin.name}`)}>
-                                    {plugin.label}
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                {plugin.description}
-                            </TooltipContent>
-                        </Tooltip>
-
-                    </li>
-                {/each}
-            </ul>
-        </TooltipProvider>
-    {:else}
-        No available plugin
-    {/if}
+        {#key plugin}
+            {#if plugin}
+                plugin render
+            {:else}
+                No registered {plugin_id} plugin found
+            {/if}
+        {/key}
     {/await}
 </div>
 

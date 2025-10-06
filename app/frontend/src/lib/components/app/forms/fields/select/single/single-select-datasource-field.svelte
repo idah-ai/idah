@@ -7,6 +7,7 @@
   import FormFieldErrors from "@/components/app/forms/form-field-errors.svelte";
   import FormFieldInfo from "@/components/app/forms/form-field-info.svelte";
   import FormFieldLabel from "@/components/app/forms/form-field-label.svelte";
+  import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
   import Spinner from "@/components/app/loading/spinner.svelte";
 
@@ -17,22 +18,27 @@
   import type { LabelValue } from "@/utils/types";
   import type { Record } from "@/data/model/Record";
   import type { ListOptions } from "@/data/DataSource";
+  import type { FormEventHandler } from "svelte/elements";
 
   // Props
   interface Props extends SelectDataSourceFieldBaseProps<T> {
     value: string | number | null;
   }
+
   let {
     displayKey,
+    valueKey = "id" as keyof T,
     dataSource,
     listOptions,
-    value = $bindable(null),
+    value = null,
     name,
     label,
     placeholder = "Select an option",
     searchable = false,
     searchPlaceholder = "Search an option",
+    searchValue = $bindable(""),
     clearable = false,
+    searchKeyWithOperation,
     disabled = false,
     required = false,
     info,
@@ -58,7 +64,7 @@
       const choiceRes = await dataSource.get(String(value));
       selectedChoice = {
         label: choiceRes.data[displayKey],
-        value: choiceRes.data.id,
+        value: choiceRes.data[valueKey],
         data: choiceRes.data,
       };
     }
@@ -90,14 +96,26 @@
     /** Set default sort */
     if (!listOpts.sort) listOpts.sort = ["-id"];
 
+    if (searchValue) {
+      listOpts.filters = {
+        ...listOpts.filters,
+        [searchKeyWithOperation]: searchValue,
+      };
+    }
+
     const response = await dataSource.list(listOpts);
 
     return response.data.map((item) => ({
       label: item[displayKey],
-      value: item.id,
+      value: item[valueKey],
       data: item,
     }));
   }
+
+  const filterChoices: FormEventHandler<HTMLInputElement> = async (event) => {
+    searchValue = event.currentTarget.value;
+    choices = await fetchChoices();
+  };
 
   async function select(choice: Choice): Promise<void> {
     value = choice.value;
@@ -127,7 +145,7 @@
           onclick={openPopover}
         >
           {#if selectedChoice}
-            {selectedChoice.label}
+            <span class="truncate">{selectedChoice.label}</span>
           {:else}
             <span class="text-muted-foreground">{placeholder}</span>
           {/if}
@@ -147,15 +165,21 @@
       {/if}
     </PopoverTrigger>
 
-    <PopoverContent align="start" class="p-0">
+    <PopoverContent align="start" class="w-auto min-w-64 p-0">
       <Command>
-        <!-- {#if searchable}
-          <CommandInput placeholder={searchPlaceholder}></CommandInput>
-        {/if} -->
-
         <CommandList>
-          <CommandEmpty>No option found.</CommandEmpty>
           <CommandGroup>
+            {#if searchable}
+              <InputField
+                name="filter/single-select/{searchKeyWithOperation}"
+                placeholder={searchPlaceholder}
+                value={searchValue}
+                oninput={filterChoices}
+              ></InputField>
+            {/if}
+
+            <CommandEmpty>No option found.</CommandEmpty>
+
             {#await initialFetchChoices()}
               <Spinner></Spinner>
             {:then _}
