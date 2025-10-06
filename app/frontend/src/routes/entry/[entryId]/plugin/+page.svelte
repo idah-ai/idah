@@ -44,7 +44,7 @@
   <h3>Available Plugins</h3>
   <TooltipProvider>
     <ul>
-      {#each plugins as plugin}
+      {#each plugins as plugin, index (index)}
         <li>
           <Tooltip>
             <TooltipTrigger>
