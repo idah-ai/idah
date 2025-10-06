@@ -35,12 +35,16 @@
   import { registerVisualModeShortcuts } from "./video-annotation-activity/shortcut";
   import { ShortcutManager } from "@/shortcut/ShortcutManager";
 
-  import type { LabelingConfiguration } from "@/data/model/dataset/labels";
+  // Props
+  interface Props {
+    context: IActivityContext;
+  }
+  let { context }: Props = $props();
 
-  let { context }: { context: IActivityContext} = $props();
+  // Contexts
+  setContext("context", context);
 
-  let labelConfig = $derived(context.config)
-
+  // Variables
   let player: Video | undefined = $state();
   let player_container: HTMLDivElement | undefined = $state(); // ...
   let volume: number = $state(0);
@@ -61,8 +65,6 @@
   let videoController: VideoController;
 
   let annotationsIDB: AnnotationsIndexedDB | undefined = $state();
-
-  setContext("labelConfig", labelConfig);
 
   let commandOpen = $state(false);
   registerVisualModeShortcuts({
@@ -291,7 +293,7 @@
           frames: [...v.shape.frames.filter((f) => f.frame != selection.frame), selection],
         };
         selectedAnnotation = undefined;
-        selectedAnnotation = v
+        selectedAnnotation = v;
 
         v.metadata.updatedAt = updatedAt;
         v.synced = false;
@@ -387,7 +389,7 @@
         $idb_updated_at = new Date();
 
         selectedAnnotation = undefined;
-        selectedAnnotation = annotation
+        selectedAnnotation = annotation;
 
         let p = context.annotations.update({
           id: annotation.metadata.id,
@@ -555,7 +557,7 @@
   });
 
   let showPopOver = $state(false);
-  let videoResizedAt = $state(new Date())
+  let videoResizedAt = $state(new Date());
 </script>
 
 <div class="flex h-screen w-full flex-col">
@@ -663,7 +665,7 @@
               bind:this={player}
               bind:element={player_container}
               onResize={() => {
-                videoResizedAt = new Date()
+                videoResizedAt = new Date();
               }}
               onFramesChange={(current, total) => {
                 currentFrame = current;
