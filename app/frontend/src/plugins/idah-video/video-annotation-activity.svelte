@@ -5,7 +5,16 @@
 
   import Button from "@/components/ui/button/button.svelte";
   import CommandManager from "@/command/CommandManager";
-  import * as Command from "$lib/components/ui/command/index.js";
+  import {
+    CommandDialog,
+    CommandGroup,
+    CommandItem,
+    CommandShortcut,
+    CommandSeparator,
+    CommandEmpty,
+    CommandInput,
+    CommandList,
+  } from "$lib/components/ui/command";
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
   import SidebarProvider from "@/components/ui/sidebar/sidebar-provider.svelte";
   import SidebarInset from "@/components/ui/sidebar/sidebar-inset.svelte";
@@ -35,13 +44,18 @@
   import { registerVisualModeShortcuts } from "./video-annotation-activity/shortcut";
   import { ShortcutManager } from "@/shortcut/ShortcutManager";
 
-  import type { LabelingConfiguration } from "@/data/model/dataset/labels";
+  // Props
+  interface Props {
+    context: IActivityContext;
+  }
+  let { context }: Props = $props();
 
-  let { context, labelConfig }: { context: IActivityContext; labelConfig: LabelingConfiguration } = $props();
+  // Contexts
+  setContext("context", context);
 
+  // Variables
   let player: Video | undefined = $state();
-  let player_container: HTMLDivElement | undefined = $state(); // ...
-  let volume: number = $state(0);
+  let player_container: HTMLDivElement | undefined = $state();
   let currentFrame = $state(0);
   let totalFrames = $state(0);
 
@@ -59,8 +73,6 @@
   let videoController: VideoController;
 
   let annotationsIDB: AnnotationsIndexedDB | undefined = $state();
-
-  setContext("labelConfig", labelConfig);
 
   let commandOpen = $state(false);
   registerVisualModeShortcuts({
@@ -200,7 +212,7 @@
         await annotationsIDB?.deleteAnnotation(id);
         $idb_updated_at = new Date();
 
-        let p = context.annotations.delete(id);
+        let _p = context.annotations.delete(id);
       },
       isCombinable: () => false,
       combine: () => cmd,
@@ -274,7 +286,7 @@
     const from = $state(v.shape.frames.find((f) => f.frame == selection.frame));
     const start = v.shape.start;
     const end = v.shape.end;
-    const cmd: Command = {
+    const cmd = {
       name: "add bounding box selection",
       async apply() {
         const v = await annotationsIDB?.get("annotations", id);
@@ -289,7 +301,7 @@
           frames: [...v.shape.frames.filter((f) => f.frame != selection.frame), selection],
         };
         selectedAnnotation = undefined;
-        selectedAnnotation = v
+        selectedAnnotation = v;
 
         v.metadata.updatedAt = updatedAt;
         v.synced = false;
@@ -347,7 +359,8 @@
       },
       isCombinable: () => false,
 
-      combine: (c) => cmd,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      combine: (_c: any) => cmd,
     };
     CommandManager.add(cmd);
   }
@@ -362,7 +375,7 @@
 
     let selection = annotation.shape.frames[index];
 
-    const cmd: Command = {
+    const cmd = {
       name: "delete bounding box keyframe",
       async apply() {
         const updatedAt = new Date();
@@ -385,7 +398,7 @@
         $idb_updated_at = new Date();
 
         selectedAnnotation = undefined;
-        selectedAnnotation = annotation
+        selectedAnnotation = annotation;
 
         let p = context.annotations.update({
           id: annotation.metadata.id,
@@ -434,7 +447,8 @@
         });
       },
       isCombinable: () => false,
-      combine: (c) => cmd,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      combine: (_c: any) => cmd,
     };
 
     CommandManager.add(cmd);
@@ -476,7 +490,7 @@
   function updateAnnotationValue(annotation: VideoAnnotation, value: AnnotationValue) {
     const annotation_id = annotation.metadata.id;
     const value_from = annotation.value;
-    const cmd: Command = {
+    const cmd = {
       name: "update annotation value",
       async apply() {
         const annotation = await annotationsIDB?.get("annotations", annotation_id);
@@ -528,7 +542,8 @@
         }
       },
       isCombinable: () => false,
-      combine: (c) => cmd,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      combine: (_c: any) => cmd,
     };
 
     CommandManager.add(cmd);
@@ -542,7 +557,7 @@
   let overlay: SvgOverlay;
 
   let annotations_promise: Promise<VideoAnnotation[]> = $derived.by(() => {
-    $idb_updated_at;
+    // $idb_updated_at;
     if (!annotationsIDB) return new Promise((_, ko) => ko("no database"));
 
     let p = annotationsIDB.getAllStore("annotations");
@@ -553,27 +568,28 @@
   });
 
   let showPopOver = $state(false);
-  let videoResizedAt = $state(new Date())
+  let videoResizedAt = $state(new Date());
 </script>
 
 <div class="flex h-screen w-full flex-col">
   {#key [ShortcutManager, ShortcutManager.currentMode, ShortcutManager.getCurrentMode()]}
-    <Command.CommandDialog bind:open={commandOpen} accesskey={ShortcutManager.getCurrentMode()}>
-      <Command.Input placeholder="Type a command or search..." />
-      <Command.List>
-        <Command.Empty>No results found.</Command.Empty>
-        <Command.Group heading={`MODE: ${ShortcutManager.getCurrentMode()}`}>
-          {#each Object.entries(ShortcutManager.keyMap[ShortcutManager.getCurrentMode()] || []) as [k, v]}
-            <Command.Item onclick={() => v.action()}>
-              <span>{v.name} ({v.description})</span>
-              <Command.CommandShortcut>{k}</Command.CommandShortcut>
-            </Command.Item>
+    <CommandDialog bind:open={commandOpen} accesskey={ShortcutManager.getCurrentMode()}>
+      <CommandInput placeholder="Type a command or search..." />
+      <CommandList>
+        <CommandEmpty>No results found.</CommandEmpty>
+        <CommandGroup heading={`MODE: ${ShortcutManager.getCurrentMode()}`}>
+          {#each Object.entries(ShortcutManager.keyMap[ShortcutManager.getCurrentMode()] || []) as [key, value] (key)}
+            <CommandItem onclick={() => value.action()}>
+              <span>{value.name} ({value.description})</span>
+              <CommandShortcut>{key}</CommandShortcut>
+            </CommandItem>
           {/each}
-        </Command.Group>
-        <Command.Separator />
-      </Command.List>
-    </Command.CommandDialog>
+        </CommandGroup>
+        <CommandSeparator />
+      </CommandList>
+    </CommandDialog>
   {/key}
+
   <AnnotationHeaderBar
     {context}
     bind:mode
@@ -623,7 +639,7 @@
     </PopoverContent>
   </Popover>
 
-  <SidebarProvider class="min-h-0 w-full" style={"height:calc(100% - 30px)"}>
+  <SidebarProvider class="min-h-0 w-full" style="height: calc(100% - 30px)">
     <ResizablePaneGroup direction="vertical">
       <ResizablePane class="flex h-full" defaultSize={60} minSize={10}>
         <AnnotationSidebar
@@ -661,13 +677,13 @@
               bind:this={player}
               bind:element={player_container}
               onResize={() => {
-                videoResizedAt = new Date()
+                videoResizedAt = new Date();
               }}
               onFramesChange={(current, total) => {
                 currentFrame = current;
                 totalFrames = total;
               }}
-              onVolumeChange={(v) => (volume = v)}
+              onVolumeChange={() => {}}
             />
           </SvgOverlay>
         </SidebarInset>

@@ -2,6 +2,7 @@
   import { page } from "$app/state";
 
   import IdahPlugin from "@/plugin/IdahPlugin.svelte";
+  import Spinner from "@/components/app/loading/spinner.svelte";
 
   import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
   import { activityContextForEntry } from "@/plugin/ActivityContext";
@@ -9,27 +10,25 @@
   import type { IActivityContext } from "@/plugin/interface/Activity";
 
   // Variables
-  let entry_id: string = page.params.entryId as string;
-  let plugin_id: string = page.params.pluginId as string;
+  let entryId: string = page.params.entryId as string;
+  let pluginId: string = page.params.pluginId as string;
 
-  console.debug("loading plugin context");
-  let contextPromise = new Promise<IActivityContext>((resolve, reject) => {
-    entriesBackendDataSource.get(entry_id, { included: ["dataset.project"] }).then(
-      (entry) => {
-        const context = activityContextForEntry(entry.data);
-        console.log({ context });
-        resolve(context);
-      },
-      (entry) => {
-        console.error({ error: entry });
-        reject();
-      },
-    );
-  });
+  // Functions
+  async function loadContext(): Promise<IActivityContext> {
+    const entryRes = await entriesBackendDataSource.get(entryId, {
+      included: ["dataset"],
+    });
+
+    const context = activityContextForEntry(entryRes.data);
+    return context;
+  }
 </script>
 
-{#await contextPromise}
-  <p>Loading context for {entry_id}</p>
+{#await loadContext()}
+  <div class="flex h-screen flex-col items-center justify-center gap-2">
+    <Spinner size="xl"></Spinner>
+    <p class="text-muted-foreground text-sm">Loading context for {entryId}...</p>
+  </div>
 {:then context}
-  <IdahPlugin {context} {plugin_id} />
+  <IdahPlugin {context} {pluginId} />
 {/await}
