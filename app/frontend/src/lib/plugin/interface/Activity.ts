@@ -52,6 +52,54 @@ export interface INoteDriver {
   list(filter: any): Promise<Array<INote>>;
 }
 
+export interface ICategoryField {
+  id: string;
+  type: string;
+  color: string;
+  text_color?: string;
+  label: string;
+}
+
+export type FieldTypeValue = "text" | "integer" | "boolean" | "single-select" | "multi-select";
+
+export type LabelPropertyOption = {
+  id: string;
+  label: string;
+};
+
+export interface FieldBase {
+  id: string;
+  type: FieldTypeValue;
+  label: string;
+  description: string;
+  required: boolean;
+  format: {
+    // placeholder?: string;
+    // readonly?: boolean;
+    minimum: number | null;
+    maximum: number | null;
+    step: number | null;
+    info: string | null;
+    options: Array<LabelPropertyOption>;
+  };
+  visible_if?: {
+    [key: string]: Array<string | number | boolean>;
+  };
+}
+
+export interface PropertyField extends FieldBase {
+  selector: Array<string>;
+}
+
+/* eslint-disable-next-line @typescript-eslint/no-empty-object-type */
+export interface TagField extends FieldBase {}
+
+export interface IConfig {
+  categories: Array<ICategoryField>;
+  properties: Array<PropertyField>;
+  taggings: Array<TagField>;
+}
+
 export interface IActivityContext {
   // Id of the current entry
   get id(): string;
@@ -66,7 +114,7 @@ export interface IActivityContext {
   get status(): string;
 
   // Get the dataset configuration
-  get config(): any;
+  get config(): IConfig;
 
   // Return the root media url
   get mediaUrl(): string;

@@ -7,8 +7,8 @@
   import { ArrowLeftRightIcon, Trash2Icon } from "@lucide/svelte";
 
   import type { VideoAnnotation } from "../VideoAnnotationContext";
-  import type { LabelingConfiguration } from "@/data/model/dataset/labels";
   import type { HTMLAttributes } from "svelte/elements";
+  import type { IActivityContext } from "@/plugin/interface/Activity";
 
   let {
     annotation,
@@ -38,7 +38,7 @@
   } = $props();
 
   // Contexts
-  const labelConfig: LabelingConfiguration = getContext("labelConfig");
+  const context: IActivityContext = getContext("context");
 
   // Variables
   let categoryColor: string | undefined = $derived(getCategory(annotation.value.category)?.color);
@@ -52,7 +52,7 @@
   function getCategory(categoryId: string | undefined) {
     if (!categoryId) return undefined;
 
-    return labelConfig.categories.find((cat) => cat.id === categoryId);
+    return context.config.categories.find((cat) => cat.id === categoryId);
   }
 </script>
 
