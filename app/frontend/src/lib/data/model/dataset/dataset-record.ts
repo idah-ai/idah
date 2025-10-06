@@ -130,7 +130,8 @@ export const datasetsBackendDataSource = createBackendDataSource(
       throw "No data returned";
     },
   }
-  `${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/datasets`,
+  // TODO: recheck this line if it's needed
+  // `${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/datasets`,
 );
 
 export interface TreeItem {

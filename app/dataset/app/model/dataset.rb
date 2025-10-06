@@ -19,6 +19,8 @@ module Dataset
 
     field :project_id, type: Integer, readonly: true
 
+    field :created_by_id, type: Integer, readonly: true
+
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
 
@@ -33,5 +35,27 @@ module Dataset
     encoder :labeling_configuration, Verse::Sequel::JsonEncoder
     encoder :workflow_configuration, Verse::Sequel::JsonEncoder
     encoder :labels, Verse::Sequel::PgArrayEncoder
+
+    # scope definition(s)
+    def scoped(action)
+      auth_context.can!(action, Resource::Dataset::Datasets) do |scope|
+        scope.all? { table }
+
+        # scope: datasets that are in the same project as the user
+        scope.same_project? do
+          project_id = auth_context.metadata[:project_id] || ""
+          binding.pry
+          # project_ids = table.where(account_id: account_id).select(:project_id).distinct
+          table.where(project_id: )
+        end
+
+        account_id = auth_context.metadata[:id] || 1
+
+        # scope: projects the user owns/creates
+        scope.own? do
+          table.where(created_by_id: account_id)
+        end
+      end
+    end
   end
 end

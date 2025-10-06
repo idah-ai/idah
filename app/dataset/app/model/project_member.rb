@@ -28,6 +28,8 @@ module ProjectMember
     # scope(s) definition
     def scoped(action)
       auth_context.can!(action, Resource::Dataset::ProjectMembers) do |scope|
+        # binding.pry
+
         scope.all? { table }
 
         account_id = auth_context.metadata[:id] || 1
