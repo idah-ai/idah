@@ -11,6 +11,7 @@ export interface IDimension {
   type: string;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface IAnnotation<T = IDimension, U = any> {
   id: string;
   dimensions: T;
@@ -25,6 +26,7 @@ interface IComment {
   update(content: string): Promise<boolean>;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface INote {
   id: string;
   createdBy: IUser;
@@ -39,6 +41,7 @@ export interface INote {
   resolve(): Promise<boolean>;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface IAnnotationDriver {
   create(id: string, dimension: any, annotation: any): Promise<IAnnotation>;
   update(ann: IAnnotation): Promise<void>;
@@ -47,6 +50,7 @@ export interface IAnnotationDriver {
   flush(): void;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface INoteDriver {
   create(position: any, content: string): Promise<INote>;
   list(filter: any): Promise<Array<INote>>;
