@@ -9,12 +9,12 @@
   import { cn } from "@/utils";
   import { humanize } from "@/utils/string";
   import { Trash2Icon } from "@lucide/svelte";
-  import type { LabelingConfiguration } from "@/data/model/dataset/labels";
 
   import Timeline from "./timeline.svelte";
   import { boundingBoxes } from "../idb_store.svelte";
   import type { VideoAnnotation } from "../VideoAnnotationContext";
   import type { AnnotationsIndexedDB } from "../indexedDB";
+  import type { IActivityContext } from "@/plugin/interface/Activity";
 
   // Props
   let {
@@ -48,7 +48,7 @@
   } = $props();
 
   // Contexts
-  let labelConfig: LabelingConfiguration = getContext("labelConfig");
+  let context: IActivityContext = getContext("context");
 
   // Variables
   let isResizing: boolean = $state(false);
@@ -91,7 +91,7 @@
   }
 
   function getCategory(categoryId: string) {
-    return labelConfig.categories.find((cat) => cat.id === categoryId);
+    return context.config.categories.find((cat) => cat.id === categoryId);
   }
 
   async function getCategoryName(categoryId: string | undefined, selected: VideoAnnotation) {
