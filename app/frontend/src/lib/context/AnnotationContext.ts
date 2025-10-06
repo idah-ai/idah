@@ -1,3 +1,5 @@
+import type { Hash } from "@/utils/types";
+
 export type AnnotationShape = {
   type: string;
   start: number; // start frame or timestamp
@@ -18,7 +20,7 @@ export type AnnotationValue = {
 
   tags?: string[]; // a tag list, e.g. ["tag1", "tag2"]
 
-  attributes?: Record<string, any>; // Other attributes, e.g. {"key": "value"}
+  attributes?: Hash; // Other attributes, e.g. {"key": "value"}
 };
 
 export type AnnotationMetadata = {
@@ -42,7 +44,7 @@ export interface AnnotationObj<
   shape: Shape;
   value: Value;
   metadata: Metadata;
-  synced: Boolean;
+  synced: boolean;
 }
 
 export type Annotation = AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
@@ -57,7 +59,7 @@ export interface AnnotationContext {
    *                 or could load the annotation for specific frame range for example for video.
    * @returns A promise that resolves to an array of annotations.
    */
-  listAnnotations(filter: Record<string, any>): Promise<Annotation[]>;
+  listAnnotations(filter: Hash): Promise<Annotation[]>;
 
   /**
    * Adds a new annotation.
