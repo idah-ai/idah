@@ -1,5 +1,7 @@
 project_manager:
-  assignable: false
+  title: "Project Manager"
+  description: "Project Manager"
+  assignable: true
   rights:
     - "dataset:projects.create.*"
     - "dataset:projects.read.own"

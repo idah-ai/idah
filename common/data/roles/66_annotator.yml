@@ -1,4 +1,6 @@
 annotator:
+  title: "Annotator"
+  description: "Annotator"
   assignable: true
   rights:
     - "dataset:projects.read.member"
