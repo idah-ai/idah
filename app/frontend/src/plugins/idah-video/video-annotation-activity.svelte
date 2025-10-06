@@ -360,7 +360,8 @@
       },
       isCombinable: () => false,
 
-      combine: (c) => cmd,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      combine: (_c: any) => cmd,
     };
     CommandManager.add(cmd);
   }
@@ -448,7 +449,7 @@
       },
       isCombinable: () => false,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      combine: (c: any) => cmd,
+      combine: (_c: any) => cmd,
     };
 
     CommandManager.add(cmd);
@@ -543,7 +544,7 @@
       },
       isCombinable: () => false,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      combine: (c: any) => cmd,
+      combine: (_c: any) => cmd,
     };
 
     CommandManager.add(cmd);
@@ -557,7 +558,7 @@
   let overlay: SvgOverlay;
 
   let annotations_promise: Promise<VideoAnnotation[]> = $derived.by(() => {
-    $idb_updated_at;
+    // $idb_updated_at;
     if (!annotationsIDB) return new Promise((_, ko) => ko("no database"));
 
     let p = annotationsIDB.getAllStore("annotations");
@@ -639,7 +640,7 @@
     </PopoverContent>
   </Popover>
 
-  <SidebarProvider class="min-h-0 w-full" style={"height:calc(100% - 30px)"}>
+  <SidebarProvider class="min-h-0 w-full" style="height: calc(100% - 30px)">
     <ResizablePaneGroup direction="vertical">
       <ResizablePane class="flex h-full" defaultSize={60} minSize={10}>
         <AnnotationSidebar

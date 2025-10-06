@@ -26,12 +26,12 @@ interface IComment {
   update(content: string): Promise<boolean>;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface INote {
   id: string;
   createdBy: IUser;
   target?: IAnnotation;
   content: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   position?: any;
   fetchDiscussion: Promise<Array<IComment>>;
   status: string;
@@ -41,18 +41,23 @@ export interface INote {
   resolve(): Promise<boolean>;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface IAnnotationDriver {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   create(id: string, dimension: any, annotation: any): Promise<IAnnotation>;
+
   update(ann: IAnnotation): Promise<void>;
   delete(id: string): Promise<void>;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   list(filter: any, pagination: any): Promise<Array<IAnnotation>>;
   flush(): void;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface INoteDriver {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   create(position: any, content: string): Promise<INote>;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   list(filter: any): Promise<Array<INote>>;
 }
 
