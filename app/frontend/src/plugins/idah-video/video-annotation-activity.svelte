@@ -182,9 +182,6 @@
         await annotationsIDB?.addAnnotations([annotation]);
         $idb_updated_at = new Date();
 
-        await annotationsIDB?.addAnnotations([annotation]);
-        $idb_updated_at = new Date();
-
         let p = context.annotations.create(id, annotation.shape, annotation.value);
 
         p.then(async () => {
