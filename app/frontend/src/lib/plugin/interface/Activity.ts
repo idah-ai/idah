@@ -11,6 +11,7 @@ export interface IDimension {
   type: string;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface IAnnotation<T = IDimension, U = any> {
   id: string;
   dimensions: T;
@@ -30,6 +31,7 @@ export interface INote {
   createdBy: IUser;
   target?: IAnnotation;
   content: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   position?: any;
   fetchDiscussion: Promise<Array<IComment>>;
   status: string;
@@ -40,15 +42,71 @@ export interface INote {
 }
 
 export interface IAnnotationDriver {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   create(id: string, dimension: any, annotation: any): Promise<IAnnotation>;
+
   update(ann: IAnnotation): Promise<void>;
   delete(id: string): Promise<void>;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   list(filter: any, pagination: any): Promise<Array<IAnnotation>>;
+  flush(): void;
 }
 
 export interface INoteDriver {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   create(position: any, content: string): Promise<INote>;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   list(filter: any): Promise<Array<INote>>;
+}
+
+export interface ICategoryField {
+  id: string;
+  type: string;
+  color: string;
+  text_color?: string;
+  label: string;
+}
+
+export type FieldTypeValue = "text" | "integer" | "boolean" | "single-select" | "multi-select";
+
+export type LabelPropertyOption = {
+  id: string;
+  label: string;
+};
+
+export interface FieldBase {
+  id: string;
+  type: FieldTypeValue;
+  label: string;
+  description: string;
+  required: boolean;
+  format: {
+    // placeholder?: string;
+    // readonly?: boolean;
+    minimum: number | null;
+    maximum: number | null;
+    step: number | null;
+    info: string | null;
+    options: Array<LabelPropertyOption>;
+  };
+  visible_if?: {
+    [key: string]: Array<string | number | boolean>;
+  };
+}
+
+export interface PropertyField extends FieldBase {
+  selector: Array<string>;
+}
+
+/* eslint-disable-next-line @typescript-eslint/no-empty-object-type */
+export interface TagField extends FieldBase {}
+
+export interface IConfig {
+  categories: Array<ICategoryField>;
+  properties: Array<PropertyField>;
+  taggings: Array<TagField>;
 }
 
 export interface IActivityContext {
@@ -65,7 +123,7 @@ export interface IActivityContext {
   get status(): string;
 
   // Get the dataset configuration
-  get config(): any;
+  get config(): IConfig;
 
   // Return the root media url
   get mediaUrl(): string;
@@ -81,6 +139,9 @@ export interface IActivityContext {
 
   // Driver for fetching and updating notes
   get notes(): INoteDriver;
+
+  // Return to previous step of the workflow
+  back(): void;
 
   // Submit to the next step of the workflow
   submit(): Promise<void>;

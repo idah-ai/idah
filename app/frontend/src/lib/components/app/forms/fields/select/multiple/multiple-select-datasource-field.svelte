@@ -5,6 +5,7 @@
   import FormFieldErrors from "@/components/app/forms/form-field-errors.svelte";
   import FormFieldInfo from "@/components/app/forms/form-field-info.svelte";
   import FormFieldLabel from "@/components/app/forms/form-field-label.svelte";
+  import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
   import Spinner from "@/components/app/loading/spinner.svelte";
 
@@ -23,13 +24,17 @@
   let {
     dataSource,
     listOptions,
-    values = $bindable([]),
+    values = [],
     name,
     label,
     placeholder = "Select an option",
     clearable = false,
+    searchKeyWithOperation,
     disabled = false,
     required = false,
+    searchable = false,
+    searchPlaceholder = "Search an option",
+    searchValue = $bindable(""),
     info,
     errors,
     class: className,
@@ -73,6 +78,11 @@
     /** Set default sort */
     if (!listOpts.sort) listOpts.sort = ["-id"];
 
+    if (searchable && searchValue) {
+      if (!listOpts.filters) listOpts.filters = {};
+      listOpts.filters[searchKeyWithOperation] = searchValue;
+    }
+
     const response = await dataSource.list(listOpts);
 
     return response.data.map((item) => ({
@@ -83,17 +93,13 @@
   }
 
   async function select(choice: Choice): Promise<void> {
-
-
-
-      if (values.find((v) => v == choice.value)) {
+    if (values.find((v) => v == choice.value)) {
       values = values.filter((value) => value != choice.value);
     } else {
       values = [...values, choice.value];
     }
     open = false;
     await onValueChange?.(choice.value);
-
   }
 </script>
 
@@ -138,8 +144,17 @@
       {/if}
     </PopoverTrigger>
 
-    <PopoverContent align="start" class="p-0">
+    <PopoverContent align="start" class="w-auto p-0">
       <Command>
+        {#if searchable}
+          <InputField
+            name="filter/multiple-select/{searchKeyWithOperation}"
+            placeholder={searchPlaceholder}
+            value={searchValue}
+            oninput={(e) => (searchValue = e.currentTarget.value)}
+          ></InputField>
+        {/if}
+
         <CommandList>
           <CommandEmpty>No option found.</CommandEmpty>
           <CommandGroup>
@@ -151,11 +166,12 @@
                   {@render slotChoice({ choice })}
                 {:else}
                   <CommandItem onclick={() => select(choice)}>
-                     <CheckIcon
-                  class={cn("mr-2 size-4", {
-                    "opacity-0": !values.includes(choice.value),
-                  })}
-                />
+                    <CheckIcon
+                      class={cn("mr-2 size-4", {
+                        "opacity-0": !values.find((v) => v == choice.value),
+                      })}
+                    ></CheckIcon>
+
                     {choice.label}
                   </CommandItem>
                 {/if}

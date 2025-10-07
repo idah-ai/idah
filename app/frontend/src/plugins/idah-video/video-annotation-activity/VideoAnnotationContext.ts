@@ -8,7 +8,7 @@ import type {
 export type Point = [number, number];
 
 export type VideoShapeType = "video:bounding_box" | "video:bounding_polygon";
-export type VideoMode = "view" | VideoShapeType;
+export type VideoMode = "visual" | VideoShapeType;
 
 export type VideoAnnotation = AnnotationObj<VideoShape, AnnotationValue, AnnotationMetadata>;
 export type VideoFrameSelection = {
@@ -29,25 +29,38 @@ export interface VideoShape extends AnnotationShape {
   frames: VideoFrameSelection[];
 }
 
-export type CategoryConfiguration = {
+export interface BaseConfiguration {
   id: string;
   type: string;
   label: string;
-  color: string;
   description: string;
-};
+}
 
-export type PropertyConfiguration = {
-  id: string;
-  type: string;
-  format: string;
-  label: string;
-  description: string;
+export interface CategoryConfiguration extends BaseConfiguration {
+  color: string;
+  text_color: string;
+}
+
+export interface PropertyConfiguration extends BaseConfiguration {
+  format: Format;
   required: boolean;
   selector: string[];
-};
+}
 
-export type LabellingConfiguration = {
+interface Format {
+  maximum?: number | null;
+  minimum?: number | null;
+  step: number;
+  options?: string[];
+}
+
+export interface TaggingConfiguration extends BaseConfiguration {
+  format: Format;
+  required: boolean;
+}
+
+export interface LabellingConfiguration {
   categories: CategoryConfiguration[];
   properties: PropertyConfiguration[];
-};
+  taggings: TaggingConfiguration[];
+}

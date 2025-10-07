@@ -10,4 +10,6 @@
   let { entry }: Props = $props();
 </script>
 
-<Badge variant={entry.statusBadge.variant}>{entry.statusBadge.label}</Badge>
+<Badge variant={entry.statusBadge.variant}>
+  {entry.statusBadge.label}
+</Badge>

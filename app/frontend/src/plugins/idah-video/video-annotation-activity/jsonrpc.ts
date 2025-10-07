@@ -36,20 +36,16 @@ export class JsonRpcDatasource {
   processing = false;
   batch_size: number;
   base_url: string;
-  constructor(base_url: string, config: JSONRpcBatchConfig = { size: 10, time: 1000 }) {
+  constructor(base_url: string, config: JSONRpcBatchConfig = { size: 200, time: 5000 }) {
     this.base_url = base_url;
     this.batch_size = config.size;
-    setInterval(this.process.bind(this), config.time);
   }
 
   call(JsonRpcMethod: JsonRpcMethod): Promise<JsonRpcError | any> {
     return new Promise<any>((onResolve, onReject) => {
       this.queue.push({ JsonRpcMethod, onResolve, onReject });
 
-      // full batch or wait for interval ?
-      if (this.queue.length == this.batch_size) this.process();
-      // or not
-      // this.process()
+      if (!this.processing) this.process();
     });
   }
 
@@ -73,7 +69,6 @@ export class JsonRpcDatasource {
         if (!x) break;
 
         batch.push({ ...x, id: batch.length.toString() });
-        // batch.push({ ...x, id: uuidv7() });
       }
       this.process_batch(batch).then(
         () => this.flush(),

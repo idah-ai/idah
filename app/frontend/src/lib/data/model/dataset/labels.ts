@@ -44,7 +44,8 @@ export interface FieldBase {
     // readonly?: boolean;
     minimum: number | null;
     maximum: number | null;
-    step: number;
+    step: number | null;
+    info: string | null;
     options: Array<LabelPropertyOption>;
   };
   visible_if?: {
@@ -56,6 +57,7 @@ export interface PropertyField extends FieldBase {
   selector: Array<string>;
 }
 
+/* eslint-disable-next-line @typescript-eslint/no-empty-object-type */
 export interface TagField extends FieldBase {}
 
 export interface LabelingConfiguration {

@@ -1,6 +1,7 @@
-import type { EntryRecord } from "@/data/model/dataset/entryRecord";
 import type { IActivityContext, INote, INoteDriver } from "./interface/Activity";
 import { createAnnotationDriver } from "./AnnotationDriver";
+import { goto } from "$app/navigation";
+import type { EntryRecord } from "@/data/model/dataset/entries/record";
 
 const noteDriver: INoteDriver = {
   create(position, content) {
@@ -22,7 +23,7 @@ export function activityContextForEntry(entry: EntryRecord): IActivityContext {
     workflowStep: entry.wf_step,
     status: entry.status,
     config: entry.dataset.labeling_configuration,
-    mediaUrl: ["https://idah.localhost:8443/api/v1/media/medias/files", entry.resource, "master.m3u8"].join("/"),
+    mediaUrl: [`${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files`, entry.resource, "master.m3u8"].join("/"),
     user: {
       id: 0,
       email: "",
@@ -32,6 +33,10 @@ export function activityContextForEntry(entry: EntryRecord): IActivityContext {
     userRole: "",
     annotations: createAnnotationDriver(entry.id),
     notes: noteDriver,
+    back() {
+      const path = `/projects/${entry.dataset.project.id}/datasets/${entry.dataset.id}/tasks`;
+      goto(path);
+    },
     submit() {
       return new Promise<void>((resolve, reject) => {
         reject("todo");

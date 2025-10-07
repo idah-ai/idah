@@ -52,11 +52,13 @@ export interface ColumnSettings<T extends Record> {
     filterOperation: DataTableColumnFilterOperation;
     choices?: LabelValue<string | number | boolean>[];
   };
-  filterComponent?: Component<DataTableFilterBaseProps<T>, {}, "">;
+
+  filterComponent?: Component<DataTableFilterBaseProps<T>, object, "">;
   align?: "left" | "center" | "right";
   visible: boolean;
   hidable: boolean;
-  cellComponent?: Component<DataTableCellBaseProps<T>, {}, "">;
+
+  cellComponent?: Component<DataTableCellBaseProps<T>, object, "">;
   cellComponentProps?: Hash;
   cellOptions?: {
     enums: LabelValue<string | number | boolean>[];
@@ -86,10 +88,14 @@ export interface DataTableBaseProps<T extends Record> {
 
   // Snippets
   actions?: Snippet;
+  emptyState?: Snippet;
+  filteredState?: Snippet;
 }
 
 export interface DataTableFilterBaseProps<T extends Record> {
   columnSetting: ColumnSettings<T>;
+  contexts?: Hash;
+  filters: Filters;
   onFilter: (params: FilterDataSourceParams) => Promise<void> | void;
 }
 

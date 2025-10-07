@@ -9,11 +9,11 @@
     DropdownMenuItem,
     DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu";
-  import UpdateEntryPriorityFormModal from "@/components/app/datasets/entries/overlays/update-entry-priority-form-modal.svelte";
 
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
   import { getEntryDropdownMenuActions } from "@/components/app/datasets/entries/dropdown-menus/entry-dropdown-menu";
   import { refetches } from "@/utils/refetch";
+  import { toast } from "svelte-sonner";
   import { EllipsisVerticalIcon } from "@lucide/svelte";
 
   // Props
@@ -28,16 +28,13 @@
   // Variables
   const menus = getEntryDropdownMenuActions({
     onAssign: openAssignEntryModal,
-    onSetPriority: () => {
-      openSetPriorityModal = true;
-    },
+    onSetPriority: () => {},
     onDelete: () => {
       openConfirmDeleteTaskModal = true;
     },
-  });
+  }).filter((m) => m.label !== "Set Priority");
 
   let openAssignEntryFormModal: boolean = $state(false);
-  let openSetPriorityModal: boolean = $state(false);
   let openConfirmDeleteTaskModal: boolean = $state(false);
 
   // Functions
@@ -52,6 +49,7 @@
 
   async function deleteTask() {
     await entriesBackendDataSource.delete(entry.id);
+    toast.success("Task successfully deleted!");
     $refetches.entries.list++;
     openConfirmDeleteTaskModal = false;
   }
@@ -68,7 +66,7 @@
 
   <DropdownMenuContent align="end">
     <DropdownMenuGroup>
-      {#each menus as { label, icon: Icon, action }}
+      {#each menus as { label, icon: Icon, action }, index (index)}
         <DropdownMenuItem onclick={action}>
           <Icon class="size-4" />
           {label}
@@ -79,12 +77,8 @@
 </DropdownMenu>
 
 <!-- MODAL::ASSIGN ANNOTATOR  -->
-<AssignEntryFormModal action="update" entryRecord={entry} entryIds={[entry.id]} bind:open={openAssignEntryFormModal}
+<AssignEntryFormModal action="update" {entryRecord} entryIds={[entry.id]} bind:open={openAssignEntryFormModal}
 ></AssignEntryFormModal>
-
-<!-- MODAL::SET PRIORITY -->
-<UpdateEntryPriorityFormModal action="update" entryRecord={entry} entryIds={[entry.id]} bind:open={openSetPriorityModal}
-></UpdateEntryPriorityFormModal>
 
 <!-- MODAL::CONFIRM DELETE -->
 <ConfirmModal

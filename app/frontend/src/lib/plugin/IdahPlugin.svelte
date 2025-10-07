@@ -1,66 +1,46 @@
 <script lang="ts">
-    import { getContext, onDestroy, onMount } from "svelte";
-    import type { IActivityContext, IActivityView } from "./interface/Activity";
-    import Button from "@/components/ui/button/button.svelte";
+  import { getContext, onDestroy, onMount } from "svelte";
+  import type { IActivityContext, IActivityView } from "./interface/Activity";
+  import type { PluginManager } from "./PluginManager";
 
-    let {context, plugin_id}:{context:IActivityContext, plugin_id: string} = $props()
-    let container: HTMLElement
+  // Props
+  interface Props {
+    context: IActivityContext;
+    pluginId: string;
+  }
+  let { context, pluginId }: Props = $props();
 
-    import { Tooltip, TooltipProvider } from "@/components/ui/tooltip";
-    import TooltipTrigger from "@/components/ui/tooltip/tooltip-trigger.svelte";
-    import TooltipContent from "@/components/ui/tooltip/tooltip-content.svelte";
-    import type { PluginManager } from "./PluginManager";
-    import { goto } from "$app/navigation";
-    let plugin: IActivityView|undefined = $state()
+  // Variables
+  let container: HTMLElement;
+  let plugin: IActivityView | undefined = $state();
+  let pluginManager: PluginManager = getContext("idah-plugin-manager");
 
-    let pluginManager:PluginManager = getContext('idah-plugin-manager')
-    let plugins: IActivityView[] = $state([])
+  // Lifecycle
+  onMount(() => {
+    pluginManager.loadedPromise.then(() => {
+      plugin = pluginManager.getPlugin(pluginId);
+      if (!plugin) return console.error("plugin not found", { pluginId });
 
-    onMount(() => {
-        pluginManager.loadedPromise.then(() => {
-            plugin = pluginManager.getPlugin(plugin_id)
-            if (!plugin) return console.error("plugin not found", {plugin_id})
+      console.debug("Mounting plugin", $state.snapshot(plugin));
+      plugin.render?.(container, context);
+    });
+  });
 
-            console.debug("Mounting plugin", $state.snapshot(plugin))
-            plugin.render?.(container, context)
-        })
-    })
-
-    onDestroy(() => {
-        plugin?.close?.()
-    })
-
+  onDestroy(() => {
+    plugin?.close?.();
+  });
 </script>
 
-
 <div bind:this={container}>
-    {#await pluginManager.loadedPromise}
-        Loading Plugins
-    {:then}
-    {#if plugins.length}
-        <h3>Available Plugins</h3>
-        <TooltipProvider>
-            <ul>
-                {#each plugins as plugin}
-                    <li>
-                        <Tooltip>
-                            <TooltipTrigger>
-                                <Button onclick={() => goto(`plugin/${plugin.name}`)}>
-                                    {plugin.label}
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                {plugin.description}
-                            </TooltipContent>
-                        </Tooltip>
-
-                    </li>
-                {/each}
-            </ul>
-        </TooltipProvider>
-    {:else}
-        No available plugin
-    {/if}
-    {/await}
+  {#await pluginManager.loadedPromise}
+    Loading Plugins
+  {:then}
+    {#key plugin}
+      {#if plugin}
+        plugin render
+      {:else}
+        No registered {pluginId} plugin found
+      {/if}
+    {/key}
+  {/await}
 </div>
-

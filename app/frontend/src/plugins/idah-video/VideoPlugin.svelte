@@ -1,10 +1,13 @@
 <script lang="ts">
-    import type { IActivityContext } from "@/plugin/interface/Activity";
-    import VideoAnnotationActivity from "./video-annotation-activity.svelte";
+  import VideoAnnotationActivity from "./video-annotation-activity.svelte";
 
+  import type { IActivityContext } from "@/plugin/interface/Activity";
 
-    let {context}:{context: IActivityContext} = $props()
+  // Props
+  interface Props {
+    context: IActivityContext;
+  }
+  let { context }: Props = $props();
 </script>
 
-
-<VideoAnnotationActivity {context}/>
+<VideoAnnotationActivity {context}></VideoAnnotationActivity>

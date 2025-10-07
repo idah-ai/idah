@@ -9,15 +9,17 @@
     type Props = {
         element?: HTMLDivElement,
         onFramesChange: (current:number, frames:number) => void
-        onVolumeChange: (volume:number) => void
+        onVolumeChange: (volume:number) => void,
+        onResize?: () => void
     }
 
     let {
          element = $bindable(),
          onFramesChange,
+         onResize
     }: Props = $props()
 
-    let player: Player;
+    let player: videojs = $state();
     let options = {
             controls: false,
             preload: "auto",
@@ -29,7 +31,7 @@
             fluid: true,
             disablePictureInPicture: true,
             // sources: [
-            //     {src: 'https://idah.localhost:8443/api/v1/media/medias/files/410910ci5lpcck5qmh.mp4/master.m3u8'}
+            //     {src: `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files/410910ci5lpcck5qmh.mp4/master.m3u8`}
             // ]
             // poster:"",
     }
@@ -44,6 +46,8 @@
         onFramesChange?.(currentFrame, frames)
     })
 
+    export const getFrames = () => frames
+
     export function togglePlay() {
         if (player.paused())
             player.play();
@@ -56,20 +60,20 @@
         return player.src(src);
     }
 
-    export function nextFrame() {
+    export function nextFrame(count = 1) {
         if (!fps) console.error({fps, nextFrame})
 
         if (!player.paused())
             player.pause()
-        player.currentTime((currentFrame + 1) / fps)
+        player.currentTime((currentFrame + count) / fps)
     }
 
-    export function previousFrame() {
+    export function previousFrame(count = 1) {
         if (!fps) console.error({fps, nextFrame})
 
         if (!player.paused())
             player.pause()
-        player.currentTime((currentFrame - 1) / fps)
+        player.currentTime((currentFrame - count) / fps)
     }
 
     export function toggleMute() {
@@ -89,7 +93,7 @@
     }
 
     export function isPlaying(){
-        return player ? player.paused() : false
+        return player ? !player.paused() : false
     }
 
     export function playbackRate(value:number){
@@ -113,7 +117,11 @@
             player.on('sourceset', () => quality_check('sourceset'))
             player.on('loadeddata', () => quality_check('loadeddata'))
             player.on('loadedmetadata', () => quality_check('loadedmetadata'))
-            player.on('resize', () => quality_check('resize'))
+            player.on('resize', () => {
+                onResize?.()
+                // quick fix for now // I'll review it all post plugin
+                quality_check('resize')
+            })
             player.on('timeupdate', () => {
                 mediaTime = player.currentTime() || 0
             });
@@ -157,7 +165,6 @@
     }
 
     function quality_check(from?: string) {
-        // console.error(from)
         let qualityLevel = player.qualityLevels()[player.qualityLevels().selectedIndex]
 
         duration = player.duration() || 0;

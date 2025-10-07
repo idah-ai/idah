@@ -1,7 +1,6 @@
 <script lang="ts">
-  import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+  import { Card, CardContent, CardHeader } from "@/components/ui/card";
   import CheckboxField from "@/components/app/forms/fields/input/checkbox-field.svelte";
-  import { Input } from "@/components/ui/input";
   import PropertyOptions from "@/components/app/datasets/labels/properties/property-options.svelte";
   import PropertyTypeDropdownMenu from "@/components/app/datasets/labels/dropdown-menus/property-type-dropdown-menu.svelte";
   import RemovePropertyButton from "@/components/app/datasets/labels/buttons/remove-property-button.svelte";
@@ -21,7 +20,6 @@
   // Variables
   let { id, type, label, required } = $derived(tag);
   let showContent: boolean = $state(false);
-  let editingLabel: boolean = $state(false);
 
   let selectedFieldType: FieldType | undefined = $derived(fieldTypes.find((t) => t.value === type));
 
@@ -41,26 +39,11 @@
     <!-- HEADER::TOGGLE SHOW CONTENT -->
     <ToggleShowContentButton {showContent} onClick={toggleContent}></ToggleShowContentButton>
 
-    <!-- HEADER::SELECT TYPE -->
-    <PropertyTypeDropdownMenu {selectedFieldType} onSetType={setTag}></PropertyTypeDropdownMenu>
+    <!-- HEADER::SELECT TYPE & TITLE -->
+    <PropertyTypeDropdownMenu {label} {selectedFieldType} onSetLabel={setTag} onSetType={setTag}
+    ></PropertyTypeDropdownMenu>
 
-    <!-- HEADER::EDITABLE TITLE -->
-    <button class="cursor-text" onclick={() => (editingLabel = true)}>
-      {#if editingLabel}
-        <Input
-          class="w-32"
-          name="{id}/label"
-          autofocus
-          value={label}
-          onblur={() => (editingLabel = false)}
-          oninput={(e) => setTag({ label: e.currentTarget.value })}
-        ></Input>
-      {:else}
-        <CardTitle>{label}</CardTitle>
-      {/if}
-    </button>
-
-    <div class="ml-auto flex items-center gap-2">
+    <div class="ml-auto flex shrink-0 items-center gap-2">
       <!-- HEADER::REQUIRED -->
       <CheckboxField
         name="{id}/required"
@@ -78,7 +61,7 @@
   <!-- CONTENT -->
   {#if showContent}
     <CardContent class="flex flex-col gap-4 px-0">
-      <PropertyOptions propertyKey="taggings" property={tag} onSetValue={setTag}></PropertyOptions>
+      <PropertyOptions property={tag} onSetValue={setTag}></PropertyOptions>
     </CardContent>
   {/if}
 </Card>

@@ -1,5 +1,4 @@
 <script lang="ts">
-  import Button from "@/components/ui/button/button.svelte";
   import Text from "@/components/ui/text/Text.svelte";
   import { cn } from "@/utils";
 
@@ -25,11 +24,11 @@
 
 <div id="response-block-container" class={cn("flex flex-col items-center gap-4", className)}>
   <!-- RESPONSE BLOCK::ICON -->
-  <Button variant="outline" size="icon">
+  <div class="inline-flex size-9 shrink-0 items-center justify-center rounded-md border">
     {#if Icon}
       <Icon class="size-4" />
     {/if}
-  </Button>
+  </div>
 
   <!-- RESPONSE BLOCK::CONTENT -->
   <div class="flex flex-col items-center gap-1">
@@ -47,9 +46,5 @@
   </div>
 
   <!-- RESPONSE BLOCK::ACTIONS -->
-  {#if actions}
-    {@render actions?.()}
-  {:else}
-    <Button class="capitalize">Action</Button>
-  {/if}
+  {@render actions?.()}
 </div>

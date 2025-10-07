@@ -1,7 +1,7 @@
 <script lang="ts" module>
   import Badge from "@/components/ui/badge/badge.svelte";
   import Button from "@/components/ui/button/button.svelte";
-  import { Command, CommandGroup, CommandItem } from "@/components/ui/command";
+  import { Command, CommandGroup } from "@/components/ui/command";
   import {
     DropdownMenu,
     DropdownMenuContent,
@@ -13,6 +13,7 @@
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import Kbd from "@/components/app/texts/kbd.svelte";
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+  import SingleSelectField from "@/components/app/forms/fields/select/single/single-select-field.svelte";
   import Text from "@/components/ui/text/Text.svelte";
   import Tooltips from "@/components/app/tooltips/tooltips.svelte";
 
@@ -59,7 +60,7 @@
 
   <div id={node.id} class={cn("flex items-center gap-2")} style:margin-left={`${(level - 1) * 3}rem`}>
     <!-- TREE::NODE -->
-    <div class="border-border e flex w-full items-center gap-2 rounded-lg border py-1 pl-4 pr-2">
+    <div class="border-border flex w-full items-center gap-2 rounded-lg border py-1 pr-2 pl-4">
       {#if isLastNode}
         <Popover>
           <PopoverTrigger>
@@ -90,39 +91,53 @@
             </Tooltips>
           </PopoverTrigger>
 
-          <PopoverContent align="start" class="p-0">
+          <PopoverContent align="center" side="right" class="p-0">
             <Command>
               <CommandGroup heading="Type">
-                {#each annotationTypes as { label, value, icon: Icon } (value)}
-                  <CommandItem
-                    onclick={() =>
-                      onEditCategory({
-                        id: node.id,
-                        type: `${node.type.split(":")[0]}:${value}`,
-                        color: node.color,
-                        text_color: node.text_color,
-                        label: node.label,
-                      })}
-                  >
-                    <Icon class="size-4"></Icon>
-
-                    {label}
-
-                    {#if node.type.includes(value)}
-                      <CheckIcon class="ml-auto size-4"></CheckIcon>
-                    {/if}
-                  </CommandItem>
-                {/each}
+                <SingleSelectField
+                  name="{node.id}/type"
+                  class="px-2"
+                  choices={annotationTypes.map((t) => ({ label: t.label, value: t.value }))}
+                  value={node.type.split(":")[1]}
+                  onValueChange={(value) => {
+                    onEditCategory({
+                      id: node.id,
+                      type: `${node.type.split(":")[0]}:${value}`,
+                      color: node.color,
+                      text_color: node.text_color,
+                      label: node.label,
+                    });
+                  }}
+                ></SingleSelectField>
               </CommandGroup>
 
               <CommandGroup heading="Shortcut Key"></CommandGroup>
 
+              {@const idParts = node.id.split("/")}
+              {@const parentParts = idParts.splice(0, idParts.length - 1)}
+              {@const parentPath = parentParts.join("/")}
+              <CommandGroup heading="ID">
+                <InputField
+                  name="{node.id}/id"
+                  class="px-2"
+                  prefix={parentPath ? `${parentPath}/` : ""}
+                  value={idParts[idParts.length - 1]}
+                  onblur={(e) => {
+                    const value = e.currentTarget.value;
+                    const newValue = parentPath ? `${parentPath}/${value}` : value;
+                    onEditCategoryId(node.id, newValue);
+                  }}
+                ></InputField>
+              </CommandGroup>
+
               <CommandGroup heading="Label">
                 <InputField
                   name="{node.id}/label"
+                  class="px-2"
                   value={node.label}
-                  oninput={(e) => {
+                  onblur={(e) => {
                     const value = e.currentTarget.value;
+
                     onEditCategory({
                       id: node.id,
                       type: node.type,
@@ -130,17 +145,6 @@
                       text_color: node.text_color,
                       label: value,
                     });
-                  }}
-                ></InputField>
-              </CommandGroup>
-
-              <CommandGroup heading="ID">
-                <InputField
-                  name="{node.id}/id"
-                  value={node.id}
-                  onblur={(e) => {
-                    const value = e.currentTarget.value;
-                    onEditCategoryId(node.id, value.toLocaleLowerCase());
                   }}
                 ></InputField>
               </CommandGroup>
@@ -187,7 +191,7 @@
         {#if assignedProperties.length > 0}
           <HoverCards align="center" openDelay={200} contentClass="p-2">
             {#snippet trigger()}
-              <Badge variant="outline" class="cursor-pointer rounded-lg">
+              <Badge variant="outline" class="cursor-pointer">
                 {assignedProperties.length > 1 ? `${assignedProperties.length} Properties` : "1 Property"}
               </Badge>
             {/snippet}
@@ -237,7 +241,7 @@
   </div>
 
   {#if node.children.length}
-    {#each node.children as child}
+    {#each node.children as child (child.id)}
       {@const level = child.id.split("/").length}
       {@render TreeNode({
         labelConfig: props.labelConfig,
