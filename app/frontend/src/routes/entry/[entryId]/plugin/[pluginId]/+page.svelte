@@ -30,5 +30,5 @@
     <p class="text-muted-foreground text-sm">Loading context for {entryId}...</p>
   </div>
 {:then context}
-  <IdahPlugin {context} {pluginId} />
+  <IdahPlugin {context} />
 {/await}

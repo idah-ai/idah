@@ -120,15 +120,15 @@
     }
   };
 
+  // for now
+  $effect(() => {
+    if (url && player && url != player?.source()) {
+      player?.source(url); //...
+    }
+  });
+
   onMount(async () => {
     $boundingBoxes = [];
-
-    // for now
-    $effect(() => {
-      if (url && player && url != player?.source()) {
-        player?.source(url); //...
-      }
-    });
 
     annotationsIndexedDB(["idah-video", "entry", entry_id].join(":")).then((idb) => {
       annotationsIDB = idb;
@@ -557,12 +557,15 @@
   let overlay: SvgOverlay;
 
   let annotations_promise: Promise<VideoAnnotation[]> = $derived.by(() => {
-    // $idb_updated_at;
+    $idb_updated_at;
     if (!annotationsIDB) return new Promise((_, ko) => ko("no database"));
 
     let p = annotationsIDB.getAllStore("annotations");
 
-    p.then((anns) => ($boundingBoxes = anns));
+    p.then((anns) => {
+      console.log({ annotations_promise: anns });
+      $boundingBoxes = anns;
+    });
 
     return p;
   });
@@ -669,7 +672,7 @@
             frame={currentFrame}
             onSelectAnnotation={selectAnnotation}
             onSelection={onShapeSelection}
-            target_container={player_container}
+            target_container={() => player_container}
             {videoResizedAt}
           >
             <!-- container context ?-->
