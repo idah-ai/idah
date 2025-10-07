@@ -82,20 +82,23 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
   end
 
   it "assign member" do
-    expect(service).to receive(:assign_member) do |args|
-      expect(args.attributes[:assigned_to_id]).to eq 1
+    expect(service).to receive(:assign_member) do |id, assigned_to_id|
+      expect(id).to eq uuid
+      expect(assigned_to_id).to eq 1
       entry_record
     end
 
-    patch "/entries/#{uuid}/assign", {
-      data: {
-        type: Resource::Dataset::Entries,
-        id: uuid,
-        attributes: {
-          assigned_to_id: 1,
-        }
-      }
-    }
+    patch "/entries/#{uuid}/assign",
+          {
+            data: {
+              type: Resource::Dataset::Entries,
+              id: uuid,
+              attributes: {
+                assigned_to_id: 1,
+              }
+            }
+          }
+
     expect(last_response.status).to eq 200
   end
 

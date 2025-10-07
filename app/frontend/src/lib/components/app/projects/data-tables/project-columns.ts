@@ -22,7 +22,7 @@ export const projectColumns: ColumnsSettings<ProjectRecord> = {
     cellComponent: ProjectNameCell,
   },
   datasets: {
-    label: "Data Sets",
+    label: "Datasets",
     dataType: "number",
     sortable: false,
     filterable: false,

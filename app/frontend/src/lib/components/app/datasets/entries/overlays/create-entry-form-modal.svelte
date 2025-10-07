@@ -1,6 +1,7 @@
 <script lang="ts">
   import Badge from "@/components/ui/badge/badge.svelte";
   import Button from "@/components/ui/button/button.svelte";
+  import DialogClose from "@/components/ui/dialog/dialog-close.svelte";
   import FileUpload from "@/components/app/forms/fields/upload/file-upload.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
   import Spinner from "@/components/app/loading/spinner.svelte";
@@ -13,25 +14,12 @@
   import { refetches } from "@/utils/refetch";
   import { toast } from "svelte-sonner";
 
-  import { EntryRecord } from "@/data/model/dataset/entries/record";
-
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
 
   // Props
-  interface Props extends FormModalBaseProps {}
-  let { action, title, open = $bindable() }: Props = $props();
+  let { action, title, open = $bindable() }: FormModalBaseProps = $props();
 
   // Variables
-  let datasetId = page.params.datasetId as string;
-  let uploading: boolean = $state(false);
-  let selectedMedias: FileList | null = $state(null);
-  let entry: EntryRecord = $derived(
-    new EntryRecord({
-      type: EntryRecord.type,
-      attributes: {},
-    }),
-  );
-
   interface UploadStatuses {
     uuid: string;
     media: File;
@@ -39,12 +27,28 @@
   }
   let uploadStatuses: Array<UploadStatuses> = $state([]);
 
+  let datasetId = page.params.datasetId as string;
+  let uploading: boolean = $state(false);
+  let selectedMedias: FileList | null = $state(null);
+  let showUploadStatus: boolean = $derived(uploadStatuses.length > 0);
+
+  let disabledUploadButton: boolean = $derived.by(() => {
+    if (!selectedMedias) return true;
+
+    if (!selectedMedias.length) return true;
+
+    if (uploading) return true;
+
+    if (showUploadStatus) return true;
+
+    return false;
+  });
+
   // Functions
   function resetForm(): void {
-    entry = new EntryRecord({
-      type: EntryRecord.type,
-      attributes: {},
-    });
+    selectedMedias = null;
+    uploadStatuses = [];
+    uploading = false;
   }
 
   function handleFilesSelected(selectedFiles: FileList): void {
@@ -97,13 +101,13 @@
 
         media.status = "success";
       } catch (error) {
+        console.error(error);
         media.status = "error";
       }
     }
 
     toast.success("Tasks successfully uploaded!");
     $refetches.entries.list++;
-    open = false;
   }
 
   async function submit(): Promise<void> {
@@ -112,6 +116,7 @@
     try {
       await uploadMedia();
     } catch (error) {
+      console.error(error);
     } finally {
       uploading = false;
     }
@@ -127,7 +132,7 @@
   onConfirm={submit}
   bind:open
 >
-  {#if uploading}
+  {#if showUploadStatus}
     <div class="flex w-full flex-col gap-4">
       {#each uploadStatuses as { uuid, media, status } (uuid)}
         <div class="flex w-full gap-4">
@@ -137,9 +142,9 @@
             {#if status === "uploading"}
               <Spinner></Spinner>
             {:else if status === "success"}
-              <Badge class="rounded-lg">Uploaded</Badge>
+              <Badge>Uploaded</Badge>
             {:else if status === "error"}
-              <Badge variant="destructive" class="rounded-lg">Error</Badge>
+              <Badge variant="destructive">Error</Badge>
             {/if}
           </div>
         </div>
@@ -153,7 +158,21 @@
     ></FileUpload>
   {/if}
 
-  {#snippet confirm()}
-    <Button onclick={submit}>Upload</Button>
+  {#snippet actions()}
+    <!-- Only show actions when not uploading -->
+    {#if !showUploadStatus}
+      <DialogClose>
+        <Button variant="outline" class="w-full lg:w-auto" onclick={resetForm}>Cancel</Button>
+      </DialogClose>
+
+      <Button disabled={disabledUploadButton} onclick={submit}>
+        {#if uploading}
+          <Spinner variant="primary-foreground"></Spinner>
+          Uploading...
+        {:else}
+          Upload
+        {/if}
+      </Button>
+    {:else}{/if}
   {/snippet}
 </FormModal>

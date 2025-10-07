@@ -4,14 +4,13 @@
   import Button from "@/components/ui/button/button.svelte";
   import DataTable from "@/components/app/data-table/data-table.svelte";
   import ProjectMemberFormModal from "@/components/app/projects/members/overlays/project-member-form-modal.svelte";
+  import ResponseBlock from "@/components/app/blocks/response-block.svelte";
 
   import { projectMemberColumns } from "@/components/app/projects/members/data-tables/project-member-columns";
   import { PlusIcon } from "@lucide/svelte";
   import { refetches } from "@/utils/refetch";
 
   import { projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
-
-  import type { Record } from "@/data/model/Record";
 
   // Variables
   let projectId: string | undefined = $derived(page.params.projectId);
@@ -22,6 +21,13 @@
     openNewProjectMemberFormModal = true;
   }
 </script>
+
+{#snippet InviteMemberButton()}
+  <Button onclick={openNewProjectMemberModal}>
+    <PlusIcon class="size-4"></PlusIcon>
+    Invite Members
+  </Button>
+{/snippet}
 
 {#key $refetches.projectMembers.list}
   <DataTable
@@ -37,10 +43,15 @@
     onNewRecord={openNewProjectMemberModal}
   >
     {#snippet actions()}
-      <Button onclick={openNewProjectMemberModal}>
-        <PlusIcon class="size-4" />
-        Invite Members
-      </Button>
+      {@render InviteMemberButton()}
+    {/snippet}
+
+    {#snippet emptyState()}
+      <ResponseBlock title="No Project Members" description="Please add members to get started" icon={PlusIcon}>
+        {#snippet actions()}
+          {@render InviteMemberButton()}
+        {/snippet}
+      </ResponseBlock>
     {/snippet}
   </DataTable>
 {/key}

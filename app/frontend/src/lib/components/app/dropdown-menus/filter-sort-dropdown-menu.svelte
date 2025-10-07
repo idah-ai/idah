@@ -1,4 +1,6 @@
 <script lang="ts" generics="T extends Record">
+  import { addDays, addMonths, endOfMonth, endOfWeek, startOfWeek } from "date-fns";
+
   import Button from "@/components/ui/button/button.svelte";
   import { Command, CommandGroup, CommandItem, CommandSeparator } from "@/components/ui/command";
   import { Input } from "@/components/ui/input";
@@ -32,11 +34,13 @@
     FilterDataSourceParams,
     SortDataSourceParams,
   } from "@/components/app/data-table/data-table.types";
+  import type { Hash } from "@/utils/types";
 
   // Props
   interface Props<T extends Record> {
     columnKey: string;
     columnSetting: ColumnSettings<T>;
+    contexts?: Hash;
 
     // DataSource
     filters: Filters;
@@ -65,6 +69,7 @@
   let {
     columnKey,
     columnSetting,
+    contexts,
 
     // DataSource
     filters,
@@ -141,6 +146,15 @@
       },
     },
   ];
+
+  const datePresets = {
+    today: { label: "Today" },
+    yesterday: { label: "Yesterday" },
+    thisWeek: { label: "This Week" },
+    lastWeek: { label: "Last Week" },
+    thisMonth: { label: "This Month" },
+    lastMonth: { label: "Last Month" },
+  };
 
   // Functions
   function closeDropdown(): void {
@@ -227,6 +241,76 @@
     }
   }
 
+  function filterByDateRangePreset(preset: keyof typeof datePresets): void {
+    const today = new Date();
+
+    let filterStartDate: Date;
+    let filterEndDate: Date;
+
+    switch (preset) {
+      case "today": {
+        filterStartDate = today;
+        filterEndDate = today;
+        break;
+      }
+
+      case "yesterday": {
+        const yesterday = addDays(today, -1);
+        filterStartDate = yesterday;
+        filterEndDate = yesterday;
+        break;
+      }
+
+      case "thisWeek": {
+        const weekStartDate = startOfWeek(today, { weekStartsOn: 2 });
+        const weekEndDate = endOfWeek(today, { weekStartsOn: 2 });
+        filterStartDate = weekStartDate;
+        filterEndDate = weekEndDate;
+        break;
+      }
+
+      case "lastWeek": {
+        const lastWeek = addDays(today, -7);
+        const lastWeekStartDate = startOfWeek(lastWeek, { weekStartsOn: 2 });
+        const lastWeekEndDate = endOfWeek(lastWeek, { weekStartsOn: 2 });
+        filterStartDate = lastWeekStartDate;
+        filterEndDate = lastWeekEndDate;
+        break;
+      }
+
+      case "thisMonth": {
+        const thisMonthStartDate = new Date(today.getFullYear(), today.getMonth(), 1);
+        const thisMonthEndDate = endOfMonth(today);
+        filterStartDate = thisMonthStartDate;
+        filterEndDate = thisMonthEndDate;
+        break;
+      }
+
+      case "lastMonth": {
+        const lastMonth = addMonths(today, -1);
+        const lastMonthStartDate = new Date(lastMonth.getFullYear(), lastMonth.getMonth(), 1);
+        const lastMonthEndDate = endOfMonth(lastMonth);
+        filterStartDate = lastMonthStartDate;
+        filterEndDate = lastMonthEndDate;
+        break;
+      }
+
+      default: {
+        // For other presets, just set both dates to today as a fallback
+        filterStartDate = today;
+        filterEndDate = today;
+        break;
+      }
+    }
+
+    onFilter({
+      filters: {
+        [`${filterKey}__gte`]: filterStartDate.toISOString().split("T")[0].concat(" 00:00:00"),
+        [`${filterKey}__lte`]: filterEndDate.toISOString().split("T")[0].concat(" 23:59:59"),
+      },
+    });
+  }
+
   function clearFilter(): void {
     const filterKey = `${filterOptions?.filterKey || columnKey}`;
     const filterKeyWithOperation = `${filterKey}__${filterOptions?.filterOperation || "in"}`;
@@ -281,7 +365,7 @@
         <CommandGroup heading="Filter">
           {#if filterComponent}
             {@const FilterComponent = filterComponent}
-            <FilterComponent {columnSetting} {onFilter}></FilterComponent>
+            <FilterComponent {columnSetting} {filters} {contexts} {onFilter}></FilterComponent>
           {:else if filterOptions?.filterBy === "string"}
             {@const filterKey = `${columnKey}__${filterOptions.filterOperation || "match"}`}
             <div class="pb-2">
@@ -344,7 +428,19 @@
               Please provide choices for multiple select filter
             {/if}
           {:else if filterOptions?.filterBy === "date-range"}
-            <div class="flex min-w-fit flex-col items-center">
+            <div class="flex min-w-fit items-center">
+              <div class="flex flex-col gap-2">
+                {#each Object.entries(datePresets) as [key, preset] (key)}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    class="hover:bg-primary/10 font-normal"
+                    onclick={() => filterByDateRangePreset(key as keyof typeof datePresets)}
+                  >
+                    {preset.label}
+                  </Button>
+                {/each}
+              </div>
               <RangeCalendar
                 value={{
                   start: filteredStartDateValue,

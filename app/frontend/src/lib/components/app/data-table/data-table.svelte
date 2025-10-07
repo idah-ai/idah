@@ -33,7 +33,6 @@
   import { getTableState } from "@/components/app/data-table/data-table.stores.svelte";
 
   // Props
-  interface Props extends DataTableBaseProps<T> {}
   let {
     id,
     name: dataTableName,
@@ -45,12 +44,16 @@
     onLoadSetContexts = async () => ({}),
     onNewRecord,
     actions,
-  }: Props = $props();
+    emptyState,
+    filteredState,
+  }: DataTableBaseProps<T> = $props();
 
   // Contexts
   setContext("columns", _columns);
   setContext("dataTableName", dataTableName);
   setContext("onNewRecord", onNewRecord);
+  setContext("emptyState", emptyState);
+  setContext("filteredState", filteredState);
 
   // Variables
   let tableState: TableState<T> = getTableState(id);
@@ -72,6 +75,7 @@
 
   let columns = $state(_columns);
   let haveSomeHidableColumns: boolean = $derived(Object.values(columns).some((column) => column.hidable));
+  let isFiltering: boolean = $derived(Object.keys(tablePreferences.filters).length > 0);
 
   let currentPage: number = $state(1);
   let itemsPerPage: number = $state(10);
@@ -270,6 +274,7 @@
                   <DataTableHeadLabel class="px-4">{label}</DataTableHeadLabel>
                 {:else}
                   <DataTableHeadOptions
+                    {tableData}
                     {columnKey}
                     {columnSetting}
                     {tablePreferences}
@@ -287,7 +292,7 @@
       {#if tableData.status === "loading"}
         <DataTableLoading />
       {:else if tableData.status === "loaded"}
-        <DataTableBody {tableData} {columns}></DataTableBody>
+        <DataTableBody {tableData} {columns} {isFiltering}></DataTableBody>
       {:else}
         <DataTableError />
       {/if}
@@ -299,7 +304,7 @@
     <DataTablePaginator
       page={tablePreferences.pagination.page || currentPage}
       itemsPerPage={tablePreferences.pagination.itemsPerPage || itemsPerPage}
-      count={tableData.response.meta?.count || 1000}
+      count={tableData.response.meta?.count ?? 0}
       hasMore={tableData.response.meta?.more || false}
       onPageChange={changePage}
       onItemsPerPageSelect={setItemsPerPage}
