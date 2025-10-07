@@ -3,5 +3,15 @@
   "name": "idah-video-annotation",
   "version": "1.0.0",
   "description": "A web application for annotating videos with bounding boxes and labels.",
-  "frontendMountingPoint": "src/index.js"
+  "author": "The IDAH Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "frontendMountingPoint": "src/index.js",
+  "backend": {
+    "path": "backend/idah_video_annotation.rb",
+    "module": "IdahVideoAnnotation"
+  }
 }
