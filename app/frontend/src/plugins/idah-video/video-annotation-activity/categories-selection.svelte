@@ -76,7 +76,7 @@
 
       if (index == -1) {
         acc.push({
-          id: configuration.id.replace(ids.join("/"), ids.at(0) || ""),
+          id: configuration.id,
           name: ids[0],
           nestedCategories: buildTree([], ids.slice(1, Infinity), configuration),
           requiredNested: true,
