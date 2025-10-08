@@ -160,8 +160,8 @@
         class="min-w-24"
         placeholder="Frame"
         min={0}
-        max={Math.max(0, totalFrames - 1)}
-        suffix={`/ ${Math.max(0, totalFrames - 1)}`}
+        max={Math.max(0, totalFrames)}
+        suffix={`/ ${Math.max(0, totalFrames)}`}
         value={currentFrame}
         onchange={seekToFrame}
       />
