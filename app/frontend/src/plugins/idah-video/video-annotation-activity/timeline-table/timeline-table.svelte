@@ -71,13 +71,14 @@
   let hoveredColumn: number | undefined = $state();
 
   export function setOffset(offset: number) {
-    pos_offset = Math.max(0, Math.min(Math.ceil(totalFrames - (range_span + 1)), offset || 0));
+    pos_offset = Math.max(0, Math.min(totalFrames - range_span, offset || 0));
   }
 
   export function setZoom(value: number) {
     const s = Math.min(150, Math.max(1, Math.round(value)));
     scale = Math.min(scale, Math.ceil(totalFrames / s));
     zoom = s;
+    onScaleChange?.(scale)
     onZoomChange?.(zoom);
   }
 
