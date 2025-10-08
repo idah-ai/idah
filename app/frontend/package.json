@@ -4,7 +4,7 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "dev": "vite dev",
+    "dev": "npm run watch:idah-video & vite dev",
     "watch:idah-video": "vite build --config vite.config.idah-video.js --watch",
     "build:idah-video": "vite build --config vite.config.idah-video.js",
     "build": "vite build",
