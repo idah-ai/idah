@@ -28,19 +28,25 @@ module Project
       id = projects.create(attr)
       created_project = projects.find!(id)
 
-      # # add the current user as project member automatically ?
-      # project_member_service.create(
-      #   {
-      #     # TODO: review project member attrs
-      #     project_id: record.project_id,
-      #     account_id: auth_context.metadata[:id] || nil,
-      #     name: record.name,
-      #     email: record.email,
-      #     invited_by_id: auth_context.metadata[:id] || nil,
-      #   }
-      # )
+      # add the current user as project member automatically ?
+      project_member_service.create(
+        Verse::JsonApi::Struct.new(
+          {
+            type: ProjectMember::Repository.resource,
+            # id: updated_attributes[:query_id],
+            attributes: {
+              # TODO: review project member attrs
+              project_id: created_project.id,
+              account_id: auth_context.metadata[:id] || created_project.created_by_id,
+              name: auth_context.metadata[:name] || nil,
+              email: auth_context.metadata[:email] || "",
+              invited_by_id: auth_context.metadata[:id] || created_project.created_by_id,
+            },
+          }
+        )
+      )
 
-      # created_project
+      created_project
     end
 
     def update(record)

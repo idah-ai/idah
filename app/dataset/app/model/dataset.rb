@@ -44,7 +44,6 @@ module Dataset
         # scope: datasets that are in the same project as the user
         scope.same_project? do
           project_id = auth_context.metadata[:project_id] || ""
-          binding.pry
           # project_ids = table.where(account_id: account_id).select(:project_id).distinct
           table.where(project_id: )
         end
