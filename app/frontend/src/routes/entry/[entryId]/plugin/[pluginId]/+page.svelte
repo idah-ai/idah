@@ -16,7 +16,7 @@
   // Functions
   async function loadContext(): Promise<IActivityContext> {
     const entryRes = await entriesBackendDataSource.get(entryId, {
-      included: ["dataset"],
+      included: ["dataset.project"],
     });
 
     const context = activityContextForEntry(entryRes.data);
