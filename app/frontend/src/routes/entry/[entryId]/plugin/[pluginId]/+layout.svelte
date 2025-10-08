@@ -13,7 +13,7 @@
 </script>
 
 <svelte:head>
-  <link rel="stylesheet" href="/build/plugins/frontend.css">
+  <link rel="stylesheet" href="/build/plugins/{pluginId}.css">
   <script src="/build/plugins/{pluginId}.umd.js">
   </script>
 </svelte:head>
