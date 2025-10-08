@@ -11,7 +11,6 @@
 
   // Variables
   let entryId: string = page.params.entryId as string;
-  let pluginId: string = page.params.pluginId as string;
 
   // Functions
   async function loadContext(): Promise<IActivityContext> {

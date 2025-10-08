@@ -6,10 +6,6 @@
   let { children } = $props();
 
   let pluginId: string = page.params.pluginId as string;
-
-  let mounted = $state(false);
-
-  onMount(() => mounted = true)
 </script>
 
 <svelte:head>
