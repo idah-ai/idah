@@ -12,6 +12,8 @@ module ProjectMember
     field :name, type: [String, NilClass]
     field :email, type: String
 
+    field :permission_set, type: String
+
     field :invited_by_id, type: Integer, readonly: true
 
     field :created_at, type: Time, readonly: true

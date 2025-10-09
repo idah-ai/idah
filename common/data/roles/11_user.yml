@@ -9,31 +9,38 @@ user:
     # default user; owner
     - "dataset:projects.create.*"
     - "dataset:projects.read.own"
+    - "dataset:projects.read.member"
     - "dataset:projects.update.own"
+    - "dataset:projects.delete.own"
     # - "dataset:project_members.create.own"
     - "dataset:project_members.read.same_project"
     - "dataset:project_members.delete.own"
 
     # annotator
-    - "dataset:projects.read.member"
-
-    # reviewer
-
-    - "dataset:project_members.create.own"
-    - "dataset:project_members.read.same_project"
-    - "dataset:project_members.delete.own"
-
-    - "dataset:datasets.create.*"
+    # - "dataset:projects.read.member"
+    - "dataset:datasets.create.same_project"
     - "dataset:datasets.read.own"
     - "dataset:datasets.read.same_project"
     - "dataset:datasets.update.own"
     - "dataset:datasets.delete.own"
 
-    - "dataset:entries.*.own"
-    - "dataset:entries.read.same_project"
+    # reviewer
 
-    - "dataset:annotations.*.own"
-    - "dataset:annotations.read.same_project"
+    # - "dataset:project_members.create.own"
+    # - "dataset:project_members.read.same_project"
+    # - "dataset:project_members.delete.own"
 
-    - "media:medias.create.*"
-    - "media:medias.read.own"
+    # - "dataset:datasets.create.same_project"
+    # - "dataset:datasets.read.own"
+    # - "dataset:datasets.read.same_project"
+    # - "dataset:datasets.update.own"
+    # - "dataset:datasets.delete.own"
+
+    # - "dataset:entries.*.own"
+    # - "dataset:entries.read.same_project"
+
+    # - "dataset:annotations.*.own"
+    # - "dataset:annotations.read.same_project"
+
+    # - "media:medias.create.*"
+    # - "media:medias.read.own"

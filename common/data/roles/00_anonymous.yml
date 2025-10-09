@@ -4,33 +4,62 @@
 anonymous:
   assignable: false
   rights:
-    - "*.*.*"
+    # - "*.*.*"
+
+    
+
+    ## default user; owner
+    # projects
+    - "dataset:projects.create.*"
+    - "dataset:projects.read.member"
+    - "dataset:projects.read.own"
+    - "dataset:projects.update.own"
+    - "dataset:projects.delete.own"
+    # memberships
+    - "dataset:project_members.create.own"
+    - "dataset:project_members.read.same_project"
+    - "dataset:project_members.delete.own"
+    # datasets
+    - "dataset:datasets.create.own_project"
+    - "dataset:datasets.read.own_project"
+    - "dataset:datasets.read.own"
+    # - "dataset:datasets.update.own"
+    # - "dataset:datasets.delete.own"
+
+
+    # annotator
+    # - "dataset:projects.read.member"
+    # - "dataset:datasets.create.same_project"
+    # - "dataset:datasets.read.own"
+    # - "dataset:datasets.read.same_project"
+    # - "dataset:datasets.update.own"
+    # - "dataset:datasets.delete.own"
 
     # WIP: annotator role
 
-    - "dataset:projects.create.*"
-    - "dataset:projects.read.own" # TODO: revise
-    - "dataset:projects.update.own" # TODO: revise
-    - "dataset:projects.read.member"
+    # - "dataset:projects.create.*"
+    # - "dataset:projects.read.own" # TODO: revise
+    # - "dataset:projects.update.own" # TODO: revise
+    # - "dataset:projects.read.member"
 
-    - "dataset:project_members.create.own" # TODO: revise
-    - "dataset:project_members.read.same_project"
-    - "dataset:project_members.delete.own"
+    # - "dataset:project_members.create.own" # TODO: revise
+    # - "dataset:project_members.read.same_project"
+    # - "dataset:project_members.delete.own"
 
-    - "dataset:datasets.create.*" # TODO: revise
-    - "dataset:datasets.read.own" # TODO: revise
-    - "dataset:datasets.read.same_project" # TODO: revise
-    - "dataset:datasets.update.own" # TODO: revise
-    - "dataset:datasets.delete.own" # TODO: revise
+    # - "dataset:datasets.create.*" # TODO: revise
+    # - "dataset:datasets.read.own" # TODO: revise
+    # - "dataset:datasets.read.same_project" # TODO: revise
+    # - "dataset:datasets.update.own" # TODO: revise
+    # - "dataset:datasets.delete.own" # TODO: revise
 
-    - "dataset:entries.*.own" # TODO: revise
-    - "dataset:entries.read.same_project" # TODO: revise
+    # - "dataset:entries.*.own" # TODO: revise
+    # - "dataset:entries.read.same_project" # TODO: revise
 
-    - "dataset:annotations.*.own" # TODO: revise
-    - "dataset:annotations.read.same_project" # TODO: revise
+    # - "dataset:annotations.*.own" # TODO: revise
+    # - "dataset:annotations.read.same_project" # TODO: revise
 
-    - "media:medias.create.*"
-    - "media:medias.read.own"
+    # - "media:medias.create.*"
+    # - "media:medias.read.own"
 
     # TODO: review scopes
 
