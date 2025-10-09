@@ -3,11 +3,11 @@
   import { toast } from "svelte-sonner";
 
   import FileUpload from "@/components/app/forms/fields/upload/file-upload.svelte";
-  import Spinner from "@/components/app/loading/spinner.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
   import Badge from "@/components/ui/badge/badge.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import DialogClose from "@/components/ui/dialog/dialog-close.svelte";
+  import Spinner from "@/components/ui/spinner/spinner.svelte";
   import Text from "@/components/ui/text/Text.svelte";
 
   import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
@@ -140,7 +140,7 @@
 
           <div class="ml-auto">
             {#if status === "uploading"}
-              <Spinner></Spinner>
+              <Spinner size="sm"></Spinner>
             {:else if status === "success"}
               <Badge>Uploaded</Badge>
             {:else if status === "error"}
@@ -165,14 +165,9 @@
         <Button variant="outline" class="w-full lg:w-auto" onclick={resetForm}>Cancel</Button>
       </DialogClose>
 
-      <Button disabled={disabledUploadButton} onclick={submit}>
-        {#if uploading}
-          <Spinner variant="primary-foreground"></Spinner>
-          Uploading...
-        {:else}
-          Upload
-        {/if}
+      <Button loading={uploading} loadingLabel="Uploading" disabled={disabledUploadButton} onclick={submit}>
+        Upload
       </Button>
-    {:else}{/if}
+    {/if}
   {/snippet}
 </FormModal>

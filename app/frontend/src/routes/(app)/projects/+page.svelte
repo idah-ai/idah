@@ -1,21 +1,21 @@
 <script lang="ts">
-  import Button from "@/components/ui/button/button.svelte";
   import DataTable from "@/components/app/data-table/data-table.svelte";
-  import PageProvider from "@/components/app/page/page-provider.svelte";
   import PageHeader from "@/components/app/page/page-header.svelte";
+  import PageProvider from "@/components/app/page/page-provider.svelte";
   import ProjectFormModal from "@/components/app/projects/overlays/project-form-modal.svelte";
+  import Button from "@/components/ui/button/button.svelte";
   import { PlusIcon } from "@lucide/svelte";
 
   import { projectBreadcrumb } from "@/components/app/page/page-breadcrumb.constants";
   import { projectColumns } from "@/components/app/projects/data-tables/project-columns";
-  import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
+  import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { refetches } from "@/utils/refetch";
 
   import type { PageBreadcrumbItem } from "@/components/app/page/page-breadcrumb.svelte";
+  import type { Record } from "@/data/model/Record";
   import type { CollectionResponse } from "@/data/model/types";
   import type { Hash } from "@/utils/types";
-  import type { Record } from "@/data/model/Record";
 
   // Variables
   let openNewProjectModal: boolean = $state(false);
@@ -44,13 +44,17 @@
   }
 </script>
 
+{#snippet AddNewProjectButton()}
+  <Button onclick={openNewProjectFormModal}>
+    <PlusIcon class="size-4"></PlusIcon>
+    New Project
+  </Button>
+{/snippet}
+
 <PageProvider name="projects" {breadcrumbs}>
   <PageHeader title="Projects">
     {#snippet actions()}
-      <Button onclick={openNewProjectFormModal}>
-        <PlusIcon class="size-4" />
-        New Project
-      </Button>
+      {@render AddNewProjectButton()}
     {/snippet}
   </PageHeader>
 
@@ -68,7 +72,7 @@
       }}
       onNewRecord={openNewProjectFormModal}
       {onLoadSetContexts}
-    />
+    ></DataTable>
   {/key}
 </PageProvider>
 

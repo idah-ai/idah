@@ -2,7 +2,7 @@
   import { getContext } from "svelte";
 
   import { Button } from "@/components/ui/button";
-  import Spinner from "@/components/app/loading/spinner.svelte";
+  import Spinner from "@/components/ui/spinner/spinner.svelte";
   import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
   import Text from "@/components/ui/text/Text.svelte";
 
@@ -10,11 +10,11 @@
   import { humanize } from "@/utils/string";
   import { Trash2Icon } from "@lucide/svelte";
 
-  import Timeline from "./timeline.svelte";
-  import { boundingBoxes } from "../idb_store.svelte";
-  import type { VideoAnnotation } from "../VideoAnnotationContext";
-  import type { AnnotationsIndexedDB } from "../indexedDB";
   import type { IActivityContext } from "@/plugin/interface/Activity";
+  import { boundingBoxes } from "../idb_store.svelte";
+  import type { AnnotationsIndexedDB } from "../indexedDB";
+  import type { VideoAnnotation } from "../VideoAnnotationContext";
+  import Timeline from "./timeline.svelte";
 
   // Props
   let {
@@ -151,7 +151,7 @@
     {@const isLastIndex = index == annotations.length - 1}
     <TableRow
       class={cn("border-b-0", {
-        "bg-primary-foreground border-primary/30 border-t border-b": isSelected,
+        "bg-primary-foreground border-primary/30 border-b border-t": isSelected,
       })}
     >
       <TableCell

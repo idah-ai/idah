@@ -118,7 +118,6 @@
       }
     } catch (error) {
       console.error(error);
-    } finally {
       submitting = false;
     }
   }

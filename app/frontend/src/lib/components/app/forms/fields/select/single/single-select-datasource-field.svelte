@@ -8,10 +8,10 @@
   import FormFieldInfo from "@/components/app/forms/form-field-info.svelte";
   import FormFieldLabel from "@/components/app/forms/form-field-label.svelte";
   import FormField from "@/components/app/forms/form-field.svelte";
-  import Spinner from "@/components/app/loading/spinner.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+  import Spinner from "@/components/ui/spinner/spinner.svelte";
 
   import { cn } from "@/utils";
 
@@ -181,7 +181,7 @@
             <CommandEmpty>No option found.</CommandEmpty>
 
             {#await initialFetchChoices()}
-              <Spinner></Spinner>
+              <Spinner size="sm"></Spinner>
             {:then _}
               {#each choices as choice, index (index)}
                 {#if slotChoice}

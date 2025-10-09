@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
-  import Spinner from "@/components/app/loading/spinner.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import { Dialog } from "@/components/ui/dialog";
   import DialogClose from "@/components/ui/dialog/dialog-close.svelte";
@@ -44,9 +43,9 @@
   function getConfirmButtonProps(): ConfirmButtonProps {
     switch (action) {
       case "create":
-        return { label: `Create ${title}`, loadingLabel: `Creating ${title?.toLocaleLowerCase()}...` };
+        return { label: `Create ${title}`, loadingLabel: `Creating ${title?.toLocaleLowerCase()}` };
       case "update":
-        return { label: `Save Changes`, loadingLabel: `Saving...` };
+        return { label: `Save Changes`, loadingLabel: `Saving` };
     }
   }
 
@@ -113,13 +112,8 @@
           {#if confirm}
             {@render confirm()}
           {:else}
-            <Button class="gap-2" onclick={handleClickConfirm}>
-              {#if loading}
-                <Spinner variant="primary-foreground" size="sm"></Spinner>
-                {confirmButtonProps.loadingLabel}
-              {:else}
-                {confirmButtonProps.label}
-              {/if}
+            <Button {loading} loadingLabel={confirmButtonProps.loadingLabel} onclick={handleClickConfirm}>
+              {confirmButtonProps.label}
             </Button>
           {/if}
         </div>

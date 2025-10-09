@@ -1,7 +1,9 @@
 <script lang="ts" module>
-  import { Loader2Icon } from "@lucide/svelte";
-  import { cn } from "@/utils";
+  import { LoaderCircleIcon } from "@lucide/svelte";
+  import type { ComponentProps } from "svelte";
   import { tv, type VariantProps } from "tailwind-variants";
+
+  import { cn } from "@/utils";
 
   export const spinnerVariants = tv({
     base: "animate-spin",
@@ -27,14 +29,19 @@
   export type SpinnerVariant = VariantProps<typeof spinnerVariants>["variant"];
   export type SpinnerSize = VariantProps<typeof spinnerVariants>["size"];
 
-  export type SpinnerProps = {
+  export type SpinnerProps = ComponentProps<typeof LoaderCircleIcon> & {
     variant?: SpinnerVariant;
     size?: SpinnerSize;
   };
 </script>
 
 <script lang="ts">
-  let { size = "default", variant = "default" }: SpinnerProps = $props();
+  let { class: className, size = "default", variant = "default", ...restProps }: SpinnerProps = $props();
 </script>
 
-<Loader2Icon class={cn(spinnerVariants({ size, variant }))} />
+<LoaderCircleIcon
+  role="status"
+  aria-label="Loading"
+  class={cn(spinnerVariants({ size, variant }), className)}
+  {...restProps}
+></LoaderCircleIcon>

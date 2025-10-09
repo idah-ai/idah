@@ -1,7 +1,10 @@
 <script lang="ts" module>
-  import { cn, type WithElementRef } from "$lib/utils.js";
   import type { HTMLAnchorAttributes, HTMLButtonAttributes } from "svelte/elements";
-  import { type VariantProps, tv } from "tailwind-variants";
+  import { tv, type VariantProps } from "tailwind-variants";
+
+  import Spinner from "@/components/ui/spinner/spinner.svelte";
+
+  import { cn, type WithElementRef } from "$lib/utils.js";
 
   export const buttonVariants = tv({
     base: "focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium outline-none transition-all focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0 cursor-pointer",
@@ -36,6 +39,8 @@
     WithElementRef<HTMLAnchorAttributes> & {
       variant?: ButtonVariant;
       size?: ButtonSize;
+      loading?: boolean;
+      loadingLabel?: string;
     };
 </script>
 
@@ -49,6 +54,8 @@
     type = "button",
     disabled,
     children,
+    loading,
+    loadingLabel = "Loading",
     ...restProps
   }: ButtonProps = $props();
 </script>
@@ -59,12 +66,17 @@
     data-slot="button"
     class={cn(buttonVariants({ variant, size }), className)}
     href={disabled ? undefined : href}
-    aria-disabled={disabled}
+    aria-disabled={disabled || loading}
     role={disabled ? "link" : undefined}
     tabindex={disabled ? -1 : undefined}
     {...restProps}
   >
-    {@render children?.()}
+    {#if loading}
+      <Spinner size="sm" variant={variant === "default" ? "primary-foreground" : "default"}></Spinner>
+      {loadingLabel}
+    {:else}
+      {@render children?.()}
+    {/if}
   </a>
 {:else}
   <button
@@ -72,9 +84,14 @@
     data-slot="button"
     class={cn(buttonVariants({ variant, size }), className)}
     {type}
-    {disabled}
+    disabled={disabled || loading}
     {...restProps}
   >
-    {@render children?.()}
+    {#if loading}
+      <Spinner size="sm" variant={variant === "default" ? "primary-foreground" : "default"}></Spinner>
+      {loadingLabel}
+    {:else}
+      {@render children?.()}
+    {/if}
   </button>
 {/if}
