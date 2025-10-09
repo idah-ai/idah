@@ -1,24 +1,4 @@
 <script lang="ts" module>
-  import Badge from "@/components/ui/badge/badge.svelte";
-  import Button from "@/components/ui/button/button.svelte";
-  import { Command, CommandGroup } from "@/components/ui/command";
-  import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuGroup,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-  } from "@/components/ui/dropdown-menu";
-  import HoverCards from "@/components/app/hover-cards/hover-cards.svelte";
-  import InputField from "@/components/app/forms/fields/input/input-field.svelte";
-  import Kbd from "@/components/app/texts/kbd.svelte";
-  import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-  import SingleSelectField from "@/components/app/forms/fields/select/single/single-select-field.svelte";
-  import Text from "@/components/ui/text/Text.svelte";
-  import Tooltips from "@/components/app/tooltips/tooltips.svelte";
-
-  import { cn } from "@/utils";
-
   import {
     CheckIcon,
     EllipsisVerticalIcon,
@@ -29,8 +9,28 @@
     Trash2Icon,
   } from "@lucide/svelte";
 
+  import InputField from "@/components/app/forms/fields/input/input-field.svelte";
+  import SingleSelectField from "@/components/app/forms/fields/select/single/single-select-field.svelte";
+  import HoverCards from "@/components/app/hover-cards/hover-cards.svelte";
+  import Tooltips from "@/components/app/tooltips/tooltips.svelte";
+  import Badge from "@/components/ui/badge/badge.svelte";
+  import Button from "@/components/ui/button/button.svelte";
+  import { Command, CommandGroup } from "@/components/ui/command";
+  import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+  } from "@/components/ui/dropdown-menu";
+  import { Kbd } from "@/components/ui/kbd";
+  import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+  import Text from "@/components/ui/text/Text.svelte";
+
+  import { cn } from "@/utils";
+
   import type { TreeItem } from "@/data/model/dataset/dataset-record";
-  import { labelColors, fieldTypes, type CategoryField, type LabelingConfiguration } from "@/data/model/dataset/labels";
+  import { fieldTypes, labelColors, type CategoryField, type LabelingConfiguration } from "@/data/model/dataset/labels";
 
   interface TreeNodeProps {
     labelConfig: LabelingConfiguration;
@@ -60,7 +60,7 @@
 
   <div id={node.id} class={cn("flex items-center gap-2")} style:margin-left={`${(level - 1) * 3}rem`}>
     <!-- TREE::NODE -->
-    <div class="border-border flex w-full items-center gap-2 rounded-lg border py-1 pr-2 pl-4">
+    <div class="border-border flex w-full items-center gap-2 rounded-lg border py-1 pl-4 pr-2">
       {#if isLastNode}
         <Popover>
           <PopoverTrigger>
