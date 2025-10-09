@@ -73,6 +73,8 @@
   let videoController: VideoController;
 
   let annotationsIDB: AnnotationsIndexedDB | undefined = $state();
+  let isPlaying = $state(false)
+  let volume = $state({level: 0, mute: false})
 
   let commandOpen = $state(false);
   registerVisualModeShortcuts({
@@ -682,11 +684,13 @@
               onResize={() => {
                 videoResizedAt = new Date();
               }}
-              onFramesChange={(current, total) => {
+              onFramesChange={(current, total, playing) => {
                 currentFrame = current;
                 totalFrames = total;
+                isPlaying = playing
+                // console.debug({onFramesChange: {current, total, playing}})
               }}
-              onVolumeChange={() => {}}
+              onVolumeChange={(level, muted) => volume = {level, muted} }
             />
           </SvgOverlay>
         </SidebarInset>
@@ -699,10 +703,12 @@
           <AnnotationFooterToolbar>
             <VideoController
               bind:this={videoController}
+              {isPlaying}
               {zoom}
               {scale}
               {currentFrame}
               {totalFrames}
+              {volume}
               bind:video={player}
               onZoomChange={(z) => timelineTable.setZoom(z)}
               onScaleChange={(s) => timelineTable.setScale(s)}
