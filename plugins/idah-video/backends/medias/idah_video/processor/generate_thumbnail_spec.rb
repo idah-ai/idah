@@ -2,14 +2,14 @@
 
 require "spec_helper"
 
-RSpec.describe Video::GenerateThumbnail do
+RSpec.describe IdahVideo::Processor::GenerateThumbnail do
   let(:file_path) {
     "spec_data/sample.mp4"
   }
 
   describe ".generate" do
     it "runs without errors" do
-      video_info = Video::VideoInfo.from_file(file_path)
+      video_info = IdahVideo::Processor::VideoInfo.from_file(file_path)
       described_class.call(file_path, video_info) do |output|
         expect(output).to be_a(String)
 
