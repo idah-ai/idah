@@ -291,7 +291,9 @@
             ...
           {:then anns}
             {#each anns.filter((annotation) => currentFrame >= annotation.shape.start && currentFrame <= annotation.shape.end && annotation.shape.type == type) as annotation, i}
-              {@render annotationSelection(annotation, `${category.name}_${i}`, category.id)}
+              {#key annotation}
+                {@render annotationSelection(annotation, `${category.name}_${i}`, category.id)}
+              {/key}
             {/each}
           {/await}
         {/if}
@@ -299,11 +301,13 @@
 
       {#if subCategories}
         {#each subCategories as subCategory}
-          {@render categorySelection(subCategory, subCategory.nestedCategories, onSelect, selected, [
-            ...parent,
-            category.id.split("/").slice(parent.length)[0],
-          ])}
-          <!-- pass managed open state for children -->
+          {#key subCategory}
+            {@render categorySelection(subCategory, subCategory.nestedCategories, onSelect, selected, [
+              ...parent,
+              category.id.split("/").slice(parent.length)[0],
+            ])}
+            <!-- pass managed open state for children -->
+           {/key}
         {/each}
       {/if}
     </CollapsibleContent>
@@ -330,9 +334,11 @@
         <SelectContent>
           <SelectGroup>
             {#each categories as category}
-              <SelectItem value={category.id} label={category.label}>
-                {category.label}
-              </SelectItem>
+              {#key category}
+                <SelectItem value={category.id} label={category.label}>
+                  {category.label}
+                </SelectItem>
+              {/key}
             {/each}
           </SelectGroup>
         </SelectContent>
@@ -359,7 +365,9 @@
     </div>
 
     {#each categoriesTree as category}
-      {@render categorySelection(category, category.nestedCategories, onSelect, selected_category)}
+      {#key category}
+        {@render categorySelection(category, category.nestedCategories, onSelect, selected_category)}
+      {/key}
     {/each}
   {/if}
 </div>
