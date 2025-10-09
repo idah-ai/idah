@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onDestroy, onMount, type Snippet } from "svelte";
+  import { type Snippet } from "svelte";
   import {
     HEIGHT,
     ORIGIN,
@@ -195,13 +195,14 @@
   >
     {#if width && height}
       <!-- prevent display issue on load for now -->
-      <line x1={0} y1={target_line[Y]} x2={width} y2={target_line[Y]} stroke={"#2b7fff"} />
-      <line x1={target_line[X]} y1={0} x2={target_line[X]} y2={height} stroke={"#2b7fff"} />
+      <line x1={0} y1={target_line[Y]} x2={width} y2={target_line[Y]} stroke=#2b7fff />
+      <line x1={target_line[X]} y1={0} x2={target_line[X]} y2={height} stroke=#2b7fff />
     {/if}
 
     <!-- draw annotation context -->
     {#await annotations_promise}
       {#each $boundingBoxes as annotation}
+      {#key annotation}
         {#if annotation.metadata.id != selected?.metadata.id}
           {#if annotation.shape.type == "video:bounding_box"}
             <BoundingBox
@@ -218,25 +219,28 @@
             />, frame
           {/if}
         {/if}
+        {/key}
       {/each}
     {:then annotations}
       {#each annotations as annotation}
-        {#if annotation.metadata.id != selected?.metadata.id}
-          {#if annotation.shape.type == "video:bounding_box"}
-            <BoundingBox
-              points={currentShape(annotation.shape, frame) || []}
-              ratio={target_size}
-              offset={zoomInfo.offset}
-              color={annotation.value.attributes?.data.color || "grey"}
-              onmousedown={(e) => {
-                if (mode == "visual" || selected) {
-                  e.stopPropagation();
-                  onSelectAnnotation(annotation);
-                }
-              }}
-            />
+        {#key annotation}
+          {#if annotation.metadata.id != selected?.metadata.id}
+            {#if annotation.shape.type == "video:bounding_box"}
+              <BoundingBox
+                points={currentShape(annotation.shape, frame) || []}
+                ratio={target_size}
+                offset={zoomInfo.offset}
+                color={annotation.value.attributes?.data.color || "grey"}
+                onmousedown={(e) => {
+                  if (mode == "visual" || selected) {
+                    e.stopPropagation();
+                    onSelectAnnotation(annotation);
+                  }
+                }}
+              />
+            {/if}
           {/if}
-        {/if}
+        {/key}
       {/each}
     {/await}
 
@@ -251,9 +255,6 @@
       onChange={(bb) => {
         onSelection("video:bounding_box", frame, bb, selected?.metadata.id);
         points = bb;
-      }}
-      onmousedown={(e) => {
-        console.error("clicked anyway");
       }}
     />
   </svg>

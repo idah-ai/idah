@@ -54,7 +54,7 @@
     }
   }
 
-  export function source(src?: any) {
+  export function source(src?: string) {
     return player?.src(src);
   }
 
@@ -92,7 +92,7 @@
   }
 
   function setUpPlayer() {
-    player = videojs(element, options, (player:Player) => {});
+    player = videojs(element, options);
     volume = (player.volume() || 0) * 100;
     quality_check("onMount");
 
