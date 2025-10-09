@@ -62,11 +62,6 @@
 
   let currentSpeed: number = $state(1);
 
-  // Functions
-  function setVolume(volumeToSet: number): void {
-    video.setVolume(volumeToSet);
-  }
-
   const seekToFrame: ChangeEventHandler<HTMLInputElement> = (event) => {
     const target = event.target as HTMLInputElement;
     const { value } = target;
