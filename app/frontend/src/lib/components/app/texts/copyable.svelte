@@ -1,11 +1,11 @@
 <script lang="ts">
+  import { CopyIcon, SquareCheckBigIcon } from "@lucide/svelte";
+  import type { Snippet } from "svelte";
+
   import Text from "@/components/ui/text/Text.svelte";
   import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
   import { truncate } from "@/utils/string";
-  import { CopyIcon, SquareCheckBigIcon } from "@lucide/svelte";
-
-  import type { Snippet } from "svelte";
 
   // Props
   interface Props {
@@ -48,9 +48,9 @@
           onclick={copyEmailToClipboard}
         >
           {#if copied}
-            <SquareCheckBigIcon class="text-primary size-4" />
+            <SquareCheckBigIcon class="text-primary size-4"></SquareCheckBigIcon>
           {:else}
-            <CopyIcon class="text-primary size-4" />
+            <CopyIcon class="text-primary size-4"></CopyIcon>
           {/if}
         </button>
       </TooltipTrigger>
