@@ -16,7 +16,7 @@
 
 <Label
   class={cn(
-    "font-medium leading-none",
+    "leading-none font-medium",
     {
       "text-muted-foreground": !required,
     },
