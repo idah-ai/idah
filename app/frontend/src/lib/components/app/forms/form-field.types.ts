@@ -1,7 +1,8 @@
 import type { Snippet } from "svelte";
-import type { LabelValue } from "@/utils/types";
+
 import type { DataSource, ListOptions } from "@/data/DataSource";
 import type { Record } from "@/data/model/Record";
+import type { LabelValue } from "@/utils/types";
 
 export interface FormFieldBaseProps {
   name: string;

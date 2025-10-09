@@ -1,8 +1,8 @@
 <script lang="ts">
-  import Button from "@/components/ui/button/button.svelte";
-  import Tooltips from "@/components/app/tooltips/tooltips.svelte";
-
   import { Trash2Icon } from "@lucide/svelte";
+
+  import Tooltips from "@/components/app/tooltips/tooltips.svelte";
+  import Button from "@/components/ui/button/button.svelte";
 
   // Props
   interface Props {
