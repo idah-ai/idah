@@ -3,11 +3,10 @@
 
   import { AccountRecord } from "@/data/model/iam/accounts/record";
 
-  import type { DataTableCellBaseProps } from "@/components/app/data-table/data-table.types";
+  import type { DataTableCellBaseProps } from "@/components/app/datasource-table/types";
 
   // Props
-  interface Props extends DataTableCellBaseProps<AccountRecord> {}
-  let { record: account }: Props = $props();
+  let { record: account }: DataTableCellBaseProps<AccountRecord> = $props();
 </script>
 
 <Badge variant={account.enabled ? "default" : "destructive"}>

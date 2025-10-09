@@ -1,8 +1,8 @@
 <script lang="ts">
   import { page } from "$app/state";
 
+  import Spinner from "@/components/ui/spinner/spinner.svelte";
   import IdahPlugin from "@/plugin/IdahPlugin.svelte";
-  import Spinner from "@/components/app/loading/spinner.svelte";
 
   import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
   import { activityContextForEntry } from "@/plugin/ActivityContext";

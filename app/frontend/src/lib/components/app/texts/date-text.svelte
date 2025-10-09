@@ -1,7 +1,9 @@
 <script lang="ts">
   import { format, formatDistanceToNow, isAfter } from "date-fns";
+
   import Text from "@/components/ui/text/Text.svelte";
   import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
   import type { TextProps, TextSize } from "@/components/ui/text/Text.svelte";
 
   // Props

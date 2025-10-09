@@ -1,11 +1,11 @@
 import { writable } from "svelte/store";
 
 interface Refetch {
-  list: number;
-  get: number;
+  list: Date;
+  get: Date;
 }
 
-interface Refetches {
+export interface Refetches {
   /** IAM */
   accounts: Refetch;
 
@@ -16,28 +16,30 @@ interface Refetches {
   entries: Refetch;
 }
 
+export type RefetchesKey = keyof Refetches;
+
 export const refetches = writable<Refetches>({
   /** IAM */
   accounts: {
-    list: 0,
-    get: 0,
+    list: new Date(),
+    get: new Date(),
   },
 
   /** DATASET */
   projects: {
-    list: 0,
-    get: 0,
+    list: new Date(),
+    get: new Date(),
   },
   projectMembers: {
-    list: 0,
-    get: 0,
+    list: new Date(),
+    get: new Date(),
   },
   datasets: {
-    list: 0,
-    get: 0,
+    list: new Date(),
+    get: new Date(),
   },
   entries: {
-    list: 0,
-    get: 0,
+    list: new Date(),
+    get: new Date(),
   },
 });

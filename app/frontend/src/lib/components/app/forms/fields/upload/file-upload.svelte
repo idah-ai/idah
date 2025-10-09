@@ -1,10 +1,11 @@
 <script lang="ts">
+  import type { ChangeEventHandler } from "svelte/elements";
+
   import Text from "@/components/ui/text/Text.svelte";
 
   import { cn } from "@/utils";
 
   import type { FileUploadBaseProps } from "@/components/app/forms/fields/upload/file-upload.types";
-  import type { ChangeEventHandler } from "svelte/elements";
 
   // Props
   let {
