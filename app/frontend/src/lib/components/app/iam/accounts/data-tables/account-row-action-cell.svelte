@@ -10,7 +10,7 @@
   import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
   import { refetches } from "@/utils/refetch";
 
-  import type { DataTableCellBaseProps } from "@/components/app/data-table/data-table.types";
+  import type { DataTableCellBaseProps } from "@/components/app/datasource-table/types";
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
 
   // Props
@@ -55,7 +55,7 @@
 
   async function removeAccount(): Promise<void> {
     await accountsBackendDataSource.delete(account.id);
-    $refetches.accounts.list++;
+    $refetches.accounts.list = new Date();
     openConfirmDeleteAccountModal = false;
     toast.success(`${account.email} is removed!`);
   }

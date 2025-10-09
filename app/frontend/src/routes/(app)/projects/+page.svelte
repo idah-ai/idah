@@ -1,5 +1,5 @@
 <script lang="ts">
-  import DataTable from "@/components/app/data-table/data-table.svelte";
+  import DatasourceTable from "@/components/app/datasource-table/datasource-table.svelte";
   import PageHeader from "@/components/app/page/page-header.svelte";
   import PageProvider from "@/components/app/page/page-provider.svelte";
   import ProjectFormModal from "@/components/app/projects/overlays/project-form-modal.svelte";
@@ -7,7 +7,7 @@
   import { PlusIcon } from "@lucide/svelte";
 
   import { projectBreadcrumb } from "@/components/app/page/page-breadcrumb.constants";
-  import { projectColumns } from "@/components/app/projects/data-tables/project-columns";
+  import { projectColumns } from "@/components/app/projects/datasource-tables/project-columns";
   import { datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { refetches } from "@/utils/refetch";
@@ -59,9 +59,10 @@
   </PageHeader>
 
   {#key $refetches.projects.list}
-    <DataTable
+    <DatasourceTable
       id="projects"
       name="project"
+      refetchKey="projects"
       columns={projectColumns}
       dataSource={projectsBackendDataSource}
       listOptions={{
@@ -70,9 +71,12 @@
         },
         sort: ["-created_at"],
       }}
-      onNewRecord={openNewProjectFormModal}
       {onLoadSetContexts}
-    ></DataTable>
+    >
+      {#snippet addNewRecordButton()}
+        {@render AddNewProjectButton()}
+      {/snippet}
+    </DatasourceTable>
   {/key}
 </PageProvider>
 

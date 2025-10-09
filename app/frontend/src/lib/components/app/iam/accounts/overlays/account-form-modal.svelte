@@ -74,7 +74,7 @@
         },
       });
 
-      $refetches.accounts.list++;
+      $refetches.accounts.list = new Date();
       closeThisModal();
       toast.success("Account created successfully");
     } catch (error) {
@@ -94,7 +94,7 @@
         },
       });
 
-      $refetches.accounts.list++;
+      $refetches.accounts.list = new Date();
       closeThisModal();
       toast.success("Account updated successfully");
     } catch (error) {

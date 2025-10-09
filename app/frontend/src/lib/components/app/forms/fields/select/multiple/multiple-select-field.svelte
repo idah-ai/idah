@@ -12,8 +12,8 @@
 
   import { cn } from "@/utils";
 
-  import type { LabelValue } from "@/components/app/component.types";
   import type { SelectFieldBaseProps } from "@/components/app/forms/form-field.types";
+  import type { LabelValue } from "@/components/app/types";
 
   // Props
   interface Props extends SelectFieldBaseProps {

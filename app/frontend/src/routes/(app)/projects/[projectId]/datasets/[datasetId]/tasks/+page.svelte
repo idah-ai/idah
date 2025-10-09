@@ -43,7 +43,7 @@
     ColumnSettings,
     FilterDataSourceParams,
     SortDataSourceParams,
-  } from "@/components/app/data-table/data-table.types";
+  } from "@/components/app/datasource-table/types";
   import type { ListOptions } from "@/data/DataSource";
   import type { CollectionResponse } from "@/data/model/types";
 
@@ -206,7 +206,7 @@
     toast.success(`${selectedRowsCount} Task(s) successfully deleted.`);
 
     selectedRows = [];
-    $refetches.entries.list++;
+    $refetches.entries.list = new Date();
     openConfirmDeleteTasksModal = false;
   }
 

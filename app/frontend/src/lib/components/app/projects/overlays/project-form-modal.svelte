@@ -63,7 +63,7 @@
 
     goto(resolve(`/projects/${createdProjectRes.data.id}/datasets`));
 
-    $refetches.projects.list++;
+    $refetches.projects.list = new Date();
     open = false;
   }
 
@@ -75,8 +75,8 @@
       },
     });
 
-    $refetches.projects.list++;
-    $refetches.projects.get++;
+    $refetches.projects.list = new Date();
+    $refetches.projects.get = new Date();
     open = false;
   }
 

@@ -41,7 +41,7 @@
     }
 
     toast.success(`${selectedEntryCount} tasks has been set priority successfully!`);
-    $refetches.entries.list++;
+    $refetches.entries.list = new Date();
     open = false;
   }
 

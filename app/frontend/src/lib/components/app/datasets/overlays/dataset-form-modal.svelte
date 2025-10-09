@@ -79,7 +79,7 @@
 
     goto(resolve(`/projects/${projectId}/datasets/${createdDatasetRes.data.id}/tasks`));
 
-    $refetches.datasets.list++;
+    $refetches.datasets.list = new Date();
     open = false;
   }
 
@@ -91,7 +91,7 @@
       },
     });
 
-    $refetches.datasets.list++;
+    $refetches.datasets.list = new Date();
     open = false;
   }
 

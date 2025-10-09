@@ -38,7 +38,7 @@
     }
 
     toast.success("Member assigned successfully");
-    $refetches.entries.list++;
+    $refetches.entries.list = new Date();
     open = false;
   }
 

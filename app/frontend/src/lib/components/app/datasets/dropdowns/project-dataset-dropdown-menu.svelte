@@ -62,7 +62,7 @@
   async function deleteDataset(): Promise<void> {
     await datasetsBackendDataSource.delete(datasetId);
     goto(resolve(`/projects/${projectId}/datasets`));
-    $refetches.datasets.list++;
+    $refetches.datasets.list = new Date();
     openConfirmDeleteDatasetModal = false;
   }
 </script>
