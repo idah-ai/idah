@@ -1,13 +1,14 @@
 <script lang="ts">
-  import AccountFormModal from "@/components/app/iam/accounts/overlays/account-form-modal.svelte";
-  import Button from "@/components/ui/button/button.svelte";
+  import { PlusIcon } from "@lucide/svelte";
+
   import DataTable from "@/components/app/data-table/data-table.svelte";
+  import AccountFormModal from "@/components/app/iam/accounts/overlays/account-form-modal.svelte";
   import PageHeader from "@/components/app/page/page-header.svelte";
   import PageProvider from "@/components/app/page/page-provider.svelte";
+  import Button from "@/components/ui/button/button.svelte";
 
-  import { accountBreadcrumb } from "@/components/app/page/page-breadcrumb.constants";
   import { accountColumns } from "@/components/app/iam/accounts/data-tables/account-columns";
-  import { PlusIcon } from "@lucide/svelte";
+  import { accountBreadcrumb } from "@/components/app/page/page-breadcrumb.constants";
   import { refetches } from "@/utils/refetch";
 
   import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
@@ -28,7 +29,7 @@
   <PageHeader title="Accounts">
     {#snippet actions()}
       <Button onclick={openNewAccountModal}>
-        <PlusIcon class="size-4" />
+        <PlusIcon class="size-4"></PlusIcon>
         New Account
       </Button>
     {/snippet}

@@ -1,22 +1,17 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-
-  import Button from "@/components/ui/button/button.svelte";
-  import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
-  import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuGroup,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-  } from "@/components/ui/dropdown-menu";
-  import ProjectFormModal from "@/components/app/projects/overlays/project-form-modal.svelte";
-
+  import { resolve } from "$app/paths";
   import { EllipsisVerticalIcon, SquarePenIcon, Trash2Icon } from "@lucide/svelte";
+
+  import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
+  import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
+  import ProjectFormModal from "@/components/app/projects/overlays/project-form-modal.svelte";
+  import Button from "@/components/ui/button/button.svelte";
+
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { refetches } from "@/utils/refetch";
 
-  import type { DropdownMenuItemBaseProps } from "@/components/app/dropdown-menus/dropdown-menu.types";
+  import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
 
   // Props
   interface Props {
@@ -25,24 +20,28 @@
   let { projectId }: Props = $props();
 
   // Variables
-  const menus: DropdownMenuItemBaseProps[] = [
-    {
-      label: "Edit",
-      icon: SquarePenIcon,
-      action: async () => {
-        const projectRes = await fetchProject();
-        projectRecord = projectRes.data;
-        openEditProjectFormModal = true;
-      },
+  const menus: IDropdownMenus = {
+    actions: {
+      items: [
+        {
+          label: "Edit",
+          icon: SquarePenIcon,
+          action: async () => {
+            const projectRes = await fetchProject();
+            projectRecord = projectRes.data;
+            openEditProjectFormModal = true;
+          },
+        },
+        {
+          label: "Delete",
+          icon: Trash2Icon,
+          action: () => {
+            openConfirmDeleteProjectModal = true;
+          },
+        },
+      ],
     },
-    {
-      label: "Delete",
-      icon: Trash2Icon,
-      action: () => {
-        openConfirmDeleteProjectModal = true;
-      },
-    },
-  ];
+  };
 
   let projectRecord: ProjectRecord | undefined = $state(undefined);
   let openEditProjectFormModal: boolean = $state(false);
@@ -60,32 +59,19 @@
 
   async function deleteProject(): Promise<void> {
     await projectsBackendDataSource.delete(projectId);
-    goto("/projects");
+    goto(resolve("/projects"));
     $refetches.projects.list++;
     openConfirmDeleteProjectModal = false;
   }
 </script>
 
-<DropdownMenu>
-  <DropdownMenuTrigger>
-    {#snippet child({ props })}
-      <Button variant="ghost" size="icon" {...props}>
-        <EllipsisVerticalIcon class="size-4" />
-      </Button>
-    {/snippet}
-  </DropdownMenuTrigger>
-
-  <DropdownMenuContent align="end">
-    <DropdownMenuGroup>
-      {#each menus as { label, icon: Icon, action }}
-        <DropdownMenuItem onclick={action}>
-          <Icon class="size-4" />
-          {label}
-        </DropdownMenuItem>
-      {/each}
-    </DropdownMenuGroup>
-  </DropdownMenuContent>
-</DropdownMenu>
+<DropdownMenus {menus} align="center">
+  {#snippet trigger({ props })}
+    <Button variant="ghost" size="icon" {...props}>
+      <EllipsisVerticalIcon class="size-4"></EllipsisVerticalIcon>
+    </Button>
+  {/snippet}
+</DropdownMenus>
 
 <ProjectFormModal title="Project" action="update" {projectRecord} bind:open={openEditProjectFormModal} />
 
