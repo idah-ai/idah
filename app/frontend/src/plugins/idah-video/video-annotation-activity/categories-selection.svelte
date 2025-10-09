@@ -5,7 +5,7 @@
   import { cn } from "@/utils";
   import { ChevronRight, CircleSmallIcon, PlusIcon, Trash2Icon } from "@lucide/svelte";
   import { idb_updated_at } from "./idb_store.svelte";
-  import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger } from "@/components/ui/select";
+  import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger } from "@/components/ui/select";
   import { SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
   import Text from "@/components/ui/text/Text.svelte";
 
@@ -290,25 +290,25 @@
           {#await db.getAllIndex("category", category.id)}
             ...
           {:then anns}
-            {#each anns.filter((annotation) => currentFrame >= annotation.shape.start && currentFrame <= annotation.shape.end && annotation.shape.type == type) as annotation, i}
-              {#key annotation}
-                {@render annotationSelection(annotation, `${category.name}_${i}`, category.id)}
-              {/key}
-            {/each}
+            {#key anns}
+              {#each anns.filter((annotation) => currentFrame >= annotation.shape.start && currentFrame <= annotation.shape.end && annotation.shape.type == type) as annotation, i}
+                  {@render annotationSelection(annotation, `${category.name}_${i}`, category.id)}
+              {/each}
+            {/key}
           {/await}
         {/if}
       {/key}
 
       {#if subCategories}
-        {#each subCategories as subCategory}
-          {#key subCategory}
+        {#key subCategories}
+          {#each subCategories as subCategory}
             {@render categorySelection(subCategory, subCategory.nestedCategories, onSelect, selected, [
               ...parent,
               category.id.split("/").slice(parent.length)[0],
             ])}
             <!-- pass managed open state for children -->
-           {/key}
-        {/each}
+          {/each}
+        {/key}
       {/if}
     </CollapsibleContent>
   </Collapsible>
@@ -333,13 +333,13 @@
         </SelectTrigger>
         <SelectContent>
           <SelectGroup>
-            {#each categories as category}
-              {#key category}
-                <SelectItem value={category.id} label={category.label}>
-                  {category.label}
-                </SelectItem>
-              {/key}
-            {/each}
+            {#key categories}
+              {#each categories as category}
+                  <SelectItem value={category.id} label={category.label}>
+                    {category.label}
+                  </SelectItem>
+              {/each}
+            {/key}
           </SelectGroup>
         </SelectContent>
       </Select>
@@ -364,10 +364,10 @@
       {/key}
     </div>
 
-    {#each categoriesTree as category}
-      {#key category}
-        {@render categorySelection(category, category.nestedCategories, onSelect, selected_category)}
-      {/key}
-    {/each}
-  {/if}
+    {#key categoriesTree}
+      {#each categoriesTree as category}
+          {@render categorySelection(category, category.nestedCategories, onSelect, selected_category)}
+      {/each}
+    {/key}
+{/if}
 </div>

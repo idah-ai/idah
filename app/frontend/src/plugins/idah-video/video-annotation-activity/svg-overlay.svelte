@@ -201,29 +201,29 @@
 
     <!-- draw annotation context -->
     {#await annotations_promise}
-      {#each $boundingBoxes as annotation}
-      {#key annotation}
-        {#if annotation.metadata.id != selected?.metadata.id}
-          {#if annotation.shape.type == "video:bounding_box"}
-            <BoundingBox
-              points={currentShape(annotation.shape, frame) || []}
-              ratio={target_size}
-              offset={zoomInfo.offset}
-              color={annotation.value.attributes?.data.color || "grey"}
-              onmousedown={(e) => {
-                if (mode == "visual" || selected) {
-                  e.stopPropagation();
-                  onSelectAnnotation(annotation);
-                }
-              }}
-            />, frame
+      {#key $boundingBoxes}
+        {#each $boundingBoxes as annotation}
+          {#if annotation.metadata.id != selected?.metadata.id}
+            {#if annotation.shape.type == "video:bounding_box"}
+              <BoundingBox
+                points={currentShape(annotation.shape, frame) || []}
+                ratio={target_size}
+                offset={zoomInfo.offset}
+                color={annotation.value.attributes?.data.color || "grey"}
+                onmousedown={(e) => {
+                  if (mode == "visual" || selected) {
+                    e.stopPropagation();
+                    onSelectAnnotation(annotation);
+                  }
+                }}
+              />, frame
+            {/if}
           {/if}
-        {/if}
-        {/key}
-      {/each}
+        {/each}
+      {/key}
     {:then annotations}
-      {#each annotations as annotation}
-        {#key annotation}
+      {#key annotations}
+        {#each annotations as annotation}
           {#if annotation.metadata.id != selected?.metadata.id}
             {#if annotation.shape.type == "video:bounding_box"}
               <BoundingBox
@@ -240,8 +240,8 @@
               />
             {/if}
           {/if}
-        {/key}
-      {/each}
+        {/each}
+      {/key}
     {/await}
 
     <BoundingBox
