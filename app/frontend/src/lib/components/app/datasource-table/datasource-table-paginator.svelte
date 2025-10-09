@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { ChevronsUpDownIcon } from "@lucide/svelte";
-
   import Button from "@/components/ui/button/button.svelte";
   import {
     DropdownMenu,
@@ -19,6 +17,8 @@
     PaginationPrevButton,
   } from "@/components/ui/pagination";
   import Text from "@/components/ui/text/Text.svelte";
+
+  import { ChevronsUpDownIcon } from "@lucide/svelte";
 
   import type { LabelValue } from "@/components/app/types";
 
@@ -48,16 +48,16 @@
   );
 </script>
 
-<div class="grid w-full grid-cols-1 items-center md:grid-cols-2">
+<div id="datasource-table-paginator-container" class="grid w-full grid-cols-1 items-center md:grid-cols-2">
   <!-- DATA TABLE::ITEMS PER PAGE -->
-  <div class="flex items-center justify-start gap-2">
+  <div id="datasource-table-paginator-items-per-page" class="flex items-center justify-start gap-2">
     <DropdownMenu bind:open={openDropdown}>
       <DropdownMenuTrigger>
         {#snippet child({ props })}
           <Button variant="outline" {...props}>
             {selectedItemsPerPage}
 
-            <ChevronsUpDownIcon class="text-muted-foreground size-4" />
+            <ChevronsUpDownIcon class="text-muted-foreground size-4"></ChevronsUpDownIcon>
           </Button>
         {/snippet}
       </DropdownMenuTrigger>
@@ -83,21 +83,21 @@
   </div>
 
   <!-- DATA TABLE::PAGINATION CONTROLS -->
-  <div class="flex items-center justify-end gap-2">
+  <div id="data-table-paginator-controls" class="flex items-center justify-end gap-2">
     <Pagination class="justify-end" {count} bind:page perPage={Number(itemsPerPage)}>
       {#snippet children({ pages, currentPage })}
         <PaginationContent>
           <!-- PREVIOUS BUTTON -->
           {#if currentPage > 1}
             <PaginationItem>
-              <PaginationPrevButton onclick={() => onPageChange(page)} />
+              <PaginationPrevButton onclick={() => onPageChange(currentPage - 1)}></PaginationPrevButton>
             </PaginationItem>
           {/if}
 
-          {#each pages as page (page.key)}
+          {#each pages as page, index (index)}
             {#if page.type === "ellipsis"}
               <PaginationItem>
-                <PaginationEllipsis />
+                <PaginationEllipsis></PaginationEllipsis>
               </PaginationItem>
             {:else}
               <PaginationItem onclick={() => onPageChange(page.value)}>
@@ -115,7 +115,7 @@
           <!-- NEXT BUTTON -->
           {#if currentPage < Math.ceil(lastPage)}
             <PaginationItem>
-              <PaginationNextButton onclick={() => onPageChange(page)} />
+              <PaginationNextButton onclick={() => onPageChange(currentPage + 1)}></PaginationNextButton>
             </PaginationItem>
           {/if}
         </PaginationContent>

@@ -107,7 +107,7 @@
     }
 
     toast.success("Tasks successfully uploaded!");
-    $refetches.entries.list++;
+    $refetches.entries.list = new Date();
   }
 
   async function submit(): Promise<void> {

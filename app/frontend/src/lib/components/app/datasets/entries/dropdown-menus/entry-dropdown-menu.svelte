@@ -51,7 +51,7 @@
   async function deleteTask() {
     await entriesBackendDataSource.delete(entry.id);
     toast.success("Task successfully deleted!");
-    $refetches.entries.list++;
+    $refetches.entries.list = new Date();
     openConfirmDeleteTaskModal = false;
   }
 </script>

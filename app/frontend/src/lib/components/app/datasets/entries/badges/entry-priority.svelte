@@ -24,7 +24,7 @@
         priority: priorityValue,
       },
     });
-    $refetches.entries.list++;
+    $refetches.entries.list = new Date();
   }
 </script>
 

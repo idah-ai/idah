@@ -31,7 +31,7 @@
     ColumnSettings,
     FilterDataSourceParams,
     SortDataSourceParams,
-  } from "@/components/app/data-table/data-table.types";
+  } from "@/components/app/datasource-table/types";
   import type { Sort } from "@/data/DataSource";
   import type { Filters } from "@/data/filtering";
   import type { Hash } from "@/utils/types";

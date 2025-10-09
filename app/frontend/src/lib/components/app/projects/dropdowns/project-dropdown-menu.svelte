@@ -60,7 +60,7 @@
   async function deleteProject(): Promise<void> {
     await projectsBackendDataSource.delete(projectId);
     goto(resolve("/projects"));
-    $refetches.projects.list++;
+    $refetches.projects.list = new Date();
     openConfirmDeleteProjectModal = false;
   }
 </script>

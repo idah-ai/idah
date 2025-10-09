@@ -80,7 +80,7 @@
         });
       }
 
-      $refetches.projectMembers.list++;
+      $refetches.projectMembers.list = new Date();
       closeThisModal();
       toast.success(`${members.length} member(s) invite sent!`);
     } catch (error) {
