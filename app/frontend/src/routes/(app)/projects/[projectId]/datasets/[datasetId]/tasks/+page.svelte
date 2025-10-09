@@ -228,54 +228,56 @@
 
 <PageHeader title="Datasets">
   {#snippet slotTitle()}
-    <div class="grid w-full gap-4">
+    <div class="flex w-full gap-4">
       <div class="flex w-full flex-col items-center justify-between gap-4 md:flex-row">
-        <div class="flex w-3/4 items-center gap-4">
+        <div class="flex flex-1 items-center gap-4">
           <!-- SELECT ALL -->
           <div class="pl-6">
             <Checkbox checked={selectedRows.length > 0} onCheckedChange={toggleSelectAll}></Checkbox>
           </div>
 
-          {#each Object.entries(entryColumns) as [columnKey, columnSetting] (columnKey)}
-            <FilterSortDropdownMenu
-              contexts={{
-                projectId: page.params.projectId,
-              }}
-              {columnKey}
-              columnSetting={columnSetting as ColumnSettings<EntryRecord>}
-              filters={listOptions.filters || {}}
-              sort={listOptions.sort || []}
-              onFilter={filterEntries}
-              onSort={sortEntries}
-              onHide={() => {}}
-            >
-              {#snippet trigger({ label, sortable, isSorting, isSortingAsc, isSortingDesc, filterable, isFiltering })}
-                <Button
-                  variant={isFiltering || isSorting ? "default" : "outline"}
-                  class={cn(
-                    "data-[state=open]:bg-primary data-[state=open]:text-primary-foreground hover:bg-primary hover:text-primary-foreground my-2 w-full min-w-60 gap-2 font-normal",
-                    isFiltering || isSorting ? "text-primary-foreground" : "text-muted-foreground",
-                  )}
-                >
-                  {#if isFiltering}
-                    <FunnelIcon class="size-4"></FunnelIcon>
-                  {/if}
-
-                  <span class="mr-auto">{label}</span>
-
-                  {#if sortable || filterable}
-                    {#if isSortingAsc}
-                      <ArrowDownAZIcon class="size-4" />
-                    {:else if isSortingDesc}
-                      <ArrowDownZAIcon class="size-4" />
-                    {:else}
-                      <ArrowUpDownIcon class="size-4" />
+          <div class="">
+            {#each Object.entries(entryColumns) as [columnKey, columnSetting] (columnKey)}
+              <FilterSortDropdownMenu
+                contexts={{
+                  projectId: page.params.projectId,
+                }}
+                {columnKey}
+                columnSetting={columnSetting as ColumnSettings<EntryRecord>}
+                filters={listOptions.filters || {}}
+                sort={listOptions.sort || []}
+                onFilter={filterEntries}
+                onSort={sortEntries}
+                onHide={() => {}}
+              >
+                {#snippet trigger({ label, sortable, isSorting, isSortingAsc, isSortingDesc, filterable, isFiltering })}
+                  <Button
+                    variant={isFiltering || isSorting ? "default" : "outline"}
+                    class={cn(
+                      "data-[state=open]:bg-primary data-[state=open]:text-primary-foreground hover:bg-primary hover:text-primary-foreground my-2 w-full min-w-60 gap-2 font-normal",
+                      isFiltering || isSorting ? "text-primary-foreground" : "text-muted-foreground",
+                    )}
+                  >
+                    {#if isFiltering}
+                      <FunnelIcon class="size-4"></FunnelIcon>
                     {/if}
-                  {/if}
-                </Button>
-              {/snippet}
-            </FilterSortDropdownMenu>
-          {/each}
+
+                    <span class="mr-auto">{label}</span>
+
+                    {#if sortable || filterable}
+                      {#if isSortingAsc}
+                        <ArrowDownAZIcon class="size-4" />
+                      {:else if isSortingDesc}
+                        <ArrowDownZAIcon class="size-4" />
+                      {:else}
+                        <ArrowUpDownIcon class="size-4" />
+                      {/if}
+                    {/if}
+                  </Button>
+                {/snippet}
+              </FilterSortDropdownMenu>
+            {/each}
+          </div>
         </div>
 
         <div class="flex items-center gap-2">
@@ -314,7 +316,7 @@
   {#await fetchEntries()}
     <Spinner></Spinner>
   {:then _}
-    <div class="grid grid-cols-1 gap-4">
+    <div class="flex flex-col gap-4">
       {#each response.data as entry (entry.id)}
         <EntryCard {entry} {selectedRows} onRowSelect={selectRow}></EntryCard>
       {:else}
