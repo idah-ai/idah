@@ -45,6 +45,7 @@
   $effect(() => onFramesChange?.(currentFrame, frames, isPlaying));
   $effect(() => onVolumeChange?.(volume, muted) && console.log({volume_changed: {volume, muted}}))
 
+  $effect(() => console.debug({frame: currentFrame, mediaTime}))
   export const getFrames = () => frames;
 
   export function togglePlay() {
@@ -132,7 +133,7 @@
           cancelAnimationFrame(raf);
           raf = undefined;
         }
-        // seekToFrame(currentFrame); // fix seek to last known frame ?
+        mediaTime = player.currentTime()
     });
 
     player.on("volumechange", () => {
