@@ -218,7 +218,7 @@
             />, frame
           {/if}
         {/if}
-      {/key}
+      {/each}
     {:then annotations}
       {#each annotations as annotation (annotation.metadata.id)}
         {#if annotation.metadata.id != selected?.metadata.id}
