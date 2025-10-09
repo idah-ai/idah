@@ -3,5 +3,5 @@
 </script>
 
 <div class="flex min-h-screen items-center justify-center">
-  <Spinner size="xl" />
+  <Spinner size="xl"></Spinner>
 </div>

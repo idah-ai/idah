@@ -1,8 +1,10 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
 
-  import Button from "@/components/ui/button/button.svelte";
+  import DatasetFormModal from "@/components/app/datasets/overlays/dataset-form-modal.svelte";
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
+  import Button from "@/components/ui/button/button.svelte";
   import {
     DropdownMenu,
     DropdownMenuContent,
@@ -10,12 +12,10 @@
     DropdownMenuItem,
     DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu";
-  import DatasetFormModal from "@/components/app/datasets/overlays/dataset-form-modal.svelte";
 
-  import { EllipsisVerticalIcon, SquarePenIcon, Trash2Icon } from "@lucide/svelte";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
-
   import { refetches } from "@/utils/refetch";
+  import { EllipsisVerticalIcon, SquarePenIcon, Trash2Icon } from "@lucide/svelte";
 
   import type { DropdownMenuItemBaseProps } from "@/components/app/dropdown-menus/dropdown-menu.types";
 
@@ -63,7 +63,7 @@
 
   async function deleteDataset(): Promise<void> {
     await datasetsBackendDataSource.delete(datasetId);
-    goto("/projects/ " + projectId + "/datasets");
+    goto(resolve(`/projects/${projectId}/datasets`));
     $refetches.datasets.list++;
     openConfirmDeleteDatasetModal = false;
   }
@@ -80,7 +80,7 @@
 
   <DropdownMenuContent align="end">
     <DropdownMenuGroup>
-      {#each menus as { label, icon: Icon, action }}
+      {#each menus as { label, icon: Icon, action }, index (index)}
         <DropdownMenuItem onclick={action}>
           <Icon class="size-4" />
           {label}

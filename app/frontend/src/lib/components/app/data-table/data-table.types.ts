@@ -2,11 +2,11 @@ import type { Component, Snippet } from "svelte";
 
 import type { LabelValue } from "@/components/app/component.types";
 import type { BackendDataSource } from "@/data/BackendDataSource";
+import type { ListOptions, Pagination, Sort } from "@/data/DataSource";
+import type { Filters } from "@/data/filtering";
+import type { Record } from "@/data/model/Record";
 import type { CollectionResponse } from "@/data/model/types";
 import type { Hash } from "@/utils/types";
-import type { ListOptions, Pagination, Sort } from "@/data/DataSource";
-import type { Record } from "@/data/model/Record";
-import type { Filters } from "@/data/filtering";
 import type { Writable } from "svelte/store";
 
 export type DataTableColumnDataType =

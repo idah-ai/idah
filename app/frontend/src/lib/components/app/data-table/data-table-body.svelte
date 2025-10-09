@@ -1,14 +1,14 @@
 <script lang="ts" generics="T extends Record">
-  import Copyable from "@/components/app/texts/copyable.svelte";
   import DataTableEmpty from "@/components/app/data-table/data-table-empty.svelte";
+  import Copyable from "@/components/app/texts/copyable.svelte";
   import DateText from "@/components/app/texts/date-text.svelte";
   import TableBody from "@/components/ui/table/table-body.svelte";
   import TableCell from "@/components/ui/table/table-cell.svelte";
   import TableRow from "@/components/ui/table/table-row.svelte";
 
+  import { Record } from "@/data/model/Record";
   import { cn } from "@/utils";
 
-  import { Record } from "@/data/model/Record";
   import type { ColumnsSettings, TableData } from "@/components/app/data-table/data-table.types";
 
   // Props
@@ -34,23 +34,24 @@
             })}
           >
             {#if CellComponent}
-              <CellComponent {record} contexts={tableData.contexts} />
+              <CellComponent {record} contexts={tableData.contexts}></CellComponent>
             {:else if dataType === "string"}
               {value}
             {:else if dataType === "number"}
               {Number(value)}
             {:else if dataType === "email"}
               {#if value}
-                <Copyable title="email" value={value as string} />
+                <Copyable title="email" value={value as string}></Copyable>
               {:else}
                 -
               {/if}
             {:else if dataType === "date"}
-              <DateText size="sm" showTooltip datetime={value as Date} datetimeFormat="MMM dd, yyyy" />
+              <DateText size="sm" showTooltip datetime={value as Date} datetimeFormat="MMM dd, yyyy"></DateText>
             {:else if dataType === "datetime"}
-              <DateText size="sm" showTooltip datetime={value as Date} datetimeFormat="MMM dd, yyyy HH:mm:ss" />
+              <DateText size="sm" showTooltip datetime={value as Date} datetimeFormat="MMM dd, yyyy HH:mm:ss"
+              ></DateText>
             {:else if dataType === "time"}
-              <DateText size="sm" showTooltip datetime={value as Date} datetimeFormat="HH:mm:ss" />
+              <DateText size="sm" showTooltip datetime={value as Date} datetimeFormat="HH:mm:ss"></DateText>
             {:else if dataType === "enum"}
               {value}
             {/if}

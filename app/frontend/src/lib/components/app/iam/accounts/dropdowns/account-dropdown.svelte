@@ -1,4 +1,7 @@
 <script lang="ts">
+  import { ChevronsUpDownIcon, CircleUserRoundIcon, LogOutIcon, SettingsIcon, SunMoonIcon } from "@lucide/svelte";
+  import { toggleMode } from "mode-watcher";
+
   import AvatarFallback from "@/components/ui/avatar/avatar-fallback.svelte";
   import AvatarImage from "@/components/ui/avatar/avatar-image.svelte";
   import Avatar from "@/components/ui/avatar/avatar.svelte";
@@ -12,9 +15,6 @@
   import SidebarMenuButton from "@/components/ui/sidebar/sidebar-menu-button.svelte";
 
   import { useSidebar } from "@/components/ui/sidebar";
-  import { toggleMode } from "mode-watcher";
-
-  import { ChevronsUpDownIcon, CircleUserRoundIcon, LogOutIcon, SettingsIcon, SunMoonIcon } from "@lucide/svelte";
 
   // Variables
   const sidebar = useSidebar();
@@ -77,7 +77,7 @@
           <span class="truncate font-medium">Example User</span>
           <span class="truncate text-xs">example@ingedata.ai</span>
         </div>
-        <ChevronsUpDownIcon class="ml-auto size-4" />
+        <ChevronsUpDownIcon class="ml-auto size-4"></ChevronsUpDownIcon>
       </SidebarMenuButton>
     {/snippet}
   </DropdownMenuTrigger>
@@ -97,14 +97,14 @@
 
         {#each items as { label, icon: Icon, action }, index (index)}
           <DropdownMenuItem onclick={action}>
-            <Icon />
+            <Icon></Icon>
             {label}
           </DropdownMenuItem>
         {/each}
       </DropdownMenuGroup>
 
       {#if !isLastgroup}
-        <DropdownMenuSeparator />
+        <DropdownMenuSeparator></DropdownMenuSeparator>
       {/if}
     {/each}
   </DropdownMenuContent>

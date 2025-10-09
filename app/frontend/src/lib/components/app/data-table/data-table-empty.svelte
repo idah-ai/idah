@@ -1,8 +1,8 @@
 <script lang="ts" generics="T extends Record">
   import { getContext, type Snippet } from "svelte";
 
-  import Button from "@/components/ui/button/button.svelte";
   import ResponseBlock from "@/components/app/blocks/response-block.svelte";
+  import Button from "@/components/ui/button/button.svelte";
   import { TableCell, TableRow } from "@/components/ui/table";
 
   import { InboxIcon, PlusIcon, SearchXIcon } from "@lucide/svelte";
@@ -47,7 +47,7 @@
         {#snippet actions()}
           {#if onNewRecord}
             <Button class="capitalize" onclick={onNewRecord}>
-              <PlusIcon class="size-4" />
+              <PlusIcon class="size-4"></PlusIcon>
               Add {dataTableName}
             </Button>
           {/if}

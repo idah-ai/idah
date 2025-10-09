@@ -1,7 +1,8 @@
 <script lang="ts">
+  import { ChevronDownIcon, ChevronRightIcon } from "@lucide/svelte";
+
   import Tooltips from "@/components/app/tooltips/tooltips.svelte";
   import Button from "@/components/ui/button/button.svelte";
-  import { ChevronDownIcon, ChevronRightIcon } from "@lucide/svelte";
 
   // Props
   interface Props {

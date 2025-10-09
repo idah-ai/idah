@@ -57,7 +57,7 @@
           <Button variant="outline" {...props}>
             {selectedItemsPerPage}
 
-            <ChevronsUpDownIcon class="text-muted-foreground size-4" />
+            <ChevronsUpDownIcon class="text-muted-foreground size-4"></ChevronsUpDownIcon>
           </Button>
         {/snippet}
       </DropdownMenuTrigger>
@@ -90,14 +90,14 @@
           <!-- PREVIOUS BUTTON -->
           {#if currentPage > 1}
             <PaginationItem>
-              <PaginationPrevButton onclick={() => onPageChange(currentPage - 1)} />
+              <PaginationPrevButton onclick={() => onPageChange(currentPage - 1)}></PaginationPrevButton>
             </PaginationItem>
           {/if}
 
           {#each pages as page, index (index)}
             {#if page.type === "ellipsis"}
               <PaginationItem>
-                <PaginationEllipsis />
+                <PaginationEllipsis></PaginationEllipsis>
               </PaginationItem>
             {:else}
               <PaginationItem onclick={() => onPageChange(page.value)}>
@@ -115,7 +115,7 @@
           <!-- NEXT BUTTON -->
           {#if currentPage < Math.ceil(lastPage)}
             <PaginationItem>
-              <PaginationNextButton onclick={() => onPageChange(currentPage + 1)} />
+              <PaginationNextButton onclick={() => onPageChange(currentPage + 1)}></PaginationNextButton>
             </PaginationItem>
           {/if}
         </PaginationContent>

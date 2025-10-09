@@ -1,12 +1,12 @@
 <script lang="ts">
+  import { BoltIcon, PlusIcon } from "@lucide/svelte";
   import { getContext } from "svelte";
 
-  import { Button } from "@/components/ui/button";
-  import { Card, CardContent } from "@/components/ui/card";
   import ResponseBlock from "@/components/app/blocks/response-block.svelte";
   import PropertyCard from "@/components/app/datasets/labels/cards/property-card.svelte";
+  import { Button } from "@/components/ui/button";
+  import { Card, CardContent } from "@/components/ui/card";
 
-  import { BoltIcon, PlusIcon } from "@lucide/svelte";
   import { slugify } from "@/utils/string";
 
   import type { LabelingConfiguration, PropertyField } from "@/data/model/dataset/labels";

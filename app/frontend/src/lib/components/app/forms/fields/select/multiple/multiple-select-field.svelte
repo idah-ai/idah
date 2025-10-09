@@ -1,18 +1,19 @@
 <script lang="ts">
-  import Button from "@/components/ui/button/button.svelte";
-  import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-  import FormField from "@/components/app/forms/form-field.svelte";
+  import { CheckIcon, ChevronsUpDownIcon, CircleXIcon } from "@lucide/svelte";
+
   import FormFieldErrors from "@/components/app/forms/form-field-errors.svelte";
   import FormFieldInfo from "@/components/app/forms/form-field-info.svelte";
   import FormFieldLabel from "@/components/app/forms/form-field-label.svelte";
+  import FormField from "@/components/app/forms/form-field.svelte";
+  import Badge from "@/components/ui/badge/badge.svelte";
+  import Button from "@/components/ui/button/button.svelte";
+  import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
   import { cn } from "@/utils";
-  import { CheckIcon, ChevronsUpDownIcon, CircleXIcon, RotateCcwIcon } from "@lucide/svelte";
 
-  import type { SelectFieldBaseProps } from "@/components/app/forms/form-field.types";
   import type { LabelValue } from "@/components/app/component.types";
-  import Badge from "@/components/ui/badge/badge.svelte";
+  import type { SelectFieldBaseProps } from "@/components/app/forms/form-field.types";
 
   // Props
   interface Props extends SelectFieldBaseProps {
@@ -69,9 +70,9 @@
   <Popover bind:open>
     <PopoverTrigger>
       {#snippet child({ props })}
-        <Button variant="outline" class="justify-between" role="combobox" aria-expanded={open} {...props}>
+        <Button variant="outline" class="justify-between" role="combobox" {disabled} aria-expanded={open} {...props}>
           {#if selectedValues.length > 0}
-            {#each selectedValues as selected}
+            {#each selectedValues as selected, index (index)}
               <Badge>{selected.label}</Badge>
             {/each}
           {:else}
@@ -84,10 +85,10 @@
               class={cn("cursor-pointer", clearable && selectedValues ? "opacity-50" : "opacity-0")}
               onclick={clearValue}
             >
-              <CircleXIcon class="size-4 shrink-0" />
+              <CircleXIcon class="size-4 shrink-0"></CircleXIcon>
             </button>
 
-            <ChevronsUpDownIcon class="size-4 shrink-0 opacity-50" />
+            <ChevronsUpDownIcon class="size-4 shrink-0 opacity-50"></ChevronsUpDownIcon>
           </div>
         </Button>
       {/snippet}
@@ -96,7 +97,7 @@
     <PopoverContent align="start" class="p-0">
       <Command>
         {#if searchable}
-          <CommandInput placeholder={searchPlaceholder} />
+          <CommandInput placeholder={searchPlaceholder}></CommandInput>
         {/if}
 
         <CommandList>

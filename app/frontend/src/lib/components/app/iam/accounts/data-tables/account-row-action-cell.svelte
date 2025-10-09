@@ -1,7 +1,10 @@
 <script lang="ts">
+  import { EllipsisVerticalIcon, SquarePenIcon, Trash2Icon } from "@lucide/svelte";
+  import { toast } from "svelte-sonner";
+
   import AccountFormModal from "@/components/app/iam/accounts/overlays/account-form-modal.svelte";
-  import Button from "@/components/ui/button/button.svelte";
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
+  import Button from "@/components/ui/button/button.svelte";
   import {
     DropdownMenu,
     DropdownMenuContent,
@@ -10,18 +13,14 @@
     DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu";
 
-  import { EllipsisVerticalIcon, SquarePenIcon, Trash2Icon } from "@lucide/svelte";
-  import { refetches } from "@/utils/refetch";
-  import { toast } from "svelte-sonner";
-
   import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
+  import { refetches } from "@/utils/refetch";
 
   import type { DataTableCellBaseProps } from "@/components/app/data-table/data-table.types";
   import type { DropdownMenuItemBaseProps } from "@/components/app/dropdown-menus/dropdown-menu.types";
 
   // Props
-  interface Props extends DataTableCellBaseProps<AccountRecord> {}
-  let { record: account }: Props = $props();
+  let { record: account }: DataTableCellBaseProps<AccountRecord> = $props();
 
   // Variables
   const menus: DropdownMenuItemBaseProps[] = [
@@ -76,7 +75,7 @@
 
   <DropdownMenuContent align="end">
     <DropdownMenuGroup>
-      {#each menus as { label, icon: Icon, action }}
+      {#each menus as { label, icon: Icon, action }, index (index)}
         <DropdownMenuItem onclick={action}>
           <Icon class="size-4" />
           {label}

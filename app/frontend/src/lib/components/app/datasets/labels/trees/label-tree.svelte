@@ -1,13 +1,13 @@
 <script lang="ts">
+  import { PlusIcon } from "@lucide/svelte";
   import { getContext } from "svelte";
 
-  import { Card, CardContent } from "@/components/ui/card";
-  import Button from "@/components/ui/button/button.svelte";
   import ResponseBlock from "@/components/app/blocks/response-block.svelte";
   import { TreeNode } from "@/components/app/datasets/labels/trees/label-tree-node.svelte";
+  import Button from "@/components/ui/button/button.svelte";
+  import { Card, CardContent } from "@/components/ui/card";
 
   import { constructTree } from "@/data/model/dataset/dataset-record";
-  import { PlusIcon } from "@lucide/svelte";
 
   import type { CategoryField, LabelingConfiguration } from "@/data/model/dataset/labels";
 
