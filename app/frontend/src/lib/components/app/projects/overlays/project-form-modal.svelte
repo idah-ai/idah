@@ -1,13 +1,14 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
 
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
   import ProjectForm from "@/components/app/projects/forms/project-form.svelte";
 
-  import { getFieldErrors, validateData, type ZodSchema } from "@/utils/validate";
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { createProjectSchema, updateProjectSchema } from "@/data/model/dataset/projects/schema";
   import { refetches } from "@/utils/refetch";
+  import { getFieldErrors, validateData, type ZodSchema } from "@/utils/validate";
 
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
   import type { Hash } from "@/utils/types";
@@ -60,7 +61,7 @@
       },
     });
 
-    goto(`/projects/${createdProjectRes.data.id}/datasets`);
+    goto(resolve(`/projects/${createdProjectRes.data.id}/datasets`));
 
     $refetches.projects.list++;
     open = false;
@@ -102,7 +103,6 @@
       }
     } catch (error) {
       console.error(error);
-    } finally {
       submitting = false;
     }
   }

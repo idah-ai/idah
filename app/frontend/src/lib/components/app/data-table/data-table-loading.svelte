@@ -1,7 +1,7 @@
 <script lang="ts" generics="T extends Record">
   import { getContext } from "svelte";
 
-  import Spinner from "@/components/app/loading/spinner.svelte";
+  import Spinner from "@/components/ui/spinner/spinner.svelte";
   import { TableCell, TableRow } from "@/components/ui/table";
 
   import type { ColumnsSettings } from "@/components/app/data-table/data-table.types";

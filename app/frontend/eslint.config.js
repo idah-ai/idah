@@ -32,6 +32,12 @@ export default defineConfig(
           varsIgnorePattern: "^_",
         },
       ],
+      "svelte/no-navigation-without-resolve": [
+        "error",
+        {
+          ignoreLinks: true,
+        },
+      ],
     },
   },
   {
