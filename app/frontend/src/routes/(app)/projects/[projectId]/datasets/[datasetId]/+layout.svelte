@@ -1,18 +1,16 @@
 <script lang="ts">
-  import { onMount, type Snippet } from "svelte";
   import { goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
   import { page } from "$app/state";
+  import { setContext, type Snippet } from "svelte";
 
   import PageHeader from "@/components/app/page/page-header.svelte";
   import PageLoading from "@/components/app/page/page-loading.svelte";
-  import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-  import { projectBreadcrumb } from "@/components/app/page/page-breadcrumb.constants";
   import { datasetTabs, type DatasetTab } from "@/components/app/datasets/tabs/dataset.tabs";
-  import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
-  import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
 
-  import type { PageBreadcrumbItem } from "@/components/app/page/page-breadcrumb.svelte";
+  import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+  import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
 
   // Props
   interface Props {
@@ -24,60 +22,35 @@
   let projectId: string = page.params.projectId as string;
   let datasetId: string = page.params.datasetId as string;
   let activeTab: DatasetTab = $derived(page.url.pathname.split("/").pop() as DatasetTab);
-  let breadcrumbs: PageBreadcrumbItem[] = $state([projectBreadcrumb]);
 
   // Records
-  let project: ProjectRecord = $state(new ProjectRecord());
   let dataset: DatasetRecord = $state(new DatasetRecord());
 
-  // Lifecycle
-  onMount(() => {
-    const currentTab = datasetTabs.find((tab) => tab.value === activeTab);
-    const defaultDatasetTab: DatasetTab = "tasks";
-
-    if (!currentTab) {
-      goto(`/projects/${projectId}/datasets/${datasetId}/${defaultDatasetTab}`, { replaceState: true });
-    } else {
-      goto(`/projects/${projectId}/datasets/${datasetId}/${currentTab.value}`, { replaceState: true });
-    }
+  $effect(() => {
+    setContext("dataset", dataset);
   });
 
   // Functions
-  async function fetchData(): Promise<void> {
-    // Fetch project data
-    const projectRes = await projectsBackendDataSource.get(projectId, {
-      fields: {
-        "datasets/projects": ["name"],
-      },
-    });
-    project = projectRes.data;
-
-    // Fetch dataset data
+  async function fetchData() {
     const datasetRes = await datasetsBackendDataSource.get(datasetId, {
       fields: {
         "dataset:datasets": ["name"],
       },
     });
     dataset = datasetRes.data;
-
-    breadcrumbs = [
-      projectBreadcrumb,
-      { label: project.name, href: `/projects/${projectId}` },
-      { label: "Datasets", href: `/projects/${projectId}/datasets` },
-      { label: dataset.name },
-    ];
+    return dataset;
   }
 
   function handleTabChange(value: DatasetTab): void {
-    goto(`/projects/${projectId}/datasets/${datasetId}/${value}`);
+    goto(resolve(`/projects/${projectId}/datasets/${datasetId}/${value}`));
   }
 </script>
 
 {#await fetchData()}
-  <PageLoading />
-{:then _}
+  <PageLoading></PageLoading>
+{:then datasetRecord}
   <div class="space-y-6">
-    <PageHeader title={dataset.name}></PageHeader>
+    <PageHeader title={datasetRecord.name}></PageHeader>
     <Tabs bind:value={activeTab}>
       <TabsList>
         {#each datasetTabs as { label, value } (value)}
