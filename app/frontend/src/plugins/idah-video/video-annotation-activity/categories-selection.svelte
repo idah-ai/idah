@@ -290,25 +290,21 @@
           {#await db.getAllIndex("category", category.id)}
             ...
           {:then anns}
-            {#key anns}
-              {#each anns.filter((annotation) => currentFrame >= annotation.shape.start && currentFrame <= annotation.shape.end && annotation.shape.type == type) as annotation, i}
-                  {@render annotationSelection(annotation, `${category.name}_${i}`, category.id)}
-              {/each}
-            {/key}
+            {#each anns.filter((annotation) => currentFrame >= annotation.shape.start && currentFrame <= annotation.shape.end && annotation.shape.type == type) as annotation, i (annotation.metadata.id)}
+                {@render annotationSelection(annotation, `${category.name}_${i}`, category.id)}
+            {/each}
           {/await}
         {/if}
       {/key}
 
       {#if subCategories}
-        {#key subCategories}
-          {#each subCategories as subCategory}
-            {@render categorySelection(subCategory, subCategory.nestedCategories, onSelect, selected, [
-              ...parent,
-              category.id.split("/").slice(parent.length)[0],
-            ])}
-            <!-- pass managed open state for children -->
-          {/each}
-        {/key}
+        {#each subCategories as subCategory (subCategory.id)}
+          {@render categorySelection(subCategory, subCategory.nestedCategories, onSelect, selected, [
+            ...parent,
+            category.id.split("/").slice(parent.length)[0],
+          ])}
+          <!-- pass managed open state for children -->
+        {/each}
       {/if}
     </CollapsibleContent>
   </Collapsible>
@@ -333,13 +329,11 @@
         </SelectTrigger>
         <SelectContent>
           <SelectGroup>
-            {#key categories}
-              {#each categories as category}
-                  <SelectItem value={category.id} label={category.label}>
-                    {category.label}
-                  </SelectItem>
-              {/each}
-            {/key}
+            {#each categories as category (category.id)}
+                <SelectItem value={category.id} label={category.label}>
+                  {category.label}
+                </SelectItem>
+            {/each}
           </SelectGroup>
         </SelectContent>
       </Select>
@@ -364,10 +358,8 @@
       {/key}
     </div>
 
-    {#key categoriesTree}
-      {#each categoriesTree as category}
-          {@render categorySelection(category, category.nestedCategories, onSelect, selected_category)}
-      {/each}
-    {/key}
+    {#each categoriesTree as category (category.id)}
+        {@render categorySelection(category, category.nestedCategories, onSelect, selected_category)}
+    {/each}
 {/if}
 </div>
