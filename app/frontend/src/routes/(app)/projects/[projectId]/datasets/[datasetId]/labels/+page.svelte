@@ -1,6 +1,8 @@
 <script lang="ts">
+  import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import { SaveIcon } from "@lucide/svelte";
+  import { getContext } from "svelte";
   import { toast } from "svelte-sonner";
 
   import LabelEditor from "@/components/app/datasets/labels/label-editor.svelte";
@@ -8,7 +10,10 @@
   import PageLoading from "@/components/app/page/page-loading.svelte";
   import Button from "@/components/ui/button/button.svelte";
 
+  import { homeBreadcrumb, projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
+  import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
+  import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
   import { humanize, slugify } from "@/utils/string";
 
   import {
@@ -19,7 +24,12 @@
     type TagField,
   } from "@/data/model/dataset/labels";
 
+  // Contexts
+  const project: ProjectRecord = getContext("project");
+  const dataset: DatasetRecord = getContext("dataset");
+
   // Variables
+  let projectId: string = page.params.projectId as string;
   let datasetId: string = page.params.datasetId as string;
 
   let saving: boolean = $state(false);
@@ -41,6 +51,15 @@
       ? availableColors[0].color
       : labelColors[Math.floor(Math.random() * labelColors.length)].color;
   });
+
+  pageBreadcrumbsStore.set([
+    homeBreadcrumb,
+    projectBreadcrumb,
+    { label: project.name },
+    { label: "Datasets" },
+    { label: dataset.name, href: resolve(`/projects/${projectId}/datasets`) },
+    { label: "Label Editor" },
+  ]);
 
   // Functions
   async function fetchData(): Promise<void> {

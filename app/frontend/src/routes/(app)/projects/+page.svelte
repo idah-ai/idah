@@ -6,20 +6,21 @@
   import Button from "@/components/ui/button/button.svelte";
   import { PlusIcon } from "@lucide/svelte";
 
-  import { projectBreadcrumb } from "@/components/app/page/page-breadcrumb.constants";
+  import { homeBreadcrumb, projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
+  import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
   import { projectColumns } from "@/components/app/projects/datasource-tables/project-columns";
   import { datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { refetches } from "@/utils/refetch";
 
-  import type { PageBreadcrumbItem } from "@/components/app/page/page-breadcrumb.svelte";
   import type { Record } from "@/data/model/Record";
   import type { CollectionResponse } from "@/data/model/types";
   import type { Hash } from "@/utils/types";
 
+  pageBreadcrumbsStore.set([homeBreadcrumb, projectBreadcrumb]);
+
   // Variables
   let openNewProjectModal: boolean = $state(false);
-  let breadcrumbs: PageBreadcrumbItem[] = $state([projectBreadcrumb]);
 
   // Functions
   function openNewProjectFormModal(): void {
@@ -51,7 +52,7 @@
   </Button>
 {/snippet}
 
-<PageProvider name="projects" {breadcrumbs}>
+<PageProvider name="projects">
   <PageHeader title="Projects">
     {#snippet actions()}
       {@render AddNewProjectButton()}
