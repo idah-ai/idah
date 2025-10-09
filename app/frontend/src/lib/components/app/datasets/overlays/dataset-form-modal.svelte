@@ -1,14 +1,15 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
   import { page } from "$app/state";
 
-  import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
   import DatasetForm from "@/components/app/datasets/forms/dataset-form.svelte";
+  import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
 
-  import { createDatasetSchema, updateDatasetSchema } from "@/data/model/dataset/datasets/schema";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
-  import { getFieldErrors, validateData, type ZodSchema } from "@/utils/validate";
+  import { createDatasetSchema, updateDatasetSchema } from "@/data/model/dataset/datasets/schema";
   import { refetches } from "@/utils/refetch";
+  import { getFieldErrors, validateData, type ZodSchema } from "@/utils/validate";
 
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
   import type { Hash } from "@/utils/types";
@@ -76,9 +77,9 @@
       },
     });
 
-    goto(`/projects/${projectId}/datasets/${createdDatasetRes.data.id}/tasks`);
+    goto(resolve(`/projects/${projectId}/datasets/${createdDatasetRes.data.id}/tasks`));
 
-    $refetches.datasets.list++;
+    $refetches.datasets.list = new Date();
     open = false;
   }
 
@@ -90,7 +91,7 @@
       },
     });
 
-    $refetches.datasets.list++;
+    $refetches.datasets.list = new Date();
     open = false;
   }
 
@@ -117,7 +118,6 @@
       }
     } catch (error) {
       console.error(error);
-    } finally {
       submitting = false;
     }
   }

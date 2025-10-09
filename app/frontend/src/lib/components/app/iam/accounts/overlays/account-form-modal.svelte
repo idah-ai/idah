@@ -1,16 +1,17 @@
 <script lang="ts">
+  import { toast } from "svelte-sonner";
+
   import AccountForm from "@/components/app/iam/accounts/forms/account-form.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
 
   import { refetches } from "@/utils/refetch";
-  import { toast } from "svelte-sonner";
 
+  import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
   import { createAccountSchema, updateAccountSchema } from "@/data/model/iam/accounts/schema";
   import { getFieldErrors, validateData, type ZodSchema } from "@/utils/validate";
-  import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
 
-  import type { Hash } from "@/utils/types";
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
+  import type { Hash } from "@/utils/types";
 
   // Props
   interface Props extends FormModalBaseProps {
@@ -73,7 +74,7 @@
         },
       });
 
-      $refetches.accounts.list++;
+      $refetches.accounts.list = new Date();
       closeThisModal();
       toast.success("Account created successfully");
     } catch (error) {
@@ -93,7 +94,7 @@
         },
       });
 
-      $refetches.accounts.list++;
+      $refetches.accounts.list = new Date();
       closeThisModal();
       toast.success("Account updated successfully");
     } catch (error) {

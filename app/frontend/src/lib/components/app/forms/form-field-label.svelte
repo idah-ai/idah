@@ -1,10 +1,11 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
+
   import { Label } from "$lib/components/ui/label";
 
   import { cn } from "$lib/utils";
 
-  import type { Snippet } from "svelte";
-
+  // Props
   interface Props {
     required: boolean;
     class?: string | null;
@@ -15,7 +16,7 @@
 
 <Label
   class={cn(
-    "font-medium leading-none",
+    "leading-none font-medium",
     {
       "text-muted-foreground": !required,
     },
