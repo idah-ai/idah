@@ -1,8 +1,8 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
+
   import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
   import { cn } from "@/utils";
-
-  import type { Snippet } from "svelte";
 
   // Props
   interface Props {

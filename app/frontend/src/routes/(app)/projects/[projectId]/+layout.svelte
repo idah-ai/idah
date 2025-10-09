@@ -1,20 +1,21 @@
 <script lang="ts">
-  import type { Snippet } from "svelte";
   import { goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
   import { page } from "$app/state";
+  import type { Snippet } from "svelte";
 
-  import PageProvider from "@/components/app/page/page-provider.svelte";
   import PageHeader from "@/components/app/page/page-header.svelte";
   import PageLoading from "@/components/app/page/page-loading.svelte";
+  import PageProvider from "@/components/app/page/page-provider.svelte";
   import ProjectDropdownMenu from "@/components/app/projects/dropdowns/project-dropdown-menu.svelte";
   import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-  import { humanize } from "@/utils/string";
   import { projectBreadcrumb } from "@/components/app/page/page-breadcrumb.constants";
   import { projectTabs, type ProjectTab } from "@/components/app/projects/tabs/project.tabs";
-  import { refetches } from "@/utils/refetch";
-  import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
+  import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
+  import { refetches } from "@/utils/refetch";
+  import { humanize } from "@/utils/string";
 
   import type { PageBreadcrumbItem } from "@/components/app/page/page-breadcrumb.svelte";
 
@@ -34,7 +35,6 @@
 
   // Records
   let project: ProjectRecord = $state(new ProjectRecord());
-  let { name, description } = $derived(project);
 
   // Lifecycle
   // onMount(() => {
@@ -53,7 +53,7 @@
   });
 
   // Functions
-  async function fetchProject(): Promise<void> {
+  async function fetchProject() {
     const projectRes = await projectsBackendDataSource.get(projectId, {
       fields: {
         "datasets/projects": ["name"],
@@ -61,6 +61,7 @@
     });
     project = projectRes.data;
     updateBreadcrumbs(page.url.pathname);
+    return project;
   }
 
   async function updateBreadcrumbs(pathname: string): Promise<void> {
@@ -101,19 +102,19 @@
   }
 
   function handleTabChange(value: ProjectTab): void {
-    goto(`/projects/${projectId}/${value}`);
+    goto(resolve(`/projects/${projectId}/${value}`));
   }
 </script>
 
 {#key $refetches.projects.get}
   {#await fetchProject()}
     <PageLoading />
-  {:then _}
+  {:then project}
     <PageProvider name="project-detail" {breadcrumbs}>
       {#if !isDatasetPage}
-        <PageHeader title={name} {description}>
+        <PageHeader title={project.name} description={project.description}>
           {#snippet actions()}
-            <ProjectDropdownMenu {projectId} />
+            <ProjectDropdownMenu {projectId}></ProjectDropdownMenu>
           {/snippet}
         </PageHeader>
 

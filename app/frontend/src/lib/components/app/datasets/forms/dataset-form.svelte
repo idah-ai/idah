@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Form from "@/components/app/forms/form.svelte";
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import SingleSelectField from "@/components/app/forms/fields/select/single/single-select-field.svelte";
+  import Form from "@/components/app/forms/form.svelte";
 
   import { DatasetRecord } from "@/data/model/dataset/dataset-record";
 
@@ -55,7 +55,6 @@
     label="Modality"
     placeholder="Select modality"
     choices={modalityOptions}
-    searchKeyWithOperation="label__match"
     required={newRecord}
     disabled={!newRecord}
     errors={fieldErrors["modality"]}

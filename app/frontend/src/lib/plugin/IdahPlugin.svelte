@@ -1,44 +1,46 @@
 <script lang="ts">
-    import { getContext, onDestroy, onMount } from "svelte";
-    import type { IActivityContext, IActivityView } from "./interface/Activity";
-    import Button from "@/components/ui/button/button.svelte";
+  import { getContext, onDestroy, onMount } from "svelte";
+  import type { IActivityContext, IActivityView } from "./interface/Activity";
+  import type { PluginManager } from "./PluginManager";
 
-    let {context, plugin_id}:{context:IActivityContext, plugin_id: string} = $props()
-    let container: HTMLElement
+  // Props
+  interface Props {
+    context: IActivityContext;
+    pluginId: string;
+  }
+  let { context, pluginId }: Props = $props();
 
-    import type { PluginManager } from "./PluginManager";
-    let plugin: IActivityView|undefined = $state()
+  // Variables
+  let container: HTMLElement;
+  let plugin: IActivityView | undefined = $state();
+  let pluginManager: PluginManager = getContext("idah-plugin-manager");
 
-    let pluginManager:PluginManager = getContext('idah-plugin-manager')
+  // Lifecycle
+  onMount(() => {
+    pluginManager.loadedPromise.then(() => {
+      plugin = pluginManager.getPlugin(pluginId);
+      if (!plugin) return console.error("plugin not found", { pluginId });
 
-    onMount(() => {
-        pluginManager.loadedPromise.then(() => {
-            plugin = pluginManager.getPlugin(plugin_id)
-            if (!plugin) return console.error("plugin not found", {plugin_id})
+      console.debug("Mounting plugin", $state.snapshot(plugin));
+      plugin.render?.(container, context);
+    });
+  });
 
-            console.debug("Mounting plugin", $state.snapshot(plugin))
-            plugin.render?.(container, context)
-        })
-    })
-
-    onDestroy(() => {
-        plugin?.close?.()
-    })
-
+  onDestroy(() => {
+    plugin?.close?.();
+  });
 </script>
 
-
 <div bind:this={container}>
-    {#await pluginManager.loadedPromise}
-        Loading Plugins
-    {:then}
-        {#key plugin}
-            {#if plugin}
-                plugin render
-            {:else}
-                No registered {plugin_id} plugin found
-            {/if}
-        {/key}
-    {/await}
+  {#await pluginManager.loadedPromise}
+    Loading Plugins
+  {:then}
+    {#key plugin}
+      {#if plugin}
+        plugin render
+      {:else}
+        No registered {pluginId} plugin found
+      {/if}
+    {/key}
+  {/await}
 </div>
-
