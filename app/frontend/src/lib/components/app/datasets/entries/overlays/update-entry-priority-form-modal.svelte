@@ -1,14 +1,15 @@
 <script lang="ts">
-  import Button from "@/components/ui/button/button.svelte";
-  import DialogTitle from "@/components/ui/dialog/dialog-title.svelte";
+  import { toast } from "svelte-sonner";
+
+  import SingleSelectField from "@/components/app/forms/fields/select/single/single-select-field.svelte";
   import Form from "@/components/app/forms/form.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
-  import SingleSelectField from "@/components/app/forms/fields/select/single/single-select-field.svelte";
+  import Button from "@/components/ui/button/button.svelte";
+  import DialogTitle from "@/components/ui/dialog/dialog-title.svelte";
 
-  import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
   import { entryPriorities } from "@/data/model/dataset/entries/constants";
+  import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
   import { refetches } from "@/utils/refetch";
-  import { toast } from "svelte-sonner";
 
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
 
@@ -50,6 +51,7 @@
     try {
       await updateEntryPriority();
     } catch (error) {
+      console.error(error);
     } finally {
       submitting = false;
     }

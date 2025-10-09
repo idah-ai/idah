@@ -1,7 +1,8 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
+
   import Text from "@/components/ui/text/Text.svelte";
   import { cn } from "@/utils";
-  import type { Snippet } from "svelte";
 
   // Props
   type Value = string | number | boolean | Date | null | undefined;

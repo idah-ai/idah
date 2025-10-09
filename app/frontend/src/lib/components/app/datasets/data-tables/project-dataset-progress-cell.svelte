@@ -8,8 +8,7 @@
   import type { EntryRecord } from "@/data/model/dataset/entries/record";
 
   // Props
-  interface Props extends DataTableCellBaseProps<DatasetRecord> {}
-  let { record: dataset }: Props = $props();
+  let { record: dataset }: DataTableCellBaseProps<DatasetRecord> = $props();
 
   let entriesRes = dataset._jsonapiData.relationships?.["entries"];
   let entries = (entriesRes?.data as EntryRecord[]) || [];

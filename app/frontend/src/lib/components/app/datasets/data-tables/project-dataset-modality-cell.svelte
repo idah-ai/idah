@@ -6,8 +6,7 @@
   import type { DataTableCellBaseProps } from "@/components/app/data-table/data-table.types";
 
   // Props
-  interface Props extends DataTableCellBaseProps<DatasetRecord> {}
-  let { record: dataset }: Props = $props();
+  let { record: dataset }: DataTableCellBaseProps<DatasetRecord> = $props();
 
   // Variables
 </script>

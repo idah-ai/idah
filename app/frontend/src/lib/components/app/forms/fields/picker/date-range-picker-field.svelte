@@ -1,19 +1,19 @@
 <script lang="ts">
+  import { CalendarDate, type DateValue } from "@internationalized/date";
+  import { CalendarIcon } from "@lucide/svelte";
+  import type { DateRange } from "bits-ui";
   import { format } from "date-fns";
 
-  import Button from "@/components/ui/button/button.svelte";
-  import FormField from "@/components/app/forms/form-field.svelte";
   import FormFieldErrors from "@/components/app/forms/form-field-errors.svelte";
   import FormFieldInfo from "@/components/app/forms/form-field-info.svelte";
   import FormFieldLabel from "@/components/app/forms/form-field-label.svelte";
-  import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+  import FormField from "@/components/app/forms/form-field.svelte";
+  import Button from "@/components/ui/button/button.svelte";
+  import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
   import RangeCalendar from "@/components/ui/range-calendar/range-calendar.svelte";
 
   import { cn } from "@/utils";
-  import { CalendarIcon } from "@lucide/svelte";
-  import { CalendarDate, DateFormatter, type DateValue } from "@internationalized/date";
 
-  import type { DateRange } from "bits-ui";
   import type { DateFieldBaseProps } from "@/components/app/forms/fields/picker/date-field.types";
 
   // Props
@@ -32,7 +32,6 @@
     info,
     errors,
     placeholderDateFormat = "MMM dd, yyyy",
-    dateStyle = "medium",
     from = $bindable(null),
     to = $bindable(null),
     class: className,
@@ -44,8 +43,6 @@
   }: Props = $props();
 
   // Variables
-  const df = new DateFormatter("en-US", { dateStyle });
-
   let calendarValue = $state<DateRange | undefined>();
 
   // Effects
@@ -94,7 +91,7 @@
           {disabled}
           {...props}
         >
-          <CalendarIcon class="size-4" />
+          <CalendarIcon class="size-4"></CalendarIcon>
 
           {#if from && to}
             {format(from, placeholderDateFormat)} - {format(to, placeholderDateFormat)}
@@ -110,7 +107,7 @@
         bind:value={calendarValue}
         onValueChange={handleValueChange}
         onEndValueChange={handleEndValueChange}
-      />
+      ></RangeCalendar>
     </PopoverContent>
   </Popover>
 

@@ -14,7 +14,7 @@
 <TableRow class="h-[50vh] min-h-[50vh]">
   <TableCell colspan={Object.keys(columns).length}>
     <div class="flex w-full items-center justify-center">
-      <Spinner size="lg" />
+      <Spinner size="lg"></Spinner>
     </div>
   </TableCell>
 </TableRow>

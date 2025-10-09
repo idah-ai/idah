@@ -4,21 +4,22 @@
   import DataTableBody from "@/components/app/data-table/data-table-body.svelte";
   import DataTableContent from "@/components/app/data-table/data-table-content.svelte";
   import DataTableError from "@/components/app/data-table/data-table-error.svelte";
-  import DataTableHeader from "@/components/app/data-table/data-table-header.svelte";
   import DataTableHeadLabel from "@/components/app/data-table/data-table-head-label.svelte";
   import DataTableHeadOptions from "@/components/app/data-table/data-table-head-options.svelte";
+  import DataTableHeader from "@/components/app/data-table/data-table-header.svelte";
   import DataTableLoading from "@/components/app/data-table/data-table-loading.svelte";
   import DataTablePaginator from "@/components/app/data-table/data-table-paginator.svelte";
   import DataTableToggleColumns from "@/components/app/data-table/data-table-toggle-columns.svelte";
   import DataTableToolbarActions from "@/components/app/data-table/data-table-toolbar-actions.svelte";
-  import Table from "@/components/ui/table/table.svelte";
   import TableHead from "@/components/ui/table/table-head.svelte";
   import TableHeader from "@/components/ui/table/table-header.svelte";
   import TableRow from "@/components/ui/table/table-row.svelte";
+  import Table from "@/components/ui/table/table.svelte";
   import Text from "@/components/ui/text/Text.svelte";
 
-  import { cn } from "@/utils";
+  import { getTableState } from "@/components/app/data-table/data-table.stores.svelte";
   import { Record } from "@/data/model/Record";
+  import { cn } from "@/utils";
 
   import type {
     DataTableBaseProps,
@@ -29,8 +30,6 @@
     TableState,
   } from "@/components/app/data-table/data-table.types";
   import type { ListOptions } from "@/data/DataSource";
-
-  import { getTableState } from "@/components/app/data-table/data-table.stores.svelte";
 
   // Props
   let {
@@ -248,7 +247,7 @@
     <!-- DATA TABLE::ACTIONS -->
     <DataTableToolbarActions>
       {#if haveSomeHidableColumns}
-        <DataTableToggleColumns {columns} />
+        <DataTableToggleColumns {columns}></DataTableToggleColumns>
       {/if}
 
       {@render actions?.()}
@@ -290,11 +289,11 @@
       </TableHeader>
 
       {#if tableData.status === "loading"}
-        <DataTableLoading />
+        <DataTableLoading></DataTableLoading>
       {:else if tableData.status === "loaded"}
         <DataTableBody {tableData} {columns} {isFiltering}></DataTableBody>
       {:else}
-        <DataTableError />
+        <DataTableError></DataTableError>
       {/if}
     </Table>
   </DataTableContent>
@@ -308,6 +307,6 @@
       hasMore={tableData.response.meta?.more || false}
       onPageChange={changePage}
       onItemsPerPageSelect={setItemsPerPage}
-    />
+    ></DataTablePaginator>
   {/if}
 </div>

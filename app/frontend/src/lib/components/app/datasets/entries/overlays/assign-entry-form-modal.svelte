@@ -1,13 +1,14 @@
 <script lang="ts">
+  import { toast } from "svelte-sonner";
+
   import AssignEntryForm from "@/components/app/datasets/entries/forms/assign-entry-form.svelte";
+  import Spinner from "@/components/app/loading/spinner.svelte";
+  import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import DialogTitle from "@/components/ui/dialog/dialog-title.svelte";
-  import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
-  import Spinner from "@/components/app/loading/spinner.svelte";
 
-  import { refetches } from "@/utils/refetch";
-  import { toast } from "svelte-sonner";
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
+  import { refetches } from "@/utils/refetch";
 
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
   import type { Hash } from "@/utils/types";

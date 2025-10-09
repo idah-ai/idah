@@ -1,6 +1,8 @@
 import { writable, type Writable } from "svelte/store";
-import type { TableData, TablePreferences, TableState } from "@/components/app/data-table/data-table.types";
+
 import { Record } from "@/data/model/Record";
+
+import type { TableData, TablePreferences, TableState } from "@/components/app/data-table/data-table.types";
 
 const DATA_TABLE_PREFIX: string = "settings:data-tables";
 const defaultTablePreferences: TablePreferences = {

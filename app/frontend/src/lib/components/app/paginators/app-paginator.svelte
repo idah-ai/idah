@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { ChevronsUpDownIcon } from "@lucide/svelte";
+
   import Button from "@/components/ui/button/button.svelte";
   import {
     DropdownMenu,
@@ -17,8 +19,6 @@
     PaginationPrevButton,
   } from "@/components/ui/pagination";
   import Text from "@/components/ui/text/Text.svelte";
-
-  import { ChevronsUpDownIcon } from "@lucide/svelte";
 
   import type { LabelValue } from "@/components/app/component.types";
 
@@ -94,7 +94,7 @@
             </PaginationItem>
           {/if}
 
-          {#each pages as page}
+          {#each pages as page (page.key)}
             {#if page.type === "ellipsis"}
               <PaginationItem>
                 <PaginationEllipsis />

@@ -1,21 +1,22 @@
 <script lang="ts" generics="T extends Record">
-  import Button from "@/components/ui/button/button.svelte";
-  import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
-  import FormField from "@/components/app/forms/form-field.svelte";
+  import { CheckIcon, ChevronsUpDownIcon, CircleXIcon } from "@lucide/svelte";
+
+  import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import FormFieldErrors from "@/components/app/forms/form-field-errors.svelte";
   import FormFieldInfo from "@/components/app/forms/form-field-info.svelte";
   import FormFieldLabel from "@/components/app/forms/form-field-label.svelte";
-  import InputField from "@/components/app/forms/fields/input/input-field.svelte";
-  import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+  import FormField from "@/components/app/forms/form-field.svelte";
   import Spinner from "@/components/app/loading/spinner.svelte";
+  import Button from "@/components/ui/button/button.svelte";
+  import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
+  import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
   import { cn } from "@/utils";
-  import { CheckIcon, ChevronsUpDownIcon, CircleXIcon } from "@lucide/svelte";
 
   import type { SelectDataSourceFieldBaseProps } from "@/components/app/forms/form-field.types";
-  import type { LabelValue } from "@/utils/types";
-  import type { Record } from "@/data/model/Record";
   import type { ListOptions } from "@/data/DataSource";
+  import type { Record } from "@/data/model/Record";
+  import type { LabelValue } from "@/utils/types";
 
   // Props
   interface Props extends SelectDataSourceFieldBaseProps<T> {
@@ -135,7 +136,7 @@
               class={cn("cursor-pointer", clearable && selectedChoice ? "opacity-50" : "opacity-0")}
               onclick={() => {}}
             >
-              <CircleXIcon class="size-4 shrink-0" />
+              <CircleXIcon class="size-4 shrink-0"></CircleXIcon>
             </button>
 
             <ChevronsUpDownIcon class="size-4 shrink-0 opacity-50"></ChevronsUpDownIcon>
