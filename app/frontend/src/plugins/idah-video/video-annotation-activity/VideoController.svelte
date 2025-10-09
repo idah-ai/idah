@@ -32,6 +32,8 @@
   // Props
   interface Props {
     video: Video;
+    isPlaying: boolean;
+    volume: {level: number, muted: boolean};
     currentFrame: number;
     totalFrames: number;
     scale: number;
@@ -40,7 +42,7 @@
     onScaleChange: (scale: number) => void;
   }
 
-  let { video = $bindable(), scale, zoom, currentFrame, totalFrames, onZoomChange, onScaleChange }: Props = $props();
+  let { video = $bindable(), isPlaying, volume, scale, zoom, currentFrame, totalFrames, onZoomChange, onScaleChange }: Props = $props();
 
   // Variables
   interface VideoSpeedMenuItem {
@@ -58,10 +60,7 @@
     { label: "5 X", value: 5 },
   ];
 
-  let volume: number = $state(50);
   let currentSpeed: number = $state(1);
-  let isPlaying: boolean = $state(false);
-  let isMuted: boolean = $derived(volume === 0);
 
   // Functions
   function setVolume(volumeToSet: number): void {
@@ -94,7 +93,6 @@
       size="icon"
       onclick={() => {
         video.togglePlay();
-        isPlaying = !isPlaying;
       }}
     >
       {#if isPlaying}
@@ -113,7 +111,7 @@
     <Popover>
       <PopoverTrigger>
         <Button variant="outline" size="icon">
-          {#if isMuted}
+          {#if volume.muted || volume.level == 0}
             <VolumeXIcon class="size-4" />
           {:else}
             <Volume2Icon class="size-4" />
@@ -128,8 +126,8 @@
           min={0}
           max={100}
           step={1}
-          onValueChange={setVolume}
-          bind:value={volume}
+          onValueChange={video.setVolume}
+          value={volume.level}
         />
       </PopoverContent>
     </Popover>
