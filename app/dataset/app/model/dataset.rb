@@ -43,7 +43,26 @@ module Dataset
     # scope definition(s)
     def scoped(action)
       auth_context.can!(action, Resource::Dataset::Datasets) do |scope|
+        account_id = auth_context.metadata[:id] || 1
+
+        permission_set_name = ProjectMember::Repository.new(auth_context).find_by({
+          account_id: account_id,
+          project_id: auth_context.metadata[:project_id] || "0199c820-46a3-796a-ab51-48f1fa692500"}
+        ).permission_set
+        # permission_set_name = membership.permission_set
+        rights = PermissionSetBackend.new.fetch(permission_set_name)
+
+        binding.pry
+
         scope.all? { table }
+
+
+        scope.own_project? do
+          project_repo = Project::Repository.new(auth_context)
+          project_ids = project_repo.index({ created_by_id: account_id }).map(&:id).uniq
+
+          table.where(project_id: project_ids)
+        end
 
         # scope: datasets that are in the same project as the user
         scope.same_project? do
@@ -51,8 +70,6 @@ module Dataset
           # project_ids = table.where(account_id: account_id).select(:project_id).distinct
           table.where(project_id: )
         end
-
-        account_id = auth_context.metadata[:id] || 1
 
         # scope: projects the user owns/creates
         scope.own? do
