@@ -4,7 +4,7 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "dev": "npm run watch:idah-video & vite dev",
+    "dev": "concurrently \"npm run watch:idah-video\" \"vite dev --host\"",
     "watch:idah-video": "vite build --config vite.config.idah-video.js --watch",
     "build:idah-video": "vite build --config vite.config.idah-video.js",
     "build": "vite build",
@@ -33,6 +33,7 @@
     "@testing-library/svelte": "^5.2.8",
     "bits-ui": "^2.8.8",
     "clsx": "^2.1.1",
+    "concurrently": "^9.2.1",
     "eslint": "^9.29.0",
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-svelte": "^3.9.2",
