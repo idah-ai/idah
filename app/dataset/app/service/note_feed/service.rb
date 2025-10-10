@@ -21,7 +21,6 @@ module NoteFeed
 
     def create(record)
       attr = record.attributes
-
       attr[:id] = record.id || UUIDv7.generate
 
       if record.entry
@@ -31,9 +30,12 @@ module NoteFeed
               "entry is required to create a note feed"
       end
 
-      if record.annotation
+      if record.annotation && record.anchor_type == "annotation"
         attr[:annotation_id] = record.annotation.id
       end
+
+      # put created_by_id to 1 for now, will be replaced with auth context later
+      attr[:created_by_id] = 1
 
       id = note_feeds.create(attr)
 

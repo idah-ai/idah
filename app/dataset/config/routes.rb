@@ -8,5 +8,7 @@ Verse.on_boot do
     DatasetsExpo,
     EntriesExpo,
     AnnotationsExpo,
+    NoteFeedsExpo,
+    NoteCommentsExpo
   ].each(&:register)
 end
