@@ -501,6 +501,7 @@
           annotation.value = value;
           annotation.metadata.updatedAt = updatedAt;
           annotation.synced = false;
+          selectedAnnotation = annotation
 
           await annotationsIDB?.addAnnotations([annotation]);
           $idb_updated_at = new Date();
@@ -527,6 +528,8 @@
           annotation.value = value_from;
           annotation.metadata.updatedAt = updatedAt;
           annotation.synced = false;
+
+          selectedAnnotation = annotation
 
           let p = context.annotations.update({
             id: annotation.metadata.id,

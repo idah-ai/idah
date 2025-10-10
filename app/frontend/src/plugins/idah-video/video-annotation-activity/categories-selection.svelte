@@ -8,10 +8,12 @@
   import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger } from "@/components/ui/select";
   import { SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
   import Text from "@/components/ui/text/Text.svelte";
+  import CategoryProperties from "./categoryProperties/categoryProperties.svelte"
 
   import type { CategoryConfiguration, VideoAnnotation } from "./VideoAnnotationContext";
   import type { CategoryDefinition } from "@/context/ActivityContext";
   import type { AnnotationsIndexedDB } from "./indexedDB";
+  import type { CategoryField } from "@/data/model/dataset/labels";
 
   // Props
   let {
@@ -61,7 +63,7 @@
   function buildTree(
     acc: CategoryDefinition[],
     ids: string[],
-    configuration: CategoryConfiguration,
+    configuration: CategoryField
   ): CategoryDefinition[] {
     if (ids.length == 1) {
       acc.push({
@@ -77,7 +79,7 @@
       if (index == -1) {
         acc.push({
           id: configuration.id,
-          name: ids[0],
+          name: configuration.label || ids[0],
           nestedCategories: buildTree([], ids.slice(1, Infinity), configuration),
           requiredNested: true,
           data: configuration,
@@ -312,32 +314,12 @@
 
 <div class="flex-col">
   {#if selected_id && selected_category}
-    {@const foundCategory = findCategory(categoriesTree, selected_category)}
-    {#if categoriesTree && foundCategory}
-      <div class="flex pb-1">
-        <Text class="text-gray-700" weight="medium" size="sm">Category</Text>
-      </div>
-
-      <Select
-        type="single"
-        onValueChange={(category_id) => {
-          onSelect(findCategory(categoriesTree, category_id));
-        }}
-      >
-        <SelectTrigger class="w-full">
-          {@render showCategoryTitle(foundCategory, false, false)}
-        </SelectTrigger>
-        <SelectContent>
-          <SelectGroup>
-            {#each categories as category (category.id)}
-                <SelectItem value={category.id} label={category.label}>
-                  {category.label}
-                </SelectItem>
-            {/each}
-          </SelectGroup>
-        </SelectContent>
-      </Select>
-    {/if}
+    <CategoryProperties
+      selectedCategory={selected_category}
+      {db}
+      selectedId={selected_id}
+      onSelectCategory={onSelect}
+    />
   {:else}
     <div class="flex gap-2 py-2">
       <Text class="text-gray-500" weight="semibold">Categories</Text>
@@ -361,5 +343,5 @@
     {#each categoriesTree as category (category.id)}
         {@render categorySelection(category, category.nestedCategories, onSelect, selected_category)}
     {/each}
-{/if}
+  {/if}
 </div>
