@@ -10,6 +10,7 @@
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import type { AnnotationsIndexedDB } from "./indexedDB";
   import type { CategoryDefinition } from "@/context/ActivityContext";
+  import type { CategoryField } from "@/data/model/dataset/labels";
 
   let {
     annotationValue,
@@ -33,7 +34,7 @@
     selected_id?: string;
   } = $props();
 
-  let tools = (context.config as LabellingConfiguration).categories.reduce((acc, v: CategoryConfiguration) => {
+  let tools = context.config.categories.reduce((acc, v: CategoryField) => {
     if (!acc.has(v.type)) acc.set(v.type, [v]);
     else {
       let categories = acc.get(v.type);
@@ -44,7 +45,7 @@
       acc.set(v.type, categories);
     }
     return acc;
-  }, new Map<string, CategoryConfiguration[]>());
+  }, new Map<string, CategoryField[]>());
 
   let searchValue = $state("");
   let debounceTimer: ReturnType<typeof setTimeout> | undefined;
@@ -52,8 +53,8 @@
   let filteredTools = $derived.by(async () => {
     if (!searchValue) return tools;
 
-    return new Promise<Map<string, CategoryConfiguration[]>>((resolve) => {
-      const filtered = new Map<string, CategoryConfiguration[]>();
+    return new Promise<Map<string, CategoryField[]>>((resolve) => {
+      const filtered = new Map<string, CategoryField[]>();
       for (const [toolType, categories] of tools) {
         const matchingCategories = categories.filter((category) =>
           category.label.toLowerCase().includes(searchValue.toLowerCase()),
@@ -72,17 +73,16 @@
       onEditValue(
         {
           category: category.id,
-          label: category.name,
-          attributes: category,
         },
         mode,
       );
-    } else {
-      onEditValue(
-        Object.fromEntries(Object.entries(annotationValue).filter(([type, _]) => type == "categories")),
-        mode,
-      );
-    }
+
+    } // else {
+    //   onEditValue(
+    //     Object.fromEntries(Object.entries(annotationValue).filter(([type, _]) => type == "categories")),
+    //     mode,
+    //   );
+    // }
   }
 
   function searchCategory(e: Event) {
@@ -108,7 +108,7 @@
   </SidebarHeader> -->
   <SidebarContent>
     {#each tools as [tool, categories]}
-      {#if !tools.has(mode) || mode == "visual"}
+      <!-- {#if !tools.has(mode) || mode == "visual"} -->
         <SidebarGroup>
           <SidebarGroupContent>
             <CategoriesSelection
@@ -125,7 +125,7 @@
             />
           </SidebarGroupContent>
         </SidebarGroup>
-      {:else if tool == mode}
+      <!-- {:else if tool == mode}
         <SidebarGroup>
           <SidebarGroupContent>
             <CategoriesSelection
@@ -142,7 +142,7 @@
             />
           </SidebarGroupContent>
         </SidebarGroup>
-      {/if}
+      {/if} -->
     {/each}
   </SidebarContent>
 </Sidebar>
