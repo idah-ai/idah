@@ -24,7 +24,7 @@ class NoteFeedsExpo < BaseExpo
 
     create do
       authorized_relationships entry: [:link],
-                              annotation: [:link]
+                               annotation: [:link]
     end
     update
     delete
