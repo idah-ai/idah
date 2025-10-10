@@ -23,6 +23,7 @@
   });
 
   // Functions
+  // TODO: implement the signup process
   async function signUp(): Promise<void> {
     /** Check if email is valid and exist in out platform? */
     // const existingAccount = await AccountsBackendDataSource.list({

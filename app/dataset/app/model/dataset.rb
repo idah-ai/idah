@@ -38,20 +38,11 @@ module Dataset
 
     # scope definition(s)
     def scoped(action)
-      auth_context.can!(action, Resource::Dataset::Datasets) do |scope|
-        account_id = auth_context.metadata[:id] || 1
+      account_id = auth_context.metadata[:id] || 1
 
-        permission_set_name = ProjectMember::Repository.new(auth_context).find_by({
-          account_id: account_id,
-          project_id: auth_context.metadata[:project_id] || "0199c820-46a3-796a-ab51-48f1fa692500"}
-        ).permission_set
-        # permission_set_name = membership.permission_set
-        rights = PermissionSetBackend.new.fetch(permission_set_name)
-
-        binding.pry
-
+      # auth_context.can!(action, Resource::Dataset::Datasets) do |scope|
+      combined_context.can!(action, Resource::Dataset::Datasets) do |scope|
         scope.all? { table }
-
 
         scope.own_project? do
           project_repo = Project::Repository.new(auth_context)
@@ -72,6 +63,43 @@ module Dataset
           table.where(created_by_id: account_id)
         end
       end
+    end
+
+    # TODO: move to a dedicated place to be called from repositories
+    # TODO: determine how and where we can cache the permissions properly
+    private def combined_context
+      # TODO: remove mockings
+      account_id = auth_context.metadata[:id] || 1
+      project_ids = auth_context.metadata[:project_id] || "0199cc34-20c1-7a60-b38d-b18556496c14"
+
+      return auth_context unless account_id && project_ids
+
+      # get permission set name from the project membership
+      permission_set_name = ProjectMember::Repository.new(auth_context).find_by(
+        {
+          account_id: account_id,
+          project_id: project_ids
+        }
+      )&.permission_set
+
+      # rights from membership's permission set
+      permission_set_rights = Verse::Auth::Context.backend.fetch(permission_set_name)
+
+      return auth_context if permission_set_rights.empty?
+
+      # rights from current account context
+      account_rights = Verse::Auth::Context.backend.fetch(auth_context.role)
+
+      # merge rights
+      combined_rights = (account_rights + permission_set_rights).uniq
+
+      # return a context with combined rights
+      Verse::Auth::Context.new(
+        combined_rights,
+        role: auth_context.role, # Keep original role name
+        custom_scopes: auth_context.custom_scopes,
+        metadata: auth_context.metadata
+      )
     end
   end
 end

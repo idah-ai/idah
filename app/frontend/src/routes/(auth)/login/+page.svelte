@@ -22,6 +22,7 @@
   });
 
   // Functions
+  // TODO: implement the signin process
   async function signIn(): Promise<void> {
     showErrorAlert = true;
   }
