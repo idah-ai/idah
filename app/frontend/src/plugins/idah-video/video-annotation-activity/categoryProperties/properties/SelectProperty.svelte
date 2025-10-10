@@ -8,9 +8,11 @@
     property,
     value,
     selectType,
+    onValueChange,
   }: {
     property: PropertyField,
     value : AnnotationValue,
+    onValueChange: (v:any) => void
     selectType: 'single'|'multi'
   } = $props()
 
@@ -27,7 +29,9 @@
 
 <div>
     <Label>{property.label}</Label>
-    <Select type={selectType} onvaluechange={(v) => { console.log(v); changeselection(v)}} onchange={(e) => console.error(e)}>
+    <Select type={selectType}
+      value={currentValue.attributes?.[property.id]}
+      onValueChange={onValueChange}>
       <SelectTrigger class="w-[180px]">
         {currentValue.attributes?.[property.id]}
       </SelectTrigger>

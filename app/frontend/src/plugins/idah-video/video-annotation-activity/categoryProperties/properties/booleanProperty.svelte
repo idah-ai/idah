@@ -6,12 +6,15 @@
 
   let {
     property,
-    value
-  }: {property: PropertyField, value: AnnotationValue} = $props()
+    value,
+    onValueChange,
+  }: {property: PropertyField, value : AnnotationValue, onValueChange: (v:any) => void} = $props()
 </script>
 
 
 <div>
     <Label for={property.id}>{property.label}</Label>
-    <Checkbox id={property.id} value={value.attributes?.[property.id]}/>
+    <Checkbox id={property.id}
+      checked={!!value.attributes?.[property.id]}
+      onCheckedChange={onValueChange} />
 </div>

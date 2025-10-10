@@ -26,6 +26,7 @@
     onSelect,
     onSelectAnnotation,
     onDeleteAnnotation,
+    onEditValue,
     db,
   }: {
     type: string;
@@ -319,6 +320,7 @@
       {db}
       selectedId={selected_id}
       onSelectCategory={onSelect}
+      {onEditValue}
     />
   {:else}
     <div class="flex gap-2 py-2">
