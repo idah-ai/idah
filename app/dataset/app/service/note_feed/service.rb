@@ -52,7 +52,7 @@ module NoteFeed
     end
 
     def resolve(id)
-      note_feeds.update!(id, status: "resolved")
+      note_feeds.update!(id, { status: "resolved" })
       note_feeds.find!(id)
     end
   end
