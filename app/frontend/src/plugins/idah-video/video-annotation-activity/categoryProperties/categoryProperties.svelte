@@ -12,6 +12,7 @@
     import BooleanProperty from "./properties/booleanProperty.svelte";
     import SelectProperty from "./properties/SelectProperty.svelte";
     import type { AnnotationValue } from "@/context/AnnotationContext";
+    import { idb_updated_at } from "../idb_store.svelte";
 
   type Props = {
     selectedCategory: string,
@@ -29,8 +30,8 @@
 
   // Contexts
   const context: IActivityContext = getContext("context");
-  const category = context.config.categories.find(c => c.id == selectedCategory)
-  const properties = context.config.properties.filter(
+  const category = () => context.config.categories.find(c => c.id == selectedCategory)
+  const properties = () => context.config.properties.filter(
     (p) => p.selector.includes(selectedCategory)
   )
 
@@ -52,7 +53,7 @@
     }}
   ]
 
-  const selectedPromise = db?.get('annotations', selectedId)
+  const selectedPromise = () => db?.get('annotations', selectedId)
 
   function visibleFullfilled(p: PropertyField, v: AnnotationValue){
     // check visibility condition
@@ -69,11 +70,12 @@
   <div class="flex pb-1">
     <Text class="text-gray-700" weight="medium" size="sm">Category</Text>
   </div>
+  {#key $idb_updated_at}
     <Select
       type="single"
       onValueChange={onSelectCategory}>
       <SelectTrigger class="w-full">
-        {category?.label}
+        {category()?.label}
         <!-- {@render showCategoryTitle(selectedCategory, false, false)} -->
       </SelectTrigger>
       <SelectContent>
@@ -87,13 +89,14 @@
       </SelectContent>
     </Select>
 
-    {#await selectedPromise}
+
+    {#await selectedPromise()}
       awaiting selected
     {:then selected}
       {#if !selected}
         <!-- annotation to display not found -->
       {:else}
-        {#each properties as property (property.id)}
+        {#each properties() as property (property.id)}
           {@const pc = propertyComponents.find(p => p.type == property.type)}
 
           {#if pc && visibleFullfilled(property, selected.value)}
@@ -106,4 +109,5 @@
     {:catch}
         could not retrieve selected from selectedId={selectedId}
     {/await}
+  {/key}
 </div>
