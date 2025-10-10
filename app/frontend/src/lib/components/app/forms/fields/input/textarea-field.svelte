@@ -1,8 +1,8 @@
 <script lang="ts">
-  import FormField from "@/components/app/forms/form-field.svelte";
   import FormFieldErrors from "@/components/app/forms/form-field-errors.svelte";
   import FormFieldInfo from "@/components/app/forms/form-field-info.svelte";
   import FormFieldLabel from "@/components/app/forms/form-field-label.svelte";
+  import FormField from "@/components/app/forms/form-field.svelte";
   import Textarea from "@/components/ui/textarea/textarea.svelte";
 
   import { cn } from "@/utils";
@@ -42,7 +42,7 @@
     <FormFieldLabel {required}>{label}</FormFieldLabel>
   {/if}
 
-  <Textarea {name} {placeholder} {disabled} {readonly} {required} {rows} bind:value {oninput} />
+  <Textarea {name} {placeholder} {disabled} {readonly} {required} {rows} bind:value {oninput}></Textarea>
 
   {#if slotInfo}
     {@render slotInfo()}

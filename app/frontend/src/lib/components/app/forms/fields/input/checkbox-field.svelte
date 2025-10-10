@@ -1,9 +1,9 @@
 <script lang="ts">
-  import Checkbox from "@/components/ui/checkbox/checkbox.svelte";
-  import FormField from "@/components/app/forms/form-field.svelte";
   import FormFieldErrors from "@/components/app/forms/form-field-errors.svelte";
   import FormFieldInfo from "@/components/app/forms/form-field-info.svelte";
   import FormFieldLabel from "@/components/app/forms/form-field-label.svelte";
+  import FormField from "@/components/app/forms/form-field.svelte";
+  import Checkbox from "@/components/ui/checkbox/checkbox.svelte";
 
   import { cn } from "@/utils";
 
@@ -44,7 +44,7 @@
     className,
   )}
 >
-  <Checkbox {name} {disabled} {readonly} {required} bind:checked {onCheckedChange} />
+  <Checkbox {name} {disabled} {readonly} {required} bind:checked {onCheckedChange}></Checkbox>
 
   <div class="grid flex-1 gap-1.5 font-normal">
     {#if slotLabel}

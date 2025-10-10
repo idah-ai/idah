@@ -9,7 +9,7 @@ import {
 import { clearCache } from "@/data/Cache";
 import { parseSingleElementError, parseSingleElementReturn } from "@/data/model/json_api";
 
-import type { DatasetRecord } from "@/data/model/dataset/dataset-record";
+import { DatasetRecord } from "@/data/model/dataset/dataset-record";
 import type { JsonApiErrorResponse, RecordResponse } from "@/data/model/types";
 import type { Hash } from "@/utils/types";
 

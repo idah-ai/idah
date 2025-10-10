@@ -1,50 +1,35 @@
 <script lang="ts">
-  import Text from "@/components/ui/text/Text.svelte";
-  import { cn } from "@/utils";
-
   import { type Icon as IconType } from "@lucide/svelte";
-
   import type { Snippet } from "svelte";
+
+  import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 
   // Props
   interface Props {
-    class?: string | null;
     icon?: typeof IconType;
 
-    title?: string;
-    slotTitle?: Snippet;
+    title: string;
+    description: string;
 
-    description?: string;
-    slotDescription?: Snippet;
-
-    actions?: Snippet;
+    actions: Snippet;
   }
-  let { class: className, icon: Icon, title, slotTitle, description, slotDescription, actions }: Props = $props();
+  let { icon: Icon, title, description, actions }: Props = $props();
 </script>
 
-<div id="response-block-container" class={cn("flex flex-col items-center gap-4", className)}>
-  <!-- RESPONSE BLOCK::ICON -->
-  <div class="inline-flex size-9 shrink-0 items-center justify-center rounded-md border">
-    {#if Icon}
-      <Icon class="size-4" />
-    {/if}
-  </div>
+<Empty>
+  <EmptyHeader>
+    <EmptyMedia variant={Icon ? "icon" : "default"}>
+      {#if Icon}
+        <Icon class="size-4"></Icon>
+      {/if}
+    </EmptyMedia>
 
-  <!-- RESPONSE BLOCK::CONTENT -->
-  <div class="flex flex-col items-center gap-1">
-    {#if slotTitle}
-      {@render slotTitle?.()}
-    {:else}
-      <Text weight="semibold" class="capitalize">{title}</Text>
-    {/if}
+    <EmptyTitle>{title}</EmptyTitle>
 
-    {#if slotDescription}
-      {@render slotDescription?.()}
-    {:else}
-      <Text size="sm" class="text-muted-foreground">{description}</Text>
-    {/if}
-  </div>
+    <EmptyDescription>{description}</EmptyDescription>
+  </EmptyHeader>
 
-  <!-- RESPONSE BLOCK::ACTIONS -->
-  {@render actions?.()}
-</div>
+  <EmptyContent class="flex-row justify-center">
+    {@render actions()}
+  </EmptyContent>
+</Empty>
