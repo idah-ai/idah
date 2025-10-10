@@ -16,31 +16,25 @@
     selectType: 'single'|'multi'
   } = $props()
 
-
-  let currentValue = $state(value)
   let options = property.format.options
-
-  function changeselection(v) {
-    //
-  }
 
 </script>
 
 
 <div>
-    <Label>{property.label}</Label>
-    <Select type={selectType}
-      value={currentValue.attributes?.[property.id]}
-      onValueChange={onValueChange}>
-      <SelectTrigger class="w-[180px]">
-        {currentValue.attributes?.[property.id]}
-      </SelectTrigger>
-      <SelectContent>
-        <SelectGroup>
-            {#each options as option (option.id)}
-              <SelectItem value={option.id} label={option.label}/>
-            {/each}
-        </SelectGroup>
-      </SelectContent>
-    </Select>
+  <Label>{property.label}</Label>
+  <Select type={selectType}
+    value={value.attributes?.[property.id]}
+    onValueChange={onValueChange}>
+    <SelectTrigger class="w-[180px]">
+      {value.attributes?.[property.id]}
+    </SelectTrigger>
+    <SelectContent>
+      <SelectGroup>
+          {#each options as option (option.id)}
+            <SelectItem value={option.id} label={option.label}/>
+          {/each}
+      </SelectGroup>
+    </SelectContent>
+  </Select>
 </div>
