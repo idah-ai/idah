@@ -18,6 +18,7 @@
     selectedCategory: string,
     selectedId: string,
     onSelectCategory: (category?: CategoryDefinition) => void,
+    onEditValue: (value?: AnnotationValue) => void,
     db?: AnnotationsIndexedDB,
   };
 
@@ -25,6 +26,7 @@
     selectedCategory,
     selectedId,
     onSelectCategory,
+    onEditValue,
     db,
   }:Props = $props();
 
@@ -60,10 +62,27 @@
     return true
   }
 
-  function requiredFullfilled() {
+  function requiredFullfilled(value:AnnotationValue):boolean {
+    const required_properties = properties().filter(p => p.required)
 
+    // todo account for visibility/required
+
+    return required_properties.every(p => {
+      !!value.attributes?.[p.id] // && conform to format
+    })
   }
 
+  function onValueChange(
+    property: PropertyField,
+    selected: AnnotationValue,
+    v: any
+  ){
+    console.log({onValueChanged:{property, selected, v}})
+    if (!selected.value.attributes) selected.value.attributes = {}
+
+    selected.value.attributes[property.id] = v
+    onEditValue(selected.value)
+  }
 </script>
 
 <div>
@@ -102,7 +121,12 @@
           {#if pc && visibleFullfilled(property, selected.value)}
             <svelte:component
               this={pc.component}
-              {...{property, ...pc.extraProps, value: selected.value}} />
+              {...{
+                property,
+                ...pc.extraProps,
+                value: selected.value,
+                onValueChange: (v:any) => onValueChange(property, selected, v)
+                }} />
           {/if}
         {/each}
       {/if}

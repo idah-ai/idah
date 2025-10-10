@@ -6,12 +6,13 @@
 
   let {
     property,
-    value
-  }: {property: PropertyField, value : AnnotationValue} = $props()
+    value,
+    onValueChange,
+  }: {property: PropertyField, value : AnnotationValue, onValueChange: (v:any) => void} = $props()
 </script>
 
 
 <div>
     <Label for={property.id}>{property.label}</Label>
-    <Input id={property.id} type='number' value={value.attributes?.[property.id]}/>
+    <Input id={property.id} type='number' value={value.attributes?.[property.id]} onchange={(e) => onValueChange(e.target.value)}/>
 </div>

@@ -121,6 +121,7 @@
               {selected_id}
               {onSelectAnnotation}
               {onDeleteAnnotation}
+              onEditValue={(v) => onEditValue(v, tool)}
               onSelect={(s) => categorySelection(tool, s)}
             />
           </SidebarGroupContent>
