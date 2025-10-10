@@ -10,6 +10,7 @@
   import { idb_updated_at } from "./idb_store.svelte";
 
   import type { CategoryDefinition } from "@/context/ActivityContext";
+  import { humanize } from "@/utils/string";
   import type { AnnotationsIndexedDB } from "./indexedDB";
   import type { CategoryConfiguration, VideoAnnotation } from "./VideoAnnotationContext";
 
@@ -72,23 +73,27 @@
         data: configuration,
       });
     } else {
-      const index = acc.findIndex((a) => configuration.id.startsWith(a.id));
+      const parentId = ids[0];
+      let parent = acc.find((a) => a.id === parentId);
 
-      if (index == -1) {
-        acc.push({
-          id: configuration.id,
-          name: ids[0],
-          nestedCategories: buildTree([], ids.slice(1, Infinity), configuration),
+      if (!parent) {
+        parent = {
+          id: parentId,
+          name: humanize(parentId),
           requiredNested: true,
           data: configuration,
-        });
-      } else {
-        acc[index].nestedCategories = buildTree(
-          acc[index].nestedCategories || [],
-          ids.slice(1, Infinity),
-          configuration,
-        );
+          nestedCategories: [],
+        };
+        acc.push(parent);
       }
+
+      // Ensure nestedCategories exists
+      if (!parent.nestedCategories) {
+        parent.nestedCategories = [];
+      }
+
+      // continue building sub path in the parent's nestedCategories
+      buildTree(parent.nestedCategories, ids.slice(1), configuration);
     }
     return acc;
   }
@@ -246,7 +251,8 @@
             // Prevent default toggle behavior
             e.preventDefault();
 
-            if (!category.requiredNested) {
+            // Allow selection if category is not requiredNested, or if it's a parent that exists in the original categories list
+            if (categories.find((c) => c.id === category.id)) {
               onSelect(category);
             }
 
@@ -291,7 +297,7 @@
             ...
           {:then anns}
             {#each anns.filter((annotation) => currentFrame >= annotation.shape.start && currentFrame <= annotation.shape.end && annotation.shape.type == type) as annotation, i (annotation.metadata.id)}
-                {@render annotationSelection(annotation, `${category.name}_${i}`, category.id)}
+              {@render annotationSelection(annotation, `${category.name}_${i}`, category.id)}
             {/each}
           {/await}
         {/if}
@@ -330,9 +336,9 @@
         <SelectContent>
           <SelectGroup>
             {#each categories as category (category.id)}
-                <SelectItem value={category.id} label={category.label}>
-                  {category.label}
-                </SelectItem>
+              <SelectItem value={category.id} label={category.label}>
+                {category.label}
+              </SelectItem>
             {/each}
           </SelectGroup>
         </SelectContent>
@@ -359,7 +365,7 @@
     </div>
 
     {#each categoriesTree as category (category.id)}
-        {@render categorySelection(category, category.nestedCategories, onSelect, selected_category)}
+      {@render categorySelection(category, category.nestedCategories, onSelect, selected_category)}
     {/each}
-{/if}
+  {/if}
 </div>
