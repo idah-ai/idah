@@ -11,12 +11,11 @@
 
   // Variables
   let entryId: string = page.params.entryId as string;
-  let pluginId: string = page.params.pluginId as string;
 
   // Functions
   async function loadContext(): Promise<IActivityContext> {
     const entryRes = await entriesBackendDataSource.get(entryId, {
-      included: ["dataset"],
+      included: ["dataset.project"],
     });
 
     const context = activityContextForEntry(entryRes.data);
@@ -30,5 +29,5 @@
     <p class="text-muted-foreground text-sm">Loading context for {entryId}...</p>
   </div>
 {:then context}
-  <IdahPlugin {context} {pluginId} />
+  <IdahPlugin {context} />
 {/await}
