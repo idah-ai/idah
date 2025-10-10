@@ -2,15 +2,15 @@
   import Badge from "@/components/ui/badge/badge.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-  import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger } from "@/components/ui/select";
+  import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger } from "@/components/ui/select";
   import { SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
   import Text from "@/components/ui/text/Text.svelte";
   import { cn } from "@/utils";
+  import { humanize } from "@/utils/string";
   import { ChevronRight, CircleSmallIcon, PlusIcon, Trash2Icon } from "@lucide/svelte";
   import { idb_updated_at } from "./idb_store.svelte";
 
   import type { CategoryDefinition } from "@/context/ActivityContext";
-  import { humanize } from "@/utils/string";
   import type { AnnotationsIndexedDB } from "./indexedDB";
   import type { CategoryConfiguration, VideoAnnotation } from "./VideoAnnotationContext";
 
@@ -124,7 +124,7 @@
   }
 </script>
 
-{#snippet annotationSelection(annotation: VideoAnnotation, name: string, annotationCategory?: string)}
+{#snippet annotationSelection(annotation: VideoAnnotation, name: string)}
   <SidebarMenuItem class="item_hover list-none p-1">
     <SidebarMenuButton
       class={cn("ml-5 w-full justify-between px-5 hover:cursor-pointer")}
@@ -297,7 +297,7 @@
             ...
           {:then anns}
             {#each anns.filter((annotation) => currentFrame >= annotation.shape.start && currentFrame <= annotation.shape.end && annotation.shape.type == type) as annotation, i (annotation.metadata.id)}
-              {@render annotationSelection(annotation, `${category.name}_${i}`, category.id)}
+              {@render annotationSelection(annotation, `${category.name}_${i}`)}
             {/each}
           {/await}
         {/if}
