@@ -121,6 +121,7 @@
               {selected_id}
               {onSelectAnnotation}
               {onDeleteAnnotation}
+              {annotationValue}
               onEditValue={(v) => onEditValue(v, tool)}
               onSelect={(s) => categorySelection(tool, s)}
             />

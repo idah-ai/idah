@@ -13,10 +13,12 @@
     import SelectProperty from "./properties/SelectProperty.svelte";
     import type { AnnotationValue } from "@/context/AnnotationContext";
     import { idb_updated_at } from "../idb_store.svelte";
+    import { visibleFullfilled } from ".";
 
   type Props = {
     selectedCategory: string,
     selectedId: string,
+    annotationValue: AnnotationValue,
     onSelectCategory: (category?: CategoryDefinition) => void,
     onEditValue: (value?: AnnotationValue) => void,
     db?: AnnotationsIndexedDB,
@@ -25,6 +27,7 @@
   let {
     selectedCategory,
     selectedId,
+    annotationValue,
     onSelectCategory,
     onEditValue,
     db,
@@ -57,31 +60,14 @@
 
   const selectedPromise = () => db?.get('annotations', selectedId)
 
-  function visibleFullfilled(p: PropertyField, v: AnnotationValue){
-    // check visibility condition
-    return true
-  }
-
-  function requiredFullfilled(value:AnnotationValue):boolean {
-    const required_properties = properties().filter(p => p.required)
-
-    // todo account for visibility/required
-
-    return required_properties.every(p => {
-      !!value.attributes?.[p.id] // && conform to format
-    })
-  }
-
   function onValueChange(
     property: PropertyField,
-    selected: AnnotationValue,
     v: any
   ){
-    console.log({onValueChanged:{property, selected, v}})
-    if (!selected.value.attributes) selected.value.attributes = {}
-
-    selected.value.attributes[property.id] = v
-    onEditValue(selected.value)
+    onEditValue({
+      ...annotationValue,
+      attributes: { ...(annotationValue.attributes || {}), [property.id]: v }
+    })
   }
 </script>
 
@@ -109,29 +95,19 @@
     </Select>
 
 
-    {#await selectedPromise()}
-      awaiting selected
-    {:then selected}
-      {#if !selected}
-        <!-- annotation to display not found -->
-      {:else}
-        {#each properties() as property (property.id)}
-          {@const pc = propertyComponents.find(p => p.type == property.type)}
+    {#each properties() as property (property.id)}
+      {@const pc = propertyComponents.find(p => p.type == property.type)}
 
-          {#if pc && visibleFullfilled(property, selected.value)}
-            <svelte:component
-              this={pc.component}
-              {...{
-                property,
-                ...pc.extraProps,
-                value: selected.value,
-                onValueChange: (v:any) => onValueChange(property, selected, v)
-                }} />
-          {/if}
-        {/each}
+      {#if pc && visibleFullfilled(property)}
+        <svelte:component
+          this={pc.component}
+          {...{
+            property,
+            ...pc.extraProps,
+            value: annotationValue,
+            onValueChange: (v:any) => onValueChange(property, v)
+            }} />
       {/if}
-    {:catch}
-        could not retrieve selected from selectedId={selectedId}
-    {/await}
+    {/each}
   {/key}
 </div>
