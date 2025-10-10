@@ -175,13 +175,13 @@
 {#snippet showCategoryTitle(category: CategoryDefinition, haveChildren: boolean = false, open: boolean = false)}
   <div
     class={cn("flex items-center gap-2", {
-      "p-2": !haveChildren && !toolMode,
+      // "p-2": !haveChildren && !toolMode,
     })}
   >
     <Button
       variant="ghost"
       class={cn("p-0 hover:cursor-pointer", {
-        hidden: (!haveChildren && !toolMode) || selected_id,
+        "opacity-0": (!haveChildren && !toolMode) || selected_id,
       })}
       onclick={(e) => {
         e.stopPropagation();
