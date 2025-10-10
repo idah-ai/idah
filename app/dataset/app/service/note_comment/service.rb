@@ -32,6 +32,9 @@ module NoteComment
               "note_feed is required to create a note comment"
       end
 
+      # put created_by_id to 1 for now, will be replaced with auth context later
+      attr[:created_by_id] = 1
+
       id = note_comments.create(attr)
 
       note_comments.find!(id)
