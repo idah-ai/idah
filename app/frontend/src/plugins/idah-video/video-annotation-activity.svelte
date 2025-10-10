@@ -77,50 +77,50 @@
   let volume = $state({level: 0, mute: false})
 
   let commandOpen = $state(false);
-  registerVisualModeShortcuts({
-    player: () => player,
-    toggleCommandCB: () => {
-      commandOpen = !commandOpen;
-    },
-    flush: () => context.annotations.flush(),
-    switch_mode: (_mode: string) => {},
-    zoom: { in: () => {}, out: () => {} },
-  });
+  // registerVisualModeShortcuts({
+  //   player: () => player,
+  //   toggleCommandCB: () => {
+  //     commandOpen = !commandOpen;
+  //   },
+  //   flush: () => context.annotations.flush(),
+  //   switch_mode: (_mode: string) => {},
+  //   zoom: { in: () => {}, out: () => {} },
+  // });
 
-  window.onkeydown = (e) => {
-    const current_mode = ShortcutManager.getCurrentMode();
-    const keymap = ShortcutManager.keyMap[current_mode];
+  // window.onkeydown = (e) => {
+  //   const current_mode = ShortcutManager.getCurrentMode();
+  //   const keymap = ShortcutManager.keyMap[current_mode];
 
-    if (!keymap) return console.error("no keymap found for", { current_mode });
+  //   if (!keymap) return console.error("no keymap found for", { current_mode });
 
-    const modifier_keys = [
-      e.altKey && "Alt",
-      e.ctrlKey && "Control",
-      e.metaKey && "Meta",
-      e.shiftKey && "Shift",
-    ].sort();
+  //   const modifier_keys = [
+  //     e.altKey && "Alt",
+  //     e.ctrlKey && "Control",
+  //     e.metaKey && "Meta",
+  //     e.shiftKey && "Shift",
+  //   ].sort();
 
-    const shortcut_keys = (
-      ["Control", "Alt", "Shift", "Meta"].includes(e.key)
-        ? [undefined]
-        : e.code.startsWith("Key")
-          ? [e.key.toLocaleUpperCase(), e.key.toLocaleLowerCase()]
-          : [e.code]
-    ).map((k) => [...modifier_keys, k].filter((k) => k).join("+"));
+  //   const shortcut_keys = (
+  //     ["Control", "Alt", "Shift", "Meta"].includes(e.key)
+  //       ? [undefined]
+  //       : e.code.startsWith("Key")
+  //         ? [e.key.toLocaleUpperCase(), e.key.toLocaleLowerCase()]
+  //         : [e.code]
+  //   ).map((k) => [...modifier_keys, k].filter((k) => k).join("+"));
 
-    for (let index = 0; index < shortcut_keys.length; index++) {
-      let shortcut_key = shortcut_keys[index];
+  //   for (let index = 0; index < shortcut_keys.length; index++) {
+  //     let shortcut_key = shortcut_keys[index];
 
-      let shortcut = keymap[shortcut_key];
+  //     let shortcut = keymap[shortcut_key];
 
-      if (!shortcut) continue;
+  //     if (!shortcut) continue;
 
-      e.preventDefault();
-      shortcut.action();
-      console.log({ shortcut_key, shortcut });
-      break;
-    }
-  };
+  //     e.preventDefault();
+  //     shortcut.action();
+  //     console.log({ shortcut_key, shortcut });
+  //     break;
+  //   }
+  // };
 
   // for now
   $effect(() => {
@@ -621,7 +621,7 @@
           annotationValue = value;
           mode = valueMode;
           if (selectedAnnotation) {
-            updateAnnotationValue(selectedAnnotation, value);
+            updateAnnotationValue($state.snapshot(selectedAnnotation), $state.snapshot(value));
           }
         }}
         onSelectAnnotation={selectAnnotation}
@@ -659,7 +659,7 @@
             mode = valueMode;
             if (selectedAnnotation) {
               selectedAnnotation.value = value;
-              updateAnnotationValue(selectedAnnotation, value);
+              updateAnnotationValue($state.snapshot(selectedAnnotation), $state.snapshot(value));
             }
           }}
           onSelectAnnotation={selectAnnotation}

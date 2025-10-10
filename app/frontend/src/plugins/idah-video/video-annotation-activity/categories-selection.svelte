@@ -28,6 +28,7 @@
     onDeleteAnnotation,
     onEditValue,
     db,
+    annotationValue,
   }: {
     type: string;
     currentFrame: number;
@@ -39,6 +40,7 @@
     onSelectAnnotation: (annotation: VideoAnnotation) => void;
     onDeleteAnnotation: (annotation: VideoAnnotation) => void;
     db?: AnnotationsIndexedDB;
+    annotationValue: AnnotationValue;
   } = $props();
 
   // Variables
@@ -318,7 +320,7 @@
     <CategoryProperties
       selectedCategory={selected_category}
       {db}
-      selectedId={selected_id}
+      {annotationValue}
       onSelectCategory={onSelect}
       {onEditValue}
     />
