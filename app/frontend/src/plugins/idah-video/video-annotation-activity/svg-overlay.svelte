@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onDestroy, onMount, type Snippet } from "svelte";
+  import { type Snippet } from "svelte";
   import {
     HEIGHT,
     ORIGIN,
@@ -19,7 +19,7 @@
     frame: number;
     selected: VideoAnnotation | undefined;
     mode: string;
-    target_container: HTMLDivElement; // ..
+    target_container: () => HTMLDivElement; // ..
     annotations_promise: Promise<VideoAnnotation[]>;
     children: Snippet;
     onclick?: (e: MouseEvent) => void;
@@ -29,7 +29,7 @@
     onmousemove?: (e: MouseEvent) => void;
     onwheel?: (e: WheelEvent) => void;
     onSelection: (type: string, frame: number, points?: Point[], id?: string) => void;
-    videoResizedAt: Date
+    videoResizedAt: Date;
   };
 
   let {
@@ -52,7 +52,6 @@
     offset: [0, 0],
   });
 
-
   let height = $state(0);
   let width = $state(0);
   let mouse: Point = $state([0, 0]);
@@ -72,9 +71,9 @@
     return shape ? currentShape(shape, frame) || [] : [];
   });
 
-  function updatedSize():Point {
+  function updatedSize(): Point {
     videoResizedAt; // (... update on change)
-    let target_dom_rect = target_container?.getBoundingClientRect();
+    let target_dom_rect = target_container()?.getBoundingClientRect();
     zoomInfo; // (... update on change)
 
     return !target_dom_rect ? ORIGIN : [target_dom_rect.width, target_dom_rect.height];
@@ -196,13 +195,13 @@
   >
     {#if width && height}
       <!-- prevent display issue on load for now -->
-      <line x1={0} y1={target_line[Y]} x2={width} y2={target_line[Y]} stroke={'#2b7fff'}/>
-      <line x1={target_line[X]} y1={0} x2={target_line[X]} y2={height} stroke={'#2b7fff'}/>
+      <line x1={0} y1={target_line[Y]} x2={width} y2={target_line[Y]} stroke=#2b7fff />
+      <line x1={target_line[X]} y1={0} x2={target_line[X]} y2={height} stroke=#2b7fff />
     {/if}
 
     <!-- draw annotation context -->
     {#await annotations_promise}
-      {#each $boundingBoxes as annotation}
+      {#each $boundingBoxes as annotation (annotation.metadata.id)}
         {#if annotation.metadata.id != selected?.metadata.id}
           {#if annotation.shape.type == "video:bounding_box"}
             <BoundingBox
@@ -221,7 +220,7 @@
         {/if}
       {/each}
     {:then annotations}
-      {#each annotations as annotation}
+      {#each annotations as annotation (annotation.metadata.id)}
         {#if annotation.metadata.id != selected?.metadata.id}
           {#if annotation.shape.type == "video:bounding_box"}
             <BoundingBox
@@ -252,9 +251,6 @@
       onChange={(bb) => {
         onSelection("video:bounding_box", frame, bb, selected?.metadata.id);
         points = bb;
-      }}
-      onmousedown={(e) => {
-        console.error("clicked anyway");
       }}
     />
   </svg>

@@ -76,7 +76,7 @@
 
       if (index == -1) {
         acc.push({
-          id: configuration.id.replace(ids.join("/"), ids.at(0) || ""),
+          id: configuration.id,
           name: ids[0],
           nestedCategories: buildTree([], ids.slice(1, Infinity), configuration),
           requiredNested: true,
@@ -290,15 +290,15 @@
           {#await db.getAllIndex("category", category.id)}
             ...
           {:then anns}
-            {#each anns.filter((annotation) => currentFrame >= annotation.shape.start && currentFrame <= annotation.shape.end && annotation.shape.type == type) as annotation, i}
-              {@render annotationSelection(annotation, `${category.name}_${i}`, category.id)}
+            {#each anns.filter((annotation) => currentFrame >= annotation.shape.start && currentFrame <= annotation.shape.end && annotation.shape.type == type) as annotation, i (annotation.metadata.id)}
+                {@render annotationSelection(annotation, `${category.name}_${i}`, category.id)}
             {/each}
           {/await}
         {/if}
       {/key}
 
       {#if subCategories}
-        {#each subCategories as subCategory}
+        {#each subCategories as subCategory (subCategory.id)}
           {@render categorySelection(subCategory, subCategory.nestedCategories, onSelect, selected, [
             ...parent,
             category.id.split("/").slice(parent.length)[0],
@@ -329,10 +329,10 @@
         </SelectTrigger>
         <SelectContent>
           <SelectGroup>
-            {#each categories as category}
-              <SelectItem value={category.id} label={category.label}>
-                {category.label}
-              </SelectItem>
+            {#each categories as category (category.id)}
+                <SelectItem value={category.id} label={category.label}>
+                  {category.label}
+                </SelectItem>
             {/each}
           </SelectGroup>
         </SelectContent>
@@ -358,8 +358,8 @@
       {/key}
     </div>
 
-    {#each categoriesTree as category}
-      {@render categorySelection(category, category.nestedCategories, onSelect, selected_category)}
+    {#each categoriesTree as category (category.id)}
+        {@render categorySelection(category, category.nestedCategories, onSelect, selected_category)}
     {/each}
-  {/if}
+{/if}
 </div>

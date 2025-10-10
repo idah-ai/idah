@@ -4,7 +4,7 @@ import { mount, unmount } from "svelte";
 
 let mounted: any;
 
-const idah_video: IActivityView = {
+const idah_plugin: IActivityView = {
   name: "idah-video",
   label: "idah video annotation plugin",
   description: "idah video annotation plugin",
@@ -34,4 +34,4 @@ const idah_video: IActivityView = {
   },
 };
 
-export default idah_video;
+export default idah_plugin;
