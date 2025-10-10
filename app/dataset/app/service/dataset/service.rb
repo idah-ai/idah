@@ -33,7 +33,8 @@ module Dataset
       end
 
       id = datasets.create(
-        record.attributes
+        **record.attributes,
+        created_by_id: auth_context.metadata[:id] || 1
       )
 
       datasets.find!(id)
