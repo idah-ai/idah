@@ -174,7 +174,7 @@
 
 {#snippet showCategoryTitle(category: CategoryDefinition, haveChildren: boolean = false, open: boolean = false)}
   <div
-    class={cn("flex items-center gap-2", {
+    class={cn("flex items-center gap-2 text-gray-700", {
       // "p-2": !haveChildren && !toolMode,
     })}
   >
