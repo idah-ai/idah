@@ -182,6 +182,7 @@
       variant="ghost"
       class={cn("p-0 hover:cursor-pointer", {
         "opacity-0": (!haveChildren && !toolMode) || selected_id,
+        hidden: toolMode && selected_id,
       })}
       onclick={(e) => {
         e.stopPropagation();
