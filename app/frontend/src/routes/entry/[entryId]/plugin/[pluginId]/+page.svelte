@@ -1,38 +1,34 @@
 <script lang="ts">
-    import IdahPlugin from "@/plugin/IdahPlugin.svelte";
-    import type { IActivityContext, IActivityView } from "@/plugin/interface/Activity";
-    import { page } from "$app/state";
-    // resolve records registration
-    import { datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
-    import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
-    import { activityContextForEntry } from "@/plugin/ActivityContext";
-    import type { PluginManager } from "@/plugin/PluginManager";
+  import { page } from "$app/state";
 
-    let entry_id: string = page.params.entryId as string;
-    let plugin_id: string = page.params.pluginId as string;
+  import Spinner from "@/components/ui/spinner/spinner.svelte";
+  import IdahPlugin from "@/plugin/IdahPlugin.svelte";
 
+  import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
+  import { activityContextForEntry } from "@/plugin/ActivityContext";
 
-    console.debug("loading plugin context")
-    let contextPromise = new Promise<IActivityContext>((resolve, reject) => {
-        entriesBackendDataSource
-            .get(entry_id, { included: ["dataset.project"] })
-            .then(
-                (entry) => {
-                    const context = activityContextForEntry(entry.data)
-                    console.log({context})
-                    resolve(context)
-                },
-                (entry) => {
-                    console.error({error: entry})
-                    reject()
-                }
-            )
-    })
+  import type { IActivityContext } from "@/plugin/interface/Activity";
+
+  // Variables
+  let entryId: string = page.params.entryId as string;
+  let pluginId: string = page.params.pluginId as string;
+
+  // Functions
+  async function loadContext(): Promise<IActivityContext> {
+    const entryRes = await entriesBackendDataSource.get(entryId, {
+      included: ["dataset"],
+    });
+
+    const context = activityContextForEntry(entryRes.data);
+    return context;
+  }
 </script>
 
-{#await contextPromise}
-    <p>Loading context for {entry_id}</p>
+{#await loadContext()}
+  <div class="flex h-screen flex-col items-center justify-center gap-2">
+    <Spinner size="xl"></Spinner>
+    <p class="text-muted-foreground text-sm">Loading context for {entryId}...</p>
+  </div>
 {:then context}
-    <IdahPlugin {context} {plugin_id}/>
+  <IdahPlugin {context} {pluginId} />
 {/await}
-

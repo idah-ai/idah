@@ -1,13 +1,13 @@
 <script lang="ts">
-  import { Card, CardContent, CardHeader } from "@/components/ui/card";
-  import CheckboxField from "@/components/app/forms/fields/input/checkbox-field.svelte";
-  import PropertyOptions from "@/components/app/datasets/labels/properties/property-options.svelte";
-  import PropertySelectors from "@/components/app/datasets/labels/properties/property-selectors.svelte";
-  import PropertyTypeDropdownMenu from "@/components/app/datasets/labels/dropdown-menus/property-type-dropdown-menu.svelte";
   import RemovePropertyButton from "@/components/app/datasets/labels/buttons/remove-property-button.svelte";
   import ToggleShowContentButton from "@/components/app/datasets/labels/buttons/toggle-show-content-button.svelte";
+  import PropertyTypeDropdownMenu from "@/components/app/datasets/labels/dropdown-menus/property-type-dropdown-menu.svelte";
+  import PropertyOptions from "@/components/app/datasets/labels/properties/property-options.svelte";
+  import PropertySelectors from "@/components/app/datasets/labels/properties/property-selectors.svelte";
+  import CheckboxField from "@/components/app/forms/fields/input/checkbox-field.svelte";
+  import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
-  import { fieldTypes, type PropertyField, type FieldType } from "@/data/model/dataset/labels";
+  import { fieldTypes, type FieldType, type PropertyField } from "@/data/model/dataset/labels";
   import type { Hash } from "@/utils/types";
 
   // Props

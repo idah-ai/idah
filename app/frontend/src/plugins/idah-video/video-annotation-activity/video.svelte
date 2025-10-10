@@ -9,12 +9,14 @@
     type Props = {
         element?: HTMLDivElement,
         onFramesChange: (current:number, frames:number) => void
-        onVolumeChange: (volume:number) => void
+        onVolumeChange: (volume:number) => void,
+        onResize?: () => void
     }
 
     let {
          element = $bindable(),
          onFramesChange,
+         onResize
     }: Props = $props()
 
     let player: videojs = $state();
@@ -115,7 +117,11 @@
             player.on('sourceset', () => quality_check('sourceset'))
             player.on('loadeddata', () => quality_check('loadeddata'))
             player.on('loadedmetadata', () => quality_check('loadedmetadata'))
-            player.on('resize', () => quality_check('resize'))
+            player.on('resize', () => {
+                onResize?.()
+                // quick fix for now // I'll review it all post plugin
+                quality_check('resize')
+            })
             player.on('timeupdate', () => {
                 mediaTime = player.currentTime() || 0
             });
@@ -159,7 +165,6 @@
     }
 
     function quality_check(from?: string) {
-        // console.error(from)
         let qualityLevel = player.qualityLevels()[player.qualityLevels().selectedIndex]
 
         duration = player.duration() || 0;

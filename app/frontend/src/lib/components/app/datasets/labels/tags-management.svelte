@@ -1,13 +1,13 @@
 <script lang="ts">
+  import { PlusIcon, TagIcon } from "@lucide/svelte";
   import { getContext } from "svelte";
 
-  import { Button } from "@/components/ui/button";
-  import { Card, CardContent } from "@/components/ui/card";
   import ResponseBlock from "@/components/app/blocks/response-block.svelte";
   import TaggingCard from "@/components/app/datasets/labels/cards/tagging-card.svelte";
+  import { Button } from "@/components/ui/button";
+  import { Card, CardContent } from "@/components/ui/card";
 
   import { slugify } from "@/utils/string";
-  import { PlusIcon, TagIcon } from "@lucide/svelte";
 
   import type { LabelingConfiguration, TagField } from "@/data/model/dataset/labels";
 

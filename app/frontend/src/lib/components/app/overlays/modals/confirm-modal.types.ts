@@ -1,5 +1,6 @@
-import type { ModalBaseProps } from "@/components/app/overlays/modals/Modal.types";
 import type { Snippet } from "svelte";
+
+import type { ModalBaseProps } from "@/components/app/overlays/modals/Modal.types";
 
 export interface ConfirmModalBaseProps extends ModalBaseProps {
   title: string;

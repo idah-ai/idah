@@ -1,12 +1,13 @@
 <script lang="ts">
-  import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+  import type { Snippet } from "svelte";
+
   import Copyable from "@/components/app/texts/copyable.svelte";
-  import Spinner from "@/components/app/loading/spinner.svelte";
+  import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+  import Spinner from "@/components/ui/spinner/spinner.svelte";
   import Text from "@/components/ui/text/Text.svelte";
 
-  import { getAvatarFallback } from "@/utils/string";
   import { ProjectMemberRecord, projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
-  import type { Snippet } from "svelte";
+  import { getAvatarFallback } from "@/utils/string";
 
   // Props
   interface Props {
@@ -30,13 +31,13 @@
 </script>
 
 {#await fetchProjectMember()}
-  <Spinner></Spinner>
+  <Spinner size="sm"></Spinner>
 {:then projectMemberRes}
   {#if projectMemberRes}
     {@const { name, email } = projectMemberRes.data}
 
     <div class="flex items-center">
-      <Avatar class="size-6">
+      <Avatar class="size-6 text-sm">
         <AvatarImage></AvatarImage>
         <AvatarFallback>{getAvatarFallback(name || email)}</AvatarFallback>
       </Avatar>
