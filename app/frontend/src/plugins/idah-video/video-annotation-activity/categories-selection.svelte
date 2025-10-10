@@ -194,6 +194,7 @@
       disabled={toolMode}
     >
       {@const selectedCategory = selected_category == category.id}
+
       {#if selectedCategory && toolMode && !selected_id}
         <PlusIcon class="text-primary size-4 " strokeWidth={4}></PlusIcon>
       {:else if !category.nestedCategories && toolMode && !selected_id}
