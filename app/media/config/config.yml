@@ -53,3 +53,11 @@ counter:
 
 logging:
   level: <%= ENV.fetch("LOG_LEVEL", "info") %>
+
+# Mount modules using path
+modules:
+  path: <%= ENV.fetch("IDAH_MODULES", "modules") %>
+  # Mount modules manually using their path in the modules
+  # directory
+  manual:
+    - idah-video
