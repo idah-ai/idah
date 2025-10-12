@@ -5,23 +5,25 @@ module PluginSystem
     field :version, String
 
     field :title, String
-    field :description, String
+    field? :description, String
 
-    field :repository do
+    field? :repository do
       field :type, String
       field :url, String
     end
 
-    field :entryPoints do
-      field? :frontend do
+    field :entry_points, key: :entryPoints do
+      field(:frontend, default: {}) do
         field :scripts, [String]
         field :styles, [String]
       end
 
-      field? :backends do
+      backend_fields = Verse::Schema.define do
         field :module, String
         field :path, String
       end
+
+      field? :backends, Verse::Schema.dictionary(backend_fields), default: {}
     end
   end
 

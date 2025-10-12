@@ -1,5 +1,5 @@
 {
-  "type": "idah-module",
+  "type": "idah-plugin",
   "name": "idah-video",
   "version": "1.0.0",
 
