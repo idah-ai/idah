@@ -1,10 +1,10 @@
 {
-  "type": "idah-plugin",
-  "name": "idah-video-annotation",
+  "type": "idah-module",
+  "name": "idah-video",
   "version": "1.0.0",
 
   "title": "IDAH Video Annotation",
-  "description": "A plugin for annotating video.",
+  "description": "A module for annotating video.",
 
   "repository": {
     "type": "git",
@@ -13,12 +13,12 @@
 
   "entryPoints": {
     "frontend": {
-      "scripts": ["frontend/build/plugin.js"],
-      "styles": ["frontend/build/plugin.css"]
+      "scripts": ["frontend/build/module.js"],
+      "styles": ["frontend/build/module.css"]
     },
-    "medias": {
-      "path": "backends/medias/medias.rb",
-      "module": "IdahVideo"
+    "backends": {
+      "module": "IdahVideo",
+      "path": "backends"
     }
   }
 }

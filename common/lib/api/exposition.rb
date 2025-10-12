@@ -18,23 +18,23 @@ class Api
     end
 
     def get(path, headers: {}, params: {}, options: {})
-      execute_request(:get, path, headers: headers, params: params, options: options)
+      execute_request(:get, path, headers:, params:, options:)
     end
 
     def post(path, headers: {}, params: {}, options: {})
-      execute_request(:post, path, headers: headers, params: params, options: options)
+      execute_request(:post, path, headers:, params:, options:)
     end
 
     def put(path, headers: {}, params: {}, options: {})
-      execute_request(:put, path, headers: headers, params: params, options: options)
+      execute_request(:put, path, headers:, params:, options:)
     end
 
     def patch(path, headers: {}, params: {}, options: {})
-      execute_request(:patch, path, headers: headers, params: params, options: options)
+      execute_request(:patch, path, headers:, params:, options:)
     end
 
     def delete(path, headers: {}, params: {}, options: {})
-      execute_request(:delete, path, headers: headers, params: params, options: options)
+      execute_request(:delete, path, headers:, params:, options:)
     end
 
     def register(method_name, &block)

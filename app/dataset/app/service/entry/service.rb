@@ -43,8 +43,6 @@ module Entry
 
         id = entries.create(attr)
 
-        # entry = entries.find!(id)
-
         if job_id
           # After we created, we check the job status
           # and update the entry status accordingly.
