@@ -13,17 +13,15 @@ module PluginSystem
     end
 
     field :entry_points, key: :entryPoints do
-      field(:frontend, default: {}) do
-        field :scripts, [String]
-        field :styles, [String]
+      field? :frontend do
+        field? :scripts, Array, of: String
+        field? :styles, Array, of: String
       end
 
-      backend_fields = Verse::Schema.define do
-        field :module, String
+      field? :backend do
+        field :module, Symbol
         field :path, String
       end
-
-      field? :backends, Verse::Schema.dictionary(backend_fields), default: {}
     end
   end
 

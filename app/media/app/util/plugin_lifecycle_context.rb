@@ -1,3 +1,5 @@
+# Microservice specific
+# context passed to the plugin code.
 class PluginLifecycleContext
   def initialize(plugin_name)
     @plugin_name = plugin_name.to_sym

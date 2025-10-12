@@ -16,7 +16,7 @@
       "scripts": ["frontend/build/module.js"],
       "styles": ["frontend/build/module.css"]
     },
-    "backends": {
+    "backend": {
       "module": "IdahVideo",
       "path": "backends"
     }
