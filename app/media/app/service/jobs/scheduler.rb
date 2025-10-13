@@ -32,7 +32,7 @@ module Jobs
       synchronize{ @running = true }
 
       @thread_pool = ThreadPool.new(
-        size: Verse.config.extra_fields.dig(:jobs, :concurrency) || 4
+        size: Verse.config.extra_fields.dig(:idah, :jobs, :concurrency) || 4
       )
 
       @scheduler = Thread.new(&method(:run))
@@ -58,8 +58,8 @@ module Jobs
 
         synchronize do
           if time.nil?
-            Verse.logger&.debug "No scheduled jobs found. Waiting 10s"
-            @wait_cond.wait(10) # Wait for 10 seconds if no jobs are scheduled
+            Verse.logger&.debug "No scheduled jobs found. Waiting 60s"
+            @wait_cond.wait(60) # Wait for 60 seconds if no jobs are scheduled
           else
             next_in = time.to_f - Time.now.to_f
 
@@ -148,6 +148,12 @@ module Jobs
       @scheduler.join # Wait for the scheduler thread to finish
 
       Verse.logger&.debug "Scheduler stopped"
+    end
+
+    # Temporary halt the scheduler without stopping the thread
+    def pause(&block)
+      # Synchronize will prevent the scheduler from running
+      synchronize(&block)
     end
 
     # On event, signal to stop waiting to try

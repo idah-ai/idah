@@ -22,7 +22,6 @@ module PluginSystem
         manifest.name
       )
       mod.init(@context)
-      binding.pry
 
       self
     end
