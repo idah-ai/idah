@@ -31,8 +31,8 @@ RSpec.describe NoteFeed::Service, database: true do
     entry_repo.create(
       priority: 1,
       resource: "http://example.com/video.mp4",
-      wf_step: "start",
-      status: "pending",
+      wf_step: "review",
+      status: "in_progress",
       assigned_to_id: 1,
       dataset_id: dataset_id
     )
@@ -98,6 +98,25 @@ RSpec.describe NoteFeed::Service, database: true do
 
         expect { subject.create_from_params(params) }
           .to raise_error(Verse::Error::NotFound)
+      end
+    end
+
+    context "when entry is not in review step" do
+      it "raises a validation error" do
+        # Create an entry not in review step
+        new_entry_id = entry_repo.create(
+          priority: 1,
+          resource: "http://example.com/video2.mp4",
+          wf_step: "start",
+          status: "pending",
+          assigned_to_id: 1,
+          dataset_id: dataset_id
+        )
+
+        params = note_feed_attributes.merge(entry_id: new_entry_id)
+
+        expect { subject.create_from_params(params) }
+          .to raise_error(Verse::Error::ValidationFailed, /Cannot add note feed to entry not in review step/)
       end
     end
   end

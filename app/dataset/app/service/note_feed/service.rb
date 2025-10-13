@@ -42,7 +42,14 @@ module NoteFeed
       attr[:status] = "pending"
 
       entry_id = attr[:entry_id]
-      entries.find!(entry_id)
+      entry = entries.find!(entry_id)
+
+      unless entry.wf_step == "review"
+        raise Verse::Error::ValidationFailed,
+              "Cannot add note feed to entry not in review step"
+      end
+
+      # TODO: check if the user has permission to add note feed to the entry
 
       if attr[:annotation_id] && attr[:anchor_type] == "annotation"
         annotation_id = attr[:annotation_id]
