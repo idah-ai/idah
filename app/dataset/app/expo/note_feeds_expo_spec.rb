@@ -33,21 +33,8 @@ RSpec.describe NoteFeedsExpo, type: :exposition, as: :system do
         attributes: {
           anchor_type: "entry",
           position: { "x" => 100, "y" => 200 },
-          content_md: "This is a test note"
-        },
-        relationships: {
-          entry: {
-            data: {
-              type: Resource::Dataset::Entries,
-              id: entry_id
-            }
-          },
-          annotation: {
-            data: {
-              type: Resource::Dataset::Annotations,
-              id: 0
-            }
-          }
+          content_md: "This is a test note",
+          entry_id: entry_id
         }
       }
     }
@@ -80,7 +67,12 @@ RSpec.describe NoteFeedsExpo, type: :exposition, as: :system do
   end
 
   it "create" do
-    expect(service).to receive(:create).and_return(note_feed_record)
+    expect(service).to receive(:create_from_params) do |args|
+      expect(args[:anchor_type]).to eq "entry"
+      expect(args[:position]).to eq({ x: 100, y: 200 })
+      expect(args[:content_md]).to eq "This is a test note"
+      note_feed_record
+    end
     post "/note_feeds", note_feed_data
 
     expect(last_response.status).to eq 201
