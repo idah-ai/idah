@@ -56,46 +56,16 @@ RSpec.describe NoteFeed::Service, database: true do
   end
 
   let(:note_feed) do
-    record = deserialize(
-      {
-        data: {
-          type: "dataset:note_feeds",
-          attributes: note_feed_attributes,
-          relationships: {
-            entry: {
-              data: {
-                type: "dataset:entries",
-                id: entry_id
-              }
-            }
-          }
-        }
-      }
-    )
-    subject.create(record)
+    params = note_feed_attributes.merge(entry_id: entry_id)
+    subject.create_from_params(params)
   end
 
-  describe "#create" do
+  describe "#create_from_params" do
     context "when entry is provided" do
       it "creates a note feed with status pending" do
-        record = deserialize(
-          {
-            data: {
-              type: "dataset:note_feeds",
-              attributes: note_feed_attributes,
-              relationships: {
-                entry: {
-                  data: {
-                    type: "dataset:entries",
-                    id: entry_id
-                  }
-                }
-              }
-            }
-          }
-        )
+        params = note_feed_attributes.merge(entry_id: entry_id)
 
-        result = subject.create(record)
+        result = subject.create_from_params(params)
 
         expect(result.entry_id).to eq(entry_id)
         expect(result.anchor_type).to eq("entry")
@@ -108,30 +78,13 @@ RSpec.describe NoteFeed::Service, database: true do
 
     context "when annotation is provided with anchor_type annotation" do
       it "creates a note feed linked to annotation" do
-        record = deserialize(
-          {
-            data: {
-              type: "dataset:note_feeds",
-              attributes: note_feed_attributes.merge(anchor_type: "annotation"),
-              relationships: {
-                entry: {
-                  data: {
-                    type: "dataset:entries",
-                    id: entry_id
-                  }
-                },
-                annotation: {
-                  data: {
-                    type: "dataset:annotations",
-                    id: annotation_id
-                  }
-                }
-              }
-            }
-          }
+        params = note_feed_attributes.merge(
+          anchor_type: "annotation",
+          entry_id: entry_id,
+          annotation_id: annotation_id
         )
 
-        result = subject.create(record)
+        result = subject.create_from_params(params)
 
         expect(result.entry_id).to eq(entry_id)
         expect(result.annotation_id).to eq(annotation_id)
@@ -140,46 +93,11 @@ RSpec.describe NoteFeed::Service, database: true do
     end
 
     context "when entry is not provided" do
-      it "raises a validation error" do
-        record = deserialize(
-          {
-            data: {
-              type: "dataset:note_feeds",
-              attributes: note_feed_attributes
-            }
-          }
-        )
+      it "raises a not found error" do
+        params = note_feed_attributes
 
-        expect { subject.create(record) }
-          .to raise_error(Verse::Error::ValidationFailed, "entry is required to create a note feed")
-      end
-    end
-
-    context "when id is provided" do
-      let(:custom_id) { UUIDv7.generate }
-
-      it "creates a note feed with the provided id" do
-        record = deserialize(
-          {
-            data: {
-              type: "dataset:note_feeds",
-              id: custom_id,
-              attributes: note_feed_attributes,
-              relationships: {
-                entry: {
-                  data: {
-                    type: "dataset:entries",
-                    id: entry_id
-                  }
-                }
-              }
-            }
-          }
-        )
-
-        result = subject.create(record)
-
-        expect(result.id).to eq(custom_id)
+        expect { subject.create_from_params(params) }
+          .to raise_error(Verse::Error::NotFound)
       end
     end
   end
@@ -190,23 +108,8 @@ RSpec.describe NoteFeed::Service, database: true do
       note_feed
 
       # Create second note feed
-      record = deserialize(
-        {
-          data: {
-            type: "dataset:note_feeds",
-            attributes: note_feed_attributes.merge(content_md: "Another note"),
-            relationships: {
-              entry: {
-                data: {
-                  type: "dataset:entries",
-                  id: entry_id
-                }
-              }
-            }
-          }
-        }
-      )
-      subject.create(record)
+      params = note_feed_attributes.merge(content_md: "Another note", entry_id: entry_id)
+      subject.create_from_params(params)
     end
 
     it "returns all note feeds when no filter is provided" do
