@@ -5,4 +5,5 @@ Verse.on_boot do
   JobsExpo.register
   MediasExpo.register
   VideosExpo.register
+  ProcessorExpo.register
 end
