@@ -55,6 +55,9 @@ logging:
   level: <%= ENV.fetch("LOG_LEVEL", "info") %>
 
 idah:
+  # Jobs used for processing media files
+  jobs:
+    concurrency: <%= ENV.fetch("IDAH_JOBS_CONCURRENCY", 1) %>
   # Define where mounted plugins are stored.
   # Plugin system is managed directly by the application,
   # except for manual mounting and dev mode.

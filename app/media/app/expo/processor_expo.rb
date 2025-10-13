@@ -1,11 +1,13 @@
 # frozen_string_literal: true
 
 class ProcessorExpo < BaseExpo
-  expose on_resource_event(Resource::Dataset::Entries, :created) do
-  end
-  def process_entry_created
-    service.process_entry_created(
-      message.content[:resource_id]
+  use_service Processor::Service
+
+  expose on_resource_event(Resource::Dataset::Entries, :created)
+  def on_entry_created
+    binding.pry
+    service.process_entry(
+      params[:resource_id]
     )
   end
 

@@ -41,8 +41,6 @@ module PluginSystem
     if config.watch
       listener.start
     end
-
-    binding.pry
   end
 
   def manual_load_plugin(path, plugin_name)
@@ -50,13 +48,13 @@ module PluginSystem
       File.join(path, plugin_name)
     )
 
-    Verse.logger.info{ "Load plugin #{plugin_path}" }
+    Verse.logger.info{ "[IDAH-PLUGIN] Load plugin #{plugin_path}" }
 
     # 1. Load the manifest:
     manifest_path = File.join(plugin_path, "manifest.json")
 
     if !File.exist?(manifest_path)
-      Verse.logger.warn{ "Plugin manifest not found at #{manifest_path}" }
+      Verse.logger.warn{ "[IDAH-PLUGIN] Plugin manifest not found at #{manifest_path}" }
       return
     end
 
@@ -76,14 +74,14 @@ module PluginSystem
 
       unless Dir.exist?(service_backend_path)
         Verse.logger.debug{
-          "No backend for service #{Verse.service_name} in plugin #{plugin_name}"
+          "[IDAH-PLUGIN] No backend for service #{Verse.service_name} in plugin #{plugin_name}"
         }
         return
       end
 
       @plugins[manifest.name.to_sym] = Plugin.new(service_backend_path, manifest, manual: true)
     rescue Verse::Schema::InvalidSchemaError => e
-      Verse.logger.error{ "Plugin manifest validation error: #{e.message}" }
+      Verse.logger.error{ "[IDAH-PLUGIN] Plugin manifest validation error: #{e.message}" }
       return
     end
 
