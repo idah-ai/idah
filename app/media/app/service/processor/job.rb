@@ -1,7 +1,7 @@
 module Processor
   class Job < Jobs::Base
     def run_impl
-      arguments[]
+      binding.pry
     end
   end
 end
