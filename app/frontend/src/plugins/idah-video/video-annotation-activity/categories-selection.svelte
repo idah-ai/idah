@@ -77,18 +77,22 @@
           id: fullPath,
           name: humanize(ids[i]),
           requiredNested: i < ids.length - 1,
-          nestedCategories: [],
-          data: { id: fullPath, label: humanize(ids[i]), color: "#ffff", description: "" } as CategoryConfiguration,
+          // only create nestedCategories if this node will have children
+          ...(i < ids.length - 1 ? { nestedCategories: [] } : {}),
+          data:
+            i < ids.length - 1
+              ? ({ id: fullPath, label: humanize(ids[i]), color: "#ffff", description: "" } as CategoryConfiguration)
+              : configuration, // leaf gets real configuration
         };
         currentLevel.push(existingNode);
       }
 
-      // go deeper
+      // go deeper only if not a leaf
       if (i < ids.length - 1) {
         if (!existingNode.nestedCategories) existingNode.nestedCategories = [];
         currentLevel = existingNode.nestedCategories;
       } else {
-        // leaf node
+        // leaf node: overwrite name, description, requiredNested, data
         existingNode.name = humanize(configuration.label);
         existingNode.description = configuration.description;
         existingNode.requiredNested = false;
