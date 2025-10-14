@@ -330,7 +330,7 @@
 {/snippet}
 
 <div class="flex-col">
-  {#if selected_category}
+  {#if selected_category && toolMode }
     <CategoryProperties
       selectedCategory={selected_category}
       {db}
