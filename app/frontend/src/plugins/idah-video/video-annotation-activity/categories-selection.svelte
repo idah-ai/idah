@@ -71,7 +71,7 @@
       fullPath = i === 0 ? ids[i] : `${fullPath}/${ids[i]}`;
 
       // find if node exists at this level
-      let existingNode = currentLevel.find((n) => n.id === fullPath);
+      let existingNode = currentLevel.find((current) => current.id === fullPath);
       if (!existingNode) {
         existingNode = {
           id: fullPath,
@@ -84,6 +84,7 @@
               ? ({ id: fullPath, label: humanize(ids[i]), color: "#ffff", description: "" } as CategoryConfiguration)
               : configuration, // leaf gets real configuration
         };
+
         currentLevel.push(existingNode);
       }
 
