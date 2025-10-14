@@ -64,37 +64,38 @@
     ids: string[],
     configuration: CategoryConfiguration,
   ): CategoryDefinition[] {
-    if (ids.length == 1) {
-      acc.push({
-        id: configuration.id,
-        name: configuration.label,
-        description: configuration.description,
-        requiredNested: false,
-        data: configuration,
-      });
-    } else {
-      const parentId = ids[0];
-      let parent = acc.find((a) => a.id === parentId);
+    let currentLevel = acc;
+    let fullPath = "";
 
-      if (!parent) {
-        parent = {
-          id: parentId,
-          name: humanize(parentId),
-          requiredNested: true,
-          data: configuration,
+    for (let i = 0; i < ids.length; i++) {
+      fullPath = i === 0 ? ids[i] : `${fullPath}/${ids[i]}`;
+
+      // find if node exists at this level
+      let existingNode = currentLevel.find((n) => n.id === fullPath);
+      if (!existingNode) {
+        existingNode = {
+          id: fullPath,
+          name: humanize(ids[i]),
+          requiredNested: i < ids.length - 1,
           nestedCategories: [],
+          data: configuration,
         };
-        acc.push(parent);
+        currentLevel.push(existingNode);
       }
 
-      // Ensure nestedCategories exists
-      if (!parent.nestedCategories) {
-        parent.nestedCategories = [];
+      // go deeper
+      if (i < ids.length - 1) {
+        if (!existingNode.nestedCategories) existingNode.nestedCategories = [];
+        currentLevel = existingNode.nestedCategories;
+      } else {
+        // leaf node
+        existingNode.name = humanize(configuration.label);
+        existingNode.description = configuration.description;
+        existingNode.requiredNested = false;
+        existingNode.data = configuration;
       }
-
-      // continue building sub path in the parent's nestedCategories
-      buildTree(parent.nestedCategories, ids.slice(1), configuration);
     }
+
     return acc;
   }
 
@@ -203,7 +204,7 @@
         {@const parentOpen = category.nestedCategories && toolMode}
         <ChevronRight
           class={cn("size-4", {
-            "opacity-0": !haveChildren,
+            "opacity-0": !haveChildren || category.nestedCategories?.length === 0,
             "rotate-90": open || parentOpen,
             "stroke-blue-300": selectedCategory,
             "stroke-gray-500": !selectedCategory,
