@@ -27,7 +27,7 @@ module Spec
 
   class RescheduleJob < Jobs::Base
     def run_impl
-      reschedule(in: 60)
+      reschedule(after: 60)
     end
   end
 

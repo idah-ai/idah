@@ -2,7 +2,7 @@
 
 require "spec_helper"
 
-RSpec.describe Video::VideoInfo do
+RSpec.describe IdahVideo::Processor::VideoInfo do
   let(:file_path) { "spec_data/sample.mp4" }
 
   describe ".from_file" do

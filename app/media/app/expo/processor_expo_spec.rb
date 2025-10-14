@@ -8,9 +8,10 @@ RSpec.describe ProcessorExpo, type: :exposition, as: :system do
 
         Verse.publish_resource_event(
           resource_type: Resource::Dataset::Entries,
-          resource_id: "123",
+          resource_id: "some-id",
           event: "created",
           payload: {
+            resource_id: "123",
             args: [],
             metadata: {}
           }
