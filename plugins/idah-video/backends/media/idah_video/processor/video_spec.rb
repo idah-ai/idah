@@ -10,8 +10,6 @@ RSpec.describe IdahVideo::Processor::Video do
     )
   end
 
-  it "#" do
-    require "pry"
-    binding.pry
+  it "process video" do
   end
 end
