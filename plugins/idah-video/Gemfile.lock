@@ -1,3 +1,13 @@
+GIT
+  remote: https://github.com/verse-rb/verse-core.git
+  revision: 8caf189141ed50d99051a339b31125ff9e299f50
+  branch: master
+  specs:
+    verse-core (2.0.0)
+      bigdecimal (>= 3.2.0)
+      logger (>= 1.0)
+      verse-schema (>= 1)
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -19,6 +29,7 @@ GEM
     json (2.13.1)
     language_server-protocol (3.17.0.5)
     lint_roller (1.1.0)
+    logger (1.7.0)
     method_source (1.1.0)
     msgpack (1.8.0)
     parallel (1.27.0)
@@ -96,6 +107,7 @@ DEPENDENCIES
   rspec (~> 3.0)
   rubocop
   simplecov
+  verse-core!
   verse-schema
   webmock
   zeitwerk

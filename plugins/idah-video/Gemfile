@@ -9,6 +9,7 @@ gem "bootsnap", "~> 1.16"
 
 gem "pry", require: false
 
+gem "verse-core", github: "verse-rb/verse-core", branch: "master"
 gem "verse-schema"
 
 group :test do

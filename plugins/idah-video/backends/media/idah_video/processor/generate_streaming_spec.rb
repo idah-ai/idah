@@ -8,14 +8,14 @@ RSpec.describe IdahVideo::Processor::GenerateStreaming do
   }
 
   let(:arguments) do
-    Video::Arguments.new(
+    IdahVideo::Processor::Arguments.new(
       resource: "123",
       streaming_time_per_segment: 3
     )
   end
 
   let(:video_info) do
-    Video::VideoInfo.from_file(file_path)
+    IdahVideo::Processor::VideoInfo.from_file(file_path)
   end
 
   describe ".generate" do
