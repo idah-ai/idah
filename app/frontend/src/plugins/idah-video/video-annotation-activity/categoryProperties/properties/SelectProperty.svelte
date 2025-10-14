@@ -22,7 +22,12 @@
 
 
 <div>
-  <Label>{property.label}</Label>
+  <Label>
+    {property.label}
+    {#if property.required}
+      <i color=red>(required)</i>
+    {/if}
+  </Label>
   <Select type={selectType}
     value={value.attributes?.[property.id]}
     onValueChange={onValueChange}>

@@ -43,6 +43,7 @@
   import { boundingBoxes, idb_updated_at } from "./video-annotation-activity/idb_store.svelte";
   import { registerVisualModeShortcuts } from "./video-annotation-activity/shortcut";
   import { ShortcutManager } from "@/shortcut/ShortcutManager";
+  import { requiredFullfilled } from "./video-annotation-activity/categoryProperties";
 
   // Props
   interface Props {
@@ -469,7 +470,7 @@
       let annotation_value_from = $state.snapshot(annotationValue) as AnnotationValue;
 
       // todo proper validation
-      if (annotationValue.category) {
+      if (requiredFullfilled(annotation_value_from, context.config.properties)) {
         addAnnotation(
           {
             type,
@@ -620,7 +621,8 @@
         onEditValue={(value: AnnotationValue, valueMode: string) => {
           annotationValue = value;
           mode = valueMode;
-          if (selectedAnnotation) {
+          if (selectedAnnotation && requiredFullfilled(annotationValue, context.config.properties)) {
+            selectedAnnotation.value = value;
             updateAnnotationValue($state.snapshot(selectedAnnotation), $state.snapshot(value));
           }
         }}
@@ -657,7 +659,7 @@
           onEditValue={(value: AnnotationValue, valueMode: string) => {
             annotationValue = value;
             mode = valueMode;
-            if (selectedAnnotation) {
+            if (selectedAnnotation && requiredFullfilled(annotationValue, context.config.properties)) {
               selectedAnnotation.value = value;
               updateAnnotationValue($state.snapshot(selectedAnnotation), $state.snapshot(value));
             }
