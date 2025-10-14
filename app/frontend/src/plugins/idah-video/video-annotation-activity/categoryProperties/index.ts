@@ -28,8 +28,8 @@ const formatValidators = [
     type: "text",
     minimum: (v: string, format) => v.length >= format.minimum,
     maximum: (v: string, format) => v.length <= format.maximum,
-    step: (v: string, format) => true
-    options: (v: string, options: Array<LabelPropertyOption>) => true
+    step: (v: string, format) => true,
+    options: (v: string, options: Array<LabelPropertyOption>) => true,
     info: (v) => true
   }, {
     type: "integer",
