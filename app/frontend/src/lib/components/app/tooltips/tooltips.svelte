@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+  import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
   // Props
   interface Props {
@@ -14,12 +14,14 @@
   let { delayDuration = 200, align = "start", side = undefined, trigger, content }: Props = $props();
 </script>
 
-<Tooltip {delayDuration}>
-  <TooltipTrigger>
-    {@render trigger()}
-  </TooltipTrigger>
+<TooltipProvider>
+  <Tooltip {delayDuration}>
+    <TooltipTrigger>
+      {@render trigger()}
+    </TooltipTrigger>
 
-  <TooltipContent {align} {side}>
-    {@render content()}
-  </TooltipContent>
-</Tooltip>
+    <TooltipContent {align} {side}>
+      {@render content()}
+    </TooltipContent>
+  </Tooltip>
+</TooltipProvider>
