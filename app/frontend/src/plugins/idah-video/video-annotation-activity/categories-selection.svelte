@@ -78,7 +78,7 @@
           name: humanize(ids[i]),
           requiredNested: i < ids.length - 1,
           nestedCategories: [],
-          data: configuration,
+          data: { id: fullPath, label: humanize(ids[i]), color: "#ffff", description: "" } as CategoryConfiguration,
         };
         currentLevel.push(existingNode);
       }
