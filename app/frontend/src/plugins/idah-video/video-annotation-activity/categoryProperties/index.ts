@@ -10,10 +10,16 @@ import type { PropertyField } from "@/plugin/interface/Activity"
     value:AnnotationValue, properties: PropertyField[]
   ):boolean {
     // todo account for visibility/required
-    const required_properties = properties.filter(p => p.required)
 
-    return required_properties.every(p => {
-      !!value.attributes?.[p.id] && conformToformat(value, p)
+    const required_properties =
+      properties.filter(
+        p => p.required && value.category && p.selector.includes(value.category)
+      )
+
+    return value.category != undefined && // for now enforce category
+      required_properties.every(p => {
+
+      return value.attributes?.[p.id] != undefined && conformToformat(value, p)
     })
   }
 
@@ -21,5 +27,5 @@ import type { PropertyField } from "@/plugin/interface/Activity"
   function conformToformat(
     value: AnnotationValue, propertyField: PropertyField
   ): boolean {
-    true
+    return true
   }

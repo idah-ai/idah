@@ -13,6 +13,11 @@
 
 
 <div>
-    <Label for={property.id}>{property.label}</Label>
+    <Label for={property.id}>
+      {property.label}
+      {#if property.required}
+        <i color=red>(required)</i>
+      {/if}
+    </Label>
     <Input id={property.id} type='number' value={value.attributes?.[property.id]} onchange={(e) => onValueChange(e.target.value)}/>
 </div>

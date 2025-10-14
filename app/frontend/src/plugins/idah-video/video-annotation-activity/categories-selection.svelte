@@ -316,7 +316,7 @@
 {/snippet}
 
 <div class="flex-col">
-  {#if selected_id && selected_category}
+  {#if selected_category}
     <CategoryProperties
       selectedCategory={selected_category}
       {db}

@@ -14,6 +14,11 @@
 
 
 <div>
-    <Label>{property.label}</Label>
+    <Label>
+      {property.label}
+      {#if property.required}
+        <i color=red>(required)</i>
+      {/if}
+    </Label>
     <Input type='text' value={value.attributes?.[property.id]} onchange={(e) => onValueChange(e.target.value)}/>
 </div>

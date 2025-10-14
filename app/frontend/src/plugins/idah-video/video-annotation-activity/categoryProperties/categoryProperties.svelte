@@ -21,7 +21,6 @@
     annotationValue: AnnotationValue,
     onSelectCategory: (category?: CategoryDefinition) => void,
     onEditValue: (value?: AnnotationValue) => void,
-    db?: AnnotationsIndexedDB,
   };
 
   let {
@@ -30,7 +29,6 @@
     annotationValue,
     onSelectCategory,
     onEditValue,
-    db,
   }:Props = $props();
 
   // Contexts
@@ -99,14 +97,13 @@
       {@const pc = propertyComponents.find(p => p.type == property.type)}
 
       {#if pc && visibleFullfilled(property)}
-        <svelte:component
-          this={pc.component}
+        <pc.component
           {...{
             property,
             ...pc.extraProps,
             value: annotationValue,
             onValueChange: (v:any) => onValueChange(property, v)
-            }} />
+          }} />
       {/if}
     {/each}
   {/key}

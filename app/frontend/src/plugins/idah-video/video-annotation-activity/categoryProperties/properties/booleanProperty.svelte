@@ -13,7 +13,12 @@
 
 
 <div>
-    <Label for={property.id}>{property.label}</Label>
+    <Label for={property.id}>
+      {property.label}
+      {#if property.required}
+        <i color=red>(required)</i>
+      {/if}
+    </Label>
     <Checkbox id={property.id}
       checked={!!value.attributes?.[property.id]}
       onCheckedChange={onValueChange} />
