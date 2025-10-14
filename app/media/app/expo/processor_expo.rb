@@ -5,7 +5,6 @@ class ProcessorExpo < BaseExpo
 
   expose on_resource_event(Resource::Dataset::Entries, :created)
   def on_entry_created
-    binding.pry
     service.process_entry(
       params[:resource_id]
     )

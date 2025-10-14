@@ -85,11 +85,11 @@ module Processor
       job.update_progress(progress)
     end
 
-    def reschedule!(in: 10)
-      job.reschedule!(in:)
+    def reschedule!(after: 10)
+      job.reschedule!(after:)
     end
 
-    def error(message)
+    def error!(message)
       job.error(message)
     end
 
