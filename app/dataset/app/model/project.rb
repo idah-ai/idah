@@ -34,39 +34,52 @@ module Project
 
         next unless account_id && project_ids
 
+        scope.as_user? do
+          # TODO: remove mockings
+          account_id = auth_context.metadata[:id] || 1
+          project_ids = project_member_repo.index({ account_id: }).map(&:project_id).uniq
+
+          case permission_set
+          when "annotator"
+            table.where(project_id: project_ids).or(created_by_id: account_id)
+          when "reviewer"
+            table.where(project_id: project_ids).or(created_by_id: account_id)
+          end
+        end
+
         # scope.annotator? do
         # end
 
-        # scope: projects the user is a member of
-        scope.member? do
-          project_member_repo = ProjectMember::Repository.new(auth_context)
-          project_ids = project_member_repo.index({ account_id: }).map(&:project_id).uniq
+        # # scope: projects the user is a member of
+        # scope.member? do
+        #   project_member_repo = ProjectMember::Repository.new(auth_context)
+        #   project_ids = project_member_repo.index({ account_id: }).map(&:project_id).uniq
 
-          table.where(id: project_ids) # member of the project
-               .or(created_by_id: account_id) # own/created the project
-        end
+        #   table.where(id: project_ids) # member of the project
+        #        .or(created_by_id: account_id) # own/created the project
+        # end
 
-        scope.membership? do
-          # get permission set name from the project membership
-          # permission_set_name = ProjectMember::Repository.new(auth_context).find_by(
-          #   {
-          #     account_id: account_id,
-          #     project_id: project_ids
-          #   }
-          # )&.permission_set
+        # scope.membership? do
+        #   # get permission set name from the project membership
+        #   # permission_set_name = ProjectMember::Repository.new(auth_context).find_by(
+        #   #   {
+        #   #     account_id: account_id,
+        #   #     project_id: project_ids
+        #   #   }
+        #   # )&.permission_set
 
-          # # rights from membership's permission set
-          # permission_set_rights = Verse::Auth::Context.backend.fetch(permission_set_name)
+        #   # # rights from membership's permission set
+        #   # permission_set_rights = Verse::Auth::Context.backend.fetch(permission_set_name)
 
-          # next if permission_set_rights.empty?
+        #   # next if permission_set_rights.empty?
 
-          # @auth_context = Verse::Auth::Context.from_role(permission_set_name)
-          @auth_context = ContextHelper.membership_context(auth_context)
+        #   # @auth_context = Verse::Auth::Context.from_role(permission_set_name)
+        #   @auth_context = ContextHelper.membership_context(auth_context)
 
-          # next unless
+        #   # next unless
 
-          scoped(action)
-        end
+        #   scoped(action)
+        # end
       end
     end
 
