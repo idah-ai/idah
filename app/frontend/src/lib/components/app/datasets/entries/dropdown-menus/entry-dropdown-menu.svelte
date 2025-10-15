@@ -1,7 +1,10 @@
 <script lang="ts">
+  import { EllipsisVerticalIcon } from "@lucide/svelte";
+  import { toast } from "svelte-sonner";
+
   import AssignEntryFormModal from "@/components/app/datasets/entries/overlays/assign-entry-form-modal.svelte";
-  import Button from "@/components/ui/button/button.svelte";
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
+  import Button from "@/components/ui/button/button.svelte";
   import {
     DropdownMenu,
     DropdownMenuContent,
@@ -10,11 +13,9 @@
     DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu";
 
-  import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
   import { getEntryDropdownMenuActions } from "@/components/app/datasets/entries/dropdown-menus/entry-dropdown-menu";
+  import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
   import { refetches } from "@/utils/refetch";
-  import { toast } from "svelte-sonner";
-  import { EllipsisVerticalIcon } from "@lucide/svelte";
 
   // Props
   interface Props {
@@ -50,7 +51,7 @@
   async function deleteTask() {
     await entriesBackendDataSource.delete(entry.id);
     toast.success("Task successfully deleted!");
-    $refetches.entries.list++;
+    $refetches.entries.list = new Date();
     openConfirmDeleteTaskModal = false;
   }
 </script>

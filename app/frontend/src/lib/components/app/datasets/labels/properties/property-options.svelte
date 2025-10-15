@@ -1,15 +1,15 @@
 <script lang="ts">
-  import Button from "@/components/ui/button/button.svelte";
-  import InputField from "@/components/app/forms/fields/input/input-field.svelte";
-  import NumberField from "@/components/app/forms/fields/input/number-field.svelte";
-  import Separator from "@/components/ui/separator/separator.svelte";
-  import Text from "@/components/ui/text/Text.svelte";
-  import TextareaField from "@/components/app/forms/fields/input/textarea-field.svelte";
-
   import { PlusIcon, Trash2Icon } from "@lucide/svelte";
 
-  import type { Hash } from "@/utils/types";
+  import InputField from "@/components/app/forms/fields/input/input-field.svelte";
+  import NumberField from "@/components/app/forms/fields/input/number-field.svelte";
+  import TextareaField from "@/components/app/forms/fields/input/textarea-field.svelte";
+  import Button from "@/components/ui/button/button.svelte";
+  import Separator from "@/components/ui/separator/separator.svelte";
+  import Text from "@/components/ui/text/Text.svelte";
+
   import type { FieldBase } from "@/data/model/dataset/labels";
+  import type { Hash } from "@/utils/types";
 
   // Props
   interface Props {

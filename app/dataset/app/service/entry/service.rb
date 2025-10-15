@@ -26,6 +26,11 @@ module Entry
       attr[:id] = record.id || UUIDv7.generate
 
       entries.transaction do
+        unless attr[:resource]
+          raise Verse::Error::ValidationFailed,
+                "resource is required to create an entry"
+        end
+
         if entries.find_by({ resource: attr[:resource] })
           raise Verse::Error::ValidationFailed,
                 "Entry with resource #{attr[:resource]} already exists"
@@ -96,9 +101,7 @@ module Entry
 
     def update_entries_job(job_id, resource)
       entries.transaction do
-        entry = entries.find_by({ resource: })
-
-        raise Verse::Error::NotFound, "Entry with resource #{resource} not found" unless entry
+        entry = entries.find_by!({ resource: })
 
         if entry.job_id && entry.job_id != job_id
           raise Verse::Error::ValidationFailed,
@@ -114,6 +117,40 @@ module Entry
       entries.transaction do
         entries.update!(id, { assigned_to_id: })
         entries.find!(id)
+      end
+    end
+
+    def submit(entry_id, **opts)
+      entries.transaction do
+        entry = entries.find!(entry_id, included: [:dataset])
+        entry_workflow = entry.dataset.entry_workflow.new(entry, **opts)
+
+        entry_workflow.submit!
+        entries.update!(
+          entry.id,
+          {
+            wf_step: entry_workflow.aasm.current_state.to_s,
+            status: entry_workflow.aasm.current_state == :done ? "completed" : "in_progress"
+          }
+        )
+        entries.find!(entry.id, included: [:dataset])
+      end
+    end
+
+    def error(entry_id, **opts)
+      entries.transaction do
+        entry = entries.find!(entry_id, included: [:dataset])
+        entry_workflow = entry.dataset.entry_workflow.new(entry, **opts)
+
+        entry_workflow.error!
+        entries.update!(
+          entry.id,
+          {
+            wf_step: entry_workflow.aasm.current_state.to_s,
+            status: "errored"
+          }
+        )
+        entries.find!(entry.id, included: [:dataset])
       end
     end
   end

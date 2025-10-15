@@ -1,9 +1,10 @@
 <script lang="ts">
   import { setContext, type Snippet } from "svelte";
 
-  import Spinner from "@/components/app/loading/spinner.svelte";
+  import Spinner from "@/components/ui/spinner/spinner.svelte";
 
   import { PluginManager } from "@/plugin/PluginManager";
+
   import config from "../../../plugins/plugins.config.json";
 
   // Props

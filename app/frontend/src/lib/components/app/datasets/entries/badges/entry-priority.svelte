@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { ChevronsUpDownIcon, FlagIcon } from "@lucide/svelte";
+
   import Badge from "@/components/ui/badge/badge.svelte";
   import { Command, CommandGroup, CommandItem } from "@/components/ui/command";
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -7,7 +9,6 @@
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
   import { cn } from "@/utils";
   import { refetches } from "@/utils/refetch";
-  import { ChevronsUpDownIcon, FlagIcon } from "@lucide/svelte";
 
   // Props
   interface Props {
@@ -23,7 +24,7 @@
         priority: priorityValue,
       },
     });
-    $refetches.entries.list++;
+    $refetches.entries.list = new Date();
   }
 </script>
 

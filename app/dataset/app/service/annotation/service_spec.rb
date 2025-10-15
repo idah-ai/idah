@@ -64,7 +64,6 @@ RSpec.describe Annotation::Service, database: true do
         }
       )
       annotation = subject.create(record)
-      # expect(annotation.type).to eq("bounding_box")
       expect(annotation.annotation).to eq({ label: "cat" })
     end
   end
