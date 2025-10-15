@@ -101,7 +101,7 @@
           {...{
             property,
             ...pc.extraProps,
-            value: annotationValue,
+            value: annotationValue.attributes?.[property.id],
             onValueChange: (v:any) => onValueChange(property, v)
           }} />
       {/if}

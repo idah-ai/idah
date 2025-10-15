@@ -3,6 +3,7 @@
   import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger } from "@/components/ui/select";
   import type { PropertyField } from "@/plugin/interface/Activity";
   import type { AnnotationValue } from "@/context/AnnotationContext";
+    import { formatConformity, propertyFullfilled } from "..";
 
   let {
     property,
@@ -11,28 +12,28 @@
     onValueChange,
   }: {
     property: PropertyField,
-    value : AnnotationValue,
+    value : any,
     onValueChange: (v:any) => void
     selectType: 'single'|'multi'
   } = $props()
 
-  let options = property.format.options
-
+  const options = property.format.options
+  const invalid = $derived(!propertyFullfilled(value, property))
+  const format = $derived(invalid ? formatConformity(value, property): [])
 </script>
 
 
 <div>
   <Label>
     {property.label}
-    {#if property.required}
-      <i color=red>(required)</i>
-    {/if}
   </Label>
-  <Select type={selectType}
-    value={value.attributes?.[property.id]}
+  <Select
+    type={selectType}
+    aria-invalid={invalid}
+    {value}
     onValueChange={onValueChange}>
     <SelectTrigger class="w-[180px]">
-      {value.attributes?.[property.id]}
+      {value}
     </SelectTrigger>
     <SelectContent>
       <SelectGroup>
@@ -42,4 +43,11 @@
       </SelectGroup>
     </SelectContent>
   </Select>
+  {#if invalid}
+    <ul>
+      {#each format as [k, v]}
+        <li style:color=red>{k}:<span>{v}</span></li>
+      {/each}
+    </ul>
+  {/if}
 </div>
