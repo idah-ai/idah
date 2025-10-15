@@ -27,20 +27,22 @@ module Project
       id = projects.create(attr)
 
       account_id = auth_context.metadata[:id] || 1 # TODO: remove, mocking
-      # add the current user as project member automatically ?
+
+      # add the user creating as project member automatically
       project_member_service.create(
         Verse::JsonApi::Struct.new(
           {
             type: ProjectMember::Repository.resource,
             # id: updated_attributes[:query_id],
             attributes: {
-              # TODO: review project member attrs
+              # TODO: review project member attrs and remove mockings
               project_id: id,
               account_id: account_id,
-              name: auth_context.metadata[:name] || nil,
-              email: auth_context.metadata[:email] || "",
+              name: auth_context.metadata[:name] || nil, # TODO: fetch either from context or iam account
+              email: auth_context.metadata[:email] || "", # TODO: fetch either from context or iam account
               invited_by_id: account_id,
-              permission_set: "annotator", # TODO: set properly, mocking
+              created_by_id: account_id,
+              permission_set: "owner",
             },
           }
         )
@@ -50,11 +52,31 @@ module Project
     end
 
     def update(record)
-      projects.update!(record.id, record.attributes)
+      # TODO: remove mocking
+      account_id = auth_context.metadata[:id] || 1
+      project_id = record.id
+      role = ProjectMember::Repository.new(auth_context).get_permission_set(account_id, project_id)
+
+      auth_context.reject! unless auth_context.can!(:update, Resource::Dataset::Projects) do |scope|
+        scope.all? { true }
+        scope.as_user? { owner?(role) }
+      end
+
+      projects.update!(project_id, record.attributes)
       projects.find!(record.id)
     end
 
     def delete(id)
+      # TODO: remove mocking
+      account_id = auth_context.metadata[:id] || 1
+      project_id = id
+      role = ProjectMember::Repository.new(auth_context).get_permission_set(account_id, project_id)
+
+      auth_context.reject! unless auth_context.can!(:delete, Resource::Dataset::Projects) do |scope|
+        scope.all? { true }
+        scope.as_user? { owner?(role) }
+      end
+
       projects.delete(id)
     end
   end
