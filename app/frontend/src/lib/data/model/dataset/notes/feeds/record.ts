@@ -1,5 +1,6 @@
 import { createBackendDataSource } from "@/data/BackendDataSource";
 import { field, Record, RecordFactory, relationship, type } from "@/data/model/Record";
+import { Transformers } from "@/data/model/transformers";
 
 import { AnnotationRecord } from "@/data/model/dataset/annotations/record";
 import { EntryRecord } from "@/data/model/dataset/entries/record";
@@ -20,8 +21,8 @@ export class NoteFeedRecord extends Record {
 
   @field() public content_md!: string;
 
-  @field() public created_at!: string;
-  @field() public updated_at!: Date;
+  @field({ transformer: Transformers.Time }) public created_at!: Date;
+  @field({ transformer: Transformers.Time }) public updated_at!: Date;
 
   @relationship() public entry!: EntryRecord;
   @relationship() public annotation!: AnnotationRecord;
