@@ -49,8 +49,6 @@ module Dataset
       auth_context.can!(action, Resource::Dataset::Datasets) do |scope|
         account_id = auth_context.metadata[:id] || 1
 
-        # binding.pry
-
         scope.all? { table }
 
         scope.as_user? do
@@ -69,33 +67,6 @@ module Dataset
             table.where(project_id: project_id).or(created_by_id: account_id)
           end
         end
-
-        # scope.own_project? do
-        #   # binding.pry
-        #   project_repo = Project::Repository.new(auth_context)
-        #   project_ids = project_repo.index({ created_by_id: account_id }).map(&:id).uniq
-
-        #   table.where(project_id: project_ids)
-        # end
-
-        # # scope: datasets that are in the same project as the user
-        # # TODO: project own, project member, own dataset
-        # scope.same_project? do
-        #   project_id = auth_context.metadata[:project_id] || ""
-        #   # project_ids = table.where(account_id: account_id).select(:project_id).distinct
-        #   table.where(project_id: )
-        # end
-
-        # # scope: projects the user owns/creates
-        # scope.own? do
-        #   # binding.pry
-        #   table.where(created_by_id: account_id)
-        # end
-
-        # scope.membership? do
-        #   @auth_context = ContextHelper.membership_context(auth_context)
-        #   scoped(action)
-        # end
       end
     end
   end
