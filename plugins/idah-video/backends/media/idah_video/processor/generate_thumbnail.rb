@@ -12,17 +12,12 @@ module IdahVideo
         # 10 images during the whole duration of the video
         images = "10/#{video_info.duration}"
 
-        command =
-          "ffmpeg -i %<file_path>s "\
-          "-vf 'fps=#{images},scale=240:-1' "\
-          "-fps_mode vfr -frames:v 10 -q:v 2 "\
-          "thumb_%%02d.png -y"
-
-        # No progress output
-        EXECUTOR.call(
-          command,
-          chdir: tmpdir,
-          file_path:
+        Ffmpeg.gen_thumbnail(
+          file_path,
+          images,
+          tmpdir,
+          scale: "240:-1",
+          output: "thumb_%02d.jpg"
         )
 
         yield compose(tmpdir)
