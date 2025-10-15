@@ -12,6 +12,8 @@ gem "pry", require: false
 gem "verse-core", github: "verse-rb/verse-core", branch: "master"
 gem "verse-schema"
 
+gem "rmagick", "~> 6.0.1"
+
 group :test do
   gem "rack-test"
   gem "rspec", "~> 3.0"

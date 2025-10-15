@@ -10,14 +10,15 @@ module IdahVideo
         tmpdir ||= Dir.mktmpdir("idah-vp-")
 
         # 10 images during the whole duration of the video
-        images = "10/#{video_info.duration}"
+        fps = "10/#{video_info.duration}"
 
         Ffmpeg.gen_thumbnail(
           file_path,
-          images,
+          fps,
           tmpdir,
+          images: 10,
           scale: "240:-1",
-          output: "thumb_%02d.jpg"
+          output: "thumb_%02d.png"
         )
 
         yield compose(tmpdir)
@@ -28,6 +29,7 @@ module IdahVideo
 
       def compose(tmpdir)
         output = File.join(tmpdir, "thumbnail.jpg")
+
         images = Dir.glob(File.join(tmpdir, "thumb_*.png")).sort.map do |file|
           Magick::Image.read(file).first
         end

@@ -32,10 +32,12 @@ GEM
     logger (1.7.0)
     method_source (1.1.0)
     msgpack (1.8.0)
+    observer (0.1.2)
     parallel (1.27.0)
     parser (3.3.9.0)
       ast (~> 2.4.1)
       racc
+    pkg-config (1.6.4)
     prism (1.4.0)
     pry (0.15.2)
       coderay (~> 1.1)
@@ -48,6 +50,9 @@ GEM
     rainbow (3.1.1)
     regexp_parser (2.10.0)
     rexml (3.4.1)
+    rmagick (6.0.1)
+      observer (~> 0.1)
+      pkg-config (~> 1.4)
     rspec (3.13.1)
       rspec-core (~> 3.13.0)
       rspec-expectations (~> 3.13.0)
@@ -104,6 +109,7 @@ DEPENDENCIES
   dotenv
   pry
   rack-test
+  rmagick (~> 6.0.1)
   rspec (~> 3.0)
   rubocop
   simplecov
