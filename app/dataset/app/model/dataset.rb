@@ -54,6 +54,7 @@ module Dataset
         scope.all? { table }
 
         scope.as_user? do
+          # TODO: remove mockings
           account_id = auth_context.metadata[:id] || 1
           project_id = auth_context.metadata[:project_id] || "0199cc34-20c1-7a60-b38d-b18556496c14"
 
