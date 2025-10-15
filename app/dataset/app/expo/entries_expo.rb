@@ -6,8 +6,8 @@ class EntriesExpo < BaseExpo
   use_service Entry::Service
 
   json_api Entry::Record, http_opts: { auth: nil } do
-   allowed_included "dataset", "dataset.project"
-   show
+    allowed_included "dataset", "dataset.project"
+    show
     index do
       allowed_filters :status__in,
                       :priority__in,
@@ -39,6 +39,42 @@ class EntriesExpo < BaseExpo
     member_id = params.dig(:data, :attributes, :assigned_to_id)
 
     service.assign_member(id, member_id)
+  end
+
+  # POST /api/v1/dataset/entries/:id/submit
+  expose on_http(:post, "/:id/submit", auth: nil) do
+    desc "Submit workflow event for an entry"
+    input do
+      field :id, String
+      field? :data, Hash do
+        field? :attributes, Hash
+      end
+    end
+  end
+  def submit
+    entry_id = params[:id]
+    opts = params.dig(:data, :attributes) || {}
+
+    service.submit(entry_id, **opts)
+  end
+
+  # POST /api/v1/dataset/entries/:id/error
+  expose on_http(:post, "/:id/error", auth: nil) do
+    desc "Trigger error event for an entry"
+    input do
+      field :id, String
+      field :data, Hash do
+        field :attributes, Hash do
+          field :message, String
+        end
+      end
+    end
+  end
+  def error
+    entry_id = params[:id]
+    opts = params.dig(:data, :attributes) || {}
+
+    service.error(entry_id, **opts)
   end
 
   expose on_resource_event(Resource::Media::Jobs, "completed")
