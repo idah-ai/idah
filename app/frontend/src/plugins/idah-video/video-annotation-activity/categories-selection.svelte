@@ -5,16 +5,17 @@
   import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger } from "@/components/ui/select";
   import { SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
   import Text from "@/components/ui/text/Text.svelte";
-  import CategoryProperties from "./categoryProperties/categoryProperties.svelte"
   import { cn } from "@/utils";
   import { humanize } from "@/utils/string";
   import { ChevronRight, CircleSmallIcon, PlusIcon, Trash2Icon } from "@lucide/svelte";
+  import CategoryProperties from "./categoryProperties/categoryProperties.svelte";
   import { idb_updated_at } from "./idb_store.svelte";
 
   import type { CategoryDefinition } from "@/context/ActivityContext";
+  import type { AnnotationValue } from "@/context/AnnotationContext";
+  import type { CategoryField } from "@/data/model/dataset/labels";
   import type { AnnotationsIndexedDB } from "./indexedDB";
   import type { CategoryConfiguration, VideoAnnotation } from "./VideoAnnotationContext";
-  import type { CategoryField } from "@/data/model/dataset/labels";
 
   // Props
   let {
@@ -37,6 +38,7 @@
     toolMode: boolean;
     selected_category: string | undefined;
     selected_id: string | undefined;
+    onEditValue: (annotationValue: AnnotationValue, mode: string) => void;
     onSelect: (category?: CategoryDefinition) => void;
     onSelectAnnotation: (annotation: VideoAnnotation) => void;
     onDeleteAnnotation: (annotation: VideoAnnotation) => void;
@@ -64,11 +66,7 @@
   }, []);
 
   // Functions
-  function buildTree(
-    acc: CategoryDefinition[],
-    ids: string[],
-    configuration: CategoryField
-  ): CategoryDefinition[] {
+  function buildTree(acc: CategoryDefinition[], ids: string[], configuration: CategoryField): CategoryDefinition[] {
     let currentLevel = acc;
     let fullPath = "";
 
@@ -330,7 +328,7 @@
 {/snippet}
 
 <div class="flex-col">
-  {#if selected_category && toolMode }
+  {#if selected_category && toolMode}
     <CategoryProperties
       selectedCategory={selected_category}
       {db}

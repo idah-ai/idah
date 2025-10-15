@@ -2,15 +2,17 @@
   import Sidebar from "@/components/ui/sidebar/sidebar.svelte";
 
   import type { AnnotationValue } from "$lib/context/AnnotationContext";
-  import type { CategoryConfiguration, LabellingConfiguration, VideoAnnotation } from "./VideoAnnotationContext";
+  import Input from "@/components/ui/input/input.svelte";
   import SidebarContent from "@/components/ui/sidebar/sidebar-content.svelte";
-  import SidebarGroup from "@/components/ui/sidebar/sidebar-group.svelte";
   import SidebarGroupContent from "@/components/ui/sidebar/sidebar-group-content.svelte";
-  import CategoriesSelection from "./categories-selection.svelte";
-  import type { IActivityContext } from "@/plugin/interface/Activity";
-  import type { AnnotationsIndexedDB } from "./indexedDB";
+  import SidebarGroup from "@/components/ui/sidebar/sidebar-group.svelte";
+  import SidebarHeader from "@/components/ui/sidebar/sidebar-header.svelte";
   import type { CategoryDefinition } from "@/context/ActivityContext";
   import type { CategoryField } from "@/data/model/dataset/labels";
+  import type { IActivityContext } from "@/plugin/interface/Activity";
+  import CategoriesSelection from "./categories-selection.svelte";
+  import type { AnnotationsIndexedDB } from "./indexedDB";
+  import type { CategoryConfiguration, LabellingConfiguration, VideoAnnotation } from "./VideoAnnotationContext";
 
   let {
     annotationValue,
@@ -76,7 +78,6 @@
         },
         mode,
       );
-
     } // else {
     //   onEditValue(
     //     Object.fromEntries(Object.entries(annotationValue).filter(([type, _]) => type == "categories")),
@@ -101,32 +102,33 @@
 </script>
 
 <Sidebar variant="inset" collapsible="none" class="w-xs">
-  <!-- <SidebarHeader>
+  <SidebarHeader>
     {#if !tools.has(mode)}
-      <Input placeholder="search" />
+      <Input placeholder="search" value={searchValue} oninput={(e) => searchCategory(e)} />
     {/if}
-  </SidebarHeader> -->
+  </SidebarHeader>
+
   <SidebarContent>
     {#each tools as [tool, categories]}
       <!-- {#if !tools.has(mode) || mode == "visual"} -->
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <CategoriesSelection
-              {db}
-              toolMode={tool == mode}
-              type={tool}
-              {currentFrame}
-              {categories}
-              selected_category={annotationValue.category}
-              {selected_id}
-              {onSelectAnnotation}
-              {onDeleteAnnotation}
-              {annotationValue}
-              onEditValue={(v) => onEditValue(v, tool)}
-              onSelect={(s) => categorySelection(tool, s)}
-            />
-          </SidebarGroupContent>
-        </SidebarGroup>
+      <SidebarGroup>
+        <SidebarGroupContent>
+          <CategoriesSelection
+            {db}
+            toolMode={tool == mode}
+            type={tool}
+            {currentFrame}
+            {categories}
+            selected_category={annotationValue.category}
+            {selected_id}
+            {onSelectAnnotation}
+            {onDeleteAnnotation}
+            {annotationValue}
+            onEditValue={(v) => onEditValue(v, tool)}
+            onSelect={(s) => categorySelection(tool, s)}
+          />
+        </SidebarGroupContent>
+      </SidebarGroup>
       <!-- {:else if tool == mode}
         <SidebarGroup>
           <SidebarGroupContent>
