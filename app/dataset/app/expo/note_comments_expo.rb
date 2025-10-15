@@ -11,7 +11,7 @@ class NoteCommentsExpo < BaseExpo
     show
     index do
       allowed_filters :note_feed_id__eq,
-                      :created_by_id__eq,
+                      :created_by_email__eq,
                       :is_edited__eq,
                       :created_at__gte,
                       :created_at__lte,

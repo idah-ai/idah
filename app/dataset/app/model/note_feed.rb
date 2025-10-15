@@ -7,7 +7,7 @@ module NoteFeed
     field :id, type: String, primary: true
     field :entry_id, type: String
     field :annotation_id, type: String
-    field :created_by_id, type: Integer, readonly: true
+    field :created_by_email, type: String, readonly: true
     field :anchor_type, type: String
     field :position, type: Hash
     field :status, type: String, readonly: true
