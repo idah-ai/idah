@@ -56,7 +56,8 @@ module IdahVideo
       end
 
       def gen_thumbnail(
-        file, images, chdir,
+        file, fps, chdir,
+        images: 10,
         scale: "240:-1",
         output: "thumb_%02d.jpg"
       )
@@ -64,7 +65,7 @@ module IdahVideo
           "-i",
           file,
           "-vf",
-          "fps=#{images},scale=#{scale}",
+          "fps=#{fps},scale=#{scale}",
           "-fps_mode",
           "vfr",
           "-frames:v",
@@ -87,7 +88,7 @@ module IdahVideo
             err = stderr.read
             error = "Failed to execute `ffmpeg #{args.join(" ")}`: #{result}\n#{err}"
             Verse.logger&.error{ error }
-            raise "Failed to execute ffmpeg: #{result}\n#{err}"
+            raise error
           end
         end
       end
