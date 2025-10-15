@@ -1,13 +1,19 @@
 <script lang="ts">
   import { page } from "$app/state";
+  import { toast } from "svelte-sonner";
 
-  import AppPaginator from "@/components/app/paginators/app-paginator.svelte";
+  import ResponseBlock from "@/components/app/blocks/response-block.svelte";
+  import EntryCard from "@/components/app/datasets/entries/cards/entry-card.svelte";
   import AssignEntryFormModal from "@/components/app/datasets/entries/overlays/assign-entry-form-modal.svelte";
+  import CreateEntryFormModal from "@/components/app/datasets/entries/overlays/create-entry-form-modal.svelte";
+  import UpdateEntryPriorityFormModal from "@/components/app/datasets/entries/overlays/update-entry-priority-form-modal.svelte";
+  import FilterSortDropdownMenu from "@/components/app/dropdown-menus/filter-sort-dropdown-menu.svelte";
+  import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
+  import PageHeader from "@/components/app/page/page-header.svelte";
+  import AppPaginator from "@/components/app/paginators/app-paginator.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import { Card, CardContent } from "@/components/ui/card";
   import Checkbox from "@/components/ui/checkbox/checkbox.svelte";
-  import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
-  import CreateEntryFormModal from "@/components/app/datasets/entries/overlays/create-entry-form-modal.svelte";
   import {
     DropdownMenu,
     DropdownMenuContent,
@@ -15,12 +21,7 @@
     DropdownMenuItem,
     DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu";
-  import EntryCard from "@/components/app/datasets/entries/cards/entry-card.svelte";
-  import FilterSortDropdownMenu from "@/components/app/dropdown-menus/filter-sort-dropdown-menu.svelte";
-  import PageHeader from "@/components/app/page/page-header.svelte";
-  import ResponseBlock from "@/components/app/blocks/response-block.svelte";
-  import Spinner from "@/components/app/loading/spinner.svelte";
-  import UpdateEntryPriorityFormModal from "@/components/app/datasets/entries/overlays/update-entry-priority-form-modal.svelte";
+  import Spinner from "@/components/ui/spinner/spinner.svelte";
 
   import {
     ArrowDownAZIcon,
@@ -32,20 +33,19 @@
     PlusIcon,
   } from "@lucide/svelte";
 
-  import { cn } from "@/utils";
   import { entryColumns } from "@/components/app/datasets/entries/data-tables/entry-columns";
-  import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
   import { getEntryDropdownMenuActions } from "@/components/app/datasets/entries/dropdown-menus/entry-dropdown-menu";
+  import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
+  import { cn } from "@/utils";
   import { refetches } from "@/utils/refetch";
-  import { toast } from "svelte-sonner";
 
-  import type { CollectionResponse } from "@/data/model/types";
-  import type { ListOptions } from "@/data/DataSource";
   import type {
     ColumnSettings,
     FilterDataSourceParams,
     SortDataSourceParams,
-  } from "@/components/app/data-table/data-table.types";
+  } from "@/components/app/datasource-table/types";
+  import type { ListOptions } from "@/data/DataSource";
+  import type { CollectionResponse } from "@/data/model/types";
 
   // Records
   let response: CollectionResponse<EntryRecord> = $state({
@@ -206,7 +206,7 @@
     toast.success(`${selectedRowsCount} Task(s) successfully deleted.`);
 
     selectedRows = [];
-    $refetches.entries.list++;
+    $refetches.entries.list = new Date();
     openConfirmDeleteTasksModal = false;
   }
 
@@ -228,54 +228,56 @@
 
 <PageHeader title="Datasets">
   {#snippet slotTitle()}
-    <div class="grid w-full gap-4">
+    <div class="flex w-full gap-4">
       <div class="flex w-full flex-col items-center justify-between gap-4 md:flex-row">
-        <div class="flex w-3/4 items-center gap-4">
+        <div class="flex flex-1 items-center gap-4">
           <!-- SELECT ALL -->
           <div class="pl-6">
             <Checkbox checked={selectedRows.length > 0} onCheckedChange={toggleSelectAll}></Checkbox>
           </div>
 
-          {#each Object.entries(entryColumns) as [columnKey, columnSetting] (columnKey)}
-            <FilterSortDropdownMenu
-              contexts={{
-                projectId: page.params.projectId,
-              }}
-              {columnKey}
-              columnSetting={columnSetting as ColumnSettings<EntryRecord>}
-              filters={listOptions.filters || {}}
-              sort={listOptions.sort || []}
-              onFilter={filterEntries}
-              onSort={sortEntries}
-              onHide={() => {}}
-            >
-              {#snippet trigger({ label, sortable, isSorting, isSortingAsc, isSortingDesc, filterable, isFiltering })}
-                <Button
-                  variant={isFiltering || isSorting ? "default" : "outline"}
-                  class={cn(
-                    "data-[state=open]:bg-primary data-[state=open]:text-primary-foreground hover:bg-primary hover:text-primary-foreground my-2 w-full min-w-60 gap-2 font-normal",
-                    isFiltering || isSorting ? "text-primary-foreground" : "text-muted-foreground",
-                  )}
-                >
-                  {#if isFiltering}
-                    <FunnelIcon class="size-4"></FunnelIcon>
-                  {/if}
-
-                  <span class="mr-auto">{label}</span>
-
-                  {#if sortable || filterable}
-                    {#if isSortingAsc}
-                      <ArrowDownAZIcon class="size-4" />
-                    {:else if isSortingDesc}
-                      <ArrowDownZAIcon class="size-4" />
-                    {:else}
-                      <ArrowUpDownIcon class="size-4" />
+          <div class="">
+            {#each Object.entries(entryColumns) as [columnKey, columnSetting] (columnKey)}
+              <FilterSortDropdownMenu
+                contexts={{
+                  projectId: page.params.projectId,
+                }}
+                {columnKey}
+                columnSetting={columnSetting as ColumnSettings<EntryRecord>}
+                filters={listOptions.filters || {}}
+                sort={listOptions.sort || []}
+                onFilter={filterEntries}
+                onSort={sortEntries}
+                onHide={() => {}}
+              >
+                {#snippet trigger({ label, sortable, isSorting, isSortingAsc, isSortingDesc, filterable, isFiltering })}
+                  <Button
+                    variant={isFiltering || isSorting ? "default" : "outline"}
+                    class={cn(
+                      "data-[state=open]:bg-primary data-[state=open]:text-primary-foreground hover:bg-primary hover:text-primary-foreground my-2 w-full min-w-60 gap-2 font-normal",
+                      isFiltering || isSorting ? "text-primary-foreground" : "text-muted-foreground",
+                    )}
+                  >
+                    {#if isFiltering}
+                      <FunnelIcon class="size-4"></FunnelIcon>
                     {/if}
-                  {/if}
-                </Button>
-              {/snippet}
-            </FilterSortDropdownMenu>
-          {/each}
+
+                    <span class="mr-auto">{label}</span>
+
+                    {#if sortable || filterable}
+                      {#if isSortingAsc}
+                        <ArrowDownAZIcon class="size-4" />
+                      {:else if isSortingDesc}
+                        <ArrowDownZAIcon class="size-4" />
+                      {:else}
+                        <ArrowUpDownIcon class="size-4" />
+                      {/if}
+                    {/if}
+                  </Button>
+                {/snippet}
+              </FilterSortDropdownMenu>
+            {/each}
+          </div>
         </div>
 
         <div class="flex items-center gap-2">
@@ -314,7 +316,7 @@
   {#await fetchEntries()}
     <Spinner></Spinner>
   {:then _}
-    <div class="grid grid-cols-1 gap-4">
+    <div class="flex flex-col gap-4">
       {#each response.data as entry (entry.id)}
         <EntryCard {entry} {selectedRows} onRowSelect={selectRow}></EntryCard>
       {:else}

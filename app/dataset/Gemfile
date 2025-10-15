@@ -24,6 +24,7 @@ gem "rake"
 
 gem "sinatra-contrib"
 
+gem "aasm"
 gem "bootsnap", "~> 1.16"
 
 group :test do

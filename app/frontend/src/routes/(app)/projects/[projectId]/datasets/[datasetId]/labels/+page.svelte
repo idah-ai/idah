@@ -1,14 +1,15 @@
 <script lang="ts">
   import { page } from "$app/state";
+  import { SaveIcon } from "@lucide/svelte";
+  import { toast } from "svelte-sonner";
 
-  import Button from "@/components/ui/button/button.svelte";
   import LabelEditor from "@/components/app/datasets/labels/label-editor.svelte";
   import PageHeader from "@/components/app/page/page-header.svelte";
   import PageLoading from "@/components/app/page/page-loading.svelte";
-  import Spinner from "@/components/app/loading/spinner.svelte";
+  import Button from "@/components/ui/button/button.svelte";
 
-  import { toast } from "svelte-sonner";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
+  import { humanize, slugify } from "@/utils/string";
 
   import {
     labelColors,
@@ -17,8 +18,6 @@
     type PropertyField,
     type TagField,
   } from "@/data/model/dataset/labels";
-  import { SaveIcon } from "@lucide/svelte";
-  import { humanize, slugify } from "@/utils/string";
 
   // Variables
   let datasetId: string = page.params.datasetId as string;
@@ -278,14 +277,15 @@
 {:then _}
   <PageHeader title="Label">
     {#snippet slotTitle()}
-      <Button disabled={saving || !isLabelConfigChanged} class="ml-auto" onclick={saveLabelConfigChanges}>
-        {#if saving}
-          <Spinner></Spinner>
-          Saving
-        {:else}
-          <SaveIcon class="size-4"></SaveIcon>
-          {isLabelConfigChanged ? "Save Changes" : "Saved"}
-        {/if}
+      <Button
+        loading={saving}
+        loadingLabel="Saving"
+        disabled={!isLabelConfigChanged}
+        class="ml-auto"
+        onclick={saveLabelConfigChanges}
+      >
+        <SaveIcon class="size-4"></SaveIcon>
+        {isLabelConfigChanged ? "Save Changes" : "Saved"}
       </Button>
     {/snippet}
   </PageHeader>

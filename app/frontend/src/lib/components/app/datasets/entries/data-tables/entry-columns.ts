@@ -1,8 +1,8 @@
-import FilterByProjectMember from "@/components/app/data-table/filters/filter-by-project-member.svelte";
+import FilterByProjectMember from "@/components/app/datasource-table/filters/filter-by-project-member.svelte";
 
 import { entryPriorities, entryStatuses, entryWorkflowSteps } from "@/data/model/dataset/entries/constants";
 
-import type { ColumnsSettings } from "@/components/app/data-table/data-table.types";
+import type { ColumnsSettings } from "@/components/app/datasource-table/types";
 import type { EntryRecord } from "@/data/model/dataset/entries/record";
 
 export const entryColumns: ColumnsSettings<EntryRecord> = {

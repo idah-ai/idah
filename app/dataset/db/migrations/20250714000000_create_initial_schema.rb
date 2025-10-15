@@ -132,7 +132,7 @@ Sequel.migration do
       # current workflow step, e.g. "start", "annotate", "review", "export"
       column :wf_step, String, null: false, index: true, default: "start"
 
-      # processing, pending, assigned, in_progress, completed, errored
+      # processing, pending, assigned, in_progress, completed, errored, ready
       column :status, String, null: false, index: true, default: "pending"
 
       column :assigned_to_id, :bigint, null: true, index: true

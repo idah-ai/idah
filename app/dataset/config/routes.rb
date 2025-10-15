@@ -7,6 +7,8 @@ Verse.on_boot do
     ProjectMembersExpo,
     DatasetsExpo,
     EntriesExpo,
-    AnnotationsExpo
+    AnnotationsExpo,
+    NoteFeedsExpo,
+    NoteCommentsExpo
   ].each(&:register)
 end

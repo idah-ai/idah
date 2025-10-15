@@ -1,42 +1,42 @@
 <script lang="ts" module>
-	export interface PageBreadcrumbItem {
-		label: string;
-		href?: string;
-	}
+  export interface PageBreadcrumbItem {
+    label: string;
+    href?: string;
+  }
 </script>
 
 <script lang="ts">
-	import {
-		Breadcrumb,
-		BreadcrumbItem,
-		BreadcrumbLink,
-		BreadcrumbList,
-		BreadcrumbPage,
-		BreadcrumbSeparator,
-	} from "@/components/ui/breadcrumb";
+  import {
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbList,
+    BreadcrumbPage,
+    BreadcrumbSeparator,
+  } from "@/components/ui/breadcrumb";
 
-	// Props
-	interface Props {
-		items: PageBreadcrumbItem[];
-	}
-	let { items }: Props = $props();
+  // Props
+  interface Props {
+    items: PageBreadcrumbItem[];
+  }
+  let { items }: Props = $props();
 </script>
 
 <Breadcrumb>
-	<BreadcrumbList>
-		{#each items as { label, href }, index (index)}
-			{@const isLastItem = index === items.length - 1}
-			<BreadcrumbItem>
-				{#if !href || isLastItem}
-					<BreadcrumbPage>{label}</BreadcrumbPage>
-				{:else}
-					<BreadcrumbLink {href}>{label}</BreadcrumbLink>
-				{/if}
-			</BreadcrumbItem>
+  <BreadcrumbList>
+    {#each items as { label, href }, index (index)}
+      {@const isLastItem = index === items.length - 1}
+      <BreadcrumbItem>
+        {#if !href || isLastItem}
+          <BreadcrumbPage>{label}</BreadcrumbPage>
+        {:else}
+          <BreadcrumbLink {href}>{label}</BreadcrumbLink>
+        {/if}
+      </BreadcrumbItem>
 
-			{#if !isLastItem}
-				<BreadcrumbSeparator />
-			{/if}
-		{/each}
-	</BreadcrumbList>
+      {#if !isLastItem}
+        <BreadcrumbSeparator></BreadcrumbSeparator>
+      {/if}
+    {/each}
+  </BreadcrumbList>
 </Breadcrumb>

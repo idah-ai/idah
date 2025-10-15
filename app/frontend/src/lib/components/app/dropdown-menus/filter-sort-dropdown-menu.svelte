@@ -1,17 +1,5 @@
 <script lang="ts" generics="T extends Record">
-  import { addDays, addMonths, endOfMonth, endOfWeek, startOfWeek } from "date-fns";
-
-  import Button from "@/components/ui/button/button.svelte";
-  import { Command, CommandGroup, CommandItem, CommandSeparator } from "@/components/ui/command";
-  import { Input } from "@/components/ui/input";
-  import NumberField from "@/components/app/forms/fields/input/number-field.svelte";
-  import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-  import RangeCalendar from "@/components/ui/range-calendar/range-calendar.svelte";
-
-  import { cn } from "@/utils";
   import { CalendarDate, parseDate } from "@internationalized/date";
-  import { delayedInput } from "@/utils/delayed";
-  import { Record } from "@/data/model/Record";
   import {
     ArrowDownAZIcon,
     ArrowDownZAIcon,
@@ -24,16 +12,28 @@
     SquareIcon,
     type Icon as IconType,
   } from "@lucide/svelte";
-
   import type { DateRange } from "bits-ui";
-  import type { Filters } from "@/data/filtering";
-  import type { Sort } from "@/data/DataSource";
+  import { addDays, addMonths, endOfMonth, endOfWeek, startOfWeek } from "date-fns";
   import type { Snippet } from "svelte";
+
+  import NumberField from "@/components/app/forms/fields/input/number-field.svelte";
+  import Button from "@/components/ui/button/button.svelte";
+  import { Command, CommandGroup, CommandItem, CommandSeparator } from "@/components/ui/command";
+  import { Input } from "@/components/ui/input";
+  import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+  import RangeCalendar from "@/components/ui/range-calendar/range-calendar.svelte";
+
+  import { Record } from "@/data/model/Record";
+  import { cn } from "@/utils";
+  import { delayedInput } from "@/utils/delayed";
+
   import type {
     ColumnSettings,
     FilterDataSourceParams,
     SortDataSourceParams,
-  } from "@/components/app/data-table/data-table.types";
+  } from "@/components/app/datasource-table/types";
+  import type { Sort } from "@/data/DataSource";
+  import type { Filters } from "@/data/filtering";
   import type { Hash } from "@/utils/types";
 
   // Props
@@ -347,11 +347,11 @@
 
         {#if sortable || filterable}
           {#if isSortingAsc}
-            <ArrowDownAZIcon class="size-4" />
+            <ArrowDownAZIcon class="size-4"></ArrowDownAZIcon>
           {:else if isSortingDesc}
-            <ArrowDownZAIcon class="size-4" />
+            <ArrowDownZAIcon class="size-4"></ArrowDownZAIcon>
           {:else}
-            <ArrowUpDownIcon class="size-4" />
+            <ArrowUpDownIcon class="size-4"></ArrowUpDownIcon>
           {/if}
         {/if}
       </Button>
@@ -416,9 +416,9 @@
                   onclick={() => filterByMultipleSelect(choice.value as boolean)}
                 >
                   {#if isSelected}
-                    <SquareCheckBigIcon class="mr-2 size-4" />
+                    <SquareCheckBigIcon class="mr-2 size-4"></SquareCheckBigIcon>
                   {:else}
-                    <SquareIcon class="mr-2 size-4" />
+                    <SquareIcon class="mr-2 size-4"></SquareIcon>
                   {/if}
 
                   {choice.label}
@@ -456,7 +456,7 @@
           {/if}
 
           <CommandItem disabled={!isFiltering} onclick={clearFilter}>
-            <FunnelXIcon class="size-4" />
+            <FunnelXIcon class="size-4"></FunnelXIcon>
             Clear filter
           </CommandItem>
         </CommandGroup>
@@ -467,7 +467,7 @@
         <CommandGroup heading="Sort">
           {#each sortOptionItems as { label, value, icon: Icon, onSelect } (value)}
             <CommandItem disabled={sort.includes(value)} onclick={onSelect}>
-              <Icon class="size-4" />
+              <Icon class="size-4"></Icon>
               {label}
             </CommandItem>
           {/each}
@@ -476,10 +476,10 @@
 
       <!-- HIDE -->
       {#if hidable}
-        <CommandSeparator />
+        <CommandSeparator></CommandSeparator>
         <CommandGroup heading="Hide">
           <CommandItem onclick={() => onHide(columnKey)}>
-            <EyeOffIcon class="size-4" />
+            <EyeOffIcon class="size-4"></EyeOffIcon>
             Hide column {label.toLowerCase()}
           </CommandItem>
         </CommandGroup>

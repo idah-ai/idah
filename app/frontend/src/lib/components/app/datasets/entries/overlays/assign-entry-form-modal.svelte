@@ -1,13 +1,13 @@
 <script lang="ts">
+  import { toast } from "svelte-sonner";
+
   import AssignEntryForm from "@/components/app/datasets/entries/forms/assign-entry-form.svelte";
+  import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import DialogTitle from "@/components/ui/dialog/dialog-title.svelte";
-  import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
-  import Spinner from "@/components/app/loading/spinner.svelte";
 
-  import { refetches } from "@/utils/refetch";
-  import { toast } from "svelte-sonner";
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
+  import { refetches } from "@/utils/refetch";
 
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
   import type { Hash } from "@/utils/types";
@@ -38,7 +38,7 @@
     }
 
     toast.success("Member assigned successfully");
-    $refetches.entries.list++;
+    $refetches.entries.list = new Date();
     open = false;
   }
 
@@ -49,7 +49,6 @@
       await assignMember();
     } catch (error) {
       console.error(error);
-    } finally {
       submitting = false;
     }
   }
@@ -71,13 +70,6 @@
   <AssignEntryForm {selectedMember} {fieldErrors} onValueChange={setValue}></AssignEntryForm>
 
   {#snippet confirm()}
-    <Button disabled={submitting || !selectedMember} onclick={submit}>
-      {#if submitting}
-        <Spinner variant="primary-foreground"></Spinner>
-        Assigning...
-      {:else}
-        Assign
-      {/if}
-    </Button>
+    <Button loading={submitting} loadingLabel="Assigning" disabled={!selectedMember} onclick={submit}>Assign</Button>
   {/snippet}
 </FormModal>
