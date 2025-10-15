@@ -56,7 +56,7 @@ RSpec.describe IdahVideo::Processor::Ffmpeg do
               file: File.expand_path(invalid_file),
               variants: [variant]
             )
-          end.to raise_error(/Failed to execute ffmpeg/)
+          end.to raise_error(/Failed to execute `ffmpeg/)
         end
       end
     end
