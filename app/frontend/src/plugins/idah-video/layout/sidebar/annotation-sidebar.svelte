@@ -1,15 +1,21 @@
 <script lang="ts">
+  import SidebarContent from "@/components/ui/sidebar/sidebar-content.svelte";
+  import SidebarGroupContent from "@/components/ui/sidebar/sidebar-group-content.svelte";
+  import SidebarGroup from "@/components/ui/sidebar/sidebar-group.svelte";
   import Sidebar from "@/components/ui/sidebar/sidebar.svelte";
 
   import type { AnnotationValue } from "$lib/context/AnnotationContext";
-  import type { CategoryConfiguration, LabellingConfiguration, VideoAnnotation } from "./VideoAnnotationContext";
-  import SidebarContent from "@/components/ui/sidebar/sidebar-content.svelte";
-  import SidebarGroup from "@/components/ui/sidebar/sidebar-group.svelte";
-  import SidebarGroupContent from "@/components/ui/sidebar/sidebar-group-content.svelte";
-  import CategoriesSelection from "./categories-selection.svelte";
-  import type { IActivityContext } from "@/plugin/interface/Activity";
-  import type { AnnotationsIndexedDB } from "./indexedDB";
   import type { CategoryDefinition } from "@/context/ActivityContext";
+  import type { IActivityContext } from "@/plugin/interface/Activity";
+
+  import CategoriesSelection from "./categories-selection.svelte";
+
+  import type { AnnotationsIndexedDB } from "../../video-annotation-activity/indexedDB";
+  import type {
+    CategoryConfiguration,
+    LabellingConfiguration,
+    VideoAnnotation,
+  } from "../../video-annotation-activity/VideoAnnotationContext";
 
   let {
     annotationValue,
@@ -107,7 +113,7 @@
     {/if}
   </SidebarHeader> -->
   <SidebarContent>
-    {#each tools as [tool, categories]}
+    {#each tools as [tool, categories] (tool)}
       {#if !tools.has(mode) || mode == "visual"}
         <SidebarGroup>
           <SidebarGroupContent>
@@ -122,7 +128,7 @@
               {onSelectAnnotation}
               {onDeleteAnnotation}
               onSelect={(s) => categorySelection(tool, s)}
-            />
+            ></CategoriesSelection>
           </SidebarGroupContent>
         </SidebarGroup>
       {:else if tool == mode}
@@ -139,7 +145,7 @@
               {onSelectAnnotation}
               {onDeleteAnnotation}
               onSelect={(s) => categorySelection(tool, s)}
-            />
+            ></CategoriesSelection>
           </SidebarGroupContent>
         </SidebarGroup>
       {/if}

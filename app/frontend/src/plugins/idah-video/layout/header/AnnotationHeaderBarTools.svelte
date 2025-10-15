@@ -1,9 +1,11 @@
 <script lang="ts">
-  import Button from "@/components/ui/button/button.svelte";
+  import { MousePointer2, RedoIcon, SquareDashedIcon, UndoIcon } from "@lucide/svelte";
+
   import CommandManager from "@/command/CommandManager";
+  import Tooltips from "@/components/app/tooltips/tooltips.svelte";
+  import Button from "@/components/ui/button/button.svelte";
   import Separator from "@/components/ui/separator/separator.svelte";
-  import { MousePointer2, RedoIcon, UndoIcon, BoxSelectIcon } from "@lucide/svelte";
-  import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
   import type { AnnotationHeaderBarBaseTool } from "./AnnotationHeaderBar.types";
 
   // Props
@@ -11,7 +13,7 @@
     mode: string;
     onSelectMode: (selectedMode: string) => void;
   }
-  let { mode = $bindable(), onSelectMode }: Props = $props();
+  let { mode, onSelectMode }: Props = $props();
 
   // Variables
   interface HeaderBarModeTool extends AnnotationHeaderBarBaseTool {
@@ -31,7 +33,7 @@
     {
       label: "Bounding Box",
       type: "video:bounding_box",
-      icon: BoxSelectIcon,
+      icon: SquareDashedIcon,
       handleClick: () => {
         mode = "video:bounding_box";
         onSelectMode("video:bounding_box");
@@ -58,33 +60,33 @@
 </script>
 
 <div id="annotation-header-bar-tools" class="flex h-full flex-1 items-center gap-1">
-  {#each tools as { label, type, icon: Icon, handleClick }}
-    <TooltipProvider>
-      <Tooltip delayDuration={100}>
-        <TooltipTrigger>
-          <Button variant={mode === type ? "default" : "ghost"} size="icon" onclick={handleClick}>
-            <Icon class="size-4" />
-          </Button>
-        </TooltipTrigger>
+  {#each tools as { label, type, icon: Icon, handleClick }, toolIndex (toolIndex)}
+    <Tooltips align="center" delayDuration={100}>
+      {#snippet trigger()}
+        <Button variant={mode === type ? "default" : "ghost"} size="icon" onclick={handleClick}>
+          <Icon />
+        </Button>
+      {/snippet}
 
-        <TooltipContent>{label}</TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+      {#snippet content()}
+        {label}
+      {/snippet}
+    </Tooltips>
   {/each}
 
-  <Separator orientation="vertical" />
+  <Separator orientation="vertical"></Separator>
 
-  {#each commands as { label, icon: Icon, handleClick }}
-    <TooltipProvider>
-      <Tooltip delayDuration={100}>
-        <TooltipTrigger>
-          <Button variant="ghost" size="icon" onclick={handleClick}>
-            <Icon class="size-4" />
-          </Button>
-        </TooltipTrigger>
+  {#each commands as { label, icon: Icon, handleClick }, commandIndex (commandIndex)}
+    <Tooltips align="center" delayDuration={100}>
+      {#snippet trigger()}
+        <Button variant="ghost" size="icon" onclick={handleClick}>
+          <Icon />
+        </Button>
+      {/snippet}
 
-        <TooltipContent>{label}</TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+      {#snippet content()}
+        {label}
+      {/snippet}
+    </Tooltips>
   {/each}
 </div>

@@ -3,46 +3,50 @@
   import { toast } from "svelte-sonner";
   import { uuidv7 } from "uuidv7";
 
-  import Button from "@/components/ui/button/button.svelte";
-  import CommandManager from "@/command/CommandManager";
   import {
     CommandDialog,
-    CommandGroup,
-    CommandItem,
-    CommandShortcut,
-    CommandSeparator,
     CommandEmpty,
+    CommandGroup,
     CommandInput,
+    CommandItem,
     CommandList,
+    CommandSeparator,
+    CommandShortcut,
   } from "$lib/components/ui/command";
-  import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-  import SidebarProvider from "@/components/ui/sidebar/sidebar-provider.svelte";
+  import CommandManager from "@/command/CommandManager";
+  import Button from "@/components/ui/button/button.svelte";
+  import { Popover, PopoverContent } from "@/components/ui/popover";
+  import { ScrollArea } from "@/components/ui/scroll-area";
   import SidebarInset from "@/components/ui/sidebar/sidebar-inset.svelte";
+  import SidebarProvider from "@/components/ui/sidebar/sidebar-provider.svelte";
 
   import { ResizableHandle, ResizablePane, ResizablePaneGroup } from "@/components/ui/resizable";
   import { AnnotationRecord } from "@/data/model/dataset/annotations/record";
 
   import type { AnnotationValue } from "@/context/AnnotationContext";
-  import { annotationsIndexedDB, AnnotationsIndexedDB } from "./video-annotation-activity/indexedDB";
-  import TimelineTable from "./video-annotation-activity/timeline-table/timeline-table.svelte";
   import type { IActivityContext } from "@/plugin/interface/Activity";
+
+  import { ShortcutManager } from "@/shortcut/ShortcutManager";
+  import AnnotationFooter from "./layout/footer/AnnotationFooter.svelte";
+  import AnnotationFooterToolbar from "./layout/footer/AnnotationFooterToolbar.svelte";
+  import AnnotationHeaderBar from "./layout/header/AnnotationHeaderBar.svelte";
+  import AnnotationSidebar from "./layout/sidebar/annotation-sidebar.svelte";
+  import CommentsSidebar from "./layout/sidebar/comments/comments-sidebar.svelte";
+  import SvgOverlay from "./video-annotation-activity/svg-overlay.svelte";
+  import TimelineTable from "./video-annotation-activity/timeline-table/timeline-table.svelte";
   import Video from "./video-annotation-activity/video.svelte";
+  import VideoController from "./video-annotation-activity/VideoController.svelte";
+
+  import { boundingBoxes, idb_updated_at } from "./video-annotation-activity/idb_store.svelte";
+  import { annotationsIndexedDB, AnnotationsIndexedDB } from "./video-annotation-activity/indexedDB";
+  import { registerVisualModeShortcuts } from "./video-annotation-activity/shortcut";
+
   import type {
     Point,
     VideoAnnotation,
     VideoFrameSelection,
     VideoShape,
   } from "./video-annotation-activity/VideoAnnotationContext";
-  import VideoController from "./video-annotation-activity/VideoController.svelte";
-  import AnnotationSidebar from "./video-annotation-activity/annotation-sidebar.svelte";
-  import SvgOverlay from "./video-annotation-activity/svg-overlay.svelte";
-  import { ScrollArea } from "@/components/ui/scroll-area";
-  import AnnotationHeaderBar from "./layout/header/AnnotationHeaderBar.svelte";
-  import AnnotationFooter from "./layout/footer/AnnotationFooter.svelte";
-  import AnnotationFooterToolbar from "./layout/footer/AnnotationFooterToolbar.svelte";
-  import { boundingBoxes, idb_updated_at } from "./video-annotation-activity/idb_store.svelte";
-  import { registerVisualModeShortcuts } from "./video-annotation-activity/shortcut";
-  import { ShortcutManager } from "@/shortcut/ShortcutManager";
 
   // Props
   interface Props {
@@ -75,6 +79,8 @@
   let annotationsIDB: AnnotationsIndexedDB | undefined = $state();
 
   let commandOpen = $state(false);
+  let showCommentsSidebar = $state(true);
+
   registerVisualModeShortcuts({
     player: () => player,
     toggleCommandCB: () => {
@@ -569,6 +575,10 @@
 
   let showPopOver = $state(false);
   let videoResizedAt = $state(new Date());
+
+  function toggleCommentsSidebar() {
+    showCommentsSidebar = !showCommentsSidebar;
+  }
 </script>
 
 <div class="flex h-screen w-full flex-col">
@@ -592,18 +602,18 @@
 
   <AnnotationHeaderBar
     {context}
-    bind:mode
-    onSelectMode={() => {
-      selectedAnnotation = undefined;
-    }}
-  />
+    {mode}
+    {showCommentsSidebar}
+    onSelectMode={() => (selectedAnnotation = undefined)}
+    onCommentsSidebarToggle={toggleCommentsSidebar}
+  ></AnnotationHeaderBar>
+
   <Popover
     open={showPopOver}
-    onOpenChange={(open) => {
+    onOpenChange={(open: boolean) => {
       showPopOver = open;
     }}
   >
-    <PopoverTrigger></PopoverTrigger>
     <PopoverContent class="w-max">
       <AnnotationSidebar
         db={annotationsIDB}
@@ -639,7 +649,7 @@
     </PopoverContent>
   </Popover>
 
-  <SidebarProvider class="min-h-0 w-full" style="height: calc(100% - 30px)">
+  <SidebarProvider class="min-h-0 w-full" style="height: calc(100% - 30px)" bind:open={showCommentsSidebar}>
     <ResizablePaneGroup direction="vertical">
       <ResizablePane class="flex h-full" defaultSize={60} minSize={10}>
         <AnnotationSidebar
@@ -660,7 +670,8 @@
           {mode}
           selected_id={selectedAnnotation?.metadata.id}
         />
-        <SidebarInset>
+
+        <SidebarInset class="flex-1">
           <SvgOverlay
             bind:this={overlay}
             {annotations_promise}
@@ -687,9 +698,11 @@
             />
           </SvgOverlay>
         </SidebarInset>
+
+        <CommentsSidebar {showCommentsSidebar} onCommentsSidebarToggle={toggleCommentsSidebar}></CommentsSidebar>
       </ResizablePane>
 
-      <ResizableHandle withHandle />
+      <ResizableHandle withHandle></ResizableHandle>
 
       <ResizablePane defaultSize={40} minSize={10}>
         <AnnotationFooter>

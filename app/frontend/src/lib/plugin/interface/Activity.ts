@@ -41,6 +41,23 @@ export interface INote {
   resolve(): Promise<boolean>;
 }
 
+export interface INoteFeed {
+  id: string;
+  entry_id: string;
+  annotation_id: string | null;
+  readonly created_by_id: number;
+
+  anchor_type: string; // ['entry', 'annotation']
+  position: Record<string, unknown>;
+
+  readonly status: string; // ['pending', 'resolved']
+
+  content_md: string;
+
+  created_at: string;
+  updated_at: string;
+}
+
 export interface IAnnotationDriver {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   create(id: string, dimension: any, annotation: any): Promise<IAnnotation>;

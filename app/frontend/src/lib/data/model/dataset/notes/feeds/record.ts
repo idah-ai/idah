@@ -11,13 +11,13 @@ import type { Hash } from "@/utils/types";
 @type("dataset:note_feeds")
 export class NoteFeedRecord extends Record {
   @field() public entry_id!: string;
-  @field() public annotation_id!: string;
+  @field() public annotation_id!: string | null;
   @field() public readonly created_by_id!: number;
 
   @field() public anchor_type!: string; // ['entry', 'annotation']
   @field() public position!: Hash;
 
-  @field() public readonly status!: string;
+  @field() public readonly status!: string; // ['pending', 'resolved']
 
   @field() public content_md!: string;
 

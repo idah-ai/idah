@@ -2,18 +2,21 @@
   import Separator from "@/components/ui/separator/separator.svelte";
 
   import type { IActivityContext } from "@/plugin/interface/Activity";
+
+  import AnnotationHeaderBarActions from "./AnnotationHeaderBarActions.svelte";
   import AnnotationHeaderBarBackButton from "./AnnotationHeaderBarBackButton.svelte";
   import AnnotationHeaderBarMediaName from "./AnnotationHeaderBarMediaName.svelte";
   import AnnotationHeaderBarTools from "./AnnotationHeaderBarTools.svelte";
-  import AnnotationHeaderBarActions from "./AnnotationHeaderBarActions.svelte";
 
   // Props
   interface Props {
     context: IActivityContext;
     mode: string;
+    showCommentsSidebar: boolean;
     onSelectMode: (selectedMode: string) => void;
+    onCommentsSidebarToggle: () => void;
   }
-  let { context, mode = $bindable(), onSelectMode }: Props = $props();
+  let { context, mode, showCommentsSidebar, onSelectMode, onCommentsSidebarToggle }: Props = $props();
 </script>
 
 <nav id="annotation-header-bar" class="flex min-h-12 items-center justify-between gap-2 px-4 py-2">
@@ -29,8 +32,8 @@
   </div>
 
   <!-- CENTER::TOOLS -->
-  <AnnotationHeaderBarTools {onSelectMode} bind:mode />
+  <AnnotationHeaderBarTools {mode} {onSelectMode} />
 
   <!-- RIGHT::ACTIONS -->
-  <AnnotationHeaderBarActions {context} />
+  <AnnotationHeaderBarActions {context} {showCommentsSidebar} {onCommentsSidebarToggle} />
 </nav>
