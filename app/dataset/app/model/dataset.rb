@@ -40,70 +40,62 @@ module Dataset
     encoder :workflow_configuration, Verse::Sequel::JsonEncoder
     encoder :labels, Verse::Sequel::PgArrayEncoder
 
+    # use_repo project_member_repo: ProjectMember::Repository
+
     # scope definition(s)
     def scoped(action)
-      account_id = auth_context.metadata[:id] || 1
-
+      # use membership_context as it also includes permissions of the member in the project
       # auth_context.can!(action, Resource::Dataset::Datasets) do |scope|
-      combined_context.can!(action, Resource::Dataset::Datasets) do |scope|
+      auth_context.can!(action, Resource::Dataset::Datasets) do |scope|
+        account_id = auth_context.metadata[:id] || 1
+
+        # binding.pry
+
         scope.all? { table }
 
-        scope.own_project? do
-          project_repo = Project::Repository.new(auth_context)
-          project_ids = project_repo.index({ created_by_id: account_id }).map(&:id).uniq
+        scope.as_user? do
+          account_id = auth_context.metadata[:id] || 1
+          project_id = auth_context.metadata[:project_id] || "0199cc34-20c1-7a60-b38d-b18556496c14"
 
-          table.where(project_id: project_ids)
+          permission_set = ProjectMember::Repository.new(auth_context).get_permission_set(account_id, project_id)
+
+          case permission_set
+          when "annotator"
+            # project_ids = table.where(account_id: account_id).select(:project_id).distinct
+            table.where(created_by_id: account_id)
+          when "reviewer"
+            # project_ids = table.where(account_id: account_id).select(:project_id).distinct
+            table.where(project_id: project_id).or(created_by_id: account_id)
+          end
         end
 
-        # scope: datasets that are in the same project as the user
-        scope.same_project? do
-          project_id = auth_context.metadata[:project_id] || ""
-          # project_ids = table.where(account_id: account_id).select(:project_id).distinct
-          table.where(project_id: )
-        end
+        # scope.own_project? do
+        #   # binding.pry
+        #   project_repo = Project::Repository.new(auth_context)
+        #   project_ids = project_repo.index({ created_by_id: account_id }).map(&:id).uniq
 
-        # scope: projects the user owns/creates
-        scope.own? do
-          table.where(created_by_id: account_id)
-        end
+        #   table.where(project_id: project_ids)
+        # end
+
+        # # scope: datasets that are in the same project as the user
+        # # TODO: project own, project member, own dataset
+        # scope.same_project? do
+        #   project_id = auth_context.metadata[:project_id] || ""
+        #   # project_ids = table.where(account_id: account_id).select(:project_id).distinct
+        #   table.where(project_id: )
+        # end
+
+        # # scope: projects the user owns/creates
+        # scope.own? do
+        #   # binding.pry
+        #   table.where(created_by_id: account_id)
+        # end
+
+        # scope.membership? do
+        #   @auth_context = ContextHelper.membership_context(auth_context)
+        #   scoped(action)
+        # end
       end
-    end
-
-    # TODO: move to a dedicated place to be called from repositories
-    # TODO: determine how and where we can cache the permissions properly
-    private def combined_context
-      # TODO: remove mockings
-      account_id = auth_context.metadata[:id] || 1
-      project_ids = auth_context.metadata[:project_id] || "0199cc34-20c1-7a60-b38d-b18556496c14"
-
-      return auth_context unless account_id && project_ids
-
-      # get permission set name from the project membership
-      permission_set_name = ProjectMember::Repository.new(auth_context).find_by(
-        {
-          account_id: account_id,
-          project_id: project_ids
-        }
-      )&.permission_set
-
-      # rights from membership's permission set
-      permission_set_rights = Verse::Auth::Context.backend.fetch(permission_set_name)
-
-      return auth_context if permission_set_rights.empty?
-
-      # rights from current account context
-      account_rights = Verse::Auth::Context.backend.fetch(auth_context.role)
-
-      # merge rights
-      combined_rights = (account_rights + permission_set_rights).uniq
-
-      # return a context with combined rights
-      Verse::Auth::Context.new(
-        combined_rights,
-        role: auth_context.role, # Keep original role name
-        custom_scopes: auth_context.custom_scopes,
-        metadata: auth_context.metadata
-      )
     end
   end
 end

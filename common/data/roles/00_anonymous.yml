@@ -6,26 +6,51 @@ anonymous:
   rights:
     # - "*.*.*"
 
-    
-
-    ## default user; owner
+    ## user
+    # dataset service
     # projects
-    - "dataset:projects.create.*"
-    - "dataset:projects.read.member"
-    - "dataset:projects.read.own"
-    - "dataset:projects.update.own"
-    - "dataset:projects.delete.own"
-    # memberships
-    - "dataset:project_members.create.own"
-    - "dataset:project_members.read.same_project"
-    - "dataset:project_members.delete.own"
+    - "dataset:projects.*.as_user"
+    # project memberships
+    - "dataset:project_members.create.*" # TODO: implement a scope for this
+    - "dataset:project_members.read.as_user"
+    - "dataset:project_members.delete.as_user"
     # datasets
-    - "dataset:datasets.create.own_project"
-    - "dataset:datasets.read.own_project"
-    - "dataset:datasets.read.own"
-    # - "dataset:datasets.update.own"
-    # - "dataset:datasets.delete.own"
+    - "dataset:datasets.*.as_user"
+    # entries
+    - "dataset:entries.*.as_user"
+    # annotations
+    - "dataset:annotations.*.as_user"
 
+    # media service
+
+    # # projects
+    # - "dataset:projects.*.membership"
+    # # - "dataset:projects.read.membership"
+    # # - "dataset:projects.update.membership"
+    # # - "dataset:projects.read.membership"
+    # # - "dataset:projects.read.member"
+    # # - "dataset:projects.read.own"
+    # # - "dataset:projects.update.own"
+    # # - "dataset:projects.delete.own"
+    # # memberships
+    # - "dataset:project_members.create.membership"
+    # - "dataset:project_members.read.same_project"
+    # - "dataset:project_members.update.membership"
+    # - "dataset:project_members.delete.membership"
+    # # - "dataset:project_members.create.own"
+    # # - "dataset:project_members.read.same_project"
+    # # - "dataset:project_members.delete.own"
+    # # datasets
+    # - "dataset:datasets.*.membership"
+    # # - "dataset:datasets.create.own_project"
+    # # - "dataset:datasets.read.own_project"
+    # # - "dataset:datasets.read.own"
+    # # - "dataset:datasets.update.own"
+    # # - "dataset:datasets.delete.own"
+    # # entries
+    # - "dataset:entries.*.membership"
+    # # annotations
+    # - "dataset:annotations.*.membership"
 
     # annotator
     # - "dataset:projects.read.member"
