@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "open3"
 
 module IdahVideo
@@ -9,8 +11,14 @@ module IdahVideo
         json = nil
 
         Open3.popen3(
-          "ffprobe", "-v", "quiet", "-print_format",
-          "json", "-show_format", "-show_streams", path
+          "ffprobe",
+          "-v",
+          "quiet",
+          "-print_format",
+          "json",
+          "-show_format",
+          "-show_streams",
+          path
         ) do |_, stdout, stderr, wait_thr|
           json = stdout.read
 
