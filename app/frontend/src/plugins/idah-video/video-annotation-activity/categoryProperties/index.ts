@@ -23,22 +23,30 @@ import type { LabelPropertyOption, PropertyField } from "@/plugin/interface/Acti
     })
   }
 
+  export function propertyFullfilled(
+    value:any, property: PropertyField
+  ) {
+    return property.required ?
+      value != undefined && conformToformat(value, property)
+      :  value == undefined || conformToformat(value, property)
+  }
+
 const formatValidators = [
   {
     type: "text",
-    minimum: (v: string, format) => v.length >= format.minimum,
-    maximum: (v: string, format) => v.length <= format.maximum,
+    minimum: (v: string, format) => v?.length >= (format.minimum || 0),
+    maximum: (v: string, format) => v?.length <= (format.maximum || v.length),
     step: (v: string, format) => true,
-    options: (v: string, options: Array<LabelPropertyOption>) => true,
+    options: (v: string, format) => true,
     info: (v) => true
   }, {
     type: "integer",
     minimum: (v: number, format) => v >= (format.minimun || 0),
-    maximum: (v: number, format) => v <= (format.maxximum || v),
-    step: (v: number, format) => {
-      return !((v - format.minimum) % format.step) || v == format.maximum
-    },
-    options: (v: number, options: Array<LabelPropertyOption>) => true,
+    maximum: (v: number, format) => v <= (format.maximum || v),
+    step: (
+      v: number, format
+    ) => !((v - format.minimum) % format.step) || v == format.maximum,
+    options: (v: number, format) => true,
     info: (v) => true
   }, {
     type: "boolean",
@@ -52,8 +60,7 @@ const formatValidators = [
     minimum: (v: string, format) => true,
     maximum: (v: string, format) => true,
     step: (v: string, format) => true,
-    options: (v: string, format) =>
-      format.options.map(o => o.id).includes(v),
+    options: (v: string, format) => format.options.map(o => o.id).includes(v),
     info: (v) => true
   }, {
     type: "multi-select",
@@ -77,7 +84,37 @@ const formatValidators = [
 
     if (!validator) return false
 
-    return Object.entries(propertyField.format).filter(([k, _]) => k != 'type').every(([k, v]) => {
-      return validator[k](value, propertyField.format)
-    })
+    return Object.entries(propertyField.format)
+      .filter(([k, _]) => k != 'type')
+      .every(([k, v]) => {
+        return validator[k](value, propertyField.format)
+      })
   }
+
+
+  export function formatConformity(
+    value: any, propertyField: PropertyField
+  ) {
+
+    const validator = formatValidators.find(f => f.type == propertyField.type)
+
+    return [
+      [
+        ['required', propertyField.required],
+        propertyField.required ? value != undefined : true
+      ],
+      ...Object.entries(
+          propertyField.format
+        ).filter(
+          ([k, _]) => k != 'type'
+        ).map(
+          ([k, _]) => [
+            [k, propertyField.format[k]],
+            !validator ?
+              false
+              : validator[k](value, propertyField.format)
+          ]
+        )
+    ].filter(([_,b]) => !b).map(([a,b]) => a)
+  }
+
