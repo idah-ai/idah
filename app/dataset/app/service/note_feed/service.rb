@@ -38,13 +38,13 @@ module NoteFeed
     def create_from_params(data)
       attr = data.dup
       attr[:id] = UUIDv7.generate
-      attr[:created_by_id] = 1
+      attr[:created_by_email] = nil
       attr[:status] = "pending"
 
       entry_id = attr[:entry_id]
       entry = entries.find!(entry_id)
 
-      unless entry.wf_step == "review"
+      unless entry.wf_step == "review" && entry.status == "in_progress"
         raise Verse::Error::ValidationFailed,
               "Cannot add note feed to entry not in review step"
       end

@@ -72,7 +72,7 @@ RSpec.describe NoteFeed::Service, database: true do
         expect(result.content_md).to eq("This is a test note")
         expect(result.position).to eq({ x: 100, y: 200 })
         expect(result.status).to eq("pending")
-        expect(result.created_by_id).to eq(1)
+        expect(result.created_by_email).to eq(nil)
       end
     end
 

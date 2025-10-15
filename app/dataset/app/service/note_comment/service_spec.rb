@@ -44,7 +44,6 @@ RSpec.describe NoteComment::Service, database: true do
       anchor_type: "entry",
       position: { "x" => 100, "y" => 200 },
       content_md: "This is a test note feed",
-      created_by_id: 1,
       status: "pending"
     )
   end
@@ -100,7 +99,7 @@ RSpec.describe NoteComment::Service, database: true do
         expect(result.note_feed_id).to eq(note_feed_id)
         expect(result.content_md).to eq("This is a test comment")
         expect(result.is_edited).to eq(false)
-        expect(result.created_by_id).to eq(1)
+        expect(result.created_by_email).to eq(nil)
       end
     end
 
