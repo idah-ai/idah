@@ -1,5 +1,5 @@
-inherit_from:
-  - https://relaxed.ruby.style/rubocop.yml
+inherit_gem:
+  relaxed-rubocop: .rubocop.yml
 
 AllCops:
   TargetRubyVersion: 3.2
@@ -36,3 +36,6 @@ Layout/ParameterAlignment:
 
 Layout/ArrayAlignment:
   Enabled: true
+
+Naming/ConstantName:
+  Enabled: false

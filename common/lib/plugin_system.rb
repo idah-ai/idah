@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module PluginSystem
   extend self
 
@@ -5,7 +7,7 @@ module PluginSystem
 
   @plugins = {}
 
-  def init(context_class)
+  def init(_context_class)
     @config = Config.new(
       Verse.config.extra_fields.dig(:idah, :plugins) || {}
     )
@@ -27,7 +29,7 @@ module PluginSystem
       listener = Listen.to(*root_paths) do |modified, added, removed|
         file = (modified + added + removed)
 
-        path_to_reload = root_paths.select do |root_path|
+        root_paths.select do |root_path|
           file.any?{ |f| f.start_with?(root_path) }
         end.unique.each do |path|
           path_index[path].each(&:reload)
@@ -38,9 +40,9 @@ module PluginSystem
     # Load the plugins:
     plugins.each_value(&:start)
 
-    if config.watch
-      listener.start
-    end
+    return unless config.watch
+
+    listener.start
   end
 
   def manual_load_plugin(path, plugin_name)
@@ -82,8 +84,7 @@ module PluginSystem
       @plugins[manifest.name.to_sym] = Plugin.new(service_backend_path, manifest, manual: true)
     rescue Verse::Schema::InvalidSchemaError => e
       Verse.logger.error{ "[IDAH-PLUGIN] Plugin manifest validation error: #{e.message}" }
-      return
+      nil
     end
-
   end
 end

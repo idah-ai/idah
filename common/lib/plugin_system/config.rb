@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module PluginSystem
   ConfigSchema = Verse::Schema.define do
     field :path, String, default: "plugins"

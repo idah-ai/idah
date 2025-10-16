@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module PluginSystem
   ManifestSchema = Verse::Schema.define do
     field :type, String

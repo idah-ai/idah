@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module PluginSystem
   class Plugin
     attr_reader :path, :manifest, :manual
