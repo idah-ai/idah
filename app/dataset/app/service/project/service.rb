@@ -21,12 +21,13 @@ module Project
     end
 
     def create(record)
+      account_id = auth_context.metadata[:id] || 1 # TODO: remove, mocking
+
       attr = record.attributes
       attr[:id] = record.id || UUIDv7.generate
+      attr[:created_by_id] = account_id
 
       id = projects.create(attr)
-
-      account_id = auth_context.metadata[:id] || 1 # TODO: remove, mocking
 
       # add the user creating as project member automatically
       project_member_service.create(
@@ -77,6 +78,10 @@ module Project
       end
 
       projects.delete(id)
+    end
+
+    def own?(account_id, project_id)
+      account_id == projects.find!(project_id).created_by_id
     end
   end
 end

@@ -2,7 +2,8 @@
 
 module ProjectMember
   class Service < Verse::Service::Base
-    use project_members: ProjectMember::Repository
+    use project_members: ProjectMember::Repository,
+        project_service: Project::Service
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       project_members.index(
@@ -21,14 +22,10 @@ module ProjectMember
 
     def create(record)
       # # TODO: remove mocking
-      # account_id = auth_context.metadata[:id] || 1
-      # project_id = record.id
-      # role = ProjectMember::Repository.new(auth_context).get_permission_set(account_id, project_id)
+      account_id = auth_context.metadata[:id] || 1
+      project_id = record.attributes[:project_id]
 
-      # auth_context.reject! unless auth_context.can!(:update, Resource::Dataset::Projects) do |scope|
-      #   scope.all? { true }
-      #   scope.as_user? { owner?(role) }
-      # end
+      auth_context.reject! unless project_service.own?(account_id, project_id)
 
       project_members.transaction do
         record_id = project_members.create(record.attributes)
