@@ -1,5 +1,7 @@
 // duplicate from yacine's
 
+import type { Command } from "@/command/Command";
+
 interface IUser {
   id: number;
   email: string;
@@ -109,6 +111,14 @@ export interface IConfig {
   taggings: Array<TagField>;
 }
 
+const command: Command
+export interface ICommands {
+  on(name: string, commandBuilder: (props:Object) => Command): void;
+  run(name: string, props: Object): void;
+  undo(times?:number): void;
+  redo(times?:number): void;
+}
+
 export interface IActivityContext {
   // Id of the current entry
   get id(): string;
@@ -139,6 +149,8 @@ export interface IActivityContext {
 
   // Driver for fetching and updating notes
   get notes(): INoteDriver;
+
+  get commands(): ICommands
 
   // Return to previous step of the workflow
   back(): void;
