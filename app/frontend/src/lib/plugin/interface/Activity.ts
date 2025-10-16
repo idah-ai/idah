@@ -1,5 +1,27 @@
 // duplicate from yacine's
 
+export interface IFields {
+  [key: string]: Array<string>;
+}
+
+export interface IFilters {
+  [key: string]: unknown;
+}
+
+export interface IPagination {
+  page: number;
+  itemsPerPage: number;
+}
+
+export type ISort = Array<string>;
+
+export interface IListOptions {
+  fields?: IFields;
+  filters?: IFilters;
+  pagination?: IPagination;
+  sort?: ISort;
+}
+
 interface IUser {
   id: number;
   email: string;
@@ -47,10 +69,10 @@ export interface INoteFeed {
   annotation_id: string | null;
   readonly created_by_id: number;
 
-  anchor_type: string; // ['entry', 'annotation']
+  anchor_type: "entry" | "annotation";
   position: Record<string, unknown>;
 
-  readonly status: string; // ['pending', 'resolved']
+  readonly status: "pending" | "resolved";
 
   content_md: string;
 
@@ -71,11 +93,11 @@ export interface IAnnotationDriver {
 }
 
 export interface INoteDriver {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  create(position: any, content: string): Promise<INote>;
+  create(data: Partial<INoteFeed>): Promise<INoteFeed>;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  list(filter: any): Promise<Array<INote>>;
+  list(listOptions: IListOptions): Promise<Array<INoteFeed>>;
+
+  markAsResolved(noteFeedId: string): Promise<INoteFeed>;
 }
 
 export interface ICategoryField {
@@ -134,10 +156,10 @@ export interface IActivityContext {
   get type(): string;
 
   // Returns the current workflow step
-  get workflowStep(): string;
+  get workflowStep(): "start" | "annotate" | "review" | "done" | "export";
 
   // Returns the current status of the entry
-  get status(): string;
+  get status(): "processing" | "ready" | "assigned" | "in_progress" | "pending" | "completed" | "errored";
 
   // Get the dataset configuration
   get config(): IConfig;
@@ -161,7 +183,7 @@ export interface IActivityContext {
   back(): void;
 
   // Submit to the next step of the workflow
-  submit(): Promise<void>;
+  submit(opts?: { approved: boolean }): Promise<void>;
 
   // Mark this activity as errored
   error(message: string): Promise<void>;
