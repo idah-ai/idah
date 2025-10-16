@@ -1,20 +1,11 @@
-import type { IActivityContext, INote, INoteDriver } from "./interface/Activity";
-import { createAnnotationDriver } from "./AnnotationDriver";
 import { goto } from "$app/navigation";
-import type { EntryRecord } from "@/data/model/dataset/entries/record";
 
-const noteDriver: INoteDriver = {
-  create(position, content) {
-    return new Promise<INote>((resolve, reject) => {
-      reject("todo");
-    });
-  },
-  list(filter) {
-    return new Promise<INote[]>((resolve, reject) => {
-      reject("todo");
-    });
-  },
-};
+import { entriesBackendDataSource, type EntryRecord } from "@/data/model/dataset/entries/record";
+
+import { createAnnotationDriver } from "./AnnotationDriver";
+import { createNoteDriver } from "./NoteDriver";
+
+import type { IActivityContext } from "./interface/Activity";
 
 export function activityContextForEntry(entry: EntryRecord): IActivityContext {
   return {
@@ -32,14 +23,17 @@ export function activityContextForEntry(entry: EntryRecord): IActivityContext {
     },
     userRole: "",
     annotations: createAnnotationDriver(entry.id),
-    notes: noteDriver,
+    notes: createNoteDriver(entry.id),
     back() {
       const path = `/projects/${entry.dataset.project.id}/datasets/${entry.dataset.id}/tasks`;
       goto(path);
     },
-    submit() {
+    submit(opts?: { approved: boolean }) {
       return new Promise<void>((resolve, reject) => {
-        reject("todo");
+        entriesBackendDataSource.submit(entry.id, opts).then(
+          (_v) => resolve(),
+          (_e) => reject(),
+        );
       });
     },
     error(message: string) {

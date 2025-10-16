@@ -1,4 +1,6 @@
-import { createBackendDataSource } from "@/data/BackendDataSource";
+import { createBackendDataSource, resourcePath } from "@/data/BackendDataSource";
+import { clearCache } from "@/data/Cache";
+import { parseSingleElementError, parseSingleElementReturn } from "@/data/model/json_api";
 import { field, Record, RecordFactory, relationship, type } from "@/data/model/Record";
 import { Transformers } from "@/data/model/transformers";
 
@@ -14,10 +16,10 @@ export class NoteFeedRecord extends Record {
   @field() public annotation_id!: string | null;
   @field() public readonly created_by_id!: number;
 
-  @field() public anchor_type!: string; // ['entry', 'annotation']
+  @field() public anchor_type!: "entry" | "annotation";
   @field() public position!: Hash;
 
-  @field() public readonly status!: string; // ['pending', 'resolved']
+  @field() public readonly status!: "pending" | "resolved";
 
   @field() public content_md!: string;
 
@@ -31,7 +33,36 @@ export class NoteFeedRecord extends Record {
 
 RecordFactory.registerTypes(NoteFeedRecord);
 
-export const noteFeedsBackendDataSource = createBackendDataSource(
-  NoteFeedRecord,
-  `${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/note_feeds`,
-);
+const noteFeedBasePath: string = `${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/note_feeds`;
+
+export const noteFeedsBackendDataSource = createBackendDataSource(NoteFeedRecord, noteFeedBasePath, {
+  markAsResolved: async (noteFeedId: string) => {
+    const res = await fetch(`${noteFeedBasePath}/${noteFeedId}/resolve`, {
+      method: "POST",
+      body: JSON.stringify({}),
+      headers: { "Content-Type": "application/vnd.api+json" },
+    });
+
+    const body = await res.json();
+
+    // Cache Management
+    const cacheIndexKey = resourcePath(noteFeedBasePath, null, undefined);
+    clearCache(cacheIndexKey);
+
+    if (body && body.errors) {
+      if (body.errors.length > 0) {
+        body.errors.forEach((err: Hash) => {
+          console.error(`[NoteFeed][markAsResolved] ${err.status} - ${err.title}`);
+        });
+      }
+
+      return Promise.reject(parseSingleElementError({ status: res.status, errors: body.errors }));
+    }
+
+    if (body && body.data) {
+      return Promise.resolve(parseSingleElementReturn<NoteFeedRecord>(body));
+    }
+
+    throw "No data returned";
+  },
+});
