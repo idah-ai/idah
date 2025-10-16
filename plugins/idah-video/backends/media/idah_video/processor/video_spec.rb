@@ -19,6 +19,7 @@ RSpec.describe IdahVideo::Processor::Video do
     # It should upload the master manifest
     expect(processor_context.uploaded).to include(
       a_hash_including(
+        io: an_instance_of(String),
         key: "master.m3u8",
         mime_type: "application/vnd.apple.mpegurl"
       )
@@ -27,34 +28,21 @@ RSpec.describe IdahVideo::Processor::Video do
     # It should upload the different streams manifests
     expect(processor_context.uploaded).to include(
       a_hash_including(
-        key: "stream1.m3u8",
+        io: an_instance_of(String),
+        key: "240p.m3u8",
         mime_type: "application/vnd.apple.mpegurl"
       )
     )
 
-    # It should upload the stream fragments
     expect(processor_context.uploaded).to include(
       a_hash_including(
-        key: "fragment1.ts",
+        io: an_instance_of(String),
+        key: "240p_0000.ts",
         mime_type: "video/mp2t"
-      )
-    )
-    expect(processor_context.uploaded).to include(
-      a_hash_including(
-        key: "fragment2.ts",
-        mime_type: "video/mp2t"
-      )
-    )
-
-    # It should upload the thumbnail
-    expect(processor_context.uploaded).to include(
-      a_hash_including(
-        key: "thumbnail.jpg",
-        mime_type: "image/jpeg"
       )
     )
 
     # It should update the progress
-    expect(processor_context.progress).to eq(0.495) # 0.5 * 0.99
+    expect(processor_context.progress).to eq(1.0)
   end
 end

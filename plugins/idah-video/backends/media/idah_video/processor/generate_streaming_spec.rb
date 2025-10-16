@@ -7,8 +7,8 @@ RSpec.describe IdahVideo::Processor::GenerateStreaming do
     "spec_data/sample.mp4"
   }
 
-  let(:arguments) do
-    IdahVideo::Processor::Arguments.new(
+  let(:options) do
+    IdahVideo::Processor::Options.new(
       resource: "123",
       streaming_time_per_segment: 3
     )
@@ -20,7 +20,7 @@ RSpec.describe IdahVideo::Processor::GenerateStreaming do
 
   describe ".generate" do
     it "runs without errors" do
-      described_class.call(file_path, video_info, arguments)
+      described_class.call(file_path, video_info, options)
     end
   end
 end

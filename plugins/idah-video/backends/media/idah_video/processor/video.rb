@@ -61,18 +61,21 @@ module IdahVideo
           raise ArgumentError, "no block given"
         end
 
-        last_progress = Time.now.to_i
+        last_progress = 0
 
         GenerateStreaming.call(file_path, video_info, context.options) do |progress, output|
           now = Time.now.to_i
 
           # Do not update too frequently (update to db)
-          if now - last_progress > 5
+          if now - last_progress > 5 || progress == 1.0
             last_progress = now
             context.progress = progress * 0.99 # 99% to convert, 1% to upload.
           end
 
-          block.call(output) if output
+          if output
+            block.call(output)
+            context.progress = 1.0
+          end
         end
       end
     end
