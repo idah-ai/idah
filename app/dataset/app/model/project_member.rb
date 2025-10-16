@@ -34,9 +34,13 @@ module ProjectMember
 
         scope.as_user? do
           account_id = auth_context.metadata[:id] || 1
+          # return true if action == :create
+          if action == :create
+            own_project_ids = Project::Repository.new(auth_context).index({ created_by_id: account_id })
+            table.where(project_id: own_project_ids)
+          end
 
-          project_ids = table.where(account_id:).select(:project_id).distinct
-          table.where(project_id: project_ids).or(account_id: account_id)
+          table.where(project_id: table.where(account_id:))
         end
       end
     end
@@ -47,21 +51,15 @@ module ProjectMember
     end
 
     def owner?(permission_set)
-      return true if permission_set == "owner"
-
-      false
+      permission_set == "owner"
     end
 
     def annotator?(permission_set)
-      return true if permission_set == "annotator"
-
-      false
+      permission_set == "annotator"
     end
 
-    def reviewer(permission_set)
-      return true if permission_set == "reviewer"
-
-      false
+    def reviewer?(permission_set)
+      permission_set == "reviewer"
     end
   end
 end

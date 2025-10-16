@@ -41,7 +41,6 @@ module Project
               name: auth_context.metadata[:name] || nil, # TODO: fetch either from context or iam account
               email: auth_context.metadata[:email] || "", # TODO: fetch either from context or iam account
               invited_by_id: account_id,
-              created_by_id: account_id,
               permission_set: "owner",
             },
           }
