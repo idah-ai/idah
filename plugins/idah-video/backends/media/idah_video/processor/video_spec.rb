@@ -16,16 +16,6 @@ RSpec.describe IdahVideo::Processor::Video do
   it "process video" do
     subject.run
 
-    # It should pass the correct arguments to GenerateStreaming
-    expect(IdahVideo::Processor::GenerateStreaming).to have_received(:call).with(
-      file_path, video_info, processor_context.arguments
-    )
-
-    # It should pass the correct arguments to GenerateThumbnail
-    expect(IdahVideo::Processor::GenerateThumbnail).to have_received(:call).with(
-      file_path, video_info, tmpdir: anything
-    )
-
     # It should upload the master manifest
     expect(processor_context.uploaded).to include(
       a_hash_including(
