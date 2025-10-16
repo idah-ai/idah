@@ -15,12 +15,12 @@ module IdahVideo
         :m3u8, :fragments
       )
 
-      def call(file_path, video_info, arguments, tmpdir: nil, &block)
+      def call(file_path, video_info, options, tmpdir: nil, &block)
         file_path = File.absolute_path(file_path)
 
         tmpdir ||= Dir.mktmpdir("idah-video-processor")
 
-        sizes = arguments.sizes
+        sizes = options.sizes
 
         master_m3u8 = String.new
 
@@ -64,7 +64,7 @@ module IdahVideo
           dir: tmpdir,
           file: file_path,
           variants:,
-          streaming_time_per_segment: arguments.streaming_time_per_segment
+          streaming_time_per_segment: options.streaming_time_per_segment
         ) do |progress|
           block&.call(progress / video_info.duration)
         end

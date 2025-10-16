@@ -10,39 +10,8 @@ RSpec.describe IdahVideo::Processor::Video do
       resource: "fake_resource_id"
     )
   end
-  let(:video_info) { double("video_info") }
 
   subject { described_class.new(processor_context) }
-
-  before do
-    allow(IdahVideo::Processor::VideoInfo).to receive(
-      :from_file
-    ).with(file_path).and_return(video_info)
-    allow(IdahVideo::Processor::GenerateStreaming).to receive(
-      :call
-    ).and_yield(
-      0.5,
-      double(
-        master_m3u8: "master.m3u8",
-        streams: [
-          double(
-            m3u8: "stream1.m3u8",
-            fragments: [
-              "fragment1.ts", "fragment2.ts"
-            ]
-          )
-        ]
-      )
-    )
-    allow(IdahVideo::Processor::GenerateThumbnail).to receive(:call).and_yield("thumbnail.jpg")
-    allow(processor_context).to receive(:arguments).and_return(
-      double(
-        generate_thumbnail: true,
-        resource: "fake_resource_id"
-      )
-    )
-    allow(Verse).to receive(:logger).and_return(Logger.new(IO::NULL))
-  end
 
   it "process video" do
     subject.run

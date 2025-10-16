@@ -10,8 +10,9 @@ module IdahVideo
       def identity(path)
         json = nil
 
-        Open3.popen3(
-          "ffprobe",
+        path = File.absolute_path(path)
+
+        args = [
           "-v",
           "quiet",
           "-print_format",
@@ -19,6 +20,10 @@ module IdahVideo
           "-show_format",
           "-show_streams",
           path
+        ]
+
+        Open3.popen3(
+          "ffprobe", *args
         ) do |_, stdout, stderr, wait_thr|
           json = stdout.read
 
@@ -27,7 +32,9 @@ module IdahVideo
           if wait_thr.value != 0
             err = stderr.read
 
-            raise "Failed to execute ffprobe: #{result}\n#{err}"
+            error = "Failed to execute `ffprobe #{args.join(" ")}`: #{result}\n#{err}"
+            Verse.logger&.error{ error }
+            raise error
           end
         end
 

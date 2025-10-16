@@ -12,7 +12,7 @@ module IdahVideo
       def run
         file_path = context.download_original
 
-        video_info = Video::VideoInfo.from_file(file_path)
+        video_info = VideoInfo.from_file(file_path)
 
         process_media(file_path, video_info) do |output|
           # Upload the master manifest
@@ -33,19 +33,19 @@ module IdahVideo
               )
             end
           end
-        end
 
-        if arguments.generate_thumbnail
-          Video::GenerateThumbnail.call(
-            file_path,
-            video_info,
-            tmpdir: output.tmpdir
-          ) do |thumbnail|
-            context.upload_media(
-              File.open(thumbnail),
-              "thumbnail.jpg",
-              "image/jpeg"
-            )
+          if context.options.generate_thumbnail
+            GenerateThumbnail.call(
+              file_path,
+              video_info,
+              tmpdir: output.tmpdir
+            ) do |thumbnail|
+              context.upload_media(
+                File.open(thumbnail),
+                "thumbnail.jpg",
+                "image/jpeg"
+              )
+            end
           end
         end
       ensure
@@ -63,7 +63,7 @@ module IdahVideo
 
         last_progress = Time.now.to_i
 
-        Video::GenerateStreaming.call(file_path, video_info, arguments) do |progress, output|
+        GenerateStreaming.call(file_path, video_info, context.options) do |progress, output|
           now = Time.now.to_i
 
           # Do not update too frequently (update to db)

@@ -2,6 +2,6 @@
 
 module IdahVideo
   module Processor
-    Arguments = ArgumentsSchema.dataclass
+    Options = OptionsSchema.dataclass
   end
 end
