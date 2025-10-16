@@ -14,7 +14,7 @@ module Spec
       self.class.ran = false
     end
 
-    def run
+    def run_impl
       self.class.ran = true
     end
   end
@@ -132,6 +132,7 @@ RSpec.describe Jobs::Scheduler do
         expect(job_repository).to receive(:lock_available).and_return([job1])
         allow(job_repository).to receive(:next_scheduled_time).and_return(nil)
         allow(job_repository).to receive(:update_progress).with(1, 1.0).and_return(true)
+        expect(job_repository).to receive(:complete).with(1)
 
         allow(thread_pool).to receive(:run) do |&block|
           block.call

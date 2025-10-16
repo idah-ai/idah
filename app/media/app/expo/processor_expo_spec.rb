@@ -11,7 +11,7 @@ RSpec.describe ProcessorExpo, type: :exposition, as: :system do
           resource_id: "some-id",
           event: "created",
           payload: {
-            resource_id: "123",
+            resource_id: "some-id",
             args: [],
             metadata: {}
           }
