@@ -9,5 +9,4 @@ class ProcessorExpo < BaseExpo
       params[:resource_id]
     )
   end
-
 end

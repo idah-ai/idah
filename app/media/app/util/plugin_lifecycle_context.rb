@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # Microservice specific
 # context passed to the plugin code.
 class PluginLifecycleContext

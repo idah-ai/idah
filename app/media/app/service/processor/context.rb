@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Processor
   class Context
     attr_reader :resource, :config, :job

@@ -106,7 +106,6 @@ RSpec.describe MediasExpo, type: :exposition, as: :system do
 
   context "#upload" do
     let(:file) do
-
       # Create a tempfile to to upload:
       Rack::Test::UploadedFile.new(
         Tempfile.create(["sample", ".mp4"]).tap do |f|

@@ -130,6 +130,7 @@ GEM
     redis-client (0.25.2)
       connection_pool
     regexp_parser (2.10.0)
+    relaxed-rubocop (2.5)
     rexml (3.4.1)
     rmagick (6.0.1)
       observer (~> 0.1)
@@ -216,6 +217,7 @@ DEPENDENCIES
   puma (~> 6)
   rack-test
   rake
+  relaxed-rubocop
   rmagick (~> 6.0.1)
   rspec (~> 3.0)
   rubocop

@@ -67,7 +67,7 @@ module IdahVideo
           now = Time.now.to_i
 
           # Do not update too frequently (update to db)
-          if now - last_progress > 5 || progress == 1.0
+          if now - last_progress > 5 || progress >= 1.0
             last_progress = now
             context.progress = progress * 0.99 # 99% to convert, 1% to upload.
           end
