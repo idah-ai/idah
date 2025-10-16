@@ -29,7 +29,15 @@
   // Contexts
   const context: IActivityContext = getContext("context");
   const category = () => context.config.categories.find((c) => c.id == selectedCategory);
-  const properties = () => context.config.properties.filter((p) => p.selector.includes(selectedCategory));
+  const properties = () =>
+    context.config.properties.filter((p) =>
+      p.selector.some(
+        (s) => selectedCategory === s || s === selectedCategory + "/*" || s === selectedCategory.split("/")[0] + "/*",
+      ),
+    );
+  $effect(() => {
+    console.log({ selectedCategory, selectedId, category, context, properties: properties() });
+  });
   const propertyComponents: {
     type: string;
     component: propertyComponent;
