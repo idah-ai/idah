@@ -1,7 +1,8 @@
 <script lang="ts">
-  import { getContext, onMount } from "svelte";
   import { goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
   import { page } from "$app/state";
+  import { getContext, onMount } from "svelte";
 
   import { Button } from "@/components/ui/button";
   import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -31,7 +32,7 @@
 
         if (registeredPlugins.length == 1) {
           /** Redirect to the single plugin's page */
-          goto(`plugin/${registeredPlugins[0].name}`);
+          goto(resolve(`/entry/${entryId}/plugin/${registeredPlugins[0].name}`));
         } else {
           /** Show the list of available plugins */
           plugins = registeredPlugins;
@@ -48,7 +49,7 @@
         <li>
           <Tooltip>
             <TooltipTrigger>
-              <Button onclick={() => goto(`plugin/${plugin.name}`)}>
+              <Button onclick={() => goto(resolve(`/entry/${entryId}/plugin/${plugin.name}`))}>
                 {plugin.label}
               </Button>
             </TooltipTrigger>
