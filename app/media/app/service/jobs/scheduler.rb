@@ -94,7 +94,7 @@ module Jobs
             when :update_progress
               jobs.update_progress(job.id, opts[:value])
             when :reschedule
-              reschedule_in = Time.now + opts.fetch(:in, 10) # Default to 10 seconds if not provided
+              reschedule_in = Time.now + opts.fetch(:after, 10) # Default to 10 seconds if not provided
               jobs.reschedule(job.id, "pending", scheduled_at: reschedule_in)
               throw :stop # Stop processing this job, it will be retried
             when :error

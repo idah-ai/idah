@@ -151,7 +151,7 @@ RSpec.describe Jobs::Scheduler do
         allow(job_repository).to receive(:next_scheduled_time).and_return(nil)
         expect(job_repository).to receive(:update_progress).with(2, 0.5)
         # The job should complete and update progress to 1.0
-        expect(job_repository).to receive(:update_progress).with(2, 1.0)
+        expect(job_repository).to receive(:complete).with(2)
 
         allow(thread_pool).to receive(:run) do |&block|
           block.call
