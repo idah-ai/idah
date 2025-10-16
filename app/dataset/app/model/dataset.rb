@@ -40,12 +40,8 @@ module Dataset
     encoder :workflow_configuration, Verse::Sequel::JsonEncoder
     encoder :labels, Verse::Sequel::PgArrayEncoder
 
-    # use_repo project_member_repo: ProjectMember::Repository
-
     # scope definition(s)
     def scoped(action)
-      # use membership_context as it also includes permissions of the member in the project
-      # auth_context.can!(action, Resource::Dataset::Datasets) do |scope|
       auth_context.can!(action, Resource::Dataset::Datasets) do |scope|
         account_id = auth_context.metadata[:id] || 1
 
@@ -54,18 +50,12 @@ module Dataset
         scope.as_user? do
           # TODO: remove mockings
           account_id = auth_context.metadata[:id] || 1
-          project_id = auth_context.metadata[:project_id] || "0199cc34-20c1-7a60-b38d-b18556496c14"
 
-          permission_set = ProjectMember::Repository.new(auth_context).get_permission_set(account_id, project_id)
+          # project ids that is a member of
+          project_ids = ProjectMember::Repository.new(auth_context).index({ account_id: }).map(&:project_id).uniq
 
-          case permission_set
-          when "annotator"
-            # project_ids = table.where(account_id: account_id).select(:project_id).distinct
-            table.where(created_by_id: account_id)
-          when "reviewer"
-            # project_ids = table.where(account_id: account_id).select(:project_id).distinct
-            table.where(project_id: project_id).or(created_by_id: account_id)
-          end
+          # datasets that are in projects that is a member of or owned datasets
+          table.where(id: project_ids).or(created_by_id: account_id)
         end
       end
     end
