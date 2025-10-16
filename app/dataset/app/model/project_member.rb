@@ -64,5 +64,9 @@ module ProjectMember
     def reviewer?(permission_set)
       permission_set == "reviewer"
     end
+
+    def self?(account_id, membership_account_id)
+      account_id == membership_account_id
+    end
   end
 end
