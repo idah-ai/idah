@@ -33,14 +33,17 @@ module ProjectMember
         scope.all? { table }
 
         scope.as_user? do
+          # TODO: remove mocking
           account_id = auth_context.metadata[:id] || 1
-          # return true if action == :create
+
           if action == :create
+            # allow creating in projects own
             own_project_ids = Project::Repository.new(auth_context).index({ created_by_id: account_id })
             table.where(project_id: own_project_ids)
           end
 
-          table.where(project_id: table.where(account_id:))
+          # members in the same projects
+          table.where(project_id: table.where(account_id:).select(:project_id))
         end
       end
     end
