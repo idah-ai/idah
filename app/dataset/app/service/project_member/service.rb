@@ -34,17 +34,15 @@ module ProjectMember
     end
 
     def update(record)
-      # TODO: consider if we should allow update, and what role
+      # TODO: consider if we should allow update, and what role if so
       project_members.update!(record.id, record.attributes)
       project_members.find!(record.id)
     end
 
     def delete(id)
       account_id = auth_context.metadata[:id] || 1
-      # project_id = id
       membership = project_members.find(id)
       role = membership.permission_set
-      # role = ProjectMember::Repository.new(auth_context).get_permission_set(account_id, project_id)
 
       auth_context.reject! unless auth_context.can!(:delete, Resource::Dataset::ProjectMembers) do |scope|
         scope.all? { true }
