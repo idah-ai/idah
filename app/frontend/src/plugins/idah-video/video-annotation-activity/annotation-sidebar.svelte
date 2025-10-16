@@ -102,11 +102,11 @@
 </script>
 
 <Sidebar variant="inset" collapsible="none" class="w-xs">
-  <SidebarHeader>
-    {#if !tools.has(mode)}
+  {#if !tools.has(mode)}
+    <SidebarHeader>
       <Input placeholder="search" value={searchValue} oninput={(e) => searchCategory(e)} />
-    {/if}
-  </SidebarHeader>
+    </SidebarHeader>
+  {/if}
 
   <SidebarContent>
     {#each tools as [tool, categories]}
