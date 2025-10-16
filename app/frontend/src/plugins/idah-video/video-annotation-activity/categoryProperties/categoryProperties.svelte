@@ -35,9 +35,7 @@
         (s) => selectedCategory === s || s === selectedCategory + "/*" || s === selectedCategory.split("/")[0] + "/*",
       ),
     );
-  $effect(() => {
-    console.log({ selectedCategory, selectedId, category, context, properties: properties() });
-  });
+
   const propertyComponents: {
     type: string;
     component: propertyComponent;
@@ -93,18 +91,26 @@
       </SelectContent>
     </Select>
 
+    <hr class="my-3 border-t border-gray-200" />
+
+    <div class="flex pb-1">
+      <Text class="text-gray-700" weight="medium" size="sm">Properties</Text>
+    </div>
+
     {#each properties() as property (property.id)}
       {@const pc = propertyComponents.find((p) => p.type == property.type)}
 
       {#if pc && visibleFullfilled(property)}
-        <pc.component
-          {...{
-            property,
-            ...pc.extraProps,
-            value: annotationValue.attributes?.[property.id],
-            onValueChange: (v: any) => onValueChange(property, v),
-          }}
-        />
+        <div class="flex flex-col gap-2">
+          <pc.component
+            {...{
+              property,
+              ...pc.extraProps,
+              value: annotationValue.attributes?.[property.id],
+              onValueChange: (v: any) => onValueChange(property, v),
+            }}
+          />
+        </div>
       {/if}
     {/each}
   {/key}
