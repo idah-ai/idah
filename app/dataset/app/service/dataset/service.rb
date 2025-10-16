@@ -2,7 +2,8 @@
 
 module Dataset
   class Service < Verse::Service::Base
-    use datasets: Dataset::Repository
+    use datasets: Dataset::Repository,
+        members: ProjectMember::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       datasets.index(
@@ -28,12 +29,14 @@ module Dataset
         raise Verse::Error::ValidationFailed,
               "project is required to create a dataset"
       end
-      role = ProjectMember::Repository.new(auth_context).get_permission_set(account_id, project_id)
 
-      auth_context.reject! unless auth_context.can!(:create, Resource::Dataset::Datasets) do |scope|
-        scope.all? { true }
-        scope.as_user? { owner?(role) || annotator?(role) }
-      end
+      members.authorize_action(
+        action: :create,
+        resource: Resource::Dataset::Datasets,
+        account_id:,
+        project_id:,
+        allowed_user_roles: [:owner, :annotator]
+      )
 
       attr = record.attributes
       attr[:id] = record.id || UUIDv7.generate
@@ -53,11 +56,35 @@ module Dataset
     end
 
     def update(record)
+      # TODO: remove mocking
+      account_id = auth_context.metadata[:id] || 1
+      project_id = datasets.find!(id).project_id
+
+      members.authorize_action(
+        action: :update,
+        resource: Resource::Dataset::Datasets,
+        account_id:,
+        project_id:,
+        allowed_user_roles: [:owner, :annotator]
+      )
+
       datasets.update!(record.id, record.attributes)
       datasets.find!(record.id)
     end
 
     def delete(id)
+      # TODO: remove mocking
+      account_id = auth_context.metadata[:id] || 1
+      project_id = datasets.find!(id).project_id
+
+      members.authorize_action(
+        action: :delete,
+        resource: Resource::Dataset::Datasets,
+        account_id:,
+        project_id:,
+        allowed_user_roles: [:owner, :annotator]
+      )
+
       datasets.delete(id)
     end
   end

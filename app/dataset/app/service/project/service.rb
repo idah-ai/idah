@@ -3,6 +3,7 @@
 module Project
   class Service < Verse::Service::Base
     use projects: Project::Repository,
+        members: ProjectMember::Repository,
         project_member_service: ProjectMember::Service
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
@@ -55,12 +56,14 @@ module Project
       # TODO: remove mocking
       account_id = auth_context.metadata[:id] || 1
       project_id = record.id
-      role = ProjectMember::Repository.new(auth_context).get_permission_set(account_id, project_id)
 
-      auth_context.reject! unless auth_context.can!(:update, Resource::Dataset::Projects) do |scope|
-        scope.all? { true }
-        scope.as_user? { owner?(role) }
-      end
+      members.authorize_action(
+        action: :update,
+        resource: Resource::Dataset::Projects,
+        account_id:,
+        project_id:,
+        allowed_user_roles: [:owner]
+      )
 
       projects.update!(project_id, record.attributes)
       projects.find!(record.id)
@@ -70,12 +73,14 @@ module Project
       # TODO: remove mocking
       account_id = auth_context.metadata[:id] || 1
       project_id = id
-      role = ProjectMember::Repository.new(auth_context).get_permission_set(account_id, project_id)
 
-      auth_context.reject! unless auth_context.can!(:delete, Resource::Dataset::Projects) do |scope|
-        scope.all? { true }
-        scope.as_user? { owner?(role) }
-      end
+      members.authorize_action(
+        action: :delete,
+        resource: Resource::Dataset::Projects,
+        account_id:,
+        project_id:,
+        allowed_user_roles: [:owner]
+      )
 
       projects.delete(id)
     end
