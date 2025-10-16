@@ -22,7 +22,7 @@ RSpec.describe IdahVideo::Processor::Ffprobe do
       it "raises an error" do
         expect do
           described_class.identity(file_path)
-        end.to raise_error(/Failed to execute ffprobe/)
+        end.to raise_error(/Failed to execute `ffprobe/)
       end
     end
   end
