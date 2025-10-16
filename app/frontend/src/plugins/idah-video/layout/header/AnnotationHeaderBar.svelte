@@ -12,11 +12,9 @@
   interface Props {
     context: IActivityContext;
     mode: string;
-    showCommentsSidebar: boolean;
     onSelectMode: (selectedMode: string) => void;
-    onCommentsSidebarToggle: () => void;
   }
-  let { context, mode, showCommentsSidebar, onSelectMode, onCommentsSidebarToggle }: Props = $props();
+  let { context, mode, onSelectMode }: Props = $props();
 </script>
 
 <nav id="annotation-header-bar" class="flex min-h-12 items-center justify-between gap-2 px-4 py-2">
@@ -35,5 +33,5 @@
   <AnnotationHeaderBarTools {mode} {onSelectMode} />
 
   <!-- RIGHT::ACTIONS -->
-  <AnnotationHeaderBarActions {context} {showCommentsSidebar} {onCommentsSidebarToggle} />
+  <AnnotationHeaderBarActions />
 </nav>

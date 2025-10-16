@@ -1,23 +1,31 @@
 <script lang="ts">
-  import { InfoIcon, MessageSquareDotIcon, Settings2Icon, SunMoonIcon } from "@lucide/svelte";
+  import {
+    BadgeCheckIcon,
+    ChevronDownIcon,
+    InfoIcon,
+    MessageSquareIcon,
+    Settings2Icon,
+    SunMoonIcon,
+  } from "@lucide/svelte";
+  import { getContext } from "svelte";
 
+  import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import Tooltips from "@/components/app/tooltips/tooltips.svelte";
   import Button from "@/components/ui/button/button.svelte";
 
   import { toggleMode } from "mode-watcher";
 
+  import { closeCommentsSidebar, commentsSidebarStore } from "../sidebar/comments/comments-sidebar-stores";
+
+  import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import type { AnnotationHeaderBarBaseTool } from "./AnnotationHeaderBar.types";
 
-  // Props
-  interface Props {
-    context: IActivityContext;
-    showCommentsSidebar: boolean;
-    onCommentsSidebarToggle: () => void;
-  }
-  let { context, showCommentsSidebar, onCommentsSidebarToggle }: Props = $props();
+  // Contexts
+  const context: IActivityContext = getContext("context");
 
   // Variables
+  let loading = $state(false);
   let menus: AnnotationHeaderBarBaseTool[] = $derived([
     {
       label: "Toggle Theme",
@@ -31,9 +39,15 @@
     },
     {
       label: "Comments",
-      icon: MessageSquareDotIcon,
-      isActive: showCommentsSidebar,
-      handleClick: () => onCommentsSidebarToggle(),
+      icon: MessageSquareIcon,
+      isActive: $commentsSidebarStore.open,
+      handleClick: () => {
+        if (!$commentsSidebarStore.open) {
+          $commentsSidebarStore.open = true;
+        } else {
+          closeCommentsSidebar();
+        }
+      },
     },
     {
       label: "Help",
@@ -41,6 +55,35 @@
       handleClick: () => {},
     },
   ]);
+
+  const reviewMenus: IDropdownMenus = {
+    actions: {
+      items: [
+        {
+          label: "Approve",
+          icon: BadgeCheckIcon,
+          action: () => reviewAnnotation(true),
+        },
+        {
+          label: "Request Changes",
+          action: () => reviewAnnotation(false),
+        },
+      ],
+    },
+  };
+
+  // Functions
+  async function submitAnnotation() {
+    loading = true;
+    await context.submit();
+    window.location.reload();
+  }
+
+  async function reviewAnnotation(approved: boolean) {
+    loading = true;
+    await context.submit({ approved });
+    window.location.reload();
+  }
 </script>
 
 <div id="annotation-header-bar-actions" class="flex h-full flex-1 items-center justify-end gap-2">
@@ -62,5 +105,16 @@
 
   <Button variant="outline" class="border-primary text-primary hover:text-primary">Skip</Button>
 
-  <Button onclick={context.submit}>Submit</Button>
+  {#if context.workflowStep === "review"}
+    <DropdownMenus menus={reviewMenus}>
+      {#snippet trigger({ props })}
+        <Button {...props} {loading} loadingLabel="Reviewing">
+          Submit Review
+          <ChevronDownIcon />
+        </Button>
+      {/snippet}
+    </DropdownMenus>
+  {:else}
+    <Button {loading} loadingLabel="Submitting" onclick={submitAnnotation}>Submit</Button>
+  {/if}
 </div>
