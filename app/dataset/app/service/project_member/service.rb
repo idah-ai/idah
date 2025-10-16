@@ -20,6 +20,16 @@ module ProjectMember
     end
 
     def create(record)
+      # # TODO: remove mocking
+      # account_id = auth_context.metadata[:id] || 1
+      # project_id = record.id
+      # role = ProjectMember::Repository.new(auth_context).get_permission_set(account_id, project_id)
+
+      # auth_context.reject! unless auth_context.can!(:update, Resource::Dataset::Projects) do |scope|
+      #   scope.all? { true }
+      #   scope.as_user? { owner?(role) }
+      # end
+
       project_members.transaction do
         record_id = project_members.create(record.attributes)
         project_members.find!(record_id)

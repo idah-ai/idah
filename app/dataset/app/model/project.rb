@@ -32,6 +32,7 @@ module Project
           account_id = auth_context.metadata[:id] || 1
           project_ids = ProjectMember::Repository.new(auth_context).index({ account_id: }).map(&:project_id).uniq
 
+          # projects that is a member of or owned
           table.where(id: project_ids).or(created_by_id: account_id)
         end
       end
