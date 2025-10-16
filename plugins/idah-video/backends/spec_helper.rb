@@ -31,6 +31,10 @@ end
 require_relative "spec_data/fake_processor_context"
 
 RSpec.configure do |config|
+  config.before :each do
+    allow(Verse).to receive(:logger).and_return(Logger.new(IO::NULL))
+  end
+
   config.example_status_persistence_file_path = ".rspec_status"
 
   config.expect_with :rspec do |c|

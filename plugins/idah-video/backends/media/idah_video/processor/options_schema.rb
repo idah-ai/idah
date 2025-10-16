@@ -12,10 +12,7 @@ module IdahVideo
       "2160p" => [2160, "20000k", "192k"],
     }.freeze
 
-    ArgumentsSchema = Verse::Schema.define do
-      field :resource, String, required: true
-      field? :key, String, default: ""
-
+    OptionsSchema = Verse::Schema.define do
       field(
         :sizes,
         Array,
