@@ -1,34 +1,32 @@
 <script lang="ts">
-  import { Checkbox } from "@/components/ui/checkbox";
   import { Label } from "@/components/ui/label";
-    import type { AnnotationValue } from "@/context/AnnotationContext";
+  import { Switch } from "@/components/ui/switch";
+  import { propertyFullfilled } from "..";
+
+  import type { AnnotationValue } from "@/context/AnnotationContext";
   import type { PropertyField } from "@/plugin/interface/Activity";
-    import { propertyFullfilled } from "..";
 
-  let {
-    property,
-    value,
-    onValueChange,
-  }: {property: PropertyField, value : any, onValueChange: (v:any) => void} = $props()
+  let { property, value, onValueChange }: { property: PropertyField; value: any; onValueChange: (v: any) => void } =
+    $props();
 
-  const invalid = $derived(!propertyFullfilled(value, property))
-  const format = $derived(invalid ? formatConformity(value, property): [])
+  const invalid = $derived(!propertyFullfilled(value, property));
+  const format = $derived(invalid ? formatConformity(value, property) : []);
 </script>
 
-
-<div>
-  <Label for={property.id}>
+<div class="my-2 flex flex-col gap-1">
+  <Label for={property.id} class="mb-2">
     {property.label}
   </Label>
-  <Checkbox
-    aria-invalid={invalid}
-    id={property.id}
-    checked={!!value}
-    onCheckedChange={onValueChange} />
+
+  <div class="flex items-center space-x-2">
+    <Switch aria-invalid={invalid} id={property.id} checked={!!value} onCheckedChange={onValueChange} />
+    <Label class="text-gray-500">{property.format.info}</Label>
+  </div>
+
   {#if invalid}
     <ul>
       {#each format as [k, v]}
-        <li style:color=red>{k}:<span>{v}</span></li>
+        <li style:color="red">{k}:<span>{v}</span></li>
       {/each}
     </ul>
   {/if}

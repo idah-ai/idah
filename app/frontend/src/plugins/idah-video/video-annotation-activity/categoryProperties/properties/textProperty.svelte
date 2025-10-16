@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Checkbox } from "@/components/ui/checkbox";
   import Input from "@/components/ui/input/input.svelte";
-  import Text from "@/components/ui/text/Text.svelte";
+  import Label from "@/components/ui/label/label.svelte";
   import { formatConformity, propertyFullfilled } from "..";
 
   import type { AnnotationValue } from "@/context/AnnotationContext";
@@ -16,7 +16,9 @@
 </script>
 
 <div class="my-2 flex flex-col gap-1">
-  <Text class="text-gray-700" weight="medium" size="sm">{property.label}</Text>
+  <Label for={property.id} class="mb-2">
+    {property.label}
+  </Label>
 
   <Input type="text" aria-invalid={invalid} {value} onchange={(e) => onValueChange(e.target.value)} />
   {#if invalid}
