@@ -30,6 +30,8 @@ module Project
         scope.as_user? do
           # TODO: remove mockings
           account_id = auth_context.metadata[:id] || 1
+
+          # projects that is a member of
           project_ids = ProjectMember::Repository.new(auth_context).index({ account_id: }).map(&:project_id).uniq
 
           # projects that is a member of or owned
