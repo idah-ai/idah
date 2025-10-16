@@ -21,7 +21,7 @@ module ProjectMember
     end
 
     def create(record)
-      # # TODO: remove mocking
+      # TODO: remove mocking
       account_id = auth_context.metadata[:id] || 1
       project_id = record.attributes[:project_id]
 
@@ -34,11 +34,23 @@ module ProjectMember
     end
 
     def update(record)
+      # TODO: consider if we should allow update, and what role
       project_members.update!(record.id, record.attributes)
       project_members.find!(record.id)
     end
 
     def delete(id)
+      account_id = auth_context.metadata[:id] || 1
+      # project_id = id
+      membership = project_members.find(id)
+      role = membership.permission_set
+      # role = ProjectMember::Repository.new(auth_context).get_permission_set(account_id, project_id)
+
+      auth_context.reject! unless auth_context.can!(:delete, Resource::Dataset::ProjectMembers) do |scope|
+        scope.all? { true }
+        scope.as_user? { owner?(role) || self?(account_id, membership.account_id) }
+      end
+
       project_members.delete(id)
     end
   end
