@@ -14,6 +14,7 @@
   import type { CategoryDefinition } from "@/context/ActivityContext";
   import type { AnnotationValue } from "@/context/AnnotationContext";
   import type { CategoryField } from "@/data/model/dataset/labels";
+  import CategoryPropertiesHeaderBar from "./categoryProperties/CategoryPropertiesHeaderBar..svelte";
   import type { AnnotationsIndexedDB } from "./indexedDB";
   import type { CategoryConfiguration, VideoAnnotation } from "./VideoAnnotationContext";
 
@@ -329,6 +330,8 @@
 
 <div class="flex-col">
   {#if selected_category && toolMode}
+    <CategoryPropertiesHeaderBar />
+
     <CategoryProperties
       selectedCategory={selected_category}
       {db}
