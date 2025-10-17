@@ -47,8 +47,11 @@
   } = $props();
 
   // Variables
-  let openStates = $state<Record<string, boolean>>(
-    categories.reduce<Record<string, boolean>>((acc, category) => {
+  let manualToggleStates = $state<Record<string, boolean>>({});
+
+  // Automatically expand all categories when categories prop changes, but allow manual toggles
+  let openStates = $derived.by(() => {
+    const autoExpanded = categories.reduce<Record<string, boolean>>((acc, category) => {
       if (category.id.includes("/")) {
         const parts = category.id.split("/");
         for (let i = 0; i < parts.length - 1; i++) {
@@ -56,9 +59,15 @@
           acc[parentPath] = true;
         }
       }
+      // Always set the category itself to true
+      acc[category.id] = true;
       return acc;
-    }, {}),
-  );
+    }, {});
+
+    // Merge with manual toggles (manual toggles take precedence)
+    return { ...autoExpanded, ...manualToggleStates };
+  });
+
   let forceRender = $state(0); // Force re-render trigger
 
   let categoriesTree = $derived(
@@ -189,8 +198,8 @@
       onclick={(e) => {
         e.stopPropagation();
         if (category.nestedCategories || haveChildren) {
-          // Toggle the category open state
-          openStates[category.id] = !openStates[category.id];
+          // Toggle the category open state manually
+          manualToggleStates[category.id] = !openStates[category.id];
         }
       }}
       disabled={toolMode}
@@ -261,8 +270,8 @@
             }
 
             if (category.nestedCategories) {
-              // Toggle the category open state
-              openStates[category.id] = !openStates[category.id];
+              // Toggle the category open state manually
+              manualToggleStates[category.id] = !openStates[category.id];
             }
             // Force re-render of annotation counts
             forceRender++;
