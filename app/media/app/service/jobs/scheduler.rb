@@ -42,9 +42,8 @@ module Jobs
       Thread.current.name = "#{self.class.name} (#{Thread.current.object_id})"
 
       Verse.logger&.debug "Starting scheduler with #{@thread_pool.size} threads"
-      while running do
+      while running
         synchronize do
-
           # Pull more job if a thread is free.
           free = @thread_pool.free
           if free > 0
