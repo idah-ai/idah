@@ -25,7 +25,7 @@ module Processor
 
       return unless processor_class
 
-      job = jobs.create(
+      job_id = jobs.create(
         job_class: processor_class.name,
         arguments: { "entry_id" => entry_id },
         status: "pending",
@@ -36,7 +36,7 @@ module Processor
       # Update the entry with the job_id
       Api[:idah].dataset.entries.update(
         id: entry.id,
-        job_id: job.id,
+        job_id: job_id,
         status: "processing"
       )
     end

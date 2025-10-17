@@ -1,7 +1,12 @@
 # frozen_string_literal: true
 
-RSpec.describe Processor::Service, type: :service, database: false do
+RSpec.describe Processor::Service, type: :service, database: true do
   subject { described_class.new(Verse::Auth::Context.new) }
+
+  module Spec
+    class SampleProcessor
+    end
+  end
 
   before do
     japi_entry = {
@@ -33,7 +38,7 @@ RSpec.describe Processor::Service, type: :service, database: false do
           type: "datasets",
           attributes: {
             name: "Test Dataset",
-            modality: "video" #  <-- Added modality
+            modality: "spec/video" #  <-- Added modality
           }
         }
       ]
@@ -47,10 +52,26 @@ RSpec.describe Processor::Service, type: :service, database: false do
       body: japi_entry,
       headers: { "Content-Type" => "application/json" },
     )
+
+    # We don't really care about the return here; it should be the entry, but
+    # our focus is on whether the entry was updated.
+    stub_request(:patch, "https://idah.example.com/api/v1/entries/entry-id").
+      to_return(status: 200, body: %{{ "data": {} }}, headers: {})
+  end
+
+  before do
+    Processor::Registry.clear_all
+    Processor::Registry.register(
+      "plugin-video", "spec/video", Spec::SampleProcessor
+    )
+  end
+
+  after do
+    Processor::Registry.clear_all
   end
 
   describe "#process_entry" do
-    it "detect the entry type" do
+    it "detects the entry type" do
       service.process_entry("entry-id")
     end
   end
