@@ -66,6 +66,9 @@ module Jobs
               Verse.logger&.debug "Next scheduled job in #{next_in} seconds"
               # Wait until the next scheduled job is ready
               @wait_cond.wait(next_in)
+            else
+              # Wait a second, to avoid busy looping
+              @wait_cond.wait(1.0)
             end
           end
         end
