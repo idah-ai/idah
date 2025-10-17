@@ -5,7 +5,7 @@ ENV["APP_ENVIRONMENT"] = "test"
 require "bootsnap"
 Bootsnap.setup(cache_dir: "tmp/cache")
 
-require "webmock"
+require "webmock/rspec"
 WebMock.enable!
 WebMock.disable_net_connect!
 
@@ -49,6 +49,11 @@ RSpec.configure do |config|
 
     ::SCHEDULER.start
     ::EXECUTOR.start
+  end
+
+  config.after :suite do
+    ::SCHEDULER.stop
+    ::EXECUTOR.stop
   end
 
   # Verse::Auth::Context.backend = Service::RoleBackend.new
