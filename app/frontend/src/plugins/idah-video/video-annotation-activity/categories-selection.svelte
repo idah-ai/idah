@@ -330,7 +330,7 @@
 
 <div class="flex-col">
   {#if selected_category && toolMode}
-    <CategoryPropertiesHeaderBar />
+    <CategoryPropertiesHeaderBar {db} selectedId={selected_id} selectedCategory={selected_category} />
 
     <CategoryProperties
       selectedCategory={selected_category}
