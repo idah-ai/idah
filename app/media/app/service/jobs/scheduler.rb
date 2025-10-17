@@ -42,21 +42,20 @@ module Jobs
       Thread.current.name = "#{self.class.name} (#{Thread.current.object_id})"
 
       Verse.logger&.debug "Starting scheduler with #{@thread_pool.size} threads"
-      loop do
-        break unless running
-
-        # Pull more job if a thread is free.
-        free = @thread_pool.free
-        if free > 0
-          Verse.logger&.debug "Job pooling (#{free} free threads)"
-          available_jobs = jobs.lock_available(free)
-          available_jobs.each(&method(:process))
-        end
-
-        # Check scheduled jobs
-        time = jobs.next_scheduled_time
-
+      while running do
         synchronize do
+
+          # Pull more job if a thread is free.
+          free = @thread_pool.free
+          if free > 0
+            Verse.logger&.debug "Job pooling (#{free} free threads)"
+            available_jobs = jobs.lock_available(free)
+            available_jobs.each(&method(:process))
+          end
+
+          # Check scheduled jobs
+          time = jobs.next_scheduled_time
+
           if time.nil?
             Verse.logger&.debug "No scheduled jobs found. Waiting 60s"
             @wait_cond.wait(60) # Wait for 60 seconds if no jobs are scheduled
