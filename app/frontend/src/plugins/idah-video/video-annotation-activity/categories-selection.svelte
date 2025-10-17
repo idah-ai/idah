@@ -61,12 +61,18 @@
   );
   let forceRender = $state(0); // Force re-render trigger
 
-  let categoriesTree: CategoryDefinition[] = categories.reduce<CategoryDefinition[]>((acc, category_configuration) => {
-    return buildTree(acc, category_configuration.id.split("/"), category_configuration);
-  }, []);
+  let categoriesTree = $derived(
+    categories.reduce<CategoryDefinition[]>((acc, category_configuration) => {
+      return buildTree(acc, category_configuration.id.split("/"), category_configuration);
+    }, []),
+  );
 
   // Functions
-  function buildTree(acc: CategoryDefinition[], ids: string[], configuration: CategoryField): CategoryDefinition[] {
+  function buildTree(
+    acc: CategoryDefinition[],
+    ids: string[],
+    configuration: CategoryConfiguration,
+  ): CategoryDefinition[] {
     let currentLevel = acc;
     let fullPath = "";
 
@@ -119,8 +125,8 @@
     return filterAnnotations.length > 0;
   }
 
-  function findCategory(categories: CategoryDefinition[], category: string): CategoryDefinition | undefined {
-    const found = categories.find((c) => category.startsWith(c.id));
+  function findCategory(categoriesList: CategoryDefinition[], category: string): CategoryDefinition | undefined {
+    const found = categoriesList.find((c) => category.startsWith(c.id));
 
     if (!found) return;
 
@@ -331,10 +337,10 @@
   {#if selected_category && toolMode}
     <CategoryProperties
       selectedCategory={selected_category}
-      {db}
+      selectedId={selected_id || ""}
       {annotationValue}
       onSelectCategory={onSelect}
-      {onEditValue}
+      onEditValue={(value) => value && onEditValue(value, type)}
     />
   {:else}
     <div class="flex gap-2 py-2">
