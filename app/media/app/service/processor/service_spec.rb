@@ -39,7 +39,8 @@ RSpec.describe Processor::Service, type: :service, database: false do
       ]
     }.to_json
 
-    stub_request(:get,
+    stub_request(
+      :get,
       "https://idah.example.com/api/v1/entries/entry-id?included%5B%5D=dataset"
     ).to_return(
       status: 200,
