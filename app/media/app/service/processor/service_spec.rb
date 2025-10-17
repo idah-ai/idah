@@ -65,7 +65,7 @@ RSpec.describe Processor::Service, type: :service, database: true do
       "plugin-video",
       "spec/video",
       processor_class: Spec::SampleProcessor,
-      processor_options: { }
+      processor_options: {}
     )
   end
 
