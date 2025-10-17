@@ -17,8 +17,9 @@ anonymous:
     # datasets
     - "dataset:datasets.*.as_user"
     # entries
-    - "dataset:entries.*.as_user"
+    - "dataset:entries.*.*"
     # annotations
     - "dataset:annotations.*.as_user"
 
     # media service
+    - "media:medias.*.*"
