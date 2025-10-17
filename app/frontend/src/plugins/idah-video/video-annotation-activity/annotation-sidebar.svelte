@@ -13,6 +13,7 @@
   import type { CategoryDefinition } from "@/context/ActivityContext";
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import type { AnnotationsIndexedDB } from "./indexedDB";
+  import AnnotationTabs from "./tabs/AnnotationTabs.svelte";
   import type { CategoryConfiguration, LabellingConfiguration, VideoAnnotation } from "./VideoAnnotationContext";
 
   let {
@@ -105,6 +106,8 @@
 <Sidebar variant="inset" collapsible="none" class="w-xs">
   {#if !tools.has(mode)}
     <SidebarHeader>
+      <AnnotationTabs></AnnotationTabs>
+
       <Input placeholder="search" value={searchValue} oninput={(e) => searchCategory(e)} />
     </SidebarHeader>
   {/if}

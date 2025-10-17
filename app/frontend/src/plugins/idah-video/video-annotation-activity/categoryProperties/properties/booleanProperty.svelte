@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Label } from "@/components/ui/label";
   import { Switch } from "@/components/ui/switch";
-  import { propertyFullfilled } from "..";
+  import { formatConformity, propertyFullfilled } from "..";
 
   import type { AnnotationValue } from "@/context/AnnotationContext";
   import type { PropertyField } from "@/plugin/interface/Activity";

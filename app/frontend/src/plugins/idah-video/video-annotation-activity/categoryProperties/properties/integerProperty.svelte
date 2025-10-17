@@ -22,6 +22,9 @@
     aria-invalid={invalid}
     id={property.id}
     type="number"
+    min={property.format?.minimum}
+    max={property.format?.maximum}
+    step={property.format?.step || "1"}
     {value}
     onchange={(e) => onValueChange(e.target.value)}
   />
