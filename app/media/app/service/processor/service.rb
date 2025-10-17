@@ -21,22 +21,24 @@ module Processor
         return if job && %w[pending running].include?(job.status)
       end
 
-      processor_class = Registry.get(modality)
+      processor_entries = Registry.get(modality)
 
-      return unless processor_class
+      return if processor_entries.nil? || processor_entries.empty?
 
-      job_id = jobs.create(
-        job_class: processor_class.name,
-        arguments: { "entry_id" => entry_id },
-        status: "pending",
-        priority: 1,
-        scheduled_at: Time.now
-      )
+      processor_entries.each do |processor_entry|
+        job_id = jobs.create(
+          job_class: processor_entry.class.name,
+          arguments: { "entry_id" => entry_id },
+          status: "pending",
+          priority: 1,
+          scheduled_at: Time.now
+        )
+        # TODO: what to do with multiple job ids?
+      end
 
       # Update the entry with the job_id
       Api[:idah].dataset.entries.update(
         id: entry.id,
-        job_id: job_id,
         status: "processing"
       )
     end
