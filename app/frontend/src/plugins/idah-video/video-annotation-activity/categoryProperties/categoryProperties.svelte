@@ -11,6 +11,7 @@
   import SelectProperty from "./properties/SelectProperty.svelte";
   import TextProperty from "./properties/textProperty.svelte";
 
+  import Label from "@/components/ui/label/label.svelte";
   import type { CategoryDefinition } from "@/context/ActivityContext";
   import type { AnnotationValue } from "@/context/AnnotationContext";
   import type { IActivityContext, PropertyField } from "@/plugin/interface/Activity";
@@ -76,7 +77,7 @@
   </div>
   {#key $idb_updated_at}
     <Select type="single" onValueChange={onSelectCategory}>
-      <SelectTrigger class="w-full text-gray-700">
+      <SelectTrigger class="w-full bg-white data-[placeholder]:text-gray-900">
         {category()?.label}
       </SelectTrigger>
 

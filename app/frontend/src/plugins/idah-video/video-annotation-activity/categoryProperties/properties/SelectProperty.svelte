@@ -1,6 +1,7 @@
 <script lang="ts">
   import Label from "@/components/ui/label/label.svelte";
   import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger } from "@/components/ui/select";
+  import Text from "@/components/ui/text/Text.svelte";
   import { formatConformity, propertyFullfilled } from "..";
 
   import type { AnnotationValue } from "@/context/AnnotationContext";
@@ -29,7 +30,7 @@
   </Label>
 
   <Select type={selectType} {value} {onValueChange}>
-    <SelectTrigger class="w-full" aria-invalid={invalid}>
+    <SelectTrigger class="w-full bg-white data-[placeholder]:text-gray-900" aria-invalid={invalid}>
       {value || "Select property"}
     </SelectTrigger>
     <SelectContent>
