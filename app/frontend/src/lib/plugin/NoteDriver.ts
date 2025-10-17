@@ -1,93 +1,122 @@
-import { noteFeedsBackendDataSource } from "@/data/model/dataset/notes/feeds/record";
+import { NoteCommentRecord, noteCommentsBackendDataSource } from "@/data/model/dataset/notes/comments/record";
+import { NoteFeedRecord, noteFeedsBackendDataSource } from "@/data/model/dataset/notes/feeds/record";
 
-import type { IListOptions, INoteDriver, INoteFeed } from "@/plugin/interface/Activity";
+import type { IListOptions, INoteComment, INoteDriver, INoteFeed } from "@/plugin/interface/Activity";
+
+function parseNoteFeedRecordToINoteFeed(record: NoteFeedRecord): INoteFeed {
+  return {
+    id: record.id,
+    entry_id: record.entry_id,
+    annotation_id: record.annotation_id,
+    created_by_id: record.created_by_id,
+    anchor_type: record.anchor_type,
+    position: record.position,
+    status: record.status,
+    content_md: record.content_md,
+    created_at: new Date(record.created_at).toString(),
+    updated_at: new Date(record.updated_at).toString(),
+  };
+}
+
+function parseNoteCommentRecordToINoteComment(record: NoteCommentRecord): INoteComment {
+  return {
+    id: record.id,
+    note_feed_id: record.note_feed_id,
+    is_edited: record.is_edited,
+    content_md: record.content_md,
+    created_by_id: record.created_by_id,
+    created_at: new Date(record.created_at).toString(),
+    updated_at: new Date(record.updated_at).toString(),
+  };
+}
 
 export function createNoteDriver(entryId: string): INoteDriver {
   return {
-    create(data: Partial<INoteFeed>) {
-      const { annotation_id, position, content_md } = data;
-      return new Promise<INoteFeed>((resolve, reject) => {
-        noteFeedsBackendDataSource
-          .create({
-            attributes: {
-              entry_id: entryId,
-              annotation_id,
-              anchor_type: annotation_id ? "annotation" : "entry",
-              position,
-              content_md,
-            },
-          })
-          .then(
-            (v) =>
-              resolve(
-                // Transform NoteFeedRecord to INoteFeed
-                {
-                  id: v.data.id,
-                  entry_id: v.data.entry_id,
-                  annotation_id: v.data.annotation_id,
-                  created_by_id: v.data.created_by_id,
-                  anchor_type: v.data.anchor_type,
-                  position: v.data.position,
-                  status: v.data.status,
-                  content_md: v.data.content_md,
-                  created_at: new Date(v.data.created_at).toString(),
-                  updated_at: new Date(v.data.updated_at).toString(),
-                },
-              ),
+    /** NOTE::FEEDS */
+    feeds: {
+      create(data: Partial<INoteFeed>) {
+        const { annotation_id, position, content_md } = data;
+        return new Promise<INoteFeed>((resolve, reject) => {
+          noteFeedsBackendDataSource
+            .create({
+              attributes: {
+                entry_id: entryId,
+                annotation_id,
+                anchor_type: annotation_id ? "annotation" : "entry",
+                position,
+                content_md,
+              },
+            })
+            .then(
+              (v) => resolve(parseNoteFeedRecordToINoteFeed(v.data)),
+              (v) => reject(v.error),
+            );
+        });
+      },
+      list(listOptions: IListOptions): Promise<Array<INoteFeed>> {
+        return new Promise<Array<INoteFeed>>((resolve, reject) => {
+          noteFeedsBackendDataSource
+            .list({
+              filters: { ...listOptions.filters, entry_id: entryId },
+              pagination: listOptions.pagination,
+              sort: listOptions.sort,
+            })
+            .then(
+              (v) => resolve(v.data.map((note) => parseNoteFeedRecordToINoteFeed(note))),
+              (v) => reject(v.error),
+            );
+        });
+      },
+      update(id: string, data: Partial<INoteFeed>) {
+        return new Promise<INoteFeed>((resolve, reject) => {
+          noteFeedsBackendDataSource
+            .update(id, {
+              attributes: {
+                content_md: data.content_md,
+                position: data.position,
+                annotation_id: data.annotation_id,
+              },
+            })
+            .then(
+              (v) => resolve(parseNoteFeedRecordToINoteFeed(v.data)),
+              (v) => reject(v.error),
+            );
+        });
+      },
+      delete(id: string) {
+        return new Promise<void>((resolve, reject) => {
+          noteFeedsBackendDataSource.delete(id).then(
+            () => resolve(),
             (v) => reject(v.error),
           );
-      });
-    },
-    list(listOptions: IListOptions): Promise<Array<INoteFeed>> {
-      return new Promise<Array<INoteFeed>>((resolve, reject) => {
-        noteFeedsBackendDataSource
-          .list({
-            filters: { ...listOptions.filters, entry_id: entryId },
-            pagination: listOptions.pagination,
-            sort: listOptions.sort,
-          })
-          .then(
-            (v) =>
-              resolve(
-                v.data.map(
-                  (note) =>
-                    ({
-                      id: note.id,
-                      entry_id: note.entry_id,
-                      annotation_id: note.annotation_id,
-                      created_by_id: note.created_by_id,
-                      anchor_type: note.anchor_type,
-                      position: note.position,
-                      status: note.status,
-                      content_md: note.content_md,
-                      created_at: new Date(note.created_at).toString(),
-                      updated_at: new Date(note.updated_at).toString(),
-                    }) as INoteFeed,
-                ),
-              ),
+        });
+      },
+      markAsResolved(noteFeedId: string) {
+        return new Promise<INoteFeed>((resolve, reject) => {
+          noteFeedsBackendDataSource.markAsResolved(noteFeedId).then(
+            (v) => resolve(parseNoteFeedRecordToINoteFeed(v.data)),
             (v) => reject(v.error),
           );
-      });
+        });
+      },
     },
-    markAsResolved(noteFeedId: string) {
-      return new Promise<INoteFeed>((resolve, reject) => {
-        noteFeedsBackendDataSource.markAsResolved(noteFeedId).then(
-          (v) =>
-            resolve({
-              id: v.data.id,
-              entry_id: v.data.entry_id,
-              annotation_id: v.data.annotation_id,
-              created_by_id: v.data.created_by_id,
-              anchor_type: v.data.anchor_type,
-              position: v.data.position,
-              status: v.data.status,
-              content_md: v.data.content_md,
-              created_at: new Date(v.data.created_at).toString(),
-              updated_at: new Date(v.data.updated_at).toString(),
-            }),
-          (v) => reject(v.error),
-        );
-      });
+
+    /** NOTE::COMMENTS */
+    comments: {
+      list(listOptions: IListOptions): Promise<Array<INoteComment>> {
+        return new Promise<Array<INoteComment>>((resolve, reject) => {
+          noteCommentsBackendDataSource
+            .list({
+              filters: { ...listOptions.filters, entry_id: entryId },
+              pagination: listOptions.pagination,
+              sort: listOptions.sort,
+            })
+            .then(
+              (v) => resolve(v.data.map((note) => parseNoteCommentRecordToINoteComment(note))),
+              (v) => reject(v.error),
+            );
+        });
+      },
     },
   };
 }

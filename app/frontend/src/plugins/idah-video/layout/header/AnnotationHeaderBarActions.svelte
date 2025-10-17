@@ -15,7 +15,7 @@
 
   import { toggleMode } from "mode-watcher";
 
-  import { closeCommentsSidebar, commentsSidebarStore } from "../sidebar/comments/comments-sidebar-stores";
+  import { closeNoteSidebar, noteSidebarStore } from "../sidebar/notes/note-sidebar-stores";
 
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
   import type { IActivityContext } from "@/plugin/interface/Activity";
@@ -38,14 +38,14 @@
       handleClick: () => {},
     },
     {
-      label: "Comments",
+      label: "Notes",
       icon: MessageSquareIcon,
-      isActive: $commentsSidebarStore.open,
+      isActive: $noteSidebarStore.open,
       handleClick: () => {
-        if (!$commentsSidebarStore.open) {
-          $commentsSidebarStore.open = true;
+        if (!$noteSidebarStore.open) {
+          $noteSidebarStore.open = true;
         } else {
-          closeCommentsSidebar();
+          closeNoteSidebar();
         }
       },
     },

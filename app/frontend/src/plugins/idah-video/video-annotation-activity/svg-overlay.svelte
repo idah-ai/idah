@@ -1,5 +1,12 @@
 <script lang="ts">
-  import { onDestroy, onMount, type Snippet } from "svelte";
+  import { getContext, type Snippet } from "svelte";
+
+  import type { IActivityContext } from "@/plugin/interface/Activity";
+  import { cn } from "@/utils";
+  import NoteBox from "../layout/sidebar/notes/note-box.svelte";
+  import { noteSidebarStore } from "../layout/sidebar/notes/note-sidebar-stores";
+  import BoundingBox, { type ToolSelection } from "./bounding-box.svelte";
+  import { boundingBoxes } from "./idb_store.svelte";
   import {
     HEIGHT,
     ORIGIN,
@@ -12,8 +19,6 @@
     type VideoShape,
   } from "./VideoAnnotationContext";
   import Zoomable from "./zoomable.svelte";
-  import BoundingBox, { type ToolSelection } from "./bounding-box.svelte";
-  import { boundingBoxes } from "./idb_store.svelte";
 
   type Props = {
     frame: number;
@@ -28,8 +33,13 @@
     onmousedown?: (e: MouseEvent) => void;
     onmousemove?: (e: MouseEvent) => void;
     onwheel?: (e: WheelEvent) => void;
-    onSelection: (type: string, frame: number, points?: Point[], id?: string) => void;
-    videoResizedAt: Date
+    onSelection: (
+      type: string,
+      frame: number,
+      points?: Point[],
+      id?: string,
+    ) => void;
+    videoResizedAt: Date;
   };
 
   let {
@@ -52,6 +62,8 @@
     offset: [0, 0],
   });
 
+  // Contexts
+  const context: IActivityContext = getContext("context");
 
   let height = $state(0);
   let width = $state(0);
@@ -72,17 +84,22 @@
     return shape ? currentShape(shape, frame) || [] : [];
   });
 
-  function updatedSize():Point {
+  function updatedSize(): Point {
     videoResizedAt; // (... update on change)
     let target_dom_rect = target_container?.getBoundingClientRect();
     zoomInfo; // (... update on change)
 
-    return !target_dom_rect ? ORIGIN : [target_dom_rect.width, target_dom_rect.height];
+    return !target_dom_rect
+      ? ORIGIN
+      : [target_dom_rect.width, target_dom_rect.height];
   }
 
   let target_size: Point = $derived.by(updatedSize);
 
-  let cursor = $derived([mouse[X] - zoomInfo.offset[X], mouse[Y] - zoomInfo.offset[Y]]);
+  let cursor = $derived([
+    mouse[X] - zoomInfo.offset[X],
+    mouse[Y] - zoomInfo.offset[Y],
+  ]);
 
   let target: Point = $derived([
     Math.min(target_size[WIDTH], Math.max(0, cursor[X])),
@@ -106,7 +123,10 @@
     return tl;
   });
 
-  let cursor_downscaled = $derived([target[X] / target_size[X], target[Y] / target_size[Y]]) as Point;
+  let cursor_downscaled = $derived([
+    target[X] / target_size[X],
+    target[Y] / target_size[Y],
+  ]) as Point;
 
   // let svg: SVGElement
   let zoom: Zoomable;
@@ -118,7 +138,9 @@
   ): Point[] | undefined {
     if (shape.start > current_frame || shape.end < current_frame) return; // out of scope
 
-    const current_points = shape.frames.find((v) => v.frame == current_frame)?.points;
+    const current_points = shape.frames.find(
+      (v) => v.frame == current_frame,
+    )?.points;
     if (current_points || !interpolate) return current_points; // exists!
 
     const frame_start = shape.frames.reduce(
@@ -135,11 +157,15 @@
 
     if (frame_start && frame_end) {
       // interpolate from within bounds
-      const ratio = (current_frame - frame_start.frame) / (frame_end.frame - frame_start.frame);
+      const ratio =
+        (current_frame - frame_start.frame) /
+        (frame_end.frame - frame_start.frame);
       return frame_end.points.map((point, i) => [
         // assume
-        frame_start.points[i][X] + (point[X] - frame_start.points[i][X]) * ratio,
-        frame_start.points[i][Y] + (point[Y] - frame_start.points[i][Y]) * ratio,
+        frame_start.points[i][X] +
+          (point[X] - frame_start.points[i][X]) * ratio,
+        frame_start.points[i][Y] +
+          (point[Y] - frame_start.points[i][Y]) * ratio,
       ]);
     }
   }
@@ -149,7 +175,25 @@
   export function selectionStart(e: MouseEvent) {
     if (!shape) {
       zoom.mouseDown(e);
-      return console.warn(selectionStart, { shape: $state.snapshot(shape) });
+
+      /**
+       * Create a new note feed with the selected position in SvgOverlay
+       * If noteSidebarStore is open
+       */
+      if ($noteSidebarStore.open) {
+        // context.notes.create({
+        //   anchor_type: "entry",
+        //   position: {
+        //     x: cursor_downscaled[X],
+        //     y: cursor_downscaled[Y],
+        //   },
+        //   content_md: "TODO: Describe your comment here",
+        // });
+        // toast.success("Comment added on SvgOverlay");
+        // $noteSidebarStore.lastUpdated = new Date();
+      }
+
+      return;
     }
 
     tool_selection?.startSelection(cursor_downscaled);
@@ -163,16 +207,57 @@
   export function selectionEnd(e: MouseEvent) {
     tool_selection?.endSelection(cursor_downscaled);
 
+    if ($noteSidebarStore.open) {
+      $noteSidebarStore.noteBox = {
+        show: !!tool_selection?.isEditing(),
+        contentMd: "",
+        posX: target[X] + 10,
+        posY: target[Y] + 10,
+      };
+    } else {
+      $noteSidebarStore.noteBox = {
+        contentMd: "",
+        show: false,
+        posX: 0,
+        posY: 0,
+      };
+    }
+
     zoom.mouseUp(e);
   }
 </script>
 
 <div class="svg-overlay flex-1">
   <div>
-    <Zoomable bind:this={zoom} {mode} onZoomChange={(scale, offset) => (zoomInfo = { scale, offset })}>
+    <Zoomable
+      bind:this={zoom}
+      {mode}
+      onZoomChange={(scale, offset) => (zoomInfo = { scale, offset })}
+    >
       {@render children?.()}
+
+      {#if $noteSidebarStore.noteBox.show}
+        {#key $noteSidebarStore.noteBox.posX}
+          <div
+            class={cn(
+              "z-100 bg-background absolute flex w-72 flex-row items-start gap-2 rounded-md border shadow-lg",
+            )}
+            style={`top: ${$noteSidebarStore.noteBox.posY}px; left: ${$noteSidebarStore.noteBox.posX}px;`}
+          >
+            <NoteBox
+              value={$noteSidebarStore.noteBox.contentMd}
+              onInput={(e) =>
+                ($noteSidebarStore.noteBox.contentMd = e.currentTarget.value)}
+              onSubmit={async () => {
+                console.log($noteSidebarStore.noteBox.contentMd);
+              }}
+            ></NoteBox>
+          </div>
+        {/key}
+      {/if}
     </Zoomable>
   </div>
+
   <svg
     bind:clientHeight={height}
     bind:clientWidth={width}
@@ -189,20 +274,30 @@
     }}
     onmouseup={selectionEnd}
     onmousedown={(e) => selectionStart(e)}
-    onwheel={(e) => {
-      zoom.onWheel(e);
-    }}
+    onwheel={(e) => zoom.onWheel(e)}
     {...restProps}
   >
     {#if width && height}
       <!-- prevent display issue on load for now -->
-      <line x1={0} y1={target_line[Y]} x2={width} y2={target_line[Y]} stroke={'#2b7fff'}/>
-      <line x1={target_line[X]} y1={0} x2={target_line[X]} y2={height} stroke={'#2b7fff'}/>
+      <line
+        x1={0}
+        y1={target_line[Y]}
+        x2={width}
+        y2={target_line[Y]}
+        stroke="#2b7fff"
+      />
+      <line
+        x1={target_line[X]}
+        y1={0}
+        x2={target_line[X]}
+        y2={height}
+        stroke="#2b7fff"
+      />
     {/if}
 
     <!-- draw annotation context -->
     {#await annotations_promise}
-      {#each $boundingBoxes as annotation}
+      {#each $boundingBoxes as annotation (annotation.metadata.id)}
         {#if annotation.metadata.id != selected?.metadata.id}
           {#if annotation.shape.type == "video:bounding_box"}
             <BoundingBox
@@ -221,7 +316,7 @@
         {/if}
       {/each}
     {:then annotations}
-      {#each annotations as annotation}
+      {#each annotations as annotation (annotation.metadata.id)}
         {#if annotation.metadata.id != selected?.metadata.id}
           {#if annotation.shape.type == "video:bounding_box"}
             <BoundingBox
@@ -254,7 +349,7 @@
         points = bb;
       }}
       onmousedown={(e) => {
-        console.error("clicked anyway");
+        console.error("clicked anyway", e);
       }}
     />
   </svg>
