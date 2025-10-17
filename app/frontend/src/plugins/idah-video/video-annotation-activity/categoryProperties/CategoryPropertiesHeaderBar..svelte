@@ -5,16 +5,23 @@
   import { ArrowLeftIcon } from "@lucide/svelte";
   import { getContext } from "svelte";
 
+  import type { CategoryDefinition } from "@/context/ActivityContext";
   import type { AnnotationsIndexedDB } from "../indexedDB";
 
   let {
     db,
     selectedId,
     selectedCategory,
+    name,
+    onSelect,
+    onSelectMode,
   }: {
     selectedId: string | undefined;
     selectedCategory: string | undefined;
     db?: AnnotationsIndexedDB;
+    name: string;
+    onSelect: (category?: CategoryDefinition) => void;
+    onSelectMode: (mode: string) => void;
   } = $props();
 
   async function getSelectedAnnotationIndex() {
@@ -29,7 +36,13 @@
 <nav id="category-header-bar" class="flex h-10 items-center justify-between gap-2 pb-2">
   <div id="category-navigations" class="flex h-full flex-1 items-center gap-2">
     <!-- BACK BUTTON -->
-    <Button variant="ghost">
+    <Button
+      variant="ghost"
+      onclick={() => {
+        onSelect(undefined);
+        onSelectMode("visual");
+      }}
+    >
       <ArrowLeftIcon class="size-4" />
       Back
     </Button>
@@ -37,12 +50,6 @@
     <Separator orientation="vertical" />
 
     <!-- CATEGORY NAME -->
-    {#if db && selectedCategory}
-      {#await getSelectedAnnotationIndex()}
-        <Spinner size="sm" />
-      {:then index}
-        <Button variant="ghost">{selectedCategory}_{index}</Button>
-      {/await}
-    {/if}
+    <Button variant="ghost">{name}</Button>
   </div>
 </nav>

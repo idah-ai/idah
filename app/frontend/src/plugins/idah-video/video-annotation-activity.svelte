@@ -3,29 +3,39 @@
   import { toast } from "svelte-sonner";
   import { uuidv7 } from "uuidv7";
 
-  import Button from "@/components/ui/button/button.svelte";
-  import CommandManager from "@/command/CommandManager";
   import {
     CommandDialog,
-    CommandGroup,
-    CommandItem,
-    CommandShortcut,
-    CommandSeparator,
     CommandEmpty,
+    CommandGroup,
     CommandInput,
+    CommandItem,
     CommandList,
+    CommandSeparator,
+    CommandShortcut,
   } from "$lib/components/ui/command";
+  import CommandManager from "@/command/CommandManager";
+  import Button from "@/components/ui/button/button.svelte";
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-  import SidebarProvider from "@/components/ui/sidebar/sidebar-provider.svelte";
   import SidebarInset from "@/components/ui/sidebar/sidebar-inset.svelte";
+  import SidebarProvider from "@/components/ui/sidebar/sidebar-provider.svelte";
 
   import { ResizableHandle, ResizablePane, ResizablePaneGroup } from "@/components/ui/resizable";
   import { AnnotationRecord } from "@/data/model/dataset/annotations/record";
 
+  import { ScrollArea } from "@/components/ui/scroll-area";
   import type { AnnotationValue } from "@/context/AnnotationContext";
-  import { annotationsIndexedDB, AnnotationsIndexedDB } from "./video-annotation-activity/indexedDB";
-  import TimelineTable from "./video-annotation-activity/timeline-table/timeline-table.svelte";
   import type { IActivityContext } from "@/plugin/interface/Activity";
+  import { ShortcutManager } from "@/shortcut/ShortcutManager";
+  import AnnotationFooter from "./layout/footer/AnnotationFooter.svelte";
+  import AnnotationFooterToolbar from "./layout/footer/AnnotationFooterToolbar.svelte";
+  import AnnotationHeaderBar from "./layout/header/AnnotationHeaderBar.svelte";
+  import AnnotationSidebar from "./video-annotation-activity/annotation-sidebar.svelte";
+  import { requiredFullfilled } from "./video-annotation-activity/categoryProperties";
+  import { boundingBoxes, idb_updated_at } from "./video-annotation-activity/idb_store.svelte";
+  import { annotationsIndexedDB, AnnotationsIndexedDB } from "./video-annotation-activity/indexedDB";
+  import { registerVisualModeShortcuts } from "./video-annotation-activity/shortcut";
+  import SvgOverlay from "./video-annotation-activity/svg-overlay.svelte";
+  import TimelineTable from "./video-annotation-activity/timeline-table/timeline-table.svelte";
   import Video from "./video-annotation-activity/video.svelte";
   import type {
     Point,
@@ -34,16 +44,6 @@
     VideoShape,
   } from "./video-annotation-activity/VideoAnnotationContext";
   import VideoController from "./video-annotation-activity/VideoController.svelte";
-  import AnnotationSidebar from "./video-annotation-activity/annotation-sidebar.svelte";
-  import SvgOverlay from "./video-annotation-activity/svg-overlay.svelte";
-  import { ScrollArea } from "@/components/ui/scroll-area";
-  import AnnotationHeaderBar from "./layout/header/AnnotationHeaderBar.svelte";
-  import AnnotationFooter from "./layout/footer/AnnotationFooter.svelte";
-  import AnnotationFooterToolbar from "./layout/footer/AnnotationFooterToolbar.svelte";
-  import { boundingBoxes, idb_updated_at } from "./video-annotation-activity/idb_store.svelte";
-  import { registerVisualModeShortcuts } from "./video-annotation-activity/shortcut";
-  import { ShortcutManager } from "@/shortcut/ShortcutManager";
-  import { requiredFullfilled } from "./video-annotation-activity/categoryProperties";
 
   // Props
   interface Props {
@@ -74,8 +74,8 @@
   let videoController: VideoController;
 
   let annotationsIDB: AnnotationsIndexedDB | undefined = $state();
-  let isPlaying = $state(false)
-  let volume = $state({level: 0, mute: false})
+  let isPlaying = $state(false);
+  let volume = $state({ level: 0, mute: false });
 
   let commandOpen = $state(false);
   // registerVisualModeShortcuts({
@@ -502,7 +502,7 @@
           annotation.value = value;
           annotation.metadata.updatedAt = updatedAt;
           annotation.synced = false;
-          selectedAnnotation = annotation
+          selectedAnnotation = annotation;
 
           await annotationsIDB?.addAnnotations([annotation]);
           $idb_updated_at = new Date();
@@ -530,7 +530,7 @@
           annotation.metadata.updatedAt = updatedAt;
           annotation.synced = false;
 
-          selectedAnnotation = annotation
+          selectedAnnotation = annotation;
 
           let p = context.annotations.update({
             id: annotation.metadata.id,
@@ -602,7 +602,8 @@
   <AnnotationHeaderBar
     {context}
     bind:mode
-    onSelectMode={() => {
+    onSelectMode={(newMode) => {
+      mode = newMode;
       selectedAnnotation = undefined;
     }}
   />
@@ -628,6 +629,10 @@
         }}
         onSelectAnnotation={selectAnnotation}
         {onDeleteAnnotation}
+        onSelectMode={(newMode) => {
+          mode = newMode;
+          selectedAnnotation = undefined;
+        }}
         {context}
         {mode}
         selected_id={selectedAnnotation?.metadata.id}
@@ -666,6 +671,10 @@
           }}
           onSelectAnnotation={selectAnnotation}
           {onDeleteAnnotation}
+          onSelectMode={(newMode) => {
+            mode = newMode;
+            selectedAnnotation = undefined;
+          }}
           {context}
           {mode}
           selected_id={selectedAnnotation?.metadata.id}
@@ -692,10 +701,10 @@
               onFramesChange={(current, total, playing) => {
                 currentFrame = current;
                 totalFrames = total;
-                isPlaying = playing
+                isPlaying = playing;
                 // console.debug({onFramesChange: {current, total, playing}})
               }}
-              onVolumeChange={(level, muted) => volume = {level, muted} }
+              onVolumeChange={(level, muted) => (volume = { level, muted })}
             />
           </SvgOverlay>
         </SidebarInset>
