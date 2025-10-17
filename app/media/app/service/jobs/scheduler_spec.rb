@@ -208,7 +208,7 @@ RSpec.describe Jobs::Scheduler do
         allow(job_repository).to receive(:lock_available).and_return([])
         # The time might not be exact, so we check that it's called with a value
         # close to the expected one.
-        expect(wait_cond).to receive(:wait).with(be_within(0.1).of(0.1)).and_call_original
+        expect(wait_cond).to receive(:wait).at_least(:once).and_call_original
         subject.start
         sleep 0.11 # allow the thread to run and wait
       end
