@@ -14,7 +14,6 @@
   import type { CategoryDefinition } from "@/context/ActivityContext";
   import type { AnnotationValue } from "@/context/AnnotationContext";
   import type { CategoryField } from "@/data/model/dataset/labels";
-  import CategoryPropertiesHeaderBar from "./categoryProperties/CategoryPropertiesHeaderBar..svelte";
   import type { AnnotationsIndexedDB } from "./indexedDB";
   import type { CategoryConfiguration, VideoAnnotation } from "./VideoAnnotationContext";
 
@@ -29,7 +28,6 @@
     onSelect,
     onSelectAnnotation,
     onDeleteAnnotation,
-    onSelectMode,
     onEditValue,
     db,
     annotationValue,
@@ -44,7 +42,6 @@
     onSelect: (category?: CategoryDefinition) => void;
     onSelectAnnotation: (annotation: VideoAnnotation) => void;
     onDeleteAnnotation: (annotation: VideoAnnotation) => void;
-    onSelectMode: (mode: string) => void;
     db?: AnnotationsIndexedDB;
     annotationValue: AnnotationValue;
   } = $props();
@@ -332,16 +329,6 @@
 
 <div class="flex-col">
   {#if selected_category && toolMode}
-    {@const category = findCategory(categoriesTree, selected_category)}
-    <CategoryPropertiesHeaderBar
-      {db}
-      selectedId={selected_id}
-      selectedCategory={selected_category}
-      name={category?.name || selected_category}
-      {onSelect}
-      {onSelectMode}
-    />
-
     <CategoryProperties
       selectedCategory={selected_category}
       {db}

@@ -1,16 +1,17 @@
 <script lang="ts">
   import Sidebar from "@/components/ui/sidebar/sidebar.svelte";
 
-  import type { AnnotationValue } from "$lib/context/AnnotationContext";
   import Input from "@/components/ui/input/input.svelte";
   import SidebarContent from "@/components/ui/sidebar/sidebar-content.svelte";
   import SidebarGroupContent from "@/components/ui/sidebar/sidebar-group-content.svelte";
   import SidebarGroup from "@/components/ui/sidebar/sidebar-group.svelte";
   import SidebarHeader from "@/components/ui/sidebar/sidebar-header.svelte";
-  import type { CategoryDefinition } from "@/context/ActivityContext";
-  import type { CategoryField } from "@/data/model/dataset/labels";
-  import type { IActivityContext } from "@/plugin/interface/Activity";
   import CategoriesSelection from "./categories-selection.svelte";
+
+  import type { AnnotationValue } from "$lib/context/AnnotationContext";
+  import type { CategoryField } from "$lib/data/model/dataset/labels";
+  import type { CategoryDefinition } from "@/context/ActivityContext";
+  import type { IActivityContext } from "@/plugin/interface/Activity";
   import type { AnnotationsIndexedDB } from "./indexedDB";
   import type { CategoryConfiguration, LabellingConfiguration, VideoAnnotation } from "./VideoAnnotationContext";
 
@@ -54,21 +55,19 @@
   let searchValue = $state("");
   let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
-  let filteredTools = $derived.by(async () => {
+  let filteredTools = $derived.by(() => {
     if (!searchValue) return tools;
 
-    return new Promise<Map<string, CategoryField[]>>((resolve) => {
-      const filtered = new Map<string, CategoryField[]>();
-      for (const [toolType, categories] of tools) {
-        const matchingCategories = categories.filter((category) =>
-          category.label.toLowerCase().includes(searchValue.toLowerCase()),
-        );
-        if (matchingCategories.length > 0) {
-          filtered.set(toolType, matchingCategories);
-        }
+    const filtered = new Map<string, CategoryField[]>();
+    for (const [toolType, categories] of tools) {
+      const matchingCategories = categories.filter((category) =>
+        category.label.toLowerCase().includes(searchValue.toLowerCase()),
+      );
+      if (matchingCategories.length > 0) {
+        filtered.set(toolType, matchingCategories);
       }
-      resolve(filtered);
-    });
+    }
+    return filtered;
   });
 
   // Functions
@@ -111,7 +110,7 @@
   {/if}
 
   <SidebarContent>
-    {#each tools as [tool, categories]}
+    {#each filteredTools as [tool, categories]}
       <!-- {#if !tools.has(mode) || mode == "visual"} -->
       <SidebarGroup>
         <SidebarGroupContent>
@@ -125,7 +124,6 @@
             {selected_id}
             {onSelectAnnotation}
             {onDeleteAnnotation}
-            {onSelectMode}
             {annotationValue}
             onEditValue={(v) => onEditValue(v, tool)}
             onSelect={(s) => categorySelection(tool, s)}

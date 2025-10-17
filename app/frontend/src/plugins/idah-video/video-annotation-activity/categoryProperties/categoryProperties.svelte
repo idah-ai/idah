@@ -72,14 +72,14 @@
 
 <div>
   <div class="flex pb-1">
-    <Text class="text-gray-700" weight="medium" size="sm">Category</Text>
+    <Text class="text-gray-500" weight="medium" size="sm">Category</Text>
   </div>
   {#key $idb_updated_at}
     <Select type="single" onValueChange={onSelectCategory}>
-      <SelectTrigger class="w-full">
+      <SelectTrigger class="w-full text-gray-700">
         {category()?.label}
-        <!-- {@render showCategoryTitle(selectedCategory, false, false)} -->
       </SelectTrigger>
+
       <SelectContent>
         <SelectGroup>
           {#each context.config.categories as c (c.id)}
@@ -93,25 +93,27 @@
 
     <hr class="my-3 border-t border-gray-200" />
 
-    <div class="flex pb-1">
-      <Text class="text-gray-700" weight="medium" size="sm">Properties</Text>
-    </div>
+    {#if properties().length > 0}
+      <div class="flex pb-1">
+        <Text class="text-gray-500" weight="medium" size="sm">Properties</Text>
+      </div>
 
-    {#each properties() as property (property.id)}
-      {@const pc = propertyComponents.find((p) => p.type == property.type)}
+      {#each properties() as property (property.id)}
+        {@const pc = propertyComponents.find((p) => p.type == property.type)}
 
-      {#if pc && visibleFullfilled(property)}
-        <div class="flex flex-col gap-2">
-          <pc.component
-            {...{
-              property,
-              ...pc.extraProps,
-              value: annotationValue.attributes?.[property.id],
-              onValueChange: (v: any) => onValueChange(property, v),
-            }}
-          />
-        </div>
-      {/if}
-    {/each}
+        {#if pc && visibleFullfilled(property)}
+          <div class="flex flex-col gap-2">
+            <pc.component
+              {...{
+                property,
+                ...pc.extraProps,
+                value: annotationValue.attributes?.[property.id],
+                onValueChange: (v: any) => onValueChange(property, v),
+              }}
+            />
+          </div>
+        {/if}
+      {/each}
+    {/if}
   {/key}
 </div>
