@@ -33,4 +33,13 @@ RSpec.describe Processor::Registry do
       expect(described_class.get("processor2")).to eq(processor_class2)
     end
   end
+
+  it ".clear_all" do
+    described_class.register("plugin1", "processor1", processor_class)
+    described_class.register("plugin2", "processor2", processor_class2)
+
+    described_class.clear_all
+    expect(described_class.get("processor1")).to be_nil
+    expect(described_class.get("processor2")).to be_nil
+  end
 end
