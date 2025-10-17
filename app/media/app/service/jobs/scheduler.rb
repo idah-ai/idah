@@ -67,7 +67,9 @@ module Jobs
               # Wait until the next scheduled job is ready
               @wait_cond.wait(next_in)
             else
-              # Wait a second, to avoid busy looping
+              # Wait a second, to avoid busy looping.
+              # This should rarely/never happen in production, it's mostly to
+              # handle specs with mocked dependencies.
               @wait_cond.wait(1.0)
             end
           end
