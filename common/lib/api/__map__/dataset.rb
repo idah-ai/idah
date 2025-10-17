@@ -19,7 +19,7 @@ Api[:idah].register(
 ) do |id:, **attributes|
   output = patch(
     "entries/:id",
-    {
+    params: {
       id:,
       data: {
         type: Resource::Dataset::Entries,
