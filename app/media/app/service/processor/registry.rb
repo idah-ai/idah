@@ -6,19 +6,36 @@ module Processor
 
     @processors = {}
 
-    def register(plugin_name, name, processor_class)
-      @processors[name.to_sym] = [plugin_name.to_sym, processor_class]
+    Entry = Data.define(:plugin, :class, :options)
+
+    def register(plugin_name, modality,
+                 processor_class:,
+                 processor_options:)
+      modality = modality.to_sym
+      @processors[modality] ||= []
+      @processors[modality] <<
+        Entry.new(
+          plugin: plugin_name.to_sym,
+          class: processor_class,
+          options: processor_options
+        )
     end
 
     def clear(plugin_name)
       plugin_name = plugin_name.to_sym
-      @processors.reject!{ |_, (mod, _)| mod == plugin_name }
+      @processors.each do |_mod, coll|
+        coll.reject! { |entry| entry.plugin == plugin_name }
+      end
     end
 
     def clear_all = @processors.clear
 
     def get(name)
-      @processors[name.to_sym]&.last
+      name = name.to_sym
+      entries = @processors[name]
+      return nil if entries.nil?
+
+      entries
     end
   end
 end

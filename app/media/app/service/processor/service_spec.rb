@@ -62,7 +62,10 @@ RSpec.describe Processor::Service, type: :service, database: true do
   before do
     Processor::Registry.clear_all
     Processor::Registry.register(
-      "plugin-video", "spec/video", Spec::SampleProcessor
+      "plugin-video",
+      "spec/video",
+      processor_class: Spec::SampleProcessor,
+      processor_options: { }
     )
   end
 
