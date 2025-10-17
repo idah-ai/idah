@@ -23,7 +23,7 @@ module Processor
 
     def clear(plugin_name)
       plugin_name = plugin_name.to_sym
-      @processors.each do |_mod, coll|
+      @processors.each_value do |coll|
         coll.reject! { |entry| entry.plugin == plugin_name }
       end
     end

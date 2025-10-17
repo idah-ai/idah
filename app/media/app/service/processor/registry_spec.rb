@@ -18,9 +18,12 @@ RSpec.describe Processor::Registry do
 
     it "registers a processor and allows to get it" do
       expect(described_class.get("my_processor")).to be_nil
-      described_class.register("my_plugin", "my_processor",
-                               processor_class: processor_class,
-                               processor_options: options)
+      described_class.register(
+        "my_plugin",
+        "my_processor",
+        processor_class: processor_class,
+        processor_options: options
+      )
       entries = described_class.get("my_processor")
       expect(entries.count).to eq(1)
 

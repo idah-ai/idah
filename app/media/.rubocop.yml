@@ -39,3 +39,9 @@ Layout/ArrayAlignment:
 
 Naming/ConstantName:
   Enabled: false
+
+# Disable in specs
+Lint/ConstantDefinitionInBlock:
+  Enabled: true
+  Exclude:
+    - '**/*_spec.rb'

@@ -26,7 +26,7 @@ module Processor
       return if processor_entries.nil? || processor_entries.empty?
 
       processor_entries.each do |processor_entry|
-        job_id = jobs.create(
+        jobs.create(
           job_class: processor_entry.class.name,
           arguments: { "entry_id" => entry_id },
           status: "pending",
