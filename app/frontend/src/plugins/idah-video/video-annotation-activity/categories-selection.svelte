@@ -29,6 +29,7 @@
     onSelect,
     onSelectAnnotation,
     onDeleteAnnotation,
+    onSelectMode,
     onEditValue,
     db,
     annotationValue,
@@ -43,6 +44,7 @@
     onSelect: (category?: CategoryDefinition) => void;
     onSelectAnnotation: (annotation: VideoAnnotation) => void;
     onDeleteAnnotation: (annotation: VideoAnnotation) => void;
+    onSelectMode: (mode: string) => void;
     db?: AnnotationsIndexedDB;
     annotationValue: AnnotationValue;
   } = $props();
@@ -330,7 +332,15 @@
 
 <div class="flex-col">
   {#if selected_category && toolMode}
-    <CategoryPropertiesHeaderBar {db} selectedId={selected_id} selectedCategory={selected_category} />
+    {@const category = findCategory(categoriesTree, selected_category)}
+    <CategoryPropertiesHeaderBar
+      {db}
+      selectedId={selected_id}
+      selectedCategory={selected_category}
+      name={category?.name || selected_category}
+      {onSelect}
+      {onSelectMode}
+    />
 
     <CategoryProperties
       selectedCategory={selected_category}

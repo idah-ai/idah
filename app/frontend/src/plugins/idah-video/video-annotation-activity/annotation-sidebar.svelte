@@ -19,6 +19,7 @@
     onEditValue,
     onSelectAnnotation,
     onDeleteAnnotation,
+    onSelectMode,
     context,
     mode,
     currentFrame,
@@ -30,6 +31,7 @@
     onEditValue: (annotationValue: AnnotationValue, mode: string) => void;
     onSelectAnnotation: (annotation: VideoAnnotation) => void;
     onDeleteAnnotation: (annotation: VideoAnnotation) => void;
+    onSelectMode: (mode: string) => void;
     context: IActivityContext;
     mode: string;
     db?: AnnotationsIndexedDB;
@@ -123,6 +125,7 @@
             {selected_id}
             {onSelectAnnotation}
             {onDeleteAnnotation}
+            {onSelectMode}
             {annotationValue}
             onEditValue={(v) => onEditValue(v, tool)}
             onSelect={(s) => categorySelection(tool, s)}
