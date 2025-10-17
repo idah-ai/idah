@@ -14,13 +14,12 @@
 </script>
 
 <div class="my-2 flex flex-col gap-1">
-  <Label for={property.id} class="mb-2">
-    {property.label}
-  </Label>
+  <div class="flex items-center space-x-2 text-center">
+    <Label for={property.id}>
+      {property.label}
+    </Label>
 
-  <div class="flex items-center space-x-2">
     <Switch aria-invalid={invalid} id={property.id} checked={!!value} onCheckedChange={onValueChange} />
-    <Label class="text-gray-500">{property.format.info}</Label>
   </div>
 
   {#if invalid}
