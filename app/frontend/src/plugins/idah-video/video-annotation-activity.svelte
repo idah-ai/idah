@@ -31,12 +31,13 @@
   import AnnotationFooterToolbar from "./layout/footer/AnnotationFooterToolbar.svelte";
   import AnnotationHeaderBar from "./layout/header/AnnotationHeaderBar.svelte";
   import AnnotationSidebar from "./layout/sidebar/annotation-sidebar.svelte";
-  import CommentsSidebar from "./layout/sidebar/comments/comments-sidebar.svelte";
+  import NoteSidebar from "./layout/sidebar/notes/note-sidebar.svelte";
   import SvgOverlay from "./video-annotation-activity/svg-overlay.svelte";
   import TimelineTable from "./video-annotation-activity/timeline-table/timeline-table.svelte";
   import Video from "./video-annotation-activity/video.svelte";
   import VideoController from "./video-annotation-activity/VideoController.svelte";
 
+  import { noteSidebarStore } from "./layout/sidebar/notes/note-sidebar-stores";
   import { boundingBoxes, idb_updated_at } from "./video-annotation-activity/idb_store.svelte";
   import { annotationsIndexedDB, AnnotationsIndexedDB } from "./video-annotation-activity/indexedDB";
   import { registerVisualModeShortcuts } from "./video-annotation-activity/shortcut";
@@ -79,7 +80,6 @@
   let annotationsIDB: AnnotationsIndexedDB | undefined = $state();
 
   let commandOpen = $state(false);
-  let showCommentsSidebar = $state(true);
 
   registerVisualModeShortcuts({
     player: () => player,
@@ -556,8 +556,25 @@
   }
 
   function selectAnnotation(annotation?: VideoAnnotation) {
-    selectedAnnotation = annotation;
-    mode = annotation?.shape.type || "visual";
+    /**
+     * Create a new note feed with the selected annotation
+     * If noteSidebarStore is open
+     */
+    if ($noteSidebarStore.open) {
+      // context.notes.create({
+      //   annotation_id: annotation?.metadata.id || null,
+      //   anchor_type: "annotation",
+      //   content_md: annotation?.metadata.id || "",
+      //   position: {
+      //     ...annotation?.shape,
+      //   },
+      // });
+      // toast.success("Note added on selected annotation");
+      // $noteSidebarStore.lastUpdated = new Date();
+    } else {
+      selectedAnnotation = annotation;
+      mode = annotation?.shape.type || "visual";
+    }
   }
 
   let overlay: SvgOverlay;
@@ -575,10 +592,6 @@
 
   let showPopOver = $state(false);
   let videoResizedAt = $state(new Date());
-
-  function toggleCommentsSidebar() {
-    showCommentsSidebar = !showCommentsSidebar;
-  }
 </script>
 
 <div class="flex h-screen w-full flex-col">
@@ -600,13 +613,7 @@
     </CommandDialog>
   {/key}
 
-  <AnnotationHeaderBar
-    {context}
-    {mode}
-    {showCommentsSidebar}
-    onSelectMode={() => (selectedAnnotation = undefined)}
-    onCommentsSidebarToggle={toggleCommentsSidebar}
-  ></AnnotationHeaderBar>
+  <AnnotationHeaderBar {context} {mode} onSelectMode={() => (selectedAnnotation = undefined)}></AnnotationHeaderBar>
 
   <Popover
     open={showPopOver}
@@ -649,7 +656,7 @@
     </PopoverContent>
   </Popover>
 
-  <SidebarProvider class="min-h-0 w-full" style="height: calc(100% - 30px)" bind:open={showCommentsSidebar}>
+  <SidebarProvider class="min-h-0 w-full" style="height: calc(100% - 30px)" bind:open={$noteSidebarStore.open}>
     <ResizablePaneGroup direction="vertical">
       <ResizablePane class="flex h-full" defaultSize={60} minSize={10}>
         <AnnotationSidebar
@@ -699,7 +706,7 @@
           </SvgOverlay>
         </SidebarInset>
 
-        <CommentsSidebar {showCommentsSidebar} onCommentsSidebarToggle={toggleCommentsSidebar}></CommentsSidebar>
+        <NoteSidebar />
       </ResizablePane>
 
       <ResizableHandle withHandle></ResizableHandle>

@@ -48,23 +48,8 @@ interface IComment {
   update(content: string): Promise<boolean>;
 }
 
-export interface INote {
-  id: string;
-  createdBy: IUser;
-  target?: IAnnotation;
-  content: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  position?: any;
-  fetchDiscussion: Promise<Array<IComment>>;
-  status: string;
-
-  reply(content: string): Promise<IComment>;
-
-  resolve(): Promise<boolean>;
-}
-
 export interface INoteFeed {
-  id: string;
+  readonly id: string;
   entry_id: string;
   annotation_id: string | null;
   readonly created_by_id: number;
@@ -80,6 +65,18 @@ export interface INoteFeed {
   updated_at: string;
 }
 
+export interface INoteComment {
+  readonly id: string;
+  readonly note_feed_id: string;
+  readonly is_edited: boolean;
+
+  content_md: string;
+
+  readonly created_by_id: number;
+  readonly created_at: string;
+  readonly updated_at: string;
+}
+
 export interface IAnnotationDriver {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   create(id: string, dimension: any, annotation: any): Promise<IAnnotation>;
@@ -93,11 +90,19 @@ export interface IAnnotationDriver {
 }
 
 export interface INoteDriver {
-  create(data: Partial<INoteFeed>): Promise<INoteFeed>;
+  /** NOTE::FEEDS */
+  feeds: {
+    create(data: Partial<INoteFeed>): Promise<INoteFeed>;
+    list(listOptions: IListOptions): Promise<Array<INoteFeed>>;
+    update(id: string, data: Partial<INoteFeed>): Promise<INoteFeed>;
+    delete(id: string): Promise<void>;
+    markAsResolved(noteFeedId: string): Promise<INoteFeed>;
+  };
 
-  list(listOptions: IListOptions): Promise<Array<INoteFeed>>;
-
-  markAsResolved(noteFeedId: string): Promise<INoteFeed>;
+  /** NOTE::COMMENTS */
+  comments: {
+    list(listOptions: IListOptions): Promise<Array<INoteComment>>;
+  };
 }
 
 export interface ICategoryField {

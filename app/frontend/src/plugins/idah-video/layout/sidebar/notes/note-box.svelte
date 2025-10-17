@@ -1,7 +1,9 @@
 <script lang="ts">
-  import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } from "@/components/ui/input-group";
   import { SendHorizontalIcon } from "@lucide/svelte";
   import type { FormEventHandler } from "svelte/elements";
+
+  import MarkdownEditor from "@/components/app/markdown/markdown-editor.svelte";
+  import { InputGroupButton } from "@/components/ui/input-group";
 
   // Props
   interface Props {
@@ -10,12 +12,11 @@
     onInput?: FormEventHandler<HTMLTextAreaElement> | null | undefined;
     onSubmit: () => Promise<void>;
   }
-  let { value, disabled, onInput, onSubmit }: Props = $props();
+  let { value = "", disabled, onInput, onSubmit }: Props = $props();
 </script>
 
-<InputGroup>
-  <InputGroupTextarea autofocus placeholder="Enter your comment" {disabled} {value} oninput={onInput} />
-  <InputGroupAddon align="block-end">
+<MarkdownEditor {disabled} placeholder="Write your comment" {value} {onInput}>
+  {#snippet actions()}
     <InputGroupButton
       aria-label="Send"
       class="ml-auto rounded-full"
@@ -27,5 +28,5 @@
       <SendHorizontalIcon class="size-3" />
       <span class="sr-only">Send</span>
     </InputGroupButton>
-  </InputGroupAddon>
-</InputGroup>
+  {/snippet}
+</MarkdownEditor>

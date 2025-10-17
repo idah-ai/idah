@@ -1,35 +1,41 @@
 import { writable } from "svelte/store";
 
-interface CommentsSidebarStore {
+import type { INoteFeed } from "@/plugin/interface/Activity";
+
+interface NoteSidebarStore {
   lastUpdated: Date;
   open: boolean;
   showFilters: boolean;
 
   /** Position and visibility of the comment box */
-  commentBox: {
+  noteBox: {
     show: boolean;
     contentMd: string;
     posX: number;
     posY: number;
   };
+
+  /** Selected note feed */
+  selectedNoteFeed: INoteFeed | null;
 }
 
-export const commentsSidebarStore = writable<CommentsSidebarStore>({
+export const noteSidebarStore = writable<NoteSidebarStore>({
   lastUpdated: new Date(),
-  open: false,
+  open: true,
   showFilters: false,
-  commentBox: {
+  noteBox: {
     show: false,
     contentMd: "",
     posX: 0,
     posY: 0,
   },
+  selectedNoteFeed: null,
 });
 
-export function closeCommentsSidebar() {
-  commentsSidebarStore.update((store) => {
+export function closeNoteSidebar() {
+  noteSidebarStore.update((store) => {
     store.open = false;
-    store.commentBox = {
+    store.noteBox = {
       show: false,
       contentMd: "",
       posX: 0,
