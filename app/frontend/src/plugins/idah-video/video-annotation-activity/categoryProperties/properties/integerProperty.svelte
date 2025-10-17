@@ -1,7 +1,7 @@
 <script lang="ts">
   import Input from "@/components/ui/input/input.svelte";
   import Label from "@/components/ui/label/label.svelte";
-  import { propertyFullfilled, requiredFullfilled } from "..";
+  import { formatConformity, propertyFullfilled, requiredFullfilled } from "..";
 
   import type { AnnotationValue } from "@/context/AnnotationContext";
   import type { PropertyField } from "@/plugin/interface/Activity";
