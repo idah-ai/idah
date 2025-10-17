@@ -2,7 +2,9 @@
 
 module Entry
   class Service < Verse::Service::Base
-    use entries: Entry::Repository
+    use entries: Entry::Repository,
+        dataset_service: Dataset::Service,
+        members: ProjectMember::Repository
     use_system datasets: Dataset::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
@@ -21,8 +23,24 @@ module Entry
     end
 
     def create(record)
-      attr = record.attributes
+      # TODO: remove mockings
+      account_id = auth_context.metadata[:id] || 1
+      if record.dataset
+        project_id = dataset_service.show(record.dataset.id).project_id
+      else
+        raise Verse::Error::ValidationFailed,
+              "dataset is required to create an entry"
+      end
 
+      members.authorize_action(
+        action: :create,
+        resource: Resource::Dataset::Entries,
+        account_id:,
+        project_id:,
+        allowed_user_roles: [:owner, :annotator]
+      )
+
+      attr = record.attributes
       attr[:id] = record.id || UUIDv7.generate
 
       entries.transaction do
