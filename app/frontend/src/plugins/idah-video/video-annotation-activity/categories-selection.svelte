@@ -124,19 +124,6 @@
 
     return filterAnnotations.length > 0;
   }
-
-  function findCategory(categoriesList: CategoryDefinition[], category: string): CategoryDefinition | undefined {
-    const found = categoriesList.find((c) => category.startsWith(c.id));
-
-    if (!found) return;
-
-    if (found.id != category) {
-      if (found.nestedCategories) return findCategory(found.nestedCategories, category);
-      else return;
-    }
-
-    return found;
-  }
 </script>
 
 {#snippet annotationSelection(annotation: VideoAnnotation, name: string)}
