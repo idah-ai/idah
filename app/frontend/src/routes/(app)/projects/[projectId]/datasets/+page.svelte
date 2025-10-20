@@ -12,6 +12,8 @@
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
   import { refetches } from "@/utils/refetch";
 
+  import type { Record } from "@/data/model/Record";
+
   // Variables
   let projectId: string = page.params.projectId as string;
   let openNewDatasetModal: boolean = $state(false);

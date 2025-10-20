@@ -67,13 +67,26 @@
   }
 </script>
 
-<DropdownMenus {menus} align="center">
-  {#snippet trigger({ props })}
-    <Button variant="ghost" size="icon" {...props}>
-      <EllipsisVerticalIcon class="size-4"></EllipsisVerticalIcon>
-    </Button>
-  {/snippet}
-</DropdownMenus>
+<DropdownMenu>
+  <DropdownMenuTrigger>
+    {#snippet child({ props })}
+      <Button variant="ghost" size="icon" {...props}>
+        <EllipsisVerticalIcon class="size-4" />
+      </Button>
+    {/snippet}
+  </DropdownMenuTrigger>
+
+  <DropdownMenuContent align="end">
+    <DropdownMenuGroup>
+      {#each menus as { label, icon: Icon, action }}
+        <DropdownMenuItem onclick={action}>
+          <Icon class="size-4" />
+          {label}
+        </DropdownMenuItem>
+      {/each}
+    </DropdownMenuGroup>
+  </DropdownMenuContent>
+</DropdownMenu>
 
 <DatasetFormModal title="Dataset" action="update" {datasetRecord} bind:open={openEditDatasetFormModal} />
 

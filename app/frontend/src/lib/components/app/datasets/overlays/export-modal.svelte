@@ -28,6 +28,18 @@
 		onConfirm,
 		datasetRecord,
 	}: Props = $props();
+
+  let dataset: DatasetRecord = $derived(
+    datasetRecord
+      ? datasetRecord
+      : new DatasetRecord({
+          type: "datasets:datasets",
+          attributes: {
+            name: null,
+            description: null,
+          },
+        }),
+  );
 </script>
 
 <AlertDialog bind:open>
