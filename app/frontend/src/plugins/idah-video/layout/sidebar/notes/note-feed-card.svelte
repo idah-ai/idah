@@ -46,11 +46,15 @@
 
   // Functions
   function handleClickNoteFeedCard() {
-    $noteSidebarStore.selectedNoteFeed = noteFeed;
+    if (!$noteSidebarStore.selectedNoteFeed) {
+      $noteSidebarStore.selectedNoteFeed = noteFeed;
+    }
   }
 
   function replyNoteFeed() {
-    $noteSidebarStore.selectedNoteFeed = noteFeed;
+    if (!$noteSidebarStore.selectedNoteFeed) {
+      $noteSidebarStore.selectedNoteFeed = noteFeed;
+    }
   }
 </script>
 
@@ -98,7 +102,7 @@
     <div class="flex items-center">
       <ResolveNoteButton {noteFeed} />
 
-      <NoteDropdownMenus {id} />
+      <NoteDropdownMenus {id} resource="noteFeed" />
     </div>
   </div>
 
