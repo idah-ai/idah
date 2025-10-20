@@ -12,10 +12,16 @@
   },
 
   "entryPoints": {
-    "frontend": {
-      "scripts": ["frontend/build/module.js"],
-      "styles": ["frontend/build/module.css"]
+    "pluginPage": {
+      "scripts": { "plugin.js": "frontend/build/build.js" },
+      "styles": { "plugin.css": "frontend/build/build.css" }
     },
+    "entryDetails": {
+      "scripts": { "entryDetails.js": "frontend/build/entryDetailsBuild.js" },
+      "styles": { "entryDetails.css": "frontend/build/entryDetailsBuild.css" }
+    },
+    "annotationType": "config/annotationType.json",
+    "assets": {},
     "backend": {
       "module": "IdahVideo",
       "path": "backends"
