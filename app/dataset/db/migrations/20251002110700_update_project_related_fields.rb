@@ -17,5 +17,9 @@ Sequel.migration do
     alter_table(:datasets) do
       add_column :created_by_id, :bigint, null: true, index: true
     end
+
+    alter_table(:entries) do
+      add_column :created_by_id, :bigint, null: true, index: true
+    end
   end
 end

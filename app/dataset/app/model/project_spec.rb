@@ -4,8 +4,9 @@ require "spec_helper"
 
 RSpec.describe Project, database: true do
   describe Project::Repository do
-    system_repo = described_class.new(Verse::Auth::Context[:system])
-    project_member_repo = ProjectMember::Repository.new(Verse::Auth::Context[:system])
+    system_context = Verse::Auth::Context[:system]
+    system_repo = described_class.new(system_context)
+    project_member_repo = ProjectMember::Repository.new(system_context)
 
     let!(:test_project1) {
       system_repo.find!(
@@ -58,14 +59,13 @@ RSpec.describe Project, database: true do
         it "returns user-scoped projects" do
           projects = subject.index({})
 
-          # binding.pry
           expect(projects.size).to eq(2)
 
           # projects that is a member of or owned
           projects.each do |project|
             expect(
-              @memberships.any? { |m|
-                m.project_id == project.id
+              @memberships.any? { |membership|
+                membership.project_id == project.id
               } || project.created_by_id == @account_id
             ).to be_truthy
           end

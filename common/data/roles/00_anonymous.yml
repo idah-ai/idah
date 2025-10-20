@@ -17,7 +17,7 @@ anonymous:
     # datasets
     - "dataset:datasets.*.as_user"
     # entries
-    - "dataset:entries.*.*"
+    - "dataset:entries.*.as_user"
     # annotations
     - "dataset:annotations.*.as_user"
 
