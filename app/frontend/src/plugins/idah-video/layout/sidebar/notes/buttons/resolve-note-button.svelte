@@ -6,13 +6,10 @@
   import Tooltips from "@/components/app/tooltips/tooltips.svelte";
   import Button from "@/components/ui/button/button.svelte";
 
-  import type {
-    IActivityContext,
-    INoteFeed,
-  } from "@/plugin/interface/Activity";
+  import type { IActivityContext, INoteFeed } from "@/plugin/interface/Activity";
 
   import { cn } from "@/utils";
-  import { noteSidebarStore } from "./note-sidebar-stores";
+  import { noteSidebarStore } from "../note-sidebar-stores";
 
   // Props
   interface Props {

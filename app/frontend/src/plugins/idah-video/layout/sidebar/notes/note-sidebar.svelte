@@ -28,12 +28,12 @@
 
   import { cn } from "@/utils";
 
+  import ResolveNoteButton from "./buttons/resolve-note-button.svelte";
+  import NoteCommentCard from "./cards/note-comment-card.svelte";
+  import NoteFeedCard from "./cards/note-feed-card.svelte";
+  import NoteDropdownMenus from "./dropdown-menus/note-dropdown-menus.svelte";
   import NoteBox from "./note-box.svelte";
-  import NoteCommentCard from "./note-comment-card.svelte";
-  import NoteDropdownMenus from "./note-dropdown-menus.svelte";
-  import NoteFeedCard from "./note-feed-card.svelte";
   import { closeNoteSidebar, noteSidebarStore } from "./note-sidebar-stores";
-  import ResolveNoteButton from "./resolve-note-button.svelte";
 
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
   import type { IActivityContext } from "@/plugin/interface/Activity";
