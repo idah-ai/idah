@@ -4,10 +4,11 @@ module PluginSystem
   class Plugin
     attr_reader :path, :manifest, :manual
 
-    def initialize(path, manifest, manual: false)
+    def initialize(path, manifest, context_class, manual: false)
       @path = path
       @manifest = manifest
       @manual = manual
+      @context_class = context_class
     end
 
     def start
@@ -20,9 +21,7 @@ module PluginSystem
       mod = Object.const_get(
         manifest.entry_points.backend.module
       )
-      @context = PluginLifecycleContext.new(
-        manifest.name
-      )
+      @context = @context_class.new(manifest.name)
       mod.init(@context)
 
       self
@@ -43,10 +42,5 @@ module PluginSystem
       Verse.logger.info{ "Reload plugin #{manifest.name} done" }
     end
 
-    # Use the repository
-    # to update the plugin
-    def update
-      # TODO...
-    end
   end
 end
