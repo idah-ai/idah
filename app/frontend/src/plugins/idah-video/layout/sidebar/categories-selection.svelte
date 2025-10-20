@@ -119,7 +119,7 @@
   }
 </script>
 
-{#snippet annotationSelection(annotation: VideoAnnotation, name: string, annotationCategory?: string)}
+{#snippet annotationSelection(annotation: VideoAnnotation, name: string)}
   <SidebarMenuItem class="item_hover list-none p-1">
     <SidebarMenuButton
       class={cn("ml-5 w-full justify-between px-5 hover:cursor-pointer")}
@@ -290,15 +290,15 @@
           {#await db.getAllIndex("category", category.id)}
             ...
           {:then anns}
-            {#each anns.filter((annotation) => currentFrame >= annotation.shape.start && currentFrame <= annotation.shape.end && annotation.shape.type == type) as annotation, i}
-              {@render annotationSelection(annotation, `${category.name}_${i}`, category.id)}
+            {#each anns.filter((annotation) => currentFrame >= annotation.shape.start && currentFrame <= annotation.shape.end && annotation.shape.type == type) as annotation, i (i)}
+              {@render annotationSelection(annotation, `${category.name}_${i}`)}
             {/each}
           {/await}
         {/if}
       {/key}
 
       {#if subCategories}
-        {#each subCategories as subCategory}
+        {#each subCategories as subCategory (subCategory.id)}
           {@render categorySelection(subCategory, subCategory.nestedCategories, onSelect, selected, [
             ...parent,
             category.id.split("/").slice(parent.length)[0],
@@ -329,7 +329,7 @@
         </SelectTrigger>
         <SelectContent>
           <SelectGroup>
-            {#each categories as category}
+            {#each categories as category (category.id)}
               <SelectItem value={category.id} label={category.label}>
                 {category.label}
               </SelectItem>
@@ -358,7 +358,7 @@
       {/key}
     </div>
 
-    {#each categoriesTree as category}
+    {#each categoriesTree as category (category.id)}
       {@render categorySelection(category, category.nestedCategories, onSelect, selected_category)}
     {/each}
   {/if}
