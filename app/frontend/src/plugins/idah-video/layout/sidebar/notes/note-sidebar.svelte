@@ -1,10 +1,18 @@
 <script lang="ts">
-  import { ArrowLeftIcon, FunnelIcon, MessageCircleDashedIcon, MessageCirclePlusIcon, XIcon } from "@lucide/svelte";
+  import {
+    ArrowLeftIcon,
+    FunnelIcon,
+    MessageCircleDashedIcon,
+    MessageCirclePlusIcon,
+    SquareCheckBigIcon,
+    SquareIcon,
+    XIcon,
+  } from "@lucide/svelte";
   import { getContext } from "svelte";
   import { toast } from "svelte-sonner";
 
   import ResponseBlock from "@/components/app/blocks/response-block.svelte";
-  import FilterSortDropdownMenu from "@/components/app/dropdown-menus/filter-sort-dropdown-menu.svelte";
+  import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import {
     Sidebar,
@@ -18,15 +26,17 @@
   import Spinner from "@/components/ui/spinner/spinner.svelte";
   import Text from "@/components/ui/text/Text.svelte";
 
-  import { NoteFeedRecord } from "@/data/model/dataset/notes/feeds/record";
   import { cn } from "@/utils";
 
   import NoteBox from "./note-box.svelte";
+  import NoteDropdownMenus from "./note-dropdown-menus.svelte";
   import NoteFeedCard from "./note-feed-card.svelte";
   import { closeNoteSidebar, noteSidebarStore } from "./note-sidebar-stores";
+  import ResolveNoteButton from "./resolve-note-button.svelte";
 
-  import type { ColumnsSettings } from "@/components/app/datasource-table/types";
-  import type { IActivityContext, INoteComment } from "@/plugin/interface/Activity";
+  import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
+  import type { IActivityContext } from "@/plugin/interface/Activity";
+  import type { Hash } from "@/utils/types";
 
   // Contexts
   const context: IActivityContext = getContext("context");
@@ -35,30 +45,38 @@
   let isInReviewStep = $derived(context.workflowStep === "review");
   let isListView = $derived(!$noteSidebarStore.selectedNoteFeed);
   let isDetailView = $derived(!!$noteSidebarStore.selectedNoteFeed);
+  let noteFeedFilters = $state<Hash>({ status__in: ["pending"] });
   let contentMd = $state<string>("");
 
-  const filterSortOptions: ColumnsSettings<NoteFeedRecord> = {
-    status: {
-      label: "Status",
-      dataType: "enum",
-      sortable: true,
-      filterable: true,
-      visible: true,
-      hidable: false,
+  const filterMenus: IDropdownMenus = $derived({
+    filters: {
+      items: [
+        {
+          label: "Show Pending Notes",
+          icon: noteFeedFilters.status__in.includes("pending") ? SquareCheckBigIcon : SquareIcon,
+          disabled: noteFeedFilters.status__in.length === 1,
+          action: () => {
+            noteFeedFilters.status__in = ["pending"];
+            $noteSidebarStore.lastUpdated = new Date();
+          },
+        },
+        {
+          label: "Show Resolved Notes",
+          icon: noteFeedFilters.status__in.includes("resolved") ? SquareCheckBigIcon : SquareIcon,
+          disabled: noteFeedFilters.status__in.includes("resolved"),
+          action: () => {
+            noteFeedFilters.status__in = ["pending", "resolved"];
+            $noteSidebarStore.lastUpdated = new Date();
+          },
+        },
+      ],
     },
-    created_by_id: {
-      label: "Commentor",
-      dataType: "number",
-      sortable: true,
-      filterable: true,
-      visible: true,
-      hidable: false,
-    },
-  };
+  });
 
   // Functions
   async function loadNotes() {
     return await context.notes.feeds.list({
+      filters: { ...noteFeedFilters },
       pagination: {
         page: 1,
         itemsPerPage: 1000,
@@ -68,7 +86,13 @@
   }
 
   async function loadNoteDetail() {
-    const noteComments: Array<INoteComment> = [];
+    const noteComments = await context.notes.comments.list({
+      filters: {
+        note_feed_id: $noteSidebarStore.selectedNoteFeed?.id,
+      },
+      sort: ["created_at"],
+    });
+
     return { noteComments };
   }
 
@@ -105,34 +129,25 @@
         {isListView ? "Notes" : "Note"}
       </Text>
 
-      <Button
-        variant={$noteSidebarStore.showFilters ? "default" : "ghost"}
-        size="icon"
-        onclick={() => ($noteSidebarStore.showFilters = !$noteSidebarStore.showFilters)}
-      >
-        <FunnelIcon />
-      </Button>
+      {#if isListView}
+        <DropdownMenus menus={filterMenus} align="end">
+          {#snippet trigger({ props })}
+            <Button {...props} variant="ghost" size="icon">
+              <FunnelIcon />
+            </Button>
+          {/snippet}
+        </DropdownMenus>
+      {/if}
+
+      {#if isDetailView && $noteSidebarStore.selectedNoteFeed}
+        <NoteDropdownMenus id={$noteSidebarStore.selectedNoteFeed.id} />
+        <ResolveNoteButton noteFeed={$noteSidebarStore.selectedNoteFeed} />
+      {/if}
 
       <Button variant="ghost" size="icon" onclick={closeNoteSidebar}>
         <XIcon />
       </Button>
     </div>
-
-    {#if $noteSidebarStore.showFilters}
-      <div class="grid w-full grid-cols-2 gap-2">
-        {#each Object.entries(filterSortOptions) as [columnKey, columnSetting] (columnKey)}
-          <FilterSortDropdownMenu
-            {columnKey}
-            {columnSetting}
-            filters={{}}
-            sort={["-created_at"]}
-            onFilter={async () => {}}
-            onSort={async () => {}}
-            onHide={() => {}}
-          />
-        {/each}
-      </div>
-    {/if}
   </SidebarHeader>
   <SidebarSeparator />
 
@@ -142,6 +157,8 @@
         {#if $noteSidebarStore.selectedNoteFeed}
           <!-- NOTE FEED::DETAIL -->
           {#await loadNoteDetail() then { noteComments }}
+            <NoteFeedCard noteFeed={$noteSidebarStore.selectedNoteFeed}></NoteFeedCard>
+
             {#each noteComments as noteComment (noteComment.id)}
               {noteComment.id}
             {/each}

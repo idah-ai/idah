@@ -42,7 +42,7 @@
         {/if}
 
         {#each group.items as item, itemIndex (itemIndex)}
-          <DropdownMenuItem onclick={() => item.action?.()}>
+          <DropdownMenuItem disabled={item.disabled} onclick={() => item.action?.()}>
             {#if item.icon}
               <item.icon class="size-4"></item.icon>
             {/if}
