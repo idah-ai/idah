@@ -146,6 +146,14 @@ export function createNoteDriver(entryId: string): INoteDriver {
             );
         });
       },
+      delete(id: string) {
+        return new Promise<void>((resolve, reject) => {
+          noteCommentsBackendDataSource.delete(id).then(
+            () => resolve(),
+            (v) => reject(v.error),
+          );
+        });
+      },
     },
   };
 }
