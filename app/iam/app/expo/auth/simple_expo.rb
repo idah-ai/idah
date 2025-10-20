@@ -2,6 +2,8 @@
 
 module Auth
   class SimpleExpo < BaseExpo
+    include HelperMethods
+
     http_path "/auth"
 
     use_service Auth::Service
