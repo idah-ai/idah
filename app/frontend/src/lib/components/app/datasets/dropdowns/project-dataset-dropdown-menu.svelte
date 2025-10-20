@@ -48,7 +48,6 @@
   let datasetRecord: DatasetRecord | undefined = $state(undefined);
   let openEditDatasetFormModal: boolean = $state(false);
   let openConfirmDeleteDatasetModal: boolean = $state(false);
-  let openExportDatasetModal: boolean = $state(false);
 
   // Functions
   async function fetchDataset() {
@@ -65,12 +64,6 @@
     goto(resolve(`/projects/${projectId}/datasets`));
     $refetches.datasets.list = new Date();
     openConfirmDeleteDatasetModal = false;
-  }
-
-  async function exportDataset(): Promise<void> {
-    await datasetsBackendDataSource.export(datasetId);
-    openExportDatasetModal = false;
-    // TODO: open modal when finish or download given exported file
   }
 </script>
 
@@ -90,11 +83,3 @@
   onConfirm={deleteDataset}
   bind:open={openConfirmDeleteDatasetModal}
 ></ConfirmModal>
-
-<!-- TODO: should we allow editing the exporting file/dataset name ? -->
-<ExportModal
-  title="Export Dataset"
-  description="Confirm to export the dataset: "
-  {datasetRecord}
-  onConfirm={exportDataset}
-  bind:open={openExportDatasetModal} />
