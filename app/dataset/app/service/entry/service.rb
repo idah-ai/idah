@@ -113,7 +113,7 @@ module Entry
     def update(record)
       # TODO: remove mockings
       account_id = auth_context.metadata[:id] || 1
-      dataset_id = entries.find!(record.id)&.id
+      dataset_id = entries.find!(record.id).dataset_id
       project_id = dataset_service.show(dataset_id).project_id
 
       members.authorize_action(
@@ -131,7 +131,7 @@ module Entry
     def delete(id)
       # TODO: remove mockings
       account_id = auth_context.metadata[:id] || 1
-      dataset_id = entries.find!(record.id)&.id
+      dataset_id = entries.find!(id).dataset_id
       project_id = dataset_service.show(dataset_id).project_id
 
       members.authorize_action(

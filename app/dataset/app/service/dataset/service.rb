@@ -58,7 +58,7 @@ module Dataset
     def update(record)
       # TODO: remove mocking
       account_id = auth_context.metadata[:id] || 1
-      project_id = datasets.find!(id).project_id
+      project_id = datasets.find!(record.id).project_id
 
       members.authorize_action(
         action: :update,
