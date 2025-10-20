@@ -3,7 +3,7 @@
 RSpec.describe Jobs::Service do
   let(:service) { described_class.new(Verse::Auth::Context[:system]) }
 
-  describe "#create_job" do
+  describe "#create" do
     it "creates a job record" do
       repo = service.repo
       expect(repo).to receive(:transaction).and_yield
@@ -19,7 +19,7 @@ RSpec.describe Jobs::Service do
       ).and_return(1)
       expect(repo).to receive(:find!).with(1)
 
-      service.create_job(
+      service.create(
         "MyJob",
         arguments: { "a" => 1 },
         priority: 10
