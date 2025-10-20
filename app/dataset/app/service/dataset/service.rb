@@ -35,7 +35,7 @@ module Dataset
         resource: Resource::Dataset::Datasets,
         account_id:,
         project_id:,
-        allowed_user_roles: [:owner, :annotator]
+        allowed_permission_sets: [:owner, :annotator]
       )
 
       attr = record.attributes
@@ -65,7 +65,7 @@ module Dataset
         resource: Resource::Dataset::Datasets,
         account_id:,
         project_id:,
-        allowed_user_roles: [:owner, :annotator]
+        allowed_permission_sets: [:owner, :annotator]
       )
 
       datasets.update!(record.id, record.attributes)
@@ -82,7 +82,7 @@ module Dataset
         resource: Resource::Dataset::Datasets,
         account_id:,
         project_id:,
-        allowed_user_roles: [:owner, :annotator]
+        allowed_permission_sets: [:owner, :annotator]
       )
 
       datasets.delete(id)
