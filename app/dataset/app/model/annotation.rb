@@ -24,5 +24,15 @@ module Annotation
 
     encoder :dimensions, Verse::Sequel::JsonEncoder
     encoder :annotation, Verse::Sequel::JsonEncoder
+
+    # scope definition(s)
+    def scoped(action)
+      auth_context.can!(action, Resource::Dataset::Entries) do |scope|
+        scope.all? { table }
+
+        # TODO: to be reviewed
+        scope.as_user? { table }
+      end
+    end
   end
 end

@@ -4,8 +4,9 @@ require "spec_helper"
 
 RSpec.describe ProjectMember, database: true do
   describe ProjectMember::Repository do
-    system_repo = described_class.new(Verse::Auth::Context[:system])
-    project_repo = Project::Repository.new(Verse::Auth::Context[:system])
+    system_context = Verse::Auth::Context[:system]
+    system_repo = described_class.new(system_context)
+    project_repo = Project::Repository.new(system_context)
 
     let!(:test_project1) {
       project_repo.find!(
@@ -76,8 +77,9 @@ RSpec.describe ProjectMember, database: true do
         it "returns user-scoped members" do
           project_members = subject.index({})
 
-          # self membership and members in same projects
           expect(project_members.size).to eq(2)
+
+          # self membership and members in same projects
           account_id = current_auth_context.metadata[:id]
           project_members.each do |project_member|
             expect(project_member.project_id == test_project2.id || project_member.account_id == account_id)
@@ -85,6 +87,26 @@ RSpec.describe ProjectMember, database: true do
           end
         end
       end
+    end
+
+    describe "authorize_action", as: :user do
+      context "with admin account", as: :admin do
+        subject { described_class.new(current_auth_context) }
+
+        it "allows any action" do
+          expect {
+            subject.authorize_action(
+              action: :read,
+              resource: Resource::Dataset::ProjectMembers,
+              account_id: current_auth_context.metadata[:id],
+              project_id: test_project1,
+              allowed_permission_sets: []
+            )
+          }.not_to raise_error
+        end
+      end
+
+      # context "with user accouint", as: :admin do
     end
   end
 end

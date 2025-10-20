@@ -20,6 +20,8 @@ module Entry
     # Add through assign method
     field :assigned_to_id, type: Integer, readonly: true
 
+    field :created_by_id, type: Integer, readonly: true
+
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
 
@@ -30,6 +32,32 @@ module Entry
   class Repository < Verse::Sequel::Repository
     self.table = "entries"
     self.resource = Resource::Dataset::Entries
+
+    # scope definition(s)
+    def scoped(action)
+      auth_context.can!(action, Resource::Dataset::Entries) do |scope|
+        scope.all? { table }
+
+        scope.as_user? do
+          # TODO: remove mockings
+          account_id = auth_context.metadata[:id] || 1
+
+          # projects/datasets that is a member of
+          project_ids = ProjectMember::Repository.new(auth_context).index({ account_id: }).map(&:project_id).uniq
+          dataset_ids = Dataset::Repository.new(auth_context).index({ project_id: project_ids }).map(&:id).uniq
+
+          # entries that are in projects/datasets that is a member of or owned entries
+          table.where(dataset_id: dataset_ids).or(created_by_id: account_id)
+        end
+      end
+    end
+
+    def create(attributes)
+      # TODO: remove mockings
+      attributes[:created_by_id] = auth_context.metadata[:id] || 1 unless attributes[:created_by_id]
+
+      super(attributes)
+    end
 
     def mark_entries_as_ready(job_id)
       entries = chunked_index({ job_id: job_id, status: "pending" })

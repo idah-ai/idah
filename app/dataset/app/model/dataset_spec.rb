@@ -4,9 +4,10 @@ require "spec_helper"
 
 RSpec.describe Dataset, database: true do
   describe Dataset::Repository do
-    system_repo = described_class.new(Verse::Auth::Context[:system])
-    project_repo = Project::Repository.new(Verse::Auth::Context[:system])
-    project_member_repo = ProjectMember::Repository.new(Verse::Auth::Context[:system])
+    system_context = Verse::Auth::Context[:system]
+    system_repo = described_class.new(system_context)
+    project_repo = Project::Repository.new(system_context)
+    project_member_repo = ProjectMember::Repository.new(system_context)
 
     let!(:test_project1) {
       project_repo.find!(
@@ -104,11 +105,12 @@ RSpec.describe Dataset, database: true do
           datasets = subject.index({})
 
           expect(datasets.size).to eq(2)
+
           # datasets that are in projects that is a member of or owned datasets
           datasets.each do |dataset|
             expect(
-              @memberships.any? { |m|
-                m.project_id == dataset.project_id
+              @memberships.any? { |membership|
+                membership.project_id == dataset.project_id
               } || dataset.created_by_id == @account_id
             ).to be_truthy
           end
