@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-module Account
-  class AuditRecord < Verse::Model::Record::Base
+module AccountAudit
+  class Record < Verse::Model::Record::Base
     type Resource::Iam::AccountAudits
 
     field :id, type: Integer, primary: true
@@ -13,7 +13,8 @@ module Account
 
     belongs_to :account, repository: "Account::Repository", foreign_key: :account_id
   end
-  class AuditRepository < Verse::Sequel::Repository
+
+  class Repository < Verse::Sequel::Repository
     self.table = "account_audits"
     self.resource = Resource::Iam::AccountAudits
 

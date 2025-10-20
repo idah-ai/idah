@@ -3,7 +3,7 @@
 Sequel.migration do
   change do
     create_table(:account_audits) do
-      primary_key :id, :bigserial
+      primary_key :id
 
       foreign_key :account_id,
                   :accounts,
@@ -14,9 +14,11 @@ Sequel.migration do
                   index: true
 
       column :role, String, null: true
-      column :date, Time, null: false
-      column :ip, :jsonb, null: true
+      column :date, DateTime, default: Sequel.lit("NOW()"), null: false
+      column :ip, String, null: true
 
+      index [:account_id, :date]
+      index :date, type: :brin # Useful because table is read-only append-only.
       Migration::Timestamps.timestamps(self)
     end
     Migration::Timestamps.trg_updated_at(self, :account_audits)

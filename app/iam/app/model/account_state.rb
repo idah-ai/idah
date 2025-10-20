@@ -18,7 +18,7 @@ module AccountState
     self.resource = Resource::Iam::AccountStates
 
     def account_audit_repo
-      @account_audit_repo ||= Account::AuditRepository.new(auth_context)
+      @account_audit_repo ||= AccountAudit::Repository.new(auth_context)
     end
 
     def check_seq(account_id, nonce, sequence)

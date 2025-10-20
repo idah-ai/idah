@@ -3,7 +3,9 @@
 module Auth
   class Service < Verse::Service::Base
     use_repo \
-      accounts: Account::Repository
+      accounts: Account::Repository,
+      account_states: AccountState::Repository
+
     use_system_repo \
       system_accounts: Account::Repository,
       system_roles: RoleRepository
@@ -15,7 +17,7 @@ module Auth
         account.id,
         nonce,
         seq,
-        exp: Time.now.to_i + Settings["refresh_token.lifetime"],
+        exp: Time.now.to_i + ::Settings["refresh_token.lifetime"],
       )
     end
 
@@ -47,13 +49,13 @@ module Auth
       end
 
       # Fetch labels from the role repository
-      role = system_roles.find_by({ name: role_name })
+      role = system_roles.find_by({ name: account_role })
 
       unless role
-        raise Verse::Error::ValidationFailed, "Cannot find role #{role_name}"
+        raise Verse::Error::ValidationFailed, "Cannot find role #{account_role}"
       end
 
-      exp = Time.now.to_i + Settings["auth_token.lifetime"]
+      exp = Time.now.to_i + ::Settings["auth_token.lifetime"]
 
 
       # encode the auth_token
@@ -63,7 +65,7 @@ module Auth
           email: account.email,
           # labels: role.labels
         }.compact,
-        role_name,
+        account_role,
         role.scopes,
         exp:
       )
