@@ -61,6 +61,8 @@ GIT
 GEM
   remote: https://rubygems.org/
   specs:
+    aasm (5.5.1)
+      concurrent-ruby (~> 1.0)
     addressable (2.8.7)
       public_suffix (>= 2.0.2, < 7.0)
     ast (2.4.3)
@@ -204,6 +206,7 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
+  aasm
   bootsnap (~> 1.16)
   dotenv
   pg

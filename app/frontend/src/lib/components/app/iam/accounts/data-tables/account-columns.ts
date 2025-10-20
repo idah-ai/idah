@@ -1,10 +1,10 @@
 import AccountJoinedAtCell from "@/components/app/iam/accounts/data-tables/account-joined-at-cell.svelte";
-import AccountStatusCell from "@/components/app/iam/accounts/data-tables/account-status-cell.svelte";
 import AccountRowActionCell from "@/components/app/iam/accounts/data-tables/account-row-action-cell.svelte";
+import AccountStatusCell from "@/components/app/iam/accounts/data-tables/account-status-cell.svelte";
 
 import { AccountRecord } from "@/data/model/iam/accounts/record";
 
-import type { ColumnsSettings } from "@/components/app/data-table/data-table.types";
+import type { ColumnsSettings } from "@/components/app/datasource-table/types";
 
 export const accountColumns: ColumnsSettings<AccountRecord> = {
   name: {

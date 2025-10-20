@@ -10,8 +10,8 @@ module Entry
 
     field :priority, type: Integer
 
-    field :wf_step, type: String, readonly: true
-    field :status, type: String, readonly: true
+    field :wf_step, type: String # , readonly: true
+    field :status, type: String # , readonly: true
 
     field :job_id, type: Integer
 

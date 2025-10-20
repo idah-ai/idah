@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { CheckIcon, ChevronsUpDownIcon, PlusIcon } from "@lucide/svelte";
   import { getContext } from "svelte";
 
   import Badge from "@/components/ui/badge/badge.svelte";
@@ -7,9 +8,8 @@
   import Separator from "@/components/ui/separator/separator.svelte";
   import Text from "@/components/ui/text/Text.svelte";
 
-  import { cn } from "@/utils";
   import { constructTree, type TreeItem } from "@/data/model/dataset/dataset-record";
-  import { CheckIcon, ChevronsUpDownIcon, PlusIcon } from "@lucide/svelte";
+  import { cn } from "@/utils";
 
   import type { LabelingConfiguration } from "@/data/model/dataset/labels";
 

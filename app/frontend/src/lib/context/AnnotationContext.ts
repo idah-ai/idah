@@ -1,23 +1,27 @@
+import type { Hash } from "@/utils/types";
+
 export type AnnotationShape = {
   type: string;
+  start: number; // start frame or timestamp
+  end: number; // end frame or timestamp
 
   // Here it's open bar.
   // Based on the type of annotation, we can have very different properties.
-}
+};
 
 export type AnnotationValue = {
-  category?: string // follow format "category/subcategory"
-  label?: string // if applicable, e.g. for text classification
+  category?: string; // follow format "category/subcategory"
+  label?: string; // if applicable, e.g. for text classification
 
-  text?: string // used for text classification or descriptive annotations.
+  text?: string; // used for text classification or descriptive annotations.
 
-  source? : string // e.g. "user" or "model"
-  confidence?: number // between 0 and 1, only if applicable
+  source?: string; // e.g. "user" or "model"
+  confidence?: number; // between 0 and 1, only if applicable
 
-  tags?: string[] // a tag list, e.g. ["tag1", "tag2"]
+  tags?: string[]; // a tag list, e.g. ["tag1", "tag2"]
 
-  attributes?: Record<string, any> // Other attributes, e.g. {"key": "value"}
-}
+  attributes?: Hash; // Other attributes, e.g. {"key": "value"}
+};
 
 export type AnnotationMetadata = {
   id: string; // Unique identifier for the annotation
@@ -27,7 +31,7 @@ export type AnnotationMetadata = {
 
   userId?: string; // ID of the user who created the annotation
   comments?: string[]; // Comments or notes associated with the annotation
-}
+};
 
 /**
  * Represents an annotation object.
@@ -40,7 +44,7 @@ export interface AnnotationObj<
   shape: Shape;
   value: Value;
   metadata: Metadata;
-  synced: Boolean;
+  synced: boolean;
 }
 
 export type Annotation = AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
@@ -55,7 +59,7 @@ export interface AnnotationContext {
    *                 or could load the annotation for specific frame range for example for video.
    * @returns A promise that resolves to an array of annotations.
    */
-  listAnnotations(filter: Record<string, any>): Promise<Annotation[]>;
+  listAnnotations(filter: Hash): Promise<Annotation[]>;
 
   /**
    * Adds a new annotation.

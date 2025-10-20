@@ -1,22 +1,30 @@
 <script lang="ts">
-    import { PluginManager } from '@/plugin/PluginManager';
-    import config from '../../../plugins/plugins.config.json'
-    import { setContext, type Snippet } from "svelte";
+  import { setContext, type Snippet } from "svelte";
 
-    type Props = {
-        children: Snippet;
-      }
-    let { children }: Props = $props();
+  import Spinner from "@/components/ui/spinner/spinner.svelte";
 
-    const pluginManager = new PluginManager(config)
+  import { PluginManager } from "@/plugin/PluginManager";
 
-    setContext("idah-plugin-manager", pluginManager)
+  import config from "../../../plugins/plugins.config.json";
+
+  // Props
+  interface Props {
+    children?: Snippet;
+  }
+  let { children }: Props = $props();
+
+  //   Variables
+  const pluginManager = new PluginManager(config);
+
+  //   Contexts
+  setContext("idah-plugin-manager", pluginManager);
 </script>
 
-<div>
-    {#await pluginManager.loadedPromise}
-        loading plugins
-    {:then}
-        {@render children?.()}
-    {/await}
-</div>
+{#await pluginManager.loadedPromise}
+  <div class="flex h-screen flex-col items-center justify-center gap-2">
+    <Spinner size="xl"></Spinner>
+    <p class="text-muted-foreground text-sm">Loading plugins...</p>
+  </div>
+{:then}
+  {@render children?.()}
+{/await}

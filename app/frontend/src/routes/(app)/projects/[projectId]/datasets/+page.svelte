@@ -1,18 +1,16 @@
 <script lang="ts">
   import { page } from "$app/state";
+  import { PlusIcon } from "@lucide/svelte";
 
-  import Button from "@/components/ui/button/button.svelte";
-  import DataTable from "@/components/app/data-table/data-table.svelte";
   import DatasetFormModal from "@/components/app/datasets/overlays/dataset-form-modal.svelte";
-  import ImportFormModal from "@/components/app/datasets/overlays/import-form-modal.svelte";
-  import PageHeader from "@/components/app/page/page-header.svelte";
+  import DatasourceTable from "@/components/app/datasource-table/datasource-table.svelte";
+  import Button from "@/components/ui/button/button.svelte";
 
-  import { projectDatasetColumns } from "@/components/app/datasets/data-tables/project-dataset.columns";
+  import { projectDatasetColumns } from "@/components/app/datasets/datasource-tables/project-dataset.columns";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { EntryRecord } from "@/data/model/dataset/entries/record";
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
   import { refetches } from "@/utils/refetch";
-  import { FileDownIcon, PlusIcon } from "@lucide/svelte";
 
   // Variables
   let projectId: string = page.params.projectId as string;
@@ -20,25 +18,19 @@
   let openNewImportModal: boolean = $state(false);
 </script>
 
-<PageHeader title="Datasets">
-  {#snippet actions()}
-    <div class="flex items-center gap-4">
-      <Button onclick={() => (openNewDatasetModal = true)}>
-        <PlusIcon class="size-4" />
-        New Dataset
-      </Button>
-      <Button variant="secondary" onclick={() => (openNewImportModal = true)}>
-        <FileDownIcon class="size-4" />
-        Import Dataset
-      </Button>
-    </div>
-  {/snippet}
-</PageHeader>
+{#snippet AddNewDatasetButton()}
+  <Button onclick={() => (openNewDatasetModal = true)}>
+    <PlusIcon class="size-4" />
+    New Dataset
+  </Button>
+{/snippet}
 
 {#key $refetches.datasets.list}
-  <DataTable
+  <DatasourceTable
     id="datasets"
     name="dataset"
+    title="Datasets"
+    refetchKey="datasets"
     columns={projectDatasetColumns}
     dataSource={datasetsBackendDataSource}
     listOptions={{
@@ -53,7 +45,15 @@
       included: ["entries"],
       sort: ["-created_at"],
     }}
-  />
+  >
+    {#snippet actions()}
+      {@render AddNewDatasetButton()}
+    {/snippet}
+
+    {#snippet addNewRecordButton()}
+      {@render AddNewDatasetButton()}
+    {/snippet}
+  </DatasourceTable>
 {/key}
 
 <DatasetFormModal title="Dataset" action="create" bind:open={openNewDatasetModal} />
