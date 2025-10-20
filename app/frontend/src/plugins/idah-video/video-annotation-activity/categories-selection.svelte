@@ -5,16 +5,17 @@
   import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger } from "@/components/ui/select";
   import { SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
   import Text from "@/components/ui/text/Text.svelte";
-  import CategoryProperties from "./categoryProperties/categoryProperties.svelte"
   import { cn } from "@/utils";
   import { humanize } from "@/utils/string";
   import { ChevronRight, CircleSmallIcon, PlusIcon, Trash2Icon } from "@lucide/svelte";
+  import CategoryProperties from "./categoryProperties/categoryProperties.svelte";
   import { idb_updated_at } from "./idb_store.svelte";
 
   import type { CategoryDefinition } from "@/context/ActivityContext";
+  import type { AnnotationValue } from "@/context/AnnotationContext";
+  import type { CategoryField } from "@/data/model/dataset/labels";
   import type { AnnotationsIndexedDB } from "./indexedDB";
   import type { CategoryConfiguration, VideoAnnotation } from "./VideoAnnotationContext";
-  import type { CategoryField } from "@/data/model/dataset/labels";
 
   // Props
   let {
@@ -37,6 +38,7 @@
     toolMode: boolean;
     selected_category: string | undefined;
     selected_id: string | undefined;
+    onEditValue: (annotationValue: AnnotationValue, mode: string) => void;
     onSelect: (category?: CategoryDefinition) => void;
     onSelectAnnotation: (annotation: VideoAnnotation) => void;
     onDeleteAnnotation: (annotation: VideoAnnotation) => void;
@@ -45,8 +47,11 @@
   } = $props();
 
   // Variables
-  let openStates = $state<Record<string, boolean>>(
-    categories.reduce<Record<string, boolean>>((acc, category) => {
+  let manualToggleStates = $state<Record<string, boolean>>({});
+
+  // Automatically expand all categories when categories prop changes, but allow manual toggles
+  let openStates = $derived.by(() => {
+    const autoExpanded = categories.reduce<Record<string, boolean>>((acc, category) => {
       if (category.id.includes("/")) {
         const parts = category.id.split("/");
         for (let i = 0; i < parts.length - 1; i++) {
@@ -54,20 +59,28 @@
           acc[parentPath] = true;
         }
       }
+      // Always set the category itself to true
+      acc[category.id] = true;
       return acc;
-    }, {}),
-  );
+    }, {});
+
+    // Merge with manual toggles (manual toggles take precedence)
+    return { ...autoExpanded, ...manualToggleStates };
+  });
+
   let forceRender = $state(0); // Force re-render trigger
 
-  let categoriesTree: CategoryDefinition[] = categories.reduce<CategoryDefinition[]>((acc, category_configuration) => {
-    return buildTree(acc, category_configuration.id.split("/"), category_configuration);
-  }, []);
+  let categoriesTree = $derived(
+    categories.reduce<CategoryDefinition[]>((acc, category_configuration) => {
+      return buildTree(acc, category_configuration.id.split("/"), category_configuration);
+    }, []),
+  );
 
   // Functions
   function buildTree(
     acc: CategoryDefinition[],
     ids: string[],
-    configuration: CategoryField
+    configuration: CategoryConfiguration,
   ): CategoryDefinition[] {
     let currentLevel = acc;
     let fullPath = "";
@@ -119,19 +132,6 @@
     });
 
     return filterAnnotations.length > 0;
-  }
-
-  function findCategory(categories: CategoryDefinition[], category: string): CategoryDefinition | undefined {
-    const found = categories.find((c) => category.startsWith(c.id));
-
-    if (!found) return;
-
-    if (found.id != category) {
-      if (found.nestedCategories) return findCategory(found.nestedCategories, category);
-      else return;
-    }
-
-    return found;
   }
 </script>
 
@@ -198,8 +198,8 @@
       onclick={(e) => {
         e.stopPropagation();
         if (category.nestedCategories || haveChildren) {
-          // Toggle the category open state
-          openStates[category.id] = !openStates[category.id];
+          // Toggle the category open state manually
+          manualToggleStates[category.id] = !openStates[category.id];
         }
       }}
       disabled={toolMode}
@@ -270,8 +270,8 @@
             }
 
             if (category.nestedCategories) {
-              // Toggle the category open state
-              openStates[category.id] = !openStates[category.id];
+              // Toggle the category open state manually
+              manualToggleStates[category.id] = !openStates[category.id];
             }
             // Force re-render of annotation counts
             forceRender++;
@@ -330,13 +330,13 @@
 {/snippet}
 
 <div class="flex-col">
-  {#if selected_category && toolMode }
+  {#if selected_category && toolMode}
     <CategoryProperties
       selectedCategory={selected_category}
-      {db}
+      selectedId={selected_id || ""}
       {annotationValue}
       onSelectCategory={onSelect}
-      {onEditValue}
+      onEditValue={(value) => value && onEditValue(value, type)}
     />
   {:else}
     <div class="flex gap-2 py-2">
