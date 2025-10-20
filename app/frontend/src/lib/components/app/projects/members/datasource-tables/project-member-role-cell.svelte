@@ -7,9 +7,10 @@
   import type { DataTableCellBaseProps } from "@/components/app/datasource-table/types";
 
   // Props
-  let { record: projectMember }: DataTableCellBaseProps<ProjectMemberRecord> = $props();
+  interface Props extends DataTableCellBaseProps<ProjectMemberRecord> {}
+  let { record: projectMember }: Props = $props();
 </script>
 
-<Badge variant="outline">
+<Badge variant="outline" class="rounded-lg">
   {projectMemberRoles.find((role) => role.value === projectMember.role)?.label || humanize(projectMember.role)}
 </Badge>

@@ -6,7 +6,7 @@
   import ProjectForm from "@/components/app/projects/forms/project-form.svelte";
 
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
-  import { createProjectSchema, updateProjectSchema } from "@/data/model/dataset/projects/schema";
+  import { projectSchema } from "@/data/model/dataset/projects/project-schema";
   import { refetches } from "@/utils/refetch";
   import { getFieldErrors, validateData, type ZodSchema } from "@/utils/validate";
 
@@ -21,7 +21,6 @@
 
   // Variables
   let newRecord: boolean = $derived(action === "create");
-  let fieldErrors: Hash = $state({});
   let submitting: boolean = $state(false);
 
   let project: ProjectRecord = $derived(
@@ -38,7 +37,6 @@
 
   // Functions
   function resetForm(): void {
-    fieldErrors = {};
     project = new ProjectRecord({
       type: "datasets:projects",
       attributes: {
@@ -81,21 +79,10 @@
   }
 
   async function submit(): Promise<void> {
-    fieldErrors = {};
     submitting = true;
-    const schema: ZodSchema = newRecord ? createProjectSchema : updateProjectSchema;
 
     try {
-      const validated = validateData(schema, {
-        name: project.name,
-        description: project.description,
-      });
-
-      if (!validated.success) {
-        fieldErrors = getFieldErrors(validated.error);
-        throw new Error("Failed to submit form");
-      }
-
+      const validated = projectSchema.safeParse(projectRecord);
       if (newRecord) {
         await createProject();
       } else {
@@ -109,5 +96,5 @@
 </script>
 
 <FormModal {action} {title} loading={submitting} onCancel={resetForm} onConfirm={submit} bind:open>
-  <ProjectForm {project} {fieldErrors} onValueChange={setValue}></ProjectForm>
+  <ProjectForm {project} onValueChange={setValue}></ProjectForm>
 </FormModal>

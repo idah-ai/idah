@@ -20,6 +20,7 @@
   } from "@/data/model/dataset/labels";
 
   // Variables
+  let projectId: string = page.params.projectId as string;
   let datasetId: string = page.params.datasetId as string;
 
   let saving: boolean = $state(false);
@@ -34,6 +35,8 @@
   let usedColors = $derived.by(() => {
     return labelConfig ? labelConfig.categories.map((cat) => cat.color) : [];
   });
+
+  $inspect(labelConfig);
 
   const availableColors = $derived(labelColors.filter((color) => !usedColors.includes(color.color)));
   const firstAvailableColor = $derived.by(() => {
@@ -65,26 +68,23 @@
       initialLabelConfig = JSON.parse(JSON.stringify(updatedDatasetRes.data.labeling_configuration));
       toast.success("Labeling configuration changes saved successfully.");
     } catch (error) {
-      console.error(error);
       toast.error("Failed to save labeling configuration changes.");
     } finally {
       saving = false;
     }
   }
 
-  function addCategory(nodeId?: string) {
+  function addNewCategory(nodeId?: string) {
     if (!labelConfig) return;
 
-    const currentTime = new Date().getTime().toString();
-    const newLabel = "New Category";
-    const newId = slugify(`${newLabel} ${currentTime}`);
+    const newId = new Date().getTime().toString();
 
     /** Add a new root category, if nodeId is not provided */
     if (!nodeId) {
       labelConfig.categories.push({
-        id: newId,
+        id: `${newId}`,
         type: defaultCategoryType,
-        label: newLabel,
+        label: "New Category",
         color: firstAvailableColor,
       });
       return;
@@ -106,7 +106,7 @@
     if (parentCategories.length === 1) {
       const parentCategoryIndex = labelConfig.categories.findIndex((cat) => cat.id === nodeId);
       if (parentCategoryIndex !== -1) {
-        /** Update the existing one with currentTime */
+        /** Update the existing one with newId */
         labelConfig.categories[parentCategoryIndex] = {
           ...labelConfig.categories[parentCategoryIndex],
           id: `${labelConfig.categories[parentCategoryIndex].id}/${currentTime}`,
@@ -162,7 +162,7 @@
 
     if (categoryToUpdateIndex >= 0) {
       labelConfig.categories[categoryToUpdateIndex].id = newId;
-      // labelConfig.categories[categoryToUpdateIndex].label = newId;
+      labelConfig.categories[categoryToUpdateIndex].label = newId;
     }
   }
 
@@ -292,7 +292,7 @@
 
   <LabelEditor
     {labelConfig}
-    onAddCategory={addCategory}
+    onAddCategory={addNewCategory}
     onEditCategory={editCategory}
     onEditCategoryId={editCategoryId}
     onRemoveCategory={removeCategory}

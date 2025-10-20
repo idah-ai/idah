@@ -38,6 +38,7 @@
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
   import { cn } from "@/utils";
   import { refetches } from "@/utils/refetch";
+  import { Record } from "@/data/model/Record";
 
   import type {
     ColumnSettings,
@@ -71,7 +72,7 @@
     filters: {
       dataset_id: datasetId,
     },
-    sort: ["priority"],
+    sort: ["-created_at"],
     count: true,
   });
   let isFiltering: boolean = $derived(

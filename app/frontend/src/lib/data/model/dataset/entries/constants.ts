@@ -3,7 +3,6 @@ import type { LabelValue } from "@/utils/types";
 import type { EntryRecord } from "@/data/model/dataset/entries/record";
 
 export interface EntryPriorityBadgeProps extends LabelValue<number, EntryRecord> {
-  iconColor: string;
   variant: BadgeVariant;
 }
 
@@ -48,9 +47,7 @@ export const entryStatuses: EntryStatusBadgeProps[] = [
   { label: "Errored", value: "errored", variant: "destructive" },
 ];
 
-interface EntryWorkflowStep extends LabelValue<string, EntryRecord> {
-  variant?: BadgeVariant;
-}
+interface EntryWorkflowStep extends LabelValue<string, EntryRecord> {}
 export const entryWorkflowSteps: EntryWorkflowStep[] = [
   { label: "Start", value: "start" },
   { label: "Annotate", value: "annotate" },

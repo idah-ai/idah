@@ -60,7 +60,7 @@
 
   <div id={node.id} class={cn("flex items-center gap-2")} style:margin-left={`${(level - 1) * 3}rem`}>
     <!-- TREE::NODE -->
-    <div class="border-border flex w-full items-center gap-2 rounded-lg border py-1 pr-2 pl-4">
+    <div class="border-border e flex w-full items-center gap-2 rounded-lg border py-1 pl-4 pr-2">
       {#if isLastNode}
         <Popover>
           <PopoverTrigger>
@@ -113,31 +113,12 @@
 
               <CommandGroup heading="Shortcut Key"></CommandGroup>
 
-              {@const idParts = node.id.split("/")}
-              {@const parentParts = idParts.splice(0, idParts.length - 1)}
-              {@const parentPath = parentParts.join("/")}
-              <CommandGroup heading="ID">
-                <InputField
-                  name="{node.id}/id"
-                  class="px-2"
-                  prefix={parentPath ? `${parentPath}/` : ""}
-                  value={idParts[idParts.length - 1]}
-                  onblur={(e) => {
-                    const value = e.currentTarget.value;
-                    const newValue = parentPath ? `${parentPath}/${value}` : value;
-                    onEditCategoryId(node.id, newValue);
-                  }}
-                ></InputField>
-              </CommandGroup>
-
               <CommandGroup heading="Label">
                 <InputField
                   name="{node.id}/label"
-                  class="px-2"
                   value={node.label}
-                  onblur={(e) => {
+                  oninput={(e) => {
                     const value = e.currentTarget.value;
-
                     onEditCategory({
                       id: node.id,
                       type: node.type,
@@ -145,6 +126,17 @@
                       text_color: node.text_color,
                       label: value,
                     });
+                  }}
+                ></InputField>
+              </CommandGroup>
+
+              <CommandGroup heading="ID">
+                <InputField
+                  name="{node.id}/id"
+                  value={node.id}
+                  onblur={(e) => {
+                    const value = e.currentTarget.value;
+                    onEditCategoryId(node.id, value.toLocaleLowerCase());
                   }}
                 ></InputField>
               </CommandGroup>
@@ -191,7 +183,7 @@
         {#if assignedProperties.length > 0}
           <HoverCards align="center" openDelay={200} contentClass="p-2">
             {#snippet trigger()}
-              <Badge variant="outline" class="cursor-pointer">
+              <Badge variant="outline" class="cursor-pointer rounded-lg">
                 {assignedProperties.length > 1 ? `${assignedProperties.length} Properties` : "1 Property"}
               </Badge>
             {/snippet}
@@ -241,7 +233,7 @@
   </div>
 
   {#if node.children.length}
-    {#each node.children as child (child.id)}
+    {#each node.children as child}
       {@const level = child.id.split("/").length}
       {@render TreeNode({
         labelConfig: props.labelConfig,

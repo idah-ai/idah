@@ -12,7 +12,7 @@
     dataset: DatasetRecord;
     newRecord: boolean;
   }
-  let { dataset, newRecord, fieldErrors, onValueChange }: Props = $props();
+  let { dataset, newRecord, onValueChange }: Props = $props();
 
   // Variables
   let resource = "dataset";
@@ -45,7 +45,7 @@
     label="Name"
     placeholder="Enter dataset name"
     required
-    errors={fieldErrors["name"]}
+    errors={dataset.errors?.["name"]}
     bind:value={name}
   />
 
@@ -55,9 +55,9 @@
     label="Modality"
     placeholder="Select modality"
     choices={modalityOptions}
-    required={newRecord}
+    required
     disabled={!newRecord}
-    errors={fieldErrors["modality"]}
+    errors={dataset.errors?.["modality"]}
     bind:value={modality}
   />
 </Form>

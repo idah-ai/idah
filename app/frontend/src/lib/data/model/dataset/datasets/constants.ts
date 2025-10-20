@@ -19,4 +19,6 @@ export interface DatasetStatusBadgeProps extends LabelValue<string, DatasetRecor
   variant: BadgeVariant;
 }
 
-export const datasetsStatuses: DatasetStatusBadgeProps[] = [{ label: "Pending", value: "pending", variant: "warning" }];
+export const datasetsStatuses: DatasetStatusBadgeProps[] = [
+  { label: "Pending", value: "pending", variant: "secondary" },
+];

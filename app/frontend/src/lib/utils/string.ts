@@ -76,13 +76,6 @@ export function underscorize(str: string): string {
     .toLowerCase();
 }
 
-export function slugify(str: string): string {
-  return str
-    .toLowerCase()
-    .replace(/ /g, "-")
-    .replace(/[^\w-]+/g, ""); // Remove all non-word chars except hyphen
-}
-
 export async function generateHash(message: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(message);

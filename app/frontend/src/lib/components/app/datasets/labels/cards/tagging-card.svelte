@@ -61,7 +61,7 @@
   <!-- CONTENT -->
   {#if showContent}
     <CardContent class="flex flex-col gap-4 px-0">
-      <PropertyOptions property={tag} onSetValue={setTag}></PropertyOptions>
+      <PropertyOptions propertyKey="taggings" property={tag} onSetValue={setTag}></PropertyOptions>
     </CardContent>
   {/if}
 </Card>

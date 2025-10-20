@@ -14,10 +14,13 @@
   import { mediaBackendDataSource } from "@/data/model/media/medias/medias-record";
   import { refetches } from "@/utils/refetch";
 
+  import { EntryRecord } from "@/data/model/dataset/entries/record";
+
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
 
   // Props
-  let { action, title, open = $bindable() }: FormModalBaseProps = $props();
+  interface Props extends FormModalBaseProps {}
+  let { action, title, open = $bindable() }: Props = $props();
 
   // Variables
   interface UploadStatuses {
@@ -46,9 +49,10 @@
 
   // Functions
   function resetForm(): void {
-    selectedMedias = null;
-    uploadStatuses = [];
-    uploading = false;
+    entry = new EntryRecord({
+      type: EntryRecord.type,
+      attributes: {},
+    });
   }
 
   function handleFilesSelected(selectedFiles: FileList): void {
@@ -101,7 +105,6 @@
 
         media.status = "success";
       } catch (error) {
-        console.error(error);
         media.status = "error";
       }
     }
@@ -116,7 +119,6 @@
     try {
       await uploadMedia();
     } catch (error) {
-      console.error(error);
     } finally {
       uploading = false;
     }
@@ -142,9 +144,9 @@
             {#if status === "uploading"}
               <Spinner size="sm"></Spinner>
             {:else if status === "success"}
-              <Badge>Uploaded</Badge>
+              <Badge class="rounded-lg">Uploaded</Badge>
             {:else if status === "error"}
-              <Badge variant="destructive">Error</Badge>
+              <Badge variant="destructive" class="rounded-lg">Error</Badge>
             {/if}
           </div>
         </div>

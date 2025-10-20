@@ -52,6 +52,7 @@ jobs:
             dataset:
               - added|modified: '${{ env.DATASET_DIR }}/**'
 
+  
   frontend:
     name: Frontend
     if: ${{ needs.changes.outputs.frontend == 'true' }}
@@ -109,15 +110,15 @@ jobs:
         run: |
           pnpm prettier --check ${{ steps.filter-format.outputs.js_files }}
 
-      # - name: Run Svelte Check
-      #   if: ${{ steps.filter.outputs.js == 'true' }}
-      #   run: |
-      #     pnpm run check --output human
+      - name: Run Svelte Check
+        if: ${{ steps.filter.outputs.js == 'true' }}
+        run: |
+          pnpm run check --output human
 
-      # - name: Run Unit Tests
-      #   if: ${{ steps.filter.outputs.js == 'true' }}
-      #   run: |
-      #     pnpm test
+      - name: Run Unit Tests
+        if: ${{ steps.filter.outputs.js == 'true' }}
+        run: |
+          pnpm test
 
   iam:
     name: IAM Service

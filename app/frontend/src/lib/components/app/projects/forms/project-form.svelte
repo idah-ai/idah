@@ -11,7 +11,7 @@
   interface Props extends FormBaseProps {
     project: ProjectRecord;
   }
-  let { project, fieldErrors, onValueChange }: Props = $props();
+  let { project, onValueChange }: Props = $props();
 
   // Variables
   let resource: string = ProjectRecord.type;
@@ -33,9 +33,9 @@
     label="Name"
     placeholder="Enter project name"
     required
-    errors={fieldErrors["name"]}
+    errors={project.errors["name"]}
     bind:value={name}
-  ></InputField>
+  />
 
   <!-- PROJECT::DESCRIPTION -->
   <TextareaField
@@ -43,7 +43,7 @@
     label="Description"
     placeholder="Enter project description"
     required
-    errors={fieldErrors["description"]}
+    errors={project.errors["description"]}
     bind:value={description}
-  ></TextareaField>
+  />
 </Form>

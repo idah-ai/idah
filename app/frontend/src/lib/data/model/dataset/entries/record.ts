@@ -37,8 +37,7 @@ export class EntryRecord extends Record {
     const defaultBadgeProps: EntryPriorityBadgeProps = {
       label: "Medium",
       value: 0,
-      variant: "secondary",
-      iconColor: "#1E90FF", // DodgerBlue
+      variant: "outline",
     };
 
     const foundEntryPriority = entryPriorities.find((p) => p.value === this.priority);
@@ -50,7 +49,7 @@ export class EntryRecord extends Record {
     const defaultBadgeProps: EntryStatusBadgeProps = {
       label: "Pending",
       value: "pending",
-      variant: "warning",
+      variant: "outline",
     };
 
     const foundEntryStatus = entryStatuses.find((s) => s.value === this.status);

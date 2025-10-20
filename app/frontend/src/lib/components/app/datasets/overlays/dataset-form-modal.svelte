@@ -23,7 +23,6 @@
   // Variables
   let projectId: string | undefined = $derived(page.params.projectId);
   let newRecord: boolean = $derived(action === "create");
-  let fieldErrors: Hash = $state({});
   let submitting: boolean = $state(false);
 
   let dataset: DatasetRecord = $derived(
@@ -40,7 +39,6 @@
 
   // Functions
   function resetForm(): void {
-    fieldErrors = {};
     dataset = new DatasetRecord({
       type: "datasets:datasets",
       attributes: {
@@ -96,21 +94,10 @@
   }
 
   async function submit(): Promise<void> {
-    fieldErrors = {};
     submitting = true;
-    const schema: ZodSchema = newRecord ? createDatasetSchema : updateDatasetSchema;
 
     try {
-      const validated = validateData(schema, {
-        name: dataset.name,
-        modality: dataset.modality,
-      });
-
-      if (!validated.success) {
-        fieldErrors = getFieldErrors(validated.error);
-        throw new Error("Failed to submit form");
-      }
-
+      // const validated = datasetSchema.safeParse(dataset);
       if (newRecord) {
         await createDataset();
       } else {
@@ -124,5 +111,5 @@
 </script>
 
 <FormModal {action} {title} loading={submitting} onCancel={resetForm} onConfirm={submit} bind:open>
-  <DatasetForm {dataset} {fieldErrors} {newRecord} onValueChange={setValue}></DatasetForm>
+  <DatasetForm {dataset} {newRecord} onValueChange={setValue}></DatasetForm>
 </FormModal>

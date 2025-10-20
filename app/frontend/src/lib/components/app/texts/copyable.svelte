@@ -7,37 +7,37 @@
 
   import { truncate } from "@/utils/string";
 
-  // Props
-  interface Props {
-    title?: string;
-    value: string;
-    slotValue?: Snippet;
-  }
-  let { title = "value", value, slotValue }: Props = $props();
+	// Props
+	interface Props {
+		title?: string;
+		value: string;
+		slotValue?: Snippet;
+	}
+	let { title = "value", value, slotValue }: Props = $props();
 
-  // Variables
-  let copied: boolean = $state(false);
+	// Variables
+	let copied: boolean = $state(false);
 
-  // Functions
-  function copyEmailToClipboard(): void {
-    copied = true;
-    navigator.clipboard.writeText(value);
-    setTimeout(() => {
-      removeCopiedState();
-    }, 3000);
-  }
+	// Functions
+	function copyEmailToClipboard(): void {
+		copied = true;
+		navigator.clipboard.writeText(value);
+		setTimeout(() => {
+			removeCopiedState();
+		}, 3000);
+	}
 
-  function removeCopiedState(): void {
-    copied = false;
-  }
+	function removeCopiedState(): void {
+		copied = false;
+	}
 </script>
 
 <div id="email-container" class="hover:bg-primary/10 group inline-flex items-center gap-2 rounded-md px-2 py-0.5">
-  {#if slotValue}
-    {@render slotValue()}
-  {:else}
-    <Text size="sm">{truncate(value)}</Text>
-  {/if}
+	{#if slotValue}
+		{@render slotValue()}
+	{:else}
+		<Text size="sm">{truncate(value)}</Text>
+	{/if}
 
   <TooltipProvider disableCloseOnTriggerClick>
     <Tooltip delayDuration={0}>
@@ -55,9 +55,9 @@
         </button>
       </TooltipTrigger>
 
-      <TooltipContent>
-        {copied ? "Copied!" : `Copy ${title}`}
-      </TooltipContent>
-    </Tooltip>
-  </TooltipProvider>
+			<TooltipContent>
+				{copied ? "Copied!" : `Copy ${title}`}
+			</TooltipContent>
+		</Tooltip>
+	</TooltipProvider>
 </div>

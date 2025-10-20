@@ -14,15 +14,11 @@
   interface Props extends FormFieldBaseProps {
     type?: HTMLInputTypeAttribute;
     value: string | null;
-    prefix?: string;
-    suffix?: string;
     oninput?: FormEventHandler<HTMLInputElement> | null | undefined;
     onblur?: FormEventHandler<HTMLInputElement> | null | undefined;
   }
   let {
     value = $bindable(null),
-    prefix = undefined,
-    suffix = undefined,
     oninput = undefined,
     onblur = undefined,
     name,

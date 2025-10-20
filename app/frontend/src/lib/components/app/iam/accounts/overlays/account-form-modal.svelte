@@ -21,7 +21,6 @@
 
   // Variables
   let newRecord: boolean = $derived(action === "create");
-  let fieldErrors: Hash = $state({});
   let submitting: boolean = $state(false);
 
   let account: AccountRecord = $derived(
@@ -44,7 +43,6 @@
   }
 
   function resetForm(): void {
-    fieldErrors = {};
     account = new AccountRecord({
       type: AccountRecord.type,
       attributes: {
@@ -104,30 +102,15 @@
   }
 
   async function submit(): Promise<void> {
-    fieldErrors = {};
     submitting = true;
-    const schema: ZodSchema = newRecord ? createAccountSchema : updateAccountSchema;
 
     try {
-      const validated = validateData(schema, {
-        name: account.name,
-        email: account.email,
-        sso_channel: account.sso_channel,
-        enabled: account.enabled,
-      });
-
-      if (!validated.success) {
-        fieldErrors = getFieldErrors(validated.error);
-        throw new Error("Failed to submit form");
-      }
-
       if (newRecord) {
         await createAccount();
       } else {
         await updateAccount();
       }
     } catch (error) {
-      console.error(error);
     } finally {
       submitting = false;
     }
@@ -135,5 +118,5 @@
 </script>
 
 <FormModal {action} {title} loading={submitting} onCancel={resetForm} onConfirm={submit} bind:open>
-  <AccountForm {account} {fieldErrors} onValueChange={setValue} />
+  <AccountForm {account} onValueChange={setValue} />
 </FormModal>
