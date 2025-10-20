@@ -14,6 +14,7 @@ RSpec.describe Project, database: true do
         )
       )
     }
+
     let!(:test_project2) {
       system_repo.find!(
         system_repo.create(
@@ -23,12 +24,8 @@ RSpec.describe Project, database: true do
     }
 
     describe "scope definitions" do
-      context "scope: all" do
-        before do
-          @test_rights = ["#{described_class.resource}.*.*"]
-        end
-        subject { described_class.new(Verse::Auth::Context.new(@test_rights)) }
-
+      context "scope: all", as: :admin do
+        subject { described_class.new(current_auth_context) }
         it "returns all projects" do
           projects = subject.index({})
 
@@ -36,54 +33,41 @@ RSpec.describe Project, database: true do
         end
       end
 
-      # scope: projects the user owns/creates
-      context "scope: own" do
+      context "scope: as_user", as: :user do
+        subject { described_class.new(current_auth_context) }
         before do
-          @test_rights = ["#{described_class.resource}.*.own"]
-          @test_account_id = 2
-        end
-        subject { described_class.new(Verse::Auth::Context.new(@test_rights, metadata: { id: @test_account_id })) }
+          # add testing user as testing_project's member
+          project_member_repo.create(
+            project_id: test_project2.id,
+            account_id: current_auth_context.metadata[:id],
+            name: "test user",
+            email: "test@email.com",
+            permission_set: "annotator",
+          )
 
-        before do
-          @created_project = system_repo.find!(
-            subject.create(
-              name: "testing_project_created",
-            )
+          # testing user creates a project
+          @user_project = subject.create(
+            name: "user_project",
           )
         end
 
-        it "returns projects the user owns/creates" do
-          own_projects = subject.index({})
+        # subject { described_class.new(current_auth_context) }
+        it "returns user-scoped projects" do
+          projects = subject.index({})
 
-          expect(own_projects.size).to eq(1)
-          expect(own_projects.first.name).to eq(@created_project.name)
-        end
-      end
+          # binding.pry
+          expect(projects.size).to eq(2)
 
-      # scope: projects the user is a member of
-      context "scope: member" do
-        before do
-          @test_rights = ["#{described_class.resource}.*.member", "#{ProjectMember::Repository.resource}.*.*"]
-          @test_account_id = 1
-        end
-        subject { described_class.new(Verse::Auth::Context.new(@test_rights, metadata: { id: @test_account_id })) }
-
-        before do
-          @testing_project = test_project2
-          project_member_repo.find!(
-            project_member_repo.create(
-              project_id: @testing_project.id,
-              account_id: @test_account_id,
-              name: "annotator_member",
-              email: "annotator@email.com",
-            )
-          )
-        end
-        it "returns projects the user is a member of" do
-          member_projects = subject.index({})
-
-          expect(member_projects.size).to eq(1)
-          expect(member_projects.first.name).to eq(@testing_project.name)
+          # projects that is a member of or owned
+          account_id = current_auth_context.metadata[:id]
+          projects.each do |project|
+            expect(
+              project_member_repo.find_by(
+                { project_id: project.id,
+                  account_id: account_id }
+              ) || project.created_by_id == account_id
+            ).to be_truthy
+          end
         end
       end
     end

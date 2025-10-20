@@ -39,5 +39,12 @@ module Project
         end
       end
     end
+
+    def create(attributes)
+      # TODO: remove mockings
+      attributes[:created_by_id] = auth_context.metadata[:id] || 1 unless attributes[:created_by_id]
+
+      super(attributes)
+    end
   end
 end
