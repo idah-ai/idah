@@ -3,29 +3,39 @@
   import { toast } from "svelte-sonner";
   import { uuidv7 } from "uuidv7";
 
-  import Button from "@/components/ui/button/button.svelte";
-  import CommandManager from "@/command/CommandManager";
   import {
     CommandDialog,
-    CommandGroup,
-    CommandItem,
-    CommandShortcut,
-    CommandSeparator,
     CommandEmpty,
+    CommandGroup,
     CommandInput,
+    CommandItem,
     CommandList,
+    CommandSeparator,
+    CommandShortcut,
   } from "$lib/components/ui/command";
+  import CommandManager from "@/command/CommandManager";
+  import Button from "@/components/ui/button/button.svelte";
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-  import SidebarProvider from "@/components/ui/sidebar/sidebar-provider.svelte";
   import SidebarInset from "@/components/ui/sidebar/sidebar-inset.svelte";
+  import SidebarProvider from "@/components/ui/sidebar/sidebar-provider.svelte";
 
   import { ResizableHandle, ResizablePane, ResizablePaneGroup } from "@/components/ui/resizable";
   import { AnnotationRecord } from "@/data/model/dataset/annotations/record";
 
+  import { ScrollArea } from "@/components/ui/scroll-area";
   import type { AnnotationValue } from "@/context/AnnotationContext";
-  import { annotationsIndexedDB, AnnotationsIndexedDB } from "./video-annotation-activity/indexedDB";
-  import TimelineTable from "./video-annotation-activity/timeline-table/timeline-table.svelte";
   import type { IActivityContext } from "@/plugin/interface/Activity";
+  import { ShortcutManager } from "@/shortcut/ShortcutManager";
+  import AnnotationFooter from "./layout/footer/AnnotationFooter.svelte";
+  import AnnotationFooterToolbar from "./layout/footer/AnnotationFooterToolbar.svelte";
+  import AnnotationHeaderBar from "./layout/header/AnnotationHeaderBar.svelte";
+  import AnnotationSidebar from "./video-annotation-activity/annotation-sidebar.svelte";
+  import { requiredFullfilled } from "./video-annotation-activity/categoryProperties";
+  import { boundingBoxes, idb_updated_at } from "./video-annotation-activity/idb_store.svelte";
+  import { annotationsIndexedDB, AnnotationsIndexedDB } from "./video-annotation-activity/indexedDB";
+  import { registerVisualModeShortcuts } from "./video-annotation-activity/shortcut";
+  import SvgOverlay from "./video-annotation-activity/svg-overlay.svelte";
+  import TimelineTable from "./video-annotation-activity/timeline-table/timeline-table.svelte";
   import Video from "./video-annotation-activity/video.svelte";
   import type {
     Point,
@@ -34,15 +44,6 @@
     VideoShape,
   } from "./video-annotation-activity/VideoAnnotationContext";
   import VideoController from "./video-annotation-activity/VideoController.svelte";
-  import AnnotationSidebar from "./video-annotation-activity/annotation-sidebar.svelte";
-  import SvgOverlay from "./video-annotation-activity/svg-overlay.svelte";
-  import { ScrollArea } from "@/components/ui/scroll-area";
-  import AnnotationHeaderBar from "./layout/header/AnnotationHeaderBar.svelte";
-  import AnnotationFooter from "./layout/footer/AnnotationFooter.svelte";
-  import AnnotationFooterToolbar from "./layout/footer/AnnotationFooterToolbar.svelte";
-  import { boundingBoxes, idb_updated_at } from "./video-annotation-activity/idb_store.svelte";
-  import { registerVisualModeShortcuts } from "./video-annotation-activity/shortcut";
-  import { ShortcutManager } from "@/shortcut/ShortcutManager";
 
   // Props
   interface Props {
@@ -73,54 +74,54 @@
   let videoController: VideoController;
 
   let annotationsIDB: AnnotationsIndexedDB | undefined = $state();
-  let isPlaying = $state(false)
-  let volume = $state({level: 0, mute: false})
+  let isPlaying = $state(false);
+  let volume = $state({ level: 0, mute: false });
 
   let commandOpen = $state(false);
-  registerVisualModeShortcuts({
-    player: () => player,
-    toggleCommandCB: () => {
-      commandOpen = !commandOpen;
-    },
-    flush: () => context.annotations.flush(),
-    switch_mode: (_mode: string) => {},
-    zoom: { in: () => {}, out: () => {} },
-  });
+  // registerVisualModeShortcuts({
+  //   player: () => player,
+  //   toggleCommandCB: () => {
+  //     commandOpen = !commandOpen;
+  //   },
+  //   flush: () => context.annotations.flush(),
+  //   switch_mode: (_mode: string) => {},
+  //   zoom: { in: () => {}, out: () => {} },
+  // });
 
-  window.onkeydown = (e) => {
-    const current_mode = ShortcutManager.getCurrentMode();
-    const keymap = ShortcutManager.keyMap[current_mode];
+  // window.onkeydown = (e) => {
+  //   const current_mode = ShortcutManager.getCurrentMode();
+  //   const keymap = ShortcutManager.keyMap[current_mode];
 
-    if (!keymap) return console.error("no keymap found for", { current_mode });
+  //   if (!keymap) return console.error("no keymap found for", { current_mode });
 
-    const modifier_keys = [
-      e.altKey && "Alt",
-      e.ctrlKey && "Control",
-      e.metaKey && "Meta",
-      e.shiftKey && "Shift",
-    ].sort();
+  //   const modifier_keys = [
+  //     e.altKey && "Alt",
+  //     e.ctrlKey && "Control",
+  //     e.metaKey && "Meta",
+  //     e.shiftKey && "Shift",
+  //   ].sort();
 
-    const shortcut_keys = (
-      ["Control", "Alt", "Shift", "Meta"].includes(e.key)
-        ? [undefined]
-        : e.code.startsWith("Key")
-          ? [e.key.toLocaleUpperCase(), e.key.toLocaleLowerCase()]
-          : [e.code]
-    ).map((k) => [...modifier_keys, k].filter((k) => k).join("+"));
+  //   const shortcut_keys = (
+  //     ["Control", "Alt", "Shift", "Meta"].includes(e.key)
+  //       ? [undefined]
+  //       : e.code.startsWith("Key")
+  //         ? [e.key.toLocaleUpperCase(), e.key.toLocaleLowerCase()]
+  //         : [e.code]
+  //   ).map((k) => [...modifier_keys, k].filter((k) => k).join("+"));
 
-    for (let index = 0; index < shortcut_keys.length; index++) {
-      let shortcut_key = shortcut_keys[index];
+  //   for (let index = 0; index < shortcut_keys.length; index++) {
+  //     let shortcut_key = shortcut_keys[index];
 
-      let shortcut = keymap[shortcut_key];
+  //     let shortcut = keymap[shortcut_key];
 
-      if (!shortcut) continue;
+  //     if (!shortcut) continue;
 
-      e.preventDefault();
-      shortcut.action();
-      console.log({ shortcut_key, shortcut });
-      break;
-    }
-  };
+  //     e.preventDefault();
+  //     shortcut.action();
+  //     console.log({ shortcut_key, shortcut });
+  //     break;
+  //   }
+  // };
 
   // for now
   $effect(() => {
@@ -469,7 +470,7 @@
       let annotation_value_from = $state.snapshot(annotationValue) as AnnotationValue;
 
       // todo proper validation
-      if (annotationValue.category) {
+      if (requiredFullfilled(annotation_value_from, context.config.properties)) {
         addAnnotation(
           {
             type,
@@ -501,6 +502,7 @@
           annotation.value = value;
           annotation.metadata.updatedAt = updatedAt;
           annotation.synced = false;
+          selectedAnnotation = annotation;
 
           await annotationsIDB?.addAnnotations([annotation]);
           $idb_updated_at = new Date();
@@ -527,6 +529,8 @@
           annotation.value = value_from;
           annotation.metadata.updatedAt = updatedAt;
           annotation.synced = false;
+
+          selectedAnnotation = annotation;
 
           let p = context.annotations.update({
             id: annotation.metadata.id,
@@ -598,7 +602,8 @@
   <AnnotationHeaderBar
     {context}
     bind:mode
-    onSelectMode={() => {
+    onSelectMode={(newMode) => {
+      mode = newMode;
       selectedAnnotation = undefined;
     }}
   />
@@ -617,12 +622,17 @@
         onEditValue={(value: AnnotationValue, valueMode: string) => {
           annotationValue = value;
           mode = valueMode;
-          if (selectedAnnotation) {
-            updateAnnotationValue(selectedAnnotation, value);
+          if (selectedAnnotation && requiredFullfilled(annotationValue, context.config.properties)) {
+            selectedAnnotation.value = value;
+            updateAnnotationValue($state.snapshot(selectedAnnotation), $state.snapshot(value));
           }
         }}
         onSelectAnnotation={selectAnnotation}
         {onDeleteAnnotation}
+        onSelectMode={(newMode) => {
+          mode = newMode;
+          selectedAnnotation = undefined;
+        }}
         {context}
         {mode}
         selected_id={selectedAnnotation?.metadata.id}
@@ -654,13 +664,17 @@
           onEditValue={(value: AnnotationValue, valueMode: string) => {
             annotationValue = value;
             mode = valueMode;
-            if (selectedAnnotation) {
+            if (selectedAnnotation && requiredFullfilled(annotationValue, context.config.properties)) {
               selectedAnnotation.value = value;
-              updateAnnotationValue(selectedAnnotation, value);
+              updateAnnotationValue($state.snapshot(selectedAnnotation), $state.snapshot(value));
             }
           }}
           onSelectAnnotation={selectAnnotation}
           {onDeleteAnnotation}
+          onSelectMode={(newMode) => {
+            mode = newMode;
+            selectedAnnotation = undefined;
+          }}
           {context}
           {mode}
           selected_id={selectedAnnotation?.metadata.id}
@@ -687,10 +701,10 @@
               onFramesChange={(current, total, playing) => {
                 currentFrame = current;
                 totalFrames = total;
-                isPlaying = playing
+                isPlaying = playing;
                 // console.debug({onFramesChange: {current, total, playing}})
               }}
-              onVolumeChange={(level, muted) => volume = {level, muted} }
+              onVolumeChange={(level, muted) => (volume = { level, muted })}
             />
           </SvgOverlay>
         </SidebarInset>
