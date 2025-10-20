@@ -5,7 +5,6 @@ import type { INoteFeed } from "@/plugin/interface/Activity";
 interface NoteSidebarStore {
   lastUpdated: Date;
   open: boolean;
-  showFilters: boolean;
 
   /** Position and visibility of the comment box */
   noteBox: {
@@ -22,13 +21,14 @@ interface NoteSidebarStore {
 export const noteSidebarStore = writable<NoteSidebarStore>({
   lastUpdated: new Date(),
   open: true,
-  showFilters: false,
+
   noteBox: {
     show: false,
     contentMd: "",
     posX: 0,
     posY: 0,
   },
+
   selectedNoteFeed: null,
 });
 

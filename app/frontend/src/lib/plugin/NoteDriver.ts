@@ -107,7 +107,7 @@ export function createNoteDriver(entryId: string): INoteDriver {
         return new Promise<Array<INoteComment>>((resolve, reject) => {
           noteCommentsBackendDataSource
             .list({
-              filters: { ...listOptions.filters, entry_id: entryId },
+              filters: { ...listOptions.filters },
               pagination: listOptions.pagination,
               sort: listOptions.sort,
             })

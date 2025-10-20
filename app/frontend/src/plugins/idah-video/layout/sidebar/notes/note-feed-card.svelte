@@ -1,9 +1,5 @@
 <script lang="ts">
-  import {
-    MapPinIcon,
-    MessageSquareIcon,
-    SquareDashedIcon,
-  } from "@lucide/svelte";
+  import { MapPinIcon, MessageSquareIcon, SquareDashedIcon } from "@lucide/svelte";
   import { getContext } from "svelte";
 
   import MarkdownPreview from "@/components/app/markdown/markdown-preview.svelte";
@@ -12,10 +8,7 @@
 
   import { cn } from "@/utils";
 
-  import type {
-    IActivityContext,
-    INoteFeed,
-  } from "@/plugin/interface/Activity";
+  import type { IActivityContext, INoteFeed } from "@/plugin/interface/Activity";
 
   import NoteDropdownMenus from "./note-dropdown-menus.svelte";
   import { noteSidebarStore } from "./note-sidebar-stores";
@@ -44,6 +37,7 @@
   } = $derived(noteFeed);
 
   type CommentType = "general" | "annotation" | "video_frame";
+  let isListView = $derived(!$noteSidebarStore.selectedNoteFeed);
   let commentType: CommentType = $derived.by(() => {
     if (annotation_id) return "annotation";
     if (Object.keys(position || {}).length > 0) return "video_frame";
@@ -55,15 +49,15 @@
     $noteSidebarStore.selectedNoteFeed = noteFeed;
   }
 
-  function replyNoteFeed() {}
+  function replyNoteFeed() {
+    $noteSidebarStore.selectedNoteFeed = noteFeed;
+  }
 </script>
 
 <div
   role="button"
   tabindex={0}
-  class={cn(
-    "border-1 hover:bg-secondary group flex cursor-pointer flex-col gap-2 rounded-lg border-transparent p-2",
-  )}
+  class={cn("border-1 hover:bg-secondary group flex cursor-pointer flex-col gap-2 rounded-lg border-transparent p-2")}
   onkeypress={handleClickNoteFeedCard}
   onclick={handleClickNoteFeedCard}
 >
@@ -72,14 +66,11 @@
     <!-- HEADER::TITLE -->
     <div class="flex flex-1 items-center gap-2">
       <div
-        class={cn(
-          "flex size-8 shrink-0 items-center justify-center rounded-full ",
-          {
-            "bg-purple-300": commentType === "annotation",
-            "bg-yellow-300": commentType === "video_frame",
-            "bg-emerald-300": commentType === "general",
-          },
-        )}
+        class={cn("flex size-8 shrink-0 items-center justify-center rounded-full ", {
+          "bg-purple-300": commentType === "annotation",
+          "bg-yellow-300": commentType === "video_frame",
+          "bg-emerald-300": commentType === "general",
+        })}
       >
         {#if commentType === "annotation"}
           <SquareDashedIcon class="size-3.5" />
@@ -115,16 +106,18 @@
   <div class="flex min-h-16 flex-1 flex-col items-start gap-1 text-sm">
     <MarkdownPreview value={content_md} />
 
-    <Button
-      variant="link"
-      size="sm"
-      class="pl-0"
-      onclick={(e) => {
-        e.stopPropagation();
-        replyNoteFeed();
-      }}
-    >
-      Reply
-    </Button>
+    {#if isListView}
+      <Button
+        variant="link"
+        size="sm"
+        class="pl-0"
+        onclick={(e) => {
+          e.stopPropagation();
+          replyNoteFeed();
+        }}
+      >
+        Reply
+      </Button>
+    {/if}
   </div>
 </div>
