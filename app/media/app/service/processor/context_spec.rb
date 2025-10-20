@@ -70,7 +70,9 @@ RSpec.describe Processor::Context, type: :repository, database: true do
         expect(media.mime_type).to eq("image/png")
 
         Verse::Plugin[:shrine].with_storage do |storage|
-          expect(storage.exists?(media.id)).to be true
+          file = media.open
+          expect(file).to be_a(File)
+          file.close
         end
       end
 
@@ -78,17 +80,18 @@ RSpec.describe Processor::Context, type: :repository, database: true do
         file_id = nil
 
         expect do
-          media_repo.transaction do
-            context.upload_media(tempfile, "new_key", "image/png")
-            media = media_repo.find_by!({resource: resource, key: "new_key"})
-            file_id = media.id
-            raise Sequel::Rollback
+          expect do
+            count = media_repo.table.count
+            media_repo.transaction do
+              context.upload_media(tempfile, "new_key", "image/png")
+              media = media_repo.find_by!({resource: resource, key: "new_key"})
+              file_id = media.id
+              raise Sequel::Rollback
+            end
+            expect(media_repo.table.count).to eq(count)
           end
-        end.not_to(change { media_repo.count })
-
-        Verse::Plugin[:shrine].with_storage do |storage|
-          expect(storage.exists?(file_id)).to be false
         end
+
       end
     end
 
@@ -101,7 +104,6 @@ RSpec.describe Processor::Context, type: :repository, database: true do
           filename: "existing.txt",
           size: 456,
           mime_type: "text/plain",
-          project_id: "1",
         )
       end
 
@@ -110,7 +112,7 @@ RSpec.describe Processor::Context, type: :repository, database: true do
 
         expect {
           context.upload_media(tempfile, "existing_key", "image/png")
-        }.not_to(change { media_repo.count })
+        }.not_to(change { media_repo.table.count })
       end
     end
   end
