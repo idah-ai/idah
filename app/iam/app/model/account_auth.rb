@@ -20,8 +20,6 @@ module AccountAuth
 
     field :role_rights, type: Array
 
-    # other roles switcheable.
-
     field :auth_token, type: String, visible: false
     field :refresh_token, type: String, visible: false
 
