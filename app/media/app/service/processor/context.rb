@@ -40,8 +40,8 @@ module Processor
       medias.transaction do
         record = medias.find_by(
           {
-            resource: arguments.resource,
-            key: key
+            resource:,
+            key:
           }
         )
 
@@ -56,6 +56,8 @@ module Processor
           "Uploading #{resource}/#{key} with mime_type #{mime_type}"
         }
 
+        filename = io.respond_to?(:path) ? File.basename(io.path) : "streamed_file"
+
         Verse::Plugin[:shrine].with_storage do |storage|
           file = storage.upload(io)
 
@@ -69,12 +71,11 @@ module Processor
           medias.create(
             {
               id: file.id,
-              resource: resource,
-              key: key,
-              filename: File.basename(file_path),
+              resource:,
+              key:,
+              filename:,
               size: file.size,
               mime_type: mime_type || file.mime_type,
-              project_id: "1",
               created_by: nil,
               created_role: "processor"
             }
