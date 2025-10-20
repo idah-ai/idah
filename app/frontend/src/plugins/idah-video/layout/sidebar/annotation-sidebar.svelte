@@ -52,25 +52,25 @@
     return acc;
   }, new Map<string, CategoryConfiguration[]>());
 
-  let searchValue = $state("");
-  let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+  // let searchValue = $state("");
+  // let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
-  let filteredTools = $derived.by(async () => {
-    if (!searchValue) return tools;
+  // let filteredTools = $derived.by(async () => {
+  //   if (!searchValue) return tools;
 
-    return new Promise<Map<string, CategoryConfiguration[]>>((resolve) => {
-      const filtered = new Map<string, CategoryConfiguration[]>();
-      for (const [toolType, categories] of tools) {
-        const matchingCategories = categories.filter((category) =>
-          category.label.toLowerCase().includes(searchValue.toLowerCase()),
-        );
-        if (matchingCategories.length > 0) {
-          filtered.set(toolType, matchingCategories);
-        }
-      }
-      resolve(filtered);
-    });
-  });
+  //   return new Promise<Map<string, CategoryConfiguration[]>>((resolve) => {
+  //     const filtered = new Map<string, CategoryConfiguration[]>();
+  //     for (const [toolType, categories] of tools) {
+  //       const matchingCategories = categories.filter((category) =>
+  //         category.label.toLowerCase().includes(searchValue.toLowerCase()),
+  //       );
+  //       if (matchingCategories.length > 0) {
+  //         filtered.set(toolType, matchingCategories);
+  //       }
+  //     }
+  //     resolve(filtered);
+  //   });
+  // });
 
   // Functions
   function categorySelection(mode: string, category?: CategoryDefinition) {
@@ -91,19 +91,19 @@
     }
   }
 
-  function searchCategory(e: Event) {
-    const value = (e.currentTarget as HTMLInputElement).value;
+  // function searchCategory(e: Event) {
+  //   const value = (e.currentTarget as HTMLInputElement).value;
 
-    // Clear existing timer
-    if (debounceTimer) {
-      clearTimeout(debounceTimer);
-    }
+  //   // Clear existing timer
+  //   if (debounceTimer) {
+  //     clearTimeout(debounceTimer);
+  //   }
 
-    // Set new timer for debounced search (300ms delay)
-    debounceTimer = setTimeout(() => {
-      searchValue = value;
-    }, 200);
-  }
+  //   // Set new timer for debounced search (300ms delay)
+  //   debounceTimer = setTimeout(() => {
+  //     searchValue = value;
+  //   }, 200);
+  // }
 </script>
 
 <Sidebar variant="inset" collapsible="none" class="w-xs">
