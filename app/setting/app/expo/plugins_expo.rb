@@ -3,14 +3,19 @@ class PluginsExpo < BaseExpo
 
   use_service Plugins::Service
 
-  expose on_http(:get, ":plugin/index.js") do
+  expose on_http(:get, ":plugin/file/:filename",
+    auth: nil,
+    renderer: Verse::Http::Renderer::Identity
+  ) do
     input do
       field :plugin, String
+      field :filename, String
     end
   end
-  def serve_frontend
-    service.serve_frontend(
-      params[:plugin]
-    )
+  def serve
+    service.serve(
+      params[:plugin],
+      params[:filename]
+    ) || server.not_found
   end
 end

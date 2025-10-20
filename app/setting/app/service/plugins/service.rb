@@ -5,5 +5,9 @@ module Plugins
         install_plugin()
       end
     end
+
+    def serve(plugin_name, filename)
+      raise "TODO: Implement plugin frontend serving"
+    end
   end
 end
