@@ -21,18 +21,17 @@ RSpec.describe Entry::Service, database: true do
       labels: ["cat", "dog"],
       labeling_configuration: { "width" => 100, "height" => 100 },
       workflow_configuration: {},
-      project_id:
+      project_id: project_id
     )
   end
 
   let(:attributes) do
     {
       priority: 1,
-      resource: "http://example.com/video.mp4",
       wf_step: "start",
       status: "pending",
       assigned_to_id: 1,
-      dataset_id:
+      dataset_id: dataset_id
     }
   end
 
@@ -41,7 +40,7 @@ RSpec.describe Entry::Service, database: true do
       {
         data: {
           type: "dataset:entries",
-          attributes:,
+          attributes: attributes,
           relationships: {
             dataset: {
               data: {
@@ -223,16 +222,12 @@ RSpec.describe Entry::Service, database: true do
   end
 
   describe "#index" do
-    before do
-      # Create first entry
-      entry
-
-      # Create second entry
+    let!(:entry2) do
       record = deserialize(
         {
           data: {
             type: "dataset:entries",
-            attributes: attributes.merge(priority: 2, resource: "http://example.com/video2.mp4"),
+            attributes: attributes.merge(priority: 2),
             relationships: {
               dataset: {
                 data: {
