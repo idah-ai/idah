@@ -18,10 +18,31 @@ module Account
 
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
+
+    def password_match?(password)
+      return false unless hashed_password
+
+      BCrypt::Password.new(hashed_password) == password
+    end
   end
 
   class Repository < Verse::Sequel::Repository
     self.table = "accounts"
     self.resource = Resource::Iam::Accounts
+
+    def login(email, password)
+      account = scoped(:login).where(email:).first
+
+      return nil unless account
+
+      # TODO: In Verse => return create_record(account, included: ["active_roles", "person"])
+      # set = prepare_included(["active_roles", "person", "state"], [account], record: AccountRecord)
+      account = decode(account)
+      account = self.class.model_class.new(account)
+
+      return account if account&.password_match?(password)
+
+      nil
+    end
   end
 end
