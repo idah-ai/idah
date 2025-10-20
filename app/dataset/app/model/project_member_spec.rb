@@ -62,6 +62,7 @@ RSpec.describe ProjectMember, database: true do
     describe "scope definitions" do
       context "scope: all", as: :admin do
         subject { described_class.new(current_auth_context) }
+
         it "returns all project members" do
           project_members = subject.index({})
 
@@ -71,6 +72,7 @@ RSpec.describe ProjectMember, database: true do
 
       context "scope: as_user", as: :user do
         subject { described_class.new(current_auth_context) }
+
         it "returns user-scoped members" do
           project_members = subject.index({})
 

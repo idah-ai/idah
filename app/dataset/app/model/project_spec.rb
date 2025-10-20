@@ -36,22 +36,25 @@ RSpec.describe Project, database: true do
       context "scope: as_user", as: :user do
         subject { described_class.new(current_auth_context) }
         before do
-          # add testing user as testing_project's member
+          @account_id = current_auth_context.metadata[:id]
+
+          # add testing user as testing project's member
           project_member_repo.create(
             project_id: test_project2.id,
-            account_id: current_auth_context.metadata[:id],
+            account_id: @account_id,
             name: "test user",
             email: "test@email.com",
             permission_set: "annotator",
           )
 
           # testing user creates a project
-          @user_project = subject.create(
+          subject.create(
             name: "user_project",
           )
+
+          @memberships = project_member_repo.index({ account_id: @account_id })
         end
 
-        # subject { described_class.new(current_auth_context) }
         it "returns user-scoped projects" do
           projects = subject.index({})
 
@@ -59,13 +62,11 @@ RSpec.describe Project, database: true do
           expect(projects.size).to eq(2)
 
           # projects that is a member of or owned
-          account_id = current_auth_context.metadata[:id]
           projects.each do |project|
             expect(
-              project_member_repo.find_by(
-                { project_id: project.id,
-                  account_id: account_id }
-              ) || project.created_by_id == account_id
+              @memberships.any? { |m|
+                m.project_id == project.id
+              } || project.created_by_id == @account_id
             ).to be_truthy
           end
         end

@@ -43,8 +43,6 @@ module Dataset
     # scope definition(s)
     def scoped(action)
       auth_context.can!(action, Resource::Dataset::Datasets) do |scope|
-        account_id = auth_context.metadata[:id] || 1
-
         scope.all? { table }
 
         scope.as_user? do
@@ -55,9 +53,16 @@ module Dataset
           project_ids = ProjectMember::Repository.new(auth_context).index({ account_id: }).map(&:project_id).uniq
 
           # datasets that are in projects that is a member of or owned datasets
-          table.where(id: project_ids).or(created_by_id: account_id)
+          table.where(project_id: project_ids).or(created_by_id: account_id)
         end
       end
+    end
+
+    def create(attributes)
+      # TODO: remove mockings
+      attributes[:created_by_id] = auth_context.metadata[:id] || 1 unless attributes[:created_by_id]
+
+      super(attributes)
     end
   end
 end
