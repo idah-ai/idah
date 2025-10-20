@@ -65,11 +65,11 @@ RSpec.describe Processor::Context, type: :repository, database: true do
       it "uploads the new media" do
         context.upload_media(tempfile, "new_key", "image/png")
 
-        media = media_repo.find_by({resource: resource, key: "new_key"})
+        media = media_repo.find_by({ resource: resource, key: "new_key" })
         expect(media).not_to be_nil
         expect(media.mime_type).to eq("image/png")
 
-        Verse::Plugin[:shrine].with_storage do |storage|
+        Verse::Plugin[:shrine].with_storage do |_storage|
           file = media.open
           expect(file).to be_a(File)
           file.close
@@ -84,14 +84,13 @@ RSpec.describe Processor::Context, type: :repository, database: true do
             count = media_repo.table.count
             media_repo.transaction do
               context.upload_media(tempfile, "new_key", "image/png")
-              media = media_repo.find_by!({resource: resource, key: "new_key"})
+              media = media_repo.find_by!({ resource: resource, key: "new_key" })
               file_id = media.id
               raise Sequel::Rollback
             end
             expect(media_repo.table.count).to eq(count)
           end
         end
-
       end
     end
 
