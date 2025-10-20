@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { type Snippet } from "svelte";
+  import { getContext, type Snippet } from "svelte";
   import {
     HEIGHT,
     ORIGIN,
@@ -51,6 +51,8 @@
     scale: 1,
     offset: [0, 0],
   });
+
+  let context = getContext("context");
 
   let height = $state(0);
   let width = $state(0);
@@ -208,7 +210,7 @@
               points={currentShape(annotation.shape, frame) || []}
               ratio={target_size}
               offset={zoomInfo.offset}
-              color={annotation.value.attributes?.data.color || "grey"}
+              color={context.config.categories.find(c => c.id == annotation.value?.category)?.color || "grey"}
               onmousedown={(e) => {
                 if (mode == "visual" || selected) {
                   e.stopPropagation();
@@ -227,7 +229,7 @@
               points={currentShape(annotation.shape, frame) || []}
               ratio={target_size}
               offset={zoomInfo.offset}
-              color={annotation.value.attributes?.data.color || "grey"}
+              color={context.config.categories.find(c => c.id == annotation.value?.category)?.color || "grey"}
               onmousedown={(e) => {
                 if (mode == "visual" || selected) {
                   e.stopPropagation();
@@ -247,7 +249,7 @@
       offset={zoomInfo.offset}
       cursor={cursor_downscaled}
       editable={mode == "video:bounding_box"}
-      color={selected?.value.attributes?.data.color || "gray"}
+      color={context.config.categories.find(c => c.id == selected?.value?.category)?.color || "grey"}
       onChange={(bb) => {
         onSelection("video:bounding_box", frame, bb, selected?.metadata.id);
         points = bb;

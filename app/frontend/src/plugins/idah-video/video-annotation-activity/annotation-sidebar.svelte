@@ -1,21 +1,27 @@
 <script lang="ts">
   import Sidebar from "@/components/ui/sidebar/sidebar.svelte";
 
-  import type { AnnotationValue } from "$lib/context/AnnotationContext";
-  import type { CategoryConfiguration, LabellingConfiguration, VideoAnnotation } from "./VideoAnnotationContext";
+  import Input from "@/components/ui/input/input.svelte";
   import SidebarContent from "@/components/ui/sidebar/sidebar-content.svelte";
-  import SidebarGroup from "@/components/ui/sidebar/sidebar-group.svelte";
   import SidebarGroupContent from "@/components/ui/sidebar/sidebar-group-content.svelte";
+  import SidebarGroup from "@/components/ui/sidebar/sidebar-group.svelte";
+  import SidebarHeader from "@/components/ui/sidebar/sidebar-header.svelte";
   import CategoriesSelection from "./categories-selection.svelte";
+
+  import type { AnnotationValue } from "$lib/context/AnnotationContext";
+  import type { CategoryField } from "$lib/data/model/dataset/labels";
+  import type { CategoryDefinition } from "@/context/ActivityContext";
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import type { AnnotationsIndexedDB } from "./indexedDB";
-  import type { CategoryDefinition } from "@/context/ActivityContext";
+  import AnnotationTabs from "./tabs/AnnotationTabs.svelte";
+  import type { CategoryConfiguration, LabellingConfiguration, VideoAnnotation } from "./VideoAnnotationContext";
 
   let {
     annotationValue,
     onEditValue,
     onSelectAnnotation,
     onDeleteAnnotation,
+    onSelectMode,
     context,
     mode,
     currentFrame,
@@ -27,13 +33,14 @@
     onEditValue: (annotationValue: AnnotationValue, mode: string) => void;
     onSelectAnnotation: (annotation: VideoAnnotation) => void;
     onDeleteAnnotation: (annotation: VideoAnnotation) => void;
+    onSelectMode: (mode: string) => void;
     context: IActivityContext;
     mode: string;
     db?: AnnotationsIndexedDB;
     selected_id?: string;
   } = $props();
 
-  let tools = (context.config as LabellingConfiguration).categories.reduce((acc, v: CategoryConfiguration) => {
+  let tools = context.config.categories.reduce((acc, v: CategoryField) => {
     if (!acc.has(v.type)) acc.set(v.type, [v]);
     else {
       let categories = acc.get(v.type);
@@ -44,26 +51,24 @@
       acc.set(v.type, categories);
     }
     return acc;
-  }, new Map<string, CategoryConfiguration[]>());
+  }, new Map<string, CategoryField[]>());
 
   let searchValue = $state("");
   let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
-  let filteredTools = $derived.by(async () => {
+  let filteredTools = $derived.by(() => {
     if (!searchValue) return tools;
 
-    return new Promise<Map<string, CategoryConfiguration[]>>((resolve) => {
-      const filtered = new Map<string, CategoryConfiguration[]>();
-      for (const [toolType, categories] of tools) {
-        const matchingCategories = categories.filter((category) =>
-          category.label.toLowerCase().includes(searchValue.toLowerCase()),
-        );
-        if (matchingCategories.length > 0) {
-          filtered.set(toolType, matchingCategories);
-        }
+    const filtered = new Map<string, CategoryField[]>();
+    for (const [toolType, categories] of tools) {
+      const matchingCategories = categories.filter((category) =>
+        category.label.toLowerCase().includes(searchValue.toLowerCase()),
+      );
+      if (matchingCategories.length > 0) {
+        filtered.set(toolType, matchingCategories);
       }
-      resolve(filtered);
-    });
+    }
+    return filtered;
   });
 
   // Functions
@@ -72,17 +77,15 @@
       onEditValue(
         {
           category: category.id,
-          label: category.name,
-          attributes: category,
         },
         mode,
       );
-    } else {
-      onEditValue(
-        Object.fromEntries(Object.entries(annotationValue).filter(([type, _]) => type == "categories")),
-        mode,
-      );
-    }
+    } // else {
+    //   onEditValue(
+    //     Object.fromEntries(Object.entries(annotationValue).filter(([type, _]) => type == "categories")),
+    //     mode,
+    //   );
+    // }
   }
 
   function searchCategory(e: Event) {
@@ -101,14 +104,36 @@
 </script>
 
 <Sidebar variant="inset" collapsible="none" class="w-xs">
-  <!-- <SidebarHeader>
-    {#if !tools.has(mode)}
-      <Input placeholder="search" />
-    {/if}
-  </SidebarHeader> -->
+  {#if !tools.has(mode)}
+    <SidebarHeader>
+      <AnnotationTabs></AnnotationTabs>
+
+      <Input placeholder="search" value={searchValue} oninput={(e) => searchCategory(e)} />
+    </SidebarHeader>
+  {/if}
+
   <SidebarContent>
-    {#each tools as [tool, categories]}
-      {#if !tools.has(mode) || mode == "visual"}
+    {#each filteredTools as [tool, categories]}
+      <!-- {#if !tools.has(mode) || mode == "visual"} -->
+      <SidebarGroup>
+        <SidebarGroupContent>
+          <CategoriesSelection
+            {db}
+            toolMode={tool == mode}
+            type={tool}
+            {currentFrame}
+            {categories}
+            selected_category={annotationValue.category}
+            {selected_id}
+            {onSelectAnnotation}
+            {onDeleteAnnotation}
+            {annotationValue}
+            onEditValue={(v) => onEditValue(v, tool)}
+            onSelect={(s) => categorySelection(tool, s)}
+          />
+        </SidebarGroupContent>
+      </SidebarGroup>
+      <!-- {:else if tool == mode}
         <SidebarGroup>
           <SidebarGroupContent>
             <CategoriesSelection
@@ -125,24 +150,7 @@
             />
           </SidebarGroupContent>
         </SidebarGroup>
-      {:else if tool == mode}
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <CategoriesSelection
-              {db}
-              toolMode={tool == mode}
-              type={tool}
-              {currentFrame}
-              {categories}
-              selected_category={annotationValue.category}
-              {selected_id}
-              {onSelectAnnotation}
-              {onDeleteAnnotation}
-              onSelect={(s) => categorySelection(tool, s)}
-            />
-          </SidebarGroupContent>
-        </SidebarGroup>
-      {/if}
+      {/if} -->
     {/each}
   </SidebarContent>
 </Sidebar>
