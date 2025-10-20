@@ -37,7 +37,7 @@ module Entry
         resource: Resource::Dataset::Entries,
         account_id:,
         project_id:,
-        allowed_user_roles: [:owner, :annotator]
+        allowed_permission_sets: [:owner, :annotator]
       )
 
       attr = record.attributes
@@ -111,13 +111,41 @@ module Entry
     end
 
     def update(record)
+      # TODO: remove mockings
+      account_id = auth_context.metadata[:id] || 1
+      dataset_id = entries.find!(record.id)&.id
+      project_id = dataset_service.show(dataset_id).project_id
+
+      members.authorize_action(
+        action: :update,
+        resource: Resource::Dataset::Entries,
+        account_id:,
+        project_id:,
+        allowed_permission_sets: [:owner, :annotator]
+      )
+
       entries.update!(record.id, record.attributes)
       entries.find!(record.id)
     end
 
     def delete(id)
+      # TODO: remove mockings
+      account_id = auth_context.metadata[:id] || 1
+      dataset_id = entries.find!(record.id)&.id
+      project_id = dataset_service.show(dataset_id).project_id
+
+      members.authorize_action(
+        action: :delete,
+        resource: Resource::Dataset::Entries,
+        account_id:,
+        project_id:,
+        allowed_permission_sets: [:owner, :annotator]
+      )
+
       entries.delete(id)
     end
+
+    # TODO: revise action checks for below methods
 
     def update_entries_job(job_id, resource)
       entries.transaction do

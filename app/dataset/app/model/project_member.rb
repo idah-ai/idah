@@ -48,14 +48,14 @@ module ProjectMember
       end
     end
 
-    # TODO: might be good idea to verify role passed in allowed_user_roles[]
+    # TODO: might be good idea to verify role passed in allowed_permission_sets[]
     # allowed user roles: :owner, :annotator, :reviewer, :self
-    def authorize_action(action:, resource:, account_id:, project_id:, allowed_user_roles: [])
+    def authorize_action(action:, resource:, account_id:, project_id:, allowed_permission_sets: [])
       auth_context.reject! unless auth_context.can!(action, resource) do |scope|
         scope.all? { true }
         scope.as_user? do
           role = get_permission_set(account_id, project_id)
-          allowed_user_roles.any? { |allowed_user_role| send("#{allowed_user_role}?", role) }
+          allowed_permission_sets.any? { |allowed_user_role| send("#{allowed_user_role}?", role) }
         end
       end
     end
