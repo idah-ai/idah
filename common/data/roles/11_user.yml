@@ -3,21 +3,20 @@ user:
   description: "User"
   assignable: true
   rights:
-    # WIP
-
-    ## user
     # dataset service
     # projects
     - "dataset:projects.*.as_user"
     # project memberships
-    - "dataset:project_members.create.*" # TODO: implement a scope for this
+    - "dataset:project_members.create.as_user" # TODO: implement a scope for this
     - "dataset:project_members.read.as_user"
     - "dataset:project_members.delete.as_user"
     # datasets
     - "dataset:datasets.*.as_user"
     # entries
-    - "dataset:entries.*.as_user"
+    - "dataset:entries.*.*"
     # annotations
     - "dataset:annotations.*.as_user"
 
+    # TODO: WIP
     # media service
+    - "media:medias.*.*"
