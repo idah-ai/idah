@@ -102,6 +102,7 @@ export interface INoteDriver {
   /** NOTE::COMMENTS */
   comments: {
     list(listOptions: IListOptions): Promise<Array<INoteComment>>;
+    create(data: Partial<INoteComment>): Promise<INoteComment>;
   };
 }
 

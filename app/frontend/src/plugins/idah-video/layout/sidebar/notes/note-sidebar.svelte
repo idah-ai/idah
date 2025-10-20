@@ -29,6 +29,7 @@
   import { cn } from "@/utils";
 
   import NoteBox from "./note-box.svelte";
+  import NoteCommentCard from "./note-comment-card.svelte";
   import NoteDropdownMenus from "./note-dropdown-menus.svelte";
   import NoteFeedCard from "./note-feed-card.svelte";
   import { closeNoteSidebar, noteSidebarStore } from "./note-sidebar-stores";
@@ -96,11 +97,25 @@
     return { noteComments };
   }
 
-  async function createGeneralComment() {
-    await context.notes.feeds.create({
-      content_md: contentMd,
-    });
-    toast.success("Comment added from sidebar");
+  async function createNote() {
+    if (isListView) {
+      /** Create a general note feed, if current view is list */
+      await context.notes.feeds.create({
+        content_md: contentMd,
+      });
+      toast.success("Comment added from sidebar");
+    }
+
+    if (isDetailView && $noteSidebarStore.selectedNoteFeed) {
+      /** Create a note comment under the selected note feed, if current view is detail */
+      await context.notes.comments.create({
+        note_feed_id: $noteSidebarStore.selectedNoteFeed.id,
+        content_md: contentMd,
+      });
+      toast.success("Reply added to note");
+    }
+
+    contentMd = "";
     $noteSidebarStore.lastUpdated = new Date();
   }
 
@@ -140,7 +155,7 @@
       {/if}
 
       {#if isDetailView && $noteSidebarStore.selectedNoteFeed}
-        <NoteDropdownMenus id={$noteSidebarStore.selectedNoteFeed.id} />
+        <NoteDropdownMenus id={$noteSidebarStore.selectedNoteFeed.id} resource="noteFeed" />
         <ResolveNoteButton noteFeed={$noteSidebarStore.selectedNoteFeed} />
       {/if}
 
@@ -156,13 +171,15 @@
       <SidebarGroupContent class="flex flex-col gap-2">
         {#if $noteSidebarStore.selectedNoteFeed}
           <!-- NOTE FEED::DETAIL -->
-          {#await loadNoteDetail() then { noteComments }}
-            <NoteFeedCard noteFeed={$noteSidebarStore.selectedNoteFeed}></NoteFeedCard>
+          {#key $noteSidebarStore.lastUpdated}
+            {#await loadNoteDetail() then { noteComments }}
+              <NoteFeedCard noteFeed={$noteSidebarStore.selectedNoteFeed}></NoteFeedCard>
 
-            {#each noteComments as noteComment (noteComment.id)}
-              {noteComment.id}
-            {/each}
-          {/await}
+              {#each noteComments as noteComment (noteComment.id)}
+                <NoteCommentCard {noteComment}></NoteCommentCard>
+              {/each}
+            {/await}
+          {/key}
         {:else}
           <!-- NOTE FEEDS::LISTS -->
           {#key $noteSidebarStore.lastUpdated}
@@ -197,9 +214,10 @@
     <SidebarGroup class="mt-auto">
       <NoteBox
         disabled={!isInReviewStep}
+        placeholder={isListView ? "Write your comment" : "Reply"}
         value={contentMd}
         onInput={(e) => (contentMd = e.currentTarget.value)}
-        onSubmit={createGeneralComment}
+        onSubmit={createNote}
       ></NoteBox>
     </SidebarGroup>
   </SidebarFooter>

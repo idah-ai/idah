@@ -117,6 +117,30 @@ export function createNoteDriver(entryId: string): INoteDriver {
             );
         });
       },
+      create(data: Partial<INoteComment>) {
+        const { note_feed_id, content_md } = data;
+        return new Promise<INoteComment>((resolve, reject) => {
+          noteCommentsBackendDataSource
+            .create({
+              attributes: {
+                note_feed_id,
+                content_md,
+              },
+              relationships: {
+                note_feed: {
+                  data: {
+                    id: note_feed_id!,
+                    type: "dataset:note_feeds",
+                  },
+                },
+              },
+            })
+            .then(
+              (v) => resolve(parseNoteCommentRecordToINoteComment(v.data)),
+              (v) => reject(v.error),
+            );
+        });
+      },
     },
   };
 }

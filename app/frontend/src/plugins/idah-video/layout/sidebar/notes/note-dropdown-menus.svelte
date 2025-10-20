@@ -1,10 +1,5 @@
 <script lang="ts">
-  import {
-    EllipsisVerticalIcon,
-    LinkIcon,
-    PenSquareIcon,
-    Trash2Icon,
-  } from "@lucide/svelte";
+  import { EllipsisVerticalIcon, LinkIcon, PenSquareIcon, Trash2Icon } from "@lucide/svelte";
 
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import Button from "@/components/ui/button/button.svelte";
@@ -14,6 +9,7 @@
   // Props
   interface Props {
     id: string;
+    resource: "noteFeed" | "noteComment";
   }
   let { id }: Props = $props();
 
@@ -47,12 +43,7 @@
 
 <DropdownMenus {menus} align="end">
   {#snippet trigger({ props })}
-    <Button
-      {...props}
-      variant="ghost"
-      size="icon"
-      class="group-hover:hover:bg-muted size-6 rounded-full"
-    >
+    <Button {...props} variant="ghost" size="icon" class="group-hover:hover:bg-muted size-6 rounded-full">
       <EllipsisVerticalIcon class="size-3" />
     </Button>
   {/snippet}

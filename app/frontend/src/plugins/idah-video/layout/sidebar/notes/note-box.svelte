@@ -7,15 +7,16 @@
 
   // Props
   interface Props {
-    value: string | null;
     disabled?: boolean;
+    placeholder?: string;
+    value: string | null;
     onInput?: FormEventHandler<HTMLTextAreaElement> | null | undefined;
     onSubmit: () => Promise<void>;
   }
-  let { value = "", disabled, onInput, onSubmit }: Props = $props();
+  let { disabled, placeholder = "Write your comment", value = "", onInput, onSubmit }: Props = $props();
 </script>
 
-<MarkdownEditor {disabled} placeholder="Write your comment" {value} {onInput}>
+<MarkdownEditor {disabled} {placeholder} {value} {onInput}>
   {#snippet actions()}
     <InputGroupButton
       aria-label="Send"
