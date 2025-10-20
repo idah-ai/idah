@@ -63,6 +63,9 @@ export interface INoteFeed {
 
   created_at: string;
   updated_at: string;
+
+  // Included relationships
+  note_comments: Array<INoteComment>;
 }
 
 export interface INoteComment {

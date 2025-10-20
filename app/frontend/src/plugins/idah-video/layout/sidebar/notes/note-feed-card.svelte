@@ -34,6 +34,7 @@
     status,
     content_md,
     created_at,
+    note_comments,
   } = $derived(noteFeed);
 
   type CommentType = "general" | "annotation" | "video_frame";
@@ -120,7 +121,11 @@
           replyNoteFeed();
         }}
       >
-        Reply
+        {#if note_comments.length === 0}
+          Reply
+        {:else}
+          {note_comments.length} {note_comments.length === 1 ? "Reply" : "Replies"}
+        {/if}
       </Button>
     {/if}
   </div>
