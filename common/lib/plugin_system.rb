@@ -7,13 +7,14 @@ module PluginSystem
 
   @plugins = {}
 
-  def init(_context_class)
+  def init(context_class)
+    Verse.logger.info{ "[IDAH-PLUGIN] Initializing Plugin System" }
     @config = Config.new(
       Verse.config.extra_fields.dig(:idah, :plugins) || {}
     )
 
     config.manual&.each do |plugin_name|
-      manual_load_plugin config.path, plugin_name
+      manual_load_plugin config.path, plugin_name, context_class
     end
 
     # Listen the plugin directory for changes
@@ -32,7 +33,7 @@ module PluginSystem
         root_paths.select do |root_path|
           file.any?{ |f| f.start_with?(root_path) }
         end.unique.each do |path|
-          path_index[path].each(&:reload)
+          path_index[path]&.reload
         end
       end
     end
@@ -45,7 +46,7 @@ module PluginSystem
     listener.start
   end
 
-  def manual_load_plugin(path, plugin_name)
+  def manual_load_plugin(path, plugin_name, context_class)
     plugin_path = File.absolute_path(
       File.join(path, plugin_name)
     )
@@ -75,13 +76,13 @@ module PluginSystem
       service_backend_path = File.join(plugin_path, backend.path, Verse.service_name)
 
       unless Dir.exist?(service_backend_path)
-        Verse.logger.debug{
-          "[IDAH-PLUGIN] No backend for service #{Verse.service_name} in plugin #{plugin_name}"
+        Verse.logger.info{
+          "[IDAH-PLUGIN] No backend for service #{Verse.service_name} in plugin #{plugin_name}. Ignoring."
         }
         return
       end
 
-      @plugins[manifest.name.to_sym] = Plugin.new(service_backend_path, manifest, manual: true)
+      @plugins[manifest.name.to_sym] = Plugin.new(service_backend_path, manifest, context_class, manual: true)
     rescue Verse::Schema::InvalidSchemaError => e
       Verse.logger.error{ "[IDAH-PLUGIN] Plugin manifest validation error: #{e.message}" }
       nil
