@@ -15,6 +15,10 @@ function parseNoteFeedRecordToINoteFeed(record: NoteFeedRecord): INoteFeed {
     content_md: record.content_md,
     created_at: new Date(record.created_at).toString(),
     updated_at: new Date(record.updated_at).toString(),
+
+    // Included relationships
+    note_comments:
+      record.note_comments?.map((comment: NoteCommentRecord) => parseNoteCommentRecordToINoteComment(comment)) || [],
   };
 }
 
@@ -60,6 +64,7 @@ export function createNoteDriver(entryId: string): INoteDriver {
               filters: { ...listOptions.filters, entry_id: entryId },
               pagination: listOptions.pagination,
               sort: listOptions.sort,
+              included: ["note_comments"],
             })
             .then(
               (v) => resolve(v.data.map((note) => parseNoteFeedRecordToINoteFeed(note))),
