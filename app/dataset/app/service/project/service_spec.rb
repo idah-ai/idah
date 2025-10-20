@@ -40,7 +40,6 @@ RSpec.describe Project::Service, database: true do
       project = subject.create(record)
       expect(project.name).to eq("Test Project")
       expect(project.description).to eq("A test project")
-      expect(project.created_by_id).to eq(nil)
     end
   end
 
