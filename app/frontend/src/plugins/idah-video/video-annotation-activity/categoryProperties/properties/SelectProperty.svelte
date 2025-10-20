@@ -1,10 +1,8 @@
 <script lang="ts">
   import Label from "@/components/ui/label/label.svelte";
   import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger } from "@/components/ui/select";
-  import Text from "@/components/ui/text/Text.svelte";
   import { formatConformity, propertyFullfilled } from "..";
 
-  import type { AnnotationValue } from "@/context/AnnotationContext";
   import type { PropertyField } from "@/plugin/interface/Activity";
 
   let {

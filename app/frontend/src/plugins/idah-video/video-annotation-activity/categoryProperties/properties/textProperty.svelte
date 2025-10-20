@@ -1,10 +1,8 @@
 <script lang="ts">
-  import { Checkbox } from "@/components/ui/checkbox";
   import Input from "@/components/ui/input/input.svelte";
   import Label from "@/components/ui/label/label.svelte";
   import { formatConformity, propertyFullfilled } from "..";
 
-  import type { AnnotationValue } from "@/context/AnnotationContext";
   import type { PropertyField } from "@/plugin/interface/Activity";
 
   let { property, value, onValueChange }: { property: PropertyField; value: any; onValueChange: (v: any) => void } =

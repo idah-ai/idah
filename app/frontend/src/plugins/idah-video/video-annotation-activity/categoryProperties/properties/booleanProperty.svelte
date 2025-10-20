@@ -3,7 +3,6 @@
   import { Switch } from "@/components/ui/switch";
   import { formatConformity, propertyFullfilled } from "..";
 
-  import type { AnnotationValue } from "@/context/AnnotationContext";
   import type { PropertyField } from "@/plugin/interface/Activity";
 
   let { property, value, onValueChange }: { property: PropertyField; value: any; onValueChange: (v: any) => void } =
