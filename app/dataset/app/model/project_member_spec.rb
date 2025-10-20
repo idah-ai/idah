@@ -21,7 +21,8 @@ RSpec.describe ProjectMember, database: true do
           project_id: test_project1.id,
           account_id: 1,
           name: "first user",
-          email: "first@email.com"
+          email: "first@email.com",
+          permission_set: "owner",
         )
       )
     }
@@ -40,7 +41,8 @@ RSpec.describe ProjectMember, database: true do
           project_id: test_project2.id,
           account_id: 1,
           name: "first user",
-          email: "first@email.com"
+          email: "first@email.com",
+          permission_set: "owner",
         )
       )
     }
@@ -51,17 +53,15 @@ RSpec.describe ProjectMember, database: true do
           project_id: test_project2.id,
           account_id: 2,
           name: "second user",
-          email: "second@email.com"
+          email: "second@email.com",
+          permission_set: "owner",
         )
       )
     }
 
     describe "scope definitions" do
-      context "scope: all", as: :system do
-        before do
-          @test_rights = ["#{described_class.resource}.*.*"]
-        end
-        subject { described_class.new(Verse::Auth::Context.new(@test_rights)) }
+      context "scope: all", as: :admin do
+        subject { described_class.new(current_auth_context) }
         it "returns all project members" do
           project_members = subject.index({})
 
@@ -69,39 +69,18 @@ RSpec.describe ProjectMember, database: true do
         end
       end
 
-      # scope: memberships that are in the same project as the user
-      context "scope: same_project" do
-        before do
-          @test_rights = ["#{described_class.resource}.read.same_project"]
-          @test_account_id = 2
-        end
-        subject { described_class.new(Verse::Auth::Context.new(@test_rights, metadata: { id: @test_account_id })) }
-
-        it "returns project members that are in the same project as the user" do
+      context "scope: as_user", as: :user do
+        subject { described_class.new(current_auth_context) }
+        it "returns user-scoped members" do
           project_members = subject.index({})
 
+          # self membership and members in same projects
           expect(project_members.size).to eq(2)
-
-          # both owned and member in same project
-          expect(project_members.first.project_id).to eq(project_members.last.project_id)
-        end
-      end
-
-      # scope: user's membership
-      context "scope: own" do
-        before do
-          @test_rights = ["#{described_class.resource}.read.own"]
-          @test_account_id = 2
-        end
-        subject { described_class.new(Verse::Auth::Context.new(@test_rights, metadata: { id: @test_account_id })) }
-
-        it "returns owned memberships" do
-          project_members = subject.index({})
-
-          expect(project_members.size).to eq(1)
-
-          # user's own account_id
-          expect(project_members.first.account_id).to eq(@test_account_id)
+          account_id = current_auth_context.metadata[:id]
+          project_members.each do |project_member|
+            expect(project_member.project_id == test_project2.id || project_member.account_id == account_id)
+              .to be_truthy
+          end
         end
       end
     end
