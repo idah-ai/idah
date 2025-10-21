@@ -10,15 +10,27 @@ module Plugins
 
     def find(plugin_name)
       # 1. check for manual plugins
+      manual_plugins = Verse.config.extra_fields.dig(
+        :idah, :plugins, :manual
+      ) || []
+      plugin_path = Verse.config.extra_fields.dig(
+        :idah, :plugins, :path
+      ) || "plugins"
+
+      manual_plugins.find{|p| p == plugin_name }&.then do
+        return Plugin::Record.from_path(
+          File.join(plugin_path, plugin_name)
+        )
+      end
 
       # 2. if manual plugin not found, check in the database
-      repo.find_by({name: plugin_name})
-
-      # if not found, return nil
+      return repo.find_by({name: plugin_name})
     end
 
     def serve(plugin_name, filename)
-      raise "TODO: Implement plugin frontend serving"
+      find(plugin_name)
+
+      # raise "TODO: Implement plugin frontend serving"
     end
   end
 end

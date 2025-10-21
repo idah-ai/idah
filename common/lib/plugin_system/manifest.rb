@@ -18,6 +18,7 @@ module PluginSystem
       field? :frontend do
         field? :scripts, Array, of: String
         field? :styles, Array, of: String
+        field? :asset
       end
 
       field? :backend do
