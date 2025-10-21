@@ -5,11 +5,11 @@
   import SingleSelectField from "@/components/app/forms/fields/select/single/single-select-field.svelte";
 
   import { PlusIcon, Trash2Icon } from "@lucide/svelte";
-  import { ProjectMemberRecord, projectMemberRoles } from "@/data/model/dataset/projects/members/record";
+  import { ProjectMemberRecord, projectMemberAccess } from "@/data/model/dataset/projects/members/record";
 
   // Props
   interface Props {
-    members: Array<{ email: string; role: string }>;
+    members: Array<{ email: string; access: string }>;
   }
   let { members = $bindable() }: Props = $props();
 
@@ -18,7 +18,7 @@
 
   // Functions
   function addMember(): void {
-    members.push({ email: "", role: "" });
+    members.push({ email: "", access: "" });
   }
 
   function removeMember(index: number): void {
@@ -40,17 +40,17 @@
         bind:value={member.email}
       />
 
-      <!-- ROLE -->
+      <!-- ACCESS -->
       <SingleSelectField
-        name="{resource}/role"
+        name="{resource}/access"
         class="flex-1"
-        label="Role"
-        placeholder="Select a role"
-        choices={projectMemberRoles}
+        label="Access"
+        placeholder="Select an access"
+        choices={projectMemberAccess}
         required
         searchable
-        searchPlaceholder="Search a role"
-        bind:value={member.role}
+        searchPlaceholder="Search an access"
+        bind:value={member.access}
       />
 
       <!-- REMOVE MEMBER BUTTON -->

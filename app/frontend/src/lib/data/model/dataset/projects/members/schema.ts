@@ -1,5 +1,5 @@
 import z from "zod";
-import { projectMemberRoles } from "@/data/model/dataset/projects/members/record";
+import { projectMemberAccess } from "@/data/model/dataset/projects/members/record";
 
 export const projectMemberSchema = z.object({
   project_id: z.uuid(),
@@ -8,7 +8,7 @@ export const projectMemberSchema = z.object({
 
   name: z.string().nullable(),
   email: z.email("Make sure to provide a valid email address."),
-  role: z.enum(projectMemberRoles.map((role) => role.value)),
+  access: z.enum(projectMemberAccess.map((access) => access.value)),
 
   invited_by_id: z.number(),
 
@@ -16,4 +16,6 @@ export const projectMemberSchema = z.object({
   updated_at: z.string().transform((str) => new Date(str)),
 });
 
-export const createMultipleProjectMembersSchema = z.array(projectMemberSchema.pick({ email: true, role: true })).min(1);
+export const createMultipleProjectMembersSchema = z
+  .array(projectMemberSchema.pick({ email: true, access: true }))
+  .min(1);
