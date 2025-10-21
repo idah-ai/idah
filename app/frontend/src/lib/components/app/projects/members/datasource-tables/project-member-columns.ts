@@ -1,7 +1,7 @@
-import ProjectMemberRoleCell from "@/components/app/projects/members/datasource-tables/project-member-role-cell.svelte";
+import ProjectMemberAccessCell from "@/components/app/projects/members/datasource-tables/project-member-access-cell.svelte";
 import ProjectMemberRowActionCell from "@/components/app/projects/members/datasource-tables/project-member-row-action-cell.svelte";
 
-import { ProjectMemberRecord, projectMemberRoles } from "@/data/model/dataset/projects/members/record";
+import { ProjectMemberRecord, projectMemberAccess } from "@/data/model/dataset/projects/members/record";
 
 import type { ColumnsSettings } from "@/components/app/datasource-table/types";
 
@@ -34,21 +34,21 @@ export const projectMemberColumns: ColumnsSettings<ProjectMemberRecord> = {
     visible: true,
     hidable: false,
   },
-  role: {
-    label: "Role",
+  access: {
+    label: "Access",
     dataType: "string",
     clickable: false,
     sortable: true,
     filterable: true,
     filterOptions: {
-      filterKey: "role",
+      filterKey: "access",
       filterBy: "multiple-select",
       filterOperation: "in",
-      choices: projectMemberRoles,
+      choices: projectMemberAccess,
     },
     visible: true,
     hidable: false,
-    cellComponent: ProjectMemberRoleCell,
+    cellComponent: ProjectMemberAccessCell,
   },
   action: {
     label: "Action",

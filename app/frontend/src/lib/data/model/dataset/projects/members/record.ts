@@ -12,7 +12,7 @@ export class ProjectMemberRecord extends Record {
   @field() public name!: string | null;
   @field() public email!: string;
 
-  @field() public role!: string;
+  @field() public access!: string;
 
   @field() public invited_by_id!: number;
 
@@ -29,9 +29,8 @@ export const projectMembersBackendDataSource = createBackendDataSource(
   `${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/project_members`,
 );
 
-export const projectMemberRoles = [
+export const projectMemberAccess = [
+  { label: "Owner", value: "owner" },
   { label: "Annotator", value: "annotator" },
   { label: "Reviewer", value: "reviewer" },
-  { label: "Project Manager", value: "project_manager" },
-  { label: "Admin", value: "admin" },
 ];
