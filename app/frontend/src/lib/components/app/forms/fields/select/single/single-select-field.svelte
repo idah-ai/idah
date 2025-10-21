@@ -20,7 +20,7 @@
   }
   let {
     choices,
-    value = $bindable(null),
+    value = $bindable(),
     name,
     label,
     placeholder = "Select an option",

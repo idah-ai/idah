@@ -24,3 +24,7 @@ anonymous:
     # TODO: WIP
     # media service
     - "media:medias.*.*"
+
+    # TODO: WIP
+    # iam service
+    - "iam:accounts.read.*"
