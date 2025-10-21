@@ -15,6 +15,22 @@ module Plugin
 
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
+
+    def self.from_path(path)
+      manifest = PluginSystem::Manifest.new(
+        JSON.parse(File.read(File.join(path, "manifest.json")))
+      )
+
+      new(
+        source_type: "manual",
+        source_path: path,
+        name: manifest.name,
+        description: manifest.description,
+        version: manifest.version,
+        created_at: File.ctime(path),
+        updated_at: File.mtime(path)
+      )
+    end
   end
 
   class Repository < Verse::Sequel::Repository
