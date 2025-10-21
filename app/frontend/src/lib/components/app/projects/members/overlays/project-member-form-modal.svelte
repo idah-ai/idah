@@ -21,7 +21,7 @@
   // Variables
   let projectId: string | undefined = $derived(page.params.projectId);
   let submitting: boolean = $state(false);
-  let members: Array<{ email: string; role: string }> = $state([{ email: "", role: "" }]);
+  let members: Array<{ email: string; access: string }> = $state([{ email: "", access: "" }]);
   let disabledSubmitButton: boolean = $derived.by(() => {
     const validated = createMultipleProjectMembersSchema.safeParse(members);
     return !validated.success;
@@ -33,13 +33,16 @@
   }
 
   function resetForm(): void {
-    members = [{ email: "", role: "" }];
+    members = [{ email: "", access: "" }];
   }
 
   async function createProjectMember(): Promise<void> {
+    const uniqueEmails = [...new Set(members.map((m) => m.email))];
+    // TODO: here we fetchonly once for existing accounts and members, no need to loop just yet
+    // then loop only to create
     try {
       for (const member of members) {
-        const { email, role } = member;
+        const { email, access } = member;
         let account: AccountRecord;
 
         /** Check if member is already invited */
@@ -74,7 +77,7 @@
             account_id: Number(account.id),
             name: account.name,
             email,
-            role,
+            access,
             invited_by_id: 1,
           },
         });
