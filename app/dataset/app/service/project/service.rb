@@ -43,7 +43,7 @@ module Project
               name: auth_context.metadata[:name] || nil, # TODO: fetch either from context or iam account
               email: auth_context.metadata[:email] || "", # TODO: fetch either from context or iam account
               invited_by_id: account_id,
-              permission_set: "owner",
+              access: "owner",
             },
           }
         )
@@ -62,7 +62,7 @@ module Project
         resource: Resource::Dataset::Projects,
         account_id:,
         project_id:,
-        allowed_permission_sets: [:owner]
+        allowed_access: [:owner]
       )
 
       projects.update!(project_id, record.attributes)
@@ -79,7 +79,7 @@ module Project
         resource: Resource::Dataset::Projects,
         account_id:,
         project_id:,
-        allowed_permission_sets: [:owner]
+        allowed_access: [:owner]
       )
 
       projects.delete(id)

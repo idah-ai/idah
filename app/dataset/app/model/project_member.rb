@@ -12,7 +12,7 @@ module ProjectMember
     field :name, type: [String, NilClass]
     field :email, type: String
 
-    field :permission_set, type: String
+    field :access, type: String
 
     field :invited_by_id, type: Integer, readonly: true
 
@@ -48,14 +48,14 @@ module ProjectMember
       end
     end
 
-    # TODO: might be good idea to verify role passed in allowed_permission_sets[]
+    # TODO: might be good idea to verify role passed in allowed_access[]
     # allowed user roles: :owner, :annotator, :reviewer, :self
-    def authorize_action(action:, resource:, account_id:, project_id:, allowed_permission_sets: [])
+    def authorize_action(action:, resource:, account_id:, project_id:, allowed_access: [])
       auth_context.reject! unless auth_context.can!(action, resource) do |scope|
         scope.all? { true }
         scope.as_user? do
-          role = get_permission_set(account_id, project_id)
-          allowed_permission_sets.any? { |allowed_user_role| send("#{allowed_user_role}?", role) }
+          role = get_access(account_id, project_id)
+          allowed_access.any? { |allowed_user_role| send("#{allowed_user_role}?", role) }
         end
       end
     end
@@ -63,20 +63,20 @@ module ProjectMember
     private
 
     # TODO: review this as it's unscoped
-    def get_permission_set(account_id, project_id)
-      table.where(account_id:, project_id:).first[:permission_set]
+    def get_access(account_id, project_id)
+      table.where(account_id:, project_id:).first[:access]
     end
 
-    def owner?(permission_set)
-      permission_set == "owner"
+    def owner?(access)
+      access == "owner"
     end
 
-    def annotator?(permission_set)
-      permission_set == "annotator"
+    def annotator?(access)
+      access == "annotator"
     end
 
-    def reviewer?(permission_set)
-      permission_set == "reviewer"
+    def reviewer?(access)
+      access == "reviewer"
     end
 
     def self?(account_id, membership_account_id)

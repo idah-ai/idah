@@ -19,7 +19,7 @@ RSpec.describe ProjectMember::Service, database: true do
       project_id: project_id,
       account_id: 1,
       email: "annotator@email.com",
-      permission_set: "annotator",
+      access: "annotator",
       invited_by_id: 1
     }
   end
@@ -47,7 +47,7 @@ RSpec.describe ProjectMember::Service, database: true do
       expect(project_member.project_id).to eq(project_id)
       expect(project_member.account_id).to eq(1)
       expect(project_member.email).to eq("annotator@email.com")
-      expect(project_member.permission_set).to eq("annotator")
+      expect(project_member.access).to eq("annotator")
     end
   end
 
@@ -70,7 +70,7 @@ RSpec.describe ProjectMember::Service, database: true do
             type: "dataset:project_members",
             id: project_member_id,
             attributes: {
-              permission_set: "owner"
+              access: "owner"
             }
           }
         }
@@ -79,7 +79,7 @@ RSpec.describe ProjectMember::Service, database: true do
       subject.update(record)
 
       updated_project_member = project_member_repo.find!(project_member_id)
-      expect(updated_project_member.permission_set).to eq("owner")
+      expect(updated_project_member.access).to eq("owner")
     end
   end
 

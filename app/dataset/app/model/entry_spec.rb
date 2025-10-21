@@ -76,7 +76,7 @@ RSpec.describe Entry, database: true do
             account_id: @account_id,
             name: "test user",
             email: "test@email.com",
-            permission_set: "annotator",
+            access: "annotator",
           )
 
           # testing user creates an entry

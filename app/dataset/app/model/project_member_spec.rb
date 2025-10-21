@@ -23,7 +23,7 @@ RSpec.describe ProjectMember, database: true do
           account_id: 1,
           name: "first user",
           email: "first@email.com",
-          permission_set: "owner",
+          access: "owner",
         )
       )
     }
@@ -43,7 +43,7 @@ RSpec.describe ProjectMember, database: true do
           account_id: 1,
           name: "first user",
           email: "first@email.com",
-          permission_set: "owner",
+          access: "owner",
         )
       )
     }
@@ -55,7 +55,7 @@ RSpec.describe ProjectMember, database: true do
           account_id: 2,
           name: "second user",
           email: "second@email.com",
-          permission_set: "owner",
+          access: "owner",
         )
       )
     }
@@ -100,7 +100,7 @@ RSpec.describe ProjectMember, database: true do
               resource: Resource::Dataset::ProjectMembers,
               account_id: current_auth_context.metadata[:id],
               project_id: test_project1,
-              allowed_permission_sets: []
+              allowed_access: []
             )
           }.not_to raise_error
         end
