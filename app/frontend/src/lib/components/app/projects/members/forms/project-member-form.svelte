@@ -28,7 +28,7 @@
 
 <Form>
   <!-- EACH MEMBERS -->
-  {#each members as member, index}
+  {#each members as member, index (member.email)}
     <div class="flex w-full items-end gap-4">
       <!-- EMAIL -->
       <InputField
