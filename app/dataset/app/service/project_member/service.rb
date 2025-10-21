@@ -42,7 +42,7 @@ module ProjectMember
     def delete(id)
       account_id = auth_context.metadata[:id] || 1
       membership = project_members.find(id)
-      role = membership.permission_set
+      role = membership.access
 
       auth_context.reject! unless auth_context.can!(:delete, Resource::Dataset::ProjectMembers) do |scope|
         scope.all? { true }

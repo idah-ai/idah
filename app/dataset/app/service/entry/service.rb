@@ -37,7 +37,7 @@ module Entry
         resource: Resource::Dataset::Entries,
         account_id:,
         project_id:,
-        allowed_permission_sets: [:owner, :annotator]
+        allowed_access: [:owner, :annotator]
       )
 
       attr = record.attributes
@@ -121,7 +121,7 @@ module Entry
         resource: Resource::Dataset::Entries,
         account_id:,
         project_id:,
-        allowed_permission_sets: [:owner, :annotator]
+        allowed_access: [:owner, :annotator]
       )
 
       entries.update!(record.id, record.attributes)
@@ -139,7 +139,7 @@ module Entry
         resource: Resource::Dataset::Entries,
         account_id:,
         project_id:,
-        allowed_permission_sets: [:owner, :annotator]
+        allowed_access: [:owner, :annotator]
       )
 
       entries.delete(id)

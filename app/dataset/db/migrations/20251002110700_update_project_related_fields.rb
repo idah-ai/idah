@@ -6,8 +6,8 @@ Sequel.migration do
       # # Remove the composite index on project_id and role
       # drop_index [:project_id, :role]
 
-      # Rename role column to permission_set
-      rename_column :role, :permission_set
+      # Rename role column to access
+      rename_column :role, :access
 
       # Make invited_by_id nullable with default null
       set_column_allow_null :invited_by_id
