@@ -36,13 +36,13 @@
   import AnnotationSidebar from "./video-annotation-activity/annotation-sidebar.svelte";
   import SvgOverlay from "./video-annotation-activity/svg-overlay.svelte";
   import { ScrollArea } from "@/components/ui/scroll-area";
-  import AnnotationHeaderBar from "./layout/header/AnnotationHeaderBar.svelte";
   import AnnotationFooter from "./layout/footer/AnnotationFooter.svelte";
   import AnnotationFooterToolbar from "./layout/footer/AnnotationFooterToolbar.svelte";
   import { boundingBoxes, idb_updated_at } from "./video-annotation-activity/idb_store.svelte";
-  import { registerVisualModeShortcuts } from "./video-annotation-activity/shortcut";
   import { ShortcutManager } from "@/shortcut/ShortcutManager";
   import { requiredFullfilled } from "./video-annotation-activity/categoryProperties";
+  import BoxSelectIcon from "@lucide/svelte/icons/box-select";
+  import MousePointer2 from "@lucide/svelte/icons/mouse-pointer-2";
 
   // Props
   interface Props {
@@ -73,8 +73,8 @@
   let videoController: VideoController;
 
   let annotationsIDB: AnnotationsIndexedDB | undefined = $state();
-  let isPlaying = $state(false)
-  let volume = $state({level: 0, mute: false})
+  let isPlaying = $state(false);
+  let volume = $state({ level: 0, mute: false });
 
   let commandOpen = $state(false);
   // registerVisualModeShortcuts({
@@ -132,9 +132,34 @@
   onMount(async () => {
     $boundingBoxes = [];
 
+    context.tools.setTools([
+      {
+        label: "Visual",
+        type: "visual",
+        icon: MousePointer2,
+        handleClick: () => {
+          console.log({ context });
+          context.commands.run("tools.visual");
+        },
+      },
+      {
+        label: "Bounding Box",
+        type: "video:bounding_box",
+        icon: BoxSelectIcon,
+        handleClick: () => {
+          console.log({ context });
+          context.commands.run("tools.bounding_box");
+        },
+      },
+    ]);
+    $effect(() => {
+      console.log("setting tool", mode);
+      context.tools.setTool(mode);
+    });
+
     annotationsIndexedDB(["idah-video", "entry", entry_id].join(":")).then((idb) => {
       annotationsIDB = idb;
-      fetchAnnotations(idb);
+      fetchAnnotations(idb).then(() => {});
     }, console.error);
 
     function fetchAnnotations(db: AnnotationsIndexedDB, page = 1, itemsPerPage = 100): Promise<void> {
@@ -176,231 +201,318 @@
   });
 
   // need to store dependancy and extract thos commands definitions
-  context.commands.on(
-    "annotation.add",
-    (props: {shape: AnnotationShape, value: AnnotationValue}) => {
-      const id = uuidv7(); // for now move to annotation driver create asap
+  context.commands.on("annotation.add", (props: { shape: AnnotationShape; value: AnnotationValue }) => {
+    const id = uuidv7(); // for now move to annotation driver create asap
 
-      return {
-        name: "new annotation",
-        async apply() {
-          const createdAt = new Date();
-          let annotation = {
-            shape: props.shape,
-            value: props.value,
-            metadata: {
-              // \_o_/
-              id,
-              createdAt,
-              updatedAt: createdAt,
-            },
-            synced: false,
-          };
+    return {
+      name: "new annotation",
+      async apply() {
+        const createdAt = new Date();
+        let annotation = {
+          shape: props.shape,
+          value: props.value,
+          metadata: {
+            // \_o_/
+            id,
+            createdAt,
+            updatedAt: createdAt,
+          },
+          synced: false,
+        };
+        selectedAnnotation = annotation;
+        await annotationsIDB?.addAnnotations([annotation]);
+        $idb_updated_at = new Date();
+
+        let p = context.annotations.create(id, annotation.shape, annotation.value);
+
+        p.then(async () => {
+          let a = await annotationsIDB?.get("annotations", id);
+
+          if (a && a.metadata.updatedAt.valueOf() == createdAt.valueOf()) {
+            a.synced = true;
+            await annotationsIDB?.addAnnotations([a]);
+            $idb_updated_at = new Date();
+          }
+        });
+      },
+      async undo() {
+        if (id == selectedAnnotation?.metadata.id) selectedAnnotation = undefined;
+
+        await annotationsIDB?.deleteAnnotation(id);
+        $idb_updated_at = new Date();
+
+        let _p = context.annotations.delete(id);
+      },
+      isCombinable: () => false,
+      combine: () => cmd,
+    };
+  });
+  context.commands.on("annotation.delete", async (props: { id: string }) => {
+    const annotation = await annotationsIDB?.get("annotations", props.id);
+
+    if (!annotation) return toast.error("cannot remove not found annotation");
+
+    return {
+      name: "remove annotation",
+      async apply() {
+        if (props.id == selectedAnnotation?.metadata.id) selectedAnnotation = undefined;
+
+        await annotationsIDB?.deleteAnnotation(props.id);
+        $idb_updated_at = new Date();
+
+        let p = context.annotations.delete(props.id);
+
+        p.then(() => ($idb_updated_at = new Date()));
+      },
+      async undo() {
+        const createdAt = new Date();
+        let a = {
+          ...annotation,
+          metadata: {
+            ...annotation.metadata,
+            createdAt,
+            updatedAt: createdAt,
+          },
+          synced: false,
+        };
+
+        await annotationsIDB?.addAnnotations([a]);
+        $idb_updated_at = new Date();
+
+        let p = context.annotations.create(props.id, annotation.shape, annotation.value);
+
+        p.then(async () => {
+          let annotation = await annotationsIDB?.get("annotations", props.id);
+
+          if (annotation?.metadata.updatedAt.valueOf() == createdAt.valueOf()) {
+            annotation.synced = true;
+            await annotationsIDB?.addAnnotations([annotation]);
+            $idb_updated_at = new Date();
+          }
+        });
+      },
+      isCombinable: () => false,
+      combine: () => cmd,
+    };
+  });
+  context.commands.on("keyframe.add", async (props: { id: string; selection: VideoFrameSelection }) => {
+    console.log(props);
+    const v = await annotationsIDB?.get("annotations", props.id);
+
+    if (!v) return console.warn({ addSelection, annotation: v });
+
+    const selection = $state.snapshot(props.selection) as VideoFrameSelection;
+
+    const from = $state(v.shape.frames.find((f) => f.frame == selection.frame));
+    const start = v.shape.start;
+    const end = v.shape.end;
+    return {
+      name: "add bounding box selection",
+      async apply() {
+        const v = await annotationsIDB?.get("annotations", props.id);
+
+        if (!v) return toast.error("bounding box not found");
+
+        const updatedAt = new Date();
+        v.shape = {
+          ...v.shape,
+          start: v.shape.start <= selection.frame ? v.shape.start : selection.frame,
+          end: v.shape.end >= selection.frame ? v.shape.end : selection.frame,
+          frames: [...v.shape.frames.filter((f) => f.frame != selection.frame), selection],
+        };
+        selectedAnnotation = undefined;
+        selectedAnnotation = v;
+
+        v.metadata.updatedAt = updatedAt;
+        v.synced = false;
+
+        await annotationsIDB?.addKeyFrame(v, selection);
+        $idb_updated_at = new Date();
+
+        let p = context.annotations.update({
+          id: v.metadata.id,
+          dimensions: v.shape,
+          annotation: v.value,
+        });
+
+        p.then(async () => {
+          if (v.metadata.updatedAt == updatedAt) {
+            v.synced = true;
+            await annotationsIDB?.addAnnotations([v]);
+            $idb_updated_at = new Date();
+          }
+        });
+      },
+      async undo() {
+        const v = await annotationsIDB?.get("annotations", props.id);
+
+        if (!v) return toast.error("bounding box not found");
+
+        const updatedAt = new Date();
+        v.shape = {
+          ...v.shape,
+          start,
+          end,
+          frames: from
+            ? [...v.shape.frames.filter((f) => f.frame != selection.frame), from]
+            : v.shape.frames.filter((f) => f.frame != selection.frame),
+        };
+        v.metadata.updatedAt = updatedAt;
+        v.synced = false;
+
+        await annotationsIDB?.deleteKeyFrame(v, selection.frame);
+        $idb_updated_at = new Date();
+
+        let p = context.annotations.update({
+          id: v.metadata.id,
+          dimensions: v.shape,
+          annotation: v.value,
+        });
+
+        p.then(async () => {
+          if (v.metadata.updatedAt == updatedAt) {
+            v.synced = true;
+            await annotationsIDB?.addAnnotations([v]);
+            $idb_updated_at = new Date();
+          }
+        });
+      },
+      isCombinable: () => false,
+      combine: (_c: any) => cmd,
+    };
+  });
+  context.commands.on("keyframe.delete", async (props: { annotation_id: string; frame: number }) => {
+    const annotation = await annotationsIDB?.get("annotations", props.annotation_id);
+
+    if (!annotation) return toast.error("cannot remove selection, annotation not found");
+
+    let index = annotation.shape.frames.findIndex((v) => v.frame == props.frame);
+    if (index == -1) return toast.warning("No frame to remove");
+
+    let selection = annotation.shape.frames[index];
+
+    return {
+      name: "delete bounding box keyframe",
+      async apply() {
+        const updatedAt = new Date();
+        const annotation = await annotationsIDB?.get("annotations", props.annotation_id);
+
+        if (!annotation) return toast.error("cannot remove keyframe, annotation not found");
+
+        let index = annotation.shape.frames.findIndex((v) => v.frame == props.frame);
+        if (index == -1) return toast.warning("No frame to remove");
+
+        let newframes = annotation.shape.frames.filter((v) => v.frame != props.frame);
+        annotation.shape = {
+          start: newframes.reduce((acc, v) => (v.frame <= acc || acc == -1 ? v.frame : acc), -1),
+          end: newframes.reduce((acc, v) => (v.frame >= acc || acc == -1 ? v.frame : acc), -1),
+          type: annotation.shape.type,
+          frames: newframes,
+        };
+        annotation.metadata.updatedAt = updatedAt;
+        await annotationsIDB?.deleteKeyFrame(annotation, props.frame);
+        $idb_updated_at = new Date();
+
+        selectedAnnotation = undefined;
+        selectedAnnotation = annotation;
+
+        let p = context.annotations.update({
+          id: annotation.metadata.id,
+          dimensions: annotation.shape,
+          annotation: annotation.value,
+        });
+
+        p.then(async () => {
+          if (annotation.metadata.updatedAt == updatedAt) {
+            annotation.synced = true;
+            await annotationsIDB?.addAnnotations([annotation]);
+            $idb_updated_at = new Date();
+          }
+        });
+      },
+      async undo() {
+        const updatedAt = new Date();
+        let annotation = await annotationsIDB?.get("annotations", props.annotation_id);
+
+        if (!annotation) return toast.error("cannot undo remove selection, annotation not found");
+
+        let newframes = [...annotation.shape.frames.filter((v) => v.frame != props.frame), selection];
+        annotation.shape = {
+          start: newframes.reduce((acc, v) => (v.frame <= acc || acc == -1 ? v.frame : acc), -1),
+          end: newframes.reduce((acc, v) => (v.frame >= acc || acc == -1 ? v.frame : acc), -1),
+          type: annotation.shape.type,
+          frames: newframes,
+        };
+        annotation.metadata.updatedAt = updatedAt;
+        annotation.synced = false;
+        await annotationsIDB?.addKeyFrame(annotation, selection);
+        $idb_updated_at = new Date();
+
+        let p = context.annotations.update({
+          id: annotation.metadata.id,
+          dimensions: annotation.shape,
+          annotation: annotation.value,
+        });
+
+        p.then(async () => {
+          if (annotation.metadata.updatedAt == updatedAt) {
+            annotation.synced = true;
+            await annotationsIDB?.addAnnotations([annotation]);
+            $idb_updated_at = new Date();
+          }
+        });
+      },
+      isCombinable: () => false,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      combine: (_c: any) => cmd,
+    };
+  });
+  context.commands.on("annotation.update", (props: { annotation: VideoAnnotation; value: AnnotationValue }) => {
+    const annotation_id = props.annotation.metadata.id;
+    const value_from = props.annotation.value;
+    return {
+      name: "update annotation value",
+      async apply() {
+        const annotation = await annotationsIDB?.get("annotations", annotation_id);
+        const updatedAt = new Date();
+        if (annotation) {
+          annotation.value = props.value;
+          annotation.metadata.updatedAt = updatedAt;
+          annotation.synced = false;
           selectedAnnotation = annotation;
+
           await annotationsIDB?.addAnnotations([annotation]);
           $idb_updated_at = new Date();
 
-          let p = context.annotations.create(id, annotation.shape, annotation.value);
-
-          p.then(async () => {
-            let a = await annotationsIDB?.get("annotations", id);
-
-            if (a && a.metadata.updatedAt.valueOf() == createdAt.valueOf()) {
-              a.synced = true;
-              await annotationsIDB?.addAnnotations([a]);
-              $idb_updated_at = new Date();
-            }
+          let p = context.annotations.update({
+            id: annotation.metadata.id,
+            dimensions: annotation.shape,
+            annotation: props.value,
           });
-        },
-        async undo() {
-          if (id == selectedAnnotation?.metadata.id) selectedAnnotation = undefined;
-
-          await annotationsIDB?.deleteAnnotation(id);
-          $idb_updated_at = new Date();
-
-          let _p = context.annotations.delete(id);
-        },
-        isCombinable: () => false,
-        combine: () => cmd,
-      }
-    })
-  context.commands.on(
-    "annotation.delete",
-    (props:{id: number}) => {
-      return {
-        name: "remove annotation",
-        async apply() {
-          if (props.id == selectedAnnotation?.metadata.id) selectedAnnotation = undefined;
-
-          await annotationsIDB?.deleteAnnotation(props.id);
-          $idb_updated_at = new Date();
-
-          let p = context.annotations.delete(props.id);
-
-          p.then(() => ($idb_updated_at = new Date()));
-        },
-        async undo() {
-          const createdAt = new Date();
-          let a = {
-            ...annotation,
-            metadata: {
-              ...annotation.metadata,
-              createdAt,
-              updatedAt: createdAt,
-            },
-            synced: false,
-          };
-
-          await annotationsIDB?.addAnnotations([a]);
-          $idb_updated_at = new Date();
-
-          let p = context.annotations.create(props.id, annotation.shape, annotation.value);
 
           p.then(async () => {
-            let annotation = await annotationsIDB?.get("annotations", props.id);
-
-            if (annotation?.metadata.updatedAt.valueOf() == createdAt.valueOf()) {
+            if (annotation.metadata.updatedAt == updatedAt) {
               annotation.synced = true;
               await annotationsIDB?.addAnnotations([annotation]);
               $idb_updated_at = new Date();
             }
           });
-        },
-        isCombinable: () => false,
-        combine: () => cmd,
-      }
-    })
-  context.commands.on(
-    "keyframe.add",
-    async (props: {id: string, selection: VideoFrameSelection}) => {
-      console.log(props)
-      const v = await annotationsIDB?.get("annotations", props.id);
-
-      if (!v) return console.warn({ addSelection, annotation: v });
-
-      const selection = $state.snapshot(props.selection) as VideoFrameSelection;
-
-      const from = $state(v.shape.frames.find((f) => f.frame == selection.frame));
-      const start = v.shape.start;
-      const end = v.shape.end;
-      return {
-        name: "add bounding box selection",
-        async apply() {
-          const v = await annotationsIDB?.get("annotations", props.id);
-
-          if (!v) return toast.error("bounding box not found");
-
+        }
+      },
+      async undo() {
+        const annotation = await annotationsIDB?.get("annotations", annotation_id);
+        if (annotation) {
           const updatedAt = new Date();
-          v.shape = {
-            ...v.shape,
-            start: v.shape.start <= selection.frame ? v.shape.start : selection.frame,
-            end: v.shape.end >= selection.frame ? v.shape.end : selection.frame,
-            frames: [...v.shape.frames.filter((f) => f.frame != selection.frame), selection],
-          };
-          selectedAnnotation = undefined;
-          selectedAnnotation = v;
-
-          v.metadata.updatedAt = updatedAt;
-          v.synced = false;
-
-          await annotationsIDB?.addKeyFrame(v, selection);
-          $idb_updated_at = new Date();
-
-          let p = context.annotations.update({
-            id: v.metadata.id,
-            dimensions: v.shape,
-            annotation: v.value,
-          });
-
-          p.then(async () => {
-            if (v.metadata.updatedAt == updatedAt) {
-              v.synced = true;
-              await annotationsIDB?.addAnnotations([v]);
-              $idb_updated_at = new Date();
-            }
-          });
-        },
-        async undo() {
-          const v = await annotationsIDB?.get("annotations", props.id);
-
-          if (!v) return toast.error("bounding box not found");
-
-          const updatedAt = new Date();
-          v.shape = {
-            ...v.shape,
-            start,
-            end,
-            frames: from
-              ? [...v.shape.frames.filter((f) => f.frame != selection.frame), from]
-              : v.shape.frames.filter((f) => f.frame != selection.frame),
-          };
-          v.metadata.updatedAt = updatedAt;
-          v.synced = false;
-
-          await annotationsIDB?.deleteKeyFrame(v, selection.frame);
-          $idb_updated_at = new Date();
-
-          let p = context.annotations.update({
-            id: v.metadata.id,
-            dimensions: v.shape,
-            annotation: v.value,
-          });
-
-          p.then(async () => {
-            if (v.metadata.updatedAt == updatedAt) {
-              v.synced = true;
-              await annotationsIDB?.addAnnotations([v]);
-              $idb_updated_at = new Date();
-            }
-          });
-        },
-        isCombinable: () => false,
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        combine: (_c: any) => cmd,
-      }
-    })
-  context.commands.on(
-    "keyframe.delete",
-    async (props: {annotation_id: string, frame: number}) => {
-      const annotation = await annotationsIDB?.get("annotations", props.annotation_id);
-
-      if (!annotation) return toast.error("cannot remove selection, annotation not found");
-
-      let index = annotation.shape.frames.findIndex((v) => v.frame == props.frame);
-      if (index == -1) return toast.warning("No frame to remove");
-
-      let selection = annotation.shape.frames[index];
-
-      return {
-        name: "delete bounding box keyframe",
-        async apply() {
-          const updatedAt = new Date();
-          const annotation = await annotationsIDB?.get("annotations", props.annotation_id);
-
-          if (!annotation) return toast.error("cannot remove keyframe, annotation not found");
-
-          let index = annotation.shape.frames.findIndex((v) => v.frame == props.frame);
-          if (index == -1) return toast.warning("No frame to remove");
-
-          let newframes = annotation.shape.frames.filter((v) => v.frame != props.frame);
-          annotation.shape = {
-            start: newframes.reduce((acc, v) => (v.frame <= acc || acc == -1 ? v.frame : acc), -1),
-            end: newframes.reduce((acc, v) => (v.frame >= acc || acc == -1 ? v.frame : acc), -1),
-            type: annotation.shape.type,
-            frames: newframes,
-          };
+          annotation.value = value_from;
           annotation.metadata.updatedAt = updatedAt;
-          await annotationsIDB?.deleteKeyFrame(annotation, props.frame);
-          $idb_updated_at = new Date();
+          annotation.synced = false;
 
-          selectedAnnotation = undefined;
           selectedAnnotation = annotation;
 
           let p = context.annotations.update({
             id: annotation.metadata.id,
             dimensions: annotation.shape,
-            annotation: annotation.value,
+            annotation: value_from,
           });
 
           p.then(async () => {
@@ -410,123 +522,51 @@
               $idb_updated_at = new Date();
             }
           });
-        },
-        async undo() {
-          const updatedAt = new Date();
-          let annotation = await annotationsIDB?.get("annotations", props.annotation_id);
+        }
+      },
+      isCombinable: () => false,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      combine: (_c: any) => cmd,
+    };
+  });
 
-          if (!annotation) return toast.error("cannot undo remove selection, annotation not found");
-
-          let newframes = [...annotation.shape.frames.filter((v) => v.frame != props.frame), selection];
-          annotation.shape = {
-            start: newframes.reduce((acc, v) => (v.frame <= acc || acc == -1 ? v.frame : acc), -1),
-            end: newframes.reduce((acc, v) => (v.frame >= acc || acc == -1 ? v.frame : acc), -1),
-            type: annotation.shape.type,
-            frames: newframes,
-          };
-          annotation.metadata.updatedAt = updatedAt;
-          annotation.synced = false;
-          await annotationsIDB?.addKeyFrame(annotation, selection);
-          $idb_updated_at = new Date();
-
-          let p = context.annotations.update({
-            id: annotation.metadata.id,
-            dimensions: annotation.shape,
-            annotation: annotation.value,
-          });
-
-          p.then(async () => {
-            if (annotation.metadata.updatedAt == updatedAt) {
-              annotation.synced = true;
-              await annotationsIDB?.addAnnotations([annotation]);
-              $idb_updated_at = new Date();
-            }
-          });
-        },
-        isCombinable: () => false,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        combine: (_c: any) => cmd,
-      }
-    })
-  context.commands.on(
-    'annotation.update',
-    (props: {annotation: VideoAnnotation, value: AnnotationValue}) => {
-      const annotation_id = props.annotation.metadata.id;
-      const value_from = props.annotation.value;
-      return {
-        name: "update annotation value",
-        async apply() {
-          const annotation = await annotationsIDB?.get("annotations", annotation_id);
-          const updatedAt = new Date();
-          if (annotation) {
-            annotation.value = props.value;
-            annotation.metadata.updatedAt = updatedAt;
-            annotation.synced = false;
-            selectedAnnotation = annotation
-
-            await annotationsIDB?.addAnnotations([annotation]);
-            $idb_updated_at = new Date();
-
-            let p = context.annotations.update({
-              id: annotation.metadata.id,
-              dimensions: annotation.shape,
-              annotation: props.value,
-            });
-
-            p.then(async () => {
-              if (annotation.metadata.updatedAt == updatedAt) {
-                annotation.synced = true;
-                await annotationsIDB?.addAnnotations([annotation]);
-                $idb_updated_at = new Date();
-              }
-            });
-          }
-        },
-        async undo() {
-          const annotation = await annotationsIDB?.get("annotations", annotation_id);
-          if (annotation) {
-            const updatedAt = new Date();
-            annotation.value = value_from;
-            annotation.metadata.updatedAt = updatedAt;
-            annotation.synced = false;
-
-            selectedAnnotation = annotation
-
-            let p = context.annotations.update({
-              id: annotation.metadata.id,
-              dimensions: annotation.shape,
-              annotation: value_from,
-            });
-
-            p.then(async () => {
-              if (annotation.metadata.updatedAt == updatedAt) {
-                annotation.synced = true;
-                await annotationsIDB?.addAnnotations([annotation]);
-                $idb_updated_at = new Date();
-              }
-            });
-          }
-        },
-        isCombinable: () => false,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        combine: (_c: any) => cmd,
-      }
-    })
+  context.commands.on("tools.visual", () => {
+    return {
+      name: "visual tool",
+      apply: () => {
+        mode = "visual";
+      },
+      undo: () => {},
+      isCombinable: () => true,
+      combine: (c) => c,
+    };
+  });
+  context.commands.on("tools.bounding_box", () => {
+    return {
+      name: "bounding box tool",
+      apply: () => {
+        mode = "video:bounding_box";
+      },
+      undo: () => {},
+      isCombinable: () => true,
+      combine: (c) => c,
+    };
+  });
 
   function addAnnotation(shape: VideoShape, value: AnnotationValue = {}) {
-    context.commands.run('annotation.add', {shape, value})
+    context.commands.run("annotation.add", { shape, value });
   }
 
   async function removeAnnotation(id: string) {
-    context.commands.run('annotation.delete', {id})
+    context.commands.run("annotation.delete", { id });
   }
 
   async function addSelection(id: string, selection: VideoFrameSelection) {
-    context.commands.run('keyframe.add', {id, selection})
+    context.commands.run("keyframe.add", { id, selection });
   }
 
   async function deleteSelection(annotation_id: string, frame: number) {
-    context.commands.run('keyframe.delete', {annotation_id, frame})
+    context.commands.run("keyframe.delete", { annotation_id, frame });
   }
 
   function onDeleteAnnotation(annotation: VideoAnnotation, frame?: number) {
@@ -563,7 +603,7 @@
   }
 
   function updateAnnotationValue(annotation: VideoAnnotation, value: AnnotationValue) {
-    context.commands.run('annotation.update', {annotation, value})
+    context.commands.run("annotation.update", { annotation, value });
   }
 
   function selectAnnotation(annotation?: VideoAnnotation) {
@@ -591,7 +631,7 @@
   let videoResizedAt = $state(new Date());
 </script>
 
-<div class="flex h-screen w-full flex-col">
+<div class="flex h-full w-full flex-col">
   {#key [ShortcutManager, ShortcutManager.currentMode, ShortcutManager.getCurrentMode()]}
     <CommandDialog bind:open={commandOpen} accesskey={ShortcutManager.getCurrentMode()}>
       <CommandInput placeholder="Type a command or search..." />
@@ -610,13 +650,6 @@
     </CommandDialog>
   {/key}
 
-  <AnnotationHeaderBar
-    {context}
-    bind:mode
-    onSelectMode={() => {
-      selectedAnnotation = undefined;
-    }}
-  />
   <Popover
     open={showPopOver}
     onOpenChange={(open) => {
@@ -703,10 +736,10 @@
               onFramesChange={(current, total, playing) => {
                 currentFrame = current;
                 totalFrames = total;
-                isPlaying = playing
+                isPlaying = playing;
                 // console.debug({onFramesChange: {current, total, playing}})
               }}
-              onVolumeChange={(level, muted) => volume = {level, muted} }
+              onVolumeChange={(level, muted) => (volume = { level, muted })}
             />
           </SvgOverlay>
         </SidebarInset>

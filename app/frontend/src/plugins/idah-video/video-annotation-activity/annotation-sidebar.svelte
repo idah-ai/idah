@@ -7,7 +7,7 @@
   import SidebarGroup from "@/components/ui/sidebar/sidebar-group.svelte";
   import SidebarGroupContent from "@/components/ui/sidebar/sidebar-group-content.svelte";
   import CategoriesSelection from "./categories-selection.svelte";
-  import type { IActivityContext } from "@/plugin/interface/Activity";
+  import type { IActivityContext, TagField } from "@/plugin/interface/Activity";
   import type { AnnotationsIndexedDB } from "./indexedDB";
   import type { CategoryDefinition } from "@/context/ActivityContext";
   import type { CategoryField } from "@/data/model/dataset/labels";
@@ -47,6 +47,21 @@
     return acc;
   }, new Map<string, CategoryField[]>());
 
+  // let tools2 = context.config.taggings.reduce((acc, v: TagField) => {
+  //   if (!acc.has(v.type)) acc.set(v.type, [v]);
+  //   else {
+  //     let taggings = acc.get(v.type);
+
+  //     if (taggings) taggings.push(v);
+  //     else taggings = [v];
+
+  //     acc.set(v.type, taggings);
+  //   }
+  //   return acc;
+  // }, new Map<string, TagField[]>());
+
+  // console.log({ tools, tools2 });
+
   let searchValue = $state("");
   let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -76,7 +91,6 @@
         },
         mode,
       );
-
     } // else {
     //   onEditValue(
     //     Object.fromEntries(Object.entries(annotationValue).filter(([type, _]) => type == "categories")),
@@ -109,24 +123,24 @@
   <SidebarContent>
     {#each tools as [tool, categories]}
       <!-- {#if !tools.has(mode) || mode == "visual"} -->
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <CategoriesSelection
-              {db}
-              toolMode={tool == mode}
-              type={tool}
-              {currentFrame}
-              {categories}
-              selected_category={annotationValue.category}
-              {selected_id}
-              {onSelectAnnotation}
-              {onDeleteAnnotation}
-              {annotationValue}
-              onEditValue={(v) => onEditValue(v, tool)}
-              onSelect={(s) => categorySelection(tool, s)}
-            />
-          </SidebarGroupContent>
-        </SidebarGroup>
+      <SidebarGroup>
+        <SidebarGroupContent>
+          <CategoriesSelection
+            {db}
+            toolMode={tool == mode}
+            type={tool}
+            {currentFrame}
+            {categories}
+            selected_category={annotationValue.category}
+            {selected_id}
+            {onSelectAnnotation}
+            {onDeleteAnnotation}
+            {annotationValue}
+            onEditValue={(v) => onEditValue(v, tool)}
+            onSelect={(s) => categorySelection(tool, s)}
+          />
+        </SidebarGroupContent>
+      </SidebarGroup>
       <!-- {:else if tool == mode}
         <SidebarGroup>
           <SidebarGroupContent>
