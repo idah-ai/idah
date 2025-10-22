@@ -22,28 +22,31 @@ function createCommandsInterface() {
   const commands = new Map();
 
   return {
-    on: (name: string, command_builder: (props: any) => Command) => {
-      commands.set(name, command_builder);
-      console.debug({ on: name });
+    on: (name: string, builder: (props: any) => Command, manager = true) => {
+      commands.set(name, { manager, builder });
+      console.debug({ command_on: name, manager });
     },
     async run(name: string, props: any) {
-      const builder = commands.get(name);
+      const { manager, builder }: { manager: boolean; builder: (props: any) => Command } = commands.get(name);
 
       if (!builder) return console.error("builder not found command:", name);
 
       const command = await builder(props);
 
       if (!commands)
-        // properly extract and we shouldnt have to await
+        // properly extract and we shouldnt have to await ?
         return console.error("builder error on command:", name);
 
-      console.debug({ run: name, props, command });
-      CommandManager.add(command);
+      console.debug({ command_run: name, props, command });
+      if (manager) CommandManager.add(command);
+      else command.apply();
     },
     undo(times?: number) {
+      console.debug({ command_undo: { times } });
       CommandManager.undo(times);
     },
     redo(times?: number) {
+      console.debug({ command_redo: { times } });
       CommandManager.redo(times);
     },
   };
