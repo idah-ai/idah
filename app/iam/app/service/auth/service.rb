@@ -28,16 +28,69 @@ module Auth
       # check the password, raise error if incorrect
       raise Verse::Error::Authorization, "Invalid credentials" if account.nil?
 
-      # ou = account.person&.organizational_unit
-      # raise Verse::Error::Authorization, "Unauthorized Access" if ou && !ou_service.authorized_host?(ou, ip)
-
       # build the two tokens for the account
       build_tokens(account, role, ip:, nonce: SecureRandom.random_number(2 ** 63))
     rescue Verse::Error::RecordNotFound
       raise Verse::Error::Authorization, "Invalid credentials"
     end
 
+        # Check if the given token is valid and regenerate a new token
+    def refresh_token(auth_token, refresh_token, role: nil, ip: "")
+      uid, nonce = RefreshToken.validate(refresh_token)
+
+      # find the account, raise error if not found
+      account = system_accounts.find_by!({ id: uid })
+
+      if auth_token
+        auth = Verse::Http::Auth::Token.decode(auth_token, validate: false)
+
+        now = Time.now.to_i
+
+        # Check if role is the same as the one in the token
+        # and the active scopes are the same as the ones in the token
+        # and the token is not expired, we can reuse it
+        # expiration: 5 minutes
+
+        if auth.context.role == role && auth.exp > now + (60 * 5)
+          # Return existing tokens:
+          return reuse_token(auth_token, refresh_token, account, role)
+        end
+      end
+
+      # build the two tokens for the account
+      build_tokens(account, role, ip:, nonce: )
+    rescue Verse::Error::RecordNotFound
+      raise BadRefreshTokenError, "Account not found"
+    end
+
+
     private
+
+    # Return the account record with the given tokens, do not
+    # attempt to generate new tokens or advance in bump seq for the refresh token.
+    def reuse_token(auth_token, refresh_token, account, _role_name)
+      tok = Verse::Http::Auth::Token.decode(auth_token)
+
+      role = system_roles.find_by({ name: tok.context.role })
+
+      AccountAuth::Record.new(
+        {
+          id: account.id,
+          email: account.email,
+          name: account.name,
+          picture_url: account.picture_url,
+          role_name: role.name,
+          role_labels: role.labels,
+          scope: tok.context.custom_scopes,
+          role_rights: role.rights,
+          # auth_type: account.auth_type,
+          auth_token:,
+          refresh_token:,
+          exp: tok.exp
+        }
+      )
+    end
+
 
     # Build the tokens for the given account and role name
     # @return [String, String] the auth_token and refresh_token
@@ -57,7 +110,6 @@ module Auth
 
       exp = Time.now.to_i + ::Settings["auth_token.lifetime"]
 
-
       # encode the auth_token
       auth_token = Verse::Http::Auth::Token.encode(
         {
@@ -66,7 +118,7 @@ module Auth
           # labels: role.labels
         }.compact,
         account_role,
-        role.scopes,
+        {}, # no role scopes for now role.scopes
         exp:
       )
 
@@ -81,7 +133,7 @@ module Auth
           picture_url: account.picture_url,
           role_name: role.name,
           role_labels: role.labels,
-          scope: role.scopes,
+          scope: {},
           role_rights: role.rights,
           # auth_type: account.auth_type,
           auth_token:,
@@ -90,6 +142,5 @@ module Auth
         }
       )
     end
-
   end
 end

@@ -1,5 +1,4 @@
 # frozen_string_literal: true
 
-module Service
-  BadRefreshTokenError = Class.new(Verse::Error::Authorization)
+class BadRefreshTokenError < Verse::Error::Authorization
 end
