@@ -43,5 +43,33 @@ module Auth
       renderer.meta = { token: output.auth_token }
       output
     end
+
+    expose on_http(:get, "refresh", auth: nil) do
+      desc <<-MD
+        Refresh the auth token using the refresh token.
+        The refresh token is stored in the cookie.
+
+        If the refresh token is invalid, the cookie will be cleared.
+      MD
+      meta nodoc: true
+      input do
+        field?(:role, String)
+      end
+    end
+    def refresh
+      output = service.refresh_token(
+        auth_cookie,
+        refresh_cookie,
+        role: params[:role],
+        ip: server_ip
+      )
+
+      set_cookies(output.auth_token, output.refresh_token)
+
+      output
+    rescue BadRefreshTokenError, Verse::Error::Authorization => e
+      set_refresh_cookie(nil)
+      e
+    end
   end
 end
