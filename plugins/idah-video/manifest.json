@@ -13,12 +13,12 @@
 
   "entryPoints": {
     "pluginPage": {
-      "scripts": { "plugin.js": "frontend/build/build.js" },
-      "styles": { "plugin.css": "frontend/build/build.css" }
+      "script": "frontend/build/build.js",
+      "style": "frontend/build/build.css"
     },
     "entryDetails": {
-      "scripts": { "entryDetails.js": "frontend/build/entryDetailsBuild.js" },
-      "styles": { "entryDetails.css": "frontend/build/entryDetailsBuild.css" }
+      "script": "frontend/build/entryDetailsBuild.js",
+      "style": "frontend/build/entryDetailsBuild.css"
     },
     "annotationType": "config/annotationType.json",
     "assets": {},
