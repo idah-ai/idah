@@ -152,6 +152,7 @@
 
   let tool_selection: ToolSelection | undefined = $state();
   let lastZoomOffset: Point = $state([0, 0]);
+  let selectedAnnotation: VideoAnnotation | undefined = $state(undefined);
 
   export function selectionStart(e: MouseEvent) {
     lastZoomOffset = $state.snapshot(zoomInfo.offset) as Point;
@@ -176,13 +177,13 @@
      * Show new note feed dialog only when there is no dragging (i.e. zoom offset did not change)
      */
     if (lastZoomOffset[X] == zoomInfo.offset[X] || lastZoomOffset[Y] == zoomInfo.offset[Y]) {
-      showNewNoteFeedDialog(e);
+      showNewNoteFeedDialog();
     }
 
     zoom.mouseUp(e);
   }
 
-  function showNewNoteFeedDialog(e: MouseEvent) {
+  function showNewNoteFeedDialog() {
     /**
      * Show new note feed dialog only when sidebar is open and dialog is not already shown
      */
@@ -209,6 +210,7 @@
           end: frame,
           x: cursor_downscaled[X],
           y: cursor_downscaled[Y],
+          ...selectedAnnotation,
         },
         status: "pending",
         content_md: "",
@@ -259,8 +261,8 @@
       // console.log({mouse:{x: mouse[X], y:mouse[Y]}, e})
       zoom.mouseMove(e);
     }}
-    onmouseup={selectionEnd}
     onmousedown={(e) => selectionStart(e)}
+    onmouseup={selectionEnd}
     onwheel={(e) => zoom.onWheel(e)}
     {...restProps}
   >
@@ -283,8 +285,9 @@
               onmousedown={(e) => {
                 if (mode == "visual" || selected) {
                   e.stopPropagation();
+                  selectedAnnotation = annotation;
                   onSelectAnnotation(annotation);
-                  showNewNoteFeedDialog(e);
+                  // showNewNoteFeedDialog(annotation);
                 }
               }}
             />, frame
@@ -303,8 +306,9 @@
               onmousedown={(e) => {
                 if (mode == "visual" || selected) {
                   e.stopPropagation();
+                  selectedAnnotation = annotation;
                   onSelectAnnotation(annotation);
-                  showNewNoteFeedDialog(e);
+                  // showNewNoteFeedDialog(annotation);
                 }
               }}
             />
