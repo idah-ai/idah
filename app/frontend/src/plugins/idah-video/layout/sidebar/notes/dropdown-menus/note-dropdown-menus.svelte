@@ -16,8 +16,9 @@
   interface Props {
     id: string;
     resource: "noteFeed" | "noteComment";
+    onSwitchToEditMode?: () => void;
   }
-  let { id, resource }: Props = $props();
+  let { id, resource, onSwitchToEditMode }: Props = $props();
 
   // Contexts
   const context: IActivityContext = getContext("context");
@@ -41,13 +42,7 @@
           label: "Edit",
           icon: PenSquareIcon,
           action: async () => {
-            if (resource === "noteFeed") {
-              // Edit note feed logic
-            }
-
-            if (resource === "noteComment") {
-              // Edit note comment logic
-            }
+            onSwitchToEditMode?.();
           },
         },
         {
