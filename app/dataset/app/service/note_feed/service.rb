@@ -38,7 +38,10 @@ module NoteFeed
     def create_from_params(data)
       attr = data.dup
       attr[:id] = UUIDv7.generate
-      attr[:created_by_email] = nil
+
+      # put created_by_email to nil for now, will be replaced with auth_context[:email] later
+      attr[:created_by_email] ||= nil
+
       attr[:status] = "pending"
 
       entry_id = attr[:entry_id]
