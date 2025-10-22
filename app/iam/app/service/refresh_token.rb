@@ -25,14 +25,14 @@ module RefreshToken
       return payload["uid"], payload["nc"]
     end
 
-    raise Service::BadRefreshTokenError, "bad uid/refid"
+    raise BadRefreshTokenError, "bad uid/refid"
   rescue JWT::DecodeError
-    raise Service::BadRefreshTokenError, "Invalid JWT token"
+    raise BadRefreshTokenError, "Invalid JWT token"
   end
 
   protected
 
   def account_states
-    @account_states ||= Model::Account::StateRepository.new(Verse::Auth::Context[:system])
+    @account_states ||= AccountState::Repository.new(Verse::Auth::Context[:system])
   end
 end
