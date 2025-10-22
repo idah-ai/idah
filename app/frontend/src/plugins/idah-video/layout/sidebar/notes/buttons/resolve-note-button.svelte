@@ -34,7 +34,7 @@
   }
 </script>
 
-<Tooltips align="center">
+<Tooltips align="center" ignoreNonKeyboardFocus>
   {#snippet trigger()}
     <Button
       variant={isResolved ? "success" : "secondary"}

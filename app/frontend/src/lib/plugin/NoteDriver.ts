@@ -146,6 +146,20 @@ export function createNoteDriver(entryId: string): INoteDriver {
             );
         });
       },
+      update(id: string, data: Partial<INoteComment>) {
+        return new Promise<INoteComment>((resolve, reject) => {
+          noteCommentsBackendDataSource
+            .update(id, {
+              attributes: {
+                content_md: data.content_md,
+              },
+            })
+            .then(
+              (v) => resolve(parseNoteCommentRecordToINoteComment(v.data)),
+              (v) => reject(v.error),
+            );
+        });
+      },
       delete(id: string) {
         return new Promise<void>((resolve, reject) => {
           noteCommentsBackendDataSource.delete(id).then(

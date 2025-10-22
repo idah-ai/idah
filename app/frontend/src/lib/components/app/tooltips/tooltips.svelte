@@ -8,13 +8,21 @@
     delayDuration?: number;
     align?: "start" | "center" | "end";
     side?: "top" | "right" | "bottom" | "left";
+    ignoreNonKeyboardFocus?: boolean;
     trigger: Snippet;
     content: Snippet;
   }
-  let { delayDuration = 200, align = "start", side = undefined, trigger, content }: Props = $props();
+  let {
+    delayDuration = 200,
+    align = "start",
+    side = undefined,
+    ignoreNonKeyboardFocus = false,
+    trigger,
+    content,
+  }: Props = $props();
 </script>
 
-<TooltipProvider>
+<TooltipProvider {ignoreNonKeyboardFocus}>
   <Tooltip {delayDuration}>
     <TooltipTrigger>
       {@render trigger()}
