@@ -41,8 +41,21 @@
 
   // Functions
   function selectNoteFeed() {
-    if (!$noteSidebarStore.selectedNoteFeed) {
-      $noteSidebarStore.selectedNoteFeed = noteFeed;
+    switch (commentType) {
+      case "general": {
+        /** Show note feed detail, if comment type is 'general' */
+        $noteSidebarStore.selectedNoteFeed = noteFeed;
+        break;
+      }
+      case "annotation":
+      case "video_frame": {
+        /** Show note feed dialog, if comment type is 'annotation' or 'video_frame' */
+        $noteSidebarStore.noteFeedPopup = {
+          show: true,
+          noteFeed: noteFeed,
+        };
+        break;
+      }
     }
   }
 </script>
