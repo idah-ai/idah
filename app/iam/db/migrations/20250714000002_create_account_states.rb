@@ -13,8 +13,14 @@ Sequel.migration do
                   on_update: :cascade,
                   index: true
 
+      column :platform, String, null: false # e.g., "web", "ios", "android", "linux", etc.
+      column :ip, String
+      column :user_agent, String
+
       column :refresh_seq, :bigint, null: false, default: 0
       column :nonce, :bigint, null: false, default: 0
+
+      index [:account_id, :platform, :ip, :user_agent], name: :idx_account_platform_ip_ua, unique: true
 
       Migration::Timestamps.timestamps(self)
     end
