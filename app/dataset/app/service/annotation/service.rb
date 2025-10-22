@@ -21,7 +21,7 @@ module Annotation
 
     def create(record)
       attributes = record.attributes
-      attributes[:created_by_id] ||= auth_context.metadata[:id]
+      attributes[:created_by_email] ||= auth_context.metadata[:email]
       attributes[:id] = record.id || UUIDv7.generate
 
       if record.entry

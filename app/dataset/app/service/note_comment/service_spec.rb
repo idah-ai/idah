@@ -14,7 +14,7 @@ RSpec.describe NoteComment::Service, database: true do
   let(:project_repo) { Project::Repository.new(auth_context) }
 
   let!(:project_id) do
-    project_repo.create(name: "Test Project", description: "A test project", created_by_id: 1)
+    project_repo.create(name: "Test Project", description: "A test project", created_by_email: "user@example.com")
   end
 
   let!(:dataset_id) do
@@ -44,13 +44,15 @@ RSpec.describe NoteComment::Service, database: true do
       anchor_type: "entry",
       position: { "x" => 100, "y" => 200 },
       content_md: "This is a test note feed",
-      status: "pending"
+      status: "pending",
+      created_by_email: "reviewer@example.com"
     )
   end
 
   let(:note_comment_attributes) do
     {
-      content_md: "This is a test comment"
+      content_md: "This is a test comment",
+      created_by_email: "user@example.com"
     }
   end
 
@@ -99,7 +101,7 @@ RSpec.describe NoteComment::Service, database: true do
         expect(result.note_feed_id).to eq(note_feed_id)
         expect(result.content_md).to eq("This is a test comment")
         expect(result.is_edited).to eq(false)
-        expect(result.created_by_email).to eq(nil)
+        expect(result.created_by_email).to eq("user@example.com")
       end
     end
 

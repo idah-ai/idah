@@ -14,7 +14,7 @@ RSpec.describe NoteFeed::Service, database: true do
   let(:project_repo) { Project::Repository.new(auth_context) }
 
   let!(:project_id) do
-    project_repo.create(name: "Test Project", description: "A test project", created_by_id: 1)
+    project_repo.create(name: "Test Project", description: "A test project", created_by_email: "user@example.com")
   end
 
   let!(:dataset_id) do
@@ -43,7 +43,7 @@ RSpec.describe NoteFeed::Service, database: true do
       entry_id: entry_id,
       dimensions: { "x" => 10, "y" => 20, "width" => 100, "height" => 50 },
       annotation: { "label" => "cat" },
-      created_by_id: 1
+      created_by_email: "user@example.com"
     )
   end
 
@@ -51,7 +51,8 @@ RSpec.describe NoteFeed::Service, database: true do
     {
       anchor_type: "entry",
       position: { "x" => 100, "y" => 200 },
-      content_md: "This is a test note"
+      content_md: "This is a test note",
+      created_by_email: "reviewer@example.com"
     }
   end
 
@@ -72,7 +73,7 @@ RSpec.describe NoteFeed::Service, database: true do
         expect(result.content_md).to eq("This is a test note")
         expect(result.position).to eq({ x: 100, y: 200 })
         expect(result.status).to eq("pending")
-        expect(result.created_by_email).to eq(nil)
+        expect(result.created_by_email).to eq("reviewer@example.com")
       end
     end
 
