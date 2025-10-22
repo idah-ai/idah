@@ -4,25 +4,55 @@ module PluginSystem
   class Plugin
     attr_reader :path, :manifest, :manual
 
-    def initialize(path, manifest, context_class, manual: false)
+    def initialize(path, manifest, manual: false)
       @path = path
       @manifest = manifest
       @manual = manual
       @context_class = context_class
     end
 
-    def start
+    def self.from_manifest(manifest_file, manual: false)
+      dir = File.dirname(manifest_file)
+      manifest = Manifest.from_file(
+        manifest_file
+      )
+
+      new(dir, manifest, manual:)
+    end
+
+    def start(context_class)
+      service_name = Verse.service_name
+
+      if manifest.entry_points&.backend&.path.nil?
+        Verse.logger.info{ "[IDAH-PLUGIN] Plugin `#{manifest.name}` has no backend entry point, skipping load." }
+        return;
+      end
+
+      path_to_code = File.join(
+        @path,
+        manifest.entry_points.backend.path,
+        service_name
+      )
+
+      if !Dir.exists?(path_to_code)
+        Verse.logger.info{ "[IDAH-PLUGIN] Plugin `#{manifest.name}` backend path `#{path_to_code}` does not exist, skipping load." }
+        return;
+      end
+
       @loader = Zeitwerk::Loader.new
-      @loader.push_dir(@path)
+      @loader.push_dir(path_to_code)
       @loader.setup
 
-      Verse.logger.info{ "Starting plugin #{manifest.name} (v#{manifest.version})" }
+      Verse.logger.info{ "[IDAH-PLUGIN] Starting plugin #{manifest.name} (v#{manifest.version})..." }
 
-      mod = Object.const_get(
-        manifest.entry_points.backend.module
+      @context = context_class.new(
+        manifest.name
       )
-      @context = @context_class.new(manifest.name)
-      mod.init(@context)
+
+      # Load the main module:
+      Object.const_get(
+        manifest.entry_points.backend.module
+      ).init(@context)
 
       self
     end

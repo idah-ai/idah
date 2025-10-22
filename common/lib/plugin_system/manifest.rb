@@ -7,7 +7,7 @@ module PluginSystem
     field :version, String
 
     field :title, String
-    field? :description, String
+    field(:description, String).default("no description provided")
 
     field? :repository do
       field :type, String
@@ -15,11 +15,19 @@ module PluginSystem
     end
 
     field :entry_points, key: :entryPoints do
-      field? :frontend do
-        field? :scripts, Array, of: String
-        field? :styles, Array, of: String
-        field? :asset
+      field? :entry_plugin, key: :entryPlugin do
+        field? :script, String
+        field? :style, String
       end
+
+      field? :entry_details, key: :entryDetails do
+        field? :script, String
+        field? :style, String
+      end
+
+      field? :dataset_config, String, key: :datasetConfig
+      field? :plugin_shortcut, String, key: :pluginShortcut
+      field? :assets_directory, String, key: :assetsDirectory
 
       field? :backend do
         field :module, Symbol
@@ -28,5 +36,10 @@ module PluginSystem
     end
   end
 
-  Manifest = ManifestSchema.dataclass
+  Manifest = ManifestSchema.dataclass do
+    def self.from_file(file_path)
+      data = JSON.parse(File.read(file))
+      self.new(data)
+    end
+  end
 end
