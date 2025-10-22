@@ -3,9 +3,9 @@
 module RefreshToken
   extend self
 
-  def encode(account_id, nonce, seq_id, exp: Time.now.to_i + 3600)
+  def encode(account_id, nonce, seq_id, platform, exp: Time.now.to_i + 3600)
     JWT.encode(
-      { uid: account_id, nc: nonce, refid: seq_id, sub: "ort", exp: },
+      { uid: account_id, nc: nonce, refid: seq_id, sub: "ort", exp:, plf: platform },
       Verse::Http::Auth::Token.sign_key,
       Verse::Http::Auth::Token.sign_algorithm
     )
@@ -21,8 +21,8 @@ module RefreshToken
       { algorithm: Verse::Http::Auth::Token.sign_algorithm, sub: "ort", verify_sub: true }
     )
 
-    if account_states.check_seq(payload["uid"], payload["nc"], payload["refid"])
-      return payload["uid"], payload["nc"]
+    if account_states.check_seq(payload["uid"], payload["plf"], payload["nc"], payload["refid"])
+      return payload["uid"], payload["nc"], payload["plf"]
     end
 
     raise BadRefreshTokenError, "bad uid/refid"
