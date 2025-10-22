@@ -6,25 +6,33 @@
   import Button from "@/components/ui/button/button.svelte";
   import {
     CommandDialog,
-    CommandGroup,
-    CommandItem,
-    CommandShortcut,
-    CommandSeparator,
     CommandEmpty,
+    CommandGroup,
     CommandInput,
+    CommandItem,
     CommandList,
+    CommandSeparator,
+    CommandShortcut,
   } from "$lib/components/ui/command";
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-  import SidebarProvider from "@/components/ui/sidebar/sidebar-provider.svelte";
   import SidebarInset from "@/components/ui/sidebar/sidebar-inset.svelte";
+  import SidebarProvider from "@/components/ui/sidebar/sidebar-provider.svelte";
 
   import { ResizableHandle, ResizablePane, ResizablePaneGroup } from "@/components/ui/resizable";
   import { AnnotationRecord } from "@/data/model/dataset/annotations/record";
 
+  import { ScrollArea } from "@/components/ui/scroll-area";
   import type { AnnotationShape, AnnotationValue } from "@/context/AnnotationContext";
-  import { annotationsIndexedDB, AnnotationsIndexedDB } from "./video-annotation-activity/indexedDB";
-  import TimelineTable from "./video-annotation-activity/timeline-table/timeline-table.svelte";
   import type { IActivityContext } from "@/plugin/interface/Activity";
+  import { ShortcutManager } from "@/shortcut/ShortcutManager";
+  import AnnotationFooter from "./layout/footer/AnnotationFooter.svelte";
+  import AnnotationFooterToolbar from "./layout/footer/AnnotationFooterToolbar.svelte";
+  import AnnotationSidebar from "./video-annotation-activity/annotation-sidebar.svelte";
+  import { requiredFullfilled } from "./video-annotation-activity/categoryProperties";
+  import { boundingBoxes, idb_updated_at } from "./video-annotation-activity/idb_store.svelte";
+  import { annotationsIndexedDB, AnnotationsIndexedDB } from "./video-annotation-activity/indexedDB";
+  import SvgOverlay from "./video-annotation-activity/svg-overlay.svelte";
+  import TimelineTable from "./video-annotation-activity/timeline-table/timeline-table.svelte";
   import Video from "./video-annotation-activity/video.svelte";
   import type {
     Point,
@@ -33,14 +41,6 @@
     VideoShape,
   } from "./video-annotation-activity/VideoAnnotationContext";
   import VideoController from "./video-annotation-activity/VideoController.svelte";
-  import AnnotationSidebar from "./video-annotation-activity/annotation-sidebar.svelte";
-  import SvgOverlay from "./video-annotation-activity/svg-overlay.svelte";
-  import { ScrollArea } from "@/components/ui/scroll-area";
-  import AnnotationFooter from "./layout/footer/AnnotationFooter.svelte";
-  import AnnotationFooterToolbar from "./layout/footer/AnnotationFooterToolbar.svelte";
-  import { boundingBoxes, idb_updated_at } from "./video-annotation-activity/idb_store.svelte";
-  import { ShortcutManager } from "@/shortcut/ShortcutManager";
-  import { requiredFullfilled } from "./video-annotation-activity/categoryProperties";
   import BoxSelectIcon from "@lucide/svelte/icons/box-select";
   import MousePointer2 from "@lucide/svelte/icons/mouse-pointer-2";
 
@@ -52,6 +52,8 @@
 
   // Contexts
   setContext("context", context);
+
+  $effect(() => console.debug({ idb_updated_at: $state.snapshot($idb_updated_at) }));
 
   // Variables
   let player: Video | undefined = $state();
@@ -137,25 +139,17 @@
         label: "Visual",
         type: "visual",
         icon: MousePointer2,
-        handleClick: () => {
-          console.log({ context });
-          context.commands.run("tools.visual");
-        },
+        handleClick: () => context.commands.run("tools.visual"),
       },
       {
         label: "Bounding Box",
         type: "video:bounding_box",
         icon: BoxSelectIcon,
-        handleClick: () => {
-          console.log({ context });
-          context.commands.run("tools.bounding_box");
-        },
+        handleClick: () => context.commands.run("tools.bounding_box"),
       },
     ]);
-    $effect(() => {
-      console.log("setting tool", mode);
-      context.tools.setTool(mode);
-    });
+
+    $effect(() => context.tools.setTool(mode));
 
     annotationsIndexedDB(["idah-video", "entry", entry_id].join(":")).then((idb) => {
       annotationsIDB = idb;
@@ -184,12 +178,9 @@
             };
           });
 
-          console.debug("fetched", d);
           if (d.length) {
-            console.debug("adding to db");
             db.addAnnotations(d).then(() => {
               $idb_updated_at = new Date();
-              console.debug("added at", { $idb_updated_at });
               fetchAnnotations(db, page + 1).then(resolve, reject);
             });
           } else {
@@ -296,16 +287,16 @@
     };
   });
   context.commands.on("keyframe.add", async (props: { id: string; selection: VideoFrameSelection }) => {
-    console.log(props);
-    const v = await annotationsIDB?.get("annotations", props.id);
+    const annotation = await annotationsIDB?.get("annotations", props.id);
 
-    if (!v) return console.warn({ addSelection, annotation: v });
+    if (!annotation) return console.warn({ addSelection, annotation });
 
     const selection = $state.snapshot(props.selection) as VideoFrameSelection;
 
-    const from = $state(v.shape.frames.find((f) => f.frame == selection.frame));
-    const start = v.shape.start;
-    const end = v.shape.end;
+    const from = annotation.shape.frames.find((f) => f.frame == selection.frame);
+
+    const start = annotation.shape.start;
+    const end = annotation.shape.end;
     return {
       name: "add bounding box selection",
       async apply() {
@@ -360,7 +351,9 @@
         v.metadata.updatedAt = updatedAt;
         v.synced = false;
 
+        // ... indexdb queries need reviews
         await annotationsIDB?.deleteKeyFrame(v, selection.frame);
+        await annotationsIDB?.addAnnotations([v]);
         $idb_updated_at = new Date();
 
         let p = context.annotations.update({
@@ -530,28 +523,38 @@
     };
   });
 
-  context.commands.on("tools.visual", () => {
-    return {
-      name: "visual tool",
-      apply: () => {
-        mode = "visual";
-      },
-      undo: () => {},
-      isCombinable: () => true,
-      combine: (c) => c,
-    };
-  });
-  context.commands.on("tools.bounding_box", () => {
-    return {
-      name: "bounding box tool",
-      apply: () => {
-        mode = "video:bounding_box";
-      },
-      undo: () => {},
-      isCombinable: () => true,
-      combine: (c) => c,
-    };
-  });
+  context.commands.on(
+    "tools.visual",
+    () => {
+      return {
+        name: "visual tool",
+        apply: () => {
+          mode = "visual";
+          selectedAnnotation = undefined;
+        },
+        undo: () => {},
+        isCombinable: () => true,
+        combine: (c) => c,
+      };
+    },
+    false,
+  );
+  context.commands.on(
+    "tools.bounding_box",
+    () => {
+      return {
+        name: "bounding box tool",
+        apply: () => {
+          mode = "video:bounding_box";
+          selectedAnnotation = undefined;
+        },
+        undo: () => {},
+        isCombinable: () => true,
+        combine: (c) => c,
+      };
+    },
+    false,
+  );
 
   function addAnnotation(shape: VideoShape, value: AnnotationValue = {}) {
     context.commands.run("annotation.add", { shape, value });
@@ -620,8 +623,8 @@
     let p = annotationsIDB.getAllStore("annotations");
 
     p.then((anns) => {
-      console.log({ annotations_promise: anns });
       $boundingBoxes = anns;
+      console.debug({ $boundingBoxes });
     });
 
     return p;
@@ -667,7 +670,7 @@
           mode = valueMode;
           if (selectedAnnotation && requiredFullfilled(annotationValue, context.config.properties)) {
             selectedAnnotation.value = value;
-            updateAnnotationValue($state.snapshot(selectedAnnotation), $state.snapshot(value));
+            updateAnnotationValue($state.snapshot(selectedAnnotation) as VideoAnnotation, $state.snapshot(value));
           }
         }}
         onSelectAnnotation={selectAnnotation}
@@ -736,6 +739,7 @@
               onFramesChange={(current, total, playing) => {
                 currentFrame = current;
                 totalFrames = total;
+                isPlaying = playing;
                 isPlaying = playing;
                 // console.debug({onFramesChange: {current, total, playing}})
               }}
