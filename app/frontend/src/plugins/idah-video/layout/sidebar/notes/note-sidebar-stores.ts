@@ -6,12 +6,9 @@ interface NoteSidebarStore {
   lastUpdated: Date;
   open: boolean;
 
-  /** Position and visibility of the comment box */
-  noteBox: {
+  noteFeedPopup: {
     show: boolean;
-    contentMd: string;
-    posX: number;
-    posY: number;
+    noteFeed: INoteFeed | null;
   };
 
   /** Selected note feed */
@@ -22,25 +19,30 @@ export const noteSidebarStore = writable<NoteSidebarStore>({
   lastUpdated: new Date(),
   open: true,
 
-  noteBox: {
+  noteFeedPopup: {
     show: false,
-    contentMd: "",
-    posX: 0,
-    posY: 0,
+    noteFeed: null,
   },
 
   selectedNoteFeed: null,
 });
 
+export function closeNoteFeedPopup() {
+  noteSidebarStore.update((store) => {
+    store.noteFeedPopup = {
+      show: false,
+      noteFeed: null,
+    };
+    return store;
+  });
+}
+
 export function closeNoteSidebar() {
   noteSidebarStore.update((store) => {
     store.open = false;
-    store.noteBox = {
-      show: false,
-      contentMd: "",
-      posX: 0,
-      posY: 0,
-    };
+
+    closeNoteFeedPopup();
+
     return store;
   });
 }

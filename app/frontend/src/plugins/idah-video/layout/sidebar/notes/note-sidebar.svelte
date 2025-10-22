@@ -129,7 +129,7 @@
   variant="floating"
   collapsible="offcanvas"
   side="right"
-  class={cn("top-14 z-50 h-[calc(100vh-3.5rem)] w-96", $noteSidebarStore.open ? "" : "invisible")}
+  class={cn("top-14 z-30 h-[calc(100vh-3.5rem)] w-96", $noteSidebarStore.open ? "" : "invisible")}
 >
   <SidebarHeader class=" flex w-full flex-col items-center gap-0">
     <div class="flex w-full flex-row items-center gap-2">

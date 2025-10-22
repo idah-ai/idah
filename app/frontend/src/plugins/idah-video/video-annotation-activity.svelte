@@ -40,7 +40,6 @@
   import { noteSidebarStore } from "./layout/sidebar/notes/note-sidebar-stores";
   import { boundingBoxes, idb_updated_at } from "./video-annotation-activity/idb_store.svelte";
   import { annotationsIndexedDB, AnnotationsIndexedDB } from "./video-annotation-activity/indexedDB";
-  import { registerVisualModeShortcuts } from "./video-annotation-activity/shortcut";
 
   import type {
     Point,
@@ -81,50 +80,59 @@
 
   let commandOpen = $state(false);
 
-  registerVisualModeShortcuts({
-    player: () => player,
-    toggleCommandCB: () => {
-      commandOpen = !commandOpen;
-    },
-    flush: () => context.annotations.flush(),
-    switch_mode: (_mode: string) => {},
-    zoom: { in: () => {}, out: () => {} },
-  });
+  // registerVisualModeShortcuts({
+  //   player: () => player,
+  //   toggleCommandCB: () => {
+  //     commandOpen = !commandOpen;
+  //   },
+  //   flush: () => context.annotations.flush(),
+  //   switch_mode: (_mode: string) => {},
+  //   zoom: { in: () => {}, out: () => {} },
+  // });
 
-  window.onkeydown = (e) => {
-    const current_mode = ShortcutManager.getCurrentMode();
-    const keymap = ShortcutManager.keyMap[current_mode];
+  // window.onkeydown = (e) => {
+  //   const current_mode = ShortcutManager.getCurrentMode();
+  //   const keymap = ShortcutManager.keyMap[current_mode];
 
-    if (!keymap) return console.error("no keymap found for", { current_mode });
+  //   if (!keymap) return console.error("no keymap found for", { current_mode });
 
-    const modifier_keys = [
-      e.altKey && "Alt",
-      e.ctrlKey && "Control",
-      e.metaKey && "Meta",
-      e.shiftKey && "Shift",
-    ].sort();
+  //   const modifier_keys = [
+  //     e.altKey && "Alt",
+  //     e.ctrlKey && "Control",
+  //     e.metaKey && "Meta",
+  //     e.shiftKey && "Shift",
+  //   ].sort();
 
-    const shortcut_keys = (
-      ["Control", "Alt", "Shift", "Meta"].includes(e.key)
-        ? [undefined]
-        : e.code.startsWith("Key")
-          ? [e.key.toLocaleUpperCase(), e.key.toLocaleLowerCase()]
-          : [e.code]
-    ).map((k) => [...modifier_keys, k].filter((k) => k).join("+"));
+  //   const shortcut_keys = (
+  //     ["Control", "Alt", "Shift", "Meta"].includes(e.key)
+  //       ? [undefined]
+  //       : e.code.startsWith("Key")
+  //         ? [e.key.toLocaleUpperCase(), e.key.toLocaleLowerCase()]
+  //         : [e.code]
+  //   ).map((k) => [...modifier_keys, k].filter((k) => k).join("+"));
 
-    for (let index = 0; index < shortcut_keys.length; index++) {
-      let shortcut_key = shortcut_keys[index];
+  //   for (let index = 0; index < shortcut_keys.length; index++) {
+  //     let shortcut_key = shortcut_keys[index];
 
-      let shortcut = keymap[shortcut_key];
+  //     let shortcut = keymap[shortcut_key];
 
-      if (!shortcut) continue;
+  //     if (!shortcut) continue;
 
-      e.preventDefault();
-      shortcut.action();
-      console.log({ shortcut_key, shortcut });
-      break;
+  //     e.preventDefault();
+  //     shortcut.action();
+  //     console.log({ shortcut_key, shortcut });
+  //     break;
+  //   }
+  // };
+
+  $effect(() => {
+    if ($noteSidebarStore.noteFeedPopup.show) {
+      /**
+       * Seek to the start frame of the selected note feed when the dialog is shown
+       */
+      player?.seekToFrame($noteSidebarStore.noteFeedPopup.noteFeed.position.start as number);
     }
-  };
+  });
 
   onMount(async () => {
     $boundingBoxes = [];
@@ -556,25 +564,8 @@
   }
 
   function selectAnnotation(annotation?: VideoAnnotation) {
-    /**
-     * Create a new note feed with the selected annotation
-     * If noteSidebarStore is open
-     */
-    if ($noteSidebarStore.open) {
-      // context.notes.create({
-      //   annotation_id: annotation?.metadata.id || null,
-      //   anchor_type: "annotation",
-      //   content_md: annotation?.metadata.id || "",
-      //   position: {
-      //     ...annotation?.shape,
-      //   },
-      // });
-      // toast.success("Note added on selected annotation");
-      // $noteSidebarStore.lastUpdated = new Date();
-    } else {
-      selectedAnnotation = annotation;
-      mode = annotation?.shape.type || "visual";
-    }
+    selectedAnnotation = annotation;
+    mode = annotation?.shape.type || "visual";
   }
 
   let overlay: SvgOverlay;
@@ -644,8 +635,10 @@
           showPopOver = false;
           annotationValue = {};
           selectAnnotation();
-        }}>Cancel</Button
+        }}
       >
+        Cancel
+      </Button>
       <Button
         onclick={() => {
           showPopOver = false;
