@@ -229,7 +229,9 @@
               points={currentShape(annotation.shape, frame) || []}
               ratio={target_size}
               offset={zoomInfo.offset}
-              color={context.config.categories.find((c) => c.id == annotation.value?.category)?.color || "grey"}
+              color={annotation?.synced
+                ? context.config.categories.find((c) => c.id == annotation?.value?.category)?.color || "grey"
+                : "grey"}
               onmousedown={(e) => {
                 if (mode == "visual" || selected) {
                   e.stopPropagation();
@@ -249,7 +251,9 @@
       offset={zoomInfo.offset}
       cursor={cursor_downscaled}
       editable={mode == "video:bounding_box"}
-      color={context.config.categories.find((c) => c.id == selected?.value?.category)?.color || "grey"}
+      color={selected?.synced
+        ? context.config.categories.find((c) => c.id == selected?.value?.category)?.color || "grey"
+        : "grey"}
       onChange={(bb) => {
         onSelection("video:bounding_box", frame, bb, selected?.metadata.id);
         points = bb;
