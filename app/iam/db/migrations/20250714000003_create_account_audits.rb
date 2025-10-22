@@ -14,11 +14,14 @@ Sequel.migration do
                   index: true
 
       column :role, String, null: true
-      column :date, DateTime, default: Sequel.lit("NOW()"), null: false
+      column :logged_in_at, DateTime, default: Sequel.lit("NOW()"), null: false
       column :ip, String, null: true
 
-      index [:account_id, :date]
-      index :date, type: :brin # Useful because table is read-only append-only.
+      column :platform, String, null: true
+      column :user_agent, String, text: true
+
+      index [:account_id, :logged_in_at]
+      index :logged_in_at, type: :brin # Useful because table is read-only append-only.
       Migration::Timestamps.timestamps(self)
     end
     Migration::Timestamps.trg_updated_at(self, :account_audits)

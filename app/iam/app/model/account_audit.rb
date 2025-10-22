@@ -8,8 +8,11 @@ module AccountAudit
     field :account_id, type: Integer, visible: false
 
     field :role, type: String
-    field :date, type: Time
+    field :logged_in_at, type: Time
     field :ip, type: Hash
+
+    field :platform, type: String
+    field :user_agent, type: String
 
     belongs_to :account, repository: "Account::Repository", foreign_key: :account_id
   end
@@ -22,12 +25,14 @@ module AccountAudit
       scoped(:read).where(account_id:).order(Sequel.lit("date DESC")).get(:role)
     end
 
-    def log_access(account_id, role, ip, at)
+    def log_access(account_id, role, ip, platform, user_agent, at)
       # no events
       table.insert(
         account_id:,
-        date: at,
+        logged_in_at: at,
         ip:,
+        platform:,
+        user_agent:,
         role:
       )
     end
