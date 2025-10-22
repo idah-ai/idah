@@ -10,10 +10,8 @@
   // Props
   interface Props {
     context: IActivityContext;
-    mode: string;
-    onSelectMode: (selectedMode: string) => void;
   }
-  let { context, mode = $bindable(), onSelectMode }: Props = $props();
+  let { context }: Props = $props();
 </script>
 
 <nav id="annotation-header-bar" class="flex min-h-12 items-center justify-between gap-2 px-4 py-2">
@@ -29,7 +27,7 @@
   </div>
 
   <!-- CENTER::TOOLS -->
-  <AnnotationHeaderBarTools {onSelectMode} bind:mode />
+  <AnnotationHeaderBarTools {context} />
 
   <!-- RIGHT::ACTIONS -->
   <AnnotationHeaderBarActions {context} />

@@ -1,4 +1,4 @@
-import type { IActivityContext, INote, INoteDriver } from "./interface/Activity";
+import type { HeaderBarModeTool, IActivityContext, INote, INoteDriver, ITools } from "./interface/Activity";
 import { createAnnotationDriver } from "./AnnotationDriver";
 import { goto } from "$app/navigation";
 import type { EntryRecord } from "@/data/model/dataset/entries/record";
@@ -18,32 +18,53 @@ const noteDriver: INoteDriver = {
   },
 };
 
-
-function createCommands() {
-  const commands = new Map()
+function createCommandsInterface() {
+  const commands = new Map();
 
   return {
-    on: (name: string, command_builder:(props:any) => Command) => {
-      commands.set(name, command_builder)
-      console.log({commands})
+    on: (name: string, command_builder: (props: any) => Command) => {
+      commands.set(name, command_builder);
+      console.debug({ on: name });
     },
-    async run(name: string, props:any){
-      const builder = commands.get(name)
+    async run(name: string, props: any) {
+      const builder = commands.get(name);
 
-      if (!builder)
-        return console.error("builder not found command:", name)
+      if (!builder) return console.error("builder not found command:", name);
 
-      const command = await builder(props)
+      const command = await builder(props);
 
-      if (!commands) // properly extract and we shouldnt have to await
-        return console.error("builder error on command:", name)
+      if (!commands)
+        // properly extract and we shouldnt have to await
+        return console.error("builder error on command:", name);
 
-      CommandManager.add(command)
+      console.debug({ run: name, props, command });
+      CommandManager.add(command);
     },
-    undo(times?: number) { CommandManager.undo(times) },
-    redo(times?: number) { CommandManager.redo(times) }
-  }
+    undo(times?: number) {
+      CommandManager.undo(times);
+    },
+    redo(times?: number) {
+      CommandManager.redo(times);
+    },
+  };
+}
 
+function createToolsInterface(): ITools {
+  let _onToolsChange: ((tools: HeaderBarModeTool[]) => void) | undefined;
+  let _onToolChange: ((tool: string) => void) | undefined;
+
+  return {
+    setTools: (tools: HeaderBarModeTool[]) => {
+      console.debug({ tools });
+      _onToolsChange?.(tools);
+    },
+    setTool: (tool: string) => {
+      console.debug({ tool });
+      _onToolChange?.(tool);
+    },
+    onToolsChange: (cb) => (_onToolsChange = cb),
+    onToolChange: (cb) => (_onToolChange = cb),
+  };
 }
 
 export function activityContextForEntry(entry: EntryRecord): IActivityContext {
@@ -53,11 +74,7 @@ export function activityContextForEntry(entry: EntryRecord): IActivityContext {
     workflowStep: entry.wf_step,
     status: entry.status,
     config: entry.dataset.labeling_configuration,
-    mediaUrl: [
-      `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files`,
-      entry.resource,
-      "master.m3u8"
-    ].join("/"),
+    mediaUrl: [`${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files`, entry.resource, "master.m3u8"].join("/"),
     user: {
       id: 0,
       email: "",
@@ -67,7 +84,8 @@ export function activityContextForEntry(entry: EntryRecord): IActivityContext {
     userRole: "",
     annotations: createAnnotationDriver(entry.id),
     notes: noteDriver,
-    commands: createCommands(),
+    commands: createCommandsInterface(),
+    tools: createToolsInterface(),
     back() {
       const path = `/projects/${entry.dataset.project.id}/datasets/${entry.dataset.id}/tasks`;
       goto(path);
