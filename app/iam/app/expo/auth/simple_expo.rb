@@ -18,6 +18,11 @@ module Auth
     def logout
       auth_context.mark_as_checked!
 
+      # delete the session if any
+      service.delete_session(
+        refresh_cookie,
+      )
+
       set_cookies(nil, nil)
 
       server.no_content
