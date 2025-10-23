@@ -54,6 +54,12 @@ module Auth
       raise BadRefreshTokenError, "Account not found"
     end
 
+    def delete_session(refresh_token)
+      uid, session_id, _nonce = RefreshToken.validate(refresh_token)
+
+      account_sessions.delete(session_id)
+    end
+
     private
 
     # Build the tokens for the given account and role name
