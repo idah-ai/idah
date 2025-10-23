@@ -18,7 +18,6 @@ module AccountAuth
     # field :auth_type, type: String
     field :auth_token, type: String
 
-    field :platform, type: String
     field :user_agent, type: String
 
     field :role_rights, type: Array

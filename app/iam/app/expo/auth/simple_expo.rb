@@ -34,7 +34,6 @@ module Auth
             in the return response.
           MD
         )
-        field(:platform, String).meta(description: "The platform from which the user is logging in.")
         field(:user_agent, String).meta(description: "The user agent of the client.")
       end
       meta nodoc: true
@@ -44,7 +43,6 @@ module Auth
         params[:email],
         params[:password],
         ip: server_ip,
-        platform: params[:platform],
         user_agent: params[:user_agent]
       )
       set_cookies(output.auth_token, output.refresh_token) if params[:cookie]
@@ -61,7 +59,6 @@ module Auth
       MD
       meta nodoc: true
       input do
-        field?(:role, String)
         field?(:user_agent, String)
       end
     end
@@ -69,7 +66,6 @@ module Auth
       output = service.refresh_token(
         auth_cookie,
         refresh_cookie,
-        role: params[:role],
         ip: server_ip,
         user_agent: params[:user_agent]
       )
