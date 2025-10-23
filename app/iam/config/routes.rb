@@ -4,6 +4,7 @@ Verse.on_boot do
   [
     HealthcheckExpo,
     AccountsExpo,
+    AccountSessionsExpo,
     Auth::SimpleExpo
   ].each(&:register)
 end
