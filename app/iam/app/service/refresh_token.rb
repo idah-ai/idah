@@ -3,9 +3,9 @@
 module RefreshToken
   extend self
 
-  def encode(account_id, nonce, seq_id, platform, exp: Time.now.to_i + 3600)
+  def encode(account_id, session_id, nonce, seq_id, exp: Time.now.to_i + 3600)
     JWT.encode(
-      { uid: account_id, nc: nonce, refid: seq_id, sub: "ort", exp:, plf: platform },
+      { uid: account_id, nc: nonce, refid: seq_id, sub: "ort", exp:, sid: session_id },
       Verse::Http::Auth::Token.sign_key,
       Verse::Http::Auth::Token.sign_algorithm
     )
@@ -18,21 +18,31 @@ module RefreshToken
       token,
       Verse::Http::Auth::Token.sign_key,
       true,
-      { algorithm: Verse::Http::Auth::Token.sign_algorithm, sub: "ort", verify_sub: true }
+      {
+        algorithm: Verse::Http::Auth::Token.sign_algorithm,
+        sub: "ort",
+        verify_sub: true
+      }
     )
 
-    if account_states.check_seq(payload["uid"], payload["plf"], payload["nc"], payload["refid"])
-      return payload["uid"], payload["nc"], payload["plf"]
+    uid   = payload["uid"]
+    sid   = payload["sid"]
+    nonce = payload["nc"]
+    refid = payload["refid"]
+
+    if account_sessions.check_seq(uid, sid, nonce, refid)
+      return uid, sid, nonce
     end
 
-    raise BadRefreshTokenError, "bad uid/refid"
+    account_sessions.delete(sid)
+    raise BadRefreshTokenError, "Bad uid/refid"
   rescue JWT::DecodeError
     raise BadRefreshTokenError, "Invalid JWT token"
   end
 
   protected
 
-  def account_states
-    @account_states ||= AccountState::Repository.new(Verse::Auth::Context[:system])
+  def account_sessions
+    @account_sessions ||= AccountSession::Repository.new(Verse::Auth::Context[:system])
   end
 end

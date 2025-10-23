@@ -4,25 +4,32 @@ module Auth
   class Service < Verse::Service::Base
     use_repo \
       accounts: Account::Repository,
-      account_states: AccountState::Repository
+      account_sessions: AccountSession::Repository
 
     use_system_repo \
       system_accounts: Account::Repository,
       system_roles: RoleRepository
 
-    def create_refresh_token(account, role_name, nonce:, ip: "", platform: "unknown", user_agent: nil)
-      seq = account_states.bump_refresh_seq(account.id, role_name, ip:, nonce:, platform:, user_agent:)
+    def create_refresh_token(account, role_name, nonce:, session_id: nil, ip: "", user_agent: nil)
+      seq, session_id = account_sessions.bump_refresh_seq(
+        account.id,
+        role_name,
+        session_id:,
+        nonce:,
+        ip:,
+        user_agent:
+      )
 
       RefreshToken.encode(
         account.id,
+        session_id,
         nonce,
         seq,
-        platform,
         exp: Time.now.to_i + ::Settings["refresh_token.lifetime"],
       )
     end
 
-    def login(email, password, role: nil, ip: "", platform: "unknown", user_agent: nil)
+    def login(email, password, ip: "", user_agent: nil)
       # find the account, raise error if not found
       account = accounts.login(email, password)
 
@@ -30,72 +37,28 @@ module Auth
       raise Verse::Error::Authorization, "Invalid credentials" if account.nil?
 
       # build the two tokens for the account
-      build_tokens(account, role, ip:, platform:, user_agent:, nonce: SecureRandom.random_number(2 ** 63))
+      build_tokens(account, ip:, user_agent:, nonce: 1)
     rescue Verse::Error::RecordNotFound
       raise Verse::Error::Authorization, "Invalid credentials"
     end
 
     # Check if the given token is valid and regenerate a new token
-    def refresh_token(auth_token, refresh_token, role: nil, ip: "", user_agent: nil)
-      uid, _, platform = RefreshToken.validate(refresh_token)
+    def refresh_token(_auth_token, refresh_token, ip: "", user_agent: nil)
+      uid, session_id, nonce = RefreshToken.validate(refresh_token)
 
       # find the account, raise error if not found
       account = system_accounts.find_by!({ id: uid })
 
-      if auth_token
-        auth = Verse::Http::Auth::Token.decode(auth_token, validate: false)
-
-        now = Time.now.to_i
-
-        # Check if role is the same as the one in the token
-        # and the active scopes are the same as the ones in the token
-        # and the token is not expired, we can reuse it
-        # expiration: 5 minutes
-
-        if auth.context.role == role && auth.exp > now + (60 * 5)
-          # Return existing tokens:
-          return reuse_token(auth_token, refresh_token, account, role, platform, user_agent)
-        end
-      end
-
-      # build the two tokens for the account
-      build_tokens(account, role, ip:, platform:, user_agent:, nonce: SecureRandom.random_number(2 ** 63))
+      build_tokens(account, session_id: session_id, ip:, user_agent:, nonce: nonce + 1)
     rescue Verse::Error::RecordNotFound
       raise BadRefreshTokenError, "Account not found"
     end
 
     private
 
-    # Return the account record with the given tokens, do not
-    # attempt to generate new tokens or advance in bump seq for the refresh token.
-    def reuse_token(auth_token, refresh_token, account, _role_name, platform, user_agent)
-      tok = Verse::Http::Auth::Token.decode(auth_token)
-
-      role = system_roles.find_by({ name: tok.context.role })
-
-      AccountAuth::Record.new(
-        {
-          id: account.id,
-          email: account.email,
-          name: account.name,
-          picture_url: account.picture_url,
-          role_name: role.name,
-          role_labels: role.labels,
-          scope: tok.context.custom_scopes,
-          role_rights: role.rights,
-          # auth_type: account.auth_type,
-          platform:,
-          user_agent:,
-          auth_token:,
-          refresh_token:,
-          exp: tok.exp
-        }
-      )
-    end
-
     # Build the tokens for the given account and role name
     # @return [String, String] the auth_token and refresh_token
-    def build_tokens(account, role_name, nonce:, ip: "", platform: "unknown", user_agent: nil)
+    def build_tokens(account, nonce:, session_id: nil, ip: "", user_agent: nil)
       account_role = account.role
       # # If no active roles for the given account, raise error
       if account_role.nil?
@@ -116,7 +79,6 @@ module Auth
         {
           id: account.id,
           email: account.email,
-          # labels: role.labels
         }.compact,
         account_role,
         {}, # no role scopes for now role.scopes
@@ -124,7 +86,7 @@ module Auth
       )
 
       # generate a refresh token
-      refresh_token = create_refresh_token(account, role_name, ip:, nonce:, platform:, user_agent:)
+      refresh_token = create_refresh_token(account, account_role, session_id:, ip:, nonce:, user_agent:)
 
       AccountAuth::Record.new(
         {
@@ -137,7 +99,6 @@ module Auth
           scope: {},
           role_rights: role.rights,
           # auth_type: account.auth_type,
-          platform:,
           user_agent:,
           auth_token:,
           refresh_token:,

@@ -12,6 +12,9 @@ Sequel.migration do
       column :name, String
       column :email, String, unique: true, null: false, index: true
 
+      column :role, String, null: true
+      column :picture_url, String, null: true
+
       column :hashed_password, String, null: true
       column :sso_channel, String, null: true
 
