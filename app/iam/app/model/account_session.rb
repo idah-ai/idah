@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-module AccountState
+module AccountSession
   class Record < Verse::Model::Record::Base
-    type Resource::Iam::AccountStates
+    type Resource::Iam::AccountSessions
 
     field :id, type: Integer, primary: true
 
@@ -10,7 +10,6 @@ module AccountState
     field :refresh_seq, type: Integer, visible: false
     field :nonce, type: Integer, visible: false
 
-    field :platform, type: String
     field :user_agent, type: String
     field :ip, type: String
 
@@ -18,18 +17,18 @@ module AccountState
   end
 
   class Repository < Verse::Sequel::Repository
-    self.table = "account_states"
-    self.resource = Resource::Iam::AccountStates
+    self.table = "account_sessions"
+    self.resource = Resource::Iam::AccountSessions
 
-    def account_audit_repo
-      @account_audit_repo ||= AccountAudit::Repository.new(auth_context)
+    def account_login_audit_repo
+      @account_login_audit_repo ||= AccountLoginAudit::Repository.new(auth_context)
     end
 
-    def check_seq(account_id, platform, nonce, sequence)
+    def check_seq(account_id, session_id, nonce, sequence)
       with_db_mode :r do |_db|
         frag = <<-SQL
           account_id = :account_id AND
-          platform = :platform AND
+          id = :session_id AND
           nonce = :nonce AND
           refresh_seq < :refresh_seq
         SQL
@@ -38,7 +37,7 @@ module AccountState
           Sequel.lit(
             frag,
             account_id:,
-            platform:,
+            session_id:,
             nonce:,
             refresh_seq: sequence + 30 # Use 30 seconds leeway in case the user is opening multiple tab at once.
           )
@@ -46,32 +45,32 @@ module AccountState
       end
     end
 
-    def bump_refresh_seq(account_id, role, nonce:, ip: "", platform: "unknown", user_agent: nil, at: Time.now)
+    def bump_refresh_seq(account_id, role, nonce:, session_id: nil, ip: "", user_agent: nil, at: Time.now)
       auth_context.mark_as_checked!
 
       with_db_mode :rw do
         transaction do
           at_ts = at.to_i
 
-          state = table.where({ account_id:, platform: }).first
+          properties = { refresh_seq: at_ts, ip:, user_agent: user_agent || "" }
 
-          is_login = state.nil? || state[:nonce] != nonce
+          session = table.where({ id: session_id, account_id: account_id }).first if session_id
 
-          properties = { refresh_seq: at_ts, ip:, platform:, user_agent: user_agent || "" }
+          is_login = session_id.nil? || session.nil? || session[:nonce] != nonce
 
           properties[:nonce] = nonce if is_login
 
-          if state
-            table.where({ account_id:, platform: }).update(properties)
+          if session
+            table.where({ id: session_id, account_id: }).update(properties)
           else
-            table.insert({ account_id:, platform:, **properties })
+            session_id = table.insert({ account_id:, **properties })
           end
 
           if is_login
-            account_audit_repo.log_access(account_id, role, ip, platform, user_agent, at)
+            account_login_audit_repo.log_access(account_id, role, ip, user_agent, at)
           end
 
-          at_ts
+          [at_ts, session_id]
         end
       end
     end

@@ -3,8 +3,8 @@
 module Resource
   module Iam
     Accounts = "iam:accounts"
-    AccountStates = "iam:account_states"
-    AccountAudits = "iam:account_audits"
+    AccountSessions = "iam:account_sessions"
+    AccountLoginAudits = "iam:account_login_audits"
     AccountAuths = "iam:account_auths"
   end
 end
