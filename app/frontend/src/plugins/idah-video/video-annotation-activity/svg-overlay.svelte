@@ -13,7 +13,7 @@
   } from "./VideoAnnotationContext";
   import Zoomable from "./zoomable.svelte";
   import BoundingBox, { type ToolSelection } from "./bounding-box.svelte";
-  import { boundingBoxes } from "./idb_store.svelte";
+  import { boundingBoxes, idb_updated_at } from "./idb_store.svelte";
 
   type Props = {
     frame: number;
