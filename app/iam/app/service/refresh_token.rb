@@ -29,7 +29,7 @@ module RefreshToken
     sid   = payload["sid"]
     nonce = payload["nc"]
     refid = payload["refid"]
-
+    # binding.pry
     if account_sessions.check_seq(uid, sid, nonce, refid)
       return uid, sid, nonce
     end
