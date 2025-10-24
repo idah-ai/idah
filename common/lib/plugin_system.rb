@@ -3,7 +3,7 @@
 module PluginSystem
   extend self
 
-  attr_reader :config, :plugins
+  attr_reader :config, :registry
 
   @plugins = {}
 
@@ -18,11 +18,14 @@ module PluginSystem
     )
 
     @registry = registry_class.new(
-      @config.path
+      context_class
     )
 
     config.manual&.each do |plugin_name|
-      @registry.load_plugin(plugin_name, nil, manual: true)
+      @registry.register(plugin_name,
+      File.join(
+        @config.path, plugin_name
+      ), manual: true)
     end
 
     # watch_sources if config.watch

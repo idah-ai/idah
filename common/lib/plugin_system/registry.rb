@@ -7,37 +7,24 @@ module PluginSystem
   class Registry
     attr_reader :context_class, :path, :plugins
 
-    def initialize(context_class, path)
+    def initialize(context_class)
       @context_class = context_class
-      @path = path
       @plugins = {}
     end
 
-    def load_plugin(name, version, manual: false)
-      if !manual && version.nil?
-        raise ArgumentError,
-          "Version must be specified for managed plugins"
-      end
-
-      plugin_path = manual ?
-        File.join(@path, "#{name}-#{version}") :
-        File.join(@path, name)
-
-      if !Dir.exist?(plugin_path)
+    def register(name, path, manual: false)
+      unless Dir.exist?(path)
         if manual
-          Verse.logger.warn{ "[IDAH-PLUGIN] Plugin path `#{plugin_path}` does not exist." }
+          Verse.logger.warn{ "[IDAH-PLUGIN] Plugin path `#{path}` does not exist." }
           return
         end
 
         retrieve_plugin(name, version)
       end
 
-      plugin = Plugin.from_manifest(File.join(
-        plugin_path, "manifest.json"
-        )
-      )
+      plugin = Plugin.from_manifest(File.join(path, "manifest.json"))
 
-      # Unload current plugin if any
+      # Unload current plugin if loaded.
       unload_plugin(name)
 
       @plugins[name] = plugin
