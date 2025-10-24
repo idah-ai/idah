@@ -79,7 +79,7 @@ const createVisualModeKeyMap = (context: KeyMapContext) => {
     console.log("startFrame executed");
   };
   const endFrame = () => {
-    context.player()?.seekToFrame((context.player()?.getFrames() || 1) - 1);
+    context.player()?.seekToFrame((context.player()?.getFrames() || 0));
     console.log("endFrame executed");
   };
 

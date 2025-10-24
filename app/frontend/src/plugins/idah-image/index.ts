@@ -4,7 +4,7 @@ import Plugin from "./plugin.svelte";
 
 let mounted: any;
 
-const IdahImage: IActivityView = {
+const idah_plugin: IActivityView = {
   name: "idah-image",
   label: "idah image",
   description: "idah image annotation plugin",
@@ -31,4 +31,4 @@ const IdahImage: IActivityView = {
   },
 };
 
-export default IdahImage;
+export default idah_plugin;
