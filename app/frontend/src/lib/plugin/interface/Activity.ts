@@ -1,5 +1,8 @@
 // duplicate from yacine's
 
+import type { Command } from "@/command/Command";
+import type { AnnotationHeaderBarBaseTool } from "../layout/header/AnnotationHeaderBar.types";
+
 interface IUser {
   id: number;
   email: string;
@@ -108,6 +111,22 @@ export interface IConfig {
   properties: Array<PropertyField>;
   taggings: Array<TagField>;
 }
+export interface ICommands {
+  on(name: string, commandBuilder: (props: any) => Command): void;
+  run(name: string, props?: any): void;
+  undo(times?: number): void;
+  redo(times?: number): void;
+}
+
+export interface HeaderBarModeTool extends AnnotationHeaderBarBaseTool {
+  type: string;
+}
+export interface ITools {
+  setTools: (tools: HeaderBarModeTool[]) => void;
+  setTool: (tool: string) => void;
+  onToolsChange: (cb: (tools: HeaderBarModeTool[]) => void) => void;
+  onToolChange: (cb: (tool: string) => void) => void;
+}
 
 export interface IActivityContext {
   // Id of the current entry
@@ -139,6 +158,10 @@ export interface IActivityContext {
 
   // Driver for fetching and updating notes
   get notes(): INoteDriver;
+
+  get commands(): ICommands;
+
+  get tools(): ITools;
 
   // Return to previous step of the workflow
   back(): void;
