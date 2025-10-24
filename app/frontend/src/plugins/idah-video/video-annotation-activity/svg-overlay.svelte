@@ -13,7 +13,7 @@
   } from "./VideoAnnotationContext";
   import Zoomable from "./zoomable.svelte";
   import BoundingBox, { type ToolSelection } from "./bounding-box.svelte";
-  import { boundingBoxes } from "./idb_store.svelte";
+  import { boundingBoxes, idb_updated_at } from "./idb_store.svelte";
 
   type Props = {
     frame: number;
@@ -197,8 +197,8 @@
   >
     {#if width && height}
       <!-- prevent display issue on load for now -->
-      <line x1={0} y1={target_line[Y]} x2={width} y2={target_line[Y]} stroke=#2b7fff />
-      <line x1={target_line[X]} y1={0} x2={target_line[X]} y2={height} stroke=#2b7fff />
+      <line x1={0} y1={target_line[Y]} x2={width} y2={target_line[Y]} stroke="#2b7fff" />
+      <line x1={target_line[X]} y1={0} x2={target_line[X]} y2={height} stroke="#2b7fff" />
     {/if}
 
     <!-- draw annotation context -->
@@ -210,7 +210,7 @@
               points={currentShape(annotation.shape, frame) || []}
               ratio={target_size}
               offset={zoomInfo.offset}
-              color={context.config.categories.find(c => c.id == annotation.value?.category)?.color || "grey"}
+              color={context.config.categories.find((c) => c.id == annotation.value?.category)?.color || "grey"}
               onmousedown={(e) => {
                 if (mode == "visual" || selected) {
                   e.stopPropagation();
@@ -229,7 +229,9 @@
               points={currentShape(annotation.shape, frame) || []}
               ratio={target_size}
               offset={zoomInfo.offset}
-              color={context.config.categories.find(c => c.id == annotation.value?.category)?.color || "grey"}
+              color={annotation?.synced
+                ? context.config.categories.find((c) => c.id == annotation?.value?.category)?.color || "grey"
+                : "grey"}
               onmousedown={(e) => {
                 if (mode == "visual" || selected) {
                   e.stopPropagation();
@@ -249,7 +251,9 @@
       offset={zoomInfo.offset}
       cursor={cursor_downscaled}
       editable={mode == "video:bounding_box"}
-      color={context.config.categories.find(c => c.id == selected?.value?.category)?.color || "grey"}
+      color={selected?.synced
+        ? context.config.categories.find((c) => c.id == selected?.value?.category)?.color || "grey"
+        : "grey"}
       onChange={(bb) => {
         onSelection("video:bounding_box", frame, bb, selected?.metadata.id);
         points = bb;
