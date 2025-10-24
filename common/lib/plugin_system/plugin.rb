@@ -8,7 +8,6 @@ module PluginSystem
       @path = path
       @manifest = manifest
       @manual = manual
-      @context_class = context_class
     end
 
     def self.from_manifest(manifest_file, manual: false)
@@ -34,7 +33,7 @@ module PluginSystem
         service_name
       )
 
-      if !Dir.exists?(path_to_code)
+      if !File.directory?(path_to_code)
         Verse.logger.info{ "[IDAH-PLUGIN] Plugin `#{manifest.name}` backend path `#{path_to_code}` does not exist, skipping load." }
         return;
       end
@@ -59,10 +58,10 @@ module PluginSystem
 
     def stop
       @context&.unmount_plugin
+      self
+    ensure
       @loader&.unload
       @loader = nil
-
-      self
     end
 
     def reload

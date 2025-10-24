@@ -3,7 +3,7 @@
 module PluginSystem
   extend self
 
-  attr_reader :config, :plugins
+  attr_reader :config, :registry
 
   @plugins = {}
 
@@ -18,7 +18,7 @@ module PluginSystem
     )
 
     @registry = registry_class.new(
-      @config.path
+      context_class, @config.path
     )
 
     config.manual&.each do |plugin_name|

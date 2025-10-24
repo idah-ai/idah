@@ -1,19 +1,21 @@
 class PluginsExpo < BaseExpo
   http_path "/plugins"
 
-  use_service Plugins::Service
+  use asset_service: Plugins::AssetService
 
-  expose on_http(:get, ":plugin/file/:filename",
+  expose on_http(:get, ":plugin/files/:filename",
     auth: nil,
     renderer: Verse::Http::Renderer::Identity
   ) do
     input do
       field :plugin, String
+
+      field :module, String
       field :filename, String
     end
   end
   def serve
-    service.serve(
+    asset_service.serve(
       params[:plugin],
       params[:filename]
     ) || server.not_found
