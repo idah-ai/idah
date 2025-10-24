@@ -180,7 +180,8 @@
               <NoteFeedCard noteFeed={$noteSidebarStore.selectedNoteFeed}></NoteFeedCard>
 
               {#each noteComments as noteComment (noteComment.id)}
-                <NoteCommentCard {noteComment}></NoteCommentCard>
+                <NoteCommentCard {noteComment} highlighted={$noteSidebarStore.selectedNoteCommentId === noteComment.id}
+                ></NoteCommentCard>
               {/each}
             {/await}
           {/key}
@@ -191,7 +192,8 @@
               <Spinner />
             {:then notes}
               {#each notes as noteFeed (noteFeed.id)}
-                <NoteFeedCard {noteFeed}></NoteFeedCard>
+                <NoteFeedCard {noteFeed} highlighted={noteFeed.id === $noteSidebarStore.noteFeedPopup.noteFeed?.id}
+                ></NoteFeedCard>
               {:else}
                 <ResponseBlock
                   title="No Notes"

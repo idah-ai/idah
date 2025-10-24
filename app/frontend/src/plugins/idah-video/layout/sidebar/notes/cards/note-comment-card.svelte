@@ -6,8 +6,9 @@
   // Props
   interface Props {
     noteComment: INoteComment;
+    highlighted?: boolean;
   }
-  let { noteComment }: Props = $props();
+  let { noteComment, highlighted }: Props = $props();
 </script>
 
-<NoteCard record={noteComment} resource="dataset:note_comments"></NoteCard>
+<NoteCard record={noteComment} resource="dataset:note_comments" {highlighted}></NoteCard>

@@ -3,7 +3,7 @@ import { NoteFeedRecord, noteFeedsBackendDataSource } from "@/data/model/dataset
 
 import type { IListOptions, INoteComment, INoteDriver, INoteFeed } from "@/plugin/interface/Activity";
 
-function parseNoteFeedRecordToINoteFeed(record: NoteFeedRecord): INoteFeed {
+export function parseNoteFeedRecordToINoteFeed(record: NoteFeedRecord): INoteFeed {
   return {
     id: record.id,
     entry_id: record.entry_id,
@@ -22,7 +22,7 @@ function parseNoteFeedRecordToINoteFeed(record: NoteFeedRecord): INoteFeed {
   };
 }
 
-function parseNoteCommentRecordToINoteComment(record: NoteCommentRecord): INoteComment {
+export function parseNoteCommentRecordToINoteComment(record: NoteCommentRecord): INoteComment {
   return {
     id: record.id,
     note_feed_id: record.note_feed_id,

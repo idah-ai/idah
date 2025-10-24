@@ -190,6 +190,9 @@ export interface IActivityContext {
   // Driver for fetching and updating notes
   get notes(): INoteDriver;
 
+  // Navigate to a specific note feed and comment
+  gotoFeed(noteFeedId: string, noteCommentId?: string): Promise<void>;
+
   // Return to previous step of the workflow
   back(): void;
 
