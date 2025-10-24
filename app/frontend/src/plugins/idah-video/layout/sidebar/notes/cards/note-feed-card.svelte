@@ -28,11 +28,13 @@
     // status,
     content_md,
     created_at,
+    updated_at,
     note_comments,
   } = $derived(noteFeed);
 
   type CommentType = "general" | "annotation" | "video_frame";
   let isListView = $derived(!$noteSidebarStore.selectedNoteFeed);
+  let isEdited = $derived(created_at !== updated_at);
   let commentType: CommentType = $derived.by(() => {
     if (annotation_id) return "annotation";
     if (Object.keys(position || {}).length > 0) return "video_frame";
@@ -60,7 +62,15 @@
   }
 </script>
 
-<NoteCard resource="noteFeed" {id} {content_md} {created_by_id} {created_at} onCardClick={selectNoteFeed}>
+<NoteCard
+  resource="noteFeed"
+  {id}
+  {content_md}
+  is_edited={isEdited}
+  {created_by_id}
+  {created_at}
+  onCardClick={selectNoteFeed}
+>
   {#snippet headerIcon()}
     <div
       class={cn("flex size-8 shrink-0 items-center justify-center rounded-full ", {

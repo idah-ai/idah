@@ -69,20 +69,15 @@
             resource="noteFeed"
             id={noteFeed.id}
             content_md={noteFeed.content_md}
+            is_edited={noteFeed.created_at !== noteFeed.updated_at}
             created_by_id={noteFeed.created_by_id}
             created_at={noteFeed.created_at}
           ></NoteCard>
 
           {#key $noteSidebarStore.lastUpdated}
             {#await loadNoteComments() then noteComments}
-              {#each noteComments as noteComment (noteComment.id)}
-                <NoteCard
-                  resource="noteComment"
-                  id={noteComment.id}
-                  content_md={noteComment.content_md}
-                  created_by_id={noteComment.created_by_id}
-                  created_at={noteComment.created_at}
-                ></NoteCard>
+              {#each noteComments as { id, content_md, is_edited, created_by_id, created_at } (id)}
+                <NoteCard resource="noteComment" {id} {content_md} {is_edited} {created_by_id} {created_at}></NoteCard>
               {/each}
             {/await}
           {/key}

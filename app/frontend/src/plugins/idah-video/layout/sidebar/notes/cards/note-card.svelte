@@ -17,6 +17,7 @@
     resource: "noteFeed" | "noteComment";
     id: string;
     content_md: string;
+    is_edited: boolean;
     created_by_id: number;
     created_at: string;
     onCardClick?: () => void;
@@ -29,6 +30,7 @@
     resource,
     id,
     content_md,
+    is_edited,
     created_by_id,
     created_at,
     onCardClick,
@@ -115,6 +117,9 @@
   <div class="flex min-h-16 flex-1 flex-col items-start gap-1 text-sm">
     {#if mode === "view"}
       <MarkdownPreview value={content_md} />
+      {#if is_edited}
+        <span class="text-muted-foreground text-xs">(Edited)</span>
+      {/if}
 
       {@render contentActions?.()}
     {/if}
