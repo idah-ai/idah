@@ -9,6 +9,12 @@ module PluginSystem
     field :title, String
     field(:description, String).default("no description provided")
 
+    field? :modalities, Array do
+      field :id, String
+      field? :label, String
+      field? :description, String
+    end
+
     field? :repository do
       field :type, String
       field :url, String
@@ -38,7 +44,7 @@ module PluginSystem
 
   Manifest = ManifestSchema.dataclass do
     def self.from_file(file_path)
-      data = JSON.parse(File.read(file))
+      data = JSON.parse(File.read(file_path))
       self.new(data)
     end
   end

@@ -11,6 +11,13 @@
     "url": ""
   },
 
+  "modalities": [
+    {
+      "id": "idah:video",
+      "label": "Video files"
+    }
+  ],
+
   "entrypoints": {
     "entryPlugin": {
       "script": "frontend/build/build.js",
