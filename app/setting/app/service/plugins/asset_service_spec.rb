@@ -1,4 +1,4 @@
-RSpec.describe Plugins::Service, type: :service, as: :system do
+RSpec.describe Plugins::AssetService, type: :service, as: :system do
 
   describe "#serve" do
     it "serves the plugin file if found (manual)" do

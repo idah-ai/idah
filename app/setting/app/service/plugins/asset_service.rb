@@ -9,7 +9,6 @@ module Plugins
     end
 
     def find(plugin_name)
-      binding.pry
       # 1. check for manual plugins
       manual_plugins = Verse.config.extra_fields.dig(
         :idah, :plugins, :manual
