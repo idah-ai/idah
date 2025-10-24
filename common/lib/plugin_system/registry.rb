@@ -22,9 +22,9 @@ module PluginSystem
         retrieve_plugin(name, version)
       end
 
-      plugin = Plugin.from_manifest(File.join(plugin_path, "manifest.json"))
+      plugin = Plugin.from_manifest(File.join(path, "manifest.json"))
 
-      # Unload current plugin if loaded
+      # Unload current plugin if loaded.
       unload_plugin(name)
 
       @plugins[name] = plugin
