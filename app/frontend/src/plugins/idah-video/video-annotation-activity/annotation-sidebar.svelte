@@ -51,21 +51,6 @@
     return acc;
   }, new Map<string, CategoryField[]>());
 
-  // let tools2 = context.config.taggings.reduce((acc, v: TagField) => {
-  //   if (!acc.has(v.type)) acc.set(v.type, [v]);
-  //   else {
-  //     let taggings = acc.get(v.type);
-
-  //     if (taggings) taggings.push(v);
-  //     else taggings = [v];
-
-  //     acc.set(v.type, taggings);
-  //   }
-  //   return acc;
-  // }, new Map<string, TagField[]>());
-
-  // console.log({ tools, tools2 });
-
   let searchValue = $state("");
   let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
