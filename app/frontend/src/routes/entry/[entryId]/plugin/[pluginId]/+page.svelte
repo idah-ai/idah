@@ -8,26 +8,33 @@
   import { activityContextForEntry } from "@/plugin/ActivityContext";
 
   import type { IActivityContext } from "@/plugin/interface/Activity";
+  import { onMount } from "svelte";
 
   // Variables
   let entryId: string = page.params.entryId as string;
 
-  // Functions
-  async function loadContext(): Promise<IActivityContext> {
-    const entryRes = await entriesBackendDataSource.get(entryId, {
-      included: ["dataset.project"],
-    });
+  let context_promise: Promise<IActivityContext> | undefined = $state();
 
-    const context = activityContextForEntry(entryRes.data);
-    return context;
-  }
+  // Functions
+  onMount(() => {
+    context_promise = new Promise<IActivityContext>(async (ok, ko) => {
+      const entryRes = await entriesBackendDataSource.get(entryId, {
+        included: ["dataset.project"],
+      });
+
+      if (!entryRes) ko(`could not retrieve entry ${entryId}`);
+      else ok(activityContextForEntry(entryRes.data));
+    });
+  });
 </script>
 
-{#await loadContext()}
-  <div class="flex h-screen flex-col items-center justify-center gap-2">
-    <Spinner size="xl"></Spinner>
-    <p class="text-muted-foreground text-sm">Loading context for {entryId}...</p>
-  </div>
-{:then context}
-  <IdahPlugin {context} />
-{/await}
+{#if context_promise}
+  {#await context_promise}
+    <div class="flex h-screen flex-col items-center justify-center gap-2">
+      <Spinner size="xl"></Spinner>
+      <p class="text-muted-foreground text-sm">Loading context for {entryId}...</p>
+    </div>
+  {:then context}
+    <IdahPlugin {context} />
+  {/await}
+{/if}

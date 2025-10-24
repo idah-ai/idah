@@ -12,7 +12,7 @@ export default defineConfig({
       name: "idah_plugin",
       external: ["svelte"],
       fileName: (format) => `idah-video.${format}.js`,
-      cssFileName: 'idah-video',
+      cssFileName: "idah-video",
     },
     outDir: "build/plugins",
     rollupOptions: {
@@ -28,5 +28,7 @@ export default defineConfig({
       }),
     },
     sourcemap: true,
+    minify: false,
+    cssMinify: true,
   },
 });

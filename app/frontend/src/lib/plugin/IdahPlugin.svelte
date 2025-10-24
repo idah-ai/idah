@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
   import type { IActivityContext, IActivityView } from "./interface/Activity";
+  import AnnotationHeaderBar from "@/plugin/layout/header/AnnotationHeaderBar.svelte";
 
   // Props
   interface Props {
@@ -14,18 +15,16 @@
 
   let p: Promise<IActivityView> = new Promise<IActivityView>((ok, ko) => {
     if (!window.idah_plugin) {
-      // expect plugin to
       ko();
     } else {
       ok(window.idah_plugin as IActivityView);
     }
-    // checkPluginLoaded(ok, ko)
   });
 
   onMount(() => {
     p.then((_plugin) => {
       plugin = _plugin;
-      console.log("plugin loaded", { plugin: $state.snapshot(plugin) });
+      console.debug({ plugin: $state.snapshot(plugin), container, context });
       plugin.render?.(container, context);
     });
   });
@@ -35,12 +34,17 @@
   });
 </script>
 
-<div bind:this={container}>
-  {#await p}
-    Loading Plugins
-  {:then}
-    should be overriden by plugin render
-  {:catch}
-    Could not find plugin
-  {/await}
+<div>
+  <AnnotationHeaderBar {context} />
+  <!-- Plugin Container -->
+  <div class="h-[calc(100vh-58px)]" bind:this={container}>
+    <!-- AnnotationHeaderBar 58 px \o/ ? -->
+    {#await p}
+      Loading Plugins
+    {:then}
+      should be overriden by plugin render
+    {:catch}
+      Could not find plugin
+    {/await}
+  </div>
 </div>

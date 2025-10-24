@@ -11,7 +11,7 @@
   import type { AnnotationValue } from "$lib/context/AnnotationContext";
   import type { CategoryField } from "$lib/data/model/dataset/labels";
   import type { CategoryDefinition } from "@/context/ActivityContext";
-  import type { IActivityContext } from "@/plugin/interface/Activity";
+  import type { IActivityContext, TagField } from "@/plugin/interface/Activity";
   import type { AnnotationsIndexedDB } from "./indexedDB";
   import AnnotationTabs from "./tabs/AnnotationTabs.svelte";
   import type { CategoryConfiguration, LabellingConfiguration, VideoAnnotation } from "./VideoAnnotationContext";
@@ -21,7 +21,6 @@
     onEditValue,
     onSelectAnnotation,
     onDeleteAnnotation,
-    onSelectMode,
     context,
     mode,
     currentFrame,
@@ -33,7 +32,6 @@
     onEditValue: (annotationValue: AnnotationValue, mode: string) => void;
     onSelectAnnotation: (annotation: VideoAnnotation) => void;
     onDeleteAnnotation: (annotation: VideoAnnotation) => void;
-    onSelectMode: (mode: string) => void;
     context: IActivityContext;
     mode: string;
     db?: AnnotationsIndexedDB;
