@@ -1,5 +1,5 @@
 module Plugins
-  class Service < Verse::Service::Base
+  class AssetService < Verse::Service::Base
     use repo: Plugin::Repository
 
     def install(plugin_name)
@@ -9,6 +9,7 @@ module Plugins
     end
 
     def find(plugin_name)
+      binding.pry
       # 1. check for manual plugins
       manual_plugins = Verse.config.extra_fields.dig(
         :idah, :plugins, :manual
@@ -28,6 +29,19 @@ module Plugins
     end
 
     def serve(plugin_name, filename)
+      plugin = find(plugin_name)
+
+      case filename
+      when "plugin.js"
+      when "plugin.css"
+      when "details.js"
+      when "details.css"
+      else
+        return nil
+      end
+
+
+
       find(plugin_name)
 
       # raise "TODO: Implement plugin frontend serving"
