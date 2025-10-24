@@ -38,49 +38,47 @@
 
   async function createProjectMember(): Promise<void> {
     const uniqueEmails = [...new Set(members.map((m) => m.email))];
-    // TODO: here we fetchonly once for existing accounts and members, no need to loop just yet
-    // then loop only to create
+    const existingAccounts = await accountsBackendDataSource.list({ filters: { email: uniqueEmails } });
+    const existingEmails = existingAccounts.data.map((account) => account.email);
+    const newEmails = uniqueEmails.filter((email) => !existingEmails.includes(email));
+
+    const existingAccountIds = existingAccounts.data.map((account) => account.account_id);
+    const existingProjectMembers = await projectMembersBackendDataSource.list({
+      filters: {
+        project_id: projectId,
+        account_id: existingAccountIds,
+      },
+    });
+    const existingProjectMemberAccountIds = existingProjectMembers.data.map((member) => member.account_id);
+
     try {
       for (const member of members) {
         const { email, access } = member;
-        let account: AccountRecord;
+        let account: AccountRecord | undefined;
 
-        /** Check if member is already invited */
-        const existingAccount = await accountsBackendDataSource.list({ filters: { email: email } });
-
-        if (!existingAccount.data.length) {
-          /** If account does not exist, create an account first */
+        // Check if account email exists
+        if (existingEmails.includes(email)) {
+          account = existingAccounts.data.find((acc) => acc.email === email);
+        } else {
           const createdAccount = await accountsBackendDataSource.create({
             attributes: { email: email, enabled: true },
           });
           account = createdAccount.data;
-        } else {
-          account = existingAccount.data[0];
         }
 
-        /** Check if member is already in the project */
-        const existingProjectMember = await projectMembersBackendDataSource.list({
-          filters: {
-            project_id: projectId,
-            account_id: account.id,
-          },
-        });
-
-        if (existingProjectMember.data.length) {
-          // Re-invite existing member
-          continue;
+        /** Check if member is not already in the project and should be invited */
+        if (account?.id && !existingProjectMemberAccountIds.includes(Number(account.id))) {
+          await projectMembersBackendDataSource.create({
+            attributes: {
+              project_id: projectId!,
+              account_id: Number(account.id),
+              name: account.name,
+              email,
+              access,
+              invited_by_id: 1, // TODO: get id from context
+            },
+          });
         }
-
-        await projectMembersBackendDataSource.create({
-          attributes: {
-            project_id: projectId!,
-            account_id: Number(account.id),
-            name: account.name,
-            email,
-            access,
-            invited_by_id: 1,
-          },
-        });
       }
 
       $refetches.projectMembers.list = new Date();
