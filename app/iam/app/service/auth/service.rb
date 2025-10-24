@@ -55,7 +55,7 @@ module Auth
     end
 
     def delete_session(refresh_token)
-      uid, session_id, _nonce = RefreshToken.validate(refresh_token)
+      _uid, session_id, _nonce = RefreshToken.validate(refresh_token)
 
       account_sessions.delete(session_id)
     end
