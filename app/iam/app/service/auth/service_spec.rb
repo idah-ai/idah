@@ -32,7 +32,7 @@ RSpec.describe Auth::Service, database: true do
 
   before do
     # Ensure Settings are loaded
-    allow(Settings).to receive(:[]).with("refresh_token.lifetime").and_return(86400)
+    allow(Settings).to receive(:[]).with("refresh_token.lifetime").and_return(86_400)
     allow(Settings).to receive(:[]).with("auth_token.lifetime").and_return(3600)
   end
 
@@ -148,12 +148,14 @@ RSpec.describe Auth::Service, database: true do
 
   describe "#create_refresh_token" do
     let(:account) do
-      Account::Record.new({
-        id: account_id,
-        email: test_email,
-        name: test_name,
-        role: test_role
-      })
+      Account::Record.new(
+        {
+          id: account_id,
+          email: test_email,
+          name: test_name,
+          role: test_role
+        }
+      )
     end
 
     it "creates a refresh token" do
