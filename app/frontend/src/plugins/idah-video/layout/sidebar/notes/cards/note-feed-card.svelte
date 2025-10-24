@@ -14,8 +14,9 @@
   // Props
   interface Props {
     noteFeed: INoteFeed;
+    highlighted?: boolean;
   }
-  let { noteFeed }: Props = $props();
+  let { noteFeed, highlighted }: Props = $props();
 
   // Variables
   let { annotation_id, position, note_comments } = $derived(noteFeed);
@@ -34,6 +35,10 @@
       case "general": {
         /** Show note feed detail, if comment type is 'general' */
         $noteSidebarStore.selectedNoteFeed = noteFeed;
+        $noteSidebarStore.noteFeedPopup = {
+          show: false,
+          noteFeed: null,
+        };
         break;
       }
       case "annotation":
@@ -49,7 +54,7 @@
   }
 </script>
 
-<NoteCard record={noteFeed} resource="dataset:note_feeds" onCardClick={selectNoteFeed}>
+<NoteCard record={noteFeed} resource="dataset:note_feeds" {highlighted} onCardClick={selectNoteFeed}>
   {#snippet headerIcon()}
     <div
       class={cn("flex size-8 shrink-0 items-center justify-center rounded-full ", {

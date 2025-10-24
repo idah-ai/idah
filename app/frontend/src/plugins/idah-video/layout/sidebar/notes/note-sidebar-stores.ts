@@ -11,13 +11,13 @@ interface NoteSidebarStore {
     noteFeed: INoteFeed | null;
   };
 
-  /** Selected note feed */
   selectedNoteFeed: INoteFeed | null;
+  selectedNoteCommentId?: string;
 }
 
 export const noteSidebarStore = writable<NoteSidebarStore>({
   lastUpdated: new Date(),
-  open: true,
+  open: false,
 
   noteFeedPopup: {
     show: false,
@@ -25,6 +25,7 @@ export const noteSidebarStore = writable<NoteSidebarStore>({
   },
 
   selectedNoteFeed: null,
+  selectedNoteCommentId: undefined,
 });
 
 export function closeNoteFeedPopup() {

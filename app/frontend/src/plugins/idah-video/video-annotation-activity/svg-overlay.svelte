@@ -1,5 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
+  import { sineInOut } from "svelte/easing";
+  import { fade } from "svelte/transition";
 
   import { closeNoteFeedPopup, noteSidebarStore } from "../layout/sidebar/notes/note-sidebar-stores";
 
@@ -230,20 +232,23 @@
     </Zoomable>
 
     {#if $noteSidebarStore.noteFeedPopup.show}
-      <div
-        class="bg-background absolute z-40 h-auto min-w-72 max-w-[480px] rounded-xl"
-        style:top="{((Number($noteSidebarStore.noteFeedPopup.noteFeed?.position.y || 0) * target_size[Y]) / height) *
-          100}%"
-        style:left="{((Number($noteSidebarStore.noteFeedPopup.noteFeed?.position.x || 0) * target_size[X]) / width) *
-          100}%"
-        style:transform="translate({zoomInfo.offset[X]}px, {zoomInfo.offset[Y]}px)"
-      >
-        {#if $noteSidebarStore.noteFeedPopup.noteFeed?.id}
-          <SelectedNoteFeedDialog />
-        {:else}
-          <NewNoteFeedDialog />
-        {/if}
-      </div>
+      {#key $noteSidebarStore.noteFeedPopup.noteFeed}
+        <div
+          transition:fade={{ duration: 200, easing: sineInOut }}
+          class="bg-background absolute z-40 h-auto min-w-72 max-w-[480px] rounded-xl"
+          style:top="{((Number($noteSidebarStore.noteFeedPopup.noteFeed?.position.y || 0) * target_size[Y]) / height) *
+            100}%"
+          style:left="{((Number($noteSidebarStore.noteFeedPopup.noteFeed?.position.x || 0) * target_size[X]) / width) *
+            100}%"
+          style:transform="translate({zoomInfo.offset[X]}px, {zoomInfo.offset[Y]}px)"
+        >
+          {#if $noteSidebarStore.noteFeedPopup.noteFeed?.id}
+            <SelectedNoteFeedDialog />
+          {:else}
+            <NewNoteFeedDialog />
+          {/if}
+        </div>
+      {/key}
     {/if}
   </div>
 

@@ -11,11 +11,13 @@
   import { noteSidebarStore } from "../note-sidebar-stores";
 
   import type { IActivityContext, INoteComment, INoteFeed } from "@/plugin/interface/Activity";
+  import { cn } from "@/utils";
 
   // Props
   interface Props {
     record: INoteFeed | INoteComment;
     resource: "dataset:note_feeds" | "dataset:note_comments";
+    highlighted?: boolean;
 
     onCardClick?: () => void;
 
@@ -23,7 +25,7 @@
     headerActions?: Snippet;
     contentActions?: Snippet;
   }
-  let { record, resource, onCardClick, headerIcon, headerActions, contentActions }: Props = $props();
+  let { record, resource, highlighted, onCardClick, headerIcon, headerActions, contentActions }: Props = $props();
 
   // Contexts
   const context: IActivityContext = getContext("context");
@@ -87,7 +89,9 @@
 <div
   role="button"
   tabindex="0"
-  class="border-1 hover:bg-secondary group flex cursor-pointer flex-col gap-2 rounded-lg border-transparent p-2"
+  class={cn("border-1 hover:bg-secondary group flex cursor-pointer flex-col gap-2 rounded-lg border-transparent p-2", {
+    "bg-secondary": highlighted,
+  })}
   onkeypress={handleClickCard}
   onclick={handleClickCard}
 >

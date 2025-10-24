@@ -64,13 +64,17 @@
 
     <CardContent class="px-4">
       <ScrollArea class="max-h-72">
-        <div>
+        <div class="flex flex-col gap-2">
           <NoteCard record={noteFeed} resource="dataset:note_feeds"></NoteCard>
 
           {#key $noteSidebarStore.lastUpdated}
             {#await loadNoteComments() then noteComments}
               {#each noteComments as noteComment (noteComment.id)}
-                <NoteCard record={noteComment} resource="dataset:note_comments"></NoteCard>
+                <NoteCard
+                  record={noteComment}
+                  resource="dataset:note_comments"
+                  highlighted={$noteSidebarStore.selectedNoteCommentId === noteComment.id}
+                ></NoteCard>
               {/each}
             {/await}
           {/key}
