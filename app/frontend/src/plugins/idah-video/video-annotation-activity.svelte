@@ -53,7 +53,8 @@
   // Contexts
   setContext("context", context);
 
-  $effect(() => console.debug({ idb_updated_at: $state.snapshot($idb_updated_at) }));
+  $effect(() => console.debug({ $idb_updated_at }));
+  $effect(() => console.debug({ $boundingBoxes }));
 
   // Variables
   let player: Video | undefined = $state();
@@ -317,8 +318,9 @@
         v.metadata.updatedAt = updatedAt;
         v.synced = false;
 
-        await annotationsIDB?.addKeyFrame(v, selection);
+        await annotationsIDB?.addAnnotations([v]);
         $idb_updated_at = new Date();
+        selectedAnnotation = v;
 
         let p = context.annotations.update({
           id: v.metadata.id,
@@ -326,13 +328,17 @@
           annotation: v.value,
         });
 
-        p.then(async () => {
-          if (v.metadata.updatedAt == updatedAt) {
-            v.synced = true;
-            await annotationsIDB?.addAnnotations([v]);
-            $idb_updated_at = new Date();
-          }
-        });
+        p.then(
+          async () => {
+            if (v.metadata.updatedAt == updatedAt) {
+              v.synced = true;
+              await annotationsIDB?.addAnnotations([v]);
+              selectedAnnotation = v;
+              $idb_updated_at = new Date();
+            }
+          },
+          (e) => console.error({ e, p }),
+        );
       },
       async undo() {
         const v = await annotationsIDB?.get("annotations", props.id);
@@ -354,6 +360,7 @@
         // ... indexdb queries need reviews
         await annotationsIDB?.deleteKeyFrame(v, selection.frame);
         await annotationsIDB?.addAnnotations([v]);
+        selectedAnnotation = v;
         $idb_updated_at = new Date();
 
         let p = context.annotations.update({
@@ -366,6 +373,7 @@
           if (v.metadata.updatedAt == updatedAt) {
             v.synced = true;
             await annotationsIDB?.addAnnotations([v]);
+            selectedAnnotation = v;
             $idb_updated_at = new Date();
           }
         });
@@ -406,7 +414,6 @@
         await annotationsIDB?.deleteKeyFrame(annotation, props.frame);
         $idb_updated_at = new Date();
 
-        selectedAnnotation = undefined;
         selectedAnnotation = annotation;
 
         let p = context.annotations.update({
@@ -419,6 +426,7 @@
           if (annotation.metadata.updatedAt == updatedAt) {
             annotation.synced = true;
             await annotationsIDB?.addAnnotations([annotation]);
+            selectedAnnotation = annotation;
             $idb_updated_at = new Date();
           }
         });
@@ -622,9 +630,9 @@
 
     let p = annotationsIDB.getAllStore("annotations");
 
-    p.then((anns) => {
-      $boundingBoxes = anns;
-      console.debug({ $boundingBoxes });
+    p.then((updated_annotations) => {
+      console.debug({ $boundingBoxes: $state.snapshot($boundingBoxes), updated_annotations });
+      $boundingBoxes = updated_annotations;
     });
 
     return p;
