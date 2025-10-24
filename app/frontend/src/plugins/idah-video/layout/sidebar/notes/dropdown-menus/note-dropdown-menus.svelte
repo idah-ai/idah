@@ -14,11 +14,12 @@
 
   // Props
   interface Props {
-    id: string;
-    resource: "noteFeed" | "noteComment";
+    noteFeedId: string;
+    noteCommentId?: string;
     onSwitchToEditMode?: () => void;
+    onDelete: () => Promise<void>;
   }
-  let { id, resource, onSwitchToEditMode }: Props = $props();
+  let { noteFeedId, noteCommentId, onSwitchToEditMode, onDelete }: Props = $props();
 
   // Contexts
   const context: IActivityContext = getContext("context");
@@ -33,8 +34,14 @@
           label: "Copy link",
           icon: LinkIcon,
           action: () => {
+            // Expect url like this #feed/[id](/comments/[id])?
             const url = new URL(window.location.href);
-            url.hash = `note-${id}`;
+
+            url.hash = `#feed/${noteFeedId}`;
+            if (noteCommentId) {
+              url.hash += `/comments/${noteCommentId}`;
+            }
+
             navigator.clipboard.writeText(url.toString());
           },
         },
@@ -58,17 +65,7 @@
 
   // Functions
   async function deleteNote() {
-    switch (resource) {
-      case "noteFeed": {
-        await context.notes.feeds.delete(id);
-        break;
-      }
-
-      case "noteComment": {
-        await context.notes.comments.delete(id);
-        break;
-      }
-    }
+    await onDelete();
     openConfirmDeleteModal = false;
     $noteSidebarStore.lastUpdated = new Date();
   }

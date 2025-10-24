@@ -123,6 +123,10 @@
     $noteSidebarStore.selectedNoteFeed = null;
     $noteSidebarStore.lastUpdated = new Date();
   }
+
+  async function deleteNoteFeed() {
+    await context.notes.feeds.delete($noteSidebarStore.selectedNoteFeed!.id);
+  }
 </script>
 
 <Sidebar
@@ -155,7 +159,7 @@
       {/if}
 
       {#if isDetailView && $noteSidebarStore.selectedNoteFeed}
-        <NoteDropdownMenus id={$noteSidebarStore.selectedNoteFeed.id} resource="noteFeed" />
+        <NoteDropdownMenus noteFeedId={$noteSidebarStore.selectedNoteFeed.id} onDelete={deleteNoteFeed} />
         <ResolveNoteButton noteFeed={$noteSidebarStore.selectedNoteFeed} />
       {/if}
 

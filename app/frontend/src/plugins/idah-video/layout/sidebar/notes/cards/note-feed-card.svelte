@@ -18,24 +18,11 @@
   let { noteFeed }: Props = $props();
 
   // Variables
-  let {
-    id,
-    // entry_id,
-    annotation_id,
-    created_by_id,
-    // anchor_type,
-    position,
-    // status,
-    content_md,
-    created_at,
-    updated_at,
-    note_comments,
-  } = $derived(noteFeed);
+  let { annotation_id, position, note_comments } = $derived(noteFeed);
 
-  type CommentType = "general" | "annotation" | "video_frame";
+  type NoteType = "general" | "annotation" | "video_frame";
   let isListView = $derived(!$noteSidebarStore.selectedNoteFeed);
-  let isEdited = $derived(created_at !== updated_at);
-  let commentType: CommentType = $derived.by(() => {
+  let noteType: NoteType = $derived.by(() => {
     if (annotation_id) return "annotation";
     if (Object.keys(position || {}).length > 0) return "video_frame";
     return "general";
@@ -43,7 +30,7 @@
 
   // Functions
   function selectNoteFeed() {
-    switch (commentType) {
+    switch (noteType) {
       case "general": {
         /** Show note feed detail, if comment type is 'general' */
         $noteSidebarStore.selectedNoteFeed = noteFeed;
@@ -62,28 +49,20 @@
   }
 </script>
 
-<NoteCard
-  resource="noteFeed"
-  {id}
-  {content_md}
-  is_edited={isEdited}
-  {created_by_id}
-  {created_at}
-  onCardClick={selectNoteFeed}
->
+<NoteCard record={noteFeed} resource="dataset:note_feeds" onCardClick={selectNoteFeed}>
   {#snippet headerIcon()}
     <div
       class={cn("flex size-8 shrink-0 items-center justify-center rounded-full ", {
-        "bg-purple-300": commentType === "annotation",
-        "bg-yellow-300": commentType === "video_frame",
-        "bg-emerald-300": commentType === "general",
+        "bg-purple-300": noteType === "annotation",
+        "bg-yellow-300": noteType === "video_frame",
+        "bg-emerald-300": noteType === "general",
       })}
     >
-      {#if commentType === "annotation"}
+      {#if noteType === "annotation"}
         <SquareDashedIcon class="size-3.5" />
-      {:else if commentType === "video_frame"}
+      {:else if noteType === "video_frame"}
         <MapPinIcon class="size-3.5" />
-      {:else if commentType === "general"}
+      {:else if noteType === "general"}
         <MessageSquareIcon class="size-3.5" />
       {/if}
     </div>
