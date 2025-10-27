@@ -90,10 +90,23 @@ export function createNoteDriver(entryId: string): INoteDriver {
       },
       delete(id: string) {
         return new Promise<void>((resolve, reject) => {
-          noteFeedsBackendDataSource.delete(id).then(
-            () => resolve(),
-            (v) => reject(v.error),
-          );
+          noteCommentsBackendDataSource
+            .list({
+              fields: {
+                [NoteCommentRecord.type]: ["id"],
+              },
+            })
+            .then(async (res) => {
+              for (const comment of res.data) {
+                await noteCommentsBackendDataSource.delete(comment.id);
+              }
+
+              noteFeedsBackendDataSource.delete(id);
+            })
+            .then(
+              () => resolve(),
+              (v) => reject(v.error),
+            );
         });
       },
       markAsResolved(noteFeedId: string) {

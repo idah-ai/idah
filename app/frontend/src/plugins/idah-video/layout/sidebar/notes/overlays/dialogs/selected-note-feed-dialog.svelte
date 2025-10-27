@@ -9,6 +9,7 @@
 
   import ResolveNoteButton from "../../buttons/resolve-note-button.svelte";
   import NoteCard from "../../cards/note-card.svelte";
+  import NoteDropdownMenus from "../../dropdown-menus/note-dropdown-menus.svelte";
   import NoteBox from "../../note-box.svelte";
   import { closeNoteFeedPopup, noteSidebarStore } from "../../note-sidebar-stores";
 
@@ -47,6 +48,16 @@
     $noteSidebarStore.lastUpdated = new Date();
     contentMd = "";
   }
+
+  async function deleteNoteFeed() {
+    /** Delete the selected note feed */
+    if (noteFeed) {
+      await context.notes.feeds.delete(noteFeed.id);
+      toast.success("Note deleted successfully.");
+      closeNoteFeedPopup();
+      $noteSidebarStore.lastUpdated = new Date();
+    }
+  }
 </script>
 
 {#if noteFeed}
@@ -55,6 +66,8 @@
       <CardTitle class="text-sm">Comment</CardTitle>
       <div class="ml-auto flex items-center gap-1">
         <ResolveNoteButton {noteFeed}></ResolveNoteButton>
+
+        <NoteDropdownMenus noteFeedId={noteFeed.id} onDelete={deleteNoteFeed} />
 
         <Button variant="ghost" size="icon" onclick={closeNoteFeedPopup}>
           <XIcon />
@@ -65,7 +78,7 @@
     <CardContent class="px-2">
       <ScrollArea orientation="vertical" class="max-h-72 overflow-y-auto">
         <div class="flex max-h-72 flex-col gap-2">
-          <NoteCard record={noteFeed} resource="dataset:note_feeds"></NoteCard>
+          <NoteCard record={noteFeed} resource="dataset:note_feeds" deletable={false}></NoteCard>
 
           {#key $noteSidebarStore.lastUpdated}
             {#await loadNoteComments() then noteComments}
@@ -85,7 +98,7 @@
     <CardFooter class="px-2">
       <NoteBox
         value={contentMd}
-        placeholder="Write your comment"
+        placeholder="Reply"
         onInput={(e) => (contentMd = e.currentTarget.value)}
         onSubmit={createNoteComment}
       ></NoteBox>

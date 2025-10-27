@@ -79,7 +79,7 @@
 
   {#snippet contentActions()}
     {#if isListView}
-      <Button variant="link" size="sm" class="pl-0" onclick={selectNoteFeed}>
+      <Button variant="link" size="xs" class="pl-0" onclick={selectNoteFeed}>
         {#if note_comments.length === 0}
           Reply
         {:else}

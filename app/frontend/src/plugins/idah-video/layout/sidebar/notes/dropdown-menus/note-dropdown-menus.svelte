@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { getContext } from "svelte";
-
   import { EllipsisVerticalIcon, LinkIcon, PenSquareIcon, Trash2Icon } from "@lucide/svelte";
 
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
@@ -10,24 +8,21 @@
   import { noteSidebarStore } from "../note-sidebar-stores";
 
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
-  import type { IActivityContext } from "@/plugin/interface/Activity";
 
   // Props
   interface Props {
     noteFeedId: string;
     noteCommentId?: string;
+    deletable?: boolean;
     onSwitchToEditMode?: () => void;
     onDelete: () => Promise<void>;
   }
-  let { noteFeedId, noteCommentId, onSwitchToEditMode, onDelete }: Props = $props();
-
-  // Contexts
-  const context: IActivityContext = getContext("context");
+  let { noteFeedId, noteCommentId, deletable = true, onSwitchToEditMode, onDelete }: Props = $props();
 
   // Variables
   let openConfirmDeleteModal = $state(false);
 
-  const menus: IDropdownMenus = {
+  const menus: IDropdownMenus = $derived({
     actions: {
       items: [
         {
@@ -53,15 +48,16 @@
           },
         },
         {
-          label: "Delete",
+          label: noteCommentId ? "Delete comment" : "Delete feed",
           icon: Trash2Icon,
+          hidden: !deletable,
           action: () => {
             openConfirmDeleteModal = true;
           },
         },
       ],
     },
-  };
+  });
 
   // Functions
   async function deleteNote() {
