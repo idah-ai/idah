@@ -69,7 +69,7 @@ Sequel.migration do
 
     create_table(:projects) do
       column :id, :uuid, primary_key: true, default: Sequel.lit("uuid_generate_v7()")
-      column :name, String, null: false
+      column :name, String, null: false, index: true
 
       column :description, String, null: true
       column :created_by_email, String, null: false, index: true

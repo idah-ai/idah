@@ -47,11 +47,15 @@ module NoteFeed
       attr[:status] = "pending"
 
       entry_id = attr[:entry_id]
-      entry = entries.find!(entry_id)
+      entry = entries.find!(entry_id, included: ["dataset"])
 
-      unless entry.wf_step == "review" && entry.status == "in_progress"
+      # Check if the current workflow step allows note feeds
+      dataset = entry.dataset
+      noteable_steps = dataset.workflow_configuration[:noteable_steps] || []
+
+      unless noteable_steps.include?(entry.wf_step) && entry.status == "in_progress"
         raise Verse::Error::ValidationFailed,
-              "Cannot add note feed to entry not in review step"
+              "Cannot add note feed to entry in current step (#{entry.wf_step})"
       end
 
       # TODO: check if the user has permission to add note feed to the entry
