@@ -30,7 +30,9 @@ export const projectMembersBackendDataSource = createBackendDataSource(
 );
 
 export const projectMemberAccess = [
+  { label: "Organization Owner", value: "org_owner" },
   { label: "Owner", value: "owner" },
   { label: "Annotator", value: "annotator" },
   { label: "Reviewer", value: "reviewer" },
+  { label: "Viewer", value: "viewer" },
 ];
