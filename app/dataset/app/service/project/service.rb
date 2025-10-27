@@ -22,7 +22,7 @@ module Project
     end
 
     def create(record)
-      account_id = auth_context.metadata[:id] || 1 # TODO: remove, mocking
+      account_id = auth_context.metadata[:id]
 
       attr = record.attributes
       attr[:id] = record.id || UUIDv7.generate
@@ -53,8 +53,7 @@ module Project
     end
 
     def update(record)
-      # TODO: remove mocking
-      account_id = auth_context.metadata[:id] || 1
+      account_id = auth_context.metadata[:id]
       project_id = record.id
 
       members.authorize_action(
@@ -70,8 +69,7 @@ module Project
     end
 
     def delete(id)
-      # TODO: remove mocking
-      account_id = auth_context.metadata[:id] || 1
+      account_id = auth_context.metadata[:id]
       project_id = id
 
       members.authorize_action(

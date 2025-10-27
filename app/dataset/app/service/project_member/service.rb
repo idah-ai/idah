@@ -21,8 +21,7 @@ module ProjectMember
     end
 
     def create(record)
-      # TODO: remove mocking
-      account_id = auth_context.metadata[:id] || 1
+      account_id = auth_context.metadata[:id]
       project_id = record.attributes[:project_id]
 
       auth_context.reject! unless project_service.own?(account_id, project_id) || # check creator as there is no member
@@ -41,8 +40,7 @@ module ProjectMember
     end
 
     def delete(id)
-      # TODO: remove mocking
-      account_id = auth_context.metadata[:id] || 1
+      account_id = auth_context.metadata[:id]
       membership = project_members.find(id)
       role = membership.access
 

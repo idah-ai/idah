@@ -62,8 +62,7 @@ module Entry
         job_id = attr[:job_id]
 
         attr[:status] ||= job_id ? "pending" : "ready"
-        # TODO: remove mocking
-        attr[:created_by_id] = auth_context.metadata[:id] || 1
+        attr[:created_by_id] = auth_context.metadata[:id]
 
         id = entries.create(attr)
 
