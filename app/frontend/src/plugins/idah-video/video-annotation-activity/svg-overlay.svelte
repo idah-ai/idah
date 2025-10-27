@@ -7,6 +7,7 @@
 
   import NewNoteFeedDialog from "../layout/sidebar/notes/overlays/dialogs/new-note-feed-dialog.svelte";
   import SelectedNoteFeedDialog from "../layout/sidebar/notes/overlays/dialogs/selected-note-feed-dialog.svelte";
+  import messageCircleIcon from "../layout/sidebar/notes/svgs/message-circle.svg";
   import BoundingBox, { type ToolSelection } from "./bounding-box.svelte";
   import { boundingBoxes } from "./idb_store.svelte";
   import {
@@ -227,7 +228,7 @@
   }
 </script>
 
-<div class="svg-overlay flex-1">
+<div class="svg-overlay flex-1" class:cursor-note={$noteSidebarStore.open}>
   <div>
     <Zoomable bind:this={zoom} {mode} onZoomChange={(scale, offset) => (zoomInfo = { scale, offset })}>
       {@render children?.()}
@@ -235,14 +236,25 @@
 
     {#if $noteSidebarStore.noteFeedPopup.show}
       {#key $noteSidebarStore.noteFeedPopup.noteFeed}
-        <div
+        <img
           transition:fade={{ duration: 200, easing: sineInOut }}
-          class="bg-background absolute z-40 min-w-72 max-w-[480px] rounded-xl"
+          src={messageCircleIcon}
+          alt="Message circle icon"
+          class="absolute z-40 cursor-auto"
           style:top="{((Number($noteSidebarStore.noteFeedPopup.noteFeed?.position.y || 0) * target_size[Y]) / height) *
             100}%"
           style:left="{((Number($noteSidebarStore.noteFeedPopup.noteFeed?.position.x || 0) * target_size[X]) / width) *
             100}%"
           style:transform="translate({zoomInfo.offset[X]}px, {zoomInfo.offset[Y]}px)"
+        />
+        <div
+          transition:fade={{ duration: 200, easing: sineInOut }}
+          class="bg-background absolute z-40 min-w-72 max-w-[480px] cursor-auto rounded-xl"
+          style:top="{((Number($noteSidebarStore.noteFeedPopup.noteFeed?.position.y || 0) * target_size[Y]) / height) *
+            100}%"
+          style:left="{((Number($noteSidebarStore.noteFeedPopup.noteFeed?.position.x || 0) * target_size[X]) / width) *
+            100}%"
+          style:transform="translate({zoomInfo.offset[X] + 32}px, {zoomInfo.offset[Y] - 32}px)"
         >
           {#if $noteSidebarStore.noteFeedPopup.noteFeed?.id}
             <SelectedNoteFeedDialog />
@@ -345,11 +357,19 @@
   .svg-overlay {
     position: relative;
   }
+
+  .cursor-note {
+    cursor:
+      url("/app/frontend/src/plugins/idah-video/layout/sidebar/notes/svgs/message-circle.svg") 0 24,
+      auto;
+  }
+
   .svg-overlay > div {
     width: 100%;
     height: 100%;
     position: relative;
   }
+
   .svg-overlay > svg {
     position: absolute;
     top: 0;
