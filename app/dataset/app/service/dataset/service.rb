@@ -21,8 +21,7 @@ module Dataset
     end
 
     def create(record)
-      # TODO: remove mocking
-      account_id = auth_context.metadata[:id] || 1
+      account_id = auth_context.metadata[:id]
       if record.project
         project_id = record.project.id
       else
@@ -56,8 +55,7 @@ module Dataset
     end
 
     def update(record)
-      # TODO: remove mocking
-      account_id = auth_context.metadata[:id] || 1
+      account_id = auth_context.metadata[:id]
       project_id = datasets.find!(record.id).project_id
 
       members.authorize_action(
@@ -73,8 +71,7 @@ module Dataset
     end
 
     def delete(id)
-      # TODO: remove mocking
-      account_id = auth_context.metadata[:id] || 1
+      account_id = auth_context.metadata[:id]
       project_id = datasets.find!(id).project_id
 
       members.authorize_action(

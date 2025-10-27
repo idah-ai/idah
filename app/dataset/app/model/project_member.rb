@@ -33,8 +33,7 @@ module ProjectMember
         scope.all? { table }
 
         scope.as_user? do
-          # TODO: remove mocking
-          account_id = auth_context.metadata[:id] || 1
+          account_id = auth_context.metadata[:id]
 
           if action == :create
             # allow creating in projects own
