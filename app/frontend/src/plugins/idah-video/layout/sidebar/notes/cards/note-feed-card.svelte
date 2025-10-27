@@ -1,11 +1,12 @@
 <script lang="ts">
   import { MapPinIcon, MessageSquareIcon, SquareDashedIcon } from "@lucide/svelte";
+  import { getContext } from "svelte";
 
   import Button from "@/components/ui/button/button.svelte";
 
   import { cn } from "@/utils";
 
-  import type { INoteFeed } from "@/plugin/interface/Activity";
+  import type { IActivityContext, INoteFeed } from "@/plugin/interface/Activity";
 
   import ResolveNoteButton from "../buttons/resolve-note-button.svelte";
   import { noteSidebarStore } from "../note-sidebar-stores";
@@ -18,8 +19,11 @@
   }
   let { noteFeed, highlighted }: Props = $props();
 
+  // Contexts
+  const context: IActivityContext = getContext("context");
+
   // Variables
-  let { annotation_id, position, note_comments } = $derived(noteFeed);
+  let { annotation_id, position } = $derived(noteFeed);
 
   type NoteType = "general" | "annotation" | "video_frame";
   let isListView = $derived(!$noteSidebarStore.selectedNoteFeed);
@@ -30,6 +34,18 @@
   });
 
   // Functions
+  async function loadComments() {
+    return await context.notes.comments.list({
+      fields: {
+        ["dataset:note_comments"]: ["id"],
+      },
+      filters: {
+        note_feed_id: noteFeed.id,
+      },
+      sort: ["created_at"],
+    });
+  }
+
   function selectNoteFeed() {
     switch (noteType) {
       case "general": {
@@ -79,13 +95,16 @@
 
   {#snippet contentActions()}
     {#if isListView}
-      <Button variant="link" size="xs" class="pl-0" onclick={selectNoteFeed}>
-        {#if note_comments.length === 0}
-          Reply
-        {:else}
-          {note_comments.length} {note_comments.length === 1 ? "Reply" : "Replies"}
-        {/if}
-      </Button>
+      {#await loadComments() then comments}
+        {@const commentCount = comments.length}
+        <Button variant="link" size="xs" class="pl-0" onclick={selectNoteFeed}>
+          {#if commentCount === 0}
+            Reply
+          {:else}
+            {commentCount} {commentCount === 1 ? "Reply" : "Replies"}
+          {/if}
+        </Button>
+      {/await}
     {/if}
   {/snippet}
 </NoteCard>
