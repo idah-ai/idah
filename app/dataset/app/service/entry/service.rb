@@ -23,8 +23,7 @@ module Entry
     end
 
     def create(record)
-      # TODO: remove mockings
-      account_id = auth_context.metadata[:id] || 1
+      account_id = auth_context.metadata[:id]
       if record.dataset
         project_id = dataset_service.show(record.dataset.id).project_id
       else
@@ -112,8 +111,7 @@ module Entry
     end
 
     def update(record)
-      # TODO: remove mockings
-      account_id = auth_context.metadata[:id] || 1
+      account_id = auth_context.metadata[:id]
       dataset_id = entries.find!(record.id).dataset_id
       project_id = dataset_service.show(dataset_id).project_id
 
@@ -130,8 +128,7 @@ module Entry
     end
 
     def delete(id)
-      # TODO: remove mockings
-      account_id = auth_context.metadata[:id] || 1
+      account_id = auth_context.metadata[:id]
       dataset_id = entries.find!(id).dataset_id
       project_id = dataset_service.show(dataset_id).project_id
 
@@ -163,8 +160,7 @@ module Entry
     end
 
     def assign(id, assigned_to_id)
-      # TODO: remove mockings
-      account_id = auth_context.metadata[:id] || 1
+      account_id = auth_context.metadata[:id]
       dataset_id = entries.find!(id).dataset_id
       project_id = dataset_service.show(dataset_id).project_id
 
@@ -183,8 +179,7 @@ module Entry
     end
 
     def unassign(id)
-      # TODO: remove mockings
-      account_id = auth_context.metadata[:id] || 1
+      account_id = auth_context.metadata[:id]
       dataset_id = entries.find!(record.id).dataset_id
       project_id = dataset_service.show(dataset_id).project_id
 

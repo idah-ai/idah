@@ -23,8 +23,7 @@ module Annotation
     end
 
     def create(record)
-      # TODO: remove mockings
-      account_id = auth_context.metadata[:id] || 1
+      account_id = auth_context.metadata[:id]
       if record.entry
         dataset_id = entry_service.show(record.entry.id).dataset_id
         project_id = dataset_service.show(dataset_id).project_id
@@ -59,8 +58,7 @@ module Annotation
     end
 
     def update(record)
-      # TODO: remove mockings
-      account_id = auth_context.metadata[:id] || 1
+      account_id = auth_context.metadata[:id]
       annotation = annotations.find!(record.id)
       dataset_id = entry_service.show(annotation.entry_id).dataset_id
       project_id = dataset_service.show(dataset_id).project_id
@@ -88,8 +86,7 @@ module Annotation
     end
 
     def delete(id)
-      # TODO: remove mockings
-      account_id = auth_context.metadata[:id] || 1
+      account_id = auth_context.metadata[:id]
       annotation = annotations.find!(id)
       dataset_id = entry_service.show(annotation.entry_id).dataset_id
       project_id = dataset_service.show(dataset_id).project_id
