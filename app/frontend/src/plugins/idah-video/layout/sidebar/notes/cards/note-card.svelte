@@ -7,11 +7,13 @@
   import { Button } from "@/components/ui/button";
   import { Textarea } from "@/components/ui/textarea";
 
+  import { cn } from "@/utils";
+  import { truncate } from "@/utils/string";
+
   import NoteDropdownMenus from "../dropdown-menus/note-dropdown-menus.svelte";
   import { noteSidebarStore } from "../note-sidebar-stores";
 
   import type { IActivityContext, INoteComment, INoteFeed } from "@/plugin/interface/Activity";
-  import { cn } from "@/utils";
 
   // Props
   interface Props {
@@ -103,7 +105,7 @@
 
       <!-- HEADER::CREATED BY & CREATED AT -->
       <div class="flex flex-col -space-y-1 text-left">
-        <p class="w-full font-semibold">{record.created_by_id}@email.com</p>
+        <p class="w-full text-sm font-semibold">{record.created_by_id}@email.com</p>
         <DateText
           class="text-muted-foreground"
           datetime={new Date(record.created_at)}
@@ -131,9 +133,9 @@
   </div>
 
   <!-- CONTENT -->
-  <div class="flex min-h-16 flex-1 flex-col items-start gap-1 text-sm">
+  <div class="flex flex-1 flex-col items-start gap-1 text-sm">
     {#if mode === "view"}
-      <MarkdownPreview value={record.content_md} />
+      <MarkdownPreview value={truncate(record.content_md, 140)} />
       {#if record.created_at !== record.updated_at}
         <span class="text-muted-foreground text-xs">(Edited)</span>
       {/if}

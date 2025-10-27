@@ -50,10 +50,10 @@
 </script>
 
 {#if noteFeed}
-  <Card class="w-[480px] py-4">
-    <CardHeader class="flex items-center px-4">
-      <CardTitle>Comment</CardTitle>
-      <div class="ml-auto flex items-center gap-2">
+  <Card class="w-[480px] gap-2 py-2">
+    <CardHeader class="flex items-center pl-4 pr-2">
+      <CardTitle class="text-sm">Comment</CardTitle>
+      <div class="ml-auto flex items-center gap-1">
         <ResolveNoteButton {noteFeed}></ResolveNoteButton>
 
         <Button variant="ghost" size="icon" onclick={closeNoteFeedPopup}>
@@ -62,9 +62,9 @@
       </div>
     </CardHeader>
 
-    <CardContent class="px-4">
-      <ScrollArea class="max-h-72">
-        <div class="flex flex-col gap-2">
+    <CardContent class="px-2">
+      <ScrollArea orientation="vertical" class="max-h-72 overflow-y-auto">
+        <div class="flex max-h-72 flex-col gap-2">
           <NoteCard record={noteFeed} resource="dataset:note_feeds"></NoteCard>
 
           {#key $noteSidebarStore.lastUpdated}
@@ -82,7 +82,7 @@
       </ScrollArea>
     </CardContent>
 
-    <CardFooter class="px-4">
+    <CardFooter class="px-2">
       <NoteBox
         value={contentMd}
         placeholder="Write your comment"
