@@ -30,7 +30,7 @@ module Annotation
       auth_context.can!(action, Resource::Dataset::Entries) do |scope|
         scope.all? { table }
 
-        # TODO: to be reviewed
+        # TODO: review annotation scope as user
         scope.as_user? { table }
       end
     end
