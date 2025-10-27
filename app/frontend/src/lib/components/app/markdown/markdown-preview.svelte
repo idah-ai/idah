@@ -1,11 +1,14 @@
 <script lang="ts">
   import { marked } from "marked";
 
+  import { cn } from "@/utils";
+
   // Props
   interface Props {
     value: string | null;
+    class?: string | null;
   }
-  let { value }: Props = $props();
+  let { value, class: className }: Props = $props();
 
   // Variables
   // const renderer = {
@@ -26,4 +29,6 @@
   }
 </script>
 
-{@html parseMarkdown(value ?? "")}
+<div class={cn("", className)}>
+  {@html parseMarkdown(value ?? "")}
+</div>

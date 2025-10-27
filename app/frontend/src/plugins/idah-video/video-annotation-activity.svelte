@@ -710,7 +710,7 @@
 
       <ResizableHandle withHandle></ResizableHandle>
 
-      <ResizablePane defaultSize={40} minSize={10}>
+      <ResizablePane defaultSize={25} minSize={10}>
         <AnnotationFooter>
           <AnnotationFooterToolbar>
             <VideoController

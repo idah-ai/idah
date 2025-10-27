@@ -50,7 +50,7 @@
 </script>
 
 {#if noteFeed}
-  <Card class="w-[480px] gap-2 py-2">
+  <Card class="w-96 gap-2 py-2">
     <CardHeader class="flex items-center pl-4 pr-2">
       <CardTitle class="text-sm">Comment</CardTitle>
       <div class="ml-auto flex items-center gap-1">
