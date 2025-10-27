@@ -30,7 +30,7 @@
     selectedMember = value.assigned_to_id;
   }
 
-  async function assignMember(): Promise<void> {
+  async function assign(): Promise<void> {
     if (entryIds.length === 0 || !selectedMember) return;
 
     for (const entryId of entryIds) {
@@ -46,7 +46,7 @@
     submitting = true;
 
     try {
-      await assignMember();
+      await assign();
     } catch (error) {
       console.error(error);
       submitting = false;

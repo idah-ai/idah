@@ -34,11 +34,11 @@ class EntriesExpo < BaseExpo
       end
     end
   end
-  def assign_member
+  def assign
     id = params[:id]
     member_id = params.dig(:data, :attributes, :assigned_to_id)
 
-    service.assign_member(id, member_id)
+    service.assign(id, member_id)
   end
 
   # POST /api/v1/dataset/entries/:id/submit
