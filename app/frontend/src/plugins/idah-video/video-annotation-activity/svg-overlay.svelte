@@ -285,7 +285,7 @@
     onwheel={(e) => zoom.onWheel(e)}
     {...restProps}
   >
-    {#if width && height}
+    {#if width && height && !$noteSidebarStore.open}
       <!-- prevent display issue on load for now -->
       <line x1={0} y1={target_line[Y]} x2={width} y2={target_line[Y]} stroke="#2b7fff" />
       <line x1={target_line[X]} y1={0} x2={target_line[X]} y2={height} stroke="#2b7fff" />
@@ -359,9 +359,7 @@
   }
 
   .cursor-note {
-    cursor:
-      url("/app/frontend/src/plugins/idah-video/layout/sidebar/notes/svgs/message-circle.svg") 0 24,
-      auto;
+    cursor: url("/app/frontend/src/plugins/idah-video/layout/sidebar/notes/svgs/message-circle.svg"), auto;
   }
 
   .svg-overlay > div {
