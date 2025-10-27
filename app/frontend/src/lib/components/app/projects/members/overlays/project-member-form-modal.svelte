@@ -40,16 +40,19 @@
     const uniqueEmails = [...new Set(members.map((m) => m.email))];
     const existingAccounts = await accountsBackendDataSource.list({ filters: { email: uniqueEmails } });
     const existingEmails = existingAccounts.data.map((account) => account.email);
-    const newEmails = uniqueEmails.filter((email) => !existingEmails.includes(email));
+    const existingAccountIds = existingAccounts.data.map((account) => account.id);
+    const existingProjectMemberAccountIds = (
+      await projectMembersBackendDataSource.list({
+        fields: { "dataset:project_members": ["account_id"] },
+        filters: {
+          project_id: projectId,
+          account_id: existingAccountIds,
+        },
+      })
+    ).data.map((member) => member.account_id);
 
-    const existingAccountIds = existingAccounts.data.map((account) => account.account_id);
-    const existingProjectMembers = await projectMembersBackendDataSource.list({
-      filters: {
-        project_id: projectId,
-        account_id: existingAccountIds,
-      },
-    });
-    const existingProjectMemberAccountIds = existingProjectMembers.data.map((member) => member.account_id);
+    let memberAdded = 0;
+    let inviteNumber = 0;
 
     try {
       for (const member of members) {
@@ -64,9 +67,10 @@
             attributes: { email: email, enabled: true },
           });
           account = createdAccount.data;
+          inviteNumber++;
         }
 
-        /** Check if member is not already in the project and should be invited */
+        /** Check if member is not in the project and should be added */
         if (account?.id && !existingProjectMemberAccountIds.includes(Number(account.id))) {
           await projectMembersBackendDataSource.create({
             attributes: {
@@ -78,12 +82,15 @@
               invited_by_id: 1, // TODO: get id from context
             },
           });
+          memberAdded++;
         }
       }
 
       $refetches.projectMembers.list = new Date();
       closeThisModal();
-      toast.success(`${members.length} member(s) invite sent!`);
+      if (memberAdded > 0 || inviteNumber > 0) {
+        toast.success(`${memberAdded} member(s) added, ${inviteNumber} account(s) invite sent!`);
+      }
     } catch (error) {
       toast.error("Failed to send invite. Please try again.");
       throw error;
@@ -92,11 +99,11 @@
 
   async function submit(): Promise<void> {
     submitting = true;
-
     try {
       await createProjectMember();
     } catch (error) {
       console.error(error);
+    } finally {
       submitting = false;
     }
   }
