@@ -235,7 +235,7 @@
       {#key $noteSidebarStore.noteFeedPopup.noteFeed}
         <div
           transition:fade={{ duration: 200, easing: sineInOut }}
-          class="bg-background absolute z-40 h-auto min-w-72 max-w-[480px] rounded-xl"
+          class="bg-background absolute z-40 min-w-72 max-w-[480px] rounded-xl"
           style:top="{((Number($noteSidebarStore.noteFeedPopup.noteFeed?.position.y || 0) * target_size[Y]) / height) *
             100}%"
           style:left="{((Number($noteSidebarStore.noteFeedPopup.noteFeed?.position.x || 0) * target_size[X]) / width) *
