@@ -3,6 +3,13 @@
 require "spec_helper"
 
 RSpec.describe NoteFeed::Service, database: true do
+  before do
+    # freeze the time
+    allow(Time).to receive(:now).and_return(
+      Time.utc(2025, 1, 1, 0, 0, 0)
+    )
+  end
+
   let(:auth_context) { Verse::Auth::Context.new }
 
   subject { described_class.new(auth_context) }
@@ -184,6 +191,7 @@ RSpec.describe NoteFeed::Service, database: true do
       result = subject.update(record)
 
       expect(result.content_md).to eq("Updated note content")
+      expect(result.edited_at).to eq(Time.now)
       expect(result.id).to eq(note_feed.id)
     end
 
@@ -203,6 +211,7 @@ RSpec.describe NoteFeed::Service, database: true do
       result = subject.update(record)
 
       expect(result.position).to eq({ x: 300, y: 400 })
+      expect(result.edited_at).to eq(Time.now)
     end
   end
 

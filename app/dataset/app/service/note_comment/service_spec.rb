@@ -3,6 +3,12 @@
 require "spec_helper"
 
 RSpec.describe NoteComment::Service, database: true do
+  before do
+    # freeze the time
+    allow(Time).to receive(:now).and_return(
+      Time.utc(2025, 1, 1, 0, 0, 0)
+    )
+  end
   let(:auth_context) { Verse::Auth::Context.new }
 
   subject { described_class.new(auth_context) }
@@ -100,7 +106,7 @@ RSpec.describe NoteComment::Service, database: true do
 
         expect(result.note_feed_id).to eq(note_feed_id)
         expect(result.content_md).to eq("This is a test comment")
-        expect(result.is_edited).to eq(false)
+        expect(result.edited_at).to be_nil
         expect(result.created_by_email).to eq("user@example.com")
       end
     end
@@ -227,28 +233,8 @@ RSpec.describe NoteComment::Service, database: true do
       result = subject.update(record)
 
       expect(result.content_md).to eq("Updated comment content")
-      expect(result.is_edited).to eq(true)
+      expect(result.edited_at).to eq(Time.now)
       expect(result.id).to eq(note_comment.id)
-    end
-
-    it "sets is_edited to true even if content is not changed" do
-      original_content = note_comment.content_md
-
-      record = deserialize(
-        {
-          data: {
-            type: "dataset:note_comments",
-            id: note_comment.id,
-            attributes: {
-              content_md: original_content
-            }
-          }
-        }
-      )
-
-      result = subject.update(record)
-
-      expect(result.is_edited).to eq(true)
     end
   end
 

@@ -22,6 +22,8 @@ module NoteFeed
     end
 
     def update(record)
+      record.attributes[:edited_at] = Time.now
+
       note_feeds.update!(record.id, record.attributes)
       note_feeds.find!(record.id)
     end
