@@ -9,7 +9,7 @@
 
   import { refetches } from "@/utils/refetch";
 
-  import { projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
+  import { ProjectMemberRecord, projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
   import { createMultipleProjectMembersSchema } from "@/data/model/dataset/projects/members/schema";
   import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
 
@@ -43,7 +43,7 @@
     const existingAccountIds = existingAccounts.data.map((account) => account.id);
     const existingProjectMemberAccountIds = (
       await projectMembersBackendDataSource.list({
-        fields: { "dataset:project_members": ["account_id"] },
+        fields: { [ProjectMemberRecord.type]: ["account_id"] },
         filters: {
           project_id: projectId,
           account_id: existingAccountIds,
