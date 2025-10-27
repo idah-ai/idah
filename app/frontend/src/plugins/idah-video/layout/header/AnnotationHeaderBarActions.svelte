@@ -117,6 +117,6 @@
       {/snippet}
     </DropdownMenus>
   {:else}
-    <Button {loading} loadingLabel="Submitting" onclick={submitAnnotation}>Submit</Button>
+    <Button {loading} loadingLabel="Submitting" size="sm" onclick={submitAnnotation}>Submit</Button>
   {/if}
 </div>
