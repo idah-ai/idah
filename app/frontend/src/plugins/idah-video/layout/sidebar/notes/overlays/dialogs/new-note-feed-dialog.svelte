@@ -45,7 +45,7 @@
 
 <NoteBox
   value={contentMd}
-  placeholder="Write your comment"
+  placeholder="Write your note"
   onInput={(e) => (contentMd = e.currentTarget.value)}
   onSubmit={createNoteFeed}
 ></NoteBox>

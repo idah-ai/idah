@@ -210,7 +210,7 @@
     <SidebarGroup class="mt-auto">
       <NoteBox
         disabled={!isInReviewStep}
-        placeholder={isListView ? "Write your comment" : "Reply"}
+        placeholder={isListView ? "Write your note" : "Reply"}
         value={contentMd}
         onInput={(e) => (contentMd = e.currentTarget.value)}
         onSubmit={createNote}
