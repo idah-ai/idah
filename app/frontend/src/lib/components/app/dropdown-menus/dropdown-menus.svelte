@@ -42,13 +42,17 @@
         {/if}
 
         {#each group.items as item, itemIndex (itemIndex)}
-          <DropdownMenuItem disabled={item.disabled} onclick={() => item.action?.()}>
-            {#if item.icon}
-              <item.icon class="size-4"></item.icon>
-            {/if}
+          {@const hidden = item.hidden ?? false}
 
-            {item.label}
-          </DropdownMenuItem>
+          {#if !hidden}
+            <DropdownMenuItem disabled={item.disabled} onclick={() => item.action?.()}>
+              {#if item.icon}
+                <item.icon class="size-4"></item.icon>
+              {/if}
+
+              {item.label}
+            </DropdownMenuItem>
+          {/if}
         {/each}
       </DropdownMenuGroup>
 

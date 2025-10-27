@@ -19,6 +19,7 @@
   interface Props {
     record: INoteFeed | INoteComment;
     resource: "dataset:note_feeds" | "dataset:note_comments";
+    deletable?: boolean;
     highlighted?: boolean;
 
     onCardClick?: () => void;
@@ -27,7 +28,16 @@
     headerActions?: Snippet;
     contentActions?: Snippet;
   }
-  let { record, resource, highlighted, onCardClick, headerIcon, headerActions, contentActions }: Props = $props();
+  let {
+    record,
+    resource,
+    deletable = true,
+    highlighted,
+    onCardClick,
+    headerIcon,
+    headerActions,
+    contentActions,
+  }: Props = $props();
 
   // Contexts
   const context: IActivityContext = getContext("context");
@@ -126,6 +136,7 @@
           ? (record as INoteFeed).id
           : (record as INoteComment).note_feed_id}
         noteCommentId={resource === "dataset:note_comments" ? (record as INoteComment).id : undefined}
+        {deletable}
         onSwitchToEditMode={switchToEditMode}
         onDelete={deleteNote}
       />

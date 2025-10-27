@@ -13,7 +13,7 @@
     onInput?: FormEventHandler<HTMLTextAreaElement> | null | undefined;
     onSubmit: () => Promise<void>;
   }
-  let { disabled, placeholder = "Write your comment", value = "", onInput, onSubmit }: Props = $props();
+  let { disabled, placeholder = "Write your note", value = "", onInput, onSubmit }: Props = $props();
 </script>
 
 <MarkdownEditor {disabled} {placeholder} {value} {onInput}>

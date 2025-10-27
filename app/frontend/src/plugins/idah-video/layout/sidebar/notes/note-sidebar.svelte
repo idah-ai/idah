@@ -3,7 +3,6 @@
     ArrowLeftIcon,
     FunnelIcon,
     MessageCircleDashedIcon,
-    MessageCirclePlusIcon,
     SquareCheckBigIcon,
     SquareIcon,
     XIcon,
@@ -193,12 +192,7 @@
                   description="There are no notes yet. Be the first to add one!"
                   icon={MessageCircleDashedIcon}
                 >
-                  {#snippet actions()}
-                    <Button>
-                      <MessageCirclePlusIcon />
-                      Add Note
-                    </Button>
-                  {/snippet}
+                  {#snippet actions()}{/snippet}
                 </ResponseBlock>
               {/each}
             {/await}
