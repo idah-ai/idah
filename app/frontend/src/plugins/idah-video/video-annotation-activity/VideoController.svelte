@@ -1,6 +1,20 @@
 <script lang="ts">
+  import type { ChangeEventHandler } from "svelte/elements";
+
+  import Tooltips from "@/components/app/tooltips/tooltips.svelte";
   import Button from "@/components/ui/button/button.svelte";
+  import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuTrigger,
+  } from "@/components/ui/dropdown-menu";
   import Input from "@/components/ui/input/input.svelte";
+  import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+  import Slider from "@/components/ui/slider/slider.svelte";
+  import Text from "@/components/ui/text/Text.svelte";
   import {
     ChevronLeftIcon,
     ChevronRightIcon,
@@ -13,20 +27,7 @@
     ZoomInIcon,
     ZoomOutIcon,
   } from "@lucide/svelte";
-  import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-  import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuGroup,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuTrigger,
-  } from "@/components/ui/dropdown-menu";
-  import Slider from "@/components/ui/slider/slider.svelte";
-  import Text from "@/components/ui/text/Text.svelte";
-  import Tooltips from "@/components/app/tooltips/tooltips.svelte";
 
-  import type { ChangeEventHandler } from "svelte/elements";
   import Video from "./video.svelte";
 
   // Props
@@ -84,39 +85,39 @@
   <!-- CONTAINER::LEFT -->
   <div class="flex items-center gap-2">
     <!-- VIDEO::PREVIOUS FRAME -->
-    <Button variant="outline" size="icon" onclick={() => video.previousFrame()}>
-      <ChevronLeftIcon class="size-4" />
+    <Button variant="outline" size="icon-sm" onclick={() => video.previousFrame()}>
+      <ChevronLeftIcon />
     </Button>
 
     <!-- VIDEO::PLAY / PAUSE -->
     <Button
       variant="outline"
-      size="icon"
+      size="icon-sm"
       onclick={() => {
         video.togglePlay();
         isPlaying = !isPlaying;
       }}
     >
       {#if isPlaying}
-        <PauseIcon class="size-4" />
+        <PauseIcon />
       {:else}
-        <PlayIcon class="size-4" />
+        <PlayIcon />
       {/if}
     </Button>
 
     <!-- VIDEO::NEXT FRAME -->
-    <Button variant="outline" size="icon" onclick={() => video.nextFrame()}>
-      <ChevronRightIcon class="size-4" />
+    <Button variant="outline" size="icon-sm" onclick={() => video.nextFrame()}>
+      <ChevronRightIcon />
     </Button>
 
     <!-- VIDEO::VOLUME -->
     <Popover>
       <PopoverTrigger>
-        <Button variant="outline" size="icon">
+        <Button variant="outline" size="icon-sm">
           {#if isMuted}
-            <VolumeXIcon class="size-4" />
+            <VolumeXIcon />
           {:else}
-            <Volume2Icon class="size-4" />
+            <Volume2Icon />
           {/if}
         </Button>
       </PopoverTrigger>
@@ -137,15 +138,15 @@
     <!-- VIDEO::SPEED -->
     <DropdownMenu>
       <DropdownMenuTrigger>
-        <Button variant="outline">
-          <FastForwardIcon class="size-4" />
+        <Button variant="outline" size="sm">
+          <FastForwardIcon />
           {videoSpeeds.find((speed) => speed.value === currentSpeed)?.label || "Speed"}
         </Button>
       </DropdownMenuTrigger>
 
       <DropdownMenuContent>
         <DropdownMenuGroup>
-          <DropdownMenuLabel>Video Speed</DropdownMenuLabel>
+          <DropdownMenuLabel>Video speed</DropdownMenuLabel>
           {#each videoSpeeds as { label, value } (value)}
             <DropdownMenuItem onclick={() => selectVideoSpeed(value)}>{label}</DropdownMenuItem>
           {/each}
@@ -157,7 +158,7 @@
     <div class="inline-flex items-center gap-1 whitespace-nowrap">
       <Input
         type="number"
-        class="min-w-24"
+        class="h-7 min-w-24"
         placeholder="Frame"
         min={0}
         max={Math.max(0, totalFrames - 1)}
@@ -177,8 +178,8 @@
     <div class="flex items-center gap-2">
       <Tooltips align="center">
         {#snippet trigger()}
-          <Button variant="outline" size="icon" onclick={() => onZoomChange(zoom - 1)}>
-            <ZoomOutIcon class="size-4" />
+          <Button variant="outline" size="icon-sm" onclick={() => onZoomChange(zoom - 1)}>
+            <ZoomOutIcon />
           </Button>
         {/snippet}
 
@@ -187,13 +188,20 @@
         {/snippet}
       </Tooltips>
 
-      <Slider class="min-w-[200px]" type="single" min={20} max={150} step={1} value={zoom} onValueChange={onZoomChange}
-      ></Slider>
+      <Slider
+        class="min-w-[200px]"
+        type="single"
+        min={20}
+        max={150}
+        step={1}
+        value={zoom}
+        onValueChange={onZoomChange}
+      />
 
       <Tooltips align="center">
         {#snippet trigger()}
-          <Button variant="outline" size="icon" onclick={() => onZoomChange(zoom + 1)}>
-            <ZoomInIcon class="size-4" />
+          <Button variant="outline" size="icon-sm" onclick={() => onZoomChange(zoom + 1)}>
+            <ZoomInIcon />
           </Button>
         {/snippet}
 
@@ -208,8 +216,8 @@
       <PopoverTrigger>
         <Tooltips align="center">
           {#snippet trigger()}
-            <Button variant="outline" size="icon">
-              <RulerIcon class="size-4"></RulerIcon>
+            <Button variant="outline" size="icon-sm">
+              <RulerIcon />
             </Button>
           {/snippet}
 

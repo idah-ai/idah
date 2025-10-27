@@ -12,7 +12,7 @@
   let { context }: Props = $props();
 </script>
 
-<Button variant="ghost" onclick={context.back}>
+<Button variant="outline" size="sm" onclick={context.back}>
   <ArrowLeftIcon />
   Back
 </Button>

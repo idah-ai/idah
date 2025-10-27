@@ -59,11 +59,11 @@
   ];
 </script>
 
-<div id="annotation-header-bar-tools" class="flex h-full flex-1 items-center gap-1">
+<div id="annotation-header-bar-tools" class="flex h-full items-center justify-center gap-1">
   {#each tools as { label, type, icon: Icon, handleClick }, toolIndex (toolIndex)}
     <Tooltips align="center" delayDuration={100}>
       {#snippet trigger()}
-        <Button variant={mode === type ? "default" : "ghost"} size="icon" onclick={handleClick}>
+        <Button variant={mode === type ? "default" : "ghost"} size="icon-sm" onclick={handleClick}>
           <Icon />
         </Button>
       {/snippet}
@@ -79,7 +79,7 @@
   {#each commands as { label, icon: Icon, handleClick }, commandIndex (commandIndex)}
     <Tooltips align="center" delayDuration={100}>
       {#snippet trigger()}
-        <Button variant="ghost" size="icon" onclick={handleClick}>
+        <Button variant="ghost" size="icon-sm" onclick={handleClick}>
           <Icon />
         </Button>
       {/snippet}

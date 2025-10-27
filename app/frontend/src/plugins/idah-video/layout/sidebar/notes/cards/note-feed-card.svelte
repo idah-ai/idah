@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { MapPinIcon, MessageSquareIcon, SquareDashedIcon } from "@lucide/svelte";
+  import { MapPinIcon, MessageCircleIcon, SquareDashedIcon } from "@lucide/svelte";
   import { getContext } from "svelte";
 
   import Button from "@/components/ui/button/button.svelte";
@@ -84,7 +84,7 @@
       {:else if noteType === "video_frame"}
         <MapPinIcon class="size-3.5" />
       {:else if noteType === "general"}
-        <MessageSquareIcon class="size-3.5" />
+        <MessageCircleIcon class="size-3.5" />
       {/if}
     </div>
   {/snippet}

@@ -2,7 +2,7 @@
   import {
     ChevronDownIcon,
     InfoIcon,
-    MessageSquareIcon,
+    MessageCircleIcon,
     Settings2Icon,
     SquareCheckIcon,
     SquareXIcon,
@@ -40,7 +40,7 @@
     },
     {
       label: "Notes",
-      icon: MessageSquareIcon,
+      icon: MessageCircleIcon,
       isActive: $noteSidebarStore.open,
       handleClick: () => {
         if (!$noteSidebarStore.open) {
@@ -88,12 +88,12 @@
   }
 </script>
 
-<div id="annotation-header-bar-actions" class="flex h-full flex-1 items-center justify-end gap-2">
+<div id="annotation-header-bar-actions" class="flex h-full items-center justify-end gap-2">
   <div id="annotation-header-bar-actions-menu" class="flex items-center gap-1">
     {#each menus as { label, icon: Icon, isActive, handleClick }, menuIndex (menuIndex)}
       <Tooltips align="center" delayDuration={100}>
         {#snippet trigger()}
-          <Button variant={isActive ? "default" : "ghost"} size="icon" onclick={handleClick}>
+          <Button variant={isActive ? "default" : "ghost"} size="icon-sm" onclick={handleClick}>
             <Icon />
           </Button>
         {/snippet}
@@ -105,12 +105,12 @@
     {/each}
   </div>
 
-  <Button variant="outline" class="border-primary text-primary hover:text-primary">Skip</Button>
+  <Button variant="outline" size="sm" class="border-primary text-primary hover:text-primary">Skip</Button>
 
   {#if context.workflowStep === "review"}
     <DropdownMenus menus={reviewMenus}>
       {#snippet trigger({ props })}
-        <Button {...props} {loading} loadingLabel="Reviewing">
+        <Button {...props} size="sm" {loading} loadingLabel="Reviewing">
           Submit Review
           <ChevronDownIcon />
         </Button>
