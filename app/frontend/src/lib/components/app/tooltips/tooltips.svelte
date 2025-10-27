@@ -3,12 +3,15 @@
 
   import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
+  import { cn } from "@/utils";
+
   // Props
   interface Props {
     delayDuration?: number;
     align?: "start" | "center" | "end";
     side?: "top" | "right" | "bottom" | "left";
     ignoreNonKeyboardFocus?: boolean;
+    class?: string | null;
     trigger: Snippet;
     content: Snippet;
   }
@@ -17,6 +20,7 @@
     align = "start",
     side = undefined,
     ignoreNonKeyboardFocus = false,
+    class: className,
     trigger,
     content,
   }: Props = $props();
@@ -24,7 +28,7 @@
 
 <TooltipProvider {ignoreNonKeyboardFocus}>
   <Tooltip {delayDuration}>
-    <TooltipTrigger>
+    <TooltipTrigger class={cn("", className)}>
       {@render trigger()}
     </TooltipTrigger>
 
