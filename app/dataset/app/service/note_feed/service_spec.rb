@@ -29,7 +29,7 @@ RSpec.describe NoteFeed::Service, database: true do
       modality: "video",
       labels: ["cat", "dog"],
       labeling_configuration: { "width" => 100, "height" => 100 },
-      workflow_configuration: {},
+      workflow_configuration: { noteable_steps: ["review"] },
       project_id: project_id
     )
   end
@@ -109,9 +109,9 @@ RSpec.describe NoteFeed::Service, database: true do
       end
     end
 
-    context "when entry is not in review step" do
+    context "when entry is not in a noteable step" do
       it "raises a validation error" do
-        # Create an entry not in review step
+        # Create an entry not in a noteable step
         new_entry_id = entry_repo.create(
           priority: 1,
           resource: "http://example.com/video2.mp4",
@@ -124,7 +124,7 @@ RSpec.describe NoteFeed::Service, database: true do
         params = note_feed_attributes.merge(entry_id: new_entry_id)
 
         expect { subject.create_from_params(params) }
-          .to raise_error(Verse::Error::ValidationFailed, /Cannot add note feed to entry not in review step/)
+          .to raise_error(Verse::Error::ValidationFailed, /Cannot add note feed to entry in current step/)
       end
     end
   end
