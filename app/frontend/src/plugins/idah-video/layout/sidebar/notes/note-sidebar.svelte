@@ -79,6 +79,7 @@
   }
 
   async function loadNoteDetail() {
+    const noteFeed = await context.notes.feeds.get($noteSidebarStore.selectedNoteFeed?.id!);
     const noteComments = await context.notes.comments.list({
       filters: {
         note_feed_id: $noteSidebarStore.selectedNoteFeed?.id,
@@ -86,7 +87,7 @@
       sort: ["created_at"],
     });
 
-    return { noteComments };
+    return { noteFeed, noteComments };
   }
 
   async function createNote() {
@@ -169,8 +170,8 @@
           {#if $noteSidebarStore.selectedNoteFeed}
             <!-- NOTE FEED::DETAIL -->
             {#key $noteSidebarStore.lastUpdated}
-              {#await loadNoteDetail() then { noteComments }}
-                <NoteFeedCard noteFeed={$noteSidebarStore.selectedNoteFeed}></NoteFeedCard>
+              {#await loadNoteDetail() then { noteFeed, noteComments }}
+                <NoteFeedCard {noteFeed}></NoteFeedCard>
 
                 {#each noteComments as noteComment (noteComment.id)}
                   <NoteCommentCard
