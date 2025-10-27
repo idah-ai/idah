@@ -165,21 +165,24 @@
   <SidebarContent>
     <SidebarGroup>
       <SidebarGroupContent class="flex flex-col gap-2">
-        {#if $noteSidebarStore.selectedNoteFeed}
-          <!-- NOTE FEED::DETAIL -->
-          {#key $noteSidebarStore.lastUpdated}
-            {#await loadNoteDetail() then { noteComments }}
-              <NoteFeedCard noteFeed={$noteSidebarStore.selectedNoteFeed}></NoteFeedCard>
+        {#key $noteSidebarStore.lastUpdated}
+          {#if $noteSidebarStore.selectedNoteFeed}
+            <!-- NOTE FEED::DETAIL -->
+            {#key $noteSidebarStore.lastUpdated}
+              {#await loadNoteDetail() then { noteComments }}
+                <NoteFeedCard noteFeed={$noteSidebarStore.selectedNoteFeed}></NoteFeedCard>
 
-              {#each noteComments as noteComment (noteComment.id)}
-                <NoteCommentCard {noteComment} highlighted={$noteSidebarStore.selectedNoteCommentId === noteComment.id}
-                ></NoteCommentCard>
-              {/each}
-            {/await}
-          {/key}
-        {:else}
-          <!-- NOTE FEEDS::LISTS -->
-          {#key $noteSidebarStore.lastUpdated}
+                {#each noteComments as noteComment (noteComment.id)}
+                  <NoteCommentCard
+                    {noteComment}
+                    highlighted={$noteSidebarStore.selectedNoteCommentId === noteComment.id}
+                  ></NoteCommentCard>
+                {/each}
+              {/await}
+            {/key}
+          {:else}
+            <!-- NOTE FEEDS::LISTS -->
+
             {#await loadNotes()}
               <Spinner />
             {:then notes}
@@ -196,8 +199,8 @@
                 </ResponseBlock>
               {/each}
             {/await}
-          {/key}
-        {/if}
+          {/if}
+        {/key}
       </SidebarGroupContent>
     </SidebarGroup>
   </SidebarContent>
