@@ -72,9 +72,9 @@ Sequel.migration do
       column :name, String, null: false, index: true
 
       column :description, String, null: true
-      column :created_by_email, String, null: false, index: true
+      column :created_by_email, String, null: false
 
-      index :name, opclass: :gin_trgm_ops, type: :gin
+      index :created_by_email, opclass: :gin_trgm_ops, type: :gin
 
       Migration::Timestamps.timestamps(self)
     end
