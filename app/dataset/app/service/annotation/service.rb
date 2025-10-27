@@ -2,7 +2,10 @@
 
 module Annotation
   class Service < Verse::Service::Base
-    use annotations: Annotation::Repository
+    use annotations: Annotation::Repository,
+        dataset_service: Dataset::Service,
+        entry_service: Entry::Service,
+        members: ProjectMember::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       annotations.index(
@@ -20,6 +23,24 @@ module Annotation
     end
 
     def create(record)
+      # TODO: remove mockings
+      account_id = auth_context.metadata[:id] || 1
+      if record.entry
+        dataset_id = entry_service.show(record.entry.id).dataset_id
+        project_id = dataset_service.show(dataset_id).project_id
+      else
+        raise Verse::Error::ValidationFailed,
+              "entry is required to create an annotation"
+      end
+
+      members.authorize_action(
+        action: :create,
+        resource: Resource::Dataset::Annotations,
+        account_id:,
+        project_id:,
+        allowed_access: [:org_owner, :owner, :annotator, :reviewer]
+      )
+
       attributes = record.attributes
       attributes[:created_by_id] ||= auth_context.metadata[:id]
       attributes[:id] = record.id || UUIDv7.generate
@@ -38,12 +59,27 @@ module Annotation
     end
 
     def update(record)
+      # TODO: remove mockings
+      account_id = auth_context.metadata[:id] || 1
+      annotation = annotations.find!(record.id)
+      dataset_id = entry_service.show(annotation.entry_id).dataset_id
+      project_id = dataset_service.show(dataset_id).project_id
+
+      members.authorize_action(
+        action: :update,
+        resource: Resource::Dataset::Annotations,
+        account_id:,
+        project_id:,
+        allowed_access: [:org_owner, :owner, :annotator, :reviewer]
+      )
+
       annotations.transaction do
         annotations.update!(record.id, record.attributes)
         annotations.find!(record.id)
       end
     end
 
+    # TODO: recheck how this is used
     def update_attr(id, attributes)
       annotations.transaction do
         annotations.update!(id, attributes)
@@ -52,6 +88,20 @@ module Annotation
     end
 
     def delete(id)
+      # TODO: remove mockings
+      account_id = auth_context.metadata[:id] || 1
+      annotation = annotations.find!(id)
+      dataset_id = entry_service.show(annotation.entry_id).dataset_id
+      project_id = dataset_service.show(dataset_id).project_id
+
+      members.authorize_action(
+        action: :delete,
+        resource: Resource::Dataset::Annotations,
+        account_id:,
+        project_id:,
+        allowed_access: [:org_owner, :owner, :annotator, :reviewer]
+      )
+
       annotations.delete(id)
     end
   end
