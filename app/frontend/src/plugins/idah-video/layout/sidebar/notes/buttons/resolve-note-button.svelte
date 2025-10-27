@@ -28,9 +28,10 @@
   async function markAsResolved() {
     if (isResolved) return;
 
-    await context.notes.feeds.markAsResolved(id);
+    const resolvedNoteFeed = await context.notes.feeds.markAsResolved(id);
     toast.success("Comment marked as resolved");
     $noteSidebarStore.lastUpdated = new Date();
+    $noteSidebarStore.noteFeedPopup.noteFeed = resolvedNoteFeed;
   }
 </script>
 

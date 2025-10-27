@@ -11,7 +11,7 @@
   import { truncate } from "@/utils/string";
 
   import NoteDropdownMenus from "../dropdown-menus/note-dropdown-menus.svelte";
-  import { noteSidebarStore } from "../note-sidebar-stores";
+  import { closeNoteFeedPopup, noteSidebarStore } from "../note-sidebar-stores";
 
   import type { IActivityContext, INoteComment, INoteFeed } from "@/plugin/interface/Activity";
 
@@ -87,6 +87,7 @@
     switch (resource) {
       case "dataset:note_feeds": {
         await context.notes.feeds.delete(record.id);
+        closeNoteFeedPopup();
         break;
       }
       case "dataset:note_comments": {
