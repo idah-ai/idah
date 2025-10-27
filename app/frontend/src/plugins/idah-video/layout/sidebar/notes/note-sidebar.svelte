@@ -53,20 +53,13 @@
     filters: {
       items: [
         {
-          label: "Show Pending Notes",
-          icon: noteFeedFilters.status__in.includes("pending") ? SquareCheckBigIcon : SquareIcon,
-          disabled: noteFeedFilters.status__in.length === 1,
-          action: () => {
-            noteFeedFilters.status__in = ["pending"];
-            $noteSidebarStore.lastUpdated = new Date();
-          },
-        },
-        {
           label: "Show Resolved Notes",
           icon: noteFeedFilters.status__in.includes("resolved") ? SquareCheckBigIcon : SquareIcon,
-          disabled: noteFeedFilters.status__in.includes("resolved"),
           action: () => {
-            noteFeedFilters.status__in = ["pending", "resolved"];
+            noteFeedFilters.status__in = noteFeedFilters.status__in.includes("resolved")
+              ? ["pending"]
+              : ["pending", "resolved"];
+
             $noteSidebarStore.lastUpdated = new Date();
           },
         },
@@ -136,22 +129,22 @@
   class={cn("top-14 z-30 h-[calc(100vh-3.5rem)] w-80", $noteSidebarStore.open ? "" : "invisible")}
 >
   <SidebarHeader class=" flex w-full flex-col items-center gap-0">
-    <div class="flex w-full flex-row items-center gap-2">
+    <div class="flex w-full flex-row items-center">
       <!-- SHOW BACK BUTTON WHEN selectedNoteFeedId IS NOT NULL -->
       {#if isDetailView}
-        <Button variant="ghost" size="icon" onclick={backToNoteFeedList}>
+        <Button variant="ghost" size="icon-sm" onclick={backToNoteFeedList}>
           <ArrowLeftIcon />
         </Button>
       {/if}
 
-      <Text size="h4" weight="semibold" class="flex-1">
+      <Text weight="semibold" class="flex-1">
         {isListView ? "Notes" : "Note"}
       </Text>
 
       {#if isListView}
         <DropdownMenus menus={filterMenus} align="end">
           {#snippet trigger({ props })}
-            <Button {...props} variant="ghost" size="icon">
+            <Button {...props} variant="ghost" size="icon-sm">
               <FunnelIcon />
             </Button>
           {/snippet}
@@ -163,7 +156,7 @@
         <ResolveNoteButton noteFeed={$noteSidebarStore.selectedNoteFeed} />
       {/if}
 
-      <Button variant="ghost" size="icon" onclick={closeNoteSidebar}>
+      <Button variant="ghost" size="icon-sm" onclick={closeNoteSidebar}>
         <XIcon />
       </Button>
     </div>
