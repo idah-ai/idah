@@ -119,6 +119,7 @@
 
   async function deleteNoteFeed() {
     await context.notes.feeds.delete($noteSidebarStore.selectedNoteFeed!.id);
+    $noteSidebarStore.lastUpdated = new Date();
   }
 </script>
 
