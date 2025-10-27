@@ -78,6 +78,7 @@
         break;
     }
 
+    switchToViewMode();
     toast.success("Comment updated successfully.");
     $noteSidebarStore.lastUpdated = new Date();
   }
