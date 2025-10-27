@@ -67,7 +67,7 @@
       <div class="ml-auto flex items-center gap-1">
         <ResolveNoteButton {noteFeed}></ResolveNoteButton>
 
-        <NoteDropdownMenus noteFeedId={noteFeed.id} onDelete={deleteNoteFeed} />
+        <NoteDropdownMenus noteFeedId={noteFeed.id} editable={false} onDelete={deleteNoteFeed} />
 
         <Button variant="ghost" size="icon-sm" onclick={closeNoteFeedPopup}>
           <XIcon />

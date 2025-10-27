@@ -13,11 +13,12 @@
   interface Props {
     noteFeedId: string;
     noteCommentId?: string;
+    editable?: boolean;
     deletable?: boolean;
     onSwitchToEditMode?: () => void;
     onDelete: () => Promise<void>;
   }
-  let { noteFeedId, noteCommentId, deletable = true, onSwitchToEditMode, onDelete }: Props = $props();
+  let { noteFeedId, noteCommentId, editable = true, deletable = true, onSwitchToEditMode, onDelete }: Props = $props();
 
   // Variables
   let openConfirmDeleteModal = $state(false);
@@ -43,6 +44,7 @@
         {
           label: "Edit",
           icon: PenSquareIcon,
+          hidden: !editable,
           action: async () => {
             onSwitchToEditMode?.();
           },
