@@ -190,6 +190,7 @@
      * Show new note feed dialog only when sidebar is open and dialog is not already shown
      */
     if (!$noteSidebarStore.open) {
+      selectedAnnotation = undefined;
       return closeNoteFeedPopup();
     }
 
@@ -197,6 +198,7 @@
      * If dialog is already shown, close & reset it
      */
     if ($noteSidebarStore.noteFeedPopup.show) {
+      selectedAnnotation = undefined;
       return closeNoteFeedPopup();
     }
 
@@ -292,7 +294,6 @@
                   e.stopPropagation();
                   selectedAnnotation = annotation;
                   onSelectAnnotation(annotation);
-                  // showNewNoteFeedDialog(annotation);
                 }
               }}
             />, frame
@@ -313,7 +314,6 @@
                   e.stopPropagation();
                   selectedAnnotation = annotation;
                   onSelectAnnotation(annotation);
-                  // showNewNoteFeedDialog(annotation);
                 }
               }}
             />
