@@ -152,8 +152,12 @@
       {/if}
 
       {#if isDetailView && $noteSidebarStore.selectedNoteFeed}
-        <NoteDropdownMenus noteFeedId={$noteSidebarStore.selectedNoteFeed.id} onDelete={deleteNoteFeed} />
         <ResolveNoteButton noteFeed={$noteSidebarStore.selectedNoteFeed} />
+        <NoteDropdownMenus
+          noteFeedId={$noteSidebarStore.selectedNoteFeed.id}
+          editable={false}
+          onDelete={deleteNoteFeed}
+        />
       {/if}
 
       <Button variant="ghost" size="icon-sm" onclick={closeNoteSidebar}>
