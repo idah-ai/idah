@@ -39,8 +39,7 @@ module Entry
         scope.all? { table }
 
         scope.as_user? do
-          # TODO: remove mockings
-          account_id = auth_context.metadata[:id] || 1
+          account_id = auth_context.metadata[:id]
 
           # projects/datasets that is a member of
           project_ids = ProjectMember::Repository.new(auth_context).index({ account_id: }).map(&:project_id).uniq
@@ -53,8 +52,7 @@ module Entry
     end
 
     def create(attributes)
-      # TODO: remove mockings
-      attributes[:created_by_id] = auth_context.metadata[:id] || 1 unless attributes[:created_by_id]
+      attributes[:created_by_id] = auth_context.metadata[:id] unless attributes[:created_by_id]
 
       super(attributes)
     end

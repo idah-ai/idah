@@ -5,7 +5,7 @@ class ProjectsExpo < BaseExpo
 
   use_service Project::Service
 
-  json_api Project::Record, http_opts: { auth: nil } do
+  json_api Project::Record do
     show
     index do
       allowed_filters :name__match,
