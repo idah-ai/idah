@@ -69,7 +69,7 @@
 
         <NoteDropdownMenus noteFeedId={noteFeed.id} onDelete={deleteNoteFeed} />
 
-        <Button variant="ghost" size="icon" onclick={closeNoteFeedPopup}>
+        <Button variant="ghost" size="icon-sm" onclick={closeNoteFeedPopup}>
           <XIcon />
         </Button>
       </div>

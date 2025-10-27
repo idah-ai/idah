@@ -17,9 +17,9 @@
   let { context, mode, onSelectMode }: Props = $props();
 </script>
 
-<nav id="annotation-header-bar" class="flex min-h-12 items-center justify-between gap-2 px-4 py-2">
+<nav id="annotation-header-bar" class="grid grid-cols-3 p-2">
   <!-- LEFT::NAVIGATIONS -->
-  <div id="navigations" class="flex h-full flex-1 items-center gap-2">
+  <div id="navigations" class="flex h-full items-center gap-2">
     <!-- BACK BUTTON -->
     <AnnotationHeaderBarBackButton {context} />
 
