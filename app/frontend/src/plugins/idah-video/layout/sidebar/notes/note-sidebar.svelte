@@ -122,10 +122,10 @@
 </script>
 
 <Sidebar
-  variant="floating"
+  variant="sidebar"
   collapsible="offcanvas"
   side="right"
-  class={cn("top-14 z-30 h-[calc(100vh-3.5rem)] w-80", $noteSidebarStore.open ? "" : "invisible")}
+  class={cn("top-[2.75rem] z-30 h-[calc(100vh-2.75rem)] w-80", $noteSidebarStore.open ? "" : "invisible")}
 >
   <SidebarHeader class=" flex w-full flex-col items-center gap-0">
     <div class="flex w-full flex-row items-center">
