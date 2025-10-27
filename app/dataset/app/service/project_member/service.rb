@@ -25,7 +25,8 @@ module ProjectMember
       account_id = auth_context.metadata[:id] || 1
       project_id = record.attributes[:project_id]
 
-      auth_context.reject! unless project_service.own?(account_id, project_id)
+      auth_context.reject! unless project_service.own?(account_id, project_id) || # check creator as there is no member
+                                  project_members.owner?(project_members.get_access(account_id, project_id)) # owner
 
       project_members.transaction do
         record_id = project_members.create(record.attributes)
@@ -34,19 +35,20 @@ module ProjectMember
     end
 
     def update(record)
-      # TODO: consider if we should allow update, and what role if so
+      # TODO: consider if we should allow update, what's there to be updated, and what role if so
       project_members.update!(record.id, record.attributes)
       project_members.find!(record.id)
     end
 
     def delete(id)
+      # TODO: remove mocking
       account_id = auth_context.metadata[:id] || 1
       membership = project_members.find(id)
       role = membership.access
 
       auth_context.reject! unless auth_context.can!(:delete, Resource::Dataset::ProjectMembers) do |scope|
         scope.all? { true }
-        scope.as_user? { owner?(role) || self?(account_id, membership.account_id) }
+        scope.as_user? { project_members.owner?(role) || project_members.self?(account_id, membership.account_id) }
       end
 
       project_members.delete(id)

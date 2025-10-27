@@ -49,7 +49,7 @@ module ProjectMember
     end
 
     # TODO: might be good idea to verify role passed in allowed_access[]
-    # allowed user roles: :owner, :annotator, :reviewer, :self
+    # allowed user roles: :org_owner, :owner, :annotator, :reviewer, :viewer, :self
     def authorize_action(action:, resource:, account_id:, project_id:, allowed_access: [])
       auth_context.reject! unless auth_context.can!(action, resource) do |scope|
         scope.all? { true }
@@ -60,11 +60,13 @@ module ProjectMember
       end
     end
 
-    private
-
     # TODO: review this as it's unscoped
     def get_access(account_id, project_id)
       table.where(account_id:, project_id:).first[:access]
+    end
+
+    def org_owner?(access)
+      access == "org_owner"
     end
 
     def owner?(access)
@@ -77,6 +79,10 @@ module ProjectMember
 
     def reviewer?(access)
       access == "reviewer"
+    end
+
+    def viewer?(access)
+      access == "viewer"
     end
 
     def self?(account_id, membership_account_id)

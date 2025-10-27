@@ -291,7 +291,7 @@ RSpec.describe Entry::Service, database: true do
     end
   end
 
-  describe "#assign_member" do
+  describe "#assign" do
     it "assigns a member to an entry" do
       record = deserialize(
         {
@@ -305,7 +305,7 @@ RSpec.describe Entry::Service, database: true do
         }
       )
 
-      subject.assign_member(record.id, 2)
+      subject.assign(record.id, 2)
 
       updated_entry = repo.find!(record.id)
       expect(updated_entry.assigned_to_id).to eq(2)

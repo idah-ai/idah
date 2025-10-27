@@ -29,7 +29,7 @@ module Entry
         project_id = dataset_service.show(record.dataset.id).project_id
       else
         raise Verse::Error::ValidationFailed,
-              "dataset is required to create an entry"
+              "dataset relationship is required to create an entry"
       end
 
       members.authorize_action(
@@ -37,7 +37,7 @@ module Entry
         resource: Resource::Dataset::Entries,
         account_id:,
         project_id:,
-        allowed_access: [:owner, :annotator]
+        allowed_access: [:org_owner, :owner]
       )
 
       attr = record.attributes
@@ -107,6 +107,7 @@ module Entry
     end
 
     def mark_entries_as_ready(job_id)
+      # TODO: recheck how is this used and review action permission
       entries.mark_entries_as_ready(job_id)
     end
 
@@ -121,7 +122,7 @@ module Entry
         resource: Resource::Dataset::Entries,
         account_id:,
         project_id:,
-        allowed_access: [:owner, :annotator]
+        allowed_access: [:org_owner, :owner]
       )
 
       entries.update!(record.id, record.attributes)
@@ -139,7 +140,7 @@ module Entry
         resource: Resource::Dataset::Entries,
         account_id:,
         project_id:,
-        allowed_access: [:owner, :annotator]
+        allowed_access: [:org_owner, :owner]
       )
 
       entries.delete(id)
@@ -161,14 +162,48 @@ module Entry
       end
     end
 
-    def assign_member(id, assigned_to_id)
+    def assign(id, assigned_to_id)
+      # TODO: remove mockings
+      account_id = auth_context.metadata[:id] || 1
+      dataset_id = entries.find!(record.id).dataset_id
+      project_id = dataset_service.show(dataset_id).project_id
+
+      members.authorize_action(
+        action: :update, # TODO: revise if :assign action permission is needed separately
+        resource: Resource::Dataset::Entries,
+        account_id:,
+        project_id:,
+        allowed_access: [:org_owner, :owner]
+      )
+
       entries.transaction do
         entries.update!(id, { assigned_to_id: })
         entries.find!(id)
       end
     end
 
+    def unassign(id)
+      # TODO: remove mockings
+      account_id = auth_context.metadata[:id] || 1
+      dataset_id = entries.find!(record.id).dataset_id
+      project_id = dataset_service.show(dataset_id).project_id
+
+      members.authorize_action(
+        action: :update, # TODO: revise if :assign action permission is needed separately
+        resource: Resource::Dataset::Entries,
+        account_id:,
+        project_id:,
+        allowed_access: [:org_owner, :owner]
+      )
+
+      entries.transaction do
+        entries.update!(id, { assigned_to_id: nil })
+        entries.find!(id)
+      end
+    end
+
     def submit(entry_id, **opts)
+      # TODO: recheck how is this used and review action permission
       entries.transaction do
         entry = entries.find!(entry_id, included: [:dataset])
         entry_workflow = entry.dataset.entry_workflow.new(entry, **opts)
@@ -186,6 +221,7 @@ module Entry
     end
 
     def error(entry_id, **opts)
+      # TODO: recheck how is this used and review action permission
       entries.transaction do
         entry = entries.find!(entry_id, included: [:dataset])
         entry_workflow = entry.dataset.entry_workflow.new(entry, **opts)

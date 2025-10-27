@@ -62,7 +62,7 @@ module Project
         resource: Resource::Dataset::Projects,
         account_id:,
         project_id:,
-        allowed_access: [:owner]
+        allowed_access: [:org_owner, :owner]
       )
 
       projects.update!(project_id, record.attributes)
@@ -79,7 +79,7 @@ module Project
         resource: Resource::Dataset::Projects,
         account_id:,
         project_id:,
-        allowed_access: [:owner]
+        allowed_access: [:org_owner, :owner]
       )
 
       projects.delete(id)
