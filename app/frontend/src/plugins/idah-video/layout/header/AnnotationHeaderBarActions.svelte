@@ -1,10 +1,11 @@
 <script lang="ts">
   import {
-    BadgeCheckIcon,
     ChevronDownIcon,
     InfoIcon,
     MessageSquareIcon,
     Settings2Icon,
+    SquareCheckIcon,
+    SquareXIcon,
     SunMoonIcon,
   } from "@lucide/svelte";
   import { getContext } from "svelte";
@@ -61,11 +62,12 @@
       items: [
         {
           label: "Approve",
-          icon: BadgeCheckIcon,
+          icon: SquareCheckIcon,
           action: () => reviewAnnotation(true),
         },
         {
-          label: "Request Changes",
+          label: "Request changes",
+          icon: SquareXIcon,
           action: () => reviewAnnotation(false),
         },
       ],
