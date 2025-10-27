@@ -15,6 +15,7 @@ module NoteFeed
 
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
+    field :edited_at, type: Time
 
     belongs_to :entry, repository: "Entry::Repository", foreign_key: :entry_id
     belongs_to :annotation, repository: "Annotation::Repository", foreign_key: :annotation_id

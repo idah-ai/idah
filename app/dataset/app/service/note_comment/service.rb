@@ -23,7 +23,6 @@ module NoteComment
       attr = record.attributes
 
       attr[:id] = record.id || UUIDv7.generate
-      attr[:is_edited] = false
 
       if record.note_feed
         attr[:note_feed_id] = record.note_feed.id
@@ -42,7 +41,7 @@ module NoteComment
 
     def update(record)
       attr = record.attributes
-      attr[:is_edited] = true
+      attr[:edited_at] = Time.now
 
       note_comments.update!(record.id, attr)
       note_comments.find!(record.id)

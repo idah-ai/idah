@@ -67,7 +67,6 @@ RSpec.describe NoteCommentsExpo, type: :exposition, as: :system do
     record = deserialize(body)
     expect(record.id).to eq uuid
     expect(record.content_md).to eq "This is a test comment"
-    expect(record.is_edited).to eq false
   end
 
   it "create" do
