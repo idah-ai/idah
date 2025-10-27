@@ -72,6 +72,18 @@ export function createNoteDriver(entryId: string): INoteDriver {
             );
         });
       },
+      get(id: string) {
+        return new Promise<INoteFeed>((resolve, reject) => {
+          noteFeedsBackendDataSource
+            .get(id, {
+              included: ["note_comments"],
+            })
+            .then(
+              (v) => resolve(parseNoteFeedRecordToINoteFeed(v.data)),
+              (v) => reject(v.error),
+            );
+        });
+      },
       update(id: string, data: Partial<INoteFeed>) {
         return new Promise<INoteFeed>((resolve, reject) => {
           noteFeedsBackendDataSource

@@ -97,6 +97,7 @@ export interface INoteDriver {
   feeds: {
     create(data: Partial<INoteFeed>): Promise<INoteFeed>;
     list(listOptions: IListOptions): Promise<Array<INoteFeed>>;
+    get(id: string): Promise<INoteFeed>;
     update(id: string, data: Partial<INoteFeed>): Promise<INoteFeed>;
     delete(id: string): Promise<void>;
     markAsResolved(noteFeedId: string): Promise<INoteFeed>;
