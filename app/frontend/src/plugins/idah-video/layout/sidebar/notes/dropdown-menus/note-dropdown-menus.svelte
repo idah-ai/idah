@@ -76,7 +76,7 @@
 </DropdownMenus>
 
 <ConfirmModal
-  title="Delete Note"
+  title={noteCommentId ? "Delete Note Comment" : "Delete Note Feed"}
   description="Are you sure you want to delete this note? This action cannot be undone."
   onConfirm={deleteNote}
   bind:open={openConfirmDeleteModal}
