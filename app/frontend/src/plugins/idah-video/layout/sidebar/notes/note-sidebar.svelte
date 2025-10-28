@@ -115,6 +115,11 @@
   function backToNoteFeedList() {
     $noteSidebarStore.selectedNoteFeed = null;
     $noteSidebarStore.lastUpdated = new Date();
+
+    // Remove hash from url
+    const url = new URL(window.location.href);
+    url.hash = "";
+    window.history.replaceState({}, document.title, url.toString());
   }
 
   async function deleteNoteFeed() {
