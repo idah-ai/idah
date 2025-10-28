@@ -63,15 +63,17 @@
   async function updateContentMd() {
     switch (resource) {
       case "dataset:note_feeds": {
-        await context.notes.feeds.update(record.id, {
+        const updatedNoteFeed = await context.notes.feeds.update(record.id, {
           content_md: editedContentMd,
         });
+        record = updatedNoteFeed;
         break;
       }
       case "dataset:note_comments": {
-        await context.notes.comments.update(record.id, {
+        const updatedNoteComment = await context.notes.comments.update(record.id, {
           content_md: editedContentMd,
         });
+        record = updatedNoteComment;
         break;
       }
       default:
