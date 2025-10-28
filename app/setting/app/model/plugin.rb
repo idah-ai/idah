@@ -21,7 +21,7 @@ module Plugin
         JSON.parse(File.read(File.join(path, "manifest.json")))
       )
 
-      new(
+      new({
         source_type: "manual",
         source_path: path,
         name: manifest.name,
@@ -29,7 +29,37 @@ module Plugin
         version: manifest.version,
         created_at: File.ctime(path),
         updated_at: File.mtime(path)
-      )
+      })
+    end
+
+    def path
+      @path ||= \
+        begin
+          plugin_path = Verse.config.extra_fields.dig(
+            :idah, :plugins, :path
+          ) || "plugins"
+          if source_type == "manual"
+            source_path
+          else
+            File.join(
+              plugin_path,
+              "#{name}-#{version}"
+            )
+          end
+        end
+    end
+
+    def manifest
+      @manifest ||= begin
+        manifest_path = File.join(path, "manifest.json")
+
+        if File.exist?(manifest_path)
+          PluginSystem::Manifest.from_file(manifest_path)
+        else
+          nil
+        end
+      end
+
     end
   end
 
