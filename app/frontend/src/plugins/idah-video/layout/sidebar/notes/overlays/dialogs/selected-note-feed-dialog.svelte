@@ -93,9 +93,9 @@
     <CardContent class="px-2">
       <ScrollArea orientation="vertical" class="max-h-72 overflow-y-auto">
         <div class="flex max-h-72 flex-col gap-2">
-          <NoteCard record={noteFeed} resource="dataset:note_feeds" deletable={false}></NoteCard>
-
           {#key $noteSidebarStore.lastUpdated}
+            <NoteCard record={noteFeed} resource="dataset:note_feeds" deletable={false}></NoteCard>
+
             {#await loadNoteComments() then noteComments}
               {#each noteComments as noteComment (noteComment.id)}
                 <NoteCard
