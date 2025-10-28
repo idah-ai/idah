@@ -12,7 +12,7 @@
   },
 
   "entryPoints": {
-    "pluginPage": {
+    "entryPlugin": {
       "script": "frontend/build/build.js",
       "style": "frontend/build/build.css"
     },
@@ -20,8 +20,9 @@
       "script": "frontend/build/entryDetailsBuild.js",
       "style": "frontend/build/entryDetailsBuild.css"
     },
-    "annotationType": "config/annotationType.json",
-    "assets": {},
+    "datasetConfig": "config/dataset.json",
+    "pluginShortcut": "config/shortcut.json",
+    "assetsDirectory": "assets",
     "backend": {
       "module": "IdahVideo",
       "path": "backends"
