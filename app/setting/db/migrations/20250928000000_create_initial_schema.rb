@@ -46,17 +46,17 @@ Sequel.migration do
     end
     Migration::Timestamps.trg_updated_at(self, :plugins)
 
-    create_table(:plugin_images) do
-      column :id, String, primary_key: true
+    # create_table(:plugin_images) do
+    #   column :id, String, primary_key: true
 
-      reference :plugin_id, :plugins, null: false, on_delete: :restrict
-      column :service, String, null: false
+    #   reference :plugin_id, :plugins, null: false, on_delete: :restrict
+    #   column :service, String, null: false
 
-      column :size, Integer, null: false
+    #   column :size, Integer, null: false
 
-      index %i[plugin_id service], unique: true
+    #   index %i[plugin_id service], unique: true
 
-      Migration::Timestamps.timestamps(self)
-    end
+    #   Migration::Timestamps.timestamps(self)
+    # end
   end
 end
