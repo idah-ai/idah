@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/state";
   import {
     ArrowLeftIcon,
     FunnelIcon,
@@ -25,6 +26,8 @@
   import Spinner from "@/components/ui/spinner/spinner.svelte";
   import Text from "@/components/ui/text/Text.svelte";
 
+  import { NoteCommentRecord, noteCommentsBackendDataSource } from "@/data/model/dataset/notes/comments/record";
+  import { noteFeedsBackendDataSource } from "@/data/model/dataset/notes/feeds/record";
   import { cn } from "@/utils";
 
   import ResolveNoteButton from "./buttons/resolve-note-button.svelte";
@@ -35,6 +38,7 @@
   import { closeNoteSidebar, noteSidebarStore } from "./note-sidebar-stores";
 
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
+
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import type { Hash } from "@/utils/types";
 
@@ -42,6 +46,7 @@
   const context: IActivityContext = getContext("context");
 
   // Variables
+  let entryId = $derived(page.params.entryId) as string;
   let isInReviewStep = $derived(context.workflowStep === "review");
   let isListView = $derived(!$noteSidebarStore.selectedNoteFeed);
   let isDetailView = $derived(!!$noteSidebarStore.selectedNoteFeed);
@@ -67,8 +72,8 @@
   });
 
   // Functions
-  async function loadNotes() {
-    return await context.notes.feeds.list({
+  async function loadNoteFeeds() {
+    const noteFeedsRes = await noteFeedsBackendDataSource.list({
       filters: { ...noteFeedFilters },
       pagination: {
         page: 1,
@@ -76,34 +81,50 @@
       },
       sort: ["-created_at"],
     });
+    return noteFeedsRes.data;
   }
 
   async function loadNoteDetail() {
-    const noteFeed = await context.notes.feeds.get($noteSidebarStore.selectedNoteFeed?.id!);
-    const noteComments = await context.notes.comments.list({
+    const noteFeedRes = await noteFeedsBackendDataSource.get($noteSidebarStore.selectedNoteFeed?.id!);
+    const noteCommentsRes = await noteCommentsBackendDataSource.list({
       filters: {
         note_feed_id: $noteSidebarStore.selectedNoteFeed?.id,
       },
       sort: ["created_at"],
     });
 
-    return { noteFeed, noteComments };
+    return { noteFeed: noteFeedRes.data, noteComments: noteCommentsRes.data };
   }
 
   async function createNote() {
     if (isListView) {
       /** Create a general note feed, if current view is list */
-      await context.notes.feeds.create({
-        content_md: contentMd,
+      await noteFeedsBackendDataSource.create({
+        attributes: {
+          entry_id: entryId,
+          annotation_id: undefined,
+          anchor_type: "entry",
+          content_md: contentMd,
+        },
       });
       toast.success("Comment added from sidebar");
     }
 
     if (isDetailView && $noteSidebarStore.selectedNoteFeed) {
       /** Create a note comment under the selected note feed, if current view is detail */
-      await context.notes.comments.create({
-        note_feed_id: $noteSidebarStore.selectedNoteFeed.id,
-        content_md: contentMd,
+      await noteCommentsBackendDataSource.create({
+        attributes: {
+          note_feed_id: $noteSidebarStore.selectedNoteFeed.id,
+          content_md: contentMd,
+        },
+        relationships: {
+          note_feed: {
+            data: {
+              id: $noteSidebarStore.selectedNoteFeed.id,
+              type: "dataset:note_feeds",
+            },
+          },
+        },
       });
       toast.success("Reply added to note");
     }
@@ -123,7 +144,22 @@
   }
 
   async function deleteNoteFeed() {
-    await context.notes.feeds.delete($noteSidebarStore.selectedNoteFeed!.id);
+    const noteCommentsRes = await noteCommentsBackendDataSource.list({
+      fields: {
+        [NoteCommentRecord.type]: ["id"],
+      },
+      filters: {
+        note_feed_id: $noteSidebarStore.selectedNoteFeed!.id,
+      },
+    });
+
+    noteCommentsRes.data.forEach(async (noteComment) => {
+      await noteCommentsBackendDataSource.delete(noteComment.id);
+    });
+
+    await noteFeedsBackendDataSource.delete($noteSidebarStore.selectedNoteFeed!.id);
+
+    $noteSidebarStore.selectedNoteFeed = null;
     $noteSidebarStore.lastUpdated = new Date();
   }
 </script>
@@ -181,7 +217,7 @@
             <!-- NOTE FEED::DETAIL -->
             {#key $noteSidebarStore.lastUpdated}
               {#await loadNoteDetail() then { noteFeed, noteComments }}
-                <NoteFeedCard {noteFeed}></NoteFeedCard>
+                <NoteFeedCard {noteFeed} deletable={false}></NoteFeedCard>
 
                 {#each noteComments as noteComment (noteComment.id)}
                   <NoteCommentCard
@@ -194,7 +230,7 @@
           {:else}
             <!-- NOTE FEEDS::LISTS -->
 
-            {#await loadNotes()}
+            {#await loadNoteFeeds()}
               <Spinner />
             {:then notes}
               {#each notes as noteFeed (noteFeed.id)}

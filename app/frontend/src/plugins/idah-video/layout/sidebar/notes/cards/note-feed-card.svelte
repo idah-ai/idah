@@ -4,6 +4,7 @@
 
   import Button from "@/components/ui/button/button.svelte";
 
+  import { NoteCommentRecord, noteCommentsBackendDataSource } from "@/data/model/dataset/notes/comments/record";
   import { cn } from "@/utils";
 
   import type { IActivityContext, INoteFeed } from "@/plugin/interface/Activity";
@@ -15,9 +16,10 @@
   // Props
   interface Props {
     noteFeed: INoteFeed;
+    deletable?: boolean;
     highlighted?: boolean;
   }
-  let { noteFeed, highlighted }: Props = $props();
+  let { noteFeed, deletable = true, highlighted }: Props = $props();
 
   // Contexts
   const context: IActivityContext = getContext("context");
@@ -35,15 +37,16 @@
 
   // Functions
   async function loadComments() {
-    return await context.notes.comments.list({
+    const noteCommentsRes = await noteCommentsBackendDataSource.list({
       fields: {
-        ["dataset:note_comments"]: ["id"],
+        [NoteCommentRecord.type]: ["id"],
       },
       filters: {
         note_feed_id: noteFeed.id,
       },
       sort: ["created_at"],
     });
+    return noteCommentsRes.data;
   }
 
   function selectNoteFeed() {
@@ -70,7 +73,7 @@
   }
 </script>
 
-<NoteCard record={noteFeed} resource="dataset:note_feeds" {highlighted} onCardClick={selectNoteFeed}>
+<NoteCard record={noteFeed} resource="dataset:note_feeds" {deletable} {highlighted} onCardClick={selectNoteFeed}>
   {#snippet headerIcon()}
     <div
       class={cn("flex size-8 shrink-0 items-center justify-center rounded-full ", {
