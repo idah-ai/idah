@@ -38,20 +38,45 @@ module Plugins
     def serve_file(plugin_name, filename)
       plugin = find(plugin_name)
 
-      case filename
-      when "plugin.js"
-      when "plugin.css"
-      when "details.js"
-      when "details.css"
-      else
-        return nil
+      manifest = plugin.manifest
+      return nil if manifest.nil?
+
+      file_path = \
+        case filename
+        when "plugin.js", "plugin.css"
+          entry_plugin = manifest.entry_points&.entry_plugin
+          return nil unless entry_plugin
+
+          is_style = filename.end_with?(".css")
+
+          is_style ?
+            entry_plugin.style :
+            entry_plugin.script
+        when "details.js", "details.css"
+          entry_details = manifest.entry_points&.entry_details
+          return nil unless entry_details
+
+          is_style = filename.end_with?(".css")
+
+          is_style ?
+            entry_details.style :
+            entry_details.script
+        when "dataset_config.json"
+          return manifest.entry_points.dataset_config if
+            manifest.entry_points&.dataset_config
+        when "plugin_shortcut.json"
+          return manifest.entry_points.plugin_shortcut if
+            manifest.entry_points&.plugin_shortcut
+        else nil
+        end
+
+      return nil if file_path.nil?
+
+      if file_path
+        File.read(
+          File.join(plugin.path, file_path)
+        )
       end
-
-
-
-      find(plugin_name)
-
-      # raise "TODO: Implement plugin frontend serving"
     end
   end
 end
