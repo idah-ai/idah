@@ -109,11 +109,11 @@ export function createNoteDriver(entryId: string): INoteDriver {
               },
             })
             .then(async (res) => {
-              for (const comment of res.data) {
+              res.data.forEach(async (comment) => {
                 await noteCommentsBackendDataSource.delete(comment.id);
-              }
+              });
 
-              noteFeedsBackendDataSource.delete(id);
+              await noteFeedsBackendDataSource.delete(id);
             })
             .then(
               () => resolve(),
