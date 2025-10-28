@@ -22,7 +22,9 @@ SimpleCov.start do
   add_group "Service", "app/service"
 
   add_filter "app/journey"
+  add_filter "common/lib"
   add_filter "config"
+
   add_filter /_spec.rb$/
 end
 
