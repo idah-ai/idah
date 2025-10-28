@@ -37,14 +37,14 @@ RSpec.describe Setting, database: true do
 
     context "#set" do
       it "creates a new setting" do
-        result = subject.set("new_key", "new_value")
+        subject.set("new_key", "new_value")
 
         expect(subject.get("new_key")).to eq("new_value")
       end
 
       it "updates an existing setting" do
         subject.set("existing_key", "initial_value")
-        result = subject.set("existing_key", "updated_value")
+        subject.set("existing_key", "updated_value")
 
         expect(subject.get("existing_key")).to eq("updated_value")
       end

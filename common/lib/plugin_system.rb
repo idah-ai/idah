@@ -22,10 +22,13 @@ module PluginSystem
     )
 
     config.manual&.each do |plugin_name|
-      @registry.register(plugin_name,
-      File.join(
-        @config.path, plugin_name
-      ), manual: true)
+      @registry.register(
+        plugin_name,
+        File.join(
+          @config.path, plugin_name
+        ),
+        manual: true
+      )
     end
 
     # watch_sources if config.watch
@@ -56,5 +59,4 @@ module PluginSystem
 
     # listener.start
   end
-
 end

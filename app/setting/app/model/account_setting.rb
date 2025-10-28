@@ -7,10 +7,11 @@ module AccountSetting
     field :account_id, type: Integer
     field :key, type: String, readonly: true
     field :plugin, type: String, readonly: true
-    field :value, type: [
-      Hash, Array, String,
-      Integer, Float, TrueClass, NilClass
-    ]
+    field :value,
+          type: [
+            Hash, Array, String,
+            Integer, Float, TrueClass, NilClass
+          ]
   end
 
   class Repository < Verse::Sequel::Repository
@@ -20,11 +21,13 @@ module AccountSetting
 
     query
     def get(key, account_id:, plugin: "", default: nil)
-      find_by({
-        key:,
-        account_id:,
-        plugin:
-      })&.value || default
+      find_by(
+        {
+          key:,
+          account_id:,
+          plugin:
+        }
+      )&.value || default
     end
 
     event(name: "updated")
@@ -37,11 +40,11 @@ module AccountSetting
         target: %i[key account_id plugin],
         update: { value: }
       ).insert({
-        key:,
-        value:,
-        account_id:,
-        plugin:
-      })
+                 key:,
+                 value:,
+                 account_id:,
+                 plugin:
+               })
 
       true
     end

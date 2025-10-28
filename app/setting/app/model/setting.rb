@@ -7,10 +7,11 @@ module Setting
     field :id, type: Integer, primary: true
 
     field :key, type: String, readonly: true
-    field :value, type: [
-      Hash, Array, String,
-      Integer, Float, TrueClass, NilClass
-    ]
+    field :value,
+          type: [
+            Hash, Array, String,
+            Integer, Float, TrueClass, NilClass
+          ]
   end
 
   class Repository < Verse::Sequel::Repository
@@ -21,7 +22,7 @@ module Setting
 
     query
     def get(key, default: nil)
-      find_by({key:})&.value || default
+      find_by({ key: })&.value || default
     end
 
     event(name: "updated")

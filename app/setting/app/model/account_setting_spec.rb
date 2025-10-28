@@ -14,7 +14,13 @@ RSpec.describe AccountSetting, database: true do
       end
 
       it "returns the default value if the key does not exist" do
-        expect(subject.get("non_existent_key", default: "default_value", account_id: user_account_id)).to eq("default_value")
+        expect(
+          subject.get(
+            "non_existent_key",
+            default: "default_value",
+            account_id: user_account_id
+          )
+        ).to eq("default_value")
       end
 
       it "returns nil if the key does not exist and no default is provided" do
@@ -85,6 +91,5 @@ RSpec.describe AccountSetting, database: true do
         expect(subject.get("some_key", account_id: other_user_account_id)).to eq("user_2_value")
       end
     end
-
   end
 end
