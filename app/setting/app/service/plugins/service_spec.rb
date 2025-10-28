@@ -1,24 +1,23 @@
-RSpec.describe Plugins::AssetService, type: :service, as: :system do
+RSpec.describe Plugins::Service, type: :service, as: :system do
 
   describe "#serve" do
     it "serves the plugin file if found (manual)" do
-      plugin_name = "sample_plugin"
+      plugin_name = "fake_plugin"
 
-      allow(Verse.config.extra_fields).to receive(:dig).with(
-        :idah, :plugins, :manual
-      ).and_return([plugin_name])
+      allow(Verse.config).to receive(:extra_fields).and_return(
+        idah: {
+          plugins: {
+            manual: [plugin_name],
+            path: "app/spec_data"
+          }
+        }
+      )
 
-      # allow(Plugin::Record).to receive(:from_path).and_return(
-        # Plugin::Record.new(
-        #   name: plugin_name,
-        #   source_type: "manual",
-        #   source_path: File.join("plugins", plugin_name)
-        # )
-      # )
+      filename = "plugin.js"
 
-      filename = "index.js"
+      output = service.serve_file(plugin_name, filename)
 
-      output = service.serve(plugin_name, filename)
+      expect(output).to eq("/* I am a javascript plugin file */")
     end
   end
 end
