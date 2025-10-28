@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module PluginSystem
   # In charge of loading
   # locally the different plugins.
@@ -44,7 +46,7 @@ module PluginSystem
       end
     end
 
-    def retrieve_plugin(name, version)
+    def retrieve_plugin(_name, _version)
       raise "TODO: Implement plugin retrieval from remote repository"
     end
   end
