@@ -1,6 +1,6 @@
 <script lang="ts">
   import { XIcon } from "@lucide/svelte";
-  import { getContext } from "svelte";
+  import { getContext, onDestroy } from "svelte";
   import { toast } from "svelte-sonner";
 
   import { Button } from "@/components/ui/button";
@@ -58,6 +58,19 @@
       $noteSidebarStore.lastUpdated = new Date();
     }
   }
+
+  function closeSelectedNoteFeedDialog() {
+    closeNoteFeedPopup();
+
+    // Remove hash from url
+    const url = new URL(window.location.href);
+    url.hash = "";
+    window.history.replaceState({}, document.title, url.toString());
+  }
+
+  onDestroy(() => {
+    closeSelectedNoteFeedDialog();
+  });
 </script>
 
 {#if noteFeed}
@@ -69,7 +82,7 @@
 
         <NoteDropdownMenus noteFeedId={noteFeed.id} editable={false} onDelete={deleteNoteFeed} />
 
-        <Button variant="ghost" size="icon-sm" onclick={closeNoteFeedPopup}>
+        <Button variant="ghost" size="icon-sm" onclick={closeSelectedNoteFeedDialog}>
           <XIcon />
         </Button>
       </div>
