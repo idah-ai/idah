@@ -34,7 +34,9 @@ module PluginSystem
       )
 
       if !File.directory?(path_to_code)
-        Verse.logger.info{ "[IDAH-PLUGIN] Plugin `#{manifest.name}` backend path `#{path_to_code}` does not exist, skipping load." }
+        Verse.logger.info{
+          "[IDAH-PLUGIN] Plugin `#{manifest.name}` backend path `#{path_to_code}` does not exist, skipping load."
+        }
         return;
       end
 
@@ -70,6 +72,5 @@ module PluginSystem
       start
       Verse.logger.info{ "Reload plugin #{manifest.name} done" }
     end
-
   end
 end

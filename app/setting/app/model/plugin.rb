@@ -21,15 +21,17 @@ module Plugin
         JSON.parse(File.read(File.join(path, "manifest.json")))
       )
 
-      new({
-        source_type: "manual",
-        source_path: path,
-        name: manifest.name,
-        description: manifest.description,
-        version: manifest.version,
-        created_at: File.ctime(path),
-        updated_at: File.mtime(path)
-      })
+      new(
+        {
+          source_type: "manual",
+          source_path: path,
+          name: manifest.name,
+          description: manifest.description,
+          version: manifest.version,
+          created_at: File.ctime(path),
+          updated_at: File.mtime(path)
+        }
+      )
     end
 
     def path
@@ -55,11 +57,8 @@ module Plugin
 
         if File.exist?(manifest_path)
           PluginSystem::Manifest.from_file(manifest_path)
-        else
-          nil
         end
       end
-
     end
   end
 

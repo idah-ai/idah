@@ -45,7 +45,7 @@ module PluginSystem
   Manifest = ManifestSchema.dataclass do
     def self.from_file(file_path)
       data = JSON.parse(File.read(file_path))
-      self.new(data)
+      new(data)
     end
   end
 end

@@ -1,10 +1,12 @@
+# frozen_string_literal: true
+
 module Plugins
   class Service < Verse::Service::Base
     use repo: Plugin::Repository
 
-    def install(plugin_name)
+    def install(_plugin_name)
       Manager.run do
-        install_plugin()
+        install_plugin
       end
     end
 
@@ -17,14 +19,14 @@ module Plugins
         :idah, :plugins, :path
       ) || "plugins"
 
-      manual_plugins.find{|p| p == plugin_name }&.then do
+      manual_plugins.find{ |p| p == plugin_name }&.then do
         return Plugin::Record.from_path(
           File.join(plugin_path, plugin_name)
         )
       end
 
       # 2. if manual plugin not found, check in the database
-      return repo.find_by({name: plugin_name})
+      repo.find_by({ name: plugin_name })
     end
 
     def serve_asset(plugin_name, filename)
@@ -61,34 +63,37 @@ module Plugins
 
           is_style = filename.end_with?(".css")
 
-          is_style ?
-            entry_plugin.style :
+          if is_style
+            entry_plugin.style
+          else
             entry_plugin.script
+          end
         when "details.js", "details.css"
           entry_details = manifest.entry_points&.entry_details
           return nil unless entry_details
 
           is_style = filename.end_with?(".css")
 
-          is_style ?
-            entry_details.style :
+          if is_style
+            entry_details.style
+          else
             entry_details.script
+          end
         when "dataset_config.json"
           return manifest.entry_points.dataset_config if
             manifest.entry_points&.dataset_config
         when "plugin_shortcut.json"
           return manifest.entry_points.plugin_shortcut if
             manifest.entry_points&.plugin_shortcut
-        else nil
         end
 
       return nil if file_path.nil?
 
-      if file_path
-        File.read(
-          File.join(plugin.path, file_path)
-        )
-      end
+      return unless file_path
+
+      File.read(
+        File.join(plugin.path, file_path)
+      )
     end
   end
 end

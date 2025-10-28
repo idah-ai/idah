@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class PluginsExpo < BaseExpo
   http_path "/plugins"
 
@@ -8,7 +10,9 @@ class PluginsExpo < BaseExpo
 
   use_service Plugins::Service
 
-  expose on_http(:get, "modalities",
+  expose on_http(
+    :get,
+    "modalities",
     auth: nil,
   ) do
     output do
@@ -19,7 +23,9 @@ class PluginsExpo < BaseExpo
     service.show_modalities
   end
 
-  expose on_http(:get, ":plugin/assets/*",
+  expose on_http(
+    :get,
+    ":plugin/assets/*",
     auth: nil,
     renderer: Verse::Http::Renderer::Binary
   ) do
@@ -30,7 +36,7 @@ class PluginsExpo < BaseExpo
   end
   def serve_asset
     # Sanitize path to prevent directory traversal
-    if params[:splat].any?{ |part| part == ".." || part == "." }
+    if params[:splat].any?{ |part| ["..", "."].include?(part) }
       return server.not_found
     end
 
@@ -40,13 +46,13 @@ class PluginsExpo < BaseExpo
     )
 
     return server.not_found unless io
-\
+
     io
-  ensure
-    io&.close
   end
 
-  expose on_http(:get, ":plugin/files/:filename",
+  expose on_http(
+    :get,
+    ":plugin/files/:filename",
     auth: nil,
     renderer: Verse::Http::Renderer::Identity
   ) do
@@ -56,7 +62,7 @@ class PluginsExpo < BaseExpo
     end
   end
   def serve
-    io = service.serve_file(
+    service.serve_file(
       params[:plugin],
       params[:filename]
     ) || server.not_found

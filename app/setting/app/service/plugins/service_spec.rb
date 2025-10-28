@@ -1,5 +1,6 @@
-RSpec.describe Plugins::Service, type: :service, as: :system do
+# frozen_string_literal: true
 
+RSpec.describe Plugins::Service, type: :service, as: :system do
   describe "#serve_file" do
     it "serves the plugin file if found (manual)" do
       plugin_name = "fake_plugin"
@@ -40,5 +41,4 @@ RSpec.describe Plugins::Service, type: :service, as: :system do
       expect(io.read).to eq("PNG IMAGE DATA")
     end
   end
-
 end
