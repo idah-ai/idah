@@ -59,17 +59,19 @@
     }
   }
 
-  function closeSelectedNoteFeedDialog() {
-    closeNoteFeedPopup();
-
-    // Remove hash from url
+  function removeHashFromUrl() {
     const url = new URL(window.location.href);
     url.hash = "";
     window.history.replaceState({}, document.title, url.toString());
   }
 
+  function closeSelectedNoteFeedDialog() {
+    closeNoteFeedPopup();
+    removeHashFromUrl();
+  }
+
   onDestroy(() => {
-    closeSelectedNoteFeedDialog();
+    removeHashFromUrl();
   });
 </script>
 
