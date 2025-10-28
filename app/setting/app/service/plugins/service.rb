@@ -30,15 +30,27 @@ module Plugins
     def serve_asset(plugin_name, filename)
       plugin = find(plugin_name)
 
-      return nil unless plugin
+      manifest = plugin&.manifest
+      return nil unless manifest
 
-      binding.pry
+      assets_directory = manifest.entry_points&.assets_directory
+      return nil unless assets_directory
+
+      asset_path = File.join(
+        plugin.path,
+        assets_directory,
+        filename
+      )
+
+      return nil unless File.exist?(asset_path)
+
+      File.open(asset_path, "rb")
     end
 
     def serve_file(plugin_name, filename)
       plugin = find(plugin_name)
 
-      manifest = plugin.manifest
+      manifest = plugin&.manifest
       return nil if manifest.nil?
 
       file_path = \
