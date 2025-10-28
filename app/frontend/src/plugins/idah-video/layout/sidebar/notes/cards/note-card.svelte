@@ -150,7 +150,7 @@
     {#if mode === "view"}
       <MarkdownPreview value={truncate(record.content_md, 140)} />
 
-      {#if record.created_at !== record.updated_at}
+      {#if new Date(record.created_at).getTime() !== new Date(record.updated_at).getTime()}
         <span class="text-muted-foreground text-xs">(Edited)</span>
       {/if}
 
