@@ -1,5 +1,5 @@
 module Plugins
-  class AssetService < Verse::Service::Base
+  class Service < Verse::Service::Base
     use repo: Plugin::Repository
 
     def install(plugin_name)
@@ -27,7 +27,15 @@ module Plugins
       return repo.find_by({name: plugin_name})
     end
 
-    def serve(plugin_name, filename)
+    def serve_asset(plugin_name, filename)
+      plugin = find(plugin_name)
+
+      return nil unless plugin
+
+      binding.pry
+    end
+
+    def serve_file(plugin_name, filename)
       plugin = find(plugin_name)
 
       case filename

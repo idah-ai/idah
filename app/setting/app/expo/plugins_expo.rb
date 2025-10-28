@@ -6,7 +6,7 @@ class PluginsExpo < BaseExpo
   # GET plugins/:plugin_name/files/entry.js|css # Entrypoint for show les entries
   # GET plugins/:plugin_name/assets/... # public static files
 
-  use_service Plugins::AssetService
+  use_service Plugins::Service
 
   expose on_http(:get, "modalities",
     auth: nil,
@@ -19,22 +19,31 @@ class PluginsExpo < BaseExpo
     service.show_modalities
   end
 
-  expose on_http(:get, ":plugin/files/assets/*filepath",
+  expose on_http(:get, ":plugin/assets/*",
     auth: nil,
-    renderer: Verse::Http::Renderer::Identity
+    renderer: Verse::Http::Renderer::Binary
   ) do
     input do
       field :plugin, String
-      field :filepath, String
+      field :splat, Array, of: String
     end
   end
   def serve_asset
-    binding.pry
+    # Sanitize path to prevent directory traversal
+    if params[:splat].any?{ |part| part == ".." || part == "." }
+      return server.not_found
+    end
 
-    asset_service.serve_asset(
+    io = service.serve_asset(
       params[:plugin],
-      params[:filepath]
-    ) || server.not_found
+      params[:splat].join("/")
+    )
+
+    return server.not_found unless io
+\
+    io
+  ensure
+    io&.close
   end
 
   expose on_http(:get, ":plugin/files/:filename",
@@ -43,13 +52,11 @@ class PluginsExpo < BaseExpo
   ) do
     input do
       field :plugin, String
-
-      field :module, String
       field :filename, String
     end
   end
   def serve
-    asset_service.serve(
+    io = service.serve_file(
       params[:plugin],
       params[:filename]
     ) || server.not_found
