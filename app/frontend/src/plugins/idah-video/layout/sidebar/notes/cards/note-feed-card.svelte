@@ -1,13 +1,12 @@
 <script lang="ts">
   import { MapPinIcon, MessageCircleIcon, SquareDashedIcon } from "@lucide/svelte";
-  import { getContext } from "svelte";
 
   import Button from "@/components/ui/button/button.svelte";
 
   import { NoteCommentRecord, noteCommentsBackendDataSource } from "@/data/model/dataset/notes/comments/record";
   import { cn } from "@/utils";
 
-  import type { IActivityContext, INoteFeed } from "@/plugin/interface/Activity";
+  import type { INoteFeed } from "@/plugin/interface/Activity";
 
   import ResolveNoteButton from "../buttons/resolve-note-button.svelte";
   import { noteSidebarStore } from "../note-sidebar-stores";
@@ -20,9 +19,6 @@
     highlighted?: boolean;
   }
   let { noteFeed, deletable = true, highlighted }: Props = $props();
-
-  // Contexts
-  const context: IActivityContext = getContext("context");
 
   // Variables
   let { annotation_id, position } = $derived(noteFeed);
