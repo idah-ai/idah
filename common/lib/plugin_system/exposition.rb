@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module PluginSystem
   class Exposition < Verse::Exposition::Base
     expose on_resource_event(Resource::Setting::Plugins, :restart_required)

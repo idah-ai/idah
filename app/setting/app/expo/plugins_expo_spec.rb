@@ -32,7 +32,7 @@ RSpec.describe PluginsExpo, type: :exposition, as: :system do
         filename
       ).and_return(nil)
 
-      get "/plugins/#{plugin_name}/file/#{filename}"
+      get "/plugins/#{plugin_name}/files/#{filename}"
 
       expect(last_response.status).to eq(404)
     end
@@ -48,7 +48,9 @@ RSpec.describe PluginsExpo, type: :exposition, as: :system do
       expect(asset_service).to receive(:serve_asset).with(
         plugin_name,
         filename
-      ).and_return("asset content")
+      ).and_return(
+        StringIO.new("asset content")
+      )
 
       get "/plugins/#{plugin_name}/assets/#{filename}"
 
@@ -59,8 +61,6 @@ RSpec.describe PluginsExpo, type: :exposition, as: :system do
     end
 
     it "sanitize the path to prevent directory traversal" do
-      asset_service = instance_double(Plugins::Service)
-      expect(Plugins::Service).to receive(:new).and_return(asset_service)
       plugin_name = "sample_plugin"
       filename = "../secret.txt"
 
