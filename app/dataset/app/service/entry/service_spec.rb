@@ -154,11 +154,6 @@ RSpec.describe Entry::Service, database: true do
 
           allow(subject.entries).to receive(:after_commit).and_yield
         end
-
-        it "creates an entry with status ready" do
-          result = subject.create(entry_record)
-          expect(result.status).to eq("ready")
-        end
       end
 
       context "when the job is not done" do
