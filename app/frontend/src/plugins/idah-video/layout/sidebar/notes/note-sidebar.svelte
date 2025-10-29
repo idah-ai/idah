@@ -74,7 +74,7 @@
   // Functions
   async function loadNoteFeeds() {
     const noteFeedsRes = await noteFeedsBackendDataSource.list({
-      filters: { ...noteFeedFilters },
+      filters: { entry_id: entryId, ...noteFeedFilters },
       pagination: {
         page: 1,
         itemsPerPage: 1000,
