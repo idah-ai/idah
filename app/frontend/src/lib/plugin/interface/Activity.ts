@@ -63,7 +63,7 @@ export interface INoteFeed {
 
   readonly created_at: string;
   readonly updated_at: string;
-  readonly edited_at: string;
+  readonly edited_at: string | null;
 
   // Included relationships
   note_comments: Array<INoteComment>;
@@ -79,7 +79,7 @@ export interface INoteComment {
   readonly created_by_email: string;
   readonly created_at: string;
   readonly updated_at: string;
-  readonly edited_at: string;
+  readonly edited_at: string | null;
 }
 
 export interface IAnnotationDriver {

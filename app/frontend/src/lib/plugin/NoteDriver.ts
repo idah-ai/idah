@@ -15,7 +15,7 @@ export function parseNoteFeedRecordToINoteFeed(record: NoteFeedRecord): INoteFee
     content_md: record.content_md,
     created_at: new Date(record.created_at).toString(),
     updated_at: new Date(record.updated_at).toString(),
-    edited_at: new Date(record.edited_at).toString(),
+    edited_at: record.edited_at ? new Date(record.edited_at).toString() : null,
 
     // Included relationships
     note_comments:
@@ -32,7 +32,7 @@ export function parseNoteCommentRecordToINoteComment(record: NoteCommentRecord):
     created_by_email: record.created_by_email,
     created_at: new Date(record.created_at).toString(),
     updated_at: new Date(record.updated_at).toString(),
-    edited_at: new Date(record.edited_at).toString(),
+    edited_at: record.edited_at ? new Date(record.edited_at).toString() : null,
   };
 }
 
@@ -41,7 +41,7 @@ export function createNoteDriver(entryId: string): INoteDriver {
     /** NOTE::FEEDS */
     feeds: {
       create(data: Partial<INoteFeed>) {
-        const { annotation_id, position, content_md } = data;
+        const { annotation_id, position, content_md, created_by_email } = data;
         return new Promise<INoteFeed>((resolve, reject) => {
           noteFeedsBackendDataSource
             .create({
@@ -51,6 +51,7 @@ export function createNoteDriver(entryId: string): INoteDriver {
                 anchor_type: annotation_id ? "annotation" : "entry",
                 position,
                 content_md,
+                created_by_email,
               },
             })
             .then(
@@ -150,13 +151,14 @@ export function createNoteDriver(entryId: string): INoteDriver {
         });
       },
       create(data: Partial<INoteComment>) {
-        const { note_feed_id, content_md } = data;
+        const { note_feed_id, content_md, created_by_email } = data;
         return new Promise<INoteComment>((resolve, reject) => {
           noteCommentsBackendDataSource
             .create({
               attributes: {
                 note_feed_id,
                 content_md,
+                created_by_email,
               },
               relationships: {
                 note_feed: {

@@ -105,6 +105,7 @@
           annotation_id: undefined,
           anchor_type: "entry",
           content_md: contentMd,
+          created_by_email: "reviewer_user@example.com",
         },
       });
       toast.success("Comment added from sidebar");
@@ -116,6 +117,7 @@
         attributes: {
           note_feed_id: $noteSidebarStore.selectedNoteFeed.id,
           content_md: contentMd,
+          created_by_email: "reply_user@example.com",
         },
         relationships: {
           note_feed: {

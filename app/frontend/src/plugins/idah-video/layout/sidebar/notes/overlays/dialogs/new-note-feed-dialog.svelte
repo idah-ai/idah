@@ -26,6 +26,7 @@
       content_md: contentMd,
       annotation_id: annotationId,
       position: { ...$noteSidebarStore.noteFeedPopup.noteFeed?.position },
+      created_by_email: "reviewer_user@example.com",
     });
 
     if (annotationId || Object.keys($noteSidebarStore.noteFeedPopup.noteFeed?.position || {}).length > 0) {
