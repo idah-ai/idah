@@ -16,10 +16,12 @@
 
   import { toggleMode } from "mode-watcher";
 
-  import { closeNoteSidebar, noteSidebarStore } from "../sidebar/notes/note-sidebar-stores";
-
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
   import type { IActivityContext } from "@/plugin/interface/Activity";
+  import {
+    closeNoteSidebar,
+    noteSidebarStore,
+  } from "../../../../plugins/idah-video/layout/sidebar/notes/note-sidebar-stores";
   import type { AnnotationHeaderBarBaseTool } from "./AnnotationHeaderBar.types";
 
   // Contexts
