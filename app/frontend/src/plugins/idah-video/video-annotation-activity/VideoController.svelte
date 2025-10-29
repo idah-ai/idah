@@ -33,6 +33,8 @@
   // Props
   interface Props {
     video: Video;
+    isPlaying: boolean;
+    volume: { level: number; muted: boolean };
     currentFrame: number;
     totalFrames: number;
     scale: number;
@@ -41,7 +43,17 @@
     onScaleChange: (scale: number) => void;
   }
 
-  let { video = $bindable(), scale, zoom, currentFrame, totalFrames, onZoomChange, onScaleChange }: Props = $props();
+  let {
+    video = $bindable(),
+    isPlaying,
+    volume,
+    scale,
+    zoom,
+    currentFrame,
+    totalFrames,
+    onZoomChange,
+    onScaleChange,
+  }: Props = $props();
 
   // Variables
   interface VideoSpeedMenuItem {
@@ -59,15 +71,7 @@
     { label: "5 X", value: 5 },
   ];
 
-  let volume: number = $state(50);
   let currentSpeed: number = $state(1);
-  let isPlaying: boolean = $state(false);
-  let isMuted: boolean = $derived(volume === 0);
-
-  // Functions
-  function setVolume(volumeToSet: number): void {
-    video.setVolume(volumeToSet);
-  }
 
   const seekToFrame: ChangeEventHandler<HTMLInputElement> = (event) => {
     const target = event.target as HTMLInputElement;
@@ -95,7 +99,6 @@
       size="icon-sm"
       onclick={() => {
         video.togglePlay();
-        isPlaying = !isPlaying;
       }}
     >
       {#if isPlaying}
@@ -114,7 +117,7 @@
     <Popover>
       <PopoverTrigger>
         <Button variant="outline" size="icon-sm">
-          {#if isMuted}
+          {#if volume.muted || volume.level == 0}
             <VolumeXIcon />
           {:else}
             <Volume2Icon />
@@ -129,8 +132,8 @@
           min={0}
           max={100}
           step={1}
-          onValueChange={setVolume}
-          bind:value={volume}
+          onValueChange={video.setVolume}
+          value={volume.level}
         />
       </PopoverContent>
     </Popover>
@@ -161,8 +164,8 @@
         class="h-7 min-w-24"
         placeholder="Frame"
         min={0}
-        max={Math.max(0, totalFrames - 1)}
-        suffix={`/ ${Math.max(0, totalFrames - 1)}`}
+        max={Math.max(0, totalFrames)}
+        suffix={`/ ${Math.max(0, totalFrames)}`}
         value={currentFrame}
         onchange={seekToFrame}
       />

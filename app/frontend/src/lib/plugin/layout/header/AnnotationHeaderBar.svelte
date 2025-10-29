@@ -11,10 +11,8 @@
   // Props
   interface Props {
     context: IActivityContext;
-    mode: string;
-    onSelectMode: (selectedMode: string) => void;
   }
-  let { context, mode, onSelectMode }: Props = $props();
+  let { context }: Props = $props();
 </script>
 
 <nav id="annotation-header-bar" class="grid grid-cols-3 p-2">
@@ -30,7 +28,7 @@
   </div>
 
   <!-- CENTER::TOOLS -->
-  <AnnotationHeaderBarTools {mode} {onSelectMode} />
+  <AnnotationHeaderBarTools {context} />
 
   <!-- RIGHT::ACTIONS -->
   <AnnotationHeaderBarActions />

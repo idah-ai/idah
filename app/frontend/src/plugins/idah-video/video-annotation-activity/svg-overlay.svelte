@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Snippet } from "svelte";
+  import { getContext, type Snippet } from "svelte";
   import { sineInOut } from "svelte/easing";
   import { fade } from "svelte/transition";
 
@@ -10,6 +10,7 @@
   import messageCircleIcon from "../layout/sidebar/notes/svgs/message-circle.svg";
   import BoundingBox, { type ToolSelection } from "./bounding-box.svelte";
   import { boundingBoxes } from "./idb_store.svelte";
+
   import {
     HEIGHT,
     ORIGIN,
@@ -23,12 +24,14 @@
   } from "./VideoAnnotationContext";
   import Zoomable from "./zoomable.svelte";
 
+  import type { IActivityContext } from "@/plugin/interface/Activity";
+
   // Props
   type Props = {
     frame: number;
     selected: VideoAnnotation | undefined;
     mode: string;
-    target_container: HTMLDivElement; // ..
+    target_container: () => HTMLDivElement; // ..
     annotations_promise: Promise<VideoAnnotation[]>;
     children: Snippet;
     onclick?: (e: MouseEvent) => void;
@@ -62,6 +65,8 @@
     offset: [0, 0],
   });
 
+  let context: IActivityContext = getContext("context");
+
   let height = $state(0);
   let width = $state(0);
   let mouse: Point = $state([0, 0]);
@@ -83,7 +88,7 @@
 
   function updatedSize(): Point {
     videoResizedAt; // (... update on change)
-    let target_dom_rect = target_container?.getBoundingClientRect();
+    let target_dom_rect = target_container()?.getBoundingClientRect();
     zoomInfo; // (... update on change)
 
     return !target_dom_rect ? ORIGIN : [target_dom_rect.width, target_dom_rect.height];
@@ -220,9 +225,10 @@
         status: "pending",
         content_md: "",
         note_comments: [],
-        created_by_id: 1,
+        created_by_email: "user@example.com",
         created_at: new Date().toDateString(),
         updated_at: new Date().toDateString(),
+        edited_at: null,
       },
     };
   }
@@ -300,7 +306,7 @@
               points={currentShape(annotation.shape, frame) || []}
               ratio={target_size}
               offset={zoomInfo.offset}
-              color={annotation.value.attributes?.data.color || "grey"}
+              color={context.config.categories.find((c) => c.id == annotation.value?.category)?.color || "grey"}
               onmousedown={(e) => {
                 if (mode == "visual" || selected) {
                   e.stopPropagation();
@@ -320,7 +326,9 @@
               points={currentShape(annotation.shape, frame) || []}
               ratio={target_size}
               offset={zoomInfo.offset}
-              color={annotation.value.attributes?.data.color || "grey"}
+              color={annotation?.synced
+                ? context.config.categories.find((c) => c.id == annotation?.value?.category)?.color || "grey"
+                : "grey"}
               onmousedown={(e) => {
                 if (mode == "visual" || selected) {
                   e.stopPropagation();
@@ -341,7 +349,9 @@
       offset={zoomInfo.offset}
       cursor={cursor_downscaled}
       editable={mode == "video:bounding_box"}
-      color={selected?.value.attributes?.data.color || "gray"}
+      color={selected?.synced
+        ? context.config.categories.find((c) => c.id == selected?.value?.category)?.color || "grey"
+        : "grey"}
       onChange={(bb) => {
         onSelection("video:bounding_box", frame, bb, selected?.metadata.id);
         points = bb;

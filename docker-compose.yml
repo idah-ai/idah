@@ -108,7 +108,7 @@ services:
       - node_modules:/app/frontend/node_modules
     networks:
       - app-network
-    command: pnpm run dev  --host
+    command: pnpm run dev
     stdin_open: true
     tty: true
 
