@@ -13,12 +13,12 @@
 
   "entryPoints": {
     "entryPlugin": {
-      "script": "frontend/build/build.js",
-      "style": "frontend/build/build.css"
+      "script": "/frontend/build/plugins/idah-video.umd.js",
+      "style": "/frontend/build/plugins/idah-video.css"
     },
     "entryDetails": {
-      "script": "frontend/build/entryDetailsBuild.js",
-      "style": "frontend/build/entryDetailsBuild.css"
+      "script": "/frontend/build/entryDetailsBuild.js",
+      "style": "/frontend/build/entryDetailsBuild.css"
     },
     "datasetConfig": "config/dataset.json",
     "pluginShortcut": "config/shortcut.json",

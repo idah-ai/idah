@@ -4,6 +4,10 @@ import { goto } from "$app/navigation";
 import type { EntryRecord } from "@/data/model/dataset/entries/record";
 import type { Command } from "@/command/Command";
 import CommandManager from "@/command/CommandManager";
+import { accountSettingBackendDataSource } from "@/data/model/setting/account_setting/record";
+import { settingsBackendDataSource } from "@/data/model/setting/setting/record";
+import { pluginsBackendDataSource } from "@/data/model/setting/plugin/record";
+import { mediaBackendDataSource } from "@/data/model/media/medias/medias-record";
 
 const noteDriver: INoteDriver = {
   create(position, content) {
@@ -71,6 +75,7 @@ function createToolsInterface(): ITools {
 }
 
 export function activityContextForEntry(entry: EntryRecord): IActivityContext {
+  mediaBackendDataSource.get(entry.filename).then(console.warn);
   return {
     id: entry.id,
     type: entry.dataset.modality,
