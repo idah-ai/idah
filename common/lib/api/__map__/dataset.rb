@@ -4,7 +4,7 @@ Api[:idah].register(
   :dataset, :entries, :show
 ) do |id:, **opts|
   output = get(
-    "entries/:id",
+    "dataset/entries/:id",
     params: {
       id:, **opts
     },
@@ -18,7 +18,7 @@ Api[:idah].register(
   :dataset, :entries, :update
 ) do |id:, **attributes|
   output = patch(
-    "entries/:id",
+    "dataset/entries/:id",
     params: {
       id:,
       data: {

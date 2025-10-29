@@ -68,7 +68,12 @@ class Api
 
       # Execute request
       http = Net::HTTP.new(uri.host, uri.port)
-      http.use_ssl = (uri.scheme == "https")
+      use_ssl = uri.scheme == "https"
+      http.use_ssl = use_ssl
+
+      # TODO: It's probably better to generate a set of self-signed authority
+      # internally to the cluster., rather than disabling verification.
+      http.verify_mode = OpenSSL::SSL::VERIFY_NONE if use_ssl
 
       response = http.request(request)
 
