@@ -25,7 +25,7 @@ export class NoteFeedRecord extends Record {
 
   @field({ transformer: Transformers.Time }) public readonly created_at!: Date;
   @field({ transformer: Transformers.Time }) public readonly updated_at!: Date;
-  @field({ transformer: Transformers.Time }) public readonly edited_at!: Date;
+  @field({ transformer: Transformers.Time }) public readonly edited_at!: Date | null;
 
   @relationship() public entry!: EntryRecord;
   @relationship() public annotation!: AnnotationRecord;

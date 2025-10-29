@@ -106,8 +106,9 @@
   </div>
 
   <Button variant="outline" size="sm" class="border-primary text-primary hover:text-primary">Skip</Button>
-
-  {#if context.workflowStep === "review"}
+  {#if context.workflowStep === "done"}
+    <!-- TODO: What to show? -->
+  {:else if context.workflowStep === "review"}
     <DropdownMenus menus={reviewMenus}>
       {#snippet trigger({ props })}
         <Button {...props} size="sm" {loading} loadingLabel="Reviewing">

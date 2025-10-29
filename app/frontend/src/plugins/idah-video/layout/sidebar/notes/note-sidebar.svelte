@@ -210,8 +210,8 @@
   <SidebarSeparator />
 
   <SidebarContent>
-    <SidebarGroup>
-      <SidebarGroupContent class="flex flex-col gap-2">
+    <SidebarGroup class="flex-1">
+      <SidebarGroupContent class="flex h-full flex-col gap-2">
         {#key $noteSidebarStore.lastUpdated}
           {#if $noteSidebarStore.selectedNoteFeed}
             <!-- NOTE FEED::DETAIL -->
@@ -241,6 +241,7 @@
                   title="No Notes"
                   description="There are no notes yet. Be the first to add one!"
                   icon={MessageCircleDashedIcon}
+                  class="mt-auto"
                 >
                   {#snippet actions()}{/snippet}
                 </ResponseBlock>

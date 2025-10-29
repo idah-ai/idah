@@ -8,13 +8,14 @@ export function parseNoteFeedRecordToINoteFeed(record: NoteFeedRecord): INoteFee
     id: record.id,
     entry_id: record.entry_id,
     annotation_id: record.annotation_id,
-    created_by_id: record.created_by_id,
+    created_by_email: record.created_by_email,
     anchor_type: record.anchor_type,
     position: record.position,
     status: record.status,
     content_md: record.content_md,
     created_at: new Date(record.created_at).toString(),
     updated_at: new Date(record.updated_at).toString(),
+    edited_at: new Date(record.edited_at).toString(),
 
     // Included relationships
     note_comments:
@@ -28,9 +29,10 @@ export function parseNoteCommentRecordToINoteComment(record: NoteCommentRecord):
     note_feed_id: record.note_feed_id,
     is_edited: record.is_edited,
     content_md: record.content_md,
-    created_by_id: record.created_by_id,
+    created_by_email: record.created_by_email,
     created_at: new Date(record.created_at).toString(),
     updated_at: new Date(record.updated_at).toString(),
+    edited_at: new Date(record.edited_at).toString(),
   };
 }
 
