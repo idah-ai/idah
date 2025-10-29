@@ -119,7 +119,7 @@
 
       <!-- HEADER::CREATED BY & CREATED AT -->
       <div class="flex flex-col -space-y-1 text-left text-xs">
-        <p class="w-full font-semibold">{record.created_by_id}@email.com</p>
+        <p class="w-full font-semibold">{record.created_by_email}</p>
         <DateText
           class="text-muted-foreground"
           datetime={new Date(record.created_at)}
@@ -152,7 +152,7 @@
     {#if mode === "view"}
       <MarkdownPreview value={truncate(record.content_md, 140)} />
 
-      {#if new Date(record.created_at).getTime() !== new Date(record.updated_at).getTime()}
+      {#if record.edited_at}
         <span class="text-muted-foreground text-xs">(Edited)</span>
       {/if}
 

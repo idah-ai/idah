@@ -52,7 +52,7 @@ export interface INoteFeed {
   readonly id: string;
   entry_id: string;
   annotation_id: string | null;
-  readonly created_by_id: number;
+  readonly created_by_email: string;
 
   anchor_type: "entry" | "annotation";
   position: Record<string, unknown>;
@@ -61,8 +61,9 @@ export interface INoteFeed {
 
   content_md: string;
 
-  created_at: string;
-  updated_at: string;
+  readonly created_at: string;
+  readonly updated_at: string;
+  readonly edited_at: string;
 
   // Included relationships
   note_comments: Array<INoteComment>;
@@ -75,9 +76,10 @@ export interface INoteComment {
 
   content_md: string;
 
-  readonly created_by_id: number;
+  readonly created_by_email: string;
   readonly created_at: string;
   readonly updated_at: string;
+  readonly edited_at: string;
 }
 
 export interface IAnnotationDriver {

@@ -16,7 +16,7 @@ export class NoteCommentRecord extends Record {
 
   @field({ transformer: Transformers.Time }) public created_at!: Date;
   @field({ transformer: Transformers.Time }) public updated_at!: Date;
-  @field({ transformer: Transformers.Time }) public edited_at!: Date;
+  @field({ transformer: Transformers.Time }) public edited_at!: Date | null;
 
   @relationship() public note_feed!: NoteFeedRecord;
 }
