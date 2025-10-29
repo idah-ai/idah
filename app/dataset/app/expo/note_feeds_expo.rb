@@ -10,12 +10,8 @@ class NoteFeedsExpo < BaseExpo
 
     show
     index do
-      allowed_filters :entry_id__eq,
-                      :annotation_id__eq,
-                      :created_by_id__eq,
-                      :anchor_type__eq,
-                      :status__eq,
-                      :status__in,
+      allowed_filters :status__in,
+                      :created_by_email__match,
                       :created_at__gte,
                       :created_at__lte,
                       :updated_at__gte,

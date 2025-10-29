@@ -18,7 +18,7 @@ RSpec.describe NoteFeedsExpo, type: :exposition, as: :system do
         position: { "x" => 100, "y" => 200 },
         content_md: "This is a test note",
         status: "pending",
-        created_by_id: 1,
+        created_by_email: nil,
         created_at: now,
         updated_at: now
       }

@@ -7,7 +7,7 @@ module NoteFeed
     field :id, type: String, primary: true
     field :entry_id, type: String
     field :annotation_id, type: String
-    field :created_by_id, type: Integer, readonly: true
+    field :created_by_email, type: String, readonly: true
     field :anchor_type, type: String
     field :position, type: Hash
     field :status, type: String, readonly: true
@@ -15,6 +15,7 @@ module NoteFeed
 
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
+    field :edited_at, type: Time
 
     belongs_to :entry, repository: "Entry::Repository", foreign_key: :entry_id
     belongs_to :annotation, repository: "Annotation::Repository", foreign_key: :annotation_id
