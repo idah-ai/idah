@@ -14,7 +14,7 @@ import type { Hash } from "@/utils/types";
 export class NoteFeedRecord extends Record {
   @field() public entry_id!: string;
   @field() public annotation_id!: string | null;
-  @field() public readonly created_by_id!: number;
+  @field() public readonly created_by_email!: string;
 
   @field() public anchor_type!: "entry" | "annotation";
   @field() public position!: Hash;
@@ -23,8 +23,9 @@ export class NoteFeedRecord extends Record {
 
   @field() public content_md!: string;
 
-  @field({ transformer: Transformers.Time }) public created_at!: Date;
-  @field({ transformer: Transformers.Time }) public updated_at!: Date;
+  @field({ transformer: Transformers.Time }) public readonly created_at!: Date;
+  @field({ transformer: Transformers.Time }) public readonly updated_at!: Date;
+  @field({ transformer: Transformers.Time }) public readonly edited_at!: Date;
 
   @relationship() public entry!: EntryRecord;
   @relationship() public annotation!: AnnotationRecord;
