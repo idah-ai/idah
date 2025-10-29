@@ -43,6 +43,7 @@
     await context.notes.comments.create({
       note_feed_id: noteFeed?.id as string,
       content_md: contentMd,
+      created_by_email: "reply_user@example.com",
     });
     toast.success("Comment added successfully.");
     $noteSidebarStore.lastUpdated = new Date();
