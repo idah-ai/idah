@@ -4,7 +4,7 @@ import Plugin from "./plugin.svelte";
 
 let mounted: any;
 
-const IdahImage: IActivityView = {
+const idah_plugin: IActivityView = {
   name: "idah-video-player",
   label: "idah video player",
   description: "idah video player plugin",
@@ -31,4 +31,4 @@ const IdahImage: IActivityView = {
   },
 };
 
-export default IdahImage;
+export default idah_plugin;

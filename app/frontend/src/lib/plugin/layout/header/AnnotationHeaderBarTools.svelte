@@ -1,60 +1,40 @@
 <script lang="ts">
-  import { MousePointer2, RedoIcon, SquareDashedIcon, UndoIcon } from "@lucide/svelte";
+  import { RedoIcon, UndoIcon } from "@lucide/svelte";
 
-  import CommandManager from "@/command/CommandManager";
   import Tooltips from "@/components/app/tooltips/tooltips.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import Separator from "@/components/ui/separator/separator.svelte";
 
+  import type { IActivityContext } from "@/plugin/interface/Activity";
   import type { AnnotationHeaderBarBaseTool } from "./AnnotationHeaderBar.types";
 
   // Props
   interface Props {
-    mode: string;
-    onSelectMode: (selectedMode: string) => void;
+    context: IActivityContext;
   }
-  let { mode, onSelectMode }: Props = $props();
+  let { context }: Props = $props();
 
   // Variables
   interface HeaderBarModeTool extends AnnotationHeaderBarBaseTool {
     type: string;
   }
 
-  const tools: HeaderBarModeTool[] = [
-    {
-      label: "Visual",
-      type: "visual",
-      icon: MousePointer2,
-      handleClick: () => {
-        mode = "visual";
-        onSelectMode("visual");
-      },
-    },
-    {
-      label: "Bounding Box",
-      type: "video:bounding_box",
-      icon: SquareDashedIcon,
-      handleClick: () => {
-        mode = "video:bounding_box";
-        onSelectMode("video:bounding_box");
-      },
-    },
-  ];
+  let tools: HeaderBarModeTool[] = $state([]);
+  let mode: string | undefined = $state();
+
+  context.tools.onToolsChange((_tools: HeaderBarModeTool[]) => (tools = _tools));
+  context.tools.onToolChange((_tool: string) => (mode = _tool));
 
   const commands: AnnotationHeaderBarBaseTool[] = [
     {
       label: "Undo",
       icon: UndoIcon,
-      handleClick: () => {
-        CommandManager.undo();
-      },
+      handleClick: () => context.commands.undo(),
     },
     {
       label: "Redo",
       icon: RedoIcon,
-      handleClick: () => {
-        CommandManager.redo();
-      },
+      handleClick: () => context.commands.redo(),
     },
   ];
 </script>

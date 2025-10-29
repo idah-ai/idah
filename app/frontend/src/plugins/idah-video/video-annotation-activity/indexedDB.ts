@@ -60,6 +60,7 @@ export class AnnotationsIndexedDB {
     const kstore = transaction.objectStore("keyframes");
 
     annotations.forEach((annotation) => {
+      console.debug({ IDBtype: "put", annotation });
       astore.put(
         {
           ...annotation,
@@ -72,6 +73,7 @@ export class AnnotationsIndexedDB {
       );
 
       annotation.shape.frames.forEach((k) => {
+        console.debug({ IDBtype: "put", keyframe: k });
         kstore.put({ annotation: annotation.metadata.id, ...k }, [annotation.metadata.id, k.frame]);
       });
     });
@@ -155,7 +157,7 @@ export class AnnotationsIndexedDB {
 
     return new Promise<void>((resolve, reject) => {
       request.onerror = (r) => reject(r);
-      request.onsuccess = () => resolve();
+      request.onsuccess = (r) => resolve(console.debug(r));
     });
   }
 

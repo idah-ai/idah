@@ -1,13 +1,67 @@
 import { goto } from "$app/navigation";
 
-import { entriesBackendDataSource, type EntryRecord } from "@/data/model/dataset/entries/record";
+import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
 import { noteFeedsBackendDataSource } from "@/data/model/dataset/notes/feeds/record";
+
+import type { Command } from "@/command/Command";
+import CommandManager from "@/command/CommandManager";
 
 import { noteSidebarStore } from "../../plugins/idah-video/layout/sidebar/notes/note-sidebar-stores";
 import { createAnnotationDriver } from "./AnnotationDriver";
 import { createNoteDriver, parseNoteFeedRecordToINoteFeed } from "./NoteDriver";
+import type { HeaderBarModeTool, IActivityContext, ITools } from "./interface/Activity";
 
-import type { IActivityContext } from "./interface/Activity";
+function createCommandsInterface() {
+  const commands = new Map();
+
+  return {
+    on: (name: string, builder: (props: any) => Command, manager = true) => {
+      commands.set(name, { manager, builder });
+      console.debug({ command_on: name, manager });
+    },
+    async run(name: string, props: any) {
+      const { manager, builder }: { manager: boolean; builder: (props: any) => Command } = commands.get(name);
+
+      if (!builder) return console.error("builder not found command:", name);
+
+      const command = await builder(props);
+
+      if (!commands)
+        // properly extract and we shouldnt have to await ?
+        return console.error("builder error on command:", name);
+
+      console.debug({ command_run: name, props, command });
+      if (manager) CommandManager.add(command);
+      else command.apply();
+    },
+    undo(times?: number) {
+      console.debug({ command_undo: { times } });
+      CommandManager.undo(times);
+    },
+    redo(times?: number) {
+      console.debug({ command_redo: { times } });
+      CommandManager.redo(times);
+    },
+  };
+}
+
+function createToolsInterface(): ITools {
+  let _onToolsChange: ((tools: HeaderBarModeTool[]) => void) | undefined;
+  let _onToolChange: ((tool: string) => void) | undefined;
+
+  return {
+    setTools: (tools: HeaderBarModeTool[]) => {
+      console.debug({ tools });
+      _onToolsChange?.(tools);
+    },
+    setTool: (tool: string) => {
+      console.debug({ tool });
+      _onToolChange?.(tool);
+    },
+    onToolsChange: (cb) => (_onToolsChange = cb),
+    onToolChange: (cb) => (_onToolChange = cb),
+  };
+}
 
 export function activityContextForEntry(entry: EntryRecord): IActivityContext {
   return {
