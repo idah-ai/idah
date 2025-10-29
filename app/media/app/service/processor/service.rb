@@ -5,13 +5,18 @@ module Processor
     use_system jobs: Jobs::Repository
 
     def process_entry(entry_id)
+      pp ({entry_id:})
       entry = Api[:idah].dataset.entries.show(
         id: entry_id,
         included: %w[dataset]
       )
 
+      pp ({entry:})
+
       # Check the modality of the dataset:
       modality = entry.dataset.modality
+
+      pp ({modality:})
 
       # Check if there is already a job:
       if entry.job_id
@@ -22,6 +27,8 @@ module Processor
       end
 
       processor_entries = Registry.get(modality)
+
+      pp ({processor_entries:})
 
       return if processor_entries.nil? || processor_entries.empty?
 

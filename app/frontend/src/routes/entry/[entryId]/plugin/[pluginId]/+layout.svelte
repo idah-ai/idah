@@ -8,11 +8,15 @@
 </script>
 
 <svelte:head>
-  <link rel="stylesheet" href="/build/plugins/{pluginId}.css">
-  <script src="/build/plugins/{pluginId}.umd.js">
+  <link
+    rel="stylesheet"
+    type="text/css"
+    href="{import.meta.env.VITE_IDAH_HOST}/api/v1/setting/plugins/{pluginId}/files/plugin.css"
+  />
+  <script src="{import.meta.env.VITE_IDAH_HOST}/api/v1/setting/plugins/{pluginId}/files/plugin.js">
   </script>
 </svelte:head>
 
 <div>
-    {@render children?.()}
+  {@render children?.()}
 </div>
