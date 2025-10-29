@@ -202,7 +202,7 @@ Sequel.migration do
       column :status, String, null: false, index: true, default: "pending"
 
       column :content_md, String, null: false
-      column :edited_at, :time, null: true
+      column :edited_at, DateTime, null: true
 
       index :created_by_email, opclass: :gin_trgm_ops, type: :gin
 
@@ -222,7 +222,7 @@ Sequel.migration do
       column :content_md, String, null: false
 
       column :created_by_email, String, null: false
-      column :edited_at, :time, null: true
+      column :edited_at, DateTime, null: true
 
       index :created_by_email, opclass: :gin_trgm_ops, type: :gin
       Migration::Timestamps.timestamps(self)
