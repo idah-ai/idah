@@ -2,20 +2,18 @@
   import Badge from "@/components/ui/badge/badge.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-  import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger } from "@/components/ui/select";
   import { SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
   import Text from "@/components/ui/text/Text.svelte";
   import { cn } from "@/utils";
   import { humanize } from "@/utils/string";
   import { ChevronRight, CircleSmallIcon, PlusIcon, Trash2Icon } from "@lucide/svelte";
-  import CategoryProperties from "./categoryProperties/categoryProperties.svelte";
-  import { idb_updated_at } from "./idb_store.svelte";
 
   import type { CategoryDefinition } from "@/context/ActivityContext";
   import type { AnnotationValue } from "@/context/AnnotationContext";
-  import type { CategoryField } from "@/data/model/dataset/labels";
-  import type { AnnotationsIndexedDB } from "./indexedDB";
-  import type { CategoryConfiguration, VideoAnnotation } from "./VideoAnnotationContext";
+
+  import type { CategoryConfiguration, VideoAnnotation } from "../../video-annotation-activity/VideoAnnotationContext";
+  import { idb_updated_at } from "../../video-annotation-activity/idb_store.svelte";
+  import type { AnnotationsIndexedDB } from "../../video-annotation-activity/indexedDB";
 
   // Props
   let {
@@ -331,12 +329,12 @@
 
 <div class="flex-col">
   {#if selected_category && toolMode}
-    <CategoryProperties
+    <!-- <CategoryProperties
       selectedCategory={selected_category}
       selectedId={selected_id || ""}
       {annotationValue}
       onSelectCategory={onSelect}
-      onEditValue={(value) => value && onEditValue(value, type)}
+      onEditValue={(value) => value && onEditValue(value, type)} -->
     />
   {:else}
     <div class="flex gap-2 py-2">
