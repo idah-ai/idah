@@ -59,6 +59,8 @@ services:
     volumes:
       - ./app/media:/app
       - ./app/media/common:/app/common
+      - ./plugins:/app/plugins
+      - ./app/frontend/build:/app/plugins/idah-video/frontend/build
       - bundler_cache:/usr/local/bundle
     networks:
       - app-network
