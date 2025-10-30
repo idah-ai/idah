@@ -92,8 +92,8 @@ RSpec.describe PluginsExpo, type: :exposition, as: :system do
       expect(Plugins::Service).to receive(:new).and_return(modality_service)
 
       expected_modalities = {
-        modality1: ["pluginA", "pluginB"],
-        modality2: ["pluginC"]
+        "modality1" => ["pluginA", "pluginB"],
+        "modality2" => ["pluginC"]
       }
       expect(modality_service).to receive(:show_modalities).and_return(
         expected_modalities
