@@ -38,7 +38,8 @@ RSpec.describe Processor::Registry do
         "plugin1",
         "processor1",
         class_name: processor_class,
-        options_class_name: "Schema::Empty")
+        options_class_name: "Schema::Empty"
+      )
       described_class.register(
         "plugin2",
         "processor2",
