@@ -85,4 +85,25 @@ RSpec.describe PluginsExpo, type: :exposition, as: :system do
       expect(last_response.status).to eq(404)
     end
   end
+
+  context "#show_modalities" do
+    it "returns the list of modalities from all plugins" do
+      modality_service = instance_double(Plugins::Service)
+      expect(Plugins::Service).to receive(:new).and_return(modality_service)
+
+      expected_modalities = {
+        modality1: ["pluginA", "pluginB"],
+        modality2: ["pluginC"]
+      }
+      expect(modality_service).to receive(:show_modalities).and_return(
+        expected_modalities
+      )
+
+      get "/plugins/modalities"
+
+      expect(last_response.status).to eq(200)
+      response_data = JSON.parse(last_response.body)
+      expect(response_data["data"]).to eq(expected_modalities)
+    end
+  end
 end

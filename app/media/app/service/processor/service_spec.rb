@@ -64,8 +64,8 @@ RSpec.describe Processor::Service, type: :service, database: true do
     Processor::Registry.register(
       "plugin-video",
       "spec/video",
-      processor_class: Spec::SampleProcessor,
-      processor_options: {}
+      class_name: "Spec::SampleProcessor",
+      options_class_name: "Schema::Empty"
     )
   end
 

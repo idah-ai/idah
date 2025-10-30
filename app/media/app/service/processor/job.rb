@@ -2,26 +2,29 @@
 
 module Processor
   class Job < Jobs::Base
+    attr_reader :entry_id, :processor_class, :options_class
+
     def run_impl
-      arguments[:entry_id]
-      processor = arguments[:processor]
-      options_class = arguments[:options_class]
+      @entry_id = arguments.fetch(:entry_id)
+
+      processor_class_name = arguments.fetch(:processor_class_name)
+      options_class_name   = arguments.fetch(:options_class_name)
+      options = arguments.fetch(:options, {})
 
       processor_class = Verse::Util::Reflection.constantize(
-        processor
+        processor_class_name
       )
+
       options_class = Verse::Util::Reflection.constantize(
-        options_class
+        options_class_name
       )
 
       # Generate the context
       context = Processor::Context.new(
         Verse::Auth::Context.new,
         self,
-        arguments[:resource],
-        options_class.new(
-          **arguments[:options]
-        )
+        arguments.fetch(:resource),
+        options_class.new(**options)
       )
 
       processor_instance = processor_class.new(context)

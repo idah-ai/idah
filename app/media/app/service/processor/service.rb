@@ -30,8 +30,9 @@ module Processor
           job_class: "Processor::Job",
           arguments: {
             entry_id:,
+            processor_class_name: processor_entry.class_name,
+            options_class_name: processor_entry.options_class_name,
             resource: entry.resource,
-            option_class: processor_entry.options.name,
             options: {}
           },
           status: "pending",
