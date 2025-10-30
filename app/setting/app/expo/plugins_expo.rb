@@ -16,7 +16,7 @@ class PluginsExpo < BaseExpo
     auth: nil,
   ) do
     output do
-      field :data, Hash, of:show_modalities Verse::Schema.array(String)
+      field :data, Hash, of: Verse::Schema.array(String)
     end
   end
   def modalities
