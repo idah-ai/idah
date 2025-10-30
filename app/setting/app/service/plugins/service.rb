@@ -49,8 +49,34 @@ module Plugins
       File.open(asset_path, "rb")
     end
 
+    # Return a hash in the form of:
+    #
+    # {
+    #   modalities: { id: {label: "...", description: "..."} },
+    #   plugins: { "modA": ["plugin1", "plugin2"], ... }
+    # }
     def show_modalities
+      output = {
+        modalities: {},
+        plugins: {}
+      }
 
+      PluginSystem.registry.plugins.each do |name, plugin|
+        modalities = plugin.modalities
+        next unless modalities
+
+        modalities.each do |mod|
+          mod_id = mod.id
+          mod_hash = (output[:modalities][mod_id] ||= {})
+          mod_hash[:label] ||= mod.label
+          mod_hash[:description] ||= mod.description
+
+          plugin_arr = (output[:plugins][mod_id] ||= [])
+          plugin_arr << name
+        end
+      end
+
+      output
     end
 
     def serve_file(plugin_name, filename)

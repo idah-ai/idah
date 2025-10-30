@@ -41,4 +41,59 @@ RSpec.describe Plugins::Service, type: :service, as: :system do
       expect(io.read).to eq("PNG IMAGE DATA")
     end
   end
+
+  describe "#show_modalities" do
+    it "shows modalities from all plugins" do
+      registry = double("PluginSystem.registry")
+
+      foo_plugin = PluginSystem::Plugin.new(
+        "path_to_foo",
+        PluginSystem::Manifest.new(
+          type: "idah-plugin",
+          name: "foo",
+          version: "1.0.0",
+          title: "Foo plugin",
+          description: "Foo ipsum",
+          modalities: [{id: "modA", label: "modality A", description: ""}, {id: "modB", label: "modality B"}],
+          entryPoints: {}
+        )
+      )
+
+      bar_plugin = PluginSystem::Plugin.new(
+        "path_to_bar",
+        PluginSystem::Manifest.new(
+          type: "idah-plugin",
+          name: "bar",
+          version: "1.0.0",
+          title: "Bar plugin",
+          description: "Bar ipsum",
+          modalities: [{id: "modB"}, {id: "modC"}],
+          entryPoints: {}
+        )
+      )
+
+      allow(registry).to receive(:plugins).and_return({
+        "foo" => foo_plugin,
+        "bar" => bar_plugin
+      })
+
+      allow(PluginSystem).to receive(:registry).and_return(registry)
+
+      output = service.show_modalities
+
+      expect(output).to eq({
+        modalities: {
+          "modA" => {label: "modality A", description: ""},
+          "modB" => {label: "modality B", description: nil},
+          "modC" => {label: nil, description: nil}
+        },
+        plugins: {
+          "modA" => ["foo"],
+          "modB" => ["foo", "bar"],
+          "modC" => ["bar"]
+        }
+      })
+    end
+  end
+
 end
