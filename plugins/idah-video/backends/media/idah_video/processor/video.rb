@@ -34,7 +34,7 @@ module IdahVideo
             end
           end
 
-          if context.options.generate_thumbnail
+          if context.config.generate_thumbnail
             GenerateThumbnail.call(
               file_path,
               video_info,
@@ -55,7 +55,8 @@ module IdahVideo
       protected
 
       def process_media(file_path, video_info, &block)
-        Verse.logger.info{ "[IdahVideo] Processing media #{arguments.resource}..." }
+        config = context.config
+        Verse.logger.info{ "[IdahVideo] Processing media #{context.resource}..." }
 
         unless block_given?
           raise ArgumentError, "no block given"
@@ -63,7 +64,7 @@ module IdahVideo
 
         last_progress = 0
 
-        GenerateStreaming.call(file_path, video_info, context.options) do |progress, output|
+        GenerateStreaming.call(file_path, video_info, context.config) do |progress, output|
           now = Time.now.to_i
 
           # Do not update too frequently (update to db)
