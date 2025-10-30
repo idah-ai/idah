@@ -46,7 +46,7 @@ RSpec.describe Processor::Service, type: :service, database: true do
 
     stub_request(
       :get,
-      "https://idah.example.com/api/v1/entries/entry-id?included%5B%5D=dataset"
+      "https://idah.example.com/api/v1/dataset/entries/entry-id?included%5B%5D=dataset"
     ).to_return(
       status: 200,
       body: japi_entry,
@@ -55,7 +55,7 @@ RSpec.describe Processor::Service, type: :service, database: true do
 
     # We don't really care about the return here; it should be the entry, but
     # our focus is on whether the entry was updated.
-    stub_request(:patch, "https://idah.example.com/api/v1/entries/entry-id").
+    stub_request(:patch, "https://idah.example.com/api/v1/dataset/entries/entry-id").
       to_return(status: 200, body: %{{ "data": {} }}, headers: {})
   end
 
