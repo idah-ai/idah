@@ -125,6 +125,8 @@ export function activityContextForEntry(entry: EntryRecord): IActivityContext {
         });
       }, 1000);
     },
+    commands: createCommandsInterface(),
+    tools: createToolsInterface(),
     back() {
       const path = `/projects/${entry.dataset.project.id}/datasets/${entry.dataset.id}/tasks`;
       goto(path);

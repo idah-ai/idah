@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { page } from "$app/state";
+  // import { page } from "$app/state";
   import { onMount, setContext } from "svelte";
   import { toast } from "svelte-sonner";
   import { uuidv7 } from "uuidv7";
@@ -14,7 +14,6 @@
     CommandSeparator,
     CommandShortcut,
   } from "$lib/components/ui/command";
-  import CommandManager from "@/command/CommandManager";
   import Button from "@/components/ui/button/button.svelte";
   import { Popover, PopoverContent } from "@/components/ui/popover";
   import { ScrollArea } from "@/components/ui/scroll-area";
@@ -86,10 +85,10 @@
   let volume = $state({ level: 0, mute: false });
 
   let commandOpen = $state(false);
-  let [_feed, noteFeedId, _comments, noteCommentId] = $state(page.url.hash.slice(1).split("/"));
-  if (noteFeedId) {
-    context.gotoFeed(noteFeedId, noteCommentId);
-  }
+  // let [_feed, noteFeedId, _comments, noteCommentId] = $state(page.url.hash.slice(1).split("/"));
+  // if (noteFeedId) {
+  //   context.gotoFeed(noteFeedId, noteCommentId);
+  // }
 
   // registerVisualModeShortcuts({
   //   player: () => player,

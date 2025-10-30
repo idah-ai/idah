@@ -21,14 +21,14 @@
     onChange?: (bb: BoundingBox) => void;
   } = $props();
 
-  export function isEditing(): Boolean {
+  export function isEditing(): boolean {
     return bounding_box.length != 4 || panStart != undefined;
   }
 
   export interface ToolSelection {
     startSelection: (start: Point) => void;
     endSelection: (end: Point) => void;
-    isEditing: () => Boolean;
+    isEditing: () => boolean;
   }
 
   let panStart: Point | undefined = $state(); // bb pan
@@ -173,8 +173,10 @@
 </script>
 
 {#snippet BoundingBoxHandle(bb: BoundingBox)}
-  {#each boundingBoxHandle(bb) as point, handle}
+  {#each boundingBoxHandle(bb) as point, handle (handle)}
     <circle
+      role="button"
+      tabindex="0"
       onmousedown={(e) => {
         e.stopPropagation();
         remove_resizeable_points(bb, handle);
@@ -182,7 +184,7 @@
       cx={point[X] * ratio[X]}
       cy={point[Y] * ratio[Y]}
       r={5}
-      style:transform-origin={"top left"}
+      style:transform-origin="top left"
       style:transform={`translate(${offset[X]}px, ${offset[Y]}px)`}
       style:cursor={getHandleCursor(handle)}
       vector-effect="non-scaling-stroke"
@@ -197,8 +199,10 @@
 {#snippet bb(path?: string)}
   {#if path}
     <path
+      role="button"
+      tabindex="0"
       d={path}
-      style:transform-origin={"top left"}
+      style:transform-origin="top left"
       style:transform={`translate(${offset[X]}px, ${offset[Y]}px) scale(${ratio[X]}, ${ratio[Y]})`}
       vector-effect="non-scaling-stroke"
       class={editable ? "cursor-move" : "cursor-pointer"}
