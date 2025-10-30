@@ -110,9 +110,9 @@ module Jobs
                   "#{error.class}: #{error.message}"
                 end
 
-              if job.retry_count < (klass.max_retries||0)
+              if job.retry_count < (klass.max_retries || 0)
                 # Exponential backoff
-                retry_delay = 5 * (2**(job.retry_count * 1.5)).to_i
+                retry_delay = 5 * (2 ** (job.retry_count * 1.5)).to_i
 
                 Verse.logger&.warn{
                   "Job #{job.id} failed with error: #{error_message}. " \

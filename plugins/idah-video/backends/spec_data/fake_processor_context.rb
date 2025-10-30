@@ -2,9 +2,7 @@
 
 class FakeProcessorContext
   attr_accessor :progress
-  attr_reader :uploaded
-
-  attr_reader :resource, :config, :job
+  attr_reader :uploaded, :resource, :config, :job
 
   def initialize(
     file_path: "/tmp/fake_video.mp4",

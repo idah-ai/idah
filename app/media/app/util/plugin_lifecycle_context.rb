@@ -9,7 +9,8 @@ class PluginLifecycleContext
 
   def register_processor(name, class_name:, options_class_name: "Schema::Empty")
     Processor::Registry.register(
-      @plugin_name, name,
+      @plugin_name,
+      name,
       class_name:,
       options_class_name:
     )

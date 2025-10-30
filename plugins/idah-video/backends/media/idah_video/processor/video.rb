@@ -55,7 +55,7 @@ module IdahVideo
       protected
 
       def process_media(file_path, video_info, &block)
-        config = context.config
+        context.config
         Verse.logger.info{ "[IdahVideo] Processing media #{context.resource}..." }
 
         unless block_given?
