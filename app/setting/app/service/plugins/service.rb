@@ -49,6 +49,10 @@ module Plugins
       File.open(asset_path, "rb")
     end
 
+    def show_modalities
+
+    end
+
     def serve_file(plugin_name, filename)
       plugin = find(plugin_name)
 

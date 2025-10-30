@@ -6,18 +6,18 @@ module Processor
 
     @processors = {}
 
-    Entry = Data.define(:plugin, :class, :options)
+    Entry = Data.define(:plugin, :class_name, :options_class_name)
 
     def register(plugin_name, modality,
-                 processor_class:,
-                 processor_options:)
+                 class_name:,
+                 options_class_name: "Schema::Empty")
       modality = modality.to_sym
       @processors[modality] ||= []
       @processors[modality] <<
         Entry.new(
           plugin: plugin_name.to_sym,
-          class: processor_class,
-          options: processor_options
+          class_name:,
+          options_class_name:
         )
     end
 

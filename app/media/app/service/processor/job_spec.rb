@@ -29,9 +29,9 @@ RSpec.describe Processor::Job do
         1,
         {
           entry_id: "entry-id",
-          processor: [self.class.name, "Spec::SampleProcessor"].join("::"),
+          processor_class_name: [self.class.name, "Spec::SampleProcessor"].join("::"),
           resource: "some-resource-identifier",
-          options_class: [self.class.name, "Spec::SampleOptions"].join("::"),
+          options_class_name: [self.class.name, "Spec::SampleOptions"].join("::"),
           options: {},
         }
       )

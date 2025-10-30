@@ -8,7 +8,7 @@ gem "verse-core", github: "verse-rb/verse-core", branch: "master"
 gem "verse-http", github: "verse-rb/verse-http", branch: "features/migrate-to-sinatra-4"
 gem "verse-jsonapi", github: "verse-rb/verse-jsonapi", branch: "master"
 gem "verse-redis", github: "verse-rb/verse-redis", branch: "master"
-gem "verse-schema", "~> 1.1"
+gem "verse-schema", "~> 1.2.1"
 gem "verse-sequel", github: "verse-rb/verse-sequel", branch: "master"
 gem "verse-shrine", github: "verse-rb/verse-shrine", branch: "master"
 
