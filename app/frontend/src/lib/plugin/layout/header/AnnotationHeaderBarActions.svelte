@@ -8,7 +8,6 @@
     SquareXIcon,
     SunMoonIcon,
   } from "@lucide/svelte";
-  import { getContext } from "svelte";
 
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import Tooltips from "@/components/app/tooltips/tooltips.svelte";
@@ -24,8 +23,11 @@
   } from "../../../../plugins/idah-video/layout/sidebar/notes/note-sidebar-stores";
   import type { AnnotationHeaderBarBaseTool } from "./AnnotationHeaderBar.types";
 
-  // Contexts
-  const context: IActivityContext = getContext("context");
+  // Props
+  interface Props {
+    context: IActivityContext;
+  }
+  let { context }: Props = $props();
 
   // Variables
   let loading = $state(false);

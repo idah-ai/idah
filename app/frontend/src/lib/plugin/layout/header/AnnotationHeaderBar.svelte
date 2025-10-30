@@ -31,5 +31,5 @@
   <AnnotationHeaderBarTools {context} />
 
   <!-- RIGHT::ACTIONS -->
-  <AnnotationHeaderBarActions />
+  <AnnotationHeaderBarActions {context} />
 </nav>

@@ -40,11 +40,12 @@
 </script>
 
 <div id="annotation-header-bar-tools" class="flex h-full items-center justify-center gap-1">
-  {#each tools as { label, type, icon: Icon, handleClick }, toolIndex (toolIndex)}
+  {#each tools as { label, type, handleClick }, toolIndex (toolIndex)}
     <Tooltips align="center" delayDuration={100}>
       {#snippet trigger()}
-        <Button variant={mode === type ? "default" : "ghost"} size="icon-sm" onclick={handleClick}>
-          <Icon />
+        <Button variant={mode === type ? "default" : "outline"} size="icon-sm" onclick={handleClick}>
+          <!-- NOTE: Cannot be display icon, as plugin cannot access to @lucide/svelte icons from app/frontend -->
+          <!-- <Icon /> -->
         </Button>
       {/snippet}
 

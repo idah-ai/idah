@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { page } from "$app/state";
+  // import { page } from "$app/state";
   import {
     ArrowLeftIcon,
     FunnelIcon,
@@ -46,7 +46,7 @@
   const context: IActivityContext = getContext("context");
 
   // Variables
-  let entryId = $derived(page.params.entryId) as string;
+  // let entryId = $derived(page.params.entryId) as string;
   let isInReviewStep = $derived(context.workflowStep === "review");
   let isListView = $derived(!$noteSidebarStore.selectedNoteFeed);
   let isDetailView = $derived(!!$noteSidebarStore.selectedNoteFeed);
@@ -74,7 +74,10 @@
   // Functions
   async function loadNoteFeeds() {
     const noteFeedsRes = await noteFeedsBackendDataSource.list({
-      filters: { entry_id: entryId, ...noteFeedFilters },
+      filters: {
+        // entry_id: entryId,
+        ...noteFeedFilters,
+      },
       pagination: {
         page: 1,
         itemsPerPage: 1000,
@@ -101,7 +104,7 @@
       /** Create a general note feed, if current view is list */
       await noteFeedsBackendDataSource.create({
         attributes: {
-          entry_id: entryId,
+          // entry_id: entryId,
           annotation_id: undefined,
           anchor_type: "entry",
           content_md: contentMd,
