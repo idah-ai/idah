@@ -2,7 +2,9 @@
 
 class FakeProcessorContext
   attr_accessor :progress
-  attr_reader :uploaded, :options
+  attr_reader :uploaded
+
+  attr_reader :resource, :config, :job
 
   def initialize(
     file_path: "/tmp/fake_video.mp4",
@@ -12,7 +14,7 @@ class FakeProcessorContext
     @file_path = file_path
     @resource = resource
     @uploaded = []
-    @options = IdahVideo::Processor::Options.new(options)
+    @config = IdahVideo::Processor::Options.new(options)
   end
 
   def download_original

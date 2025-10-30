@@ -17,19 +17,19 @@ module IdahVideo
         process_media(file_path, video_info) do |output|
           # Upload the master manifest
           context.upload_media(
-            output.master_m3u8, "master.m3u8", "application/vnd.apple.mpegurl"
+            File.open(output.master_m3u8), "master.m3u8", "application/vnd.apple.mpegurl"
           )
 
           output.streams.each do |stream|
             # Upload the different streams manifests
             context.upload_media(
-              stream.m3u8, File.basename(stream.m3u8), "application/vnd.apple.mpegurl"
+              File.open(stream.m3u8), File.basename(stream.m3u8), "application/vnd.apple.mpegurl"
             )
 
             # Upload the stream fragments
             stream.fragments.each do |fragment|
               context.upload_media(
-                fragment, File.basename(fragment), "video/mp2t"
+                File.open(fragment), File.basename(fragment), "video/mp2t"
               )
             end
           end

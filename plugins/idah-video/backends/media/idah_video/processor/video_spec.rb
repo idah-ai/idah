@@ -19,7 +19,7 @@ RSpec.describe IdahVideo::Processor::Video do
     # It should upload the master manifest
     expect(processor_context.uploaded).to include(
       a_hash_including(
-        io: an_instance_of(String),
+        io: an_instance_of(File),
         key: "master.m3u8",
         mime_type: "application/vnd.apple.mpegurl"
       )
@@ -28,7 +28,7 @@ RSpec.describe IdahVideo::Processor::Video do
     # It should upload the different streams manifests
     expect(processor_context.uploaded).to include(
       a_hash_including(
-        io: an_instance_of(String),
+        io: an_instance_of(File),
         key: "240p.m3u8",
         mime_type: "application/vnd.apple.mpegurl"
       )
@@ -36,7 +36,7 @@ RSpec.describe IdahVideo::Processor::Video do
 
     expect(processor_context.uploaded).to include(
       a_hash_including(
-        io: an_instance_of(String),
+        io: an_instance_of(File),
         key: "240p_0000.ts",
         mime_type: "video/mp2t"
       )
