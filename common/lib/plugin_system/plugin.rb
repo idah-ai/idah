@@ -1,7 +1,11 @@
 # frozen_string_literal: true
 
+require 'forwardable'
+
 module PluginSystem
   class Plugin
+    extend Forwardable
+
     attr_reader :path, :manifest, :manual
 
     def initialize(path, manifest, manual: false)
@@ -9,6 +13,10 @@ module PluginSystem
       @manifest = manifest
       @manual = manual
     end
+
+    # Helper to access the different fields of the manifest directly into
+    # the plugin object via delegation.
+    def_delegators :@manifest, *PluginSystem::Manifest.schema.fields.map(&:name)
 
     def self.from_manifest(manifest_file, manual: false)
       dir = File.dirname(manifest_file)
