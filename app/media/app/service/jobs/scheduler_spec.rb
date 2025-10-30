@@ -36,6 +36,24 @@ module Spec
       error("Something went wrong")
     end
   end
+
+  class RetryJob < Jobs::Base
+    class << self
+      attr_accessor :run_count
+    end
+
+    self.max_retries = 2
+
+    def initialize(job_id, arguments)
+      super
+      self.class.run_count ||= 0
+    end
+
+    def run_impl
+      self.class.run_count += 1
+      raise "Job failed"
+    end
+  end
 end
 
 RSpec.describe Jobs::Scheduler do
@@ -96,6 +114,20 @@ RSpec.describe Jobs::Scheduler do
     )
   }
 
+  let(:retry_job) {
+    double(
+      "job",
+      id: 5,
+      job_class: "Spec::RetryJob",
+      arguments: {},
+      priority: 0,
+      status: "pending",
+      scheduled_at: Time.now,
+      retry_count: 0,
+      class: Spec::RetryJob
+    )
+  }
+
   let(:thread_pool) {
     double("ThreadPool")
   }
@@ -104,6 +136,7 @@ RSpec.describe Jobs::Scheduler do
 
   before do
     Spec::CustomJob.ran = false
+    Spec::RetryJob.run_count = 0
 
     allow(ThreadPool).to receive(:new).and_return(thread_pool)
     allow(thread_pool).to receive(:free).and_return(1)
@@ -193,6 +226,33 @@ RSpec.describe Jobs::Scheduler do
 
         subject.start
         sleep 0.01 # allow the thread to run
+      end
+    end
+
+    context "when a job fails and is retried" do
+      before do
+        allow(thread_pool).to receive(:run) do |&block|
+          block.call
+        end
+        allow(job_repository).to receive(:next_scheduled_time).and_return(nil)
+      end
+
+      it "reschedules the job on failure" do
+        expect(job_repository).to receive(:lock_available).and_return([retry_job])
+        allow(retry_job).to receive(:retry_count).and_return(0)
+        expect(job_repository).to receive(:reschedule)
+
+        subject.start
+        sleep 0.01
+      end
+
+      it "errors the job after max_retries" do
+        expect(job_repository).to receive(:lock_available).and_return([retry_job])
+        allow(retry_job).to receive(:retry_count).and_return(Spec::RetryJob.max_retries)
+        expect(job_repository).to receive(:error)
+
+        subject.start
+        sleep 0.01
       end
     end
 
