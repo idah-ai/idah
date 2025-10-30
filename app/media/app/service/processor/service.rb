@@ -27,8 +27,13 @@ module Processor
 
       processor_entries.each do |processor_entry|
         jobs.create(
-          job_class: processor_entry.class.name,
-          arguments: { "entry_id" => entry_id },
+          job_class: "Processor::Job",
+          arguments: {
+            entry_id:,
+            resource: entry.resource,
+            option_class: processor_entry.options,
+            options: {}
+          },
           status: "pending",
           priority: 1,
           scheduled_at: Time.now
