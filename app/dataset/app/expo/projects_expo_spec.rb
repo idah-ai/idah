@@ -13,7 +13,7 @@ RSpec.describe ProjectsExpo, type: :exposition, as: :system do
         id: uuid,
         name: "Test Project",
         description: "A test project",
-        created_by_id: 1,
+        created_by_email: "user@example.com",
         created_at: now,
         updated_at: now
       }
@@ -29,7 +29,7 @@ RSpec.describe ProjectsExpo, type: :exposition, as: :system do
           attributes: {
             name: "Test Project",
             description: "A test project",
-            created_by_id: 1,
+            created_by_email: "user@example.com",
             created_at: now.iso8601,
             updated_at: now.iso8601
           }

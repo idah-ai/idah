@@ -18,7 +18,7 @@ RSpec.describe NoteFeedsExpo, type: :exposition, as: :system do
         position: { "x" => 100, "y" => 200 },
         content_md: "This is a test note",
         status: "pending",
-        created_by_id: 1,
+        created_by_email: nil,
         created_at: now,
         updated_at: now
       }
@@ -34,7 +34,8 @@ RSpec.describe NoteFeedsExpo, type: :exposition, as: :system do
           anchor_type: "entry",
           position: { "x" => 100, "y" => 200 },
           content_md: "This is a test note",
-          entry_id: entry_id
+          entry_id: entry_id,
+          created_by_email: "user@example.com"
         }
       }
     }
@@ -71,6 +72,7 @@ RSpec.describe NoteFeedsExpo, type: :exposition, as: :system do
       expect(args[:anchor_type]).to eq "entry"
       expect(args[:position]).to eq({ x: 100, y: 200 })
       expect(args[:content_md]).to eq "This is a test note"
+      expect(args[:created_by_email]).to eq "user@example.com"
       note_feed_record
     end
     post "/note_feeds", note_feed_data
