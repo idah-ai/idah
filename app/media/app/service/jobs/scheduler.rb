@@ -110,9 +110,14 @@ module Jobs
                   "#{error.class}: #{error.message}"
                 end
 
-              if job.retry_count < job.class.max_retries
+              if job.retry_count < (klass.max_retries||0)
                 # Exponential backoff
-                retry_delay = 5 * (2 ** (job.retry_count * 1.5)).to_i
+                retry_delay = 5 * (2**(job.retry_count * 1.5)).to_i
+
+                Verse.logger&.warn{
+                  "Job #{job.id} failed with error: #{error_message}. " \
+                  "Retrying in #{retry_delay} seconds (attempt #{job.retry_count + 1}/#{klass.max_retries})"
+                }
 
                 jobs.reschedule(
                   job.id,
@@ -121,7 +126,10 @@ module Jobs
                 )
               else
                 jobs.error(job.id, error: error_message)
-                Verse.logger&.error "Job #{job.id} failed after #{job.retry_count}"
+                Verse.logger&.error{
+                  "Job #{job.id} failed with error: #{error_message}. " \
+                  "Max retries (#{klass.max_retries}) reached, marking as failed."
+                }
               end
 
               throw :stop
