@@ -11,7 +11,7 @@ module Annotation
     field :dimensions, type: Hash
     field :annotation, type: Hash
 
-    field :created_by_id, type: Integer, readonly: true
+    field :created_by_email, type: String, readonly: true
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
 

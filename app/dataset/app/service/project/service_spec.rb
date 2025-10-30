@@ -28,7 +28,8 @@ RSpec.describe Project::Service, database: true do
         type: "dataset:projects",
         attributes: {
           name: "Test Project",
-          description: "A test project"
+          description: "A test project",
+          created_by_email: "user@example.com"
         }
       }
     }
@@ -40,13 +41,17 @@ RSpec.describe Project::Service, database: true do
       project = subject.create(record)
       expect(project.name).to eq("Test Project")
       expect(project.description).to eq("A test project")
-      expect(project.created_by_id).to eq(nil)
+      expect(project.created_by_email).to eq("user@example.com")
     end
   end
 
   describe "#show" do
     it "shows a project" do
-      project_id = repo.create(name: "Test Project", description: "A test project", created_by_id: 1)
+      project_id = repo.create(
+        name: "Test Project",
+        description: "A test project",
+        created_by_email: "user@example.com"
+      )
       found_project = subject.show(project_id)
       expect(found_project.id).to eq(project_id)
     end
@@ -54,7 +59,11 @@ RSpec.describe Project::Service, database: true do
 
   describe "#update" do
     it "updates a project" do
-      project_id = repo.create(name: "Test Project", description: "A test project", created_by_id: 1)
+      project_id = repo.create(
+        name: "Test Project",
+        description: "A test project",
+        created_by_email: "user@example.com"
+      )
 
       update_data[:data][:id] = project_id
       update_data[:data][:attributes][:name] = "Updated Project"
@@ -69,7 +78,11 @@ RSpec.describe Project::Service, database: true do
 
   describe "#delete" do
     it "deletes a project" do
-      project_id = repo.create(name: "Test Project", description: "A test project", created_by_id: 1)
+      project_id = repo.create(
+        name: "Test Project",
+        description: "A test project",
+        created_by_email: "user@example.com"
+      )
       subject.delete(project_id)
       expect { repo.find!(project_id) }.to raise_error(Verse::Error::NotFound)
     end
