@@ -8,20 +8,17 @@
     SquareXIcon,
     SunMoonIcon,
   } from "@lucide/svelte";
+  import { toggleMode } from "mode-watcher";
 
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import Tooltips from "@/components/app/tooltips/tooltips.svelte";
   import Button from "@/components/ui/button/button.svelte";
 
-  import { toggleMode } from "mode-watcher";
+  import NoteSidebar from "@/plugin/layout/sidebar/notes/note-sidebar.svelte";
 
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
   import type { IActivityContext } from "@/plugin/interface/Activity";
-  import {
-    closeNoteSidebar,
-    noteSidebarStore,
-  } from "../../../../plugins/idah-video/layout/sidebar/notes/note-sidebar-stores";
-  import type { AnnotationHeaderBarBaseTool } from "./AnnotationHeaderBar.types";
+  import type { AnnotationHeaderBarBaseTool } from "@/plugin/layout/header/AnnotationHeaderBar.types";
 
   // Props
   interface Props {
@@ -31,6 +28,7 @@
 
   // Variables
   let loading = $state(false);
+  let openNoteSidebar = $state(false);
   let menus: AnnotationHeaderBarBaseTool[] = $derived([
     {
       label: "Toggle Theme",
@@ -45,13 +43,9 @@
     {
       label: "Notes",
       icon: MessageCircleIcon,
-      isActive: $noteSidebarStore.open,
+      isActive: openNoteSidebar,
       handleClick: () => {
-        if (!$noteSidebarStore.open) {
-          $noteSidebarStore.open = true;
-        } else {
-          closeNoteSidebar();
-        }
+        openNoteSidebar = !openNoteSidebar;
       },
     },
     {
@@ -125,3 +119,5 @@
     <Button {loading} loadingLabel="Submitting" size="sm" onclick={submitAnnotation}>Submit</Button>
   {/if}
 </div>
+
+<NoteSidebar {context} open={openNoteSidebar} onSidebarClose={() => (openNoteSidebar = false)} />

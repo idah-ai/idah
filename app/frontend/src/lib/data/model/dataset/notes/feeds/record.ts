@@ -30,6 +30,14 @@ export class NoteFeedRecord extends Record {
   @relationship() public entry!: EntryRecord;
   @relationship() public annotation!: AnnotationRecord;
   @relationship() public note_comments!: NoteCommentRecord[];
+
+  public get noteType(): "general" | "video_frame" | "annotation" {
+    if (this.annotation_id) return "annotation";
+
+    if (this.anchor_type === "entry" && Object.keys(this.position || {}).length > 0) return "video_frame";
+
+    return "general";
+  }
 }
 
 RecordFactory.registerTypes(NoteFeedRecord);
