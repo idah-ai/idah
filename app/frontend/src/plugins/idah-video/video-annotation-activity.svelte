@@ -18,7 +18,6 @@
   import { Popover, PopoverContent } from "@/components/ui/popover";
   import { ScrollArea } from "@/components/ui/scroll-area";
   import SidebarInset from "@/components/ui/sidebar/sidebar-inset.svelte";
-  import SidebarProvider from "@/components/ui/sidebar/sidebar-provider.svelte";
 
   import { ResizableHandle, ResizablePane, ResizablePaneGroup } from "@/components/ui/resizable";
   import { AnnotationRecord } from "@/data/model/dataset/annotations/record";
@@ -30,8 +29,6 @@
   import AnnotationFooter from "./layout/footer/AnnotationFooter.svelte";
   import AnnotationFooterToolbar from "./layout/footer/AnnotationFooterToolbar.svelte";
   import AnnotationSidebar from "./layout/sidebar/annotation-sidebar.svelte";
-  import { noteSidebarStore } from "./layout/sidebar/notes/note-sidebar-stores";
-  import NoteSidebar from "./layout/sidebar/notes/note-sidebar.svelte";
   import { requiredFullfilled } from "./video-annotation-activity/categoryProperties";
   import { boundingBoxes, idb_updated_at } from "./video-annotation-activity/idb_store.svelte";
   import { annotationsIndexedDB, AnnotationsIndexedDB } from "./video-annotation-activity/indexedDB";
@@ -715,104 +712,100 @@
     </PopoverContent>
   </Popover>
 
-  <SidebarProvider class="min-h-0 w-full" style="height: calc(100% - 30px)" bind:open={$noteSidebarStore.open}>
-    <ResizablePaneGroup direction="vertical">
-      <ResizablePane class="flex h-full" defaultSize={60} minSize={10}>
-        <AnnotationSidebar
-          db={annotationsIDB}
-          {annotationValue}
-          {currentFrame}
-          onEditValue={(value: AnnotationValue, valueMode: string) => {
-            annotationValue = value;
-            mode = valueMode;
-            if (selectedAnnotation && requiredFullfilled(annotationValue, context.config.properties)) {
-              selectedAnnotation.value = value;
-              updateAnnotationValue($state.snapshot(selectedAnnotation), $state.snapshot(value));
-            }
-          }}
-          onSelectAnnotation={selectAnnotation}
-          {onDeleteAnnotation}
-          {context}
+  <ResizablePaneGroup direction="vertical">
+    <ResizablePane class="flex h-full" defaultSize={60} minSize={10}>
+      <AnnotationSidebar
+        db={annotationsIDB}
+        {annotationValue}
+        {currentFrame}
+        onEditValue={(value: AnnotationValue, valueMode: string) => {
+          annotationValue = value;
+          mode = valueMode;
+          if (selectedAnnotation && requiredFullfilled(annotationValue, context.config.properties)) {
+            selectedAnnotation.value = value;
+            updateAnnotationValue($state.snapshot(selectedAnnotation), $state.snapshot(value));
+          }
+        }}
+        onSelectAnnotation={selectAnnotation}
+        {onDeleteAnnotation}
+        {context}
+        {mode}
+        selected_id={selectedAnnotation?.metadata.id}
+      />
+
+      <SidebarInset class="flex-1">
+        <SvgOverlay
+          bind:this={overlay}
+          {annotations_promise}
+          selected={selectedAnnotation}
           {mode}
-          selected_id={selectedAnnotation?.metadata.id}
-        />
+          frame={currentFrame}
+          onSelectAnnotation={selectAnnotation}
+          onSelection={onShapeSelection}
+          target_container={() => player_container}
+          {videoResizedAt}
+        >
+          <!-- container context ?-->
+          <Video
+            bind:this={player}
+            bind:element={player_container}
+            onResize={() => {
+              videoResizedAt = new Date();
+            }}
+            onFramesChange={(current, total, playing) => {
+              currentFrame = current;
+              totalFrames = total;
+              isPlaying = playing;
+              isPlaying = playing;
+              // console.debug({onFramesChange: {current, total, playing}})
+            }}
+            onVolumeChange={(level, muted) => (volume = { level, muted })}
+          />
+        </SvgOverlay>
+      </SidebarInset>
+    </ResizablePane>
 
-        <SidebarInset class="flex-1">
-          <SvgOverlay
-            bind:this={overlay}
+    <ResizableHandle withHandle></ResizableHandle>
+
+    <ResizablePane defaultSize={25} minSize={10}>
+      <AnnotationFooter>
+        <AnnotationFooterToolbar>
+          <VideoController
+            bind:this={videoController}
+            {isPlaying}
+            {zoom}
+            {scale}
+            {currentFrame}
+            {totalFrames}
+            {volume}
+            bind:video={player}
+            onZoomChange={(z) => timelineTable.setZoom(z)}
+            onScaleChange={(s) => timelineTable.setScale(s)}
+          />
+        </AnnotationFooterToolbar>
+
+        <ScrollArea class="h-[calc(100%-3.4em)]">
+          <TimelineTable
+            bind:this={timelineTable}
             {annotations_promise}
-            selected={selectedAnnotation}
-            {mode}
-            frame={currentFrame}
+            db={annotationsIDB}
+            {scale}
+            {zoom}
+            {currentFrame}
+            {totalFrames}
+            {selectedAnnotation}
+            onSeekFrame={(frame) => player?.seekToFrame(frame)}
+            {onDeleteAnnotation}
             onSelectAnnotation={selectAnnotation}
-            onSelection={onShapeSelection}
-            target_container={() => player_container}
-            {videoResizedAt}
-          >
-            <!-- container context ?-->
-            <Video
-              bind:this={player}
-              bind:element={player_container}
-              onResize={() => {
-                videoResizedAt = new Date();
-              }}
-              onFramesChange={(current, total, playing) => {
-                currentFrame = current;
-                totalFrames = total;
-                isPlaying = playing;
-                isPlaying = playing;
-                // console.debug({onFramesChange: {current, total, playing}})
-              }}
-              onVolumeChange={(level, muted) => (volume = { level, muted })}
-            />
-          </SvgOverlay>
-        </SidebarInset>
-
-        <NoteSidebar />
-      </ResizablePane>
-
-      <ResizableHandle withHandle></ResizableHandle>
-
-      <ResizablePane defaultSize={25} minSize={10}>
-        <AnnotationFooter>
-          <AnnotationFooterToolbar>
-            <VideoController
-              bind:this={videoController}
-              {isPlaying}
-              {zoom}
-              {scale}
-              {currentFrame}
-              {totalFrames}
-              {volume}
-              bind:video={player}
-              onZoomChange={(z) => timelineTable.setZoom(z)}
-              onScaleChange={(s) => timelineTable.setScale(s)}
-            />
-          </AnnotationFooterToolbar>
-
-          <ScrollArea class="h-[calc(100%-3.4em)]">
-            <TimelineTable
-              bind:this={timelineTable}
-              {annotations_promise}
-              db={annotationsIDB}
-              {scale}
-              {zoom}
-              {currentFrame}
-              {totalFrames}
-              {selectedAnnotation}
-              onSeekFrame={(frame) => player?.seekToFrame(frame)}
-              {onDeleteAnnotation}
-              onSelectAnnotation={selectAnnotation}
-              onScaleChange={(s) => {
-                scale = s;
-              }}
-              onZoomChange={(z) => {
-                zoom = z;
-              }}
-            />
-          </ScrollArea>
-        </AnnotationFooter>
-      </ResizablePane>
-    </ResizablePaneGroup>
-  </SidebarProvider>
+            onScaleChange={(s) => {
+              scale = s;
+            }}
+            onZoomChange={(z) => {
+              zoom = z;
+            }}
+          />
+        </ScrollArea>
+      </AnnotationFooter>
+    </ResizablePane>
+  </ResizablePaneGroup>
 </div>
