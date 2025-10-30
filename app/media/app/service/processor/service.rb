@@ -31,7 +31,7 @@ module Processor
           arguments: {
             entry_id:,
             resource: entry.resource,
-            option_class: processor_entry.options,
+            option_class: processor_entry.options.name,
             options: {}
           },
           status: "pending",
