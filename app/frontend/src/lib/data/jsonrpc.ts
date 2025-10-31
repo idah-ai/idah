@@ -1,6 +1,6 @@
 type JsonRpcMethod = {
   method: string;
-  params?: any;
+  params?: object;
 };
 
 type JsonRpcRequest = {
@@ -11,9 +11,9 @@ type JsonRpcRequest = {
 type JsonRpcError = {
   code: number;
   message: string;
-  data?: any;
+  data?: object;
 };
-type JsonRpcResult = any; // let see
+type JsonRpcResult = object; // let see
 
 type JsonRpcResponse = {
   jsonrpc: string;
@@ -41,8 +41,8 @@ export class JsonRpcDatasource {
     this.batch_size = config.size;
   }
 
-  call(JsonRpcMethod: JsonRpcMethod): Promise<JsonRpcError | any> {
-    return new Promise<any>((onResolve, onReject) => {
+  call(JsonRpcMethod: JsonRpcMethod): Promise<JsonRpcError | object> {
+    return new Promise<object>((onResolve, onReject) => {
       this.queue.push({ JsonRpcMethod, onResolve, onReject });
 
       if (!this.processing) this.process();
@@ -133,13 +133,15 @@ export class JsonRpcDatasource {
                 return c.id == methodPromise.id;
               });
 
-              if (!JsonRpcMethod_res) return console.error({ JsonRpcMethod_res }); //.?
+              if (!JsonRpcMethod_res) return reject(console.error({ JsonRpcMethod_res })); //.?
 
               if (JsonRpcMethod_res.error) {
                 failed.push(methodPromise);
                 methodPromise.onReject?.(JsonRpcMethod_res.error);
-              } else {
+              } else if (JsonRpcMethod_res.result) {
                 methodPromise.onResolve?.(JsonRpcMethod_res.result);
+              } else {
+                reject(console.error({ JsonRpcMethod_res }));
               }
             });
 
