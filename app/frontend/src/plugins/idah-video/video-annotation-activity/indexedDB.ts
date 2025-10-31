@@ -162,7 +162,7 @@ export class AnnotationsIndexedDB {
   }
 
   getBoundedAnnotations(start: number, end: number) {
-    return new Promise<VideoAnnotation[]>(async (resolve, reject) => {
+    return new Promise<VideoAnnotation[]>((resolve, reject) => {
       const transaction = this.db.transaction("annotations", "readonly");
       const store = transaction.objectStore("annotations").index("end");
       const bound = IDBKeyRange.lowerBound(start);

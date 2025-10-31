@@ -18,12 +18,14 @@
   // Functions
   onMount(() => {
     context_promise = new Promise<IActivityContext>(async (ok, ko) => {
-      const entryRes = await entriesBackendDataSource.get(entryId, {
-        included: ["dataset.project"],
-      });
-
-      if (!entryRes) ko(`could not retrieve entry ${entryId}`);
-      else ok(activityContextForEntry(entryRes.data));
+      entriesBackendDataSource
+        .get(entryId, {
+          included: ["dataset.project"],
+        })
+        .then(
+          (entryRes) => ok(activityContextForEntry(entryRes.data)),
+          () => ko(`could not retrieve entry ${entryId}`),
+        );
     });
   });
 </script>

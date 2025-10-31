@@ -9,7 +9,6 @@
   import CategoriesSelection from "./categories-selection.svelte";
 
   import type { AnnotationValue } from "$lib/context/AnnotationContext";
-  import type { CategoryField } from "$lib/data/model/dataset/labels";
   import type { IActivityContext, ICategoryField } from "@/plugin/interface/Activity";
   import type { AnnotationsIndexedDB } from "./indexedDB";
   import AnnotationTabs from "./tabs/AnnotationTabs.svelte";
