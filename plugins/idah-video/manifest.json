@@ -1,0 +1,31 @@
+{
+  "type": "idah-plugin",
+  "name": "idah-video",
+  "version": "1.0.0",
+
+  "title": "IDAH Video Annotation",
+  "description": "A module for annotating video.",
+
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+
+  "entryPoints": {
+    "entryPlugin": {
+      "script": "/frontend/build/plugins/idah-video.umd.js",
+      "style": "/frontend/build/plugins/idah-video.css"
+    },
+    "entryDetails": {
+      "script": "/frontend/build/entryDetailsBuild.js",
+      "style": "/frontend/build/entryDetailsBuild.css"
+    },
+    "datasetConfig": "config/dataset.json",
+    "pluginShortcut": "config/shortcut.json",
+    "assetsDirectory": "assets",
+    "backend": {
+      "module": "IdahVideo",
+      "path": "backends"
+    }
+  }
+}
