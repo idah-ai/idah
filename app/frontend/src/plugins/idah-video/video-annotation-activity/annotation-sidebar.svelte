@@ -10,11 +10,10 @@
 
   import type { AnnotationValue } from "$lib/context/AnnotationContext";
   import type { CategoryField } from "$lib/data/model/dataset/labels";
-  import type { CategoryDefinition } from "@/context/ActivityContext";
-  import type { IActivityContext } from "@/plugin/interface/Activity";
+  import type { IActivityContext, ICategoryField } from "@/plugin/interface/Activity";
   import type { AnnotationsIndexedDB } from "./indexedDB";
   import AnnotationTabs from "./tabs/AnnotationTabs.svelte";
-  import type { VideoAnnotation } from "./VideoAnnotationContext";
+  import type { CategoryConfiguration, VideoAnnotation } from "./VideoAnnotationContext";
   import { SvelteMap } from "svelte/reactivity";
 
   let {
@@ -39,18 +38,18 @@
     selected_id?: string;
   } = $props();
 
-  let tools = context.config.categories.reduce((acc, v: CategoryField) => {
+  let tools = context.config.categories.reduce((acc, v: ICategoryField) => {
     if (!acc.has(v.type)) acc.set(v.type, [v]);
     else {
       let categories = acc.get(v.type);
 
       if (categories) categories.push(v);
-      else categories = [v];
+      else categories = [v] as CategoryConfiguration[];
 
       acc.set(v.type, categories);
     }
     return acc;
-  }, new Map<string, CategoryField[]>());
+  }, new Map<string, CategoryConfiguration[]>());
 
   let searchValue = $state("");
   let debounceTimer: ReturnType<typeof setTimeout> | undefined;
@@ -58,7 +57,7 @@
   let filteredTools = $derived.by(() => {
     if (!searchValue) return tools;
 
-    const filtered = new SvelteMap<string, CategoryField[]>();
+    const filtered = new SvelteMap<string, CategoryConfiguration[]>();
     for (const [toolType, categories] of tools) {
       const matchingCategories = categories.filter((category) =>
         category.label.toLowerCase().includes(searchValue.toLowerCase()),
@@ -71,14 +70,9 @@
   });
 
   // Functions
-  function categorySelection(mode: string, category?: CategoryDefinition) {
+  function categorySelection(mode: string, category?: string) {
     if (category) {
-      onEditValue(
-        {
-          category: category.id,
-        },
-        mode,
-      );
+      onEditValue({ category }, mode);
     } // else {
     //   onEditValue(
     //     Object.fromEntries(Object.entries(annotationValue).filter(([type, _]) => type == "categories")),
