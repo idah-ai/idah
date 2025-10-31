@@ -3,11 +3,9 @@
 require "spec_helper"
 
 RSpec.describe Project::Service, database: true do
-  let(:auth_context){ Verse::Auth::Context.new }
+  let(:system_context) { Verse::Auth::Context.new }
 
-  subject { described_class.new(auth_context) }
-
-  let(:repo) { Project::Repository.new(auth_context) }
+  let(:repo) { Project::Repository.new(system_context) }
 
   let(:update_data) do
     {
@@ -34,43 +32,55 @@ RSpec.describe Project::Service, database: true do
     }
   end
 
-  describe "#create" do
-    it "creates a new project" do
-      record = deserialize(create_data)
-      project = subject.create(record)
-      expect(project.name).to eq("Test Project")
-      expect(project.description).to eq("A test project")
+  context "usual operations", as: :admin do
+    subject { described_class.new(current_auth_context) }
+
+    describe "#create", as: :admin do
+      # subject { described_class.new(current_auth_context) }
+
+      it "creates a new project" do
+        record = deserialize(create_data)
+        project = subject.create(record)
+        expect(project.name).to eq("Test Project")
+        expect(project.description).to eq("A test project")
+      end
     end
-  end
 
-  describe "#show" do
-    it "shows a project" do
-      project_id = repo.create(name: "Test Project", description: "A test project", created_by_id: 1)
-      found_project = subject.show(project_id)
-      expect(found_project.id).to eq(project_id)
+    describe "#show" do
+      # subject { described_class.new(current_auth_context) }
+
+      it "shows a project" do
+        project_id = repo.create(name: "Test Project", description: "A test project", created_by_id: 1)
+        found_project = subject.show(project_id)
+        expect(found_project.id).to eq(project_id)
+      end
     end
-  end
 
-  describe "#update" do
-    it "updates a project" do
-      project_id = repo.create(name: "Test Project", description: "A test project", created_by_id: 1)
+    describe "#update" do
+      # subject { described_class.new(current_auth_context) }
 
-      update_data[:data][:id] = project_id
-      update_data[:data][:attributes][:name] = "Updated Project"
+      it "updates a project" do
+        project_id = repo.create(name: "Test Project", description: "A test project", created_by_id: 1)
 
-      record = deserialize(update_data)
-      subject.update(record)
+        update_data[:data][:id] = project_id
+        update_data[:data][:attributes][:name] = "Updated Project"
 
-      updated_project = repo.find!(project_id)
-      expect(updated_project.name).to eq("Updated Project")
+        record = deserialize(update_data)
+        subject.update(record)
+
+        updated_project = repo.find!(project_id)
+        expect(updated_project.name).to eq("Updated Project")
+      end
     end
-  end
 
-  describe "#delete" do
-    it "deletes a project" do
-      project_id = repo.create(name: "Test Project", description: "A test project", created_by_id: 1)
-      subject.delete(project_id)
-      expect { repo.find!(project_id) }.to raise_error(Verse::Error::NotFound)
+    describe "#delete" do
+      # subject { described_class.new(current_auth_context) }
+
+      it "deletes a project" do
+        project_id = repo.create(name: "Test Project", description: "A test project", created_by_id: 1)
+        subject.delete(project_id)
+        expect { repo.find!(project_id) }.to raise_error(Verse::Error::NotFound)
+      end
     end
   end
 end

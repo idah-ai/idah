@@ -3,6 +3,8 @@
 
 anonymous:
   assignable: false
+  scopes:
+    - organizations
   rights:
     # - "*.*.*"
 
