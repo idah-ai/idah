@@ -2,7 +2,7 @@
   import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
   import SelectGroup from "@/components/ui/select/select-group.svelte";
   import Text from "@/components/ui/text/Text.svelte";
-  import { getContext, type Component, type ComponentProps } from "svelte";
+  import { getContext } from "svelte";
 
   import { visibleFullfilled } from ".";
   import { idb_updated_at } from "../idb_store.svelte";
@@ -12,7 +12,6 @@
 
   import type { AnnotationValue } from "@/context/AnnotationContext";
   import type { IActivityContext, PropertyField } from "@/plugin/interface/Activity";
-  import type { Hash } from "@/utils/types";
   import MultiSelectProperty from "./properties/MultiSelectProperty.svelte";
   import SingleSelectProperty from "./properties/SingleSelectProperty.svelte";
 
