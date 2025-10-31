@@ -2,7 +2,7 @@
   import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
   import SelectGroup from "@/components/ui/select/select-group.svelte";
   import Text from "@/components/ui/text/Text.svelte";
-  import { getContext, type Component } from "svelte";
+  import { getContext, type Component, type ComponentProps } from "svelte";
 
   import { visibleFullfilled } from ".";
   import { idb_updated_at } from "../idb_store.svelte";
@@ -37,7 +37,12 @@
 
   const propertyComponents: {
     type: string;
-    component: Component<any, Hash, "">;
+    component:
+      | typeof TextProperty
+      | typeof IntegerProperty
+      | typeof BooleanProperty
+      | typeof SingleSelectProperty
+      | typeof MultiSelectProperty;
   }[] = [
     { type: "text", component: TextProperty },
     { type: "integer", component: IntegerProperty },
