@@ -78,7 +78,7 @@
     const s = Math.min(150, Math.max(1, Math.round(value)));
     scale = Math.min(scale, Math.ceil(totalFrames / s));
     zoom = s;
-    onScaleChange?.(scale)
+    onScaleChange?.(scale);
     onZoomChange?.(zoom);
   }
 
@@ -152,7 +152,7 @@
     {@const isLastIndex = index == annotations.length - 1}
     <TableRow
       class={cn("border-b-0", {
-        "bg-primary-foreground border-primary/30 border-t border-b": isSelected,
+        "bg-primary-foreground border-primary/30 border-b border-t": isSelected,
       })}
     >
       <TableCell
