@@ -56,6 +56,10 @@ module Entry
       entries.mark_entries_as_ready(job_id)
     end
 
+    def mark_entries_as_errored(job_id)
+      entries.mark_entries_as_errored(job_id)
+    end
+
     def update(record)
       entries.update!(record.id, record.attributes)
       entries.find!(record.id)
