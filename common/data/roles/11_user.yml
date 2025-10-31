@@ -2,7 +2,12 @@ user:
   title: "User"
   description: "User"
   assignable: true
+  scopes:
+    - organizations
   rights:
+    # - "*.*.*"
+
+    ## WIP: user account
     # dataset service
     # projects
     - "dataset:projects.*.as_user"
@@ -17,6 +22,10 @@ user:
     # annotations
     - "dataset:annotations.*.as_user"
 
-    # TODO: WIP
+    # TODO: WIP, api checks with dataset service ?
     # media service
     - "media:medias.*.*"
+
+    # TODO: WIP, differ between admin and user
+    # iam service
+    - "iam:accounts.*.*"

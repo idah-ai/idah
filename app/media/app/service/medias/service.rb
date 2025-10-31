@@ -26,6 +26,14 @@ module Medias
     end
 
     def create(record)
+      # TODO: check permission from project member
+      #
+      # 1. get account id from auth_context
+      # 2. get project ids from project members of account id ?
+      # 3. check
+      #
+      # membership = Api[:idah].dataset.project_members.index(: media.)
+
       medias.transaction do
         record_id = medias.create(record.attributes)
         medias.find!(record_id)
