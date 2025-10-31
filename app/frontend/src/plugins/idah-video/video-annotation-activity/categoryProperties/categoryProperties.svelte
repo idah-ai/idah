@@ -18,7 +18,7 @@
   type Props = {
     selectedCategory: string;
     annotationValue: AnnotationValue;
-    onSelectCategory: (category?: CategoryDefinition) => void;
+    onSelectCategory: (id?: string) => void;
     onEditValue: (value?: AnnotationValue) => void;
   };
 
@@ -37,7 +37,7 @@
   const propertyComponents: {
     type: string;
     component: Component<any, {}, "">;
-    extraProps?: {};
+    extraProps?: Object;
   }[] = [
     { type: "text", component: TextProperty },
     { type: "integer", component: IntegerProperty },

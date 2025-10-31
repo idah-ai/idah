@@ -37,7 +37,7 @@
     selected_category: string | undefined;
     selected_id: string | undefined;
     onEditValue: (annotationValue: AnnotationValue, mode: string) => void;
-    onSelect: (category?: CategoryDefinition) => void;
+    onSelect: (category?: string) => void;
     onSelectAnnotation: (annotation: VideoAnnotation) => void;
     onDeleteAnnotation: (annotation: VideoAnnotation) => void;
     db?: AnnotationsIndexedDB;
@@ -245,7 +245,7 @@
 {#snippet categorySelection(
   category: CategoryDefinition,
   subCategories: CategoryDefinition[] | undefined,
-  onSelect: (category?: CategoryDefinition) => void,
+  onSelect: (category?: string) => void,
   selected: string | undefined,
   parent: string[] = [],
 )}
@@ -264,7 +264,7 @@
 
             // Allow selection if category is not requiredNested, or if it's a parent that exists in the original categories list
             if (categories.find((c) => c.id === category.id)) {
-              onSelect(category);
+              onSelect(category.id);
             }
 
             if (category.nestedCategories) {
