@@ -65,7 +65,7 @@ export class JsonRpcDatasource {
         onReject?: (r: JsonRpcError) => void;
       }> = [];
       while (batch.length < this.batch_size) {
-        let x = this.queue.shift();
+        const x = this.queue.shift();
         if (!x) break;
 
         batch.push({ ...x, id: batch.length.toString() });
@@ -110,7 +110,7 @@ export class JsonRpcDatasource {
       });
 
       try {
-        let response = await fetch(this.base_url, {
+        const response = await fetch(this.base_url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(JsonRpcRequests.length == 1 ? JsonRpcRequests[0] : JsonRpcRequests),
@@ -124,7 +124,7 @@ export class JsonRpcDatasource {
           onReject?: (r: JsonRpcError) => void;
         }> = [];
 
-        let body_response: JsonRpcResponse | JsonRpcResponse[] = await response.json();
+        const body_response: JsonRpcResponse | JsonRpcResponse[] = await response.json();
         let body: JsonRpcResponse[];
         if (body_response.constructor == Array) body = body_response;
         else body = Array(body_response as JsonRpcResponse);
@@ -146,7 +146,8 @@ export class JsonRpcDatasource {
 
         if (failed.length) reject({ batch: failed, retry: false });
         else resolve({ batch: [], retry: false });
-      } catch (error) {
+      } catch (rpc_error) {
+        console.error({ rpc_error });
         reject({ batch, retry: true });
       }
     });

@@ -1,8 +1,9 @@
 import type { AnnotationValue } from "@/context/AnnotationContext";
-import type { LabelPropertyOption, PropertyField } from "@/plugin/interface/Activity";
+import type { FieldFormat, PropertyField } from "@/plugin/interface/Activity";
 
-export function visibleFullfilled(value: AnnotationValue, p: PropertyField) {
+export function visibleFullfilled(value: AnnotationValue, field: PropertyField) {
   // check visibility condition
+  console.debug({ value, field });
   return true;
 }
 
@@ -43,46 +44,47 @@ export function propertyFullfilled(value: any, property: PropertyField) {
 const formatValidators = [
   {
     type: "text",
-    minimum: (v: string, format) => v?.length >= (format.minimum || 0),
-    maximum: (v: string, format) => v?.length <= (format.maximum || v.length),
-    step: (v: string, format) => true,
-    options: (v: string, format) => true,
-    info: (v) => true,
+    minimum: (v: string, format: FieldFormat) => v?.length >= (format.minimum || 0),
+    maximum: (v: string, format: FieldFormat) => v?.length <= (format.maximum || v.length),
+    step: (_v: string, _format: FieldFormat) => true,
+    options: (_v: string, _format: FieldFormat) => true,
+    info: (_v: string) => true,
   },
   {
     type: "integer",
-    minimum: (v: number, format) => v >= (format.minimun || 0),
-    maximum: (v: number, format) => v <= (format.maximum || v),
-    step: (v: number, format) => !((v - format.minimum) % format.step) || v == format.maximum,
-    options: (v: number, format) => true,
-    info: (v) => true,
+    minimum: (v: number, format: FieldFormat) => v >= (format.minimum || 0),
+    maximum: (v: number, format: FieldFormat) => v <= (format.maximum || v),
+    step: (v: number, format: FieldFormat) =>
+      !((v - (format.minimum || 0)) % (format.step || 1)) || v == format.maximum,
+    options: (_v: number, _format: FieldFormat) => true,
+    info: (_v: number) => true,
   },
   {
     type: "boolean",
-    minimum: (v: number, format) => true,
-    maximum: (v: number, format) => true,
-    step: (v: number, format) => true,
-    options: (v: number, format) => true,
-    info: (v) => true,
+    minimum: (_v: boolean, _format: FieldFormat) => true,
+    maximum: (_v: boolean, _format: FieldFormat) => true,
+    step: (_v: boolean, _format: FieldFormat) => true,
+    options: (_v: boolean, _format: FieldFormat) => true,
+    info: (_v: boolean) => true,
   },
   {
     type: "single-select",
-    minimum: (v: string, format) => true,
-    maximum: (v: string, format) => true,
-    step: (v: string, format) => true,
-    options: (v: string, format) => format.options.map((o) => o.id).includes(v),
-    info: (v) => true,
+    minimum: (_v: string, _format: FieldFormat) => true,
+    maximum: (_v: string, _format: FieldFormat) => true,
+    step: (_v: string, _format: FieldFormat) => true,
+    options: (v: string, format: FieldFormat) => format.options.map((o) => o.id).includes(v),
+    info: (_v) => true,
   },
   {
     type: "multi-select",
-    minimum: (v: string[], format) => v.length >= format.minimun,
-    maximum: (v: string[], format) => v.length <= format.maximum,
-    step: (v: string[], format) => true,
-    options: (v: string[], format) => {
+    minimum: (v: string[], format: FieldFormat) => v.length >= (format.minimum || 0),
+    maximum: (v: string[], format: FieldFormat) => v.length <= (format.maximum || format.options.length || 0),
+    step: (_v: string[], _format: FieldFormat) => true,
+    options: (v: string[], format: FieldFormat) => {
       const optionIds = format.options.map((o) => o.id);
       return v.every((s) => optionIds.includes(s));
     },
-    info: (v) => true,
+    info: (_v: string[]) => true,
   },
 ];
 
@@ -93,7 +95,7 @@ function conformToformat(value: any, propertyField: PropertyField): boolean {
 
   return Object.entries(propertyField.format)
     .filter(([k, _]) => k != "type")
-    .every(([k, v]) => {
+    .every(([k, _v]: [k: string, _v: any]) => {
       return validator[k](value, propertyField.format);
     });
 }

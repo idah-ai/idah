@@ -11,10 +11,11 @@
   import type { AnnotationValue } from "$lib/context/AnnotationContext";
   import type { CategoryField } from "$lib/data/model/dataset/labels";
   import type { CategoryDefinition } from "@/context/ActivityContext";
-  import type { IActivityContext, TagField } from "@/plugin/interface/Activity";
+  import type { IActivityContext } from "@/plugin/interface/Activity";
   import type { AnnotationsIndexedDB } from "./indexedDB";
   import AnnotationTabs from "./tabs/AnnotationTabs.svelte";
-  import type { CategoryConfiguration, LabellingConfiguration, VideoAnnotation } from "./VideoAnnotationContext";
+  import type { VideoAnnotation } from "./VideoAnnotationContext";
+  import { SvelteMap } from "svelte/reactivity";
 
   let {
     annotationValue,
@@ -57,7 +58,7 @@
   let filteredTools = $derived.by(() => {
     if (!searchValue) return tools;
 
-    const filtered = new Map<string, CategoryField[]>();
+    const filtered = new SvelteMap<string, CategoryField[]>();
     for (const [toolType, categories] of tools) {
       const matchingCategories = categories.filter((category) =>
         category.label.toLowerCase().includes(searchValue.toLowerCase()),
@@ -111,7 +112,7 @@
   {/if}
 
   <SidebarContent>
-    {#each filteredTools as [tool, categories]}
+    {#each filteredTools as [tool, categories] (tool)}
       <!-- {#if !tools.has(mode) || mode == "visual"} -->
       <SidebarGroup>
         <SidebarGroupContent>

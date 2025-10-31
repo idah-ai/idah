@@ -40,7 +40,7 @@
 
 <div id="annotation-header-bar-actions" class="flex h-full flex-1 items-center justify-end gap-2">
   <div id="annotation-header-bar-actions-menu" class="flex items-center gap-1">
-    {#each menus as { label, icon: Icon, handleClick }}
+    {#each menus as { label, icon: Icon, handleClick } (label)}
       <TooltipProvider>
         <Tooltip delayDuration={100}>
           <TooltipTrigger>

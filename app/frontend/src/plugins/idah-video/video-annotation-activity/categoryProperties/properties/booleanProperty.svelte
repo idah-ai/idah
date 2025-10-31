@@ -23,7 +23,7 @@
 
   {#if invalid}
     <ul>
-      {#each format as [k, v]}
+      {#each format as [k, v] (k)}
         <li style:color="red">{k}:<span>{v}</span></li>
       {/each}
     </ul>

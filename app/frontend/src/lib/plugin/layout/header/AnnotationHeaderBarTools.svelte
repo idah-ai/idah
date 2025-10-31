@@ -38,7 +38,7 @@
 </script>
 
 <div id="annotation-header-bar-tools" class="flex h-full flex-1 items-center gap-1">
-  {#each tools as { label, type, icon: Icon, handleClick }}
+  {#each tools as { label, type, icon: Icon, handleClick } (label)}
     <TooltipProvider>
       <Tooltip delayDuration={100}>
         <TooltipTrigger>
@@ -55,7 +55,7 @@
 
   <Separator orientation="vertical" />
 
-  {#each commands as { label, icon: Icon, handleClick }}
+  {#each commands as { label, icon: Icon, handleClick } (label)}
     <TooltipProvider>
       <Tooltip delayDuration={100}>
         <TooltipTrigger>
