@@ -3,6 +3,13 @@
 require "spec_helper"
 
 RSpec.describe NoteFeed::Service, database: true do
+  before do
+    # freeze the time
+    allow(Time).to receive(:now).and_return(
+      Time.utc(2025, 1, 1, 0, 0, 0)
+    )
+  end
+
   let(:auth_context) { Verse::Auth::Context.new }
 
   subject { described_class.new(auth_context) }
@@ -14,7 +21,7 @@ RSpec.describe NoteFeed::Service, database: true do
   let(:project_repo) { Project::Repository.new(auth_context) }
 
   let!(:project_id) do
-    project_repo.create(name: "Test Project", description: "A test project", created_by_id: 1)
+    project_repo.create(name: "Test Project", description: "A test project", created_by_email: "user@example.com")
   end
 
   let!(:dataset_id) do
@@ -22,7 +29,7 @@ RSpec.describe NoteFeed::Service, database: true do
       modality: "video",
       labels: ["cat", "dog"],
       labeling_configuration: { "width" => 100, "height" => 100 },
-      workflow_configuration: {},
+      workflow_configuration: { noteable_steps: ["review"] },
       project_id: project_id
     )
   end
@@ -43,7 +50,7 @@ RSpec.describe NoteFeed::Service, database: true do
       entry_id: entry_id,
       dimensions: { "x" => 10, "y" => 20, "width" => 100, "height" => 50 },
       annotation: { "label" => "cat" },
-      created_by_id: 1
+      created_by_email: "user@example.com"
     )
   end
 
@@ -51,7 +58,8 @@ RSpec.describe NoteFeed::Service, database: true do
     {
       anchor_type: "entry",
       position: { "x" => 100, "y" => 200 },
-      content_md: "This is a test note"
+      content_md: "This is a test note",
+      created_by_email: "reviewer@example.com"
     }
   end
 
@@ -72,7 +80,7 @@ RSpec.describe NoteFeed::Service, database: true do
         expect(result.content_md).to eq("This is a test note")
         expect(result.position).to eq({ x: 100, y: 200 })
         expect(result.status).to eq("pending")
-        expect(result.created_by_id).to eq(1)
+        expect(result.created_by_email).to eq("reviewer@example.com")
       end
     end
 
@@ -101,9 +109,9 @@ RSpec.describe NoteFeed::Service, database: true do
       end
     end
 
-    context "when entry is not in review step" do
+    context "when entry is not in a noteable step" do
       it "raises a validation error" do
-        # Create an entry not in review step
+        # Create an entry not in a noteable step
         new_entry_id = entry_repo.create(
           priority: 1,
           resource: "http://example.com/video2.mp4",
@@ -116,7 +124,7 @@ RSpec.describe NoteFeed::Service, database: true do
         params = note_feed_attributes.merge(entry_id: new_entry_id)
 
         expect { subject.create_from_params(params) }
-          .to raise_error(Verse::Error::ValidationFailed, /Cannot add note feed to entry not in review step/)
+          .to raise_error(Verse::Error::ValidationFailed, /Cannot add note feed to entry in current step/)
       end
     end
   end
@@ -183,6 +191,7 @@ RSpec.describe NoteFeed::Service, database: true do
       result = subject.update(record)
 
       expect(result.content_md).to eq("Updated note content")
+      expect(result.edited_at).to eq(Time.now)
       expect(result.id).to eq(note_feed.id)
     end
 
@@ -202,6 +211,7 @@ RSpec.describe NoteFeed::Service, database: true do
       result = subject.update(record)
 
       expect(result.position).to eq({ x: 300, y: 400 })
+      expect(result.edited_at).to eq(Time.now)
     end
   end
 

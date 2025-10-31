@@ -72,7 +72,9 @@ Sequel.migration do
       column :name, String, null: false, index: true
 
       column :description, String, null: true
-      column :created_by_id, :bigint, null: true, index: true
+      column :created_by_email, String, null: false
+
+      index :created_by_email, opclass: :gin_trgm_ops, type: :gin
 
       Migration::Timestamps.timestamps(self)
     end
@@ -88,6 +90,8 @@ Sequel.migration do
                   index: true,
                   on_delete: :cascade,
                   on_update: :cascade
+
+      column :name, String, null: false, default: ""
 
       # Type of dataset
       column :modality, String, null: false
@@ -106,6 +110,8 @@ Sequel.migration do
       column :status, String, null: false, index: true, default: "pending"
 
       column :progress, Float, null: false, default: 0.0 # from 0.0 to 1.0
+
+      index :name, opclass: :gin_trgm_ops, type: :gin
 
       Migration::Timestamps.timestamps(self)
     end
@@ -157,8 +163,9 @@ Sequel.migration do
       column :annotation, :jsonb, text: true, null: false
 
       # Annotator information
-      column :created_by_id, :bigint, null: true, index: true
+      column :created_by_email, String, null: false
 
+      index :created_by_email, opclass: :gin_trgm_ops, type: :gin
       Migration::Timestamps.timestamps(self)
     end
     Migration::Timestamps.trg_updated_at(self, :annotations)
@@ -183,7 +190,7 @@ Sequel.migration do
                   on_delete: :cascade,
                   on_update: :cascade
 
-      column :created_by_id, :bigint, null: false, index: true
+      column :created_by_email, String, null: false
 
       # Position anchor, or annotation reference
       column :anchor_type, String, null: false, index: true
@@ -195,6 +202,10 @@ Sequel.migration do
       column :status, String, null: false, index: true, default: "pending"
 
       column :content_md, String, null: false
+      column :edited_at, DateTime, null: true
+
+      index :created_by_email, opclass: :gin_trgm_ops, type: :gin
+
       Migration::Timestamps.timestamps(self)
     end
     Migration::Timestamps.trg_updated_at(self, :note_feeds)
@@ -208,10 +219,12 @@ Sequel.migration do
                   null: false,
                   index: true
 
-      column :is_edited, :boolean, null: false, default: false
       column :content_md, String, null: false
 
-      column :created_by_id, :bigint, null: false, index: true
+      column :created_by_email, String, null: false
+      column :edited_at, DateTime, null: true
+
+      index :created_by_email, opclass: :gin_trgm_ops, type: :gin
       Migration::Timestamps.timestamps(self)
     end
     Migration::Timestamps.trg_updated_at(self, :note_comments)

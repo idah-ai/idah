@@ -22,7 +22,7 @@ module Dataset
     def create(record)
       attr = record.attributes
 
-      # attr[:created_by_id] ||= auth_context.metadata[:id]
+      # attr[:created_by_email] ||= auth_context.metadata[:email]
       attr[:id] = record.id || UUIDv7.generate
 
       if record.project
