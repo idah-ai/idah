@@ -16,8 +16,8 @@
   import { Spinner } from "@/components/ui/spinner";
   import Text from "@/components/ui/text/Text.svelte";
   import ResolveNoteFeedButton from "@/plugin/layout/sidebar/notes/buttons/resolve-note-feed-button.svelte";
-  import NoteCommentCard from "@/plugin/layout/sidebar/notes/card/note-comment-card.svelte";
-  import NoteFeedCard from "@/plugin/layout/sidebar/notes/card/note-feed-card.svelte";
+  import NoteCommentCard from "@/plugin/layout/sidebar/notes/cards/note-comment-card.svelte";
+  import NoteFeedCard from "@/plugin/layout/sidebar/notes/cards/note-feed-card.svelte";
   import NoteDropdownMenus from "@/plugin/layout/sidebar/notes/dropdown-menus/note-dropdown-menus.svelte";
   import NoteInputField from "@/plugin/layout/sidebar/notes/inputs/note-input-field.svelte";
 
