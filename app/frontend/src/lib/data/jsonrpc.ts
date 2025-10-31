@@ -100,7 +100,7 @@ export class JsonRpcDatasource {
         onReject?: (r: JsonRpcError) => void;
       }>;
       retry: boolean;
-    }>(async (resolve, reject) => {
+    }>((resolve, reject) => {
       const JsonRpcRequests: JsonRpcRequest[] = batch.map((q) => {
         return {
           ...q.JsonRpcMethod,
@@ -110,42 +110,42 @@ export class JsonRpcDatasource {
       });
 
       try {
-        const response = await fetch(this.base_url, {
+        fetch(this.base_url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(JsonRpcRequests.length == 1 ? JsonRpcRequests[0] : JsonRpcRequests),
-        });
+        }).then((response) => {
+          if (response == undefined) return reject(batch);
 
-        if (response == undefined) return reject(batch);
+          const failed: Array<{
+            JsonRpcMethod: JsonRpcMethod;
+            onResolve?: (r: JsonRpcResult) => void;
+            onReject?: (r: JsonRpcError) => void;
+          }> = [];
 
-        const failed: Array<{
-          JsonRpcMethod: JsonRpcMethod;
-          onResolve?: (r: JsonRpcResult) => void;
-          onReject?: (r: JsonRpcError) => void;
-        }> = [];
+          const body_response: JsonRpcResponse | JsonRpcResponse[] = await response.json();
+          let body: JsonRpcResponse[];
+          if (body_response.constructor == Array) body = body_response;
+          else body = Array(body_response as JsonRpcResponse);
 
-        const body_response: JsonRpcResponse | JsonRpcResponse[] = await response.json();
-        let body: JsonRpcResponse[];
-        if (body_response.constructor == Array) body = body_response;
-        else body = Array(body_response as JsonRpcResponse);
+          batch.forEach((methodPromise) => {
+            const JsonRpcMethod_res = body.find((c) => {
+              return c.id == methodPromise.id;
+            });
 
-        batch.forEach((methodPromise) => {
-          const JsonRpcMethod_res = body.find((c) => {
-            return c.id == methodPromise.id;
+            if (!JsonRpcMethod_res) return console.error({ JsonRpcMethod_res }); //.?
+
+            if (JsonRpcMethod_res.error) {
+              failed.push(methodPromise);
+              methodPromise.onReject?.(JsonRpcMethod_res.error);
+            } else {
+              methodPromise.onResolve?.(JsonRpcMethod_res.result);
+            }
           });
 
-          if (!JsonRpcMethod_res) return console.error({ JsonRpcMethod_res }); //.?
-
-          if (JsonRpcMethod_res.error) {
-            failed.push(methodPromise);
-            methodPromise.onReject?.(JsonRpcMethod_res.error);
-          } else {
-            methodPromise.onResolve?.(JsonRpcMethod_res.result);
-          }
-        });
-
-        if (failed.length) reject({ batch: failed, retry: false });
-        else resolve({ batch: [], retry: false });
+          if (failed.length) reject({ batch: failed, retry: false });
+          else resolve({ batch: [], retry: false });
+        }, reject);
       } catch (rpc_error) {
         console.error({ rpc_error });
         reject({ batch, retry: true });
