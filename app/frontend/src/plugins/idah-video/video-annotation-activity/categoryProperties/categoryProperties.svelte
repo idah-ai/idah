@@ -8,11 +8,13 @@
   import { idb_updated_at } from "../idb_store.svelte";
   import BooleanProperty from "./properties/booleanProperty.svelte";
   import IntegerProperty from "./properties/integerProperty.svelte";
-  import SelectProperty from "./properties/SelectProperty.svelte";
   import TextProperty from "./properties/textProperty.svelte";
 
   import type { AnnotationValue } from "@/context/AnnotationContext";
   import type { IActivityContext, PropertyField } from "@/plugin/interface/Activity";
+  import type { Hash } from "@/utils/types";
+  import MultiSelectProperty from "./properties/MultiSelectProperty.svelte";
+  import SingleSelectProperty from "./properties/SingleSelectProperty.svelte";
 
   type Props = {
     selectedCategory: string;
@@ -35,29 +37,16 @@
 
   const propertyComponents: {
     type: string;
-    component: Component<any, {}, "">;
-    extraProps?: object;
+    component: Component<any, Hash, "">;
   }[] = [
     { type: "text", component: TextProperty },
     { type: "integer", component: IntegerProperty },
     { type: "boolean", component: BooleanProperty },
-    {
-      type: "single-select",
-      component: SelectProperty,
-      extraProps: {
-        selectType: "single",
-      },
-    },
-    {
-      type: "multi-select",
-      component: SelectProperty,
-      extraProps: {
-        selectType: "multi",
-      },
-    },
+    { type: "single-select", component: SingleSelectProperty },
+    { type: "multi-select", component: MultiSelectProperty },
   ];
 
-  function onValueChange(property: PropertyField, v: any) {
+  function onValueChange(property: PropertyField, v: string | number | string[] | undefined | boolean) {
     onEditValue({
       ...annotationValue,
       attributes: { ...(annotationValue.attributes || {}), [property.id]: v },
@@ -101,7 +90,6 @@
             <pc.component
               {...{
                 property,
-                ...pc.extraProps,
                 value: annotationValue.attributes?.[property.id],
                 onValueChange: (v: string | number | boolean | string[] | undefined) => onValueChange(property, v),
               }}

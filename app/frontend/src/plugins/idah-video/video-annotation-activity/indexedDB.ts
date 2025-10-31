@@ -107,7 +107,7 @@ export class AnnotationsIndexedDB {
     });
   }
 
-  get(store_name: string, key: any): Promise<VideoAnnotation> {
+  get(store_name: string, key: string): Promise<VideoAnnotation> {
     return new Promise<VideoAnnotation>((resolve, reject) => {
       const transaction = this.db.transaction(store_name, "readonly");
       const store = transaction.objectStore(store_name);
