@@ -1,5 +1,5 @@
 import { annotationsBackendDataSource } from "@/data/model/dataset/annotations/record";
-import { JsonRpcDatasource } from "../../plugins/idah-video/video-annotation-activity/jsonrpc";
+import { JsonRpcDatasource } from "@/data/jsonrpc";
 import type { IAnnotation, IAnnotationDriver } from "./interface/Activity";
 
 const annotations_rpc = new JsonRpcDatasource(`${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/annotations/_rpc`);

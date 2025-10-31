@@ -8,7 +8,7 @@ module Video
 
       puts "Arguments = #{arguments.inspect}"
 
-      job_service.create_job(
+      job_service.create(
         "Video::Job",
         arguments:,
         unicity: "video:vp_#{arguments[:resource]}"

@@ -106,7 +106,15 @@ RSpec.describe MediasExpo, type: :exposition, as: :system do
 
   context "#upload" do
     let(:file) do
-      Rack::Test::UploadedFile.new("spec_data/sample.mp4", "video/mp4")
+      # Create a tempfile to to upload:
+      Rack::Test::UploadedFile.new(
+        Tempfile.create(["sample", ".mp4"]).tap do |f|
+          f.write("ab")
+          f.rewind
+        end.path,
+        "video/mp4",
+        original_filename: "sample.mp4"
+      )
     end
     it "without key" do
       expect_any_instance_of(Medias::Service).to receive(:upload) do |_service, file, resource:, key:|

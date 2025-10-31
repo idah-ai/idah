@@ -48,40 +48,6 @@ module Entry
 
         id = entries.create(attr)
 
-        if job_id
-          # After we created, we check the job status
-          # and update the entry status accordingly.
-          # If the job is not done yet, we will update the
-          # status on event.
-          entries.after_commit do
-            job = Api[:idah].media.jobs.show(id: job_id)
-
-            if job.status == "completed"
-              entries.update!(id, { status: "ready" })
-            end
-          end
-        else
-          # If there is no job, we can start processing right away
-          # depending on the dataset modality
-          entries.after_commit do
-            entry_dataset_modality = datasets.find!(record.dataset.id).modality
-
-            if entry_dataset_modality == "video"
-              Api[:idah].media.videos.process(
-                attributes: {
-                  resource: record.resource,
-                  sizes: ["240p", "360p", "480p", "720p", "1080p", "1440p", "2160p"],
-                  generate_frames: false,
-                  generate_thumbnail: true,
-                  generate_frame_format: "avif",
-                  generate_frame_framerate: 6,
-                  streaming_time_per_segment: 10
-                }
-              )
-            end
-          end
-        end
-
         entries.find!(id)
       end
     end
