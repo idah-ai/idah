@@ -95,4 +95,11 @@ class EntriesExpo < BaseExpo
 
     service.update_entries_job(job_id, job_resource)
   end
+
+  expose on_resource_event(Resource::Media::Jobs, "errored")
+  def on_job_errored
+    job_id = message.content[:resource_id]
+
+    service.mark_entries_as_errored(job_id)
+  end
 end

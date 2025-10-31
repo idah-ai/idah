@@ -32,11 +32,21 @@ module Entry
     self.resource = Resource::Dataset::Entries
 
     def mark_entries_as_ready(job_id)
-      entries = chunked_index({ job_id: job_id, status: "pending" })
+      entries = chunked_index({ job_id: job_id, status: "processing" })
 
       transaction do
         entries.each do |entry|
           update!(entry.id, { status: "ready" })
+        end
+      end
+    end
+
+    def mark_entries_as_errored(job_id)
+      entries = chunked_index({ job_id: job_id, status: "processing" })
+
+      transaction do
+        entries.each do |entry|
+          update!(entry.id, { status: "errored" })
         end
       end
     end

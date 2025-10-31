@@ -186,7 +186,7 @@ RSpec.describe Entry::Service, database: true do
         {
           dataset_id: dataset_id,
           job_id: job_id,
-          status: "pending"
+          status: "processing"
         }
       )
 
@@ -194,7 +194,7 @@ RSpec.describe Entry::Service, database: true do
         {
           dataset_id: dataset_id,
           job_id: job_id,
-          status: "pending"
+          status: "processing"
         }
       )
       repo.create(
@@ -211,6 +211,45 @@ RSpec.describe Entry::Service, database: true do
 
       entries = repo.index({ job_id: job_id })
       expect(entries.map(&:status)).to all(eq("ready"))
+
+      other_entry = repo.index({ job_id: 789 }).first
+      expect(other_entry.status).to eq("pending")
+    end
+  end
+
+  describe "#mark_entries_as_errored" do
+    let(:job_id) { 456 }
+
+    before do
+      repo.create(
+        {
+          dataset_id: dataset_id,
+          job_id: job_id,
+          status: "processing"
+        }
+      )
+
+      repo.create(
+        {
+          dataset_id: dataset_id,
+          job_id: job_id,
+          status: "processing"
+        }
+      )
+      repo.create(
+        {
+          dataset_id: dataset_id,
+          job_id: 789,
+          status: "pending"
+        }
+      )
+    end
+
+    it "marks entries with the given job_id as errored" do
+      subject.mark_entries_as_errored(job_id)
+
+      entries = repo.index({ job_id: job_id })
+      expect(entries.map(&:status)).to all(eq("errored"))
 
       other_entry = repo.index({ job_id: 789 }).first
       expect(other_entry.status).to eq("pending")

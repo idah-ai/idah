@@ -181,4 +181,129 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
       expect(record.id).to eq uuid
     end
   end
+
+  describe "on_resource_event media:jobs completed" do
+    # before do
+    #   allow_any_instance_of(Entry::Service).to receive(:mark_entries_as_ready)
+    # end
+
+    it "marks entries as ready when job is completed" do
+      job_id = "123"
+
+      expect(
+        service
+      ).to(
+        receive(:mark_entries_as_ready).with(job_id)
+      )
+
+      Verse.publish_resource_event(
+        resource_type: "media:jobs",
+        resource_id: job_id,
+        event: "completed",
+        payload: {
+          resource_id: job_id
+        }
+      )
+    end
+  end
+
+  describe "on_resource_event media:jobs created" do
+    it "updates entries job when job is created" do
+      job_id = "456"
+      job_resource = "http://example.com/video.mp4"
+
+      expect(
+        service
+      ).to(
+        receive(:update_entries_job).with(job_id, job_resource)
+      )
+
+      Verse.publish_resource_event(
+        resource_type: "media:jobs",
+        resource_id: job_id,
+        event: "created",
+        payload: {
+          resource_id: job_id,
+          args: [
+            {
+              arguments: {
+                resource: job_resource
+              }
+            }
+          ]
+        }
+      )
+    end
+
+    it "does not update entries job when job_id is missing" do
+      job_resource = "http://example.com/video.mp4"
+
+      expect(
+        service
+      ).not_to(
+        receive(:update_entries_job)
+      )
+
+      Verse.publish_resource_event(
+        resource_type: "media:jobs",
+        resource_id: nil,
+        event: "created",
+        payload: {
+          resource_id: nil,
+          args: [
+            {
+              arguments: {
+                resource: job_resource
+              }
+            }
+          ]
+        }
+      )
+    end
+
+    it "does not update entries job when job_resource is missing" do
+      job_id = "456"
+
+      expect(
+        service
+      ).not_to(
+        receive(:update_entries_job)
+      )
+
+      Verse.publish_resource_event(
+        resource_type: "media:jobs",
+        resource_id: job_id,
+        event: "created",
+        payload: {
+          resource_id: job_id,
+          args: [
+            {
+              arguments: {}
+            }
+          ]
+        }
+      )
+    end
+  end
+
+  describe "on_resource_event media:jobs errored" do
+    it "marks entries as errored when job fails" do
+      job_id = "789"
+
+      expect(
+        service
+      ).to(
+        receive(:mark_entries_as_errored).with(job_id)
+      )
+
+      Verse.publish_resource_event(
+        resource_type: "media:jobs",
+        resource_id: job_id,
+        event: "errored",
+        payload: {
+          resource_id: job_id
+        }
+      )
+    end
+  end
 end
