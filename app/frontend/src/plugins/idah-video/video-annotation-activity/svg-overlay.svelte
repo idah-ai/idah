@@ -75,12 +75,9 @@
   });
 
   function updatedSize(): Point {
-    //@ts-ignore
-    videoResizedAt; // (... update on change)
-    //@ts-ignore
-    zoomInfo; // (... update on change)
-
+    videoResizedAt; // eslint-disable-line @typescript-eslint/no-unused-expressions
     let target_dom_rect = target_container()?.getBoundingClientRect();
+    zoomInfo; // eslint-disable-line @typescript-eslint/no-unused-expressions
 
     return !target_dom_rect ? ORIGIN : [target_dom_rect.width, target_dom_rect.height];
   }
