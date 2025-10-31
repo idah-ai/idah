@@ -73,7 +73,7 @@ const formatValidators = [
     maximum: (_v: string, _format: FieldFormat) => true,
     step: (_v: string, _format: FieldFormat) => true,
     options: (v: string, format: FieldFormat) => format.options.map((o) => o.id).includes(v),
-    info: (_v) => true,
+    info: (_v: string) => true,
   },
   {
     type: "multi-select",
@@ -100,7 +100,7 @@ function conformToformat(value: any, propertyField: PropertyField): boolean {
     });
 }
 
-export function formatConformity(value: any, propertyField: PropertyField) {
+export function formatConformity(value: object, propertyField: PropertyField) {
   const validator = formatValidators.find((f) => f.type == propertyField.type);
 
   return [

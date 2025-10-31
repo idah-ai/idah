@@ -22,12 +22,12 @@ function createCommandsInterface() {
   const commands = new Map();
 
   return {
-    on: (name: string, builder: (props: any) => Command, manager = true) => {
+    on: (name: string, builder: (props?: object) => Command, manager = true) => {
       commands.set(name, { manager, builder });
       console.debug({ command_on: name, manager });
     },
-    async run(name: string, props: any) {
-      const { manager, builder }: { manager: boolean; builder: (props: any) => Command } = commands.get(name);
+    async run(name: string, props?: object) {
+      const { manager, builder }: { manager: boolean; builder: (props?: object) => Command } = commands.get(name);
 
       if (!builder) return console.error("builder not found command:", name);
 
