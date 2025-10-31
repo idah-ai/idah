@@ -2,7 +2,7 @@ import type { IActivityContext, IActivityView } from "@/plugin/interface/Activit
 import { mount, unmount } from "svelte";
 import Plugin from "./plugin.svelte";
 
-let mounted: any;
+let mounted: object;
 
 const idah_plugin: IActivityView = {
   name: "idah-video-player",
@@ -11,7 +11,7 @@ const idah_plugin: IActivityView = {
   version: "1.0",
   type: "video",
   init() {
-    console.debug("Initializing Plugin", { this: this, context });
+    console.debug("Initializing Plugin", { this: this });
   },
 
   render(parent: HTMLElement, context: IActivityContext) {
