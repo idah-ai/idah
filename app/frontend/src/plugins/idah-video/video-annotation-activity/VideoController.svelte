@@ -33,7 +33,7 @@
   interface Props {
     video: Video;
     isPlaying: boolean;
-    volume: {level: number, muted: boolean};
+    volume: { level: number; muted: boolean };
     currentFrame: number;
     totalFrames: number;
     scale: number;
@@ -42,7 +42,17 @@
     onScaleChange: (scale: number) => void;
   }
 
-  let { video = $bindable(), isPlaying, volume, scale, zoom, currentFrame, totalFrames, onZoomChange, onScaleChange }: Props = $props();
+  let {
+    video = $bindable(),
+    isPlaying,
+    volume,
+    scale,
+    zoom,
+    currentFrame,
+    totalFrames,
+    onZoomChange,
+    onScaleChange,
+  }: Props = $props();
 
   // Variables
   interface VideoSpeedMenuItem {

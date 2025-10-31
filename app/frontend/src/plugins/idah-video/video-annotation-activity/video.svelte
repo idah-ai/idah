@@ -8,14 +8,14 @@
 
   type Props = {
     element?: HTMLDivElement;
-    onFramesChange: (current: number, frames: number, isPlaying:boolean) => void;
+    onFramesChange: (current: number, frames: number, isPlaying: boolean) => void;
     onVolumeChange: (volume: number, muted: boolean) => void;
     onResize?: () => void;
   };
 
-  let { element = $bindable(), onFramesChange, onResize, onVolumeChange}: Props = $props();
+  let { element = $bindable(), onFramesChange, onResize, onVolumeChange }: Props = $props();
 
-  let player: Player|undefined = $state();
+  let player: Player | undefined = $state();
   let options = {
     controls: false,
     preload: "auto",
@@ -35,17 +35,16 @@
   let fps = $state(DEFAULT_FPS);
   let frames = $derived(Math.round(duration * fps));
   let volume = $state(0);
-  let muted = $state(false)
+  let muted = $state(false);
   let mediaTime = $state(0);
   let currentFrame = $derived(Math.round(mediaTime * fps));
-  let isPlaying = $state(false)
+  let isPlaying = $state(false);
   let raf: number | undefined = $state();
 
-
   $effect(() => onFramesChange?.(currentFrame, frames, isPlaying));
-  $effect(() => onVolumeChange?.(volume, muted) && console.log({volume_changed: {volume, muted}}))
+  $effect(() => onVolumeChange?.(volume, muted) && console.log({ volume_changed: { volume, muted } }));
 
-  $effect(() => console.debug({frame: currentFrame, mediaTime}))
+  $effect(() => console.debug({ frame: currentFrame, mediaTime }));
   export const getFrames = () => frames;
 
   export function togglePlay() {
@@ -98,7 +97,7 @@
     quality_check("onMount");
 
     player.on("durationchange", () => {
-        duration = player?.duration() || 0;
+      duration = player?.duration() || 0;
     });
 
     // player?.qualityLevels().on('change', () => quality_check('qualityLevels on change'))
@@ -109,12 +108,12 @@
     player.on("loadeddata", () => quality_check("loadeddata"));
     player.on("loadedmetadata", () => quality_check("loadedmetadata"));
     player.on("resize", () => {
-        onResize?.();
-        // quick fix for now // I'll review it all post plugin
-        quality_check("resize");
+      onResize?.();
+      // quick fix for now // I'll review it all post plugin
+      quality_check("resize");
     });
     player.on("timeupdate", () => {
-        mediaTime = player?.currentTime() || 0;
+      mediaTime = player?.currentTime() || 0;
     });
     //    player.on('stalled', () => console.log('stalled'));
     //    player.on('ready', () => console.log('ready'));
@@ -123,28 +122,28 @@
     //    player.on('statechanged', () => console.log('statechanged'));
 
     player.on("play", () => {
-        isPlaying = true;
-        raf = requestAnimationFrame(trackFrame);
+      isPlaying = true;
+      raf = requestAnimationFrame(trackFrame);
     });
 
     player.on("pause", () => {
-        isPlaying = false;
-        if (raf) {
-          cancelAnimationFrame(raf);
-          raf = undefined;
-        }
-        mediaTime = player.currentTime()
+      isPlaying = false;
+      if (raf) {
+        cancelAnimationFrame(raf);
+        raf = undefined;
+      }
+      mediaTime = player.currentTime();
     });
 
     player.on("volumechange", () => {
       volume = player.volume() * 100;
       muted = player.muted();
-    })
+    });
 
     player.on("playing", () => {});
 
     player.on("seeked", () => {
-        mediaTime = player?.currentTime() || 0;
+      mediaTime = player?.currentTime() || 0;
     });
 
     // player.on('seeking', (e) => {
@@ -161,7 +160,7 @@
   onMount(setUpPlayer);
 
   function trackFrame() {
-    mediaTime = (player?.currentTime() || 0);
+    mediaTime = player?.currentTime() || 0;
     raf = requestAnimationFrame(trackFrame);
   }
 
@@ -170,7 +169,7 @@
 
     duration = player?.duration() || 0;
     fps = qualityLevel?.frameRate || DEFAULT_FPS; // ....
-    console.debug({quality_check_from: from, duration, fps})
+    console.debug({ quality_check_from: from, duration, fps });
   }
 
   onDestroy(() => {
@@ -178,4 +177,4 @@
   });
 </script>
 
-<video-js id='idah-video' bind:this={element} onloadeddata={(e) => console.log(e)}></video-js>
+<video-js id="idah-video" bind:this={element} onloadeddata={(e) => console.log(e)}></video-js>
