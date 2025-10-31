@@ -37,7 +37,7 @@
   const propertyComponents: {
     type: string;
     component: Component<any, {}, "">;
-    extraProps?: Object;
+    extraProps?: object;
   }[] = [
     { type: "text", component: TextProperty },
     { type: "integer", component: IntegerProperty },
