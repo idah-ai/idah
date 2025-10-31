@@ -21,6 +21,15 @@ module Project
       projects.find!(id, included: included)
     end
 
+    # TODO: finish this
+    def get_member_project
+      # get account id from context
+      # get membership of account id
+      # return uniq project ids ?
+      # then for media service, get resource from entries ?
+      pass
+    end
+
     def create(record)
       account_id = auth_context.metadata[:id]
 
