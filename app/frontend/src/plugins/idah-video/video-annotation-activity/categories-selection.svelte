@@ -331,7 +331,6 @@
   {#if selected_category && toolMode}
     <CategoryProperties
       selectedCategory={selected_category}
-      selectedId={selected_id || ""}
       {annotationValue}
       onSelectCategory={onSelect}
       onEditValue={(value) => value && onEditValue(value, type)}

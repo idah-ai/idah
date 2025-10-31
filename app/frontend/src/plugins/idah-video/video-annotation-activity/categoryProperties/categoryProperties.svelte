@@ -2,7 +2,7 @@
   import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
   import SelectGroup from "@/components/ui/select/select-group.svelte";
   import Text from "@/components/ui/text/Text.svelte";
-  import { getContext } from "svelte";
+  import { getContext, type Component } from "svelte";
 
   import { visibleFullfilled } from ".";
   import { idb_updated_at } from "../idb_store.svelte";
@@ -17,14 +17,12 @@
 
   type Props = {
     selectedCategory: string;
-    selectedId: string;
     annotationValue: AnnotationValue;
     onSelectCategory: (category?: CategoryDefinition) => void;
     onEditValue: (value?: AnnotationValue) => void;
   };
-  type propertyComponent = TextProperty | IntegerProperty | BooleanProperty;
 
-  let { selectedCategory, selectedId, annotationValue, onSelectCategory, onEditValue }: Props = $props();
+  let { selectedCategory, annotationValue, onSelectCategory, onEditValue }: Props = $props();
 
   // Contexts
   const context: IActivityContext = getContext("context");
@@ -38,7 +36,7 @@
 
   const propertyComponents: {
     type: string;
-    component: propertyComponent;
+    component: Component<any, {}, "">;
     extraProps?: {};
   }[] = [
     { type: "text", component: TextProperty },
@@ -81,7 +79,7 @@
       <SelectContent>
         <SelectGroup>
           {#each context.config.categories as c (c.id)}
-            <SelectItem value={c} label={c.label}>
+            <SelectItem value={c.id} label={c.label}>
               {c.label}
             </SelectItem>
           {/each}
