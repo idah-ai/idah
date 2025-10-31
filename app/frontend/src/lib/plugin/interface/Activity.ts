@@ -113,8 +113,8 @@ export interface IConfig {
   taggings: Array<TagField>;
 }
 export interface ICommands {
-  on(name: string, commandBuilder: (props: any) => Command): void;
-  run(name: string, props?: any): void;
+  on(name: string, commandBuilder: (props?: object) => Command): void;
+  run(name: string, props?: object): void;
   undo(times?: number): void;
   redo(times?: number): void;
 }
