@@ -123,28 +123,29 @@ export class JsonRpcDatasource {
             onReject?: (r: JsonRpcError) => void;
           }> = [];
 
-          const body_response: JsonRpcResponse | JsonRpcResponse[] = await response.json();
-          let body: JsonRpcResponse[];
-          if (body_response.constructor == Array) body = body_response;
-          else body = Array(body_response as JsonRpcResponse);
+          response.json().then((body_response: JsonRpcResponse | JsonRpcResponse[]) => {
+            let body: JsonRpcResponse[];
+            if (body_response.constructor == Array) body = body_response;
+            else body = Array(body_response as JsonRpcResponse);
 
-          batch.forEach((methodPromise) => {
-            const JsonRpcMethod_res = body.find((c) => {
-              return c.id == methodPromise.id;
+            batch.forEach((methodPromise) => {
+              const JsonRpcMethod_res = body.find((c) => {
+                return c.id == methodPromise.id;
+              });
+
+              if (!JsonRpcMethod_res) return console.error({ JsonRpcMethod_res }); //.?
+
+              if (JsonRpcMethod_res.error) {
+                failed.push(methodPromise);
+                methodPromise.onReject?.(JsonRpcMethod_res.error);
+              } else {
+                methodPromise.onResolve?.(JsonRpcMethod_res.result);
+              }
             });
 
-            if (!JsonRpcMethod_res) return console.error({ JsonRpcMethod_res }); //.?
-
-            if (JsonRpcMethod_res.error) {
-              failed.push(methodPromise);
-              methodPromise.onReject?.(JsonRpcMethod_res.error);
-            } else {
-              methodPromise.onResolve?.(JsonRpcMethod_res.result);
-            }
-          });
-
-          if (failed.length) reject({ batch: failed, retry: false });
-          else resolve({ batch: [], retry: false });
+            if (failed.length) reject({ batch: failed, retry: false });
+            else resolve({ batch: [], retry: false });
+          }, reject);
         }, reject);
       } catch (rpc_error) {
         console.error({ rpc_error });
