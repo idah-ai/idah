@@ -625,6 +625,7 @@
   let overlay: SvgOverlay;
 
   let annotations_promise: Promise<VideoAnnotation[]> = $derived.by(() => {
+    //@ts-ignore
     $idb_updated_at;
     if (!annotationsIDB) return new Promise((_, ko) => ko("no database"));
 

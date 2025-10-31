@@ -75,9 +75,12 @@
   });
 
   function updatedSize(): Point {
+    //@ts-ignore
     videoResizedAt; // (... update on change)
-    let target_dom_rect = target_container()?.getBoundingClientRect();
+    //@ts-ignore
     zoomInfo; // (... update on change)
+
+    let target_dom_rect = target_container()?.getBoundingClientRect();
 
     return !target_dom_rect ? ORIGIN : [target_dom_rect.width, target_dom_rect.height];
   }

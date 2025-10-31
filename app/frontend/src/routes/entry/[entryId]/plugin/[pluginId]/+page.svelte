@@ -17,7 +17,7 @@
 
   // Functions
   onMount(() => {
-    context_promise = new Promise<IActivityContext>(async (ok, ko) => {
+    context_promise = new Promise<IActivityContext>((ok, ko) => {
       entriesBackendDataSource
         .get(entryId, {
           included: ["dataset.project"],
