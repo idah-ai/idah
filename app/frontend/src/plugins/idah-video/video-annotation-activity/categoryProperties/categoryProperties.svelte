@@ -103,7 +103,7 @@
                 property,
                 ...pc.extraProps,
                 value: annotationValue.attributes?.[property.id],
-                onValueChange: (v: any) => onValueChange(property, v),
+                onValueChange: (v: string | number | boolean | string[] | undefined) => onValueChange(property, v),
               }}
             />
           </div>
