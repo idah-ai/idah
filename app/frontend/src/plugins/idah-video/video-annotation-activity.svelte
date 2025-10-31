@@ -625,8 +625,7 @@
   let overlay: SvgOverlay;
 
   let annotations_promise: Promise<VideoAnnotation[]> = $derived.by(() => {
-    //@ts-ignore
-    $idb_updated_at;
+    $idb_updated_at; // eslint-disable-line @typescript-eslint/no-unused-expressions
     if (!annotationsIDB) return new Promise((_, ko) => ko("no database"));
 
     let p = annotationsIDB.getAllStore("annotations");
