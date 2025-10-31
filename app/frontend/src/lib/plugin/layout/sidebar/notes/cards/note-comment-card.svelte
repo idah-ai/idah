@@ -1,7 +1,7 @@
 <script lang="ts">
   import { toast } from "svelte-sonner";
 
-  import NoteCard from "@/plugin/layout/sidebar/notes/card/note-card.svelte";
+  import NoteCard from "@/plugin/layout/sidebar/notes/cards/note-card.svelte";
 
   import { noteCommentsBackendDataSource, type NoteCommentRecord } from "@/data/model/dataset/notes/comments/record";
   import { refetches } from "@/utils/refetch";

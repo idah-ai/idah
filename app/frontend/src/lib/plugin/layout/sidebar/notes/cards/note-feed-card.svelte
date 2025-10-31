@@ -3,7 +3,7 @@
 
   import Button from "@/components/ui/button/button.svelte";
   import ResolveNoteFeedButton from "@/plugin/layout/sidebar/notes/buttons/resolve-note-feed-button.svelte";
-  import NoteCard from "@/plugin/layout/sidebar/notes/card/note-card.svelte";
+  import NoteCard from "@/plugin/layout/sidebar/notes/cards/note-card.svelte";
 
   import { NoteCommentRecord, noteCommentsBackendDataSource } from "@/data/model/dataset/notes/comments/record";
   import { NoteFeedRecord } from "@/data/model/dataset/notes/feeds/record";
