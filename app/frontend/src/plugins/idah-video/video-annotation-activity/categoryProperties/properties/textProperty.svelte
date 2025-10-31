@@ -5,8 +5,11 @@
 
   import type { PropertyField } from "@/plugin/interface/Activity";
 
-  let { property, value, onValueChange }: { property: PropertyField; value: any; onValueChange: (v: any) => void } =
-    $props();
+  let {
+    property,
+    value,
+    onValueChange,
+  }: { property: PropertyField; value: string; onValueChange: (v: string) => void } = $props();
 
   const invalid = $derived(!propertyFullfilled(value, property));
 

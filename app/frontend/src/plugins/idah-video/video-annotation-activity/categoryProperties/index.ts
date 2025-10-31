@@ -1,7 +1,7 @@
 import type { AnnotationValue } from "@/context/AnnotationContext";
-import type { FieldFormat, PropertyField } from "@/plugin/interface/Activity";
+import type { FieldFormat, LabelPropertyOption, PropertyField } from "@/plugin/interface/Activity";
 
-export function visibleFullfilled(value: AnnotationValue, field: PropertyField) {
+export function visibleFullfilled(value: AnnotationValue, field?: PropertyField) {
   // check visibility condition
   console.debug({ value, field });
   return true;
@@ -35,7 +35,7 @@ function matchSelector(selector: string[], selection: string) {
   });
 }
 
-export function propertyFullfilled(value: any, property: PropertyField) {
+export function propertyFullfilled(value: string | number | string[] | boolean | undefined, property: PropertyField) {
   return property.required
     ? value != undefined && conformToformat(value, property)
     : value == undefined || conformToformat(value, property);
@@ -88,19 +88,25 @@ const formatValidators = [
   },
 ];
 
-function conformToformat(value: any, propertyField: PropertyField): boolean {
+function conformToformat(
+  value: string | number | string[] | boolean | undefined,
+  propertyField: PropertyField,
+): boolean {
   const validator = formatValidators.find((f) => f.type == propertyField.type);
 
   if (!validator) return false;
 
   return Object.entries(propertyField.format)
     .filter(([k, _]) => k != "type")
-    .every(([k, _v]: [k: string, _v: any]) => {
+    .every(([k, _v]: [k: string, _v: string | number | Array<LabelPropertyOption>]) => {
       return validator[k](value, propertyField.format);
     });
 }
 
-export function formatConformity(value: object, propertyField: PropertyField) {
+export function formatConformity(
+  value: string | number | string[] | boolean | undefined,
+  propertyField: PropertyField,
+) {
   const validator = formatValidators.find((f) => f.type == propertyField.type);
 
   return [
