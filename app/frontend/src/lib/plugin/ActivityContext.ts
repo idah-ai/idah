@@ -4,6 +4,7 @@ import { goto } from "$app/navigation";
 import type { EntryRecord } from "@/data/model/dataset/entries/record";
 import type { Command } from "@/command/Command";
 import CommandManager from "@/command/CommandManager";
+import { resolve } from "$app/paths";
 
 const noteDriver: INoteDriver = {
   create(position, content) {
@@ -90,8 +91,12 @@ export function activityContextForEntry(entry: EntryRecord): IActivityContext {
     commands: createCommandsInterface(),
     tools: createToolsInterface(),
     back() {
-      const path = `/projects/${entry.dataset.project.id}/datasets/${entry.dataset.id}/tasks`;
-      goto(path);
+      goto(
+        resolve("/(app)/projects/[projectId]/datasets/[datasetId]/tasks", {
+          projectId: entry.dataset.project.id,
+          datasetId: entry.dataset.id,
+        }),
+      );
     },
     submit() {
       return new Promise<void>((resolve, reject) => {
