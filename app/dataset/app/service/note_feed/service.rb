@@ -22,6 +22,8 @@ module NoteFeed
     end
 
     def update(record)
+      record.attributes[:edited_at] = Time.now
+
       note_feeds.update!(record.id, record.attributes)
       note_feeds.find!(record.id)
     end
@@ -38,15 +40,22 @@ module NoteFeed
     def create_from_params(data)
       attr = data.dup
       attr[:id] = UUIDv7.generate
-      attr[:created_by_id] = 1
+
+      # put created_by_email to nil for now, will be replaced with auth_context[:email] later
+      attr[:created_by_email] ||= nil
+
       attr[:status] = "pending"
 
       entry_id = attr[:entry_id]
-      entry = entries.find!(entry_id)
+      entry = entries.find!(entry_id, included: ["dataset"])
 
-      unless entry.wf_step == "review"
+      # Check if the current workflow step allows note feeds
+      dataset = entry.dataset
+      noteable_steps = dataset.workflow_configuration[:noteable_steps] || []
+
+      unless noteable_steps.include?(entry.wf_step) && entry.status == "in_progress"
         raise Verse::Error::ValidationFailed,
-              "Cannot add note feed to entry not in review step"
+              "Cannot add note feed to entry in current step (#{entry.wf_step})"
       end
 
       # TODO: check if the user has permission to add note feed to the entry

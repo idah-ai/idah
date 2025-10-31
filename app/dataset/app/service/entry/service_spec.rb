@@ -12,7 +12,7 @@ RSpec.describe Entry::Service, database: true do
   let(:dataset_repo) { Dataset::Repository.new(auth_context) }
 
   let!(:project_id) do
-    project_repo.create(name: "Test Project", description: "A test project", created_by_id: 1)
+    project_repo.create(name: "Test Project", description: "A test project", created_by_email: "user@example.com")
   end
 
   let!(:dataset_id) do
