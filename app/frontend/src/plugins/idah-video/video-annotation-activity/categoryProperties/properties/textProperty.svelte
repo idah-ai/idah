@@ -21,7 +21,7 @@
   <Input type="text" aria-invalid={invalid} {value} onchange={(e) => onValueChange(e.target.value)} />
   {#if invalid}
     <ul>
-      {#each format as [k, v]}
+      {#each format as [k, v] (k)}
         <li style:color="red">{k}:<span>{v}</span></li>
       {/each}
     </ul>

@@ -1,7 +1,7 @@
 import { type VideoAnnotation, type Point, X, Y, type VideoFrameSelection } from "./VideoAnnotationContext";
 
 //test
-let s = {
+const s = {
   annotations: [
     { index: "start", path: "shape.start", opts: { unique: false } },
     { index: "end", path: "shape.end", opts: { unique: false } },

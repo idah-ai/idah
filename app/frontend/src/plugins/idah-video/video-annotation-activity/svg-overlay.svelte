@@ -13,7 +13,8 @@
   } from "./VideoAnnotationContext";
   import Zoomable from "./zoomable.svelte";
   import BoundingBox, { type ToolSelection } from "./bounding-box.svelte";
-  import { boundingBoxes, idb_updated_at } from "./idb_store.svelte";
+  import { boundingBoxes } from "./idb_store.svelte";
+  import type { IActivityContext } from "@/plugin/interface/Activity";
 
   type Props = {
     frame: number;
@@ -52,7 +53,7 @@
     offset: [0, 0],
   });
 
-  let context = getContext("context");
+  let context = getContext<IActivityContext>("context");
 
   let height = $state(0);
   let width = $state(0);

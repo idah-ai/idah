@@ -60,8 +60,6 @@
     },
   ];
 
-  const selectedPromise = () => db?.get("annotations", selectedId);
-
   function onValueChange(property: PropertyField, v: any) {
     onEditValue({
       ...annotationValue,

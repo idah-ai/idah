@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { goto } from "$app/navigation";
-  import { pluginsBackendDataSource } from "@/data/model/setting/plugin/record";
   import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
   import { page } from "$app/state";
 
@@ -12,7 +11,7 @@
   onMount(async () => {
     plugins_promise = new Promise<string[]>((resolve, reject) => {
       // pluginsBackendDataSource.modalities().then(async (modalities) => {
-      entriesBackendDataSource.get(entryId, { included: ["dataset"] }).then((entry) => {
+      entriesBackendDataSource.get(entryId, { included: ["dataset"] }).then((_entry) => {
         // const plugins = modalities[entry.data.dataset.modality];
 
         // if (!plugins) reject(`no available plugin for modality ${entry.data.dataset.modality}`);
@@ -36,7 +35,7 @@
     {:then plugins}
       <p>plugins</p>
       <ul>
-        {#each plugins as plugin}
+        {#each plugins as plugin, i (i)}
           <li>
             <a href={plugin}>{plugin}</a>
           </li>

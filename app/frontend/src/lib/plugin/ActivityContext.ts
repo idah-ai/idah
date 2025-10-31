@@ -7,13 +7,13 @@ import CommandManager from "@/command/CommandManager";
 
 const noteDriver: INoteDriver = {
   create(position, content) {
-    return new Promise<INote>((resolve, reject) => {
-      reject("todo");
+    return new Promise<INote>((_resolve, reject) => {
+      reject({ position, content });
     });
   },
   list(filter) {
-    return new Promise<INote[]>((resolve, reject) => {
-      reject("todo");
+    return new Promise<INote[]>((_resolve, reject) => {
+      reject({ filter });
     });
   },
 };
