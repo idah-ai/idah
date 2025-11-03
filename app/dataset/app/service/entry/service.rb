@@ -52,12 +52,8 @@ module Entry
       end
     end
 
-    def mark_entries_as_ready(job_id)
-      entries.mark_entries_as_ready(job_id)
-    end
-
-    def mark_entries_as_errored(job_id)
-      entries.mark_entries_as_errored(job_id)
+    def mark_entries_status_as(job_id, status)
+      entries.mark_entries_status_as(job_id, status)
     end
 
     def update(record)
