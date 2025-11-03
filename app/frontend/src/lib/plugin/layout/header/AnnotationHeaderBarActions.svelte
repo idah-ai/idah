@@ -15,6 +15,7 @@
   import Button from "@/components/ui/button/button.svelte";
 
   import NoteSidebar from "@/plugin/layout/sidebar/notes/note-sidebar.svelte";
+  import NoteOverlay from "@/plugin/layout/sidebar/notes/overlays/note-overlay.svelte";
 
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
   import type { IActivityContext } from "@/plugin/interface/Activity";
@@ -23,8 +24,9 @@
   // Props
   interface Props {
     context: IActivityContext;
+    pluginContainerElement: HTMLElement | null;
   }
-  let { context }: Props = $props();
+  let { context, pluginContainerElement }: Props = $props();
 
   // Variables
   let loading = $state(false);
@@ -45,7 +47,11 @@
       icon: MessageCircleIcon,
       isActive: openNoteSidebar,
       handleClick: () => {
-        openNoteSidebar = !openNoteSidebar;
+        if (!openNoteSidebar) {
+          openNoteSidebar = true;
+        } else {
+          closeNoteSidebar();
+        }
       },
     },
     {
@@ -73,6 +79,13 @@
   };
 
   // Functions
+  function closeNoteSidebar() {
+    openNoteSidebar = false;
+
+    // Reset selected note feed when closing sidebar
+    context.notes.gotoFeed(null);
+  }
+
   async function submitAnnotation() {
     loading = true;
     await context.submit();
@@ -120,4 +133,6 @@
   {/if}
 </div>
 
-<NoteSidebar {context} open={openNoteSidebar} onSidebarClose={() => (openNoteSidebar = false)} />
+<NoteSidebar {context} open={openNoteSidebar} onSidebarClose={closeNoteSidebar} />
+
+<NoteOverlay {context} {pluginContainerElement} />

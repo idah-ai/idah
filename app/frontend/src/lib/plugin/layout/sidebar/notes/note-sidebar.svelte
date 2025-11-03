@@ -73,6 +73,7 @@
       }
 
       default: {
+        context.notes.gotoFeed(noteFeed.id);
         break;
       }
     }
@@ -213,7 +214,7 @@
       </div>
     </section>
 
-    <div class="flex flex-1 flex-col overflow-y-auto p-2">
+    <div class="flex flex-1 flex-col overflow-y-auto">
       {#key $refetches.noteFeeds.list}
         <!-- CONTENT::LIST VIEW -->
         {#if isListView}

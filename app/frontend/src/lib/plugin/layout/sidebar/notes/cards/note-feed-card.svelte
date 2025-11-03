@@ -19,6 +19,7 @@
     highlighted?: boolean;
     showReplyCount?: boolean;
     onSelectNoteFeed?: () => void;
+    onNoteFeedUpdated?: (updatedNoteFeedRecord: NoteFeedRecord) => Promise<void> | void;
   }
   let {
     noteFeedRecord,
@@ -28,6 +29,7 @@
     highlighted,
     showReplyCount = false,
     onSelectNoteFeed,
+    onNoteFeedUpdated,
   }: Props = $props();
 
   // Variables
@@ -51,7 +53,8 @@
   }
 
   async function updateNoteFeed(editedContentMd: string) {
-    await updateNoteFeedContentMd(id, editedContentMd);
+    const updatedNoteFeedRes = await updateNoteFeedContentMd(id, editedContentMd);
+    onNoteFeedUpdated?.(updatedNoteFeedRes);
   }
 </script>
 

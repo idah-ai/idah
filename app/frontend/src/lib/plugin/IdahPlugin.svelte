@@ -12,7 +12,9 @@
   let { context }: Props = $props();
 
   // Variables
-  let container: HTMLElement;
+  let PluginContainerElement = $state<HTMLElement | null>(null);
+  let HeaderBarElement = $state<HTMLElement | null>(null);
+  let headerBarHeight = $derived(HeaderBarElement?.clientHeight ?? 50);
   let plugin: IActivityView | undefined = $state();
 
   let p: Promise<IActivityView> = new Promise<IActivityView>((ok, ko) => {
@@ -26,8 +28,8 @@
   onMount(() => {
     p.then((_plugin) => {
       plugin = _plugin;
-      console.debug({ plugin: $state.snapshot(plugin), container, context });
-      plugin.render?.(container, context);
+      // console.debug({ plugin: $state.snapshot(plugin), PluginContainerElement, context });
+      plugin.render?.(PluginContainerElement, context);
     });
   });
 
@@ -36,11 +38,11 @@
   });
 </script>
 
-<div>
-  <AnnotationHeaderBar {context} />
+<div class="relative">
+  <AnnotationHeaderBar bind:ref={HeaderBarElement} pluginContainerElement={PluginContainerElement} {context} />
+
   <!-- Plugin Container -->
-  <div class="h-[calc(100vh-58px)]" bind:this={container}>
-    <!-- AnnotationHeaderBar 58 px \o/ ? -->
+  <div style:height={`calc(100vh - ${headerBarHeight}px)`} bind:this={PluginContainerElement}>
     {#await p}
       Loading Plugins
     {:then}

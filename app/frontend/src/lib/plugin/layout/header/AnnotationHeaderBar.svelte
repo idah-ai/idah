@@ -1,7 +1,10 @@
 <script lang="ts">
+  import type { HTMLAttributes } from "svelte/elements";
+
   import Separator from "@/components/ui/separator/separator.svelte";
 
   import type { IActivityContext } from "@/plugin/interface/Activity";
+  import type { WithElementRef } from "@/utils";
 
   import AnnotationHeaderBarActions from "./AnnotationHeaderBarActions.svelte";
   import AnnotationHeaderBarBackButton from "./AnnotationHeaderBarBackButton.svelte";
@@ -11,11 +14,16 @@
   // Props
   interface Props {
     context: IActivityContext;
+    pluginContainerElement: HTMLElement | null;
   }
-  let { context }: Props = $props();
+  let {
+    ref = $bindable(null),
+    context,
+    pluginContainerElement,
+  }: WithElementRef<HTMLAttributes<HTMLElement>> & Props = $props();
 </script>
 
-<nav id="annotation-header-bar" class="grid grid-cols-3 p-2">
+<nav bind:this={ref} id="annotation-header-bar" class="grid grid-cols-3 p-2">
   <!-- LEFT::NAVIGATIONS -->
   <div id="navigations" class="flex h-full items-center gap-2">
     <!-- BACK BUTTON -->
@@ -31,5 +39,5 @@
   <AnnotationHeaderBarTools {context} />
 
   <!-- RIGHT::ACTIONS -->
-  <AnnotationHeaderBarActions {context} />
+  <AnnotationHeaderBarActions {context} {pluginContainerElement} />
 </nav>

@@ -1,5 +1,4 @@
 <script lang="ts">
-  // import { page } from "$app/state";
   import { onMount, setContext } from "svelte";
   import { toast } from "svelte-sonner";
   import { uuidv7 } from "uuidv7";
@@ -82,10 +81,6 @@
   let volume = $state({ level: 0, mute: false });
 
   let commandOpen = $state(false);
-  // let [_feed, noteFeedId, _comments, noteCommentId] = $state(page.url.hash.slice(1).split("/"));
-  // if (noteFeedId) {
-  //   context.gotoFeed(noteFeedId, noteCommentId);
-  // }
 
   // registerVisualModeShortcuts({
   //   player: () => player,

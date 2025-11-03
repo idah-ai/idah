@@ -1,15 +1,14 @@
 import { goto } from "$app/navigation";
+import { resolve } from "$app/paths";
+import type { Pathname } from "$app/types";
 
 import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
-import { noteFeedsBackendDataSource } from "@/data/model/dataset/notes/feeds/record";
 
 import type { Command } from "@/command/Command";
 import CommandManager from "@/command/CommandManager";
 
-import { noteSidebarStore } from "../../plugins/idah-video/layout/sidebar/notes/note-sidebar-stores";
 import { createAnnotationDriver } from "./AnnotationDriver";
-import { createNoteDriver, parseNoteFeedRecordToINoteFeed } from "./NoteDriver";
-import type { HeaderBarModeTool, IActivityContext, ITools } from "./interface/Activity";
+import type { HeaderBarModeTool, IActivityContext, INoteFeed, INotes, ITools } from "./interface/Activity";
 
 function createCommandsInterface() {
   const commands = new Map();
@@ -63,6 +62,25 @@ function createToolsInterface(): ITools {
   };
 }
 
+function createNotesInterface(): INotes {
+  let _onNoteSelected: ((noteFeedId: string | null, noteCommentId?: string) => void) | undefined;
+  let _onNewNoteFeedOpenChange:
+    | ((data: Pick<INoteFeed, "anchor_type" | "position" | "annotation_id">) => void)
+    | undefined;
+
+  return {
+    showNewNoteFeedPopup: (data: Pick<INoteFeed, "anchor_type" | "position" | "annotation_id">) => {
+      _onNewNoteFeedOpenChange?.(data);
+    },
+    onNewNoteFeedOpenChange: (cb) => (_onNewNoteFeedOpenChange = cb),
+
+    gotoFeed: (noteFeedId: string | null, noteCommentId?: string) => {
+      _onNoteSelected?.(noteFeedId, noteCommentId);
+    },
+    onNoteSelected: (cb) => (_onNoteSelected = cb),
+  };
+}
+
 export function activityContextForEntry(entry: EntryRecord): IActivityContext {
   return {
     id: entry.id,
@@ -79,57 +97,12 @@ export function activityContextForEntry(entry: EntryRecord): IActivityContext {
     },
     userRole: "",
     annotations: createAnnotationDriver(entry.id),
-    notes: createNoteDriver(entry.id),
-    async gotoFeed(noteFeedId: string, noteCommentId?: string): Promise<void> {
-      const noteFeedRes = await noteFeedsBackendDataSource.get(noteFeedId);
-      const noteFeed = noteFeedRes.data;
-      const generalNoteType = noteFeed.anchor_type === "entry" && Object.keys(noteFeed.position || {}).length === 0;
-
-      if (noteCommentId) {
-        // TODO: Scroll to the specific note comment in the note feed detail view
-        noteSidebarStore.update((store) => ({
-          ...store,
-          selectedNoteCommentId: noteCommentId,
-        }));
-      }
-
-      /**
-       * Open the note sidebar
-       */
-      setTimeout(() => {
-        noteSidebarStore.update((store) => ({
-          ...store,
-          open: true,
-        }));
-      }, 700);
-
-      /**
-       * Show the note feed popup / sidebar detail after a delay
-       */
-      setTimeout(() => {
-        noteSidebarStore.update((store) => {
-          if (generalNoteType) {
-            return {
-              ...store,
-              selectedNoteFeed: parseNoteFeedRecordToINoteFeed(noteFeed),
-            };
-          } else {
-            return {
-              ...store,
-              noteFeedPopup: {
-                show: true,
-                noteFeed: parseNoteFeedRecordToINoteFeed(noteFeed),
-              },
-            };
-          }
-        });
-      }, 1000);
-    },
+    notes: createNotesInterface(),
     commands: createCommandsInterface(),
     tools: createToolsInterface(),
     back() {
-      const path = `/projects/${entry.dataset.project.id}/datasets/${entry.dataset.id}/tasks`;
-      goto(path);
+      const path: Pathname = `/projects/${entry.dataset.project.id}/datasets/${entry.dataset.id}/tasks`;
+      goto(resolve(path));
     },
     submit(opts?: { approved: boolean }) {
       return new Promise<void>((resolve, reject) => {
