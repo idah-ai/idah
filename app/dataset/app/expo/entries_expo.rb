@@ -77,6 +77,18 @@ class EntriesExpo < BaseExpo
     service.error(entry_id, **opts)
   end
 
+  expose on_http(:get, "/accessible_resources/:project_id", auth: nil) do
+    desc ""
+    input do
+      field :project_id, String
+    end
+  end
+  def accessible_resources
+    project_id = params[:project_id]
+
+    service.accessible_resources(project_id)
+  end
+
   expose on_resource_event(Resource::Media::Jobs, "completed")
   def on_job_updated
     job_id = message.content[:resource_id]

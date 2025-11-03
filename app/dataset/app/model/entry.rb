@@ -33,6 +33,18 @@ module Entry
     self.table = "entries"
     self.resource = Resource::Dataset::Entries
 
+    custom_filter :accessible_resources do |collection, value|
+      fragment = <<-SQL
+        EXISTS (
+          SELECT 1 FROM datasets
+          WHERE datasets.id = entries.dataset_id
+          AND datasets.project_id = ?
+        )
+      SQL
+
+      collection.select(:resource).where(Sequel.lit(fragment, value))
+    end
+
     # scope definition(s)
     def scoped(action)
       auth_context.can!(action, Resource::Dataset::Entries) do |scope|

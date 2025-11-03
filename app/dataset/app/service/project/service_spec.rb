@@ -36,8 +36,6 @@ RSpec.describe Project::Service, database: true do
     subject { described_class.new(current_auth_context) }
 
     describe "#create", as: :admin do
-      # subject { described_class.new(current_auth_context) }
-
       it "creates a new project" do
         record = deserialize(create_data)
         project = subject.create(record)
@@ -47,8 +45,6 @@ RSpec.describe Project::Service, database: true do
     end
 
     describe "#show" do
-      # subject { described_class.new(current_auth_context) }
-
       it "shows a project" do
         project_id = repo.create(name: "Test Project", description: "A test project", created_by_id: 1)
         found_project = subject.show(project_id)
@@ -57,8 +53,6 @@ RSpec.describe Project::Service, database: true do
     end
 
     describe "#update" do
-      # subject { described_class.new(current_auth_context) }
-
       it "updates a project" do
         project_id = repo.create(name: "Test Project", description: "A test project", created_by_id: 1)
 
@@ -74,8 +68,6 @@ RSpec.describe Project::Service, database: true do
     end
 
     describe "#delete" do
-      # subject { described_class.new(current_auth_context) }
-
       it "deletes a project" do
         project_id = repo.create(name: "Test Project", description: "A test project", created_by_id: 1)
         subject.delete(project_id)

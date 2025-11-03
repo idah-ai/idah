@@ -26,13 +26,11 @@ module Medias
     end
 
     def create(record)
-      # TODO: check permission from project member
-      #
-      # 1. get account id from auth_context
-      # 2. get project ids from project members of account id ?
-      # 3. check
-      #
-      # membership = Api[:idah].dataset.project_members.index(: media.)
+      auth_context.reject! unless authorize_resources(
+        # TODO: consider if we get project_id from auth_context or somewhere else ?
+        project_id: auth_context.metadata[:project_id],
+        allowed_access: ["org_owner", "owner"]
+      )
 
       medias.transaction do
         record_id = medias.create(record.attributes)
@@ -73,6 +71,12 @@ module Medias
         )
         medias.find!(id)
       end
+    end
+
+    private
+
+    def authorize_action(project_id:, allowed_access:)
+      Api[:idah].dataset.project_members.authorize_action(project_id:, allowed_access:)
     end
   end
 end
