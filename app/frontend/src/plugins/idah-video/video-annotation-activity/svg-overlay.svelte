@@ -328,10 +328,6 @@
     position: relative;
   }
 
-  .cursor-note {
-    cursor: url("/app/frontend/src/plugins/idah-video/layout/sidebar/notes/svgs/message-circle.svg"), auto;
-  }
-
   .svg-overlay > div {
     width: 100%;
     height: 100%;
