@@ -21,4 +21,15 @@ RSpec.describe Medias::Service, as: :system, database: true do
   ensure
     file&.close
   end
+
+  describe "#authorize_action" do
+    it "return true if the resources are authorized" do
+      allow(Api[:idah].dataset.entries).to receive(:accessible_resources).and_return(true)
+      pass
+    end
+
+    it "return false if any resources given is not authorized" do
+      pass
+    end
+  end
 end

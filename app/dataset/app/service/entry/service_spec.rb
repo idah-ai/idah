@@ -257,6 +257,46 @@ RSpec.describe Entry::Service, database: true do
       result = subject.index({ dataset_id: dataset_id })
       expect(result.all? { |e| e.dataset_id == dataset_id }).to be true
     end
+
+    it "returns entries' accessible resources" do
+      another_project_id = project_repo.create(
+        name: "Another Test Project",
+        description: "Another test project",
+        created_by_id: 1
+      )
+
+      another_dataset_id = dataset_repo.create(
+        modality: "video",
+        labels: ["cat", "dog"],
+        labeling_configuration: { "width" => 100, "height" => 100 },
+        workflow_configuration: {},
+        project_id: another_project_id
+      )
+
+      another_entry = subject.create(
+        deserialize(
+          {
+            data: {
+              type: "dataset:entries",
+              attributes: attributes.merge(priority: 2, resource: "http://example.com/video3.mp4"),
+              relationships: {
+                dataset: {
+                  data: {
+                    type: "dataset:datasets",
+                    id: another_dataset_id
+                  }
+                }
+              }
+            }
+          }
+        )
+      )
+
+      result = subject.index({ accessible_resources: project_id })
+
+      expect(result.count).to eq(2)
+      expect(result.map(&:resource)).not_to include(another_entry.resource)
+    end
   end
 
   describe "#show" do

@@ -34,5 +34,10 @@ module Medias
   class Repository < Verse::Sequel::Repository
     self.table = "medias"
     self.resource = Resource::Media::Medias
+
+    private def accessible_resources(project_id)
+      # TODO: consider caching here ?
+      Api[:idah].dataset.entries.accessible_resources(project_id)
+    end
   end
 end
