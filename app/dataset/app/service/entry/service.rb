@@ -42,9 +42,6 @@ module Entry
         end
 
         attr[:dataset_id] = record.dataset.id
-        job_id = attr[:job_id]
-
-        attr[:status] ||= job_id ? "pending" : "ready"
 
         id = entries.create(attr)
 
@@ -63,20 +60,6 @@ module Entry
 
     def delete(id)
       entries.delete(id)
-    end
-
-    def update_entries_job(job_id, resource)
-      entries.transaction do
-        entry = entries.find_by!({ resource: })
-
-        if entry.job_id && entry.job_id != job_id
-          raise Verse::Error::ValidationFailed,
-                "Entry with resource #{resource} already has a different job_id #{entry.job_id}"
-        end
-
-        entries.update!(entry.id, { job_id: })
-        entries.find!(entry.id)
-      end
     end
 
     def assign_member(id, assigned_to_id)
