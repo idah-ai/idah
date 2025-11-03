@@ -84,18 +84,6 @@ class EntriesExpo < BaseExpo
     service.mark_entries_status_as(job_id , "ready")
   end
 
-  expose on_resource_event(Resource::Media::Jobs, "created")
-  def on_job_created
-    job_content = message.content
-
-    job_resource = job_content.dig(:args, 0, :arguments, :resource)
-    job_id = job_content[:resource_id]
-
-    return unless job_id && job_resource
-
-    service.update_entries_job(job_id, job_resource)
-  end
-
   expose on_resource_event(Resource::Media::Jobs, "errored")
   def on_job_errored
     job_id = message.content[:resource_id]
