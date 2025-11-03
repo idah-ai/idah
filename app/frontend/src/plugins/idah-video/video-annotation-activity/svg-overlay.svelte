@@ -1,13 +1,6 @@
 <script lang="ts">
   import { getContext, type Snippet } from "svelte";
-  import { sineInOut } from "svelte/easing";
-  import { fade } from "svelte/transition";
 
-  import { closeNoteFeedPopup, noteSidebarStore } from "../layout/sidebar/notes/note-sidebar-stores";
-
-  import NewNoteFeedDialog from "../layout/sidebar/notes/overlays/dialogs/new-note-feed-dialog.svelte";
-  import SelectedNoteFeedDialog from "../layout/sidebar/notes/overlays/dialogs/selected-note-feed-dialog.svelte";
-  import messageCircleIcon from "../layout/sidebar/notes/svgs/message-circle.svg";
   import BoundingBox, { type ToolSelection } from "./bounding-box.svelte";
   import { boundingBoxes } from "./idb_store.svelte";
 
@@ -160,7 +153,6 @@
 
   let tool_selection: ToolSelection | undefined = $state();
   let lastZoomOffset: Point = $state([0, 0]);
-  let selectedAnnotation: VideoAnnotation | undefined = $state(undefined);
 
   export function selectionStart(e: MouseEvent) {
     lastZoomOffset = $state.snapshot(zoomInfo.offset) as Point;
@@ -185,62 +177,32 @@
      * Show new note feed dialog only when there is no dragging (i.e. zoom offset did not change)
      */
     if (lastZoomOffset[X] == zoomInfo.offset[X] || lastZoomOffset[Y] == zoomInfo.offset[Y]) {
-      showNewNoteFeedDialog();
+      context.notes.showNewNoteFeedPopup({
+        anchor_type: "entry",
+        position: {
+          x: cursor_downscaled[X],
+          y: cursor_downscaled[Y],
+          start: frame,
+          end: frame,
+          target_size,
+        },
+        annotation_id: null,
+        // annotation_id: selected?.metadata.id,
+      });
+      // showNewNoteFeedDialog();
     }
 
     zoom.mouseUp(e);
   }
-
-  function showNewNoteFeedDialog() {
-    /**
-     * Show new note feed dialog only when sidebar is open and dialog is not already shown
-     */
-    if (!$noteSidebarStore.open) {
-      selectedAnnotation = undefined;
-      return closeNoteFeedPopup();
-    }
-
-    /**
-     * If dialog is already shown, close & reset it
-     */
-    if ($noteSidebarStore.noteFeedPopup.show) {
-      selectedAnnotation = undefined;
-      return closeNoteFeedPopup();
-    }
-
-    $noteSidebarStore.noteFeedPopup = {
-      show: true,
-      noteFeed: {
-        id: "",
-        entry_id: "",
-        annotation_id: "",
-        anchor_type: "entry",
-        position: {
-          start: frame,
-          end: frame,
-          x: cursor_downscaled[X],
-          y: cursor_downscaled[Y],
-          ...selectedAnnotation,
-        },
-        status: "pending",
-        content_md: "",
-        note_comments: [],
-        created_by_email: "user@example.com",
-        created_at: new Date().toDateString(),
-        updated_at: new Date().toDateString(),
-        edited_at: null,
-      },
-    };
-  }
 </script>
 
-<div class="svg-overlay flex-1" class:cursor-note={$noteSidebarStore.open}>
+<div class="svg-overlay flex-1">
   <div>
     <Zoomable bind:this={zoom} {mode} onZoomChange={(scale, offset) => (zoomInfo = { scale, offset })}>
       {@render children?.()}
     </Zoomable>
 
-    {#if $noteSidebarStore.noteFeedPopup.show}
+    <!-- {#if $noteSidebarStore.noteFeedPopup.show}
       {#key $noteSidebarStore.noteFeedPopup.noteFeed}
         <img
           transition:fade={{ duration: 200, easing: sineInOut }}
@@ -269,7 +231,7 @@
           {/if}
         </div>
       {/key}
-    {/if}
+    {/if} -->
   </div>
 
   <svg
@@ -291,7 +253,7 @@
     onwheel={(e) => zoom.onWheel(e)}
     {...restProps}
   >
-    {#if width && height && !$noteSidebarStore.open}
+    {#if width && height}
       <!-- prevent display issue on load for now -->
       <line x1={0} y1={target_line[Y]} x2={width} y2={target_line[Y]} stroke="#2b7fff" />
       <line x1={target_line[X]} y1={0} x2={target_line[X]} y2={height} stroke="#2b7fff" />
@@ -310,7 +272,6 @@
               onmousedown={(e) => {
                 if (mode == "visual" || selected) {
                   e.stopPropagation();
-                  selectedAnnotation = annotation;
                   onSelectAnnotation(annotation);
                 }
               }}
@@ -332,7 +293,6 @@
               onmousedown={(e) => {
                 if (mode == "visual" || selected) {
                   e.stopPropagation();
-                  selectedAnnotation = annotation;
                   onSelectAnnotation(annotation);
                 }
               }}

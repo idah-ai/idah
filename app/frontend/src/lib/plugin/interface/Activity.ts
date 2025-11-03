@@ -1,7 +1,7 @@
 // duplicate from yacine's
 
 import type { Command } from "@/command/Command";
-import type { AnnotationHeaderBarBaseTool } from "../layout/header/AnnotationHeaderBar.types";
+import type { AnnotationHeaderBarBaseTool } from "@/plugin/layout/header/AnnotationHeaderBar.types";
 
 export interface IFields {
   [key: string]: Array<string>;
@@ -43,14 +43,6 @@ export interface IAnnotation<T = IDimension, U = any> {
   annotation: U;
 }
 
-interface IComment {
-  id: string;
-  createdBy: IUser;
-  content: string;
-
-  update(content: string): Promise<boolean>;
-}
-
 export interface INoteFeed {
   readonly id: string;
   entry_id: string;
@@ -67,9 +59,6 @@ export interface INoteFeed {
   readonly created_at: string;
   readonly updated_at: string;
   readonly edited_at: string | null;
-
-  // Included relationships
-  note_comments: Array<INoteComment>;
 }
 
 export interface INoteComment {
@@ -97,24 +86,32 @@ export interface IAnnotationDriver {
   flush(): void;
 }
 
-export interface INoteDriver {
-  /** NOTE::FEEDS */
-  feeds: {
-    create(data: Partial<INoteFeed>): Promise<INoteFeed>;
-    list(listOptions: IListOptions): Promise<Array<INoteFeed>>;
-    get(id: string): Promise<INoteFeed>;
-    update(id: string, data: Partial<INoteFeed>): Promise<INoteFeed>;
-    delete(id: string): Promise<void>;
-    markAsResolved(noteFeedId: string): Promise<INoteFeed>;
-  };
+// export interface INoteDriver {
+//   /** NOTE::FEEDS */
+//   feeds: {
+//     create(data: Partial<INoteFeed>): Promise<INoteFeed>;
+//     list(listOptions: IListOptions): Promise<Array<INoteFeed>>;
+//     get(id: string): Promise<INoteFeed>;
+//     update(id: string, data: Partial<INoteFeed>): Promise<INoteFeed>;
+//     delete(id: string): Promise<void>;
+//     markAsResolved(noteFeedId: string): Promise<INoteFeed>;
+//   };
 
-  /** NOTE::COMMENTS */
-  comments: {
-    list(listOptions: IListOptions): Promise<Array<INoteComment>>;
-    create(data: Partial<INoteComment>): Promise<INoteComment>;
-    update(id: string, data: Partial<INoteComment>): Promise<INoteComment>;
-    delete(id: string): Promise<void>;
-  };
+//   /** NOTE::COMMENTS */
+//   comments: {
+//     list(listOptions: IListOptions): Promise<Array<INoteComment>>;
+//     create(data: Partial<INoteComment>): Promise<INoteComment>;
+//     update(id: string, data: Partial<INoteComment>): Promise<INoteComment>;
+//     delete(id: string): Promise<void>;
+//   };
+// }
+
+export interface INotes {
+  showNewNoteFeedPopup: (data: Pick<INoteFeed, "anchor_type" | "position" | "annotation_id">) => void;
+  onNewNoteFeedOpenChange: (cb: (data: Pick<INoteFeed, "anchor_type" | "position" | "annotation_id">) => void) => void;
+
+  gotoFeed: (noteFeedId: string | null, noteCommentId?: string) => void;
+  onNoteSelected: (cb: (noteFeedId: string | null, noteCommentId?: string) => Promise<void> | void) => void;
 }
 
 export interface ICategoryField {
@@ -210,10 +207,7 @@ export interface IActivityContext {
   get annotations(): IAnnotationDriver;
 
   // Driver for fetching and updating notes
-  get notes(): INoteDriver;
-
-  // Navigate to a specific note feed and comment
-  gotoFeed(noteFeedId: string, noteCommentId?: string): Promise<void>;
+  get notes(): INotes;
 
   get commands(): ICommands;
 
@@ -244,6 +238,6 @@ export interface IActivityView {
 
   // Initialize the activity with the given context and parent element
   init();
-  render?(parent: HTMLElement, context: IActivityContext);
+  render?(parent: HTMLElement | null, context: IActivityContext);
   close?();
 }
