@@ -81,7 +81,7 @@ class EntriesExpo < BaseExpo
   def on_job_updated
     job_id = message.content[:resource_id]
 
-    service.mark_entries_status_as(job_id , "ready")
+    service.mark_entries_status_as(job_id, "ready")
   end
 
   expose on_resource_event(Resource::Media::Jobs, "errored")
