@@ -31,23 +31,11 @@ module Entry
     self.table = "entries"
     self.resource = Resource::Dataset::Entries
 
-    def mark_entries_as_ready(job_id)
-      entries = chunked_index({ job_id: job_id, status: "processing" })
+    def mark_entries_status_as(job_id, status)
+      entry = find_by!({ job_id: job_id, status: "processing" })
 
       transaction do
-        entries.each do |entry|
-          update!(entry.id, { status: "ready" })
-        end
-      end
-    end
-
-    def mark_entries_as_errored(job_id)
-      entries = chunked_index({ job_id: job_id, status: "processing" })
-
-      transaction do
-        entries.each do |entry|
-          update!(entry.id, { status: "errored" })
-        end
+        update!(entry.id, { status: status })
       end
     end
   end
