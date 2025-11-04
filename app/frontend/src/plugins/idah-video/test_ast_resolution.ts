@@ -1,10 +1,10 @@
 type ASTValue = string | number | string[] | boolean | undefined;
-type ASTNodeValue = ASTValue | ASTNode;
-type ASTNode = [ASTValue] | [string, ASTNodeValue, ASTNodeValue?];
+type ASTNodeValue = ASTValue | ASTNode | [ASTValue];
+type ASTNode = [string, ASTNodeValue, ASTNodeValue?];
 
 const tree: ASTNode = [
-  "or",
-  ["eq", true, false],
+  "and",
+  ["match", "*/vehicles", "categories/*"],
   ["and", ["neq", ["eq", ["get", "var_1"], [["42", "24"]]], false], ["eq", "test", ["get", "var_2"]]],
 ];
 
@@ -19,7 +19,59 @@ const variables = new Map<string, ASTValue>([
 type UnaryOp = (val: ASTValue) => ASTValue;
 type BinaryOp = (val1: ASTValue, val2: ASTValue) => ASTValue;
 
+function wildcard_match(pattern1: string, pattern2: string) {
+  function matchHelper(i: number, j: number): boolean {
+    // Base case: both patterns exhausted
+    if (i === pattern1.length && j === pattern2.length) {
+      return true;
+    }
+
+    // If one pattern is exhausted, check if remaining is all '*'
+    if (i === pattern1.length) {
+      return pattern2
+        .slice(j)
+        .split("")
+        .every((c) => c === "*");
+    }
+
+    if (j === pattern2.length) {
+      return pattern1
+        .slice(i)
+        .split("")
+        .every((c) => c === "*");
+    }
+
+    const c1 = pattern1[i];
+    const c2 = pattern2[j];
+
+    if (c1 === "*" && c2 === "*") {
+      // Both are wildcards - they can match any sequence
+      return matchHelper(i + 1, j) || matchHelper(i, j + 1) || matchHelper(i + 1, j + 1);
+    } else if (c1 === "*") {
+      // pattern1 has wildcard - can match 0 or more characters from pattern2
+      return matchHelper(i + 1, j) || matchHelper(i, j + 1);
+    } else if (c2 === "*") {
+      // pattern2 has wildcard - can match 0 or more characters from pattern1
+      return matchHelper(i + 1, j) || matchHelper(i, j + 1);
+    } else if (c1 === c2) {
+      // Exact character match
+      return matchHelper(i + 1, j + 1);
+    } else {
+      // Characters don't match and no wildcards
+      return false;
+    }
+  }
+
+  return matchHelper(0, 0);
+}
+
 const operators = new Map<string, UnaryOp | BinaryOp>([
+  [
+    "match",
+    (val1: ASTValue, val2: ASTValue) => {
+      return wildcard_match(val1?.toString() || "", val2?.toString() || "");
+    },
+  ],
   [
     "get",
     (val: ASTValue): ASTValue => {
@@ -37,7 +89,16 @@ const operators = new Map<string, UnaryOp | BinaryOp>([
       return val1 === val2;
     },
   ],
-  ["neq", (val1: ASTValue, val2: ASTValue): boolean => val1 !== val2],
+  [
+    "neq",
+    (val1: ASTValue, val2: ASTValue): boolean => {
+      if (Array.isArray(val1) && Array.isArray(val2)) {
+        return val1.length != val2.length || val1.some((v) => !val2.includes(v));
+      }
+
+      return val1 !== val2;
+    },
+  ],
   [
     "gt",
     (val1: ASTValue, val2: ASTValue): boolean => {
