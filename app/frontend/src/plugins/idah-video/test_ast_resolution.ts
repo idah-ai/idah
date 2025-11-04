@@ -16,7 +16,7 @@ const variables: [string, ASTValue][] = [
   ["var_1", var_1],
   ["var_2", var_2],
 ];
-const commands: (
+const operators: (
   | [op: SingleOperator, (val: ASTValue) => ASTValue]
   | [op: MultiOperator, (val1: ASTValue, val2: ASTValue) => ASTValue]
 )[] = [
@@ -83,30 +83,30 @@ const commands: (
   ],
 ];
 
-function process_ast([command, val1, val2]: ASTNode) {
-  return process_command(command, val1, val2) == true;
+function process_ast([operator, val1, val2]: ASTNode) {
+  return process_operator(operator, val1, val2) == true;
 }
 
-function process_command(command: string, val1: ASTNodeValue, val2?: ASTNodeValue): boolean | ASTValue {
-  const cmd = commands.find((c) => c[0] == command)?.[1];
+function process_operator(operator: string, val1: ASTNodeValue, val2?: ASTNodeValue): boolean | ASTValue {
+  const cmd = operators.find((c) => c[0] == operator)?.[1];
 
-  if (!cmd) throw `no command ${command} found`;
+  if (!cmd) throw `no operator ${operator} found`;
 
   return cmd(process_value(val1), process_value(val2));
 }
 
 function process_value(value: ASTNodeValue): ASTValue {
   if (Array.isArray(value)) {
-    const [command, val1, val2] = value;
+    const [operator, val1, val2] = value;
 
-    if (value.length == 1) return command;
+    if (value.length == 1) return operator;
 
-    if (Array.isArray(command)) {
+    if (Array.isArray(operator)) {
       console.warn("operator array received with value parameters", { value });
-      return command;
+      return operator;
     }
 
-    if (command) return process_command(command.toString(), val1, val2);
+    if (operator) return process_operator(operator.toString(), val1, val2);
     else return value as ASTValue;
   }
 
