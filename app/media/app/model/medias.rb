@@ -39,5 +39,7 @@ module Medias
       # TODO: consider caching here ?
       Api[:idah].dataset.entries.accessible_resources(project_id)
     end
+
+    # TODO: implement a scoping here, use accessible_resources for as_user
   end
 end

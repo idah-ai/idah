@@ -25,7 +25,7 @@ anonymous:
 
     # TODO: WIP, api checks with dataset service ?
     # media service
-    - "media:medias.*.*"
+    - "media:medias.*.as_user"
 
     # TODO: WIP, differ between admin and user
     # iam service
