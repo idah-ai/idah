@@ -54,8 +54,14 @@ module ProjectMember
 
     # meant to be used by other microservices
     # TODO: might need to add certain kind of check ? allowing only calls from backend ? possible security issues ?
-    def authorize_action(action:, resource:, account_id:, project_id:, allowed_access: [])
-      project_members.authorize_action(action:, resource:, account_id:, project_id:, allowed_access:)
+    def authorize_access(action:, resource:, project_id:, allowed_access: [])
+      project_members.authorize_action(
+        action:,
+        resource:,
+        account_id: auth_context.metadata[:id] || 1, # TODO: remove mocking
+        project_id:,
+        allowed_access:
+      )
 
       true
     end

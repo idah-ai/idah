@@ -31,4 +31,22 @@ class ProjectMembersExpo < BaseExpo
     update
     delete
   end
+
+  expose on_http(:post, "/authorize_access", auth: nil) do
+    desc "Check if context is authorized to do action on resource, based on the allowed access and project memnbership"
+    input do
+      field :project_id, String
+      field :action, String
+      field :resource, String
+      field :allowed_access, Array, of: String
+    end
+  end
+  def authorize_access
+    project_id = params[:project_id]
+    action = params[:action].to_sym
+    resource = params[:resource]
+    allowed_access = params[:allowed_access]
+
+    service.authorize_access(action:, resource:, project_id:, allowed_access:)
+  end
 end
