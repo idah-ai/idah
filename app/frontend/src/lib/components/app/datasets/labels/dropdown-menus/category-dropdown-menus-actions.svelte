@@ -41,7 +41,7 @@
 
 <DropdownMenus {menus}>
   {#snippet trigger({ props })}
-    <Button {...props} variant="ghost" size="icon" class={className}>
+    <Button {...props} variant="ghost" size="icon-sm" class={className}>
       <EllipsisVerticalIcon />
     </Button>
   {/snippet}

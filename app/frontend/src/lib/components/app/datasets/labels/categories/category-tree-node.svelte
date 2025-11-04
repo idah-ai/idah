@@ -20,20 +20,21 @@
     treeItem: ICategoryTreeNode;
     level: number;
     onToggleExpand: (id: string) => void;
+    onAddCategory: (nodeId?: string) => void;
   }
 
   export { CategoryTreeNode, type ICategoryTreeNode };
 </script>
 
 {#snippet CategoryTreeNode(props: CategoryTreeNodeProps)}
-  {@const { treeItem, onToggleExpand } = props}
+  {@const { treeItem, onToggleExpand, onAddCategory } = props}
   {@const { id, children } = treeItem}
   {@const level = props.level}
   {@const hasChildren = children.length > 0}
 
-  <div class="group flex w-full items-center" style:margin-left="{(level - 1) * 4.5}rem">
+  <div class="group flex w-full items-center" style:margin-left="{(level - 1) * 2}rem">
     {#if hasChildren}
-      <Button variant="ghost" size="icon" onclick={() => onToggleExpand(id)}>
+      <Button variant="ghost" size="icon-sm" onclick={() => onToggleExpand(id)}>
         <ChevronRightIcon
           class={cn("transition-transform duration-200", {
             "rotate-90": props.treeItem.expanded,
@@ -47,7 +48,7 @@
     <CategoryDropdownMenusActions
       {treeItem}
       class="opacity-0 transition-opacity duration-200 group-hover:opacity-100"
-      onAddSubCategory={() => {}}
+      onAddSubCategory={() => onAddCategory(id)}
       onDeleteCategory={() => {}}
     />
   </div>
@@ -60,6 +61,7 @@
           treeItem: child,
           level,
           onToggleExpand,
+          onAddCategory: () => onAddCategory(child.id),
         })}
       {/each}
     {/if}

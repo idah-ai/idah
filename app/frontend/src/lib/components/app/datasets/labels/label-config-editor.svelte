@@ -10,8 +10,9 @@
   // Props
   interface Props {
     labelConfig: LabelConfigurations;
+    onAddCategory: (labelConfigKey: string, nodeId?: string) => void;
   }
-  let { labelConfig }: Props = $props();
+  let { labelConfig, onAddCategory }: Props = $props();
 
   // Variables
   let selectedConfigKey: string = $state(Object.keys(labelConfig)[0]);
@@ -21,6 +22,10 @@
   // Functions
   function selectConfigKey(key: string) {
     selectedConfigKey = key;
+  }
+
+  function addCategory(nodeId?: string) {
+    onAddCategory(selectedConfigKey, nodeId);
   }
 </script>
 
@@ -60,7 +65,7 @@
 
         <CardAction>
           {#if hasAtLeastOneCategory}
-            <Button size="sm">
+            <Button size="sm" onclick={() => addCategory()}>
               <PlusIcon />
               New Category
             </Button>
@@ -69,7 +74,7 @@
       </CardHeader>
 
       <CardContent>
-        <CategoryTree values={labelConfig[selectedConfigKey].values} />
+        <CategoryTree values={labelConfig[selectedConfigKey].values} onAddCategory={(nodeId) => addCategory(nodeId)} />
       </CardContent>
     </Card>
 
