@@ -3,6 +3,7 @@
   import { SaveIcon } from "@lucide/svelte";
   import { toast } from "svelte-sonner";
 
+  import LabelConfigEditor from "@/components/app/datasets/labels/label-config-editor.svelte";
   import LabelEditor from "@/components/app/datasets/labels/label-editor.svelte";
   import PageHeader from "@/components/app/page/page-header.svelte";
   import PageLoading from "@/components/app/page/page-loading.svelte";
@@ -289,6 +290,8 @@
       </Button>
     {/snippet}
   </PageHeader>
+
+  <LabelConfigEditor />
 
   <LabelEditor
     {labelConfig}

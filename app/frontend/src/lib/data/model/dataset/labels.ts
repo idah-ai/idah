@@ -60,10 +60,18 @@ export interface PropertyField extends FieldBase {
 /* eslint-disable-next-line @typescript-eslint/no-empty-object-type */
 export interface TagField extends FieldBase {}
 
+export interface LabelConfigurationValue {
+  id: string;
+  color: string;
+  label: string;
+  text_color?: string;
+}
+
 export interface LabelingConfiguration {
-  categories: Array<CategoryField>;
-  properties: Array<PropertyField>;
-  taggings: Array<TagField>;
+  values: Array<LabelConfigurationValue>;
+  // categories: Array<CategoryField>;
+  // properties: Array<PropertyField>;
+  // taggings: Array<TagField>;
 }
 
 interface LabelColor {
