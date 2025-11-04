@@ -25,14 +25,6 @@ export type LabelPropertyOption = {
   label: string;
 };
 
-export interface CategoryField {
-  id: string;
-  type: string;
-  color: string;
-  text_color?: string;
-  label: string;
-}
-
 export interface FieldBase {
   id: string;
   type: FieldTypeValue;
@@ -53,13 +45,6 @@ export interface FieldBase {
   };
 }
 
-export interface PropertyField extends FieldBase {
-  selector: Array<string>;
-}
-
-/* eslint-disable-next-line @typescript-eslint/no-empty-object-type */
-export interface TagField extends FieldBase {}
-
 export interface LabelConfigurationValue {
   id: string;
   color: string;
@@ -69,9 +54,11 @@ export interface LabelConfigurationValue {
 
 export interface LabelingConfiguration {
   values: Array<LabelConfigurationValue>;
-  // categories: Array<CategoryField>;
-  // properties: Array<PropertyField>;
-  // taggings: Array<TagField>;
+  properties: Array<FieldBase>;
+}
+
+export interface LabelConfigurations {
+  [key: string]: LabelingConfiguration;
 }
 
 interface LabelColor {

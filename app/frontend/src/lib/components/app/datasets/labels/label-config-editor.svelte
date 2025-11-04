@@ -5,143 +5,18 @@
   import { Button } from "@/components/ui/button";
   import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-  import type { Hash } from "@/utils/types";
+  import type { LabelConfigurations } from "@/data/model/dataset/labels";
+
+  // Props
+  interface Props {
+    labelConfig: LabelConfigurations;
+  }
+  let { labelConfig }: Props = $props();
 
   // Variables
-  const config: Hash = {
-    "idah-video:bounding_box": {
-      values: [
-        { id: "vehicle/car", label: "Car" },
-        { id: "vehicle/truck", label: "Truck" },
-        { id: "vehicle/bike", label: "Bike" },
-        { id: "vehicle/other", label: "Other" },
-        { id: "person/adult", label: "Adult" },
-        { id: "person/child", label: "Child" },
-      ],
-      properties: [
-        {
-          id: "brand",
-          label: "Brand",
-          type: "text",
-          required: true,
-          visibility: ["match", ["get", "value.id"], "vehicle/*"],
-          format: {
-            min: 1,
-            max: 100,
-          },
-        },
-        {
-          id: "age",
-          label: "Age",
-          type: "integer",
-          visibility: ["match", ["get", "value.id"], "person/*"],
-          required: true,
-          format: {
-            min: 1,
-          },
-        },
-      ],
-    },
-    "idah-video:polygon_box": {
-      values: [
-        { id: "vehicle/car", label: "Car" },
-        { id: "vehicle/truck", label: "Truck" },
-        { id: "vehicle/bike", label: "Bike" },
-        { id: "vehicle/other", label: "Other" },
-        { id: "person/adult", label: "Adult" },
-        { id: "person/child", label: "Child" },
-      ],
-      properties: [
-        {
-          id: "brand",
-          label: "Brand",
-          type: "text",
-          required: true,
-          visibility: ["match", ["get", "value.id"], "vehicles/*"],
-          format: {
-            min: 1,
-            max: 100,
-          },
-        },
-        {
-          id: "age",
-          label: "Age",
-          type: "integer",
-          visibility: ["match", ["get", "value.id"], "person/*"],
-          required: true,
-          format: {
-            min: 1,
-          },
-        },
-      ],
-    },
-    "idah-video:framed_tag": {
-      values: [
-        { id: "accident", label: "Accident" },
-        { id: "traffic", label: "Traffic" },
-      ],
-      properties: [
-        {
-          id: "entity_concerned",
-          label: "visible number of entity impacted",
-          type: "integer",
-          visibility: ["match", ["get", "value.id"], "*"],
-        },
-        {
-          id: "rightofway",
-          label: "Right of way",
-          type: "single-select",
-          visibility: ["eq", ["get", "value.id"], "traffic"],
-          required: true,
-          format: {
-            options: [
-              { id: "row.vehicle", label: "Vehicle" },
-              { id: "row.pedestrian", label: "Pedestrian" },
-            ],
-          },
-        },
-      ],
-    },
-    "idah-video:ranged_tag": {
-      values: [
-        { id: "accident", label: "Accident" },
-        { id: "traffic", label: "Traffic" },
-      ],
-      properties: [
-        {
-          id: "entity_concerned",
-          label: "visible number of entity impacted",
-          type: "integer",
-          visibility: ["match", ["get", "value.id"], "*"],
-        },
-        {
-          id: "rightofway",
-          label: "Right of way",
-          type: "single-select",
-          visibility: ["eq", ["get", "value.id"], "traffic"],
-          required: true,
-          format: {
-            options: [
-              { id: "row.vehicle", label: "Vehicle" },
-              { id: "row.pedestrian", label: "Pedestrian" },
-            ],
-          },
-        },
-      ],
-    },
-    "entry:root": {
-      values: [
-        // in case of entry:root I'm assuming those should be either unique or exclusive
-        // { id: "entry:root", label: "Unique Entry Annotation" },
-      ],
-      properties: [
-        // any configuration of properties or none :) ..
-      ],
-    },
-  };
-  let selectedConfigKey: string = $state(Object.keys(config)[0]);
-  let hasAtLeastOneCategory: boolean = $derived(config[selectedConfigKey].values.length > 0);
-  let hasAtLeastOneProperty: boolean = $derived(config[selectedConfigKey].properties.length > 0);
+  let selectedConfigKey: string = $state(Object.keys(labelConfig)[0]);
+  let hasAtLeastOneCategory: boolean = $derived(labelConfig[selectedConfigKey].values.length > 0);
+  let hasAtLeastOneProperty: boolean = $derived(labelConfig[selectedConfigKey].properties.length > 0);
 
   // Functions
   function selectConfigKey(key: string) {
@@ -155,18 +30,18 @@
     <Card class="w-full gap-2">
       <CardHeader>
         <CardTitle>Configurations</CardTitle>
-        <CardDescription class="text-xs">Select a configuration to manage</CardDescription>
+        <CardDescription class="text-xs">Select a labelConfiguration to manage</CardDescription>
       </CardHeader>
 
       <CardContent class="flex flex-col gap-2">
-        {#each Object.keys(config) as configKey (configKey)}
-          {@const isSelect = selectedConfigKey === configKey}
+        {#each Object.keys(labelConfig) as labelConfigKey (labelConfigKey)}
+          {@const isSelect = selectedConfigKey === labelConfigKey}
           <Button
             variant={isSelect ? "default" : "secondary"}
             class="w-full justify-start"
-            onclick={() => selectConfigKey(configKey)}
+            onclick={() => selectConfigKey(labelConfigKey)}
           >
-            {configKey}
+            {labelConfigKey}
           </Button>
         {/each}
       </CardContent>
@@ -194,7 +69,7 @@
       </CardHeader>
 
       <CardContent>
-        <CategoryTree values={config[selectedConfigKey].values} />
+        <CategoryTree values={labelConfig[selectedConfigKey].values} />
       </CardContent>
     </Card>
 
