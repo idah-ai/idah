@@ -25,6 +25,19 @@ class PluginsExpo < BaseExpo
 
   expose on_http(
     :get,
+    "modalities/:modality_name",
+    auth: nil
+  ) do
+    input do
+      field :modality_name, String
+    end
+  end
+  def show_modality
+    service.show_modality(params[:modality_name])
+  end
+
+  expose on_http(
+    :get,
     ":plugin/assets/*",
     auth: nil,
     renderer: Verse::Http::Renderer::Binary
