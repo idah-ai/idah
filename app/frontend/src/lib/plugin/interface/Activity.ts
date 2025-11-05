@@ -1,6 +1,7 @@
 // duplicate from yacine's
 
 import type { Command } from "@/command/Command";
+import type { ASTNode } from "@/utils/types";
 import type { AnnotationHeaderBarBaseTool } from "../layout/header/AnnotationHeaderBar.types";
 
 interface IUser {
@@ -64,14 +65,6 @@ export interface INoteDriver {
   list(filter: any): Promise<Array<INote>>;
 }
 
-export interface ICategoryField {
-  id: string;
-  type: string;
-  color: string;
-  text_color?: string;
-  label: string;
-}
-
 export type FieldTypeValue = "text" | "integer" | "boolean" | "single-select" | "multi-select";
 
 export type LabelPropertyOption = {
@@ -88,29 +81,30 @@ export interface FieldFormat {
   options: Array<LabelPropertyOption>;
 }
 
-export interface FieldBase {
+export interface ILabelConfigurationValue {
+  id: string;
+  color: string;
+  label: string;
+  text_color?: string;
+}
+
+export interface ILabelConfigurationProperty {
   id: string;
   type: FieldTypeValue;
   label: string;
   description: string;
   required: boolean;
   format: FieldFormat;
-  visible_if?: {
-    [key: string]: Array<string | number | boolean>;
-  };
+  visibility: ASTNode;
 }
 
-export interface PropertyField extends FieldBase {
-  selector: Array<string>;
+export interface ILabelConfiguration {
+  values: Array<ILabelConfigurationValue>;
+  properties: Array<ILabelConfigurationProperty>;
 }
-
-/* eslint-disable-next-line @typescript-eslint/no-empty-object-type */
-export interface TagField extends FieldBase {}
 
 export interface IConfig {
-  categories: Array<ICategoryField>;
-  properties: Array<PropertyField>;
-  taggings: Array<TagField>;
+  [key: string]: ILabelConfiguration;
 }
 export interface ICommands {
   on(name: string, commandBuilder: (props?: object) => Command): void;

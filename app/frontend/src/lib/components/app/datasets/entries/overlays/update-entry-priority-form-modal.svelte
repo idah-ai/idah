@@ -40,7 +40,7 @@
       });
     }
 
-    toast.success(`${selectedEntryCount} tasks has been set priority successfully!`);
+    toast.success(`${selectedEntryCount} entries has been set priority successfully!`);
     $refetches.entries.list = new Date();
     open = false;
   }
@@ -61,7 +61,7 @@
 <FormModal
   {action}
   {title}
-  description="Set priority to {selectedEntryCount > 1 ? `${selectedEntryCount} tasks` : 'task'}"
+  description="Set priority to {selectedEntryCount > 1 ? `${selectedEntryCount} entries` : 'entry'}"
   loading={submitting}
   onCancel={resetForm}
   onConfirm={submit}
@@ -79,7 +79,7 @@
       choices={entryPriorities}
       required
       bind:value={selectedPriority}
-    ></SingleSelectField>
+    />
   </Form>
 
   {#snippet confirm()}

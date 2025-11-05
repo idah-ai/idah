@@ -13,6 +13,6 @@
   let projectId = $derived(page.params.projectId);
 </script>
 
-<Link href="/projects/{projectId}/datasets/{dataset.id}/tasks" showIcon>
+<Link href="/projects/{projectId}/datasets/{dataset.id}/entries" showIcon>
   {dataset.name}
 </Link>

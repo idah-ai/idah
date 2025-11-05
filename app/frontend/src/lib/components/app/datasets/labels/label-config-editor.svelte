@@ -73,7 +73,7 @@
         info: null,
         options: [],
       },
-      visibility: ["match", ["get", "value.id", "*"]],
+      visibility: ["match", [["get", ["value.id"]], "*"]],
     });
   }
 
