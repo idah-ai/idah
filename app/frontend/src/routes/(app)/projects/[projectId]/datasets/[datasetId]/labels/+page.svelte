@@ -12,7 +12,12 @@
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { humanize, slugify } from "@/utils/string";
 
-  import { labelColors, type LabelConfigurations, type LabelingConfiguration } from "@/data/model/dataset/labels";
+  import {
+    labelColors,
+    type LabelConfigurations,
+    type LabelConfigurationValue,
+    type LabelingConfiguration,
+  } from "@/data/model/dataset/labels";
 
   // Variables
   let datasetId: string = page.params.datasetId as string;
@@ -121,34 +126,36 @@
     });
   }
 
-  function editCategory(category: CategoryField) {
+  function editCategory(labelConfigKey: string, category: LabelConfigurationValue) {
     if (!labelConfig) return;
 
-    // const categoryToUpdateIndex = labelConfig.categories.findIndex((cat) => cat.id === category.id);
+    const selectedLabelConfig = labelConfig[labelConfigKey];
+    const categoryToUpdateIndex = selectedLabelConfig.values.findIndex((cat) => cat.id === category.id);
 
-    // if (categoryToUpdateIndex >= 0) {
-    //   const existingCategory = labelConfig.categories[categoryToUpdateIndex];
-    //   const slugifiedLabel: string = slugify(category.label);
-    //   const newId = existingCategory.id.split("/").slice(0, -1).concat(slugifiedLabel).join("/");
+    if (categoryToUpdateIndex >= 0) {
+      const existingCategory = selectedLabelConfig.values[categoryToUpdateIndex];
+      const slugifiedLabel: string = slugify(category.label);
+      const newId = existingCategory.id.split("/").slice(0, -1).concat(slugifiedLabel).join("/");
 
-    //   labelConfig.categories[categoryToUpdateIndex] = {
-    //     ...existingCategory,
-    //     ...category,
-    //     label: category.label,
-    //     id: newId,
-    //   };
-    // } else {
-    //   labelConfig.categories.push(category);
-    // }
+      selectedLabelConfig.values[categoryToUpdateIndex] = {
+        ...existingCategory,
+        ...category,
+        label: category.label,
+        id: newId,
+      };
+    } else {
+      selectedLabelConfig.values.push(category);
+    }
   }
 
-  function editCategoryId(oldId: string, newId: string) {
-    // if (!labelConfig) return;
-    // const categoryToUpdateIndex = labelConfig.categories.findIndex((cat) => cat.id === oldId);
-    // if (categoryToUpdateIndex >= 0) {
-    //   labelConfig.categories[categoryToUpdateIndex].id = newId;
-    //   // labelConfig.categories[categoryToUpdateIndex].label = newId;
-    // }
+  function editCategoryId(labelConfigKey: string, oldId: string, newId: string) {
+    if (!labelConfig) return;
+
+    const selectedLabelConfig = labelConfig[labelConfigKey];
+    const categoryToUpdateIndex = selectedLabelConfig.values.findIndex((cat) => cat.id === oldId);
+    if (categoryToUpdateIndex >= 0) {
+      selectedLabelConfig.values[categoryToUpdateIndex].id = newId;
+    }
   }
 
   function removeCategory(labelConfigKey: string, categoryId: string) {
@@ -269,7 +276,13 @@
     {/snippet}
   </PageHeader>
 
-  <LabelConfigEditor {labelConfig} onAddCategory={addCategory} onRemoveCategory={removeCategory} />
+  <LabelConfigEditor
+    {labelConfig}
+    onAddCategory={addCategory}
+    onEditCategoryId={editCategoryId}
+    onEditCategory={editCategory}
+    onRemoveCategory={removeCategory}
+  />
 
   <!-- <LabelEditor
     {labelConfig}
