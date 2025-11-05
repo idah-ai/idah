@@ -92,7 +92,7 @@
     <Card class="w-full gap-2">
       <CardHeader>
         <CardTitle>Configurations</CardTitle>
-        <CardDescription class="text-xs">Select a labelConfiguration to manage</CardDescription>
+        <CardDescription class="text-xs">Select a label configuration to manage</CardDescription>
       </CardHeader>
 
       <CardContent class="flex flex-col gap-2">
