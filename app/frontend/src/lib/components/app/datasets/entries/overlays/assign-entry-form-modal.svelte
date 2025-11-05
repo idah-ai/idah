@@ -57,7 +57,7 @@
 <FormModal
   {action}
   {title}
-  description="Assign {selectedEntryCount > 1 ? `${selectedEntryCount} tasks` : 'task'} to a member"
+  description="Assign {selectedEntryCount > 1 ? `${selectedEntryCount} entries` : 'entry'} to a member"
   loading={submitting}
   onCancel={() => {}}
   onConfirm={submit}
@@ -67,7 +67,7 @@
     <DialogTitle>{title}</DialogTitle>
   {/snippet}
 
-  <AssignEntryForm {selectedMember} {fieldErrors} onValueChange={setValue}></AssignEntryForm>
+  <AssignEntryForm {selectedMember} {fieldErrors} onValueChange={setValue} />
 
   {#snippet confirm()}
     <Button loading={submitting} loadingLabel="Assigning" disabled={!selectedMember} onclick={submit}>Assign</Button>
