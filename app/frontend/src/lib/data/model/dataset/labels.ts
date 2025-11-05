@@ -1,4 +1,4 @@
-import type { LabelValue } from "@/utils/types";
+import type { ASTNode, LabelValue } from "@/utils/types";
 import {
   CircleCheckBigIcon,
   HashIcon,
@@ -25,24 +25,20 @@ export type LabelPropertyOption = {
   label: string;
 };
 
-export interface FieldBase {
+export interface LabelConfigurationProperty {
   id: string;
   type: FieldTypeValue;
   label: string;
   description: string;
   required: boolean;
   format: {
-    // placeholder?: string;
-    // readonly?: boolean;
     minimum: number | null;
     maximum: number | null;
     step: number | null;
     info: string | null;
     options: Array<LabelPropertyOption>;
   };
-  visible_if?: {
-    [key: string]: Array<string | number | boolean>;
-  };
+  visibility: ASTNode;
 }
 
 export interface LabelConfigurationValue {
@@ -54,7 +50,7 @@ export interface LabelConfigurationValue {
 
 export interface LabelingConfiguration {
   values: Array<LabelConfigurationValue>;
-  properties: Array<FieldBase>;
+  properties: Array<LabelConfigurationProperty>;
 }
 
 export interface LabelConfigurations {

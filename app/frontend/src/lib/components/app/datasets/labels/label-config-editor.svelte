@@ -1,11 +1,17 @@
 <script lang="ts">
-  import { PlusIcon } from "@lucide/svelte";
+  import { BoltIcon, PlusIcon } from "@lucide/svelte";
 
+  import ResponseBlock from "@/components/app/blocks/response-block.svelte";
+  import PropertyCard from "@/components/app/datasets/labels/cards/property-card.svelte";
   import CategoryTree from "@/components/app/datasets/labels/categories/category-tree.svelte";
   import { Button } from "@/components/ui/button";
   import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-  import type { LabelConfigurations, LabelConfigurationValue } from "@/data/model/dataset/labels";
+  import type {
+    LabelConfigurationProperty,
+    LabelConfigurations,
+    LabelConfigurationValue,
+  } from "@/data/model/dataset/labels";
 
   // Props
   interface Props {
@@ -14,8 +20,18 @@
     onEditCategoryId: (labelConfigKey: string, oldId: string, newId: string) => void;
     onEditCategory: (labelConfigKey: string, category: LabelConfigurationValue) => void;
     onRemoveCategory: (labelConfigKey: string, categoryId: string) => void;
+    onSetProperty: (labelConfigKey: string, property: LabelConfigurationProperty) => void;
+    onRemoveProperty: (labelConfigKey: string, propertyId: string) => void;
   }
-  let { labelConfig, onAddCategory, onEditCategoryId, onEditCategory, onRemoveCategory }: Props = $props();
+  let {
+    labelConfig,
+    onAddCategory,
+    onEditCategoryId,
+    onEditCategory,
+    onRemoveCategory,
+    onSetProperty,
+    onRemoveProperty,
+  }: Props = $props();
 
   // Variables
   let selectedConfigKey: string = $state(Object.keys(labelConfig)[0]);
@@ -41,6 +57,32 @@
 
   function removeCategory(categoryId: string) {
     onRemoveCategory(selectedConfigKey, categoryId);
+  }
+
+  function addNewProperty() {
+    onSetProperty(selectedConfigKey, {
+      id: `property-${new Date().getTime()}`,
+      label: "New Property",
+      type: "text",
+      description: "",
+      required: false,
+      format: {
+        minimum: null,
+        maximum: null,
+        step: 1,
+        info: null,
+        options: [],
+      },
+      visibility: ["match", ["get", "value.id", "*"]],
+    });
+  }
+
+  function setProperty(property: LabelConfigurationProperty) {
+    onSetProperty(selectedConfigKey, property);
+  }
+
+  function removeProperty(propertyId: string) {
+    onRemoveProperty(selectedConfigKey, propertyId);
   }
 </script>
 
@@ -107,15 +149,33 @@
 
         <CardAction>
           {#if hasAtLeastOneProperty}
-            <Button size="sm">
-              <PlusIcon />
-              New Property
-            </Button>
+            {@render AddNewPropertyButton()}
           {/if}
         </CardAction>
       </CardHeader>
 
-      <CardContent></CardContent>
+      <CardContent class="flex flex-col gap-2">
+        {#each Object.values(labelConfig[selectedConfigKey].properties) as property (property.id)}
+          <PropertyCard
+            {property}
+            onSetProperty={(editedProperty) => setProperty(editedProperty)}
+            onRemoveProperty={(propertyId) => removeProperty(propertyId)}
+          />
+        {:else}
+          <ResponseBlock icon={BoltIcon} title="No Properties Yet" description="Create properties to get started">
+            {#snippet actions()}
+              {@render AddNewPropertyButton()}
+            {/snippet}
+          </ResponseBlock>
+        {/each}
+      </CardContent>
     </Card>
   </div>
 </section>
+
+{#snippet AddNewPropertyButton()}
+  <Button size="sm" onclick={addNewProperty}>
+    <PlusIcon />
+    New Property
+  </Button>
+{/snippet}
