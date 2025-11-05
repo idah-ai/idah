@@ -69,17 +69,17 @@ class PluginsExpo < BaseExpo
     auth: nil,
     # renderer: Verse::Http::Renderer::Identity
     renderer: Class.new do
-        def render(result, server)
-          case File.extname(server.request.env["verse.http.server"].params["filename"])
-          when '.js'
-            server.response["content-type"] = "text/javascript"
-          when '.css'
-            server.response["content-type"] = "text/css"
-          end
-
-          result
+      def render(result, server)
+        case File.extname(server.request.env["verse.http.server"].params["filename"])
+        when ".js"
+          server.response["content-type"] = "text/javascript"
+        when ".css"
+          server.response["content-type"] = "text/css"
         end
+
+        result
       end
+    end
   ) do
     input do
       field :plugin, String

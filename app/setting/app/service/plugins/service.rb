@@ -82,7 +82,7 @@ module Plugins
     def show_modality(modality_name)
       shapes = {}
 
-      PluginSystem.registry.plugins.each do |_, plugin|
+      PluginSystem.registry.plugins.each_value do |plugin|
         next unless plugin.modalities
 
         plugin.modalities.each do |mod|
@@ -93,7 +93,7 @@ module Plugins
         end
       end
 
-      shapes
+      { shapes: }
     end
 
     def serve_file(plugin_name, filename)

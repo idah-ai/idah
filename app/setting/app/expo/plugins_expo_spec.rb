@@ -114,7 +114,9 @@ RSpec.describe PluginsExpo, type: :exposition, as: :system do
 
       modality_name = "idah-video"
       expected_shapes = {
-        "bounding-box" => { "label" => "Bounding Box", "icon" => "icon.svg" }
+        "shapes": {
+          "bounding-box" => { "label" => "Bounding Box", "icon" => "icon.svg" }
+        }
       }
 
       expect(modality_service).to receive(:show_modality).with(modality_name).and_return(
@@ -125,16 +127,18 @@ RSpec.describe PluginsExpo, type: :exposition, as: :system do
 
       expect(last_response.status).to eq(200)
       response_data = JSON.parse(last_response.body, symbolize_names: true)
-      # expect(response_data).to eq(
-      #   {
-      #     data: {
-      #       :"bounding-box" => {
-      #         label: "Bounding Box",
-      #         icon: "icon.svg"
-      #       }
-      #     }
-      #   }
-      # )
+      expect(response_data).to eq(
+        {
+          data: {
+            shapes: {
+              "bounding-box": {
+                label: "Bounding Box",
+                icon: "icon.svg"
+              }
+            }
+          }
+        }
+      )
     end
   end
 end
