@@ -54,7 +54,7 @@ RSpec.describe Plugins::Service, type: :service, as: :system do
           version: "1.0.0",
           title: "Foo plugin",
           description: "Foo ipsum",
-          modalities: [{id: "modA", label: "modality A", description: ""}, {id: "modB", label: "modality B"}],
+          modalities: [{ id: "modA", label: "modality A", description: "" }, { id: "modB", label: "modality B" }],
           entryPoints: {}
         )
       )
@@ -67,32 +67,36 @@ RSpec.describe Plugins::Service, type: :service, as: :system do
           version: "1.0.0",
           title: "Bar plugin",
           description: "Bar ipsum",
-          modalities: [{id: "modB"}, {id: "modC"}],
+          modalities: [{ id: "modB" }, { id: "modC" }],
           entryPoints: {}
         )
       )
 
-      allow(registry).to receive(:plugins).and_return({
-        "foo" => foo_plugin,
-        "bar" => bar_plugin
-      })
+      allow(registry).to receive(:plugins).and_return(
+        {
+          "foo" => foo_plugin,
+          "bar" => bar_plugin
+        }
+      )
 
       allow(PluginSystem).to receive(:registry).and_return(registry)
 
       output = service.show_modalities
 
-      expect(output).to eq({
-        modalities: {
-          "modA" => {label: "modality A", description: ""},
-          "modB" => {label: "modality B", description: nil},
-          "modC" => {label: nil, description: nil}
-        },
-        plugins: {
-          "modA" => ["foo"],
-          "modB" => ["foo", "bar"],
-          "modC" => ["bar"]
+      expect(output).to eq(
+        {
+          modalities: {
+            "modA" => { label: "modality A", description: "" },
+            "modB" => { label: "modality B", description: nil },
+            "modC" => { label: nil, description: nil }
+          },
+          plugins: {
+            "modA" => ["foo"],
+            "modB" => ["foo", "bar"],
+            "modC" => ["bar"]
+          }
         }
-      })
+      )
     end
   end
 
@@ -138,19 +142,23 @@ RSpec.describe Plugins::Service, type: :service, as: :system do
         )
       )
 
-      allow(registry).to receive(:plugins).and_return({
-        "foo" => foo_plugin,
-        "bar" => bar_plugin
-      })
+      allow(registry).to receive(:plugins).and_return(
+        {
+          "foo" => foo_plugin,
+          "bar" => bar_plugin
+        }
+      )
 
       allow(PluginSystem).to receive(:registry).and_return(registry)
 
       output = service.show_modality("modA")
 
-      expect(output).to eq({
-        shapeA: { label: "Shape A", icon: "iconA.svg" },
-        shapeB: { label: "Shape B", icon: "iconB.svg" }
-      })
+      expect(output).to eq(
+        { shapes: {
+          shapeA: { label: "Shape A", icon: "iconA.svg" },
+          shapeB: { label: "Shape B", icon: "iconB.svg" }
+        } }
+      )
     end
   end
 end
