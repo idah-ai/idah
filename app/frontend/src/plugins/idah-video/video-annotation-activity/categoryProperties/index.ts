@@ -1,11 +1,22 @@
 import type { AnnotationValue } from "@/context/AnnotationContext";
 import type { IConfigProperty, IConfigPropertyFormat, IConfigPropertyOption } from "@/plugin/interface/Activity";
-import { AstProcessor } from "../../test_ast_resolution";
+import { AstProcessor, type ASTValue } from "../../test_ast_resolution";
+
+function objectVariables(obj: object, root: string = "") {
+  return Object.entries(obj).reduce((acc: [string, ASTValue][], [k, v]) => {
+    if (typeof v == "object") {
+      acc.concat(objectVariables(v, [root, k].join(".")));
+    } else {
+      acc.push([[root, k].join("."), v]);
+    }
+    return acc;
+  }, []);
+}
 
 export function visibilityFullfilled(value: AnnotationValue, field: IConfigProperty) {
-  console.debug({ value, field });
+  console.debug({ value, field, variables: objectVariables(value, "annotation") });
   if (typeof field.visibility == "boolean") return field.visibility;
-  return new AstProcessor([["value", value]]).processAST(field.visibility);
+  return new AstProcessor(new Map(objectVariables(value, "annotation"))).processAST(field.visibility);
 }
 
 export function requiredFullfilled(value: AnnotationValue, properties: IConfigProperty[]): boolean {

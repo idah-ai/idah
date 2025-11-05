@@ -1,5 +1,5 @@
-type ASTValue = string | number | string[] | boolean | undefined;
-type ASTNodeValue = ASTValue | ASTNode | [ASTValue];
+export type ASTValue = string | number | string[] | boolean | undefined;
+export type ASTNodeValue = ASTValue | ASTNode | [ASTValue];
 export type ASTNode = [string, ASTNodeValue[]];
 
 const _tree: ASTNode = [
@@ -18,7 +18,7 @@ const _tree: ASTNode = [
 
 const var_1: ASTValue = ["42", "24"];
 const var_2: ASTValue = "test";
-const _variables = new Map<string, any>([
+const _variables = new Map<string, ASTValue>([
   ["var_1", var_1],
   ["var_2", var_2],
 ]);
@@ -225,3 +225,14 @@ export class AstProcessor {
 }
 
 console.log("AST Result:", new AstProcessor(_variables).processAST(_tree));
+import parser from "../../../build/parser.cjs";
+
+try {
+  const input = 'taskname match "xxxx" and description match "..." and status = "..." and tags = "..."';
+  const result = parser.parse(input);
+  console.log("Parse successful:", { result: result.toString() });
+} catch (error) {
+  console.error("Parse error:", error.message);
+  // The error object has useful properties for detailed reporting,
+  // such as location, expected, found, etc.
+}
