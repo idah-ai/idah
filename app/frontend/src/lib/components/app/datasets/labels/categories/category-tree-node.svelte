@@ -21,6 +21,8 @@
     level: number;
     onToggleExpand: (id: string) => void;
     onAddCategory: (nodeId?: string) => void;
+    onEditCategoryId: (oldId: string, newId: string) => void;
+    onEditCategory: (editedCategory: LabelConfigurationValue) => void;
     onRemoveCategory: (categoryId: string) => void;
   }
 
@@ -28,7 +30,7 @@
 </script>
 
 {#snippet CategoryTreeNode(props: CategoryTreeNodeProps)}
-  {@const { treeItem, onToggleExpand, onAddCategory, onRemoveCategory } = props}
+  {@const { treeItem, onToggleExpand, onAddCategory, onEditCategoryId, onEditCategory, onRemoveCategory } = props}
   {@const { id, children } = treeItem}
   {@const level = props.level}
   {@const hasChildren = children.length > 0}
@@ -47,7 +49,7 @@
       />
     </Button>
 
-    <CategoryPopover {treeItem} />
+    <CategoryPopover {treeItem} {onEditCategoryId} {onEditCategory} />
 
     <CategoryDropdownMenusActions
       {treeItem}
@@ -66,6 +68,8 @@
           level,
           onToggleExpand,
           onAddCategory,
+          onEditCategoryId,
+          onEditCategory,
           onRemoveCategory,
         })}
       {/each}

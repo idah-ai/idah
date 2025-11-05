@@ -10,16 +10,18 @@
 
   import { humanize } from "@/utils/string";
 
-  import type { LabelingConfiguration } from "@/data/model/dataset/labels";
+  import type { LabelConfigurationValue, LabelingConfiguration } from "@/data/model/dataset/labels";
   import type { Hash } from "@/utils/types";
 
   // Props
   interface Props {
     values: LabelingConfiguration["values"];
     onAddCategory: (nodeId?: string) => void;
+    onEditCategoryId: (oldId: string, newId: string) => void;
+    onEditCategory: (editedCategory: LabelConfigurationValue) => void;
     onRemoveCategory: (categoryId: string) => void;
   }
-  let { values, onAddCategory, onRemoveCategory }: Props = $props();
+  let { values, onAddCategory, onEditCategoryId, onEditCategory, onRemoveCategory }: Props = $props();
 
   // Functions
   function constructCategoryTree(values: LabelingConfiguration["values"]) {
@@ -108,8 +110,10 @@
       treeItem: treeItem,
       level: 1,
       onToggleExpand: toggleExpand,
-      onAddCategory: onAddCategory,
-      onRemoveCategory: onRemoveCategory,
+      onAddCategory,
+      onEditCategoryId,
+      onEditCategory,
+      onRemoveCategory,
     })}
   {:else}
     <ResponseBlock title="No categories yet" description="Add category to get started" icon={WorkflowIcon}>

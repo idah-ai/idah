@@ -7,18 +7,29 @@
   import { Kbd, KbdGroup } from "@/components/ui/kbd";
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
-  import { labelColors } from "@/data/model/dataset/labels";
+  import { labelColors, type LabelConfigurationValue } from "@/data/model/dataset/labels";
+  import { cn } from "@/utils";
 
   import type { ICategoryTreeNode } from "@/components/app/datasets/labels/categories/category-tree-node.svelte";
 
   // Props
   interface Props {
     treeItem: ICategoryTreeNode;
+    onEditCategoryId: (oldId: string, newId: string) => void;
+    onEditCategory: (editedCategory: LabelConfigurationValue) => void;
   }
-  let { treeItem }: Props = $props();
+  let { treeItem, onEditCategoryId, onEditCategory }: Props = $props();
 
   // Variables
-  let { id, color: treeItemColor, label } = treeItem;
+  let { id, color, text_color, label } = $derived(treeItem);
+
+  // Functions
+  function updateCategory(updatedFields: Partial<LabelConfigurationValue>) {
+    onEditCategory({
+      ...treeItem,
+      ...updatedFields,
+    });
+  }
 </script>
 
 <Popover>
@@ -26,7 +37,11 @@
     {#snippet child({ props })}
       <Button {...props} variant="ghost" class="px-2 text-sm">
         <!-- ICON -->
-        <div class="flex size-5 items-center justify-center rounded-sm bg-amber-500">
+        <div
+          class="flex size-5 items-center justify-center rounded-sm"
+          style:background-color={color}
+          style:color={text_color}
+        >
           <SquareDashedMousePointerIcon class="size-3 text-white" />
         </div>
 
@@ -55,9 +70,9 @@
       onblur={(e) => {
         const value = e.currentTarget.value;
         const newValue = parentPath ? `${parentPath}/${value}` : value;
+        onEditCategoryId(id, newValue);
       }}
     ></InputField>
-    <!-- onEditCategoryId(node.id, newValue); -->
 
     <!-- LABEL -->
     <InputField
@@ -67,31 +82,24 @@
       value={label}
       onblur={(e) => {
         const value = e.currentTarget.value;
+        updateCategory({ label: value });
       }}
     ></InputField>
-    <!-- onEditCategory({
-          id: node.id,
-          type: node.type,
-          color: node.color,
-          text_color: node.text_color,
-          label: value,
-        }); -->
 
     <!-- SHORTCUT KEY -->
 
     <!-- COLOR -->
     <div class="grid grid-cols-5 gap-1 px-2">
-      {#each labelColors as { label, color, text_color } (color)}
-        <Tooltips delayDuration={0}>
+      {#each labelColors as { label, color: c, text_color } (c)}
+        {@const isSelected = color === c}
+        <Tooltips align="center" delayDuration={0}>
           {#snippet trigger()}
             <button
               class="inline-flex size-6 items-center justify-center rounded-lg border"
-              style="background-color: {color}; color: {text_color}"
-              onclick={() => {}}
+              style="background-color: {c}; color: {text_color}"
+              onclick={() => updateCategory({ color: c, text_color })}
             >
-              {#if treeItemColor === color}
-                <CheckIcon class="size-4"></CheckIcon>
-              {/if}
+              <CheckIcon class={cn("size-4", isSelected ? "opacity-100" : "opacity-0")}></CheckIcon>
             </button>
           {/snippet}
 

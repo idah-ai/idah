@@ -5,15 +5,17 @@
   import { Button } from "@/components/ui/button";
   import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-  import type { LabelConfigurations } from "@/data/model/dataset/labels";
+  import type { LabelConfigurations, LabelConfigurationValue } from "@/data/model/dataset/labels";
 
   // Props
   interface Props {
     labelConfig: LabelConfigurations;
     onAddCategory: (labelConfigKey: string, nodeId?: string) => void;
+    onEditCategoryId: (labelConfigKey: string, oldId: string, newId: string) => void;
+    onEditCategory: (labelConfigKey: string, category: LabelConfigurationValue) => void;
     onRemoveCategory: (labelConfigKey: string, categoryId: string) => void;
   }
-  let { labelConfig, onAddCategory, onRemoveCategory }: Props = $props();
+  let { labelConfig, onAddCategory, onEditCategoryId, onEditCategory, onRemoveCategory }: Props = $props();
 
   // Variables
   let selectedConfigKey: string = $state(Object.keys(labelConfig)[0]);
@@ -27,6 +29,14 @@
 
   function addCategory(nodeId?: string) {
     onAddCategory(selectedConfigKey, nodeId);
+  }
+
+  function editCategoryId(oldId: string, newId: string) {
+    onEditCategoryId(selectedConfigKey, oldId, newId);
+  }
+
+  function editCategory(editedCategory: LabelConfigurationValue) {
+    onEditCategory(selectedConfigKey, editedCategory);
   }
 
   function removeCategory(categoryId: string) {
@@ -82,6 +92,8 @@
         <CategoryTree
           values={labelConfig[selectedConfigKey].values}
           onAddCategory={(nodeId) => addCategory(nodeId)}
+          onEditCategoryId={(oldId, newId) => editCategoryId(oldId, newId)}
+          onEditCategory={(editedCategory) => editCategory(editedCategory)}
           onRemoveCategory={(categoryId) => removeCategory(categoryId)}
         />
       </CardContent>
