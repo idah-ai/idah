@@ -21,27 +21,31 @@
     level: number;
     onToggleExpand: (id: string) => void;
     onAddCategory: (nodeId?: string) => void;
+    onRemoveCategory: (categoryId: string) => void;
   }
 
   export { CategoryTreeNode, type ICategoryTreeNode };
 </script>
 
 {#snippet CategoryTreeNode(props: CategoryTreeNodeProps)}
-  {@const { treeItem, onToggleExpand, onAddCategory } = props}
+  {@const { treeItem, onToggleExpand, onAddCategory, onRemoveCategory } = props}
   {@const { id, children } = treeItem}
   {@const level = props.level}
   {@const hasChildren = children.length > 0}
 
   <div class="group flex w-full items-center" style:margin-left="{(level - 1) * 2}rem">
-    {#if hasChildren}
-      <Button variant="ghost" size="icon-sm" onclick={() => onToggleExpand(id)}>
-        <ChevronRightIcon
-          class={cn("transition-transform duration-200", {
-            "rotate-90": props.treeItem.expanded,
-          })}
-        />
-      </Button>
-    {/if}
+    <Button
+      variant="ghost"
+      size="icon-sm"
+      class={cn("", hasChildren ? "opacity-100" : "opacity-0")}
+      onclick={() => onToggleExpand(id)}
+    >
+      <ChevronRightIcon
+        class={cn("transition-transform duration-200", {
+          "rotate-90": props.treeItem.expanded,
+        })}
+      />
+    </Button>
 
     <CategoryPopover {treeItem} />
 
@@ -49,7 +53,7 @@
       {treeItem}
       class="opacity-0 transition-opacity duration-200 group-hover:opacity-100"
       onAddSubCategory={() => onAddCategory(id)}
-      onDeleteCategory={() => {}}
+      onDeleteCategory={() => onRemoveCategory(id)}
     />
   </div>
 
@@ -61,7 +65,8 @@
           treeItem: child,
           level,
           onToggleExpand,
-          onAddCategory: () => onAddCategory(child.id),
+          onAddCategory,
+          onRemoveCategory,
         })}
       {/each}
     {/if}

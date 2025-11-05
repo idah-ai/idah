@@ -17,8 +17,9 @@
   interface Props {
     values: LabelingConfiguration["values"];
     onAddCategory: (nodeId?: string) => void;
+    onRemoveCategory: (categoryId: string) => void;
   }
-  let { values, onAddCategory }: Props = $props();
+  let { values, onAddCategory, onRemoveCategory }: Props = $props();
 
   // Functions
   function constructCategoryTree(values: LabelingConfiguration["values"]) {
@@ -108,6 +109,7 @@
       level: 1,
       onToggleExpand: toggleExpand,
       onAddCategory: onAddCategory,
+      onRemoveCategory: onRemoveCategory,
     })}
   {:else}
     <ResponseBlock title="No categories yet" description="Add category to get started" icon={WorkflowIcon}>

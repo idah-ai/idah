@@ -11,8 +11,9 @@
   interface Props {
     labelConfig: LabelConfigurations;
     onAddCategory: (labelConfigKey: string, nodeId?: string) => void;
+    onRemoveCategory: (labelConfigKey: string, categoryId: string) => void;
   }
-  let { labelConfig, onAddCategory }: Props = $props();
+  let { labelConfig, onAddCategory, onRemoveCategory }: Props = $props();
 
   // Variables
   let selectedConfigKey: string = $state(Object.keys(labelConfig)[0]);
@@ -26,6 +27,10 @@
 
   function addCategory(nodeId?: string) {
     onAddCategory(selectedConfigKey, nodeId);
+  }
+
+  function removeCategory(categoryId: string) {
+    onRemoveCategory(selectedConfigKey, categoryId);
   }
 </script>
 
@@ -74,7 +79,11 @@
       </CardHeader>
 
       <CardContent>
-        <CategoryTree values={labelConfig[selectedConfigKey].values} onAddCategory={(nodeId) => addCategory(nodeId)} />
+        <CategoryTree
+          values={labelConfig[selectedConfigKey].values}
+          onAddCategory={(nodeId) => addCategory(nodeId)}
+          onRemoveCategory={(categoryId) => removeCategory(categoryId)}
+        />
       </CardContent>
     </Card>
 
