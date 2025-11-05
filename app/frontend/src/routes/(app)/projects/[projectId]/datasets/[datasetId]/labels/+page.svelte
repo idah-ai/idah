@@ -14,6 +14,7 @@
 
   import {
     labelColors,
+    type LabelConfigurationProperty,
     type LabelConfigurations,
     type LabelConfigurationValue,
     type LabelingConfiguration,
@@ -23,7 +24,7 @@
   let datasetId: string = page.params.datasetId as string;
 
   let saving: boolean = $state(false);
-  let modality: string = $state("video");
+  let _modality: string = $state("video");
   let labelConfig: LabelConfigurations = $state({});
   let initialLabelConfig: LabelingConfiguration | undefined = $state(undefined);
   let isLabelConfigChanged: boolean = $derived.by(() => {
@@ -37,7 +38,7 @@
         [DatasetRecord.type]: ["modality", "labeling_configuration"],
       },
     });
-    modality = datasetRes.data.modality;
+    _modality = datasetRes.data.modality;
     labelConfig = datasetRes.data.labeling_configuration;
     initialLabelConfig = JSON.parse(JSON.stringify(labelConfig));
   }
@@ -65,7 +66,7 @@
 
     const currentTime = new Date().getTime().toString();
     const newLabel = "New Category";
-    const newId = slugify(`${newLabel} ${currentTime}`);
+    const newId = slugify(currentTime);
     const selectedLabelConfig: LabelingConfiguration = labelConfig[labelConfigKey];
     const usedColors = selectedLabelConfig.values.map((cat) => cat.color);
     const availableColors = labelColors.filter((color) => !usedColors.includes(color.color));
@@ -189,72 +190,26 @@
         });
       }
     }
-
-    // Remove the category from property selectors
-    // if (labelConfig.properties && labelConfig.properties.length > 0) {
-    //   labelConfig.properties = labelConfig.properties.map((property) => {
-    //     // Filter out selectors that match the removed category
-    //     // This handles both exact matches and wildcard patterns
-    //     const updatedSelector = property.selector.filter((selector) => {
-    //       // Remove exact matches
-    //       if (selector === categoryId) {
-    //         return false;
-    //       }
-    //       // Remove wildcard patterns that include the category
-    //       if (selector === `${categoryId}/*`) {
-    //         return false;
-    //       }
-    //       // Remove if the selector is a child of the removed category
-    //       if (selector.startsWith(`${categoryId}/`)) {
-    //         return false;
-    //       }
-    //       return true;
-    //     });
-    //     return {
-    //       ...property,
-    //       selector: updatedSelector,
-    //     };
-    //   });
-    // }
   }
 
-  function setProperty(property: PropertyField) {
-    // if (!labelConfig) return;
-    // const propertyToUpdateIndex = labelConfig.properties.findIndex((p) => p.id === property.id);
-    // if (propertyToUpdateIndex >= 0) {
-    //   labelConfig.properties[propertyToUpdateIndex] = {
-    //     ...property,
-    //     id: slugify(property.label),
-    //   };
-    // } else {
-    //   labelConfig.properties.push(property);
-    // }
+  function setProperty(labelConfigKey: string, property: LabelConfigurationProperty) {
+    if (!labelConfig) return;
+    const selectedLabelConfig = labelConfig[labelConfigKey];
+    const propertyToUpdateIndex = selectedLabelConfig.properties.findIndex((p) => p.id === property.id);
+    if (propertyToUpdateIndex >= 0) {
+      selectedLabelConfig.properties[propertyToUpdateIndex] = {
+        ...property,
+        id: slugify(property.label),
+      };
+    } else {
+      selectedLabelConfig.properties.push(property);
+    }
   }
 
-  function removeProperty(propertyId: string) {
-    // if (!labelConfig) return;
-    // labelConfig.properties = labelConfig.properties.filter((p) => p.id !== propertyId);
-  }
-
-  function setTag(tag: TagField) {
-    // if (!labelConfig) return;
-    // if (!labelConfig.taggings) {
-    //   labelConfig.taggings = [];
-    // }
-    // const tagToUpdateIndex = labelConfig.taggings.findIndex((t) => t.id === tag.id);
-    // if (tagToUpdateIndex >= 0) {
-    //   labelConfig.taggings[tagToUpdateIndex] = {
-    //     ...tag,
-    //     id: slugify(tag.label),
-    //   };
-    // } else {
-    //   labelConfig.taggings.push(tag);
-    // }
-  }
-
-  function removeTag(tagId: string) {
-    // if (!labelConfig || !labelConfig.taggings) return;
-    // labelConfig.taggings = labelConfig.taggings.filter((t) => t.id !== tagId);
+  function removeProperty(labelConfigKey: string, propertyId: string) {
+    if (!labelConfig) return;
+    const selectedLabelConfig = labelConfig[labelConfigKey];
+    selectedLabelConfig.properties = selectedLabelConfig.properties.filter((p) => p.id !== propertyId);
   }
 </script>
 
@@ -282,17 +237,7 @@
     onEditCategoryId={editCategoryId}
     onEditCategory={editCategory}
     onRemoveCategory={removeCategory}
-  />
-
-  <!-- <LabelEditor
-    {labelConfig}
-    onAddCategory={addCategory}
-    onEditCategory={editCategory}
-    onEditCategoryId={editCategoryId}
-    onRemoveCategory={removeCategory}
     onSetProperty={setProperty}
     onRemoveProperty={removeProperty}
-    onSetTag={setTag}
-    onRemoveTag={removeTag}
-  ></LabelEditor> -->
+  />
 {/await}
