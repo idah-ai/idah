@@ -39,8 +39,8 @@
         <!-- ICON -->
         <div
           class="flex size-5 items-center justify-center rounded-sm"
-          style:background-color={color}
-          style:color={text_color}
+          style:background-color={color || "#000000"}
+          style:color={text_color || "#FFFFFF"}
         >
           <SquareDashedMousePointerIcon class="size-3 text-white" />
         </div>
