@@ -96,4 +96,61 @@ RSpec.describe Plugins::Service, type: :service, as: :system do
     end
   end
 
+  describe "#show_modality" do
+    it "shows shapes for a given modality" do
+      registry = double("PluginSystem.registry")
+
+      foo_plugin = PluginSystem::Plugin.new(
+        "path_to_foo",
+        PluginSystem::Manifest.new(
+          type: "idah-plugin",
+          name: "foo",
+          version: "1.0.0",
+          title: "Foo plugin",
+          description: "Foo ipsum",
+          modalities: [{
+            id: "modA",
+            label: "modality A",
+            description: "",
+            shapes: {
+              "shapeA" => { label: "Shape A", icon: "iconA.svg" }
+            }
+          }],
+          entryPoints: {}
+        )
+      )
+
+      bar_plugin = PluginSystem::Plugin.new(
+        "path_to_bar",
+        PluginSystem::Manifest.new(
+          type: "idah-plugin",
+          name: "bar",
+          version: "1.0.0",
+          title: "Bar plugin",
+          description: "Bar ipsum",
+          modalities: [{
+            id: "modA",
+            shapes: {
+              "shapeB" => { label: "Shape B", icon: "iconB.svg" }
+            }
+          }],
+          entryPoints: {}
+        )
+      )
+
+      allow(registry).to receive(:plugins).and_return({
+        "foo" => foo_plugin,
+        "bar" => bar_plugin
+      })
+
+      allow(PluginSystem).to receive(:registry).and_return(registry)
+
+      output = service.show_modality("modA")
+
+      expect(output).to eq({
+        shapeA: { label: "Shape A", icon: "iconA.svg" },
+        shapeB: { label: "Shape B", icon: "iconB.svg" }
+      })
+    end
+  end
 end
