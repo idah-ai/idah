@@ -4,7 +4,6 @@
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import NumberField from "@/components/app/forms/fields/input/number-field.svelte";
   import TextareaField from "@/components/app/forms/fields/input/textarea-field.svelte";
-  import Badge from "@/components/ui/badge/badge.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import Separator from "@/components/ui/separator/separator.svelte";
   import Text from "@/components/ui/text/Text.svelte";
@@ -21,6 +20,14 @@
 
   // Variables
   let { id, description, type, format } = $derived(property);
+  let visibilityString = $state("");
+
+  $effect(() => {
+    console.warn("TODO: Parse visibility condition string to object", visibilityString);
+  });
+
+  // Functions
+  function parseVisibility() {}
 </script>
 
 {#snippet SectionHeading(heading: string)}
@@ -169,17 +176,14 @@
   <!-- PROPERTY::CONDITIONAL VISIBLE -->
   <Separator />
   <div class="flex flex-col gap-2 px-6">
-    <div class="flex items-center justify-between gap-4">
-      {@render SectionHeading("Visibility")}
-
-      <Badge variant="secondary" class="cursor-pointer">
-        <PlusIcon class="size-4" />
-        Add Visibility
-      </Badge>
-    </div>
-
-    <div class="flex items-center gap-2">
-      <!--  -->
-    </div>
+    <TextareaField
+      name="{id}/visibility"
+      class="col-span-1 md:col-span-2"
+      label="Visibility"
+      placeholder="e.g. match(task_name, '...') and status = '...'"
+      value={visibilityString}
+      oninput={(e) => (visibilityString = e.currentTarget.value)}
+    />
+    <!-- onblur={parseVisibility} -->
   </div>
 </div>
