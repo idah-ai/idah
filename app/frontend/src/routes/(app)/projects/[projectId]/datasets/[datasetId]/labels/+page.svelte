@@ -79,6 +79,7 @@
         label: newLabel,
         color: firstAvailableColor.color,
         text_color: firstAvailableColor.text_color,
+        selectable: false,
       });
       return;
     }
@@ -91,6 +92,7 @@
         label: newLabel,
         color: firstAvailableColor.color,
         text_color: firstAvailableColor.text_color,
+        selectable: true,
       });
       return;
     }
@@ -104,6 +106,7 @@
           ...selectedLabelConfig.values[parentCategoryIndex],
           id: `${selectedLabelConfig.values[parentCategoryIndex].id}/${currentTime}`,
           label: newLabel,
+          selectable: true,
         };
       } else {
         /** Just in case, if not found, add a new one */
@@ -112,6 +115,7 @@
           label: newLabel,
           color: firstAvailableColor.color,
           text_color: firstAvailableColor.text_color,
+          selectable: true,
         });
       }
 
@@ -124,6 +128,7 @@
       label: newLabel,
       color: firstAvailableColor.color,
       text_color: firstAvailableColor.text_color,
+      selectable: true,
     });
   }
 
@@ -187,6 +192,7 @@
           label: humanize(parentPath),
           color: firstAvailableColor.color,
           text_color: firstAvailableColor.text_color,
+          selectable: false,
         });
       }
     }
