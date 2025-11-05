@@ -2,6 +2,7 @@
 
 import type { Command } from "@/command/Command";
 import type { AnnotationHeaderBarBaseTool } from "../layout/header/AnnotationHeaderBar.types";
+import type { ASTNode } from "../../../plugins/idah-video/test_ast_resolution";
 
 interface IUser {
   id: number;
@@ -64,53 +65,45 @@ export interface INoteDriver {
   list(filter: any): Promise<Array<INote>>;
 }
 
-export interface ICategoryField {
-  id: string;
-  type: string;
-  color: string;
-  text_color?: string;
-  label: string;
-}
+export type IConfigPropertyType = "text" | "integer" | "boolean" | "single-select" | "multi-select";
 
-export type FieldTypeValue = "text" | "integer" | "boolean" | "single-select" | "multi-select";
-
-export type LabelPropertyOption = {
+export type IConfigPropertyOption = {
   id: string;
   label: string;
 };
-export interface FieldFormat {
+
+export type IConfigPropertyFormatKeys = keyof IConfigPropertyFormat;
+export interface IConfigPropertyFormat {
   // placeholder?: string;
   // readonly?: boolean;
   minimum: number | null;
   maximum: number | null;
   step: number | null;
-  info: string | null;
-  options: Array<LabelPropertyOption>;
+  // info: string | null;
+  options: Array<IConfigPropertyOption>;
 }
 
-export interface FieldBase {
+export interface IConfigValue {
   id: string;
-  type: FieldTypeValue;
   label: string;
   description: string;
+  color: string;
+  textColor: string;
+}
+
+export interface IConfigProperty {
+  id: string;
+  label: string;
+  type: string;
   required: boolean;
-  format: FieldFormat;
-  visible_if?: {
-    [key: string]: Array<string | number | boolean>;
-  };
+  visibility: ASTNode | boolean;
+  format: IConfigPropertyFormat;
 }
-
-export interface PropertyField extends FieldBase {
-  selector: Array<string>;
-}
-
-/* eslint-disable-next-line @typescript-eslint/no-empty-object-type */
-export interface TagField extends FieldBase {}
-
 export interface IConfig {
-  categories: Array<ICategoryField>;
-  properties: Array<PropertyField>;
-  taggings: Array<TagField>;
+  [shape_type: string]: {
+    values: IConfigValue[];
+    properties: IConfigProperty[];
+  };
 }
 export interface ICommands {
   on(name: string, commandBuilder: (props?: object) => Command): void;

@@ -1,3 +1,4 @@
+import type { IConfigValue } from "@/plugin/interface/Activity";
 import type { CategoryConfiguration } from "../../plugins/idah-video/video-annotation-activity/VideoAnnotationContext";
 import type { AnnotationContext } from "./AnnotationContext";
 
@@ -18,7 +19,7 @@ export interface CategoryDefinition {
   description?: string; // Description of the category
   requiredNested?: boolean; // true = this category requires a subcategory
   nestedCategories?: CategoryDefinition[]; // Subcategories
-  data: CategoryConfiguration;
+  data: IConfigValue; // why dont we store the missing attributes from it in this interface directly ?
 }
 /**
  * Represents a category with its subcategories
