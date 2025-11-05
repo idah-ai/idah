@@ -28,7 +28,7 @@
   // let breadcrumbs: PageBreadcrumbItem[] = $state([projectBreadcrumb]);
 
   // Records
-  let project: ProjectRecord = $state(new ProjectRecord());
+  let _project: ProjectRecord = $state(new ProjectRecord());
   let dataset: DatasetRecord = $state(new DatasetRecord());
 
   // Lifecycle
@@ -51,7 +51,7 @@
         "datasets/projects": ["name"],
       },
     });
-    project = projectRes.data;
+    _project = projectRes.data;
 
     // Fetch dataset data
     const datasetRes = await datasetsBackendDataSource.get(datasetId, {
