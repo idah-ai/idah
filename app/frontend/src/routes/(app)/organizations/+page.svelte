@@ -1,5 +1,6 @@
 <script lang="ts">
   import DatasourceTable from "@/components/app/datasource-table/datasource-table.svelte";
+  import OrganizationFormModal from "@/components/app/organizations/overlays/organization-form-modal.svelte";
   import PageHeader from "@/components/app/page/page-header.svelte";
   import PageProvider from "@/components/app/page/page-provider.svelte";
   import Button from "@/components/ui/button/button.svelte";
@@ -55,3 +56,6 @@
     </DatasourceTable>
   {/key}
 </PageProvider>
+
+<OrganizationFormModal action="create" title="Organization" bind:open={openNewOrganizationFormModal}
+></OrganizationFormModal>
