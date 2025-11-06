@@ -23,7 +23,6 @@ module NoteComment
       attr = record.attributes
 
       attr[:id] = record.id || UUIDv7.generate
-      attr[:is_edited] = false
 
       if record.note_feed
         attr[:note_feed_id] = record.note_feed.id
@@ -32,8 +31,8 @@ module NoteComment
               "note_feed is required to create a note comment"
       end
 
-      # put created_by_id to 1 for now, will be replaced with auth context later
-      attr[:created_by_id] = 1
+      # put created_by_email to nil for now, will be replaced with auth_context[:email] later
+      attr[:created_by_email] ||= nil
 
       id = note_comments.create(attr)
 
@@ -42,7 +41,7 @@ module NoteComment
 
     def update(record)
       attr = record.attributes
-      attr[:is_edited] = true
+      attr[:edited_at] = Time.now
 
       note_comments.update!(record.id, attr)
       note_comments.find!(record.id)

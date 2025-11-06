@@ -1,0 +1,56 @@
+service_name: setting
+description: Setting and Plugins Management Service
+em:
+  adapter: redis
+plugins:
+  - name: http
+    config:
+      show_error_details: <%= ENV.fetch("LOG_SHOW_ERROR_DETAILS", "true") %>
+  - name: sequel
+    config:
+      mode: simple
+      extensions:
+        - pg_json
+        - pg_array
+        - pg_enum
+      db:
+        uri: <%= ENV.fetch("DATABASE_URI") %>
+  - name: redis
+    config:
+      url: <%= ENV.fetch("REDIS_STREAM_URL") %>
+      max_connections: 10
+
+kv_store:
+  adapter: Verse::Redis::KVStore
+  config:
+    plugin: :redis
+    key_prefix: "setting:keys"
+
+lock:
+  adapter: Verse::Redis::Lock
+  config:
+    plugin: redis
+    key_prefix: "setting:locks"
+
+counter:
+  adapter: Verse::Redis::Counter
+  config:
+    plugin: redis
+    key_prefix: "setting:counters"
+
+logging:
+  level: <%= ENV.fetch("LOG_LEVEL", "info") %>
+
+idah:
+  # Define where mounted plugins are stored.
+  # Plugin system is managed directly by the application,
+  # except for manual mounting and dev mode.
+  plugins:
+    path: <%= ENV.fetch("IDAH_PLUGIN_PATH", "plugins") %>
+    # Mount modules manually using their path in the modules
+    # directory
+    manual:
+      - idah-video
+    # Auto reload modules when files change (only manual plugins)
+    # True if the IDAH_DEV_PLUGIN env var is set to any value
+    watch: <%= !!ENV["IDAH_DEV_PLUGIN"] %>

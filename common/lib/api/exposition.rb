@@ -18,23 +18,23 @@ class Api
     end
 
     def get(path, headers: {}, params: {}, options: {})
-      execute_request(:get, path, headers: headers, params: params, options: options)
+      execute_request(:get, path, headers:, params:, options:)
     end
 
     def post(path, headers: {}, params: {}, options: {})
-      execute_request(:post, path, headers: headers, params: params, options: options)
+      execute_request(:post, path, headers:, params:, options:)
     end
 
     def put(path, headers: {}, params: {}, options: {})
-      execute_request(:put, path, headers: headers, params: params, options: options)
+      execute_request(:put, path, headers:, params:, options:)
     end
 
     def patch(path, headers: {}, params: {}, options: {})
-      execute_request(:patch, path, headers: headers, params: params, options: options)
+      execute_request(:patch, path, headers:, params:, options:)
     end
 
     def delete(path, headers: {}, params: {}, options: {})
-      execute_request(:delete, path, headers: headers, params: params, options: options)
+      execute_request(:delete, path, headers:, params:, options:)
     end
 
     def register(method_name, &block)
@@ -68,7 +68,12 @@ class Api
 
       # Execute request
       http = Net::HTTP.new(uri.host, uri.port)
-      http.use_ssl = (uri.scheme == "https")
+      use_ssl = uri.scheme == "https"
+      http.use_ssl = use_ssl
+
+      # TODO: It's probably better to generate a set of self-signed authority
+      # internally to the cluster., rather than disabling verification.
+      http.verify_mode = OpenSSL::SSL::VERIFY_NONE if use_ssl
 
       response = http.request(request)
 
@@ -79,10 +84,23 @@ class Api
       response
     end
 
-    def to_query(hash, prefix = nil)
-      hash.flat_map do |k, v|
-        key = prefix ? "#{prefix}[#{k}]" : k.to_s
-        v.is_a?(Hash) ? to_query(v, key) : [[key, v]]
+    def to_query(params, prefix = nil)
+      params.flat_map do |key, value|
+        # If the key is nil or empty, use the prefix as the base key
+        new_prefix = prefix ? "#{prefix}[#{key unless key.to_s.empty?}]" : key.to_s
+
+        case value
+        when Hash
+          # Recurse for nested hashes
+          to_query(value, new_prefix)
+        when Array
+          # Handle arrays by mapping each item to a query parameter
+          # Note: The key for array elements is an empty string to get `prefix[]=...`
+          value.flat_map { |item| to_query({ "" => item }, new_prefix) }
+        else
+          # Base case for simple values
+          [[new_prefix, value]]
+        end
       end
     end
 
