@@ -1,8 +1,8 @@
-import { AccountRecord } from "@/data/model/iam/accounts/record";
+import { OrganizationRecord } from "@/data/model/dataset/organizations/record";
 
 import type { ColumnsSettings } from "@/components/app/datasource-table/types";
 
-export const organizationColumns: ColumnsSettings<AccountRecord> = {
+export const organizationColumns: ColumnsSettings<OrganizationRecord> = {
   name: {
     label: "Name",
     dataType: "string",
