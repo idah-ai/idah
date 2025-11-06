@@ -13,7 +13,7 @@
   import type { CategoryDefinition } from "@/context/ActivityContext";
   import type { AnnotationValue } from "@/context/AnnotationContext";
   import type { AnnotationsIndexedDB } from "./indexedDB";
-  import type { CategoryConfiguration, VideoAnnotation } from "./VideoAnnotationContext";
+  import type { VideoAnnotation } from "./VideoAnnotationContext";
   import type { IConfigValue } from "@/plugin/interface/Activity";
 
   // Props
@@ -338,6 +338,7 @@
       onEditValue={(value) => value && onEditValue(value, type)}
     />
   {:else}
+    <Text class="text-gray-500" weight="semibold">{type}</Text>
     <div class="flex gap-2 py-2">
       <Text class="text-gray-500" weight="semibold">Categories</Text>
 

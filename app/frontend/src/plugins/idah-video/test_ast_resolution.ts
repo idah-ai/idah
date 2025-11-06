@@ -81,7 +81,10 @@ export class AstProcessor {
       (props): ASTValue => {
         const [val] = props;
         const key = val?.toString();
-        if (!key || !this.variables.has(key)) throw new Error(`Variable not found: ${key}`);
+        if (!key || !this.variables.has(key)) {
+          console.error({ op: "get", val, key, variables: this.variables });
+          throw new Error(`Variable not found: ${key}`);
+        }
         console.debug({ op: "get", val, result: this.variables.get(key) });
         return this.variables.get(key)!;
       },

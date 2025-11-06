@@ -77,7 +77,142 @@ export function activityContextForEntry(entry: EntryRecord): IActivityContext {
     type: entry.dataset.modality,
     workflowStep: entry.wf_step,
     status: entry.status,
-    config: entry.dataset.labeling_configuration,
+    // config: entry.dataset.labeling_configuration,
+    config: {
+      "video:bounding_box": {
+        values: [
+          { id: "vehicle/car", label: "Car", description: "", color: "", textColor: "" },
+          { id: "vehicle/truck", label: "Truck", description: "", color: "", textColor: "" },
+          { id: "vehicle/bike", label: "Bike", description: "", color: "", textColor: "" },
+          { id: "vehicle/other", label: "Other", description: "", color: "", textColor: "" },
+          { id: "person/adult", label: "Adult", description: "", color: "", textColor: "" },
+          { id: "person/child", label: "Child", description: "", color: "", textColor: "" },
+        ],
+        properties: [
+          {
+            id: "brand",
+            label: "Brand",
+            type: "text",
+            required: true,
+            visibility: ["match", [["get", ["annotation.value.category"]], "vehicle/*"]],
+            format: {
+              minimum: 1,
+              maximum: 100,
+            },
+          },
+          {
+            id: "age",
+            label: "Age",
+            type: "integer",
+            visibility: ["match", [["get", ["annotation.value.category"]], "person/*"]],
+            required: true,
+            format: {
+              minimum: 1,
+            },
+          },
+        ],
+      },
+      "video:polygon_box": {
+        values: [
+          { id: "vehicle/car", label: "Car", description: "", color: "", textColor: "" },
+          { id: "vehicle/truck", label: "Truck", description: "", color: "", textColor: "" },
+          { id: "vehicle/bike", label: "Bike", description: "", color: "", textColor: "" },
+          { id: "vehicle/other", label: "Other", description: "", color: "", textColor: "" },
+          { id: "person/adult", label: "Adult", description: "", color: "", textColor: "" },
+          { id: "person/child", label: "Child", description: "", color: "", textColor: "" },
+        ],
+        properties: [
+          {
+            id: "brand",
+            label: "Brand",
+            type: "text",
+            required: true,
+            visibility: ["match", [["get", ["annotation.value.category"]], "vehicles/*"]],
+            format: {
+              minimum: 1,
+              maximum: 100,
+            },
+          },
+          {
+            id: "age",
+            label: "Age",
+            type: "integer",
+            visibility: ["match", [["get", ["annotation.value.category"]], "person/*"]],
+            required: true,
+            format: {
+              minimum: 1,
+            },
+          },
+        ],
+      },
+      "video:framed_tag": {
+        values: [
+          { id: "accident", label: "Accident", description: "", color: "", textColor: "" },
+          { id: "traffic", label: "Traffic", description: "", color: "", textColor: "" },
+        ],
+        properties: [
+          {
+            id: "entity_concerned",
+            label: "visible number of entity impacted",
+            type: "integer",
+            visibility: ["match", [["get", ["annotation.value.category"]], "*"]],
+            required: false,
+            format: {},
+          },
+          {
+            id: "rightofway",
+            label: "Right of way",
+            type: "single-select",
+            visibility: ["eq", [["get", ["annotation.value.category"]], "traffic"]],
+            required: true,
+            format: {
+              options: [
+                { id: "row.vehicle", label: "Vehicle" },
+                { id: "row.pedestrian", label: "Pedestrian" },
+              ],
+            },
+          },
+        ],
+      },
+      "video:ranged_tag": {
+        values: [
+          { id: "accident", label: "Accident", description: "", color: "", textColor: "" },
+          { id: "traffic", label: "Traffic", description: "", color: "", textColor: "" },
+        ],
+        properties: [
+          {
+            id: "entity_concerned",
+            label: "visible number of entity impacted",
+            type: "integer",
+            visibility: ["match", [["get", ["annotation.value.category"]], "*"]],
+            required: false,
+            format: {},
+          },
+          {
+            id: "rightofway",
+            label: "Right of way",
+            type: "single-select",
+            visibility: ["eq", [["get", ["annotation.value.category"]], "traffic"]],
+            required: true,
+            format: {
+              options: [
+                { id: "row.vehicle", label: "Vehicle" },
+                { id: "row.pedestrian", label: "Pedestrian" },
+              ],
+            },
+          },
+        ],
+      },
+      "entry:root": {
+        values: [
+          // in case of entry:root I'm assuming those should be either unique or exclusive
+          { id: "entry:root", label: "Unique Entry Annotation", description: "", color: "", textColor: "" },
+        ],
+        properties: [
+          // any configuration of properties or none :) ..
+        ],
+      },
+    },
     mediaUrl: [`${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files`, entry.resource, "master.m3u8"].join("/"),
     user: {
       id: 0,

@@ -91,14 +91,16 @@
     onSeekFrame(frameToGo);
   }
 
-  function getCategory(categoryId: string) {
-    return context.config.categories.find((cat) => cat.id === categoryId);
+  function getCategory(categoryId: string, shape_type: string) {
+    return Object.entries(context.config)
+      .find(([k, v]) => k == shape_type)?.[1]
+      .values.find((cat) => cat.id === categoryId);
   }
 
   async function getCategoryName(categoryId: string | undefined, selected: VideoAnnotation) {
     if (!categoryId) return "Uncategorized";
 
-    const selectedCategory = getCategory(categoryId);
+    const selectedCategory = getCategory(categoryId, selected.shape.type);
 
     const selectedAnnotationIndex = await getSelectedAnnotationIndex(categoryId, selected.metadata.id);
     const selectedCategoryName = selectedCategory?.label || categoryId;
@@ -152,7 +154,7 @@
     {@const isLastIndex = index == annotations.length - 1}
     <TableRow
       class={cn("border-b-0", {
-        "bg-primary-foreground border-primary/30 border-t border-b": isSelected,
+        "bg-primary-foreground border-primary/30 border-b border-t": isSelected,
       })}
     >
       <TableCell
