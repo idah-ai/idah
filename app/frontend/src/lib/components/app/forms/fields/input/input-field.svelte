@@ -49,15 +49,15 @@
   <FieldLabel for={name} {required}>{label}</FieldLabel>
 
   <InputGroup>
-    {#if prefix}
-      <InputGroupAddon align="inline-start">
-        <InputGroupText>{prefix}</InputGroupText>
-      </InputGroupAddon>
-    {/if}
-
     {#if PrefixIcon}
       <InputGroupAddon align="inline-start">
         <PrefixIcon />
+      </InputGroupAddon>
+    {/if}
+
+    {#if prefix}
+      <InputGroupAddon align="inline-start">
+        <InputGroupText>{prefix}</InputGroupText>
       </InputGroupAddon>
     {/if}
 
