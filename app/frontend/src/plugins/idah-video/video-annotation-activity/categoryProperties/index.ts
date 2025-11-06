@@ -3,7 +3,7 @@ import type { IConfigProperty, IConfigPropertyFormat, IConfigPropertyOption } fr
 import { AstProcessor, objectVariables } from "../../test_ast_resolution";
 
 export function visibilityFullfilled(value: AnnotationValue, field: IConfigProperty) {
-  console.debug({ value, field, variables: objectVariables(value, "annotation") });
+  console.debug({ value, field, variables: objectVariables(value, "annotation.value") });
   if (typeof field.visibility == "boolean") return field.visibility;
   return new AstProcessor(new Map(objectVariables(value, "annotation"))).processAST(field.visibility);
 }
