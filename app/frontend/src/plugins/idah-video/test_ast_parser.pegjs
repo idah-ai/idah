@@ -43,7 +43,7 @@ comparisonExpr
     return [op, [left, right]]
   }
 
-value = value:(Array / Integer / string / boolean) { return value }
+value = value:(Array / Integer / string) { return value }
 
 variable
   = variableName:variableName {
@@ -74,4 +74,4 @@ Array
     return [[inner[0], ...inner[1].map(arr => arr[2])]]
   }
 
-Integer = integer:digit+ { return [parseInt(integer.join(""))] }
+Integer = integer:digit+ { return parseInt(integer.join("")) }
