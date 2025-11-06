@@ -22,7 +22,6 @@ module ProjectMember
     belongs_to :project, repository: "Project::Repository", foreign_key: :project_id
   end
 
-  # TODO: temporary mocking account_id value, need to implement login/authentication
   class Repository < Verse::Sequel::Repository
     self.table = "project_members"
     self.resource = Resource::Dataset::ProjectMembers
@@ -59,7 +58,6 @@ module ProjectMember
       end
     end
 
-    # TODO: review this as it's unscoped
     def get_access(account_id, project_id)
       table.where(account_id:, project_id:).first&.[](:access)
     end

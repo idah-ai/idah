@@ -40,6 +40,19 @@ module Medias
       Api[:idah].dataset.entries.accessible_resources(project_id)
     end
 
-    # TODO: implement a scoping here, use accessible_resources for as_user
+    # scope(s) definition
+    def scoped(action)
+      auth_context.can!(action, Resource::Media::Medias) do |scope|
+        scope.all? { table }
+
+        scope.as_user? do
+          # TODO: consider if we get project_id from auth_context or somewhere else ?
+          project_id = auth_context.metadata[:project_id]
+          resources = accessible_resources(project_id)
+
+          table.where(resource: resources)
+        end
+      end
+    end
   end
 end

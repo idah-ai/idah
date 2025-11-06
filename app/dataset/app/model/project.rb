@@ -17,7 +17,6 @@ module Project
     has_many :datasets, repository: "Dataset::Repository", foreign_key: :project_id
   end
 
-  # TODO: temporary mocking account_id value, need to implement login/authentication
   class Repository < Verse::Sequel::Repository
     self.table = "projects"
     self.resource = Resource::Dataset::Projects
