@@ -26,7 +26,9 @@ export interface FormFieldBaseProps {
 
   class?: string | null;
 
+  slotLabel?: Snippet;
   slotDescription?: Snippet;
+  slotInfo?: Snippet;
   slotErrors?: Snippet;
 }
 
@@ -40,6 +42,8 @@ export interface NumberFieldBaseProps extends FormFieldBaseProps {
   min?: number;
   max?: number;
   step?: number;
+  oninput?: FormEventHandler<HTMLInputElement> | null | undefined;
+  onblur?: FormEventHandler<HTMLInputElement> | null | undefined;
 }
 
 export interface TextAreaFieldBaseProps extends FormFieldBaseProps {
