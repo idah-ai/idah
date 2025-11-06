@@ -90,6 +90,7 @@ GEM
       ruby2_keywords (~> 0.0.1)
     nio4r (2.7.4)
     observer (0.1.2)
+    openssl (3.3.2)
     parallel (1.27.0)
     parser (3.3.9.0)
       ast (~> 2.4.1)
@@ -202,6 +203,7 @@ PLATFORMS
 DEPENDENCIES
   bootsnap (~> 1.16)
   dotenv
+  openssl
   pg
   pry
   puma (~> 6)

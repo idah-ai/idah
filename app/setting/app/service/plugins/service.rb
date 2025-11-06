@@ -79,6 +79,23 @@ module Plugins
       output
     end
 
+    def show_modality(modality_name)
+      shapes = {}
+
+      PluginSystem.registry.plugins.each_value do |plugin|
+        next unless plugin.modalities
+
+        plugin.modalities.each do |mod|
+          next unless mod.id == modality_name
+          next unless mod.shapes
+
+          shapes.merge!(mod.shapes.transform_values(&:to_h))
+        end
+      end
+
+      { shapes: }
+    end
+
     def serve_file(plugin_name, filename)
       plugin = find(plugin_name)
 
