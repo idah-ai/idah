@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import { goto } from "$app/navigation";
-  import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
-  import { page } from "$app/state";
   import { resolve } from "$app/paths";
+  import { page } from "$app/state";
+  import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
+  import { onMount } from "svelte";
 
   let entryId: string = page.params.entryId as string;
 
@@ -20,7 +20,7 @@
 
         if (plugins.length == 1)
           goto(
-            resolve("/entry/[entryId]/plugin/[pluginId]", {
+            resolve("/entries/[entryId]/plugin/[pluginId]", {
               entryId: entry.data.id,
               pluginId: plugins[0],
             }),
