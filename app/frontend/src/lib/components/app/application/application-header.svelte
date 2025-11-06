@@ -1,19 +1,13 @@
 <script lang="ts">
+  import { PanelLeftCloseIcon, PanelLeftOpenIcon } from "@lucide/svelte";
+
   import PageBreadcrumb from "@/components/app/page/page-breadcrumb.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import Separator from "@/components/ui/separator/separator.svelte";
   import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
+  import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
   import { useSidebar } from "@/components/ui/sidebar";
-  import { PanelLeftCloseIcon, PanelLeftOpenIcon } from "@lucide/svelte";
-
-  import type { PageBreadcrumbItem } from "@/components/app/page/page-breadcrumb.svelte";
-
-  // Props
-  interface Props {
-    breadcrumbs: PageBreadcrumbItem[];
-  }
-  let { breadcrumbs }: Props = $props();
 
   // Variables
   const sidebar = useSidebar();
@@ -42,6 +36,6 @@
 
     <Separator orientation="vertical" class="mr-2 data-[orientation=vertical]:h-4"></Separator>
 
-    <PageBreadcrumb items={breadcrumbs}></PageBreadcrumb>
+    <PageBreadcrumb items={$pageBreadcrumbsStore}></PageBreadcrumb>
   </div>
 </header>

@@ -21,10 +21,12 @@ RSpec.describe Plugin::Record, type: :model do
   describe "#path" do
     context "when source_type is manual" do
       let(:record) do
-        described_class.new({
-          source_type: "manual",
-          source_path: "/custom/path/to/plugin"
-        })
+        described_class.new(
+          {
+            source_type: "manual",
+            source_path: "/custom/path/to/plugin"
+          }
+        )
       end
 
       it "returns the source_path" do
@@ -34,11 +36,13 @@ RSpec.describe Plugin::Record, type: :model do
 
     context "when source_type is not manual" do
       let(:record) do
-        described_class.new({
-          source_type: "remote",
-          name: "my-plugin",
-          version: "1.2.3"
-        })
+        described_class.new(
+          {
+            source_type: "remote",
+            name: "my-plugin",
+            version: "1.2.3"
+          }
+        )
       end
 
       it "builds the path from plugin configuration" do

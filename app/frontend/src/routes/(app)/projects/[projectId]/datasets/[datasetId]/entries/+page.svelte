@@ -1,5 +1,7 @@
 <script lang="ts">
+  import { resolve } from "$app/paths";
   import { page } from "$app/state";
+  import { getContext } from "svelte";
   import { toast } from "svelte-sonner";
 
   import ResponseBlock from "@/components/app/blocks/response-block.svelte";
@@ -35,7 +37,11 @@
 
   import { entryColumns } from "@/components/app/datasets/entries/data-tables/entry-columns";
   import { getEntryDropdownMenuActions } from "@/components/app/datasets/entries/dropdown-menus/entry-dropdown-menu";
+  import { homeBreadcrumb, projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
+  import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
+  import { DatasetRecord } from "@/data/model/dataset/dataset-record";
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
+  import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
   import { cn } from "@/utils";
   import { refetches } from "@/utils/refetch";
 
@@ -47,6 +53,10 @@
   import type { ListOptions } from "@/data/DataSource";
   import type { CollectionResponse } from "@/data/model/types";
 
+  // Contexts
+  const project: ProjectRecord = getContext("project");
+  const dataset: DatasetRecord = getContext("dataset");
+
   // Records
   let response: CollectionResponse<EntryRecord> = $state({
     data: [],
@@ -54,6 +64,7 @@
   });
 
   // Variables
+  let projectId: string = page.params.projectId as string;
   let datasetId = page.params.datasetId as string;
   let currentPage: number = $state(1);
   let itemsPerPage: number = $state(10);
@@ -63,6 +74,15 @@
   let openAssignEntryFormModal: boolean = $state(false);
   let openSetPriorityModal: boolean = $state(false);
   let openConfirmDeleteEntriesModal: boolean = $state(false);
+
+  pageBreadcrumbsStore.set([
+    homeBreadcrumb,
+    projectBreadcrumb,
+    { label: project.name },
+    { label: "Datasets" },
+    { label: dataset.name, href: resolve(`/projects/${projectId}/datasets`) },
+    { label: "Tasks" },
+  ]);
 
   let listOptions: ListOptions = $state({
     fields: {
