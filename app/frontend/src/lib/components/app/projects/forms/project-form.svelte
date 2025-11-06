@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Form from "@/components/app/forms/form.svelte";
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import TextareaField from "@/components/app/forms/fields/input/textarea-field.svelte";
+  import Form from "@/components/app/forms/form.svelte";
 
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
 

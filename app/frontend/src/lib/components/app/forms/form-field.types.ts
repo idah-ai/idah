@@ -1,6 +1,6 @@
 import type { Icon as IconType } from "@lucide/svelte";
 import type { Snippet } from "svelte";
-import type { FormEventHandler, HTMLInputTypeAttribute } from "svelte/elements";
+import type { FormEventHandler } from "svelte/elements";
 
 import type { DataSource, ListOptions } from "@/data/DataSource";
 import type { Record } from "@/data/model/Record";
@@ -26,13 +26,19 @@ export interface FormFieldBaseProps {
 }
 
 export interface InputFieldBaseProps extends FormFieldBaseProps {
-  type?: HTMLInputTypeAttribute;
   prefixIcon?: typeof IconType;
   prefix?: string;
   suffixIcon?: typeof IconType;
   suffix?: string;
   oninput?: FormEventHandler<HTMLInputElement> | null | undefined;
   onblur?: FormEventHandler<HTMLInputElement> | null | undefined;
+}
+
+export interface NumberFieldBaseProps extends InputFieldBaseProps {
+  inputmode?: "decimal" | "numeric" | "tel"; // default: "decimal"
+  min?: number;
+  max?: number;
+  step?: number;
 }
 
 export interface SelectFieldBaseProps extends FormFieldBaseProps {

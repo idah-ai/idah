@@ -1,5 +1,6 @@
 <script lang="ts">
   import { InfoIcon } from "@lucide/svelte";
+  import type { HTMLInputTypeAttribute } from "svelte/elements";
 
   import Tooltips from "@/components/app/tooltips/tooltips.svelte";
   import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
@@ -17,6 +18,7 @@
 
   // Props
   interface Props extends InputFieldBaseProps {
+    type?: HTMLInputTypeAttribute;
     value: string | null;
   }
   let {
