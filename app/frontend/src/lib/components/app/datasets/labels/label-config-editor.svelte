@@ -1,5 +1,6 @@
 <script lang="ts">
   import { BoltIcon, PlusIcon } from "@lucide/svelte";
+  import { onMount } from "svelte";
 
   import ResponseBlock from "@/components/app/blocks/response-block.svelte";
   import PropertyCard from "@/components/app/datasets/labels/cards/property-card.svelte";
@@ -12,9 +13,12 @@
     LabelConfigurations,
     LabelConfigurationValue,
   } from "@/data/model/dataset/labels";
+  import type { ModalityShape, ModalityShapes } from "@/data/model/setting/plugin/types";
 
   // Props
   interface Props {
+    modality: string;
+    shapes: ModalityShapes;
     labelConfig: LabelConfigurations;
     onAddCategory: (labelConfigKey: string, nodeId?: string) => void;
     onEditCategoryId: (labelConfigKey: string, oldId: string, newId: string) => void;
@@ -24,6 +28,8 @@
     onRemoveProperty: (labelConfigKey: string, propertyId: string) => void;
   }
   let {
+    modality,
+    shapes,
     labelConfig,
     onAddCategory,
     onEditCategoryId,
@@ -34,9 +40,33 @@
   }: Props = $props();
 
   // Variables
-  let selectedConfigKey: string = $state(Object.keys(labelConfig)[0]);
-  let hasAtLeastOneCategory: boolean = $derived(labelConfig[selectedConfigKey].values.length > 0);
-  let hasAtLeastOneProperty: boolean = $derived(labelConfig[selectedConfigKey].properties.length > 0);
+  let selectedConfigKey: string = $derived(Object.keys(labelConfig)[0]);
+  let selectedLabelConfig = $derived(labelConfig[selectedConfigKey]);
+  let labelConfigIsEmpty: boolean = $derived(Object.keys(labelConfig).length === 0);
+  let hasAtLeastOneCategory: boolean = $derived(selectedLabelConfig ? selectedLabelConfig.values.length > 0 : false);
+  let hasAtLeastOneProperty: boolean = $derived(
+    selectedLabelConfig ? selectedLabelConfig.properties.length > 0 : false,
+  );
+
+  //
+  onMount(() => {
+    if (Object.keys(labelConfig).length > 0) {
+      labelConfig = labelConfig;
+      return;
+    }
+
+    // Return combination of modality:shapes
+    let modalityShapeLabelConfig: LabelConfigurations = {};
+    Object.keys(shapes).forEach((shape) => {
+      const configKey = `${modality}:${shape}`;
+      modalityShapeLabelConfig[configKey] = {
+        values: [],
+        properties: [],
+      };
+    });
+
+    labelConfig = modalityShapeLabelConfig;
+  });
 
   // Functions
   function selectConfigKey(key: string) {
@@ -98,12 +128,14 @@
       <CardContent class="flex flex-col gap-2">
         {#each Object.keys(labelConfig) as labelConfigKey (labelConfigKey)}
           {@const isSelect = selectedConfigKey === labelConfigKey}
+          {@const shapeKey = labelConfigKey.split(":")[1]}
+          {@const currentShape = shapes[shapeKey] as ModalityShape}
           <Button
             variant={isSelect ? "default" : "secondary"}
             class="w-full justify-start"
             onclick={() => selectConfigKey(labelConfigKey)}
           >
-            {labelConfigKey}
+            {currentShape.label}
           </Button>
         {/each}
       </CardContent>
@@ -131,13 +163,15 @@
       </CardHeader>
 
       <CardContent>
-        <CategoryTree
-          values={labelConfig[selectedConfigKey].values}
-          onAddCategory={(nodeId) => addCategory(nodeId)}
-          onEditCategoryId={(oldId, newId) => editCategoryId(oldId, newId)}
-          onEditCategory={(editedCategory) => editCategory(editedCategory)}
-          onRemoveCategory={(categoryId) => removeCategory(categoryId)}
-        />
+        {#if !labelConfigIsEmpty}
+          <CategoryTree
+            values={selectedLabelConfig.values}
+            onAddCategory={(nodeId) => addCategory(nodeId)}
+            onEditCategoryId={(oldId, newId) => editCategoryId(oldId, newId)}
+            onEditCategory={(editedCategory) => editCategory(editedCategory)}
+            onRemoveCategory={(categoryId) => removeCategory(categoryId)}
+          />
+        {/if}
       </CardContent>
     </Card>
 
@@ -155,19 +189,21 @@
       </CardHeader>
 
       <CardContent class="flex flex-col gap-2">
-        {#each Object.values(labelConfig[selectedConfigKey].properties) as property (property.id)}
-          <PropertyCard
-            {property}
-            onSetProperty={(editedProperty) => setProperty(editedProperty)}
-            onRemoveProperty={(propertyId) => removeProperty(propertyId)}
-          />
-        {:else}
-          <ResponseBlock icon={BoltIcon} title="No Properties Yet" description="Create properties to get started">
-            {#snippet actions()}
-              {@render AddNewPropertyButton()}
-            {/snippet}
-          </ResponseBlock>
-        {/each}
+        {#if !labelConfigIsEmpty}
+          {#each Object.values(selectedLabelConfig.properties) as property (property.id)}
+            <PropertyCard
+              {property}
+              onSetProperty={(editedProperty) => setProperty(editedProperty)}
+              onRemoveProperty={(propertyId) => removeProperty(propertyId)}
+            />
+          {:else}
+            <ResponseBlock icon={BoltIcon} title="No Properties Yet" description="Create properties to get started">
+              {#snippet actions()}
+                {@render AddNewPropertyButton()}
+              {/snippet}
+            </ResponseBlock>
+          {/each}
+        {/if}
       </CardContent>
     </Card>
   </div>

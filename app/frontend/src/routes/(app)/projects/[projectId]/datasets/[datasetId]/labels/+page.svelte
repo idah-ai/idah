@@ -24,6 +24,9 @@
     type LabelConfigurationValue,
     type LabelingConfiguration,
   } from "@/data/model/dataset/labels";
+  import { pluginsBackendDataSource } from "@/data/model/setting/plugin/record";
+
+  import type { ModalityShapes } from "@/data/model/setting/plugin/types";
 
   // Contexts
   const project: ProjectRecord = getContext("project");
@@ -34,7 +37,8 @@
   let datasetId: string = page.params.datasetId as string;
 
   let saving: boolean = $state(false);
-  let _modality: string = $state("video");
+  let modality: string = $state("");
+  let shapes = $state<ModalityShapes>({});
   let labelConfig: LabelConfigurations = $state({});
   let initialLabelConfig: LabelingConfiguration | undefined = $state(undefined);
   let isLabelConfigChanged: boolean = $derived.by(() => {
@@ -57,9 +61,12 @@
         [DatasetRecord.type]: ["modality", "labeling_configuration"],
       },
     });
-    _modality = datasetRes.data.modality;
+    modality = datasetRes.data.modality;
     labelConfig = datasetRes.data.labeling_configuration;
     initialLabelConfig = JSON.parse(JSON.stringify(labelConfig));
+
+    const showModalityRes = await pluginsBackendDataSource.showModality(modality);
+    shapes = showModalityRes.shapes;
   }
 
   async function saveLabelConfigChanges(): Promise<void> {
@@ -257,6 +264,8 @@
   </PageHeader>
 
   <LabelConfigEditor
+    {modality}
+    {shapes}
     {labelConfig}
     onAddCategory={addCategory}
     onEditCategoryId={editCategoryId}
