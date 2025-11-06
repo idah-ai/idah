@@ -1,7 +1,7 @@
 <script lang="ts">
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import TextareaField from "@/components/app/forms/fields/input/textarea-field.svelte";
-  import Form from "@/components/app/forms/form.svelte";
+  import { FieldGroup, FieldSet } from "@/components/ui/field";
 
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
 
@@ -26,24 +26,28 @@
   });
 </script>
 
-<Form>
-  <!-- PROJECT::NAME -->
-  <InputField
-    name="{resource}/name"
-    label="Name"
-    placeholder="Enter project name"
-    required
-    errors={fieldErrors["name"]}
-    bind:value={name}
-  ></InputField>
+<FieldSet class="p-1">
+  <FieldGroup>
+    <!-- PROJECT::NAME -->
+    <InputField
+      name="{resource}/name"
+      label="Name"
+      placeholder="Enter project name"
+      required
+      errors={fieldErrors["name"]}
+      value={name}
+      oninput={(e) => (name = e.currentTarget.value)}
+    ></InputField>
 
-  <!-- PROJECT::DESCRIPTION -->
-  <TextareaField
-    name="{resource}/description"
-    label="Description"
-    placeholder="Enter project description"
-    required
-    errors={fieldErrors["description"]}
-    bind:value={description}
-  ></TextareaField>
-</Form>
+    <!-- PROJECT::DESCRIPTION -->
+    <TextareaField
+      name="{resource}/description"
+      label="Description"
+      placeholder="Enter project description"
+      required
+      errors={fieldErrors["description"]}
+      value={description}
+      oninput={(e) => (description = e.currentTarget.value)}
+    ></TextareaField>
+  </FieldGroup>
+</FieldSet>
