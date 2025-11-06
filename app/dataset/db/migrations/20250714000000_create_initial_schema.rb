@@ -95,7 +95,6 @@ Sequel.migration do
 
       # Type of dataset
       column :modality, String, null: false
-      column :name, String, null: false, default: ""
 
       column :labels, "text[]", null: false, default: "{}"
 
@@ -111,8 +110,6 @@ Sequel.migration do
       column :status, String, null: false, index: true, default: "pending"
 
       column :progress, Float, null: false, default: 0.0 # from 0.0 to 1.0
-
-      index :name, opclass: :gin_trgm_ops, type: :gin
 
       Migration::Timestamps.timestamps(self)
     end
