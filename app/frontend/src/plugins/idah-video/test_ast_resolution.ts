@@ -2,27 +2,6 @@ export type ASTValue = string | number | string[] | boolean | undefined;
 export type ASTNodeValue = ASTValue | ASTNode | [ASTValue];
 export type ASTNode = [string, ASTNodeValue[]];
 
-const _tree: ASTNode = [
-  "and",
-  [
-    ["match", ["*/vehicles", "categories/*"]],
-    [
-      "and",
-      [
-        ["neq", [["eq", [["get", ["var_1"]], [["42", "24"]]]], false]],
-        ["eq", ["test", ["get", ["var_2"]]]],
-      ],
-    ],
-  ],
-];
-
-const var_1: ASTValue = ["42", "24"];
-const var_2: ASTValue = "test";
-const _variables = new Map<string, ASTValue>([
-  ["var_1", var_1],
-  ["var_2", var_2],
-]);
-
 // Operator implementations
 type OperatorCallback = (args: ASTValue[]) => ASTValue;
 
@@ -87,6 +66,13 @@ export class AstProcessor {
 
         const [val1, val2] = props;
 
+        console.debug({
+          op: "match",
+          val1,
+          val2,
+          result: wildcard_match(val1?.toString() || "", val2?.toString() || ""),
+        });
+
         return wildcard_match(val1?.toString() || "", val2?.toString() || "");
       },
     ],
@@ -96,6 +82,7 @@ export class AstProcessor {
         const [val] = props;
         const key = val?.toString();
         if (!key || !this.variables.has(key)) throw new Error(`Variable not found: ${key}`);
+        console.debug({ op: "get", val, result: this.variables.get(key) });
         return this.variables.get(key)!;
       },
     ],
@@ -105,6 +92,17 @@ export class AstProcessor {
         if (props.length != 2) throw new Error(`Invalid number of arguments expected 2 received: ${props.length}`);
 
         const [val1, val2] = props;
+
+        console.debug({
+          op: "eq",
+          val1,
+          val2,
+          result:
+            Array.isArray(val1) && Array.isArray(val2)
+              ? val1.length === val2.length && val1.every((v) => val2.includes(v))
+              : val1 === val2,
+        });
+
         if (Array.isArray(val1) && Array.isArray(val2)) {
           return val1.length === val2.length && val1.every((v) => val2.includes(v));
         }
@@ -117,6 +115,17 @@ export class AstProcessor {
         if (props.length != 2) throw new Error(`Invalid number of arguments expected 2 received: ${props.length}`);
 
         const [val1, val2] = props;
+
+        console.debug({
+          op: "neq",
+          val1,
+          val2,
+          result:
+            Array.isArray(val1) && Array.isArray(val2)
+              ? val1.length != val2.length || val1.some((v) => !val2.includes(v))
+              : val1 !== val2,
+        });
+
         if (Array.isArray(val1) && Array.isArray(val2)) {
           return val1.length != val2.length || val1.some((v) => !val2.includes(v));
         }
@@ -130,6 +139,13 @@ export class AstProcessor {
         if (props.length != 2) throw new Error(`Invalid number of arguments expected 2 received: ${props.length}`);
 
         const [val1, val2] = props;
+        console.debug({
+          op: "gt",
+          val1,
+          val2,
+          result: val1 != null && val2 != null ? val1 > val2 : false,
+        });
+
         return val1 != null && val2 != null ? val1 > val2 : false;
       },
     ],
@@ -139,6 +155,12 @@ export class AstProcessor {
         if (props.length != 2) throw new Error(`Invalid number of arguments expected 2 received: ${props.length}`);
 
         const [val1, val2] = props;
+        console.debug({
+          op: "lt",
+          val1,
+          val2,
+          result: val1 != null && val2 != null ? val1 < val2 : false,
+        });
         return val1 != null && val2 != null ? val1 < val2 : false;
       },
     ],
@@ -148,6 +170,13 @@ export class AstProcessor {
         if (props.length != 2) throw new Error(`Invalid number of arguments expected 2 received: ${props.length}`);
 
         const [val1, val2] = props;
+        console.debug({
+          op: "lte",
+          val1,
+          val2,
+          result: val1 != null && val2 != null ? val1 <= val2 : false,
+        });
+
         return val1 != null && val2 != null ? val1 <= val2 : false;
       },
     ],
@@ -157,6 +186,12 @@ export class AstProcessor {
         if (props.length != 2) throw new Error(`Invalid number of arguments expected 2 received: ${props.length}`);
 
         const [val1, val2] = props;
+        console.debug({
+          op: "lte",
+          val1,
+          val2,
+          result: val1 != null && val2 != null ? val1 >= val2 : false,
+        });
         return val1 != null && val2 != null ? val1 >= val2 : false;
       },
     ],
@@ -166,6 +201,12 @@ export class AstProcessor {
         if (props.length != 2) throw new Error(`Invalid number of arguments expected 2 received: ${props.length}`);
 
         const [val1, val2] = props;
+        console.debug({
+          op: "and",
+          val1,
+          val2,
+          result: val1 === true && val2 === true,
+        });
         return val1 === true && val2 === true;
       },
     ],
@@ -175,6 +216,12 @@ export class AstProcessor {
         if (props.length != 2) throw new Error(`Invalid number of arguments expected 2 received: ${props.length}`);
 
         const [val1, val2] = props;
+        console.debug({
+          op: "and",
+          val1,
+          val2,
+          result: val1 === true || val2 === true,
+        });
         return val1 === true || val2 === true;
       },
     ],
@@ -206,7 +253,8 @@ export class AstProcessor {
 
     // Single element array - treat as literal value
     if (rest.length === 0) {
-      return Array.isArray(first) ? first : (value as ASTValue);
+      return first;
+      // return Array.isArray(first) ? first : (value as ASTValue);
     }
 
     // Operator node
@@ -224,13 +272,23 @@ export class AstProcessor {
   }
 }
 
-console.log("AST Result:", new AstProcessor(_variables).processAST(_tree));
 import parser from "../../../build/parser.cjs";
 
+const var_1: ASTValue = ["42", "24"];
+const var_2: ASTValue = "categories/*";
+const _variables = new Map<string, ASTValue>([
+  ["var1", var_1],
+  ["var2", var_2],
+  ["var3", true],
+  ["false", false], //.... account for boolean in parser. ? xD
+  ["true", true], //.... account for boolean in parser. ? xD
+]);
+
 try {
-  const input = 'taskname match "xxxx" and description match "..." and status = "..." and tags = "..."';
-  const result = parser.parse(input);
-  console.log("Parse successful:", { result: result.toString() });
+  const query = 'var3 = false or (var1 = ["42", "24"] and var2 match "*/vehicles")';
+  const result = parser.parse(query);
+  console.log("Parse successful:", { result: result });
+  console.log("AST Result:", new AstProcessor(_variables).processAST(result));
 } catch (error) {
   console.error("Parse error:", error.message);
   // The error object has useful properties for detailed reporting,
