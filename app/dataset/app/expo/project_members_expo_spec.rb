@@ -99,4 +99,26 @@ RSpec.describe ProjectMembersExpo, type: :exposition, as: :system do
 
     expect(last_response.status).to eq 204
   end
+
+  it "check project member access" do
+    expect(service).to receive(:authorize_access).with(
+      action: :create,
+      resource: "media:medias",
+      project_id: uuid,
+      allowed_access: ["org_owner", "owner"]
+    ).and_return(true)
+
+    post "/project_members/authorize_access",
+         {
+           action: "create",
+           resource: "media:medias",
+           project_id: uuid,
+           allowed_access: ["org_owner", "owner"]
+         }
+
+    expect(last_response.status).to eq 200
+
+    body = JSON.parse(last_response.body, symbolize_names: true)
+    expect(body[:data]).to be_truthy
+  end
 end

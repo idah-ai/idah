@@ -90,4 +90,35 @@ RSpec.describe ProjectMember::Service, database: true do
       expect { project_member_repo.find!(project_member_id) }.to raise_error(Verse::Error::NotFound)
     end
   end
+
+  describe "#authorize_access", as: :user do
+    subject { described_class.new(current_auth_context) }
+    before do
+      membership_id = project_member_repo.create(attributes.merge({ account_id: current_auth_context.metadata[:id] }))
+      @membership = project_member_repo.find!(membership_id)
+    end
+
+    it "check if the action on resource with existing access is allowed" do
+      result = subject.authorize_access(
+        action: :create,
+        resource: "media:medias",
+        project_id: project_id,
+        allowed_access: ["annotator"]
+      )
+
+      expect(result).to be_truthy
+      expect(@membership.access).to eq("annotator")
+    end
+
+    it "gets an error if the access is not allowed" do
+      expect{
+        subject.authorize_access(
+          action: :create,
+          resource: "media:medias",
+          project_id: project_id,
+          allowed_access: ["owner"]
+        )
+      }.to raise_error(Verse::Error::Unauthorized)
+    end
+  end
 end
