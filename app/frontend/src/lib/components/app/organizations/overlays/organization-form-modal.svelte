@@ -6,8 +6,8 @@
 
   import { refetches } from "@/utils/refetch";
 
-  import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
-  import { createAccountSchema, updateAccountSchema } from "@/data/model/iam/accounts/schema";
+  import { OrganizationRecord, organizationsBackendDataSource } from "@/data/model/dataset/organizations/record";
+  import { createOrganizationSchema, updateOrganizationSchema } from "@/data/model/dataset/organizations/schema";
   import { getFieldErrors, validateData, type ZodSchema } from "@/utils/validate";
 
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
@@ -15,7 +15,7 @@
 
   // Props
   interface Props extends FormModalBaseProps {
-    organizationRecord?: AccountRecord;
+    organizationRecord?: OrganizationRecord;
   }
   let { action, open = $bindable(), title, organizationRecord }: Props = $props();
 
@@ -24,11 +24,11 @@
   let fieldErrors: Hash = $state({});
   let submitting: boolean = $state(false);
 
-  let organization: AccountRecord = $derived(
+  let organization: OrganizationRecord = $derived(
     organizationRecord
       ? organizationRecord
-      : new AccountRecord({
-          type: AccountRecord.type,
+      : new OrganizationRecord({
+          type: OrganizationRecord.type,
           attributes: {
             name: null,
           },
@@ -42,8 +42,8 @@
 
   function resetForm(): void {
     fieldErrors = {};
-    organization = new AccountRecord({
-      type: AccountRecord.type,
+    organization = new OrganizationRecord({
+      type: OrganizationRecord.type,
       attributes: {
         name: null,
       },
@@ -56,7 +56,7 @@
 
   async function createOrganization(): Promise<void> {
     try {
-      await accountsBackendDataSource.create({
+      await organizationsBackendDataSource.create({
         attributes: {
           name: organization.name,
         },
@@ -73,7 +73,7 @@
 
   async function updateOrganization(): Promise<void> {
     try {
-      await accountsBackendDataSource.update(organization.id, {
+      await organizationsBackendDataSource.update(organization.id, {
         attributes: {
           name: organization.name,
         },
@@ -91,7 +91,7 @@
   async function submit(): Promise<void> {
     fieldErrors = {};
     submitting = true;
-    const schema: ZodSchema = newRecord ? createAccountSchema : updateAccountSchema;
+    const schema: ZodSchema = newRecord ? createOrganizationSchema : updateOrganizationSchema;
 
     try {
       const validated = validateData(schema, {
