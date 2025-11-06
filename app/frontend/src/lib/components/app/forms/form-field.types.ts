@@ -1,4 +1,6 @@
+import type { Icon as IconType } from "@lucide/svelte";
 import type { Snippet } from "svelte";
+import type { FormEventHandler, HTMLInputTypeAttribute } from "svelte/elements";
 
 import type { DataSource, ListOptions } from "@/data/DataSource";
 import type { Record } from "@/data/model/Record";
@@ -14,13 +16,23 @@ export interface FormFieldBaseProps {
   readonly?: boolean;
 
   info?: string;
+  description?: string;
   errors?: string[];
 
   class?: string | null;
 
-  slotLabel?: Snippet;
-  slotInfo?: Snippet;
+  slotDescription?: Snippet;
   slotErrors?: Snippet;
+}
+
+export interface InputFieldBaseProps extends FormFieldBaseProps {
+  type?: HTMLInputTypeAttribute;
+  prefixIcon?: typeof IconType;
+  prefix?: string;
+  suffixIcon?: typeof IconType;
+  suffix?: string;
+  oninput?: FormEventHandler<HTMLInputElement> | null | undefined;
+  onblur?: FormEventHandler<HTMLInputElement> | null | undefined;
 }
 
 export interface SelectFieldBaseProps extends FormFieldBaseProps {
