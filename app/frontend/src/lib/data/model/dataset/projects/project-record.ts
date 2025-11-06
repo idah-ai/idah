@@ -1,14 +1,15 @@
 import { createBackendDataSource } from "@/data/BackendDataSource";
 import { field, Record, RecordFactory, type } from "@/data/model/Record";
+import { Transformers } from "@/data/model/transformers";
 
 @type("dataset:projects")
 export class ProjectRecord extends Record {
   @field() public name!: string;
   @field() public description!: string;
+  @field() public readonly created_by_email!: string;
 
-  @field() public created_by_id!: string;
-  @field() public created_at!: string;
-  @field() public updated_at!: Date;
+  @field({ transformer: Transformers.Time }) public readonly created_at!: Date;
+  @field({ transformer: Transformers.Time }) public readonly updated_at!: Date;
 }
 
 RecordFactory.registerTypes(ProjectRecord);

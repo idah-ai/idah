@@ -8,7 +8,7 @@ module Project
 
     field :name, type: String
     field :description, type: String
-    field :created_by_id, type: Integer, readonly: true
+    field :created_by_email, type: String, readonly: true
 
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true

@@ -19,8 +19,8 @@ module Jobs
       emit(:update_progress, value:)
     end
 
-    def reschedule(in: 10)
-      emit(:reschedule, in:)
+    def reschedule(after: 10)
+      emit(:reschedule, after:)
     end
 
     def error(message)

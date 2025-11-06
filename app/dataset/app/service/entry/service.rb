@@ -26,6 +26,11 @@ module Entry
       attr[:id] = record.id || UUIDv7.generate
 
       entries.transaction do
+        unless attr[:resource]
+          raise Verse::Error::ValidationFailed,
+                "resource is required to create an entry"
+        end
+
         if entries.find_by({ resource: attr[:resource] })
           raise Verse::Error::ValidationFailed,
                 "Entry with resource #{attr[:resource]} already exists"
@@ -42,42 +47,6 @@ module Entry
         attr[:status] ||= job_id ? "pending" : "ready"
 
         id = entries.create(attr)
-
-        # entry = entries.find!(id)
-
-        if job_id
-          # After we created, we check the job status
-          # and update the entry status accordingly.
-          # If the job is not done yet, we will update the
-          # status on event.
-          entries.after_commit do
-            job = Api[:idah].media.jobs.show(id: job_id)
-
-            if job.status == "completed"
-              entries.update!(id, { status: "ready" })
-            end
-          end
-        else
-          # If there is no job, we can start processing right away
-          # depending on the dataset modality
-          entries.after_commit do
-            entry_dataset_modality = datasets.find!(record.dataset.id).modality
-
-            if entry_dataset_modality == "video"
-              Api[:idah].media.videos.process(
-                attributes: {
-                  resource: record.resource,
-                  sizes: ["240p", "360p", "480p", "720p", "1080p", "1440p", "2160p"],
-                  generate_frames: false,
-                  generate_thumbnail: true,
-                  generate_frame_format: "avif",
-                  generate_frame_framerate: 6,
-                  streaming_time_per_segment: 10
-                }
-              )
-            end
-          end
-        end
 
         entries.find!(id)
       end
@@ -98,9 +67,7 @@ module Entry
 
     def update_entries_job(job_id, resource)
       entries.transaction do
-        entry = entries.find_by({ resource: })
-
-        raise Verse::Error::NotFound, "Entry with resource #{resource} not found" unless entry
+        entry = entries.find_by!({ resource: })
 
         if entry.job_id && entry.job_id != job_id
           raise Verse::Error::ValidationFailed,
@@ -116,6 +83,40 @@ module Entry
       entries.transaction do
         entries.update!(id, { assigned_to_id: })
         entries.find!(id)
+      end
+    end
+
+    def submit(entry_id, **opts)
+      entries.transaction do
+        entry = entries.find!(entry_id, included: [:dataset])
+        entry_workflow = entry.dataset.entry_workflow.new(entry, **opts)
+
+        entry_workflow.submit!
+        entries.update!(
+          entry.id,
+          {
+            wf_step: entry_workflow.aasm.current_state.to_s,
+            status: entry_workflow.aasm.current_state == :done ? "completed" : "in_progress"
+          }
+        )
+        entries.find!(entry.id, included: [:dataset])
+      end
+    end
+
+    def error(entry_id, **opts)
+      entries.transaction do
+        entry = entries.find!(entry_id, included: [:dataset])
+        entry_workflow = entry.dataset.entry_workflow.new(entry, **opts)
+
+        entry_workflow.error!
+        entries.update!(
+          entry.id,
+          {
+            wf_step: entry_workflow.aasm.current_state.to_s,
+            status: "errored"
+          }
+        )
+        entries.find!(entry.id, included: [:dataset])
       end
     end
   end

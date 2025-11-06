@@ -1,27 +1,30 @@
 <script lang="ts">
-  import { getContext, onDestroy, onMount } from "svelte";
+  import { onDestroy, onMount } from "svelte";
   import type { IActivityContext, IActivityView } from "./interface/Activity";
-  import type { PluginManager } from "./PluginManager";
+  import AnnotationHeaderBar from "@/plugin/layout/header/AnnotationHeaderBar.svelte";
 
   // Props
   interface Props {
     context: IActivityContext;
-    pluginId: string;
   }
-  let { context, pluginId }: Props = $props();
+  let { context }: Props = $props();
 
   // Variables
   let container: HTMLElement;
   let plugin: IActivityView | undefined = $state();
-  let pluginManager: PluginManager = getContext("idah-plugin-manager");
 
-  // Lifecycle
+  let p: Promise<IActivityView> = new Promise<IActivityView>((ok, ko) => {
+    if (!window.idah_plugin) {
+      ko();
+    } else {
+      ok(window.idah_plugin as IActivityView);
+    }
+  });
+
   onMount(() => {
-    pluginManager.loadedPromise.then(() => {
-      plugin = pluginManager.getPlugin(pluginId);
-      if (!plugin) return console.error("plugin not found", { pluginId });
-
-      console.debug("Mounting plugin", $state.snapshot(plugin));
+    p.then((_plugin) => {
+      plugin = _plugin;
+      console.debug({ plugin: $state.snapshot(plugin), container, context });
       plugin.render?.(container, context);
     });
   });
@@ -31,16 +34,17 @@
   });
 </script>
 
-<div bind:this={container}>
-  {#await pluginManager.loadedPromise}
-    Loading Plugins
-  {:then}
-    {#key plugin}
-      {#if plugin}
-        plugin render
-      {:else}
-        No registered {pluginId} plugin found
-      {/if}
-    {/key}
-  {/await}
+<div>
+  <AnnotationHeaderBar {context} />
+  <!-- Plugin Container -->
+  <div class="h-[calc(100vh-58px)]" bind:this={container}>
+    <!-- AnnotationHeaderBar 58 px \o/ ? -->
+    {#await p}
+      Loading Plugins
+    {:then}
+      should be overriden by plugin render
+    {:catch}
+      Could not find plugin
+    {/await}
+  </div>
 </div>

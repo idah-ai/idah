@@ -108,4 +108,77 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
 
     expect(last_response.status).to eq 204
   end
+
+  describe "#submit" do
+    it "calls service.submit with entry_id and no options" do
+      expect(service).to receive(:submit).with(uuid).and_return(entry_record)
+
+      post "/entries/#{uuid}/submit"
+
+      expect(last_response.status).to eq 200
+      body = JSON.parse(last_response.body, symbolize_names: true)
+      record = deserialize(body)
+      expect(record.id).to eq uuid
+    end
+
+    it "calls service.submit with entry_id and options" do
+      expect(service).to receive(:submit).with(uuid, { approved: true }).and_return(entry_record)
+
+      post "/entries/#{uuid}/submit",
+           {
+             data: {
+               attributes: {
+                 approved: true
+               }
+             }
+           }
+
+      expect(last_response.status).to eq 200
+      body = JSON.parse(last_response.body, symbolize_names: true)
+      record = deserialize(body)
+      expect(record.id).to eq uuid
+    end
+
+    it "handles submit with multiple options" do
+      expect(service).to receive(:submit).with(
+        uuid,
+        { approved: false, comment: "Needs revision" }
+      ).and_return(entry_record)
+
+      post "/entries/#{uuid}/submit",
+           {
+             data: {
+               attributes: {
+                 approved: false,
+                 comment: "Needs revision"
+               }
+             }
+           }
+
+      expect(last_response.status).to eq 200
+    end
+  end
+
+  describe "#error" do
+    it "calls service.error with entry_id and options" do
+      expect(service).to receive(:error).with(
+        uuid,
+        { message: "Processing failed" }
+      ).and_return(entry_record)
+
+      post "/entries/#{uuid}/error",
+           {
+             data: {
+               attributes: {
+                 message: "Processing failed"
+               }
+             }
+           }
+
+      expect(last_response.status).to eq 200
+      body = JSON.parse(last_response.body, symbolize_names: true)
+      record = deserialize(body)
+      expect(record.id).to eq uuid
+    end
+  end
 end
