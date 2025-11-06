@@ -5,7 +5,7 @@
   import PageProvider from "@/components/app/page/page-provider.svelte";
   import Button from "@/components/ui/button/button.svelte";
 
-  import { accountColumns } from "@/components/app/iam/accounts/data-tables/account-columns";
+  import { organizationColumns } from "@/components/app/organizations/data-tables/organization-columns";
   import { organizationBreadcrumb } from "@/components/app/page/page-breadcrumb.constants";
   import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
   import { refetches } from "@/utils/refetch";
@@ -42,11 +42,11 @@
       id="organizations"
       name="organizations"
       refetchKey="organizations"
-      columns={accountColumns}
+      columns={organizationColumns}
       dataSource={accountsBackendDataSource}
       listOptions={{
         fields: {
-          [AccountRecord.type]: ["name", "email", "enabled", "joined_at", "created_at", "updated_at"],
+          [AccountRecord.type]: ["name", "created_at"],
         },
       }}
     >
