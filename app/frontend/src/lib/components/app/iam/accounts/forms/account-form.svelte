@@ -1,7 +1,7 @@
 <script lang="ts">
   import CheckboxField from "@/components/app/forms/fields/input/checkbox-field.svelte";
-  import Form from "@/components/app/forms/form.svelte";
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
+  import { FieldGroup, FieldSet } from "@/components/ui/field";
 
   import { AccountRecord } from "@/data/model/iam/accounts/record";
 
@@ -27,36 +27,40 @@
   });
 </script>
 
-<Form>
-  <!-- ACCOUNT::NAME -->
-  <InputField
-    name="{resource}/name"
-    label="Name"
-    placeholder="E.g. John Doe"
-    required
-    errors={fieldErrors["name"]}
-    bind:value={name}
-  />
+<FieldSet class="p-1">
+  <FieldGroup>
+    <!-- ACCOUNT::NAME -->
+    <InputField
+      name="{resource}/name"
+      label="Name"
+      placeholder="E.g. John Doe"
+      required
+      errors={fieldErrors["name"]}
+      value={name}
+      oninput={(e) => (name = e.currentTarget.value)}
+    />
 
-  <!-- ACCOUNT::EMAIL -->
-  <InputField
-    name="{resource}/email"
-    label="Email"
-    placeholder="E.g. john.doe@example.com"
-    type="email"
-    required
-    errors={fieldErrors["email"]}
-    bind:value={email}
-  />
+    <!-- ACCOUNT::EMAIL -->
+    <InputField
+      name="{resource}/email"
+      label="Email"
+      placeholder="E.g. john.doe@example.com"
+      type="email"
+      required
+      errors={fieldErrors["email"]}
+      value={email}
+      oninput={(e) => (email = e.currentTarget.value)}
+    />
 
-  <!-- ACCOUNT::ENABLED -->
-  <CheckboxField
-    name="{resource}/enabled"
-    label="Enable account"
-    info="Allow this account to access the application"
-    bordered
-    required
-    errors={fieldErrors["enabled"]}
-    bind:checked={enabled}
-  ></CheckboxField>
-</Form>
+    <!-- ACCOUNT::ENABLED -->
+    <CheckboxField
+      name="{resource}/enabled"
+      label="Enable account"
+      info="Allow this account to access the application"
+      bordered
+      required
+      errors={fieldErrors["enabled"]}
+      bind:checked={enabled}
+    ></CheckboxField>
+  </FieldGroup>
+</FieldSet>
