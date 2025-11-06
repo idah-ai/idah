@@ -39,7 +39,6 @@ module Auth
             in the return response.
           MD
         )
-        field(:user_agent, String).meta(description: "The user agent of the client.")
       end
       meta nodoc: true
     end
@@ -48,7 +47,7 @@ module Auth
         params[:email],
         params[:password],
         ip: server_ip,
-        user_agent: params[:user_agent]
+        user_agent: env["HTTP_USER_AGENT"]
       )
       set_cookies(output.auth_token, output.refresh_token) if params[:cookie]
       renderer.meta = { token: output.auth_token }
@@ -63,16 +62,13 @@ module Auth
         If the refresh token is invalid, the cookie will be cleared.
       MD
       meta nodoc: true
-      input do
-        field?(:user_agent, String)
-      end
     end
     def refresh
       output = service.refresh_token(
         auth_cookie,
         refresh_cookie,
         ip: server_ip,
-        user_agent: params[:user_agent]
+        user_agent: env["HTTP_USER_AGENT"]
       )
 
       set_cookies(output.auth_token, output.refresh_token)

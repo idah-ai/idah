@@ -2,6 +2,9 @@
 
 module Auth
   class Service < Verse::Service::Base
+    AUTH_TOKEN_LIFETIME  = 86_400 # 1 day
+    REFRESH_TOKEN_LIFETIME  = 1_209_600 # 14 days
+
     use_repo \
       accounts: Account::Repository,
       account_sessions: AccountSession::Repository
@@ -10,10 +13,9 @@ module Auth
       system_accounts: Account::Repository,
       system_roles: RoleRepository
 
-    def create_refresh_token(account, role_name, nonce:, session_id: nil, ip: "", user_agent: nil)
+    def create_refresh_token(account, nonce:, session_id: nil, ip: "", user_agent: nil)
       seq, session_id = account_sessions.bump_refresh_seq(
-        account.id,
-        role_name,
+        account,
         session_id:,
         nonce:,
         ip:,
@@ -25,7 +27,7 @@ module Auth
         session_id,
         nonce,
         seq,
-        exp: Time.now.to_i + ::Settings["refresh_token.lifetime"],
+        exp: Time.now.to_i + REFRESH_TOKEN_LIFETIME,
       )
     end
 
@@ -43,7 +45,7 @@ module Auth
     end
 
     # Check if the given token is valid and regenerate a new token
-    def refresh_token(_auth_token, refresh_token, ip: "", user_agent: nil)
+    def refresh_token(auth_token, refresh_token, ip: "", user_agent: nil)
       uid, session_id, nonce = RefreshToken.validate(refresh_token)
 
       # find the account, raise error if not found
@@ -66,10 +68,6 @@ module Auth
     # @return [String, String] the auth_token and refresh_token
     def build_tokens(account, nonce:, session_id: nil, ip: "", user_agent: nil)
       account_role = account.role
-      # # If no active roles for the given account, raise error
-      if account_role.nil?
-        raise Verse::Error::Authorization, "No role active"
-      end
 
       # Fetch labels from the role repository
       role = system_roles.find_by({ name: account_role })
@@ -78,7 +76,7 @@ module Auth
         raise Verse::Error::ValidationFailed, "Cannot find role #{account_role}"
       end
 
-      exp = Time.now.to_i + ::Settings["auth_token.lifetime"]
+      exp = Time.now.to_i + AUTH_TOKEN_LIFETIME
 
       # encode the auth_token
       auth_token = Verse::Http::Auth::Token.encode(
@@ -92,7 +90,7 @@ module Auth
       )
 
       # generate a refresh token
-      refresh_token = create_refresh_token(account, account_role, session_id:, ip:, nonce:, user_agent:)
+      refresh_token = create_refresh_token(account, session_id:, ip:, nonce:, user_agent:)
 
       AccountAuth::Record.new(
         {
@@ -101,11 +99,8 @@ module Auth
           name: account.name,
           picture_url: account.picture_url,
           role_name: role.name,
-          role_labels: role.labels,
           scope: {},
           role_rights: role.rights,
-          # auth_type: account.auth_type,
-          user_agent:,
           auth_token:,
           refresh_token:,
           exp:

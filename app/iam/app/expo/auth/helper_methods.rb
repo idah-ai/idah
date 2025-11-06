@@ -2,6 +2,14 @@
 
 module Auth
   module HelperMethods
+    AUTH_TOKEN_NAME      = "auth-token"
+    AUTH_TOKEN_PATH      = "/"
+    AUTH_TOKEN_LIFETIME  = 86_400 # 1 day
+
+    REFRESH_TOKEN_NAME      = "refresh-token"
+    REFRESH_TOKEN_PATH      = "/api/v1/iam"
+    REFRESH_TOKEN_LIFETIME  = 1_209_600 # 14 days
+
     def self.included(base)
       base.use_service(Auth::Service)
     end
@@ -19,19 +27,19 @@ module Auth
     def set_refresh_cookie(value)
       if value
         server.response.set_cookie(
-          Settings["refresh_token.name"],
+          REFRESH_TOKEN_NAME,
           value:,
-          path: Settings["refresh_token.path"],
-          expires: Time.now + Settings["refresh_token.lifetime"],
+          path: REFRESH_TOKEN_PATH,
+          expires: Time.now + REFRESH_TOKEN_LIFETIME,
           http_only: true,
           secure: true
         )
       else
         # Force expiration of the cookie as we can't delete a cookie
         server.response.set_cookie(
-          Settings["refresh_token.name"],
+          REFRESH_TOKEN_NAME,
           value: "",
-          path: Settings["refresh_token.path"],
+          path: REFRESH_TOKEN_PATH,
           expires: Time.now - 600, # 10 minutes ago
           http_only: true,
           secure: true
@@ -42,19 +50,19 @@ module Auth
     def set_auth_cookie(value)
       if value
         server.response.set_cookie(
-          Settings["auth_token.name"],
+          AUTH_TOKEN_NAME,
           value:,
-          path: Settings["auth_token.path"],
-          expires: Time.now + Settings["auth_token.lifetime"],
+          path: AUTH_TOKEN_PATH,
+          expires: Time.now + AUTH_TOKEN_LIFETIME,
           http_only: true,
           secure: true
         )
       else
         # Force expiration of the cookie as we can't delete a cookie
         server.response.set_cookie(
-          Settings["auth_token.name"],
+          AUTH_TOKEN_NAME,
           value: "",
-          path: Settings["auth_token.path"],
+          path: AUTH_TOKEN_PATH,
           expires: Time.now - 600,
           http_only: true,
           secure: true
@@ -69,13 +77,13 @@ module Auth
 
     def auth_cookie
       server.cookies[
-        Settings["auth_token.name"]
+        AUTH_TOKEN_NAME
       ]
     end
 
     def refresh_cookie
       server.cookies[
-        Settings["refresh_token.name"]
+        REFRESH_TOKEN_NAME
       ]
     end
   end

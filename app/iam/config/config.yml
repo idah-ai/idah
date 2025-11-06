@@ -41,14 +41,3 @@ counter:
 
 logging:
   level: <%= ENV.fetch("LOG_LEVEL", "info") %>
-
-default_settings: # Settings to setup if not yet set in database.
-  "auth_token.name": "auth-token"
-  "auth_token.path": "/"
-  "auth_token.lifetime": 86400
-
-  "refresh_token.name": "refresh-token"
-  "refresh_token.path": "/api/v1/iam"
-  "refresh_token.lifetime": 1209600
-
-  "redirect.default": 'https://<%= ENV.fetch("SERVICE_DOMAIN") %>/'
