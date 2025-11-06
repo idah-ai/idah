@@ -1,10 +1,11 @@
 <script lang="ts">
-  import Button from "@/components/ui/button/button.svelte";
-  import Form from "@/components/app/forms/form.svelte";
+  import { PlusIcon, Trash2Icon } from "@lucide/svelte";
+
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import SingleSelectField from "@/components/app/forms/fields/select/single/single-select-field.svelte";
+  import Button from "@/components/ui/button/button.svelte";
+  import { FieldGroup, FieldSet } from "@/components/ui/field";
 
-  import { PlusIcon, Trash2Icon } from "@lucide/svelte";
   import { ProjectMemberRecord, projectMemberRoles } from "@/data/model/dataset/projects/members/record";
 
   // Props
@@ -26,45 +27,48 @@
   }
 </script>
 
-<Form>
-  <!-- EACH MEMBERS -->
-  {#each members as member, index}
-    <div class="flex w-full items-end gap-4">
-      <!-- EMAIL -->
-      <InputField
-        name="{resource}/email"
-        class="flex-1"
-        label="Email"
-        placeholder="Write an email address"
-        required
-        bind:value={member.email}
-      />
+<FieldSet class="p-1">
+  <FieldGroup>
+    <!-- EACH MEMBERS -->
+    {#each members as member, index (index)}
+      <div class="flex w-full items-end gap-4">
+        <!-- EMAIL -->
+        <InputField
+          name="{resource}/email"
+          class="flex-1"
+          label="Email"
+          placeholder="Write an email address"
+          required
+          value={member.email}
+          oninput={(e) => (member.email = e.currentTarget.value)}
+        />
 
-      <!-- ROLE -->
-      <SingleSelectField
-        name="{resource}/role"
-        class="flex-1"
-        label="Role"
-        placeholder="Select a role"
-        choices={projectMemberRoles}
-        required
-        searchable
-        searchPlaceholder="Search a role"
-        bind:value={member.role}
-      />
+        <!-- ROLE -->
+        <SingleSelectField
+          name="{resource}/role"
+          class="flex-1"
+          label="Role"
+          placeholder="Select a role"
+          choices={projectMemberRoles}
+          required
+          searchable
+          searchPlaceholder="Search a role"
+          bind:value={member.role}
+        />
 
-      <!-- REMOVE MEMBER BUTTON -->
-      <Button variant="ghost" size="icon" class="mb-1" onclick={() => removeMember(index)}>
-        <Trash2Icon class="size-4" />
+        <!-- REMOVE MEMBER BUTTON -->
+        <Button variant="ghost" size="icon" class="mb-1" onclick={() => removeMember(index)}>
+          <Trash2Icon class="size-4" />
+        </Button>
+      </div>
+    {/each}
+
+    <div>
+      <!-- ADD MORE MEMBERS BUTTON -->
+      <Button variant="secondary" onclick={addMember}>
+        <PlusIcon class="size-4" />
+        Add Members
       </Button>
     </div>
-  {/each}
-
-  <div>
-    <!-- ADD MORE MEMBERS BUTTON -->
-    <Button variant="secondary" onclick={addMember}>
-      <PlusIcon class="size-4" />
-      Add Members
-    </Button>
-  </div>
-</Form>
+  </FieldGroup>
+</FieldSet>

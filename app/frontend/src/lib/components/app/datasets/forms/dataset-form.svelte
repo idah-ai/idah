@@ -1,7 +1,7 @@
 <script lang="ts">
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import SingleSelectField from "@/components/app/forms/fields/select/single/single-select-field.svelte";
-  import Form from "@/components/app/forms/form.svelte";
+  import { FieldGroup, FieldSet } from "@/components/ui/field";
 
   import { DatasetRecord } from "@/data/model/dataset/dataset-record";
 
@@ -38,26 +38,29 @@
   });
 </script>
 
-<Form>
-  <!-- DATASET::NAME -->
-  <InputField
-    name="{resource}/name"
-    label="Name"
-    placeholder="Enter dataset name"
-    required
-    errors={fieldErrors["name"]}
-    bind:value={name}
-  />
+<FieldSet class="p-1">
+  <FieldGroup>
+    <!-- DATASET::NAME -->
+    <InputField
+      name="{resource}/name"
+      label="Name"
+      placeholder="Enter dataset name"
+      required
+      errors={fieldErrors["name"]}
+      value={name}
+      oninput={(e) => (name = e.currentTarget.value)}
+    />
 
-  <!-- DATASET::MODALITY -->
-  <SingleSelectField
-    name="{resource}/modality"
-    label="Modality"
-    placeholder="Select modality"
-    choices={modalityOptions}
-    required={newRecord}
-    disabled={!newRecord}
-    errors={fieldErrors["modality"]}
-    bind:value={modality}
-  />
-</Form>
+    <!-- DATASET::MODALITY -->
+    <SingleSelectField
+      name="{resource}/modality"
+      label="Modality"
+      placeholder="Select modality"
+      choices={modalityOptions}
+      required={newRecord}
+      disabled={!newRecord}
+      errors={fieldErrors["modality"]}
+      bind:value={modality}
+    />
+  </FieldGroup>
+</FieldSet>
