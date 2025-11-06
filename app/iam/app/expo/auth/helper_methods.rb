@@ -2,13 +2,13 @@
 
 module Auth
   module HelperMethods
-    AUTH_TOKEN_NAME      = "auth-token"
-    AUTH_TOKEN_PATH      = "/"
-    AUTH_TOKEN_LIFETIME  = 86_400 # 1 day
+    AUTH_TOKEN_NAME = "auth-token"
+    AUTH_TOKEN_PATH = "/"
+    AUTH_TOKEN_LIFETIME = 86_400 # 1 day
 
-    REFRESH_TOKEN_NAME      = "refresh-token"
-    REFRESH_TOKEN_PATH      = "/api/v1/iam"
-    REFRESH_TOKEN_LIFETIME  = 1_209_600 # 14 days
+    REFRESH_TOKEN_NAME = "refresh-token"
+    REFRESH_TOKEN_PATH = "/api/v1/iam"
+    REFRESH_TOKEN_LIFETIME = 1_209_600 # 14 days
 
     def self.included(base)
       base.use_service(Auth::Service)

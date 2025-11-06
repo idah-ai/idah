@@ -2,8 +2,8 @@
 
 module Auth
   class Service < Verse::Service::Base
-    AUTH_TOKEN_LIFETIME  = 86_400 # 1 day
-    REFRESH_TOKEN_LIFETIME  = 1_209_600 # 14 days
+    AUTH_TOKEN_LIFETIME = 86_400 # 1 day
+    REFRESH_TOKEN_LIFETIME = 1_209_600 # 14 days
 
     use_repo \
       accounts: Account::Repository,
@@ -45,7 +45,7 @@ module Auth
     end
 
     # Check if the given token is valid and regenerate a new token
-    def refresh_token(auth_token, refresh_token, ip: "", user_agent: nil)
+    def refresh_token(_auth_token, refresh_token, ip: "", user_agent: nil)
       uid, session_id, nonce = RefreshToken.validate(refresh_token)
 
       # find the account, raise error if not found
