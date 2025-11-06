@@ -13,6 +13,13 @@ module PluginSystem
       field :id, String
       field? :label, String
       field? :description, String
+
+      shape_type = define do
+        field :label, String
+        field? :icon, String
+      end
+
+      field? :shapes, Hash, of: shape_type
     end
 
     field? :repository do
