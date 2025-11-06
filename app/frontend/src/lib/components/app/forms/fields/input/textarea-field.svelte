@@ -1,58 +1,103 @@
 <script lang="ts">
-  import FormFieldErrors from "@/components/app/forms/form-field-errors.svelte";
-  import FormFieldInfo from "@/components/app/forms/form-field-info.svelte";
-  import FormFieldLabel from "@/components/app/forms/form-field-label.svelte";
-  import FormField from "@/components/app/forms/form-field.svelte";
-  import Textarea from "@/components/ui/textarea/textarea.svelte";
+  import { InfoIcon } from "@lucide/svelte";
+
+  import Tooltips from "@/components/app/tooltips/tooltips.svelte";
+  import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
+  import {
+    InputGroup,
+    InputGroupAddon,
+    InputGroupButton,
+    InputGroupText,
+    InputGroupTextarea,
+  } from "@/components/ui/input-group";
 
   import { cn } from "@/utils";
 
-  import type { FormFieldBaseProps } from "@/components/app/forms/form-field.types";
-  import type { FormEventHandler } from "svelte/elements";
+  import type { TextAreaFieldBaseProps } from "@/components/app/forms/form-field.types";
 
   // Props
-  interface Props extends FormFieldBaseProps {
+  interface Props extends TextAreaFieldBaseProps {
     value: string | null;
-    rows?: number;
-    oninput?: FormEventHandler<HTMLTextAreaElement>;
   }
   let {
     value = $bindable(null),
-    oninput,
+    prefix = undefined,
+    prefixIcon: PrefixIcon = undefined,
+    suffix = undefined,
+    suffixIcon: SuffixIcon = undefined,
+    oninput = undefined,
+    onblur = undefined,
     name,
     label,
     placeholder,
     disabled = false,
     required = false,
     readonly,
-    rows = 4,
+    description,
     info,
     errors,
     class: className,
-    slotLabel,
-    slotInfo,
+    slotDescription,
     slotErrors,
   }: Props = $props();
 </script>
 
-<FormField id={name} class={cn("", className)}>
-  {#if slotLabel}
-    {@render slotLabel()}
-  {:else}
-    <FormFieldLabel {required}>{label}</FormFieldLabel>
-  {/if}
+<Field class={cn("", className)}>
+  <FieldLabel for={name} {required}>{label}</FieldLabel>
 
-  <Textarea {name} {placeholder} {disabled} {readonly} {required} {rows} bind:value {oninput}></Textarea>
+  <InputGroup>
+    {#if prefix}
+      <InputGroupAddon align="inline-start">
+        <InputGroupText>{prefix}</InputGroupText>
+      </InputGroupAddon>
+    {/if}
 
-  {#if slotInfo}
-    {@render slotInfo()}
-  {:else}
-    <FormFieldInfo>{info}</FormFieldInfo>
+    {#if PrefixIcon}
+      <InputGroupAddon align="inline-start">
+        <PrefixIcon />
+      </InputGroupAddon>
+    {/if}
+
+    <InputGroupTextarea id={name} {placeholder} {disabled} {required} {readonly} {value} {oninput} {onblur} />
+
+    {#if suffix}
+      <InputGroupAddon align="inline-end">
+        <InputGroupText>{suffix}</InputGroupText>
+      </InputGroupAddon>
+    {/if}
+
+    {#if SuffixIcon}
+      <InputGroupAddon align="inline-end">
+        <SuffixIcon />
+      </InputGroupAddon>
+    {/if}
+
+    {#if info}
+      <InputGroupAddon align="inline-end">
+        <Tooltips align="center">
+          {#snippet trigger()}
+            <InputGroupButton variant="ghost" size="icon-xs">
+              <InfoIcon />
+            </InputGroupButton>
+          {/snippet}
+
+          {#snippet content()}
+            {info}
+          {/snippet}
+        </Tooltips>
+      </InputGroupAddon>
+    {/if}
+  </InputGroup>
+
+  {#if slotDescription}
+    {@render slotDescription()}
+  {:else if description}
+    <FieldDescription>{description}</FieldDescription>
   {/if}
 
   {#if slotErrors}
     {@render slotErrors()}
-  {:else}
-    <FormFieldErrors {errors}></FormFieldErrors>
+  {:else if errors}
+    <FieldError>{errors}</FieldError>
   {/if}
-</FormField>
+</Field>
