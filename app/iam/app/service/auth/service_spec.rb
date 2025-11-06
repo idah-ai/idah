@@ -30,12 +30,6 @@ RSpec.describe Auth::Service, database: true do
   let(:ip) { "127.0.0.1" }
   let(:user_agent) { "Mozilla/5.0" }
 
-  # before do
-  #   # Ensure Settings are loaded
-  #   allow(Settings).to receive(:[]).with("refresh_token.lifetime").and_return(86_400)
-  #   allow(Settings).to receive(:[]).with("auth_token.lifetime").and_return(3600)
-  # end
-
   describe "#login" do
     context "with valid credentials" do
       it "returns an AccountAuth record with tokens" do
@@ -150,6 +144,8 @@ RSpec.describe Auth::Service, database: true do
       allow(account_session_repo).to receive(:bump_refresh_seq).and_return([Time.now.to_i, 1])
 
       token = subject.create_refresh_token(account, nonce: 1, ip:, user_agent:)
+
+      expect(token).to be_a(String)
     end
   end
 end
