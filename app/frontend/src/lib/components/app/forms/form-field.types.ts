@@ -15,6 +15,11 @@ export interface FormFieldBaseProps {
   disabled?: boolean;
   readonly?: boolean;
 
+  prefixIcon?: typeof IconType;
+  prefix?: string;
+  suffixIcon?: typeof IconType;
+  suffix?: string;
+
   info?: string;
   description?: string;
   errors?: string[];
@@ -26,19 +31,21 @@ export interface FormFieldBaseProps {
 }
 
 export interface InputFieldBaseProps extends FormFieldBaseProps {
-  prefixIcon?: typeof IconType;
-  prefix?: string;
-  suffixIcon?: typeof IconType;
-  suffix?: string;
   oninput?: FormEventHandler<HTMLInputElement> | null | undefined;
   onblur?: FormEventHandler<HTMLInputElement> | null | undefined;
 }
 
-export interface NumberFieldBaseProps extends InputFieldBaseProps {
+export interface NumberFieldBaseProps extends FormFieldBaseProps {
   inputmode?: "decimal" | "numeric" | "tel"; // default: "decimal"
   min?: number;
   max?: number;
   step?: number;
+}
+
+export interface TextAreaFieldBaseProps extends FormFieldBaseProps {
+  rows?: number;
+  oninput?: FormEventHandler<HTMLTextAreaElement> | null | undefined;
+  onblur?: FormEventHandler<HTMLTextAreaElement> | null | undefined;
 }
 
 export interface SelectFieldBaseProps extends FormFieldBaseProps {
