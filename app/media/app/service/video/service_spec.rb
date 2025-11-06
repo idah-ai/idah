@@ -9,7 +9,7 @@ RSpec.describe Video::Service do
       expect(Jobs::Service).to receive(:new).and_return(job_service)
 
       arguments = { resource: "video_123" }
-      expect(job_service).to receive(:create_job).with(
+      expect(job_service).to receive(:create).with(
         "Video::Job",
         arguments:,
         unicity: "video:vp_video_123"

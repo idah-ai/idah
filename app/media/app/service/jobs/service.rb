@@ -23,14 +23,7 @@ module Jobs
       repo.delete(id)
     end
 
-    def create(record)
-      repo.transaction do
-        record_id = repo.create(record.attributes)
-        repo.find!(record_id)
-      end
-    end
-
-    def create_job(
+    def create(
       job_class,
       arguments: {},
       priority: 0,

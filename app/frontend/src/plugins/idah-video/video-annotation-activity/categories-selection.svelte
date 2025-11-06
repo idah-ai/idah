@@ -2,16 +2,18 @@
   import Badge from "@/components/ui/badge/badge.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-  import { cn } from "@/utils";
-  import { ChevronRight, CircleSmallIcon, PlusIcon, Trash2Icon } from "@lucide/svelte";
-  import { idb_updated_at } from "./idb_store.svelte";
-  import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger } from "@/components/ui/select";
   import { SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
   import Text from "@/components/ui/text/Text.svelte";
+  import { cn } from "@/utils";
+  import { humanize } from "@/utils/string";
+  import { ChevronRight, CircleSmallIcon, PlusIcon, Trash2Icon } from "@lucide/svelte";
+  import CategoryProperties from "./categoryProperties/categoryProperties.svelte";
+  import { idb_updated_at } from "./idb_store.svelte";
 
-  import type { CategoryConfiguration, VideoAnnotation } from "./VideoAnnotationContext";
   import type { CategoryDefinition } from "@/context/ActivityContext";
+  import type { AnnotationValue } from "@/context/AnnotationContext";
   import type { AnnotationsIndexedDB } from "./indexedDB";
+  import type { CategoryConfiguration, VideoAnnotation } from "./VideoAnnotationContext";
 
   // Props
   let {
@@ -24,7 +26,9 @@
     onSelect,
     onSelectAnnotation,
     onDeleteAnnotation,
+    onEditValue,
     db,
+    annotationValue,
   }: {
     type: string;
     currentFrame: number;
@@ -32,15 +36,20 @@
     toolMode: boolean;
     selected_category: string | undefined;
     selected_id: string | undefined;
-    onSelect: (category?: CategoryDefinition) => void;
+    onEditValue: (annotationValue: AnnotationValue, mode: string) => void;
+    onSelect: (category?: string) => void;
     onSelectAnnotation: (annotation: VideoAnnotation) => void;
     onDeleteAnnotation: (annotation: VideoAnnotation) => void;
     db?: AnnotationsIndexedDB;
+    annotationValue: AnnotationValue;
   } = $props();
 
   // Variables
-  let openStates = $state<Record<string, boolean>>(
-    categories.reduce<Record<string, boolean>>((acc, category) => {
+  let manualToggleStates = $state<Record<string, boolean>>({});
+
+  // Automatically expand all categories when categories prop changes, but allow manual toggles
+  let openStates = $derived.by(() => {
+    const autoExpanded = categories.reduce<Record<string, boolean>>((acc, category) => {
       if (category.id.includes("/")) {
         const parts = category.id.split("/");
         for (let i = 0; i < parts.length - 1; i++) {
@@ -48,14 +57,22 @@
           acc[parentPath] = true;
         }
       }
+      // Always set the category itself to true
+      acc[category.id] = true;
       return acc;
-    }, {}),
-  );
+    }, {});
+
+    // Merge with manual toggles (manual toggles take precedence)
+    return { ...autoExpanded, ...manualToggleStates };
+  });
+
   let forceRender = $state(0); // Force re-render trigger
 
-  let categoriesTree: CategoryDefinition[] = categories.reduce<CategoryDefinition[]>((acc, category_configuration) => {
-    return buildTree(acc, category_configuration.id.split("/"), category_configuration);
-  }, []);
+  let categoriesTree = $derived(
+    categories.reduce<CategoryDefinition[]>((acc, category_configuration) => {
+      return buildTree(acc, category_configuration.id.split("/"), category_configuration);
+    }, []),
+  );
 
   // Functions
   function buildTree(
@@ -63,33 +80,43 @@
     ids: string[],
     configuration: CategoryConfiguration,
   ): CategoryDefinition[] {
-    if (ids.length == 1) {
-      acc.push({
-        id: configuration.id,
-        name: configuration.label,
-        description: configuration.description,
-        requiredNested: false,
-        data: configuration,
-      });
-    } else {
-      const index = acc.findIndex((a) => configuration.id.startsWith(a.id));
+    let currentLevel = acc;
+    let fullPath = "";
 
-      if (index == -1) {
-        acc.push({
-          id: configuration.id.replace(ids.join("/"), ids.at(0) || ""),
-          name: ids[0],
-          nestedCategories: buildTree([], ids.slice(1, Infinity), configuration),
-          requiredNested: true,
-          data: configuration,
-        });
+    for (let i = 0; i < ids.length; i++) {
+      fullPath = i === 0 ? ids[i] : `${fullPath}/${ids[i]}`;
+
+      // find if node exists at this level
+      let existingNode = currentLevel.find((current) => current.id === fullPath);
+      if (!existingNode) {
+        existingNode = {
+          id: fullPath,
+          name: humanize(ids[i]),
+          requiredNested: i < ids.length - 1,
+          // only create nestedCategories if this node will have children
+          ...(i < ids.length - 1 ? { nestedCategories: [] } : {}),
+          data:
+            i < ids.length - 1
+              ? ({ id: fullPath, label: humanize(ids[i]), color: "#ffff", description: "" } as CategoryConfiguration)
+              : configuration, // leaf gets real configuration
+        };
+
+        currentLevel.push(existingNode);
+      }
+
+      // go deeper only if not a leaf
+      if (i < ids.length - 1) {
+        if (!existingNode.nestedCategories) existingNode.nestedCategories = [];
+        currentLevel = existingNode.nestedCategories;
       } else {
-        acc[index].nestedCategories = buildTree(
-          acc[index].nestedCategories || [],
-          ids.slice(1, Infinity),
-          configuration,
-        );
+        // leaf node: overwrite name, description, requiredNested, data
+        existingNode.name = humanize(configuration.label);
+        existingNode.description = configuration.description;
+        existingNode.requiredNested = false;
+        existingNode.data = configuration;
       }
     }
+
     return acc;
   }
 
@@ -104,22 +131,9 @@
 
     return filterAnnotations.length > 0;
   }
-
-  function findCategory(categories: CategoryDefinition[], category: string): CategoryDefinition | undefined {
-    const found = categories.find((c) => category.startsWith(c.id));
-
-    if (!found) return;
-
-    if (found.id != category) {
-      if (found.nestedCategories) return findCategory(found.nestedCategories, category);
-      else return;
-    }
-
-    return found;
-  }
 </script>
 
-{#snippet annotationSelection(annotation: VideoAnnotation, name: string, annotationCategory?: string)}
+{#snippet annotationSelection(annotation: VideoAnnotation, name: string)}
   <SidebarMenuItem class="item_hover list-none p-1">
     <SidebarMenuButton
       class={cn("ml-5 w-full justify-between px-5 hover:cursor-pointer")}
@@ -127,6 +141,7 @@
     >
       <div class="flex gap-2">
         <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <!-- prettier-ignore -->
           <path
             d="M6.66667 4.58333H13.3333M6.66667 4.58333C6.66667 5.73393 5.73393 6.66667 4.58333 6.66667M6.66667 4.58333C6.66667 3.43274 5.73393 2.5 4.58333 2.5C3.43274 2.5 2.5 3.43274 2.5 4.58333C2.5 5.73393 3.43274 6.66667 4.58333 6.66667M13.3333 4.58333C13.3333 5.73393 14.2661 6.66667 15.4167 6.66667M13.3333 4.58333C13.3333 3.43274 14.2661 2.5 15.4167 2.5C16.5673 2.5 17.5 3.43274 17.5 4.58333C17.5 5.73393 16.5673 6.66667 15.4167 6.66667M15.4167 6.66667V13.3333M15.4167 13.3333C14.2661 13.3333 13.3333 14.2661 13.3333 15.4167M15.4167 13.3333C16.5673 13.3333 17.5 14.2661 17.5 15.4167C17.5 16.5673 16.5673 17.5 15.4167 17.5C14.2661 17.5 13.3333 16.5673 13.3333 15.4167M13.3333 15.4167H6.66667M6.66667 15.4167C6.66667 16.5673 5.73393 17.5 4.58333 17.5C3.43274 17.5 2.5 16.5673 2.5 15.4167C2.5 14.2661 3.43274 13.3333 4.58333 13.3333M6.66667 15.4167C6.66667 14.2661 5.73393 13.3333 4.58333 13.3333M4.58333 13.3333V6.66667"
             stroke="var(--color-gray-500)"
@@ -139,7 +154,6 @@
         {name}
       </div>
 
-      <!-- {#if selected_category && selected_category == annotationCategory} -->
       <Button
         variant="ghost"
         size="icon"
@@ -151,7 +165,6 @@
       >
         <Trash2Icon color="var(--color-gray-500)" />
       </Button>
-      <!-- {/if} -->
     </SidebarMenuButton>
   </SidebarMenuItem>
 
@@ -169,25 +182,27 @@
 
 {#snippet showCategoryTitle(category: CategoryDefinition, haveChildren: boolean = false, open: boolean = false)}
   <div
-    class={cn("flex items-center gap-2", {
-      "p-2": !haveChildren && !toolMode,
+    class={cn("flex items-center gap-2 text-gray-700", {
+      // "p-2": !haveChildren && !toolMode,
     })}
   >
     <Button
       variant="ghost"
       class={cn("p-0 hover:cursor-pointer", {
-        hidden: (!haveChildren && !toolMode) || selected_id,
+        "opacity-0": (!haveChildren && !toolMode) || selected_id,
+        hidden: toolMode && selected_id,
       })}
       onclick={(e) => {
         e.stopPropagation();
         if (category.nestedCategories || haveChildren) {
-          // Toggle the category open state
-          openStates[category.id] = !openStates[category.id];
+          // Toggle the category open state manually
+          manualToggleStates[category.id] = !openStates[category.id];
         }
       }}
       disabled={toolMode}
     >
       {@const selectedCategory = selected_category == category.id}
+
       {#if selectedCategory && toolMode && !selected_id}
         <PlusIcon class="text-primary size-4 " strokeWidth={4}></PlusIcon>
       {:else if !category.nestedCategories && toolMode && !selected_id}
@@ -196,7 +211,7 @@
         {@const parentOpen = category.nestedCategories && toolMode}
         <ChevronRight
           class={cn("size-4", {
-            "opacity-0": !haveChildren,
+            "opacity-0": !haveChildren || category.nestedCategories?.length === 0,
             "rotate-90": open || parentOpen,
             "stroke-blue-300": selectedCategory,
             "stroke-gray-500": !selectedCategory,
@@ -214,6 +229,7 @@
       viewBox="0 0 20 20"
       fill="none"
     >
+      <!-- prettier-ignore -->
       <path
         d="M6.66667 4.58333H13.3333M6.66667 4.58333C6.66667 5.73393 5.73393 6.66667 4.58333 6.66667M6.66667 4.58333C6.66667 3.43274 5.73393 2.5 4.58333 2.5C3.43274 2.5 2.5 3.43274 2.5 4.58333C2.5 5.73393 3.43274 6.66667 4.58333 6.66667M13.3333 4.58333C13.3333 5.73393 14.2661 6.66667 15.4167 6.66667M13.3333 4.58333C13.3333 3.43274 14.2661 2.5 15.4167 2.5C16.5673 2.5 17.5 3.43274 17.5 4.58333C17.5 5.73393 16.5673 6.66667 15.4167 6.66667M15.4167 6.66667V13.3333M15.4167 13.3333C14.2661 13.3333 13.3333 14.2661 13.3333 15.4167M15.4167 13.3333C16.5673 13.3333 17.5 14.2661 17.5 15.4167C17.5 16.5673 16.5673 17.5 15.4167 17.5C14.2661 17.5 13.3333 16.5673 13.3333 15.4167M13.3333 15.4167H6.66667M6.66667 15.4167C6.66667 16.5673 5.73393 17.5 4.58333 17.5C3.43274 17.5 2.5 16.5673 2.5 15.4167C2.5 14.2661 3.43274 13.3333 4.58333 13.3333M6.66667 15.4167C6.66667 14.2661 5.73393 13.3333 4.58333 13.3333M4.58333 13.3333V6.66667"
         stroke={category.data.color || "var(--color-gray-500)"}
@@ -229,7 +245,7 @@
 {#snippet categorySelection(
   category: CategoryDefinition,
   subCategories: CategoryDefinition[] | undefined,
-  onSelect: (category?: CategoryDefinition) => void,
+  onSelect: (category?: string) => void,
   selected: string | undefined,
   parent: string[] = [],
 )}
@@ -238,7 +254,7 @@
       {#await haveAnnotationsInCategory(category.id) then hasAnnotations}
         <CollapsibleTrigger
           class={cn("flex w-full items-center justify-between", {
-            "bg-primary-foreground border-1 rounded-sm border-blue-300": selected == category.id,
+            "bg-primary-foreground rounded-sm border-1 border-blue-300": selected == category.id,
             "hover:bg-primary-foreground hover:cursor-pointer hover:rounded-sm": !category.requiredNested,
             "hover:bg-accent hover:cursor-pointer hover:rounded-sm": category.requiredNested && !toolMode,
           })}
@@ -246,13 +262,15 @@
             // Prevent default toggle behavior
             e.preventDefault();
 
-            if (!category.requiredNested) {
-              onSelect(category);
+            // Allow selection if category is not requiredNested,
+            // or if it's a parent that exists in the original categories list
+            if (categories.find((c) => c.id === category.id)) {
+              onSelect(category.id);
             }
 
             if (category.nestedCategories) {
-              // Toggle the category open state
-              openStates[category.id] = !openStates[category.id];
+              // Toggle the category open state manually
+              manualToggleStates[category.id] = !openStates[category.id];
             }
             // Force re-render of annotation counts
             forceRender++;
@@ -290,15 +308,18 @@
           {#await db.getAllIndex("category", category.id)}
             ...
           {:then anns}
-            {#each anns.filter((annotation) => currentFrame >= annotation.shape.start && currentFrame <= annotation.shape.end && annotation.shape.type == type) as annotation, i}
-              {@render annotationSelection(annotation, `${category.name}_${i}`, category.id)}
+            {#each anns.filter((annotation) => {
+              // prettier-ignore ...
+              return currentFrame >= annotation.shape.start && currentFrame <= annotation.shape.end && annotation.shape.type == type;
+            }) as annotation, i (annotation.metadata.id)}
+              {@render annotationSelection(annotation, `${category.name}_${i}`)}
             {/each}
           {/await}
         {/if}
       {/key}
 
       {#if subCategories}
-        {#each subCategories as subCategory}
+        {#each subCategories as subCategory (subCategory.id)}
           {@render categorySelection(subCategory, subCategory.nestedCategories, onSelect, selected, [
             ...parent,
             category.id.split("/").slice(parent.length)[0],
@@ -311,33 +332,13 @@
 {/snippet}
 
 <div class="flex-col">
-  {#if selected_id && selected_category}
-    {@const foundCategory = findCategory(categoriesTree, selected_category)}
-    {#if categoriesTree && foundCategory}
-      <div class="flex pb-1">
-        <Text class="text-gray-700" weight="medium" size="sm">Category</Text>
-      </div>
-
-      <Select
-        type="single"
-        onValueChange={(category_id) => {
-          onSelect(findCategory(categoriesTree, category_id));
-        }}
-      >
-        <SelectTrigger class="w-full">
-          {@render showCategoryTitle(foundCategory, false, false)}
-        </SelectTrigger>
-        <SelectContent>
-          <SelectGroup>
-            {#each categories as category}
-              <SelectItem value={category.id} label={category.label}>
-                {category.label}
-              </SelectItem>
-            {/each}
-          </SelectGroup>
-        </SelectContent>
-      </Select>
-    {/if}
+  {#if selected_category && toolMode}
+    <CategoryProperties
+      selectedCategory={selected_category}
+      {annotationValue}
+      onSelectCategory={onSelect}
+      onEditValue={(value) => value && onEditValue(value, type)}
+    />
   {:else}
     <div class="flex gap-2 py-2">
       <Text class="text-gray-500" weight="semibold">Categories</Text>
@@ -358,7 +359,7 @@
       {/key}
     </div>
 
-    {#each categoriesTree as category}
+    {#each categoriesTree as category (category.id)}
       {@render categorySelection(category, category.nestedCategories, onSelect, selected_category)}
     {/each}
   {/if}
