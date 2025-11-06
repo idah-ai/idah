@@ -43,7 +43,7 @@ comparisonExpr
     return [op, [left, right]]
   }
 
-value = value:(Array / Integer / string) { return [value] }
+value = value:(Array / Integer / string / boolean) { return value }
 
 variable
   = variableName:variableName {
@@ -58,7 +58,7 @@ variableSegment = variableSegmentStart:alphaNum variableSegmentEnd:(alphaNum)* {
   return variableSegmentStart + variableSegmentEnd.join("")
 }
 
-string = StringQuotes stringValue:stringValue StringQuotes { return [stringValue] }
+string = StringQuotes stringValue:stringValue StringQuotes { return stringValue }
 
 stringValue = stringChar:stringChar* { return stringChar.join("") }
 
