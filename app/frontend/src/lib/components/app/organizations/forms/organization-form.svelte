@@ -1,7 +1,7 @@
 <script lang="ts">
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import Form from "@/components/app/forms/form.svelte";
-
+  // import { FieldGroup, FieldSet } from "@/components/ui/field";
   import { OrganizationRecord } from "@/data/model/dataset/organizations/record";
 
   import type { FormBaseProps } from "@/components/app/forms/form.types";
@@ -24,6 +24,8 @@
   });
 </script>
 
+<!-- <FieldSet class="p-1">
+  <FieldGroup> -->
 <Form>
   <!-- ORGANIZATION::NAME -->
   <InputField
@@ -32,6 +34,9 @@
     placeholder="Organization Name"
     required
     errors={fieldErrors["name"]}
-    bind:value={name}
+    value={name}
+    oninput={(e) => (name = e.currentTarget.value)}
   />
 </Form>
+<!-- </FieldGroup>
+</FieldSet> -->
