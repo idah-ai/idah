@@ -676,7 +676,7 @@
         onEditValue={(value: AnnotationValue, valueMode: string) => {
           annotationValue = value;
           mode = valueMode;
-          if (selectedAnnotation && requiredFullfilled(annotationValue, context.config.properties)) {
+          if (selectedAnnotation && requiredFullfilled(annotationValue, context.config[valueMode]?.properties)) {
             selectedAnnotation.value = value;
             updateAnnotationValue($state.snapshot(selectedAnnotation) as VideoAnnotation, $state.snapshot(value));
           }
@@ -714,7 +714,7 @@
           onEditValue={(value: AnnotationValue, valueMode: string) => {
             annotationValue = value;
             mode = valueMode;
-            if (selectedAnnotation && requiredFullfilled(annotationValue, context.config.properties)) {
+            if (selectedAnnotation && requiredFullfilled(annotationValue, context.config[valueMode]?.properties)) {
               selectedAnnotation.value = value;
               updateAnnotationValue($state.snapshot(selectedAnnotation), $state.snapshot(value));
             }

@@ -211,7 +211,9 @@
               points={currentShape(annotation.shape, frame) || []}
               ratio={target_size}
               offset={zoomInfo.offset}
-              color={context.config.categories.find((c) => c.id == annotation.value?.category)?.color || "grey"}
+              color={Object.entries(context.config)
+                .find(([k, v]) => k == "video:bounding_box")?.[1]
+                .values.find((c) => c.id == annotation.value?.category)?.color || "grey"}
               onmousedown={(e) => {
                 if (mode == "visual" || selected) {
                   e.stopPropagation();
@@ -231,7 +233,9 @@
               ratio={target_size}
               offset={zoomInfo.offset}
               color={annotation?.synced
-                ? context.config.categories.find((c) => c.id == annotation?.value?.category)?.color || "grey"
+                ? Object.entries(context.config)
+                    .find(([k, v]) => k == "video:bounding_box")?.[1]
+                    .values.find((c) => c.id == annotation?.value?.category)?.color || "grey"
                 : "grey"}
               onmousedown={(e) => {
                 if (mode == "visual" || selected) {
@@ -253,7 +257,9 @@
       cursor={cursor_downscaled}
       editable={mode == "video:bounding_box"}
       color={selected?.synced
-        ? context.config.categories.find((c) => c.id == selected?.value?.category)?.color || "grey"
+        ? Object.entries(context.config)
+            .find(([k, v]) => k == mode)?.[1]
+            .values.find((c) => c.id == selected?.value?.category)?.color || "grey"
         : "grey"}
       onChange={(bb) => {
         onSelection("video:bounding_box", frame, bb, selected?.metadata.id);

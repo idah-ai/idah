@@ -5,7 +5,7 @@ import { AstProcessor, objectVariables } from "../../test_ast_resolution";
 export function visibilityFullfilled(value: AnnotationValue, field: IConfigProperty) {
   console.debug({ value, field, variables: objectVariables(value, "annotation.value") });
   if (typeof field.visibility == "boolean") return field.visibility;
-  return new AstProcessor(new Map(objectVariables(value, "annotation"))).processAST(field.visibility);
+  return new AstProcessor(new Map(objectVariables(value, "annotation.value"))).processAST(field.visibility);
 }
 
 export function requiredFullfilled(value: AnnotationValue, properties: IConfigProperty[]): boolean {
@@ -51,7 +51,7 @@ const formatValidators = [
     minimum: (_v: string, _format: IConfigPropertyFormat) => true,
     maximum: (_v: string, _format: IConfigPropertyFormat) => true,
     step: (_v: string, _format: IConfigPropertyFormat) => true,
-    options: (v: string, format: IConfigPropertyFormat) => format.options.map((o) => o.id).includes(v),
+    options: (v: string, format: IConfigPropertyFormat) => format.options?.map((o) => o.id).includes(v),
     info: (_v: string) => true,
   },
   {
@@ -60,8 +60,8 @@ const formatValidators = [
     maximum: (v: string[], format: IConfigPropertyFormat) => v.length <= (format.maximum || format.options.length || 0),
     step: (_v: string[], _format: IConfigPropertyFormat) => true,
     options: (v: string[], format: IConfigPropertyFormat) => {
-      const optionIds = format.options.map((o) => o.id);
-      return v.every((s) => optionIds.includes(s));
+      const optionIds = format.options?.map((o) => o.id);
+      return v.every((s) => optionIds?.includes(s));
     },
     info: (_v: string[]) => true,
   },

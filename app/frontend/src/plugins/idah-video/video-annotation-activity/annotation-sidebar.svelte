@@ -12,7 +12,7 @@
   import type { IActivityContext, IConfigValue } from "@/plugin/interface/Activity";
   import type { AnnotationsIndexedDB } from "./indexedDB";
   import AnnotationTabs from "./tabs/AnnotationTabs.svelte";
-  import type { CategoryConfiguration, VideoAnnotation } from "./VideoAnnotationContext";
+  import type { VideoAnnotation } from "./VideoAnnotationContext";
   import { SvelteMap } from "svelte/reactivity";
 
   let {
@@ -38,7 +38,7 @@
   } = $props();
 
   let tools = new Map<string, IConfigValue[]>(
-    Object.entries(context.config).map(([shapeType, config]) => [shapeType, config.values]),
+    Object.entries(context.config).map(([shapeType, { values }]) => [shapeType, values]),
   );
 
   let searchValue = $state("");
@@ -97,24 +97,26 @@
 
   <SidebarContent>
     {#each filteredTools as [tool, categories] (tool)}
-      <SidebarGroup>
-        <SidebarGroupContent>
-          <CategoriesSelection
-            {db}
-            toolMode={tool == mode}
-            type={tool}
-            {currentFrame}
-            {categories}
-            selected_category={annotationValue.category}
-            {selected_id}
-            {onSelectAnnotation}
-            {onDeleteAnnotation}
-            {annotationValue}
-            onEditValue={(v) => onEditValue(v, tool)}
-            onSelect={(s) => categorySelection(tool, s)}
-          />
-        </SidebarGroupContent>
-      </SidebarGroup>
+      {#if !filteredTools.has(mode) || (filteredTools.has(mode) && tool == mode)}
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <CategoriesSelection
+              {db}
+              toolMode={tool == mode}
+              type={tool}
+              {currentFrame}
+              {categories}
+              selected_category={annotationValue.category}
+              {selected_id}
+              {onSelectAnnotation}
+              {onDeleteAnnotation}
+              {annotationValue}
+              onEditValue={(v) => onEditValue(v, tool)}
+              onSelect={(s) => categorySelection(tool, s)}
+            />
+          </SidebarGroupContent>
+        </SidebarGroup>
+      {/if}
     {/each}
   </SidebarContent>
 </Sidebar>

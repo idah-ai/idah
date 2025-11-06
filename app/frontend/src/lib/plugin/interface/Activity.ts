@@ -76,11 +76,11 @@ export type IConfigPropertyFormatKeys = keyof IConfigPropertyFormat;
 export interface IConfigPropertyFormat {
   // placeholder?: string;
   // readonly?: boolean;
-  minimum: number | null;
-  maximum: number | null;
-  step: number | null;
+  minimum?: number | null;
+  maximum?: number | null;
+  step?: number | null;
   // info: string | null;
-  options: Array<IConfigPropertyOption>;
+  options?: Array<IConfigPropertyOption>;
 }
 
 export interface IConfigValue {
