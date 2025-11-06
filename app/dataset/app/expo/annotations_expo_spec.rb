@@ -17,7 +17,7 @@ RSpec.describe AnnotationsExpo, type: :exposition, as: :system do
         type: "bounding_box",
         dimensions: { "x" => 10, "y" => 20, "width" => 30, "height" => 40 },
         annotation: { "label" => "cat" },
-        created_by_id: 1,
+        created_by_email: "user@example.com",
         created_at: now,
         updated_at: now
       }

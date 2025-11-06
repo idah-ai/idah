@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onDestroy, onMount, type Snippet } from "svelte";
+  import { getContext, type Snippet } from "svelte";
   import {
     HEIGHT,
     ORIGIN,
@@ -14,12 +14,13 @@
   import Zoomable from "./zoomable.svelte";
   import BoundingBox, { type ToolSelection } from "./bounding-box.svelte";
   import { boundingBoxes } from "./idb_store.svelte";
+  import type { IActivityContext } from "@/plugin/interface/Activity";
 
   type Props = {
     frame: number;
     selected: VideoAnnotation | undefined;
     mode: string;
-    target_container: HTMLDivElement; // ..
+    target_container: () => HTMLDivElement; // ..
     annotations_promise: Promise<VideoAnnotation[]>;
     children: Snippet;
     onclick?: (e: MouseEvent) => void;
@@ -29,7 +30,7 @@
     onmousemove?: (e: MouseEvent) => void;
     onwheel?: (e: WheelEvent) => void;
     onSelection: (type: string, frame: number, points?: Point[], id?: string) => void;
-    videoResizedAt: Date
+    videoResizedAt: Date;
   };
 
   let {
@@ -52,6 +53,7 @@
     offset: [0, 0],
   });
 
+  let context = getContext<IActivityContext>("context");
 
   let height = $state(0);
   let width = $state(0);
@@ -72,10 +74,10 @@
     return shape ? currentShape(shape, frame) || [] : [];
   });
 
-  function updatedSize():Point {
-    videoResizedAt; // (... update on change)
-    let target_dom_rect = target_container?.getBoundingClientRect();
-    zoomInfo; // (... update on change)
+  function updatedSize(): Point {
+    videoResizedAt; // eslint-disable-line @typescript-eslint/no-unused-expressions
+    let target_dom_rect = target_container()?.getBoundingClientRect();
+    zoomInfo; // eslint-disable-line @typescript-eslint/no-unused-expressions
 
     return !target_dom_rect ? ORIGIN : [target_dom_rect.width, target_dom_rect.height];
   }
@@ -196,20 +198,20 @@
   >
     {#if width && height}
       <!-- prevent display issue on load for now -->
-      <line x1={0} y1={target_line[Y]} x2={width} y2={target_line[Y]} stroke={'#2b7fff'}/>
-      <line x1={target_line[X]} y1={0} x2={target_line[X]} y2={height} stroke={'#2b7fff'}/>
+      <line x1={0} y1={target_line[Y]} x2={width} y2={target_line[Y]} stroke="#2b7fff" />
+      <line x1={target_line[X]} y1={0} x2={target_line[X]} y2={height} stroke="#2b7fff" />
     {/if}
 
     <!-- draw annotation context -->
     {#await annotations_promise}
-      {#each $boundingBoxes as annotation}
+      {#each $boundingBoxes as annotation (annotation.metadata.id)}
         {#if annotation.metadata.id != selected?.metadata.id}
           {#if annotation.shape.type == "video:bounding_box"}
             <BoundingBox
               points={currentShape(annotation.shape, frame) || []}
               ratio={target_size}
               offset={zoomInfo.offset}
-              color={annotation.value.attributes?.data.color || "grey"}
+              color={context.config.categories.find((c) => c.id == annotation.value?.category)?.color || "grey"}
               onmousedown={(e) => {
                 if (mode == "visual" || selected) {
                   e.stopPropagation();
@@ -221,14 +223,16 @@
         {/if}
       {/each}
     {:then annotations}
-      {#each annotations as annotation}
+      {#each annotations as annotation (annotation.metadata.id)}
         {#if annotation.metadata.id != selected?.metadata.id}
           {#if annotation.shape.type == "video:bounding_box"}
             <BoundingBox
               points={currentShape(annotation.shape, frame) || []}
               ratio={target_size}
               offset={zoomInfo.offset}
-              color={annotation.value.attributes?.data.color || "grey"}
+              color={annotation?.synced
+                ? context.config.categories.find((c) => c.id == annotation?.value?.category)?.color || "grey"
+                : "grey"}
               onmousedown={(e) => {
                 if (mode == "visual" || selected) {
                   e.stopPropagation();
@@ -248,13 +252,12 @@
       offset={zoomInfo.offset}
       cursor={cursor_downscaled}
       editable={mode == "video:bounding_box"}
-      color={selected?.value.attributes?.data.color || "gray"}
+      color={selected?.synced
+        ? context.config.categories.find((c) => c.id == selected?.value?.category)?.color || "grey"
+        : "grey"}
       onChange={(bb) => {
         onSelection("video:bounding_box", frame, bb, selected?.metadata.id);
         points = bb;
-      }}
-      onmousedown={(e) => {
-        console.error("clicked anyway");
       }}
     />
   </svg>

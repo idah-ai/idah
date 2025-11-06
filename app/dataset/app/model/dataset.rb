@@ -24,6 +24,10 @@ module Dataset
 
     belongs_to :project, repository: "Project::Repository", foreign_key: :project_id
     has_many :entries, repository: "Entry::Repository", foreign_key: :dataset_id
+
+    def entry_workflow
+      Workflow::EntryWorkflow
+    end
   end
 
   class Repository < Verse::Sequel::Repository

@@ -20,7 +20,7 @@ const CommonInjecter = (context: KeyMapContext) => {
     context.toggleCommandCB();
   };
 
-  const enterMode = (mode: string, replace: boolean = false) => {
+  const _enterMode = (mode: string, replace: boolean = false) => {
     return () => {
       ShortcutManager.enterMode(mode, replace);
       context.switch_mode(mode);
@@ -79,7 +79,7 @@ const createVisualModeKeyMap = (context: KeyMapContext) => {
     console.log("startFrame executed");
   };
   const endFrame = () => {
-    context.player()?.seekToFrame((context.player()?.getFrames() || 1) - 1);
+    context.player()?.seekToFrame(context.player()?.getFrames() || 0);
     console.log("endFrame executed");
   };
 
