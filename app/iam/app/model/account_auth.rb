@@ -13,12 +13,9 @@ module AccountAuth
     field :picture_url, type: String
 
     field :role_name, type: String
-    field :role_labels, type: Array
     field :scope, type: Hash
-    # field :auth_type, type: String
-    field :auth_token, type: String
 
-    field :user_agent, type: String
+    field :auth_token, type: String
 
     field :role_rights, type: Array
 

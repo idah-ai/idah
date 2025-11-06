@@ -9,7 +9,6 @@ RSpec.describe Auth::SimpleExpo, type: :exposition, as: :system do
   let(:test_name) { "Test User" }
   let(:test_role) { "user" }
   let(:ip) { "127.0.0.1" }
-  let(:user_agent) { "Mozilla/5.0" }
 
   let(:auth_service) { instance_double(Auth::Service) }
 
@@ -21,10 +20,8 @@ RSpec.describe Auth::SimpleExpo, type: :exposition, as: :system do
         name: test_name,
         picture_url: nil,
         role_name: test_role,
-        role_labels: {},
         scope: {},
         role_rights: [],
-        user_agent:,
         auth_token: "test_auth_token",
         refresh_token: "test_refresh_token",
         exp: (Time.now + 3600).to_i
@@ -42,7 +39,6 @@ RSpec.describe Auth::SimpleExpo, type: :exposition, as: :system do
         email: test_email,
         password: test_password,
         cookie: true,
-        user_agent:
       }
     end
 
@@ -99,7 +95,7 @@ RSpec.describe Auth::SimpleExpo, type: :exposition, as: :system do
       end
 
       it "returns new account auth data" do
-        get "/auth/refresh?user_agent=#{user_agent}"
+        get "/auth/refresh"
 
         expect(last_response.status).to eq 200
         body = JSON.parse(last_response.body, symbolize_names: true)
@@ -115,7 +111,7 @@ RSpec.describe Auth::SimpleExpo, type: :exposition, as: :system do
       end
 
       it "returns the error and clears refresh cookie" do
-        get "/auth/refresh?user_agent=#{user_agent}"
+        get "/auth/refresh"
 
         expect(last_response.status).to be >= 400
       end
@@ -129,7 +125,7 @@ RSpec.describe Auth::SimpleExpo, type: :exposition, as: :system do
       end
 
       it "returns authorization error and clears refresh cookie" do
-        get "/auth/refresh?user_agent=#{user_agent}"
+        get "/auth/refresh"
 
         expect(last_response.status).to eq 401
       end
