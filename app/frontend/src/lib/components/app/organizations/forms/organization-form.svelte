@@ -2,18 +2,18 @@
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import Form from "@/components/app/forms/form.svelte";
 
-  import { AccountRecord } from "@/data/model/iam/accounts/record";
+  import { OrganizationRecord } from "@/data/model/dataset/organizations/record";
 
   import type { FormBaseProps } from "@/components/app/forms/form.types";
 
   // Props
   interface Props extends FormBaseProps {
-    organization: AccountRecord;
+    organization: OrganizationRecord;
   }
   let { organization, fieldErrors, onValueChange }: Props = $props();
 
   // Variables
-  let resource: string = AccountRecord.type;
+  let resource: string = OrganizationRecord.type;
 
   // Variables::Reactive
   let name: string = $derived(organization.name);

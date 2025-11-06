@@ -6,15 +6,16 @@
   import Button from "@/components/ui/button/button.svelte";
 
   import { organizationColumns } from "@/components/app/organizations/data-tables/organization-columns";
-  import { organizationBreadcrumb } from "@/components/app/page/page-breadcrumb.constants";
-  import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
+  import { homeBreadcrumb, organizationBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
+  import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
+
+  import { OrganizationRecord, organizationsBackendDataSource } from "@/data/model/dataset/organizations/record";
   import { refetches } from "@/utils/refetch";
   import { PlusIcon } from "@lucide/svelte";
 
-  import type { PageBreadcrumbItem } from "@/components/app/page/page-breadcrumb.svelte";
+  pageBreadcrumbsStore.set([homeBreadcrumb, organizationBreadcrumb]);
 
   // Variables
-  let breadcrumbs: PageBreadcrumbItem[] = $state([organizationBreadcrumb]);
   let openNewOrganizationFormModal: boolean = $state(false);
 
   // Functions
@@ -30,7 +31,7 @@
   </Button>
 {/snippet}
 
-<PageProvider name="organizations" {breadcrumbs}>
+<PageProvider name="organizations">
   <PageHeader title="Organizations">
     {#snippet actions()}
       {@render AddNewOrganizationButton()}
@@ -43,10 +44,10 @@
       name="organizations"
       refetchKey="organizations"
       columns={organizationColumns}
-      dataSource={accountsBackendDataSource}
+      dataSource={organizationsBackendDataSource}
       listOptions={{
         fields: {
-          [AccountRecord.type]: ["name", "created_at"],
+          [OrganizationRecord.type]: ["name", "created_at"],
         },
       }}
     >
