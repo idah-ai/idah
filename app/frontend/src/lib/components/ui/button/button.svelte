@@ -27,7 +27,7 @@
         lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
         icon: "size-9",
         "icon-sm": "size-7 [&_svg:not([class*='size-'])]:size-3.5",
-        "icon-lg": "size-10 [&_svg:not([class*='size-'])]:size-5"",
+        "icon-lg": "size-10 [&_svg:not([class*='size-'])]:size-5",
       },
     },
     defaultVariants: {
