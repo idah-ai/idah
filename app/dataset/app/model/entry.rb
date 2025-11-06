@@ -33,6 +33,7 @@ module Entry
     self.table = "entries"
     self.resource = Resource::Dataset::Entries
 
+    # returns accessible resources under the project id given
     custom_filter :accessible_resources do |collection, value|
       fragment = <<-SQL
         EXISTS (

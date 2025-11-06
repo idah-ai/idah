@@ -77,8 +77,8 @@ class EntriesExpo < BaseExpo
     service.error(entry_id, **opts)
   end
 
-  expose on_http(:get, "/accessible_resources/:project_id", auth: nil) do
-    desc ""
+  expose on_http(:get, "/accessible_resources/:project_id") do
+    desc "Get resources of entries under datasets in given project id"
     input do
       field :project_id, String
     end

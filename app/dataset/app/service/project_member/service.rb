@@ -24,8 +24,13 @@ module ProjectMember
       account_id = auth_context.metadata[:id]
       project_id = record.attributes[:project_id]
 
-      auth_context.reject! unless project_service.own?(account_id, project_id) || # check creator as there is no member
-                                  project_members.owner?(project_members.get_access(account_id, project_id)) # owner
+      auth_context.reject! unless auth_context.can!(:create, Resource::Dataset::ProjectMembers) do |scope|
+        scope.all? { true }
+        scope.user? {
+          project_service.own?(account_id, project_id) || # check if is creator as there is no member yet
+          project_members.owner?(project_members.get_access(account_id, project_id)) # owner
+        }
+      end
 
       project_members.transaction do
         record_id = project_members.create(record.attributes)
@@ -58,7 +63,7 @@ module ProjectMember
       project_members.authorize_action(
         action:,
         resource:,
-        account_id: auth_context.metadata[:id] || 1, # TODO: remove mocking
+        account_id: auth_context.metadata[:id],
         project_id:,
         allowed_access:
       )
