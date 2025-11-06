@@ -91,6 +91,7 @@ Sequel.migration do
 
       # Type of dataset
       column :modality, String, null: false
+      column :name, String, null: false, default: ""
 
       column :labels, "text[]", null: false, default: "{}"
 
@@ -106,6 +107,8 @@ Sequel.migration do
       column :status, String, null: false, index: true, default: "pending"
 
       column :progress, Float, null: false, default: 0.0 # from 0.0 to 1.0
+
+      index :name, opclass: :gin_trgm_ops, type: :gin
 
       Migration::Timestamps.timestamps(self)
     end
@@ -215,5 +218,31 @@ Sequel.migration do
       Migration::Timestamps.timestamps(self)
     end
     Migration::Timestamps.trg_updated_at(self, :note_comments)
+
+    create_table(:project_members) do
+      primary_key :id, :bigserial
+
+      foreign_key :project_id,
+                  :projects,
+                  type: :uuid,
+                  null: false,
+                  index: true,
+                  on_delete: :cascade,
+                  on_update: :cascade
+
+      column :account_id, :bigint, null: false, index: true
+      column :name, String
+      column :email, String, null: false, index: true
+
+      column :role, String, null: false
+
+      column :invited_by_id, :bigint, null: false
+
+      index [:project_id, :account_id]
+      index [:project_id, :role]
+
+      Migration::Timestamps.timestamps(self)
+    end
+    Migration::Timestamps.trg_updated_at(self, :project_members)
   end
 end

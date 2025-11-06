@@ -36,16 +36,17 @@ module Account
     def login(email, password)
       account = scoped(:login).where(email:).first
 
-      return nil unless account
+      # To prevent timing attack, add small delay when account is not found.
+      if account
+        account = decode(account)
+        account = self.class.model_class.new(account)
+        valid = account.password_match?(password)
+      else
+        sleep(rand(0.3..0.5))
+        valid = false
+      end
 
-      # TODO: In Verse => return create_record(account, included: ["active_roles", "person"])
-      # set = prepare_included(["active_roles", "person", "state"], [account], record: AccountRecord)
-      account = decode(account)
-      account = self.class.model_class.new(account)
-
-      return account if account&.password_match?(password)
-
-      nil
+      valid ? account : nil
     end
   end
 end

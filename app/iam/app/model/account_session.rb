@@ -20,54 +20,58 @@ module AccountSession
     self.table = "account_sessions"
     self.resource = Resource::Iam::AccountSessions
 
-    def account_login_audit_repo
-      @account_login_audit_repo ||= AccountLoginAudit::Repository.new(auth_context)
-    end
-
     def check_seq(account_id, session_id, nonce, sequence)
-      with_db_mode :r do |_db|
-        frag = <<-SQL
-          account_id = :account_id AND
-          id = :session_id AND
-          nonce = :nonce AND
-          refresh_seq < :refresh_seq
-        SQL
+      with_db_mode :rw do |_db|
+        new_sequence = sequence + 30
+        updated = table
+                  .with_sql(<<~SQL, account_id:, session_id:, nonce:, refresh_seq: new_sequence)
+                    UPDATE account_sessions
+                    SET refresh_seq = :refresh_seq
+                    WHERE account_id = :account_id
+                      AND id = :session_id
+                      AND nonce = :nonce
+                      AND refresh_seq < :refresh_seq
+                    RETURNING id
+                  SQL
+                  .first
 
-        !table.where(
-          Sequel.lit(
-            frag,
-            account_id:,
-            session_id:,
-            nonce:,
-            refresh_seq: sequence + 30 # Use 30 seconds leeway in case the user is opening multiple tab at once.
-          )
-        ).empty?
+        !!updated
       end
     end
 
-    def bump_refresh_seq(account_id, role, nonce:, session_id: nil, ip: "", user_agent: nil, at: Time.now)
+    def bump_refresh_seq(account, nonce:, session_id: nil, ip: "", user_agent: nil, at: Time.now)
       auth_context.mark_as_checked!
 
       with_db_mode :rw do
         transaction do
           at_ts = at.to_i
 
-          properties = { refresh_seq: at_ts, ip:, user_agent: user_agent || "" }
+          properties = { refresh_seq: at_ts, ip:, user_agent: user_agent }
 
-          session = table.where({ id: session_id, account_id: account_id }).first if session_id
+          session = table.where({ id: session_id, account_id: account.id }).first if session_id
 
           is_login = session_id.nil? || session.nil? || session[:nonce] != nonce
 
-          properties[:nonce] = nonce if is_login
+          properties[:nonce] = nonce
 
           if session
-            table.where({ id: session_id, account_id: }).update(properties)
+            table.where({ id: session_id, account_id: account.id }).update(properties)
           else
-            session_id = table.insert({ account_id:, **properties })
+            session_id = table.insert({ account_id: account.id, **properties })
           end
 
           if is_login
-            account_login_audit_repo.log_access(account_id, role, ip, user_agent, at)
+            Verse.publish(
+              "iam:account:login",
+              {
+                account_id: account.id,
+                account_email: account.email,
+                account_role: account.role,
+                ip: ip,
+                user_agent: user_agent,
+                at: at,
+              }
+            )
           end
 
           [at_ts, session_id]

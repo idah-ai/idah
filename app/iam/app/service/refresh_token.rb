@@ -5,7 +5,7 @@ module RefreshToken
 
   def encode(account_id, session_id, nonce, seq_id, exp: Time.now.to_i + 3600)
     JWT.encode(
-      { uid: account_id, nc: nonce, refid: seq_id, sub: "ort", exp:, sid: session_id },
+      { uid: account_id, sid: session_id, nc: nonce, refid: seq_id, sub: "ort", exp: },
       Verse::Http::Auth::Token.sign_key,
       Verse::Http::Auth::Token.sign_algorithm
     )
@@ -29,7 +29,7 @@ module RefreshToken
     sid   = payload["sid"]
     nonce = payload["nc"]
     refid = payload["refid"]
-    # binding.pry
+
     if account_sessions.check_seq(uid, sid, nonce, refid)
       return uid, sid, nonce
     end
