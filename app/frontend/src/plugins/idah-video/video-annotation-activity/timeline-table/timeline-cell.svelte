@@ -53,7 +53,7 @@
     if (!categoryId) return undefined;
 
     return Object.entries(context.config)
-      .find(([k, v]) => k == annotation.shape.type)?.[1]
+      .find(([k, _]) => k == annotation.shape.type)?.[1]
       .values.find((cat) => cat.id === categoryId);
   }
 </script>

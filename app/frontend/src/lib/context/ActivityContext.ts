@@ -8,6 +8,7 @@ import type { AnnotationContext } from "./AnnotationContext";
 export type MediaInfo = {
   [key: string]: {
     url: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     metadata: Record<string, any>;
   };
 };
@@ -45,6 +46,7 @@ export type AllowedValueFields = {
 export type ToolInfo = {
   [annotationType: string]: {
     // Shape-specific configuration
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     shapeConfig?: Record<string, any>; // Additional configuration for the shape type
 
     // Allowed value fields

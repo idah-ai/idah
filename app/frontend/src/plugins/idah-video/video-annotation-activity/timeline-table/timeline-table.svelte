@@ -93,7 +93,7 @@
 
   function getCategory(categoryId: string, shape_type: string) {
     return Object.entries(context.config)
-      .find(([k, v]) => k == shape_type)?.[1]
+      .find(([k, _]) => k == shape_type)?.[1]
       .values.find((cat) => cat.id === categoryId);
   }
 
