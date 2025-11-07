@@ -62,11 +62,40 @@
       },
     });
     modality = datasetRes.data.modality;
-    labelConfig = datasetRes.data.labeling_configuration;
-    initialLabelConfig = JSON.parse(JSON.stringify(labelConfig));
 
     const showModalityRes = await pluginsBackendDataSource.showModality(modality);
     shapes = showModalityRes.shapes;
+
+    // labelConfig = datasetRes.data.labeling_configuration;
+    labelConfig = getLabelConfig({
+      labelConfigurations: datasetRes.data.labeling_configuration,
+      modality,
+      modalityShapes: shapes,
+    });
+    initialLabelConfig = JSON.parse(JSON.stringify(labelConfig));
+  }
+
+  function getLabelConfig(params: {
+    labelConfigurations: LabelConfigurations;
+    modality: string;
+    modalityShapes: ModalityShapes;
+  }) {
+    const { labelConfigurations, modality, modalityShapes } = params;
+    if (Object.keys(labelConfigurations).length > 0) {
+      return labelConfigurations;
+    }
+
+    // Return combination of modality:shapes
+    let modalityShapeLabelConfig: LabelConfigurations = {};
+    Object.keys(modalityShapes).forEach((shape) => {
+      const configKey = `${modality}:${shape}`;
+      modalityShapeLabelConfig[configKey] = {
+        values: [],
+        properties: [],
+      };
+    });
+
+    return modalityShapeLabelConfig;
   }
 
   async function saveLabelConfigChanges(): Promise<void> {
@@ -191,8 +220,6 @@
   }
 
   function removeCategory(labelConfigKey: string, categoryId: string) {
-    console.log(categoryId);
-
     if (!labelConfig) return;
     // Filter out the exact category with the given ID
     // This will only remove the exact match, keeping any parent categories
@@ -264,9 +291,8 @@
   </PageHeader>
 
   <LabelConfigEditor
-    {modality}
-    {shapes}
     {labelConfig}
+    {shapes}
     onAddCategory={addCategory}
     onEditCategoryId={editCategoryId}
     onEditCategory={editCategory}

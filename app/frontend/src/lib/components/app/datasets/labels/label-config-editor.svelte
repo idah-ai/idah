@@ -1,6 +1,5 @@
 <script lang="ts">
   import { BoltIcon, PlusIcon } from "@lucide/svelte";
-  import { onMount } from "svelte";
 
   import ResponseBlock from "@/components/app/blocks/response-block.svelte";
   import PropertyCard from "@/components/app/datasets/labels/cards/property-card.svelte";
@@ -17,7 +16,6 @@
 
   // Props
   interface Props {
-    modality: string;
     shapes: ModalityShapes;
     labelConfig: LabelConfigurations;
     onAddCategory: (labelConfigKey: string, nodeId?: string) => void;
@@ -28,9 +26,8 @@
     onRemoveProperty: (labelConfigKey: string, propertyId: string) => void;
   }
   let {
-    modality,
-    shapes,
     labelConfig,
+    shapes,
     onAddCategory,
     onEditCategoryId,
     onEditCategory,
@@ -47,26 +44,6 @@
   let hasAtLeastOneProperty: boolean = $derived(
     selectedLabelConfig ? selectedLabelConfig.properties.length > 0 : false,
   );
-
-  //
-  onMount(() => {
-    if (Object.keys(labelConfig).length > 0) {
-      labelConfig = labelConfig;
-      return;
-    }
-
-    // Return combination of modality:shapes
-    let modalityShapeLabelConfig: LabelConfigurations = {};
-    Object.keys(shapes).forEach((shape) => {
-      const configKey = `${modality}:${shape}`;
-      modalityShapeLabelConfig[configKey] = {
-        values: [],
-        properties: [],
-      };
-    });
-
-    labelConfig = modalityShapeLabelConfig;
-  });
 
   // Functions
   function selectConfigKey(key: string) {
