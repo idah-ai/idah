@@ -1,10 +1,10 @@
-import type { HeaderBarModeTool, IActivityContext, INote, INoteDriver, ITools } from "./interface/Activity";
-import { createAnnotationDriver } from "./AnnotationDriver";
 import { goto } from "$app/navigation";
-import type { EntryRecord } from "@/data/model/dataset/entries/record";
+import { resolve } from "$app/paths";
 import type { Command } from "@/command/Command";
 import CommandManager from "@/command/CommandManager";
-import { resolve } from "$app/paths";
+import type { EntryRecord } from "@/data/model/dataset/entries/record";
+import { createAnnotationDriver } from "./AnnotationDriver";
+import type { HeaderBarModeTool, IActivityContext, INote, INoteDriver, ITools } from "./interface/Activity";
 
 const noteDriver: INoteDriver = {
   create(position, content) {
@@ -227,7 +227,7 @@ export function activityContextForEntry(entry: EntryRecord): IActivityContext {
     tools: createToolsInterface(),
     back() {
       goto(
-        resolve("/(app)/projects/[projectId]/datasets/[datasetId]/tasks", {
+        resolve("/(app)/projects/[projectId]/datasets/[datasetId]/entries", {
           projectId: entry.dataset.project.id,
           datasetId: entry.dataset.id,
         }),

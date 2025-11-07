@@ -22,3 +22,7 @@ export type LabelValue<Value, T extends Record = Record> = {
   data?: T;
   [key: string]: unknown;
 };
+
+type ASTValue = string | number | string[] | boolean | undefined;
+type ASTNodeValue = ASTValue | ASTNode | [ASTValue];
+export type ASTNode = [string, ASTNodeValue[]];

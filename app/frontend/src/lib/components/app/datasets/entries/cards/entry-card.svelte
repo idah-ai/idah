@@ -1,15 +1,15 @@
 <script lang="ts">
+  import EntryPriority from "@/components/app/datasets/entries/badges/entry-priority.svelte";
+  import EntryStatus from "@/components/app/datasets/entries/badges/entry-status.svelte";
+  import LoadingEntryCard from "@/components/app/datasets/entries/cards/loading-entry-card.svelte";
+  import EntryDropdownMenu from "@/components/app/datasets/entries/dropdown-menus/entry-dropdown-menu.svelte";
+  import ProjectMemberAvatar from "@/components/app/projects/members/avatars/project-member-avatar.svelte";
+  import DataDisplay from "@/components/app/texts/data-display.svelte";
+  import DateText from "@/components/app/texts/date-text.svelte";
   import { AspectRatio } from "@/components/ui/aspect-ratio";
   import { Card, CardContent } from "@/components/ui/card";
   import Checkbox from "@/components/ui/checkbox/checkbox.svelte";
-  import DataDisplay from "@/components/app/texts/data-display.svelte";
-  import DateText from "@/components/app/texts/date-text.svelte";
-  import EntryDropdownMenu from "@/components/app/datasets/entries/dropdown-menus/entry-dropdown-menu.svelte";
-  import EntryPriority from "@/components/app/datasets/entries/badges/entry-priority.svelte";
-  import EntryStatus from "@/components/app/datasets/entries/badges/entry-status.svelte";
   import Link from "@/components/ui/text/Link.svelte";
-  import LoadingEntryCard from "@/components/app/datasets/entries/cards/loading-entry-card.svelte";
-  import ProjectMemberAvatar from "@/components/app/projects/members/avatars/project-member-avatar.svelte";
   import Text from "@/components/ui/text/Text.svelte";
 
   import { EntryRecord } from "@/data/model/dataset/entries/record";
@@ -93,7 +93,6 @@
   });
 </script>
 
-
 {#await fetchData()}
   <LoadingEntryCard></LoadingEntryCard>
 {:then _}
@@ -141,7 +140,7 @@
       <div class="flex flex-1 flex-col gap-6">
         <!-- RESOURCE -->
         <Link
-          href="/entry/{entry.id}/plugin"
+          href="/entries/{entry.id}/plugin"
           class="group-hover:text-primary group-hover:cursor-pointer group-hover:underline group-hover:underline-offset-4"
           showIcon
         >

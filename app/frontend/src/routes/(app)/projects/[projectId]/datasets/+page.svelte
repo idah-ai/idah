@@ -1,20 +1,34 @@
 <script lang="ts">
+  import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import { PlusIcon } from "@lucide/svelte";
+  import { getContext } from "svelte";
 
   import DatasetFormModal from "@/components/app/datasets/overlays/dataset-form-modal.svelte";
   import DatasourceTable from "@/components/app/datasource-table/datasource-table.svelte";
   import Button from "@/components/ui/button/button.svelte";
 
   import { projectDatasetColumns } from "@/components/app/datasets/datasource-tables/project-dataset.columns";
+  import { homeBreadcrumb, projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
+  import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { EntryRecord } from "@/data/model/dataset/entries/record";
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
   import { refetches } from "@/utils/refetch";
 
+  // Contexts
+  const project: ProjectRecord = getContext("project");
+
   // Variables
   let projectId: string = page.params.projectId as string;
   let openNewDatasetModal: boolean = $state(false);
+
+  pageBreadcrumbsStore.set([
+    homeBreadcrumb,
+    projectBreadcrumb,
+    { label: project.name, href: resolve(`/projects/${projectId}/datasets`) },
+    { label: "Datasets" },
+  ]);
 </script>
 
 {#snippet AddNewDatasetButton()}
