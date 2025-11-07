@@ -1,6 +1,6 @@
 <script lang="ts">
   import { type Snippet } from "svelte";
-  import { HEIGHT, WIDTH, X, Y, type Point, type VideoMode } from "./VideoAnnotationContext";
+  import { HEIGHT, WIDTH, X, Y, type Point } from "./VideoAnnotationContext";
   import { DefaultMode, IdahVideoBoundingBox } from "../type";
 
   let offset: Point = $state([0, 0]);
@@ -23,7 +23,8 @@
   } = $props();
 
   $effect(() => {
-    size[HEIGHT] && size[WIDTH]; //..
+    // eslint-disable-next-line  @typescript-eslint/no-unused-expressions
+    size[HEIGHT] && size[WIDTH];
     onZoomChange(zoom.current, offset);
   });
 
@@ -61,9 +62,11 @@
   }
 
   export function onWheel(e: WheelEvent) {
+    let step;
+
     switch (mode) {
       default:
-        let step = e.deltaY > 0 ? -zoom.step : zoom.step;
+        step = e.deltaY > 0 ? -zoom.step : zoom.step;
 
         zoomAt(e.offsetX, e.offsetY, step * zoom.current);
     }
@@ -79,7 +82,7 @@
     }
   }
 
-  export function mouseUp(e: MouseEvent) {
+  export function mouseUp(_e: MouseEvent) {
     switch (mode) {
       default:
         panStop();
@@ -106,7 +109,7 @@
 >
   <div
     class="target"
-    style:transform-origin={"top left"}
+    style:transform-origin="top left"
     style:transform={`translate(${offset[X]}px, ${offset[Y]}px)  scale(${zoom.current})`}
   >
     {@render children()}

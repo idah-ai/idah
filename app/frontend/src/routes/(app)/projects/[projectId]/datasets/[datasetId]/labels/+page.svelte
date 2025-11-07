@@ -80,7 +80,7 @@
     modality: string;
     modalityShapes: ModalityShapes;
   }) {
-    const { labelConfigurations, modality, modalityShapes } = params;
+    const { labelConfigurations, modalityShapes } = params;
     if (Object.keys(labelConfigurations).length > 0) {
       return labelConfigurations;
     }
