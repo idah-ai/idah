@@ -32,7 +32,7 @@
     info,
     errors,
     class: className,
-    onValueChange,
+    onSelect,
     slotLabel,
     slotInfo,
     slotErrors,
@@ -46,7 +46,7 @@
   async function select(choice: LabelValue<string | number>): Promise<void> {
     value = choice.value;
     open = false;
-    await onValueChange?.(value);
+    await onSelect?.(value);
   }
 
   function clearValue(event: MouseEvent): void {

@@ -44,7 +44,7 @@
     info,
     errors,
     class: className,
-    onValueChange,
+    onSelect,
 
     // Slots
     slotLabel,
@@ -120,7 +120,7 @@
   async function select(choice: Choice): Promise<void> {
     value = choice.value;
     open = false;
-    await onValueChange?.(value);
+    await onSelect?.(value);
   }
 </script>
 
