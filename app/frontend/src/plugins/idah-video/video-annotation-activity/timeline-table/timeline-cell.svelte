@@ -52,7 +52,9 @@
   function getCategory(categoryId: string | undefined) {
     if (!categoryId) return undefined;
 
-    return context.config.categories.find((cat) => cat.id === categoryId);
+    return Object.entries(context.config)
+      .find(([k, _]) => k == annotation.shape.type)?.[1]
+      .values.find((cat) => cat.id === categoryId);
   }
 </script>
 

@@ -65,49 +65,48 @@ export interface INoteDriver {
   list(filter: any): Promise<Array<INote>>;
 }
 
-export type FieldTypeValue = "text" | "integer" | "boolean" | "single-select" | "multi-select";
+export type IConfigPropertyType = "text" | "integer" | "boolean" | "single-select" | "multi-select";
 
-export type LabelPropertyOption = {
+export type IConfigPropertyOption = {
   id: string;
   label: string;
 };
-export interface FieldFormat {
+
+export type IConfigPropertyFormatKeys = keyof IConfigPropertyFormat;
+export interface IConfigPropertyFormat {
   // placeholder?: string;
   // readonly?: boolean;
-  minimum: number | null;
-  maximum: number | null;
-  step: number | null;
-  info: string | null;
-  options: Array<LabelPropertyOption>;
+  minimum?: number | null;
+  maximum?: number | null;
+  step?: number | null;
+  // info: string | null;
+  options?: Array<IConfigPropertyOption>;
 }
 
-export interface ILabelConfigurationValue {
+export interface IConfigValue {
   id: string;
-  color: string;
-  label: string;
-  text_color?: string;
-}
-
-export interface ILabelConfigurationProperty {
-  id: string;
-  type: FieldTypeValue;
   label: string;
   description: string;
+  color: string;
+  textColor: string;
+}
+
+export interface IConfigProperty {
+  id: string;
+  label: string;
+  type: string;
   required: boolean;
-  format: FieldFormat;
-  visibility: ASTNode;
+  visibility: ASTNode | boolean;
+  format: IConfigPropertyFormat;
 }
-
-export interface ILabelConfiguration {
-  values: Array<ILabelConfigurationValue>;
-  properties: Array<ILabelConfigurationProperty>;
-}
-
 export interface IConfig {
-  [key: string]: ILabelConfiguration;
+  [shape_type: string]: {
+    values: IConfigValue[];
+    properties: IConfigProperty[];
+  };
 }
 export interface ICommands {
-  on(name: string, commandBuilder: (props?: object) => Command): void;
+  on(name: string, commandBuilder: (props?: object) => Command, manager?: boolean): void;
   run(name: string, props?: object): void;
   undo(times?: number): void;
   redo(times?: number): void;
