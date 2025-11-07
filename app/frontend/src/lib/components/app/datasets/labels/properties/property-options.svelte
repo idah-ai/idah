@@ -27,7 +27,6 @@
   });
 
   // Functions
-  function parseVisibility() {}
 </script>
 
 {#snippet SectionHeading(heading: string)}
