@@ -8,7 +8,6 @@ Api[:idah].register(
     params: {
       id:, **opts
     },
-    options: { auth: nil },
   )
 
   deserialize output.body
@@ -26,7 +25,6 @@ Api[:idah].register(
         attributes:
       }
     },
-    options: { auth: nil }
   )
 
   deserialize output.body

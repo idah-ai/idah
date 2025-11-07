@@ -5,7 +5,6 @@ Api[:idah].register(
 ) do |id:|
   output = get(
     "media/jobs/:id",
-    options: { auth: nil },
     params: { id: }
   )
   deserialize output.body
@@ -16,7 +15,6 @@ Api[:idah].register(
 ) do |attributes:|
   output = post(
     "media/videos/process",
-    options: { auth: nil },
     params: { data: attributes }
   )
   deserialize output.body
