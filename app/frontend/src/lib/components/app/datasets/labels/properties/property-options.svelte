@@ -10,6 +10,7 @@
 
   import type { LabelConfigurationProperty } from "@/data/model/dataset/labels";
   import type { Hash } from "@/utils/types";
+  import type { ASTNode } from "@/plugins/idah-video/test_ast_resolution";
 
   // Props
   interface Props {
@@ -22,11 +23,17 @@
   let { id, description, type, format } = $derived(property);
   let visibilityString = $state("");
 
-  $effect(() => {
-    console.warn("TODO: Parse visibility condition string to object", visibilityString);
-  });
+  import * as parser from "@build/parser.js";
 
-  // Functions
+  $effect(() => {
+    try {
+      const visibility = parser.parse(visibilityString);
+      console.log({ visibility });
+      // onSetValue({ visibility });
+    } catch (error) {
+      console.error(error);
+    }
+  });
 </script>
 
 {#snippet SectionHeading(heading: string)}
