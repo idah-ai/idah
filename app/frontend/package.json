@@ -8,7 +8,7 @@
     "watch:idah-video": "vite build --config vite.config.idah-video.js --watch",
     "build:idah-video": "vite build --config vite.config.idah-video.js",
     "build": "vite build",
-    "build:parser": "peggy -o build/parser.cjs src/plugins/idah-video/test_ast_parser.pegjs",
+    "build:parser": "peggy --format es src/plugins/idah-video/test_ast_parser.pegjs -o build/parser.js",
     "preview": "vite preview",
     "prepare": "svelte-kit sync || echo ''",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",

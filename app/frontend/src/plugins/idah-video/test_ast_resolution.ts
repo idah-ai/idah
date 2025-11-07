@@ -290,39 +290,14 @@ export function objectVariables(obj: object, root?: string) {
   }, []);
 }
 
-import parser from "../../../build/parser.cjs";
-
-const _variables = {
-  var1: ["42", "24"],
-  var2: "categories/*",
-  var3: true,
-  false: false,
-  true: true,
-  deep: { test: 42, deeper: { test2: "42", boolean: false } },
-};
-
-// easiear to read than the array \_o_/
-function ASTNodeToFunctionString(node: ASTNode, d = 0): string {
+export function ASTNodeToFunctionString(node: ASTNode, d = 0): string {
   return `${node?.[0]}(${node?.[1].map((n) => ASTNodeValueToString(n, d + 1)).join(", ")})`;
 }
+
 function ASTNodeValueToString(value: ASTNodeValue, d: number) {
   if (Array.isArray(value) && typeof value[0] == "string" && Array.isArray(value[1]))
     return `\n${Array(d).fill(" ").join("")}${ASTNodeToFunctionString(value as ASTNode, d)}`;
   else if (Array.isArray(value)) return `[${value}]`;
   else if (typeof value == "string") return `"${value}"`;
   return value;
-}
-
-try {
-  const query =
-    'var3 = false or (var1 = ["42", "24"] and var2 match "*/vehicles" and deep.test != 42 or deep.deeper.boolean = false)';
-  const result = parser.parse(query);
-  console.debug("Parse successful:", ASTNodeToFunctionString(result), { result });
-  const variables = objectVariables(_variables);
-  console.debug({ variables });
-  console.log("AST Result:", new AstProcessor(new Map<string, ASTValue>(variables)).processAST(result));
-} catch (error) {
-  console.error("Parse error:", error.message);
-  // The error object has useful properties for detailed reporting,
-  // such as location, expected, found, etc.
 }
