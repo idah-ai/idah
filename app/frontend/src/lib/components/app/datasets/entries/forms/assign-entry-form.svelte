@@ -44,7 +44,7 @@
       }}
       searchKeyWithOperation="email__match"
       value={assignedToId}
-      onSelect={(value: string | number) => {
+      onSelected={(value: string | number) => {
         assignedToId = value as number;
       }}
     ></SingleSelectDatasourceField>
