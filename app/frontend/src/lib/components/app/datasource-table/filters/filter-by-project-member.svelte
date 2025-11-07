@@ -47,5 +47,5 @@
   searchable
   searchKeyWithOperation="email__match"
   value={filters[filterKeyWithOperation]}
-  onSelect={handleFilter}
+  onSelected={handleFilter}
 ></SingleSelectDatasourceField>

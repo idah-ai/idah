@@ -99,7 +99,7 @@
                   class="px-2"
                   choices={annotationTypes.map((t) => ({ label: t.label, value: t.value }))}
                   value={node.type.split(":")[1]}
-                  onSelect={(value) => {
+                  onSelected={(value) => {
                     onEditCategory({
                       id: node.id,
                       type: `${node.type.split(":")[0]}:${value}`,
