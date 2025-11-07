@@ -78,10 +78,10 @@
   pageBreadcrumbsStore.set([
     homeBreadcrumb,
     projectBreadcrumb,
-    { label: project.name },
-    { label: "Datasets" },
-    { label: dataset.name, href: resolve(`/projects/${projectId}/datasets`) },
-    { label: "Tasks" },
+    { label: project.name, href: resolve(`/projects/${projectId}/datasets`) },
+    { label: "Datasets", href: resolve(`/projects/${projectId}/datasets`) },
+    { label: dataset.name, href: resolve(`/projects/${projectId}/datasets/${datasetId}/entries`) },
+    { label: "Entries" },
   ]);
 
   let listOptions: ListOptions = $state({
