@@ -13,7 +13,8 @@
   import type { CategoryDefinition } from "@/context/ActivityContext";
   import type { AnnotationValue } from "@/context/AnnotationContext";
   import type { AnnotationsIndexedDB } from "./indexedDB";
-  import type { CategoryConfiguration, VideoAnnotation } from "./VideoAnnotationContext";
+  import type { VideoAnnotation } from "./VideoAnnotationContext";
+  import type { IConfigValue } from "@/plugin/interface/Activity";
 
   // Props
   let {
@@ -32,7 +33,7 @@
   }: {
     type: string;
     currentFrame: number;
-    categories: CategoryConfiguration[];
+    categories: IConfigValue[];
     toolMode: boolean;
     selected_category: string | undefined;
     selected_id: string | undefined;
@@ -67,7 +68,7 @@
   });
 
   let forceRender = $state(0); // Force re-render trigger
-
+  console.log({ categories, type: typeof categories });
   let categoriesTree = $derived(
     categories.reduce<CategoryDefinition[]>((acc, category_configuration) => {
       return buildTree(acc, category_configuration.id.split("/"), category_configuration);
@@ -75,11 +76,7 @@
   );
 
   // Functions
-  function buildTree(
-    acc: CategoryDefinition[],
-    ids: string[],
-    configuration: CategoryConfiguration,
-  ): CategoryDefinition[] {
+  function buildTree(acc: CategoryDefinition[], ids: string[], configuration: IConfigValue): CategoryDefinition[] {
     let currentLevel = acc;
     let fullPath = "";
 
@@ -97,7 +94,7 @@
           ...(i < ids.length - 1 ? { nestedCategories: [] } : {}),
           data:
             i < ids.length - 1
-              ? ({ id: fullPath, label: humanize(ids[i]), color: "#ffff", description: "" } as CategoryConfiguration)
+              ? ({ id: fullPath, label: humanize(ids[i]), color: "#ffff", description: "" } as IConfigValue)
               : configuration, // leaf gets real configuration
         };
 
@@ -333,13 +330,17 @@
 
 <div class="flex-col">
   {#if selected_category && toolMode}
-    <CategoryProperties
-      selectedCategory={selected_category}
-      {annotationValue}
-      onSelectCategory={onSelect}
-      onEditValue={(value) => value && onEditValue(value, type)}
-    />
+    {#key [toolMode, selected_category]}
+      <CategoryProperties
+        {type}
+        selectedCategory={selected_category}
+        {annotationValue}
+        onSelectCategory={onSelect}
+        onEditValue={(value) => value && onEditValue(value, type)}
+      />
+    {/key}
   {:else}
+    <Text class="text-gray-500" weight="semibold">{type}</Text>
     <div class="flex gap-2 py-2">
       <Text class="text-gray-500" weight="semibold">Categories</Text>
 
