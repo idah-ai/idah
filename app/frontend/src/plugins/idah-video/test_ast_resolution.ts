@@ -82,8 +82,9 @@ export class AstProcessor {
         const [val] = props;
         const key = val?.toString();
         if (!key || !this.variables.has(key)) {
-          console.error({ op: "get", val, key, variables: this.variables });
-          throw new Error(`Variable not found: ${key}`);
+          console.warn({ op: "get", val, key, variables: this.variables });
+          console.warn(`Variable not found: ${key}`);
+          return false;
         }
         console.debug({ op: "get", val, result: this.variables.get(key) });
         return this.variables.get(key)!;
@@ -231,7 +232,9 @@ export class AstProcessor {
   ]);
 
   processAST(node: ASTNode): boolean {
-    return this.processOperator(node) === true;
+    const result = this.processOperator(node) === true;
+    console.debug(ASTNodeToFunctionString(node), { result });
+    return result;
   }
 
   processOperator(node: ASTNode): ASTValue {
@@ -300,7 +303,7 @@ const _variables = {
 
 // easiear to read than the array \_o_/
 function ASTNodeToFunctionString(node: ASTNode, d = 0): string {
-  return `${node[0]}(${node[1].map((n) => ASTNodeValueToString(n, d + 1)).join(", ")})`;
+  return `${node?.[0]}(${node?.[1].map((n) => ASTNodeValueToString(n, d + 1)).join(", ")})`;
 }
 function ASTNodeValueToString(value: ASTNodeValue, d: number) {
   if (Array.isArray(value) && typeof value[0] == "string" && Array.isArray(value[1]))

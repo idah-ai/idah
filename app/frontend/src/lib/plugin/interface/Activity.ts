@@ -106,7 +106,7 @@ export interface IConfig {
   };
 }
 export interface ICommands {
-  on(name: string, commandBuilder: (props?: object) => Command): void;
+  on(name: string, commandBuilder: (props?: object) => Command, manager?: boolean): void;
   run(name: string, props?: object): void;
   undo(times?: number): void;
   redo(times?: number): void;

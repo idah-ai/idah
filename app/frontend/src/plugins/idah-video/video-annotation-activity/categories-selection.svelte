@@ -330,13 +330,15 @@
 
 <div class="flex-col">
   {#if selected_category && toolMode}
-    <CategoryProperties
-      {type}
-      selectedCategory={selected_category}
-      {annotationValue}
-      onSelectCategory={onSelect}
-      onEditValue={(value) => value && onEditValue(value, type)}
-    />
+    {#key [toolMode, selected_category]}
+      <CategoryProperties
+        {type}
+        selectedCategory={selected_category}
+        {annotationValue}
+        onSelectCategory={onSelect}
+        onEditValue={(value) => value && onEditValue(value, type)}
+      />
+    {/key}
   {:else}
     <Text class="text-gray-500" weight="semibold">{type}</Text>
     <div class="flex gap-2 py-2">

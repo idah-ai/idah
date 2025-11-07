@@ -220,6 +220,8 @@
 
 {@render bb(draw_cmd(boundingBox(bounding_box, cursor)))}
 
+{console.log({ editable: editable, isEditing: !isEditing() })}
 {#if editable && !isEditing()}
+  {console.log("editable bounding box")}
   {@render BoundingBoxHandle(boundingBox(bounding_box, cursor))}
 {/if}
