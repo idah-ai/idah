@@ -59,7 +59,7 @@ export interface SelectFieldBaseProps extends FormFieldBaseProps {
   searchValue?: string;
   clearable?: boolean;
 
-  onValueChange?: (value: string | number) => Promise<void> | void;
+  onSelect?: (value: string | number) => Promise<void> | void;
 
   slotTrigger?: Snippet<
     [
