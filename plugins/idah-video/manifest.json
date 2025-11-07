@@ -13,7 +13,7 @@
 
   "modalities": [
     {
-      "id": "idah-video",
+      "id": "video",
       "label": "Video files",
       "shapes": {
         "bounding-box": {
