@@ -1,8 +1,6 @@
-// duplicate from yacine's
-
 import type { Command } from "@/command/Command";
-import type { ASTNode } from "@/utils/types";
 import type { AnnotationHeaderBarBaseTool } from "../layout/header/AnnotationHeaderBar.types";
+import type { ASTNode } from "../../../plugins/idah-video/test_ast_resolution";
 
 interface IUser {
   id: number;
@@ -76,25 +74,25 @@ export type IConfigPropertyFormatKeys = keyof IConfigPropertyFormat;
 export interface IConfigPropertyFormat {
   // placeholder?: string;
   // readonly?: boolean;
-  minimum?: number | null;
-  maximum?: number | null;
-  step?: number | null;
-  // info: string | null;
-  options?: Array<IConfigPropertyOption>;
-}
+  minimum: number | null;
+  maximum: number | null;
+  step: number | null;
+  info: string | null;
+  options: Array<IConfigPropertyOption>;
+} // we should probably just send what we need ?
 
 export interface IConfigValue {
   id: string;
   label: string;
-  description: string;
   color: string;
-  textColor: string;
+  selectable: boolean; //?
 }
 
 export interface IConfigProperty {
   id: string;
   label: string;
-  type: string;
+  description: string;
+  type: IConfigPropertyType;
   required: boolean;
   visibility: ASTNode | boolean;
   format: IConfigPropertyFormat;

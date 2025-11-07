@@ -24,7 +24,7 @@ const formatValidators = [
   {
     type: "text",
     minimum: (v: string, format: IConfigPropertyFormat) => v?.length >= (format.minimum || 0),
-    maximum: (v: string, format: IConfigPropertyFormat) => v?.length <= (format.maximum || v.length),
+    maximum: (v: string, format: IConfigPropertyFormat) => v?.length <= (format.maximum || v?.length || 0),
     step: (_v: string, _format: IConfigPropertyFormat) => true,
     options: (_v: string, _format: IConfigPropertyFormat) => true,
     info: (_v: string) => true,
@@ -56,12 +56,13 @@ const formatValidators = [
   },
   {
     type: "multi-select",
-    minimum: (v: string[], format: IConfigPropertyFormat) => v.length >= (format.minimum || 0),
-    maximum: (v: string[], format: IConfigPropertyFormat) => v.length <= (format.maximum || format.options.length || 0),
+    minimum: (v: string[], format: IConfigPropertyFormat) => v?.length >= (format.minimum || 0),
+    maximum: (v: string[], format: IConfigPropertyFormat) =>
+      v?.length <= (format.maximum || format.options.length || 0),
     step: (_v: string[], _format: IConfigPropertyFormat) => true,
     options: (v: string[], format: IConfigPropertyFormat) => {
       const optionIds = format.options?.map((o) => o.id);
-      return v.every((s) => optionIds?.includes(s));
+      return v?.every((s) => optionIds?.includes(s));
     },
     info: (_v: string[]) => true,
   },
