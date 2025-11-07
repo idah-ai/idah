@@ -2,11 +2,10 @@ import type { Hash } from "@/utils/types";
 
 export type AnnotationShape = {
   type: string;
-  start: number; // start frame or timestamp
-  end: number; // end frame or timestamp
 
   // Here it's open bar.
   // Based on the type of annotation, we can have very different properties.
+  [open_bar: string]: any;
 };
 
 export type AnnotationValue = {

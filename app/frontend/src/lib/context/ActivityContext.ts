@@ -1,5 +1,4 @@
 import type { IConfigValue } from "@/plugin/interface/Activity";
-import type { CategoryConfiguration } from "../../plugins/idah-video/video-annotation-activity/VideoAnnotationContext";
 import type { AnnotationContext } from "./AnnotationContext";
 
 /*

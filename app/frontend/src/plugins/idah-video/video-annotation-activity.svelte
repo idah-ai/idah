@@ -22,7 +22,12 @@
   import { AnnotationRecord } from "@/data/model/dataset/annotations/record";
 
   import { ScrollArea } from "@/components/ui/scroll-area";
-  import type { AnnotationShape, AnnotationValue } from "@/context/AnnotationContext";
+  import type {
+    AnnotationMetadata,
+    AnnotationObj,
+    AnnotationShape,
+    AnnotationValue,
+  } from "@/context/AnnotationContext";
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import { ShortcutManager } from "@/shortcut/ShortcutManager";
   import AnnotationFooter from "./layout/footer/AnnotationFooter.svelte";
@@ -34,12 +39,7 @@
   import SvgOverlay from "./video-annotation-activity/svg-overlay.svelte";
   import TimelineTable from "./video-annotation-activity/timeline-table/timeline-table.svelte";
   import Video from "./video-annotation-activity/video.svelte";
-  import type {
-    Point,
-    VideoAnnotation,
-    VideoFrameSelection,
-    VideoShape,
-  } from "./video-annotation-activity/VideoAnnotationContext";
+  import type { Point, VideoFrameSelection, VideoShape } from "./video-annotation-activity/VideoAnnotationContext";
   import VideoController from "./video-annotation-activity/VideoController.svelte";
   import BoxSelectIcon from "@lucide/svelte/icons/box-select";
   import MousePointer2 from "@lucide/svelte/icons/mouse-pointer-2";
@@ -64,7 +64,7 @@
 
   let mode: string = $state("visual");
 
-  let selectedAnnotation: VideoAnnotation | undefined = $state();
+  let selectedAnnotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata> | undefined = $state();
   let annotationValue: AnnotationValue = $derived(selectedAnnotation?.value || {});
 
   let entry_id = $state(context.id);
@@ -294,7 +294,7 @@
 
     const selection = $state.snapshot(props.selection) as VideoFrameSelection;
 
-    const from = annotation.shape.frames.find((f) => f.frame == selection.frame);
+    const from = annotation.shape.frames.find((f: VideoFrameSelection) => f.frame == selection.frame);
 
     const start = annotation.shape.start;
     const end = annotation.shape.end;
@@ -351,8 +351,8 @@
           start,
           end,
           frames: from
-            ? [...v.shape.frames.filter((f) => f.frame != selection.frame), from]
-            : v.shape.frames.filter((f) => f.frame != selection.frame),
+            ? [...v.shape.frames.filter((f: VideoFrameSelection) => f.frame != selection.frame), from]
+            : v.shape.frames.filter((f: VideoFrameSelection) => f.frame != selection.frame),
         };
         v.metadata.updatedAt = updatedAt;
         v.synced = false;
@@ -387,7 +387,7 @@
 
     if (!annotation) return toast.error("cannot remove selection, annotation not found");
 
-    let index = annotation.shape.frames.findIndex((v) => v.frame == props.frame);
+    let index = annotation.shape.frames.findIndex((v: VideoFrameSelection) => v.frame == props.frame);
     if (index == -1) return toast.warning("No frame to remove");
 
     let selection = annotation.shape.frames[index];
@@ -400,13 +400,19 @@
 
         if (!annotation) return toast.error("cannot remove keyframe, annotation not found");
 
-        let index = annotation.shape.frames.findIndex((v) => v.frame == props.frame);
+        let index = annotation.shape.frames.findIndex((v: VideoFrameSelection) => v.frame == props.frame);
         if (index == -1) return toast.warning("No frame to remove");
 
-        let newframes = annotation.shape.frames.filter((v) => v.frame != props.frame);
+        let newframes = annotation.shape.frames.filter((v: VideoFrameSelection) => v.frame != props.frame);
         annotation.shape = {
-          start: newframes.reduce((acc, v) => (v.frame <= acc || acc == -1 ? v.frame : acc), -1),
-          end: newframes.reduce((acc, v) => (v.frame >= acc || acc == -1 ? v.frame : acc), -1),
+          start: newframes.reduce(
+            (acc: number, v: VideoFrameSelection) => (v.frame <= acc || acc == -1 ? v.frame : acc),
+            -1,
+          ),
+          end: newframes.reduce(
+            (acc: number, v: VideoFrameSelection) => (v.frame >= acc || acc == -1 ? v.frame : acc),
+            -1,
+          ),
           type: annotation.shape.type,
           frames: newframes,
         };
@@ -464,72 +470,76 @@
         });
       },
       isCombinable: () => false,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      combine: (_c: any) => cmd,
+      combine: (_c) => _c,
     };
   });
-  context.commands.on("annotation.update", (props: { annotation: VideoAnnotation; value: AnnotationValue }) => {
-    const annotation_id = props.annotation.metadata.id;
-    const value_from = props.annotation.value;
-    return {
-      name: "update annotation value",
-      async apply() {
-        const annotation = await annotationsIDB?.get("annotations", annotation_id);
-        const updatedAt = new Date();
-        if (annotation) {
-          annotation.value = props.value;
-          annotation.metadata.updatedAt = updatedAt;
-          annotation.synced = false;
-          selectedAnnotation = annotation;
-
-          await annotationsIDB?.addAnnotations([annotation]);
-          $idb_updated_at = new Date();
-
-          let p = context.annotations.update({
-            id: annotation.metadata.id,
-            dimensions: annotation.shape,
-            annotation: props.value,
-          });
-
-          p.then(async () => {
-            if (annotation.metadata.updatedAt == updatedAt) {
-              annotation.synced = true;
-              await annotationsIDB?.addAnnotations([annotation]);
-              $idb_updated_at = new Date();
-            }
-          });
-        }
-      },
-      async undo() {
-        const annotation = await annotationsIDB?.get("annotations", annotation_id);
-        if (annotation) {
+  context.commands.on(
+    "annotation.update",
+    (props: {
+      annotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
+      value: AnnotationValue;
+    }) => {
+      const annotation_id = props.annotation.metadata.id;
+      const value_from = props.annotation.value;
+      return {
+        name: "update annotation value",
+        async apply() {
+          const annotation = await annotationsIDB?.get("annotations", annotation_id);
           const updatedAt = new Date();
-          annotation.value = value_from;
-          annotation.metadata.updatedAt = updatedAt;
-          annotation.synced = false;
+          if (annotation) {
+            annotation.value = props.value;
+            annotation.metadata.updatedAt = updatedAt;
+            annotation.synced = false;
+            selectedAnnotation = annotation;
 
-          selectedAnnotation = annotation;
+            await annotationsIDB?.addAnnotations([annotation]);
+            $idb_updated_at = new Date();
 
-          let p = context.annotations.update({
-            id: annotation.metadata.id,
-            dimensions: annotation.shape,
-            annotation: value_from,
-          });
+            let p = context.annotations.update({
+              id: annotation.metadata.id,
+              dimensions: annotation.shape,
+              annotation: props.value,
+            });
 
-          p.then(async () => {
-            if (annotation.metadata.updatedAt == updatedAt) {
-              annotation.synced = true;
-              await annotationsIDB?.addAnnotations([annotation]);
-              $idb_updated_at = new Date();
-            }
-          });
-        }
-      },
-      isCombinable: () => false,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      combine: (_c: any) => cmd,
-    };
-  });
+            p.then(async () => {
+              if (annotation.metadata.updatedAt == updatedAt) {
+                annotation.synced = true;
+                await annotationsIDB?.addAnnotations([annotation]);
+                $idb_updated_at = new Date();
+              }
+            });
+          }
+        },
+        async undo() {
+          const annotation = await annotationsIDB?.get("annotations", annotation_id);
+          if (annotation) {
+            const updatedAt = new Date();
+            annotation.value = value_from;
+            annotation.metadata.updatedAt = updatedAt;
+            annotation.synced = false;
+
+            selectedAnnotation = annotation;
+
+            let p = context.annotations.update({
+              id: annotation.metadata.id,
+              dimensions: annotation.shape,
+              annotation: value_from,
+            });
+
+            p.then(async () => {
+              if (annotation.metadata.updatedAt == updatedAt) {
+                annotation.synced = true;
+                await annotationsIDB?.addAnnotations([annotation]);
+                $idb_updated_at = new Date();
+              }
+            });
+          }
+        },
+        isCombinable: () => false,
+        combine: (_c) => _c,
+      };
+    },
+  );
 
   context.commands.on(
     "tools.visual",
@@ -539,6 +549,7 @@
         apply: () => {
           mode = "visual";
           selectedAnnotation = undefined;
+          annotationValue = {};
         },
         undo: () => {},
         isCombinable: () => true,
@@ -555,6 +566,7 @@
         apply: () => {
           mode = "video:bounding_box";
           selectedAnnotation = undefined;
+          annotationValue = {};
         },
         undo: () => {},
         isCombinable: () => true,
@@ -564,7 +576,7 @@
     false,
   );
 
-  function addAnnotation(shape: VideoShape, value: AnnotationValue = {}) {
+  function addAnnotation(shape: AnnotationShape, value: AnnotationValue = {}) {
     context.commands.run("annotation.add", { shape, value });
   }
 
@@ -580,7 +592,10 @@
     context.commands.run("keyframe.delete", { annotation_id, frame });
   }
 
-  function onDeleteAnnotation(annotation: VideoAnnotation, frame?: number) {
+  function onDeleteAnnotation(
+    annotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>,
+    frame?: number,
+  ) {
     if (frame != undefined) deleteSelection(annotation.metadata.id, frame);
     else removeAnnotation(annotation.metadata.id);
   }
@@ -593,17 +608,22 @@
       let annotation_value_from = $state.snapshot(annotationValue) as AnnotationValue;
 
       // todo proper validation
-      if (requiredFullfilled(annotation_value_from, context.config.properties)) {
-        addAnnotation(
-          {
-            type,
-            start: frame,
-            end: frame,
+      let shape: AnnotationShape = { type };
+      switch (type) {
+        case "entry:root":
+          break;
+        case "video:bounding_box":
+          shape = { ...shape, start: frame, end: frame, frames: [{ frame, points }] };
+          break;
+        default:
+          throw `unhandled type ${type}`;
+      }
 
-            frames: [{ frame, points }],
-          },
-          annotation_value_from,
-        );
+      if (
+        context.config[type]?.values.some((v) => v.id == annotation_value_from.category) &&
+        requiredFullfilled(annotation_value_from, context.config[type]?.properties)
+      ) {
+        addAnnotation(shape, annotation_value_from);
       } else {
         shapeSelectionArgs = [type, frame, _points, selectedId];
         showPopOver = true;
@@ -613,30 +633,35 @@
     }
   }
 
-  function updateAnnotationValue(annotation: VideoAnnotation, value: AnnotationValue) {
+  function updateAnnotationValue(
+    annotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>,
+    value: AnnotationValue,
+  ) {
     context.commands.run("annotation.update", { annotation, value });
   }
 
-  function selectAnnotation(annotation?: VideoAnnotation) {
+  function selectAnnotation(annotation?: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) {
     selectedAnnotation = annotation;
     mode = annotation?.shape.type || "visual";
   }
 
   let overlay: SvgOverlay;
 
-  let annotations_promise: Promise<VideoAnnotation[]> = $derived.by(() => {
-    $idb_updated_at; // eslint-disable-line @typescript-eslint/no-unused-expressions
-    if (!annotationsIDB) return new Promise((_, ko) => ko("no database"));
+  let annotations_promise: Promise<AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]> = $derived.by(
+    () => {
+      $idb_updated_at; // eslint-disable-line @typescript-eslint/no-unused-expressions
+      if (!annotationsIDB) return new Promise((_, ko) => ko("no database"));
 
-    let p = annotationsIDB.getAllStore("annotations");
+      let p = annotationsIDB.getAllStore("annotations");
 
-    p.then((updated_annotations) => {
-      console.debug({ $boundingBoxes: $state.snapshot($boundingBoxes), updated_annotations });
-      $boundingBoxes = updated_annotations;
-    });
+      p.then((updated_annotations) => {
+        console.debug({ $boundingBoxes: $state.snapshot($boundingBoxes), updated_annotations });
+        $boundingBoxes = updated_annotations;
+      });
 
-    return p;
-  });
+      return p;
+    },
+  );
 
   let showPopOver = $state(false);
   let videoResizedAt = $state(new Date());
@@ -676,9 +701,15 @@
         onEditValue={(value: AnnotationValue, valueMode: string) => {
           annotationValue = value;
           mode = valueMode;
-          if (selectedAnnotation && requiredFullfilled(annotationValue, context.config[valueMode]?.properties)) {
+          if (
+            valueMode == "entry:root" &&
+            !selectedAnnotation &&
+            requiredFullfilled(annotationValue, context.config[valueMode]?.properties)
+          ) {
+            addAnnotation({ type: valueMode }, $state.snapshot(value));
+          } else if (selectedAnnotation && requiredFullfilled(annotationValue, context.config[valueMode]?.properties)) {
             selectedAnnotation.value = value;
-            updateAnnotationValue($state.snapshot(selectedAnnotation) as VideoAnnotation, $state.snapshot(value));
+            updateAnnotationValue($state.snapshot(selectedAnnotation), $state.snapshot(value));
           }
         }}
         onSelectAnnotation={selectAnnotation}
@@ -714,7 +745,16 @@
           onEditValue={(value: AnnotationValue, valueMode: string) => {
             annotationValue = value;
             mode = valueMode;
-            if (selectedAnnotation && requiredFullfilled(annotationValue, context.config[valueMode]?.properties)) {
+            if (
+              valueMode == "entry:root" &&
+              !selectedAnnotation &&
+              requiredFullfilled(annotationValue, context.config[valueMode]?.properties)
+            ) {
+              addAnnotation({ type: valueMode }, $state.snapshot(value));
+            } else if (
+              selectedAnnotation &&
+              requiredFullfilled(annotationValue, context.config[valueMode]?.properties)
+            ) {
               selectedAnnotation.value = value;
               updateAnnotationValue($state.snapshot(selectedAnnotation), $state.snapshot(value));
             }
