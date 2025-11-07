@@ -186,7 +186,7 @@
       name="{id}/visibility"
       class="col-span-1 md:col-span-2"
       label="Visibility"
-      placeholder="e.g. match(task_name, '...') and status = '...'"
+      placeholder="e.g. task_name match '...' and status = '...'"
       value={visibilityString}
       oninput={(e) => (visibilityString = e.currentTarget.value)}
     />
