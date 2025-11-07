@@ -14,15 +14,15 @@ import {
   datasetsModalities,
   datasetsStatuses,
 } from "@/data/model/dataset/datasets/constants";
-import type { LabelConfigurations } from "@/data/model/dataset/labels";
 import type { Hash } from "@/utils/types";
+import type { IConfig } from "@/plugin/interface/Activity";
 
 @type("dataset:datasets")
 export class DatasetRecord extends Record {
   @field() public name!: string;
   @field() public labels!: Array<string>;
   @field() public modality!: string;
-  @field() public labeling_configuration!: LabelConfigurations;
+  @field() public labeling_configuration!: IConfig;
   @field() public workflow_configuration!: Hash;
   @field() public status!: string;
   @field() public progress!: number;

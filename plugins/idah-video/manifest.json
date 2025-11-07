@@ -16,27 +16,27 @@
       "id": "video",
       "label": "Video files",
       "shapes": {
-        "bounding-box": {
+        "idah-video:bounding-box": {
           "label": "Bounding Box",
           "icon": "api/v1/plugins/idah-video/assets/bounding-box-icon.svg"
         },
-        "polygon": {
+        "idah-video:polygon": {
           "label": "Polygon",
           "icon": "api/v1/plugins/idah-video/assets/polygon-icon.svg"
         },
-        "frame-tagging": {
+        "idah-video:frame-tagging": {
           "label": "Frame Tagging",
           "icon": "api/v1/plugins/idah-video/assets/frame-tagging-icon.svg"
         },
-        "framerange-tagging": {
+        "idah-video:framerange-tagging": {
           "label": "Frame Range Tagging",
           "icon": "api/v1/plugins/idah-video/assets/frame-range-tagging-icon.svg"
         },
-        "polyline": {
+        "idah-video:polyline": {
           "label": "Polyline",
           "icon": "api/v1/plugins/idah-video/assets/polyline-icon.svg"
         },
-        "point": {
+        "idah-video:point": {
           "label": "Point",
           "icon": "api/v1/plugins/idah-video/assets/point-icon.svg"
         }

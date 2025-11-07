@@ -1,4 +1,4 @@
-import type { ASTNode, LabelValue } from "@/utils/types";
+import type { LabelValue } from "@/utils/types";
 import {
   CircleCheckBigIcon,
   HashIcon,
@@ -7,6 +7,7 @@ import {
   TypeIcon,
   type Icon as IconType,
 } from "@lucide/svelte";
+import type { ASTNode } from "../../../../plugins/idah-video/test_ast_resolution";
 
 export type FieldTypeValue = "text" | "integer" | "boolean" | "single-select" | "multi-select";
 export interface FieldType extends LabelValue<FieldTypeValue> {
@@ -38,7 +39,7 @@ export interface LabelConfigurationProperty {
     info: string | null;
     options: Array<LabelPropertyOption>;
   };
-  visibility: ASTNode;
+  visibility: ASTNode | boolean;
 }
 
 export interface LabelConfigurationValue {

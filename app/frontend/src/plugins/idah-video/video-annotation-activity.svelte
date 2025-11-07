@@ -43,6 +43,7 @@
   import VideoController from "./video-annotation-activity/VideoController.svelte";
   import BoxSelectIcon from "@lucide/svelte/icons/box-select";
   import MousePointer2 from "@lucide/svelte/icons/mouse-pointer-2";
+  import { DefaultMode, EntryRoot, IdahVideoBoundingBox } from "./type";
 
   // Props
   interface Props {
@@ -138,13 +139,13 @@
     context.tools.setTools([
       {
         label: "Visual",
-        type: "visual",
+        type: DefaultMode,
         icon: MousePointer2,
         handleClick: () => context.commands.run("tools.visual"),
       },
       {
         label: "Bounding Box",
-        type: "video:bounding_box",
+        type: IdahVideoBoundingBox,
         icon: BoxSelectIcon,
         handleClick: () => context.commands.run("tools.bounding_box"),
       },
@@ -547,7 +548,7 @@
       return {
         name: "visual tool",
         apply: () => {
-          mode = "visual";
+          mode = DefaultMode;
           selectedAnnotation = undefined;
           annotationValue = {};
         },
@@ -564,7 +565,7 @@
       return {
         name: "bounding box tool",
         apply: () => {
-          mode = "video:bounding_box";
+          mode = IdahVideoBoundingBox;
           selectedAnnotation = undefined;
           annotationValue = {};
         },
@@ -610,9 +611,9 @@
       // todo proper validation
       let shape: AnnotationShape = { type };
       switch (type) {
-        case "entry:root":
+        case DefaultMode:
           break;
-        case "video:bounding_box":
+        case IdahVideoBoundingBox:
           shape = { ...shape, start: frame, end: frame, frames: [{ frame, points }] };
           break;
         default:
@@ -642,7 +643,7 @@
 
   function selectAnnotation(annotation?: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) {
     selectedAnnotation = annotation;
-    mode = annotation?.shape.type || "visual";
+    mode = annotation?.shape.type || DefaultMode;
   }
 
   let overlay: SvgOverlay;
@@ -702,7 +703,7 @@
           annotationValue = value;
           mode = valueMode;
           if (
-            valueMode == "entry:root" &&
+            valueMode == EntryRoot &&
             !selectedAnnotation &&
             requiredFullfilled(annotationValue, context.config[valueMode]?.properties)
           ) {
