@@ -48,9 +48,9 @@
   pageBreadcrumbsStore.set([
     homeBreadcrumb,
     projectBreadcrumb,
-    { label: project.name },
-    { label: "Datasets" },
-    { label: dataset.name, href: resolve(`/projects/${projectId}/datasets`) },
+    { label: project.name, href: resolve(`/projects/${projectId}/datasets`) },
+    { label: "Datasets", href: resolve(`/projects/${projectId}/datasets`) },
+    { label: dataset.name, href: resolve(`/projects/${projectId}/datasets/${datasetId}/labels`) },
     { label: "Label Editor" },
   ]);
 
