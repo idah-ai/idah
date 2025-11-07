@@ -130,13 +130,17 @@
     {/if}
 
     <Popover bind:open>
-      <PopoverTrigger>
+      <PopoverTrigger
+        class={cn("w-full justify-between", {
+          "ring-destructive ring-1": (errors?.length ?? 0) > 0,
+        })}
+      >
         {#if slotTrigger}
           {@render slotTrigger({ selectedChoice, clearable, disabled })}
         {:else}
           <Button
             variant="outline"
-            class="w-full justify-between"
+            class={cn("w-full justify-between", {})}
             {disabled}
             role="combobox"
             aria-expanded={open}

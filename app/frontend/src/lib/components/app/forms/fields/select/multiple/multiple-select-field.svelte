@@ -66,7 +66,11 @@
     {/if}
 
     <Popover bind:open>
-      <PopoverTrigger>
+      <PopoverTrigger
+        class={cn("w-full justify-between", {
+          "ring-destructive ring-1": (errors?.length ?? 0) > 0,
+        })}
+      >
         {#snippet child({ props })}
           <Button variant="outline" class="justify-between" role="combobox" {disabled} aria-expanded={open} {...props}>
             {#if selectedValues.length > 0}
