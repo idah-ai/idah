@@ -4,6 +4,8 @@
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import Button from "@/components/ui/button/button.svelte";
 
+  import { cn } from "@/utils";
+
   import type { ICategoryTreeNode } from "@/components/app/datasets/labels/categories/category-tree-node.svelte";
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
 
@@ -41,7 +43,14 @@
 
 <DropdownMenus {menus}>
   {#snippet trigger({ props })}
-    <Button {...props} variant="ghost" size="icon-sm" class={className}>
+    <Button
+      {...props}
+      variant="ghost"
+      size="icon-sm"
+      class={cn("", className, {
+        "opacity-100": props["data-state"] === "open",
+      })}
+    >
       <EllipsisVerticalIcon />
     </Button>
   {/snippet}

@@ -69,8 +69,6 @@ export const pluginsBackendDataSource = createBackendDataSource(PluginRecord, ba
     }
 
     if (body && body.data) {
-      console.log(body);
-
       return Promise.resolve(body.data);
     }
 
