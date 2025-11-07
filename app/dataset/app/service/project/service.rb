@@ -5,6 +5,7 @@ module Project
     use projects: Project::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
+      binding.pry
       projects.index(
         filter,
         included: included,
