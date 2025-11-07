@@ -21,14 +21,14 @@
     onChange?: (bb: BoundingBox) => void;
   } = $props();
 
-  export function isEditing(): Boolean {
+  export function isEditing(): boolean {
     return bounding_box.length != 4 || panStart != undefined;
   }
 
   export interface ToolSelection {
     startSelection: (start: Point) => void;
     endSelection: (end: Point) => void;
-    isEditing: () => Boolean;
+    isEditing: () => boolean;
   }
 
   let panStart: Point | undefined = $state(); // bb pan
@@ -116,10 +116,10 @@
     }
   }
 
-  const BB_TOP_LEFT: 0 = 0;
-  const BB_TOP_RIGHT: 1 = 1;
-  const BB_BOTTOM_RIGHT: 2 = 2;
-  const BB_BOTTOM_LEFT: 3 = 3;
+  const BB_TOP_LEFT: 0 = 0 as const;
+  const BB_TOP_RIGHT: 1 = 1 as const;
+  const BB_BOTTOM_RIGHT: 2 = 2 as const;
+  const BB_BOTTOM_LEFT: 3 = 3 as const;
 
   const BB_HANDLE_POINTS = [
     [BB_BOTTOM_RIGHT],
@@ -173,7 +173,7 @@
 </script>
 
 {#snippet BoundingBoxHandle(bb: BoundingBox)}
-  {#each boundingBoxHandle(bb) as point, handle}
+  {#each boundingBoxHandle(bb) as point, handle (handle)}
     <circle
       onmousedown={(e) => {
         e.stopPropagation();
@@ -182,7 +182,7 @@
       cx={point[X] * ratio[X]}
       cy={point[Y] * ratio[Y]}
       r={5}
-      style:transform-origin={"top left"}
+      style:transform-origin="top left"
       style:transform={`translate(${offset[X]}px, ${offset[Y]}px)`}
       style:cursor={getHandleCursor(handle)}
       vector-effect="non-scaling-stroke"
@@ -198,7 +198,7 @@
   {#if path}
     <path
       d={path}
-      style:transform-origin={"top left"}
+      style:transform-origin="top left"
       style:transform={`translate(${offset[X]}px, ${offset[Y]}px) scale(${ratio[X]}, ${ratio[Y]})`}
       vector-effect="non-scaling-stroke"
       class={editable ? "cursor-move" : "cursor-pointer"}
@@ -220,8 +220,6 @@
 
 {@render bb(draw_cmd(boundingBox(bounding_box, cursor)))}
 
-{console.log({ editable: editable, isEditing: !isEditing() })}
 {#if editable && !isEditing()}
-  {console.log("editable bounding box")}
   {@render BoundingBoxHandle(boundingBox(bounding_box, cursor))}
 {/if}

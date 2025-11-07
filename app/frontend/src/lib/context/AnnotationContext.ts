@@ -5,6 +5,7 @@ export type AnnotationShape = {
 
   // Here it's open bar.
   // Based on the type of annotation, we can have very different properties.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [open_bar: string]: any;
 };
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getContext, onMount, type Snippet } from "svelte";
+  import { getContext, type Snippet } from "svelte";
   import { HEIGHT, ORIGIN, WIDTH, X, Y, type Point, type VideoFrameSelection } from "./VideoAnnotationContext";
   import Zoomable from "./zoomable.svelte";
   import BoundingBox, { type ToolSelection } from "./bounding-box.svelte";
@@ -48,10 +48,6 @@
   } = $state({
     scale: 1,
     offset: [0, 0],
-  });
-
-  $effect(() => {
-    console.log({ toolComponent, toolSelection, shape, selected, mode: mode });
   });
 
   let context = getContext<IActivityContext>("context");
@@ -151,31 +147,13 @@
     }
   }
 
-  let toolComponent: ToolSelection | undefined = $state();
-
-  let toolSelection: ToolSelection | undefined = $derived.by(() => {
-    switch (shape?.type) {
-      case EntryRoot:
-        return {
-          startSelection: (p: Point) => {
-            onSelection(EntryRoot, frame, undefined, selected?.metadata.id);
-          },
-          endSelection: (p: Point) => {},
-          isEditing: () => false,
-        };
-      default:
-        return toolComponent;
-    }
-  });
+  let toolSelection: ToolSelection | undefined = $state();
 
   export function selectionStart(e: MouseEvent) {
-    console.warn({ shape });
     if (!shape) {
       zoom.mouseDown(e);
       return console.warn(selectionStart, { shape: $state.snapshot(shape) });
     }
-
-    console.warn({ toolSelection, toolComponent });
 
     toolSelection?.startSelection(cursor_downscaled);
 
@@ -237,7 +215,7 @@
               ratio={target_size}
               offset={zoomInfo.offset}
               color={Object.entries(context.config)
-                .find(([k, v]) => k == IdahVideoBoundingBox)?.[1]
+                .find(([k, _]) => k == IdahVideoBoundingBox)?.[1]
                 .values.find((c) => c.id == annotation.value?.category)?.color || "grey"}
               onmousedown={(e) => {
                 if (mode == DefaultMode || selected) {
@@ -259,7 +237,7 @@
               offset={zoomInfo.offset}
               color={annotation?.synced
                 ? Object.entries(context.config)
-                    .find(([k, v]) => k == IdahVideoBoundingBox)?.[1]
+                    .find(([k, _]) => k == IdahVideoBoundingBox)?.[1]
                     .values.find((c) => c.id == annotation?.value?.category)?.color || "grey"
                 : "grey"}
               onmousedown={(e) => {
@@ -276,7 +254,7 @@
 
     {#if shape?.type == IdahVideoBoundingBox || mode == IdahVideoBoundingBox}
       <BoundingBox
-        bind:this={toolComponent}
+        bind:this={toolSelection}
         {points}
         ratio={target_size}
         offset={zoomInfo.offset}
@@ -284,7 +262,7 @@
         editable={shape?.type == IdahVideoBoundingBox || mode == IdahVideoBoundingBox}
         color={selected?.synced
           ? Object.entries(context.config)
-              .find(([k, v]) => k == mode)?.[1]
+              .find(([k, _]) => k == mode)?.[1]
               .values.find((c) => c.id == selected?.value?.category)?.color || "grey"
           : "grey"}
         onChange={(bb) => {
