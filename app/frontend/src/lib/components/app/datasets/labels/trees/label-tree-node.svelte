@@ -60,7 +60,7 @@
 
   <div id={node.id} class={cn("flex items-center gap-2")} style:margin-left={`${(level - 1) * 3}rem`}>
     <!-- TREE::NODE -->
-    <div class="border-border flex w-full items-center gap-2 rounded-lg border py-1 pr-2 pl-4">
+    <div class="border-border flex w-full items-center gap-2 rounded-lg border py-1 pl-4 pr-2">
       {#if isLastNode}
         <Popover>
           <PopoverTrigger>
@@ -99,7 +99,7 @@
                   class="px-2"
                   choices={annotationTypes.map((t) => ({ label: t.label, value: t.value }))}
                   value={node.type.split(":")[1]}
-                  onValueChange={(value) => {
+                  onSelect={(value) => {
                     onEditCategory({
                       id: node.id,
                       type: `${node.type.split(":")[0]}:${value}`,

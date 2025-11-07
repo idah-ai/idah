@@ -34,5 +34,5 @@
   displayKey="name"
   value={filters[filterKeyWithOperation]}
   searchKeyWithOperation="email__match"
-  onValueChange={handleFilter}
+  onSelect={handleFilter}
 ></SingleSelectDatasourceField>

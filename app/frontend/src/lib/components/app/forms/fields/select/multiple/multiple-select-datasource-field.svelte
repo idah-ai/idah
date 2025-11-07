@@ -39,7 +39,7 @@
     info,
     errors,
     class: className,
-    onValueChange,
+    onSelect,
 
     // Slots
     slotLabel,
@@ -100,7 +100,7 @@
       values = [...values, choice.value];
     }
     open = false;
-    await onValueChange?.(choice.value);
+    await onSelect?.(choice.value);
   }
 </script>
 

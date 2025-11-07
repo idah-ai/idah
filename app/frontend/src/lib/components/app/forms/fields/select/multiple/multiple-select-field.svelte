@@ -33,7 +33,7 @@
     info,
     errors,
     class: className,
-    onValueChange,
+    onSelect,
     slotLabel,
     slotInfo,
     slotErrors,
@@ -51,7 +51,7 @@
       values = [...values, choice.value];
     }
     open = false;
-    await onValueChange?.(choice.value);
+    await onSelect?.(choice.value);
   }
 
   function clearValue(event: MouseEvent): void {
