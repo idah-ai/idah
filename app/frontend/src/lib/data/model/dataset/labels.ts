@@ -1,4 +1,4 @@
-import type { LabelValue } from "@/utils/types";
+import type { ASTNode, LabelValue } from "@/utils/types";
 import {
   CircleCheckBigIcon,
   HashIcon,
@@ -25,45 +25,37 @@ export type LabelPropertyOption = {
   label: string;
 };
 
-export interface CategoryField {
-  id: string;
-  type: string;
-  color: string;
-  text_color?: string;
-  label: string;
-}
-
-export interface FieldBase {
+export interface LabelConfigurationProperty {
   id: string;
   type: FieldTypeValue;
   label: string;
   description: string;
   required: boolean;
   format: {
-    // placeholder?: string;
-    // readonly?: boolean;
     minimum: number | null;
     maximum: number | null;
     step: number | null;
     info: string | null;
     options: Array<LabelPropertyOption>;
   };
-  visible_if?: {
-    [key: string]: Array<string | number | boolean>;
-  };
+  visibility: ASTNode;
 }
 
-export interface PropertyField extends FieldBase {
-  selector: Array<string>;
+export interface LabelConfigurationValue {
+  id: string;
+  color: string;
+  label: string;
+  selectable: boolean;
+  text_color?: string;
 }
-
-/* eslint-disable-next-line @typescript-eslint/no-empty-object-type */
-export interface TagField extends FieldBase {}
 
 export interface LabelingConfiguration {
-  categories: Array<CategoryField>;
-  properties: Array<PropertyField>;
-  taggings: Array<TagField>;
+  values: Array<LabelConfigurationValue>;
+  properties: Array<LabelConfigurationProperty>;
+}
+
+export interface LabelConfigurations {
+  [key: string]: LabelingConfiguration;
 }
 
 interface LabelColor {

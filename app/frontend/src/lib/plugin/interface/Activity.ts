@@ -1,8 +1,8 @@
 // duplicate from yacine's
 
 import type { Command } from "@/command/Command";
+import type { ASTNode } from "@/utils/types";
 import type { AnnotationHeaderBarBaseTool } from "../layout/header/AnnotationHeaderBar.types";
-import type { ASTNode } from "../../../plugins/idah-video/test_ast_resolution";
 
 interface IUser {
   id: number;

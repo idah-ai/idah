@@ -106,4 +106,39 @@ RSpec.describe PluginsExpo, type: :exposition, as: :system do
       expect(response_data["data"]).to eq(expected_modalities)
     end
   end
+
+  context "#show_modality" do
+    it "returns the list of shapes for a given modality" do
+      modality_service = instance_double(Plugins::Service)
+      expect(Plugins::Service).to receive(:new).and_return(modality_service)
+
+      modality_name = "idah-video"
+      expected_shapes = {
+        "shapes": {
+          "bounding-box" => { "label" => "Bounding Box", "icon" => "icon.svg" }
+        }
+      }
+
+      expect(modality_service).to receive(:show_modality).with(modality_name).and_return(
+        expected_shapes
+      )
+
+      get "/plugins/modalities/#{modality_name}"
+
+      expect(last_response.status).to eq(200)
+      response_data = JSON.parse(last_response.body, symbolize_names: true)
+      expect(response_data).to eq(
+        {
+          data: {
+            shapes: {
+              "bounding-box": {
+                label: "Bounding Box",
+                icon: "icon.svg"
+              }
+            }
+          }
+        }
+      )
+    end
+  end
 end

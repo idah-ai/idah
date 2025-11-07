@@ -114,13 +114,13 @@
 
   {#if slotInfo}
     {@render slotInfo()}
-  {:else}
+  {:else if info}
     <FormFieldInfo>{info}</FormFieldInfo>
   {/if}
 
   {#if slotErrors}
     {@render slotErrors()}
-  {:else}
+  {:else if errors}
     <FormFieldErrors {errors}></FormFieldErrors>
   {/if}
 </FormField>
