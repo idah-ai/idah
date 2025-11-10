@@ -7,6 +7,8 @@
   import { Button } from "@/components/ui/button";
   import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
+  import { humanize } from "@/utils/string";
+
   import type {
     LabelConfigurationProperty,
     LabelConfigurations,
@@ -105,14 +107,15 @@
       <CardContent class="flex flex-col gap-2">
         {#each Object.keys(labelConfig) as labelConfigKey (labelConfigKey)}
           {@const isSelect = selectedConfigKey === labelConfigKey}
-          {@const shapeKey = labelConfigKey.split(":")[1]}
+          {@const shapeKey = labelConfigKey.split(":").slice(1).join(":")}
           {@const currentShape = shapes[shapeKey] as ModalityShape}
+          {@const labelConfigKeyDisplay = labelConfigKey.split(":").slice(1).join(":").replace(":", " ")}
           <Button
             variant={isSelect ? "default" : "secondary"}
             class="w-full justify-start"
             onclick={() => selectConfigKey(labelConfigKey)}
           >
-            {currentShape.label}
+            {currentShape ? currentShape.label : humanize(labelConfigKeyDisplay)}
           </Button>
         {/each}
       </CardContent>

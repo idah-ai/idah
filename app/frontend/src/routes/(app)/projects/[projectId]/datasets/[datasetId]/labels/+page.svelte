@@ -66,7 +66,6 @@
     const showModalityRes = await pluginsBackendDataSource.showModality(modality);
     shapes = showModalityRes.shapes;
 
-    // labelConfig = datasetRes.data.labeling_configuration;
     labelConfig = getLabelConfig({
       labelConfigurations: datasetRes.data.labeling_configuration,
       modality,
@@ -85,7 +84,7 @@
       return labelConfigurations;
     }
 
-    // Return combination of modality:shapes
+    /** Return combination of modality:shapes */
     let modalityShapeLabelConfig: LabelConfigurations = {};
     Object.keys(modalityShapes).forEach((shape) => {
       const configKey = `${modality}:${shape}`;
@@ -95,15 +94,31 @@
       };
     });
 
+    /** Add entry:root statically for now as @Yacine said. */
+    modalityShapeLabelConfig[`${modality}:entry:root`] = {
+      values: [],
+      properties: [],
+    };
+
     return modalityShapeLabelConfig;
   }
 
   async function saveLabelConfigChanges(): Promise<void> {
     saving = true;
+    /**
+     * Remove unset config
+     */
+    const cleanedLabelConfig: LabelConfigurations = {};
+    Object.entries(labelConfig).forEach(([key, config]) => {
+      if (config.values.length > 0 || config.properties.length > 0) {
+        cleanedLabelConfig[key] = config;
+      }
+    });
+
     try {
       const updatedDatasetRes = await datasetsBackendDataSource.update(datasetId, {
         attributes: {
-          labeling_configuration: labelConfig,
+          labeling_configuration: cleanedLabelConfig,
         },
       });
       initialLabelConfig = JSON.parse(JSON.stringify(updatedDatasetRes.data.labeling_configuration));
