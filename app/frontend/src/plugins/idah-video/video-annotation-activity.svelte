@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { BoxSelectIcon, MessageCircleIcon, MousePointer2 } from "@lucide/svelte";
   import { onMount, setContext } from "svelte";
   import { toast } from "svelte-sonner";
   import { uuidv7 } from "uuidv7";
@@ -42,9 +43,6 @@
   } from "./video-annotation-activity/VideoAnnotationContext";
   import VideoController from "./video-annotation-activity/VideoController.svelte";
 
-  import BoxSelectIcon from "@lucide/svelte/icons/box-select";
-  import MousePointer2 from "@lucide/svelte/icons/mouse-pointer-2";
-
   // Props
   interface Props {
     context: IActivityContext;
@@ -54,6 +52,7 @@
   // Contexts
   setContext("context", context);
 
+  // Lifecycles
   $effect(() => console.debug({ $idb_updated_at }));
   $effect(() => console.debug({ $boundingBoxes }));
 
@@ -64,6 +63,7 @@
   let totalFrames = $state(0);
 
   let mode: string = $state("visual");
+  let annotationSidebarWidthRem = $state<number>(20);
 
   let selectedAnnotation: VideoAnnotation | undefined = $state();
   let annotationValue: AnnotationValue = $derived(selectedAnnotation?.value || {});
@@ -149,6 +149,12 @@
         type: "video:bounding_box",
         icon: BoxSelectIcon,
         handleClick: () => context.commands.run("tools.bounding_box"),
+      },
+      {
+        label: "Notes",
+        type: "note",
+        icon: MessageCircleIcon,
+        handleClick: () => context.commands.run("tools.note"),
       },
     ]);
 
@@ -533,38 +539,42 @@
     };
   });
 
-  context.commands.on(
-    "tools.visual",
-    () => {
-      return {
-        name: "visual tool",
-        apply: () => {
-          mode = "visual";
-          selectedAnnotation = undefined;
-        },
-        undo: () => {},
-        isCombinable: () => true,
-        combine: (c) => c,
-      };
-    },
-    false,
-  );
-  context.commands.on(
-    "tools.bounding_box",
-    () => {
-      return {
-        name: "bounding box tool",
-        apply: () => {
-          mode = "video:bounding_box";
-          selectedAnnotation = undefined;
-        },
-        undo: () => {},
-        isCombinable: () => true,
-        combine: (c) => c,
-      };
-    },
-    false,
-  );
+  context.commands.on("tools.visual", () => {
+    return {
+      name: "visual tool",
+      apply: () => {
+        mode = "visual";
+        selectedAnnotation = undefined;
+      },
+      undo: () => {},
+      isCombinable: () => true,
+      combine: (c) => c,
+    };
+  });
+  context.commands.on("tools.bounding_box", () => {
+    return {
+      name: "bounding box tool",
+      apply: () => {
+        mode = "video:bounding_box";
+        selectedAnnotation = undefined;
+      },
+      undo: () => {},
+      isCombinable: () => true,
+      combine: (c) => c,
+    };
+  });
+  context.commands.on("tools.note", () => {
+    return {
+      name: "note tool",
+      apply: () => {
+        mode = "note";
+        selectedAnnotation = undefined;
+      },
+      undo: () => {},
+      isCombinable: () => true,
+      combine: (c) => c,
+    };
+  });
 
   function addAnnotation(shape: VideoShape, value: AnnotationValue = {}) {
     context.commands.run("annotation.add", { shape, value });
@@ -671,6 +681,7 @@
   >
     <PopoverContent class="w-max">
       <AnnotationSidebar
+        sidebarWidthRem={annotationSidebarWidthRem}
         db={annotationsIDB}
         {annotationValue}
         {currentFrame}
@@ -708,7 +719,7 @@
   </Popover>
 
   <ResizablePaneGroup direction="vertical">
-    <ResizablePane class="flex h-full" defaultSize={60} minSize={10}>
+    <ResizablePane class="flex h-full" defaultSize={50} minSize={10}>
       <AnnotationSidebar
         db={annotationsIDB}
         {annotationValue}

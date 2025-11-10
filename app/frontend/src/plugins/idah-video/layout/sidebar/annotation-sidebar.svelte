@@ -18,7 +18,9 @@
 
   import type { CategoryConfiguration, VideoAnnotation } from "../../video-annotation-activity/VideoAnnotationContext";
 
+  // Props
   let {
+    sidebarWidthRem = 20,
     annotationValue,
     onEditValue,
     onSelectAnnotation,
@@ -29,6 +31,7 @@
     db,
     selected_id,
   }: {
+    sidebarWidthRem?: number;
     currentFrame: number;
     annotationValue: AnnotationValue;
     onEditValue: (annotationValue: AnnotationValue, mode: string) => void;
@@ -98,7 +101,7 @@
   }
 </script>
 
-<Sidebar variant="inset" collapsible="none" class="w-xs">
+<Sidebar variant="inset" collapsible="none" style="width: {sidebarWidthRem}rem;">
   {#if !tools.has(mode)}
     <SidebarHeader>
       <AnnotationTabs></AnnotationTabs>
