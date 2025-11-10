@@ -47,7 +47,7 @@
   }
 </script>
 
-{#snippet EditOrganizationButton()}
+{#snippet EditOrganizationButton(organization: OrganizationRecord)}
   <div class="flex items-center gap-2">
     <Text size="h2" weight="semibold">{organization.name || "Organization name"}</Text>
 
@@ -64,7 +64,7 @@
     <PageProvider name="organizations">
       <PageHeader>
         {#snippet slotTitle()}
-          {@render EditOrganizationButton()}
+          {@render EditOrganizationButton(organization)}
         {/snippet}
       </PageHeader>
 
