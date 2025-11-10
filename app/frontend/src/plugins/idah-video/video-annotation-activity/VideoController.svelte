@@ -1,6 +1,18 @@
 <script lang="ts">
+  import Tooltips from "@/components/app/tooltips/tooltips.svelte";
   import Button from "@/components/ui/button/button.svelte";
+  import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuTrigger,
+  } from "@/components/ui/dropdown-menu";
   import Input from "@/components/ui/input/input.svelte";
+  import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+  import Slider from "@/components/ui/slider/slider.svelte";
+  import Text from "@/components/ui/text/Text.svelte";
   import {
     ChevronLeftIcon,
     ChevronRightIcon,
@@ -13,18 +25,6 @@
     ZoomInIcon,
     ZoomOutIcon,
   } from "@lucide/svelte";
-  import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-  import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuGroup,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuTrigger,
-  } from "@/components/ui/dropdown-menu";
-  import Slider from "@/components/ui/slider/slider.svelte";
-  import Text from "@/components/ui/text/Text.svelte";
-  import Tooltips from "@/components/app/tooltips/tooltips.svelte";
 
   import type { ChangeEventHandler } from "svelte/elements";
   import Video from "./video.svelte";
@@ -180,13 +180,13 @@
     <div class="flex items-center gap-2">
       <Tooltips align="center">
         {#snippet trigger()}
-          <Button variant="outline" size="icon" onclick={() => onZoomChange(zoom - 1)}>
+          <Button variant="outline" size="icon" onclick={() => onZoomChange(zoom + 1)}>
             <ZoomOutIcon class="size-4" />
           </Button>
         {/snippet}
 
         {#snippet content()}
-          Zoom in
+          Zoom out
         {/snippet}
       </Tooltips>
 
@@ -195,13 +195,13 @@
 
       <Tooltips align="center">
         {#snippet trigger()}
-          <Button variant="outline" size="icon" onclick={() => onZoomChange(zoom + 1)}>
+          <Button variant="outline" size="icon" onclick={() => onZoomChange(zoom - 1)}>
             <ZoomInIcon class="size-4" />
           </Button>
         {/snippet}
 
         {#snippet content()}
-          Zoom out
+          Zoom in
         {/snippet}
       </Tooltips>
     </div>
