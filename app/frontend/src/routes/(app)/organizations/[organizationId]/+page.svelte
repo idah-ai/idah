@@ -15,7 +15,7 @@
   import { refetches } from "@/utils/refetch";
   import { PencilIcon } from "@lucide/svelte";
 
-  import { OrganizationRecord, organizationsBackendDataSource } from "@/data/model/dataset/organizations/record";
+  import { OrganizationRecord, organizationsBackendDataSource } from "@/data/model/iam/organizations/record";
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
 
   // Records
@@ -40,7 +40,7 @@
   async function fetchOrganization(): Promise<OrganizationRecord> {
     const organizationRes = await organizationsBackendDataSource.get(organizationId, {
       fields: {
-        "dataset/organizations": ["name"],
+        "iam/organizations": ["name"],
       },
     });
     organization = organizationRes.data;

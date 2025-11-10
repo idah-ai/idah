@@ -4,7 +4,7 @@
   import SingleSelectDatasourceField from "@/components/app/forms/fields/select/single/single-select-datasource-field.svelte";
   import { FieldGroup, FieldSet } from "@/components/ui/field";
 
-  import { organizationsBackendDataSource } from "@/data/model/dataset/organizations/record";
+  import { organizationsBackendDataSource } from "@/data/model/iam/organizations/record";
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
 
   import type { FormBaseProps } from "@/components/app/forms/form.types";

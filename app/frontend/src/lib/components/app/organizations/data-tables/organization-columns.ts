@@ -1,4 +1,4 @@
-import { OrganizationRecord } from "@/data/model/dataset/organizations/record";
+import { OrganizationRecord } from "@/data/model/iam/organizations/record";
 
 import type { ColumnsSettings } from "@/components/app/datasource-table/types";
 
