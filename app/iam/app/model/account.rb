@@ -14,6 +14,7 @@ module Account
 
     field :enabled, type: [TrueClass]
     field :role, type: [String, NilClass]
+    field :role_scopes, type: Hash
 
     field :picture_url, type: [String, NilClass], readonly: true
 
@@ -32,6 +33,8 @@ module Account
   class Repository < Verse::Sequel::Repository
     self.table = "accounts"
     self.resource = Resource::Iam::Accounts
+
+    encoder :role_scopes, Verse::Sequel::JsonEncoder
 
     def login(email, password)
       account = scoped(:login).where(email:).first
