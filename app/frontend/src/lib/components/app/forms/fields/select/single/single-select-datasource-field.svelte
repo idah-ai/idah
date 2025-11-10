@@ -6,10 +6,10 @@
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import FormFieldErrors from "@/components/app/forms/form-field-errors.svelte";
   import FormFieldInfo from "@/components/app/forms/form-field-info.svelte";
-  import FormFieldLabel from "@/components/app/forms/form-field-label.svelte";
   import FormField from "@/components/app/forms/form-field.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
+  import FieldLabel from "@/components/ui/field/field-label.svelte";
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
   import Spinner from "@/components/ui/spinner/spinner.svelte";
 
@@ -128,7 +128,7 @@
   {#if slotLabel}
     {@render slotLabel()}
   {:else}
-    <FormFieldLabel {required}>{label}</FormFieldLabel>
+    <FieldLabel for={name} {required}>{label}</FieldLabel>
   {/if}
 
   <Popover bind:open>
