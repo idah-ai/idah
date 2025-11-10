@@ -128,6 +128,15 @@ export type LabelPropertyOption = {
   id: string;
   label: string;
 };
+export interface FieldFormat {
+  // placeholder?: string;
+  // readonly?: boolean;
+  minimum: number | null;
+  maximum: number | null;
+  step: number | null;
+  info: string | null;
+  options: Array<LabelPropertyOption>;
+}
 
 export interface FieldBase {
   id: string;
@@ -135,15 +144,7 @@ export interface FieldBase {
   label: string;
   description: string;
   required: boolean;
-  format: {
-    // placeholder?: string;
-    // readonly?: boolean;
-    minimum: number | null;
-    maximum: number | null;
-    step: number | null;
-    info: string | null;
-    options: Array<LabelPropertyOption>;
-  };
+  format: FieldFormat;
   visible_if?: {
     [key: string]: Array<string | number | boolean>;
   };
@@ -162,8 +163,8 @@ export interface IConfig {
   taggings: Array<TagField>;
 }
 export interface ICommands {
-  on(name: string, commandBuilder: (props: any) => Command): void;
-  run(name: string, props?: any): void;
+  on(name: string, commandBuilder: (props?: object) => Command): void;
+  run(name: string, props?: object): void;
   undo(times?: number): void;
   redo(times?: number): void;
 }

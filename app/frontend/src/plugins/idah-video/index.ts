@@ -2,7 +2,7 @@ import type { IActivityContext, IActivityView } from "@/plugin/interface/Activit
 import VideoPlugin from "./VideoPlugin.svelte";
 import { mount, unmount } from "svelte";
 
-let mounted: any;
+let mounted: object;
 
 const idah_plugin: IActivityView = {
   name: "idah-video",

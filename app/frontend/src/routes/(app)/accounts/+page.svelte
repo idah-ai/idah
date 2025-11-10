@@ -8,15 +8,16 @@
   import Button from "@/components/ui/button/button.svelte";
 
   import { accountColumns } from "@/components/app/iam/accounts/data-tables/account-columns";
-  import { accountBreadcrumb } from "@/components/app/page/page-breadcrumb.constants";
+
   import { refetches } from "@/utils/refetch";
 
+  import { accountBreadcrumb, homeBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
+  import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
   import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
 
-  import type { PageBreadcrumbItem } from "@/components/app/page/page-breadcrumb.svelte";
+  pageBreadcrumbsStore.set([homeBreadcrumb, accountBreadcrumb]);
 
   // Variables
-  let breadcrumbs: PageBreadcrumbItem[] = $state([accountBreadcrumb]);
   let openNewAccountFormModal: boolean = $state(false);
 
   // Functions
@@ -32,7 +33,7 @@
   </Button>
 {/snippet}
 
-<PageProvider name="accounts" {breadcrumbs}>
+<PageProvider name="accounts">
   <PageHeader title="Accounts">
     {#snippet actions()}
       {@render AddNewAccountButton()}

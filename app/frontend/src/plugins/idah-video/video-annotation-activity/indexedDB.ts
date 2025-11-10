@@ -1,7 +1,7 @@
 import { type VideoAnnotation, type Point, X, Y, type VideoFrameSelection } from "./VideoAnnotationContext";
 
 //test
-let s = {
+const s = {
   annotations: [
     { index: "start", path: "shape.start", opts: { unique: false } },
     { index: "end", path: "shape.end", opts: { unique: false } },
@@ -107,7 +107,7 @@ export class AnnotationsIndexedDB {
     });
   }
 
-  get(store_name: string, key: any): Promise<VideoAnnotation> {
+  get(store_name: string, key: string): Promise<VideoAnnotation> {
     return new Promise<VideoAnnotation>((resolve, reject) => {
       const transaction = this.db.transaction(store_name, "readonly");
       const store = transaction.objectStore(store_name);
@@ -162,7 +162,7 @@ export class AnnotationsIndexedDB {
   }
 
   getBoundedAnnotations(start: number, end: number) {
-    return new Promise<VideoAnnotation[]>(async (resolve, reject) => {
+    return new Promise<VideoAnnotation[]>((resolve, reject) => {
       const transaction = this.db.transaction("annotations", "readonly");
       const store = transaction.objectStore("annotations").index("end");
       const bound = IDBKeyRange.lowerBound(start);

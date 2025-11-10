@@ -238,7 +238,7 @@
         let _p = context.annotations.delete(id);
       },
       isCombinable: () => false,
-      combine: () => cmd,
+      combine: (cmd) => cmd,
     };
   });
   context.commands.on("annotation.delete", async (props: { id: string }) => {
@@ -286,7 +286,7 @@
         });
       },
       isCombinable: () => false,
-      combine: () => cmd,
+      combine: (cmd) => cmd,
     };
   });
   context.commands.on("keyframe.add", async (props: { id: string; selection: VideoFrameSelection }) => {
@@ -381,7 +381,7 @@
         });
       },
       isCombinable: () => false,
-      combine: (_c: any) => cmd,
+      combine: (c) => c,
     };
   });
   context.commands.on("keyframe.delete", async (props: { annotation_id: string; frame: number }) => {
@@ -627,7 +627,7 @@
   let overlay: SvgOverlay;
 
   let annotations_promise: Promise<VideoAnnotation[]> = $derived.by(() => {
-    $idb_updated_at;
+    $idb_updated_at; // eslint-disable-line @typescript-eslint/no-unused-expressions
     if (!annotationsIDB) return new Promise((_, ko) => ko("no database"));
 
     let p = annotationsIDB.getAllStore("annotations");

@@ -8,7 +8,7 @@ gem "verse-core", github: "verse-rb/verse-core", branch: "master"
 gem "verse-http", github: "verse-rb/verse-http", branch: "features/migrate-to-sinatra-4"
 gem "verse-jsonapi", github: "verse-rb/verse-jsonapi", branch: "master"
 gem "verse-redis", github: "verse-rb/verse-redis", branch: "master"
-gem "verse-schema", "~> 1.1"
+gem "verse-schema", "~> 1.2.1"
 gem "verse-sequel", github: "verse-rb/verse-sequel", branch: "master"
 gem "verse-shrine", github: "verse-rb/verse-shrine", branch: "master"
 
@@ -17,6 +17,7 @@ gem "pg"
 gem "dotenv"
 gem "zeitwerk"
 
+gem "listen", "~> 3.9"
 gem "puma", "~> 6"
 
 gem "pry", require: false
@@ -27,6 +28,10 @@ gem "sinatra-contrib"
 gem "bootsnap", "~> 1.16"
 
 gem "rmagick", "~> 6.0.1"
+
+group :test, :development do
+  gem "relaxed-rubocop"
+end
 
 group :test do
   gem "rack-test"

@@ -2,8 +2,6 @@
 
 require "dotenv"
 
-# COMMON_PATH = ENV["COMMON_PATH"] || File.expand_path("../../../../common", __dir__)
-
 Dotenv.load(".env", ".env.test")
 
 require "rspec"

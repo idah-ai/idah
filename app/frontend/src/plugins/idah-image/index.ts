@@ -2,7 +2,7 @@ import type { IActivityContext, IActivityView } from "@/plugin/interface/Activit
 import { mount, unmount } from "svelte";
 import Plugin from "./plugin.svelte";
 
-let mounted: any;
+let mounted: object;
 
 const idah_plugin: IActivityView = {
   name: "idah-image",

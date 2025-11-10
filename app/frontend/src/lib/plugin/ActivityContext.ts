@@ -1,6 +1,5 @@
 import { goto } from "$app/navigation";
 import { resolve } from "$app/paths";
-import type { Pathname } from "$app/types";
 
 import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
 
@@ -14,12 +13,12 @@ function createCommandsInterface() {
   const commands = new Map();
 
   return {
-    on: (name: string, builder: (props: any) => Command, manager = true) => {
+    on: (name: string, builder: (props?: object) => Command, manager = true) => {
       commands.set(name, { manager, builder });
       console.debug({ command_on: name, manager });
     },
-    async run(name: string, props: any) {
-      const { manager, builder }: { manager: boolean; builder: (props: any) => Command } = commands.get(name);
+    async run(name: string, props?: object) {
+      const { manager, builder }: { manager: boolean; builder: (props?: object) => Command } = commands.get(name);
 
       if (!builder) return console.error("builder not found command:", name);
 
@@ -101,8 +100,12 @@ export function activityContextForEntry(entry: EntryRecord): IActivityContext {
     commands: createCommandsInterface(),
     tools: createToolsInterface(),
     back() {
-      const path: Pathname = `/projects/${entry.dataset.project.id}/datasets/${entry.dataset.id}/tasks`;
-      goto(resolve(path));
+      goto(
+        resolve("/(app)/projects/[projectId]/datasets/[datasetId]/tasks", {
+          projectId: entry.dataset.project.id,
+          datasetId: entry.dataset.id,
+        }),
+      );
     },
     submit(opts?: { approved: boolean }) {
       return new Promise<void>((resolve, reject) => {
