@@ -58,7 +58,7 @@
     return player?.src(src);
   }
   function setCurrentTime(time) {
-    player?.currentTime(time + (1 / fps) * 1000);
+    player?.currentTime(time + 1 / (fps * 1000));
   }
 
   export function nextFrame(count = 1) {
