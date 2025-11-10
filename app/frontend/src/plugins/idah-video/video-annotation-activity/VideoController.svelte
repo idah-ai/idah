@@ -39,7 +39,6 @@
     scale: number;
     zoom: number;
     onZoomChange: (zoom: number) => void;
-    onScaleChange: (scale: number) => void;
   }
 
   let {
@@ -51,7 +50,6 @@
     currentFrame,
     totalFrames,
     onZoomChange,
-    onScaleChange,
   }: Props = $props();
 
   // Variables
@@ -180,7 +178,7 @@
     <div class="flex items-center gap-2">
       <Tooltips align="center">
         {#snippet trigger()}
-          <Button variant="outline" size="icon" onclick={() => onZoomChange(zoom + 1)}>
+          <Button variant="outline" size="icon" onclick={() => onZoomChange(zoom - 1)}>
             <ZoomOutIcon class="size-4" />
           </Button>
         {/snippet}
@@ -190,12 +188,12 @@
         {/snippet}
       </Tooltips>
 
-      <Slider class="min-w-[200px]" type="single" min={20} max={150} step={1} value={zoom} onValueChange={onZoomChange}
+      <Slider class="min-w-[200px]" type="single" min={20} max={100} step={1} value={zoom} onValueChange={onZoomChange}
       ></Slider>
 
       <Tooltips align="center">
         {#snippet trigger()}
-          <Button variant="outline" size="icon" onclick={() => onZoomChange(zoom - 1)}>
+          <Button variant="outline" size="icon" onclick={() => onZoomChange(zoom + 1)}>
             <ZoomInIcon class="size-4" />
           </Button>
         {/snippet}
@@ -207,7 +205,7 @@
     </div>
 
     <!-- VIDEO::SCALE ADJUSTER (SCALE DOWN / SCALE UP) -->
-    <Popover>
+    <!-- <Popover>
       <PopoverTrigger>
         <Tooltips align="center">
           {#snippet trigger()}
@@ -235,6 +233,6 @@
           onValueChange={onScaleChange}
         />
       </PopoverContent>
-    </Popover>
+    </Popover> -->
   </div>
 </div>
