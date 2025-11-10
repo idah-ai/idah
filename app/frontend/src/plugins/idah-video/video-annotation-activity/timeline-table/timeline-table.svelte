@@ -66,7 +66,6 @@
 
   let pos_offset: number = $state(0);
   let range: [number, number] = $derived([pos_offset, pos_offset + range_span]);
-
   let wheelthrottling = $state(false);
   let hoveredColumn: number | undefined = $state();
 
@@ -75,8 +74,8 @@
   }
 
   export function setZoom(value: number) {
-    const s = Math.min(150, Math.max(1, Math.round(value)));
-    scale = Math.min(scale, Math.ceil(totalFrames / s));
+    const s = Math.min(100, Math.max(1, Math.round(value)));
+    scale = value === 100 ? 1 : Math.max(1, Math.round(totalFrames / s));
     zoom = s;
     onScaleChange?.(scale);
     onZoomChange?.(zoom);
