@@ -1,6 +1,6 @@
 import type { Command } from "@/command/Command";
-import type { AnnotationHeaderBarBaseTool } from "../layout/header/AnnotationHeaderBar.types";
 import type { ASTNode } from "../../../plugins/idah-video/test_ast_resolution";
+import type { AnnotationHeaderBarBaseTool } from "../layout/header/AnnotationHeaderBar.types";
 
 interface IUser {
   id: number;
@@ -85,7 +85,6 @@ export interface IConfigValue {
   id: string;
   label: string;
   color: string;
-  selectable: boolean; //?
 }
 
 export interface IConfigProperty {

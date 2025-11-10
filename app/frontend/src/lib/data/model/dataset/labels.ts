@@ -46,7 +46,6 @@ export interface LabelConfigurationValue {
   id: string;
   color: string;
   label: string;
-  selectable: boolean;
   text_color?: string;
 }
 
