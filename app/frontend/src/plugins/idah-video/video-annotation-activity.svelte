@@ -702,13 +702,10 @@
         onEditValue={(value: AnnotationValue, valueMode: string) => {
           annotationValue = value;
           mode = valueMode;
-          if (
-            valueMode == EntryRoot &&
-            !selectedAnnotation &&
-            requiredFullfilled(annotationValue, context.config[valueMode]?.properties)
-          ) {
+          let requirementFullfilled = requiredFullfilled(annotationValue, context.config[valueMode]?.properties);
+          if (valueMode == EntryRoot && !selectedAnnotation && requirementFullfilled) {
             addAnnotation({ type: valueMode }, $state.snapshot(value));
-          } else if (selectedAnnotation && requiredFullfilled(annotationValue, context.config[valueMode]?.properties)) {
+          } else if (selectedAnnotation && requirementFullfilled) {
             selectedAnnotation.value = value;
             updateAnnotationValue($state.snapshot(selectedAnnotation), $state.snapshot(value));
           }
@@ -729,9 +726,15 @@
       <Button
         onclick={() => {
           showPopOver = false;
-          if (shapeSelectionArgs) onShapeSelection(...shapeSelectionArgs);
+          switch (mode) {
+            case EntryRoot:
+              onShapeSelection(EntryRoot, currentFrame);
+              break;
+            default:
+              if (shapeSelectionArgs) onShapeSelection(...shapeSelectionArgs);
+          }
         }}
-        disabled={!shapeSelectionArgs}>Confirm</Button
+        disabled={shapeSelectionArgs == undefined && EntryRoot != mode}>Confirm</Button
       >
     </PopoverContent>
   </Popover>
@@ -746,16 +749,10 @@
           onEditValue={(value: AnnotationValue, valueMode: string) => {
             annotationValue = value;
             mode = valueMode;
-            if (
-              valueMode == "entry:root" &&
-              !selectedAnnotation &&
-              requiredFullfilled(annotationValue, context.config[valueMode]?.properties)
-            ) {
+            let requirementFullfilled = requiredFullfilled(annotationValue, context.config[valueMode]?.properties);
+            if (valueMode == EntryRoot && !selectedAnnotation && requirementFullfilled) {
               addAnnotation({ type: valueMode }, $state.snapshot(value));
-            } else if (
-              selectedAnnotation &&
-              requiredFullfilled(annotationValue, context.config[valueMode]?.properties)
-            ) {
+            } else if (selectedAnnotation && requirementFullfilled) {
               selectedAnnotation.value = value;
               updateAnnotationValue($state.snapshot(selectedAnnotation), $state.snapshot(value));
             }
