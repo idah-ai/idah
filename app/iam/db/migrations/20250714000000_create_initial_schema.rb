@@ -22,38 +22,19 @@ Sequel.migration do
 
       column :joined_at, Time, null: true
 
+      column :scopes, :jsonb, null: true
+
       Migration::Timestamps.timestamps(self)
     end
     Migration::Timestamps.trg_updated_at(self, :accounts)
 
-    create_table(:teams) do
+    create_table(:organizations) do
       primary_key :id, :bigserial
       column :name, String
 
       Migration::Timestamps.timestamps(self)
     end
-    Migration::Timestamps.trg_updated_at(self, :teams)
-
-    create_table(:account_teams) do
-      primary_key :id, :bigserial
-
-      foreign_key :account_id,
-                  :accounts,
-                  type: :bigint,
-                  null: false,
-                  on_delete: :cascade,
-                  on_update: :cascade
-
-      foreign_key :team_id,
-                  :teams,
-                  type: :bigint,
-                  null: false,
-                  on_delete: :cascade,
-                  on_update: :cascade
-
-      Migration::Timestamps.timestamps(self)
-    end
-    Migration::Timestamps.trg_updated_at(self, :account_teams)
+    Migration::Timestamps.trg_updated_at(self, :organizations)
 
     create_table(:account_sessions) do
       primary_key :id

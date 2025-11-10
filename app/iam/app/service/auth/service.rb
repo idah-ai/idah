@@ -85,7 +85,7 @@ module Auth
           email: account.email,
         }.compact,
         account_role,
-        {}, # no role scopes for now role.scopes
+        account.scopes,
         exp:
       )
 
@@ -99,7 +99,7 @@ module Auth
           name: account.name,
           picture_url: account.picture_url,
           role_name: role.name,
-          scope: {},
+          scopes: account.scopes,
           role_rights: role.rights,
           auth_token:,
           refresh_token:,

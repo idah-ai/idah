@@ -13,7 +13,7 @@ module AccountAuth
     field :picture_url, type: String
 
     field :role_name, type: String
-    field :scope, type: Hash
+    field :scopes, type: Hash
 
     field :auth_token, type: String
 

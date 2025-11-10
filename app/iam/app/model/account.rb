@@ -19,6 +19,8 @@ module Account
 
     field :joined_at, type: [Time, NilClass], readonly: true
 
+    field :scopes, type: Hash
+
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
 
