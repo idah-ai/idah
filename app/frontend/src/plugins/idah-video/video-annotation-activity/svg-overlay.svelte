@@ -19,6 +19,13 @@
 
   import type { IActivityContext } from "@/plugin/interface/Activity";
 
+  // Types
+  export interface OnAddNewNoteParams {
+    anchorType: "entry" | "annotation";
+    position: Record<string, unknown>;
+    annotationId: string | null;
+  }
+
   // Props
   type Props = {
     frame: number;
@@ -33,6 +40,7 @@
     onmousemove?: (e: MouseEvent) => void;
     onwheel?: (e: WheelEvent) => void;
     onSelection: (type: string, frame: number, points?: Point[], id?: string) => void;
+    onAddNewNote: (params: OnAddNewNoteParams) => void;
     videoResizedAt: Date;
   };
   let {
@@ -43,10 +51,14 @@
     annotations_promise,
     onSelectAnnotation,
     onSelection, // valid shape output
+    onAddNewNote,
     children,
     videoResizedAt,
     ...restProps
   }: Props = $props();
+
+  // Contexts
+  let context = getContext<IActivityContext>("context");
 
   // Variables
   let zoomInfo: {
@@ -56,8 +68,6 @@
     scale: 1,
     offset: [0, 0],
   });
-
-  let context = getContext<IActivityContext>("context");
 
   let height = $state(0);
   let width = $state(0);
@@ -154,8 +164,6 @@
   let tool_selection: ToolSelection | undefined = $state();
 
   export function selectionStart(e: MouseEvent) {
-    lastZoomOffset = $state.snapshot(zoomInfo.offset) as Point;
-
     if (!shape) {
       zoom.mouseDown(e);
       return;
@@ -169,30 +177,26 @@
     }
   }
 
-  let lastZoomOffset: Point = $state([0, 0]);
   export function selectionEnd(e: MouseEvent) {
     tool_selection?.endSelection(cursor_downscaled);
 
     /**
      * Show new note feed dialog only when there is no dragging (i.e. zoom offset did not change)
      */
-    // if (lastZoomOffset[X] == zoomInfo.offset[X] || lastZoomOffset[Y] == zoomInfo.offset[Y]) {
     if (mode === "note") {
-      context.notes.showNewNoteFeedPopup({
-        anchor_type: "entry",
+      onAddNewNote({
+        anchorType: "entry",
         position: {
           x: cursor_downscaled[X],
           y: cursor_downscaled[Y],
           start: frame,
           end: frame,
           target_size,
+          zoom_info: zoomInfo,
         },
-        annotation_id: null,
-        // annotation_id: selected?.metadata.id,
+        annotationId: null,
       });
     }
-
-    // }
 
     zoom.mouseUp(e);
   }
