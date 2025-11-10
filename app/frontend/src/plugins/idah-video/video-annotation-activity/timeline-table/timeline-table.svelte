@@ -154,7 +154,7 @@
     {@const isLastIndex = index == annotations.length - 1}
     <TableRow
       class={cn("border-b-0", {
-        "bg-primary-foreground border-primary/30 border-t border-b": isSelected,
+        "bg-primary-foreground border-primary/30 border-b border-t": isSelected,
       })}
     >
       <TableCell
@@ -164,7 +164,7 @@
         onclick={() => {
           onSelectAnnotation(annotation);
           pos_offset = annotation.shape.start;
-          onSeekFrame(annotation.shape.start);
+          onSeekFrame(annotation.shape.start || 0);
         }}
       >
         <button class={cn("group flex w-full cursor-pointer items-center justify-end px-2 py-1")}>

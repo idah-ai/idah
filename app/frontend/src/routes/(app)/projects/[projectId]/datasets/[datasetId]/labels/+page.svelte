@@ -88,13 +88,13 @@
     let modalityShapeLabelConfig: LabelConfigurations = {};
 
     /** Add entry:root statically for now as @Yacine said. */
-    if (!modalityShapeLabelConfig[`${modality}:entry:root`]) {
-      modalityShapeLabelConfig[`${modality}:entry:root`] = {
+    if (!modalityShapeLabelConfig["entry:root"]) {
+      modalityShapeLabelConfig["entry:root"] = {
         values: [],
         properties: [],
       };
     } else {
-      modalityShapeLabelConfig[`${modality}:entry:root`] = labelConfigurations[`${modality}:entry:root`];
+      modalityShapeLabelConfig["entry:root"] = labelConfigurations["entry:root"];
     }
 
     /** Each shapes in modalities */
