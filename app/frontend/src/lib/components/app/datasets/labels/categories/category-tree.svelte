@@ -45,7 +45,6 @@
             label: humanize(part),
             color: category.color,
             text_color: category.text_color,
-            selectable: category.selectable,
             expanded: true,
           },
           __children: {},
@@ -59,7 +58,6 @@
             label: humanize(part),
             color: category.color,
             text_color: category.text_color,
-            selectable: category.selectable,
             expanded: true,
           };
         }

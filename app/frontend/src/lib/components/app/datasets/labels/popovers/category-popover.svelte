@@ -1,7 +1,6 @@
 <script lang="ts">
   import { CheckIcon, SquareDashedMousePointerIcon } from "@lucide/svelte";
 
-  import CheckboxField from "@/components/app/forms/fields/input/checkbox-field.svelte";
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import FormFieldLabel from "@/components/app/forms/form-field-label.svelte";
   import Tooltips from "@/components/app/tooltips/tooltips.svelte";
@@ -24,7 +23,7 @@
   let { treeItem, onEditCategoryId, onEditCategory }: Props = $props();
 
   // Variables
-  let { id, color, text_color, label, selectable } = $derived(treeItem);
+  let { id, color, text_color, label } = $derived(treeItem);
 
   // Functions
   function updateCategory(updatedFields: Partial<LabelConfigurationValue>) {
@@ -94,14 +93,7 @@
         <!-- SHORTCUT KEY -->
 
         <!-- SELECTABLE -->
-        <CheckboxField
-          class="px-2"
-          name="{id}/selectable"
-          label="Selectable"
-          bordered={false}
-          checked={selectable}
-          onCheckedChange={(checked) => updateCategory({ selectable: checked })}
-        ></CheckboxField>
+        <!-- NOTE: We will implement selectable feature later -->
       </section>
 
       <!-- COLOR -->

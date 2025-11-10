@@ -80,25 +80,36 @@
     modalityShapes: ModalityShapes;
   }) {
     const { labelConfigurations, modalityShapes } = params;
-    if (Object.keys(labelConfigurations).length > 0) {
-      return labelConfigurations;
-    }
-
-    /** Return combination of modality:shapes */
+    /**
+     * Return combination of modality:shapes
+     * If no labeling configuration is set yet, create empty structure
+     * If already set, return the existing one
+     */
     let modalityShapeLabelConfig: LabelConfigurations = {};
-    Object.keys(modalityShapes).forEach((shape) => {
-      const configKey = `${modality}:${shape}`;
-      modalityShapeLabelConfig[configKey] = {
+
+    /** Add entry:root statically for now as @Yacine said. */
+    if (!modalityShapeLabelConfig[`${modality}:entry:root`]) {
+      modalityShapeLabelConfig[`${modality}:entry:root`] = {
         values: [],
         properties: [],
       };
-    });
+    } else {
+      modalityShapeLabelConfig[`${modality}:entry:root`] = labelConfigurations[`${modality}:entry:root`];
+    }
 
-    /** Add entry:root statically for now as @Yacine said. */
-    modalityShapeLabelConfig[`${modality}:entry:root`] = {
-      values: [],
-      properties: [],
-    };
+    /** Each shapes in modalities */
+    Object.keys(modalityShapes).forEach((shapeKey) => {
+      const configKey = `${modality}:${shapeKey}`;
+
+      if (labelConfigurations[configKey]) {
+        modalityShapeLabelConfig[configKey] = labelConfigurations[configKey];
+      } else {
+        modalityShapeLabelConfig[configKey] = {
+          values: [],
+          properties: [],
+        };
+      }
+    });
 
     return modalityShapeLabelConfig;
   }
@@ -149,7 +160,6 @@
         label: newLabel,
         color: firstAvailableColor.color,
         text_color: firstAvailableColor.text_color,
-        selectable: false,
       });
       return;
     }
@@ -162,7 +172,6 @@
         label: newLabel,
         color: firstAvailableColor.color,
         text_color: firstAvailableColor.text_color,
-        selectable: true,
       });
       return;
     }
@@ -176,7 +185,6 @@
           ...selectedLabelConfig.values[parentCategoryIndex],
           id: `${selectedLabelConfig.values[parentCategoryIndex].id}/${currentTime}`,
           label: newLabel,
-          selectable: true,
         };
       } else {
         /** Just in case, if not found, add a new one */
@@ -185,7 +193,6 @@
           label: newLabel,
           color: firstAvailableColor.color,
           text_color: firstAvailableColor.text_color,
-          selectable: true,
         });
       }
 
@@ -198,7 +205,6 @@
       label: newLabel,
       color: firstAvailableColor.color,
       text_color: firstAvailableColor.text_color,
-      selectable: true,
     });
   }
 
@@ -260,7 +266,6 @@
           label: humanize(parentPath),
           color: firstAvailableColor.color,
           text_color: firstAvailableColor.text_color,
-          selectable: false,
         });
       }
     }
