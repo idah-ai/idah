@@ -29,7 +29,8 @@ RSpec.describe Project::Service, database: true do
         attributes: {
           name: "Test Project",
           description: "A test project",
-          created_by_email: "user@example.com"
+          created_by_email: "user@example.com",
+          organization_id: 1,
         }
       }
     }
@@ -50,7 +51,8 @@ RSpec.describe Project::Service, database: true do
       project_id = repo.create(
         name: "Test Project",
         description: "A test project",
-        created_by_email: "user@example.com"
+        created_by_email: "user@example.com",
+        organization_id: 1,
       )
       found_project = subject.show(project_id)
       expect(found_project.id).to eq(project_id)
@@ -62,7 +64,8 @@ RSpec.describe Project::Service, database: true do
       project_id = repo.create(
         name: "Test Project",
         description: "A test project",
-        created_by_email: "user@example.com"
+        created_by_email: "user@example.com",
+        organization_id: 1,
       )
 
       update_data[:data][:id] = project_id
@@ -81,7 +84,8 @@ RSpec.describe Project::Service, database: true do
       project_id = repo.create(
         name: "Test Project",
         description: "A test project",
-        created_by_email: "user@example.com"
+        created_by_email: "user@example.com",
+        organization_id: 1,
       )
       subject.delete(project_id)
       expect { repo.find!(project_id) }.to raise_error(Verse::Error::NotFound)
