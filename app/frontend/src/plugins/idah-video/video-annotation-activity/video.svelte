@@ -87,7 +87,7 @@
   export function seekToFrame(frame: number) {
     if (!fps) return console.log({ seekToFrame, fps, frame });
 
-    setCurrentTime(frame / fps - 1 / fps);
+    setCurrentTime((frame - 1) / fps);
   }
 
   export function playbackRate(value: number) {
