@@ -21,11 +21,13 @@
   // Records
   let organization: OrganizationRecord = $state(new OrganizationRecord());
 
-  pageBreadcrumbsStore.set([
-    homeBreadcrumb,
-    organizationBreadcrumb,
-    { label: organization.name || "Organization name" },
-  ]);
+  $effect(() => {
+    pageBreadcrumbsStore.set([
+      homeBreadcrumb,
+      organizationBreadcrumb,
+      { label: organization.name || "Organization name" },
+    ]);
+  });
 
   // Variables
   let organizationId: string = page.params.organizationId as string;
