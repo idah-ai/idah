@@ -13,7 +13,7 @@
   import { homeBreadcrumb, organizationBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
   import { refetches } from "@/utils/refetch";
-  import { Edit2Icon } from "@lucide/svelte";
+  import { PencilIcon } from "@lucide/svelte";
 
   import { OrganizationRecord, organizationsBackendDataSource } from "@/data/model/dataset/organizations/record";
 
@@ -52,7 +52,7 @@
     <Text size="h2" weight="semibold">{organization.name || "Organization name"}</Text>
 
     <Button variant="outline" onclick={openNewOrganizationModal}>
-      <Edit2Icon class="size-4"></Edit2Icon>
+      <PencilIcon class="size-4"></PencilIcon>
     </Button>
   </div>
 {/snippet}
