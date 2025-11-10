@@ -6,6 +6,7 @@ import { Transformers } from "@/data/model/transformers";
 export class ProjectRecord extends Record {
   @field() public name!: string;
   @field() public description!: string;
+  @field() public organization_id!: number;
   @field() public readonly created_by_email!: string;
 
   @field({ transformer: Transformers.Time }) public readonly created_at!: Date;
