@@ -631,7 +631,13 @@
 
   function selectAnnotation(annotation?: VideoAnnotation) {
     selectedAnnotation = annotation;
-    mode = annotation?.shape.type || "visual";
+
+    /**
+     * Set mode to the annotation shape type when selecting an annotation
+     */
+    if (annotation?.shape.type) {
+      mode = annotation.shape.type;
+    }
   }
 
   let overlay: SvgOverlay;
