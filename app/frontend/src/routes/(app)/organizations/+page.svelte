@@ -9,7 +9,7 @@
   import { homeBreadcrumb, organizationBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
 
-  import { OrganizationRecord, organizationsBackendDataSource } from "@/data/model/dataset/organizations/record";
+  import { OrganizationRecord, organizationsBackendDataSource } from "@/data/model/iam/organizations/record";
   import { refetches } from "@/utils/refetch";
   import { PlusIcon } from "@lucide/svelte";
 

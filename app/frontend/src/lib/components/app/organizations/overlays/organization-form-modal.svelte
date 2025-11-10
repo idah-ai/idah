@@ -6,8 +6,8 @@
 
   import { refetches } from "@/utils/refetch";
 
-  import { OrganizationRecord, organizationsBackendDataSource } from "@/data/model/dataset/organizations/record";
-  import { createOrganizationSchema, updateOrganizationSchema } from "@/data/model/dataset/organizations/schema";
+  import { OrganizationRecord, organizationsBackendDataSource } from "@/data/model/iam/organizations/record";
+  import { createOrganizationSchema, updateOrganizationSchema } from "@/data/model/iam/organizations/schema";
   import { getFieldErrors, validateData, type ZodSchema } from "@/utils/validate";
 
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
