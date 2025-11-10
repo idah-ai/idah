@@ -45,10 +45,11 @@
     <!-- PROJECT::ORGANIZATION -->
     <SingleSelectDatasourceField
       name="{resource}/organization_id"
-      label="Member"
-      placeholder="Select a member"
+      label="Organization"
+      placeholder="Select an organization"
       displayKey="email"
       dataSource={organizationsBackendDataSource}
+      required
       value={organizationId}
       searchKeyWithOperation="name__match"
       onValueChange={(value: string | number) => {
