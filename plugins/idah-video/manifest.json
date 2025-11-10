@@ -13,30 +13,30 @@
 
   "modalities": [
     {
-      "id": "video",
+      "id": "idah-video",
       "label": "Video files",
       "shapes": {
-        "idah-video:bounding-box": {
+        "bounding-box": {
           "label": "Bounding Box",
           "icon": "api/v1/plugins/idah-video/assets/bounding-box-icon.svg"
         },
-        "idah-video:polygon": {
+        "polygon": {
           "label": "Polygon",
           "icon": "api/v1/plugins/idah-video/assets/polygon-icon.svg"
         },
-        "idah-video:frame-tagging": {
+        "frame-tagging": {
           "label": "Frame Tagging",
           "icon": "api/v1/plugins/idah-video/assets/frame-tagging-icon.svg"
         },
-        "idah-video:framerange-tagging": {
+        "framerange-tagging": {
           "label": "Frame Range Tagging",
           "icon": "api/v1/plugins/idah-video/assets/frame-range-tagging-icon.svg"
         },
-        "idah-video:polyline": {
+        "polyline": {
           "label": "Polyline",
           "icon": "api/v1/plugins/idah-video/assets/polyline-icon.svg"
         },
-        "idah-video:point": {
+        "point": {
           "label": "Point",
           "icon": "api/v1/plugins/idah-video/assets/point-icon.svg"
         }

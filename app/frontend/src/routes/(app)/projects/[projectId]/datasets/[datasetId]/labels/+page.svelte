@@ -88,7 +88,8 @@
     // Return combination of modality:shapes
     let modalityShapeLabelConfig: LabelConfigurations = {};
     Object.keys(modalityShapes).forEach((shape) => {
-      modalityShapeLabelConfig[shape] = {
+      const configKey = `${modality}:${shape}`;
+      modalityShapeLabelConfig[configKey] = {
         values: [],
         properties: [],
       };
