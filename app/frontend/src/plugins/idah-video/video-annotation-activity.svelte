@@ -3,7 +3,6 @@
   import { toast } from "svelte-sonner";
   import { uuidv7 } from "uuidv7";
 
-  import Button from "@/components/ui/button/button.svelte";
   import {
     CommandDialog,
     CommandEmpty,
@@ -14,17 +13,16 @@
     CommandSeparator,
     CommandShortcut,
   } from "$lib/components/ui/command";
+  import Button from "@/components/ui/button/button.svelte";
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
   import SidebarInset from "@/components/ui/sidebar/sidebar-inset.svelte";
   import SidebarProvider from "@/components/ui/sidebar/sidebar-provider.svelte";
 
   import { ResizableHandle, ResizablePane, ResizablePaneGroup } from "@/components/ui/resizable";
-  import { AnnotationRecord } from "@/data/model/dataset/annotations/record";
-
   import { ScrollArea } from "@/components/ui/scroll-area";
-  import type { AnnotationShape, AnnotationValue } from "@/context/AnnotationContext";
-  import type { IActivityContext } from "@/plugin/interface/Activity";
+  import { AnnotationRecord } from "@/data/model/dataset/annotations/record";
   import { ShortcutManager } from "@/shortcut/ShortcutManager";
+  import { MousePointer2Icon, SquareMousePointerIcon } from "@lucide/svelte";
   import AnnotationFooter from "./layout/footer/AnnotationFooter.svelte";
   import AnnotationFooterToolbar from "./layout/footer/AnnotationFooterToolbar.svelte";
   import AnnotationSidebar from "./video-annotation-activity/annotation-sidebar.svelte";
@@ -34,6 +32,9 @@
   import SvgOverlay from "./video-annotation-activity/svg-overlay.svelte";
   import TimelineTable from "./video-annotation-activity/timeline-table/timeline-table.svelte";
   import Video from "./video-annotation-activity/video.svelte";
+
+  import type { AnnotationShape, AnnotationValue } from "@/context/AnnotationContext";
+  import type { IActivityContext } from "@/plugin/interface/Activity";
   import type {
     Point,
     VideoAnnotation,
@@ -41,8 +42,6 @@
     VideoShape,
   } from "./video-annotation-activity/VideoAnnotationContext";
   import VideoController from "./video-annotation-activity/VideoController.svelte";
-  import BoxSelectIcon from "@lucide/svelte/icons/box-select";
-  import MousePointer2 from "@lucide/svelte/icons/mouse-pointer-2";
 
   // Props
   interface Props {
@@ -139,13 +138,13 @@
       {
         label: "Visual",
         type: "visual",
-        icon: MousePointer2,
+        icon: MousePointer2Icon,
         handleClick: () => context.commands.run("tools.visual"),
       },
       {
         label: "Bounding Box",
         type: "video:bounding_box",
-        icon: BoxSelectIcon,
+        icon: SquareMousePointerIcon,
         handleClick: () => context.commands.run("tools.bounding_box"),
       },
     ]);
@@ -771,8 +770,9 @@
               {totalFrames}
               {volume}
               bind:video={player}
-              onZoomChange={(z) => timelineTable.setZoom(z)}
-              onScaleChange={(s) => timelineTable.setScale(s)}
+              onZoomChange={(z) => {
+                timelineTable.setZoom(z);
+              }}
             />
           </AnnotationFooterToolbar>
 
