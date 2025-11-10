@@ -2,7 +2,7 @@
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
 
   import { FieldGroup, FieldSet } from "@/components/ui/field";
-  import { OrganizationRecord } from "@/data/model/dataset/organizations/record";
+  import { OrganizationRecord } from "@/data/model/iam/organizations/record";
 
   import type { FormBaseProps } from "@/components/app/forms/form.types";
 
