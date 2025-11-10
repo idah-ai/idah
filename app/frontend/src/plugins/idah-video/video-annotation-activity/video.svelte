@@ -37,14 +37,14 @@
   let volume = $state(0);
   let muted = $state(false);
   let mediaTime = $state(0);
-  let currentFrame = $derived(Math.round(mediaTime * fps));
+  let currentFrame = $derived(Math.round(mediaTime * fps) + 1);
   let isPlaying = $state(false);
   let raf: number | undefined = $state();
 
   $effect(() => onFramesChange?.(currentFrame, frames, isPlaying));
   $effect(() => onVolumeChange?.(volume, muted) && console.log({ volume_changed: { volume, muted } }));
 
-  $effect(() => console.debug({ frame: currentFrame, mediaTime }));
+  $effect(() => console.debug({ currentFrame, frames, mediaTime, duration, isPlaying }));
   export const getFrames = () => frames;
 
   export function togglePlay() {
@@ -57,19 +57,22 @@
   export function source(src?: string) {
     return player?.src(src);
   }
+  function setCurrentTime(time) {
+    player?.currentTime(time + 1 / 1000000);
+  }
 
   export function nextFrame(count = 1) {
     if (!fps) console.error({ fps, nextFrame });
 
     if (!player?.paused()) player?.pause();
-    player?.currentTime((currentFrame + count) / fps);
+    setCurrentTime((currentFrame + count) / fps - 1 / fps);
   }
 
   export function previousFrame(count = 1) {
     if (!fps) console.error({ fps, nextFrame });
 
     if (!player?.paused()) player?.pause();
-    player?.currentTime((currentFrame - count) / fps);
+    setCurrentTime((currentFrame - count) / fps - 1 / fps);
   }
 
   export function toggleMute() {
@@ -84,7 +87,7 @@
   export function seekToFrame(frame: number) {
     if (!fps) return console.log({ seekToFrame, fps, frame });
 
-    player?.currentTime(frame / fps);
+    setCurrentTime(frame / fps - 1 / fps);
   }
 
   export function playbackRate(value: number) {
