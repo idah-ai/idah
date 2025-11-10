@@ -27,7 +27,6 @@
     target_container: () => HTMLDivElement; // ..
     annotations_promise: Promise<VideoAnnotation[]>;
     children: Snippet;
-    onclick?: (e: MouseEvent) => void;
     onSelectAnnotation: (annotation?: VideoAnnotation) => void;
     onmouseup?: (e: MouseEvent) => void;
     onmousedown?: (e: MouseEvent) => void;
@@ -191,7 +190,6 @@
         annotation_id: null,
         // annotation_id: selected?.metadata.id,
       });
-      // showNewNoteFeedDialog();
     }
 
     // }

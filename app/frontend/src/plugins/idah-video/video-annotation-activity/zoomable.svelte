@@ -63,13 +63,20 @@
     let step = e.deltaY > 0 ? -zoom.step : zoom.step;
 
     switch (mode) {
-      default:
+      case "note": {
+        break; // Do not zoom in note mode
+      }
+      default: {
         zoomAt(e.offsetX, e.offsetY, step * zoom.current);
+      }
     }
   }
 
   export function mouseDown(e: MouseEvent) {
     switch (mode) {
+      case "note": {
+        break; // Do not pan in note mode
+      }
       default:
         if (!panOrigin) {
           panStart(e.offsetX, e.offsetY);
@@ -78,21 +85,30 @@
     }
   }
 
-  export function mouseUp(e: MouseEvent) {
+  export function mouseUp() {
     switch (mode) {
-      default:
+      case "note": {
+        break; // Do not pan in note mode
+      }
+      default: {
         panStop();
         break;
+      }
     }
   }
 
   export function mouseMove(e: MouseEvent) {
     switch (mode) {
+      case "note": {
+        break; // Do not pan in note mode
+      }
+
       case "visual":
       case "bounding-box":
       case "bounding-polygon":
-      default:
+      default: {
         panTo(e.offsetX, e.offsetY);
+      }
     }
   }
 </script>
