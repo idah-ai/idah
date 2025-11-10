@@ -16,7 +16,8 @@ Api[:idah].register(
 ) do |id:|
   output = get(
     "iam/accounts/:id",
-    params: { id: }
+    params: { id: },
+    options: { auth: :bearer }  # Enable authentication
   )
   deserialize output.body
 end

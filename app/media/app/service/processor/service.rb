@@ -23,10 +23,16 @@ module Processor
 
       processor_entries = Registry.get(modality)
 
-      return if processor_entries.nil? || processor_entries.empty?
+      if processor_entries.nil? || processor_entries.empty?
+        Api[:idah].dataset.entries.update(
+          id: entry.id,
+          status: "ready"
+        )
+        return
+      end
 
       processor_entries.each do |processor_entry|
-        jobs.create(
+        job_id = jobs.create(
           job_class: "Processor::Job",
           arguments: {
             entry_id:,
@@ -40,13 +46,14 @@ module Processor
           scheduled_at: Time.now
         )
         # TODO: what to do with multiple job ids?
+        # Update the entry with the job_id
+        Api[:idah].dataset.entries.update(
+          id: entry.id,
+          status: "processing",
+          job_id: job_id
+        )
       end
 
-      # Update the entry with the job_id
-      Api[:idah].dataset.entries.update(
-        id: entry.id,
-        status: "processing"
-      )
     end
   end
 end
