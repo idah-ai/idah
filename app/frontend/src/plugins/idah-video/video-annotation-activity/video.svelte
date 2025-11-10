@@ -58,21 +58,21 @@
     return player?.src(src);
   }
   function setCurrentTime(time) {
-    player?.currentTime(time + 1 / 1000000);
+    player?.currentTime(time + Number.EPSILON);
   }
 
   export function nextFrame(count = 1) {
     if (!fps) console.error({ fps, nextFrame });
 
     if (!player?.paused()) player?.pause();
-    setCurrentTime((currentFrame + count) / fps - 1 / fps);
+    setCurrentTime((currentFrame + count - 1) / fps);
   }
 
   export function previousFrame(count = 1) {
     if (!fps) console.error({ fps, nextFrame });
 
     if (!player?.paused()) player?.pause();
-    setCurrentTime((currentFrame - count) / fps - 1 / fps);
+    setCurrentTime((currentFrame - count - 1) / fps);
   }
 
   export function toggleMute() {
