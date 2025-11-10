@@ -58,7 +58,7 @@
     offset: [0, 0],
   });
 
-  let context: IActivityContext = getContext("context");
+  let context = getContext<IActivityContext>("context");
 
   let height = $state(0);
   let width = $state(0);
@@ -80,9 +80,9 @@
   });
 
   function updatedSize(): Point {
-    videoResizedAt; // (... update on change)
+    videoResizedAt; // eslint-disable-line @typescript-eslint/no-unused-expressions
     let target_dom_rect = target_container()?.getBoundingClientRect();
-    zoomInfo; // (... update on change)
+    zoomInfo; // eslint-disable-line @typescript-eslint/no-unused-expressions
 
     return !target_dom_rect ? ORIGIN : [target_dom_rect.width, target_dom_rect.height];
   }

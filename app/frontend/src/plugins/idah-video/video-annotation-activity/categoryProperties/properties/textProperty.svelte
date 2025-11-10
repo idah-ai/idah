@@ -5,8 +5,11 @@
 
   import type { PropertyField } from "@/plugin/interface/Activity";
 
-  let { property, value, onValueChange }: { property: PropertyField; value: any; onValueChange: (v: any) => void } =
-    $props();
+  let {
+    property,
+    value,
+    onValueChange,
+  }: { property: PropertyField; value: string; onValueChange: (v: string) => void } = $props();
 
   const invalid = $derived(!propertyFullfilled(value, property));
 
@@ -21,7 +24,7 @@
   <Input type="text" aria-invalid={invalid} {value} onchange={(e) => onValueChange(e.target.value)} />
   {#if invalid}
     <ul>
-      {#each format as [k, v]}
+      {#each format as [k, v] (k)}
         <li style:color="red">{k}:<span>{v}</span></li>
       {/each}
     </ul>

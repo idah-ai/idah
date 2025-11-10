@@ -78,7 +78,7 @@
     const s = Math.min(150, Math.max(1, Math.round(value)));
     scale = Math.min(scale, Math.ceil(totalFrames / s));
     zoom = s;
-    onScaleChange?.(scale)
+    onScaleChange?.(scale);
     onZoomChange?.(zoom);
   }
 

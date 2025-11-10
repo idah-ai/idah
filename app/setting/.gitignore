@@ -1,0 +1,12 @@
+.bundle
+coverage
+.rspec_status
+.DS_Store
+
+tmp/*
+
+# ignore all files in config/keys except the dev key, for security purposes
+config/keys/*
+!config/keys/private.dev.pem
+!config/keys/public.dev.pem
+!config/keys/README.md

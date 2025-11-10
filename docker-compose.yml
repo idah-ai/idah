@@ -12,6 +12,7 @@ services:
       - media
       - dataset
       - iam
+      - setting
     networks:
       - app-network
 
@@ -58,6 +59,8 @@ services:
     volumes:
       - ./app/media:/app
       - ./app/media/common:/app/common
+      - ./plugins:/app/plugins
+      - ./app/frontend/build:/app/plugins/idah-video/frontend/build
       - bundler_cache:/usr/local/bundle
     networks:
       - app-network
@@ -67,6 +70,8 @@ services:
     command: ./dev-entrypoint.sh puma
     stdin_open: true
     tty: true
+    depends_on:
+      - dataset
 
   dataset:
     build:
@@ -91,6 +96,34 @@ services:
       - "idah.localhost:host-gateway"
     networks:
       - app-network
+    command: ./dev-entrypoint.sh puma
+    stdin_open: true
+    tty: true
+
+  setting:
+    build:
+      context: ./app/setting
+      dockerfile: Dockerfile
+      args:
+        BUNDLE_WITHOUT: "" # Allow all groups for dev.
+        APP_ENVIRONMENT: development
+    environment:
+      - POSTGRES_HOST=host.docker.internal
+      - REDIS_STREAM_URL=redis://host.docker.internal:6379/0
+      - EAGER_LOAD=1
+    ports:
+      - "3000"
+    volumes:
+      - ./app/setting:/app
+      - ./app/setting/common:/app/common
+      - ./plugins:/app/plugins
+      - ./app/frontend/build:/app/plugins/idah-video/frontend/build
+      - bundler_cache:/usr/local/bundle
+    networks:
+      - app-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+      - "idah.localhost:host-gateway"
     command: ./dev-entrypoint.sh puma
     stdin_open: true
     tty: true

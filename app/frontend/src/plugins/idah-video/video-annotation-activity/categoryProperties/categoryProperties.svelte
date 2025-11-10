@@ -8,23 +8,21 @@
   import { idb_updated_at } from "../idb_store.svelte";
   import BooleanProperty from "./properties/booleanProperty.svelte";
   import IntegerProperty from "./properties/integerProperty.svelte";
-  import SelectProperty from "./properties/SelectProperty.svelte";
   import TextProperty from "./properties/textProperty.svelte";
 
-  import type { CategoryDefinition } from "@/context/ActivityContext";
   import type { AnnotationValue } from "@/context/AnnotationContext";
   import type { IActivityContext, PropertyField } from "@/plugin/interface/Activity";
+  import MultiSelectProperty from "./properties/MultiSelectProperty.svelte";
+  import SingleSelectProperty from "./properties/SingleSelectProperty.svelte";
 
   type Props = {
     selectedCategory: string;
-    selectedId: string;
     annotationValue: AnnotationValue;
-    onSelectCategory: (category?: CategoryDefinition) => void;
+    onSelectCategory: (id?: string) => void;
     onEditValue: (value?: AnnotationValue) => void;
   };
-  type propertyComponent = TextProperty | IntegerProperty | BooleanProperty;
 
-  let { selectedCategory, selectedId, annotationValue, onSelectCategory, onEditValue }: Props = $props();
+  let { selectedCategory, annotationValue, onSelectCategory, onEditValue }: Props = $props();
 
   // Contexts
   const context: IActivityContext = getContext("context");
@@ -38,31 +36,21 @@
 
   const propertyComponents: {
     type: string;
-    component: propertyComponent;
-    extraProps?: {};
+    component:
+      | typeof TextProperty
+      | typeof IntegerProperty
+      | typeof BooleanProperty
+      | typeof SingleSelectProperty
+      | typeof MultiSelectProperty;
   }[] = [
     { type: "text", component: TextProperty },
     { type: "integer", component: IntegerProperty },
     { type: "boolean", component: BooleanProperty },
-    {
-      type: "single-select",
-      component: SelectProperty,
-      extraProps: {
-        selectType: "single",
-      },
-    },
-    {
-      type: "multi-select",
-      component: SelectProperty,
-      extraProps: {
-        selectType: "multi",
-      },
-    },
+    { type: "single-select", component: SingleSelectProperty },
+    { type: "multi-select", component: MultiSelectProperty },
   ];
 
-  const selectedPromise = () => db?.get("annotations", selectedId);
-
-  function onValueChange(property: PropertyField, v: any) {
+  function onValueChange(property: PropertyField, v: string | number | string[] | undefined | boolean) {
     onEditValue({
       ...annotationValue,
       attributes: { ...(annotationValue.attributes || {}), [property.id]: v },
@@ -83,7 +71,7 @@
       <SelectContent>
         <SelectGroup>
           {#each context.config.categories as c (c.id)}
-            <SelectItem value={c} label={c.label}>
+            <SelectItem value={c.id} label={c.label}>
               {c.label}
             </SelectItem>
           {/each}
@@ -106,9 +94,8 @@
             <pc.component
               {...{
                 property,
-                ...pc.extraProps,
                 value: annotationValue.attributes?.[property.id],
-                onValueChange: (v: any) => onValueChange(property, v),
+                onValueChange: (v: string | number | boolean | string[] | undefined) => onValueChange(property, v),
               }}
             />
           </div>
