@@ -85,7 +85,7 @@
     }
   }
 
-  export function mouseUp() {
+  export function mouseUp(e: MouseEvent) {
     switch (mode) {
       case "note": {
         break; // Do not pan in note mode
@@ -135,6 +135,7 @@
     display: flexbox;
     overflow: hidden;
   }
+
   .target {
     background-color: chartreuse;
   }

@@ -27,6 +27,12 @@
   }
   let { context, pluginContainerElement }: Props = $props();
 
+  // Interfaces
+  interface ZoomInfo {
+    scale: number;
+    offset: [number, number];
+  }
+
   // Elements
   let NoteOverlayElement = $state<HTMLButtonElement | null>(null);
 
@@ -160,25 +166,31 @@
       {@const posY = newNoteFeed.position.y || 0}
       {@const targetSizeX = newNoteFeed.position.target_size[0] || containerWidth || 0}
       {@const targetSizeY = newNoteFeed.position.target_size[1] || containerHeight || 0}
-      {@const top = (Number(posY * targetSizeY) / containerHeight) * 100}
-      {@const left = (Number(posX * targetSizeX) / containerWidth) * 100}
+      {@const top = `${(Number(posY * targetSizeY) / containerHeight) * 100}%`}
+      {@const left = `${(Number(posX * targetSizeX) / containerWidth) * 100}%`}
+      {@const sidebarLeftWidth = newNoteFeed.position.sidebar_width || 0}
+      {@const zoomInfo = (newNoteFeed.position.zoom_info || { scale: 1, offset: [0, 0] }) as ZoomInfo}
+      {@const zoomOffsetX = zoomInfo.offset[0] || 0}
+      {@const zoomOffsetY = zoomInfo.offset[1] || 0}
 
-      <!-- transition:fade={{ duration: 200, easing: sineInOut }} -->
       <img
         src={messageCircleIcon}
         alt="Message circle icon"
         class="absolute z-40 cursor-auto"
-        style:top="{top}%"
-        style:left="{left}%"
-        style:transform="translate(1300%, -50%)"
+        style:top
+        style:left
+        style:transform="translate({sidebarLeftWidth + zoomOffsetX}px, {zoomOffsetY}px)"
       />
-      <!-- style:transform="translate({zoomInfo.offset[X]}px, {zoomInfo.offset[Y]}px)" -->
 
       <Dialog open={showNewNoteFeedPopup} onOpenChangeComplete={(open) => (showNewNoteFeedPopup = open)}>
         <DialogContent
-          overlayClass="bg-transparent"
-          class="w-80 translate-x-[110%] translate-y-0 p-0"
-          style="top: {top}%; left: {left}%;"
+          overlayClass="bg-transparent data-[state=open]:animate-none data-[state=closed]:animate-none"
+          class="w-80 p-0 data-[state=closed]:animate-none data-[state=open]:animate-none"
+          style="
+            top: {top}; 
+            left: {left}; 
+            transform: translate({sidebarLeftWidth + zoomOffsetX + 200}px, {zoomOffsetY}px);
+          "
           showCloseButton={false}
         >
           <NoteInputField

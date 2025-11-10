@@ -32,7 +32,7 @@
   import { requiredFullfilled } from "./video-annotation-activity/categoryProperties";
   import { boundingBoxes, idb_updated_at } from "./video-annotation-activity/idb_store.svelte";
   import { annotationsIndexedDB, AnnotationsIndexedDB } from "./video-annotation-activity/indexedDB";
-  import SvgOverlay from "./video-annotation-activity/svg-overlay.svelte";
+  import SvgOverlay, { type OnAddNewNoteParams } from "./video-annotation-activity/svg-overlay.svelte";
   import TimelineTable from "./video-annotation-activity/timeline-table/timeline-table.svelte";
   import Video from "./video-annotation-activity/video.svelte";
   import type {
@@ -658,6 +658,23 @@
 
   let showPopOver = $state(false);
   let videoResizedAt = $state(new Date());
+
+  function showNewNotePopup(params: OnAddNewNoteParams) {
+    const { anchorType, position, annotationId } = params;
+    context.notes.showNewNoteFeedPopup({
+      anchor_type: anchorType,
+      position: {
+        ...position,
+        /**
+         * Need to be sent in pixels
+         * Need to be sent the sidebar width to position the note correctly
+         * Otherwise the note will be positioned left to the sidebar
+         */
+        sidebar_width: annotationSidebarWidthRem * 16,
+      },
+      annotation_id: annotationId,
+    });
+  }
 </script>
 
 <div class="flex h-full w-full flex-col">
@@ -754,6 +771,7 @@
           frame={currentFrame}
           onSelectAnnotation={selectAnnotation}
           onSelection={onShapeSelection}
+          onAddNewNote={showNewNotePopup}
           target_container={() => player_container}
           {videoResizedAt}
         >
