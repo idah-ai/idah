@@ -9,13 +9,14 @@
   import Button from "@/components/ui/button/button.svelte";
   import Text from "@/components/ui/text/Text.svelte";
 
-  import { organizationColumns } from "@/components/app/organizations/data-tables/organization-columns";
+  import { organizationProjectColumns } from "@/components/app/organizations/data-tables/organization-project-columns";
   import { homeBreadcrumb, organizationBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
   import { refetches } from "@/utils/refetch";
   import { PencilIcon } from "@lucide/svelte";
 
   import { OrganizationRecord, organizationsBackendDataSource } from "@/data/model/dataset/organizations/record";
+  import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
 
   // Records
   let organization: OrganizationRecord = $state(new OrganizationRecord());
@@ -36,7 +37,7 @@
   }
 
   // Functions
-  async function fetchOrganization() {
+  async function fetchOrganization(): Promise<OrganizationRecord> {
     const organizationRes = await organizationsBackendDataSource.get(organizationId, {
       fields: {
         "dataset/organizations": ["name"],
@@ -70,14 +71,17 @@
 
       {#key $refetches.organizations.list}
         <DatasourceTable
-          id="organizations"
-          name="organizations"
+          id="organizations-projects-table"
+          name="organizations-projects-table"
           refetchKey="organizations"
-          columns={organizationColumns}
-          dataSource={organizationsBackendDataSource}
+          columns={organizationProjectColumns}
+          dataSource={projectsBackendDataSource}
           listOptions={{
             fields: {
-              [OrganizationRecord.type]: ["name", "created_at"],
+              [ProjectRecord.type]: ["name", "created_at"],
+            },
+            filters: {
+              organization_id: organizationId,
             },
           }}
         ></DatasourceTable>
