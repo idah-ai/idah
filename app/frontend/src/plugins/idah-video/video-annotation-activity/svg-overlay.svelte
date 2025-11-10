@@ -78,6 +78,7 @@
   let points: Point[] = $derived.by(() => {
     return shape ? currentShape(shape, frame) || [] : [];
   });
+  let isNoteMode: boolean = $derived(mode === "note");
 
   function updatedSize(): Point {
     videoResizedAt; // eslint-disable-line @typescript-eslint/no-unused-expressions
@@ -152,7 +153,6 @@
   }
 
   let tool_selection: ToolSelection | undefined = $state();
-  let lastZoomOffset: Point = $state([0, 0]);
 
   export function selectionStart(e: MouseEvent) {
     lastZoomOffset = $state.snapshot(zoomInfo.offset) as Point;
@@ -170,13 +170,15 @@
     }
   }
 
+  let lastZoomOffset: Point = $state([0, 0]);
   export function selectionEnd(e: MouseEvent) {
     tool_selection?.endSelection(cursor_downscaled);
 
     /**
      * Show new note feed dialog only when there is no dragging (i.e. zoom offset did not change)
      */
-    if (lastZoomOffset[X] == zoomInfo.offset[X] || lastZoomOffset[Y] == zoomInfo.offset[Y]) {
+    // if (lastZoomOffset[X] == zoomInfo.offset[X] || lastZoomOffset[Y] == zoomInfo.offset[Y]) {
+    if (mode === "note") {
       context.notes.showNewNoteFeedPopup({
         anchor_type: "entry",
         position: {
@@ -192,11 +194,13 @@
       // showNewNoteFeedDialog();
     }
 
+    // }
+
     zoom.mouseUp(e);
   }
 </script>
 
-<div class="svg-overlay flex-1">
+<div class="svg-overlay flex-1" class:cursor-note={isNoteMode}>
   <div>
     <Zoomable bind:this={zoom} {mode} onZoomChange={(scale, offset) => (zoomInfo = { scale, offset })}>
       {@render children?.()}
@@ -253,7 +257,7 @@
     onwheel={(e) => zoom.onWheel(e)}
     {...restProps}
   >
-    {#if width && height}
+    {#if width && height && !isNoteMode}
       <!-- prevent display issue on load for now -->
       <line x1={0} y1={target_line[Y]} x2={width} y2={target_line[Y]} stroke="#2b7fff" />
       <line x1={target_line[X]} y1={0} x2={target_line[X]} y2={height} stroke="#2b7fff" />
@@ -326,6 +330,10 @@
 <style>
   .svg-overlay {
     position: relative;
+  }
+
+  .cursor-note {
+    cursor: url("/app/frontend/src/plugins/assets/icons/message-circle.svg"), auto;
   }
 
   .svg-overlay > div {
