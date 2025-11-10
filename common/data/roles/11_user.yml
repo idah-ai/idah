@@ -1,0 +1,8 @@
+# Until later in the development process,
+# we will keep anonymous role able to do everything on the platform
+
+# TODO: for temporary testing, remove this file
+user:
+  assignable: false
+  rights:
+    - "*.*.*"
