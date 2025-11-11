@@ -10,7 +10,6 @@
 
   import type { LabelConfigurationProperty } from "@/data/model/dataset/labels";
   import type { Hash } from "@/utils/types";
-  import type { ASTNode } from "@/plugins/idah-video/test_ast_resolution";
 
   // Props
   interface Props {
@@ -20,20 +19,10 @@
   let { property, onSetValue }: Props = $props();
 
   // Variables
-  let { id, description, type, format } = $derived(property);
-  let visibilityString = $state("");
+  let { id, description, type, format, visibility } = $derived(property);
 
   import * as parser from "@build/parser.js";
-
-  $effect(() => {
-    try {
-      const visibility = parser.parse(visibilityString);
-      console.log({ visibility });
-      // onSetValue({ visibility });
-    } catch (error) {
-      console.error(error);
-    }
-  });
+  import { ASTNodeToFunctionString } from "../../../../../../plugins/idah-video/test_ast_resolution";
 </script>
 
 {#snippet SectionHeading(heading: string)}
@@ -187,9 +176,15 @@
       class="col-span-1 md:col-span-2"
       label="Visibility"
       placeholder="e.g. task_name match '...' and status = '...'"
-      value={visibilityString}
-      oninput={(e) => (visibilityString = e.currentTarget.value)}
+      value={ASTNodeToFunctionString(visibility)}
+      oninput={(e) => {
+        try {
+          const visibility = parser.parse(e.currentTarget.value);
+          onSetValue({ visibility });
+        } catch (error) {
+          console.error(error);
+        }
+      }}
     />
-    <!-- onblur={parseVisibility} -->
   </div>
 </div>
