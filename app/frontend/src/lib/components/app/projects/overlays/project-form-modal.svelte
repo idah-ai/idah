@@ -32,6 +32,7 @@
           attributes: {
             name: null,
             description: null,
+            organization_id: null,
           },
         }),
   );
@@ -44,6 +45,7 @@
       attributes: {
         name: null,
         description: null,
+        organization_id: null,
       },
     });
   }
@@ -51,6 +53,7 @@
   function setValue(value: Hash): void {
     project.name = value.name;
     project.description = value.description;
+    project.organization_id = value.organization_id;
   }
 
   async function createProject() {
@@ -58,6 +61,7 @@
       attributes: {
         name: project.name,
         description: project.description,
+        organization_id: project.organization_id,
         created_by_email: "user@example.com", // TODO: Replace with actual user email from auth context when implement authentication system
       },
     });
@@ -73,6 +77,7 @@
       attributes: {
         name: project.name,
         description: project.description,
+        organization_id: project.organization_id,
       },
     });
 
@@ -89,7 +94,7 @@
     try {
       const validated = validateData(schema, {
         name: project.name,
-        description: project.description,
+        organization_id: project.organization_id,
       });
 
       if (!validated.success) {
