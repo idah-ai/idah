@@ -51,6 +51,15 @@ function wildcard_match(pattern1: string, pattern2: string) {
   return matchHelper(0, 0);
 }
 
+type unaryOperator = "unary";
+const unaryOperator = "unary";
+type binaryOperator = "binary";
+const binaryOperator = "binary";
+type functionOperator = "function";
+const functionOperator = "function";
+
+type operatorTypes = unaryOperator | binaryOperator | functionOperator;
+
 export class AstProcessor {
   variables: Map<string, ASTValue>;
 
@@ -290,14 +299,47 @@ export function objectVariables(obj: object, root?: string) {
   }, []);
 }
 
-export function ASTNodeToFunctionString(node: ASTNode, d = 0): string {
-  return `${node?.[0]}(${node?.[1].map((n) => ASTNodeValueToString(n, d + 1)).join(", ")})`;
+const printOperators: { [operator: string]: [string, operatorTypes] } = {
+  eq: ["=", binaryOperator],
+  neq: ["!=", binaryOperator],
+  lt: ["<", binaryOperator],
+  gt: [">", binaryOperator],
+  lte: ["<=", binaryOperator],
+  gte: [">=", binaryOperator],
+  match: ["match", binaryOperator],
+  // match: ["match", functionOperator],
+  get: ["get", unaryOperator],
+};
+
+export function ASTNodeToFunctionString(node: ASTNode | boolean, d = 0): string {
+  if ("boolean" == typeof node) return node.toString();
+
+  const printOperator = printOperators[node?.[0]];
+
+  switch (printOperator[1]) {
+    case unaryOperator:
+      return ASTNodeValueToString(node?.[1][0], d + 1).slice(1, -1); // remove quotes from string
+      break;
+    case binaryOperator:
+      return [
+        ASTNodeValueToString(node?.[1][0], d + 1),
+        printOperator[0],
+        ASTNodeValueToString(node?.[1][1], d + 1),
+      ].join(" ");
+      break;
+    case functionOperator:
+      return `${node?.[0]}(${node?.[1].map((n) => ASTNodeValueToString(n, d + 1)).join(", ")})`;
+      break;
+    default:
+      return node.toString();
+      break;
+  }
 }
 
-function ASTNodeValueToString(value: ASTNodeValue, d: number) {
+function ASTNodeValueToString(value: ASTNodeValue, d: number): string {
   if (Array.isArray(value) && typeof value[0] == "string" && Array.isArray(value[1]))
-    return `\n${Array(d).fill(" ").join("")}${ASTNodeToFunctionString(value as ASTNode, d)}`;
+    return ASTNodeToFunctionString(value as ASTNode, d);
   else if (Array.isArray(value)) return `[${value}]`;
   else if (typeof value == "string") return `"${value}"`;
-  return value;
+  return value?.toString() || "undefined";
 }
