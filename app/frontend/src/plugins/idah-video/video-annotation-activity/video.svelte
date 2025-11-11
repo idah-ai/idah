@@ -48,10 +48,7 @@
   export const getFrames = () => frames;
 
   export function togglePlay() {
-    if (player?.paused()) player?.play();
-    else {
-      player?.pause();
-    }
+    return player?.paused() ? player?.play() : player?.pause();
   }
 
   export function source(src?: string) {
