@@ -97,7 +97,7 @@
 
 <section class="flex w-full flex-col gap-2 lg:flex-row">
   <!-- LABEL CONFIG::NAVIGATION -->
-  <div class="flex w-full lg:min-w-72 lg:max-w-80">
+  <div class="flex w-full lg:max-w-80 lg:min-w-72">
     <Card class="w-full gap-2">
       <CardHeader>
         <CardTitle>Configurations</CardTitle>
