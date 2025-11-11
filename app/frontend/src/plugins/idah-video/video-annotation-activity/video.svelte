@@ -37,7 +37,7 @@
   let volume = $state(0);
   let muted = $state(false);
   let mediaTime = $state(0);
-  let currentFrame = $derived(Math.round(mediaTime * fps) + 1);
+  let currentFrame = $derived(Math.min(frames, Math.round(mediaTime * fps) + 1));
   let isPlaying = $state(false);
   let raf: number | undefined = $state();
 
