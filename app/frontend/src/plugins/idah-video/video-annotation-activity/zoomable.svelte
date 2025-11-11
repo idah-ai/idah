@@ -93,7 +93,7 @@
     }
   }
 
-  export function mouseUp(e: MouseEvent) {
+  export function mouseUp(_e: MouseEvent) {
     switch (mode) {
       case "note": {
         break; // Do not pan in note mode

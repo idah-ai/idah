@@ -16,6 +16,7 @@
 
   // Lifecycle
   onMount(() => {
+    // eslint-disable-next-line no-async-promise-executor
     context_promise = new Promise<IActivityContext>(async (ok, ko) => {
       const checkEntryRes = await entriesBackendDataSource.get(entryId, {
         fields: {

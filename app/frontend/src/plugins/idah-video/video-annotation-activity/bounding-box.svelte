@@ -116,10 +116,10 @@
     }
   }
 
-  const BB_TOP_LEFT: 0 = 0;
-  const BB_TOP_RIGHT: 1 = 1;
-  const BB_BOTTOM_RIGHT: 2 = 2;
-  const BB_BOTTOM_LEFT: 3 = 3;
+  const BB_TOP_LEFT: number = 0;
+  const BB_TOP_RIGHT: number = 1;
+  const BB_BOTTOM_RIGHT: number = 2;
+  const BB_BOTTOM_LEFT: number = 3;
 
   const BB_HANDLE_POINTS = [
     [BB_BOTTOM_RIGHT],
