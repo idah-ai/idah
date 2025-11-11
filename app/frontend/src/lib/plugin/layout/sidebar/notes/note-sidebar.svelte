@@ -79,11 +79,10 @@
         /**
          * Only go to detail view if note feed is general note
          */
-        if (noteFeedRes.data.anchor_type === "entry" && !noteFeedRes.data.annotation_id) {
+        if (noteFeedRes.data.anchor_type === "entry" && !!noteFeedRes.data.annotation_id) {
           selectedNoteFeed = noteFeedRes.data;
+          open = true;
         }
-
-        open = true;
       }
 
       if (noteCommentIdFromURL) {
