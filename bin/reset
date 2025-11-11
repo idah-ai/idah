@@ -1,0 +1,6 @@
+#!/bin/sh
+
+docker-compose run --rm dataset bundle exec rake db:reset
+docker-compose run --rm iam bundle exec rake db:reset
+docker-compose run --rm media bundle exec rake db:reset
+docker-compose run --rm setting bundle exec rake db:reset
