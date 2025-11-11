@@ -79,7 +79,7 @@
     const maxZoom = 150;
     const maxScale = Math.ceil(totalFrames / zoom);
 
-    let newScale = value >= (minZoom + maxZoom) / 2 ? 1 : 1 + ((s - minZoom) / (maxZoom - minZoom)) * (maxScale - 1);
+    let newScale = value <= (minZoom + maxZoom) / 2 ? 1 : Math.max(1, Math.min(Math.ceil(totalFrames / zoom), value));
 
     // clamp scale just in case
     newScale = Math.min(newScale, maxScale);
@@ -333,7 +333,6 @@
               <button
                 class="border-border text-muted-foreground/50 absolute top-0 cursor-col-resize border-l"
                 style:width="{width}%"
-                style:padding-left="0.125rem"
                 style:left="{startLeftPosition}%"
                 onclick={() => seekToFrame(thisFrame)}
               >
