@@ -181,4 +181,46 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
       expect(record.id).to eq uuid
     end
   end
+
+  describe "on_resource_event media:jobs completed" do
+    it "marks entries as ready when job is completed" do
+      job_id = "123"
+
+      expect(
+        service
+      ).to(
+        receive(:mark_entries_status_as).with(job_id, "ready")
+      )
+
+      Verse.publish_resource_event(
+        resource_type: "media:jobs",
+        resource_id: job_id,
+        event: "completed",
+        payload: {
+          resource_id: job_id
+        }
+      )
+    end
+  end
+
+  describe "on_resource_event media:jobs errored" do
+    it "marks entries as errored when job fails" do
+      job_id = "789"
+
+      expect(
+        service
+      ).to(
+        receive(:mark_entries_status_as).with(job_id, "processing_error")
+      )
+
+      Verse.publish_resource_event(
+        resource_type: "media:jobs",
+        resource_id: job_id,
+        event: "errored",
+        payload: {
+          resource_id: job_id
+        }
+      )
+    end
+  end
 end
