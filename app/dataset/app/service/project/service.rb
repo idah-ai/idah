@@ -22,8 +22,11 @@ module Project
     def create(record)
       attr = record.attributes
       attr[:id] = record.id || UUIDv7.generate
-      id = projects.create(attr)
-      projects.find!(id)
+
+      projects.transaction do
+        id = projects.create(attr)
+        projects.find!(id)
+      end
     end
 
     def update(record)
@@ -32,7 +35,7 @@ module Project
     end
 
     def delete(id)
-      projects.delete(id)
+      projects.delete!(id)
     end
   end
 end

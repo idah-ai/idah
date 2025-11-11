@@ -20,9 +20,23 @@ module ProjectMember
     end
 
     def create(record)
+      attr = record.attributes
+
+      if record.project
+        attr[:project_id] = record.project.id
+      else
+        raise Verse::Error::ValidationFailed,
+              "project is required to create a dataset"
+      end
+
       project_members.transaction do
-        record_id = project_members.create(record.attributes)
-        project_members.find!(record_id)
+        id = project_members.create(attr)
+        
+        project_member = project_members.find(id, scope: project_members.scoped(:create))
+
+        raise Errors::Service::UnauthorizedProjectAccess unless project_member
+
+        project_member
       end
     end
 
@@ -32,7 +46,7 @@ module ProjectMember
     end
 
     def delete(id)
-      project_members.delete(id)
+      project_members.delete!(id)
     end
   end
 end
