@@ -66,9 +66,6 @@
 
   let pos_offset: number = $state(1);
   let range: [number, number] = $derived([pos_offset, pos_offset + range_span]);
-  $effect(() => {
-    console.log({ zoom, scale, sum: scale * zoom, range, range_span, pos_offset });
-  });
   let wheelthrottling = $state(false);
   let hoveredColumn: number | undefined = $state();
 
@@ -78,7 +75,7 @@
 
   export function setZoom(value: number) {
     const s = Math.min(100, Math.max(1, Math.round(value)));
-    scale = value === 100 ? 1 : Math.max(1, Math.round(totalFrames / s));
+    scale = Math.max(1, Math.round(totalFrames / s));
     zoom = s;
     onScaleChange?.(scale);
     onZoomChange?.(zoom);
@@ -315,7 +312,7 @@
                 onclick={() => seekToFrame(thisFrame)}
               >
                 <span
-                  class="pointer-events-none absolute -top-2 left-1/2 -translate-x-1/2 transform whitespace-nowrap rounded-md bg-black px-3 py-1 text-sm font-medium text-white"
+                  class="pointer-events-none absolute -top-3.5 left-1/2 -translate-x-1/2 transform whitespace-nowrap rounded-md bg-black px-3 py-1 text-sm font-medium text-white"
                 >
                   {thisFrame}
                   <span class="absolute left-1/2 top-full -mt-1 h-2 w-2 -translate-x-1/2 rotate-45 bg-black"></span>
