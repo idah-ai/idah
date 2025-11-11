@@ -142,18 +142,21 @@
         label: "Visual",
         type: "visual",
         icon: MousePointer2,
+        iconName: "mouse-pointer-2",
         handleClick: () => context.commands.run("tools.visual"),
       },
       {
         label: "Bounding Box",
         type: "video:bounding_box",
         icon: BoxSelectIcon,
+        iconName: "vector-square",
         handleClick: () => context.commands.run("tools.bounding_box"),
       },
       {
         label: "Notes",
         type: "note",
         icon: MessageCircleIcon,
+        iconName: "message-circle",
         handleClick: () => context.commands.run("tools.note"),
       },
     ]);

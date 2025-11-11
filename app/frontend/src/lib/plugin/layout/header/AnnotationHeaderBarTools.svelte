@@ -5,6 +5,7 @@
   import Button from "@/components/ui/button/button.svelte";
   import Separator from "@/components/ui/separator/separator.svelte";
 
+  import { pluginsBackendDataSource } from "@/data/model/setting/plugin/record";
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import type { AnnotationHeaderBarBaseTool } from "./AnnotationHeaderBar.types";
 
@@ -37,16 +38,30 @@
       handleClick: () => context.commands.redo(),
     },
   ];
+
+  // Functions
+  async function loadIcon(iconName: string | undefined) {
+    if (!iconName) return "";
+
+    const pluginIconRes = await pluginsBackendDataSource.serveAsset("idah-video", `${iconName}.svg`);
+    return await pluginIconRes.text();
+  }
 </script>
 
 <div id="annotation-header-bar-tools" class="flex h-full items-center justify-center gap-1">
-  {#each tools as { label, type, handleClick }, toolIndex (toolIndex)}
+  {#each tools as { label, type, iconName, handleClick }, toolIndex (toolIndex)}
     <Tooltips align="center" delayDuration={100}>
       {#snippet trigger()}
-        <Button variant={mode === type ? "default" : "outline"} size="icon-sm" onclick={handleClick}>
-          <!-- NOTE: Cannot be display icon, as plugin cannot access to @lucide/svelte icons from app/frontend -->
-          <!-- <Icon /> -->
-        </Button>
+        {#await loadIcon(iconName) then iconSvg}
+          <Button variant={mode === type ? "default" : "outline"} size="icon-sm" onclick={handleClick}>
+            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+            {@html iconSvg}
+
+            <!-- NOTE: We might want to display icon with <img> later after we fix the mime-type from backend -->
+            <!-- NOTE: For now lets keep using {@html iconSvg} -->
+            <!-- <img src="/api/v1/setting/plugins/idah-video/assets/message-circle.svg" alt={label} /> -->
+          </Button>
+        {/await}
       {/snippet}
 
       {#snippet content()}
