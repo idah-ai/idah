@@ -34,7 +34,6 @@ namespace :service_accounts do
         services.each do |(service, password)|
           email = "#{service}@#{service_name}"
           role = "anonymous"
-          role_scopes = {}
 
           record = repo.find_by({ email: })
 
@@ -46,8 +45,7 @@ namespace :service_accounts do
               {
                 hashed_password: BCrypt::Password.create(password),
                 enabled: true,
-                role: role,
-                role_scopes: role_scopes
+                role: role
               }
             )
           else
@@ -59,8 +57,7 @@ namespace :service_accounts do
                 email:,
                 hashed_password: BCrypt::Password.create(password),
                 enabled: true,
-                role: role,
-                role_scopes: role_scopes
+                role: role
               }
             )
           end
