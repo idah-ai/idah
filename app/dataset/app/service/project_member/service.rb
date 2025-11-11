@@ -29,14 +29,14 @@ module ProjectMember
               "project is required to create a dataset"
       end
 
+      # Ensure user can "create" member to the project
+      unless project_members.user_has_project_access?(:create, attr[:project_id])
+        raise Errors::Service::UnauthorizedProjectAccess
+      end
+
       project_members.transaction do
         id = project_members.create(attr)
-        
-        project_member = project_members.find(id, scope: project_members.scoped(:create))
-
-        raise Errors::Service::UnauthorizedProjectAccess unless project_member
-
-        project_member
+        project_members.find(id)
       end
     end
 

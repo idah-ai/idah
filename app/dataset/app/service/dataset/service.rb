@@ -33,14 +33,14 @@ module Dataset
               "project is required to create a dataset"
       end
 
+      # Ensure user can "create" dataset to the project
+      unless datasets.user_has_project_access?(:create, attr[:project_id])
+        raise Errors::Service::UnauthorizedProjectAccess
+      end
+
       datasets.transaction do
         id = datasets.create(attr)
-        
-        dataset = datasets.find(id, scope: datasets.scoped(:create))
-
-        raise Errors::Service::UnauthorizedProjectAccess unless dataset
-
-        dataset
+        datasets.find(id)
       end
     end
 

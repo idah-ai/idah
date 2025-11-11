@@ -16,22 +16,31 @@ RSpec.describe Project::Service, database: true do
   }
 
   # Project Members
-  let!(:owner_member_id) {
+  let!(:project_owner_member_id) {
     project_member_repo.create(
-      project_id: first_project_id, account_id: 3,
-      role: "project_owner", email: "po@example.com", invited_by_id: 1
+      project_id: first_project_id,
+      account_id: 3,
+      role: "project_owner",
+      email: "po@example.com",
+      invited_by_id: 1
     )
   }
   let!(:annotator_member_id) {
     project_member_repo.create(
-      project_id: second_project_id, account_id: 4,
-      role: "annotator", email: "an@example.com", invited_by_id: 1
+      project_id: first_project_id,
+      account_id: 4,
+      role: "annotator",
+      email: "an@example.com",
+      invited_by_id: 1
     )
   }
   let!(:reviewer_member_id) {
     project_member_repo.create(
-      project_id: second_project_id, account_id: 5,
-      role: "reviewer", email: "re@example.com", invited_by_id: 1
+      project_id: second_project_id,
+      account_id: 5,
+      role: "reviewer",
+      email: "re@example.com",
+      invited_by_id: 1
     )
   }
 
@@ -69,7 +78,7 @@ RSpec.describe Project::Service, database: true do
         result = subject.index({})
 
         expect(result.count).to eq 1
-        expect(result.first.name).to eq "Project 1"
+        expect(result.map(&:name)).to eq ["Project 1"]
       end
 
       it "cannot create" do
@@ -87,7 +96,7 @@ RSpec.describe Project::Service, database: true do
       it "can delete" do
         subject.delete(first_project_id)
 
-        expect { 
+        expect {
           subject.show(first_project_id)
         }.to raise_error(Verse::Error::RecordNotFound)
       end
@@ -131,7 +140,7 @@ RSpec.describe Project::Service, database: true do
         result = subject.index({})
 
         expect(result.count).to eq 1
-        expect(result.first.name).to eq "Project 2"
+        expect(result.first.name).to eq "Project 1"
       end
 
       it "cannot create" do
@@ -158,7 +167,7 @@ RSpec.describe Project::Service, database: true do
         result = subject.index({})
 
         expect(result.count).to eq 1
-        expect(result.first.name).to_not eq "Project 1"
+        expect(result.first.name).to_not eq "Project 2"
       end
 
       it "cannot create" do

@@ -16,22 +16,34 @@ RSpec.describe ProjectMember::Service, database: true do
   }
 
   # Project Members
-  let!(:owner_member_id) {
+  let!(:project_owner_member_id) {
     project_member_repo.create(
-      project_id: first_project_id, account_id: 3, role: "project_owner",
-      name: "Project Owner", email: "po@example.com", invited_by_id: 1
+      project_id: first_project_id,
+      account_id: 3,
+      role: "project_owner",
+      name: "Project Owner",
+      email: "po@example.com",
+      invited_by_id: 1
     )
   }
   let!(:annotator_member_id) {
     project_member_repo.create(
-      project_id: first_project_id, account_id: 4, role: "annotator",
-      name: "Annotator", email: "an@example.com", invited_by_id: 1
+      project_id: first_project_id,
+      account_id: 4,
+      role: "annotator",
+      name: "Annotator",
+      email: "an@example.com",
+      invited_by_id: 1
     )
   }
   let!(:reviewer_member_id) {
     project_member_repo.create(
-      project_id: second_project_id, account_id: 5, role: "reviewer",
-      name: "Reviewer", email: "re@example.com", invited_by_id: 1
+      project_id: second_project_id,
+      account_id: 5,
+      role: "reviewer",
+      name: "Reviewer",
+      email: "re@example.com",
+      invited_by_id: 1
     )
   }
 
@@ -99,7 +111,7 @@ RSpec.describe ProjectMember::Service, database: true do
       it "can delete" do
         subject.delete(annotator_member_id)
 
-        expect { 
+        expect {
           subject.show(annotator_member_id)
         }.to raise_error(Verse::Error::RecordNotFound)
       end
@@ -115,7 +127,7 @@ RSpec.describe ProjectMember::Service, database: true do
 
       it "cannot create" do
         create_data[:data][:relationships][:project][:data][:id] = second_project_id
-      
+
         expect {
           subject.create(deserialize(create_data))
         }.to raise_error(Errors::Service::UnauthorizedProjectAccess)
