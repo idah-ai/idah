@@ -30,5 +30,6 @@
 </script>
 
 <div class={cn("", className)}>
+  <!-- eslint-disable-next-line svelte/no-at-html-tags -->
   {@html parseMarkdown(value ?? "")}
 </div>
