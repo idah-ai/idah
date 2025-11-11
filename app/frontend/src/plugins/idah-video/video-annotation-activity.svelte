@@ -34,7 +34,7 @@
   import AnnotationFooterToolbar from "./layout/footer/AnnotationFooterToolbar.svelte";
   import AnnotationSidebar from "./video-annotation-activity/annotation-sidebar.svelte";
   import { requiredFullfilled } from "./video-annotation-activity/categoryProperties";
-  import { boundingBoxes, idb_updated_at } from "./video-annotation-activity/idb_store.svelte";
+  import { boundingBoxes, entryRoot, idb_updated_at } from "./video-annotation-activity/idb_store.svelte";
   import { annotationsIndexedDB, AnnotationsIndexedDB } from "./video-annotation-activity/indexedDB";
   import SvgOverlay from "./video-annotation-activity/svg-overlay.svelte";
   import TimelineTable from "./video-annotation-activity/timeline-table/timeline-table.svelte";
@@ -155,14 +155,17 @@
 
     annotationsIndexedDB(["idah-video", "entry", entry_id].join(":")).then((idb) => {
       annotationsIDB = idb;
-      fetchAnnotations(idb).then(() => {});
+      fetchAnnotations(idb).then(() => {
+        // quick fix if unsynced data, though we dont have way to send it anyway for now if so
+        idb?.getAllIndex("type", EntryRoot).then((anns) => ($entryRoot = anns[0]));
+      });
     }, console.error);
 
     function fetchAnnotations(db: AnnotationsIndexedDB, page = 1, itemsPerPage = 100): Promise<void> {
       return new Promise<void>((resolve, reject) => {
         context.annotations.list({ entry_id: entry_id }, { page, itemsPerPage }).then((r) => {
           let d = (r as AnnotationRecord[]).map((a) => {
-            return {
+            const annotation = {
               shape: {
                 ...(a.dimensions as VideoShape),
                 range: [a.dimensions.start, a.dimensions.end],
@@ -178,6 +181,8 @@
               },
               synced: true,
             };
+            if (annotation.shape.type == EntryRoot) $entryRoot = annotation;
+            return annotation;
           });
 
           if (d.length) {
@@ -216,6 +221,9 @@
         await annotationsIDB?.addAnnotations([annotation]);
         $idb_updated_at = new Date();
 
+        // quick fix for now as we mode id still here
+        if (annotation.shape.type == EntryRoot) $entryRoot = annotation;
+
         let p = context.annotations.create(id, annotation.shape, annotation.value);
 
         p.then(async () => {
@@ -226,10 +234,12 @@
             await annotationsIDB?.addAnnotations([a]);
             $idb_updated_at = new Date();
           }
-        });
+        }, console.error);
       },
       async undo() {
         if (id == selectedAnnotation?.metadata.id) selectedAnnotation = undefined;
+
+        if ($entryRoot?.metadata.id == id) $entryRoot = undefined;
 
         await annotationsIDB?.deleteAnnotation(id);
         $idb_updated_at = new Date();
@@ -252,6 +262,8 @@
 
         await annotationsIDB?.deleteAnnotation(props.id);
         $idb_updated_at = new Date();
+
+        if ($entryRoot?.metadata.id == props.id) $entryRoot = undefined;
 
         let p = context.annotations.delete(props.id);
 
@@ -277,8 +289,12 @@
         p.then(async () => {
           let annotation = await annotationsIDB?.get("annotations", props.id);
 
+          if (annotation?.shape.type == EntryRoot) $entryRoot = annotation;
+
           if (annotation?.metadata.updatedAt.valueOf() == createdAt.valueOf()) {
             annotation.synced = true;
+            if (annotation?.shape.type == EntryRoot) $entryRoot = annotation;
+
             await annotationsIDB?.addAnnotations([annotation]);
             $idb_updated_at = new Date();
           }
@@ -329,17 +345,14 @@
           annotation: v.value,
         });
 
-        p.then(
-          async () => {
-            if (v.metadata.updatedAt == updatedAt) {
-              v.synced = true;
-              await annotationsIDB?.addAnnotations([v]);
-              selectedAnnotation = v;
-              $idb_updated_at = new Date();
-            }
-          },
-          (e) => console.error({ e, p }),
-        );
+        p.then(async () => {
+          if (v.metadata.updatedAt == updatedAt) {
+            v.synced = true;
+            await annotationsIDB?.addAnnotations([v]);
+            selectedAnnotation = v;
+            $idb_updated_at = new Date();
+          }
+        }, console.error);
       },
       async undo() {
         const v = await annotationsIDB?.get("annotations", props.id);
@@ -496,6 +509,8 @@
             await annotationsIDB?.addAnnotations([annotation]);
             $idb_updated_at = new Date();
 
+            if ($entryRoot?.metadata.id == annotation.metadata.id) $entryRoot = { ...annotation, value: props.value };
+
             let p = context.annotations.update({
               id: annotation.metadata.id,
               dimensions: annotation.shape,
@@ -505,6 +520,7 @@
             p.then(async () => {
               if (annotation.metadata.updatedAt == updatedAt) {
                 annotation.synced = true;
+                if ($entryRoot?.metadata.id == annotation.metadata.id) $entryRoot = annotation;
                 await annotationsIDB?.addAnnotations([annotation]);
                 $idb_updated_at = new Date();
               }
@@ -527,9 +543,12 @@
               annotation: value_from,
             });
 
+            if ($entryRoot?.metadata.id == annotation.metadata.id) $entryRoot = { ...annotation, value: props.value };
+
             p.then(async () => {
               if (annotation.metadata.updatedAt == updatedAt) {
                 annotation.synced = true;
+                if ($entryRoot?.metadata.id == annotation.metadata.id) $entryRoot = annotation;
                 await annotationsIDB?.addAnnotations([annotation]);
                 $idb_updated_at = new Date();
               }
@@ -578,11 +597,15 @@
   );
 
   function addAnnotation(shape: AnnotationShape, value: AnnotationValue = {}) {
-    context.commands.run("annotation.add", {
+    const annotation = {
       // filter out indexed shape index noise for now
-      shape: Object.fromEntries(Object.entries(shape).filter(([k, _]) => ["type", "frames"].includes(k))),
+      shape: Object.fromEntries(
+        Object.entries(shape).filter(([k, _]) => ["type", "frames", "start", "end"].includes(k)),
+      ),
       value,
-    });
+    };
+
+    context.commands.run("annotation.add", annotation);
   }
 
   async function removeAnnotation(id: string) {
@@ -606,6 +629,20 @@
   }
 
   let shapeSelectionArgs: [type: string, frame: number, _points: Point[], selectedId?: string] | undefined = $state();
+
+  function onEditValue(value: AnnotationValue, valueMode: string) {
+    annotationValue = value;
+    mode = valueMode;
+    let requirementFullfilled = requiredFullfilled(annotationValue, context.config[valueMode]?.properties);
+    if (valueMode == EntryRoot && !selectedAnnotation) {
+      $entryRoot
+        ? selectAnnotation($entryRoot)
+        : requirementFullfilled && addAnnotation({ type: valueMode }, $state.snapshot(value));
+    } else if (selectedAnnotation && requirementFullfilled) {
+      selectedAnnotation.value = value;
+      updateAnnotationValue($state.snapshot(selectedAnnotation), $state.snapshot(value));
+    }
+  }
 
   function onShapeSelection(type: string, frame: number, _points: Point[] = [], selectedId?: string) {
     let points = $state.snapshot(_points) as Point[];
@@ -703,17 +740,7 @@
         db={annotationsIDB}
         {annotationValue}
         {currentFrame}
-        onEditValue={(value: AnnotationValue, valueMode: string) => {
-          annotationValue = value;
-          mode = valueMode;
-          let requirementFullfilled = requiredFullfilled(annotationValue, context.config[valueMode]?.properties);
-          if (valueMode == EntryRoot && !selectedAnnotation && requirementFullfilled) {
-            addAnnotation({ type: valueMode }, $state.snapshot(value));
-          } else if (selectedAnnotation && requirementFullfilled) {
-            selectedAnnotation.value = value;
-            updateAnnotationValue($state.snapshot(selectedAnnotation), $state.snapshot(value));
-          }
-        }}
+        {onEditValue}
         onSelectAnnotation={selectAnnotation}
         {onDeleteAnnotation}
         {context}
@@ -750,17 +777,7 @@
           db={annotationsIDB}
           {annotationValue}
           {currentFrame}
-          onEditValue={(value: AnnotationValue, valueMode: string) => {
-            annotationValue = value;
-            mode = valueMode;
-            let requirementFullfilled = requiredFullfilled(annotationValue, context.config[valueMode]?.properties);
-            if (valueMode == EntryRoot && !selectedAnnotation && requirementFullfilled) {
-              addAnnotation({ type: valueMode }, $state.snapshot(value));
-            } else if (selectedAnnotation && requirementFullfilled) {
-              selectedAnnotation.value = value;
-              updateAnnotationValue($state.snapshot(selectedAnnotation), $state.snapshot(value));
-            }
-          }}
+          {onEditValue}
           onSelectAnnotation={selectAnnotation}
           {onDeleteAnnotation}
           {context}

@@ -10,3 +10,4 @@ export const uncategorizedAnnotations = writable<AnnotationObj<AnnotationShape, 
 );
 export const annotationsCategory = writable<Map<string, VideoAnnotation[]>>(new SvelteMap());
 export const bbrange = writable<{ min: number; max: number }>({ min: 0, max: 0 });
+export const entryRoot = writable<AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata> | undefined>();

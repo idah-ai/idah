@@ -163,7 +163,7 @@
         })}
         onclick={() => {
           onSelectAnnotation(annotation);
-          pos_offset = annotation.shape.start;
+          pos_offset = annotation.shape.start || 0;
           onSeekFrame(annotation.shape.start || 0);
         }}
       >
