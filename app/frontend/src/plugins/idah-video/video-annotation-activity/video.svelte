@@ -1,179 +1,183 @@
 <script lang="ts">
-	import { onDestroy, onMount } from "svelte";
-	import videojs from "video.js";
-    import 'video.js/dist/video-js.css'
-	import type Player from "video.js/dist/types/player";
+  import { onDestroy, onMount } from "svelte";
+  import videojs from "video.js";
+  import "video.js/dist/video-js.css";
+  import type Player from "video.js/dist/types/player";
 
-    const DEFAULT_FPS = 30
+  const DEFAULT_FPS = 30;
 
-    type Props = {
-        element?: HTMLDivElement,
-        onFramesChange: (current:number, frames:number) => void
-        onVolumeChange: (volume:number) => void,
-        onResize?: () => void
+  type Props = {
+    element?: HTMLDivElement;
+    onFramesChange: (current: number, frames: number, isPlaying: boolean) => void;
+    onVolumeChange: (volume: number, muted: boolean) => void;
+    onResize?: () => void;
+  };
+
+  let { element = $bindable(), onFramesChange, onResize, onVolumeChange }: Props = $props();
+
+  let player: Player | undefined = $state();
+  let options = {
+    controls: false,
+    preload: "auto",
+    loop: false,
+    muted: false,
+    autoplay: false,
+    fill: false,
+    responsive: false,
+    fluid: true,
+    disablePictureInPicture: true,
+    // sources: [
+    //     {src: `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files/410910ci5lpcck5qmh.mp4/master.m3u8`}
+    // ]
+    // poster:"",
+  };
+  let duration = $state(0);
+  let fps = $state(DEFAULT_FPS);
+  let frames = $derived(Math.round(duration * fps));
+  let volume = $state(0);
+  let muted = $state(false);
+  let mediaTime = $state(0);
+  let currentFrame = $derived(Math.round(mediaTime * fps) + 1);
+  let isPlaying = $state(false);
+  let raf: number | undefined = $state();
+
+  $effect(() => onFramesChange?.(currentFrame, frames, isPlaying));
+  $effect(() => onVolumeChange?.(volume, muted) && console.log({ volume_changed: { volume, muted } }));
+
+  $effect(() => console.debug({ currentFrame, frames, mediaTime, duration, isPlaying }));
+  export const getFrames = () => frames;
+
+  export function togglePlay() {
+    if (player?.paused()) player?.play();
+    else {
+      player?.pause();
     }
+  }
 
-    let {
-         element = $bindable(),
-         onFramesChange,
-         onResize
-    }: Props = $props()
+  export function source(src?: string) {
+    return player?.src(src);
+  }
+  function setCurrentTime(time) {
+    player?.currentTime(time + 1 / (fps * 1000));
+  }
 
-    let player: videojs = $state();
-    let options = {
-            controls: false,
-            preload: "auto",
-            loop: false,
-            muted: false,
-            autoplay: false,
-            fill: false,
-            responsive: false,
-            fluid: true,
-            disablePictureInPicture: true,
-            // sources: [
-            //     {src: `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files/410910ci5lpcck5qmh.mp4/master.m3u8`}
-            // ]
-            // poster:"",
-    }
-    let duration = $state(0)
-    let fps = $state(DEFAULT_FPS)
-    let frames = $derived(Math.ceil(duration * fps))
-    let volume = $state(0)
-    let mediaTime = $state(0)
-    let currentFrame = $derived(Math.round(mediaTime * fps))
+  export function nextFrame(count = 1) {
+    if (!fps) console.error({ fps, nextFrame });
 
-    $effect(() => {
-        onFramesChange?.(currentFrame, frames)
-    })
+    if (!player?.paused()) player?.pause();
+    setCurrentTime((currentFrame + count - 1) / fps);
+  }
 
-    export const getFrames = () => frames
+  export function previousFrame(count = 1) {
+    if (!fps) console.error({ fps, nextFrame });
 
-    export function togglePlay() {
-        if (player.paused())
-            player.play();
-        else {
-            player.pause();
-        }
-    }
+    if (!player?.paused()) player?.pause();
+    setCurrentTime((currentFrame - count - 1) / fps);
+  }
 
-    export function source(src?:any) {
-        return player.src(src);
-    }
+  export function toggleMute() {
+    player?.muted(!player?.muted());
+  }
 
-    export function nextFrame(count = 1) {
-        if (!fps) console.error({fps, nextFrame})
+  export function setVolume(percent: number) {
+    if (player?.muted()) player?.muted(false);
+    return player?.volume(percent / 100);
+  }
 
-        if (!player.paused())
-            player.pause()
-        player.currentTime((currentFrame + count) / fps)
-    }
+  export function seekToFrame(frame: number) {
+    if (!fps) return console.log({ seekToFrame, fps, frame });
 
-    export function previousFrame(count = 1) {
-        if (!fps) console.error({fps, nextFrame})
+    setCurrentTime((frame - 1) / fps);
+  }
 
-        if (!player.paused())
-            player.pause()
-        player.currentTime((currentFrame - count) / fps)
-    }
+  export function playbackRate(value: number) {
+    player?.playbackRate(value);
+  }
 
-    export function toggleMute() {
-        player.muted(!player.muted())
-    }
+  function setUpPlayer() {
+    player = videojs(element, options);
+    volume = (player.volume() || 0) * 100;
+    quality_check("onMount");
 
-    export function setVolume(percent: number) {
-        if (player.muted())
-            player.muted(false)
-        return player.volume(percent / 100)
-    }
+    player.on("durationchange", () => {
+      duration = player?.duration() || 0;
+    });
 
-    export function seekToFrame(frame: number) {
-        if (!fps) return console.log({seekToFrame, fps, frame})
+    // player?.qualityLevels().on('change', () => quality_check('qualityLevels on change'))
+    // player?.tech_.vhs.qualityLevels_.on('change', quality_check)
+    player.on("durationchange", () => quality_check("durationchange"));
+    player.on("loadstart", () => quality_check("loadstart"));
+    player.on("sourceset", () => quality_check("sourceset"));
+    player.on("loadeddata", () => quality_check("loadeddata"));
+    player.on("loadedmetadata", () => quality_check("loadedmetadata"));
+    player.on("resize", () => {
+      onResize?.();
+      // quick fix for now // I'll review it all post plugin
+      quality_check("resize");
+    });
+    player.on("timeupdate", () => {
+      mediaTime = player?.currentTime() || 0;
+    });
+    //    player.on('stalled', () => console.log('stalled'));
+    //    player.on('ready', () => console.log('ready'));
+    //    player.on('progress', () => console.log('progress'));
+    //    player.on('change', () => console.log('change'));
+    //    player.on('statechanged', () => console.log('statechanged'));
 
-        player.currentTime(frame / fps)
-    }
+    player.on("play", () => {
+      isPlaying = true;
+      raf = requestAnimationFrame(trackFrame);
+    });
 
-    export function isPlaying(){
-        return player ? !player.paused() : false
-    }
+    player.on("pause", () => {
+      isPlaying = false;
+      if (raf) {
+        cancelAnimationFrame(raf);
+        raf = undefined;
+      }
+      mediaTime = player.currentTime();
+    });
 
-    export function playbackRate(value:number){
-        player.playbackRate(value)
-    }
+    player.on("volumechange", () => {
+      volume = player.volume() * 100;
+      muted = player.muted();
+    });
 
-    onMount(() => {
-        player = videojs(element, options, () => {
-           volume = (player.volume() || 0) * 100
-            quality_check('onMount')
+    player.on("playing", () => {});
 
-            player.on('durationchange', () => {
-                duration = player.duration() || 0;
-            })
+    player.on("seeked", () => {
+      mediaTime = player?.currentTime() || 0;
+    });
 
+    // player.on('seeking', (e) => {
+    //     console.warn('seeking?')
+    // })
 
-            // player.qualityLevels().on('change', () => quality_check('qualityLevels on change'))
-            // player.tech_.vhs.qualityLevels_.on('change', quality_check)
-            player.on('durationchange', () => quality_check('durationchange'))
-            player.on('loadstart', () => quality_check('loadstart'))
-            player.on('sourceset', () => quality_check('sourceset'))
-            player.on('loadeddata', () => quality_check('loadeddata'))
-            player.on('loadedmetadata', () => quality_check('loadedmetadata'))
-            player.on('resize', () => {
-                onResize?.()
-                // quick fix for now // I'll review it all post plugin
-                quality_check('resize')
-            })
-            player.on('timeupdate', () => {
-                mediaTime = player.currentTime() || 0
-            });
-        //    player.on('stalled', () => console.log('stalled'));
-        //    player.on('ready', () => console.log('ready'));
-        //    player.on('progress', () => console.log('progress'));
-        //    player.on('change', () => console.log('change'));
-        //    player.on('statechanged', () => console.log('statechanged'));
+    player.on("suspend", () => {});
 
-            player.on('play', () => {
-                raf = requestAnimationFrame(trackFrame)
-            })
-            player.on('pause', () => {
-                if (raf) { cancelAnimationFrame(raf); raf = undefined }
+    console.debug({ setup_player: player, element, options });
+  }
 
-                seekToFrame(currentFrame) // fix seek to last known frame ?
-            })
+  console.debug({ init_video_element: element });
 
-            player.on('playing', () => {
-            })
+  onMount(setUpPlayer);
 
-            player.on('seeked', () => {
-                // console.log({seeked: player.currentTime(), mediaTime})
-                mediaTime = player.currentTime() || 0
-            })
+  function trackFrame() {
+    mediaTime = player?.currentTime() || 0;
+    raf = requestAnimationFrame(trackFrame);
+  }
 
-            // player.on('seeking', (e) => {
-            //     console.warn('seeking?')
-            // })
+  function quality_check(from?: string) {
+    let qualityLevel = player?.qualityLevels()[player?.qualityLevels().selectedIndex];
 
-            player.on('suspend', () => {
-            })
+    duration = player?.duration() || 0;
+    fps = qualityLevel?.frameRate || DEFAULT_FPS; // ....
+    console.debug({ quality_check_from: from, duration, fps });
+  }
 
-        })
-    })
-
-    let raf:number|undefined=$state()
-    function trackFrame() {
-        mediaTime = (player.currentTime() || 0) + 1/fps
-        raf = requestAnimationFrame(trackFrame)
-    }
-
-    function quality_check(from?: string) {
-        let qualityLevel = player.qualityLevels()[player.qualityLevels().selectedIndex]
-
-        duration = player.duration() || 0;
-        fps = qualityLevel?.frameRate || DEFAULT_FPS // ....
-    }
-
-    onDestroy(() => {
-        player?.dispose()
-    })
+  onDestroy(() => {
+    player?.dispose();
+  });
 </script>
 
-<video-js bind:this={element}></video-js>
+<video-js id="idah-video" bind:this={element} onloadeddata={(e) => console.log(e)}></video-js>

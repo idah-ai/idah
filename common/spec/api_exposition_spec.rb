@@ -271,6 +271,7 @@ RSpec.describe Api::Exposition do
       http_mock = double("http")
       allow(Net::HTTP).to receive(:new).and_return(http_mock)
       allow(http_mock).to receive(:use_ssl=).with(true)
+      allow(http_mock).to receive(:verify_mode=)
       allow(http_mock).to receive(:request).and_return(
         double("response", code: "200", body: '{"secure": true}')
       )
@@ -291,6 +292,7 @@ RSpec.describe Api::Exposition do
       http_mock = double("http")
       allow(Net::HTTP).to receive(:new).and_return(http_mock)
       allow(http_mock).to receive(:use_ssl=).with(false)
+      allow(http_mock).to receive(:verify_mode=)
       allow(http_mock).to receive(:request).and_return(
         double("response", code: "200", body: '{"secure": false}')
       )

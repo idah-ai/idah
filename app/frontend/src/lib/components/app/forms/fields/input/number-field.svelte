@@ -1,58 +1,121 @@
 <script lang="ts">
-  import FormFieldErrors from "@/components/app/forms/form-field-errors.svelte";
-  import FormFieldInfo from "@/components/app/forms/form-field-info.svelte";
-  import FormFieldLabel from "@/components/app/forms/form-field-label.svelte";
-  import FormField from "@/components/app/forms/form-field.svelte";
-  import Input from "@/components/ui/input/input.svelte";
+  import { InfoIcon } from "@lucide/svelte";
+
+  import Tooltips from "@/components/app/tooltips/tooltips.svelte";
+  import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
+  import {
+    InputGroup,
+    InputGroupAddon,
+    InputGroupButton,
+    InputGroupInput,
+    InputGroupText,
+  } from "@/components/ui/input-group";
 
   import { cn } from "@/utils";
 
-  import type { FormFieldBaseProps } from "@/components/app/forms/form-field.types";
-  import type { FormEventHandler, HTMLInputTypeAttribute } from "svelte/elements";
+  import type { NumberFieldBaseProps } from "@/components/app/forms/form-field.types";
 
   // Props
-  interface Props extends FormFieldBaseProps {
-    type?: HTMLInputTypeAttribute;
-    value: number | null | undefined;
-    oninput?: FormEventHandler<HTMLInputElement>;
+  interface Props extends NumberFieldBaseProps {
+    value: number | null;
   }
   let {
     value = $bindable(null),
-    oninput,
+    prefix = undefined,
+    prefixIcon: PrefixIcon = undefined,
+    suffix = undefined,
+    suffixIcon: SuffixIcon = undefined,
+    oninput = undefined,
+    onblur = undefined,
     name,
-    type = "number",
+    inputmode = "decimal",
+    min = undefined,
+    max = undefined,
+    step = 1,
     label,
     placeholder,
     disabled = false,
     required = false,
     readonly,
+    description,
     info,
     errors,
     class: className,
-    slotLabel,
-    slotInfo,
+    slotDescription,
     slotErrors,
   }: Props = $props();
 </script>
 
-<FormField id={name} class={cn("", className)}>
-  {#if slotLabel}
-    {@render slotLabel()}
-  {:else}
-    <FormFieldLabel {required}>{label}</FormFieldLabel>
-  {/if}
+<Field class={cn("", className)}>
+  <FieldLabel for={name} {required}>{label}</FieldLabel>
 
-  <Input {name} {type} {placeholder} {disabled} {readonly} {required} bind:value {oninput}></Input>
+  <InputGroup>
+    {#if PrefixIcon}
+      <InputGroupAddon align="inline-start">
+        <PrefixIcon />
+      </InputGroupAddon>
+    {/if}
 
-  {#if slotInfo}
-    {@render slotInfo()}
-  {:else}
-    <FormFieldInfo>{info}</FormFieldInfo>
+    {#if prefix}
+      <InputGroupAddon align="inline-start">
+        <InputGroupText>{prefix}</InputGroupText>
+      </InputGroupAddon>
+    {/if}
+
+    <InputGroupInput
+      id={name}
+      type="number"
+      {inputmode}
+      {placeholder}
+      {disabled}
+      {required}
+      {readonly}
+      {min}
+      {max}
+      {step}
+      {value}
+      {oninput}
+      {onblur}
+    />
+
+    {#if suffix}
+      <InputGroupAddon align="inline-end">
+        <InputGroupText>{suffix}</InputGroupText>
+      </InputGroupAddon>
+    {/if}
+
+    {#if SuffixIcon}
+      <InputGroupAddon align="inline-end">
+        <SuffixIcon />
+      </InputGroupAddon>
+    {/if}
+
+    {#if info}
+      <InputGroupAddon align="inline-end">
+        <Tooltips align="center">
+          {#snippet trigger()}
+            <InputGroupButton variant="ghost" size="icon-xs">
+              <InfoIcon />
+            </InputGroupButton>
+          {/snippet}
+
+          {#snippet content()}
+            {info}
+          {/snippet}
+        </Tooltips>
+      </InputGroupAddon>
+    {/if}
+  </InputGroup>
+
+  {#if slotDescription}
+    {@render slotDescription()}
+  {:else if description}
+    <FieldDescription>{description}</FieldDescription>
   {/if}
 
   {#if slotErrors}
     {@render slotErrors()}
-  {:else}
-    <FormFieldErrors {errors}></FormFieldErrors>
+  {:else if errors}
+    <FieldError>{errors}</FieldError>
   {/if}
-</FormField>
+</Field>

@@ -2,10 +2,10 @@
   import { toast } from "svelte-sonner";
 
   import SingleSelectField from "@/components/app/forms/fields/select/single/single-select-field.svelte";
-  import Form from "@/components/app/forms/form.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import DialogTitle from "@/components/ui/dialog/dialog-title.svelte";
+  import { FieldGroup, FieldSet } from "@/components/ui/field";
 
   import { entryPriorities } from "@/data/model/dataset/entries/constants";
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
@@ -71,16 +71,18 @@
     <DialogTitle>{title}</DialogTitle>
   {/snippet}
 
-  <Form>
-    <SingleSelectField
-      name="{resource}/priority"
-      label="Priority"
-      placeholder="Please select priority"
-      choices={entryPriorities}
-      required
-      bind:value={selectedPriority}
-    ></SingleSelectField>
-  </Form>
+  <FieldSet class="p-1">
+    <FieldGroup>
+      <SingleSelectField
+        name="{resource}/priority"
+        label="Priority"
+        placeholder="Please select priority"
+        choices={entryPriorities}
+        required
+        bind:value={selectedPriority}
+      ></SingleSelectField>
+    </FieldGroup>
+  </FieldSet>
 
   {#snippet confirm()}
     <Button disabled={submitting || selectedPriority === null} onclick={submit}>Set Priority</Button>

@@ -11,7 +11,7 @@ RSpec.describe Dataset::Service, database: true do
   let(:project_repo) { Project::Repository.new(auth_context) }
 
   let!(:project_id) do
-    project_repo.create(name: "Test Project", description: "A test project", created_by_id: 1)
+    project_repo.create(name: "Test Project", description: "A test project", created_by_email: "user@example.com")
   end
 
   let(:attributes) do
@@ -22,6 +22,37 @@ RSpec.describe Dataset::Service, database: true do
       workflow_configuration: {},
       project_id: project_id
     }
+  end
+
+  describe "#index" do
+    it "returns all datasets" do
+      dataset1_id = repo.create(attributes)
+      dataset2_id = repo.create(attributes.merge(labels: ["bird", "fish"]))
+
+      result = subject.index
+
+      expect(result.count).to eq(2)
+      expect(result.map(&:id)).to include(dataset1_id, dataset2_id)
+    end
+
+    it "returns datasets with pagination" do
+      repo.create(attributes)
+      repo.create(attributes.merge(labels: ["bird", "fish"]))
+
+      result = subject.index({}, page: 1, items_per_page: 1)
+
+      expect(result.count).to eq(1)
+    end
+
+    it "returns datasets with filter" do
+      dataset1_id = repo.create(attributes)
+      repo.create(attributes.merge(labels: ["bird", "fish"]))
+
+      result = subject.index({ id: dataset1_id })
+
+      expect(result.count).to eq(1)
+      expect(result.first.id).to eq(dataset1_id)
+    end
   end
 
   describe "#create" do

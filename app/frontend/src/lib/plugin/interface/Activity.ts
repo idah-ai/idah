@@ -1,5 +1,8 @@
 // duplicate from yacine's
 
+import type { Command } from "@/command/Command";
+import type { AnnotationHeaderBarBaseTool } from "../layout/header/AnnotationHeaderBar.types";
+
 interface IUser {
   id: number;
   email: string;
@@ -75,6 +78,15 @@ export type LabelPropertyOption = {
   id: string;
   label: string;
 };
+export interface FieldFormat {
+  // placeholder?: string;
+  // readonly?: boolean;
+  minimum: number | null;
+  maximum: number | null;
+  step: number | null;
+  info: string | null;
+  options: Array<LabelPropertyOption>;
+}
 
 export interface FieldBase {
   id: string;
@@ -82,15 +94,7 @@ export interface FieldBase {
   label: string;
   description: string;
   required: boolean;
-  format: {
-    // placeholder?: string;
-    // readonly?: boolean;
-    minimum: number | null;
-    maximum: number | null;
-    step: number | null;
-    info: string | null;
-    options: Array<LabelPropertyOption>;
-  };
+  format: FieldFormat;
   visible_if?: {
     [key: string]: Array<string | number | boolean>;
   };
@@ -107,6 +111,22 @@ export interface IConfig {
   categories: Array<ICategoryField>;
   properties: Array<PropertyField>;
   taggings: Array<TagField>;
+}
+export interface ICommands {
+  on(name: string, commandBuilder: (props?: object) => Command): void;
+  run(name: string, props?: object): void;
+  undo(times?: number): void;
+  redo(times?: number): void;
+}
+
+export interface HeaderBarModeTool extends AnnotationHeaderBarBaseTool {
+  type: string;
+}
+export interface ITools {
+  setTools: (tools: HeaderBarModeTool[]) => void;
+  setTool: (tool: string) => void;
+  onToolsChange: (cb: (tools: HeaderBarModeTool[]) => void) => void;
+  onToolChange: (cb: (tool: string) => void) => void;
 }
 
 export interface IActivityContext {
@@ -139,6 +159,10 @@ export interface IActivityContext {
 
   // Driver for fetching and updating notes
   get notes(): INoteDriver;
+
+  get commands(): ICommands;
+
+  get tools(): ITools;
 
   // Return to previous step of the workflow
   back(): void;

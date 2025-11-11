@@ -2,7 +2,7 @@
   import { page } from "$app/state";
 
   import SingleSelectDatasourceField from "@/components/app/forms/fields/select/single/single-select-datasource-field.svelte";
-  import Form from "@/components/app/forms/form.svelte";
+  import { FieldGroup, FieldSet } from "@/components/ui/field";
 
   import { EntryRecord } from "@/data/model/dataset/entries/record";
   import { projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
@@ -29,22 +29,24 @@
   });
 </script>
 
-<Form>
-  <SingleSelectDatasourceField
-    name="{resource}/assigned_to_id"
-    label="Member"
-    placeholder="Select a member"
-    displayKey="email"
-    dataSource={projectMembersBackendDataSource}
-    listOptions={{
-      filters: {
-        project_id: projectId,
-      },
-    }}
-    searchKeyWithOperation="email__match"
-    value={assignedToId}
-    onValueChange={(value: string | number) => {
-      assignedToId = value as number;
-    }}
-  ></SingleSelectDatasourceField>
-</Form>
+<FieldSet class="p-1">
+  <FieldGroup>
+    <SingleSelectDatasourceField
+      name="{resource}/assigned_to_id"
+      label="Member"
+      placeholder="Select a member"
+      displayKey="email"
+      dataSource={projectMembersBackendDataSource}
+      listOptions={{
+        filters: {
+          project_id: projectId,
+        },
+      }}
+      searchKeyWithOperation="email__match"
+      value={assignedToId}
+      onValueChange={(value: string | number) => {
+        assignedToId = value as number;
+      }}
+    ></SingleSelectDatasourceField>
+  </FieldGroup>
+</FieldSet>

@@ -1,3 +1,5 @@
+em:
+  adapter: redis
 logging:
   level: <%= ENV.fetch("LOG_LEVEL", "debug") %>
 plugins:

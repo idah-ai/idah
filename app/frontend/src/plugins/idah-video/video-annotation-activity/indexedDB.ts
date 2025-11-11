@@ -1,7 +1,7 @@
 import { type VideoAnnotation, type Point, X, Y, type VideoFrameSelection } from "./VideoAnnotationContext";
 
 //test
-let s = {
+const s = {
   annotations: [
     { index: "start", path: "shape.start", opts: { unique: false } },
     { index: "end", path: "shape.end", opts: { unique: false } },
@@ -60,6 +60,7 @@ export class AnnotationsIndexedDB {
     const kstore = transaction.objectStore("keyframes");
 
     annotations.forEach((annotation) => {
+      console.debug({ IDBtype: "put", annotation });
       astore.put(
         {
           ...annotation,
@@ -72,6 +73,7 @@ export class AnnotationsIndexedDB {
       );
 
       annotation.shape.frames.forEach((k) => {
+        console.debug({ IDBtype: "put", keyframe: k });
         kstore.put({ annotation: annotation.metadata.id, ...k }, [annotation.metadata.id, k.frame]);
       });
     });
@@ -105,7 +107,7 @@ export class AnnotationsIndexedDB {
     });
   }
 
-  get(store_name: string, key: any): Promise<VideoAnnotation> {
+  get(store_name: string, key: string): Promise<VideoAnnotation> {
     return new Promise<VideoAnnotation>((resolve, reject) => {
       const transaction = this.db.transaction(store_name, "readonly");
       const store = transaction.objectStore(store_name);
@@ -155,12 +157,12 @@ export class AnnotationsIndexedDB {
 
     return new Promise<void>((resolve, reject) => {
       request.onerror = (r) => reject(r);
-      request.onsuccess = () => resolve();
+      request.onsuccess = (r) => resolve(console.debug(r));
     });
   }
 
   getBoundedAnnotations(start: number, end: number) {
-    return new Promise<VideoAnnotation[]>(async (resolve, reject) => {
+    return new Promise<VideoAnnotation[]>((resolve, reject) => {
       const transaction = this.db.transaction("annotations", "readonly");
       const store = transaction.objectStore("annotations").index("end");
       const bound = IDBKeyRange.lowerBound(start);
