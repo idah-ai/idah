@@ -36,8 +36,8 @@ def generate_token
     password: credentials.fetch(:password)
   )
 
-  token = output.meta.dig(:token)
-  @service_token_expires_at = JSON.parse(Base64.decode64(token.split(".")[1]))["exp"]
+  token = output.meta&.dig(:token)
+  @service_token_expires_at = JSON.parse(Base64.decode64(token.split(".")[1]))["exp"] if token
   @service_token = token
 
   token
