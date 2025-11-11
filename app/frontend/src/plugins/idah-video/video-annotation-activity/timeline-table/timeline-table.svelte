@@ -204,6 +204,8 @@
           {currentFrame}
           {range}
           {scale}
+          {zoom}
+          {totalFrames}
           onCellHover={(column) => (hoveredColumn = column)}
           {hoveredColumn}
           {onSeekFrame}
