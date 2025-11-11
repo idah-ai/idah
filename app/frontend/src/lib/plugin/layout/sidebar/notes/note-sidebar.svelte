@@ -75,7 +75,14 @@
       const [_noteFeed, noteFeedIdFromURL, _noteComment, noteCommentIdFromURL] = page.url.hash.split("/");
       if (noteFeedIdFromURL) {
         const noteFeedRes = await noteFeedsBackendDataSource.get(noteFeedIdFromURL);
-        selectedNoteFeed = noteFeedRes.data;
+
+        /**
+         * Only go to detail view if note feed is general note
+         */
+        if (noteFeedRes.data.anchor_type === "entry" && !noteFeedRes.data.annotation_id) {
+          selectedNoteFeed = noteFeedRes.data;
+        }
+
         open = true;
       }
 
