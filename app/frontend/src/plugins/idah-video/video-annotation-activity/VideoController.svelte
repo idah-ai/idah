@@ -12,14 +12,12 @@
   import Input from "@/components/ui/input/input.svelte";
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
   import Slider from "@/components/ui/slider/slider.svelte";
-  import Text from "@/components/ui/text/Text.svelte";
   import {
     ChevronLeftIcon,
     ChevronRightIcon,
     FastForwardIcon,
     PauseIcon,
     PlayIcon,
-    RulerIcon,
     Volume2Icon,
     VolumeXIcon,
     ZoomInIcon,

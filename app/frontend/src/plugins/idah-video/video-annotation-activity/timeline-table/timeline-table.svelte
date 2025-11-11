@@ -66,6 +66,9 @@
 
   let pos_offset: number = $state(0);
   let range: [number, number] = $derived([pos_offset, pos_offset + range_span]);
+  $effect(() => {
+    console.log({ zoom, scale, sum: scale * zoom, range, range_span, pos_offset });
+  });
   let wheelthrottling = $state(false);
   let hoveredColumn: number | undefined = $state();
 
@@ -295,7 +298,7 @@
 
             {#if isSelected}
               <button
-                class="border-border text-primary bg-background absolute top-0 z-20 cursor-col-resize border-b border-l"
+                class="border-border text-primary bg-background absolute top-0 z-0 cursor-col-resize border-b border-l"
                 style:width="{width}%"
                 style:padding-left="0.125rem"
                 style:left="{startLeftPosition}%"
@@ -305,13 +308,18 @@
               </button>
             {:else if isHovered}
               <button
-                class="border-border text-primary bg-primary/20 absolute top-0 z-10 cursor-col-resize border-l"
+                class="border-border text-primary bg-primary/20 absolute top-0 z-20 cursor-col-resize border-l"
                 style:width="{width}%"
                 style:padding-left="0.125rem"
                 style:left="{startLeftPosition}%"
                 onclick={() => seekToFrame(thisFrame)}
               >
-                {thisFrame}
+                <span
+                  class="pointer-events-none absolute -top-2 left-1/2 -translate-x-1/2 transform whitespace-nowrap rounded-md bg-black px-3 py-1 text-sm font-medium text-white"
+                >
+                  {thisFrame}
+                  <span class="absolute left-1/2 top-full -mt-1 h-2 w-2 -translate-x-1/2 rotate-45 bg-black"></span>
+                </span>
               </button>
             {:else if isDefault}
               <button
