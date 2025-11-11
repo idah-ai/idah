@@ -1,5 +1,5 @@
 org_owner:
-  mask: "8.0.0"
+  mask: "2.0.0"
   description: |
     This role is assigned to organization owners
     who have access to all projects within their organization.

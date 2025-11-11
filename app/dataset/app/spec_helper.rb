@@ -61,7 +61,7 @@ RSpec.configure do |config|
 
   Verse::Spec.add_user(:system, "system")
   Verse::Spec.add_user(:admin, "admin", user_data: { id: 1 })
-  Verse::Spec.add_user(:org_owner, "organization_owner", scopes: { org: [1, 2] }, user_data: { id: 2 })
+  Verse::Spec.add_user(:org_owner, "org_owner", scopes: { org: [1, 2] }, user_data: { id: 2 })
   Verse::Spec.add_user(:project_owner, "user", user_data: { id: 3 })
   Verse::Spec.add_user(:annotator, "user", user_data: { id: 4 })
   Verse::Spec.add_user(:reviewer, "user", user_data: { id: 5 })

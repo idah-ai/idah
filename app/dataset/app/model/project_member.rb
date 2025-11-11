@@ -29,10 +29,45 @@ module ProjectMember
     def scoped(action)
       auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }
-        scope.as_user? do
-          ScopedQuery.project_members(table, action, auth_context.metadata[:id])
-        end
+        scope.as_user? { user_project_scoped_query(action) }
       end
+    end
+
+    # Actions                      | Roles
+    # read, create, update, delete | project_owner
+    #
+    # Info:
+    # Only allowed for project_owner(member), org_owner and admin roles
+    query
+    def user_project_scoped_query(action)
+      case action
+      when :read, :create, :update, :delete
+        scoped_fragment = <<-SQL
+          EXISTS (
+            SELECT 1
+            FROM project_members pm
+            WHERE pm.account_id = :account_id
+              AND pm.project_id = project_members.project_id
+              AND pm.role IN :roles
+          )
+        SQL
+
+        table.where(
+          Sequel.lit(
+            scoped_fragment,
+            account_id: auth_context.metadata[:id],
+            roles: %w[project_owner],
+          )
+        )
+      else
+        raise Verse::Error::Unauthorized,
+              "Permission denied for \"#{action}\" action on #{self.class.resource}"
+      end
+    end
+
+    query
+    def user_has_project_access?(action, project_id)
+      user_project_scoped_query(action).where(project_id:).limit(1).any?
     end
   end
 end
