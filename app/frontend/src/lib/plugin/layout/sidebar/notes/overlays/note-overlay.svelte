@@ -1,6 +1,9 @@
 <script lang="ts">
+  import { page } from "$app/state";
   import { XIcon } from "@lucide/svelte";
+  import { onMount } from "svelte";
   import { toast } from "svelte-sonner";
+  import { SvelteURL } from "svelte/reactivity";
 
   import Button from "@/components/ui/button/button.svelte";
   import { Dialog, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -48,33 +51,59 @@
   let contentMd: string = $state("");
 
   let selectedNoteFeed: NoteFeedRecord | null = $state(null);
-  // let selectedNoteCommentId: string | null = $state(null);
+  let selectedNoteCommentId: string | null = $state(null);
   let noteComments: NoteCommentRecord[] = $state([]);
 
+  onMount(() => {
+    const [_noteFeed, noteFeedId, _noteComment, noteCommentId] = page.url.hash.split("/");
+    setTimeout(async () => {
+      if (noteFeedId) {
+        const noteFeed = await loadNoteFeed(noteFeedId);
+        context.notes.requireNoteFeedPosition(parseNoteFeedRecordToINoteFeed(noteFeed));
+      }
+
+      if (noteCommentId) {
+        selectedNoteCommentId = noteCommentId;
+      }
+    }, 200);
+  });
+
   $effect(() => {
-    context.notes.onNoteSelected(async (noteFeedId: string | null, _noteCommentId?: string) => {
+    /**
+     * Handle when a note feed is selected from sidebar
+     */
+    context.notes.onNoteSelected(async (noteFeedId: string | null, noteCommentId?: string) => {
       if (!noteFeedId) {
         selectedNoteFeed = null;
-        // selectedNoteCommentId = null;
+        selectedNoteCommentId = null;
         return;
       }
 
       const noteFeed = await loadNoteFeed(noteFeedId);
-      // selectedNoteCommentId = noteCommentId || null;
+      selectedNoteCommentId = noteCommentId || null;
       context.notes.requireNoteFeedPosition(parseNoteFeedRecordToINoteFeed(noteFeed));
     });
 
+    /**
+     * Handle when a click is made to show new note feed popup
+     */
     context.notes.onNewNoteFeedOpenChange((data) => {
       showNewNoteFeedPopup = true;
       newNoteFeed.anchor_type = data.anchor_type;
       newNoteFeed.position = data.position || {};
       newNoteFeed.annotation_id = data.annotation_id || null;
-      console.log(newNoteFeed.annotation_id);
     });
   });
 
   function closeSelectedNoteFeedPopup() {
     selectedNoteFeed = null;
+    selectedNoteCommentId = null;
+
+    // Remove hash from url if exists
+    if (!page.url.hash) return;
+    const url = new SvelteURL(window.location.href);
+    url.hash = "";
+    window.history.replaceState({}, document.title, url.toString());
   }
 
   async function loadNoteFeed(id: string) {
@@ -235,10 +264,7 @@
         style:transform="translate({sidebarLeftWidth + zoomOffsetX}px, {zoomOffsetY}px)"
       />
 
-      <Dialog
-        open={!!selectedNoteFeed}
-        onOpenChangeComplete={(open) => (selectedNoteFeed = open ? selectedNoteFeed : null)}
-      >
+      <Dialog open={!!selectedNoteFeed} onOpenChangeComplete={closeSelectedNoteFeedPopup}>
         <NoteDialogContent
           class="w-80 gap-1 px-0 py-2"
           style="
@@ -264,13 +290,16 @@
 
           {#key $refetches.noteFeeds.list}
             <ScrollArea class="max-h-64">
-              <div class="flex flex-col gap-2">
+              <div class="flex flex-col">
                 <NoteFeedCard noteFeedRecord={selectedNoteFeed} editable {onNoteFeedUpdated} />
 
                 {#key $refetches.noteComments.list}
                   {#await loadNoteComments(selectedNoteFeed.id) then}
                     {#each noteComments as noteComment (noteComment.id)}
-                      <NoteCommentCard noteCommentRecord={noteComment} />
+                      <NoteCommentCard
+                        noteCommentRecord={noteComment}
+                        highlighted={selectedNoteCommentId === noteComment.id}
+                      />
                     {/each}
                   {/await}
                 {/key}

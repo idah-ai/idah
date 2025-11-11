@@ -13,6 +13,7 @@
   // Props
   interface Props {
     noteFeedId: string;
+    noteCommentId?: string;
     content_md: string;
     edited_at?: Date | string | null;
     created_by_email: string;
@@ -32,6 +33,7 @@
   }
   let {
     noteFeedId,
+    noteCommentId,
     content_md,
     edited_at,
     created_by_email,
@@ -100,7 +102,14 @@
       <div class="ml-auto flex items-center">
         {@render headerActions?.()}
 
-        <NoteDropdownMenus {noteFeedId} {editable} {deletable} onSwitchToEditMode={switchToEditMode} {onDelete} />
+        <NoteDropdownMenus
+          {noteFeedId}
+          {noteCommentId}
+          {editable}
+          {deletable}
+          onSwitchToEditMode={switchToEditMode}
+          {onDelete}
+        />
       </div>
     </div>
   </div>

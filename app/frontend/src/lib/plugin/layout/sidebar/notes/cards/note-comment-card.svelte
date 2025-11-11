@@ -9,8 +9,9 @@
   // Props
   interface Props {
     noteCommentRecord: NoteCommentRecord;
+    highlighted?: boolean;
   }
-  let { noteCommentRecord }: Props = $props();
+  let { noteCommentRecord, highlighted = false }: Props = $props();
 
   // Variables
   let { id, content_md, created_by_email, created_at, edited_at, note_feed_id } = $derived(noteCommentRecord);
@@ -36,12 +37,14 @@
 
 <NoteCard
   noteFeedId={note_feed_id}
+  noteCommentId={id}
   {content_md}
   {created_by_email}
   {created_at}
   {edited_at}
   editable
   deletable
+  {highlighted}
   onUpdateContentMd={updateNoteCommentMd}
   onDelete={deleteNoteComment}
 ></NoteCard>

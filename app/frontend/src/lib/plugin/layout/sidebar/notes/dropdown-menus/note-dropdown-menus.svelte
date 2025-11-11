@@ -1,5 +1,7 @@
 <script lang="ts">
   import { EllipsisVerticalIcon, LinkIcon, PenSquareIcon, Trash2Icon } from "@lucide/svelte";
+  import { toast } from "svelte-sonner";
+  import { SvelteURL } from "svelte/reactivity";
 
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
@@ -40,7 +42,7 @@
           icon: LinkIcon,
           action: () => {
             // Expect url like this #feed/[id](/comments/[id])?
-            const url = new URL(window.location.href);
+            const url = new SvelteURL(window.location.href);
 
             url.hash = `#feed/${noteFeedId}`;
             if (noteCommentId) {
@@ -48,6 +50,8 @@
             }
 
             navigator.clipboard.writeText(url.toString());
+
+            toast.info("Link copied to clipboard.");
           },
         },
         {
