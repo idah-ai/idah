@@ -21,6 +21,8 @@
   // Variables
   let { id, description, type, format, visibility } = $derived(property);
 
+  let visibilityError: string | undefined = $state();
+
   import * as parser from "@build/parser.js";
   import { ASTNodeToFunctionString } from "../../../../../../plugins/idah-video/test_ast_resolution";
 </script>
@@ -180,11 +182,15 @@
       oninput={(e) => {
         try {
           const visibility = parser.parse(e.currentTarget.value);
+          visibilityError = undefined;
           onSetValue({ visibility });
         } catch (error) {
-          console.error(error);
+          visibilityError = error.message;
         }
       }}
     />
+    {#if visibilityError}
+      <p class="text-red-500">{visibilityError}</p>
+    {/if}
   </div>
 </div>
