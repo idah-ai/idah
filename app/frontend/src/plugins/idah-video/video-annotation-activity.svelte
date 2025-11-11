@@ -635,9 +635,8 @@
     mode = valueMode;
     let requirementFullfilled = requiredFullfilled(annotationValue, context.config[valueMode]?.properties);
     if (valueMode == EntryRoot && !selectedAnnotation) {
-      $entryRoot
-        ? selectAnnotation($entryRoot)
-        : requirementFullfilled && addAnnotation({ type: valueMode }, $state.snapshot(value));
+      if ($entryRoot) selectAnnotation($entryRoot);
+      else if (requirementFullfilled) addAnnotation({ type: valueMode }, $state.snapshot(value));
     } else if (selectedAnnotation && requirementFullfilled) {
       selectedAnnotation.value = value;
       updateAnnotationValue($state.snapshot(selectedAnnotation), $state.snapshot(value));

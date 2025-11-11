@@ -183,7 +183,7 @@
         try {
           const visibility = parser.parse(e.currentTarget.value);
           visibilityError = undefined;
-          visibility.length ? onSetValue({ visibility }) : onSetValue({ visibility: true });
+          onSetValue({ visibility: visibility.length ? visibility : true });
         } catch (error) {
           visibilityError = error.message;
         }

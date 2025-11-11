@@ -15,7 +15,7 @@
   import type { AnnotationsIndexedDB } from "./indexedDB";
   import type { VideoAnnotation } from "./VideoAnnotationContext";
   import type { IConfigValue } from "@/plugin/interface/Activity";
-  import { DefaultMode, EntryRoot } from "../type";
+  import { EntryRoot } from "../type";
 
   // Props
   let {
