@@ -275,19 +275,19 @@
     if (delta || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) e.preventDefault();
   }}
 >
-  <TableHeader class="bg-background sticky z-10" style="inset-block-start: 0">
+  <TableHeader class="bg-background sticky z-50" style="inset-block-start: 0">
     <TableRow>
       <!-- HEADER::ANNOTATIONS -->
-      <TableHead class="h-5 w-80"></TableHead>
+      <TableHead class="h-6 w-80"></TableHead>
 
       <!-- HEADER::TIMELINES -->
-      <TableHead class="h-5 p-0">
+      <TableHead class="h-6 p-0">
         <div
           role="scrollbar"
           aria-controls="timeline-table"
           aria-valuenow={pos_offset}
           tabindex="0"
-          class="text-muted-foreground relative h-5"
+          class="text-muted-foreground relative h-6"
           onmousedowncapture={() => {
             isResizing = true;
           }}
@@ -308,7 +308,7 @@
 
             {#if isSelected}
               <button
-                class="border-border text-primary bg-background absolute top-0 z-0 cursor-col-resize border-b border-l"
+                class="border-border text-primary bg-background absolute top-0 z-0 h-full cursor-col-resize border-l"
                 style:width="{width}%"
                 style:padding-left="0.125rem"
                 style:left="{startLeftPosition}%"
@@ -325,10 +325,10 @@
                 onclick={() => seekToFrame(thisFrame)}
               >
                 <span
-                  class="pointer-events-none absolute -top-3.5 left-1/2 -translate-x-1/2 transform whitespace-nowrap rounded-md bg-black px-3 py-1 text-sm font-medium text-white"
+                  class="pointer-events-none absolute -top-1 left-1/2 -translate-x-1/2 transform whitespace-nowrap rounded-md bg-black px-2 py-1 text-xs font-medium text-white"
                 >
                   {thisFrame}
-                  <span class="absolute left-1/2 top-full -mt-1 h-2 w-2 -translate-x-1/2 rotate-45 bg-black"></span>
+                  <span class="absolute left-1/2 top-full -mt-1 h-1.5 w-1.5 -translate-x-1/2 rotate-45 bg-black"></span>
                 </span>
               </button>
             {:else if isDefault}
