@@ -3,6 +3,7 @@
 module Dataset
   class Service < Verse::Service::Base
     use datasets: Dataset::Repository
+    use_system project_members: ProjectMember::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       datasets.index(
@@ -32,11 +33,15 @@ module Dataset
               "project is required to create a dataset"
       end
 
-      id = datasets.create(
-        record.attributes
-      )
+      datasets.transaction do
+        id = datasets.create(attr)
+        
+        dataset = datasets.find(id, scope: datasets.scoped(:create))
 
-      datasets.find!(id)
+        raise Errors::Service::UnauthorizedProjectAccess unless dataset
+
+        dataset
+      end
     end
 
     def update(record)
@@ -45,7 +50,7 @@ module Dataset
     end
 
     def delete(id)
-      datasets.delete(id)
+      datasets.delete!(id)
     end
   end
 end

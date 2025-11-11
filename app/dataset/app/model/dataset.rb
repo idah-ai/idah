@@ -37,5 +37,14 @@ module Dataset
     encoder :labeling_configuration, Verse::Sequel::JsonEncoder
     encoder :workflow_configuration, Verse::Sequel::JsonEncoder
     encoder :labels, Verse::Sequel::PgArrayEncoder
+
+    def scoped(action)
+      auth_context.can!(action, self.class.resource) do |scope|
+        scope.all? { table }
+        scope.as_user? do
+          ScopedQuery.datasets(table, action, auth_context.metadata[:id])
+        end
+      end
+    end
   end
 end

@@ -25,5 +25,14 @@ module ProjectMember
   class Repository < Verse::Sequel::Repository
     self.table = "project_members"
     self.resource = Resource::Dataset::ProjectMembers
+
+    def scoped(action)
+      auth_context.can!(action, self.class.resource) do |scope|
+        scope.all? { table }
+        scope.as_user? do
+          ScopedQuery.project_members(table, action, auth_context.metadata[:id])
+        end
+      end
+    end
   end
 end
