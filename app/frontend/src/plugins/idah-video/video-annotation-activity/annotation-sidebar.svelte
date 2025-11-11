@@ -14,6 +14,8 @@
   import AnnotationTabs from "./tabs/AnnotationTabs.svelte";
   import type { VideoAnnotation } from "./VideoAnnotationContext";
   import { SvelteMap } from "svelte/reactivity";
+  import { EntryRoot } from "../type";
+  import { entryRoot } from "./idb_store.svelte";
 
   let {
     annotationValue,
@@ -97,7 +99,7 @@
 
   <SidebarContent>
     {#each filteredTools as [tool, categories] (tool)}
-      {#if !filteredTools.has(mode) || (filteredTools.has(mode) && tool == mode)}
+      {#if !filteredTools.has(mode) || (filteredTools.has(mode) && tool == mode) || mode == EntryRoot}
         <SidebarGroup>
           <SidebarGroupContent>
             <CategoriesSelection
@@ -106,11 +108,13 @@
               type={tool}
               {currentFrame}
               {categories}
-              selected_category={annotationValue.category}
+              selected_category={tool == EntryRoot && !(tool == mode)
+                ? $entryRoot?.value.category
+                : annotationValue.category}
               {selected_id}
               {onSelectAnnotation}
               {onDeleteAnnotation}
-              {annotationValue}
+              annotationValue={tool == EntryRoot && !(tool == mode) ? $entryRoot?.value || {} : annotationValue}
               onEditValue={(v) => onEditValue(v, tool)}
               onSelect={(s) => categorySelection(tool, s)}
             />
