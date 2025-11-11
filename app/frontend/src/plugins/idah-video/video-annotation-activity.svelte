@@ -578,7 +578,11 @@
   );
 
   function addAnnotation(shape: AnnotationShape, value: AnnotationValue = {}) {
-    context.commands.run("annotation.add", { shape, value });
+    context.commands.run("annotation.add", {
+      // filter out indexed shape index noise for now
+      shape: Object.fromEntries(Object.entries(shape).filter(([k, _]) => ["type", "frames"].includes(k))),
+      value,
+    });
   }
 
   async function removeAnnotation(id: string) {
