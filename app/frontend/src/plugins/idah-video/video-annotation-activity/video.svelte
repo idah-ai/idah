@@ -38,12 +38,8 @@
   let raf: number | undefined = $state();
 
   $effect(() => onFramesChange?.(currentFrame, frames, isPlaying));
-  $effect(() => {
-    console.debug({ volume, muted });
-    onVolumeChange?.(volume, muted);
-  });
+  $effect(() => onVolumeChange?.(volume, muted));
 
-  $effect(() => console.debug({ currentFrame, frames, mediaTime, duration, isPlaying }));
   export const getFrames = () => frames;
 
   export function togglePlay() {
@@ -73,7 +69,7 @@
 
   export function seekToFrame(frame: number) {
     if (!player?.paused()) player?.pause();
-    if (!fps) return console.log({ seekToFrame, fps, frame });
+    if (!fps) return console.error({ seekToFrame, fps, frame });
 
     // + 0.001 to account for browser rounding difference
     player?.currentTime((frame - 1 + 0.001) / fps);
@@ -94,8 +90,6 @@
       duration = player?.duration() || 0;
     });
 
-    // player?.qualityLevels().on('change', () => quality_check('qualityLevels on change'))
-    // player?.tech_.vhs.qualityLevels_.on('change', quality_check)
     player.on("durationchange", () => quality_check("durationchange"));
     player.on("loadstart", () => quality_check("loadstart"));
     player.on("sourceset", () => quality_check("sourceset"));
@@ -109,11 +103,6 @@
     player.on("timeupdate", () => {
       mediaTime = player?.currentTime() || 0;
     });
-    //    player.on('stalled', () => console.log('stalled'));
-    //    player.on('ready', () => console.log('ready'));
-    //    player.on('progress', () => console.log('progress'));
-    //    player.on('change', () => console.log('change'));
-    //    player.on('statechanged', () => console.log('statechanged'));
 
     player.on("play", () => {
       isPlaying = true;
@@ -140,13 +129,7 @@
       mediaTime = player?.currentTime() || 0;
     });
 
-    // player.on('seeking', (e) => {
-    //     console.warn('seeking?')
-    // })
-
     player.on("suspend", () => {});
-
-    console.debug({ setup_player: player, element, options });
   }
 
   onMount(setUpPlayer);
