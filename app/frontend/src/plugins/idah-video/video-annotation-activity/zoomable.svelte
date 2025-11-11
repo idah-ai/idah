@@ -49,6 +49,10 @@
     console.log("zoomout");
   }
 
+  export function setZoom(newZoom: number) {
+    zoom = { ...zoom, current: newZoom };
+  }
+
   export function setOffset(newOffset: Point) {
     offset = newOffset;
   }

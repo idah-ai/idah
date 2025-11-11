@@ -222,7 +222,9 @@
        * 3. Make the viewport at the same position from reviewer fow now
        * and will centered on the note feed later
        */
+      const noteFeedZoomScale = (noteFeed.position.zoom_info as ZoomInfo)?.scale || 1;
       const noteFeedOffset = (noteFeed.position.zoom_info as ZoomInfo)?.offset || [height / 2, -(width / 2)];
+      zoomableElement.setZoom(noteFeedZoomScale);
       zoomableElement.setOffset(noteFeedOffset);
 
       // 4. Return the absolute position for the top left corner of the note feed.
