@@ -126,7 +126,7 @@
       return;
     }
 
-    await noteFeedsBackendDataSource.create({
+    const createdNoteFeedRes = await noteFeedsBackendDataSource.create({
       attributes: {
         entry_id: context.id,
         content_md: contentMd,
@@ -144,8 +144,11 @@
         },
       },
     });
+
     toast.success("Note added successfully.");
     $refetches.noteFeeds.list = new Date();
+
+    context.notes.gotoFeed(createdNoteFeedRes.data.id);
 
     // Reset
     contentMd = "";
