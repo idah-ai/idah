@@ -52,7 +52,15 @@ module ProjectMember
       SQL
 
       case action
-      when :read, :create, :update, :delete
+      when :read
+        table.where(
+          Sequel.lit(
+            scoped_fragment,
+            account_id:,
+            roles: %w[project_owner annotator reviewer],
+          )
+        )
+      when :create, :update, :delete
         table.where(
           Sequel.lit(
             scoped_fragment,
