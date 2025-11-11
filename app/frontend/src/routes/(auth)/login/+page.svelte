@@ -8,6 +8,7 @@
   import Text from "@/components/ui/text/Text.svelte";
 
   import { loginSchema } from "@/data/model/iam/accounts/auth-schema";
+  import { goto } from "$app/navigation";
 
   // Variables
   let resource: string = "iam:account";
@@ -22,8 +23,39 @@
   });
 
   // Functions
-  async function signIn(): Promise<void> {
-    showErrorAlert = true;
+  async function logIn(): Promise<void> {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_IDAH_HOST}/api/v1/iam/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: credentials.email,
+          password: credentials.password,
+          cookie: true,
+        }),
+      });
+
+      console.log("response: ", response);
+
+      // if (!response.ok) {
+      //   showErrorAlert = true;
+      //   return;
+      // }
+
+      const body = await response.json();
+      console.log("body: ", body);
+
+      if (body.errors) throw body.errors;
+      // if (body && body.data) return body;
+      if (body && body.data) goto("/");
+      // token = body.meta.token
+
+      throw "No body returned";
+
+      // localStorage.setItem("authToken", body.token);
+    } catch (error) {
+      showErrorAlert = true;
+    }
   }
 </script>
 
@@ -42,7 +74,8 @@
         label="Email"
         placeholder="Enter your email"
         required
-        bind:value={credentials.email}
+        value={credentials.email}
+        oninput={(e) => (credentials.email = e.currentTarget.value)}
       ></InputField>
 
       <!-- PASSWORD -->
@@ -52,14 +85,15 @@
         type="password"
         placeholder="Enter your password"
         required
-        bind:value={credentials.password}
+        value={credentials.password}
+        oninput={(e) => (credentials.password = e.currentTarget.value)}
       ></InputField>
 
       <div class="flex items-center justify-end">
         <Link href="/forgot-password" class="text-primary text-sm">Forgot password?</Link>
       </div>
 
-      <Button class="w-full" disabled={disabledSignInButton} onclick={signIn}>Sign In</Button>
+      <Button class="w-full" disabled={disabledSignInButton} onclick={logIn}>Sign In</Button>
     </Form>
   {/snippet}
 
