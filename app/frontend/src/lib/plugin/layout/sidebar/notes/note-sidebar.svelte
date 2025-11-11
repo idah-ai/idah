@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/state";
   import {
     ArrowLeftIcon,
     FunnelIcon,
@@ -7,7 +8,9 @@
     SquareIcon,
     XIcon,
   } from "@lucide/svelte";
+  import { onMount } from "svelte";
   import { toast } from "svelte-sonner";
+  import { SvelteURL } from "svelte/reactivity";
   import { slide } from "svelte/transition";
 
   import ResponseBlock from "@/components/app/blocks/response-block.svelte";
@@ -40,10 +43,12 @@
 
   // Variables
   let selectedNoteFeed: NoteFeedRecord | null = $state(null);
+  let selectedNoteCommentId: string | null = $state(null);
   let isInReviewStep = $derived(context.workflowStep === "review");
   let isListView = $derived(!selectedNoteFeed);
   let isDetailView = $derived(!!selectedNoteFeed);
   let noteFeedFilters = $state<Hash>({ status__in: ["pending"] });
+  let isFilteringResolved = $derived(noteFeedFilters.status__in.includes("resolved"));
   let contentMd = $state<string>("");
 
   const filterMenus: IDropdownMenus = $derived({
@@ -62,6 +67,22 @@
         },
       ],
     },
+  });
+
+  // Lifecycle
+  onMount(() => {
+    setTimeout(async () => {
+      const [_noteFeed, noteFeedIdFromURL, _noteComment, noteCommentIdFromURL] = page.url.hash.split("/");
+      if (noteFeedIdFromURL) {
+        const noteFeedRes = await noteFeedsBackendDataSource.get(noteFeedIdFromURL);
+        selectedNoteFeed = noteFeedRes.data;
+        open = true;
+      }
+
+      if (noteCommentIdFromURL) {
+        selectedNoteCommentId = noteCommentIdFromURL;
+      }
+    }, 200);
   });
 
   // Functions
@@ -83,10 +104,11 @@
     selectedNoteFeed = null;
     $refetches.noteFeeds.list = new Date();
 
-    // Remove hash from url
-    // const url = new URL(window.location.href);
-    // url.hash = "";
-    // window.history.replaceState({}, document.title, url.toString());
+    // Remove hash from url if exists
+    if (!page.url.hash) return;
+    const url = new SvelteURL(window.location.href);
+    url.hash = "";
+    window.history.replaceState({}, document.title, url.toString());
   }
 
   async function loadNoteFeeds() {
@@ -175,7 +197,7 @@
     class="bg-background absolute right-0 top-12 z-50 ml-auto flex h-[calc(100%-3rem)] w-80 flex-col border-l"
   >
     <!-- HEADER -->
-    <section class="flex items-center border-b p-2">
+    <section class="flex items-center gap-1 border-b p-2">
       <!-- HEADER::BACK BUTTON -->
       {#if isDetailView}
         <Button variant="ghost" size="icon-sm" onclick={backToNoteFeedList}>
@@ -195,6 +217,11 @@
             {#snippet trigger({ props })}
               <Button {...props} variant="ghost" size="icon-sm">
                 <FunnelIcon />
+
+                <!-- FILTERING INDICATOR -->
+                {#if isFilteringResolved}
+                  <div class="bg-primary absolute right-1 top-1 size-2 animate-pulse rounded-full"></div>
+                {/if}
               </Button>
             {/snippet}
           </DropdownMenus>
@@ -253,7 +280,7 @@
             {/if}
 
             {#each noteComments as noteComment (noteComment.id)}
-              <NoteCommentCard noteCommentRecord={noteComment} />
+              <NoteCommentCard noteCommentRecord={noteComment} highlighted={selectedNoteCommentId === noteComment.id} />
             {/each}
           {/await}
         {/if}

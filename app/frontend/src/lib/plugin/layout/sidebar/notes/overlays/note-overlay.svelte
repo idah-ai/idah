@@ -55,15 +55,15 @@
   let noteComments: NoteCommentRecord[] = $state([]);
 
   onMount(() => {
-    const [_noteFeed, noteFeedId, _noteComment, noteCommentId] = page.url.hash.split("/");
+    const [_noteFeed, noteFeedIdFromURL, _noteComment, noteCommentIdFromURL] = page.url.hash.split("/");
     setTimeout(async () => {
-      if (noteFeedId) {
-        const noteFeed = await loadNoteFeed(noteFeedId);
+      if (noteFeedIdFromURL) {
+        const noteFeed = await loadNoteFeed(noteFeedIdFromURL);
         context.notes.requireNoteFeedPosition(parseNoteFeedRecordToINoteFeed(noteFeed));
       }
 
-      if (noteCommentId) {
-        selectedNoteCommentId = noteCommentId;
+      if (noteCommentIdFromURL) {
+        selectedNoteCommentId = noteCommentIdFromURL;
       }
     }, 200);
   });
