@@ -39,16 +39,7 @@
     onZoomChange: (zoom: number) => void;
   }
 
-  let {
-    video = $bindable(),
-    isPlaying,
-    volume,
-    scale,
-    zoom,
-    currentFrame,
-    totalFrames,
-    onZoomChange,
-  }: Props = $props();
+  let { video = $bindable(), isPlaying, volume, zoom, currentFrame, totalFrames, onZoomChange }: Props = $props();
 
   // Variables
   interface VideoSpeedMenuItem {

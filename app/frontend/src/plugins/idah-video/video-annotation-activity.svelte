@@ -765,7 +765,6 @@
               bind:this={videoController}
               {isPlaying}
               {zoom}
-              {scale}
               {currentFrame}
               {totalFrames}
               {volume}
