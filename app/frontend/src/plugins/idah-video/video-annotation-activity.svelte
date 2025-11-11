@@ -69,7 +69,7 @@
   let entry_id = $state(context.id);
   let url = $state(context.mediaUrl);
 
-  let zoom = $state(10);
+  let zoom = $state(85);
   let scale = $state(1);
   let timelineTable: TimelineTable;
   let videoController: VideoController;
