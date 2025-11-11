@@ -53,7 +53,6 @@ module Processor
           job_id: job_id
         )
       end
-
     end
   end
 end

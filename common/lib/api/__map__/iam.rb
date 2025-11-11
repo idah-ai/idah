@@ -17,7 +17,7 @@ Api[:idah].register(
   output = get(
     "iam/accounts/:id",
     params: { id: },
-    options: { auth: :bearer }  # Enable authentication
+    options: { auth: :bearer } # Enable authentication
   )
   deserialize output.body
 end
@@ -39,12 +39,13 @@ Api[:idah].register(
     "iam/auth/login",
     params: { email:, password: }
   )
+
   deserialize output.body
 end
 
 Api[:idah].register(
   :iam, :auth, :logout,
-) do |d|
+) do |_d|
   output = get(
     "iam/auth/logout"
   )

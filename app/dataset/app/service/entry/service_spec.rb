@@ -186,7 +186,7 @@ RSpec.describe Entry::Service, database: true do
         {
           dataset_id: dataset_id,
           job_id: job_id,
-          status: "pending"
+          status: "processing"
         }
       )
 
@@ -194,7 +194,7 @@ RSpec.describe Entry::Service, database: true do
         {
           dataset_id: dataset_id,
           job_id: job_id,
-          status: "pending"
+          status: "processing"
         }
       )
       repo.create(
