@@ -26,10 +26,6 @@
     responsive: false,
     fluid: true,
     disablePictureInPicture: true,
-    // sources: [
-    //     {src: `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files/410910ci5lpcck5qmh.mp4/master.m3u8`}
-    // ]
-    // poster:"",
   };
   let duration = $state(0);
   let fps = $state(DEFAULT_FPS);
@@ -42,7 +38,10 @@
   let raf: number | undefined = $state();
 
   $effect(() => onFramesChange?.(currentFrame, frames, isPlaying));
-  $effect(() => onVolumeChange?.(volume, muted) && console.log({ volume_changed: { volume, muted } }));
+  $effect(() => {
+    console.debug({ volume, muted });
+    onVolumeChange?.(volume, muted);
+  });
 
   $effect(() => console.debug({ currentFrame, frames, mediaTime, duration, isPlaying }));
   export const getFrames = () => frames;
@@ -85,6 +84,8 @@
   }
 
   function setUpPlayer() {
+    if (!element) return console.error({ setUpPlayer: { element } });
+
     player = videojs(element, options);
     volume = (player.volume() || 0) * 100;
     quality_check("onMount");
@@ -125,12 +126,12 @@
         cancelAnimationFrame(raf);
         raf = undefined;
       }
-      mediaTime = player.currentTime();
+      mediaTime = player?.currentTime() || 0;
     });
 
     player.on("volumechange", () => {
-      volume = player.volume() * 100;
-      muted = player.muted();
+      volume = player?.volume() || 0 * 100;
+      muted = player?.muted() || true;
     });
 
     player.on("playing", () => {});
@@ -147,8 +148,6 @@
 
     console.debug({ setup_player: player, element, options });
   }
-
-  console.debug({ init_video_element: element });
 
   onMount(setUpPlayer);
 
@@ -170,4 +169,4 @@
   });
 </script>
 
-<video-js id="idah-video" bind:this={element} onloadeddata={(e) => console.log(e)}></video-js>
+<video-js id="idah-video" bind:this={element}></video-js>
