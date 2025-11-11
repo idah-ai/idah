@@ -309,30 +309,35 @@ const printOperators: { [operator: string]: [string, operatorTypes] } = {
   match: ["match", binaryOperator],
   // match: ["match", functionOperator],
   get: ["get", unaryOperator],
+  and: ["and", binaryOperator],
+  or: ["or", binaryOperator],
 };
 
 export function ASTNodeToFunctionString(node: ASTNode | boolean, d = 0): string {
   if ("boolean" == typeof node) return node.toString();
 
   const printOperator = printOperators[node?.[0]];
+  if (!printOperator) return node.toString();
 
   switch (printOperator[1]) {
     case unaryOperator:
       return ASTNodeValueToString(node?.[1][0], d + 1).slice(1, -1); // remove quotes from string
-      break;
     case binaryOperator:
-      return [
-        ASTNodeValueToString(node?.[1][0], d + 1),
-        printOperator[0],
-        ASTNodeValueToString(node?.[1][1], d + 1),
-      ].join(" ");
-      break;
+      return (
+        d == 0
+          ? [ASTNodeValueToString(node?.[1][0], d + 1), printOperator[0], ASTNodeValueToString(node?.[1][1], d + 1)]
+          : [
+              "(",
+              ASTNodeValueToString(node?.[1][0], d + 1),
+              printOperator[0],
+              ASTNodeValueToString(node?.[1][1], d + 1),
+              ")",
+            ]
+      ).join(" ");
     case functionOperator:
       return `${node?.[0]}(${node?.[1].map((n) => ASTNodeValueToString(n, d + 1)).join(", ")})`;
-      break;
     default:
       return node.toString();
-      break;
   }
 }
 
