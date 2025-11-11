@@ -183,12 +183,18 @@
   export function selectionEnd(e: MouseEvent) {
     tool_selection?.endSelection(cursor_downscaled);
 
+    showNewNoteFeedPopup();
+
+    zoomableElement.mouseUp(e);
+  }
+
+  function showNewNoteFeedPopup(annotation?: VideoAnnotation) {
     /**
      * Show new note feed dialog only when there is no dragging (i.e. zoom offset did not change)
      */
     if (mode === "note") {
       onAddNewNote({
-        anchorType: "entry",
+        anchorType: annotation ? "annotation" : "entry",
         position: {
           x: cursor_downscaled[X],
           y: cursor_downscaled[Y],
@@ -197,11 +203,9 @@
           target_size,
           zoom_info: zoomInfo,
         },
-        annotationId: null,
+        annotationId: annotation?.metadata.id || null,
       });
     }
-
-    zoomableElement.mouseUp(e);
   }
 
   $effect(() => {
@@ -269,9 +273,14 @@
               offset={zoomInfo.offset}
               color={context.config.categories.find((c) => c.id == annotation.value?.category)?.color || "grey"}
               onmousedown={(e) => {
+                e.stopPropagation();
+
                 if (mode == "visual" || selected) {
-                  e.stopPropagation();
                   onSelectAnnotation(annotation);
+                }
+
+                if (mode === "note") {
+                  showNewNoteFeedPopup(annotation);
                 }
               }}
             />, frame
@@ -290,9 +299,13 @@
                 ? context.config.categories.find((c) => c.id == annotation?.value?.category)?.color || "grey"
                 : "grey"}
               onmousedown={(e) => {
+                e.stopPropagation();
                 if (mode == "visual" || selected) {
-                  e.stopPropagation();
                   onSelectAnnotation(annotation);
+                }
+
+                if (mode === "note") {
+                  showNewNoteFeedPopup(annotation);
                 }
               }}
             />
