@@ -18,14 +18,12 @@ namespace :dev do
       {
         email: "admin@ingedata.ai",
         name: "Admin User",
-        role: "anonymous",
-        role_scopes: {}
+        role: "anonymous"
       },
       {
         email: "user@ingedata.ai",
         name: "Staff User",
-        role: "anonymous",
-        role_scopes: {}
+        role: "anonymous"
       },
     ]
 
@@ -43,8 +41,7 @@ namespace :dev do
           email: user_data[:email],
           hashed_password: hashed_password,
           enabled: true,
-          role: user_data[:role],
-          role_scopes: {}
+          role: user_data[:role]
         }
       )
     end

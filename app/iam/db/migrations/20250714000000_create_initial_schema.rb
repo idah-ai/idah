@@ -13,7 +13,7 @@ Sequel.migration do
       column :email, String, unique: true, null: false, index: true
 
       column :role, String, null: false, default: "user"
-      column :role_scopes, :jsonb, null: false, default: "{}"
+
       column :picture_url, String, null: true
 
       column :hashed_password, String, null: true
