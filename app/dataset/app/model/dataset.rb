@@ -54,6 +54,7 @@ module Dataset
     # Annotators and reviewers can only read datasets
     query
     def user_project_scoped_query(action)
+      account_id = auth_context.metadata[:id]
       scoped_fragment = <<-SQL
         EXISTS (
           SELECT 1
@@ -69,7 +70,7 @@ module Dataset
         table.where(
           Sequel.lit(
             scoped_fragment,
-            account_id: auth_context.metadata[:id],
+            account_id:,
             roles: %w[project_owner annotator reviewer]
           )
         )
@@ -77,7 +78,7 @@ module Dataset
         table.where(
           Sequel.lit(
             scoped_fragment,
-            account_id: auth_context.metadata[:id],
+            account_id:,
             roles: %w[project_owner]
           )
         )

@@ -40,22 +40,23 @@ module ProjectMember
     # Only allowed for project_owner(member), org_owner and admin roles
     query
     def user_project_scoped_query(action)
+      account_id = auth_context.metadata[:id]
+      scoped_fragment = <<-SQL
+        EXISTS (
+          SELECT 1
+          FROM project_members pm
+          WHERE pm.account_id = :account_id
+            AND pm.project_id = project_members.project_id
+            AND pm.role IN :roles
+        )
+      SQL
+
       case action
       when :read, :create, :update, :delete
-        scoped_fragment = <<-SQL
-          EXISTS (
-            SELECT 1
-            FROM project_members pm
-            WHERE pm.account_id = :account_id
-              AND pm.project_id = project_members.project_id
-              AND pm.role IN :roles
-          )
-        SQL
-
         table.where(
           Sequel.lit(
             scoped_fragment,
-            account_id: auth_context.metadata[:id],
+            account_id:,
             roles: %w[project_owner],
           )
         )
