@@ -59,15 +59,11 @@
   }
 
   export function nextFrame(count = 1) {
-    if (!fps) console.error({ fps, nextFrame });
-
     if (!player?.paused()) player?.pause();
     seekToFrame(currentFrame + count);
   }
 
   export function previousFrame(count = 1) {
-    if (!fps) console.error({ fps, nextFrame });
-
     if (!player?.paused()) player?.pause();
     seekToFrame(currentFrame - count);
   }
