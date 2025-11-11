@@ -142,7 +142,7 @@
         <Slider
           type="single"
           orientation="vertical"
-          min={0}
+          min={1}
           max={100}
           step={1}
           onValueChange={video.setVolume}
@@ -176,7 +176,7 @@
         type="number"
         class="min-w-24"
         placeholder="Frame"
-        min={0}
+        min={1}
         max={Math.max(0, totalFrames)}
         suffix={`/ ${Math.max(0, totalFrames)}`}
         value={currentFrame}
