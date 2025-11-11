@@ -79,14 +79,16 @@
     const maxZoom = 150;
     const maxScale = Math.ceil(totalFrames / zoom);
 
-    let scale = value >= (minZoom + maxZoom) / 2 ? 1 : 1 + ((s - minZoom) / (maxZoom - minZoom)) * (maxScale - 1);
+    let newScale = value >= (minZoom + maxZoom) / 2 ? 1 : 1 + ((s - minZoom) / (maxZoom - minZoom)) * (maxScale - 1);
 
     // clamp scale just in case
-    scale = Math.min(scale, maxScale);
+    newScale = Math.min(newScale, maxScale);
+
+    scale = Math.ceil(newScale);
 
     zoom = s;
 
-    onScaleChange?.(Math.ceil(scale));
+    onScaleChange?.(scale);
     onZoomChange?.(zoom);
   }
 
