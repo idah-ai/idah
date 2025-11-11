@@ -7,7 +7,7 @@ module Project
     field :id, type: String, primary: true
 
     field :name, type: String
-    field :description, type: String
+    field :description, type: [String, NilClass]
     field :created_by_email, type: String, readonly: true
 
     field :created_at, type: Time, readonly: true

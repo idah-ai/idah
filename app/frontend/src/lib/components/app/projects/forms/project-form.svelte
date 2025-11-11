@@ -4,7 +4,7 @@
   import SingleSelectDatasourceField from "@/components/app/forms/fields/select/single/single-select-datasource-field.svelte";
   import { FieldGroup, FieldSet } from "@/components/ui/field";
 
-  import { organizationsBackendDataSource } from "@/data/model/iam/organizations/record";
+  import { OrganizationRecord, organizationsBackendDataSource } from "@/data/model/iam/organizations/record";
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
 
   import type { FormBaseProps } from "@/components/app/forms/form.types";
@@ -19,13 +19,11 @@
   let resource: string = ProjectRecord.type;
 
   // Variables::Reactive
-  let name = $derived(project.name);
-  let description = $derived(project.description);
-  let organizationId = $derived(project.organization_id);
+  let { name, description, organization_id } = $derived(project);
 
   // Functions
   $effect(() => {
-    onValueChange({ name, description, organizationId });
+    onValueChange({ name, description, organization_id });
   });
 </script>
 
@@ -47,14 +45,15 @@
       name="{resource}/organization_id"
       label="Organization"
       placeholder="Select an organization"
-      displayKey="email"
       dataSource={organizationsBackendDataSource}
+      displayKey="name"
       required
-      value={organizationId}
-      searchKeyWithOperation="name__match"
+      errors={fieldErrors["organization_id"]}
+      value={organization_id}
       onValueChange={(value: string | number) => {
-        organizationId = value as number;
+        organization_id = value as number;
       }}
+      searchKeyWithOperation="name__match"
     ></SingleSelectDatasourceField>
 
     <!-- PROJECT::DESCRIPTION -->
@@ -62,8 +61,6 @@
       name="{resource}/description"
       label="Description"
       placeholder="Enter project description"
-      required
-      errors={fieldErrors["description"]}
       value={description}
       oninput={(e) => (description = e.currentTarget.value)}
     ></TextareaField>
