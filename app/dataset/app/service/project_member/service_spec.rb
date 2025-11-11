@@ -153,10 +153,11 @@ RSpec.describe ProjectMember::Service, database: true do
     subject { described_class.new(current_auth_context) }
 
     describe "scoped project members" do
-      it "cannot index" do
+      it "can index" do
         result = subject.index({})
 
-        expect(result.count).to eq 0
+        expect(result.count).to eq 2
+        expect(result.map(&:name)).to eq ["Project Owner", "Annotator"]
       end
 
       it "cannot create" do
@@ -182,7 +183,8 @@ RSpec.describe ProjectMember::Service, database: true do
       it "cannot index" do
         result = subject.index({})
 
-        expect(result.count).to eq 0
+        expect(result.count).to eq 2
+        expect(result.map(&:name)).to_not include "Reviewer"
       end
 
       it "cannot create" do
@@ -211,10 +213,11 @@ RSpec.describe ProjectMember::Service, database: true do
     subject { described_class.new(current_auth_context) }
 
     describe "scoped project members" do
-      it "cannot index" do
+      it "can index" do
         result = subject.index({})
 
-        expect(result.count).to eq 0
+        expect(result.count).to eq 1
+        expect(result.map(&:name)).to eq ["Reviewer"]
       end
 
       it "cannot create" do
@@ -240,7 +243,8 @@ RSpec.describe ProjectMember::Service, database: true do
       it "cannot index" do
         result = subject.index({})
 
-        expect(result.count).to eq 0
+        expect(result.count).to eq 1
+        expect(result.map(&:name)).to_not include "Project Owner", "Annotator"
       end
 
       it "cannot create" do
