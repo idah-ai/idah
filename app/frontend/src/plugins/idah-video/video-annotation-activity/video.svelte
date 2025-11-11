@@ -59,12 +59,10 @@
   }
 
   export function nextFrame(count = 1) {
-    if (!player?.paused()) player?.pause();
     seekToFrame(currentFrame + count);
   }
 
   export function previousFrame(count = 1) {
-    if (!player?.paused()) player?.pause();
     seekToFrame(currentFrame - count);
   }
 
@@ -78,6 +76,7 @@
   }
 
   export function seekToFrame(frame: number) {
+    if (!player?.paused()) player?.pause();
     if (!fps) return console.log({ seekToFrame, fps, frame });
 
     // + 0.001 to account for browser rounding difference
