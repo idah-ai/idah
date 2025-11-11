@@ -6,9 +6,9 @@
   import { cn } from "@/utils";
   import { ArrowLeftRightIcon, Trash2Icon } from "@lucide/svelte";
 
-  import type { VideoAnnotation } from "../VideoAnnotationContext";
-  import type { HTMLAttributes } from "svelte/elements";
   import type { IActivityContext } from "@/plugin/interface/Activity";
+  import type { HTMLAttributes } from "svelte/elements";
+  import type { VideoAnnotation } from "../VideoAnnotationContext";
 
   let {
     annotation,
