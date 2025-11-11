@@ -8,7 +8,7 @@
 
   import { cn } from "@/utils";
   import { humanize } from "@/utils/string";
-  import { Trash2Icon } from "@lucide/svelte";
+  import { Trash2Icon, ZoomOutIcon } from "@lucide/svelte";
 
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import { boundingBoxes } from "../idb_store.svelte";
@@ -19,8 +19,8 @@
   // Props
   let {
     // tracking = false,
-    scale = 1,
-    zoom = 1,
+    scale,
+    zoom,
     currentFrame,
     totalFrames,
     selectedAnnotation,
@@ -73,18 +73,38 @@
     pos_offset = Math.max(1, Math.min(totalFrames - range_span, offset || 0));
   }
 
+  // export function setZoom(value: number) {
+  //   const s = Math.min(100, Math.max(1, Math.round(value)));
+  //   const newScale = Math.ceil(totalFrames / s);
+  //   scale = Math.min(scale, Math.ceil(totalFrames / s));
+  //   zoom = s;
+  //   console.log({ value, scale, zoom });
+
+  //   onScaleChange?.(scale);
+  //   onZoomChange?.(zoom);
+  // }
+
   export function setZoom(value: number) {
     const s = Math.min(100, Math.max(1, Math.round(value)));
-    scale = Math.max(1, Math.round(totalFrames / s));
+    const minZoom = 10;
+    const maxZoom = 100;
+    const maxScale = Math.ceil(totalFrames / zoom);
+
+    let scale = value == minZoom ? 1 : 1 + ((s - minZoom) / (maxZoom - minZoom)) * (maxScale - 1);
+
+    // clamp scale just in case
+    scale = Math.min(scale, maxScale);
+
     zoom = s;
-    onScaleChange?.(scale);
+
+    onScaleChange?.(Math.ceil(scale));
     onZoomChange?.(zoom);
   }
 
-  export function setScale(value: number) {
-    scale = Math.max(1, Math.min(Math.ceil(totalFrames / zoom), value));
-    onScaleChange?.(scale);
-  }
+  // export function setScale(value: number) {
+  //   scale = Math.max(1, Math.min(Math.ceil(totalFrames / zoom), value));
+  //   onScaleChange?.(scale);
+  // }
 
   function seekToFrame(frameToGo: number) {
     onSeekFrame(frameToGo);
@@ -219,7 +239,7 @@
         let c_hovered = $state.snapshot(hoveredColumn);
         let c = c_hovered != undefined ? Math.ceil((c_hovered - pos_offset) / scale) : 0;
 
-        setScale(scale + delta);
+        // setScale(scale + delta);
         if (c_hovered != undefined) {
           setOffset(c_hovered - c * scale);
         }

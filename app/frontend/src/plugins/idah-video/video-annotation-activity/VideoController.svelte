@@ -2,26 +2,26 @@
   import Tooltips from "@/components/app/tooltips/tooltips.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuGroup,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuTrigger,
+      DropdownMenu,
+      DropdownMenuContent,
+      DropdownMenuGroup,
+      DropdownMenuItem,
+      DropdownMenuLabel,
+      DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu";
   import Input from "@/components/ui/input/input.svelte";
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
   import Slider from "@/components/ui/slider/slider.svelte";
   import {
-    ChevronLeftIcon,
-    ChevronRightIcon,
-    FastForwardIcon,
-    PauseIcon,
-    PlayIcon,
-    Volume2Icon,
-    VolumeXIcon,
-    ZoomInIcon,
-    ZoomOutIcon,
+      ChevronLeftIcon,
+      ChevronRightIcon,
+      FastForwardIcon,
+      PauseIcon,
+      PlayIcon,
+      Volume2Icon,
+      VolumeXIcon,
+      ZoomInIcon,
+      ZoomOutIcon,
   } from "@lucide/svelte";
 
   import type { ChangeEventHandler } from "svelte/elements";
@@ -65,7 +65,7 @@
     { label: "3 X", value: 3 },
     { label: "5 X", value: 5 },
   ];
-  const min = 20;
+  const min = 10;
   const max = 100;
 
   let currentSpeed: number = $state(1);
@@ -90,11 +90,14 @@
   // Slider needs reversed value for displa
 
   function zoomIn(): void {
-    zoom = Math.min(max, zoom + 1);
+    zoom = zoom - 5;
+    onZoomChange(Math.min(max, zoom + 1));
   }
 
   function zoomOut(): void {
-    zoom = Math.max(min, zoom - 1);
+    zoom = zoom + 5;
+
+    onZoomChange(Math.max(min, zoom - 1));
   }
 </script>
 
@@ -209,7 +212,7 @@
         type="single"
         {min}
         {max}
-        step={1}
+        step={5}
         value={sliderValue}
         onValueChange={onSliderChange}
       ></Slider>
