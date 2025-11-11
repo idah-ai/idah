@@ -1,7 +1,7 @@
-import { NoteCommentRecord, noteCommentsBackendDataSource } from "@/data/model/dataset/notes/comments/record";
-import { NoteFeedRecord, noteFeedsBackendDataSource } from "@/data/model/dataset/notes/feeds/record";
+import { NoteCommentRecord } from "@/data/model/dataset/notes/comments/record";
+import { NoteFeedRecord } from "@/data/model/dataset/notes/feeds/record";
 
-import type { IListOptions, INoteComment, INoteDriver, INoteFeed } from "@/plugin/interface/Activity";
+import type { INoteComment, INoteFeed, INotes } from "@/plugin/interface/Activity";
 
 export function parseNoteFeedRecordToINoteFeed(record: NoteFeedRecord): INoteFeed {
   return {
@@ -16,10 +16,6 @@ export function parseNoteFeedRecordToINoteFeed(record: NoteFeedRecord): INoteFee
     created_at: new Date(record.created_at).toString(),
     updated_at: new Date(record.updated_at).toString(),
     edited_at: record.edited_at ? new Date(record.edited_at).toString() : null,
-
-    // Included relationships
-    note_comments:
-      record.note_comments?.map((comment: NoteCommentRecord) => parseNoteCommentRecordToINoteComment(comment)) || [],
   };
 }
 
@@ -36,167 +32,27 @@ export function parseNoteCommentRecordToINoteComment(record: NoteCommentRecord):
   };
 }
 
-export function createNoteDriver(entryId: string): INoteDriver {
+export function createNoteDriver(): INotes {
+  let _onNoteSelected: ((noteFeedId: string | null, noteCommentId?: string) => void) | undefined;
+  let _onNewNoteFeedOpenChange:
+    | ((data: Pick<INoteFeed, "anchor_type" | "position" | "annotation_id">) => void)
+    | undefined;
+  let _onRequireNoteFeedPosition: ((noteFeed: INoteFeed) => void) | undefined;
+
   return {
-    /** NOTE::FEEDS */
-    feeds: {
-      create(data: Partial<INoteFeed>) {
-        const { annotation_id, position, content_md, created_by_email } = data;
-        return new Promise<INoteFeed>((resolve, reject) => {
-          noteFeedsBackendDataSource
-            .create({
-              attributes: {
-                entry_id: entryId,
-                annotation_id,
-                anchor_type: annotation_id ? "annotation" : "entry",
-                position,
-                content_md,
-                created_by_email,
-              },
-            })
-            .then(
-              (v) => resolve(parseNoteFeedRecordToINoteFeed(v.data)),
-              (v) => reject(v.error),
-            );
-        });
-      },
-      list(listOptions: IListOptions): Promise<Array<INoteFeed>> {
-        return new Promise<Array<INoteFeed>>((resolve, reject) => {
-          noteFeedsBackendDataSource
-            .list({
-              filters: { ...listOptions.filters, entry_id: entryId },
-              pagination: listOptions.pagination,
-              sort: listOptions.sort,
-              included: ["note_comments"],
-            })
-            .then(
-              (v) => resolve(v.data.map((note) => parseNoteFeedRecordToINoteFeed(note))),
-              (v) => reject(v.error),
-            );
-        });
-      },
-      get(id: string) {
-        return new Promise<INoteFeed>((resolve, reject) => {
-          noteFeedsBackendDataSource
-            .get(id, {
-              included: ["note_comments"],
-            })
-            .then(
-              (v) => resolve(parseNoteFeedRecordToINoteFeed(v.data)),
-              (v) => reject(v.error),
-            );
-        });
-      },
-      update(id: string, data: Partial<INoteFeed>) {
-        return new Promise<INoteFeed>((resolve, reject) => {
-          noteFeedsBackendDataSource
-            .update(id, {
-              attributes: {
-                content_md: data.content_md,
-                position: data.position,
-                annotation_id: data.annotation_id,
-              },
-            })
-            .then(
-              (v) => resolve(parseNoteFeedRecordToINoteFeed(v.data)),
-              (v) => reject(v.error),
-            );
-        });
-      },
-      delete(id: string) {
-        return new Promise<void>((resolve, reject) => {
-          noteCommentsBackendDataSource
-            .list({
-              fields: {
-                [NoteCommentRecord.type]: ["id"],
-              },
-            })
-            .then(async (res) => {
-              res.data.forEach(async (comment) => {
-                await noteCommentsBackendDataSource.delete(comment.id);
-              });
-
-              await noteFeedsBackendDataSource.delete(id);
-            })
-            .then(
-              () => resolve(),
-              (v) => reject(v.error),
-            );
-        });
-      },
-      markAsResolved(noteFeedId: string) {
-        return new Promise<INoteFeed>((resolve, reject) => {
-          noteFeedsBackendDataSource.markAsResolved(noteFeedId).then(
-            (v) => resolve(parseNoteFeedRecordToINoteFeed(v.data)),
-            (v) => reject(v.error),
-          );
-        });
-      },
+    showNewNoteFeedPopup: (data: Pick<INoteFeed, "anchor_type" | "position" | "annotation_id">) => {
+      _onNewNoteFeedOpenChange?.(data);
     },
+    onNewNoteFeedOpenChange: (cb) => (_onNewNoteFeedOpenChange = cb),
 
-    /** NOTE::COMMENTS */
-    comments: {
-      list(listOptions: IListOptions): Promise<Array<INoteComment>> {
-        return new Promise<Array<INoteComment>>((resolve, reject) => {
-          noteCommentsBackendDataSource
-            .list({
-              filters: { ...listOptions.filters },
-              pagination: listOptions.pagination,
-              sort: listOptions.sort,
-            })
-            .then(
-              (v) => resolve(v.data.map((note) => parseNoteCommentRecordToINoteComment(note))),
-              (v) => reject(v.error),
-            );
-        });
-      },
-      create(data: Partial<INoteComment>) {
-        const { note_feed_id, content_md, created_by_email } = data;
-        return new Promise<INoteComment>((resolve, reject) => {
-          noteCommentsBackendDataSource
-            .create({
-              attributes: {
-                note_feed_id,
-                content_md,
-                created_by_email,
-              },
-              relationships: {
-                note_feed: {
-                  data: {
-                    id: note_feed_id!,
-                    type: "dataset:note_feeds",
-                  },
-                },
-              },
-            })
-            .then(
-              (v) => resolve(parseNoteCommentRecordToINoteComment(v.data)),
-              (v) => reject(v.error),
-            );
-        });
-      },
-      update(id: string, data: Partial<INoteComment>) {
-        return new Promise<INoteComment>((resolve, reject) => {
-          noteCommentsBackendDataSource
-            .update(id, {
-              attributes: {
-                content_md: data.content_md,
-              },
-            })
-            .then(
-              (v) => resolve(parseNoteCommentRecordToINoteComment(v.data)),
-              (v) => reject(v.error),
-            );
-        });
-      },
-      delete(id: string) {
-        return new Promise<void>((resolve, reject) => {
-          noteCommentsBackendDataSource.delete(id).then(
-            () => resolve(),
-            (v) => reject(v.error),
-          );
-        });
-      },
+    requireNoteFeedPosition: (noteFeed: INoteFeed) => {
+      _onRequireNoteFeedPosition?.(noteFeed);
     },
+    onRequireNoteFeedPosition: (cb) => (_onRequireNoteFeedPosition = cb),
+
+    gotoFeed: (noteFeedId: string | null, noteCommentId?: string) => {
+      _onNoteSelected?.(noteFeedId, noteCommentId);
+    },
+    onNoteSelected: (cb) => (_onNoteSelected = cb),
   };
 }

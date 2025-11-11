@@ -16,6 +16,7 @@
   import { NoteCommentRecord, noteCommentsBackendDataSource } from "@/data/model/dataset/notes/comments/record";
   import { NoteFeedRecord, noteFeedsBackendDataSource } from "@/data/model/dataset/notes/feeds/record";
   import { deleteNoteFeed } from "@/plugin/layout/sidebar/notes/utils/note-feed.svelte";
+  import { parseNoteFeedRecordToINoteFeed } from "@/plugin/NoteDriver";
   import { refetches } from "@/utils/refetch";
 
   import type { IActivityContext } from "@/plugin/interface/Activity";
@@ -46,19 +47,20 @@
   let contentMd: string = $state("");
 
   let selectedNoteFeed: NoteFeedRecord | null = $state(null);
-  let selectedNoteCommentId: string | null = $state(null);
+  // let selectedNoteCommentId: string | null = $state(null);
   let noteComments: NoteCommentRecord[] = $state([]);
 
   $effect(() => {
-    context.notes.onNoteSelected(async (noteFeedId: string | null, noteCommentId?: string) => {
+    context.notes.onNoteSelected(async (noteFeedId: string | null, _noteCommentId?: string) => {
       if (!noteFeedId) {
         selectedNoteFeed = null;
-        selectedNoteCommentId = null;
+        // selectedNoteCommentId = null;
         return;
       }
 
-      await loadNoteFeed(noteFeedId);
-      selectedNoteCommentId = noteCommentId || null;
+      const noteFeed = await loadNoteFeed(noteFeedId);
+      // selectedNoteCommentId = noteCommentId || null;
+      context.notes.requireNoteFeedPosition(parseNoteFeedRecordToINoteFeed(noteFeed));
     });
 
     context.notes.onNewNoteFeedOpenChange((data) => {
@@ -76,6 +78,7 @@
   async function loadNoteFeed(id: string) {
     const noteFeedRes = await noteFeedsBackendDataSource.get(id);
     selectedNoteFeed = noteFeedRes.data;
+    return noteFeedRes.data;
   }
 
   async function loadNoteComments(noteFeedId: string) {
@@ -208,16 +211,20 @@
       {@const posY = selectedNoteFeed.position.y || 0}
       {@const targetSizeX = selectedNoteFeed.position.target_size[0] || containerWidth || 0}
       {@const targetSizeY = selectedNoteFeed.position.target_size[1] || containerHeight || 0}
-      {@const top = (Number(posY * targetSizeY) / containerHeight) * 100}
-      {@const left = (Number(posX * targetSizeX) / containerWidth) * 100}
+      {@const top = `${(Number(posY * targetSizeY) / containerHeight) * 100}%`}
+      {@const left = `${(Number(posX * targetSizeX) / containerWidth) * 100}%`}
+      {@const sidebarLeftWidth = selectedNoteFeed.position.sidebar_width || 0}
+      {@const zoomInfo = (selectedNoteFeed.position.zoom_info || { scale: 1, offset: [0, 0] }) as ZoomInfo}
+      {@const zoomOffsetX = zoomInfo.offset[0] || 0}
+      {@const zoomOffsetY = zoomInfo.offset[1] || 0}
 
       <img
         src={messageCircleIcon}
         alt="Message circle icon"
         class="absolute z-40 cursor-auto"
-        style:top="{top}%"
-        style:left="{left}%"
-        style:transform="translate(1300%, -50%)"
+        style:top
+        style:left
+        style:transform="translate({sidebarLeftWidth + zoomOffsetX}px, {zoomOffsetY}px)"
       />
 
       <Dialog
@@ -225,9 +232,13 @@
         onOpenChangeComplete={(open) => (selectedNoteFeed = open ? selectedNoteFeed : null)}
       >
         <DialogContent
-          overlayClass="bg-transparent"
-          class="w-80 translate-x-[110%] translate-y-0 gap-1 px-0 py-2"
-          style="top: {top}%; left: {left}%;"
+          overlayClass="bg-transparent data-[state=open]:animate-none data-[state=closed]:animate-none"
+          class="w-80 gap-1 px-0 py-2 data-[state=closed]:animate-none data-[state=open]:animate-none"
+          style="
+            top: {top};
+            left: {left};
+            transform: translate({sidebarLeftWidth + zoomOffsetX + 200}px, {zoomOffsetY}px);
+          "
           showCloseButton={false}
         >
           <DialogHeader class="flex flex-row items-center px-2">

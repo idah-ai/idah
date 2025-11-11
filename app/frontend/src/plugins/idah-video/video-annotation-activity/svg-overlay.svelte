@@ -17,7 +17,7 @@
   } from "./VideoAnnotationContext";
   import Zoomable from "./zoomable.svelte";
 
-  import type { IActivityContext } from "@/plugin/interface/Activity";
+  import type { IActivityContext, INoteFeed } from "@/plugin/interface/Activity";
 
   // Types
   export interface OnAddNewNoteParams {
@@ -41,6 +41,7 @@
     onwheel?: (e: WheelEvent) => void;
     onSelection: (type: string, frame: number, points?: Point[], id?: string) => void;
     onAddNewNote: (params: OnAddNewNoteParams) => void;
+    onChangeFrame?: (newFrame: number) => void;
     videoResizedAt: Date;
   };
   let {
@@ -52,6 +53,7 @@
     onSelectAnnotation,
     onSelection, // valid shape output
     onAddNewNote,
+    onChangeFrame,
     children,
     videoResizedAt,
     ...restProps
@@ -61,10 +63,11 @@
   let context = getContext<IActivityContext>("context");
 
   // Variables
-  let zoomInfo: {
+  interface ZoomInfo {
     scale: number;
     offset: Point;
-  } = $state({
+  }
+  let zoomInfo: ZoomInfo = $state({
     scale: 1,
     offset: [0, 0],
   });
@@ -126,7 +129,7 @@
   let cursor_downscaled: Point = $derived([target[X] / target_size[X], target[Y] / target_size[Y]]);
 
   // let svg: SVGElement
-  let zoom: Zoomable;
+  let zoomableElement: Zoomable;
 
   export function currentShape(
     shape: VideoShape,
@@ -165,7 +168,7 @@
 
   export function selectionStart(e: MouseEvent) {
     if (!shape) {
-      zoom.mouseDown(e);
+      zoomableElement.mouseDown(e);
       return;
     }
 
@@ -173,7 +176,7 @@
 
     if (!tool_selection?.isEditing()) {
       onSelectAnnotation();
-      zoom.mouseDown(e);
+      zoomableElement.mouseDown(e);
     }
   }
 
@@ -198,46 +201,36 @@
       });
     }
 
-    zoom.mouseUp(e);
+    zoomableElement.mouseUp(e);
   }
+
+  $effect(() => {
+    context.notes.onRequireNoteFeedPosition(async (noteFeed: INoteFeed) => {
+      // 1. Check the frame
+      const noteFeedStartFrame = (noteFeed.position.start as number) || 0;
+
+      // 2. Go to the frame
+      if (noteFeedStartFrame != frame) {
+        onChangeFrame?.(noteFeedStartFrame);
+      }
+
+      /**
+       * 3. Make the viewport at the same position from reviewer fow now
+       * and will centered on the note feed later
+       */
+      const noteFeedOffset = (noteFeed.position.zoom_info as ZoomInfo)?.offset || [height / 2, -(width / 2)];
+      zoomableElement.setOffset(noteFeedOffset);
+
+      // 4. Return the absolute position for the top left corner of the note feed.
+    });
+  });
 </script>
 
 <div class="svg-overlay flex-1" class:cursor-note={isNoteMode}>
   <div>
-    <Zoomable bind:this={zoom} {mode} onZoomChange={(scale, offset) => (zoomInfo = { scale, offset })}>
+    <Zoomable bind:this={zoomableElement} {mode} onZoomChange={(scale, offset) => (zoomInfo = { scale, offset })}>
       {@render children?.()}
     </Zoomable>
-
-    <!-- {#if $noteSidebarStore.noteFeedPopup.show}
-      {#key $noteSidebarStore.noteFeedPopup.noteFeed}
-        <img
-          transition:fade={{ duration: 200, easing: sineInOut }}
-          src={messageCircleIcon}
-          alt="Message circle icon"
-          class="absolute z-40 cursor-auto"
-          style:top="{((Number($noteSidebarStore.noteFeedPopup.noteFeed?.position.y || 0) * target_size[Y]) / height) *
-            100}%"
-          style:left="{((Number($noteSidebarStore.noteFeedPopup.noteFeed?.position.x || 0) * target_size[X]) / width) *
-            100}%"
-          style:transform="translate({zoomInfo.offset[X]}px, {zoomInfo.offset[Y]}px)"
-        />
-        <div
-          transition:fade={{ duration: 200, easing: sineInOut }}
-          class="bg-background absolute z-40 min-w-72 max-w-[480px] cursor-auto rounded-xl"
-          style:top="{((Number($noteSidebarStore.noteFeedPopup.noteFeed?.position.y || 0) * target_size[Y]) / height) *
-            100}%"
-          style:left="{((Number($noteSidebarStore.noteFeedPopup.noteFeed?.position.x || 0) * target_size[X]) / width) *
-            100}%"
-          style:transform="translate({zoomInfo.offset[X] + 32}px, {zoomInfo.offset[Y] - 32}px)"
-        >
-          {#if $noteSidebarStore.noteFeedPopup.noteFeed?.id}
-            <SelectedNoteFeedDialog />
-          {:else}
-            <NewNoteFeedDialog />
-          {/if}
-        </div>
-      {/key}
-    {/if} -->
   </div>
 
   <svg
@@ -252,11 +245,11 @@
       // mouse[0] = e.pageX - (Math.round(elementRect.left) + window.scrollX);
       // mouse[1] = e.pageY - (Math.round(elementRect.top) + window.scrollY);
       // console.log({mouse:{x: mouse[X], y:mouse[Y]}, e})
-      zoom.mouseMove(e);
+      zoomableElement.mouseMove(e);
     }}
     onmousedown={(e) => selectionStart(e)}
     onmouseup={selectionEnd}
-    onwheel={(e) => zoom.onWheel(e)}
+    onwheel={(e) => zoomableElement.onWheel(e)}
     {...restProps}
   >
     {#if width && height && !isNoteMode}
