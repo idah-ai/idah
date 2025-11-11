@@ -3,7 +3,7 @@
   import { toast } from "svelte-sonner";
 
   import Button from "@/components/ui/button/button.svelte";
-  import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+  import { Dialog, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
   import ScrollArea from "@/components/ui/scroll-area/scroll-area.svelte";
   import Text from "@/components/ui/text/Text.svelte";
   import messageCircleIcon from "@/plugin/layout/sidebar/notes/assets/message-circle.svg";
@@ -12,6 +12,7 @@
   import NoteFeedCard from "@/plugin/layout/sidebar/notes/cards/note-feed-card.svelte";
   import NoteDropdownMenus from "@/plugin/layout/sidebar/notes/dropdown-menus/note-dropdown-menus.svelte";
   import NoteInputField from "@/plugin/layout/sidebar/notes/inputs/note-input-field.svelte";
+  import NoteDialogContent from "@/plugin/layout/sidebar/notes/overlays/note-dialog-content.svelte";
 
   import { NoteCommentRecord, noteCommentsBackendDataSource } from "@/data/model/dataset/notes/comments/record";
   import { NoteFeedRecord, noteFeedsBackendDataSource } from "@/data/model/dataset/notes/feeds/record";
@@ -68,6 +69,7 @@
       newNoteFeed.anchor_type = data.anchor_type;
       newNoteFeed.position = data.position || {};
       newNoteFeed.annotation_id = data.annotation_id || null;
+      console.log(newNoteFeed.annotation_id);
     });
   });
 
@@ -103,6 +105,14 @@
         position: newNoteFeed.position,
         annotation_id: newNoteFeed.annotation_id || undefined,
         created_by_email: "reviewer_user@example.com",
+      },
+      relationships: {
+        annotation: {
+          data: {
+            id: newNoteFeed.annotation_id || undefined,
+            type: "dataset:annotations",
+          },
+        },
       },
     });
     toast.success("Note added successfully.");
@@ -158,7 +168,7 @@
 {#if selectedNoteFeed || showNewNoteFeedPopup}
   <button
     bind:this={NoteOverlayElement}
-    class="bg-primary/10 absolute left-0 z-40"
+    class="absolute left-0 z-40"
     style:top="{pluginContainerRect.top}px"
     style:width="{containerWidth}px"
     style:height="{containerHeight}px"
@@ -186,22 +196,20 @@
       />
 
       <Dialog open={showNewNoteFeedPopup} onOpenChangeComplete={(open) => (showNewNoteFeedPopup = open)}>
-        <DialogContent
-          overlayClass="bg-transparent data-[state=open]:animate-none data-[state=closed]:animate-none"
-          class="w-80 p-0 data-[state=closed]:animate-none data-[state=open]:animate-none"
+        <NoteDialogContent
+          class="w-80 p-0"
           style="
             top: {top}; 
             left: {left}; 
-            transform: translate({sidebarLeftWidth + zoomOffsetX + 200}px, {zoomOffsetY}px);
+            transform: translate({sidebarLeftWidth + zoomOffsetX + 32}px, {zoomOffsetY}px);
           "
-          showCloseButton={false}
         >
           <NoteInputField
             value={contentMd}
             onInput={(e) => (contentMd = e.currentTarget.value)}
             onSubmit={createNoteFeed}
           />
-        </DialogContent>
+        </NoteDialogContent>
       </Dialog>
     {/if}
 
@@ -231,15 +239,13 @@
         open={!!selectedNoteFeed}
         onOpenChangeComplete={(open) => (selectedNoteFeed = open ? selectedNoteFeed : null)}
       >
-        <DialogContent
-          overlayClass="bg-transparent data-[state=open]:animate-none data-[state=closed]:animate-none"
-          class="w-80 gap-1 px-0 py-2 data-[state=closed]:animate-none data-[state=open]:animate-none"
+        <NoteDialogContent
+          class="w-80 gap-1 px-0 py-2"
           style="
             top: {top};
             left: {left};
-            transform: translate({sidebarLeftWidth + zoomOffsetX + 200}px, {zoomOffsetY}px);
+            transform: translate({sidebarLeftWidth + zoomOffsetX + 32}px, {zoomOffsetY}px);
           "
-          showCloseButton={false}
         >
           <DialogHeader class="flex flex-row items-center px-2">
             <DialogTitle>
@@ -280,7 +286,7 @@
               onSubmit={createNoteComment}
             />
           </DialogFooter>
-        </DialogContent>
+        </NoteDialogContent>
       </Dialog>
     {/if}
   </button>

@@ -637,6 +637,10 @@
      */
     if (annotation?.shape.type) {
       mode = annotation.shape.type;
+    } else if (mode === "note") {
+      mode = "note";
+    } else {
+      mode = "visual";
     }
   }
 
