@@ -65,8 +65,11 @@
     { label: "3 X", value: 3 },
     { label: "5 X", value: 5 },
   ];
+  const min = 20;
+  const max = 100;
 
   let currentSpeed: number = $state(1);
+  let sliderValue: number = $derived(max - (zoom - min));
 
   const seekToFrame: ChangeEventHandler<HTMLInputElement> = (event) => {
     const target = event.target as HTMLInputElement;
@@ -77,6 +80,21 @@
   function selectVideoSpeed(selectedSpeed: number): void {
     currentSpeed = selectedSpeed;
     video.playbackRate(currentSpeed);
+  }
+
+  function onSliderChange(value: number): void {
+    zoom = max - (value - min); // flip value
+    onZoomChange(zoom);
+  }
+
+  // Slider needs reversed value for displa
+
+  function zoomIn(): void {
+    zoom = Math.min(max, zoom + 1);
+  }
+
+  function zoomOut(): void {
+    zoom = Math.max(min, zoom - 1);
   }
 </script>
 
@@ -176,7 +194,7 @@
     <div class="flex items-center gap-2">
       <Tooltips align="center">
         {#snippet trigger()}
-          <Button variant="outline" size="icon" onclick={() => onZoomChange(zoom - 1)}>
+          <Button variant="outline" size="icon" onclick={zoomOut}>
             <ZoomOutIcon class="size-4" />
           </Button>
         {/snippet}
@@ -186,12 +204,19 @@
         {/snippet}
       </Tooltips>
 
-      <Slider class="min-w-[200px]" type="single" min={20} max={100} step={1} value={zoom} onValueChange={onZoomChange}
+      <Slider
+        class="min-w-[200px]"
+        type="single"
+        {min}
+        {max}
+        step={1}
+        value={sliderValue}
+        onValueChange={onSliderChange}
       ></Slider>
 
       <Tooltips align="center">
         {#snippet trigger()}
-          <Button variant="outline" size="icon" onclick={() => onZoomChange(zoom + 1)}>
+          <Button variant="outline" size="icon" onclick={zoomIn}>
             <ZoomInIcon class="size-4" />
           </Button>
         {/snippet}
@@ -201,7 +226,6 @@
         {/snippet}
       </Tooltips>
     </div>
-
     <!-- VIDEO::SCALE ADJUSTER (SCALE DOWN / SCALE UP) -->
     <!-- <Popover>
       <PopoverTrigger>
