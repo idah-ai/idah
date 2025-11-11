@@ -1,27 +1,27 @@
 <script lang="ts">
+  import NumberField from "@/components/app/forms/fields/input/number-field.svelte";
   import Tooltips from "@/components/app/tooltips/tooltips.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import {
-      DropdownMenu,
-      DropdownMenuContent,
-      DropdownMenuGroup,
-      DropdownMenuItem,
-      DropdownMenuLabel,
-      DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu";
-  import Input from "@/components/ui/input/input.svelte";
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
   import Slider from "@/components/ui/slider/slider.svelte";
   import {
-      ChevronLeftIcon,
-      ChevronRightIcon,
-      FastForwardIcon,
-      PauseIcon,
-      PlayIcon,
-      Volume2Icon,
-      VolumeXIcon,
-      ZoomInIcon,
-      ZoomOutIcon,
+    ChevronLeftIcon,
+    ChevronRightIcon,
+    FastForwardIcon,
+    PauseIcon,
+    PlayIcon,
+    Volume2Icon,
+    VolumeXIcon,
+    ZoomInIcon,
+    ZoomOutIcon,
   } from "@lucide/svelte";
 
   import type { ChangeEventHandler } from "svelte/elements";
@@ -65,8 +65,8 @@
     { label: "3 X", value: 3 },
     { label: "5 X", value: 5 },
   ];
-  const min = 10;
-  const max = 100;
+  const min = 20;
+  const max = 150;
 
   let currentSpeed: number = $state(1);
   let sliderValue: number = $derived(max - (zoom - min));
@@ -175,15 +175,15 @@
 
     <!-- VIDEO::FRAME ADJUSTER -->
     <div class="inline-flex items-center gap-1 whitespace-nowrap">
-      <Input
-        type="number"
+      <NumberField
+        name="frame-seek"
         class="min-w-24"
         placeholder="Frame"
         min={1}
         max={Math.max(0, totalFrames)}
         suffix={`/ ${Math.max(0, totalFrames)}`}
         value={currentFrame}
-        onchange={seekToFrame}
+        oninput={seekToFrame}
       />
     </div>
   </div>

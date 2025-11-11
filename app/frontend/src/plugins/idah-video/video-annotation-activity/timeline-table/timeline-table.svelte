@@ -5,16 +5,16 @@
   import Spinner from "@/components/ui/spinner/spinner.svelte";
   import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
   import Text from "@/components/ui/text/Text.svelte";
+  import Timeline from "./timeline.svelte";
 
   import { cn } from "@/utils";
   import { humanize } from "@/utils/string";
-  import { Trash2Icon, ZoomOutIcon } from "@lucide/svelte";
+  import { Trash2Icon } from "@lucide/svelte";
+  import { boundingBoxes } from "../idb_store.svelte";
 
   import type { IActivityContext } from "@/plugin/interface/Activity";
-  import { boundingBoxes } from "../idb_store.svelte";
   import type { AnnotationsIndexedDB } from "../indexedDB";
   import type { VideoAnnotation } from "../VideoAnnotationContext";
-  import Timeline from "./timeline.svelte";
 
   // Props
   let {
@@ -73,24 +73,13 @@
     pos_offset = Math.max(1, Math.min(totalFrames - range_span, offset || 0));
   }
 
-  // export function setZoom(value: number) {
-  //   const s = Math.min(100, Math.max(1, Math.round(value)));
-  //   const newScale = Math.ceil(totalFrames / s);
-  //   scale = Math.min(scale, Math.ceil(totalFrames / s));
-  //   zoom = s;
-  //   console.log({ value, scale, zoom });
-
-  //   onScaleChange?.(scale);
-  //   onZoomChange?.(zoom);
-  // }
-
   export function setZoom(value: number) {
     const s = Math.min(100, Math.max(1, Math.round(value)));
-    const minZoom = 10;
-    const maxZoom = 100;
+    const minZoom = 20;
+    const maxZoom = 150;
     const maxScale = Math.ceil(totalFrames / zoom);
 
-    let scale = value == minZoom ? 1 : 1 + ((s - minZoom) / (maxZoom - minZoom)) * (maxScale - 1);
+    let scale = value >= (minZoom + maxZoom) / 2 ? 1 : 1 + ((s - minZoom) / (maxZoom - minZoom)) * (maxScale - 1);
 
     // clamp scale just in case
     scale = Math.min(scale, maxScale);
