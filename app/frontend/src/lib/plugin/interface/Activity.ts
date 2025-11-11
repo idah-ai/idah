@@ -86,29 +86,12 @@ export interface IAnnotationDriver {
   flush(): void;
 }
 
-// export interface INoteDriver {
-//   /** NOTE::FEEDS */
-//   feeds: {
-//     create(data: Partial<INoteFeed>): Promise<INoteFeed>;
-//     list(listOptions: IListOptions): Promise<Array<INoteFeed>>;
-//     get(id: string): Promise<INoteFeed>;
-//     update(id: string, data: Partial<INoteFeed>): Promise<INoteFeed>;
-//     delete(id: string): Promise<void>;
-//     markAsResolved(noteFeedId: string): Promise<INoteFeed>;
-//   };
-
-//   /** NOTE::COMMENTS */
-//   comments: {
-//     list(listOptions: IListOptions): Promise<Array<INoteComment>>;
-//     create(data: Partial<INoteComment>): Promise<INoteComment>;
-//     update(id: string, data: Partial<INoteComment>): Promise<INoteComment>;
-//     delete(id: string): Promise<void>;
-//   };
-// }
-
 export interface INotes {
   showNewNoteFeedPopup: (data: Pick<INoteFeed, "anchor_type" | "position" | "annotation_id">) => void;
   onNewNoteFeedOpenChange: (cb: (data: Pick<INoteFeed, "anchor_type" | "position" | "annotation_id">) => void) => void;
+
+  requireNoteFeedPosition: (noteFeed: INoteFeed) => void;
+  onRequireNoteFeedPosition: (cb: (noteFeed: INoteFeed) => void) => void;
 
   gotoFeed: (noteFeedId: string | null, noteCommentId?: string) => void;
   onNoteSelected: (cb: (noteFeedId: string | null, noteCommentId?: string) => Promise<void> | void) => void;

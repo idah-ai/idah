@@ -49,6 +49,10 @@
     console.log("zoomout");
   }
 
+  export function setOffset(newOffset: Point) {
+    offset = newOffset;
+  }
+
   function zoomAt(x: number, y: number, step: number) {
     let ox = (x - offset[X]) / zoom.current;
     let oy = (y - offset[Y]) / zoom.current;

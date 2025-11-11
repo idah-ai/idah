@@ -7,7 +7,9 @@ import type { Command } from "@/command/Command";
 import CommandManager from "@/command/CommandManager";
 
 import { createAnnotationDriver } from "./AnnotationDriver";
-import type { HeaderBarModeTool, IActivityContext, INoteFeed, INotes, ITools } from "./interface/Activity";
+import { createNoteDriver } from "./NoteDriver";
+
+import type { HeaderBarModeTool, IActivityContext, ITools } from "./interface/Activity";
 
 function createCommandsInterface() {
   const commands = new Map();
@@ -61,25 +63,6 @@ function createToolsInterface(): ITools {
   };
 }
 
-function createNotesInterface(): INotes {
-  let _onNoteSelected: ((noteFeedId: string | null, noteCommentId?: string) => void) | undefined;
-  let _onNewNoteFeedOpenChange:
-    | ((data: Pick<INoteFeed, "anchor_type" | "position" | "annotation_id">) => void)
-    | undefined;
-
-  return {
-    showNewNoteFeedPopup: (data: Pick<INoteFeed, "anchor_type" | "position" | "annotation_id">) => {
-      _onNewNoteFeedOpenChange?.(data);
-    },
-    onNewNoteFeedOpenChange: (cb) => (_onNewNoteFeedOpenChange = cb),
-
-    gotoFeed: (noteFeedId: string | null, noteCommentId?: string) => {
-      _onNoteSelected?.(noteFeedId, noteCommentId);
-    },
-    onNoteSelected: (cb) => (_onNoteSelected = cb),
-  };
-}
-
 export function activityContextForEntry(entry: EntryRecord): IActivityContext {
   return {
     id: entry.id,
@@ -96,7 +79,7 @@ export function activityContextForEntry(entry: EntryRecord): IActivityContext {
     },
     userRole: "",
     annotations: createAnnotationDriver(entry.id),
-    notes: createNotesInterface(),
+    notes: createNoteDriver(),
     commands: createCommandsInterface(),
     tools: createToolsInterface(),
     back() {

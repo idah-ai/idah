@@ -675,6 +675,10 @@
       annotation_id: annotationId,
     });
   }
+
+  function seekToFrame(frame: number) {
+    player?.seekToFrame(frame);
+  }
 </script>
 
 <div class="flex h-full w-full flex-col">
@@ -772,6 +776,7 @@
           onSelectAnnotation={selectAnnotation}
           onSelection={onShapeSelection}
           onAddNewNote={showNewNotePopup}
+          onChangeFrame={seekToFrame}
           target_container={() => player_container}
           {videoResizedAt}
         >
@@ -824,7 +829,7 @@
             {currentFrame}
             {totalFrames}
             {selectedAnnotation}
-            onSeekFrame={(frame) => player?.seekToFrame(frame)}
+            onSeekFrame={seekToFrame}
             {onDeleteAnnotation}
             onSelectAnnotation={selectAnnotation}
             onScaleChange={(s) => {
