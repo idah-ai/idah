@@ -57,22 +57,19 @@
   export function source(src?: string) {
     return player?.src(src);
   }
-  function setCurrentTime(time) {
-    player?.currentTime(time + 1 / (fps * 1000));
-  }
 
   export function nextFrame(count = 1) {
     if (!fps) console.error({ fps, nextFrame });
 
     if (!player?.paused()) player?.pause();
-    setCurrentTime((currentFrame + count - 1) / fps);
+    seekToFrame(currentFrame + count);
   }
 
   export function previousFrame(count = 1) {
     if (!fps) console.error({ fps, nextFrame });
 
     if (!player?.paused()) player?.pause();
-    setCurrentTime((currentFrame - count - 1) / fps);
+    seekToFrame(currentFrame - count);
   }
 
   export function toggleMute() {
@@ -87,7 +84,8 @@
   export function seekToFrame(frame: number) {
     if (!fps) return console.log({ seekToFrame, fps, frame });
 
-    setCurrentTime((frame - 1) / fps);
+    // + 0.001 to account for browser rounding difference
+    player?.currentTime((frame - 1 + 0.001) / fps);
   }
 
   export function playbackRate(value: number) {
