@@ -5,22 +5,22 @@
   import Spinner from "@/components/ui/spinner/spinner.svelte";
   import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
   import Text from "@/components/ui/text/Text.svelte";
+  import Timeline from "./timeline.svelte";
 
   import { cn } from "@/utils";
   import { humanize } from "@/utils/string";
   import { Trash2Icon } from "@lucide/svelte";
+  import { boundingBoxes } from "../idb_store.svelte";
 
   import type { IActivityContext } from "@/plugin/interface/Activity";
-  import { boundingBoxes } from "../idb_store.svelte";
   import type { AnnotationsIndexedDB } from "../indexedDB";
   import type { VideoAnnotation } from "../VideoAnnotationContext";
-  import Timeline from "./timeline.svelte";
 
   // Props
   let {
     // tracking = false,
-    scale = 1,
-    zoom = 1,
+    scale,
+    zoom,
     currentFrame,
     totalFrames,
     selectedAnnotation,
@@ -66,25 +66,42 @@
 
   let pos_offset: number = $state(1);
   let range: [number, number] = $derived([pos_offset, pos_offset + range_span]);
-
   let wheelthrottling = $state(false);
   let hoveredColumn: number | undefined = $state();
+  let prevCurrentFrame: number = $state(currentFrame);
+
+  $effect(() => {
+    // Auto-scroll to center currentFrame only when currentFrame actually changes
+    if (currentFrame !== prevCurrentFrame) {
+      const centerOffset = currentFrame - Math.floor(range_span / 2);
+      if (currentFrame < pos_offset || currentFrame > pos_offset + range_span) {
+        setOffset(centerOffset);
+      }
+      prevCurrentFrame = currentFrame;
+    }
+  });
 
   export function setOffset(offset: number) {
     pos_offset = Math.max(1, Math.min(totalFrames - range_span, offset || 0));
   }
 
-  export function setZoom(value: number) {
-    const s = Math.min(150, Math.max(1, Math.round(value)));
-    scale = Math.min(scale, Math.ceil(totalFrames / s));
+  export function setZoom(value: number): void {
+    const s = Math.min(100, Math.max(1, Math.round(value)));
+    const minZoom = 20;
+    const maxZoom = 150;
+    const midZoom = (minZoom + maxZoom) / 2;
+
+    // maximum scale based on zoom
+    const maxScale = Math.ceil(totalFrames / zoom);
+
+    // Determine new scale based on zoom value
+    const newScale = value <= midZoom ? 1 : Math.ceil(1 + ((value - midZoom) / (maxZoom - midZoom)) * (maxScale - 1));
+
+    scale = Math.ceil(newScale);
     zoom = s;
+
     onScaleChange?.(scale);
     onZoomChange?.(zoom);
-  }
-
-  export function setScale(value: number) {
-    scale = Math.max(1, Math.min(Math.ceil(totalFrames / zoom), value));
-    onScaleChange?.(scale);
   }
 
   function seekToFrame(frameToGo: number) {
@@ -134,8 +151,8 @@
 
   function scrollHorizontal(e: MouseEvent) {
     if (isResizing) {
-      const isScrollToTheRight = e.movementX < 0;
-      const isScrollToTheLeft = e.movementX > 0;
+      const isScrollToTheRight = e.movementX > 0;
+      const isScrollToTheLeft = e.movementX < 0;
 
       if (isScrollToTheRight) {
         const next = Math.floor(range_span / 10);
@@ -196,6 +213,8 @@
           {currentFrame}
           {range}
           {scale}
+          {zoom}
+          {totalFrames}
           onCellHover={(column) => (hoveredColumn = column)}
           {hoveredColumn}
           {onSeekFrame}
@@ -205,6 +224,18 @@
       </TableCell>
     </TableRow>
   {/each}
+{/snippet}
+
+{#snippet tooltipFrame(thisFrame: number, bgColor: string = "bg-black", extraClass: string = "")}
+  <span
+    class={cn(
+      `${bgColor} pointer-events-none absolute top-0 left-1/2 z-50 -translate-x-1/2 transform rounded-md px-2 py-1 text-xs font-medium whitespace-nowrap text-white transition-all duration-150`,
+      extraClass,
+    )}
+  >
+    {thisFrame}
+    <span class={`absolute top-full left-1/2 -mt-1 h-1.5 w-1.5 -translate-x-1/2 rotate-45 ${bgColor}`}></span>
+  </span>
 {/snippet}
 
 <Table
@@ -222,7 +253,6 @@
         let c_hovered = $state.snapshot(hoveredColumn);
         let c = c_hovered != undefined ? Math.ceil((c_hovered - pos_offset) / scale) : 0;
 
-        setScale(scale + delta);
         if (c_hovered != undefined) {
           setOffset(c_hovered - c * scale);
         }
@@ -265,19 +295,19 @@
     if (delta || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) e.preventDefault();
   }}
 >
-  <TableHeader class="bg-background sticky z-10" style="inset-block-start: 0">
+  <TableHeader class="bg-background sticky" style="inset-block-start: 0">
     <TableRow>
       <!-- HEADER::ANNOTATIONS -->
-      <TableHead class="h-5 w-80"></TableHead>
+      <TableHead class="h-7 w-80"></TableHead>
 
       <!-- HEADER::TIMELINES -->
-      <TableHead class="h-5 p-0">
+      <TableHead class="h-7 p-0">
         <div
           role="scrollbar"
           aria-controls="timeline-table"
           aria-valuenow={pos_offset}
           tabindex="0"
-          class="text-muted-foreground relative h-5"
+          class="text-muted-foreground group relative h-7"
           onmousedowncapture={() => {
             isResizing = true;
           }}
@@ -298,43 +328,50 @@
 
             {#if isSelected}
               <button
-                class="border-border text-primary bg-background absolute top-0 z-20 cursor-col-resize border-b border-l"
+                class="border-border text-primary bg-background absolute top-0 z-50 h-full cursor-col-resize border-l"
                 style:width="{width}%"
                 style:padding-left="0.125rem"
                 style:left="{startLeftPosition}%"
                 onclick={() => seekToFrame(thisFrame)}
               >
-                {thisFrame}
-              </button>
-            {:else if isHovered}
-              <button
-                class="border-border text-primary bg-primary/20 absolute top-0 z-10 cursor-col-resize border-l"
-                style:width="{width}%"
-                style:padding-left="0.125rem"
-                style:left="{startLeftPosition}%"
-                onclick={() => seekToFrame(thisFrame)}
-              >
-                {thisFrame}
+                {@render tooltipFrame(thisFrame, "bg-primary")}
               </button>
             {:else if isDefault}
               <button
-                class="border-border text-muted-foreground/50 absolute top-0 cursor-col-resize border-l"
+                class={cn("border-border absolute top-0 h-full cursor-pointer border-l", {
+                  "bg-primary/20 text-primary z-100": isHovered,
+                  "text-muted-foreground/50 z-0": !isHovered,
+                })}
                 style:width="{width}%"
-                style:padding-left="0.125rem"
                 style:left="{startLeftPosition}%"
                 onclick={() => seekToFrame(thisFrame)}
+                onmouseenter={() => (hoveredColumn = thisFrame)}
+                onmouseleave={() => (hoveredColumn = undefined)}
               >
-                {thisFrame}
+                {#if isHovered}
+                  {@render tooltipFrame(thisFrame, "bg-black")}
+                {:else}
+                  {thisFrame}
+                {/if}
               </button>
             {:else if isTick}
               <button
                 aria-label="tick"
-                class="border-border absolute bottom-0 cursor-col-resize border-l"
+                class={cn("border-border absolute bottom-0 cursor-pointer border-l", {
+                  "z-100": isHovered,
+                  "z-0": !isHovered,
+                })}
                 style:height="60%"
-                style:width="100%"
+                style:width="{width}%"
                 style:left="{startLeftPosition}%"
                 onclick={() => seekToFrame(thisFrame)}
-              ></button>
+                onmouseenter={() => (hoveredColumn = thisFrame)}
+                onmouseleave={() => (hoveredColumn = undefined)}
+              >
+                {#if isHovered}
+                  {@render tooltipFrame(thisFrame, "bg-black", "-top-3")}
+                {/if}
+              </button>
             {/if}
           {/each}
         </div>

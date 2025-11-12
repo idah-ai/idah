@@ -1,5 +1,6 @@
 <script lang="ts">
   import TimelineCell from "./timeline-cell.svelte";
+
   import type { VideoAnnotation } from "../VideoAnnotationContext";
   import { EntryRoot } from "../../type";
 
@@ -8,6 +9,8 @@
     currentFrame,
     range,
     scale,
+    zoom,
+    totalFrames,
     hoveredColumn,
     onCellHover,
     onSeekFrame,
@@ -19,6 +22,8 @@
     currentFrame: number;
     range: [number, number];
     scale: number;
+    zoom: number;
+    totalFrames: number;
     hoveredColumn?: number;
     onCellHover: (column?: number) => void;
     onSeekFrame: (frame: number) => void;
@@ -46,9 +51,10 @@
         {currentFrame}
         {range}
         {scale}
-        inSpan={annotation.shape.type == EntryRoot ||
-          (Math.floor((annotation.shape.start - range[0]) / scale) <= i &&
-            Math.floor((annotation.shape.end - range[0]) / scale) >= i)}
+        {zoom}
+        {totalFrames}
+        inSpan={Math.floor((annotation.shape.start - range[0]) / scale) <= i &&
+          Math.floor((annotation.shape.end - range[0]) / scale) >= i}
         {onSeekFrame}
         keyframes={(annotation.shape.frames || [])
           .filter((s) => Math.floor((s.frame - range[0]) / scale) == i)

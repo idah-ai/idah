@@ -1,9 +1,9 @@
 <script lang="ts">
+  import { MousePointer2Icon, SquareMousePointerIcon } from "@lucide/svelte";
   import { onMount, setContext } from "svelte";
   import { toast } from "svelte-sonner";
   import { uuidv7 } from "uuidv7";
 
-  import Button from "@/components/ui/button/button.svelte";
   import {
     CommandDialog,
     CommandEmpty,
@@ -14,13 +14,12 @@
     CommandSeparator,
     CommandShortcut,
   } from "$lib/components/ui/command";
+  import Button from "@/components/ui/button/button.svelte";
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
   import SidebarInset from "@/components/ui/sidebar/sidebar-inset.svelte";
   import SidebarProvider from "@/components/ui/sidebar/sidebar-provider.svelte";
 
   import { ResizableHandle, ResizablePane, ResizablePaneGroup } from "@/components/ui/resizable";
-  import { AnnotationRecord } from "@/data/model/dataset/annotations/record";
-
   import { ScrollArea } from "@/components/ui/scroll-area";
   import type {
     AnnotationMetadata,
@@ -29,6 +28,7 @@
     AnnotationValue,
   } from "@/context/AnnotationContext";
   import type { IActivityContext } from "@/plugin/interface/Activity";
+  import { AnnotationRecord } from "@/data/model/dataset/annotations/record";
   import { ShortcutManager } from "@/shortcut/ShortcutManager";
   import AnnotationFooter from "./layout/footer/AnnotationFooter.svelte";
   import AnnotationFooterToolbar from "./layout/footer/AnnotationFooterToolbar.svelte";
@@ -44,6 +44,16 @@
   import BoxSelectIcon from "@lucide/svelte/icons/box-select";
   import MousePointer2 from "@lucide/svelte/icons/mouse-pointer-2";
   import { DefaultMode, EntryRoot, IdahVideoBoundingBox } from "./type";
+
+  import type { AnnotationShape, AnnotationValue } from "@/context/AnnotationContext";
+  import type { IActivityContext } from "@/plugin/interface/Activity";
+  import type {
+    Point,
+    VideoAnnotation,
+    VideoFrameSelection,
+    VideoShape,
+  } from "./video-annotation-activity/VideoAnnotationContext";
+  import VideoController from "./video-annotation-activity/VideoController.svelte";
 
   // Props
   interface Props {
@@ -71,7 +81,7 @@
   let entry_id = $state(context.id);
   let url = $state(context.mediaUrl);
 
-  let zoom = $state(100);
+  let zoom = $state(85);
   let scale = $state(1);
   let timelineTable: TimelineTable;
   let videoController: VideoController;
@@ -139,14 +149,14 @@
     context.tools.setTools([
       {
         label: "Visual",
-        type: DefaultMode,
-        icon: MousePointer2,
+        type: "visual",
+        icon: MousePointer2Icon,
         handleClick: () => context.commands.run("tools.visual"),
       },
       {
         label: "Bounding Box",
-        type: IdahVideoBoundingBox,
-        icon: BoxSelectIcon,
+        type: "video:bounding_box",
+        icon: SquareMousePointerIcon,
         handleClick: () => context.commands.run("tools.bounding_box"),
       },
     ]);
@@ -825,13 +835,13 @@
               bind:this={videoController}
               {isPlaying}
               {zoom}
-              {scale}
               {currentFrame}
               {totalFrames}
               {volume}
               bind:video={player}
-              onZoomChange={(z) => timelineTable.setZoom(z)}
-              onScaleChange={(s) => timelineTable.setScale(s)}
+              onZoomChange={(z) => {
+                timelineTable.setZoom(z);
+              }}
             />
           </AnnotationFooterToolbar>
 
