@@ -231,6 +231,7 @@
 
           if (a && a.metadata.updatedAt.valueOf() == createdAt.valueOf()) {
             a.synced = true;
+            selectedAnnotation = a;
             await annotationsIDB?.addAnnotations([a]);
             $idb_updated_at = new Date();
           }
