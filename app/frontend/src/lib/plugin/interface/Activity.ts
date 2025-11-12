@@ -3,28 +3,6 @@
 import type { Command } from "@/command/Command";
 import type { AnnotationHeaderBarBaseTool } from "@/plugin/layout/header/annotation-header-bar.types";
 
-export interface IFields {
-  [key: string]: Array<string>;
-}
-
-export interface IFilters {
-  [key: string]: unknown;
-}
-
-export interface IPagination {
-  page: number;
-  itemsPerPage: number;
-}
-
-export type ISort = Array<string>;
-
-export interface IListOptions {
-  fields?: IFields;
-  filters?: IFilters;
-  pagination?: IPagination;
-  sort?: ISort;
-}
-
 interface IUser {
   id: number;
   email: string;

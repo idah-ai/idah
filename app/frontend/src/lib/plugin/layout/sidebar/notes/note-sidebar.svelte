@@ -200,7 +200,7 @@
 {#if open}
   <div
     transition:slide={{ axis: "x" }}
-    class="bg-background absolute top-12 right-0 z-50 ml-auto flex h-[calc(100%-3rem)] w-80 flex-col border-l"
+    class="bg-background absolute top-11 right-0 z-50 ml-auto flex h-[calc(100%-3rem)] w-80 flex-col border-l"
   >
     <!-- HEADER -->
     <section class="flex items-center gap-1 border-b p-2">

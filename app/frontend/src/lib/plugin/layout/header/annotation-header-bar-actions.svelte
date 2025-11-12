@@ -43,7 +43,7 @@
       handleClick: () => {},
     },
     {
-      label: "Notes",
+      label: "Notes Sidebar",
       icon: MessageCircleIcon,
       isActive: openNoteSidebar,
       handleClick: () => {

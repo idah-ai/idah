@@ -73,9 +73,9 @@
 >
   {#snippet headerIcon()}
     <div
-      class={cn("flex size-8 shrink-0 items-center justify-center rounded-full ", {
+      class={cn("dark:text-accent flex size-8 shrink-0 items-center justify-center rounded-full", {
         "bg-purple-300": noteType === "annotation",
-        "bg-yellow-300": noteType === "video_frame",
+        "bg-yellow-300 ": noteType === "video_frame",
         "bg-emerald-300": noteType === "general",
       })}
     >
