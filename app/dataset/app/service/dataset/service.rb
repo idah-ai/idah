@@ -3,6 +3,7 @@
 module Dataset
   class Service < Verse::Service::Base
     use datasets: Dataset::Repository
+    use_system project_members: ProjectMember::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       datasets.index(
@@ -20,23 +21,28 @@ module Dataset
     end
 
     def create(record)
-      attr = record.attributes
-
-      # attr[:created_by_email] ||= auth_context.metadata[:email]
-      attr[:id] = record.id || UUIDv7.generate
-
-      if record.project
-        attr[:project_id] = record.project.id
-      else
+      # Validate required relationships
+      unless record.project
         raise Verse::Error::ValidationFailed,
-              "project is required to create a dataset"
+              "project relationship is required to create a dataset"
       end
 
-      id = datasets.create(
-        record.attributes
-      )
+      # With "as_user" ensure account can "create" dataset to the project
+      access = auth_context.can?(:create, datasets.class.resource)
+      if access == :as_user && !datasets.account_can_access_project?(record.project.id, :create)
+        raise Errors::Service::UnauthorizedProjectAccess
+      end
 
-      datasets.find!(id)
+      # Assign attributes
+      attributes = record.attributes
+      attributes[:id] = record.id || UUIDv7.generate
+      attributes[:project_id] = record.project.id
+      # attributes[:created_by_email] ||= auth_context.metadata[:email]
+
+      datasets.transaction do
+        id = datasets.create(attributes)
+        datasets.find(id)
+      end
     end
 
     def update(record)
@@ -45,7 +51,7 @@ module Dataset
     end
 
     def delete(id)
-      datasets.delete(id)
+      datasets.delete!(id)
     end
   end
 end

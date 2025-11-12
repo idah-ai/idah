@@ -2,8 +2,7 @@
 
 module Entry
   class Service < Verse::Service::Base
-    use entries: Entry::Repository
-    use_system datasets: Dataset::Repository
+    use entries: Entry::Repository, datasets: Dataset::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       entries.index(
@@ -21,30 +20,45 @@ module Entry
     end
 
     def create(record)
-      attr = record.attributes
+      attributes = record.attributes
 
-      attr[:id] = record.id || UUIDv7.generate
+      # Validate required relationships and fields
+      unless record.dataset
+        raise Verse::Error::ValidationFailed,
+              "dataset relationship is required to create an entry"
+      end
+
+      unless attributes[:resource]
+        raise Verse::Error::ValidationFailed,
+              "resource field is required to create an entry"
+      end
+
+      # Ensure entry with same resource does not already exist
+      if entries.find_by({ resource: attributes[:resource] })
+        raise Verse::Error::ValidationFailed,
+              "Entry with resource #{attributes[:resource]} already exists"
+      end
+
+      dataset = datasets.find(record.dataset.id)
+
+      unless dataset
+        raise Verse::Error::ValidationFailed,
+              "dataset not found to create an entry"
+      end
+
+      # With "as_user" ensure account can "create" entry to the project
+      access = auth_context.can?(:create, entries.class.resource)
+      if access == :as_user && !entries.account_can_access_project?(dataset.project_id, :create)
+        raise Errors::Service::UnauthorizedProjectAccess
+      end
+
+      # Assign attributes
+      attributes[:id] = record.id || UUIDv7.generate
+      attributes[:project_id] = dataset.project_id
+      attributes[:dataset_id] = dataset.id
 
       entries.transaction do
-        unless attr[:resource]
-          raise Verse::Error::ValidationFailed,
-                "resource is required to create an entry"
-        end
-
-        if entries.find_by({ resource: attr[:resource] })
-          raise Verse::Error::ValidationFailed,
-                "Entry with resource #{attr[:resource]} already exists"
-        end
-
-        unless record.dataset
-          raise Verse::Error::ValidationFailed,
-                "dataset is required to create an entry"
-        end
-
-        attr[:dataset_id] = record.dataset.id
-
-        id = entries.create(attr)
-
+        id = entries.create(attributes)
         entries.find!(id)
       end
     end
@@ -59,7 +73,7 @@ module Entry
     end
 
     def delete(id)
-      entries.delete(id)
+      entries.delete!(id)
     end
 
     def assign_member(id, assigned_to_id)
