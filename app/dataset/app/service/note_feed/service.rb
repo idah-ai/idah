@@ -45,7 +45,12 @@ module NoteFeed
               "entry_id field is required to create a note feed"
       end
 
-      entry = entries.find!(attributes[:entry_id])
+      entry = entries.find(attributes[:entry_id], included: ["dataset"])
+
+      unless entry
+        raise Verse::Error::ValidationFailed,
+              "entry not found to create a note feed"
+      end
 
       attributes[:id] = UUIDv7.generate
       attributes[:project_id] = entry.project_id
@@ -53,9 +58,6 @@ module NoteFeed
       # put created_by_email to nil for now, will be replaced with auth_context[:email] later
       attributes[:created_by_email] ||= nil
       attributes[:status] = "pending"
-
-      entry_id = attributes[:entry_id]
-      entry = entries.find!(entry_id, included: ["dataset"])
 
       # Check if the current workflow step allows note feeds
       dataset = entry.dataset

@@ -26,7 +26,12 @@ module Annotation
               "entry relationship is required to create an annotation"
       end
 
-      entry = entries.find!(record.entry.id)
+      entry = entries.find(record.entry.id)
+
+      unless entry
+        raise Verse::Error::ValidationFailed,
+              "entry not found to create an annotation"
+      end
 
       # Assign attributes
       attributes = record.attributes

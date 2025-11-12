@@ -39,7 +39,18 @@ module Entry
               "Entry with resource #{attributes[:resource]} already exists"
       end
 
-      dataset = datasets.find!(record.dataset.id)
+      dataset = datasets.find(record.dataset.id)
+
+      unless dataset
+        raise Verse::Error::ValidationFailed,
+              "dataset not found to create an entry"
+      end
+
+      # With "as_user" ensure account can "create" entry to the project
+      access = auth_context.can?(:create, entries.class.resource)
+      if access == :as_user && !entries.account_can_access_project?(dataset.project_id, :create)
+        raise Errors::Service::UnauthorizedProjectAccess
+      end
 
       # Assign attributes
       attributes[:id] = record.id || UUIDv7.generate
@@ -62,7 +73,7 @@ module Entry
     end
 
     def delete(id)
-      entries.delete(id)
+      entries.delete!(id)
     end
 
     def assign_member(id, assigned_to_id)

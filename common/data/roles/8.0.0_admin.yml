@@ -5,7 +5,4 @@ admin:
     who have access to all organizations and projects.
   assignable: true
   rights:
-    - "iam:accounts.login.*"
-    - "dataset:projects.*.*"
-    - "dataset:project_members.*.*"
-    - "dataset:datasets.*.*"
+    - "*.*.*"
