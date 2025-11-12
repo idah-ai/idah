@@ -12,9 +12,10 @@
   import type { AnnotationValue } from "@/context/AnnotationContext";
 
   import CategoryProperties from "../../video-annotation-activity/categoryProperties/categoryProperties.svelte";
-  import { idb_updated_at } from "../../video-annotation-activity/idb_store.svelte";
+  import { entryRoot, idb_updated_at } from "../../video-annotation-activity/idb_store.svelte";
   import type { AnnotationsIndexedDB } from "../../video-annotation-activity/indexedDB";
   import type { VideoAnnotation } from "../../video-annotation-activity/VideoAnnotationContext";
+  import { EntryRoot } from "../../type";
 
   // Props
   let {
