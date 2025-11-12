@@ -287,7 +287,7 @@
     if (delta || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) e.preventDefault();
   }}
 >
-  <TableHeader class="bg-background sticky z-50" style="inset-block-start: 0">
+  <TableHeader class="bg-background sticky" style="inset-block-start: 0">
     <TableRow>
       <!-- HEADER::ANNOTATIONS -->
       <TableHead class="h-7 w-80"></TableHead>
@@ -320,7 +320,7 @@
 
             {#if isSelected}
               <button
-                class="border-border text-primary bg-background absolute top-0 z-0 h-full cursor-col-resize border-l"
+                class="border-border text-primary bg-background absolute top-0 z-50 h-full cursor-col-resize border-l"
                 style:width="{width}%"
                 style:padding-left="0.125rem"
                 style:left="{startLeftPosition}%"
@@ -331,8 +331,8 @@
             {:else if isDefault}
               <button
                 class={cn("border-border absolute top-0 h-full cursor-pointer border-l", {
-                  "bg-primary/20 text-primary z-20": isHovered,
-                  "text-muted-foreground/50": !isHovered,
+                  "bg-primary/20 text-primary z-100": isHovered,
+                  "text-muted-foreground/50 z-0": !isHovered,
                 })}
                 style:width="{width}%"
                 style:left="{startLeftPosition}%"
@@ -349,7 +349,10 @@
             {:else if isTick}
               <button
                 aria-label="tick"
-                class={cn("border-border absolute bottom-0 cursor-pointer border-l", {})}
+                class={cn("border-border absolute bottom-0 cursor-pointer border-l", {
+                  "z-100": isHovered,
+                  "z-0": !isHovered,
+                })}
                 style:height="60%"
                 style:width="{width}%"
                 style:left="{startLeftPosition}%"
