@@ -1,4 +1,7 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
+
   import AuthenticationAlert from "@/components/app/iam/auth/alert/authentication-alert.svelte";
   import AuthenticationCard from "@/components/app/iam/auth/card/authentication-card.svelte";
   import Button from "@/components/ui/button/button.svelte";
@@ -8,7 +11,6 @@
   import Text from "@/components/ui/text/Text.svelte";
 
   import { loginSchema } from "@/data/model/iam/accounts/auth-schema";
-  import { goto } from "$app/navigation";
 
   // Variables
   let resource: string = "iam:account";
@@ -35,22 +37,13 @@
         }),
       });
 
-      console.log("response: ", response);
-
-      // if (!response.ok) {
-      //   showErrorAlert = true;
-      //   return;
-      // }
-
       const body = await response.json();
       console.log("body: ", body);
 
       if (body.errors) throw body.errors;
       // if (body && body.data) return body;
-      if (body && body.data) goto("/");
+      if (body && body.data) goto(resolve("/"));
       // token = body.meta.token
-
-      throw "No body returned";
 
       // localStorage.setItem("authToken", body.token);
     } catch (error) {
@@ -93,7 +86,7 @@
         <Link href="/forgot-password" class="text-primary text-sm">Forgot password?</Link>
       </div>
 
-      <Button class="w-full" disabled={disabledSignInButton} onclick={logIn}>Sign In</Button>
+      <Button type="submit" class="w-full" disabled={disabledSignInButton} onclick={logIn}>Sign In</Button>
     </Form>
   {/snippet}
 
