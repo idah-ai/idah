@@ -23,20 +23,60 @@ module Project
     self.resource = Resource::Dataset::Projects
 
     def scoped(action)
-      auth_context.can!(action, Resource::Dataset::Projects) do |scope|
+      auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }
-        scope.as_user? do
-          org_scopes = auth_context.custom_scopes[:org]
-
-          # TODO: finish this once base query for action checks are done
-          if org_scopes.any?
-            # Can access everything under the org
-            table.where(organization_id: org_scopes)
-            # else
-            # Check project membership role then scope the record
-          end
-        end
+        scope.as_user? { account_project_scoped_query(action) }
       end
+    end
+
+    # Actions          | Roles
+    # read             | project_owner, annotator, reviewer
+    # update/delete    | project_owner
+    # create           | N/A
+    #
+    # Info:
+    # Annotators and reviewers can only read projects
+    # Only project_owner(member), org_owner and admin roles can update and delete projects
+    # Only org_owner and admin roles can create projects
+    query
+    def account_project_scoped_query(action)
+      account_id = auth_context.metadata[:id]
+      scoped_fragment = <<-SQL
+        EXISTS (
+          SELECT 1
+          FROM project_members pm
+          WHERE pm.account_id = :account_id
+            AND pm.project_id = projects.id
+            AND pm.role IN :roles
+        )
+      SQL
+
+      case action
+      when :read
+        table.where(
+          Sequel.lit(
+            scoped_fragment,
+            account_id:,
+            roles: %w[project_owner annotator reviewer]
+          )
+        )
+      when :update, :delete
+        table.where(
+          Sequel.lit(
+            scoped_fragment,
+            account_id:,
+            roles: %w[project_owner]
+          )
+        )
+      else
+        raise Verse::Error::Unauthorized,
+              "Permission denied for \"#{action}\" action on #{self.class.resource}"
+      end
+    end
+
+    query
+    def account_can_access_project?(project_id, action)
+      account_project_scoped_query(action).where(project_id:).limit(1).any?
     end
   end
 end

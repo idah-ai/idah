@@ -1,0 +1,11 @@
+org_owner:
+  mask: "2.0.0"
+  description: |
+    This role is assigned to organization owners
+    who have access to all projects within their organization.
+  assignable: true
+  rights:
+    - "iam:accounts.login.*"
+    - "dataset:projects.*.as_org_owner"
+    - "dataset:project_members.*.as_org_owner"
+    - "dataset:datasets.*.as_org_owner"
