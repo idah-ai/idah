@@ -217,6 +217,18 @@
   {/each}
 {/snippet}
 
+{#snippet tooltipFrame(thisFrame: number, bgColor: string = "bg-black", extraClass: string = "")}
+  <span
+    class={cn(
+      `${bgColor} pointer-events-none absolute left-1/2 top-0 z-50 -translate-x-1/2 transform whitespace-nowrap rounded-md px-2 py-1 text-xs font-medium text-white transition-all duration-150`,
+      extraClass,
+    )}
+  >
+    {thisFrame}
+    <span class={`absolute left-1/2 top-full -mt-1 h-1.5 w-1.5 -translate-x-1/2 rotate-45 ${bgColor}`}></span>
+  </span>
+{/snippet}
+
 <Table
   onwheel={(e: WheelEvent) => {
     let from = $state.snapshot(pos_offset) as number;
@@ -278,16 +290,16 @@
   <TableHeader class="bg-background sticky z-50" style="inset-block-start: 0">
     <TableRow>
       <!-- HEADER::ANNOTATIONS -->
-      <TableHead class="h-6 w-80"></TableHead>
+      <TableHead class="h-7 w-80"></TableHead>
 
       <!-- HEADER::TIMELINES -->
-      <TableHead class="h-6 p-0">
+      <TableHead class="h-7 p-0">
         <div
           role="scrollbar"
           aria-controls="timeline-table"
           aria-valuenow={pos_offset}
           tabindex="0"
-          class="text-muted-foreground relative h-6"
+          class="text-muted-foreground group relative h-7"
           onmousedowncapture={() => {
             isResizing = true;
           }}
@@ -314,41 +326,41 @@
                 style:left="{startLeftPosition}%"
                 onclick={() => seekToFrame(thisFrame)}
               >
-                {thisFrame}
-              </button>
-            {:else if isHovered}
-              <button
-                class="border-border text-primary bg-primary/20 absolute top-0 z-20 cursor-col-resize border-l"
-                style:width="{width}%"
-                style:padding-left="0.125rem"
-                style:left="{startLeftPosition}%"
-                onclick={() => seekToFrame(thisFrame)}
-              >
-                <span
-                  class="pointer-events-none absolute -top-1 left-1/2 -translate-x-1/2 transform whitespace-nowrap rounded-md bg-black px-2 py-1 text-xs font-medium text-white"
-                >
-                  {thisFrame}
-                  <span class="absolute left-1/2 top-full -mt-1 h-1.5 w-1.5 -translate-x-1/2 rotate-45 bg-black"></span>
-                </span>
+                {@render tooltipFrame(thisFrame, "bg-primary")}
               </button>
             {:else if isDefault}
               <button
-                class="border-border text-muted-foreground/50 absolute top-0 cursor-col-resize border-l"
+                class={cn("border-border absolute top-0 h-full cursor-pointer border-l", {
+                  "bg-primary/20 text-primary z-20": isHovered,
+                  "text-muted-foreground/50": !isHovered,
+                })}
                 style:width="{width}%"
                 style:left="{startLeftPosition}%"
                 onclick={() => seekToFrame(thisFrame)}
+                onmouseenter={() => (hoveredColumn = thisFrame)}
+                onmouseleave={() => (hoveredColumn = undefined)}
               >
-                {thisFrame}
+                {#if isHovered}
+                  {@render tooltipFrame(thisFrame, "bg-black")}
+                {:else}
+                  {thisFrame}
+                {/if}
               </button>
             {:else if isTick}
               <button
                 aria-label="tick"
-                class="border-border absolute bottom-0 cursor-col-resize border-l"
+                class={cn("border-border absolute bottom-0 cursor-pointer border-l", {})}
                 style:height="60%"
-                style:width="100%"
+                style:width="{width}%"
                 style:left="{startLeftPosition}%"
                 onclick={() => seekToFrame(thisFrame)}
-              ></button>
+                onmouseenter={() => (hoveredColumn = thisFrame)}
+                onmouseleave={() => (hoveredColumn = undefined)}
+              >
+                {#if isHovered}
+                  {@render tooltipFrame(thisFrame, "bg-black", "-top-3")}
+                {/if}
+              </button>
             {/if}
           {/each}
         </div>
