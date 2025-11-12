@@ -8,7 +8,7 @@ Api[:idah].register(
     params: {
       id:, **opts
     },
-    options: { auth: nil },
+    options: { auth: :bearer }  # Enable authentication
   )
 
   deserialize output.body
@@ -26,7 +26,7 @@ Api[:idah].register(
         attributes:
       }
     },
-    options: { auth: nil }
+    options: { auth: :bearer }  # Enable authentication
   )
 
   deserialize output.body

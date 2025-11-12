@@ -41,7 +41,6 @@ class EntriesExpo < BaseExpo
     service.assign_member(id, member_id)
   end
 
-  # POST /api/v1/dataset/entries/:id/submit
   expose on_http(:post, "/:id/submit") do
     desc "Submit workflow event for an entry"
     input do
@@ -58,7 +57,6 @@ class EntriesExpo < BaseExpo
     service.submit(entry_id, **opts)
   end
 
-  # POST /api/v1/dataset/entries/:id/error
   expose on_http(:post, "/:id/error") do
     desc "Trigger error event for an entry"
     input do
@@ -81,18 +79,13 @@ class EntriesExpo < BaseExpo
   def on_job_updated
     job_id = message.content[:resource_id]
 
-    service.mark_entries_as_ready(job_id)
+    service.mark_entries_status_as(job_id, "ready")
   end
 
-  expose on_resource_event(Resource::Media::Jobs, "created")
-  def on_job_created
-    job_content = message.content
+  expose on_resource_event(Resource::Media::Jobs, "errored")
+  def on_job_errored
+    job_id = message.content[:resource_id]
 
-    job_resource = job_content.dig(:args, 0, :arguments, :resource)
-    job_id = job_content[:resource_id]
-
-    return unless job_id && job_resource
-
-    service.update_entries_job(job_id, job_resource)
+    service.mark_entries_status_as(job_id, "processing_error")
   end
 end
