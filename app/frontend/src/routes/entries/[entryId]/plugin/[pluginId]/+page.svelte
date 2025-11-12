@@ -21,6 +21,7 @@
       entriesBackendDataSource
         .get(entryId, {
           included: ["dataset.project"],
+          noCache: true,
         })
         .then(
           (entryRes) => ok(activityContextForEntry(entryRes.data)),
