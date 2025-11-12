@@ -1,23 +1,15 @@
 import { goto } from "$app/navigation";
 import { resolve } from "$app/paths";
+
+import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
+
 import type { Command } from "@/command/Command";
 import CommandManager from "@/command/CommandManager";
-import type { EntryRecord } from "@/data/model/dataset/entries/record";
-import { createAnnotationDriver } from "./AnnotationDriver";
-import type { HeaderBarModeTool, IActivityContext, INote, INoteDriver, ITools } from "./interface/Activity";
 
-const noteDriver: INoteDriver = {
-  create(position, content) {
-    return new Promise<INote>((_resolve, reject) => {
-      reject({ position, content });
-    });
-  },
-  list(filter) {
-    return new Promise<INote[]>((_resolve, reject) => {
-      reject({ filter });
-    });
-  },
-};
+import { createAnnotationDriver } from "./AnnotationDriver";
+import { createNoteDriver } from "./NoteDriver";
+
+import type { HeaderBarModeTool, IActivityContext, ITools } from "./interface/Activity";
 
 function createCommandsInterface() {
   const commands = new Map();
@@ -87,7 +79,7 @@ export function activityContextForEntry(entry: EntryRecord): IActivityContext {
     },
     userRole: "",
     annotations: createAnnotationDriver(entry.id),
-    notes: noteDriver,
+    notes: createNoteDriver(),
     commands: createCommandsInterface(),
     tools: createToolsInterface(),
     back() {
@@ -98,9 +90,12 @@ export function activityContextForEntry(entry: EntryRecord): IActivityContext {
         }),
       );
     },
-    submit() {
+    submit(opts?: { approved: boolean }) {
       return new Promise<void>((resolve, reject) => {
-        reject("todo");
+        entriesBackendDataSource.submit(entry.id, opts).then(
+          (_v) => resolve(),
+          (_e) => reject(),
+        );
       });
     },
     error(message: string) {
