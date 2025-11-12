@@ -8,6 +8,6 @@
   let { name }: Props = $props();
 </script>
 
-<Button variant="ghost">
+<Button variant="ghost" size="sm">
   {name}
 </Button>

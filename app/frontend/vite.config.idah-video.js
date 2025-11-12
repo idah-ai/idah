@@ -1,7 +1,7 @@
+import alias from "@rollup/plugin-alias";
+import { svelte } from "@sveltejs/vite-plugin-svelte";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
-import { svelte } from "@sveltejs/vite-plugin-svelte";
-import alias from "@rollup/plugin-alias";
 
 export default defineConfig({
   plugins: [tailwindcss(), svelte()],
