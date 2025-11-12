@@ -1,6 +1,7 @@
 <script lang="ts">
   import { type Snippet } from "svelte";
 
+  import { DefaultMode, IdahVideoBoundingBox } from "../type";
   import { HEIGHT, WIDTH, X, Y, type Point } from "./VideoAnnotationContext";
 
   // Props
@@ -111,8 +112,8 @@
         break; // Do not pan in note mode
       }
 
-      case "visual":
-      case "bounding-box":
+      case DefaultMode:
+      case IdahVideoBoundingBox:
       case "bounding-polygon":
       default: {
         panTo(e.offsetX, e.offsetY);

@@ -1,4 +1,4 @@
-import type { CategoryConfiguration } from "../../plugins/idah-video/video-annotation-activity/VideoAnnotationContext";
+import type { IConfigValue } from "@/plugin/interface/Activity";
 import type { AnnotationContext } from "./AnnotationContext";
 
 /*
@@ -8,6 +8,7 @@ import type { AnnotationContext } from "./AnnotationContext";
 export type MediaInfo = {
   [key: string]: {
     url: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     metadata: Record<string, any>;
   };
 };
@@ -18,7 +19,7 @@ export interface CategoryDefinition {
   description?: string; // Description of the category
   requiredNested?: boolean; // true = this category requires a subcategory
   nestedCategories?: CategoryDefinition[]; // Subcategories
-  data: CategoryConfiguration;
+  data: IConfigValue; // why dont we store the missing attributes from it in this interface directly ?
 }
 /**
  * Represents a category with its subcategories
@@ -45,6 +46,7 @@ export type AllowedValueFields = {
 export type ToolInfo = {
   [annotationType: string]: {
     // Shape-specific configuration
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     shapeConfig?: Record<string, any>; // Additional configuration for the shape type
 
     // Allowed value fields

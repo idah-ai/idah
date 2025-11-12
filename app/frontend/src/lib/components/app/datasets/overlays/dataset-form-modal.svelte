@@ -60,11 +60,7 @@
       attributes: {
         name: dataset.name,
         modality: dataset.modality,
-        labeling_configuration: {
-          categories: [],
-          properties: [],
-          taggings: [],
-        },
+        labeling_configuration: {},
         workflow_configuration: {},
       },
       relationships: {
@@ -77,7 +73,7 @@
       },
     });
 
-    goto(resolve(`/projects/${projectId}/datasets/${createdDatasetRes.data.id}/tasks`));
+    goto(resolve(`/projects/${projectId}/datasets/${createdDatasetRes.data.id}/entries`));
 
     $refetches.datasets.list = new Date();
     open = false;

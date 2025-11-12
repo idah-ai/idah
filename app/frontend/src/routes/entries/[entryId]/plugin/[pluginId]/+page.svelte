@@ -22,6 +22,7 @@
         fields: {
           [EntryRecord.type]: ["wf_step"],
         },
+        noCache: true,
       });
 
       /**

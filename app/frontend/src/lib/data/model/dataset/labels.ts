@@ -7,6 +7,7 @@ import {
   TypeIcon,
   type Icon as IconType,
 } from "@lucide/svelte";
+import type { ASTNode } from "../../../../plugins/idah-video/test_ast_resolution";
 
 export type FieldTypeValue = "text" | "integer" | "boolean" | "single-select" | "multi-select";
 export interface FieldType extends LabelValue<FieldTypeValue> {
@@ -25,45 +26,36 @@ export type LabelPropertyOption = {
   label: string;
 };
 
-export interface CategoryField {
-  id: string;
-  type: string;
-  color: string;
-  text_color?: string;
-  label: string;
-}
-
-export interface FieldBase {
+export interface LabelConfigurationProperty {
   id: string;
   type: FieldTypeValue;
   label: string;
   description: string;
   required: boolean;
   format: {
-    // placeholder?: string;
-    // readonly?: boolean;
     minimum: number | null;
     maximum: number | null;
     step: number | null;
     info: string | null;
     options: Array<LabelPropertyOption>;
   };
-  visible_if?: {
-    [key: string]: Array<string | number | boolean>;
-  };
+  visibility: ASTNode | boolean;
 }
 
-export interface PropertyField extends FieldBase {
-  selector: Array<string>;
+export interface LabelConfigurationValue {
+  id: string;
+  color: string;
+  label: string;
+  text_color?: string;
 }
-
-/* eslint-disable-next-line @typescript-eslint/no-empty-object-type */
-export interface TagField extends FieldBase {}
 
 export interface LabelingConfiguration {
-  categories: Array<CategoryField>;
-  properties: Array<PropertyField>;
-  taggings: Array<TagField>;
+  values: Array<LabelConfigurationValue>;
+  properties: Array<LabelConfigurationProperty>;
+}
+
+export interface LabelConfigurations {
+  [key: string]: LabelingConfiguration;
 }
 
 interface LabelColor {
