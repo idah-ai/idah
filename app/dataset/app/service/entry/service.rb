@@ -21,30 +21,26 @@ module Entry
     end
 
     def create(record)
-      attr = record.attributes
+      # Validate required relationships
+      action_label = "create an entry"
+      Validation::Service.require!("resource", attributes[:resource], action_label)
+      Validation::Service.require!("project", record.project, action_label)
+      Validation::Service.require!("dataset", record.dataset, action_label)
 
-      attr[:id] = record.id || UUIDv7.generate
+      # Ensure entry with same resource does not already exist
+      if entries.find_by({ resource: attributes[:resource] })
+        raise Verse::Error::ValidationFailed,
+              "Entry with resource #{attributes[:resource]} already exists"
+      end
+
+      # Assign attributes
+      attributes = record.attributes
+      attributes[:id] = record.id || UUIDv7.generate
+      attributes[:project_id] = record.project.id
+      attributes[:dataset_id] = record.dataset.id
 
       entries.transaction do
-        unless attr[:resource]
-          raise Verse::Error::ValidationFailed,
-                "resource is required to create an entry"
-        end
-
-        if entries.find_by({ resource: attr[:resource] })
-          raise Verse::Error::ValidationFailed,
-                "Entry with resource #{attr[:resource]} already exists"
-        end
-
-        unless record.dataset
-          raise Verse::Error::ValidationFailed,
-                "dataset is required to create an entry"
-        end
-
-        attr[:dataset_id] = record.dataset.id
-
-        id = entries.create(attr)
-
+        id = entries.create(attributes)
         entries.find!(id)
       end
     end

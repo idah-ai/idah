@@ -20,11 +20,11 @@ module Project
     end
 
     def create(record)
-      attr = record.attributes
-      attr[:id] = record.id || UUIDv7.generate
+      attributes = record.attributes
+      attributes[:id] = record.id || UUIDv7.generate
 
       projects.transaction do
-        id = projects.create(attr)
+        id = projects.create(attributes)
         projects.find!(id)
       end
     end
