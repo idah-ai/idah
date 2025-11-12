@@ -62,7 +62,7 @@
 <div
   class={cn("inline-block h-full border-b py-1 first:border-l", {
     "bg-primary/20": isSelected,
-    "bg-primary/10": isHovered,
+    "bg-primary/10 cursor-pointer": isHovered,
   })}
   style:box-sizing="border-box"
   style:width="{cellWidth}%"
