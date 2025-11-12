@@ -7,15 +7,14 @@
   import { cn } from "@/utils";
   import { humanize } from "@/utils/string";
   import { ChevronRight, CircleSmallIcon, PlusIcon, Trash2Icon } from "@lucide/svelte";
-  import CategoryProperties from "./categoryProperties/categoryProperties.svelte";
-  import { entryRoot, idb_updated_at } from "./idb_store.svelte";
 
   import type { CategoryDefinition } from "@/context/ActivityContext";
   import type { AnnotationValue } from "@/context/AnnotationContext";
-  import type { IConfigValue } from "@/plugin/interface/Activity";
-  import { EntryRoot } from "../type";
-  import type { AnnotationsIndexedDB } from "./indexedDB";
-  import type { VideoAnnotation } from "./VideoAnnotationContext";
+
+  import CategoryProperties from "../../video-annotation-activity/categoryProperties/categoryProperties.svelte";
+  import { idb_updated_at } from "../../video-annotation-activity/idb_store.svelte";
+  import type { AnnotationsIndexedDB } from "../../video-annotation-activity/indexedDB";
+  import type { VideoAnnotation } from "../../video-annotation-activity/VideoAnnotationContext";
 
   // Props
   let {
@@ -251,7 +250,7 @@
       {#await haveAnnotationsInCategory(category.id) then hasAnnotations}
         <CollapsibleTrigger
           class={cn("flex w-full items-center justify-between", {
-            "bg-primary-foreground rounded-sm border-1 border-blue-300": selected == category.id,
+            "bg-primary-foreground border-1 rounded-sm border-blue-300": selected == category.id,
             "hover:bg-primary-foreground hover:cursor-pointer hover:rounded-sm": !category.requiredNested,
             "hover:bg-accent hover:cursor-pointer hover:rounded-sm": category.requiredNested && !toolMode,
           })}

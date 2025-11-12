@@ -1,12 +1,12 @@
 import { createBackendDataSource, encodeModel, resourcePath } from "@/data/BackendDataSource";
-import { field, Record, RecordFactory, type, relationship } from "@/data/model/Record";
+import { clearCache } from "@/data/Cache";
+import { field, Record, RecordFactory, relationship, type } from "@/data/model/Record";
 import {
   entryPriorities,
   entryStatuses,
   type EntryPriorityBadgeProps,
   type EntryStatusBadgeProps,
 } from "@/data/model/dataset/entries/constants";
-import { clearCache } from "@/data/Cache";
 import { parseSingleElementError, parseSingleElementReturn } from "@/data/model/json_api";
 
 import { DatasetRecord } from "@/data/model/dataset/dataset-record";
@@ -19,8 +19,8 @@ export class EntryRecord extends Record {
 
   @field() public priority!: number;
 
-  @field() public wf_step!: string;
-  @field() public status!: string;
+  @field() public wf_step!: "start" | "annotate" | "review" | "done" | "export";
+  @field() public status!: "processing" | "ready" | "assigned" | "in_progress" | "pending" | "completed" | "errored";
 
   @field() public job_id!: string;
 
@@ -84,6 +84,41 @@ export const entriesBackendDataSource = createBackendDataSource(EntryRecord, ent
       if (body.errors.length > 0) {
         body.errors.forEach((err: Hash) => {
           console.error(`Error assigning entry: ${err.title} - ${err.detail}`, err);
+        });
+      }
+
+      return Promise.reject(parseSingleElementError({ status: res.status, errors: body.errors }));
+    }
+
+    if (body && body.data) {
+      return Promise.resolve(parseSingleElementReturn<EntryRecord>(body));
+    }
+
+    throw "No data returned";
+  },
+  submit: async (entryId: string, opts?: { approved: boolean }) => {
+    const res = await fetch(`${entryBasePath}/${entryId}/submit`, {
+      method: "POST",
+      body: JSON.stringify({
+        data: {
+          attributes: {
+            approved: opts?.approved || false,
+          },
+        },
+      }),
+      headers: { "Content-Type": "application/vnd.api+json" },
+    });
+
+    const body = await res.json();
+
+    // Cache Management
+    const cacheIndexKey = resourcePath(entryBasePath, null, undefined);
+    clearCache(cacheIndexKey);
+
+    if (body && body.errors) {
+      if (body.errors.length > 0) {
+        body.errors.forEach((err: Hash) => {
+          console.error(`Error submitting entry: ${err.title} - ${err.detail}`, err);
         });
       }
 

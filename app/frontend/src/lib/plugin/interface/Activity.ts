@@ -1,6 +1,6 @@
 import type { Command } from "@/command/Command";
+import type { AnnotationHeaderBarBaseTool } from "@/plugin/layout/header/annotation-header-bar.types";
 import type { ASTNode } from "../../../plugins/idah-video/test_ast_resolution";
-import type { AnnotationHeaderBarBaseTool } from "../layout/header/AnnotationHeaderBar.types";
 
 interface IUser {
   id: number;
@@ -20,27 +20,35 @@ export interface IAnnotation<T = IDimension, U = any> {
   annotation: U;
 }
 
-interface IComment {
-  id: string;
-  createdBy: IUser;
-  content: string;
+export interface INoteFeed {
+  readonly id: string;
+  entry_id: string;
+  annotation_id: string | null;
+  readonly created_by_email: string;
 
-  update(content: string): Promise<boolean>;
+  anchor_type: "entry" | "annotation";
+  position: Record<string, unknown>;
+
+  readonly status: "pending" | "resolved";
+
+  content_md: string;
+
+  readonly created_at: string;
+  readonly updated_at: string;
+  readonly edited_at: string | null;
 }
 
-export interface INote {
-  id: string;
-  createdBy: IUser;
-  target?: IAnnotation;
-  content: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  position?: any;
-  fetchDiscussion: Promise<Array<IComment>>;
-  status: string;
+export interface INoteComment {
+  readonly id: string;
+  readonly note_feed_id: string;
+  readonly is_edited: boolean;
 
-  reply(content: string): Promise<IComment>;
+  content_md: string;
 
-  resolve(): Promise<boolean>;
+  readonly created_by_email: string;
+  readonly created_at: string;
+  readonly updated_at: string;
+  readonly edited_at: string | null;
 }
 
 export interface IAnnotationDriver {
@@ -55,12 +63,15 @@ export interface IAnnotationDriver {
   flush(): void;
 }
 
-export interface INoteDriver {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  create(position: any, content: string): Promise<INote>;
+export interface INotes {
+  showNewNoteFeedPopup: (data: Pick<INoteFeed, "anchor_type" | "position" | "annotation_id">) => void;
+  onNewNoteFeedOpenChange: (cb: (data: Pick<INoteFeed, "anchor_type" | "position" | "annotation_id">) => void) => void;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  list(filter: any): Promise<Array<INote>>;
+  requireNoteFeedPosition: (noteFeed: INoteFeed) => void;
+  onRequireNoteFeedPosition: (cb: (noteFeed: INoteFeed) => void) => void;
+
+  gotoFeed: (noteFeedId: string | null, noteCommentId?: string) => void;
+  onNoteSelected: (cb: (noteFeedId: string | null, noteCommentId?: string) => Promise<void> | void) => void;
 }
 
 export type IConfigPropertyType = "text" | "integer" | "boolean" | "single-select" | "multi-select";
@@ -127,10 +138,10 @@ export interface IActivityContext {
   get type(): string;
 
   // Returns the current workflow step
-  get workflowStep(): string;
+  get workflowStep(): "start" | "annotate" | "review" | "done" | "export";
 
   // Returns the current status of the entry
-  get status(): string;
+  get status(): "processing" | "ready" | "assigned" | "in_progress" | "pending" | "completed" | "errored";
 
   // Get the dataset configuration
   get config(): IConfig;
@@ -148,7 +159,7 @@ export interface IActivityContext {
   get annotations(): IAnnotationDriver;
 
   // Driver for fetching and updating notes
-  get notes(): INoteDriver;
+  get notes(): INotes;
 
   get commands(): ICommands;
 
@@ -158,7 +169,7 @@ export interface IActivityContext {
   back(): void;
 
   // Submit to the next step of the workflow
-  submit(): Promise<void>;
+  submit(opts?: { approved: boolean }): Promise<void>;
 
   // Mark this activity as errored
   error(message: string): Promise<void>;
@@ -179,6 +190,6 @@ export interface IActivityView {
 
   // Initialize the activity with the given context and parent element
   init();
-  render?(parent: HTMLElement, context: IActivityContext);
+  render?(parent: HTMLElement | null, context: IActivityContext);
   close?();
 }

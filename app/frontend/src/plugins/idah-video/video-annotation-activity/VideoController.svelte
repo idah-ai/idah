@@ -95,38 +95,38 @@
   <!-- CONTAINER::LEFT -->
   <div class="flex items-center gap-2">
     <!-- VIDEO::PREVIOUS FRAME -->
-    <Button variant="outline" size="icon" onclick={() => video.previousFrame()}>
-      <ChevronLeftIcon class="size-4" />
+    <Button variant="outline" size="icon-sm" onclick={() => video.previousFrame()}>
+      <ChevronLeftIcon />
     </Button>
 
     <!-- VIDEO::PLAY / PAUSE -->
     <Button
       variant="outline"
-      size="icon"
+      size="icon-sm"
       onclick={() => {
         video.togglePlay();
       }}
     >
       {#if isPlaying}
-        <PauseIcon class="size-4" />
+        <PauseIcon />
       {:else}
-        <PlayIcon class="size-4" />
+        <PlayIcon />
       {/if}
     </Button>
 
     <!-- VIDEO::NEXT FRAME -->
-    <Button variant="outline" size="icon" onclick={() => video.nextFrame()}>
-      <ChevronRightIcon class="size-4" />
+    <Button variant="outline" size="icon-sm" onclick={() => video.nextFrame()}>
+      <ChevronRightIcon />
     </Button>
 
     <!-- VIDEO::VOLUME -->
     <Popover>
       <PopoverTrigger>
-        <Button variant="outline" size="icon">
+        <Button variant="outline" size="icon-sm">
           {#if volume.muted || volume.level == 0}
-            <VolumeXIcon class="size-4" />
+            <VolumeXIcon />
           {:else}
-            <Volume2Icon class="size-4" />
+            <Volume2Icon />
           {/if}
         </Button>
       </PopoverTrigger>
@@ -147,15 +147,15 @@
     <!-- VIDEO::SPEED -->
     <DropdownMenu>
       <DropdownMenuTrigger>
-        <Button variant="outline">
-          <FastForwardIcon class="size-4" />
+        <Button variant="outline" size="sm">
+          <FastForwardIcon />
           {videoSpeeds.find((speed) => speed.value === currentSpeed)?.label || "Speed"}
         </Button>
       </DropdownMenuTrigger>
 
       <DropdownMenuContent>
         <DropdownMenuGroup>
-          <DropdownMenuLabel>Video Speed</DropdownMenuLabel>
+          <DropdownMenuLabel>Video speed</DropdownMenuLabel>
           {#each videoSpeeds as { label, value } (value)}
             <DropdownMenuItem onclick={() => selectVideoSpeed(value)}>{label}</DropdownMenuItem>
           {/each}
@@ -187,8 +187,8 @@
     <div class="flex items-center gap-2">
       <Tooltips align="center">
         {#snippet trigger()}
-          <Button variant="outline" size="icon" onclick={zoomOut}>
-            <ZoomOutIcon class="size-4" />
+          <Button variant="outline" size="icon-sm" onclick={zoomOut}>
+            <ZoomOutIcon />
           </Button>
         {/snippet}
 
@@ -209,8 +209,8 @@
 
       <Tooltips align="center">
         {#snippet trigger()}
-          <Button variant="outline" size="icon" onclick={zoomIn}>
-            <ZoomInIcon class="size-4" />
+          <Button variant="outline" size="icon-sm" onclick={zoomIn}>
+            <ZoomInIcon />
           </Button>
         {/snippet}
 
@@ -224,8 +224,8 @@
       <PopoverTrigger>
         <Tooltips align="center">
           {#snippet trigger()}
-            <Button variant="outline" size="icon">
-              <RulerIcon class="size-4"></RulerIcon>
+            <Button variant="outline" size="icon-sm">
+              <RulerIcon />
             </Button>
           {/snippet}
 

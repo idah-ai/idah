@@ -74,4 +74,15 @@ export const pluginsBackendDataSource = createBackendDataSource(PluginRecord, ba
 
     throw "No data returned";
   },
+  serveAsset: async (pluginName: string, splat: string) => {
+    const res = await fetch(`${base_path}/${pluginName}/assets/${splat}`);
+
+    const asset = await res.blob();
+
+    if (!res.ok) {
+      throw `Error fetching asset: ${res.status} ${res.statusText}`;
+    }
+
+    return asset;
+  },
 });

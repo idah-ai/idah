@@ -1,10 +1,21 @@
 <script lang="ts">
   import { type Snippet } from "svelte";
-  import { HEIGHT, WIDTH, X, Y, type Point } from "./VideoAnnotationContext";
-  import { DefaultMode, IdahVideoBoundingBox } from "../type";
 
+  import { DefaultMode, IdahVideoBoundingBox } from "../type";
+  import { HEIGHT, WIDTH, X, Y, type Point } from "./VideoAnnotationContext";
+
+  // Props
+  interface Props {
+    mode: string;
+    children: Snippet;
+    onZoomChange: (scale: number, offset: Point) => void;
+  }
+  let { mode, children, onZoomChange }: Props = $props();
+
+  // Variables
   let offset: Point = $state([0, 0]);
   let size: Point = $state([0, 0]);
+  let panOrigin: Point | undefined = $state();
   let zoom = $state({
     current: 1,
     min: 0.4,
@@ -12,24 +23,11 @@
     step: 0.1,
   });
 
-  let {
-    mode,
-    children,
-    onZoomChange,
-  }: {
-    mode: string;
-    children: Snippet;
-    onZoomChange: (scale: number, offset: Point) => void;
-  } = $props();
-
   $effect(() => {
-    // eslint-disable-next-line  @typescript-eslint/no-unused-expressions
-    size[HEIGHT] && size[WIDTH];
     onZoomChange(zoom.current, offset);
   });
 
-  let panOrigin: Point | undefined = $state();
-
+  // Functions
   function panTo(x: number, y: number) {
     if (!panOrigin) return;
 
@@ -47,8 +45,17 @@
   export function zoomIn() {
     console.log("zoomin");
   }
+
   export function zoomOut() {
     console.log("zoomout");
+  }
+
+  export function setZoom(newZoom: number) {
+    zoom = { ...zoom, current: newZoom };
+  }
+
+  export function setOffset(newOffset: Point) {
+    offset = newOffset;
   }
 
   function zoomAt(x: number, y: number, step: number) {
@@ -62,18 +69,23 @@
   }
 
   export function onWheel(e: WheelEvent) {
-    let step;
+    let step = e.deltaY > 0 ? -zoom.step : zoom.step;
 
     switch (mode) {
-      default:
-        step = e.deltaY > 0 ? -zoom.step : zoom.step;
-
+      case "note": {
+        break; // Do not zoom in note mode
+      }
+      default: {
         zoomAt(e.offsetX, e.offsetY, step * zoom.current);
+      }
     }
   }
 
   export function mouseDown(e: MouseEvent) {
     switch (mode) {
+      case "note": {
+        break; // Do not pan in note mode
+      }
       default:
         if (!panOrigin) {
           panStart(e.offsetX, e.offsetY);
@@ -84,18 +96,28 @@
 
   export function mouseUp(_e: MouseEvent) {
     switch (mode) {
-      default:
+      case "note": {
+        break; // Do not pan in note mode
+      }
+      default: {
         panStop();
         break;
+      }
     }
   }
 
   export function mouseMove(e: MouseEvent) {
     switch (mode) {
+      case "note": {
+        break; // Do not pan in note mode
+      }
+
       case DefaultMode:
       case IdahVideoBoundingBox:
-      default:
+      case "bounding-polygon":
+      default: {
         panTo(e.offsetX, e.offsetY);
+      }
     }
   }
 </script>
@@ -122,6 +144,7 @@
     display: flexbox;
     overflow: hidden;
   }
+
   .target {
     background-color: chartreuse;
   }
