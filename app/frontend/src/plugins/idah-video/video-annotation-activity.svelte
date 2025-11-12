@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { MousePointer2Icon, SquareMousePointerIcon } from "@lucide/svelte";
   import { onMount, setContext } from "svelte";
   import { toast } from "svelte-sonner";
   import { uuidv7 } from "uuidv7";
@@ -15,9 +14,8 @@
     CommandShortcut,
   } from "$lib/components/ui/command";
   import Button from "@/components/ui/button/button.svelte";
-  import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+  import { Popover, PopoverContent } from "@/components/ui/popover";
   import SidebarInset from "@/components/ui/sidebar/sidebar-inset.svelte";
-  import SidebarProvider from "@/components/ui/sidebar/sidebar-provider.svelte";
 
   import { ResizableHandle, ResizablePane, ResizablePaneGroup } from "@/components/ui/resizable";
   import { ScrollArea } from "@/components/ui/scroll-area";
@@ -25,11 +23,11 @@
   import { ShortcutManager } from "@/shortcut/ShortcutManager";
   import AnnotationFooter from "./layout/footer/AnnotationFooter.svelte";
   import AnnotationFooterToolbar from "./layout/footer/AnnotationFooterToolbar.svelte";
-  import AnnotationSidebar from "./video-annotation-activity/annotation-sidebar.svelte";
+  import AnnotationSidebar from "./layout/sidebar/annotation-sidebar.svelte";
   import { requiredFullfilled } from "./video-annotation-activity/categoryProperties";
   import { boundingBoxes, idb_updated_at } from "./video-annotation-activity/idb_store.svelte";
   import { annotationsIndexedDB, AnnotationsIndexedDB } from "./video-annotation-activity/indexedDB";
-  import SvgOverlay from "./video-annotation-activity/svg-overlay.svelte";
+  import SvgOverlay, { type OnAddNewNoteParams } from "./video-annotation-activity/svg-overlay.svelte";
   import TimelineTable from "./video-annotation-activity/timeline-table/timeline-table.svelte";
   import Video from "./video-annotation-activity/video.svelte";
 
@@ -52,6 +50,7 @@
   // Contexts
   setContext("context", context);
 
+  // Lifecycles
   $effect(() => console.debug({ $idb_updated_at }));
   $effect(() => console.debug({ $boundingBoxes }));
 
@@ -62,6 +61,7 @@
   let totalFrames = $state(0);
 
   let mode: string = $state("visual");
+  let annotationSidebarWidthRem = $state<number>(20);
 
   let selectedAnnotation: VideoAnnotation | undefined = $state();
   let annotationValue: AnnotationValue = $derived(selectedAnnotation?.value || {});
@@ -79,6 +79,7 @@
   let volume = $state({ level: 0, mute: false });
 
   let commandOpen = $state(false);
+
   // registerVisualModeShortcuts({
   //   player: () => player,
   //   toggleCommandCB: () => {
@@ -138,14 +139,20 @@
       {
         label: "Visual",
         type: "visual",
-        icon: MousePointer2Icon,
+        iconName: "mouse-pointer-2",
         handleClick: () => context.commands.run("tools.visual"),
       },
       {
         label: "Bounding Box",
         type: "video:bounding_box",
-        icon: SquareMousePointerIcon,
+        iconName: "vector-square",
         handleClick: () => context.commands.run("tools.bounding_box"),
+      },
+      {
+        label: "Notes",
+        type: "note",
+        iconName: "message-circle",
+        handleClick: () => context.commands.run("tools.note"),
       },
     ]);
 
@@ -530,38 +537,42 @@
     };
   });
 
-  context.commands.on(
-    "tools.visual",
-    () => {
-      return {
-        name: "visual tool",
-        apply: () => {
-          mode = "visual";
-          selectedAnnotation = undefined;
-        },
-        undo: () => {},
-        isCombinable: () => true,
-        combine: (c) => c,
-      };
-    },
-    false,
-  );
-  context.commands.on(
-    "tools.bounding_box",
-    () => {
-      return {
-        name: "bounding box tool",
-        apply: () => {
-          mode = "video:bounding_box";
-          selectedAnnotation = undefined;
-        },
-        undo: () => {},
-        isCombinable: () => true,
-        combine: (c) => c,
-      };
-    },
-    false,
-  );
+  context.commands.on("tools.visual", () => {
+    return {
+      name: "visual tool",
+      apply: () => {
+        mode = "visual";
+        selectedAnnotation = undefined;
+      },
+      undo: () => {},
+      isCombinable: () => true,
+      combine: (c) => c,
+    };
+  });
+  context.commands.on("tools.bounding_box", () => {
+    return {
+      name: "bounding box tool",
+      apply: () => {
+        mode = "video:bounding_box";
+        selectedAnnotation = undefined;
+      },
+      undo: () => {},
+      isCombinable: () => true,
+      combine: (c) => c,
+    };
+  });
+  context.commands.on("tools.note", () => {
+    return {
+      name: "note tool",
+      apply: () => {
+        mode = "note";
+        selectedAnnotation = undefined;
+      },
+      undo: () => {},
+      isCombinable: () => true,
+      combine: (c) => c,
+    };
+  });
 
   function addAnnotation(shape: VideoShape, value: AnnotationValue = {}) {
     context.commands.run("annotation.add", { shape, value });
@@ -618,7 +629,17 @@
 
   function selectAnnotation(annotation?: VideoAnnotation) {
     selectedAnnotation = annotation;
-    mode = annotation?.shape.type || "visual";
+
+    /**
+     * Set mode to the annotation shape type when selecting an annotation
+     */
+    if (annotation?.shape.type) {
+      mode = annotation.shape.type;
+    } else if (mode === "note") {
+      mode = "note";
+    } else {
+      mode = "visual";
+    }
   }
 
   let overlay: SvgOverlay;
@@ -639,6 +660,27 @@
 
   let showPopOver = $state(false);
   let videoResizedAt = $state(new Date());
+
+  function showNewNotePopup(params: OnAddNewNoteParams) {
+    const { anchorType, position, annotationId } = params;
+    context.notes.showNewNoteFeedPopup({
+      anchor_type: anchorType,
+      position: {
+        ...position,
+        /**
+         * Need to be sent in pixels
+         * Need to be sent the sidebar width to position the note correctly
+         * Otherwise the note will be positioned left to the sidebar
+         */
+        sidebar_width: annotationSidebarWidthRem * 16,
+      },
+      annotation_id: annotationId,
+    });
+  }
+
+  function seekToFrame(frame: number) {
+    player?.seekToFrame(frame);
+  }
 </script>
 
 <div class="flex h-full w-full flex-col">
@@ -662,13 +704,13 @@
 
   <Popover
     open={showPopOver}
-    onOpenChange={(open) => {
+    onOpenChange={(open: boolean) => {
       showPopOver = open;
     }}
   >
-    <PopoverTrigger></PopoverTrigger>
     <PopoverContent class="w-max">
       <AnnotationSidebar
+        sidebarWidthRem={annotationSidebarWidthRem}
         db={annotationsIDB}
         {annotationValue}
         {currentFrame}
@@ -691,8 +733,10 @@
           showPopOver = false;
           annotationValue = {};
           selectAnnotation();
-        }}>Cancel</Button
+        }}
       >
+        Cancel
+      </Button>
       <Button
         onclick={() => {
           showPopOver = false;
@@ -703,38 +747,101 @@
     </PopoverContent>
   </Popover>
 
-  <SidebarProvider class="min-h-0 w-full" style="height: calc(100% - 30px)">
-    <ResizablePaneGroup direction="vertical">
-      <ResizablePane class="flex h-full" defaultSize={60} minSize={10}>
-        <AnnotationSidebar
-          db={annotationsIDB}
-          {annotationValue}
-          {currentFrame}
-          onEditValue={(value: AnnotationValue, valueMode: string) => {
-            annotationValue = value;
-            mode = valueMode;
-            if (selectedAnnotation && requiredFullfilled(annotationValue, context.config.properties)) {
-              selectedAnnotation.value = value;
-              updateAnnotationValue($state.snapshot(selectedAnnotation), $state.snapshot(value));
-            }
-          }}
-          onSelectAnnotation={selectAnnotation}
-          {onDeleteAnnotation}
-          {context}
+  <ResizablePaneGroup direction="vertical">
+    <ResizablePane class="flex h-full" defaultSize={50} minSize={10}>
+      <AnnotationSidebar
+        db={annotationsIDB}
+        {annotationValue}
+        {currentFrame}
+        onEditValue={(value: AnnotationValue, valueMode: string) => {
+          annotationValue = value;
+          mode = valueMode;
+          if (selectedAnnotation && requiredFullfilled(annotationValue, context.config.properties)) {
+            selectedAnnotation.value = value;
+            updateAnnotationValue($state.snapshot(selectedAnnotation), $state.snapshot(value));
+          }
+        }}
+        onSelectAnnotation={selectAnnotation}
+        {onDeleteAnnotation}
+        {context}
+        {mode}
+        selected_id={selectedAnnotation?.metadata.id}
+      />
+
+      <SidebarInset class="flex-1">
+        <SvgOverlay
+          bind:this={overlay}
+          {annotations_promise}
+          selected={selectedAnnotation}
           {mode}
-          selected_id={selectedAnnotation?.metadata.id}
-        />
-        <SidebarInset>
-          <SvgOverlay
-            bind:this={overlay}
+          frame={currentFrame}
+          onSelectAnnotation={selectAnnotation}
+          onSelection={onShapeSelection}
+          onAddNewNote={showNewNotePopup}
+          onChangeFrame={seekToFrame}
+          target_container={() => player_container}
+          {videoResizedAt}
+        >
+          <!-- container context ?-->
+          <Video
+            bind:this={player}
+            bind:element={player_container}
+            onResize={() => {
+              videoResizedAt = new Date();
+            }}
+            onFramesChange={(current, total, playing) => {
+              currentFrame = current;
+              totalFrames = total;
+              isPlaying = playing;
+              isPlaying = playing;
+              // console.debug({onFramesChange: {current, total, playing}})
+            }}
+            onVolumeChange={(level, muted) => (volume = { level, muted })}
+          />
+        </SvgOverlay>
+      </SidebarInset>
+    </ResizablePane>
+
+    <ResizableHandle withHandle></ResizableHandle>
+
+    <ResizablePane defaultSize={25} minSize={10}>
+      <AnnotationFooter>
+        <AnnotationFooterToolbar>
+          <VideoController
+            bind:this={videoController}
+            {isPlaying}
+            {zoom}
+            {scale}
+            {currentFrame}
+            {totalFrames}
+            {volume}
+            bind:video={player}
+            onZoomChange={(z) => timelineTable.setZoom(z)}
+          />
+        </AnnotationFooterToolbar>
+
+        <ScrollArea class="h-[calc(100%-3.4em)]">
+          <TimelineTable
+            bind:this={timelineTable}
             {annotations_promise}
-            selected={selectedAnnotation}
-            {mode}
-            frame={currentFrame}
+            db={annotationsIDB}
+            {scale}
+            {zoom}
+            {currentFrame}
+            {totalFrames}
+            {selectedAnnotation}
+            onSeekFrame={seekToFrame}
+            {onDeleteAnnotation}
             onSelectAnnotation={selectAnnotation}
             onSelection={onShapeSelection}
             target_container={() => player_container}
             {videoResizedAt}
+            onScaleChange={(s) => {
+              scale = s;
+            }}
+            onZoomChange={(z) => {
+              zoom = z;
+            }}
           >
             <!-- container context ?-->
             <Video
@@ -752,52 +859,9 @@
               }}
               onVolumeChange={(level, muted) => (volume = { level, muted })}
             />
-          </SvgOverlay>
-        </SidebarInset>
-      </ResizablePane>
-
-      <ResizableHandle withHandle />
-
-      <ResizablePane defaultSize={40} minSize={10}>
-        <AnnotationFooter>
-          <AnnotationFooterToolbar>
-            <VideoController
-              bind:this={videoController}
-              {isPlaying}
-              {zoom}
-              {currentFrame}
-              {totalFrames}
-              {volume}
-              bind:video={player}
-              onZoomChange={(z) => {
-                timelineTable.setZoom(z);
-              }}
-            />
-          </AnnotationFooterToolbar>
-
-          <ScrollArea class="h-[calc(100%-3.4em)]">
-            <TimelineTable
-              bind:this={timelineTable}
-              {annotations_promise}
-              db={annotationsIDB}
-              {scale}
-              {zoom}
-              {currentFrame}
-              {totalFrames}
-              {selectedAnnotation}
-              onSeekFrame={(frame) => player?.seekToFrame(frame)}
-              {onDeleteAnnotation}
-              onSelectAnnotation={selectAnnotation}
-              onScaleChange={(s) => {
-                scale = s;
-              }}
-              onZoomChange={(z) => {
-                zoom = z;
-              }}
-            />
-          </ScrollArea>
-        </AnnotationFooter>
-      </ResizablePane>
-    </ResizablePaneGroup>
-  </SidebarProvider>
+          </TimelineTable>
+        </ScrollArea>
+      </AnnotationFooter>
+    </ResizablePane>
+  </ResizablePaneGroup>
 </div>
