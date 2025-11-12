@@ -183,7 +183,7 @@ RSpec.describe Entry::Service, database: true do
     end
   end
 
-  describe "#mark_entries_as_ready" do
+  describe "#mark_entries_status_as" do
     let(:job_id) { 456 }
 
     before do
@@ -191,17 +191,10 @@ RSpec.describe Entry::Service, database: true do
         {
           dataset_id: dataset_id,
           job_id: job_id,
-          status: "pending"
+          status: "processing"
         }
       )
 
-      repo.create(
-        {
-          dataset_id: dataset_id,
-          job_id: job_id,
-          status: "pending"
-        }
-      )
       repo.create(
         {
           dataset_id: dataset_id,
@@ -212,10 +205,20 @@ RSpec.describe Entry::Service, database: true do
     end
 
     it "marks entries with the given job_id as ready" do
-      subject.mark_entries_as_ready(job_id)
+      subject.mark_entries_status_as(job_id, "ready")
 
       entries = repo.index({ job_id: job_id })
       expect(entries.map(&:status)).to all(eq("ready"))
+
+      other_entry = repo.index({ job_id: 789 }).first
+      expect(other_entry.status).to eq("pending")
+    end
+
+    it "marks entries with the given job_id as processing_error" do
+      subject.mark_entries_status_as(job_id, "processing_error")
+
+      entries = repo.index({ job_id: job_id })
+      expect(entries.map(&:status)).to all(eq("processing_error"))
 
       other_entry = repo.index({ job_id: 789 }).first
       expect(other_entry.status).to eq("pending")
@@ -316,50 +319,6 @@ RSpec.describe Entry::Service, database: true do
     it "deletes an entry" do
       subject.delete(entry.id)
       expect { repo.find!(entry.id) }.to raise_error(Verse::Error::NotFound)
-    end
-  end
-
-  describe "#update_entries_job" do
-    let(:job_id) { 789 }
-    let(:resource) { "test-resource.jpg" }
-    let!(:test_entry_id) do
-      repo.create(
-        {
-          dataset_id: dataset_id,
-          resource: resource,
-          status: "pending"
-        }
-      )
-    end
-
-    context "when entry exists and has no job_id" do
-      it "updates the entry with the provided job_id" do
-        result = subject.update_entries_job(job_id, resource)
-
-        expect(result.job_id).to eq(job_id)
-        expect(result.resource).to eq(resource)
-        expect(result.id).to eq(test_entry_id)
-      end
-    end
-
-    context "when entry exists but has a different job_id" do
-      let(:different_job_id) { 999 }
-
-      before do
-        repo.update!(test_entry_id, { job_id: different_job_id })
-      end
-
-      it "raises a validation error" do
-        expect { subject.update_entries_job(job_id, resource) }
-          .to raise_error(Verse::Error::ValidationFailed)
-      end
-    end
-
-    context "when entry does not exist" do
-      it "raises a not found error" do
-        expect { subject.update_entries_job(job_id, "non-existent-resource.jpg") }
-          .to raise_error(Verse::Error::NotFound)
-      end
     end
   end
 

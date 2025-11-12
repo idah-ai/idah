@@ -1,0 +1,11 @@
+admin:
+  mask: "8.0.0"
+  description: |
+    This role is assigned to system administrators
+    who have access to all organizations and projects.
+  assignable: true
+  rights:
+    - "iam:accounts.login.*"
+    - "dataset:projects.*.*"
+    - "dataset:project_members.*.*"
+    - "dataset:datasets.*.*"

@@ -1,7 +1,8 @@
 # Until later in the development process,
 # we will keep anonymous role able to do everything on the platform
 
-anonymous:
+system:
+  mask: "9.9.9"
   assignable: false
   rights:
     - "*.*.*"
