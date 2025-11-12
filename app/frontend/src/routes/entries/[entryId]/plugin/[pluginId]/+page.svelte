@@ -1,31 +1,44 @@
 <script lang="ts">
   import { page } from "$app/state";
+  import { onMount } from "svelte";
 
   import Spinner from "@/components/ui/spinner/spinner.svelte";
   import IdahPlugin from "@/plugin/IdahPlugin.svelte";
 
-  import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
+  import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
   import { activityContextForEntry } from "@/plugin/ActivityContext";
 
   import type { IActivityContext } from "@/plugin/interface/Activity";
-  import { onMount } from "svelte";
 
   // Variables
   let entryId: string = page.params.entryId as string;
-
   let context_promise: Promise<IActivityContext> | undefined = $state();
 
-  // Functions
+  // Lifecycle
   onMount(() => {
-    context_promise = new Promise<IActivityContext>((ok, ko) => {
-      entriesBackendDataSource
-        .get(entryId, {
-          included: ["dataset.project"],
-        })
-        .then(
-          (entryRes) => ok(activityContextForEntry(entryRes.data)),
-          () => ko(`could not retrieve entry ${entryId}`),
-        );
+    // eslint-disable-next-line no-async-promise-executor
+    context_promise = new Promise<IActivityContext>(async (ok, ko) => {
+      const checkEntryRes = await entriesBackendDataSource.get(entryId, {
+        fields: {
+          [EntryRecord.type]: ["wf_step"],
+        },
+      });
+
+      /**
+       * Start workflow event for an entry
+       * If entry wf_step is not ['annotate', 'review', 'done', 'export']
+       */
+      if (checkEntryRes.data.wf_step === "start") {
+        await entriesBackendDataSource.submit(entryId);
+      }
+
+      /** Get the lastest entry record with dataset */
+      const latestEntryRes = await entriesBackendDataSource.get(entryId, {
+        included: ["dataset", "dataset.project"],
+      });
+
+      if (!latestEntryRes) ko(`could not retrieve entry ${entryId}`);
+      else ok(activityContextForEntry(latestEntryRes.data));
     });
   });
 </script>

@@ -4,6 +4,8 @@
 
   import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 
+  import { cn } from "@/utils";
+
   // Props
   interface Props {
     icon?: typeof IconType;
@@ -11,12 +13,13 @@
     title: string;
     description: string;
 
+    class?: string | null;
     actions: Snippet;
   }
-  let { icon: Icon, title, description, actions }: Props = $props();
+  let { icon: Icon, title, description, class: className, actions }: Props = $props();
 </script>
 
-<Empty>
+<Empty class={cn("", className)}>
   <EmptyHeader>
     <EmptyMedia variant={Icon ? "icon" : "default"}>
       {#if Icon}
