@@ -66,9 +66,7 @@
         selectedNoteCommentId = noteCommentIdFromURL;
       }
     }, 200);
-  });
 
-  $effect(() => {
     /**
      * Handle when a note feed is selected from sidebar
      */

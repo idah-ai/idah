@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getContext, type Snippet } from "svelte";
+  import { getContext, onMount, type Snippet } from "svelte";
 
   import BoundingBox, { type ToolSelection } from "./bounding-box.svelte";
   import { boundingBoxes } from "./idb_store.svelte";
@@ -208,7 +208,7 @@
     }
   }
 
-  $effect(() => {
+  onMount(() => {
     context.notes.onRequireNoteFeedPosition(async (noteFeed: INoteFeed) => {
       // 1. Check the frame
       const noteFeedStartFrame = (noteFeed.position.start as number) || 0;
