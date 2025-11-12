@@ -21,7 +21,7 @@ module Annotation
 
     def create(record)
       attributes = record.attributes
-      attributes[:created_by_email] = 'harcoded_value@annotation.service.rb'
+      attributes[:created_by_email] = "harcoded_value@annotation.service.rb"
       # attributes[:created_by_email] ||= auth_context.metadata[:email]
       attributes[:id] = record.id || UUIDv7.generate
 
