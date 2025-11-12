@@ -4,7 +4,7 @@
   import Badge from "@/components/ui/badge/badge.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-  import { FieldDescription, FieldError, FieldGroup, FieldLabel, FieldSet } from "@/components/ui/field";
+  import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
   import { cn } from "@/utils";
@@ -57,80 +57,78 @@
   }
 </script>
 
-<FieldGroup id={name} class={cn("", className)}>
-  <FieldSet>
-    {#if slotLabel}
-      {@render slotLabel()}
-    {:else}
-      <FieldLabel {required}>{label}</FieldLabel>
-    {/if}
+<Field id={name} class={cn("", className)}>
+  {#if slotLabel}
+    {@render slotLabel()}
+  {:else}
+    <FieldLabel for={name} {required}>{label}</FieldLabel>
+  {/if}
 
-    <Popover bind:open>
-      <PopoverTrigger
-        class={cn("w-full justify-between", {
-          "ring-destructive ring-1": (errors?.length ?? 0) > 0,
-        })}
-      >
-        {#snippet child({ props })}
-          <Button variant="outline" class="justify-between" role="combobox" {disabled} aria-expanded={open} {...props}>
-            {#if selectedValues.length > 0}
-              {#each selectedValues as selected, index (index)}
-                <Badge>{selected.label}</Badge>
-              {/each}
-            {:else}
-              <span class="text-muted-foreground">{placeholder}</span>
-            {/if}
-
-            <div class={cn("ml-auto inline-flex items-center gap-2")}>
-              <button
-                type="button"
-                class={cn("cursor-pointer", clearable && selectedValues ? "opacity-50" : "opacity-0")}
-                onclick={clearValue}
-              >
-                <CircleXIcon class="size-4 shrink-0"></CircleXIcon>
-              </button>
-
-              <ChevronsUpDownIcon class="size-4 shrink-0 opacity-50"></ChevronsUpDownIcon>
-            </div>
-          </Button>
-        {/snippet}
-      </PopoverTrigger>
-
-      <PopoverContent align="start" class="p-0">
-        <Command>
-          {#if searchable}
-            <CommandInput placeholder={searchPlaceholder}></CommandInput>
+  <Popover bind:open>
+    <PopoverTrigger
+      class={cn("w-full justify-between", {
+        "ring-destructive ring-1": (errors?.length ?? 0) > 0,
+      })}
+    >
+      {#snippet child({ props })}
+        <Button variant="outline" class="justify-between" role="combobox" {disabled} aria-expanded={open} {...props}>
+          {#if selectedValues.length > 0}
+            {#each selectedValues as selected, index (index)}
+              <Badge>{selected.label}</Badge>
+            {/each}
+          {:else}
+            <span class="text-muted-foreground">{placeholder}</span>
           {/if}
 
-          <CommandList>
-            <CommandEmpty>No option found.</CommandEmpty>
-            <CommandGroup>
-              {#each choices as choice (choice.value)}
-                <CommandItem value={String(choice.value)} onSelect={() => select(choice)}>
-                  <CheckIcon
-                    class={cn("mr-2 size-4", {
-                      "opacity-0": !values.includes(choice.value),
-                    })}
-                  />
-                  {choice.label}
-                </CommandItem>
-              {/each}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+          <div class={cn("ml-auto inline-flex items-center gap-2")}>
+            <button
+              type="button"
+              class={cn("cursor-pointer", clearable && selectedValues ? "opacity-50" : "opacity-0")}
+              onclick={clearValue}
+            >
+              <CircleXIcon class="size-4 shrink-0"></CircleXIcon>
+            </button>
 
-    {#if slotInfo}
-      {@render slotInfo()}
-    {:else if info}
-      <FieldDescription>{info}</FieldDescription>
-    {/if}
+            <ChevronsUpDownIcon class="size-4 shrink-0 opacity-50"></ChevronsUpDownIcon>
+          </div>
+        </Button>
+      {/snippet}
+    </PopoverTrigger>
 
-    {#if slotErrors}
-      {@render slotErrors()}
-    {:else if errors}
-      <FieldError>{errors}</FieldError>
-    {/if}
-  </FieldSet>
-</FieldGroup>
+    <PopoverContent align="start" class="p-0">
+      <Command>
+        {#if searchable}
+          <CommandInput placeholder={searchPlaceholder}></CommandInput>
+        {/if}
+
+        <CommandList>
+          <CommandEmpty>No option found.</CommandEmpty>
+          <CommandGroup>
+            {#each choices as choice (choice.value)}
+              <CommandItem value={String(choice.value)} onSelect={() => select(choice)}>
+                <CheckIcon
+                  class={cn("mr-2 size-4", {
+                    "opacity-0": !values.includes(choice.value),
+                  })}
+                />
+                {choice.label}
+              </CommandItem>
+            {/each}
+          </CommandGroup>
+        </CommandList>
+      </Command>
+    </PopoverContent>
+  </Popover>
+
+  {#if slotInfo}
+    {@render slotInfo()}
+  {:else if info}
+    <FieldDescription>{info}</FieldDescription>
+  {/if}
+
+  {#if slotErrors}
+    {@render slotErrors()}
+  {:else if errors}
+    <FieldError>{errors}</FieldError>
+  {/if}
+</Field>
