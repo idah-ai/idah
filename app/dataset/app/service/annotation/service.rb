@@ -20,16 +20,19 @@ module Annotation
     end
 
     def create(record)
-      attributes = record.attributes
-      attributes[:created_by_email] ||= auth_context.metadata[:email]
-      attributes[:id] = record.id || UUIDv7.generate
+      # Validate required relationships
+      action_label = "create an annotation"
+      Validation::Service.require!("project", record.project, action_label)
+      Validation::Service.require!("dataset", record.dataset, action_label)
+      Validation::Service.require!("entry", record.entry, action_label)
 
-      if record.entry
-        attributes[:entry_id] = record.entry.id
-      else
-        raise Verse::Error::ValidationFailed,
-              "entry relationship is required to create an annotation"
-      end
+      # Assign attributes
+      attributes = record.attributes
+      attributes[:id] = record.id || UUIDv7.generate
+      attributes[:project_id] = record.project.id
+      attributes[:dataset_id] = record.dataset.id
+      attributes[:entry_id] = record.entry.id
+      attributes[:created_by_email] ||= auth_context.metadata[:email]
 
       annotations.transaction do
         id = annotations.create(attributes)

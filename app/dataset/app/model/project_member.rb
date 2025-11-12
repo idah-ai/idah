@@ -5,7 +5,6 @@ module ProjectMember
     type Resource::Dataset::ProjectMembers
 
     field :id, type: Integer, primary: true
-
     field :project_id, type: String, readonly: true
 
     field :account_id, type: Integer, readonly: true
