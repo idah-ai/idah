@@ -104,11 +104,6 @@
     onZoomChange?.(zoom);
   }
 
-  // export function setScale(value: number) {
-  //   scale = Math.max(1, Math.min(Math.ceil(totalFrames / zoom), value));
-  //   onScaleChange?.(scale);
-  // }
-
   function seekToFrame(frameToGo: number) {
     onSeekFrame(frameToGo);
   }
@@ -174,7 +169,7 @@
     {@const isLastIndex = index == annotations.length - 1}
     <TableRow
       class={cn("border-b-0", {
-        "bg-primary-foreground border-primary/30 border-t border-b": isSelected,
+        "bg-primary-foreground border-primary/30 border-b border-t": isSelected,
       })}
     >
       <TableCell
@@ -232,12 +227,12 @@
 {#snippet tooltipFrame(thisFrame: number, bgColor: string = "bg-black", extraClass: string = "")}
   <span
     class={cn(
-      `${bgColor} pointer-events-none absolute top-0 left-1/2 z-50 -translate-x-1/2 transform rounded-md px-2 py-1 text-xs font-medium whitespace-nowrap text-white transition-all duration-150`,
+      `${bgColor} pointer-events-none absolute left-1/2 top-0 z-50 -translate-x-1/2 transform whitespace-nowrap rounded-md px-2 py-1 text-xs font-medium text-white transition-all duration-150`,
       extraClass,
     )}
   >
     {thisFrame}
-    <span class={`absolute top-full left-1/2 -mt-1 h-1.5 w-1.5 -translate-x-1/2 rotate-45 ${bgColor}`}></span>
+    <span class={`absolute left-1/2 top-full -mt-1 h-1.5 w-1.5 -translate-x-1/2 rotate-45 ${bgColor}`}></span>
   </span>
 {/snippet}
 
@@ -256,7 +251,6 @@
         let c_hovered = $state.snapshot(hoveredColumn);
         let c = c_hovered != undefined ? Math.ceil((c_hovered - pos_offset) / scale) : 0;
 
-        // setScale(scale + delta);
         if (c_hovered != undefined) {
           setOffset(c_hovered - c * scale);
         }

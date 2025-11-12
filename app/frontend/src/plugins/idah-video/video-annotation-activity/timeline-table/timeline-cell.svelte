@@ -1,5 +1,6 @@
 <script lang="ts">
   import { getContext } from "svelte";
+  import type { HTMLAttributes } from "svelte/elements";
 
   import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu";
 
@@ -7,7 +8,6 @@
   import { ArrowLeftRightIcon, Trash2Icon } from "@lucide/svelte";
 
   import type { IActivityContext } from "@/plugin/interface/Activity";
-  import type { HTMLAttributes } from "svelte/elements";
   import type { VideoAnnotation } from "../VideoAnnotationContext";
 
   let {
