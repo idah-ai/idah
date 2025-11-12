@@ -12,11 +12,13 @@
   import CategoriesSelection from "./categories-selection.svelte";
 
   import type { AnnotationValue } from "$lib/context/AnnotationContext";
-  import type { IActivityContext } from "@/plugin/interface/Activity";
+  import type { IActivityContext, IConfigValue } from "@/plugin/interface/Activity";
 
   import type { AnnotationsIndexedDB } from "../../video-annotation-activity/indexedDB";
 
   import type { VideoAnnotation } from "../../video-annotation-activity/VideoAnnotationContext";
+  import { EntryRoot } from "../../type";
+  import { entryRoot } from "../../video-annotation-activity/idb_store.svelte";
 
   // Props
   let {

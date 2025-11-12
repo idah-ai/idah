@@ -37,6 +37,7 @@
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import type { Point, VideoFrameSelection, VideoShape } from "./video-annotation-activity/VideoAnnotationContext";
   import VideoController from "./video-annotation-activity/VideoController.svelte";
+  import { SidebarProvider } from "@/components/ui/sidebar";
 
   // Props
   interface Props {
@@ -570,7 +571,7 @@
       apply: () => {
         mode = DefaultMode;
         selectedAnnotation = undefined;
-          annotationValue = {};
+        annotationValue = {};
       },
       undo: () => {},
       isCombinable: () => true,
@@ -583,7 +584,7 @@
       apply: () => {
         mode = IdahVideoBoundingBox;
         selectedAnnotation = undefined;
-          annotationValue = {};
+        annotationValue = {};
       },
       undo: () => {},
       isCombinable: () => true,
@@ -834,7 +835,7 @@
             onSelectAnnotation={selectAnnotation}
             onSelection={onShapeSelection}
             onAddNewNote={showNewNotePopup}
-          onChangeFrame={seekToFrame}
+            onChangeFrame={seekToFrame}
             target_container={() => player_container}
             {videoResizedAt}
           >
@@ -858,66 +859,67 @@
         </SidebarInset>
       </ResizablePane>
 
-    <ResizableHandle withHandle></ResizableHandle>
+      <ResizableHandle withHandle></ResizableHandle>
 
-    <ResizablePane defaultSize={25} minSize={10}>
-      <AnnotationFooter>
-        <AnnotationFooterToolbar>
-          <VideoController
-            bind:this={videoController}
-            {isPlaying}
-            {zoom}
-            {scale}
-            {currentFrame}
-            {totalFrames}
-            {volume}
-            bind:video={player}
-            onZoomChange={(z) => timelineTable.setZoom(z)}
-          />
-        </AnnotationFooterToolbar>
-
-        <ScrollArea class="h-[calc(100%-3.4em)]">
-          <TimelineTable
-            bind:this={timelineTable}
-            {annotations_promise}
-            db={annotationsIDB}
-            {scale}
-            {zoom}
-            {currentFrame}
-            {totalFrames}
-            {selectedAnnotation}
-            onSeekFrame={seekToFrame}
-            {onDeleteAnnotation}
-            onSelectAnnotation={selectAnnotation}
-            onSelection={onShapeSelection}
-            target_container={() => player_container}
-            {videoResizedAt}
-            onScaleChange={(s) => {
-              scale = s;
-            }}
-            onZoomChange={(z) => {
-              zoom = z;
-            }}
-          >
-            <!-- container context ?-->
-            <Video
-              bind:this={player}
-              bind:element={player_container}
-              onResize={() => {
-                videoResizedAt = new Date();
-              }}
-              onFramesChange={(current, total, playing) => {
-                currentFrame = current;
-                totalFrames = total;
-                isPlaying = playing;
-                isPlaying = playing;
-                // console.debug({onFramesChange: {current, total, playing}})
-              }}
-              onVolumeChange={(level, muted) => (volume = { level, muted })}
+      <ResizablePane defaultSize={25} minSize={10}>
+        <AnnotationFooter>
+          <AnnotationFooterToolbar>
+            <VideoController
+              bind:this={videoController}
+              {isPlaying}
+              {zoom}
+              {scale}
+              {currentFrame}
+              {totalFrames}
+              {volume}
+              bind:video={player}
+              onZoomChange={(z) => timelineTable.setZoom(z)}
             />
-          </TimelineTable>
-        </ScrollArea>
-      </AnnotationFooter>
-    </ResizablePane>
-  </ResizablePaneGroup>
+          </AnnotationFooterToolbar>
+
+          <ScrollArea class="h-[calc(100%-3.4em)]">
+            <TimelineTable
+              bind:this={timelineTable}
+              {annotations_promise}
+              db={annotationsIDB}
+              {scale}
+              {zoom}
+              {currentFrame}
+              {totalFrames}
+              {selectedAnnotation}
+              onSeekFrame={seekToFrame}
+              {onDeleteAnnotation}
+              onSelectAnnotation={selectAnnotation}
+              onSelection={onShapeSelection}
+              target_container={() => player_container}
+              {videoResizedAt}
+              onScaleChange={(s) => {
+                scale = s;
+              }}
+              onZoomChange={(z) => {
+                zoom = z;
+              }}
+            >
+              <!-- container context ?-->
+              <Video
+                bind:this={player}
+                bind:element={player_container}
+                onResize={() => {
+                  videoResizedAt = new Date();
+                }}
+                onFramesChange={(current, total, playing) => {
+                  currentFrame = current;
+                  totalFrames = total;
+                  isPlaying = playing;
+                  isPlaying = playing;
+                  // console.debug({onFramesChange: {current, total, playing}})
+                }}
+                onVolumeChange={(level, muted) => (volume = { level, muted })}
+              />
+            </TimelineTable>
+          </ScrollArea>
+        </AnnotationFooter>
+      </ResizablePane>
+    </ResizablePaneGroup>
+  </SidebarProvider>
 </div>
