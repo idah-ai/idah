@@ -12,10 +12,8 @@ export interface Plugins {
 }
 
 export interface ModalityShape {
-  [shapeName: string]: {
-    label: string;
-    icon: string;
-  };
+  label: string;
+  icon: string;
 }
 
 export interface ModalityShapes {
