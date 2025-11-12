@@ -13,13 +13,12 @@ module Account
     field :sso_channel, type: [String, NilClass], readonly: true
 
     field :enabled, type: [TrueClass]
-    field :role, type: [String, NilClass]
+    field :role_name, type: [String, NilClass]
+    field :role_scope, type: Hash
 
     field :picture_url, type: [String, NilClass], readonly: true
 
     field :joined_at, type: [Time, NilClass], readonly: true
-
-    field :scopes, type: Hash
 
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true

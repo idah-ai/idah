@@ -67,7 +67,7 @@ module Auth
     # Build the tokens for the given account and role name
     # @return [String, String] the auth_token and refresh_token
     def build_tokens(account, nonce:, session_id: nil, ip: "", user_agent: nil)
-      account_role = account.role
+      account_role = account.role_name
 
       # Fetch labels from the role repository
       role = system_roles.find_by({ name: account_role })
@@ -85,7 +85,7 @@ module Auth
           email: account.email,
         }.compact,
         account_role,
-        account.scopes,
+        account.role_scope,
         exp:
       )
 
@@ -99,7 +99,7 @@ module Auth
           name: account.name,
           picture_url: account.picture_url,
           role_name: role.name,
-          scopes: account.scopes,
+          scopes: account.role_scope,
           role_rights: role.rights,
           auth_token:,
           refresh_token:,

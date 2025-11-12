@@ -5,6 +5,7 @@ module Organization
     use organizations: Organization::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
+      binding.pry
       organizations.index(
         filter,
         included: included,
@@ -33,6 +34,10 @@ module Organization
 
     def delete(id)
       organizations.delete(id)
+    end
+
+    def add_owner(org_id:, account_email:)
+      pass
     end
   end
 end
