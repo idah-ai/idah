@@ -13,7 +13,7 @@ Sequel.migration do
       column :email, String, unique: true, null: false, index: true
 
       column :role_name, String, null: false, default: "user"
-      column :role_scope, :jsonb, null: true
+      column :role_scope, :jsonb, null: false, default: "{}"
 
       column :picture_url, String, null: true
 
@@ -56,5 +56,19 @@ Sequel.migration do
       Migration::Timestamps.timestamps(self)
     end
     Migration::Timestamps.trg_updated_at(self, :account_sessions)
+
+    # Create initial admin account
+    now = Time.now
+    from(:accounts).insert(
+      name: "admin",
+      email: "admin@idah.ai",
+      role_name: "admin",
+      role_scope: "{}",
+      hashed_password: BCrypt::Password.create("password"),
+      enabled: true,
+      joined_at: now,
+      created_at: now,
+      updated_at: now,
+    )
   end
 end

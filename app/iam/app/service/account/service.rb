@@ -2,7 +2,8 @@
 
 module Account
   class Service < Verse::Service::Base
-    use accounts: Account::Repository
+    use accounts: Account::Repository,
+        organization_service: Organization::Service
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       accounts.index(
@@ -43,6 +44,30 @@ module Account
 
     def delete(id)
       accounts.delete(id)
+    end
+
+    # TODO: should allow only admin/system for this action
+    def add_owner(org_id:, account_id:)
+      organization_service.show(org_id)
+      # TODO: error / fail fast here
+
+      account = accounts.find!(account_id)
+      # update_role_name = "org_owner" if account.role_name == "user"
+      update_role_scope = account.role_scope || {}
+      update_role_scope[:org] ||= []
+      (update_role_scope[:org] << org_id).uniq!
+
+      update_attr = { role_scope: update_role_scope }
+      update_attr[:role_name] = "org_owner" if account.role_name == "user"
+
+      accounts.update!(account_id, update_attr)
+
+      accounts.find!(account_id)
+    end
+
+    # TODO: should allow only admin/system for this action
+    def remove_owner(org_id:, account_id:)
+      pass
     end
   end
 end
