@@ -1,14 +1,14 @@
 <script lang="ts">
   import { getContext } from "svelte";
-  import type { HTMLAttributes } from "svelte/elements";
 
   import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu";
 
   import { cn } from "@/utils";
   import { ArrowLeftRightIcon, Trash2Icon } from "@lucide/svelte";
 
-  import type { IActivityContext } from "@/plugin/interface/Activity";
   import type { VideoAnnotation } from "../VideoAnnotationContext";
+  import type { HTMLAttributes } from "svelte/elements";
+  import type { IActivityContext } from "@/plugin/interface/Activity";
 
   let {
     annotation,
@@ -22,8 +22,6 @@
     onSeekFrame,
     onSelectAnnotation,
     onDeleteFrame,
-    zoom,
-    totalFrames,
     ...restProps
   }: HTMLAttributes<HTMLDivElement> & {
     annotation: VideoAnnotation;
@@ -34,8 +32,6 @@
     inSpan: boolean;
     keyframes: number[];
     hovered: boolean;
-    zoom: number;
-    totalFrames: number;
     onSeekFrame: (frame: number) => void;
     onSelectAnnotation: (annotation: VideoAnnotation) => void;
     onDeleteFrame: (frame: number) => void;
@@ -46,8 +42,9 @@
 
   // Variables
   let categoryColor: string | undefined = $derived(getCategory(annotation.value.category)?.color);
-  let range_span = $derived(Math.min(scale * zoom, totalFrames));
-  let cellWidth: number = $derived((1 / ((range[1] - range[0] + (scale - (range_span % scale))) / 100)) * scale);
+  let cellWidth: number = $derived(
+    (1 / ((range[1] - range[0] + (scale - ((range[1] - range[0]) % scale))) / 100)) * scale,
+  );
   let isSelected: boolean = $derived(Math.floor(currentFrame / scale) == Math.floor(frame / scale));
   let isHovered: boolean = $derived(hovered && !isSelected);
 
@@ -62,7 +59,7 @@
 <div
   class={cn("inline-block h-full border-b py-1 first:border-l", {
     "bg-primary/20": isSelected,
-    "bg-primary/10 cursor-pointer": isHovered,
+    "bg-primary/10": isHovered,
   })}
   style:box-sizing="border-box"
   style:width="{cellWidth}%"
