@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { BoxSelectIcon, MessageCircleIcon, MousePointer2 } from "@lucide/svelte";
+  import { MousePointer2Icon, SquareMousePointerIcon } from "@lucide/svelte";
   import { onMount, setContext } from "svelte";
   import { toast } from "svelte-sonner";
   import { uuidv7 } from "uuidv7";
@@ -15,16 +15,12 @@
     CommandShortcut,
   } from "$lib/components/ui/command";
   import Button from "@/components/ui/button/button.svelte";
-  import { Popover, PopoverContent } from "@/components/ui/popover";
-  import { ScrollArea } from "@/components/ui/scroll-area";
+  import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
   import SidebarInset from "@/components/ui/sidebar/sidebar-inset.svelte";
 
   import { ResizableHandle, ResizablePane, ResizablePaneGroup } from "@/components/ui/resizable";
+  import { ScrollArea } from "@/components/ui/scroll-area";
   import { AnnotationRecord } from "@/data/model/dataset/annotations/record";
-
-  import type { AnnotationShape, AnnotationValue } from "@/context/AnnotationContext";
-  import type { IActivityContext } from "@/plugin/interface/Activity";
-
   import { ShortcutManager } from "@/shortcut/ShortcutManager";
   import AnnotationFooter from "./layout/footer/AnnotationFooter.svelte";
   import AnnotationFooterToolbar from "./layout/footer/AnnotationFooterToolbar.svelte";
@@ -35,6 +31,9 @@
   import SvgOverlay, { type OnAddNewNoteParams } from "./video-annotation-activity/svg-overlay.svelte";
   import TimelineTable from "./video-annotation-activity/timeline-table/timeline-table.svelte";
   import Video from "./video-annotation-activity/video.svelte";
+
+  import type { AnnotationShape, AnnotationValue } from "@/context/AnnotationContext";
+  import type { IActivityContext } from "@/plugin/interface/Activity";
   import type {
     Point,
     VideoAnnotation,
@@ -71,7 +70,7 @@
   let entry_id = $state(context.id);
   let url = $state(context.mediaUrl);
 
-  let zoom = $state(100);
+  let zoom = $state(85);
   let scale = $state(1);
   let timelineTable: TimelineTable;
   let videoController: VideoController;
@@ -141,15 +140,13 @@
       {
         label: "Visual",
         type: "visual",
-        icon: MousePointer2,
-        iconName: "mouse-pointer-2",
+        icon: MousePointer2Icon,
         handleClick: () => context.commands.run("tools.visual"),
       },
       {
         label: "Bounding Box",
         type: "video:bounding_box",
-        icon: BoxSelectIcon,
-        iconName: "vector-square",
+        icon: SquareMousePointerIcon,
         handleClick: () => context.commands.run("tools.bounding_box"),
       },
       {
@@ -839,15 +836,72 @@
             onSeekFrame={seekToFrame}
             {onDeleteAnnotation}
             onSelectAnnotation={selectAnnotation}
-            onScaleChange={(s) => {
-              scale = s;
-            }}
-            onZoomChange={(z) => {
-              zoom = z;
-            }}
-          />
-        </ScrollArea>
-      </AnnotationFooter>
-    </ResizablePane>
-  </ResizablePaneGroup>
+            onSelection={onShapeSelection}
+            target_container={() => player_container}
+            {videoResizedAt}
+          >
+            <!-- container context ?-->
+            <Video
+              bind:this={player}
+              bind:element={player_container}
+              onResize={() => {
+                videoResizedAt = new Date();
+              }}
+              onFramesChange={(current, total, playing) => {
+                currentFrame = current;
+                totalFrames = total;
+                isPlaying = playing;
+                isPlaying = playing;
+                // console.debug({onFramesChange: {current, total, playing}})
+              }}
+              onVolumeChange={(level, muted) => (volume = { level, muted })}
+            />
+          </SvgOverlay>
+        </SidebarInset>
+      </ResizablePane>
+
+      <ResizableHandle withHandle />
+
+      <ResizablePane defaultSize={40} minSize={10}>
+        <AnnotationFooter>
+          <AnnotationFooterToolbar>
+            <VideoController
+              bind:this={videoController}
+              {isPlaying}
+              {zoom}
+              {currentFrame}
+              {totalFrames}
+              {volume}
+              bind:video={player}
+              onZoomChange={(z) => {
+                timelineTable.setZoom(z);
+              }}
+            />
+          </AnnotationFooterToolbar>
+
+          <ScrollArea class="h-[calc(100%-3.4em)]">
+            <TimelineTable
+              bind:this={timelineTable}
+              {annotations_promise}
+              db={annotationsIDB}
+              {scale}
+              {zoom}
+              {currentFrame}
+              {totalFrames}
+              {selectedAnnotation}
+              onSeekFrame={(frame) => player?.seekToFrame(frame)}
+              {onDeleteAnnotation}
+              onSelectAnnotation={selectAnnotation}
+              onScaleChange={(s) => {
+                scale = s;
+              }}
+              onZoomChange={(z) => {
+                zoom = z;
+              }}
+            />
+          </ScrollArea>
+        </AnnotationFooter>
+      </ResizablePane>
+    </ResizablePaneGroup>
+  </SidebarProvider>
 </div>
