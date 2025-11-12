@@ -25,6 +25,10 @@ module Project
     def scoped(action)
       auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }
+        # scope.as_org_owner? {
+        #   org_ids = auth_context.custom_scopes[:org]
+        #   table.where
+        # }
         scope.as_user? { account_project_scoped_query(action) }
       end
     end
