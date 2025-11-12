@@ -72,7 +72,6 @@ function createToolsInterface(): ITools {
 }
 
 export function activityContextForEntry(entry: EntryRecord): IActivityContext {
-  console.log({ config: entry.dataset.labeling_configuration });
   return {
     id: entry.id,
     type: entry.dataset.modality,

@@ -12,10 +12,10 @@
 
   import type { CategoryDefinition } from "@/context/ActivityContext";
   import type { AnnotationValue } from "@/context/AnnotationContext";
-  import type { AnnotationsIndexedDB } from "./indexedDB";
-  import type { VideoAnnotation } from "./VideoAnnotationContext";
   import type { IConfigValue } from "@/plugin/interface/Activity";
   import { EntryRoot } from "../type";
+  import type { AnnotationsIndexedDB } from "./indexedDB";
+  import type { VideoAnnotation } from "./VideoAnnotationContext";
 
   // Props
   let {
@@ -69,7 +69,6 @@
   });
 
   let forceRender = $state(0); // Force re-render trigger
-  console.log({ categories, type: typeof categories });
   let categoriesTree = $derived(
     categories.reduce<CategoryDefinition[]>((acc, category_configuration) => {
       return buildTree(acc, category_configuration.id.split("/"), category_configuration);
@@ -252,7 +251,7 @@
       {#await haveAnnotationsInCategory(category.id) then hasAnnotations}
         <CollapsibleTrigger
           class={cn("flex w-full items-center justify-between", {
-            "bg-primary-foreground rounded-sm border-1 border-blue-300": selected == category.id,
+            "bg-primary-foreground border-1 rounded-sm border-blue-300": selected == category.id,
             "hover:bg-primary-foreground hover:cursor-pointer hover:rounded-sm": !category.requiredNested,
             "hover:bg-accent hover:cursor-pointer hover:rounded-sm": category.requiredNested && !toolMode,
           })}
