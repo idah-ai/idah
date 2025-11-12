@@ -62,7 +62,10 @@
         required={newRecord}
         disabled={!newRecord}
         errors={fieldErrors["modality"]}
-        bind:value={modality}
+        value={modality}
+        onSelected={(selectedValue) => {
+          modality = selectedValue as string;
+        }}
       />
     {/await}
   </FieldGroup>

@@ -79,7 +79,10 @@
         placeholder="Please select priority"
         choices={entryPriorities}
         required
-        bind:value={selectedPriority}
+        value={selectedPriority}
+        onSelected={(selectedValue) => {
+          selectedPriority = selectedValue as number;
+        }}
       ></SingleSelectField>
     </FieldGroup>
   </FieldSet>
