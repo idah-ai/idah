@@ -73,19 +73,19 @@
     pos_offset = Math.max(1, Math.min(totalFrames - range_span, offset || 0));
   }
 
-  export function setZoom(value: number) {
+  export function setZoom(value: number): void {
     const s = Math.min(100, Math.max(1, Math.round(value)));
     const minZoom = 20;
     const maxZoom = 150;
+    const midZoom = (minZoom + maxZoom) / 2;
+
+    // maximum scale based on zoom
     const maxScale = Math.ceil(totalFrames / zoom);
 
-    let newScale = value <= (minZoom + maxZoom) / 2 ? 1 : Math.max(1, Math.min(Math.ceil(totalFrames / zoom), value));
-
-    // clamp scale just in case
-    newScale = Math.min(newScale, maxScale);
+    // Determine new scale based on zoom value
+    const newScale = value <= midZoom ? 1 : Math.ceil(1 + ((value - midZoom) / (maxZoom - midZoom)) * (maxScale - 1));
 
     scale = Math.ceil(newScale);
-
     zoom = s;
 
     onScaleChange?.(scale);

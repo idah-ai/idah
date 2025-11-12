@@ -34,7 +34,6 @@
     volume: { level: number; muted: boolean };
     currentFrame: number;
     totalFrames: number;
-    scale: number;
     zoom: number;
     onZoomChange: (zoom: number) => void;
   }
