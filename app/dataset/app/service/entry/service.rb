@@ -2,8 +2,7 @@
 
 module Entry
   class Service < Verse::Service::Base
-    use entries: Entry::Repository
-    use_system datasets: Dataset::Repository
+    use entries: Entry::Repository, datasets: Dataset::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       entries.index(
@@ -21,11 +20,18 @@ module Entry
     end
 
     def create(record)
-      # Validate required relationships
-      action_label = "create an entry"
-      Validation::Service.require!("resource", attributes[:resource], action_label)
-      Validation::Service.require!("project", record.project, action_label)
-      Validation::Service.require!("dataset", record.dataset, action_label)
+      attributes = record.attributes
+
+      # Validate required relationships and fields
+      unless record.dataset
+        raise Verse::Error::ValidationFailed,
+              "dataset relationship is required to create an entry"
+      end
+
+      unless attributes[:resource]
+        raise Verse::Error::ValidationFailed,
+              "resource field is required to create an entry"
+      end
 
       # Ensure entry with same resource does not already exist
       if entries.find_by({ resource: attributes[:resource] })
@@ -33,11 +39,12 @@ module Entry
               "Entry with resource #{attributes[:resource]} already exists"
       end
 
+      dataset = datasets.find!(record.dataset.id)
+
       # Assign attributes
-      attributes = record.attributes
       attributes[:id] = record.id || UUIDv7.generate
-      attributes[:project_id] = record.project.id
-      attributes[:dataset_id] = record.dataset.id
+      attributes[:project_id] = dataset.project_id
+      attributes[:dataset_id] = dataset.id
 
       entries.transaction do
         id = entries.create(attributes)

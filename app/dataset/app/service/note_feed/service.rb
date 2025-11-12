@@ -39,8 +39,17 @@ module NoteFeed
 
     def create_from_params(data)
       attributes = data.dup
-      attributes[:id] = UUIDv7.generate
 
+      unless attributes[:entry_id]
+        raise Verse::Error::ValidationFailed,
+              "entry_id field is required to create a note feed"
+      end
+
+      entry = entries.find!(attributes[:entry_id])
+
+      attributes[:id] = UUIDv7.generate
+      attributes[:project_id] = entry.project_id
+      attributes[:dataset_id] = entry.dataset_id
       # put created_by_email to nil for now, will be replaced with auth_context[:email] later
       attributes[:created_by_email] ||= nil
       attributes[:status] = "pending"

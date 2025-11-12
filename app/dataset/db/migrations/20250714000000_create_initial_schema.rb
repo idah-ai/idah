@@ -223,6 +223,15 @@ Sequel.migration do
                   on_delete: :cascade,
                   on_update: :cascade
 
+      # Optional annotation reference, based on the anchor type.
+      foreign_key :annotation_id,
+                  :annotations,
+                  type: :uuid,
+                  null: true,
+                  index: true,
+                  on_delete: :cascade,
+                  on_update: :cascade
+
       column :created_by_email, String, null: false
 
       # Position anchor, or annotation reference

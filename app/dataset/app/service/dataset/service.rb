@@ -22,7 +22,10 @@ module Dataset
 
     def create(record)
       # Validate required relationships
-      Validation::Service.require!("project", record.project, "create a dataset")
+      unless record.project
+        raise Verse::Error::ValidationFailed,
+              "project relationship is required to create a dataset"
+      end
 
       # Ensure user can "create" dataset to the project
       unless datasets.account_can_access_project?(record.project.id, :create)
