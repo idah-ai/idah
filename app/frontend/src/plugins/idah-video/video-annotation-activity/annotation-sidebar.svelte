@@ -62,9 +62,10 @@
   });
 
   // Functions
-  function categorySelection(mode: string, category?: string) {
+  function categorySelection(shape_type: string, category?: string) {
     if (category) {
-      onEditValue({ category }, mode);
+      if (shape_type != mode) onSelectAnnotation();
+      onEditValue({ category }, shape_type);
     } // else {
     //   onEditValue(
     //     Object.fromEntries(Object.entries(annotationValue).filter(([type, _]) => type == "categories")),
