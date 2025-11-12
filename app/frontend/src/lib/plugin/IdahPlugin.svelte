@@ -12,9 +12,9 @@
   let { context }: Props = $props();
 
   // Variables
-  let PluginContainerElement = $state<HTMLElement | null>(null);
-  let HeaderBarElement = $state<HTMLElement | null>(null);
-  let headerBarHeight = $derived(HeaderBarElement?.clientHeight ?? 50);
+  let pluginContainerElement = $state<HTMLElement | null>(null);
+  let headerBarElement = $state<HTMLElement | null>(null);
+  let headerBarHeight = $derived(headerBarElement?.clientHeight ?? 50);
   let plugin: IActivityView | undefined = $state();
 
   let p: Promise<IActivityView> = new Promise<IActivityView>((ok, ko) => {
@@ -28,8 +28,8 @@
   onMount(() => {
     p.then((_plugin) => {
       plugin = _plugin;
-      // console.debug({ plugin: $state.snapshot(plugin), PluginContainerElement, context });
-      plugin.render?.(PluginContainerElement, context);
+      // console.debug({ plugin: $state.snapshot(plugin), pluginContainerElement, context });
+      plugin.render?.(pluginContainerElement, context);
     });
   });
 
@@ -39,10 +39,10 @@
 </script>
 
 <div class="relative">
-  <AnnotationHeaderBar bind:ref={HeaderBarElement} pluginContainerElement={PluginContainerElement} {context} />
+  <AnnotationHeaderBar bind:ref={headerBarElement} pluginContainerElement={pluginContainerElement} {context} />
 
   <!-- Plugin Container -->
-  <div style:height={`calc(100vh - ${headerBarHeight}px)`} bind:this={PluginContainerElement}>
+  <div style:height={`calc(100vh - ${headerBarHeight}px)`} bind:this={pluginContainerElement}>
     {#await p}
       Loading Plugins
     {:then}
