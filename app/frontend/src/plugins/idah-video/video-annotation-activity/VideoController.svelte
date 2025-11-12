@@ -1,19 +1,20 @@
 <script lang="ts">
-  import Button from "@/components/ui/button/button.svelte";
-  import Input from "@/components/ui/input/input.svelte";
   import {
     ChevronLeftIcon,
     ChevronRightIcon,
     FastForwardIcon,
     PauseIcon,
     PlayIcon,
-    RulerIcon,
     Volume2Icon,
     VolumeXIcon,
     ZoomInIcon,
     ZoomOutIcon,
   } from "@lucide/svelte";
-  import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+  import type { ChangeEventHandler } from "svelte/elements";
+
+  import NumberField from "@/components/app/forms/fields/input/number-field.svelte";
+  import Tooltips from "@/components/app/tooltips/tooltips.svelte";
+  import Button from "@/components/ui/button/button.svelte";
   import {
     DropdownMenu,
     DropdownMenuContent,
@@ -22,11 +23,8 @@
     DropdownMenuLabel,
     DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu";
+  import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
   import Slider from "@/components/ui/slider/slider.svelte";
-  import Text from "@/components/ui/text/Text.svelte";
-  import Tooltips from "@/components/app/tooltips/tooltips.svelte";
-
-  import type { ChangeEventHandler } from "svelte/elements";
   import Video from "./video.svelte";
 
   // Props
@@ -36,23 +34,11 @@
     volume: { level: number; muted: boolean };
     currentFrame: number;
     totalFrames: number;
-    scale: number;
     zoom: number;
     onZoomChange: (zoom: number) => void;
-    onScaleChange: (scale: number) => void;
   }
 
-  let {
-    video = $bindable(),
-    isPlaying,
-    volume,
-    scale,
-    zoom,
-    currentFrame,
-    totalFrames,
-    onZoomChange,
-    onScaleChange,
-  }: Props = $props();
+  let { video = $bindable(), isPlaying, volume, zoom, currentFrame, totalFrames, onZoomChange }: Props = $props();
 
   // Variables
   interface VideoSpeedMenuItem {
@@ -69,8 +55,11 @@
     { label: "3 X", value: 3 },
     { label: "5 X", value: 5 },
   ];
+  const min = 20;
+  const max = 150;
 
   let currentSpeed: number = $state(1);
+  let sliderValue: number = $derived(max - (zoom - min));
 
   const seekToFrame: ChangeEventHandler<HTMLInputElement> = (event) => {
     const target = event.target as HTMLInputElement;
@@ -81,6 +70,24 @@
   function selectVideoSpeed(selectedSpeed: number): void {
     currentSpeed = selectedSpeed;
     video.playbackRate(currentSpeed);
+  }
+
+  function onSliderChange(value: number): void {
+    zoom = max - (value - min); // flip value
+    onZoomChange(zoom);
+  }
+
+  // Slider needs reversed value for displa
+
+  function zoomIn(): void {
+    zoom = zoom - 5;
+    onZoomChange(Math.min(max, zoom + 1));
+  }
+
+  function zoomOut(): void {
+    zoom = zoom + 5;
+
+    onZoomChange(Math.max(min, zoom - 1));
   }
 </script>
 
@@ -128,7 +135,7 @@
         <Slider
           type="single"
           orientation="vertical"
-          min={0}
+          min={1}
           max={100}
           step={1}
           onValueChange={video.setVolume}
@@ -158,15 +165,15 @@
 
     <!-- VIDEO::FRAME ADJUSTER -->
     <div class="inline-flex items-center gap-1 whitespace-nowrap">
-      <Input
-        type="number"
+      <NumberField
+        name="frame-seek"
         class="min-w-24"
         placeholder="Frame"
-        min={0}
+        min={1}
         max={Math.max(0, totalFrames)}
         suffix={`/ ${Math.max(0, totalFrames)}`}
         value={currentFrame}
-        onchange={seekToFrame}
+        oninput={seekToFrame}
       />
     </div>
   </div>
@@ -180,23 +187,8 @@
     <div class="flex items-center gap-2">
       <Tooltips align="center">
         {#snippet trigger()}
-          <Button variant="outline" size="icon" onclick={() => onZoomChange(zoom - 1)}>
+          <Button variant="outline" size="icon" onclick={zoomOut}>
             <ZoomOutIcon class="size-4" />
-          </Button>
-        {/snippet}
-
-        {#snippet content()}
-          Zoom in
-        {/snippet}
-      </Tooltips>
-
-      <Slider class="min-w-[200px]" type="single" min={20} max={150} step={1} value={zoom} onValueChange={onZoomChange}
-      ></Slider>
-
-      <Tooltips align="center">
-        {#snippet trigger()}
-          <Button variant="outline" size="icon" onclick={() => onZoomChange(zoom + 1)}>
-            <ZoomInIcon class="size-4" />
           </Button>
         {/snippet}
 
@@ -204,10 +196,31 @@
           Zoom out
         {/snippet}
       </Tooltips>
-    </div>
 
+      <Slider
+        class="min-w-[200px]"
+        type="single"
+        {min}
+        {max}
+        step={5}
+        value={sliderValue}
+        onValueChange={onSliderChange}
+      ></Slider>
+
+      <Tooltips align="center">
+        {#snippet trigger()}
+          <Button variant="outline" size="icon" onclick={zoomIn}>
+            <ZoomInIcon class="size-4" />
+          </Button>
+        {/snippet}
+
+        {#snippet content()}
+          Zoom in
+        {/snippet}
+      </Tooltips>
+    </div>
     <!-- VIDEO::SCALE ADJUSTER (SCALE DOWN / SCALE UP) -->
-    <Popover>
+    <!-- <Popover>
       <PopoverTrigger>
         <Tooltips align="center">
           {#snippet trigger()}
@@ -235,6 +248,6 @@
           onValueChange={onScaleChange}
         />
       </PopoverContent>
-    </Popover>
+    </Popover> -->
   </div>
 </div>
