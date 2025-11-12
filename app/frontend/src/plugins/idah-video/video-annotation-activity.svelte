@@ -21,13 +21,7 @@
 
   import { ResizableHandle, ResizablePane, ResizablePaneGroup } from "@/components/ui/resizable";
   import { ScrollArea } from "@/components/ui/scroll-area";
-  import type {
-    AnnotationMetadata,
-    AnnotationObj,
-    AnnotationShape,
-    AnnotationValue,
-  } from "@/context/AnnotationContext";
-  import type { IActivityContext } from "@/plugin/interface/Activity";
+  import type { AnnotationMetadata, AnnotationObj } from "@/context/AnnotationContext";
   import { AnnotationRecord } from "@/data/model/dataset/annotations/record";
   import { ShortcutManager } from "@/shortcut/ShortcutManager";
   import AnnotationFooter from "./layout/footer/AnnotationFooter.svelte";
@@ -39,20 +33,11 @@
   import SvgOverlay from "./video-annotation-activity/svg-overlay.svelte";
   import TimelineTable from "./video-annotation-activity/timeline-table/timeline-table.svelte";
   import Video from "./video-annotation-activity/video.svelte";
-  import type { Point, VideoFrameSelection, VideoShape } from "./video-annotation-activity/VideoAnnotationContext";
-  import VideoController from "./video-annotation-activity/VideoController.svelte";
-  import BoxSelectIcon from "@lucide/svelte/icons/box-select";
-  import MousePointer2 from "@lucide/svelte/icons/mouse-pointer-2";
   import { DefaultMode, EntryRoot, IdahVideoBoundingBox } from "./type";
 
   import type { AnnotationShape, AnnotationValue } from "@/context/AnnotationContext";
   import type { IActivityContext } from "@/plugin/interface/Activity";
-  import type {
-    Point,
-    VideoAnnotation,
-    VideoFrameSelection,
-    VideoShape,
-  } from "./video-annotation-activity/VideoAnnotationContext";
+  import type { Point, VideoFrameSelection, VideoShape } from "./video-annotation-activity/VideoAnnotationContext";
   import VideoController from "./video-annotation-activity/VideoController.svelte";
 
   // Props
