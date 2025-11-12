@@ -64,14 +64,14 @@
 
   let range_span = $derived(Math.min(scale * zoom, totalFrames));
 
-  let pos_offset: number = $state(0);
+  let pos_offset: number = $state(1);
   let range: [number, number] = $derived([pos_offset, pos_offset + range_span]);
 
   let wheelthrottling = $state(false);
   let hoveredColumn: number | undefined = $state();
 
   export function setOffset(offset: number) {
-    pos_offset = Math.max(0, Math.min(totalFrames - range_span, offset || 0));
+    pos_offset = Math.max(1, Math.min(totalFrames - range_span, offset || 0));
   }
 
   export function setZoom(value: number) {
