@@ -5,7 +5,14 @@ org_owner:
     who have access to all projects within their organization.
   assignable: true
   rights:
+    # Login
     - "iam:accounts.login.*"
+
+    # Organizations
+    # TODO: review org scope; owned ?
+    - "iam:organizations.read.*"
+
+    # Datasets
     - "dataset:projects.*.as_org_owner"
     - "dataset:project_members.*.as_org_owner"
     - "dataset:datasets.*.as_org_owner"

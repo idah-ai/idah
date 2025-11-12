@@ -72,4 +72,72 @@ RSpec.describe Account::Service, database: true do
       expect { account_repo.find!(account_id) }.to raise_error(Verse::Error::NotFound)
     end
   end
+
+  describe "#add_owner" do
+    before do
+      @user_account = subject.create(
+        deserialize(
+          {
+            data: {
+              type: Resource::Iam::Accounts,
+              attributes: {
+                name: "User",
+                email: "user@test.com",
+                role_name: "user",
+                role_scope: "{}",
+                enabled: true,
+              },
+            }
+          }
+        )
+      )
+      @org_owner_account = subject.create(
+        deserialize(
+          {
+            data: {
+              type: Resource::Iam::Accounts,
+              attributes: {
+                name: "Org Owner",
+                email: "org_owner@test.com",
+                role_name: "org_owner",
+                role_scope: '{"org": [999]}',
+                enabled: true,
+              },
+            }
+          }
+        )
+      )
+
+      allow_any_instance_of(Organization::Service).to receive(:show).with(anything) do |org_id|
+        Verse::JsonApi::Struct.new(
+          { id: org_id,
+            name: "org #{org_id}", }
+        )
+      end
+    end
+
+    it "add a user as an org_owner and return the account" do
+      expect(@user_account.role_name).to eq("user")
+      expect(@user_account.role_scope["org"]).to be_nil.or be_empty
+
+      account = subject.add_owner(org_id: 111, account_id: @user_account.id)
+
+      expect(account.id).to eq(@user_account.id)
+      expect(account.role_name).to eq("org_owner" || "admin")
+      expect(account.role_scope["org"].size).to eq(1)
+      expect(account.role_scope["org"]).to include(111)
+    end
+
+    xit "add an organization id to scope if the account is already an org_owner and return the account" do
+      expect(@org_owner_account.role_name).to eq("org_owner")
+      expect(@org_owner_account.role_scope[:org]).to not_be_nil.or not_be_empty
+
+      account = subject.add_owner(org_id: 111, account_id: @org_owner_account.id)
+
+      expect(account.id).to eq(@org_owner_account.id)
+      expect(account.role_name).to eq("org_owner").or to eq("admin")
+      expect(account.role_scope[:org].size).to eq(2)
+      expect(account.role_scope[:org]).to include(111)
+    end
+  end
 end
