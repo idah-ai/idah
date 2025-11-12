@@ -5,7 +5,7 @@ module Entry
     type Resource::Dataset::Entries
 
     field :id, type: String, primary: true
-
+    field :project_id, type: String, readonly: true
     field :dataset_id, type: String, readonly: true
 
     field :priority, type: Integer
@@ -24,6 +24,8 @@ module Entry
     field :updated_at, type: Time, readonly: true
 
     belongs_to :dataset, repository: "Dataset::Repository", foreign_key: :dataset_id
+    belongs_to :project, repository: "Project::Repository", foreign_key: :project_id
+
     has_many :annotations, repository: "Annotation::Repository", foreign_key: :entry_id
   end
 
