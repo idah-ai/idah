@@ -7,7 +7,7 @@
 
   import { pluginsBackendDataSource } from "@/data/model/setting/plugin/record";
   import type { IActivityContext } from "@/plugin/interface/Activity";
-  import type { AnnotationHeaderBarBaseTool } from "./AnnotationHeaderBar.types";
+  import type { AnnotationHeaderBarBaseTool } from "./annotation-header-bar.types";
 
   // Props
   interface Props {
@@ -53,7 +53,7 @@
     <Tooltips align="center" delayDuration={100}>
       {#snippet trigger()}
         {#await loadIcon(iconName) then iconSvg}
-          <Button variant={mode === type ? "default" : "outline"} size="icon-sm" onclick={handleClick}>
+          <Button variant={mode === type ? "default" : "ghost"} size="icon-sm" onclick={handleClick}>
             <!-- eslint-disable-next-line svelte/no-at-html-tags -->
             {@html iconSvg}
 

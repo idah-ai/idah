@@ -1,7 +1,7 @@
 // duplicate from yacine's
 
 import type { Command } from "@/command/Command";
-import type { AnnotationHeaderBarBaseTool } from "@/plugin/layout/header/AnnotationHeaderBar.types";
+import type { AnnotationHeaderBarBaseTool } from "@/plugin/layout/header/annotation-header-bar.types";
 
 export interface IFields {
   [key: string]: Array<string>;

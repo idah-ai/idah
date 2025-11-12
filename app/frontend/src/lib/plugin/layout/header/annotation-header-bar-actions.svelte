@@ -19,7 +19,7 @@
 
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
   import type { IActivityContext } from "@/plugin/interface/Activity";
-  import type { AnnotationHeaderBarBaseTool } from "@/plugin/layout/header/AnnotationHeaderBar.types";
+  import type { AnnotationHeaderBarBaseTool } from "@/plugin/layout/header/annotation-header-bar.types";
 
   // Props
   interface Props {

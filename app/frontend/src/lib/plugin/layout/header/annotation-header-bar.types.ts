@@ -4,5 +4,6 @@ export interface AnnotationHeaderBarBaseTool {
   label: string;
   icon?: Component;
   iconName?: string;
+  isActive?: boolean;
   handleClick: () => void;
 }
