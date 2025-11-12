@@ -30,7 +30,7 @@ module ProjectMember
       end
 
       # Ensure user can "create" member to the project
-      unless project_members.user_has_project_access?(:create, attr[:project_id])
+      unless project_members.account_can_access_project?(attr[:project_id], :create)
         raise Errors::Service::UnauthorizedProjectAccess
       end
 

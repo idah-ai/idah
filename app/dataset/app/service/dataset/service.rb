@@ -34,7 +34,7 @@ module Dataset
       end
 
       # Ensure user can "create" dataset to the project
-      unless datasets.user_has_project_access?(:create, attr[:project_id])
+      unless datasets.account_can_access_project?(attr[:project_id], :create)
         raise Errors::Service::UnauthorizedProjectAccess
       end
 
