@@ -1,5 +1,7 @@
+import FilterByOrganization from "@/components/app/datasource-table/filters/filter-by-organization.svelte";
 import ProjectDatasetsCell from "@/components/app/projects/datasource-tables/project-datasets-cell.svelte";
 import ProjectNameCell from "@/components/app/projects/datasource-tables/project-name-cell.svelte";
+import ProjectOrganizationCell from "@/components/app/projects/datasource-tables/project-organization-cell.svelte";
 import ProjectRowActionCell from "@/components/app/projects/datasource-tables/project-row-action-cell.svelte";
 
 import type { ColumnsSettings } from "@/components/app/datasource-table/types";
@@ -20,6 +22,21 @@ export const projectColumns: ColumnsSettings<ProjectRecord> = {
     visible: true,
     hidable: false,
     cellComponent: ProjectNameCell,
+  },
+  organization_id: {
+    label: "Organization ID",
+    dataType: "number",
+    sortable: true,
+    filterable: true,
+    filterOptions: {
+      filterKey: "organization_id",
+      filterBy: "multiple-select",
+      filterOperation: "in",
+    },
+    visible: true,
+    hidable: false,
+    cellComponent: ProjectOrganizationCell,
+    filterComponent: FilterByOrganization,
   },
   datasets: {
     label: "Datasets",
