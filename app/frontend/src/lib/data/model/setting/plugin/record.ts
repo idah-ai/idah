@@ -1,8 +1,9 @@
-import { field, Record, RecordFactory, type } from "@/data/model/Record";
 import { createBackendDataSource, resourcePath } from "@/data/BackendDataSource";
 import { clearCache } from "@/data/Cache";
-import type { Hash } from "@/utils/types";
 import { parseSingleElementError } from "@/data/model/json_api";
+import { field, Record, RecordFactory, type } from "@/data/model/Record";
+
+import type { Hash } from "@/utils/types";
 
 @type("setting:plugins")
 export class PluginRecord extends Record {
@@ -45,5 +46,16 @@ export const pluginsBackendDataSource = createBackendDataSource(PluginRecord, ba
     }
 
     throw "No data returned";
+  },
+  serveAsset: async (pluginName: string, splat: string) => {
+    const res = await fetch(`${base_path}/${pluginName}/assets/${splat}`);
+
+    const asset = await res.blob();
+
+    if (!res.ok) {
+      throw `Error fetching asset: ${res.status} ${res.statusText}`;
+    }
+
+    return asset;
   },
 });
