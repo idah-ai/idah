@@ -29,7 +29,7 @@ module ProjectMember
     def scoped(action)
       auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }
-        scope.as_user? { user_project_scoped_query(action) }
+        scope.as_user? { account_project_scoped_query(action) }
       end
     end
 
@@ -39,7 +39,7 @@ module ProjectMember
     # Info:
     # Only allowed for project_owner(member), org_owner and admin roles
     query
-    def user_project_scoped_query(action)
+    def account_project_scoped_query(action)
       account_id = auth_context.metadata[:id]
       scoped_fragment = <<-SQL
         EXISTS (
@@ -75,8 +75,8 @@ module ProjectMember
     end
 
     query
-    def user_has_project_access?(action, project_id)
-      user_project_scoped_query(action).where(project_id:).limit(1).any?
+    def account_can_access_project?(project_id, action)
+      account_project_scoped_query(action).where(project_id:).limit(1).any?
     end
   end
 end
