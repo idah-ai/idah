@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [tailwindcss(), sveltekit()],
   server: {
     fs: {
-      allow: ["build/plugins"],
+      allow: ["build/plugins", "build/parser.js"],
     },
   },
   test: {

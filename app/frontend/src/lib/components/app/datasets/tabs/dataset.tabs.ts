@@ -1,9 +1,9 @@
 import type { BaseTabs } from "@/components/ui/tabs/tabs.types";
 
-export type DatasetTab = "tasks" | "analytics" | "labels";
+export type DatasetTab = "entries" | "analytics" | "labels";
 
 export const datasetTabs: BaseTabs<DatasetTab> = [
-  { label: "Tasks", value: "tasks" },
+  { label: "Entries", value: "entries" },
   // { label: "Analytics", value: "analytics" },
   { label: "Label Editor", value: "labels" },
 ];

@@ -3,23 +3,22 @@
   import ToggleShowContentButton from "@/components/app/datasets/labels/buttons/toggle-show-content-button.svelte";
   import PropertyTypeDropdownMenu from "@/components/app/datasets/labels/dropdown-menus/property-type-dropdown-menu.svelte";
   import PropertyOptions from "@/components/app/datasets/labels/properties/property-options.svelte";
-  import PropertySelectors from "@/components/app/datasets/labels/properties/property-selectors.svelte";
   import CheckboxField from "@/components/app/forms/fields/input/checkbox-field.svelte";
   import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
-  import { fieldTypes, type FieldType, type PropertyField } from "@/data/model/dataset/labels";
+  import { fieldTypes, type FieldType, type LabelConfigurationProperty } from "@/data/model/dataset/labels";
   import type { Hash } from "@/utils/types";
 
   // Props
   interface Props {
-    property: PropertyField;
-    onSetProperty: (property: PropertyField) => void;
+    property: LabelConfigurationProperty;
+    onSetProperty: (property: LabelConfigurationProperty) => void;
     onRemoveProperty: (propertyId: string) => void;
   }
   let { property, onSetProperty, onRemoveProperty }: Props = $props();
 
   // Variables
-  let { id, label, required, type, selector } = $derived(property);
+  let { id, label, required, type } = $derived(property);
   let showContent: boolean = $state(false);
 
   let selectedFieldType: FieldType | undefined = $derived(fieldTypes.find((t) => t.value === type));
@@ -32,64 +31,11 @@
   function setProperty(valueToSet: Hash) {
     onSetProperty({ ...property, ...valueToSet });
   }
-
-  function assignCategory(params: { categoryId: string; isLastNode: boolean }) {
-    const { categoryId, isLastNode } = params;
-    const assigningSelectorId: string = isLastNode ? categoryId : `${categoryId}/*`;
-
-    if (isLastNode) {
-      /**
-       * If the assigning selector is a last node,
-       * Check each selector if there is any parent selector already exists,
-       * If there is, remove the parent selector and add the last node selector,
-       * If there is none, just add the last node selector.
-       */
-      const parentSelectors = selector.filter(
-        (s) => assigningSelectorId.startsWith(s.split("/*")[0]) && s !== assigningSelectorId,
-      );
-      if (parentSelectors.length) {
-        setProperty({
-          selector: [...selector.filter((s) => !parentSelectors.includes(s)), assigningSelectorId],
-        });
-      } else if (!selector.includes(assigningSelectorId)) {
-        // If not selected, add it
-        setProperty({ selector: [...(selector || []), assigningSelectorId] });
-      } else {
-        // If already selected, remove it
-        setProperty({
-          selector: selector.filter((s) => s !== assigningSelectorId),
-        });
-      }
-    } else {
-      /**
-       * If the assigning selector is not a last node,
-       * Check if there are any children related to the selected category,
-       * If there are, remove the children and add the selected category,
-       * If there are none, just add the selected category.
-       */
-      const childSelectors = selector.filter((s) => s.startsWith(categoryId + "/") || s === categoryId);
-
-      // Check if the selected category already exists in the selector
-      const selectedCategoryExists = selector.includes(assigningSelectorId);
-
-      if (selectedCategoryExists) {
-        // If already selected, remove it
-        setProperty({
-          selector: selector.filter((s) => s !== assigningSelectorId),
-        });
-      } else {
-        // If not selected, add it and remove any child selectors
-        setProperty({
-          selector: [...selector.filter((s) => !childSelectors.includes(s)), assigningSelectorId],
-        });
-      }
-    }
-  }
 </script>
 
-<Card class="w-full">
+<Card class="w-full gap-2 py-2">
   <!-- HEADER -->
-  <CardHeader class="flex items-center gap-2">
+  <CardHeader class="flex items-center gap-2 px-2">
     <!-- HEADER::TOGGLE SHOW CONTENT -->
     <ToggleShowContentButton {showContent} onClick={toggleContent}></ToggleShowContentButton>
 
@@ -116,8 +62,6 @@
   {#if showContent}
     <CardContent class="flex flex-col gap-4 px-0">
       <PropertyOptions {property} onSetValue={setProperty}></PropertyOptions>
-
-      <PropertySelectors {selector} onSelectCategory={assignCategory}></PropertySelectors>
     </CardContent>
   {/if}
 </Card>
