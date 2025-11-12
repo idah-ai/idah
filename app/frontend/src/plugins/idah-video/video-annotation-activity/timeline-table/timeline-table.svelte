@@ -68,12 +68,16 @@
   let range: [number, number] = $derived([pos_offset, pos_offset + range_span]);
   let wheelthrottling = $state(false);
   let hoveredColumn: number | undefined = $state();
+  let prevCurrentFrame: number = $state(currentFrame);
 
   $effect(() => {
-    // Auto-scroll to center currentFrame in the visible range
-    const centerOffset = currentFrame - Math.floor(range_span / 2);
-    if (currentFrame < pos_offset || currentFrame > pos_offset + range_span) {
-      setOffset(centerOffset);
+    // Auto-scroll to center currentFrame only when currentFrame actually changes
+    if (currentFrame !== prevCurrentFrame) {
+      const centerOffset = currentFrame - Math.floor(range_span / 2);
+      if (currentFrame < pos_offset || currentFrame > pos_offset + range_span) {
+        setOffset(centerOffset);
+      }
+      prevCurrentFrame = currentFrame;
     }
   });
 
@@ -150,8 +154,8 @@
 
   function scrollHorizontal(e: MouseEvent) {
     if (isResizing) {
-      const isScrollToTheRight = e.movementX < 0;
-      const isScrollToTheLeft = e.movementX > 0;
+      const isScrollToTheRight = e.movementX > 0;
+      const isScrollToTheLeft = e.movementX < 0;
 
       if (isScrollToTheRight) {
         const next = Math.floor(range_span / 10);
@@ -170,7 +174,7 @@
     {@const isLastIndex = index == annotations.length - 1}
     <TableRow
       class={cn("border-b-0", {
-        "bg-primary-foreground border-primary/30 border-b border-t": isSelected,
+        "bg-primary-foreground border-primary/30 border-t border-b": isSelected,
       })}
     >
       <TableCell
@@ -228,12 +232,12 @@
 {#snippet tooltipFrame(thisFrame: number, bgColor: string = "bg-black", extraClass: string = "")}
   <span
     class={cn(
-      `${bgColor} pointer-events-none absolute left-1/2 top-0 z-50 -translate-x-1/2 transform whitespace-nowrap rounded-md px-2 py-1 text-xs font-medium text-white transition-all duration-150`,
+      `${bgColor} pointer-events-none absolute top-0 left-1/2 z-50 -translate-x-1/2 transform rounded-md px-2 py-1 text-xs font-medium whitespace-nowrap text-white transition-all duration-150`,
       extraClass,
     )}
   >
     {thisFrame}
-    <span class={`absolute left-1/2 top-full -mt-1 h-1.5 w-1.5 -translate-x-1/2 rotate-45 ${bgColor}`}></span>
+    <span class={`absolute top-full left-1/2 -mt-1 h-1.5 w-1.5 -translate-x-1/2 rotate-45 ${bgColor}`}></span>
   </span>
 {/snippet}
 
