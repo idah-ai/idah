@@ -1,17 +1,13 @@
 <script lang="ts" generics="T extends Record">
+  import { cn } from "@/utils";
   import { CheckIcon, ChevronsUpDownIcon, CircleXIcon } from "@lucide/svelte";
 
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
-  import FormFieldErrors from "@/components/app/forms/form-field-errors.svelte";
-  import FormFieldInfo from "@/components/app/forms/form-field-info.svelte";
-  import FormFieldLabel from "@/components/app/forms/form-field-label.svelte";
-  import FormField from "@/components/app/forms/form-field.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
+  import { FieldDescription, FieldError, FieldGroup, FieldLabel, FieldSet } from "@/components/ui/field";
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
   import Spinner from "@/components/ui/spinner/spinner.svelte";
-
-  import { cn } from "@/utils";
 
   import type { SelectDataSourceFieldBaseProps } from "@/components/app/forms/form-field.types";
   import type { ListOptions } from "@/data/DataSource";
@@ -39,7 +35,7 @@
     info,
     errors,
     class: className,
-    onValueChange,
+    onSelected,
 
     // Slots
     slotLabel,
@@ -100,99 +96,105 @@
       values = [...values, choice.value];
     }
     open = false;
-    await onValueChange?.(choice.value);
+    await onSelected?.(choice.value);
   }
 </script>
 
-<FormField id={name} class={cn("", className)}>
-  {#if slotLabel}
-    {@render slotLabel()}
-  {:else}
-    <FormFieldLabel {required}>{label}</FormFieldLabel>
-  {/if}
+<FieldGroup id={name} class={cn("", className)}>
+  <FieldSet>
+    {#if slotLabel}
+      {@render slotLabel()}
+    {:else}
+      <FieldLabel {required}>{label}</FieldLabel>
+    {/if}
 
-  <Popover bind:open>
-    <PopoverTrigger>
-      {#if slotTrigger}
-        {@render slotTrigger({ selectedChoice, clearable, disabled })}
-      {:else}
-        <Button
-          variant="outline"
-          class="w-full justify-between"
-          {disabled}
-          role="combobox"
-          aria-expanded={open}
-          onclick={openPopover}
-        >
-          {#if selectedChoice}
-            {selectedChoice.label}
-          {:else}
-            <span class="text-muted-foreground">{placeholder}</span>
+    <Popover bind:open>
+      <PopoverTrigger
+        class={cn("w-full justify-between", {
+          "ring-destructive ring-1": (errors?.length ?? 0) > 0,
+        })}
+      >
+        {#if slotTrigger}
+          {@render slotTrigger({ selectedChoice, clearable, disabled })}
+        {:else}
+          <Button
+            variant="outline"
+            class="w-full justify-between"
+            {disabled}
+            role="combobox"
+            aria-expanded={open}
+            onclick={openPopover}
+          >
+            {#if selectedChoice}
+              {selectedChoice.label}
+            {:else}
+              <span class="text-muted-foreground">{placeholder}</span>
+            {/if}
+
+            <div class="ml-auto inline-flex items-center gap-2">
+              <button
+                type="button"
+                class={cn("cursor-pointer", clearable && selectedChoice ? "opacity-50" : "opacity-0")}
+                onclick={() => {}}
+              >
+                <CircleXIcon class="size-4 shrink-0"></CircleXIcon>
+              </button>
+
+              <ChevronsUpDownIcon class="size-4 shrink-0 opacity-50"></ChevronsUpDownIcon>
+            </div>
+          </Button>
+        {/if}
+      </PopoverTrigger>
+
+      <PopoverContent align="start" class="w-auto p-0">
+        <Command>
+          {#if searchable}
+            <InputField
+              name="filter/multiple-select/{searchKeyWithOperation}"
+              placeholder={searchPlaceholder}
+              value={searchValue}
+              oninput={(e) => (searchValue = e.currentTarget.value)}
+            ></InputField>
           {/if}
 
-          <div class="ml-auto inline-flex items-center gap-2">
-            <button
-              type="button"
-              class={cn("cursor-pointer", clearable && selectedChoice ? "opacity-50" : "opacity-0")}
-              onclick={() => {}}
-            >
-              <CircleXIcon class="size-4 shrink-0"></CircleXIcon>
-            </button>
+          <CommandList>
+            <CommandEmpty>No option found.</CommandEmpty>
+            <CommandGroup>
+              {#await initialFetchChoices()}
+                <Spinner size="sm"></Spinner>
+              {:then _}
+                {#each choices as choice, index (index)}
+                  {#if slotChoice}
+                    {@render slotChoice({ choice })}
+                  {:else}
+                    <CommandItem onclick={() => select(choice)}>
+                      <CheckIcon
+                        class={cn("mr-2 size-4", {
+                          "opacity-0": !values.find((v) => v == choice.value),
+                        })}
+                      ></CheckIcon>
 
-            <ChevronsUpDownIcon class="size-4 shrink-0 opacity-50"></ChevronsUpDownIcon>
-          </div>
-        </Button>
-      {/if}
-    </PopoverTrigger>
+                      {choice.label}
+                    </CommandItem>
+                  {/if}
+                {/each}
+              {/await}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
 
-    <PopoverContent align="start" class="w-auto p-0">
-      <Command>
-        {#if searchable}
-          <InputField
-            name="filter/multiple-select/{searchKeyWithOperation}"
-            placeholder={searchPlaceholder}
-            value={searchValue}
-            oninput={(e) => (searchValue = e.currentTarget.value)}
-          ></InputField>
-        {/if}
+    {#if slotInfo}
+      {@render slotInfo()}
+    {:else if info}
+      <FieldDescription>{info}</FieldDescription>
+    {/if}
 
-        <CommandList>
-          <CommandEmpty>No option found.</CommandEmpty>
-          <CommandGroup>
-            {#await initialFetchChoices()}
-              <Spinner size="sm"></Spinner>
-            {:then _}
-              {#each choices as choice, index (index)}
-                {#if slotChoice}
-                  {@render slotChoice({ choice })}
-                {:else}
-                  <CommandItem onclick={() => select(choice)}>
-                    <CheckIcon
-                      class={cn("mr-2 size-4", {
-                        "opacity-0": !values.find((v) => v == choice.value),
-                      })}
-                    ></CheckIcon>
-
-                    {choice.label}
-                  </CommandItem>
-                {/if}
-              {/each}
-            {/await}
-          </CommandGroup>
-        </CommandList>
-      </Command>
-    </PopoverContent>
-  </Popover>
-
-  {#if slotInfo}
-    {@render slotInfo()}
-  {:else if info}
-    <FormFieldInfo>{info}</FormFieldInfo>
-  {/if}
-
-  {#if slotErrors}
-    {@render slotErrors()}
-  {:else if errors}
-    <FormFieldErrors {errors}></FormFieldErrors>
-  {/if}
-</FormField>
+    {#if slotErrors}
+      {@render slotErrors()}
+    {:else if errors}
+      <FieldError>{errors}</FieldError>
+    {/if}
+  </FieldSet>
+</FieldGroup>
