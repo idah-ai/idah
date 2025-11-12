@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
 
-  import AnnotationHeaderBar from "@/plugin/layout/header/AnnotationHeaderBar.svelte";
+  import AnnotationHeaderBar from "@/plugin/layout/header/annotation-header-bar.svelte";
 
   import type { IActivityContext, IActivityView } from "./interface/Activity";
 

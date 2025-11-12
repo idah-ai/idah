@@ -6,10 +6,10 @@
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import type { WithElementRef } from "@/utils";
 
-  import AnnotationHeaderBarActions from "./AnnotationHeaderBarActions.svelte";
-  import AnnotationHeaderBarBackButton from "./AnnotationHeaderBarBackButton.svelte";
-  import AnnotationHeaderBarMediaName from "./AnnotationHeaderBarMediaName.svelte";
-  import AnnotationHeaderBarTools from "./AnnotationHeaderBarTools.svelte";
+  import AnnotationHeaderBarActions from "./annotation-header-bar-actions.svelte";
+  import AnnotationHeaderBarBackButton from "./annotation-header-bar-back-button.svelte";
+  import AnnotationHeaderBarMediaName from "./annotation-header-bar-media-name.svelte";
+  import AnnotationHeaderBarTools from "./annotation-header-bar-tools.svelte";
 
   // Props
   interface Props {
