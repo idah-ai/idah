@@ -66,52 +66,8 @@
     const showModalityRes = await pluginsBackendDataSource.showModality(modality);
     shapes = showModalityRes.shapes;
 
-    labelConfig = getLabelConfig({
-      labelConfigurations: datasetRes.data.labeling_configuration,
-      modality,
-      modalityShapes: shapes,
-    });
+    labelConfig = datasetRes.data.labeling_configuration;
     initialLabelConfig = JSON.parse(JSON.stringify(labelConfig));
-  }
-
-  function getLabelConfig(params: {
-    labelConfigurations: LabelConfigurations;
-    modality: string;
-    modalityShapes: ModalityShapes;
-  }) {
-    const { labelConfigurations, modalityShapes } = params;
-    /**
-     * Return combination of modality:shapes
-     * If no labeling configuration is set yet, create empty structure
-     * If already set, return the existing one
-     */
-    let modalityShapeLabelConfig: LabelConfigurations = {};
-
-    /** Add entry:root statically for now as @Yacine said. */
-    if (!modalityShapeLabelConfig["entry:root"]) {
-      modalityShapeLabelConfig["entry:root"] = {
-        values: [],
-        properties: [],
-      };
-    } else {
-      modalityShapeLabelConfig["entry:root"] = labelConfigurations["entry:root"];
-    }
-
-    /** Each shapes in modalities */
-    Object.keys(modalityShapes).forEach((shapeKey) => {
-      const configKey = `${modality}:${shapeKey}`;
-
-      if (labelConfigurations[configKey]) {
-        modalityShapeLabelConfig[configKey] = labelConfigurations[configKey];
-      } else {
-        modalityShapeLabelConfig[configKey] = {
-          values: [],
-          properties: [],
-        };
-      }
-    });
-
-    return modalityShapeLabelConfig;
   }
 
   async function saveLabelConfigChanges(): Promise<void> {
@@ -139,6 +95,17 @@
       toast.error("Failed to save labeling configuration changes.");
     } finally {
       saving = false;
+    }
+  }
+
+  function addLabelConfig(labelConfigKey: string) {
+    if (!labelConfig) return;
+
+    if (!labelConfig[labelConfigKey]) {
+      labelConfig[labelConfigKey] = {
+        values: [],
+        properties: [],
+      };
     }
   }
 
@@ -311,8 +278,10 @@
   </PageHeader>
 
   <LabelConfigEditor
-    {labelConfig}
+    {modality}
     {shapes}
+    {labelConfig}
+    onAddLabelConfig={addLabelConfig}
     onAddCategory={addCategory}
     onEditCategoryId={editCategoryId}
     onEditCategory={editCategory}
