@@ -1,21 +1,26 @@
 <script lang="ts">
-  import Sidebar from "@/components/ui/sidebar/sidebar.svelte";
+  import { SvelteMap } from "svelte/reactivity";
 
   import Input from "@/components/ui/input/input.svelte";
   import SidebarContent from "@/components/ui/sidebar/sidebar-content.svelte";
   import SidebarGroupContent from "@/components/ui/sidebar/sidebar-group-content.svelte";
   import SidebarGroup from "@/components/ui/sidebar/sidebar-group.svelte";
   import SidebarHeader from "@/components/ui/sidebar/sidebar-header.svelte";
+  import Sidebar from "@/components/ui/sidebar/sidebar.svelte";
+
+  import AnnotationTabs from "../../video-annotation-activity/tabs/AnnotationTabs.svelte";
   import CategoriesSelection from "./categories-selection.svelte";
 
   import type { AnnotationValue } from "$lib/context/AnnotationContext";
   import type { IActivityContext, ICategoryField } from "@/plugin/interface/Activity";
-  import type { AnnotationsIndexedDB } from "./indexedDB";
-  import AnnotationTabs from "./tabs/AnnotationTabs.svelte";
-  import type { CategoryConfiguration, VideoAnnotation } from "./VideoAnnotationContext";
-  import { SvelteMap } from "svelte/reactivity";
 
+  import type { AnnotationsIndexedDB } from "../../video-annotation-activity/indexedDB";
+
+  import type { CategoryConfiguration, VideoAnnotation } from "../../video-annotation-activity/VideoAnnotationContext";
+
+  // Props
   let {
+    sidebarWidthRem = 20,
     annotationValue,
     onEditValue,
     onSelectAnnotation,
@@ -26,6 +31,7 @@
     db,
     selected_id,
   }: {
+    sidebarWidthRem?: number;
     currentFrame: number;
     annotationValue: AnnotationValue;
     onEditValue: (annotationValue: AnnotationValue, mode: string) => void;
@@ -95,7 +101,7 @@
   }
 </script>
 
-<Sidebar variant="inset" collapsible="none" class="w-xs">
+<Sidebar variant="inset" collapsible="none" style="width: {sidebarWidthRem}rem;">
   {#if !tools.has(mode)}
     <SidebarHeader>
       <AnnotationTabs></AnnotationTabs>

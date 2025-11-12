@@ -118,6 +118,14 @@ Sequel.migration do
     create_table(:entries) do
       column :id, :uuid, primary_key: true, default: Sequel.lit("uuid_generate_v7()")
 
+      foreign_key :project_id,
+                  :projects,
+                  type: :uuid,
+                  null: false,
+                  index: true,
+                  on_delete: :cascade,
+                  on_update: :cascade
+
       foreign_key :dataset_id,
                   :datasets,
                   type: :uuid,
@@ -148,11 +156,29 @@ Sequel.migration do
     create_table(:annotations) do
       column :id, :uuid, primary_key: true, default: Sequel.lit("uuid_generate_v7()")
 
+      foreign_key :project_id,
+                  :projects,
+                  type: :uuid,
+                  null: false,
+                  index: true,
+                  on_delete: :cascade,
+                  on_update: :cascade
+
+      foreign_key :dataset_id,
+                  :datasets,
+                  type: :uuid,
+                  null: false,
+                  index: true,
+                  on_delete: :cascade,
+                  on_update: :cascade
+
       foreign_key :entry_id,
                   :entries,
                   type: :uuid,
                   null: false,
-                  index: true
+                  index: true,
+                  on_delete: :cascade,
+                  on_update: :cascade
 
       # Dimension of the annotation, e.g. coordinates or pixel mask.
       column :dimensions, :jsonb, text: true, null: false
@@ -170,6 +196,22 @@ Sequel.migration do
 
     create_table(:note_feeds) do
       column :id, :uuid, primary_key: true, default: Sequel.lit("uuid_generate_v7()")
+
+      foreign_key :project_id,
+                  :projects,
+                  type: :uuid,
+                  null: false,
+                  index: true,
+                  on_delete: :cascade,
+                  on_update: :cascade
+
+      foreign_key :dataset_id,
+                  :datasets,
+                  type: :uuid,
+                  null: false,
+                  index: true,
+                  on_delete: :cascade,
+                  on_update: :cascade
 
       foreign_key :entry_id,
                   :entries,
@@ -215,7 +257,9 @@ Sequel.migration do
                   :note_feeds,
                   type: :uuid,
                   null: false,
-                  index: true
+                  index: true,
+                  on_delete: :cascade,
+                  on_update: :cascade
 
       column :content_md, String, null: false
 

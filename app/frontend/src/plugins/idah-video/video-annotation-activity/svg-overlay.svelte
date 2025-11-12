@@ -1,5 +1,9 @@
 <script lang="ts">
-  import { getContext, type Snippet } from "svelte";
+  import { getContext, onMount, type Snippet } from "svelte";
+
+  import BoundingBox, { type ToolSelection } from "./bounding-box.svelte";
+  import { boundingBoxes } from "./idb_store.svelte";
+
   import {
     HEIGHT,
     ORIGIN,
@@ -12,10 +16,17 @@
     type VideoShape,
   } from "./VideoAnnotationContext";
   import Zoomable from "./zoomable.svelte";
-  import BoundingBox, { type ToolSelection } from "./bounding-box.svelte";
-  import { boundingBoxes } from "./idb_store.svelte";
-  import type { IActivityContext } from "@/plugin/interface/Activity";
 
+  import type { IActivityContext, INoteFeed } from "@/plugin/interface/Activity";
+
+  // Types
+  export interface OnAddNewNoteParams {
+    anchorType: "entry" | "annotation";
+    position: Record<string, unknown>;
+    annotationId: string | null;
+  }
+
+  // Props
   type Props = {
     frame: number;
     selected: VideoAnnotation | undefined;
@@ -23,16 +34,16 @@
     target_container: () => HTMLDivElement; // ..
     annotations_promise: Promise<VideoAnnotation[]>;
     children: Snippet;
-    onclick?: (e: MouseEvent) => void;
     onSelectAnnotation: (annotation?: VideoAnnotation) => void;
     onmouseup?: (e: MouseEvent) => void;
     onmousedown?: (e: MouseEvent) => void;
     onmousemove?: (e: MouseEvent) => void;
     onwheel?: (e: WheelEvent) => void;
     onSelection: (type: string, frame: number, points?: Point[], id?: string) => void;
+    onAddNewNote: (params: OnAddNewNoteParams) => void;
+    onChangeFrame?: (newFrame: number) => void;
     videoResizedAt: Date;
   };
-
   let {
     frame,
     selected,
@@ -41,19 +52,25 @@
     annotations_promise,
     onSelectAnnotation,
     onSelection, // valid shape output
+    onAddNewNote,
+    onChangeFrame,
     children,
     videoResizedAt,
     ...restProps
   }: Props = $props();
-  let zoomInfo: {
+
+  // Contexts
+  let context = getContext<IActivityContext>("context");
+
+  // Variables
+  interface ZoomInfo {
     scale: number;
     offset: Point;
-  } = $state({
+  }
+  let zoomInfo: ZoomInfo = $state({
     scale: 1,
     offset: [0, 0],
   });
-
-  let context = getContext<IActivityContext>("context");
 
   let height = $state(0);
   let width = $state(0);
@@ -73,6 +90,7 @@
   let points: Point[] = $derived.by(() => {
     return shape ? currentShape(shape, frame) || [] : [];
   });
+  let isNoteMode: boolean = $derived(mode === "note");
 
   function updatedSize(): Point {
     videoResizedAt; // eslint-disable-line @typescript-eslint/no-unused-expressions
@@ -108,10 +126,10 @@
     return tl;
   });
 
-  let cursor_downscaled = $derived([target[X] / target_size[X], target[Y] / target_size[Y]]) as Point;
+  let cursor_downscaled: Point = $derived([target[X] / target_size[X], target[Y] / target_size[Y]]);
 
   // let svg: SVGElement
-  let zoom: Zoomable;
+  let zoomableElement: Zoomable;
 
   export function currentShape(
     shape: VideoShape,
@@ -150,31 +168,77 @@
 
   export function selectionStart(e: MouseEvent) {
     if (!shape) {
-      zoom.mouseDown(e);
-      return console.warn(selectionStart, { shape: $state.snapshot(shape) });
+      zoomableElement.mouseDown(e);
+      return;
     }
 
     tool_selection?.startSelection(cursor_downscaled);
 
     if (!tool_selection?.isEditing()) {
       onSelectAnnotation();
-      zoom.mouseDown(e);
+      zoomableElement.mouseDown(e);
     }
   }
 
   export function selectionEnd(e: MouseEvent) {
     tool_selection?.endSelection(cursor_downscaled);
 
-    zoom.mouseUp(e);
+    showNewNoteFeedPopup();
+
+    zoomableElement.mouseUp(e);
   }
+
+  function showNewNoteFeedPopup(annotation?: VideoAnnotation) {
+    /**
+     * Show new note feed dialog only when there is no dragging (i.e. zoom offset did not change)
+     */
+    if (mode === "note") {
+      onAddNewNote({
+        anchorType: annotation ? "annotation" : "entry",
+        position: {
+          x: cursor_downscaled[X],
+          y: cursor_downscaled[Y],
+          start: frame,
+          end: frame,
+          target_size,
+          zoom_info: zoomInfo,
+        },
+        annotationId: annotation?.metadata.id || null,
+      });
+    }
+  }
+
+  onMount(() => {
+    context.notes.onRequireNoteFeedPosition(async (noteFeed: INoteFeed) => {
+      // 1. Check the frame
+      const noteFeedStartFrame = (noteFeed.position.start as number) || 0;
+
+      // 2. Go to the frame
+      if (noteFeedStartFrame != frame) {
+        onChangeFrame?.(noteFeedStartFrame);
+      }
+
+      /**
+       * 3. Make the viewport at the same position from reviewer fow now
+       * and will centered on the note feed later
+       */
+      const noteFeedZoomScale = (noteFeed.position.zoom_info as ZoomInfo)?.scale || 1;
+      const noteFeedOffset = (noteFeed.position.zoom_info as ZoomInfo)?.offset || [height / 2, -(width / 2)];
+      zoomableElement.setZoom(noteFeedZoomScale);
+      zoomableElement.setOffset(noteFeedOffset);
+
+      // 4. Return the absolute position for the top left corner of the note feed.
+    });
+  });
 </script>
 
-<div class="svg-overlay flex-1">
+<div class="svg-overlay flex-1" class:cursor-note={isNoteMode}>
   <div>
-    <Zoomable bind:this={zoom} {mode} onZoomChange={(scale, offset) => (zoomInfo = { scale, offset })}>
+    <Zoomable bind:this={zoomableElement} {mode} onZoomChange={(scale, offset) => (zoomInfo = { scale, offset })}>
       {@render children?.()}
     </Zoomable>
   </div>
+
   <svg
     bind:clientHeight={height}
     bind:clientWidth={width}
@@ -187,16 +251,14 @@
       // mouse[0] = e.pageX - (Math.round(elementRect.left) + window.scrollX);
       // mouse[1] = e.pageY - (Math.round(elementRect.top) + window.scrollY);
       // console.log({mouse:{x: mouse[X], y:mouse[Y]}, e})
-      zoom.mouseMove(e);
+      zoomableElement.mouseMove(e);
     }}
-    onmouseup={selectionEnd}
     onmousedown={(e) => selectionStart(e)}
-    onwheel={(e) => {
-      zoom.onWheel(e);
-    }}
+    onmouseup={selectionEnd}
+    onwheel={(e) => zoomableElement.onWheel(e)}
     {...restProps}
   >
-    {#if width && height}
+    {#if width && height && !isNoteMode}
       <!-- prevent display issue on load for now -->
       <line x1={0} y1={target_line[Y]} x2={width} y2={target_line[Y]} stroke="#2b7fff" />
       <line x1={target_line[X]} y1={0} x2={target_line[X]} y2={height} stroke="#2b7fff" />
@@ -213,9 +275,14 @@
               offset={zoomInfo.offset}
               color={context.config.categories.find((c) => c.id == annotation.value?.category)?.color || "grey"}
               onmousedown={(e) => {
+                e.stopPropagation();
+
                 if (mode == "visual" || selected) {
-                  e.stopPropagation();
                   onSelectAnnotation(annotation);
+                }
+
+                if (mode === "note") {
+                  showNewNoteFeedPopup(annotation);
                 }
               }}
             />, frame
@@ -234,9 +301,13 @@
                 ? context.config.categories.find((c) => c.id == annotation?.value?.category)?.color || "grey"
                 : "grey"}
               onmousedown={(e) => {
+                e.stopPropagation();
                 if (mode == "visual" || selected) {
-                  e.stopPropagation();
                   onSelectAnnotation(annotation);
+                }
+
+                if (mode === "note") {
+                  showNewNoteFeedPopup(annotation);
                 }
               }}
             />
@@ -259,6 +330,9 @@
         onSelection("video:bounding_box", frame, bb, selected?.metadata.id);
         points = bb;
       }}
+      onmousedown={(e) => {
+        console.error("clicked anyway", e);
+      }}
     />
   </svg>
 </div>
@@ -267,11 +341,17 @@
   .svg-overlay {
     position: relative;
   }
+
+  .cursor-note {
+    cursor: url("/app/frontend/src/plugins/assets/icons/message-circle.svg"), auto;
+  }
+
   .svg-overlay > div {
     width: 100%;
     height: 100%;
     position: relative;
   }
+
   .svg-overlay > svg {
     position: absolute;
     top: 0;

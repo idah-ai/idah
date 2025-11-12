@@ -38,16 +38,26 @@ module NoteFeed
     end
 
     def create_from_params(data)
-      attr = data.dup
-      attr[:id] = UUIDv7.generate
+      attributes = data.dup
 
+      unless attributes[:entry_id]
+        raise Verse::Error::ValidationFailed,
+              "entry_id field is required to create a note feed"
+      end
+
+      entry = entries.find(attributes[:entry_id], included: ["dataset"])
+
+      unless entry
+        raise Verse::Error::ValidationFailed,
+              "entry not found to create a note feed"
+      end
+
+      attributes[:id] = UUIDv7.generate
+      attributes[:project_id] = entry.project_id
+      attributes[:dataset_id] = entry.dataset_id
       # put created_by_email to nil for now, will be replaced with auth_context[:email] later
-      attr[:created_by_email] ||= nil
-
-      attr[:status] = "pending"
-
-      entry_id = attr[:entry_id]
-      entry = entries.find!(entry_id, included: ["dataset"])
+      attributes[:created_by_email] ||= nil
+      attributes[:status] = "pending"
 
       # Check if the current workflow step allows note feeds
       dataset = entry.dataset
@@ -59,17 +69,17 @@ module NoteFeed
       end
 
       # TODO: check if the user has permission to add note feed to the entry
-
-      if attr[:annotation_id] && attr[:anchor_type] == "annotation"
-        annotation_id = attr[:annotation_id]
+      if attributes[:annotation_id] && attributes[:anchor_type] == "annotation"
+        annotation_id = attributes[:annotation_id]
         annotations.find!(annotation_id)
       else
-        attr.delete(:annotation_id)
+        attributes.delete(:annotation_id)
       end
 
-      id = note_feeds.create(attr)
-
-      note_feeds.find!(id)
+      note_feeds.transaction do
+        id = note_feeds.create(attributes)
+        note_feeds.find!(id)
+      end
     end
   end
 end
