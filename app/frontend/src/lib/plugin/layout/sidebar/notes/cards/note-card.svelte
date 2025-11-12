@@ -73,7 +73,7 @@
 <div
   role="button"
   tabindex="0"
-  class={cn("border-1 hover:bg-secondary group flex cursor-pointer flex-col gap-2 border-transparent p-2", {
+  class={cn("hover:bg-secondary group flex cursor-pointer flex-col gap-2 border-1 border-transparent p-2", {
     "bg-secondary": highlighted,
   })}
   onkeypress={handleClickCard}
@@ -129,7 +129,7 @@
     {#if isEditMode}
       <Textarea value={editedContentMd} oninput={(e) => (editedContentMd = e.currentTarget.value)} />
 
-      <div class="ml-auto mt-2 flex items-center gap-2">
+      <div class="mt-2 ml-auto flex items-center gap-2">
         <Button
           variant="outline"
           size="sm"
