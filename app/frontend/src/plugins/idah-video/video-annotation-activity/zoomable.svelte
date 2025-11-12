@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { type Snippet } from "svelte";
+  import { onMount, type Snippet } from "svelte";
 
   import { HEIGHT, WIDTH, X, Y, type Point } from "./VideoAnnotationContext";
 
@@ -22,7 +22,8 @@
     step: 0.1,
   });
 
-  $effect(() => {
+  // Lifecycle
+  onMount(() => {
     onZoomChange(zoom.current, offset);
   });
 
