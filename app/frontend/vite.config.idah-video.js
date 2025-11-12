@@ -24,7 +24,6 @@ export default defineConfig({
           { find: "@/shortcut", replacement: "/src/lib/shortcut" },
           { find: "@/utils", replacement: "/src/lib/utils" },
           { find: "$lib", replacement: "/src/lib" },
-          { find: "$app/state", replacement: "/src/app/state" },
         ],
       }),
     },
