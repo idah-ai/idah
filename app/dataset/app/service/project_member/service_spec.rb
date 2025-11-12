@@ -9,10 +9,10 @@ RSpec.describe ProjectMember::Service, database: true do
 
   # Projects
   let!(:first_project_id) {
-    project_repo.create(name: "Project 1", created_by_email: "system@example.com")
+    project_repo.create(name: "Project 1", created_by_email: "system@example.com", organization_id: 1)
   }
   let!(:second_project_id) {
-    project_repo.create(name: "Project 2", created_by_email: "system@example.com")
+    project_repo.create(name: "Project 2", created_by_email: "system@example.com", organization_id: 1)
   }
 
   # Project Members
