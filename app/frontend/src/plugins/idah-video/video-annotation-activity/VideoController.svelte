@@ -1,4 +1,17 @@
 <script lang="ts">
+  import {
+    ChevronLeftIcon,
+    ChevronRightIcon,
+    FastForwardIcon,
+    PauseIcon,
+    PlayIcon,
+    Volume2Icon,
+    VolumeXIcon,
+    ZoomInIcon,
+    ZoomOutIcon,
+  } from "@lucide/svelte";
+  import type { ChangeEventHandler } from "svelte/elements";
+
   import NumberField from "@/components/app/forms/fields/input/number-field.svelte";
   import Tooltips from "@/components/app/tooltips/tooltips.svelte";
   import Button from "@/components/ui/button/button.svelte";
@@ -12,19 +25,6 @@
   } from "@/components/ui/dropdown-menu";
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
   import Slider from "@/components/ui/slider/slider.svelte";
-  import {
-    ChevronLeftIcon,
-    ChevronRightIcon,
-    FastForwardIcon,
-    PauseIcon,
-    PlayIcon,
-    Volume2Icon,
-    VolumeXIcon,
-    ZoomInIcon,
-    ZoomOutIcon,
-  } from "@lucide/svelte";
-
-  import type { ChangeEventHandler } from "svelte/elements";
   import Video from "./video.svelte";
 
   // Props

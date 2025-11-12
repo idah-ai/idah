@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { MousePointer2Icon, SquareMousePointerIcon } from "@lucide/svelte";
   import { onMount, setContext } from "svelte";
   import { toast } from "svelte-sonner";
   import { uuidv7 } from "uuidv7";
@@ -22,7 +23,6 @@
   import { ScrollArea } from "@/components/ui/scroll-area";
   import { AnnotationRecord } from "@/data/model/dataset/annotations/record";
   import { ShortcutManager } from "@/shortcut/ShortcutManager";
-  import { MousePointer2Icon, SquareMousePointerIcon } from "@lucide/svelte";
   import AnnotationFooter from "./layout/footer/AnnotationFooter.svelte";
   import AnnotationFooterToolbar from "./layout/footer/AnnotationFooterToolbar.svelte";
   import AnnotationSidebar from "./video-annotation-activity/annotation-sidebar.svelte";
