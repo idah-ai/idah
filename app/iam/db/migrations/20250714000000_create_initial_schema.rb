@@ -12,7 +12,8 @@ Sequel.migration do
       column :name, String
       column :email, String, unique: true, null: false, index: true
 
-      column :role, String, null: false, default: "user"
+      column :role_name, String, null: false, default: "user"
+      column :role_scope, :jsonb, null: true
 
       column :picture_url, String, null: true
 
@@ -22,8 +23,6 @@ Sequel.migration do
       column :enabled, TrueClass, index: true
 
       column :joined_at, Time, null: true
-
-      column :scopes, :jsonb, null: true
 
       Migration::Timestamps.timestamps(self)
     end
