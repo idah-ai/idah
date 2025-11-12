@@ -39,7 +39,7 @@
 </script>
 
 <div class="relative">
-  <AnnotationHeaderBar bind:ref={headerBarElement} pluginContainerElement={pluginContainerElement} {context} />
+  <AnnotationHeaderBar bind:ref={headerBarElement} {pluginContainerElement} {context} />
 
   <!-- Plugin Container -->
   <div style:height={`calc(100vh - ${headerBarHeight}px)`} bind:this={pluginContainerElement}>
