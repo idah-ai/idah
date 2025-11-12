@@ -42,7 +42,7 @@
   {type}
   data-size={size}
   {variant}
-  class={cn("text-muted-foreground", inputGroupButtonVariants({ size }), className)}
+  class={cn(inputGroupButtonVariants({ size }), className)}
   {...restProps}
 >
   {@render children?.()}

@@ -20,9 +20,24 @@ module ProjectMember
     end
 
     def create(record)
+      # Validate required relationships
+      unless record.project
+        raise Verse::Error::ValidationFailed,
+              "project relationship is required to create a project member"
+      end
+
+      # Ensure user can "create" member to the project
+      unless project_members.account_can_access_project?(record.project.id, :create)
+        raise Errors::Service::UnauthorizedProjectAccess
+      end
+
+      # Assign attributes
+      attributes = record.attributes
+      attributes[:project_id] = record.project.id
+
       project_members.transaction do
-        record_id = project_members.create(record.attributes)
-        project_members.find!(record_id)
+        id = project_members.create(attributes)
+        project_members.find(id)
       end
     end
 
@@ -32,7 +47,7 @@ module ProjectMember
     end
 
     def delete(id)
-      project_members.delete(id)
+      project_members.delete!(id)
     end
   end
 end
