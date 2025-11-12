@@ -21,7 +21,10 @@ module ProjectMember
 
     def create(record)
       # Validate required relationships
-      Validation::Service.require!("project", record.project, "create a project member")
+      unless record.project
+        raise Verse::Error::ValidationFailed,
+              "project relationship is required to create a project member"
+      end
 
       # Ensure user can "create" member to the project
       unless project_members.account_can_access_project?(record.project.id, :create)

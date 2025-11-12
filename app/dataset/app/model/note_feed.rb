@@ -8,6 +8,7 @@ module NoteFeed
     field :project_id, type: String, readonly: true
     field :dataset_id, type: String, readonly: true
     field :entry_id, type: String, readonly: true
+    field :annotation_id, type: String, readonly: true
 
     field :created_by_email, type: String, readonly: true
     field :anchor_type, type: String
@@ -22,6 +23,7 @@ module NoteFeed
     belongs_to :dataset, repository: "Dataset::Repository", foreign_key: :dataset_id
     belongs_to :project, repository: "Project::Repository", foreign_key: :project_id
     belongs_to :entry, repository: "Entry::Repository", foreign_key: :entry_id
+    belongs_to :annotation, repository: "Annotation::Repository", foreign_key: :annotation_id
 
     has_many :note_comments, repository: "NoteComment::Repository", foreign_key: :note_feed_id
   end
