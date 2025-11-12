@@ -3,7 +3,7 @@
 require "spec_helper"
 
 RSpec.describe Entry::Service, database: true do
-  let(:auth_context){ Verse::Auth::Context.new }
+  let(:auth_context) { Verse::Auth::Context[:system] }
 
   subject { described_class.new(auth_context) }
 

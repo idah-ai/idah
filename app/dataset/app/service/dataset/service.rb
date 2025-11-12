@@ -27,8 +27,9 @@ module Dataset
               "project relationship is required to create a dataset"
       end
 
-      # Ensure user can "create" dataset to the project
-      unless datasets.account_can_access_project?(record.project.id, :create)
+      # With "as_user" ensure account can "create" dataset to the project
+      access = auth_context.can?(:create, datasets.class.resource)
+      if access == :as_user && !datasets.account_can_access_project?(record.project.id, :create)
         raise Errors::Service::UnauthorizedProjectAccess
       end
 
