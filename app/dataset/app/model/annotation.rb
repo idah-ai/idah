@@ -17,7 +17,7 @@ module Annotation
     field :updated_at, type: Time, readonly: true
 
     belongs_to :project, repository: "Project::Repository", foreign_key: :project_id
-    belongs_to :dataset, repository: "Dataset::Repository", foreign_key: :project_id
+    belongs_to :dataset, repository: "Dataset::Repository", foreign_key: :dataset_id
     belongs_to :entry, repository: "Entry::Repository", foreign_key: :entry_id
   end
 
