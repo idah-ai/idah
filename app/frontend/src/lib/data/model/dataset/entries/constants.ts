@@ -1,6 +1,6 @@
 import type { BadgeVariant } from "@/components/ui/badge";
-import type { LabelValue } from "@/utils/types";
 import type { EntryRecord } from "@/data/model/dataset/entries/record";
+import type { LabelValue } from "@/utils/types";
 
 export interface EntryPriorityBadgeProps extends LabelValue<number, EntryRecord> {
   iconColor: string;
@@ -34,6 +34,9 @@ export const entryPriorities: EntryPriorityBadgeProps[] = [
   },
 ];
 
+export type EntryWorkflowStep = "start" | "annotate" | "review" | "done" | "export";
+export type EntryStatus = "pending" | "processing" | "ready" | "assigned" | "in_progress" | "completed" | "errored";
+
 export interface EntryStatusBadgeProps extends LabelValue<string, EntryRecord> {
   variant: BadgeVariant;
 }
@@ -48,10 +51,10 @@ export const entryStatuses: EntryStatusBadgeProps[] = [
   { label: "Errored", value: "errored", variant: "destructive" },
 ];
 
-interface EntryWorkflowStep extends LabelValue<string, EntryRecord> {
+interface EntryWorkflowStepBadgeProps extends LabelValue<string, EntryRecord> {
   variant?: BadgeVariant;
 }
-export const entryWorkflowSteps: EntryWorkflowStep[] = [
+export const entryWorkflowSteps: EntryWorkflowStepBadgeProps[] = [
   { label: "Start", value: "start" },
   { label: "Annotate", value: "annotate" },
   { label: "Review", value: "review" },
