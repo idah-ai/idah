@@ -27,5 +27,64 @@ module Annotation
 
     encoder :dimensions, Verse::Sequel::JsonEncoder
     encoder :annotation, Verse::Sequel::JsonEncoder
+
+    def scoped(action)
+      auth_context.can!(action, self.class.resource) do |scope|
+        scope.all? { table }
+        scope.as_user? { account_project_scoped_query(action) }
+      end
+    end
+
+    # Actions                       | Roles
+    # read, create, update, delete  | project_owner, annotator, reviewer
+    #
+    # Info:
+    # 1. org_owner, admin roles and project_owner(member) can create, update and delete annotations
+    # 2. annotator and reviewer project members can create, update, delete and read
+    # annotations only for entries assigned to them
+    query
+    def account_project_scoped_query(action)
+      account_id = auth_context.metadata[:id]
+
+      scoped_fragment = <<-SQL
+        EXISTS (
+          SELECT 1
+          FROM project_members pm
+          WHERE pm.account_id = :account_id
+            AND pm.project_id = annotations.project_id
+            AND (
+              pm.role IN :with_roles OR (
+                pm.role IN :assigned_to_roles AND
+                EXISTS (
+                  SELECT 1
+                  FROM entries e
+                  WHERE e.id = annotations.entry_id
+                    AND e.assigned_to_id = :account_id
+                )
+              )
+            )
+        )
+      SQL
+
+      case action
+      when :read, :create, :update, :delete
+        table.where(
+          Sequel.lit(
+            scoped_fragment,
+            account_id:,
+            with_roles: %w[project_owner],
+            assigned_to_roles: %w[annotator reviewer]
+          )
+        )
+      else
+        raise Verse::Error::Unauthorized,
+              "Permission denied for \"#{action}\" action on #{self.class.resource}"
+      end
+    end
+
+    query
+    def account_can_access_project?(project_id, action)
+      account_project_scoped_query(action).where(project_id:).limit(1).any?
+    end
   end
 end

@@ -36,7 +36,7 @@ module ProjectMember
     # read, create, update, delete | project_owner
     #
     # Info:
-    # Only allowed for project_owner(member), org_owner and admin roles
+    # 1. only allowed for project_owner(member), org_owner and admin roles
     query
     def account_project_scoped_query(action)
       account_id = auth_context.metadata[:id]

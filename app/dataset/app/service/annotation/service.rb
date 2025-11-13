@@ -62,7 +62,7 @@ module Annotation
     end
 
     def delete(id)
-      annotations.delete(id)
+      annotations.delete!(id)
     end
   end
 end

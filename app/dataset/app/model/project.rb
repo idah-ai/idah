@@ -37,9 +37,9 @@ module Project
     # create           | N/A
     #
     # Info:
-    # Annotators and reviewers can only read projects
-    # Only project_owner(member), org_owner and admin roles can update and delete projects
-    # Only org_owner and admin roles can create projects
+    # 1. annotators and reviewers can only read projects
+    # 2. only project_owner(member), org_owner and admin roles can update and delete projects
+    # 3. only org_owner and admin roles can create projects
     query
     def account_project_scoped_query(action)
       account_id = auth_context.metadata[:id]
