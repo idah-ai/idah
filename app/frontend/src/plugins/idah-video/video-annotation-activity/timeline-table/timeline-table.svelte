@@ -190,7 +190,7 @@
           {:then title}
             <Text size="sm" weight={isSelected ? "semibold" : "normal"} class="text-foreground">
               {humanize(title)}
-              </Text>
+            </Text>
           {/await}
 
           <Button
