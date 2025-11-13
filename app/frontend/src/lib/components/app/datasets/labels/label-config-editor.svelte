@@ -93,14 +93,14 @@
   }
 
   function removeLabelConfig(key: string) {
-    // delete labelConfig[key];
-    onRemoveLabelConfig(key);
-
     if (selectedConfigKey === key) {
       selectedConfigKey = Object.keys(labelConfig)[0] || "";
     } else {
       selectedConfigKey = "";
     }
+
+    // delete labelConfig[key];
+    onRemoveLabelConfig(key);
   }
 
   function addCategory(nodeId?: string) {
@@ -195,6 +195,7 @@
             title="No label configurations Yet"
             description="Add a label configuration to get started"
             icon={BoltIcon}
+            size="sm"
           ></ResponseBlock>
         {/each}
       </CardContent>
@@ -235,6 +236,7 @@
             title="No categories yet"
             description="Add a label configuration to get started"
             icon={WorkflowIcon}
+            size="sm"
           ></ResponseBlock>
         {/if}
       </CardContent>
@@ -264,7 +266,12 @@
               onRemoveProperty={(propertyId) => removeProperty(propertyId)}
             />
           {:else}
-            <ResponseBlock icon={BoltIcon} title="No properties yet" description="Create properties to get started">
+            <ResponseBlock
+              icon={BoltIcon}
+              title="No properties yet"
+              description="Create properties to get started"
+              size="sm"
+            >
               {#snippet actions()}
                 {@render AddNewPropertyButton()}
               {/snippet}
@@ -275,6 +282,7 @@
             title="No properties yet"
             description="Add a label configuration to get started"
             icon={BoltIcon}
+            size="sm"
           ></ResponseBlock>
         {/if}
       </CardContent>

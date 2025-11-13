@@ -116,7 +116,7 @@
       onRemoveCategory,
     })}
   {:else}
-    <ResponseBlock title="No categories yet" description="Add category to get started" icon={WorkflowIcon}>
+    <ResponseBlock title="No categories yet" description="Add category to get started" icon={WorkflowIcon} size="sm">
       {#snippet actions()}
         <Button size="sm" onclick={addNewCategory}>
           <PlusIcon />
