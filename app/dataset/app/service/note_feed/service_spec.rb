@@ -35,7 +35,7 @@ RSpec.describe NoteFeed::Service, database: true do
       labels: ["cat", "dog"],
       labeling_configuration: { "width" => 100, "height" => 100 },
       workflow_configuration: { noteable_steps: ["review"] },
-      project_id: project_id
+      project_id:
     )
   end
 
@@ -46,13 +46,16 @@ RSpec.describe NoteFeed::Service, database: true do
       wf_step: "review",
       status: "in_progress",
       assigned_to_id: 1,
-      dataset_id: dataset_id
+      project_id:,
+      dataset_id:
     )
   end
 
   let!(:annotation_id) do
     annotation_repo.create(
-      entry_id: entry_id,
+      project_id:,
+      dataset_id:,
+      entry_id:,
       dimensions: { "x" => 10, "y" => 20, "width" => 100, "height" => 50 },
       annotation: { "label" => "cat" },
       created_by_email: "user@example.com"
@@ -61,6 +64,7 @@ RSpec.describe NoteFeed::Service, database: true do
 
   let(:note_feed_attributes) do
     {
+      entry_id:,
       anchor_type: "entry",
       position: { "x" => 100, "y" => 200 },
       content_md: "This is a test note",
@@ -69,17 +73,16 @@ RSpec.describe NoteFeed::Service, database: true do
   end
 
   let(:note_feed) do
-    params = note_feed_attributes.merge(entry_id: entry_id)
-    subject.create_from_params(params)
+    subject.create_from_params(note_feed_attributes)
   end
 
   describe "#create_from_params" do
     context "when entry is provided" do
       it "creates a note feed with status pending" do
-        params = note_feed_attributes.merge(entry_id: entry_id)
+        result = subject.create_from_params(note_feed_attributes)
 
-        result = subject.create_from_params(params)
-
+        expect(result.project_id).to eq(project_id)
+        expect(result.dataset_id).to eq(dataset_id)
         expect(result.entry_id).to eq(entry_id)
         expect(result.anchor_type).to eq("entry")
         expect(result.content_md).to eq("This is a test note")
@@ -93,7 +96,6 @@ RSpec.describe NoteFeed::Service, database: true do
       it "creates a note feed linked to annotation" do
         params = note_feed_attributes.merge(
           anchor_type: "annotation",
-          entry_id: entry_id,
           annotation_id: annotation_id
         )
 
@@ -107,10 +109,10 @@ RSpec.describe NoteFeed::Service, database: true do
 
     context "when entry is not provided" do
       it "raises a not found error" do
-        params = note_feed_attributes
+        note_feed_attributes.delete(:entry_id)
 
-        expect { subject.create_from_params(params) }
-          .to raise_error(Verse::Error::NotFound)
+        expect { subject.create_from_params(note_feed_attributes) }
+          .to raise_error(Verse::Error::ValidationFailed, "entry_id field is required to create a note feed")
       end
     end
 
@@ -123,7 +125,8 @@ RSpec.describe NoteFeed::Service, database: true do
           wf_step: "start",
           status: "pending",
           assigned_to_id: 1,
-          dataset_id: dataset_id
+          project_id:,
+          dataset_id:
         )
 
         params = note_feed_attributes.merge(entry_id: new_entry_id)
@@ -140,7 +143,7 @@ RSpec.describe NoteFeed::Service, database: true do
       note_feed
 
       # Create second note feed
-      params = note_feed_attributes.merge(content_md: "Another note", entry_id: entry_id)
+      params = note_feed_attributes.merge(content_md: "Another note")
       subject.create_from_params(params)
     end
 
@@ -151,7 +154,7 @@ RSpec.describe NoteFeed::Service, database: true do
     end
 
     it "filters note feeds by entry_id" do
-      result = subject.index({ entry_id: entry_id })
+      result = subject.index({ entry_id: })
       expect(result.all? { |nf| nf.entry_id == entry_id }).to be true
     end
 

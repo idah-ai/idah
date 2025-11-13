@@ -20,30 +20,30 @@ module NoteComment
     end
 
     def create(record)
-      attr = record.attributes
+      attributes = record.attributes
 
-      attr[:id] = record.id || UUIDv7.generate
+      attributes[:id] = record.id || UUIDv7.generate
 
       if record.note_feed
-        attr[:note_feed_id] = record.note_feed.id
+        attributes[:note_feed_id] = record.note_feed.id
       else
         raise Verse::Error::ValidationFailed,
               "note_feed is required to create a note comment"
       end
 
       # put created_by_email to nil for now, will be replaced with auth_context[:email] later
-      attr[:created_by_email] ||= nil
+      attributes[:created_by_email] ||= nil
 
-      id = note_comments.create(attr)
+      id = note_comments.create(attributes)
 
       note_comments.find!(id)
     end
 
     def update(record)
-      attr = record.attributes
-      attr[:edited_at] = Time.now
+      attributes = record.attributes
+      attributes[:edited_at] = Time.now
 
-      note_comments.update!(record.id, attr)
+      note_comments.update!(record.id, attributes)
       note_comments.find!(record.id)
     end
 

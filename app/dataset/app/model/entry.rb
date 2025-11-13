@@ -5,7 +5,7 @@ module Entry
     type Resource::Dataset::Entries
 
     field :id, type: String, primary: true
-
+    field :project_id, type: String, readonly: true
     field :dataset_id, type: String, readonly: true
 
     field :priority, type: Integer
@@ -24,6 +24,8 @@ module Entry
     field :updated_at, type: Time, readonly: true
 
     belongs_to :dataset, repository: "Dataset::Repository", foreign_key: :dataset_id
+    belongs_to :project, repository: "Project::Repository", foreign_key: :project_id
+
     has_many :annotations, repository: "Annotation::Repository", foreign_key: :entry_id
   end
 
@@ -42,6 +44,55 @@ module Entry
 
         scope.as_user? { account_project_scoped_query(action) }
       end
+    end
+
+    # Actions                | Roles
+    # read                   | project_owner, annotator, reviewer
+    # create, update, delete | project_owner
+    #
+    # Info:
+    # Only project_owner(member), org_owner and admin roles can create, update and delete datasets
+    # Annotators and reviewers can only read datasets
+    query
+    def account_project_scoped_query(action)
+      account_id = auth_context.metadata[:id]
+
+      scoped_fragment = <<-SQL
+        EXISTS (
+          SELECT 1
+          FROM project_members pm
+          WHERE pm.account_id = :account_id
+            AND pm.project_id = entries.project_id
+            AND pm.role IN :roles
+        )
+      SQL
+
+      case action
+      when :read
+        table.where(
+          Sequel.lit(
+            scoped_fragment,
+            account_id:,
+            roles: %w[project_owner annotator reviewer]
+          )
+        )
+      when :create, :update, :delete
+        table.where(
+          Sequel.lit(
+            scoped_fragment,
+            account_id:,
+            roles: %w[project_owner]
+          )
+        )
+      else
+        raise Verse::Error::Unauthorized,
+              "Permission denied for \"#{action}\" action on #{self.class.resource}"
+      end
+    end
+
+    query
+    def account_can_access_project?(project_id, action)
+      account_project_scoped_query(action).where(project_id:).limit(1).any?
     end
 
     def mark_entries_status_as(job_id, status)

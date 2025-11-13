@@ -1,17 +1,13 @@
 <script lang="ts" generics="T extends Record">
+  import { cn } from "@/utils";
   import { CheckIcon, ChevronsUpDownIcon, CircleXIcon } from "@lucide/svelte";
 
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
-  import FormFieldErrors from "@/components/app/forms/form-field-errors.svelte";
-  import FormFieldInfo from "@/components/app/forms/form-field-info.svelte";
-  import FormFieldLabel from "@/components/app/forms/form-field-label.svelte";
-  import FormField from "@/components/app/forms/form-field.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
+  import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
   import Spinner from "@/components/ui/spinner/spinner.svelte";
-
-  import { cn } from "@/utils";
 
   import type { SelectDataSourceFieldBaseProps } from "@/components/app/forms/form-field.types";
   import type { ListOptions } from "@/data/DataSource";
@@ -39,7 +35,7 @@
     info,
     errors,
     class: className,
-    onValueChange,
+    onSelected,
 
     // Slots
     slotLabel,
@@ -100,19 +96,23 @@
       values = [...values, choice.value];
     }
     open = false;
-    await onValueChange?.(choice.value);
+    await onSelected?.(choice.value);
   }
 </script>
 
-<FormField id={name} class={cn("", className)}>
+<Field id={name} class={cn("", className)}>
   {#if slotLabel}
     {@render slotLabel()}
   {:else}
-    <FormFieldLabel {required}>{label}</FormFieldLabel>
+    <FieldLabel for={name} {required}>{label}</FieldLabel>
   {/if}
 
   <Popover bind:open>
-    <PopoverTrigger>
+    <PopoverTrigger
+      class={cn("w-full justify-between", {
+        "ring-destructive ring-1": (errors?.length ?? 0) > 0,
+      })}
+    >
       {#if slotTrigger}
         {@render slotTrigger({ selectedChoice, clearable, disabled })}
       {:else}
@@ -150,6 +150,7 @@
         {#if searchable}
           <InputField
             name="filter/multiple-select/{searchKeyWithOperation}"
+            class="pb-2"
             placeholder={searchPlaceholder}
             value={searchValue}
             oninput={(e) => (searchValue = e.currentTarget.value)}
@@ -187,12 +188,12 @@
   {#if slotInfo}
     {@render slotInfo()}
   {:else if info}
-    <FormFieldInfo>{info}</FormFieldInfo>
+    <FieldDescription>{info}</FieldDescription>
   {/if}
 
   {#if slotErrors}
     {@render slotErrors()}
   {:else if errors}
-    <FormFieldErrors {errors}></FormFieldErrors>
+    <FieldError>{errors}</FieldError>
   {/if}
-</FormField>
+</Field>
