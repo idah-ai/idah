@@ -335,7 +335,7 @@
       <Text class="text-gray-500" weight="semibold">{type}</Text>
     </CollapsibleTrigger>
     <CollapsibleContent>
-      {#if selected_category && (toolMode || type == ENTRY_ROOT)}
+      <!-- {#if selected_category && (toolMode || type == ENTRY_ROOT)}
         {#key [toolMode, selected_category, $entryRoot]}
           <CategoryProperties
             {type}
@@ -345,30 +345,30 @@
             onEditValue={(value) => value && onEditValue(value, type)}
           />
         {/key}
-      {:else}
-        <div class="flex gap-2 py-2">
-          <Text class="text-gray-500" weight="semibold">Categories</Text>
+      {:else} -->
+      <div class="flex gap-2 py-2">
+        <Text class="text-gray-500" weight="semibold">Categories</Text>
 
-          {#key $idb_updated_at}
-            <Badge class={cn({ "bg-gray-300": !!selected_category })} variant="secondary">
-              {#await db?.getAllIndex("category")}
-                ...
-              {:then anns}
-                {anns?.filter(
-                  (annotation) =>
-                    currentFrame >= annotation.shape.start &&
-                    currentFrame <= annotation.shape.end &&
-                    annotation.shape.type == type,
-                ).length}
-              {/await}
-            </Badge>
-          {/key}
-        </div>
+        {#key $idb_updated_at}
+          <Badge class={cn({ "bg-gray-300": !!selected_category })} variant="secondary">
+            {#await db?.getAllIndex("category")}
+              ...
+            {:then anns}
+              {anns?.filter(
+                (annotation) =>
+                  currentFrame >= annotation.shape.start &&
+                  currentFrame <= annotation.shape.end &&
+                  annotation.shape.type == type,
+              ).length}
+            {/await}
+          </Badge>
+        {/key}
+      </div>
 
-        {#each categoriesTree as category (category.id)}
-          {@render categorySelection(category, category.nestedCategories, onSelect, selected_category)}
-        {/each}
-      {/if}
+      {#each categoriesTree as category (category.id)}
+        {@render categorySelection(category, category.nestedCategories, onSelect, selected_category)}
+      {/each}
+      <!-- {/if} -->
     </CollapsibleContent>
   </Collapsible>
 </div>
