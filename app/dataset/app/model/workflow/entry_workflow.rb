@@ -43,5 +43,10 @@ module Workflow
 
       @submit_opts[:approved]
     end
+
+    def allowed_note_feed?
+      # check if current step allows note feeds by state
+      @entry.wf_step == "review"
+    end
   end
 end
