@@ -45,7 +45,14 @@
           {@const hidden = item.hidden ?? false}
 
           {#if !hidden}
-            <DropdownMenuItem disabled={item.disabled} onclick={() => item.action?.()}>
+            <DropdownMenuItem
+              class={cn("", {
+                "cursor-not-allowed": item.disabled,
+                "cursor-pointer": item.action,
+              })}
+              disabled={item.disabled}
+              onclick={() => item.action?.()}
+            >
               {#if item.icon}
                 <item.icon class="size-4"></item.icon>
               {/if}
