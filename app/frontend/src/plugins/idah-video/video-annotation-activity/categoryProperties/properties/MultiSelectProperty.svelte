@@ -26,7 +26,7 @@
   </Label>
 
   <Select type="multiple" {value} {onValueChange}>
-    <SelectTrigger class="w-full bg-white data-[placeholder]:text-gray-900" aria-invalid={invalid}>
+    <SelectTrigger class="data-[placeholder]:text-secondary-foreground bg-secondary w-full" aria-invalid={invalid}>
       {options
         .filter(({ id }) => value?.includes(id))
         .map((o) => o.label)

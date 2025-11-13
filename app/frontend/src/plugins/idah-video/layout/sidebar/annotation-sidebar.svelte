@@ -1,7 +1,8 @@
 <script lang="ts">
+  import { CircleXIcon } from "@lucide/svelte";
   import { SvelteMap } from "svelte/reactivity";
 
-  import Input from "@/components/ui/input/input.svelte";
+  import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import SidebarContent from "@/components/ui/sidebar/sidebar-content.svelte";
   import SidebarGroupContent from "@/components/ui/sidebar/sidebar-group-content.svelte";
   import SidebarGroup from "@/components/ui/sidebar/sidebar-group.svelte";
@@ -99,7 +100,21 @@
 <Sidebar variant="inset" collapsible="none" style="width: {sidebarWidthRem}rem;">
   {#if !tools.has(mode)}
     <SidebarHeader>
-      <Input placeholder="search" value={searchValue} oninput={(e) => searchCategory(e)} />
+      <InputField
+        name="input/plugin/search"
+        placeholder="search"
+        value={searchValue}
+        oninput={(e) => searchCategory(e)}
+      >
+        {#snippet suffixIcon()}
+          <CircleXIcon
+            class="hover:cursor-pointer"
+            onclick={() => {
+              searchValue = "";
+            }}
+          />
+        {/snippet}
+      </InputField>
     </SidebarHeader>
   {/if}
 
