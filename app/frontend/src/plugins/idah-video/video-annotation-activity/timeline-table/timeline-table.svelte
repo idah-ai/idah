@@ -171,7 +171,7 @@
     {@const isLastIndex = index == annotations.length - 1}
     <TableRow
       class={cn("border-b-0", {
-        "bg-primary-foreground border-b border-t": isSelected,
+        "bg-primary border-b border-t": isSelected,
       })}
     >
       <TableCell
@@ -188,12 +188,8 @@
           {#await getCategoryName(annotation.value.category, annotation)}
             <Spinner size="sm"></Spinner>
           {:then title}
-            <Text
-              size="sm"
-              weight={isSelected ? "semibold" : "normal"}
-              class={cn("text-foregroun", {
-                "dark:text-background ": isSelected,
-              })}>{humanize(title)}</Text
+            <Text size="sm" weight={isSelected ? "semibold" : "normal"} class={cn("text-foregroun", {})}
+              >{humanize(title)}</Text
             >
           {/await}
 
