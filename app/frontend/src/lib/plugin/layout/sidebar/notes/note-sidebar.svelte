@@ -79,7 +79,11 @@
         /**
          * Only go to detail view if note feed is general note
          */
-        if (noteFeedRes.data.anchor_type === "entry" && !!noteFeedRes.data.annotation_id) {
+        if (
+          noteFeedRes.data.anchor_type === "entry" &&
+          noteFeedRes.data.annotation_id === null &&
+          !Object.keys(noteFeedRes.data.position || {}).includes("x")
+        ) {
           selectedNoteFeed = noteFeedRes.data;
           open = true;
         }
