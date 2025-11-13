@@ -4,6 +4,7 @@
   import BoundingBox, { type ToolSelection } from "./bounding-box.svelte";
   import { boundingBoxes } from "./idb_store.svelte";
 
+  import { DEFAULT_MODE, ENTRY_ROOT, IDAH_VIDEO_BOUNDING_BOX, type EntryRoot } from "../type";
   import {
     HEIGHT,
     ORIGIN,
@@ -23,7 +24,6 @@
     AnnotationValue,
   } from "@/context/AnnotationContext";
   import type { IActivityContext, INoteFeed } from "@/plugin/interface/Activity";
-  import { DefaultMode, EntryRoot, IdahVideoBoundingBox } from "../type";
 
   // Types
   export interface OnAddNewNoteParams {
@@ -84,9 +84,9 @@
   let shape: AnnotationShape | { type: EntryRoot } | undefined = $derived(
     selected
       ? selected.shape
-      : mode != DefaultMode
-        ? mode == EntryRoot
-          ? { type: EntryRoot }
+      : mode != DEFAULT_MODE
+        ? mode == ENTRY_ROOT
+          ? { type: ENTRY_ROOT }
           : {
               type: mode,
               start: frame,
@@ -186,7 +186,7 @@
 
     if (!toolSelection?.isEditing()) {
       if (!toolSelection)
-        console.error("no tool for mode:", mode, "deselecting annotation (and reverting to mode", DefaultMode, ")");
+        console.error("no tool for mode:", mode, "deselecting annotation (and reverting to mode", DEFAULT_MODE, ")");
       onSelectAnnotation();
       zoomableElement.mouseDown(e);
     }
@@ -280,18 +280,18 @@
     {#await annotations_promise}
       {#each $boundingBoxes as annotation (annotation.metadata.id)}
         {#if annotation.metadata.id != selected?.metadata.id}
-          {#if annotation.shape.type == IdahVideoBoundingBox}
+          {#if annotation.shape.type == IDAH_VIDEO_BOUNDING_BOX}
             <BoundingBox
               points={currentShape(annotation.shape, frame) || []}
               ratio={target_size}
               offset={zoomInfo.offset}
               color={Object.entries(context.config)
-                .find(([k, _]) => k == IdahVideoBoundingBox)?.[1]
+                .find(([k, _]) => k == IDAH_VIDEO_BOUNDING_BOX)?.[1]
                 .values.find((c) => c.id == annotation.value?.category)?.color || "grey"}
               onmousedown={(e) => {
                 e.stopPropagation();
 
-                if (mode == DefaultMode || selected) {
+                if (mode == DEFAULT_MODE || selected) {
                   onSelectAnnotation(annotation);
                 }
 
@@ -306,20 +306,20 @@
     {:then annotations}
       {#each annotations as annotation (annotation.metadata.id)}
         {#if annotation.metadata.id != selected?.metadata.id}
-          {#if annotation.shape.type == IdahVideoBoundingBox}
+          {#if annotation.shape.type == IDAH_VIDEO_BOUNDING_BOX}
             <BoundingBox
               points={currentShape(annotation.shape, frame) || []}
               ratio={target_size}
               offset={zoomInfo.offset}
               color={annotation?.synced
                 ? Object.entries(context.config)
-                    .find(([k, _]) => k == IdahVideoBoundingBox)?.[1]
+                    .find(([k, _]) => k == IDAH_VIDEO_BOUNDING_BOX)?.[1]
                     .values.find((c) => c.id == annotation?.value?.category)?.color || "grey"
                 : "grey"}
               onmousedown={(e) => {
                 e.stopPropagation();
 
-                if (mode == DefaultMode || selected) {
+                if (mode == DEFAULT_MODE || selected) {
                   onSelectAnnotation(annotation);
                 }
 
@@ -333,21 +333,21 @@
       {/each}
     {/await}
 
-    {#if shape?.type == IdahVideoBoundingBox || mode == IdahVideoBoundingBox}
+    {#if shape?.type == IDAH_VIDEO_BOUNDING_BOX || mode == IDAH_VIDEO_BOUNDING_BOX}
       <BoundingBox
         bind:this={toolSelection}
         {points}
         ratio={target_size}
         offset={zoomInfo.offset}
         cursor={cursor_downscaled}
-        editable={shape?.type == IdahVideoBoundingBox || mode == IdahVideoBoundingBox}
+        editable={shape?.type == IDAH_VIDEO_BOUNDING_BOX || mode == IDAH_VIDEO_BOUNDING_BOX}
         color={selected?.synced
           ? Object.entries(context.config)
               .find(([k, _]) => k == mode)?.[1]
               .values.find((c) => c.id == selected?.value?.category)?.color || "grey"
           : "grey"}
         onChange={(bb) => {
-          onSelection(IdahVideoBoundingBox, frame, bb, selected?.metadata.id);
+          onSelection(IDAH_VIDEO_BOUNDING_BOX, frame, bb, selected?.metadata.id);
           points = bb;
         }}
       />
