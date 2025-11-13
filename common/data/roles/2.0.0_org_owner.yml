@@ -8,11 +8,14 @@ org_owner:
     # Login
     - "iam:accounts.login.*"
 
+    # Accounts
+    - "iam:accounts.read.*"
+
     # Organizations
     # TODO: review org scope; owned ?
     - "iam:organizations.read.*"
 
-    # Datasets
+    # Dataset Service
     - "dataset:projects.*.as_org_owner"
     - "dataset:project_members.*.as_org_owner"
     - "dataset:datasets.*.as_org_owner"

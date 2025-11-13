@@ -5,7 +5,16 @@ user:
     who have access to their own projects.
   assignable: true
   rights:
+    # Login
     - "iam:accounts.login.*"
+
+    # Accounts
+    - "iam:accounts.read.*"
+
+    # Organizations
+    - "iam:organizations.read.*"
+
+    # Dataset Service
     - "dataset:projects.read.as_user"
     - "dataset:projects.update.as_user"
     - "dataset:projects.delete.as_user"

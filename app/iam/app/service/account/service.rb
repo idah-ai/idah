@@ -46,28 +46,42 @@ module Account
       accounts.delete(id)
     end
 
-    # TODO: should allow only admin/system for this action
+    # TODO: should allow only admin/system for this action, skip checks for admin ?
     def add_owner(org_id:, account_id:)
       organization_service.show(org_id)
       # TODO: error / fail fast here
 
       account = accounts.find!(account_id)
-      # update_role_name = "org_owner" if account.role_name == "user"
-      update_role_scope = account.role_scope || {}
-      update_role_scope[:org] ||= []
-      (update_role_scope[:org] << org_id).uniq!
+      return account if account.role_name == "admin" ||
+                        (account.role_name == "org_owner" && account.role_scope&.dig("org")&.include?(org_id))
 
-      update_attr = { role_scope: update_role_scope }
+      update_role_scope = JSON.parse((account.role_scope || {}).to_json)
+      update_role_scope["org"] ||= []
+      (update_role_scope["org"] << org_id).uniq!
+
+      update_attr = { role_scope: update_role_scope.to_json }
       update_attr[:role_name] = "org_owner" if account.role_name == "user"
 
       accounts.update!(account_id, update_attr)
-
       accounts.find!(account_id)
     end
 
-    # TODO: should allow only admin/system for this action
+    # TODO: should allow only admin/system for this action, skip checks for admin ?
     def remove_owner(org_id:, account_id:)
-      pass
+      account = accounts.find!(account_id)
+      return account unless account.role_name == "org_owner" || account.role_scope&.dig("org")&.include?(org_id)
+
+      update_role_scope = JSON.parse((account.role_scope || {}).to_json)
+      update_role_scope["org"]&.delete(org_id)
+
+      # clean up empty org array
+      update_role_scope.delete("org") if update_role_scope["org"] && update_role_scope["org"].empty?
+
+      update_attr = { role_scope: update_role_scope.to_json }
+      update_attr[:role_name] = "user" if update_role_scope.empty? && account.role_name != "user"
+
+      accounts.update!(account_id, update_attr)
+      accounts.find!(account_id)
     end
   end
 end
