@@ -106,7 +106,7 @@
       }
     }
 
-    toast.success("Tasks successfully uploaded!");
+    toast.success("Entries successfully uploaded!");
     $refetches.entries.list = new Date();
   }
 

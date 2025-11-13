@@ -39,7 +39,7 @@ module Annotation
       attributes[:project_id] = entry.project_id
       attributes[:dataset_id] = entry.dataset_id
       attributes[:entry_id] = entry.id
-      attributes[:created_by_email] ||= auth_context.metadata[:email] || "email@example.com"
+      attributes[:created_by_email] = auth_context.metadata[:email]
 
       annotations.transaction do
         id = annotations.create(attributes)

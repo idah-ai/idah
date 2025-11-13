@@ -23,12 +23,12 @@
   <Tooltips>
     {#snippet trigger()}
       <PopoverTrigger>
-        <Button variant="ghost" class="cursor-pointer">
+        <Button variant="ghost" size="sm" class="cursor-pointer">
           {#if selectedFieldType}
             {@const SelectedTypeIcon = selectedFieldType.icon}
-            <SelectedTypeIcon class="size-4"></SelectedTypeIcon>
+            <SelectedTypeIcon />
 
-            <Text weight="medium">{truncate(label, 20)}</Text>
+            <Text size="sm" weight="medium">{truncate(label, 20)}</Text>
           {/if}
         </Button>
       </PopoverTrigger>
@@ -43,14 +43,14 @@
     <Command>
       <CommandList>
         <CommandGroup heading="Label">
-          <InputField name={label} value={label} oninput={(e) => onSetLabel({ label: e.currentTarget.value })}
+          <InputField name={label} value={label} onblur={(e) => onSetLabel({ label: e.currentTarget.value })}
           ></InputField>
         </CommandGroup>
 
         <CommandGroup heading="Type">
           {#each fieldTypes as { label, value, icon: Icon } (value)}
             <CommandItem onclick={() => onSetType({ type: value })}>
-              <Icon class="size-4"></Icon>
+              <Icon class="size-4" />
               {label}
             </CommandItem>
           {/each}

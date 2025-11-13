@@ -4,11 +4,12 @@ import type {
   AnnotationShape,
   AnnotationValue,
 } from "../../../lib/context/AnnotationContext";
+import type { DefaultMode, IdahVideoBoundingBox } from "../type";
 
 export type Point = [number, number];
 
-export type VideoShapeType = "video:bounding_box" | "video:bounding_polygon";
-export type VideoMode = "visual" | VideoShapeType;
+export type VideoShapeType = IdahVideoBoundingBox;
+export type VideoMode = DefaultMode | VideoShapeType;
 
 export type VideoAnnotation = AnnotationObj<VideoShape, AnnotationValue, AnnotationMetadata>;
 export type VideoFrameSelection = {

@@ -108,14 +108,16 @@
     onSeekFrame(frameToGo);
   }
 
-  function getCategory(categoryId: string) {
-    return context.config.categories.find((cat) => cat.id === categoryId);
+  function getCategory(categoryId: string, shape_type: string) {
+    return Object.entries(context.config)
+      .find(([k, _]) => k == shape_type)?.[1]
+      .values.find((cat) => cat.id === categoryId);
   }
 
   async function getCategoryName(categoryId: string | undefined, selected: VideoAnnotation) {
     if (!categoryId) return "Uncategorized";
 
-    const selectedCategory = getCategory(categoryId);
+    const selectedCategory = getCategory(categoryId, selected.shape.type);
 
     const selectedAnnotationIndex = await getSelectedAnnotationIndex(categoryId, selected.metadata.id);
     const selectedCategoryName = selectedCategory?.label || categoryId;
@@ -178,8 +180,8 @@
         })}
         onclick={() => {
           onSelectAnnotation(annotation);
-          pos_offset = annotation.shape.start;
-          onSeekFrame(annotation.shape.start);
+          pos_offset = annotation.shape.start || 0;
+          onSeekFrame(annotation.shape.start || 0);
         }}
       >
         <button class={cn("group flex w-full cursor-pointer items-center justify-end px-2 py-1")}>

@@ -84,7 +84,7 @@ export function activityContextForEntry(entry: EntryRecord): IActivityContext {
     tools: createToolsInterface(),
     back() {
       goto(
-        resolve("/(app)/projects/[projectId]/datasets/[datasetId]/tasks", {
+        resolve("/(app)/projects/[projectId]/datasets/[datasetId]/entries", {
           projectId: entry.dataset.project.id,
           datasetId: entry.dataset.id,
         }),

@@ -10,11 +10,13 @@
 
   import type { CategoryDefinition } from "@/context/ActivityContext";
   import type { AnnotationValue } from "@/context/AnnotationContext";
+  import type { IConfigValue } from "@/plugin/interface/Activity";
 
+  import { ENTRY_ROOT } from "../../type";
   import CategoryProperties from "../../video-annotation-activity/categoryProperties/categoryProperties.svelte";
-  import { idb_updated_at } from "../../video-annotation-activity/idb_store.svelte";
+  import { entryRoot, idb_updated_at } from "../../video-annotation-activity/idb_store.svelte";
   import type { AnnotationsIndexedDB } from "../../video-annotation-activity/indexedDB";
-  import type { CategoryConfiguration, VideoAnnotation } from "../../video-annotation-activity/VideoAnnotationContext";
+  import type { VideoAnnotation } from "../../video-annotation-activity/VideoAnnotationContext";
 
   // Props
   let {
@@ -33,7 +35,7 @@
   }: {
     type: string;
     currentFrame: number;
-    categories: CategoryConfiguration[];
+    categories: IConfigValue[];
     toolMode: boolean;
     selected_category: string | undefined;
     selected_id: string | undefined;
@@ -68,7 +70,6 @@
   });
 
   let forceRender = $state(0); // Force re-render trigger
-
   let categoriesTree = $derived(
     categories.reduce<CategoryDefinition[]>((acc, category_configuration) => {
       return buildTree(acc, category_configuration.id.split("/"), category_configuration);
@@ -76,11 +77,7 @@
   );
 
   // Functions
-  function buildTree(
-    acc: CategoryDefinition[],
-    ids: string[],
-    configuration: CategoryConfiguration,
-  ): CategoryDefinition[] {
+  function buildTree(acc: CategoryDefinition[], ids: string[], configuration: IConfigValue): CategoryDefinition[] {
     let currentLevel = acc;
     let fullPath = "";
 
@@ -98,7 +95,7 @@
           ...(i < ids.length - 1 ? { nestedCategories: [] } : {}),
           data:
             i < ids.length - 1
-              ? ({ id: fullPath, label: humanize(ids[i]), color: "#ffff", description: "" } as CategoryConfiguration)
+              ? ({ id: fullPath, label: humanize(ids[i]), color: "#ffff", description: "" } as IConfigValue)
               : configuration, // leaf gets real configuration
         };
 
@@ -202,9 +199,9 @@
       }}
       disabled={toolMode}
     >
-      {@const selectedCategory = selected_category == category.id}
+      {@const selected = selected_category == category.id}
 
-      {#if selectedCategory && toolMode && !selected_id}
+      {#if selected && toolMode && !selected_id}
         <PlusIcon class="text-primary size-4 " strokeWidth={4}></PlusIcon>
       {:else if !category.nestedCategories && toolMode && !selected_id}
         <CircleSmallIcon class="fill-gray-400 stroke-gray-400"></CircleSmallIcon>
@@ -214,8 +211,8 @@
           class={cn("size-4", {
             "opacity-0": !haveChildren || category.nestedCategories?.length === 0,
             "rotate-90": open || parentOpen,
-            "stroke-blue-300": selectedCategory,
-            "stroke-gray-500": !selectedCategory,
+            "stroke-blue-300": selected,
+            "stroke-gray-500": !selected,
           })}
         ></ChevronRight>
       {/if}
@@ -255,7 +252,7 @@
       {#await haveAnnotationsInCategory(category.id) then hasAnnotations}
         <CollapsibleTrigger
           class={cn("flex w-full items-center justify-between", {
-            "bg-primary-foreground rounded-sm border-1 border-blue-300": selected == category.id,
+            "bg-primary-foreground border-1 rounded-sm border-blue-300": selected == category.id,
             "hover:bg-primary-foreground hover:cursor-pointer hover:rounded-sm": !category.requiredNested,
             "hover:bg-accent hover:cursor-pointer hover:rounded-sm": category.requiredNested && !toolMode,
           })}
@@ -333,35 +330,45 @@
 {/snippet}
 
 <div class="flex-col">
-  {#if selected_category && toolMode}
-    <CategoryProperties
-      selectedCategory={selected_category}
-      {annotationValue}
-      onSelectCategory={onSelect}
-      onEditValue={(value) => value && onEditValue(value, type)}
-    />
-  {:else}
-    <div class="flex gap-2 py-2">
-      <Text class="text-gray-500" weight="semibold">Categories</Text>
+  <Collapsible open={true}>
+    <CollapsibleTrigger>
+      <Text class="text-gray-500" weight="semibold">{type}</Text>
+    </CollapsibleTrigger>
+    <CollapsibleContent>
+      {#if selected_category && (toolMode || type == ENTRY_ROOT)}
+        {#key [toolMode, selected_category, $entryRoot]}
+          <CategoryProperties
+            {type}
+            selectedCategory={selected_category}
+            {annotationValue}
+            onSelectCategory={onSelect}
+            onEditValue={(value) => value && onEditValue(value, type)}
+          />
+        {/key}
+      {:else}
+        <div class="flex gap-2 py-2">
+          <Text class="text-gray-500" weight="semibold">Categories</Text>
 
-      {#key $idb_updated_at}
-        <Badge class={cn({ "bg-gray-300": !!selected_category })} variant="secondary">
-          {#await db?.getAllIndex("category")}
-            ...
-          {:then anns}
-            {anns?.filter(
-              (annotation) =>
-                currentFrame >= annotation.shape.start &&
-                currentFrame <= annotation.shape.end &&
-                annotation.shape.type == type,
-            ).length}
-          {/await}
-        </Badge>
-      {/key}
-    </div>
+          {#key $idb_updated_at}
+            <Badge class={cn({ "bg-gray-300": !!selected_category })} variant="secondary">
+              {#await db?.getAllIndex("category")}
+                ...
+              {:then anns}
+                {anns?.filter(
+                  (annotation) =>
+                    currentFrame >= annotation.shape.start &&
+                    currentFrame <= annotation.shape.end &&
+                    annotation.shape.type == type,
+                ).length}
+              {/await}
+            </Badge>
+          {/key}
+        </div>
 
-    {#each categoriesTree as category (category.id)}
-      {@render categorySelection(category, category.nestedCategories, onSelect, selected_category)}
-    {/each}
-  {/if}
+        {#each categoriesTree as category (category.id)}
+          {@render categorySelection(category, category.nestedCategories, onSelect, selected_category)}
+        {/each}
+      {/if}
+    </CollapsibleContent>
+  </Collapsible>
 </div>
