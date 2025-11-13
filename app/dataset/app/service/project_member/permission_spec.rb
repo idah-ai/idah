@@ -15,11 +15,16 @@ RSpec.describe ProjectMember::Service, database: true do
     project_repo.create(name: "Project 2", created_by_email: "system@example.com")
   }
 
+  # Accounts IDs
+  let(:project_owner_account_id) { 3 }
+  let(:annotator_account_id) { 4 }
+  let(:reviewer_account_id) { 5 }
+
   # Project Members
   let!(:project_owner_member_id) {
     project_member_repo.create(
       project_id: first_project_id,
-      account_id: 3,
+      account_id: project_owner_account_id,
       role: "project_owner",
       name: "Project Owner",
       email: "po@example.com",
@@ -29,7 +34,7 @@ RSpec.describe ProjectMember::Service, database: true do
   let!(:annotator_member_id) {
     project_member_repo.create(
       project_id: first_project_id,
-      account_id: 4,
+      account_id: annotator_account_id,
       role: "annotator",
       name: "Annotator",
       email: "an@example.com",
@@ -39,7 +44,7 @@ RSpec.describe ProjectMember::Service, database: true do
   let!(:reviewer_member_id) {
     project_member_repo.create(
       project_id: second_project_id,
-      account_id: 5,
+      account_id: reviewer_account_id,
       role: "reviewer",
       name: "Reviewer",
       email: "re@example.com",
@@ -69,7 +74,7 @@ RSpec.describe ProjectMember::Service, database: true do
           name: "John Doe",
           email: "johndoe@example.com",
           role: "annotator",
-          account_id: 6,
+          account_id: annotator_account_id,
           invited_by_id: 1
         },
         relationships: {
@@ -81,10 +86,16 @@ RSpec.describe ProjectMember::Service, database: true do
     }
   end
 
+  # Permission: Project Owner
+  # ---------------------------------------------------
+  # Project Members | index | create | update | delete
+  # ---------------------------------------------------
+  # Assigned        |  yes  |  yes   |   yes  |   yes
+  # Not Assigned    |   x   |   x    |    x   |    x
   context "as Project Owner", as: :project_owner do
     subject { described_class.new(current_auth_context) }
 
-    describe "scoped project members" do
+    describe "with assigned project" do
       it "can index" do
         result = subject.index({})
 
@@ -93,19 +104,20 @@ RSpec.describe ProjectMember::Service, database: true do
       end
 
       it "can create" do
-        created = subject.create(deserialize(create_data))
-        created_project_members = subject.show(created.id, included: ["project"])
+        record = subject.create(deserialize(create_data))
 
-        expect(created_project_members.name).to eq "John Doe"
-        expect(created_project_members.project.id).to eq first_project_id
+        expect(record.name).to eq "John Doe"
+        expect(record.email).to eq "johndoe@example.com"
+        expect(record.account_id).to eq annotator_account_id
+        expect(record.project_id).to eq first_project_id
       end
 
       it "can update" do
-        updated_project = subject.update(deserialize(update_data))
+        record = subject.update(deserialize(update_data))
 
-        expect(updated_project.name).to eq "Jane Doe"
-        expect(updated_project.email).to eq "janedoe@example.com"
-        expect(updated_project.role).to eq "reviewer"
+        expect(record.name).to eq "Jane Doe"
+        expect(record.email).to eq "janedoe@example.com"
+        expect(record.role).to eq "reviewer"
       end
 
       it "can delete" do
@@ -117,7 +129,7 @@ RSpec.describe ProjectMember::Service, database: true do
       end
     end
 
-    describe "not scoped project members" do
+    describe "with not assigned project" do
       it "cannot index" do
         result = subject.index({})
 
@@ -149,10 +161,16 @@ RSpec.describe ProjectMember::Service, database: true do
     end
   end
 
+  # Permission: Annotator
+  # ---------------------------------------------------
+  # Project Members | index | create | update | delete
+  # ---------------------------------------------------
+  # Assigned        |  yes  |   x    |    x   |    x
+  # Not Assigned    |   x   |   x    |    x   |    x
   context "as Annotator", as: :annotator do
     subject { described_class.new(current_auth_context) }
 
-    describe "scoped project members" do
+    describe "with assigned project" do
       it "can index" do
         result = subject.index({})
 
@@ -179,7 +197,7 @@ RSpec.describe ProjectMember::Service, database: true do
       end
     end
 
-    describe "not scoped project_members" do
+    describe "with not assigned project" do
       it "cannot index" do
         result = subject.index({})
 
@@ -209,10 +227,16 @@ RSpec.describe ProjectMember::Service, database: true do
     end
   end
 
+  # Permission: Reviewer
+  # ---------------------------------------------------
+  # Project Members | index | create | update | delete
+  # ---------------------------------------------------
+  # Assigned        |  yes  |   x    |    x   |    x
+  # Not Assigned    |   x   |   x    |    x   |    x
   context "as Reviewer", as: :reviewer do
     subject { described_class.new(current_auth_context) }
 
-    describe "scoped project members" do
+    describe "with assigned project" do
       it "can index" do
         result = subject.index({})
 
@@ -239,7 +263,7 @@ RSpec.describe ProjectMember::Service, database: true do
       end
     end
 
-    describe "not scoped project_members" do
+    describe "with not assigned project" do
       it "cannot index" do
         result = subject.index({})
 

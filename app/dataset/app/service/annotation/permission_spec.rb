@@ -2,12 +2,13 @@
 
 require "spec_helper"
 
-RSpec.describe Entry::Service, database: true do
+RSpec.describe Annotation::Service, database: true do
   let(:system_context) { Verse::Auth::Context[:system] }
   let(:project_repo) { Project::Repository.new(system_context) }
   let(:project_member_repo) { ProjectMember::Repository.new(system_context) }
   let(:dataset_repo) { Dataset::Repository.new(system_context) }
   let(:entry_repo) { Entry::Repository.new(system_context) }
+  let(:annotation_repo) { Annotation::Repository.new(system_context) }
 
   # Projects
   let!(:first_project_id) {
@@ -102,7 +103,7 @@ RSpec.describe Entry::Service, database: true do
       resource: "http://example.com/first.mp4",
       wf_step: "start",
       status: "pending",
-      assigned_to_id: annotator_account_id,
+      assigned_to_id: 4, # annotator
     )
   }
   let!(:second_entry_id) {
@@ -113,7 +114,7 @@ RSpec.describe Entry::Service, database: true do
       resource: "http://example.com/second.mp4",
       wf_step: "start",
       status: "pending",
-      assigned_to_id: reviewer_account_id,
+      assigned_to_id: 5, # reviewer
     )
   }
   let!(:third_entry_id) {
@@ -128,17 +129,46 @@ RSpec.describe Entry::Service, database: true do
     )
   }
 
+  # Annotations
+  let!(:first_annotation_id) {
+    annotation_repo.create(
+      project_id: first_project_id,
+      dataset_id: first_dataset_id,
+      entry_id: first_entry_id,
+      dimensions: { x: 10, y: 20, width: 30, height: 40 },
+      annotation: { label: "cat" },
+      created_by_email: "an@example.com"
+    )
+  }
+  let!(:second_annotation_id) {
+    annotation_repo.create(
+      project_id: second_project_id,
+      dataset_id: second_dataset_id,
+      entry_id: second_entry_id,
+      dimensions: { x: 50, y: 60, width: 70, height: 80 },
+      annotation: { label: "dog" },
+      created_by_email: "re@example.com"
+    )
+  }
+  let!(:third_annotation_id) {
+    annotation_repo.create(
+      project_id: third_project_id,
+      dataset_id: third_dataset_id,
+      entry_id: third_entry_id,
+      dimensions: { x: 90, y: 100, width: 110, height: 120 },
+      annotation: { label: "mouse" },
+      created_by_email: "an2@example.com"
+    )
+  }
+
   let(:update_data) do
     {
       data: {
-        type: "dataset:entries",
-        id: first_entry_id,
+        type: "dataset:annotations",
+        id: first_annotation_id,
         attributes: {
-          priority: 2,
-          resource: "http://example.com/updated.mp4",
-          wf_step: "end",
-          status: "done",
-          assigned_to_id: annotator_account_id,
+          dimensions: { x: 11, y: 21, width: 31, height: 41 },
+          annotation: { label: "mouse" },
         }
       }
     }
@@ -147,16 +177,18 @@ RSpec.describe Entry::Service, database: true do
   let(:create_data) do
     {
       data: {
-        type: "dataset:entries",
+        type: "dataset:annotations",
         attributes: {
-          priority: 1,
-          resource: "http://example.com/created.mp4",
-          wf_step: "start",
-          status: "pending",
+          dimensions: { x: 10, y: 20, width: 30, height: 40 },
+          annotation: { label: "cat" },
+          created_by_email: "annotator@example.com"
         },
         relationships: {
-          dataset: {
-            data: { type: "dataset:datasets", id: first_dataset_id }
+          entry: {
+            data: {
+              type: "dataset:entries",
+              id: first_entry_id
+            }
           }
         }
       }
@@ -165,7 +197,7 @@ RSpec.describe Entry::Service, database: true do
 
   # Permission: Project Owner
   # ------------------------------------------------
-  # Entries       | index | create | update | delete
+  # Annotations   | index | create | update | delete
   # ------------------------------------------------
   # Assigned      |  yes  |  yes   |   yes  |   yes
   # Not Assigned  |   x   |   x    |    x   |    x
@@ -178,36 +210,39 @@ RSpec.describe Entry::Service, database: true do
 
         expect(result.count).to eq 1
 
-        expect(result.first.id).to eq first_entry_id
+        record = result.first
+        expect(record.id).to eq first_annotation_id
       end
 
       it "can create" do
-        record = subject.create(deserialize(create_data))
+        create_data[:data][:attributes][:created_by_email] = "po@example.com"
+
+        created = subject.create(deserialize(create_data))
+        record = subject.show(created.id)
 
         expect(record.project_id).to eq first_project_id
         expect(record.dataset_id).to eq first_dataset_id
-        expect(record.resource).to eq "http://example.com/created.mp4"
-        expect(record.status).to eq "pending"
-        expect(record.wf_step).to eq "start"
-        expect(record.priority).to eq 1
-        expect(record.assigned_to_id).to be_nil
+        expect(record.entry_id).to eq first_entry_id
+        expect(record.dimensions).to eq({ x: 10, y: 20, width: 30, height: 40 })
+        expect(record.annotation).to eq({ label: "cat" })
+        expect(record.created_by_email).to eq "po@example.com"
       end
 
       it "can update" do
         record = subject.update(deserialize(update_data))
 
-        expect(record.priority).to eq 2
-        expect(record.resource).to eq "http://example.com/updated.mp4"
-        expect(record.wf_step).to eq "end"
-        expect(record.status).to eq "done"
-        expect(record.assigned_to_id).to eq 4
+        expect(record.project_id).to eq first_project_id
+        expect(record.dataset_id).to eq first_dataset_id
+        expect(record.entry_id).to eq first_entry_id
+        expect(record.dimensions).to eq({ x: 11, y: 21, width: 31, height: 41 })
+        expect(record.annotation).to eq({ label: "mouse" })
       end
 
       it "can delete" do
-        subject.delete(first_entry_id)
+        subject.delete(first_annotation_id)
 
         expect {
-          subject.show(first_entry_id)
+          subject.show(first_annotation_id)
         }.to raise_error(Verse::Error::RecordNotFound)
       end
     end
@@ -217,47 +252,21 @@ RSpec.describe Entry::Service, database: true do
         result = subject.index({})
 
         expect(result.count).to eq 1
-        expect(result.first.id).to_not eq second_entry_id
+
+        record = result.first
+        expect(record.id).to_not eq second_annotation_id
       end
 
       it "cannot create" do
-        create_data[:data][:relationships][:dataset][:data][:id] = second_dataset_id
+        create_data[:data][:relationships][:entry][:data][:id] = second_entry_id
 
         expect {
           subject.create(deserialize(create_data))
-        }.to raise_error(Verse::Error::ValidationFailed, "dataset not found to create an entry")
-      end
-
-      it "cannot create as annotator of another project" do
-        # Add "project_owner" member to second project as "annotator"
-        project_member_repo.create(
-          project_id: second_project_id,
-          account_id: project_owner_account_id,
-          role: "annotator",
-          email: "po@example.com",
-          invited_by_id: 1
-        )
-
-        # Create another entry in second dataset to be able to access it
-        entry_repo.create(
-          project_id: second_project_id,
-          dataset_id: second_dataset_id,
-          priority: 1,
-          resource: "http://example.com/second.mp4",
-          wf_step: "start",
-          status: "pending",
-          assigned_to_id: project_owner_account_id,
-        )
-
-        create_data[:data][:relationships][:dataset][:data][:id] = second_dataset_id
-
-        expect {
-          subject.create(deserialize(create_data))
-        }.to raise_error(Errors::Service::UnauthorizedProjectAccess)
+        }.to raise_error(Verse::Error::ValidationFailed, "entry not found to create an annotation")
       end
 
       it "cannot update" do
-        update_data[:data][:id] = second_entry_id
+        update_data[:data][:id] = second_annotation_id
 
         expect {
           subject.update(deserialize(update_data))
@@ -266,7 +275,7 @@ RSpec.describe Entry::Service, database: true do
 
       it "cannot delete" do
         expect {
-          subject.delete(second_entry_id)
+          subject.delete(second_annotation_id)
         }.to raise_error(Verse::Error::RecordNotFound)
       end
     end
@@ -274,7 +283,7 @@ RSpec.describe Entry::Service, database: true do
 
   # Permission: Annotator
   # ------------------------------------------------
-  # Entries       | index | create | update | delete
+  # Annotations   | index | create | update | delete
   # ------------------------------------------------
   # Assigned      |  yes (from assigned entries only)
   # Not Assigned  |   x   |   x    |    x   |    x
@@ -286,24 +295,37 @@ RSpec.describe Entry::Service, database: true do
         result = subject.index({})
 
         expect(result.count).to eq 1
-        expect(result.first.id).to eq first_entry_id
+
+        record = result.first
+        expect(record.id).to eq first_annotation_id
       end
 
-      it "cannot create" do
-        expect {
-          subject.create(deserialize(create_data))
-        }.to raise_error(Errors::Service::UnauthorizedProjectAccess)
+      it "can create" do
+        record = subject.create(deserialize(create_data))
+
+        expect(record.project_id).to eq first_project_id
+        expect(record.dataset_id).to eq first_dataset_id
+        expect(record.entry_id).to eq first_entry_id
+        expect(record.dimensions).to eq({ x: 10, y: 20, width: 30, height: 40 })
+        expect(record.annotation).to eq({ label: "cat" })
+        expect(record.created_by_email).to eq "annotator@example.com"
       end
 
-      it "cannot update" do
-        expect {
-          subject.update(deserialize(update_data))
-        }.to raise_error(Verse::Error::RecordNotFound)
+      it "can update" do
+        record = subject.update(deserialize(update_data))
+
+        expect(record.project_id).to eq first_project_id
+        expect(record.dataset_id).to eq first_dataset_id
+        expect(record.entry_id).to eq first_entry_id
+        expect(record.dimensions).to eq({ x: 11, y: 21, width: 31, height: 41 })
+        expect(record.annotation).to eq({ label: "mouse" })
       end
 
-      it "cannot delete" do
+      it "can delete" do
+        subject.delete(first_annotation_id)
+
         expect {
-          subject.delete(first_entry_id)
+          subject.show(first_annotation_id)
         }.to raise_error(Verse::Error::RecordNotFound)
       end
     end
@@ -328,7 +350,29 @@ RSpec.describe Entry::Service, database: true do
         # Ensure that the annotator cannot see unassigned entries in the third project
         result = subject.index({})
         expect(result.count).to eq 1
-        expect(result.first.id).to_not eq third_entry_id
+        expect(result.first.id).to_not eq third_annotation_id
+      end
+
+      it "cannot create" do
+        create_data[:data][:relationships][:entry][:data][:id] = third_entry_id
+
+        expect {
+          subject.create(deserialize(create_data))
+        }.to raise_error(Verse::Error::ValidationFailed, "entry not found to create an annotation")
+      end
+
+      it "cannot update" do
+        update_data[:data][:id] = third_annotation_id
+
+        expect {
+          subject.update(deserialize(update_data))
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
+
+      it "cannot delete" do
+        expect {
+          subject.delete(third_annotation_id)
+        }.to raise_error(Verse::Error::RecordNotFound)
       end
     end
 
@@ -337,18 +381,21 @@ RSpec.describe Entry::Service, database: true do
         result = subject.index({})
 
         expect(result.count).to eq 1
-        expect(result.first.id).to_not eq second_entry_id
-        expect(result.first.id).to_not eq third_entry_id
+
+        record = result.first
+        expect(record.id).to_not eq second_annotation_id
       end
 
       it "cannot create" do
+        create_data[:data][:relationships][:entry][:data][:id] = second_entry_id
+
         expect {
           subject.create(deserialize(create_data))
-        }.to raise_error(Errors::Service::UnauthorizedProjectAccess)
+        }.to raise_error(Verse::Error::ValidationFailed, "entry not found to create an annotation")
       end
 
       it "cannot update" do
-        update_data[:data][:id] = second_entry_id
+        update_data[:data][:id] = second_annotation_id
 
         expect {
           subject.update(deserialize(update_data))
@@ -357,7 +404,7 @@ RSpec.describe Entry::Service, database: true do
 
       it "cannot delete" do
         expect {
-          subject.delete(second_entry_id)
+          subject.delete(second_annotation_id)
         }.to raise_error(Verse::Error::RecordNotFound)
       end
     end
@@ -365,38 +412,54 @@ RSpec.describe Entry::Service, database: true do
 
   # Permission: Reviewer
   # ------------------------------------------------
-  # Entries       | index | create | update | delete
+  # Annotations   | index | create | update | delete
   # ------------------------------------------------
   # Assigned      |  yes (from assigned entries only)
   # Not Assigned  |   x   |   x    |    x   |    x
   context "as Reviewer", as: :reviewer do
     subject { described_class.new(current_auth_context) }
 
-    describe "with assigned project on assigned entries" do
+    describe "with assigned project and assigned entries" do
       it "can index" do
         result = subject.index({})
 
         expect(result.count).to eq 1
-        expect(result.first.id).to eq second_entry_id
+
+        record = result.first
+        expect(record.id).to eq second_annotation_id
       end
 
-      it "cannot create" do
-        create_data[:data][:relationships][:dataset][:data][:id] = second_dataset_id
+      it "can create" do
+        create_data[:data][:relationships][:entry][:data][:id] = second_entry_id
+        create_data[:data][:attributes][:created_by_email] = "reviewer@example.com"
 
-        expect {
-          subject.create(deserialize(create_data))
-        }.to raise_error(Errors::Service::UnauthorizedProjectAccess)
+        record = subject.create(deserialize(create_data))
+
+        expect(record.project_id).to eq second_project_id
+        expect(record.dataset_id).to eq second_dataset_id
+        expect(record.entry_id).to eq second_entry_id
+        expect(record.dimensions).to eq({ x: 10, y: 20, width: 30, height: 40 })
+        expect(record.annotation).to eq({ label: "cat" })
+        expect(record.created_by_email).to eq "reviewer@example.com"
       end
 
-      it "cannot update" do
-        expect {
-          subject.update(deserialize(update_data))
-        }.to raise_error(Verse::Error::RecordNotFound)
+      it "can update" do
+        update_data[:data][:id] = second_annotation_id
+
+        record = subject.update(deserialize(update_data))
+
+        expect(record.project_id).to eq second_project_id
+        expect(record.dataset_id).to eq second_dataset_id
+        expect(record.entry_id).to eq second_entry_id
+        expect(record.dimensions).to eq({ x: 11, y: 21, width: 31, height: 41 })
+        expect(record.annotation).to eq({ label: "mouse" })
       end
 
-      it "cannot delete" do
+      it "can delete" do
+        subject.delete(second_annotation_id)
+
         expect {
-          subject.delete(first_entry_id)
+          subject.show(second_annotation_id)
         }.to raise_error(Verse::Error::RecordNotFound)
       end
     end
@@ -421,27 +484,19 @@ RSpec.describe Entry::Service, database: true do
         # Ensure that the reviewer cannot see unassigned entries in the third project
         result = subject.index({})
         expect(result.count).to eq 1
-        expect(result.first.id).to_not eq third_entry_id
-      end
-    end
-
-    describe "with not assigned project" do
-      it "cannot index" do
-        result = subject.index({})
-
-        expect(result.count).to eq 1
-        expect(result.first.id).to_not eq first_entry_id
-        expect(result.first.id).to_not eq third_entry_id
+        expect(result.first.id).to_not eq third_annotation_id
       end
 
       it "cannot create" do
+        create_data[:data][:relationships][:entry][:data][:id] = third_entry_id
+
         expect {
           subject.create(deserialize(create_data))
-        }.to raise_error(Verse::Error::ValidationFailed, "dataset not found to create an entry")
+        }.to raise_error(Verse::Error::ValidationFailed, "entry not found to create an annotation")
       end
 
       it "cannot update" do
-        update_data[:data][:id] = second_entry_id
+        update_data[:data][:id] = third_annotation_id
 
         expect {
           subject.update(deserialize(update_data))
@@ -450,7 +505,40 @@ RSpec.describe Entry::Service, database: true do
 
       it "cannot delete" do
         expect {
-          subject.delete(second_entry_id)
+          subject.delete(third_annotation_id)
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
+    end
+
+    describe "with not assigned project" do
+      it "cannot index" do
+        result = subject.index({})
+
+        expect(result.count).to eq 1
+
+        record = result.first
+        expect(record.id).to_not eq first_annotation_id
+      end
+
+      it "cannot create" do
+        create_data[:data][:relationships][:entry][:data][:id] = first_entry_id
+
+        expect {
+          subject.create(deserialize(create_data))
+        }.to raise_error(Verse::Error::ValidationFailed, "entry not found to create an annotation")
+      end
+
+      it "cannot update" do
+        update_data[:data][:id] = first_annotation_id
+
+        expect {
+          subject.update(deserialize(update_data))
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
+
+      it "cannot delete" do
+        expect {
+          subject.delete(first_annotation_id)
         }.to raise_error(Verse::Error::RecordNotFound)
       end
     end
