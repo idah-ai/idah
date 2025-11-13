@@ -171,7 +171,7 @@
     {@const isLastIndex = index == annotations.length - 1}
     <TableRow
       class={cn("border-b-0", {
-        "bg-primary-foreground border-b border-t hover:dark:bg-white": isSelected,
+        "bg-primary-foreground border-b border-t": isSelected,
       })}
     >
       <TableCell
