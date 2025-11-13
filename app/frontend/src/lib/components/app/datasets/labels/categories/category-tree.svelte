@@ -43,8 +43,8 @@
             id: currentPath,
             parent: parentPath,
             label: humanize(part),
-            color: category.color,
-            text_color: category.text_color,
+            color: null, // Note: Set it to null as default for non-leaf nodes, will be set after implement selectable nodes
+            text_color: null, // Note: Set it to null as default for non-leaf nodes, will be set after implement selectable nodes
             expanded: true,
           },
           __children: {},

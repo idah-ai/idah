@@ -200,7 +200,7 @@
 {#if open}
   <div
     transition:slide={{ axis: "x" }}
-    class="bg-background absolute top-11 right-0 z-50 ml-auto flex h-[calc(100%-3rem)] w-80 flex-col border-l"
+    class="bg-background absolute right-0 top-11 z-50 ml-auto flex h-[calc(100%-3rem)] w-80 flex-col border-l"
   >
     <!-- HEADER -->
     <section class="flex items-center gap-1 border-b p-2">
@@ -226,7 +226,7 @@
 
                 <!-- FILTERING INDICATOR -->
                 {#if isFilteringResolved}
-                  <div class="bg-primary absolute top-1 right-1 size-2 animate-pulse rounded-full"></div>
+                  <div class="bg-primary absolute right-1 top-1 size-2 animate-pulse rounded-full"></div>
                 {/if}
               </Button>
             {/snippet}
@@ -269,9 +269,7 @@
                 description="There are no notes yet. Be the first to add one!"
                 icon={MessageCircleDashedIcon}
                 class="mt-auto"
-              >
-                {#snippet actions()}{/snippet}
-              </ResponseBlock>
+              ></ResponseBlock>
             {/each}
           {/await}
         {/if}

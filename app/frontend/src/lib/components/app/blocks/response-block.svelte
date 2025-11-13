@@ -14,7 +14,7 @@
     description: string;
 
     class?: string | null;
-    actions: Snippet;
+    actions?: Snippet;
   }
   let { icon: Icon, title, description, class: className, actions }: Props = $props();
 </script>
@@ -33,6 +33,6 @@
   </EmptyHeader>
 
   <EmptyContent class="flex-row justify-center">
-    {@render actions()}
+    {@render actions?.()}
   </EmptyContent>
 </Empty>
