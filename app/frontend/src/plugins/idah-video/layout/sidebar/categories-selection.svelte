@@ -132,7 +132,7 @@
 </script>
 
 {#snippet annotationSelection(annotation: VideoAnnotation, name: string)}
-  <SidebarMenuItem class="item_hover list-none p-1">
+  <SidebarMenuItem class="group list-none p-1">
     <SidebarMenuButton
       class={cn("ml-5 w-full justify-between px-5 hover:cursor-pointer")}
       onclick={() => onSelectAnnotation(annotation)}
@@ -155,7 +155,7 @@
       <Button
         variant="ghost"
         size="icon"
-        class="hover_button"
+        class="hidden group-hover:inline-flex "
         onclick={(e) => {
           e.stopPropagation();
           onDeleteAnnotation(annotation);
@@ -165,17 +165,6 @@
       </Button>
     </SidebarMenuButton>
   </SidebarMenuItem>
-
-  <style>
-    .item_hover .hover_button {
-      display: none;
-    }
-
-    .item_hover:hover .hover_button {
-      display: inline-flex;
-      cursor: pointer;
-    }
-  </style>
 {/snippet}
 
 {#snippet showCategoryTitle(category: CategoryDefinition, haveChildren: boolean = false, open: boolean = false)}
