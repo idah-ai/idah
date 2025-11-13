@@ -67,15 +67,31 @@ module Entry
         )
       SQL
 
+      assigned_scoped_fragment = <<-SQL
+        EXISTS (
+          SELECT 1
+          FROM project_members pm
+          WHERE pm.account_id = :account_id
+            AND pm.project_id = entries.project_id
+            AND pm.role IN :roles
+        )
+        AND entries.assigned_to_id = :account_id
+      SQL
+
       case action
       when :read
         table.where(
           Sequel.lit(
             scoped_fragment,
             account_id:,
-            roles: %w[project_owner annotator reviewer]
+            roles: %w[project_owner]
+          ) | Sequel.lit(
+            assigned_scoped_fragment,
+            account_id:,
+            roles: %w[annotator reviewer]
           )
         )
+
       when :create, :update, :delete
         table.where(
           Sequel.lit(
