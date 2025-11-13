@@ -171,7 +171,7 @@
     {@const isLastIndex = index == annotations.length - 1}
     <TableRow
       class={cn("border-b-0", {
-        "bg-primary-foreground border-primary/30 border-t border-b": isSelected,
+        "bg-primary-foreground border-primary/30 border-b border-t": isSelected,
       })}
     >
       <TableCell
@@ -188,7 +188,7 @@
           {#await getCategoryName(annotation.value.category, annotation)}
             <Spinner size="sm"></Spinner>
           {:then title}
-            <Text size="sm" weight={isSelected ? "semibold" : "normal"}>{humanize(title)}</Text>
+            <Text size="sm" weight={isSelected ? "semibold" : "normal"} class="text-foreground">{humanize(title)}</Text>
           {/await}
 
           <Button
@@ -226,15 +226,15 @@
   {/each}
 {/snippet}
 
-{#snippet tooltipFrame(thisFrame: number, bgColor: string = "bg-black", extraClass: string = "")}
+{#snippet tooltipFrame(thisFrame: number, bgColor: string = "bg-background", extraClass: string = "")}
   <span
     class={cn(
-      `${bgColor} pointer-events-none absolute top-0 left-1/2 z-50 -translate-x-1/2 transform rounded-md px-2 py-1 text-xs font-medium whitespace-nowrap text-white transition-all duration-150`,
+      `${bgColor} text-foreground pointer-events-none absolute left-1/2 top-0 z-50 -translate-x-1/2 transform whitespace-nowrap rounded-md px-2 py-1 text-xs font-medium transition-all duration-150`,
       extraClass,
     )}
   >
     {thisFrame}
-    <span class={`absolute top-full left-1/2 -mt-1 h-1.5 w-1.5 -translate-x-1/2 rotate-45 ${bgColor}`}></span>
+    <span class={`absolute left-1/2 top-full -mt-1 h-1.5 w-1.5 -translate-x-1/2 rotate-45 ${bgColor}`}></span>
   </span>
 {/snippet}
 
@@ -339,7 +339,7 @@
             {:else if isDefault}
               <button
                 class={cn("border-border absolute top-0 h-full cursor-pointer border-l", {
-                  "bg-primary/20 text-primary z-100": isHovered,
+                  "bg-primary/30 text-primary z-100": isHovered,
                   "text-muted-foreground/50 z-0": !isHovered,
                 })}
                 style:width="{width}%"
@@ -349,7 +349,7 @@
                 onmouseleave={() => (hoveredColumn = undefined)}
               >
                 {#if isHovered}
-                  {@render tooltipFrame(thisFrame, "bg-black")}
+                  {@render tooltipFrame(thisFrame, "bg-background")}
                 {:else}
                   {thisFrame}
                 {/if}
@@ -369,7 +369,7 @@
                 onmouseleave={() => (hoveredColumn = undefined)}
               >
                 {#if isHovered}
-                  {@render tooltipFrame(thisFrame, "bg-black", "-top-3")}
+                  {@render tooltipFrame(thisFrame, "bg-background", "-top-3")}
                 {/if}
               </button>
             {/if}

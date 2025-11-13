@@ -11,11 +11,11 @@
   import type { CategoryDefinition } from "@/context/ActivityContext";
   import type { AnnotationValue } from "@/context/AnnotationContext";
 
+  import { EntryRoot } from "../../type";
   import CategoryProperties from "../../video-annotation-activity/categoryProperties/categoryProperties.svelte";
   import { entryRoot, idb_updated_at } from "../../video-annotation-activity/idb_store.svelte";
   import type { AnnotationsIndexedDB } from "../../video-annotation-activity/indexedDB";
   import type { VideoAnnotation } from "../../video-annotation-activity/VideoAnnotationContext";
-  import { EntryRoot } from "../../type";
 
   // Props
   let {
@@ -179,7 +179,7 @@
 
 {#snippet showCategoryTitle(category: CategoryDefinition, haveChildren: boolean = false, open: boolean = false)}
   <div
-    class={cn("flex items-center gap-2 text-gray-700", {
+    class={cn("text-muted-foreground flex items-center gap-2", {
       // "p-2": !haveChildren && !toolMode,
     })}
   >
@@ -251,7 +251,7 @@
       {#await haveAnnotationsInCategory(category.id) then hasAnnotations}
         <CollapsibleTrigger
           class={cn("flex w-full items-center justify-between", {
-            "bg-primary-foreground rounded-sm border-1 border-blue-300": selected == category.id,
+            "bg-primary-foreground border-1 rounded-sm border-blue-300": selected == category.id,
             "hover:bg-primary-foreground hover:cursor-pointer hover:rounded-sm": !category.requiredNested,
             "hover:bg-accent hover:cursor-pointer hover:rounded-sm": category.requiredNested && !toolMode,
           })}
@@ -331,7 +331,7 @@
 <div class="flex-col">
   <Collapsible open={true}>
     <CollapsibleTrigger>
-      <Text class="text-gray-500" weight="semibold">{type}</Text>
+      <Text class="text-foreground" weight="semibold">{type}</Text>
     </CollapsibleTrigger>
     <CollapsibleContent>
       {#if selected_category && (toolMode || type == EntryRoot)}
@@ -346,7 +346,7 @@
         {/key}
       {:else}
         <div class="flex gap-2 py-2">
-          <Text class="text-gray-500" weight="semibold">Categories</Text>
+          <Text class="text-foreground" weight="semibold">Categories</Text>
 
           {#key $idb_updated_at}
             <Badge class={cn({ "bg-gray-300": !!selected_category })} variant="secondary">
