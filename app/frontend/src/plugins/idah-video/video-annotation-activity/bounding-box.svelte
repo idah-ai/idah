@@ -174,9 +174,12 @@
 
 {#snippet BoundingBoxHandle(bb: BoundingBox)}
   {#each boundingBoxHandle(bb) as point, handle (handle)}
+    <!-- 
+      NOTE: Do not add role="button" and tabindex="" to <circle>
+      as it will raise an unexpected ellipse shape during moving annotation bounding box.
+    -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
     <circle
-      role="button"
-      tabindex="0"
       onmousedown={(e) => {
         e.stopPropagation();
         remove_resizeable_points(bb, handle);
@@ -198,9 +201,12 @@
 
 {#snippet bb(path?: string)}
   {#if path}
+    <!-- 
+      NOTE: Do not add role="button" and tabindex="" to <path>
+      as it will raise an unexpected ellipse shape during moving annotation bounding box.
+    -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
     <path
-      role="button"
-      tabindex="0"
       d={path}
       style:transform-origin="top left"
       style:transform={`translate(${offset[X]}px, ${offset[Y]}px) scale(${ratio[X]}, ${ratio[Y]})`}

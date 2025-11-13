@@ -1,8 +1,8 @@
 <script lang="ts">
   import TimelineCell from "./timeline-cell.svelte";
 
+  import { ENTRY_ROOT } from "../../type";
   import type { VideoAnnotation } from "../VideoAnnotationContext";
-  import { EntryRoot } from "../../type";
 
   let {
     annotation,
@@ -53,7 +53,7 @@
         {scale}
         {zoom}
         {totalFrames}
-        inSpan={annotation.shape.type == EntryRoot ||
+        inSpan={annotation.shape.type == ENTRY_ROOT ||
           (Math.floor((annotation.shape.start - range[0]) / scale) <= i &&
             Math.floor((annotation.shape.end - range[0]) / scale) >= i)}
         {onSeekFrame}
