@@ -28,8 +28,8 @@
   // Contexts
   const context: IActivityContext = getContext("context");
   const typeConfig = context.config[type];
-  const category = typeConfig.values.find((c) => c.id == selectedCategory);
-  const properties = typeConfig.properties.filter((p) => visibilityFullfilled(annotationValue, p));
+  const category = typeConfig?.values.find((c) => c.id == selectedCategory);
+  const properties = typeConfig?.properties.filter((p) => visibilityFullfilled(annotationValue, p));
 
   const propertyComponents: {
     type: string;
@@ -78,7 +78,7 @@
 
     <hr class="my-3 border-t border-gray-200" />
 
-    {#if properties.length > 0}
+    {#if properties?.length > 0}
       <div class="flex pb-1">
         <Text class="text-muted-foreground" weight="medium" size="sm">Properties</Text>
       </div>

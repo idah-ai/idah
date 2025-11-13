@@ -7,15 +7,14 @@
   import SelectTrigger from "@/components/ui/select/select-trigger.svelte";
 
   import { formatConformity, propertyFullfilled } from "..";
-
-  import type { PropertyField } from "@/plugin/interface/Activity";
+  import type { IConfigProperty } from "@/plugin/interface/Activity";
 
   let {
     property,
     value,
     onValueChange,
   }: {
-    property: PropertyField;
+    property: IConfigProperty;
     value: string;
     onValueChange: (v: string) => void;
   } = $props();
@@ -32,7 +31,7 @@
 
   <Select type="single" {value} {onValueChange}>
     <SelectTrigger class="data-[placeholder]:text-secondary-foreground bg-secondary w-full" aria-invalid={invalid}>
-      {value || "Select property"}
+      {options.find(({ id }) => id == value)?.label || "Select property"}
     </SelectTrigger>
     <SelectContent>
       <SelectGroup>

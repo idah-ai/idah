@@ -95,7 +95,7 @@ export interface IConfigPropertyFormat {
 export interface IConfigValue {
   id: string;
   label: string;
-  color: string;
+  color: string | null;
 }
 
 export interface IConfigProperty {
