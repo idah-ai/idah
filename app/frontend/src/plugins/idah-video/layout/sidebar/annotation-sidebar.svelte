@@ -120,8 +120,6 @@
               {selected_id}
               {onSelectAnnotation}
               {onDeleteAnnotation}
-              annotationValue={tool == ENTRY_ROOT && !(tool == mode) ? $entryRoot?.value || {} : annotationValue}
-              onEditValue={(v) => onEditValue(v, tool)}
               onSelect={(s) => categorySelection(tool, s)}
             />
           </SidebarGroupContent>
