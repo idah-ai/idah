@@ -356,7 +356,7 @@
                 onmouseleave={() => (hoveredColumn = undefined)}
               >
                 {#if isHovered}
-                  {@render tooltipFrame(thisFrame, "bg-foreground", "text-background")}
+                  {@render tooltipFrame(thisFrame, "bg-secondary", "text-secondary-foreground")}
                 {:else}
                   {thisFrame}
                 {/if}
@@ -376,7 +376,7 @@
                 onmouseleave={() => (hoveredColumn = undefined)}
               >
                 {#if isHovered}
-                  {@render tooltipFrame(thisFrame, "bg-foreground", "text-background", "-top-3")}
+                  {@render tooltipFrame(thisFrame, "bg-secondary", "text-secondary-foreground", "-top-3")}
                 {/if}
               </button>
             {/if}
