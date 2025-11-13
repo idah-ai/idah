@@ -150,6 +150,7 @@
         label: "Notes",
         type: IDAH_NOTE,
         iconName: "message-circle",
+        disabled: context.workflowStep !== "review", // Note: This should be checked with dataset.workflow_configuration.noteable_steps after Tojo implements it
         handleClick: () => context.commands.run("tools.note"),
       },
     ]);
