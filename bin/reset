@@ -5,7 +5,7 @@ SERVICES="dataset iam media setting"
 reset_service() {
   service=$1
   echo "Resetting $service service..."
-  docker-compose run --rm $service bundle exec rake db:reset
+  docker compose run --rm $service bundle exec rake db:reset
 }
 
 if [ -z "$1" ]; then
