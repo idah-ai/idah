@@ -85,9 +85,6 @@
   ]);
 
   let listOptions: ListOptions = $state({
-    fields: {
-      [EntryRecord.type]: ["priority", "wf_step", "status", "resource", "assigned_to_id", "created_at", "updated_at"],
-    },
     filters: {
       dataset_id: datasetId,
     },

@@ -44,9 +44,9 @@ export interface LabelConfigurationProperty {
 
 export interface LabelConfigurationValue {
   id: string;
-  color: string;
+  color: string | null;
   label: string;
-  text_color?: string;
+  text_color?: string | null;
 }
 
 export interface LabelingConfiguration {

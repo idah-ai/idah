@@ -38,6 +38,9 @@
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import type { Point, VideoFrameSelection, VideoShape } from "./video-annotation-activity/VideoAnnotationContext";
   import VideoController from "./video-annotation-activity/VideoController.svelte";
+  import PopoverTrigger from "@/components/ui/popover/popover-trigger.svelte";
+  import CategoryProperties from "./video-annotation-activity/categoryProperties/categoryProperties.svelte";
+  import PropertiesSidebar from "./layout/sidebar/properties-sidebar.svelte";
 
   // Props
   interface Props {
@@ -51,6 +54,7 @@
   // Lifecycles
   $effect(() => console.debug({ $idb_updated_at }));
   $effect(() => console.debug({ $boundingBoxes }));
+  $effect(() => console.debug({ $entryRoot }));
 
   // Variables
   let player: Video | undefined = $state();
@@ -288,12 +292,11 @@
         await annotationsIDB?.addAnnotations([a]);
         $idb_updated_at = new Date();
 
+        if (annotation.shape.type == ENTRY_ROOT) $entryRoot = annotation;
         let p = context.annotations.create(props.id, annotation.shape, annotation.value);
 
         p.then(async () => {
           let annotation = await annotationsIDB?.get("annotations", props.id);
-
-          if (annotation?.shape.type == ENTRY_ROOT) $entryRoot = annotation;
 
           if (annotation?.metadata.updatedAt.valueOf() == createdAt.valueOf()) {
             annotation.synced = true;
@@ -470,6 +473,8 @@
         };
         annotation.metadata.updatedAt = updatedAt;
         annotation.synced = false;
+        selectedAnnotation = annotation;
+
         await annotationsIDB?.addKeyFrame(annotation, selection);
         $idb_updated_at = new Date();
 
@@ -483,6 +488,7 @@
           if (annotation.metadata.updatedAt == updatedAt) {
             annotation.synced = true;
             await annotationsIDB?.addAnnotations([annotation]);
+            selectedAnnotation = annotation;
             $idb_updated_at = new Date();
           }
         });
@@ -513,7 +519,7 @@
             await annotationsIDB?.addAnnotations([annotation]);
             $idb_updated_at = new Date();
 
-            if ($entryRoot?.metadata.id == annotation.metadata.id) $entryRoot = { ...annotation, value: props.value };
+            if ($entryRoot?.metadata.id == annotation.metadata.id) $entryRoot = annotation;
 
             let p = context.annotations.update({
               id: annotation.metadata.id,
@@ -524,6 +530,7 @@
             p.then(async () => {
               if (annotation.metadata.updatedAt == updatedAt) {
                 annotation.synced = true;
+                selectedAnnotation = annotation;
                 if ($entryRoot?.metadata.id == annotation.metadata.id) $entryRoot = annotation;
                 await annotationsIDB?.addAnnotations([annotation]);
                 $idb_updated_at = new Date();
@@ -547,11 +554,12 @@
               annotation: value_from,
             });
 
-            if ($entryRoot?.metadata.id == annotation.metadata.id) $entryRoot = { ...annotation, value: props.value };
+            if ($entryRoot?.metadata.id == annotation.metadata.id) $entryRoot = annotation;
 
             p.then(async () => {
               if (annotation.metadata.updatedAt == updatedAt) {
                 annotation.synced = true;
+                selectedAnnotation = annotation;
                 if ($entryRoot?.metadata.id == annotation.metadata.id) $entryRoot = annotation;
                 await annotationsIDB?.addAnnotations([annotation]);
                 $idb_updated_at = new Date();
@@ -640,15 +648,19 @@
   let shapeSelectionArgs: [type: string, frame: number, _points: Point[], selectedId?: string] | undefined = $state();
 
   function onEditValue(value: AnnotationValue, valueMode: string) {
+    let requirementFullfilled = requiredFullfilled(value, context.config[valueMode]?.properties);
     annotationValue = value;
     mode = valueMode;
-    let requirementFullfilled = requiredFullfilled(annotationValue, context.config[valueMode]?.properties);
+    if (valueMode == ENTRY_ROOT && !selectedAnnotation && $entryRoot?.metadata.id) selectedAnnotation = $entryRoot;
     if (valueMode == ENTRY_ROOT && !selectedAnnotation) {
-      if ($entryRoot) selectAnnotation($entryRoot);
-      else if (requirementFullfilled) addAnnotation({ type: valueMode }, $state.snapshot(value));
-    } else if (selectedAnnotation && requirementFullfilled) {
-      selectedAnnotation.value = value;
-      updateAnnotationValue($state.snapshot(selectedAnnotation), $state.snapshot(value));
+      if (value.category && value.category != "" && requirementFullfilled)
+        addAnnotation({ type: valueMode }, $state.snapshot(value));
+    } else if (selectedAnnotation) {
+      selectedAnnotation = { ...selectedAnnotation, value: annotationValue };
+      if (requirementFullfilled) updateAnnotationValue($state.snapshot(selectedAnnotation), $state.snapshot(value));
+    } else if (shapeSelectionArgs && requirementFullfilled) {
+      showPopOver = false;
+      onShapeSelection(...shapeSelectionArgs);
     }
   }
 
@@ -748,7 +760,7 @@
   }
 </script>
 
-<div class="flex h-full w-full flex-col">
+<div class="relative flex h-full w-full flex-col">
   {#key [ShortcutManager, ShortcutManager.currentMode, ShortcutManager.getCurrentMode()]}
     <CommandDialog bind:open={commandOpen} accesskey={ShortcutManager.getCurrentMode()}>
       <CommandInput placeholder="Type a command or search..." />
@@ -773,19 +785,34 @@
       showPopOver = open;
     }}
   >
+    <PopoverTrigger></PopoverTrigger>
+
     <PopoverContent class="w-max">
-      <AnnotationSidebar
-        sidebarWidthRem={annotationSidebarWidthRem}
-        db={annotationsIDB}
-        {annotationValue}
-        {currentFrame}
-        {onEditValue}
-        onSelectAnnotation={selectAnnotation}
-        {onDeleteAnnotation}
-        {context}
-        {mode}
-        selected_id={selectedAnnotation?.metadata.id}
-      />
+      {#if annotationValue.category}
+        <CategoryProperties
+          type={mode}
+          selectedCategory={annotationValue.category}
+          {annotationValue}
+          onSelectCategory={(s) => {
+            if (s != mode) selectAnnotation();
+            onEditValue({ category: annotationValue.category }, mode);
+          }}
+          onEditValue={(value) => value && onEditValue(value, mode)}
+        />
+      {:else}
+        <AnnotationSidebar
+          sidebarWidthRem={annotationSidebarWidthRem}
+          db={annotationsIDB}
+          {annotationValue}
+          {currentFrame}
+          {onEditValue}
+          onSelectAnnotation={selectAnnotation}
+          {onDeleteAnnotation}
+          {context}
+          {mode}
+          selected_id={selectedAnnotation?.metadata.id}
+        />
+      {/if}
       <Button
         onclick={() => {
           showPopOver = false;
@@ -857,6 +884,7 @@
             />
           </SvgOverlay>
         </SidebarInset>
+        <PropertiesSidebar {annotationValue} {onEditValue} {context} {mode} />
       </ResizablePane>
 
       <ResizableHandle withHandle></ResizableHandle>

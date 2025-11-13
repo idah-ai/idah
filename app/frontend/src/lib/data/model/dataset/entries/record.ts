@@ -5,7 +5,9 @@ import {
   entryPriorities,
   entryStatuses,
   type EntryPriorityBadgeProps,
+  type EntryStatus,
   type EntryStatusBadgeProps,
+  type EntryWorkflowStep,
 } from "@/data/model/dataset/entries/constants";
 import { parseSingleElementError, parseSingleElementReturn } from "@/data/model/json_api";
 
@@ -19,10 +21,10 @@ export class EntryRecord extends Record {
 
   @field() public priority!: number;
 
-  @field() public wf_step!: "start" | "annotate" | "review" | "done" | "export";
-  @field() public status!: "processing" | "ready" | "assigned" | "in_progress" | "pending" | "completed" | "errored";
+  @field() public wf_step!: EntryWorkflowStep;
+  @field() public status!: EntryStatus;
 
-  @field() public job_id!: string;
+  @field() public job_id!: string | null;
 
   @field() public resource!: string;
 
