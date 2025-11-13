@@ -109,6 +109,12 @@
     }
   }
 
+  function duplicateConfig(sourceLabelConfigKey: string, targetLabelConfigKey: string) {
+    if (!labelConfig) return;
+
+    labelConfig[targetLabelConfigKey] = JSON.parse(JSON.stringify(labelConfig[sourceLabelConfigKey]));
+  }
+
   function removeLabelConfig(key: string) {
     if (!labelConfig) return;
     labelConfig = Object.fromEntries(
@@ -289,6 +295,7 @@
     {shapes}
     {labelConfig}
     onAddLabelConfig={addLabelConfig}
+    onDuplicateConfig={duplicateConfig}
     onRemoveLabelConfig={removeLabelConfig}
     onAddCategory={addCategory}
     onEditCategoryId={editCategoryId}

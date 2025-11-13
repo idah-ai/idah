@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { BoltIcon, PlusIcon, Trash2Icon, WorkflowIcon } from "@lucide/svelte";
+  import { BoltIcon, CopyIcon, EllipsisVerticalIcon, PlusIcon, Trash2Icon, WorkflowIcon } from "@lucide/svelte";
 
   import ResponseBlock from "@/components/app/blocks/response-block.svelte";
   import PropertyCard from "@/components/app/datasets/labels/cards/property-card.svelte";
@@ -8,6 +8,7 @@
   import { Button } from "@/components/ui/button";
   import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
+  import { cn } from "@/utils";
   import { humanize } from "@/utils/string";
 
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
@@ -21,6 +22,7 @@
     shapes: ModalityShapes;
     labelConfig: IConfig;
     onAddLabelConfig: (labelConfigKey: string) => void;
+    onDuplicateConfig: (sourceLabelConfigKey: string, targetLabelConfigKey: string) => void;
     onRemoveLabelConfig: (labelConfigKey: string) => void;
     onAddCategory: (labelConfigKey: string, nodeId?: string) => void;
     onEditCategoryId: (labelConfigKey: string, oldId: string, newId: string) => void;
@@ -34,6 +36,7 @@
     labelConfig,
     shapes,
     onAddLabelConfig,
+    onDuplicateConfig,
     onRemoveLabelConfig,
     onAddCategory,
     onEditCategoryId,
@@ -78,6 +81,52 @@
       ],
     },
   });
+
+  function getLabelConfigActionMenus(labelConfigKey: string): IDropdownMenus {
+    return {
+      actions: {
+        items: [
+          {
+            label: "Duplicate configuration to",
+            icon: CopyIcon,
+            items: {
+              shapes: {
+                label: "Shapes",
+                items: Object.entries(shapes).map(([shapeKey, shape]) => {
+                  return {
+                    label: shape.label,
+                    disabled: labelConfigKey === `${modality}:${shapeKey}`,
+                    action: () => {
+                      onDuplicateConfig(labelConfigKey, `${modality}:${shapeKey}`);
+                    },
+                  };
+                }),
+              },
+              entry: {
+                label: "Entry",
+                items: [
+                  {
+                    label: "Entry Root",
+                    disabled: labelConfigKey === "entry:root",
+                    action: () => {
+                      onDuplicateConfig(labelConfigKey, "entry:root");
+                    },
+                  },
+                ],
+              },
+            },
+          },
+          {
+            label: "Remove configuration",
+            icon: Trash2Icon,
+            action: () => {
+              removeLabelConfig(labelConfigKey);
+            },
+          },
+        ],
+      },
+    };
+  }
 
   // Functions
   function getSelectLabelConfigLabel(selectedLabelConfigKey: string): string {
@@ -178,17 +227,20 @@
           >
             {currentShape ? currentShape.label : humanize(labelConfigKeyDisplay)}
 
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              class="ml-auto opacity-0 transition-opacity duration-200 group-hover:opacity-100"
-              onclick={(e) => {
-                e.stopPropagation();
-                removeLabelConfig(labelConfigKey);
-              }}
-            >
-              <Trash2Icon />
-            </Button>
+            <DropdownMenus menus={getLabelConfigActionMenus(labelConfigKey)} align="end">
+              {#snippet trigger({ props })}
+                <Button
+                  {...props}
+                  variant="ghost"
+                  size="icon-sm"
+                  class={cn("ml-auto opacity-0 transition-opacity duration-200 group-hover:opacity-100 ", {
+                    "opacity-100": props["data-state"] === "open",
+                  })}
+                >
+                  <EllipsisVerticalIcon />
+                </Button>
+              {/snippet}
+            </DropdownMenus>
           </Button>
         {:else}
           <ResponseBlock
