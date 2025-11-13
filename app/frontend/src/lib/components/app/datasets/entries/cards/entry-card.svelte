@@ -103,8 +103,8 @@
 
           // If progress = 100%, update entry status to 'ready'
           if (jobRes.data.progress === 1) {
-            await loadThumbnail();
             entry.status = "ready";
+            await loadThumbnail();
           }
 
           // If the entry is no longer processing, stop the interval
