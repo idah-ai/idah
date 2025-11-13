@@ -10,12 +10,13 @@
 
   import type { CategoryDefinition } from "@/context/ActivityContext";
   import type { AnnotationValue } from "@/context/AnnotationContext";
+  import type { IConfigValue } from "@/plugin/interface/Activity";
 
+  import { ENTRY_ROOT } from "../../type";
   import CategoryProperties from "../../video-annotation-activity/categoryProperties/categoryProperties.svelte";
   import { entryRoot, idb_updated_at } from "../../video-annotation-activity/idb_store.svelte";
   import type { AnnotationsIndexedDB } from "../../video-annotation-activity/indexedDB";
   import type { VideoAnnotation } from "../../video-annotation-activity/VideoAnnotationContext";
-  import { EntryRoot } from "../../type";
 
   // Props
   let {
@@ -251,7 +252,7 @@
       {#await haveAnnotationsInCategory(category.id) then hasAnnotations}
         <CollapsibleTrigger
           class={cn("flex w-full items-center justify-between", {
-            "bg-primary-foreground rounded-sm border-1 border-blue-300": selected == category.id,
+            "bg-primary-foreground border-1 rounded-sm border-blue-300": selected == category.id,
             "hover:bg-primary-foreground hover:cursor-pointer hover:rounded-sm": !category.requiredNested,
             "hover:bg-accent hover:cursor-pointer hover:rounded-sm": category.requiredNested && !toolMode,
           })}
@@ -334,7 +335,7 @@
       <Text class="text-gray-500" weight="semibold">{type}</Text>
     </CollapsibleTrigger>
     <CollapsibleContent>
-      {#if selected_category && (toolMode || type == EntryRoot)}
+      {#if selected_category && (toolMode || type == ENTRY_ROOT)}
         {#key [toolMode, selected_category, $entryRoot]}
           <CategoryProperties
             {type}
