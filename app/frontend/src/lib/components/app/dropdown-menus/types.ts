@@ -6,6 +6,12 @@ export interface IDropdownMenuItem {
   disabled?: boolean;
   hidden?: boolean;
   action?: () => Promise<void> | void;
+  items?: {
+    [group: string]: {
+      label?: string;
+      items: IDropdownMenuItem[];
+    };
+  };
 }
 
 export interface IDropdownMenus {
