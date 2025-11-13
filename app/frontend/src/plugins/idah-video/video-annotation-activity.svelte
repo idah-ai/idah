@@ -25,19 +25,19 @@
   import AnnotationFooter from "./layout/footer/AnnotationFooter.svelte";
   import AnnotationFooterToolbar from "./layout/footer/AnnotationFooterToolbar.svelte";
   import AnnotationSidebar from "./layout/sidebar/annotation-sidebar.svelte";
+  import { DEFAULT_MODE, ENTRY_ROOT, IDAH_NOTE, IDAH_VIDEO_BOUNDING_BOX } from "./type";
   import { requiredFullfilled } from "./video-annotation-activity/categoryProperties";
   import { boundingBoxes, entryRoot, idb_updated_at } from "./video-annotation-activity/idb_store.svelte";
   import { annotationsIndexedDB, AnnotationsIndexedDB } from "./video-annotation-activity/indexedDB";
   import SvgOverlay, { type OnAddNewNoteParams } from "./video-annotation-activity/svg-overlay.svelte";
   import TimelineTable from "./video-annotation-activity/timeline-table/timeline-table.svelte";
   import Video from "./video-annotation-activity/video.svelte";
-  import { DefaultMode, EntryRoot, IdahVideoBoundingBox } from "./type";
 
+  import { SidebarProvider } from "@/components/ui/sidebar";
   import type { AnnotationShape, AnnotationValue } from "@/context/AnnotationContext";
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import type { Point, VideoFrameSelection, VideoShape } from "./video-annotation-activity/VideoAnnotationContext";
   import VideoController from "./video-annotation-activity/VideoController.svelte";
-  import { SidebarProvider } from "@/components/ui/sidebar";
 
   // Props
   interface Props {
@@ -136,19 +136,19 @@
     context.tools.setTools([
       {
         label: "Visual",
-        type: "visual",
+        type: DEFAULT_MODE,
         iconName: "mouse-pointer-2",
         handleClick: () => context.commands.run("tools.visual"),
       },
       {
         label: "Bounding Box",
-        type: "video:bounding_box",
+        type: IDAH_VIDEO_BOUNDING_BOX,
         iconName: "vector-square",
         handleClick: () => context.commands.run("tools.bounding_box"),
       },
       {
         label: "Notes",
-        type: "note",
+        type: IDAH_NOTE,
         iconName: "message-circle",
         handleClick: () => context.commands.run("tools.note"),
       },
@@ -160,7 +160,7 @@
       annotationsIDB = idb;
       fetchAnnotations(idb).then(() => {
         // quick fix if unsynced data, though we dont have way to send it anyway for now if so
-        idb?.getAllIndex("type", EntryRoot).then((anns) => ($entryRoot = anns[0]));
+        idb?.getAllIndex("type", ENTRY_ROOT).then((anns) => ($entryRoot = anns[0]));
       });
     }, console.error);
 
@@ -184,7 +184,7 @@
               },
               synced: true,
             };
-            if (annotation.shape.type == EntryRoot) $entryRoot = annotation;
+            if (annotation.shape.type == ENTRY_ROOT) $entryRoot = annotation;
             return annotation;
           });
 
@@ -225,7 +225,7 @@
         $idb_updated_at = new Date();
 
         // quick fix for now as we mode id still here
-        if (annotation.shape.type == EntryRoot) $entryRoot = annotation;
+        if (annotation.shape.type == ENTRY_ROOT) $entryRoot = annotation;
 
         let p = context.annotations.create(id, annotation.shape, annotation.value);
 
@@ -293,11 +293,11 @@
         p.then(async () => {
           let annotation = await annotationsIDB?.get("annotations", props.id);
 
-          if (annotation?.shape.type == EntryRoot) $entryRoot = annotation;
+          if (annotation?.shape.type == ENTRY_ROOT) $entryRoot = annotation;
 
           if (annotation?.metadata.updatedAt.valueOf() == createdAt.valueOf()) {
             annotation.synced = true;
-            if (annotation?.shape.type == EntryRoot) $entryRoot = annotation;
+            if (annotation?.shape.type == ENTRY_ROOT) $entryRoot = annotation;
 
             await annotationsIDB?.addAnnotations([annotation]);
             $idb_updated_at = new Date();
@@ -569,7 +569,7 @@
     return {
       name: "visual tool",
       apply: () => {
-        mode = DefaultMode;
+        mode = DEFAULT_MODE;
         selectedAnnotation = undefined;
         annotationValue = {};
       },
@@ -582,7 +582,7 @@
     return {
       name: "bounding box tool",
       apply: () => {
-        mode = IdahVideoBoundingBox;
+        mode = IDAH_VIDEO_BOUNDING_BOX;
         selectedAnnotation = undefined;
         annotationValue = {};
       },
@@ -595,7 +595,7 @@
     return {
       name: "note tool",
       apply: () => {
-        mode = "note";
+        mode = IDAH_NOTE;
         selectedAnnotation = undefined;
         annotationValue = {};
       },
@@ -643,7 +643,7 @@
     annotationValue = value;
     mode = valueMode;
     let requirementFullfilled = requiredFullfilled(annotationValue, context.config[valueMode]?.properties);
-    if (valueMode == EntryRoot && !selectedAnnotation) {
+    if (valueMode == ENTRY_ROOT && !selectedAnnotation) {
       if ($entryRoot) selectAnnotation($entryRoot);
       else if (requirementFullfilled) addAnnotation({ type: valueMode }, $state.snapshot(value));
     } else if (selectedAnnotation && requirementFullfilled) {
@@ -660,9 +660,9 @@
       // todo proper validation
       let shape: AnnotationShape = { type };
       switch (type) {
-        case DefaultMode:
+        case DEFAULT_MODE:
           break;
-        case IdahVideoBoundingBox:
+        case IDAH_VIDEO_BOUNDING_BOX:
           shape = { ...shape, start: frame, end: frame, frames: [{ frame, points }] };
           break;
         default:
@@ -701,7 +701,7 @@
     } else if (mode === "note") {
       mode = "note";
     } else {
-      mode = DefaultMode;
+      mode = DEFAULT_MODE;
     }
   }
 
@@ -799,14 +799,14 @@
         onclick={() => {
           showPopOver = false;
           switch (mode) {
-            case EntryRoot:
-              onShapeSelection(EntryRoot, currentFrame);
+            case ENTRY_ROOT:
+              onShapeSelection(ENTRY_ROOT, currentFrame);
               break;
             default:
               if (shapeSelectionArgs) onShapeSelection(...shapeSelectionArgs);
           }
         }}
-        disabled={shapeSelectionArgs == undefined && EntryRoot != mode}>Confirm</Button
+        disabled={shapeSelectionArgs == undefined && ENTRY_ROOT != mode}>Confirm</Button
       >
     </PopoverContent>
   </Popover>
