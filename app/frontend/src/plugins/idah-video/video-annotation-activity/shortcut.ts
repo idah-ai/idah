@@ -1,8 +1,8 @@
 import CommandManager from "@/command/CommandManager";
 import { KeyMapBuilder } from "@/shortcut/KeyMapBuilder";
 import { ShortcutManager } from "@/shortcut/ShortcutManager";
+import { DEFAULT_MODE, IDAH_VIDEO_BOUNDING_BOX } from "../type";
 import type Video from "./video.svelte";
-import { DefaultMode, IdahVideoBoundingBox } from "../type";
 
 const CommonInjecter = (context: KeyMapContext) => {
   const flushAction = () => {
@@ -98,7 +98,7 @@ const createVisualModeKeyMap = (context: KeyMapContext) => {
     b.on(null, "ArrowLeft", previousFrame, "Previous", "go to the previous frame");
     b.on([b.Ctrl, b.Alt], "ArrowRight", endFrame, "End", "go to the starting frame");
     b.on([b.Ctrl, b.Alt], "ArrowLeft", startFrame, "Start", "go to the ending frame");
-    // b.on(null, "B", enterMode(IdahVideoBoundingBox), "Bounding box", "Enter Bouding box mode");
+    // b.on(null, "B", enterMode(IDAH_VIDEO_BOUNDING_BOX), "Bounding box", "Enter Bouding box mode");
     // b.on(null, "+", () => context.zoom.in(), "Zoom in", "Zoom In");
     // b.on(null, "-", () => context.zoom.out(), "Zoom Out", "Zoom Out");
   });
@@ -110,14 +110,14 @@ export function registerVisualModeShortcuts(context: KeyMapContext) {
   const visualModeKeyMap = createVisualModeKeyMap(context);
   const boundingBoxModeKeyMap = createBoundingBoxModeKeyMap(context);
 
-  ShortcutManager.registerKeyMap(DefaultMode, visualModeKeyMap);
-  ShortcutManager.registerKeyMap(IdahVideoBoundingBox, boundingBoxModeKeyMap);
+  ShortcutManager.registerKeyMap(DEFAULT_MODE, visualModeKeyMap);
+  ShortcutManager.registerKeyMap(IDAH_VIDEO_BOUNDING_BOX, boundingBoxModeKeyMap);
 
   // Set visual as the default mode if needed
-  ShortcutManager.defaultMode = DefaultMode;
+  ShortcutManager.defaultMode = DEFAULT_MODE;
 
   // Enter visual mode
-  ShortcutManager.enterMode(DefaultMode);
+  ShortcutManager.enterMode(DEFAULT_MODE);
 
   console.log("Visual mode shortcuts registered");
 

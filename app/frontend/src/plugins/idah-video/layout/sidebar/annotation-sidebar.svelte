@@ -16,9 +16,9 @@
 
   import type { AnnotationsIndexedDB } from "../../video-annotation-activity/indexedDB";
 
-  import type { VideoAnnotation } from "../../video-annotation-activity/VideoAnnotationContext";
-  import { EntryRoot } from "../../type";
+  import { ENTRY_ROOT } from "../../type";
   import { entryRoot } from "../../video-annotation-activity/idb_store.svelte";
+  import type { VideoAnnotation } from "../../video-annotation-activity/VideoAnnotationContext";
 
   // Props
   let {
@@ -106,7 +106,7 @@
 
   <SidebarContent>
     {#each filteredTools as [tool, categories] (tool)}
-      {#if !filteredTools.has(mode) || (filteredTools.has(mode) && tool == mode) || mode == EntryRoot}
+      {#if !filteredTools.has(mode) || (filteredTools.has(mode) && tool == mode) || mode == ENTRY_ROOT}
         <SidebarGroup>
           <SidebarGroupContent>
             <CategoriesSelection
@@ -115,13 +115,13 @@
               type={tool}
               {currentFrame}
               {categories}
-              selected_category={tool == EntryRoot && !(tool == mode)
+              selected_category={tool == ENTRY_ROOT && !(tool == mode)
                 ? $entryRoot?.value.category
                 : annotationValue.category}
               {selected_id}
               {onSelectAnnotation}
               {onDeleteAnnotation}
-              annotationValue={tool == EntryRoot && !(tool == mode) ? $entryRoot?.value || {} : annotationValue}
+              annotationValue={tool == ENTRY_ROOT && !(tool == mode) ? $entryRoot?.value || {} : annotationValue}
               onEditValue={(v) => onEditValue(v, tool)}
               onSelect={(s) => categorySelection(tool, s)}
             />
