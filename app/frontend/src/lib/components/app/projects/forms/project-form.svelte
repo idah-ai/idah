@@ -4,7 +4,7 @@
   import SingleSelectDatasourceField from "@/components/app/forms/fields/select/single/single-select-datasource-field.svelte";
   import { FieldGroup, FieldSet } from "@/components/ui/field";
 
-  import { OrganizationRecord, organizationsBackendDataSource } from "@/data/model/iam/organizations/record";
+  import { organizationsBackendDataSource } from "@/data/model/iam/organizations/record";
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
 
   import type { FormBaseProps } from "@/components/app/forms/form.types";
@@ -50,7 +50,7 @@
       required
       errors={fieldErrors["organization_id"]}
       value={organization_id}
-      onValueChange={(value: string | number) => {
+      onSelected={(value: string | number) => {
         organization_id = value as number;
       }}
       searchKeyWithOperation="name__match"
