@@ -70,18 +70,18 @@
   let itemsPerPage: number = $state(10);
   let selectedRows: string[] = $state([]);
   let selectedRowsCount: number = $derived(selectedRows.length);
-  let openNewTaskModal: boolean = $state(false);
+  let openNewEntryModal: boolean = $state(false);
   let openAssignEntryFormModal: boolean = $state(false);
   let openSetPriorityModal: boolean = $state(false);
-  let openConfirmDeleteTasksModal: boolean = $state(false);
+  let openConfirmDeleteEntriesModal: boolean = $state(false);
 
   pageBreadcrumbsStore.set([
     homeBreadcrumb,
     projectBreadcrumb,
-    { label: project.name },
-    { label: "Datasets" },
-    { label: dataset.name, href: resolve(`/projects/${projectId}/datasets`) },
-    { label: "Tasks" },
+    { label: project.name, href: resolve(`/projects/${projectId}/datasets`) },
+    { label: "Datasets", href: resolve(`/projects/${projectId}/datasets`) },
+    { label: dataset.name, href: resolve(`/projects/${projectId}/datasets/${datasetId}/entries`) },
+    { label: "Entries" },
   ]);
 
   let listOptions: ListOptions = $state({
@@ -107,13 +107,13 @@
       openSetPriorityModal = true;
     },
     onDelete: () => {
-      openConfirmDeleteTasksModal = true;
+      openConfirmDeleteEntriesModal = true;
     },
   });
 
   // Functions
-  function openNewTaskFormModal(): void {
-    openNewTaskModal = true;
+  function openNewEntryFormModal(): void {
+    openNewEntryModal = true;
   }
 
   async function fetchEntries(): Promise<void> {
@@ -218,16 +218,16 @@
     }
   }
 
-  async function deleteTasks(): Promise<void> {
+  async function deleteEntries(): Promise<void> {
     for (const entryId of selectedRows) {
       await entriesBackendDataSource.delete(entryId);
     }
 
-    toast.success(`${selectedRowsCount} Task(s) successfully deleted.`);
+    toast.success(`${selectedRowsCount} Entry(s) successfully deleted.`);
 
     selectedRows = [];
     $refetches.entries.list = new Date();
-    openConfirmDeleteTasksModal = false;
+    openConfirmDeleteEntriesModal = false;
   }
 
   function toggleSelectAll(checked: boolean): void {
@@ -239,10 +239,10 @@
   }
 </script>
 
-{#snippet AddTaskButton()}
-  <Button onclick={openNewTaskFormModal}>
+{#snippet AddEntryButton()}
+  <Button onclick={openNewEntryFormModal}>
     <PlusIcon class="size-4"></PlusIcon>
-    Add Task
+    Add Entry
   </Button>
 {/snippet}
 
@@ -324,7 +324,7 @@
             </DropdownMenu>
           {/if}
 
-          {@render AddTaskButton()}
+          {@render AddEntryButton()}
         </div>
       </div>
     </div>
@@ -344,12 +344,12 @@
           <CardContent class="min-h-64 flex items-center justify-center">
             <ResponseBlock
               icon={LayoutListIcon}
-              title={isFiltering ? "No tasks found" : "No tasks yet"}
-              description={isFiltering ? "Try adjusting your filters." : "Please add task to get started."}
+              title={isFiltering ? "No entries found" : "No entries yet"}
+              description={isFiltering ? "Try adjusting your filters." : "Please add entries to get started."}
             >
               {#snippet actions()}
                 {#if !isFiltering}
-                  {@render AddTaskButton()}
+                  {@render AddEntryButton()}
                 {/if}
               {/snippet}
             </ResponseBlock>
@@ -370,20 +370,18 @@
 {/key}
 
 <!-- MODAL::ADD TASK -->
-<CreateEntryFormModal action="create" title="Task" bind:open={openNewTaskModal}></CreateEntryFormModal>
+<CreateEntryFormModal action="create" title="Entry" bind:open={openNewEntryModal} />
 
 <!-- MODAL::ASSIGN ANNOTATOR  -->
-<AssignEntryFormModal action="update" entryIds={selectedRows} bind:open={openAssignEntryFormModal}
-></AssignEntryFormModal>
+<AssignEntryFormModal action="update" entryIds={selectedRows} bind:open={openAssignEntryFormModal} />
 
 <!-- MODAL::SET PRIORITY -->
-<UpdateEntryPriorityFormModal action="update" entryIds={selectedRows} bind:open={openSetPriorityModal}
-></UpdateEntryPriorityFormModal>
+<UpdateEntryPriorityFormModal action="update" entryIds={selectedRows} bind:open={openSetPriorityModal} />
 
 <!-- MODAL::CONFIRM DELETE -->
 <ConfirmModal
-  title="Delete {selectedRowsCount} task(s)"
-  description="Are you sure you want to delete {selectedRowsCount} task(s)? This action cannot be undone."
-  onConfirm={deleteTasks}
-  bind:open={openConfirmDeleteTasksModal}
-></ConfirmModal>
+  title="Delete {selectedRowsCount} entries(s)"
+  description="Are you sure you want to delete {selectedRowsCount} entries(s)? This action cannot be undone."
+  onConfirm={deleteEntries}
+  bind:open={openConfirmDeleteEntriesModal}
+/>

@@ -53,7 +53,10 @@
           required
           searchable
           searchPlaceholder="Search a role"
-          bind:value={member.role}
+          value={member.role}
+          onSelected={(selectedValue) => {
+            member.role = selectedValue as string;
+          }}
         />
 
         <!-- REMOVE MEMBER BUTTON -->

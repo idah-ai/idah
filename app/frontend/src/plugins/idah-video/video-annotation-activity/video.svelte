@@ -116,6 +116,7 @@
         raf = undefined;
       }
       mediaTime = player?.currentTime() || 0;
+      nextFrame(); // smoothest quick fix currentFrame on play/pause I can think of for now
     });
 
     player.on("volumechange", () => {

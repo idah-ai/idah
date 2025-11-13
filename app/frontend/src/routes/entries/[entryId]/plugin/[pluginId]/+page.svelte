@@ -22,6 +22,7 @@
         fields: {
           [EntryRecord.type]: ["wf_step"],
         },
+        noCache: true,
       });
 
       /**
@@ -35,6 +36,7 @@
       /** Get the lastest entry record with dataset */
       const latestEntryRes = await entriesBackendDataSource.get(entryId, {
         included: ["dataset", "dataset.project"],
+        noCache: true,
       });
 
       if (!latestEntryRes) ko(`could not retrieve entry ${entryId}`);

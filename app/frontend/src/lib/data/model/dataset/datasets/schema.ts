@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { datasetsModalities } from "./constants";
 
 export const datasetSchema = z.object({
   name: z.string("Dataset name is required."),
@@ -7,12 +6,7 @@ export const datasetSchema = z.object({
   // labels
 
   // modality: z.string("Dataset modality is required."),
-  modality: z.enum(
-    datasetsModalities.map((m) => m.value),
-    {
-      message: "Please select a modality.",
-    },
-  ),
+  modality: z.string("Dataset modality is required."),
 
   // labeling_configuration
   // workflow_configuration
