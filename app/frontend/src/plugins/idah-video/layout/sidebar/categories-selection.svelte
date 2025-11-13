@@ -241,7 +241,7 @@
       {#await haveAnnotationsInCategory(category.id) then hasAnnotations}
         <CollapsibleTrigger
           class={cn("text-foreground flex w-full items-center justify-between", {
-            "bg-primary-foreground rounded-sm border-1 border-blue-300": selected == category.id,
+            "bg-primary-foreground border-1 rounded-sm border-blue-300": selected == category.id,
             "hover:bg-muted-foreground hover:cursor-pointer hover:rounded-sm": !category.requiredNested,
             "hover:bg-accent hover:cursor-pointer hover:rounded-sm": !toolMode,
           })}
@@ -271,7 +271,7 @@
 
           {#if db && category && $idb_updated_at}
             {#key $idb_updated_at}
-              <Badge variant="secondary">
+              <Badge variant="secondary" class="bg-gray-200 dark:bg-gray-600">
                 {#await db.getAllStartingWith("category", category.id)}
                   ...
                 {:then anns}
@@ -339,7 +339,10 @@
           <Text class="text-foreground" weight="semibold">Categories</Text>
 
           {#key $idb_updated_at}
-            <Badge class={cn({ "bg-gray-300": !!selected_category })} variant="secondary">
+            <Badge
+              class={cn("bg-gray-200 dark:bg-gray-600", { "bg-secondary-foreground": !!selected_category })}
+              variant="secondary"
+            >
               {#await db?.getAllIndex("category")}
                 ...
               {:then anns}
