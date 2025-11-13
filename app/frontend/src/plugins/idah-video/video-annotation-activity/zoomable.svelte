@@ -1,7 +1,7 @@
 <script lang="ts">
   import { type Snippet } from "svelte";
 
-  import { DefaultMode, IdahVideoBoundingBox } from "../type";
+  import { DEFAULT_MODE, IDAH_NOTE, IDAH_VIDEO_BOUNDING_BOX } from "../type";
   import { HEIGHT, WIDTH, X, Y, type Point } from "./VideoAnnotationContext";
 
   // Props
@@ -72,7 +72,7 @@
     let step = e.deltaY > 0 ? -zoom.step : zoom.step;
 
     switch (mode) {
-      case "note": {
+      case IDAH_NOTE: {
         break; // Do not zoom in note mode
       }
       default: {
@@ -83,7 +83,7 @@
 
   export function mouseDown(e: MouseEvent) {
     switch (mode) {
-      case "note": {
+      case IDAH_NOTE: {
         break; // Do not pan in note mode
       }
       default:
@@ -96,7 +96,7 @@
 
   export function mouseUp(_e: MouseEvent) {
     switch (mode) {
-      case "note": {
+      case IDAH_NOTE: {
         break; // Do not pan in note mode
       }
       default: {
@@ -108,12 +108,12 @@
 
   export function mouseMove(e: MouseEvent) {
     switch (mode) {
-      case "note": {
+      case IDAH_NOTE: {
         break; // Do not pan in note mode
       }
 
-      case DefaultMode:
-      case IdahVideoBoundingBox:
+      case DEFAULT_MODE:
+      case IDAH_VIDEO_BOUNDING_BOX:
       case "bounding-polygon":
       default: {
         panTo(e.offsetX, e.offsetY);
