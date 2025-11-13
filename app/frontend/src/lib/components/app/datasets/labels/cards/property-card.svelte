@@ -3,7 +3,6 @@
   import ToggleShowContentButton from "@/components/app/datasets/labels/buttons/toggle-show-content-button.svelte";
   import PropertyTypeDropdownMenu from "@/components/app/datasets/labels/dropdown-menus/property-type-dropdown-menu.svelte";
   import PropertyOptions from "@/components/app/datasets/labels/properties/property-options.svelte";
-  import CheckboxField from "@/components/app/forms/fields/input/checkbox-field.svelte";
   import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
   import { fieldTypes, type FieldType, type LabelConfigurationProperty } from "@/data/model/dataset/labels";
@@ -18,7 +17,7 @@
   let { property, onSetProperty, onRemoveProperty }: Props = $props();
 
   // Variables
-  let { id, label, required, type } = $derived(property);
+  let { id, label, type } = $derived(property);
   let showContent: boolean = $state(false);
 
   let selectedFieldType: FieldType | undefined = $derived(fieldTypes.find((t) => t.value === type));
@@ -35,7 +34,7 @@
 
 <Card class="w-full gap-2 py-2">
   <!-- HEADER -->
-  <CardHeader class="flex items-center gap-2 px-2">
+  <CardHeader class="flex items-center gap-0 px-2">
     <!-- HEADER::TOGGLE SHOW CONTENT -->
     <ToggleShowContentButton {showContent} onClick={toggleContent}></ToggleShowContentButton>
 
@@ -43,17 +42,8 @@
     <PropertyTypeDropdownMenu {label} {selectedFieldType} onSetLabel={setProperty} onSetType={setProperty}
     ></PropertyTypeDropdownMenu>
 
+    <!-- HEADER::REMOVE BUTTON -->
     <div class="ml-auto flex shrink-0 items-center gap-2">
-      <!-- HEADER::REQUIRED -->
-      <CheckboxField
-        name="{id}/required"
-        label="Required"
-        bordered={false}
-        checked={required}
-        onCheckedChange={() => setProperty({ required: !required })}
-      ></CheckboxField>
-
-      <!-- HEADER::REMOVE BUTTON -->
       <RemovePropertyButton propertyKey="property" onClick={() => onRemoveProperty(id)}></RemovePropertyButton>
     </div>
   </CardHeader>

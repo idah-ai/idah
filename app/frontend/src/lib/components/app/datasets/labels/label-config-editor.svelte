@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { BoltIcon, PlusIcon, Trash2Icon } from "@lucide/svelte";
+  import { BoltIcon, PlusIcon, Trash2Icon, WorkflowIcon } from "@lucide/svelte";
 
   import ResponseBlock from "@/components/app/blocks/response-block.svelte";
   import PropertyCard from "@/components/app/datasets/labels/cards/property-card.svelte";
@@ -11,19 +11,17 @@
   import { humanize } from "@/utils/string";
 
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
-  import type {
-    LabelConfigurationProperty,
-    LabelConfigurations,
-    LabelConfigurationValue,
-  } from "@/data/model/dataset/labels";
+  import type { LabelConfigurationProperty, LabelConfigurationValue } from "@/data/model/dataset/labels";
   import type { ModalityShape, ModalityShapes } from "@/data/model/setting/plugin/types";
+  import type { IConfig } from "@/plugin/interface/Activity";
 
   // Props
   interface Props {
     modality: string;
     shapes: ModalityShapes;
-    labelConfig: LabelConfigurations;
+    labelConfig: IConfig;
     onAddLabelConfig: (labelConfigKey: string) => void;
+    onRemoveLabelConfig: (labelConfigKey: string) => void;
     onAddCategory: (labelConfigKey: string, nodeId?: string) => void;
     onEditCategoryId: (labelConfigKey: string, oldId: string, newId: string) => void;
     onEditCategory: (labelConfigKey: string, category: LabelConfigurationValue) => void;
@@ -36,6 +34,7 @@
     labelConfig,
     shapes,
     onAddLabelConfig,
+    onRemoveLabelConfig,
     onAddCategory,
     onEditCategoryId,
     onEditCategory,
@@ -81,14 +80,26 @@
   });
 
   // Functions
+  function getSelectLabelConfigLabel(selectedLabelConfigKey: string): string {
+    if (!selectedLabelConfigKey) return "";
+
+    const shapeKey = selectedLabelConfigKey.split(":").slice(1).join(":");
+    const currentShape = shapes[shapeKey] as ModalityShape;
+    return currentShape ? `"${currentShape.label}"` : `"${humanize(shapeKey.replace(":", " "))}"`;
+  }
+
   function selectConfigKey(key: string) {
     selectedConfigKey = key;
   }
 
   function removeLabelConfig(key: string) {
-    delete labelConfig[key];
+    // delete labelConfig[key];
+    onRemoveLabelConfig(key);
+
     if (selectedConfigKey === key) {
       selectedConfigKey = Object.keys(labelConfig)[0] || "";
+    } else {
+      selectedConfigKey = "";
     }
   }
 
@@ -137,7 +148,7 @@
 
 <section class="flex w-full flex-col gap-2 lg:flex-row">
   <!-- LABEL CONFIG::NAVIGATION -->
-  <div class="flex w-full lg:max-w-80 lg:min-w-72">
+  <div class="flex w-full lg:min-w-72 lg:max-w-80">
     <Card class="w-full gap-2">
       <CardHeader>
         <CardTitle>Configurations</CardTitle>
@@ -181,12 +192,10 @@
           </Button>
         {:else}
           <ResponseBlock
-            title="No Label Configurations Yet"
+            title="No label configurations Yet"
             description="Add a label configuration to get started"
             icon={BoltIcon}
-          >
-            {#snippet actions()}{/snippet}
-          </ResponseBlock>
+          ></ResponseBlock>
         {/each}
       </CardContent>
     </Card>
@@ -199,7 +208,7 @@
       <CardHeader>
         <CardTitle>Categories</CardTitle>
         <CardDescription class="text-xs">
-          Manage the categories for the "{selectedConfigKey}" label configuration
+          Manage the categories for the {getSelectLabelConfigLabel(selectedConfigKey)} label configuration
         </CardDescription>
 
         <CardAction>
@@ -221,6 +230,12 @@
             onEditCategory={(editedCategory) => editCategory(editedCategory)}
             onRemoveCategory={(categoryId) => removeCategory(categoryId)}
           />
+        {:else}
+          <ResponseBlock
+            title="No categories yet"
+            description="Add a label configuration to get started"
+            icon={WorkflowIcon}
+          ></ResponseBlock>
         {/if}
       </CardContent>
     </Card>
@@ -229,7 +244,9 @@
     <Card class="col-span-1 gap-2 md:col-span-2">
       <CardHeader>
         <CardTitle>Properties</CardTitle>
-        <CardDescription class="text-xs">Manage the properties</CardDescription>
+        <CardDescription class="text-xs">
+          Manage the properties for the {getSelectLabelConfigLabel(selectedConfigKey)} label configuration
+        </CardDescription>
 
         <CardAction>
           {#if hasAtLeastOneProperty}
@@ -247,12 +264,18 @@
               onRemoveProperty={(propertyId) => removeProperty(propertyId)}
             />
           {:else}
-            <ResponseBlock icon={BoltIcon} title="No Properties Yet" description="Create properties to get started">
+            <ResponseBlock icon={BoltIcon} title="No properties yet" description="Create properties to get started">
               {#snippet actions()}
                 {@render AddNewPropertyButton()}
               {/snippet}
             </ResponseBlock>
           {/each}
+        {:else}
+          <ResponseBlock
+            title="No properties yet"
+            description="Add a label configuration to get started"
+            icon={BoltIcon}
+          ></ResponseBlock>
         {/if}
       </CardContent>
     </Card>
