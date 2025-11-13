@@ -8,11 +8,8 @@
   import type { AnnotationValue } from "$lib/context/AnnotationContext";
   import type { IActivityContext, IConfigValue } from "@/plugin/interface/Activity";
 
-  import type { AnnotationsIndexedDB } from "../../video-annotation-activity/indexedDB";
-
   import { DEFAULT_MODE, ENTRY_ROOT } from "../../type";
   import { entryRoot } from "../../video-annotation-activity/idb_store.svelte";
-  import type { VideoAnnotation } from "../../video-annotation-activity/VideoAnnotationContext";
   import CategoryProperties from "../../video-annotation-activity/categoryProperties/categoryProperties.svelte";
 
   // Props
