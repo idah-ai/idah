@@ -180,7 +180,7 @@
 
 {#snippet showCategoryTitle(category: CategoryDefinition, haveChildren: boolean = false, open: boolean = false)}
   <div
-    class={cn("text-muted-foreground flex items-center gap-2", {
+    class={cn("text-foreground flex items-center gap-2", {
       // "p-2": !haveChildren && !toolMode,
     })}
   >

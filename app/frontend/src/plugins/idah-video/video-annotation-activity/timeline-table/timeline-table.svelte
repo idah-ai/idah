@@ -170,8 +170,8 @@
     {@const isSelected = selectedAnnotation?.metadata.id == annotation.metadata.id}
     {@const isLastIndex = index == annotations.length - 1}
     <TableRow
-      class={cn("border-b-0", {
-        "bg-primary-foreground border-primary/30 border-b border-t": isSelected,
+      class={cn("hover:bg-primary/70 border-b-0", {
+        "bg-primary-foreground border-b border-t": isSelected,
       })}
     >
       <TableCell
@@ -188,7 +188,13 @@
           {#await getCategoryName(annotation.value.category, annotation)}
             <Spinner size="sm"></Spinner>
           {:then title}
-            <Text size="sm" weight={isSelected ? "semibold" : "normal"} class="text-foreground">{humanize(title)}</Text>
+            <Text
+              size="sm"
+              weight={isSelected ? "semibold" : "normal"}
+              class={cn("text-foregroun", {
+                "dark:text-background ": isSelected,
+              })}>{humanize(title)}</Text
+            >
           {/await}
 
           <Button
@@ -226,10 +232,15 @@
   {/each}
 {/snippet}
 
-{#snippet tooltipFrame(thisFrame: number, bgColor: string = "bg-background", extraClass: string = "")}
+{#snippet tooltipFrame(
+  thisFrame: number,
+  bgColor: string = "bg-foreground",
+  textColor: string = "text-background",
+  extraClass: string = "",
+)}
   <span
     class={cn(
-      `${bgColor} text-foreground pointer-events-none absolute left-1/2 top-0 z-50 -translate-x-1/2 transform whitespace-nowrap rounded-md px-2 py-1 text-xs font-medium transition-all duration-150`,
+      `${bgColor} ${textColor} pointer-events-none absolute left-1/2 top-0 z-50 -translate-x-1/2 transform whitespace-nowrap rounded-md px-2 py-1 text-xs font-medium transition-all duration-150`,
       extraClass,
     )}
   >
@@ -334,7 +345,7 @@
                 style:left="{startLeftPosition}%"
                 onclick={() => seekToFrame(thisFrame)}
               >
-                {@render tooltipFrame(thisFrame, "bg-primary")}
+                {@render tooltipFrame(thisFrame, "bg-primary", "text-white")}
               </button>
             {:else if isDefault}
               <button
@@ -349,7 +360,7 @@
                 onmouseleave={() => (hoveredColumn = undefined)}
               >
                 {#if isHovered}
-                  {@render tooltipFrame(thisFrame, "bg-background")}
+                  {@render tooltipFrame(thisFrame, "bg-foreground", "text-background")}
                 {:else}
                   {thisFrame}
                 {/if}
@@ -369,7 +380,7 @@
                 onmouseleave={() => (hoveredColumn = undefined)}
               >
                 {#if isHovered}
-                  {@render tooltipFrame(thisFrame, "bg-background", "-top-3")}
+                  {@render tooltipFrame(thisFrame, "bg-foreground", "text-background", "-top-3")}
                 {/if}
               </button>
             {/if}
