@@ -1,6 +1,11 @@
 <script lang="ts">
   import Label from "@/components/ui/label/label.svelte";
-  import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger } from "@/components/ui/select";
+  import { Select } from "@/components/ui/select";
+  import SelectContent from "@/components/ui/select/select-content.svelte";
+  import SelectGroup from "@/components/ui/select/select-group.svelte";
+  import SelectItem from "@/components/ui/select/select-item.svelte";
+  import SelectTrigger from "@/components/ui/select/select-trigger.svelte";
+
   import { formatConformity, propertyFullfilled } from "..";
 
   import type { PropertyField } from "@/plugin/interface/Activity";
@@ -26,7 +31,7 @@
   </Label>
 
   <Select type="single" {value} {onValueChange}>
-    <SelectTrigger class="w-full bg-white data-[placeholder]:text-gray-900" aria-invalid={invalid}>
+    <SelectTrigger class="bg-background data-[placeholder]:text-foreground w-full" aria-invalid={invalid}>
       {value || "Select property"}
     </SelectTrigger>
     <SelectContent>

@@ -26,7 +26,7 @@
   </Label>
 
   <Select type="multiple" {value} {onValueChange}>
-    <SelectTrigger class="w-full bg-white data-[placeholder]:text-gray-900" aria-invalid={invalid}>
+    <SelectTrigger class="bg-background data-[placeholder]:text-foreground w-full" aria-invalid={invalid}>
       {value || "Select property"}
     </SelectTrigger>
     <SelectContent>
