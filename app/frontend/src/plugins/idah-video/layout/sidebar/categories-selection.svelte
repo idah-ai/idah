@@ -240,7 +240,7 @@
     {#key forceRender}
       {#await haveAnnotationsInCategory(category.id) then hasAnnotations}
         <CollapsibleTrigger
-          class={cn("text-foreground flex w-full items-center justify-between", {
+          class={cn("text-secondary-foreground flex w-full items-center justify-between", {
             "bg-primary-foreground rounded-sm border-1 border-blue-300": selected == category.id,
             "hover:bg-muted-foreground hover:cursor-pointer hover:rounded-sm": !category.requiredNested,
             "hover:bg-accent hover:cursor-pointer hover:rounded-sm": !toolMode,
@@ -271,7 +271,7 @@
 
           {#if db && category && $idb_updated_at}
             {#key $idb_updated_at}
-              <Badge variant="secondary" class="bg-gray-200 dark:bg-gray-600">
+              <Badge variant="gray">
                 {#await db.getAllStartingWith("category", category.id)}
                   ...
                 {:then anns}
@@ -321,7 +321,7 @@
 <div class="flex-col">
   <Collapsible open={true}>
     <CollapsibleTrigger>
-      <Text class="text-foreground" weight="semibold">{type}</Text>
+      <Text class="text-secondary-foreground" weight="semibold">{type}</Text>
     </CollapsibleTrigger>
     <CollapsibleContent>
       {#if selected_category && (toolMode || type == ENTRY_ROOT)}
@@ -336,12 +336,12 @@
         {/key}
       {:else}
         <div class="flex gap-2 py-2">
-          <Text class="text-foreground" weight="semibold">Categories</Text>
+          <Text class="text-secondary-foreground" weight="semibold">Categories</Text>
 
           {#key $idb_updated_at}
             <Badge
-              class={cn("bg-gray-200 dark:bg-gray-600", { "bg-secondary-foreground": !!selected_category })}
-              variant="secondary"
+              class={cn("", { "bg-secondary-foreground": !!selected_category })}
+              variant="gray"
             >
               {#await db?.getAllIndex("category")}
                 ...

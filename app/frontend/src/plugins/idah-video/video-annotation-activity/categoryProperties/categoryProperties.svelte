@@ -61,7 +61,7 @@
   </div>
   {#key $idb_updated_at}
     <Select type="single" onValueChange={onSelectCategory}>
-      <SelectTrigger class="data-[placeholder]:text-foreground bg-background w-full">
+      <SelectTrigger class="data-[placeholder]:text-secondary-foreground bg-secondary w-full">
         {category?.label}
       </SelectTrigger>
 
