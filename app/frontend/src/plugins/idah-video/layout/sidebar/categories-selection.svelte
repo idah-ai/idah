@@ -180,8 +180,9 @@
 
 {#snippet showCategoryTitle(category: CategoryDefinition, haveChildren: boolean = false, open: boolean = false)}
   <div
-    class={cn("text-foreground flex items-center gap-2", {
+    class={cn("flex items-center gap-2", {
       // "p-2": !haveChildren && !toolMode,
+      "hover:dark:text-black": !category.requiredNested,
     })}
   >
     <Button
@@ -251,9 +252,10 @@
     {#key forceRender}
       {#await haveAnnotationsInCategory(category.id) then hasAnnotations}
         <CollapsibleTrigger
-          class={cn("flex w-full items-center justify-between", {
-            "bg-primary-foreground rounded-sm border-1 border-blue-300": selected == category.id,
-            "hover:bg-primary-foreground hover:cursor-pointer hover:rounded-sm": !category.requiredNested,
+          class={cn("text-foreground flex w-full items-center justify-between", {
+            "bg-primary-foreground border-1 rounded-sm border-blue-300": selected == category.id,
+            "hover:bg-primary-foreground hover:cursor-pointer hover:rounded-sm hover:dark:text-black":
+              !category.requiredNested,
             "hover:bg-accent hover:cursor-pointer hover:rounded-sm": category.requiredNested && !toolMode,
           })}
           onclick={(e) => {
