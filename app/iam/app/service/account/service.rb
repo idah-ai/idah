@@ -46,10 +46,12 @@ module Account
       accounts.delete(id)
     end
 
-    # TODO: should allow only admin/system for this action, skip checks for admin ?
-    def add_owner(org_id:, account_id:)
-      organization_service.show(org_id)
-      # TODO: error / fail fast here
+    def add_org_scope(org_id:, account_id:)
+      begin
+        organization_service.show(org_id)
+      rescue Verse::Error::RecordNotFound
+        raise Verse::Error::ValidationFailed, "Invalid organization"
+      end
 
       account = accounts.find!(account_id)
       return account if account.role_name == "admin" ||
@@ -66,8 +68,7 @@ module Account
       accounts.find!(account_id)
     end
 
-    # TODO: should allow only admin/system for this action, skip checks for admin ?
-    def remove_owner(org_id:, account_id:)
+    def remove_org_scope(org_id:, account_id:)
       account = accounts.find!(account_id)
       return account unless account.role_name == "org_owner" || account.role_scope&.dig("org")&.include?(org_id)
 

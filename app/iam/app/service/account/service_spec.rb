@@ -132,12 +132,12 @@ RSpec.describe Account::Service, database: true do
       end
     end
 
-    describe "#add_owner" do
+    describe "#add_org_scope" do
       it "adds a user as an org_owner and return the account" do
         expect(@user_account.role_name).to eq("user")
         expect(@user_account.role_scope["org"]).to be_nil.or be_empty
 
-        account = subject.add_owner(org_id: 111, account_id: @user_account.id)
+        account = subject.add_org_scope(org_id: 111, account_id: @user_account.id)
 
         expect(account.id).to eq(@user_account.id)
         expect(account.role_name).to eq("org_owner")
@@ -149,7 +149,7 @@ RSpec.describe Account::Service, database: true do
         expect(@org_owner_account.role_name).to eq("org_owner")
         expect(@org_owner_account.role_scope["org"]).not_to be_empty
 
-        account = subject.add_owner(org_id: 111, account_id: @org_owner_account.id)
+        account = subject.add_org_scope(org_id: 111, account_id: @org_owner_account.id)
 
         expect(account.id).to eq(@org_owner_account.id)
         expect(account.role_name).to eq("org_owner")
@@ -162,7 +162,7 @@ RSpec.describe Account::Service, database: true do
         expect(@another_org_owner_account.role_scope["org"]).to include(222)
         expect_any_instance_of(Account::Repository).not_to receive(:update!)
 
-        account = subject.add_owner(org_id: 222, account_id: @another_org_owner_account.id)
+        account = subject.add_org_scope(org_id: 222, account_id: @another_org_owner_account.id)
 
         expect(account.id).to eq(@another_org_owner_account.id)
         expect(account.role_name).to eq("org_owner")
@@ -170,12 +170,12 @@ RSpec.describe Account::Service, database: true do
       end
     end
 
-    describe "#remove_owner" do
+    describe "#remove_org_scope" do
       it "removes an organization id from scope of an org_owner account" do
         expect(@another_org_owner_account.role_name).to eq("org_owner")
         expect(@another_org_owner_account.role_scope["org"]).not_to be_empty
 
-        account = subject.remove_owner(org_id: 999, account_id: @another_org_owner_account.id)
+        account = subject.remove_org_scope(org_id: 999, account_id: @another_org_owner_account.id)
 
         expect(account.id).to eq(@another_org_owner_account.id)
         expect(account.role_name).to eq("org_owner")
@@ -186,7 +186,7 @@ RSpec.describe Account::Service, database: true do
         expect(@org_owner_account.role_name).to eq("org_owner")
         expect(@org_owner_account.role_scope["org"]).not_to be_empty
 
-        account = subject.remove_owner(org_id: 999, account_id: @org_owner_account.id)
+        account = subject.remove_org_scope(org_id: 999, account_id: @org_owner_account.id)
 
         expect(account.id).to eq(@org_owner_account.id)
         expect(account.role_name).to eq("user")
@@ -198,7 +198,7 @@ RSpec.describe Account::Service, database: true do
         expect(@user_account.role_scope["org"]).to be_nil.or be_empty
         expect_any_instance_of(Account::Repository).not_to receive(:update!)
 
-        account = subject.remove_owner(org_id: 999, account_id: @user_account.id)
+        account = subject.remove_org_scope(org_id: 999, account_id: @user_account.id)
 
         expect(account.id).to eq(@user_account.id)
         expect(account.role_name).to eq("user")
