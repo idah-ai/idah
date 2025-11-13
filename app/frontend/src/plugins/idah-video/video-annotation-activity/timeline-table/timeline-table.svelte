@@ -188,9 +188,9 @@
           {#await getCategoryName(annotation.value.category, annotation)}
             <Spinner size="sm"></Spinner>
           {:then title}
-            <Text size="sm" weight={isSelected ? "semibold" : "normal"} class={cn("text-foregroun", {})}
-              >{humanize(title)}</Text
-            >
+            <Text size="sm" weight={isSelected ? "semibold" : "normal"} class="text-foreground">
+              {humanize(title)}
+              </Text>
           {/await}
 
           <Button
@@ -230,8 +230,8 @@
 
 {#snippet tooltipFrame(
   thisFrame: number,
-  bgColor: string = "bg-foreground",
-  textColor: string = "text-background",
+  bgColor: string = "bg-secondary",
+  textColor: string = "text-secondary-foreground",
   extraClass: string = "",
 )}
   <span
@@ -341,7 +341,7 @@
                 style:left="{startLeftPosition}%"
                 onclick={() => seekToFrame(thisFrame)}
               >
-                {@render tooltipFrame(thisFrame, "bg-primary", "text-white")}
+                {@render tooltipFrame(thisFrame, "bg-primary", "text-primary-foreground")}
               </button>
             {:else if isDefault}
               <button

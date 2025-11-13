@@ -31,7 +31,7 @@
   </Label>
 
   <Select type="single" {value} {onValueChange}>
-    <SelectTrigger class="bg-background data-[placeholder]:text-foreground w-full" aria-invalid={invalid}>
+    <SelectTrigger class="data-[placeholder]:text-secondary-foreground bg-secondary w-full" aria-invalid={invalid}>
       {value || "Select property"}
     </SelectTrigger>
     <SelectContent>
