@@ -20,3 +20,4 @@ user:
     - "dataset:projects.delete.as_user"
     - "dataset:project_members.*.as_user"
     - "dataset:datasets.*.as_user"
+    - "dataset:entries.*.as_user"

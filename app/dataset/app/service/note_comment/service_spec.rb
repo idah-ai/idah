@@ -34,7 +34,7 @@ RSpec.describe NoteComment::Service, database: true do
       labels: ["cat", "dog"],
       labeling_configuration: { "width" => 100, "height" => 100 },
       workflow_configuration: {},
-      project_id: project_id
+      project_id:
     )
   end
 
@@ -45,13 +45,16 @@ RSpec.describe NoteComment::Service, database: true do
       wf_step: "start",
       status: "pending",
       assigned_to_id: 1,
-      dataset_id: dataset_id
+      project_id:,
+      dataset_id:
     )
   end
 
   let!(:note_feed_id) do
     note_feed_repo.create(
-      entry_id: entry_id,
+      project_id:,
+      dataset_id:,
+      entry_id:,
       anchor_type: "entry",
       position: { "x" => 100, "y" => 200 },
       content_md: "This is a test note feed",

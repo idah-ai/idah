@@ -37,14 +37,17 @@ RSpec.describe Annotation::Service, database: true do
       wf_step: "start",
       status: "pending",
       assigned_to_id: 1,
+      project_id:,
       dataset_id:
     )
   end
 
   let(:attributes) do
     {
+      project_id:,
+      dataset_id:,
       entry_id:,
-      dimensions: { "x" => 10, "y" => 20, "width" => 30, "height" => 40 },
+      dimensions: { x: 10, y: 20, width: 30, height: 40 },
       annotation: { label: "cat" },
       created_by_email: "user@example.com"
     }
@@ -68,8 +71,13 @@ RSpec.describe Annotation::Service, database: true do
           }
         }
       )
+
       annotation = subject.create(record)
       expect(annotation.annotation).to eq({ label: "cat" })
+      expect(annotation.dimensions).to eq({ x: 10, y: 20, width: 30, height: 40 })
+      expect(annotation.entry_id).to eq(entry_id)
+      expect(annotation.dataset_id).to eq(dataset_id)
+      expect(annotation.project_id).to eq(project_id)
     end
   end
 

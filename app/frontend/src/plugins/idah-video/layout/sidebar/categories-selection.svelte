@@ -7,13 +7,14 @@
   import { cn } from "@/utils";
   import { humanize } from "@/utils/string";
   import { ChevronRight, CircleSmallIcon, PlusIcon, Trash2Icon } from "@lucide/svelte";
-  import CategoryProperties from "./categoryProperties/categoryProperties.svelte";
-  import { idb_updated_at } from "./idb_store.svelte";
 
   import type { CategoryDefinition } from "@/context/ActivityContext";
   import type { AnnotationValue } from "@/context/AnnotationContext";
-  import type { AnnotationsIndexedDB } from "./indexedDB";
-  import type { CategoryConfiguration, VideoAnnotation } from "./VideoAnnotationContext";
+
+  import CategoryProperties from "../../video-annotation-activity/categoryProperties/categoryProperties.svelte";
+  import { idb_updated_at } from "../../video-annotation-activity/idb_store.svelte";
+  import type { AnnotationsIndexedDB } from "../../video-annotation-activity/indexedDB";
+  import type { CategoryConfiguration, VideoAnnotation } from "../../video-annotation-activity/VideoAnnotationContext";
 
   // Props
   let {

@@ -15,7 +15,11 @@ module Project
 
     field :organization_id, type: Integer
 
+    has_many :project_members, repository: "ProjectMember::Repository", foreign_key: :project_id
     has_many :datasets, repository: "Dataset::Repository", foreign_key: :project_id
+    has_many :entries, repository: "Entry::Repository", foreign_key: :project_id
+    has_many :annotations, repository: "Annotation::Repository", foreign_key: :project_id
+    has_many :note_feeds, repository: "NoteFeed::Repository", foreign_key: :project_id
   end
 
   class Repository < Verse::Sequel::Repository

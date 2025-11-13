@@ -1,25 +1,39 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+  import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+  import { cn } from "@/utils";
 
   // Props
   interface Props {
     delayDuration?: number;
     align?: "start" | "center" | "end";
     side?: "top" | "right" | "bottom" | "left";
+    ignoreNonKeyboardFocus?: boolean;
+    class?: string | null;
     trigger: Snippet;
     content: Snippet;
   }
-  let { delayDuration = 200, align = "start", side = undefined, trigger, content }: Props = $props();
+  let {
+    delayDuration = 200,
+    align = "start",
+    side = undefined,
+    ignoreNonKeyboardFocus = false,
+    class: className,
+    trigger,
+    content,
+  }: Props = $props();
 </script>
 
-<Tooltip {delayDuration}>
-  <TooltipTrigger>
-    {@render trigger()}
-  </TooltipTrigger>
+<TooltipProvider {ignoreNonKeyboardFocus}>
+  <Tooltip {delayDuration}>
+    <TooltipTrigger class={cn("", className)}>
+      {@render trigger()}
+    </TooltipTrigger>
 
-  <TooltipContent {align} {side}>
-    {@render content()}
-  </TooltipContent>
-</Tooltip>
+    <TooltipContent {align} {side}>
+      {@render content()}
+    </TooltipContent>
+  </Tooltip>
+</TooltipProvider>
