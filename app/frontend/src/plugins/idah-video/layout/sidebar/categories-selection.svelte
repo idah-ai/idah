@@ -9,12 +9,9 @@
   import { ChevronRight, CircleSmallIcon, PlusIcon, Trash2Icon } from "@lucide/svelte";
 
   import type { CategoryDefinition } from "@/context/ActivityContext";
-  import type { AnnotationValue } from "@/context/AnnotationContext";
   import type { IConfigValue } from "@/plugin/interface/Activity";
 
-  import { ENTRY_ROOT } from "../../type";
-  import CategoryProperties from "../../video-annotation-activity/categoryProperties/categoryProperties.svelte";
-  import { entryRoot, idb_updated_at } from "../../video-annotation-activity/idb_store.svelte";
+  import { idb_updated_at } from "../../video-annotation-activity/idb_store.svelte";
   import type { AnnotationsIndexedDB } from "../../video-annotation-activity/indexedDB";
   import type { VideoAnnotation } from "../../video-annotation-activity/VideoAnnotationContext";
 
@@ -29,9 +26,7 @@
     onSelect,
     onSelectAnnotation,
     onDeleteAnnotation,
-    onEditValue,
     db,
-    annotationValue,
   }: {
     type: string;
     currentFrame: number;
@@ -39,12 +34,10 @@
     toolMode: boolean;
     selected_category: string | undefined;
     selected_id: string | undefined;
-    onEditValue: (annotationValue: AnnotationValue, mode: string) => void;
     onSelect: (category?: string) => void;
     onSelectAnnotation: (annotation: VideoAnnotation) => void;
     onDeleteAnnotation: (annotation: VideoAnnotation) => void;
     db?: AnnotationsIndexedDB;
-    annotationValue: AnnotationValue;
   } = $props();
 
   // Variables
