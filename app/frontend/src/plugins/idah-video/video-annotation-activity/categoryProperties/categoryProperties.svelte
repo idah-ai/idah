@@ -57,7 +57,7 @@
 
 <div>
   <div class="flex pb-1">
-    <Text class="text-muted-foreground" weight="medium" size="sm"
+    <Text class="text-muted-foreground" weight="medium" size="xs"
       >{((s: string) => [s.slice(0, 1).toUpperCase(), s.slice(1)].join(""))(
         type.split(":").reverse()[0].split(new RegExp(/-|_/)).join(" "),
       )}</Text
@@ -65,14 +65,14 @@
   </div>
   {#key $idb_updated_at}
     <Select type="single" onValueChange={onSelectCategory}>
-      <SelectTrigger class="data-[placeholder]:text-secondary-foreground bg-secondary w-full">
-        {category?.label}
+      <SelectTrigger class="data-[placeholder]:text-secondary-foreground bg-secondary w-full text-xs">
+        {category?.label || "Select category"}
       </SelectTrigger>
 
       <SelectContent>
         <SelectGroup>
           {#each typeConfig.values as c (c.id)}
-            <SelectItem value={c.id} label={c.label}>
+            <SelectItem value={c.id} label={c.label} class="text-xs">
               {c.label}
             </SelectItem>
           {/each}
@@ -84,7 +84,7 @@
 
     {#if category && properties?.length > 0}
       <div class="flex pb-1">
-        <Text class="text-muted-foreground" weight="medium" size="sm">Properties</Text>
+        <Text class="text-muted-foreground" weight="medium" size="xs">Properties</Text>
       </div>
 
       {#each properties as property (property.id)}
