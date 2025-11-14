@@ -25,6 +25,8 @@ class AccountsExpo < BaseExpo
     delete
   end
 
+  # TODO: move to frontend logic
+
   expose on_http(:patch, "/:account_id/add_org_scope/:org_id") do
     desc "Add an account as organization owner"
     input do

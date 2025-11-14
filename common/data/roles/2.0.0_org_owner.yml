@@ -22,3 +22,7 @@ org_owner:
     - "dataset:project_members.*.as_org_owner"
     - "dataset:datasets.*.as_org_owner"
     - "dataset:entries.*.as_org_owner"
+
+    # Media Service
+    # TODO: review media scope
+    - "media:medias.*.*"
