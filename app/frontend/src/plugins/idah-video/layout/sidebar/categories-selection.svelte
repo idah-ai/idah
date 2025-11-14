@@ -313,7 +313,11 @@
 <div class="flex-col overflow-x-hidden">
   <Collapsible open={true}>
     <CollapsibleTrigger>
-      <Text class="text-secondary-foreground" size="xs" weight="semibold">{type}</Text>
+      <Text class="text-secondary-foreground" weight="semibold" size="xs" >
+        {((s: string) => [s.slice(0, 1).toUpperCase(), s.slice(1)].join(""))(
+          type.split(":").reverse()[0].split(new RegExp(/-|_/)).join(" "),
+        )}
+      </Text>
     </CollapsibleTrigger>
     <CollapsibleContent>
       <div class="flex items-center gap-2 py-2">
