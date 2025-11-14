@@ -41,7 +41,6 @@
   import PopoverTrigger from "@/components/ui/popover/popover-trigger.svelte";
   import CategoryProperties from "./video-annotation-activity/categoryProperties/categoryProperties.svelte";
   import PropertiesSidebar from "./layout/sidebar/properties-sidebar.svelte";
-  import Page from "../../routes/(app)/+page.svelte";
 
   // Props
   interface Props {
