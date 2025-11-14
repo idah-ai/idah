@@ -1,6 +1,9 @@
+import { goto } from "$app/navigation";
+import { resolve } from "$app/paths";
 import { writable, type Writable } from "svelte/store";
-import { AccountAuthRecord } from "@/data/model/iam/accounts/auth/records";
-import type { AuthBackend } from "./AuthBackend";
+
+import { AccountAuthRecord, type AuthService } from "@/data/model/iam/accounts/auth/records";
+
 import type { Hash } from "@/utils/types";
 
 export type AuthenticationStatus = {
@@ -14,7 +17,7 @@ export const authStatus: Writable<AuthenticationStatus> = writable({
 });
 
 export class AuthContext {
-  public static backend: AuthBackend;
+  public static backend: AuthService;
 
   public static currentAuthContextPromise: Promise<AuthContext | undefined>;
   public static currentAuthContext: AuthContext | undefined;
@@ -26,9 +29,9 @@ export class AuthContext {
     });
   }
 
-  static async login(account: string, password: string) {
+  static async signInWithEmailAndPassword(email: string, password: string) {
     try {
-      const out = await this.backend.login(account, password);
+      const out = await this.backend.signInWithEmailAndPassword(email, password);
       const data = out.data;
 
       const context: AccountAuthRecord = new AccountAuthRecord(data);
@@ -45,12 +48,46 @@ export class AuthContext {
     }
   }
 
+  static async refresh() {
+    try {
+      const out = await this.backend.refresh();
+      const data = out.data;
+
+      const context = Object.assign({}, data.attributes, { id: data.id });
+      const ctx = new AuthContext(context);
+
+      this.currentAuthContext = ctx;
+      this.setAuthStatus("logged-in", ctx);
+
+      return ctx;
+    } catch (e) {
+      this.setAuthStatus("logged-out", null);
+
+      throw e;
+    }
+  }
+
+  static async logout() {
+    try {
+      await this.backend.signOut();
+    } catch (e) {
+      console.error(e);
+    }
+
+    // window.AppCable.cable.disconnect();
+
+    this.setAuthStatus("logged-out", null);
+
+    await goto(resolve("/login"), { replaceState: true });
+  }
+
   public readonly email: string;
   public readonly name: string | null;
   public readonly pictureUrl: string | null;
 
-  public readonly role: string;
-  public readonly scopes: Hash;
+  public readonly roleName: string;
+  public readonly roleScope: Hash;
+  public readonly roleRights: string[] = [];
 
   public readonly exp: number;
 
@@ -59,8 +96,9 @@ export class AuthContext {
     this.name = record.name;
     this.pictureUrl = record.picture_url;
 
-    this.scopes = record.scopes;
-    this.role = record.role_name;
+    this.roleName = record.role_name;
+    this.roleScope = record.role_scope;
+    this.roleRights = record.role_rights || [];
 
     this.exp = record.exp * 1000;
   }
