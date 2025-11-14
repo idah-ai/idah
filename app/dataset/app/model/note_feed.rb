@@ -37,7 +37,7 @@ module NoteFeed
     def scoped(action)
       auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }
-        scope.as_user? { account_project_scoped_query(action) }
+        scope.as_user? { user_project_scoped_query(action) }
       end
     end
 
@@ -52,7 +52,7 @@ module NoteFeed
     # 2. all roles can update and delete only their own note feeds in their projects
     # 3. org owner, project owner and reviewer can resolve note feeds in their projects
     query
-    def account_project_scoped_query(action)
+    def user_project_scoped_query(action)
       # Ignore create action as it will be handled in service layer
       return table if action == :create
 

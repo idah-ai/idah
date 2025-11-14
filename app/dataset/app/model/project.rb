@@ -27,7 +27,7 @@ module Project
     def scoped(action)
       auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }
-        scope.as_user? { account_project_scoped_query(action) }
+        scope.as_user? { user_project_scoped_query(action) }
       end
     end
 
@@ -41,7 +41,7 @@ module Project
     # 2. only org_owner and project_owner(member) can update and delete projects
     # 3. only org_owner and admin roles can create projects
     query
-    def account_project_scoped_query(action)
+    def user_project_scoped_query(action)
       # Ignore create action as it will be handled in service layer
       return table if action == :create
 
