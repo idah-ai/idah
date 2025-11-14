@@ -64,7 +64,7 @@
 <div
   class={cn("inline-block h-full border-b py-1 first:border-l", {
     "bg-primary/50": isSelected,
-    "bg-primary/60 cursor-pointer": isHovered,
+    "bg-muted-foreground/30 dark:bg-accent cursor-pointer": isHovered,
   })}
   style:box-sizing="border-box"
   style:width="{cellWidth}%"
@@ -99,7 +99,7 @@
 
               <ContextMenuItem onclick={() => onDeleteFrame?.(keyframe)}>
                 <Trash2Icon class="size-4"></Trash2Icon>
-                Delete frame
+                Delete frame {keyframe}
               </ContextMenuItem>
             {/each}
           </ContextMenuContent>

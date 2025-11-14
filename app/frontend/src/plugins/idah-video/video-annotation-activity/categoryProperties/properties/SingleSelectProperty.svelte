@@ -6,8 +6,8 @@
   import SelectItem from "@/components/ui/select/select-item.svelte";
   import SelectTrigger from "@/components/ui/select/select-trigger.svelte";
 
-  import { formatConformity, propertyFullfilled } from "..";
   import type { IConfigProperty } from "@/plugin/interface/Activity";
+  import { formatConformity, propertyFullfilled } from "..";
 
   let {
     property,
@@ -25,18 +25,21 @@
 </script>
 
 <div class="my-2 flex flex-col gap-1">
-  <Label for={property.id} class="mb-2">
+  <Label for={property.id} class="mb-2 text-xs">
     {property.label}
   </Label>
 
   <Select type="single" {value} {onValueChange}>
-    <SelectTrigger class="data-[placeholder]:text-secondary-foreground bg-secondary w-full" aria-invalid={invalid}>
+    <SelectTrigger
+      class="data-[placeholder]:text-secondary-foreground bg-secondary w-full text-xs"
+      aria-invalid={invalid}
+    >
       {options.find(({ id }) => id == value)?.label || "Select property"}
     </SelectTrigger>
     <SelectContent>
       <SelectGroup>
         {#each options as option (option.id)}
-          <SelectItem value={option.id} label={option.label} />
+          <SelectItem value={option.id} label={option.label} class="text-xs" />
         {/each}
       </SelectGroup>
     </SelectContent>
