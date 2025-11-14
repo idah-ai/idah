@@ -23,22 +23,21 @@
   }: WithElementRef<HTMLAttributes<HTMLElement>> & Props = $props();
 </script>
 
-<nav bind:this={ref} id="annotation-header-bar" class="grid grid-cols-3 p-2 items-center gap-2">
+<nav bind:this={ref} id="annotation-header-bar" class="grid grid-cols-3 p-1">
   <!-- LEFT::NAVIGATIONS -->
-  <div id="navigations" class="flex items-center gap-1">
+  <div id="navigations" class="flex h-full items-center gap-2">
+    <!-- BACK BUTTON -->
     <AnnotationHeaderBarBackButton {context} />
+
     <Separator orientation="vertical" />
+
     <!-- MEDIA NAME -->
     <AnnotationHeaderBarMediaName name={context.mediaUrl} />
   </div>
 
   <!-- CENTER::TOOLS -->
-  <div class="flex justify-center">
-    <AnnotationHeaderBarTools {context} />
-  </div>
+  <AnnotationHeaderBarTools {context} />
 
   <!-- RIGHT::ACTIONS -->
-  <div class="flex justify-end">
-    <AnnotationHeaderBarActions {context} {pluginContainerElement} />
-  </div>
+  <AnnotationHeaderBarActions {context} {pluginContainerElement} />
 </nav>
