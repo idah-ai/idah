@@ -8,12 +8,15 @@
     DropdownMenuGroupHeading,
     DropdownMenuItem,
     DropdownMenuSeparator,
+    DropdownMenuSub,
+    DropdownMenuSubContent,
+    DropdownMenuSubTrigger,
     DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu";
 
   import { cn } from "@/utils";
 
-  import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
+  import type { IDropdownMenuItem, IDropdownMenus } from "@/components/app/dropdown-menus/types";
 
   // Props
   interface Props {
@@ -25,6 +28,23 @@
   }
   let { class: className, align = "start", side = "bottom", menus, trigger }: Props = $props();
 </script>
+
+{#snippet DropdownMenusItem(item: IDropdownMenuItem)}
+  <DropdownMenuItem
+    class={cn("", {
+      "cursor-not-allowed": item.disabled,
+      "cursor-pointer": item.action,
+    })}
+    disabled={item.disabled}
+    onclick={() => item.action?.()}
+  >
+    {#if item.icon}
+      <item.icon class="size-4"></item.icon>
+    {/if}
+
+    {item.label}
+  </DropdownMenuItem>
+{/snippet}
 
 <DropdownMenu>
   <DropdownMenuTrigger>
@@ -45,19 +65,39 @@
           {@const hidden = item.hidden ?? false}
 
           {#if !hidden}
-            <DropdownMenuItem disabled={item.disabled} onclick={() => item.action?.()}>
-              {#if item.icon}
-                <item.icon class="size-4"></item.icon>
-              {/if}
+            {#if item.items && Object.keys(item.items).length > 0}
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  {#if item.icon}
+                    <item.icon class="size-4"></item.icon>
+                  {/if}
 
-              {item.label}
-            </DropdownMenuItem>
+                  {item.label}
+                </DropdownMenuSubTrigger>
+
+                <DropdownMenuSubContent>
+                  {#each Object.entries(item.items) as [subGroupKey, subGroup], subGroupIndex (subGroupKey)}
+                    {@const isLastSubItem = subGroupIndex === Object.keys(item.items).length - 1}
+
+                    {#each subGroup.items as subItem, subItemIndex (subItemIndex)}
+                      {@render DropdownMenusItem(subItem)}
+                    {/each}
+
+                    {#if !isLastSubItem}
+                      <DropdownMenuSeparator />
+                    {/if}
+                  {/each}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+            {:else}
+              {@render DropdownMenusItem(item)}
+            {/if}
           {/if}
         {/each}
       </DropdownMenuGroup>
 
       {#if !isLastGroup}
-        <DropdownMenuSeparator></DropdownMenuSeparator>
+        <DropdownMenuSeparator />
       {/if}
     {/each}
   </DropdownMenuContent>

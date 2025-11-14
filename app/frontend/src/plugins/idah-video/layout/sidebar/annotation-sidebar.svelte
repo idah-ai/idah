@@ -1,14 +1,14 @@
 <script lang="ts">
+  import { CircleXIcon } from "@lucide/svelte";
   import { SvelteMap } from "svelte/reactivity";
 
-  import Input from "@/components/ui/input/input.svelte";
+  import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import SidebarContent from "@/components/ui/sidebar/sidebar-content.svelte";
   import SidebarGroupContent from "@/components/ui/sidebar/sidebar-group-content.svelte";
   import SidebarGroup from "@/components/ui/sidebar/sidebar-group.svelte";
   import SidebarHeader from "@/components/ui/sidebar/sidebar-header.svelte";
   import Sidebar from "@/components/ui/sidebar/sidebar.svelte";
 
-  import AnnotationTabs from "../../video-annotation-activity/tabs/AnnotationTabs.svelte";
   import CategoriesSelection from "./categories-selection.svelte";
 
   import type { AnnotationValue } from "$lib/context/AnnotationContext";
@@ -17,8 +17,8 @@
   import type { AnnotationsIndexedDB } from "../../video-annotation-activity/indexedDB";
 
   import { ENTRY_ROOT } from "../../type";
-  import { entryRoot } from "../../video-annotation-activity/idb_store.svelte";
   import type { VideoAnnotation } from "../../video-annotation-activity/VideoAnnotationContext";
+  import { entryRoot } from "../../video-annotation-activity/idb_store.svelte";
 
   // Props
   let {
@@ -46,7 +46,9 @@
   } = $props();
 
   let tools = new Map<string, IConfigValue[]>(
-    Object.entries(context.config).map(([shapeType, { values }]) => [shapeType, values]),
+    Object.entries(context.config)
+      .filter(([shapeType, _]) => shapeType != ENTRY_ROOT)
+      .map(([shapeType, { values }]) => [shapeType, values]),
   );
 
   let searchValue = $state("");
@@ -98,9 +100,21 @@
 <Sidebar variant="inset" collapsible="none" style="width: {sidebarWidthRem}rem;">
   {#if !tools.has(mode)}
     <SidebarHeader>
-      <AnnotationTabs></AnnotationTabs>
-
-      <Input placeholder="search" value={searchValue} oninput={(e) => searchCategory(e)} />
+      <InputField
+        name="input/plugin/search"
+        placeholder="search"
+        value={searchValue}
+        oninput={(e) => searchCategory(e)}
+      >
+        {#snippet suffixIcon()}
+          <CircleXIcon
+            class="hover:cursor-pointer"
+            onclick={() => {
+              searchValue = "";
+            }}
+          />
+        {/snippet}
+      </InputField>
     </SidebarHeader>
   {/if}
 
@@ -121,8 +135,6 @@
               {selected_id}
               {onSelectAnnotation}
               {onDeleteAnnotation}
-              annotationValue={tool == ENTRY_ROOT && !(tool == mode) ? $entryRoot?.value || {} : annotationValue}
-              onEditValue={(v) => onEditValue(v, tool)}
               onSelect={(s) => categorySelection(tool, s)}
             />
           </SidebarGroupContent>
