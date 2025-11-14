@@ -46,7 +46,7 @@ module Workflow
 
     def allowed_note_feed?
       # check if current step allows note feeds by state
-      @entry.wf_step == "review"
+      @entry.wf_step == "annotate" || @entry.wf_step == "review"
     end
   end
 end
