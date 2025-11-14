@@ -70,8 +70,8 @@ module NoteFeed
               AND (
                 pm.role IN :with_roles OR
                 (
-                  pm.role IN :assigned_to_roles AND
-                  EXISTS (
+                  pm.role IN :assigned_to_roles
+                  AND EXISTS (
                     SELECT 1
                     FROM entries e
                     WHERE e.id = note_feeds.entry_id
