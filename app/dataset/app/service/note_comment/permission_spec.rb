@@ -2,7 +2,7 @@
 
 require "spec_helper"
 
-RSpec.describe NoteFeed::Service, database: true do
+RSpec.describe NoteComment::Service, database: true do
   let(:system_context) { Verse::Auth::Context[:system] }
   let(:project_repo) { Project::Repository.new(system_context) }
   let(:project_member_repo) { ProjectMember::Repository.new(system_context) }
@@ -10,6 +10,7 @@ RSpec.describe NoteFeed::Service, database: true do
   let(:entry_repo) { Entry::Repository.new(system_context) }
   let(:annotation_repo) { Annotation::Repository.new(system_context) }
   let(:note_feed_repo) { NoteFeed::Repository.new(system_context) }
+  let(:note_comment_repo) { NoteComment::Repository.new(system_context) }
 
   # Projects
   let(:first_project_id) {
@@ -135,6 +136,17 @@ RSpec.describe NoteFeed::Service, database: true do
       created_by_email: "project_owner@example.com"
     )
   }
+  let(:annotator_note_feed_id) {
+    note_feed_repo.create(
+      project_id: first_project_id,
+      dataset_id: first_dataset_id,
+      entry_id: first_entry_id,
+      anchor_type: "entry",
+      position: { "x" => 100, "y" => 200 },
+      content_md: "This is a second test note",
+      created_by_email: "annotator@example.com"
+    )
+  }
   let(:reviewer_first_note_feed_id) {
     note_feed_repo.create(
       project_id: first_project_id,
@@ -180,31 +192,81 @@ RSpec.describe NoteFeed::Service, database: true do
     )
   }
 
+  # Note Feed Comments
+  let(:project_owner_note_comment_id) {
+    note_comment_repo.create(
+      note_feed_id: project_owner_note_feed_id,
+      content_md: "This is a test note comment",
+      created_by_email: "project_owner@example.com"
+    )
+  }
+  let(:annotator_note_comment_id) {
+    note_comment_repo.create(
+      note_feed_id: annotator_note_feed_id,
+      content_md: "This is a test note comment",
+      created_by_email: "annotator@example.com"
+    )
+  }
+  let(:reviewer_first_note_comment_id) {
+    note_comment_repo.create(
+      note_feed_id: reviewer_first_note_feed_id,
+      content_md: "This is a test note comment",
+      created_by_email: "reviewer@example.com"
+    )
+  }
+  let(:reviewer_second_note_comment_id) {
+    note_comment_repo.create(
+      note_feed_id: reviewer_second_note_feed_id,
+      content_md: "This is a test note comment",
+      created_by_email: "reviewer@example.com",
+    )
+  }
+  let(:reviewer_third_note_comment_id) {
+    note_comment_repo.create(
+      note_feed_id: reviewer_third_note_feed_id,
+      content_md: "This is a test note comment",
+      created_by_email: "reviewer@example.com"
+    )
+  }
+  let(:other_note_comment_id) {
+    note_comment_repo.create(
+      note_feed_id: other_note_feed_id,
+      content_md: "This is a test note comment",
+      created_by_email: "other@example.com"
+    )
+  }
+
   let(:update_data) do
     {
       data: {
-        type: "dataset:note_feeds",
-        id: project_owner_note_feed_id,
+        type: "dataset:note_comments",
+        id: project_owner_note_comment_id,
         attributes: {
-          position: { "x" => 300, "y" => 400 },
-          content_md: "This is an updated test note"
+          content_md: "This is an updated test note comment"
         }
       }
     }
   end
 
-  let(:create_attributes) do
+  let(:create_data) do
     {
-      entry_id: first_entry_id,
-      anchor_type: "entry",
-      position: { "x" => 100, "y" => 200 },
-      content_md: "This is a test note"
+      data: {
+        type: "dataset:note_comments",
+        attributes: {
+          content_md: "This is a created test note comment"
+        },
+        relationships: {
+          note_feed: {
+            data: { type: "dataset:note_feeds", id: project_owner_note_feed_id }
+          }
+        }
+      }
     }
   end
 
   # Permission: Project Owner
   # ------------------------------------------------
-  # Note Feeds    | index | create | update | delete
+  # Note Comments | index | create | update | delete
   # ------------------------------------------------
   # Assigned      |  yes  |  yes   |   own  |   own
   # Not Assigned  |   x   |   x    |    x   |    x
@@ -217,66 +279,60 @@ RSpec.describe NoteFeed::Service, database: true do
 
     describe "with assigned project" do
       it "can index" do
-        # Setup: create note feeds to test visibility
-        project_owner_note_feed_id
-        reviewer_first_note_feed_id
-        reviewer_second_note_feed_id
-        reviewer_third_note_feed_id
-        other_note_feed_id
+        # Setup: create note comments to test visibility
+        project_owner_note_comment_id
+        annotator_note_comment_id
+        reviewer_first_note_comment_id
+        reviewer_second_note_comment_id
+        reviewer_third_note_comment_id
+        other_note_comment_id
 
         result_ids = subject.index({}).map(&:id)
 
-        expect(result_ids.count).to eq 3
+        expect(result_ids.count).to eq 4
         expect(result_ids).to contain_exactly(
-          project_owner_note_feed_id,
-          reviewer_first_note_feed_id,
-          reviewer_second_note_feed_id
+          project_owner_note_comment_id,
+          annotator_note_comment_id,
+          reviewer_first_note_comment_id,
+          reviewer_second_note_comment_id
         )
       end
 
       it "can create" do
-        record = subject.create_from_params(create_attributes)
+        record = subject.create(deserialize(create_data))
 
-        expect(record.project_id).to eq first_project_id
-        expect(record.dataset_id).to eq first_dataset_id
-        expect(record.entry_id).to eq first_entry_id
-        expect(record.anchor_type).to eq "entry"
-        expect(record.position).to eq({ x: 100, y: 200 })
-        expect(record.content_md).to eq "This is a test note"
+        expect(record.note_feed_id).to eq project_owner_note_feed_id
+        expect(record.content_md).to eq "This is a created test note comment"
         expect(record.created_by_email).to eq "project_owner@example.com"
       end
 
-      it "can update own note feed" do
+      it "can update own note feed comment" do
         record = subject.update(deserialize(update_data))
 
-        expect(record.project_id).to eq first_project_id
-        expect(record.dataset_id).to eq first_dataset_id
-        expect(record.entry_id).to eq first_entry_id
-        expect(record.anchor_type).to eq "entry"
-        expect(record.position).to eq({ x: 300, y: 400 })
-        expect(record.content_md).to eq "This is an updated test note"
+        expect(record.note_feed_id).to eq project_owner_note_feed_id
+        expect(record.content_md).to eq "This is an updated test note comment"
         expect(record.created_by_email).to eq "project_owner@example.com"
       end
 
-      it "can delete own note feed" do
-        subject.delete(project_owner_note_feed_id)
+      it "can delete own note feed comment" do
+        subject.delete(project_owner_note_comment_id)
 
         expect {
-          subject.show(project_owner_note_feed_id)
+          subject.show(project_owner_note_comment_id)
         }.to raise_error(Verse::Error::RecordNotFound)
       end
 
-      it "cannot update others note feed" do
-        update_data[:data][:id] = reviewer_first_note_feed_id
+      it "cannot update others note feed comment" do
+        update_data[:data][:id] = reviewer_first_note_comment_id
 
         expect {
           subject.update(deserialize(update_data))
         }.to raise_error(Verse::Error::RecordNotFound)
       end
 
-      it "cannot delete others note feed" do
+      it "cannot delete others note feed comment" do
         expect {
-          subject.delete(reviewer_first_note_feed_id)
+          subject.delete(reviewer_first_note_comment_id)
         }.to raise_error(Verse::Error::RecordNotFound)
       end
     end
@@ -284,28 +340,32 @@ RSpec.describe NoteFeed::Service, database: true do
     describe "with not assigned project" do
       it "cannot index" do
         # Setup: create note feeds to test visibility
-        project_owner_note_feed_id
-        reviewer_first_note_feed_id
-        reviewer_second_note_feed_id
-        reviewer_third_note_feed_id
-        other_note_feed_id
+        project_owner_note_comment_id
+        annotator_note_comment_id
+        reviewer_first_note_comment_id
+        reviewer_second_note_comment_id
+        reviewer_third_note_comment_id
+        other_note_comment_id
 
         result = subject.index({})
 
-        expect(result.count).to eq 3
-        expect(result.map(&:id)).to_not include reviewer_third_note_feed_id
+        expect(result.count).to eq 4
+        expect(result.map(&:id)).to_not include reviewer_third_note_feed_id, other_note_feed_id
       end
 
       it "cannot create" do
-        create_attributes[:entry_id] = third_entry_id
+        create_data[:data][:relationships][:note_feed][:data][:id] = reviewer_third_note_feed_id
 
         expect {
-          subject.create_from_params(create_attributes)
-        }.to raise_error(Verse::Error::Unauthorized, "You do not have permission to create note feed")
+          subject.create(deserialize(create_data))
+        }.to raise_error(
+          Verse::Error::ValidationFailed,
+          "note feed not found to create a comment"
+        )
       end
 
       it "cannot update" do
-        update_data[:data][:id] = reviewer_third_note_feed_id
+        update_data[:data][:id] = reviewer_third_note_comment_id
 
         expect {
           subject.update(deserialize(update_data))
@@ -314,7 +374,7 @@ RSpec.describe NoteFeed::Service, database: true do
 
       it "cannot delete" do
         expect {
-          subject.delete(reviewer_third_note_feed_id)
+          subject.delete(reviewer_third_note_comment_id)
         }.to raise_error(Verse::Error::RecordNotFound)
       end
     end
@@ -322,9 +382,9 @@ RSpec.describe NoteFeed::Service, database: true do
 
   # Permission: Annotator
   # ------------------------------------------------
-  # Note Feeds    | index | create | update | delete
+  # Note Comments | index | create | update | delete
   # ------------------------------------------------
-  # Assigned      |  yes  |   x    |    x   |    x
+  # Assigned      |  yes  |  yes   |   own  |   own
   # Not Assigned  |   x   |   x    |    x   |    x
   context "as Annotator", as: :annotator do
     subject { described_class.new(current_auth_context) }
@@ -336,43 +396,63 @@ RSpec.describe NoteFeed::Service, database: true do
     describe "with assigned project and assigned entries" do
       it "can index" do
         # Setup: create note feeds to test visibility
-        project_owner_note_feed_id
-        reviewer_first_note_feed_id
-        reviewer_second_note_feed_id
-        reviewer_third_note_feed_id
-        other_note_feed_id
+        project_owner_note_comment_id
+        annotator_note_comment_id
+        reviewer_first_note_comment_id
+        reviewer_second_note_comment_id
+        reviewer_third_note_comment_id
+        other_note_comment_id
 
         result = subject.index({})
 
-        expect(result.count).to eq 3
+        expect(result.count).to eq 4
         expect(result.map(&:id)).to contain_exactly(
-          project_owner_note_feed_id,
-          reviewer_first_note_feed_id,
-          reviewer_second_note_feed_id
+          project_owner_note_comment_id,
+          annotator_note_comment_id,
+          reviewer_first_note_comment_id,
+          reviewer_second_note_comment_id
         )
       end
 
       it "can create" do
-        record = subject.create_from_params(create_attributes)
+        create_data[:data][:relationships][:note_feed][:data][:id] = annotator_note_feed_id
 
-        expect(record.project_id).to eq first_project_id
-        expect(record.dataset_id).to eq first_dataset_id
-        expect(record.entry_id).to eq first_entry_id
-        expect(record.anchor_type).to eq "entry"
-        expect(record.position).to eq({ x: 100, y: 200 })
-        expect(record.content_md).to eq "This is a test note"
+        record = subject.create(deserialize(create_data))
+
+        expect(record.note_feed_id).to eq annotator_note_feed_id
+        expect(record.content_md).to eq "This is a created test note comment"
         expect(record.created_by_email).to eq "annotator@example.com"
       end
 
-      it "can update" do
+      it "can update own note feed comment" do
+        update_data[:data][:id] = annotator_note_comment_id
+
+        record = subject.update(deserialize(update_data))
+
+        expect(record.note_feed_id).to eq annotator_note_feed_id
+        expect(record.content_md).to eq "This is an updated test note comment"
+        expect(record.created_by_email).to eq "annotator@example.com"
+      end
+
+      it "can delete own note feed comment" do
+        subject.delete(annotator_note_comment_id)
+
+        expect {
+          subject.show(annotator_note_comment_id)
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
+
+      it "cannot update others note feed comment" do
+        update_data[:data][:id] = reviewer_first_note_comment_id
+
         expect {
           subject.update(deserialize(update_data))
         }.to raise_error(Verse::Error::RecordNotFound)
       end
 
-      it "can delete" do
+      it "cannot delete others note feed comment" do
         expect {
-          subject.delete(project_owner_note_feed_id)
+          subject.delete(reviewer_first_note_comment_id)
         }.to raise_error(Verse::Error::RecordNotFound)
       end
     end
@@ -391,11 +471,12 @@ RSpec.describe NoteFeed::Service, database: true do
 
       it "cannot index" do
         # Setup: create note feeds to test visibility
-        project_owner_note_feed_id
-        reviewer_first_note_feed_id
-        reviewer_second_note_feed_id
-        reviewer_third_note_feed_id
-        other_note_feed_id
+        project_owner_note_comment_id
+        annotator_note_comment_id
+        reviewer_first_note_comment_id
+        reviewer_second_note_comment_id
+        reviewer_third_note_comment_id
+        other_note_comment_id
 
         # Ensure that the annotator is a member of the third project
         member = project_member_repo.find_by!({ account_id: annotator_account_id, project_id: second_project_id })
@@ -403,23 +484,24 @@ RSpec.describe NoteFeed::Service, database: true do
 
         # Ensure that the annotator cannot see unassigned entries in the third project
         result = subject.index({})
-        expect(result.count).to eq 3
-        expect(result.map(&:id)).to_not include reviewer_third_note_feed_id
+        expect(result.count).to eq 4
+        expect(result.map(&:id)).to_not include reviewer_third_note_comment_id, other_note_comment_id
       end
 
       it "cannot create" do
-        create_attributes[:entry_id] = third_entry_id
+        create_data[:data][:relationships][:note_feed][:data][:id] = reviewer_third_note_feed_id
 
+        # Note feed exists but annotator is not assigned to entry
         expect {
-          subject.create_from_params(create_attributes)
+          subject.create(deserialize(create_data))
         }.to raise_error(
-          Verse::Error::Unauthorized,
-          "You do not have permission to create note feed"
+          Verse::Error::ValidationFailed,
+          "note feed not found to create a comment"
         )
       end
 
       it "cannot update" do
-        update_data[:data][:id] = project_owner_note_feed_id
+        update_data[:data][:id] = project_owner_note_comment_id
 
         expect {
           subject.update(deserialize(update_data))
@@ -428,31 +510,40 @@ RSpec.describe NoteFeed::Service, database: true do
 
       it "cannot delete" do
         expect {
-          subject.delete(project_owner_note_feed_id)
+          subject.delete(project_owner_note_comment_id)
         }.to raise_error(Verse::Error::RecordNotFound)
       end
     end
 
     describe "with not assigned project" do
       it "cannot index" do
-        _all_ids = [project_owner_note_feed_id, reviewer_first_note_feed_id, reviewer_third_note_feed_id]
+        # Setup: create note feeds to test visibility
+        project_owner_note_comment_id
+        annotator_note_comment_id
+        reviewer_first_note_comment_id
+        reviewer_second_note_comment_id
+        reviewer_third_note_comment_id
+        other_note_comment_id
 
         result = subject.index({})
 
-        expect(result.count).to eq 2
-        expect(result.map(&:id)).to_not include reviewer_third_note_feed_id
+        expect(result.count).to eq 4
+        expect(result.map(&:id)).to_not include reviewer_third_note_comment_id, other_note_comment_id
       end
 
       it "cannot create" do
-        create_attributes[:entry_id] = second_entry_id
+        create_data[:data][:relationships][:note_feed][:data][:id] = reviewer_third_note_feed_id
 
         expect {
-          subject.create_from_params(create_attributes)
-        }.to raise_error(Verse::Error::Unauthorized, "You do not have permission to create note feed")
+          subject.create(deserialize(create_data))
+        }.to raise_error(
+          Verse::Error::ValidationFailed,
+          "note feed not found to create a comment"
+        )
       end
 
       it "cannot update" do
-        update_data[:data][:id] = other_note_feed_id
+        update_data[:data][:id] = other_note_comment_id
 
         expect {
           subject.update(deserialize(update_data))
@@ -461,7 +552,7 @@ RSpec.describe NoteFeed::Service, database: true do
 
       it "cannot delete" do
         expect {
-          subject.delete(other_note_feed_id)
+          subject.delete(other_note_comment_id)
         }.to raise_error(Verse::Error::RecordNotFound)
       end
     end
@@ -482,53 +573,46 @@ RSpec.describe NoteFeed::Service, database: true do
 
     describe "with assigned project and assigned entries" do
       it "can index" do
-        # Setup: create note feeds to test visibility
-        project_owner_note_feed_id
-        reviewer_first_note_feed_id
-        reviewer_second_note_feed_id
-        reviewer_third_note_feed_id
-        other_note_feed_id
+        # Setup: create note comments to test visibility
+        project_owner_note_comment_id
+        annotator_note_comment_id
+        reviewer_first_note_comment_id
+        reviewer_second_note_comment_id
+        reviewer_third_note_comment_id
+        other_note_comment_id
 
         result = subject.index({})
 
-        # Can only see third note feed which is in their assigned entry
+        # Can only see third note comment which is in their assigned entry
         expect(result.count).to eq 1
-        expect(result.map(&:id)).to contain_exactly(reviewer_third_note_feed_id)
+        expect(result.map(&:id)).to contain_exactly(reviewer_third_note_comment_id)
       end
 
       it "can create" do
-        create_attributes[:entry_id] = second_entry_id
+        create_data[:data][:relationships][:note_feed][:data][:id] = reviewer_third_note_feed_id
 
-        record = subject.create_from_params(create_attributes)
+        record = subject.create(deserialize(create_data))
 
-        expect(record.project_id).to eq second_project_id
-        expect(record.dataset_id).to eq second_dataset_id
-        expect(record.entry_id).to eq second_entry_id
-        expect(record.anchor_type).to eq "entry"
-        expect(record.position).to eq({ x: 100, y: 200 })
-        expect(record.content_md).to eq "This is a test note"
+        expect(record.note_feed_id).to eq reviewer_third_note_feed_id
+        expect(record.content_md).to eq "This is a created test note comment"
         expect(record.created_by_email).to eq "reviewer@example.com"
       end
 
       it "can update" do
-        update_data[:data][:id] = reviewer_third_note_feed_id
+        update_data[:data][:id] = reviewer_third_note_comment_id
 
         record = subject.update(deserialize(update_data))
 
-        expect(record.project_id).to eq second_project_id
-        expect(record.dataset_id).to eq second_dataset_id
-        expect(record.entry_id).to eq second_entry_id
-        expect(record.anchor_type).to eq "entry"
-        expect(record.position).to eq({ x: 300, y: 400 })
-        expect(record.content_md).to eq "This is an updated test note"
+        expect(record.note_feed_id).to eq reviewer_third_note_feed_id
+        expect(record.content_md).to eq "This is an updated test note comment"
         expect(record.created_by_email).to eq "reviewer@example.com"
       end
 
       it "can delete" do
-        subject.delete(reviewer_third_note_feed_id)
+        subject.delete(reviewer_third_note_comment_id)
 
         expect {
-          subject.show(reviewer_third_note_feed_id)
+          subject.show(reviewer_third_note_comment_id)
         }.to raise_error(Verse::Error::RecordNotFound)
       end
     end
@@ -546,36 +630,38 @@ RSpec.describe NoteFeed::Service, database: true do
       end
 
       it "cannot index" do
-        # Setup: create note feeds to test visibility
-        project_owner_note_feed_id
-        reviewer_first_note_feed_id
-        reviewer_second_note_feed_id
-        reviewer_third_note_feed_id
-        other_note_feed_id
+        # Setup: create note comments to test visibility
+        project_owner_note_comment_id
+        annotator_note_comment_id
+        reviewer_first_note_comment_id
+        reviewer_second_note_comment_id
+        reviewer_third_note_comment_id
+        other_note_comment_id
 
-        # Ensure that the reviewer is a member of the third project
+        # Ensure that the reviewer is a member of the second project
         member = project_member_repo.find_by!({ account_id: reviewer_account_id, project_id: second_project_id })
         expect(member.project_id).to eq second_project_id
 
         # Ensure that the reviewer cannot see unassigned entries in the third project
         result = subject.index({})
         expect(result.count).to eq 1
-        expect(result.first.id).to_not eq reviewer_first_note_feed_id
+        expect(result.first.id).to_not eq reviewer_first_note_comment_id
       end
 
       it "cannot create" do
-        create_attributes[:entry_id] = first_entry_id
+        create_data[:data][:relationships][:note_feed][:data][:id] = other_note_feed_id
 
+        # Note feed exists but annotator is not assigned to entry
         expect {
-          subject.create_from_params(create_attributes)
+          subject.create(deserialize(create_data))
         }.to raise_error(
-          Verse::Error::Unauthorized,
-          "You do not have permission to create note feed"
+          Verse::Error::ValidationFailed,
+          "note feed not found to create a comment"
         )
       end
 
       it "cannot update" do
-        update_data[:data][:id] = project_owner_note_feed_id
+        update_data[:data][:id] = project_owner_note_comment_id
 
         expect {
           subject.update(deserialize(update_data))
@@ -584,7 +670,7 @@ RSpec.describe NoteFeed::Service, database: true do
 
       it "cannot delete" do
         expect {
-          subject.delete(project_owner_note_feed_id)
+          subject.delete(project_owner_note_comment_id)
         }.to raise_error(Verse::Error::RecordNotFound)
       end
     end
@@ -592,35 +678,38 @@ RSpec.describe NoteFeed::Service, database: true do
     describe "with not assigned project" do
       it "cannot index" do
         # Setup: create note feeds to test visibility
-        project_owner_note_feed_id
-        reviewer_first_note_feed_id
-        reviewer_second_note_feed_id
-        reviewer_third_note_feed_id
-        other_note_feed_id
+        project_owner_note_comment_id
+        annotator_note_comment_id
+        reviewer_first_note_comment_id
+        reviewer_second_note_comment_id
+        reviewer_third_note_comment_id
+        other_note_comment_id
 
         result = subject.index({})
 
         expect(result.count).to eq 1
         expect(result.first.id).to_not include(
           project_owner_note_feed_id,
+          annotator_note_feed_id,
           reviewer_first_note_feed_id,
-          reviewer_second_note_feed_id
+          reviewer_second_note_feed_id,
+          other_note_feed_id
         )
       end
 
       it "cannot create" do
-        create_attributes[:entry_id] = first_entry_id
+        create_data[:data][:relationships][:note_feed][:data][:id] = other_note_feed_id
 
         expect {
-          subject.create_from_params(create_attributes)
+          subject.create(deserialize(create_data))
         }.to raise_error(
-          Verse::Error::Unauthorized,
-          "You do not have permission to create note feed"
+          Verse::Error::ValidationFailed,
+          "note feed not found to create a comment"
         )
       end
 
       it "cannot update" do
-        update_data[:data][:id] = other_note_feed_id
+        update_data[:data][:id] = other_note_comment_id
 
         expect {
           subject.update(deserialize(update_data))
@@ -629,7 +718,7 @@ RSpec.describe NoteFeed::Service, database: true do
 
       it "cannot delete" do
         expect {
-          subject.delete(other_note_feed_id)
+          subject.delete(other_note_comment_id)
         }.to raise_error(Verse::Error::RecordNotFound)
       end
     end
