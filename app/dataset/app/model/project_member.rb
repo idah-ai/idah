@@ -33,12 +33,17 @@ module ProjectMember
     end
 
     # Actions                      | Roles
-    # read, create, update, delete | project_owner
+    # read                         | project_owner, reviewer, annotator
+    # create, update, delete       | project_owner
     #
     # Info:
-    # 1. only allowed for project_owner(member), org_owner and admin roles
+    # 1. only allowed for org_owner and project_owner(member) can create, update and delete project members
+    # 2. annotator and reviewer can only read project members in their projects
     query
     def account_project_scoped_query(action)
+      # Ignore create action as it will be handled in service layer
+      return table if action == :create
+
       account_id = auth_context.metadata[:id]
       scoped_fragment = <<-SQL
         EXISTS (
@@ -56,10 +61,10 @@ module ProjectMember
           Sequel.lit(
             scoped_fragment,
             account_id:,
-            roles: %w[project_owner annotator reviewer],
+            roles: %w[project_owner reviewer annotator],
           )
         )
-      when :create, :update, :delete
+      when :update, :delete
         table.where(
           Sequel.lit(
             scoped_fragment,
@@ -71,33 +76,6 @@ module ProjectMember
         raise Verse::Error::Unauthorized,
               "Permission denied for \"#{action}\" action on #{self.class.resource}"
       end
-    end
-
-    query
-    def account_can_access_project?(project_id, action)
-      account_project_scoped_query(action).where(project_id:).limit(1).any?
-    end
-
-    query
-    def with_project_member_role?(account_id, project_id, roles)
-      scoped_fragment = <<-SQL
-        EXISTS (
-          SELECT 1
-          FROM project_members pm
-          WHERE pm.account_id = :account_id
-            AND pm.project_id = :project_id
-            AND pm.role IN :roles
-        )
-      SQL
-
-      table.where(
-        Sequel.lit(
-          scoped_fragment,
-          account_id:,
-          project_id:,
-          roles:
-        )
-      ).limit(1).any?
     end
   end
 end

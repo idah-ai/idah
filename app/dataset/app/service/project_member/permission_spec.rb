@@ -8,10 +8,10 @@ RSpec.describe ProjectMember::Service, database: true do
   let(:project_member_repo) { ProjectMember::Repository.new(system_context) }
 
   # Projects
-  let!(:first_project_id) {
+  let(:first_project_id) {
     project_repo.create(name: "Project 1", created_by_email: "system@example.com")
   }
-  let!(:second_project_id) {
+  let(:second_project_id) {
     project_repo.create(name: "Project 2", created_by_email: "system@example.com")
   }
 
@@ -21,7 +21,7 @@ RSpec.describe ProjectMember::Service, database: true do
   let(:reviewer_account_id) { 5 }
 
   # Project Members
-  let!(:project_owner_member_id) {
+  let(:project_owner_member_id) {
     project_member_repo.create(
       project_id: first_project_id,
       account_id: project_owner_account_id,
@@ -31,7 +31,7 @@ RSpec.describe ProjectMember::Service, database: true do
       invited_by_id: 1
     )
   }
-  let!(:annotator_member_id) {
+  let(:annotator_member_id) {
     project_member_repo.create(
       project_id: first_project_id,
       account_id: annotator_account_id,
@@ -41,7 +41,7 @@ RSpec.describe ProjectMember::Service, database: true do
       invited_by_id: 1
     )
   }
-  let!(:reviewer_member_id) {
+  let(:reviewer_member_id) {
     project_member_repo.create(
       project_id: second_project_id,
       account_id: reviewer_account_id,
@@ -95,8 +95,15 @@ RSpec.describe ProjectMember::Service, database: true do
   context "as Project Owner", as: :project_owner do
     subject { described_class.new(current_auth_context) }
 
+    before do
+      project_owner_member_id # Assign user to project
+    end
+
     describe "with assigned project" do
       it "can index" do
+        # Setup: create other project members to test visibility
+        [annotator_member_id, reviewer_member_id]
+
         result = subject.index({})
 
         expect(result.count).to eq 2
@@ -131,6 +138,9 @@ RSpec.describe ProjectMember::Service, database: true do
 
     describe "with not assigned project" do
       it "cannot index" do
+        # Setup: create other project members to test visibility
+        [annotator_member_id, reviewer_member_id]
+
         result = subject.index({})
 
         expect(result.count).to eq 2
@@ -142,7 +152,10 @@ RSpec.describe ProjectMember::Service, database: true do
 
         expect {
           subject.create(deserialize(create_data))
-        }.to raise_error(Errors::Service::UnauthorizedProjectAccess)
+        }.to raise_error(
+          Verse::Error::Unauthorized,
+          "You do not have permission to create project member on this project"
+        )
       end
 
       it "cannot update" do
@@ -170,18 +183,28 @@ RSpec.describe ProjectMember::Service, database: true do
   context "as Annotator", as: :annotator do
     subject { described_class.new(current_auth_context) }
 
+    before do
+      annotator_member_id # Assign user to project
+    end
+
     describe "with assigned project" do
       it "can index" do
+        # Setup: create other project members to test visibility
+        [project_owner_member_id, reviewer_member_id]
+
         result = subject.index({})
 
         expect(result.count).to eq 2
-        expect(result.map(&:name)).to eq ["Project Owner", "Annotator"]
+        expect(result.map(&:name).sort).to eq ["Annotator", "Project Owner"]
       end
 
       it "cannot create" do
         expect {
           subject.create(deserialize(create_data))
-        }.to raise_error(Errors::Service::UnauthorizedProjectAccess)
+        }.to raise_error(
+          Verse::Error::Unauthorized,
+          "You do not have permission to create project member on this project"
+        )
       end
 
       it "cannot update" do
@@ -199,6 +222,9 @@ RSpec.describe ProjectMember::Service, database: true do
 
     describe "with not assigned project" do
       it "cannot index" do
+        # Setup: create other project members to test visibility
+        [project_owner_member_id, reviewer_member_id]
+
         result = subject.index({})
 
         expect(result.count).to eq 2
@@ -208,7 +234,10 @@ RSpec.describe ProjectMember::Service, database: true do
       it "cannot create" do
         expect {
           subject.create(deserialize(create_data))
-        }.to raise_error(Errors::Service::UnauthorizedProjectAccess)
+        }.to raise_error(
+          Verse::Error::Unauthorized,
+          "You do not have permission to create project member on this project"
+        )
       end
 
       it "cannot update" do
@@ -236,8 +265,15 @@ RSpec.describe ProjectMember::Service, database: true do
   context "as Reviewer", as: :reviewer do
     subject { described_class.new(current_auth_context) }
 
+    before do
+      reviewer_member_id # Assign user to project
+    end
+
     describe "with assigned project" do
       it "can index" do
+        # Setup: create other project members to test visibility
+        [project_owner_member_id, annotator_member_id]
+
         result = subject.index({})
 
         expect(result.count).to eq 1
@@ -247,7 +283,10 @@ RSpec.describe ProjectMember::Service, database: true do
       it "cannot create" do
         expect {
           subject.create(deserialize(create_data))
-        }.to raise_error(Errors::Service::UnauthorizedProjectAccess)
+        }.to raise_error(
+          Verse::Error::Unauthorized,
+          "You do not have permission to create project member on this project"
+        )
       end
 
       it "cannot update" do
@@ -265,6 +304,9 @@ RSpec.describe ProjectMember::Service, database: true do
 
     describe "with not assigned project" do
       it "cannot index" do
+        # Setup: create other project members from different project
+        [project_owner_member_id, annotator_member_id]
+
         result = subject.index({})
 
         expect(result.count).to eq 1
@@ -274,7 +316,10 @@ RSpec.describe ProjectMember::Service, database: true do
       it "cannot create" do
         expect {
           subject.create(deserialize(create_data))
-        }.to raise_error(Errors::Service::UnauthorizedProjectAccess)
+        }.to raise_error(
+          Verse::Error::Unauthorized,
+          "You do not have permission to create project member on this project"
+        )
       end
 
       it "cannot update" do

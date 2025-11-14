@@ -38,10 +38,13 @@ module Project
     #
     # Info:
     # 1. annotators and reviewers can only read projects
-    # 2. only project_owner(member), org_owner and admin roles can update and delete projects
+    # 2. only org_owner and project_owner(member) can update and delete projects
     # 3. only org_owner and admin roles can create projects
     query
     def account_project_scoped_query(action)
+      # Ignore create action as it will be handled in service layer
+      return table if action == :create
+
       account_id = auth_context.metadata[:id]
       scoped_fragment = <<-SQL
         EXISTS (
@@ -74,11 +77,6 @@ module Project
         raise Verse::Error::Unauthorized,
               "Permission denied for \"#{action}\" action on #{self.class.resource}"
       end
-    end
-
-    query
-    def account_can_access_project?(project_id, action)
-      account_project_scoped_query(action).where(project_id:).limit(1).any?
     end
   end
 end

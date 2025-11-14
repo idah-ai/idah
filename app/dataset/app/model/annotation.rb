@@ -39,11 +39,14 @@ module Annotation
     # read, create, update, delete  | project_owner, annotator, reviewer
     #
     # Info:
-    # 1. org_owner, admin roles and project_owner(member) can create, update and delete annotations
+    # 1. org_owner role and project_owner(member) can create, update and delete annotations
     # 2. annotator and reviewer project members can create, update, delete and read
     # annotations only for entries assigned to them
     query
     def account_project_scoped_query(action)
+      # Ignore create action as it will be handled in service layer
+      return table if action == :create
+
       account_id = auth_context.metadata[:id]
 
       scoped_fragment = <<-SQL
@@ -80,11 +83,6 @@ module Annotation
         raise Verse::Error::Unauthorized,
               "Permission denied for \"#{action}\" action on #{self.class.resource}"
       end
-    end
-
-    query
-    def account_can_access_project?(project_id, action)
-      account_project_scoped_query(action).where(project_id:).limit(1).any?
     end
   end
 end

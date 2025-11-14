@@ -41,17 +41,21 @@ module NoteFeed
       end
     end
 
-    # Actions                       | Member Roles
-    # read                          | project_owner, annotator, reviewer
-    # create, update, delete        | project_owner
-    # resolve, delete(own)          | reviewer
+    # Actions                      Member Roles
+    # read, create                | project_owner, reviewer, annotator
+    # update(own), delete(own)    | project_owner, reviewer, annotator
+    # resolve                     | project_owner, reviewer
     #
     # Info:
-    # 1. org_owner, admin roles and project_owner(member) can create, update and delete all note feeds
-    # 2. annotator and reviewer can read note feeds which entries are assigned to them
-    # 3. reviewer can resolve and delete(own) their note feeds
+    # 1. org owner and project owner can read/create note feeds in their projects
+    # 2. reviewer and annotator can read/create note feeds in their assigned entries in their projects
+    # 2. all roles can update and delete only their own note feeds in their projects
+    # 3. org owner, project owner and reviewer can resolve note feeds in their projects
     query
     def account_project_scoped_query(action)
+      # Ignore create action as it will be handled in service layer
+      return table if action == :create
+
       account_id = auth_context.metadata[:id]
       email = auth_context.metadata[:email]
 
@@ -83,37 +87,7 @@ module NoteFeed
             scoped_fragment,
             account_id:,
             with_roles: %w[project_owner],
-            assigned_to_roles: %w[annotator reviewer]
-          )
-        )
-      when :create
-        scoped_fragment = <<-SQL
-          EXISTS (
-            SELECT 1
-            FROM project_members pm
-            WHERE pm.account_id = :account_id
-              AND pm.project_id = note_feeds.project_id
-              AND (
-                pm.role IN :with_roles OR
-                (
-                  pm.role IN :assigned_to_roles
-                  AND EXISTS (
-                    SELECT 1
-                    FROM entries e
-                    WHERE e.id = note_feeds.entry_id
-                      AND e.assigned_to_id = :account_id
-                  )
-                )
-              )
-          )
-        SQL
-
-        table.where(
-          Sequel.lit(
-            scoped_fragment,
-            account_id:,
-            with_roles: %w[project_owner],
-            assigned_to_roles: %w[reviewer]
+            assigned_to_roles: %w[reviewer annotator]
           )
         )
       when :update, :delete
@@ -145,7 +119,7 @@ module NoteFeed
             account_id:,
             email:,
             with_roles: %w[project_owner],
-            assigned_to_roles: %w[reviewer]
+            assigned_to_roles: %w[reviewer annotator]
           )
         )
       else
