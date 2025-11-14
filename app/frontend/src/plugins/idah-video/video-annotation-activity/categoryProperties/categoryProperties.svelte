@@ -28,8 +28,8 @@
   // Contexts
   const context: IActivityContext = getContext("context");
   const typeConfig = context.config[type];
-  const category = typeConfig.values.find((c) => c.id == selectedCategory);
-  const properties = typeConfig.properties.filter((p) => visibilityFullfilled(annotationValue, p));
+  const category = typeConfig?.values.find((c) => c.id == selectedCategory);
+  const properties = typeConfig?.properties.filter((p) => visibilityFullfilled(annotationValue, p));
 
   const propertyComponents: {
     type: string;
@@ -57,11 +57,11 @@
 
 <div>
   <div class="flex pb-1">
-    <Text class="text-gray-500" weight="medium" size="sm">Category</Text>
+    <Text class="text-muted-foreground" weight="medium" size="sm">Category</Text>
   </div>
   {#key $idb_updated_at}
     <Select type="single" onValueChange={onSelectCategory}>
-      <SelectTrigger class="w-full bg-white data-[placeholder]:text-gray-900">
+      <SelectTrigger class="data-[placeholder]:text-secondary-foreground bg-secondary w-full">
         {category?.label}
       </SelectTrigger>
 
@@ -78,9 +78,9 @@
 
     <hr class="my-3 border-t border-gray-200" />
 
-    {#if properties.length > 0}
+    {#if properties?.length > 0}
       <div class="flex pb-1">
-        <Text class="text-gray-500" weight="medium" size="sm">Properties</Text>
+        <Text class="text-muted-foreground" weight="medium" size="sm">Properties</Text>
       </div>
 
       {#each properties as property (property.id)}

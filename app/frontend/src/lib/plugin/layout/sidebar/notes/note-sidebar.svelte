@@ -273,9 +273,7 @@
                 description="There are no notes yet. Be the first to add one!"
                 icon={MessageCircleDashedIcon}
                 class="mt-auto"
-              >
-                {#snippet actions()}{/snippet}
-              </ResponseBlock>
+              ></ResponseBlock>
             {/each}
           {/await}
         {/if}
