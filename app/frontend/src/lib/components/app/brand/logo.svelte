@@ -1,8 +1,12 @@
 <script lang="ts">
   import type { HTMLAttributes } from "svelte/elements";
-  import { cn, type WithElementRef } from "@/utils";
 
-  let { class: className }: WithElementRef<HTMLAttributes<HTMLDivElement>> = $props();
+  import idahLogoSvg from "@/components/app/brand/idah-logo.svg";
+
+  import { type WithElementRef } from "@/utils";
+
+  // Props
+  let { class: className }: WithElementRef<HTMLAttributes<HTMLImageElement>> = $props();
 </script>
 
-<div class={cn("bg-primary text-primary-foreground rounded-sm px-2 py-0.5 font-semibold", className)}>IDAH</div>
+<img src={idahLogoSvg} alt="idah-logo" class={className} />
