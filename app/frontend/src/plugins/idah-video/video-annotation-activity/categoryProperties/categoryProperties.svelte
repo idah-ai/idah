@@ -57,7 +57,11 @@
 
 <div>
   <div class="flex pb-1">
-    <Text class="text-muted-foreground" weight="medium" size="sm">Category</Text>
+    <Text class="text-muted-foreground" weight="medium" size="sm"
+      >{((s: string) => [s.slice(0, 1).toUpperCase(), s.slice(1)].join(""))(
+        type.split(":").reverse()[0].split(new RegExp(/-|_/)).join(" "),
+      )}</Text
+    >
   </div>
   {#key $idb_updated_at}
     <Select type="single" onValueChange={onSelectCategory}>
