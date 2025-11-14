@@ -78,7 +78,7 @@
 
     <hr class="my-3 border-t border-gray-200" />
 
-    {#if properties?.length > 0}
+    {#if category && properties?.length > 0}
       <div class="flex pb-1">
         <Text class="text-muted-foreground" weight="medium" size="sm">Properties</Text>
       </div>
