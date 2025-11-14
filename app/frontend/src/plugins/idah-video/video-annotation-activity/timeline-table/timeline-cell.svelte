@@ -48,7 +48,7 @@
   let categoryColor: string | undefined = $derived(getCategory(annotation.value.category)?.color);
   let range_span = $derived(Math.min(scale * zoom, totalFrames));
   let cellWidth: number = $derived((1 / ((range[1] - range[0] + (scale - (range_span % scale))) / 100)) * scale);
-  let isSelected: boolean = $derived(Math.floor(currentFrame / scale) == Math.floor(frame / scale));
+  let isSelected: boolean = $derived(currentFrame >= frame && currentFrame < frame + scale);
   let isHovered: boolean = $derived(hovered && !isSelected);
 
   // Functions

@@ -71,10 +71,13 @@
   let prevCurrentFrame: number = $state(currentFrame);
 
   $effect(() => {
-    // Auto-scroll to center currentFrame whenever it changes
+    // Auto-scroll to center currentFrame only when it's outside the visible range
     if (currentFrame !== prevCurrentFrame) {
-      const centerOffset = currentFrame - Math.floor(range_span / 2);
-      setOffset(centerOffset);
+      // Only center if the frame is outside the currently visible range
+      if (currentFrame < pos_offset || currentFrame > pos_offset + range_span) {
+        const centerOffset = currentFrame - Math.floor(range_span / 2);
+        setOffset(centerOffset);
+      }
       prevCurrentFrame = currentFrame;
     }
   });
