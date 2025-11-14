@@ -278,25 +278,18 @@
 
         const next = Math.floor(range_span / 4);
 
-        if (isScrollUp) {
-          scrollRight(next);
-        } else if (isScrollDown) {
-          scrollLeft(next);
-        }
+        if (isScrollUp) scrollRight(next);
+        else if (isScrollDown) scrollLeft(next);
       }
 
-      /** Handle CMD + Scroll to zoom in or out */
       if (e.metaKey) {
         const isScrollUp = e.deltaY < 0;
         const isScrollDown = e.deltaY > 0;
 
         const to = scale * (zoom / 10);
 
-        if (isScrollUp) {
-          zoomIn(to);
-        } else if (isScrollDown) {
-          zoomOut(to);
-        }
+        if (isScrollUp) zoomIn(to);
+        else if (isScrollDown) zoomOut(to);
       }
     }
     if (delta || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) e.preventDefault();
@@ -386,11 +379,11 @@
     </TableRow>
   </TableHeader>
 
-  <TableBody>
-    {#await annotations_promise}
-      {@render row($boundingBoxes)}
-    {:then annotations}
-      {@render row(annotations)}
-    {/await}
-  </TableBody>
+    <TableBody>
+      {#await annotations_promise}
+        {@render row($boundingBoxes)}
+      {:then annotations}
+        {@render row(annotations)}
+      {/await}
+    </TableBody>
 </Table>
