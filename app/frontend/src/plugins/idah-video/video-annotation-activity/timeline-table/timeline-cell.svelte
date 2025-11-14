@@ -99,7 +99,7 @@
 
               <ContextMenuItem onclick={() => onDeleteFrame?.(keyframe)}>
                 <Trash2Icon class="size-4"></Trash2Icon>
-                Delete frame
+                Delete frame {keyframe}
               </ContextMenuItem>
             {/each}
           </ContextMenuContent>
