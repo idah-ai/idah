@@ -171,7 +171,7 @@
     {@const isLastIndex = index == annotations.length - 1}
     <TableRow
       class={cn("border-b-0", {
-        "bg-primary border-t border-b": isSelected,
+        "bg-primary/20 border-t border-b": isSelected,
       })}
     >
       <TableCell
@@ -230,8 +230,8 @@
 
 {#snippet tooltipFrame(
   thisFrame: number,
-  bgColor: string = "bg-secondary",
-  textColor: string = "text-secondary-foreground",
+  bgColor: string = "bg:secondary-foreground dark:bg-secondary",
+  textColor: string = "text:secondary dark:text-secondary-foreground",
   extraClass: string = "",
 )}
   <span
@@ -278,31 +278,24 @@
 
         const next = Math.floor(range_span / 4);
 
-        if (isScrollUp) {
-          scrollRight(next);
-        } else if (isScrollDown) {
-          scrollLeft(next);
-        }
+        if (isScrollUp) scrollRight(next);
+        else if (isScrollDown) scrollLeft(next);
       }
 
-      /** Handle CMD + Scroll to zoom in or out */
       if (e.metaKey) {
         const isScrollUp = e.deltaY < 0;
         const isScrollDown = e.deltaY > 0;
 
         const to = scale * (zoom / 10);
 
-        if (isScrollUp) {
-          zoomIn(to);
-        } else if (isScrollDown) {
-          zoomOut(to);
-        }
+        if (isScrollUp) zoomIn(to);
+        else if (isScrollDown) zoomOut(to);
       }
     }
     if (delta || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) e.preventDefault();
   }}
 >
-  <TableHeader class="bg-background sticky" style="inset-block-start: 0">
+  <TableHeader class="bg-background sticky z-50" style="inset-block-start: 0">
     <TableRow>
       <!-- HEADER::ANNOTATIONS -->
       <TableHead class="h-7 w-80"></TableHead>
@@ -345,9 +338,9 @@
               </button>
             {:else if isDefault}
               <button
-                class={cn("border-border absolute top-0 h-full cursor-pointer border-l", {
-                  "bg-primary/30 text-primary z-100": isHovered,
-                  "text-muted-foreground/50 z-0": !isHovered,
+                class={cn("border-border text-muted-foreground/50 absolute top-0 h-full cursor-pointer border-l", {
+                  "z-100": isHovered,
+                  "z-0": !isHovered,
                 })}
                 style:width="{width}%"
                 style:left="{startLeftPosition}%"
@@ -356,7 +349,11 @@
                 onmouseleave={() => (hoveredColumn = undefined)}
               >
                 {#if isHovered}
-                  {@render tooltipFrame(thisFrame, "bg-secondary", "text-secondary-foreground")}
+                  {@render tooltipFrame(
+                    thisFrame,
+                    "bg-secondary-foreground dark:bg-secondary",
+                    "text-secondary dark:text-secondary-foreground",
+                  )}
                 {:else}
                   {thisFrame}
                 {/if}
@@ -376,7 +373,12 @@
                 onmouseleave={() => (hoveredColumn = undefined)}
               >
                 {#if isHovered}
-                  {@render tooltipFrame(thisFrame, "bg-secondary", "text-secondary-foreground", "-top-3")}
+                  {@render tooltipFrame(
+                    thisFrame,
+                    "bg-secondary-foreground dark:bg-secondary",
+                    "text-secondary dark:text-secondary-foreground",
+                    "-top-2.5",
+                  )}
                 {/if}
               </button>
             {/if}
