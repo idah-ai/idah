@@ -168,7 +168,7 @@
     <Button
       variant="ghost"
       class={cn("p-0 hover:cursor-pointer", {
-        "opacity-0": (!haveChildren) || selected_id,
+        "opacity-0": !haveChildren || selected_id,
         hidden: toolMode && selected_id,
       })}
       onclick={(e) => {
@@ -231,9 +231,10 @@
     {#key `${forceRender}-${$idb_updated_at}-${currentFrame}-${type}`}
       {#await haveAnnotationsInCategory(category.id) then hasAnnotations}
         <CollapsibleTrigger
-          class={cn("text-secondary-foreground flex w-full items-center justify-between text-xs pr-1", {
+          class={cn("text-secondary-foreground flex w-full items-center justify-between pr-1 text-xs", {
             "bg-secondary border-ring text-secondary-foreground rounded-sm border-1": selected == category.id,
-            "hover:bg-primary-foreground hover:dark:bg-accent hover:cursor-pointer hover:rounded-sm": !category.requiredNested,
+            "hover:bg-primary-foreground hover:dark:bg-accent hover:cursor-pointer hover:rounded-sm":
+              !category.requiredNested,
             "hover:bg-accent hover:cursor-pointer hover:rounded-sm": !toolMode,
           })}
           onclick={(e) => {
@@ -315,7 +316,7 @@
       <Text class="text-secondary-foreground" size="xs" weight="semibold">{type}</Text>
     </CollapsibleTrigger>
     <CollapsibleContent>
-      <div class="flex gap-2 py-2 items-center">
+      <div class="flex items-center gap-2 py-2">
         <Text class="text-secondary-foreground" size="xs" weight="semibold">Categories</Text>
         {#key $idb_updated_at}
           <Badge variant="gray" class="text-xs">
