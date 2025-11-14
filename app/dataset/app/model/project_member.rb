@@ -77,5 +77,27 @@ module ProjectMember
     def account_can_access_project?(project_id, action)
       account_project_scoped_query(action).where(project_id:).limit(1).any?
     end
+
+    query
+    def with_project_member_role?(account_id, project_id, roles)
+      scoped_fragment = <<-SQL
+        EXISTS (
+          SELECT 1
+          FROM project_members pm
+          WHERE pm.account_id = :account_id
+            AND pm.project_id = :project_id
+            AND pm.role IN :roles
+        )
+      SQL
+
+      table.where(
+        Sequel.lit(
+          scoped_fragment,
+          account_id:,
+          project_id:,
+          roles:
+        )
+      ).limit(1).any?
+    end
   end
 end
