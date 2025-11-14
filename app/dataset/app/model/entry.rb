@@ -39,7 +39,7 @@ module Entry
 
         scope.as_org_owner? do
           org_ids = auth_context.custom_scopes[:org]
-          table.where(project_id: table.db[:projects].where(organization_id: org_ids).select(:id))
+          table.where(table.db[:projects].where(organization_id: org_ids).select(1).exists)
         end
 
         scope.as_user? { account_project_scoped_query(action) }
@@ -67,28 +67,13 @@ module Entry
         )
       SQL
 
-      assigned_scoped_fragment = <<-SQL
-        EXISTS (
-          SELECT 1
-          FROM project_members pm
-          WHERE pm.account_id = :account_id
-            AND pm.project_id = entries.project_id
-            AND pm.role IN :roles
-        )
-        AND entries.assigned_to_id = :account_id
-      SQL
-
       case action
       when :read
         table.where(
           Sequel.lit(
             scoped_fragment,
             account_id:,
-            roles: %w[project_owner]
-          ) | Sequel.lit(
-            assigned_scoped_fragment,
-            account_id:,
-            roles: %w[annotator reviewer]
+            roles: %w[project_owner annotator reviewer]
           )
         )
 
