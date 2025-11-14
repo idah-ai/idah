@@ -4,7 +4,8 @@ module NoteFeed
   class Service < Verse::Service::Base
     use note_feeds: NoteFeed::Repository
     use_system entries: Entry::Repository,
-               annotations: Annotation::Repository
+               annotations: Annotation::Repository,
+               project_members: ProjectMember::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       note_feeds.index(
@@ -29,7 +30,7 @@ module NoteFeed
     end
 
     def delete(id)
-      note_feeds.delete(id)
+      note_feeds.delete!(id)
     end
 
     def resolve(id)
@@ -52,11 +53,19 @@ module NoteFeed
               "entry not found to create a note feed"
       end
 
+      unless project_members.with_project_member_role?(
+        auth_context.metadata[:id],
+        entry.project_id,
+        ["project_owner", "reviewer"]
+      )
+        raise Verse::Error::Unauthorized,
+              "You do not have permission to add note feed"
+      end
+
       attributes[:id] = UUIDv7.generate
       attributes[:project_id] = entry.project_id
       attributes[:dataset_id] = entry.dataset_id
-      # put created_by_email to nil for now, will be replaced with auth_context[:email] later
-      attributes[:created_by_email] ||= nil
+      attributes[:created_by_email] = auth_context.metadata[:email]
       attributes[:status] = "pending"
 
       # Check if the current workflow step allows note feeds
