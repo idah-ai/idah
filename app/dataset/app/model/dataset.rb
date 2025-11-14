@@ -93,7 +93,7 @@ module Dataset
             assigned_to_roles: %w[annotator reviewer]
           )
         )
-      when :create, :update, :delete
+      when :update, :delete
         scoped_fragment = <<-SQL
           EXISTS (
             SELECT 1
