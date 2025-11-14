@@ -30,7 +30,10 @@
   </Label>
 
   <Select type="single" {value} {onValueChange}>
-    <SelectTrigger class="data-[placeholder]:text-secondary-foreground bg-secondary w-full text-xs" aria-invalid={invalid}>
+    <SelectTrigger
+      class="data-[placeholder]:text-secondary-foreground bg-secondary w-full text-xs"
+      aria-invalid={invalid}
+    >
       {options.find(({ id }) => id == value)?.label || "Select property"}
     </SelectTrigger>
     <SelectContent>
