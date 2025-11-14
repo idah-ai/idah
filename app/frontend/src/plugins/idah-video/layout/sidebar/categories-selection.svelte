@@ -231,7 +231,7 @@
     {#key `${forceRender}-${$idb_updated_at}-${currentFrame}-${type}`}
       {#await haveAnnotationsInCategory(category.id) then hasAnnotations}
         <CollapsibleTrigger
-          class={cn("text-secondary-foreground flex w-full items-center justify-between text-xs", {
+          class={cn("text-secondary-foreground flex w-full items-center justify-between text-xs pr-1", {
             "bg-secondary border-ring text-secondary-foreground rounded-sm border-1": selected == category.id,
             "hover:bg-primary-foreground hover:dark:bg-accent hover:cursor-pointer hover:rounded-sm": !category.requiredNested,
             "hover:bg-accent hover:cursor-pointer hover:rounded-sm": !toolMode,
