@@ -1,6 +1,7 @@
 <script lang="ts">
   import { PlusIcon, Trash2Icon } from "@lucide/svelte";
 
+  import CheckboxField from "@/components/app/forms/fields/input/checkbox-field.svelte";
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import NumberField from "@/components/app/forms/fields/input/number-field.svelte";
   import TextareaField from "@/components/app/forms/fields/input/textarea-field.svelte";
@@ -22,7 +23,7 @@
   let { property, onSetValue }: Props = $props();
 
   // Variables
-  let { id, description, type, format, visibility } = $derived(property);
+  let { id, description, type, format, required, visibility } = $derived(property);
 
   let visibilityError: string | undefined = $state();
 </script>
@@ -32,14 +33,24 @@
 {/snippet}
 
 <div class="flex flex-col gap-4">
-  <!-- PROPERTY OPTIONS:: DESCRIPTION -->
   <div class="flex flex-col gap-2 px-6">
+    <!-- PROPERTY OPTIONS:: DESCRIPTION -->
     <TextareaField
       name="{id}/description"
       label="Description"
       value={description}
       oninput={(e) => onSetValue({ description: e.currentTarget.value })}
     />
+
+    <!-- PROPERTY::REQUIRED -->
+    <CheckboxField
+      name="{id}/required"
+      label="Required"
+      bordered
+      info="If checked, this property must be filled before submission."
+      checked={required}
+      onCheckedChange={() => onSetValue({ required: !required })}
+    ></CheckboxField>
   </div>
 
   <!-- PROPERTY OPTIONS::FORMAT -->
@@ -185,7 +196,9 @@
           visibilityError = undefined;
           onSetValue({ visibility: visibility.length ? visibility : true });
         } catch (error) {
-          visibilityError = error.message;
+          if (error instanceof Error) {
+            visibilityError = error.message;
+          }
         }
       }}
     />

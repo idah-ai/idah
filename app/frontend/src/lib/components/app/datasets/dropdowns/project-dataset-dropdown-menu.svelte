@@ -1,12 +1,11 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
-  import { EllipsisVerticalIcon, SquarePenIcon, Trash2Icon } from "@lucide/svelte";
+  import { SquarePenIcon, Trash2Icon } from "@lucide/svelte";
 
   import DatasetFormModal from "@/components/app/datasets/overlays/dataset-form-modal.svelte";
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
-  import Button from "@/components/ui/button/button.svelte";
 
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { refetches } from "@/utils/refetch";
@@ -67,13 +66,7 @@
   }
 </script>
 
-<DropdownMenus {menus} align="center">
-  {#snippet trigger({ props })}
-    <Button variant="ghost" size="icon" {...props}>
-      <EllipsisVerticalIcon class="size-4"></EllipsisVerticalIcon>
-    </Button>
-  {/snippet}
-</DropdownMenus>
+<DropdownMenus {menus} align="end" />
 
 <DatasetFormModal title="Dataset" action="update" {datasetRecord} bind:open={openEditDatasetFormModal} />
 
@@ -82,4 +75,4 @@
   description="Are you sure you want to delete this dataset?"
   onConfirm={deleteDataset}
   bind:open={openConfirmDeleteDatasetModal}
-></ConfirmModal>
+/>

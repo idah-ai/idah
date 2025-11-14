@@ -43,12 +43,14 @@
 
 <DropdownMenus {menus}>
   {#snippet trigger({ props })}
+    {@const isOpen = props["data-state"] === "open"}
+
     <Button
       {...props}
-      variant="ghost"
+      variant={isOpen ? "secondary" : "ghost"}
       size="icon-sm"
       class={cn("", className, {
-        "opacity-100": props["data-state"] === "open",
+        "opacity-100": isOpen,
       })}
     >
       <EllipsisVerticalIcon />

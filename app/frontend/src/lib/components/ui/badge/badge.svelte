@@ -14,6 +14,7 @@
           "bg-amber-300 text-secondary-foreground dark:text-secondary [a&]:hover:bg-amber-300/90 border-transparent",
         success: "bg-green-600 text-primary-foreground [a&]:hover:bg-green-600/90 border-transparent",
         info: "bg-sky-200 text-secondary-foreground [a&]:hover:bg-sky-200/90 border-transparent",
+        gray: "bg-gray-200 text-secondary-foreground dark:bg-gray-600 [a&]:hover:bg-secondary/90 border-transparent",
       },
       rounded: {
         none: "rounded-none",
