@@ -71,12 +71,10 @@
   let prevCurrentFrame: number = $state(currentFrame);
 
   $effect(() => {
-    // Auto-scroll to center currentFrame only when currentFrame actually changes
+    // Auto-scroll to center currentFrame whenever it changes
     if (currentFrame !== prevCurrentFrame) {
       const centerOffset = currentFrame - Math.floor(range_span / 2);
-      if (currentFrame < pos_offset || currentFrame > pos_offset + range_span) {
-        setOffset(centerOffset);
-      }
+      setOffset(centerOffset);
       prevCurrentFrame = currentFrame;
     }
   });
@@ -102,6 +100,11 @@
 
     onScaleChange?.(scale);
     onZoomChange?.(zoom);
+
+    // Re-center on current frame after zoom change
+    const newRangeSpan = Math.min(scale * zoom, totalFrames);
+    const centerOffset = currentFrame - Math.floor(newRangeSpan / 2);
+    setOffset(centerOffset);
   }
 
   function seekToFrame(frameToGo: number) {
