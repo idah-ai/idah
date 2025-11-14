@@ -295,7 +295,7 @@
     if (delta || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) e.preventDefault();
   }}
 >
-  <TableHeader class="bg-background sticky" style="inset-block-start: 0">
+  <TableHeader class="bg-background sticky z-50" style="inset-block-start: 0">
     <TableRow>
       <!-- HEADER::ANNOTATIONS -->
       <TableHead class="h-7 w-80"></TableHead>
