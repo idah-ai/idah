@@ -10,13 +10,13 @@ RSpec.describe Entry::Service, database: true do
   let(:entry_repo) { Entry::Repository.new(system_context) }
 
   # Projects
-  let!(:first_project_id) {
+  let(:first_project_id) {
     project_repo.create(name: "Project 1", created_by_email: "system@example.com")
   }
-  let!(:second_project_id) {
+  let(:second_project_id) {
     project_repo.create(name: "Project 2", created_by_email: "system@example.com")
   }
-  let!(:third_project_id) {
+  let(:third_project_id) {
     project_repo.create(name: "Project 3", created_by_email: "system@example.com")
   }
 
@@ -27,7 +27,7 @@ RSpec.describe Entry::Service, database: true do
   let(:another_annotator_account_id) { 6 }
 
   # Project Members
-  let!(:project_owner_member_id) {
+  let(:project_owner_member_id) {
     project_member_repo.create(
       project_id: first_project_id,
       account_id: project_owner_account_id,
@@ -36,7 +36,7 @@ RSpec.describe Entry::Service, database: true do
       invited_by_id: 1
     )
   }
-  let!(:annotator_member_id) {
+  let(:annotator_member_id) {
     project_member_repo.create(
       project_id: first_project_id,
       account_id: annotator_account_id,
@@ -45,7 +45,7 @@ RSpec.describe Entry::Service, database: true do
       invited_by_id: 1
     )
   }
-  let!(:reviewer_member_id) {
+  let(:reviewer_member_id) {
     project_member_repo.create(
       project_id: second_project_id,
       account_id: reviewer_account_id,
@@ -54,7 +54,7 @@ RSpec.describe Entry::Service, database: true do
       invited_by_id: 1
     )
   }
-  let!(:another_annotator_member_id) {
+  let(:another_annotator_member_id) {
     project_member_repo.create(
       project_id: third_project_id,
       account_id: another_annotator_account_id,
@@ -65,7 +65,7 @@ RSpec.describe Entry::Service, database: true do
   }
 
   # Datasets
-  let!(:first_dataset_id) {
+  let(:first_dataset_id) {
     dataset_repo.create(
       name: "Dataset 1",
       project_id: first_project_id,
@@ -74,7 +74,7 @@ RSpec.describe Entry::Service, database: true do
       labeling_configuration: {}
     )
   }
-  let!(:second_dataset_id) {
+  let(:second_dataset_id) {
     dataset_repo.create(
       name: "Dataset 2",
       project_id: second_project_id,
@@ -83,7 +83,7 @@ RSpec.describe Entry::Service, database: true do
       labeling_configuration: {}
     )
   }
-  let!(:third_dataset_id) {
+  let(:third_dataset_id) {
     dataset_repo.create(
       name: "Dataset 3",
       project_id: third_project_id,
@@ -94,7 +94,7 @@ RSpec.describe Entry::Service, database: true do
   }
 
   # Entries
-  let!(:first_entry_id) {
+  let(:first_entry_id) {
     entry_repo.create(
       project_id: first_project_id,
       dataset_id: first_dataset_id,
@@ -105,7 +105,7 @@ RSpec.describe Entry::Service, database: true do
       assigned_to_id: annotator_account_id,
     )
   }
-  let!(:second_entry_id) {
+  let(:second_entry_id) {
     entry_repo.create(
       project_id: second_project_id,
       dataset_id: second_dataset_id,
@@ -116,7 +116,7 @@ RSpec.describe Entry::Service, database: true do
       assigned_to_id: reviewer_account_id,
     )
   }
-  let!(:third_entry_id) {
+  let(:third_entry_id) {
     entry_repo.create(
       project_id: third_project_id,
       dataset_id: third_dataset_id,
@@ -172,12 +172,18 @@ RSpec.describe Entry::Service, database: true do
   context "as Project Owner", as: :project_owner do
     subject { described_class.new(current_auth_context) }
 
+    before do
+      project_owner_member_id # Assign user to project
+    end
+
     describe "with assigned project" do
       it "can index" do
+        # Setup: Create entries as "Project Owner" can see all entries in assigned project
+        [first_entry_id, second_entry_id, third_entry_id]
+
         result = subject.index({})
 
         expect(result.count).to eq 1
-
         expect(result.first.id).to eq first_entry_id
       end
 
@@ -214,10 +220,13 @@ RSpec.describe Entry::Service, database: true do
 
     describe "with not assigned project" do
       it "cannot index" do
+        # Setup: Create entries as "Project Owner" can see all entries in assigned project
+        [first_entry_id, second_entry_id, third_entry_id]
+
         result = subject.index({})
 
         expect(result.count).to eq 1
-        expect(result.first.id).to_not eq second_entry_id
+        expect(result.first.id).to_not include second_entry_id, third_entry_id
       end
 
       it "cannot create" do
@@ -253,7 +262,10 @@ RSpec.describe Entry::Service, database: true do
 
         expect {
           subject.create(deserialize(create_data))
-        }.to raise_error(Errors::Service::UnauthorizedProjectAccess)
+        }.to raise_error(
+          Verse::Error::Unauthorized,
+          "You do not have permission to create entry on this project"
+        )
       end
 
       it "cannot update" do
@@ -281,8 +293,15 @@ RSpec.describe Entry::Service, database: true do
   context "as Annotator", as: :annotator do
     subject { described_class.new(current_auth_context) }
 
+    before do
+      annotator_member_id # Assign user to project
+    end
+
     describe "with assigned project and assigned entries" do
       it "can index" do
+        # Setup: Create entries as "Annotator" can see all entries in assigned entries
+        [first_entry_id, second_entry_id, third_entry_id]
+
         result = subject.index({})
 
         expect(result.count).to eq 1
@@ -290,9 +309,15 @@ RSpec.describe Entry::Service, database: true do
       end
 
       it "cannot create" do
+        # Create dataset and entry in first project to be able to access it
+        [first_dataset_id, first_entry_id]
+
         expect {
           subject.create(deserialize(create_data))
-        }.to raise_error(Errors::Service::UnauthorizedProjectAccess)
+        }.to raise_error(
+          Verse::Error::Unauthorized,
+          "You do not have permission to create entry on this project"
+        )
       end
 
       it "cannot update" do
@@ -321,6 +346,9 @@ RSpec.describe Entry::Service, database: true do
       end
 
       it "cannot index" do
+        # Setup: Create entries as "Annotator" can see all entries in assigned entries
+        [first_entry_id, second_entry_id, third_entry_id]
+
         # Ensure that the annotator is a member of the third project
         member = project_member_repo.find_by!({ account_id: annotator_account_id, project_id: third_project_id })
         expect(member.project_id).to eq third_project_id
@@ -334,17 +362,25 @@ RSpec.describe Entry::Service, database: true do
 
     describe "with not assigned project" do
       it "cannot index" do
+        # Setup: Create entries as "Annotator" can see all entries in assigned entries
+        [first_entry_id, second_entry_id, third_entry_id]
+
         result = subject.index({})
 
         expect(result.count).to eq 1
-        expect(result.first.id).to_not eq second_entry_id
-        expect(result.first.id).to_not eq third_entry_id
+        expect(result.first.id).to_not include second_entry_id, third_entry_id
       end
 
       it "cannot create" do
+        create_data[:data][:relationships][:dataset][:data][:id] = second_dataset_id
+
+        # User cannot access dataset in unassigned project
         expect {
           subject.create(deserialize(create_data))
-        }.to raise_error(Errors::Service::UnauthorizedProjectAccess)
+        }.to raise_error(
+          Verse::Error::ValidationFailed,
+          "dataset not found to create an entry"
+        )
       end
 
       it "cannot update" do
@@ -372,8 +408,15 @@ RSpec.describe Entry::Service, database: true do
   context "as Reviewer", as: :reviewer do
     subject { described_class.new(current_auth_context) }
 
+    before do
+      reviewer_member_id # Assign user to project
+    end
+
     describe "with assigned project on assigned entries" do
       it "can index" do
+        # Setup: Create entries as "Reviewer" can see all entries in assigned entries
+        [first_entry_id, second_entry_id, third_entry_id]
+
         result = subject.index({})
 
         expect(result.count).to eq 1
@@ -381,11 +424,17 @@ RSpec.describe Entry::Service, database: true do
       end
 
       it "cannot create" do
+        # Create dataset and entry in first project to be able to access it
+        [second_dataset_id, second_entry_id]
+
         create_data[:data][:relationships][:dataset][:data][:id] = second_dataset_id
 
         expect {
           subject.create(deserialize(create_data))
-        }.to raise_error(Errors::Service::UnauthorizedProjectAccess)
+        }.to raise_error(
+          Verse::Error::Unauthorized,
+          "You do not have permission to create entry on this project"
+        )
       end
 
       it "cannot update" do
@@ -414,6 +463,9 @@ RSpec.describe Entry::Service, database: true do
       end
 
       it "cannot index" do
+        # Setup: Create entries as "Reviewer" can see all entries in assigned entries
+        [first_entry_id, second_entry_id, third_entry_id]
+
         # Ensure that the reviewer is a member of the third project
         member = project_member_repo.find_by!({ account_id: reviewer_account_id, project_id: third_project_id })
         expect(member.project_id).to eq third_project_id
@@ -427,17 +479,22 @@ RSpec.describe Entry::Service, database: true do
 
     describe "with not assigned project" do
       it "cannot index" do
+        # Setup: Create entries as "Annotator" can see all entries in assigned entries
+        [first_entry_id, second_entry_id, third_entry_id]
+
         result = subject.index({})
 
         expect(result.count).to eq 1
-        expect(result.first.id).to_not eq first_entry_id
-        expect(result.first.id).to_not eq third_entry_id
+        expect(result.first.id).to_not include first_entry_id, third_entry_id
       end
 
       it "cannot create" do
         expect {
           subject.create(deserialize(create_data))
-        }.to raise_error(Verse::Error::ValidationFailed, "dataset not found to create an entry")
+        }.to raise_error(
+          Verse::Error::ValidationFailed,
+          "dataset not found to create an entry"
+        )
       end
 
       it "cannot update" do

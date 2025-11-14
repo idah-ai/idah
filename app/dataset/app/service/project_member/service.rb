@@ -26,9 +26,15 @@ module ProjectMember
               "project relationship is required to create a project member"
       end
 
-      # Ensure user can "create" member to the project
-      unless project_members.account_can_access_project?(record.project.id, :create)
-        raise Errors::Service::UnauthorizedProjectAccess
+      # With "as_user" access ensure account can "create" project member to the project
+      access = auth_context.can?(:create, project_members.class.resource)
+      if access == :as_user && !ScopedQuery::Service.with_project_access?(
+        auth_context.metadata[:id],
+        record.project.id,
+        ["project_owner"]
+      )
+        raise Verse::Error::Unauthorized,
+              "You do not have permission to create project member on this project"
       end
 
       # Assign attributes

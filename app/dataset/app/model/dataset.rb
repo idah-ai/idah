@@ -51,10 +51,13 @@ module Dataset
     # create, update, delete | project_owner
     #
     # Info:
-    # 1. only project_owner(member), org_owner and admin roles can create, update and delete datasets
+    # 1. only org_owner and project_owner(member) role can create, update and delete datasets
     # 2. annotator and reviewer can only read datasets
     query
     def account_project_scoped_query(action)
+      # Ignore create action as it will be handled in service layer
+      return table if action == :create
+
       account_id = auth_context.metadata[:id]
 
       case action
@@ -112,11 +115,6 @@ module Dataset
         raise Verse::Error::Unauthorized,
               "Permission denied for \"#{action}\" action on #{self.class.resource}"
       end
-    end
-
-    query
-    def account_can_access_project?(project_id, action)
-      account_project_scoped_query(action).where(project_id:).limit(1).any?
     end
   end
 end

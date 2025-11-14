@@ -53,13 +53,15 @@ module NoteFeed
               "entry not found to create a note feed"
       end
 
-      unless project_members.with_project_member_role?(
+      # With "as_user" access ensure account can "create" note feed to the project
+      access = auth_context.can?(:create, note_feeds.class.resource)
+      if access == :as_user && !ScopedQuery::Service.with_project_access?(
         auth_context.metadata[:id],
         entry.project_id,
-        ["project_owner", "reviewer"]
+        ["project_owner", "reviewer", "annotator"]
       )
         raise Verse::Error::Unauthorized,
-              "You do not have permission to add note feed"
+              "You do not have permission to create note feed"
       end
 
       attributes[:id] = UUIDv7.generate

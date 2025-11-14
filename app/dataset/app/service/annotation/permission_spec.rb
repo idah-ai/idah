@@ -11,13 +11,13 @@ RSpec.describe Annotation::Service, database: true do
   let(:annotation_repo) { Annotation::Repository.new(system_context) }
 
   # Projects
-  let!(:first_project_id) {
+  let(:first_project_id) {
     project_repo.create(name: "Project 1", created_by_email: "system@example.com")
   }
-  let!(:second_project_id) {
+  let(:second_project_id) {
     project_repo.create(name: "Project 2", created_by_email: "system@example.com")
   }
-  let!(:third_project_id) {
+  let(:third_project_id) {
     project_repo.create(name: "Project 3", created_by_email: "system@example.com")
   }
 
@@ -28,7 +28,7 @@ RSpec.describe Annotation::Service, database: true do
   let(:another_annotator_account_id) { 6 }
 
   # Project Members
-  let!(:project_owner_member_id) {
+  let(:project_owner_member_id) {
     project_member_repo.create(
       project_id: first_project_id,
       account_id: project_owner_account_id,
@@ -37,7 +37,7 @@ RSpec.describe Annotation::Service, database: true do
       invited_by_id: 1
     )
   }
-  let!(:annotator_member_id) {
+  let(:annotator_member_id) {
     project_member_repo.create(
       project_id: first_project_id,
       account_id: annotator_account_id,
@@ -46,7 +46,7 @@ RSpec.describe Annotation::Service, database: true do
       invited_by_id: 1
     )
   }
-  let!(:reviewer_member_id) {
+  let(:reviewer_member_id) {
     project_member_repo.create(
       project_id: second_project_id,
       account_id: reviewer_account_id,
@@ -55,7 +55,7 @@ RSpec.describe Annotation::Service, database: true do
       invited_by_id: 1
     )
   }
-  let!(:another_annotator_member_id) {
+  let(:another_annotator_member_id) {
     project_member_repo.create(
       project_id: third_project_id,
       account_id: another_annotator_account_id,
@@ -66,7 +66,7 @@ RSpec.describe Annotation::Service, database: true do
   }
 
   # Datasets
-  let!(:first_dataset_id) {
+  let(:first_dataset_id) {
     dataset_repo.create(
       name: "Dataset 1",
       project_id: first_project_id,
@@ -75,7 +75,7 @@ RSpec.describe Annotation::Service, database: true do
       labeling_configuration: {}
     )
   }
-  let!(:second_dataset_id) {
+  let(:second_dataset_id) {
     dataset_repo.create(
       name: "Dataset 2",
       project_id: second_project_id,
@@ -84,7 +84,7 @@ RSpec.describe Annotation::Service, database: true do
       labeling_configuration: {}
     )
   }
-  let!(:third_dataset_id) {
+  let(:third_dataset_id) {
     dataset_repo.create(
       name: "Dataset 3",
       project_id: third_project_id,
@@ -95,7 +95,7 @@ RSpec.describe Annotation::Service, database: true do
   }
 
   # Entries
-  let!(:first_entry_id) {
+  let(:first_entry_id) {
     entry_repo.create(
       project_id: first_project_id,
       dataset_id: first_dataset_id,
@@ -106,7 +106,7 @@ RSpec.describe Annotation::Service, database: true do
       assigned_to_id: 4, # annotator
     )
   }
-  let!(:second_entry_id) {
+  let(:second_entry_id) {
     entry_repo.create(
       project_id: second_project_id,
       dataset_id: second_dataset_id,
@@ -117,7 +117,7 @@ RSpec.describe Annotation::Service, database: true do
       assigned_to_id: 5, # reviewer
     )
   }
-  let!(:third_entry_id) {
+  let(:third_entry_id) {
     entry_repo.create(
       project_id: third_project_id,
       dataset_id: third_dataset_id,
@@ -130,7 +130,7 @@ RSpec.describe Annotation::Service, database: true do
   }
 
   # Annotations
-  let!(:first_annotation_id) {
+  let(:first_annotation_id) {
     annotation_repo.create(
       project_id: first_project_id,
       dataset_id: first_dataset_id,
@@ -140,7 +140,7 @@ RSpec.describe Annotation::Service, database: true do
       created_by_email: "an@example.com"
     )
   }
-  let!(:second_annotation_id) {
+  let(:second_annotation_id) {
     annotation_repo.create(
       project_id: second_project_id,
       dataset_id: second_dataset_id,
@@ -150,7 +150,7 @@ RSpec.describe Annotation::Service, database: true do
       created_by_email: "re@example.com"
     )
   }
-  let!(:third_annotation_id) {
+  let(:third_annotation_id) {
     annotation_repo.create(
       project_id: third_project_id,
       dataset_id: third_dataset_id,
@@ -204,8 +204,15 @@ RSpec.describe Annotation::Service, database: true do
   context "as Project Owner", as: :project_owner do
     subject { described_class.new(current_auth_context) }
 
+    before do
+      project_owner_member_id # Assign user to project
+    end
+
     describe "with assigned project" do
       it "can index" do
+        # Setup: Create annotations as "Project Owner" can see all annotations in assigned project
+        [first_annotation_id, second_annotation_id, third_annotation_id]
+
         result = subject.index({})
 
         expect(result.count).to eq 1
@@ -215,17 +222,14 @@ RSpec.describe Annotation::Service, database: true do
       end
 
       it "can create" do
-        create_data[:data][:attributes][:created_by_email] = "po@example.com"
-
-        created = subject.create(deserialize(create_data))
-        record = subject.show(created.id)
+        record = subject.create(deserialize(create_data))
 
         expect(record.project_id).to eq first_project_id
         expect(record.dataset_id).to eq first_dataset_id
         expect(record.entry_id).to eq first_entry_id
         expect(record.dimensions).to eq({ x: 10, y: 20, width: 30, height: 40 })
         expect(record.annotation).to eq({ label: "cat" })
-        expect(record.created_by_email).to eq "po@example.com"
+        expect(record.created_by_email).to eq "project_owner@example.com"
       end
 
       it "can update" do
@@ -249,12 +253,13 @@ RSpec.describe Annotation::Service, database: true do
 
     describe "with not assigned project" do
       it "cannot index" do
+        # Setup: Create annotations as "Project Owner" can see all annotations in assigned project
+        [first_annotation_id, second_annotation_id, third_annotation_id]
+
         result = subject.index({})
 
         expect(result.count).to eq 1
-
-        record = result.first
-        expect(record.id).to_not eq second_annotation_id
+        expect(result.first.id).to_not include second_annotation_id, third_annotation_id
       end
 
       it "cannot create" do
@@ -262,7 +267,10 @@ RSpec.describe Annotation::Service, database: true do
 
         expect {
           subject.create(deserialize(create_data))
-        }.to raise_error(Verse::Error::ValidationFailed, "entry not found to create an annotation")
+        }.to raise_error(
+          Verse::Error::ValidationFailed,
+          "entry not found to create an annotation"
+        )
       end
 
       it "cannot update" do
@@ -290,14 +298,19 @@ RSpec.describe Annotation::Service, database: true do
   context "as Annotator", as: :annotator do
     subject { described_class.new(current_auth_context) }
 
+    before do
+      annotator_member_id # Assign user to project
+    end
+
     describe "with assigned project and assigned entries" do
       it "can index" do
+        # Setup: Create annotations as "Annotator" can see all annotations in assigned entries
+        [first_annotation_id, second_annotation_id, third_annotation_id]
+
         result = subject.index({})
 
         expect(result.count).to eq 1
-
-        record = result.first
-        expect(record.id).to eq first_annotation_id
+        expect(result.first.id).to eq first_annotation_id
       end
 
       it "can create" do
@@ -343,6 +356,9 @@ RSpec.describe Annotation::Service, database: true do
       end
 
       it "cannot index" do
+        # Setup: Create annotations as "Annotator" can see all annotations in assigned project
+        [first_annotation_id, second_annotation_id, third_annotation_id]
+
         # Ensure that the annotator is a member of the third project
         member = project_member_repo.find_by!({ account_id: annotator_account_id, project_id: third_project_id })
         expect(member.project_id).to eq third_project_id
@@ -358,7 +374,10 @@ RSpec.describe Annotation::Service, database: true do
 
         expect {
           subject.create(deserialize(create_data))
-        }.to raise_error(Verse::Error::ValidationFailed, "entry not found to create an annotation")
+        }.to raise_error(
+          Verse::Error::ValidationFailed,
+          "entry not found to create an annotation"
+        )
       end
 
       it "cannot update" do
@@ -378,12 +397,13 @@ RSpec.describe Annotation::Service, database: true do
 
     describe "with not assigned project" do
       it "cannot index" do
+        # Setup: Create annotations as "Annotator" can see all annotations in assigned project
+        [first_annotation_id, second_annotation_id, third_annotation_id]
+
         result = subject.index({})
 
         expect(result.count).to eq 1
-
-        record = result.first
-        expect(record.id).to_not eq second_annotation_id
+        expect(result.first.id).to_not include second_annotation_id, third_annotation_id
       end
 
       it "cannot create" do
@@ -391,7 +411,10 @@ RSpec.describe Annotation::Service, database: true do
 
         expect {
           subject.create(deserialize(create_data))
-        }.to raise_error(Verse::Error::ValidationFailed, "entry not found to create an annotation")
+        }.to raise_error(
+          Verse::Error::ValidationFailed,
+          "entry not found to create an annotation"
+        )
       end
 
       it "cannot update" do
@@ -419,19 +442,23 @@ RSpec.describe Annotation::Service, database: true do
   context "as Reviewer", as: :reviewer do
     subject { described_class.new(current_auth_context) }
 
+    before do
+      reviewer_member_id # Assign user to project
+    end
+
     describe "with assigned project and assigned entries" do
       it "can index" do
+        # Setup: Create annotations as "Reviewer" can see all annotations in assigned project
+        [first_annotation_id, second_annotation_id, third_annotation_id]
+
         result = subject.index({})
 
         expect(result.count).to eq 1
-
-        record = result.first
-        expect(record.id).to eq second_annotation_id
+        expect(result.first.id).to eq second_annotation_id
       end
 
       it "can create" do
         create_data[:data][:relationships][:entry][:data][:id] = second_entry_id
-        create_data[:data][:attributes][:created_by_email] = "reviewer@example.com"
 
         record = subject.create(deserialize(create_data))
 
@@ -477,6 +504,9 @@ RSpec.describe Annotation::Service, database: true do
       end
 
       it "cannot index" do
+        # Setup: Create annotations as "Reviewer" can see all annotations in assigned project
+        [first_annotation_id, second_annotation_id, third_annotation_id]
+
         # Ensure that the reviewer is a member of the third project
         member = project_member_repo.find_by!({ account_id: reviewer_account_id, project_id: third_project_id })
         expect(member.project_id).to eq third_project_id
@@ -492,7 +522,10 @@ RSpec.describe Annotation::Service, database: true do
 
         expect {
           subject.create(deserialize(create_data))
-        }.to raise_error(Verse::Error::ValidationFailed, "entry not found to create an annotation")
+        }.to raise_error(
+          Verse::Error::ValidationFailed,
+          "entry not found to create an annotation"
+        )
       end
 
       it "cannot update" do
@@ -512,12 +545,13 @@ RSpec.describe Annotation::Service, database: true do
 
     describe "with not assigned project" do
       it "cannot index" do
+        # Setup: Create annotations as "Reviewer" can see all annotations in assigned project
+        [first_annotation_id, second_annotation_id, third_annotation_id]
+
         result = subject.index({})
 
         expect(result.count).to eq 1
-
-        record = result.first
-        expect(record.id).to_not eq first_annotation_id
+        expect(result.first.id).to_not include first_annotation_id, third_annotation_id
       end
 
       it "cannot create" do
@@ -525,7 +559,10 @@ RSpec.describe Annotation::Service, database: true do
 
         expect {
           subject.create(deserialize(create_data))
-        }.to raise_error(Verse::Error::ValidationFailed, "entry not found to create an annotation")
+        }.to raise_error(
+          Verse::Error::ValidationFailed,
+          "entry not found to create an annotation"
+        )
       end
 
       it "cannot update" do

@@ -46,10 +46,15 @@ module Entry
               "dataset not found to create an entry"
       end
 
-      # With "as_user" ensure account can "create" entry to the project
+      # With "as_user" access ensure account can "create" entry to the project
       access = auth_context.can?(:create, entries.class.resource)
-      if access == :as_user && !entries.account_can_access_project?(dataset.project_id, :create)
-        raise Errors::Service::UnauthorizedProjectAccess
+      if access == :as_user && !ScopedQuery::Service.with_project_access?(
+        auth_context.metadata[:id],
+        dataset.project_id,
+        ["project_owner"]
+      )
+        raise Verse::Error::Unauthorized,
+              "You do not have permission to create entry on this project"
       end
 
       # Assign attributes

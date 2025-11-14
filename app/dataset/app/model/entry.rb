@@ -41,14 +41,17 @@ module Entry
     end
 
     # Actions                | Roles
-    # read                   | project_owner, annotator, reviewer
+    # read                   | project_owner, annotator(assigned), reviewer(assigned)
     # create, update, delete | project_owner
     #
     # Info:
-    # 1. only project_owner(member), org_owner and admin roles can create, update and delete entries
-    # 2. annotator and reviewer can only read entries
+    # 1. only org_owner and project_owner(member) can create, update and delete entries
+    # 2. annotator and reviewer can only read entries assigned to them
     query
     def account_project_scoped_query(action)
+      # Ignore create action as it will be handled in service layer
+      return table if action == :create
+
       account_id = auth_context.metadata[:id]
 
       case action
@@ -80,7 +83,7 @@ module Entry
             assigned_to_roles: %w[annotator reviewer]
           )
         )
-      when :create, :update, :delete
+      when :update, :delete
         scoped_fragment = <<-SQL
           EXISTS (
             SELECT 1
@@ -102,11 +105,6 @@ module Entry
         raise Verse::Error::Unauthorized,
               "Permission denied for \"#{action}\" action on #{self.class.resource}"
       end
-    end
-
-    query
-    def account_can_access_project?(project_id, action)
-      account_project_scoped_query(action).where(project_id:).limit(1).any?
     end
 
     def mark_entries_status_as(job_id, status)
