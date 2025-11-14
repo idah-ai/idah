@@ -23,3 +23,7 @@ user:
     - "dataset:project_members.*.as_user"
     - "dataset:datasets.*.as_user"
     - "dataset:entries.*.as_user"
+
+    # Media Service
+    # TODO: review media scope
+    - "media:medias.read.*"
