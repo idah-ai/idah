@@ -27,7 +27,7 @@
 </script>
 
 <TooltipProvider {ignoreNonKeyboardFocus}>
-  <Tooltip {delayDuration}>
+  <Tooltip {delayDuration} {ignoreNonKeyboardFocus}>
     <TooltipTrigger class={cn("", className)}>
       {@render trigger()}
     </TooltipTrigger>
