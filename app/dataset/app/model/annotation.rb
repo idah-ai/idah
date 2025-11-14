@@ -70,7 +70,7 @@ module Annotation
       SQL
 
       case action
-      when :read, :create, :update, :delete
+      when :read, :update, :delete
         table.where(
           Sequel.lit(
             scoped_fragment,
