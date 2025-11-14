@@ -33,14 +33,14 @@
   import TimelineTable from "./video-annotation-activity/timeline-table/timeline-table.svelte";
   import Video from "./video-annotation-activity/video.svelte";
 
+  import PopoverTrigger from "@/components/ui/popover/popover-trigger.svelte";
   import { SidebarProvider } from "@/components/ui/sidebar";
   import type { AnnotationShape, AnnotationValue } from "@/context/AnnotationContext";
   import type { IActivityContext } from "@/plugin/interface/Activity";
+  import PropertiesSidebar from "./layout/sidebar/properties-sidebar.svelte";
+  import CategoryProperties from "./video-annotation-activity/categoryProperties/categoryProperties.svelte";
   import type { Point, VideoFrameSelection, VideoShape } from "./video-annotation-activity/VideoAnnotationContext";
   import VideoController from "./video-annotation-activity/VideoController.svelte";
-  import PopoverTrigger from "@/components/ui/popover/popover-trigger.svelte";
-  import CategoryProperties from "./video-annotation-activity/categoryProperties/categoryProperties.svelte";
-  import PropertiesSidebar from "./layout/sidebar/properties-sidebar.svelte";
 
   // Props
   interface Props {
@@ -63,7 +63,7 @@
   let totalFrames = $state(0);
 
   let mode: string = $state("visual");
-  let annotationSidebarWidthRem = $state<number>(20);
+  let annotationSidebarWidthRem = $state<number>(15);
 
   let selectedAnnotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata> | undefined = $state();
   let annotationValue: AnnotationValue = $derived(selectedAnnotation?.value || {});
@@ -848,7 +848,7 @@
 
   <SidebarProvider class="min-h-0 w-full" style="height: calc(100% - 30px)">
     <ResizablePaneGroup direction="vertical">
-      <ResizablePane class="flex h-full" defaultSize={60} minSize={10}>
+      <ResizablePane class="flex h-full" defaultSize={60} minSize={15}>
         <AnnotationSidebar
           db={annotationsIDB}
           {annotationValue}
