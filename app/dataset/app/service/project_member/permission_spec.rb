@@ -27,7 +27,7 @@ RSpec.describe ProjectMember::Service, database: true do
       account_id: project_owner_account_id,
       role: "project_owner",
       name: "Project Owner",
-      email: "po@example.com",
+      email: "project_owner@example.com",
       invited_by_id: 1
     )
   }
@@ -37,7 +37,7 @@ RSpec.describe ProjectMember::Service, database: true do
       account_id: annotator_account_id,
       role: "annotator",
       name: "Annotator",
-      email: "an@example.com",
+      email: "annotator@example.com",
       invited_by_id: 1
     )
   }
@@ -47,7 +47,7 @@ RSpec.describe ProjectMember::Service, database: true do
       account_id: reviewer_account_id,
       role: "reviewer",
       name: "Reviewer",
-      email: "re@example.com",
+      email: "reviewer@example.com",
       invited_by_id: 1
     )
   }

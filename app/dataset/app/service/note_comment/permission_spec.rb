@@ -35,7 +35,7 @@ RSpec.describe NoteComment::Service, database: true do
       account_id: project_owner_account_id,
       role: "project_owner",
       name: "Project Owner",
-      email: "po@example.com",
+      email: "project_owner@example.com",
       invited_by_id: 1
     )
   }
@@ -55,7 +55,7 @@ RSpec.describe NoteComment::Service, database: true do
       account_id: reviewer_account_id,
       role: "reviewer",
       name: "Reviewer",
-      email: "re@example.com",
+      email: "reviewer@example.com",
       invited_by_id: 1
     )
   }
