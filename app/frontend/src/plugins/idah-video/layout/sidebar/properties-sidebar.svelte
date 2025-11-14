@@ -9,12 +9,12 @@
   import type { IActivityContext, IConfigValue } from "@/plugin/interface/Activity";
 
   import { DEFAULT_MODE, ENTRY_ROOT } from "../../type";
-  import { entryRoot } from "../../video-annotation-activity/idb_store.svelte";
   import CategoryProperties from "../../video-annotation-activity/categoryProperties/categoryProperties.svelte";
+  import { entryRoot } from "../../video-annotation-activity/idb_store.svelte";
 
   // Props
   let {
-    sidebarWidthRem = 20,
+    sidebarWidthRem = 15,
     annotationValue,
     onEditValue,
     context,

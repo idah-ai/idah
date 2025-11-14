@@ -125,12 +125,12 @@
 </script>
 
 {#snippet annotationSelection(annotation: VideoAnnotation, name: string)}
-  <SidebarMenuItem class="group list-none p-1">
+  <SidebarMenuItem class="list-none">
     <SidebarMenuButton
-      class={cn("ml-5 w-full justify-between px-5 hover:cursor-pointer")}
+      class={cn("group ml-5 w-full justify-between pr-3 hover:cursor-pointer")}
       onclick={() => onSelectAnnotation(annotation)}
     >
-      <div class="flex gap-2">
+      <div class="flex gap-1 text-xs">
         <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
           <!-- prettier-ignore -->
           <path
@@ -141,14 +141,13 @@
             stroke-linejoin="round"
           />
         </svg>
-
         {name}
       </div>
 
       <Button
         variant="ghost"
         size="icon"
-        class="hidden group-hover:inline-flex "
+        class="hidden group-hover:inline-flex"
         onclick={(e) => {
           e.stopPropagation();
           onDeleteAnnotation(annotation);
@@ -162,14 +161,14 @@
 
 {#snippet showCategoryTitle(category: CategoryDefinition, haveChildren: boolean = false, open: boolean = false)}
   <div
-    class={cn("flex items-center gap-2", {
-      // "p-2": !haveChildren && !toolMode,
+    class={cn("flex items-center gap-1 text-xs", {
+      "p-2": toolMode && selected_id,
     })}
   >
     <Button
       variant="ghost"
       class={cn("p-0 hover:cursor-pointer", {
-        "opacity-0": (!haveChildren && !toolMode) || selected_id,
+        "opacity-0": (!haveChildren) || selected_id,
         hidden: toolMode && selected_id,
       })}
       onclick={(e) => {
@@ -182,7 +181,6 @@
       disabled={toolMode}
     >
       {@const selected = selected_category == category.id}
-
       {#if selected && toolMode && !selected_id}
         <PlusIcon class="text-primary size-4 " strokeWidth={4}></PlusIcon>
       {:else if !category.nestedCategories && toolMode && !selected_id}
@@ -233,9 +231,9 @@
     {#key forceRender}
       {#await haveAnnotationsInCategory(category.id) then hasAnnotations}
         <CollapsibleTrigger
-          class={cn("text-secondary-foreground flex w-full items-center justify-between", {
-            "bg-primary-foreground rounded-sm border-1 border-blue-300": selected == category.id,
-            "hover:bg-muted-foreground hover:cursor-pointer hover:rounded-sm": !category.requiredNested,
+          class={cn("text-secondary-foreground flex w-full items-center justify-between text-xs", {
+            "bg-secondary border-ring text-secondary-foreground rounded-sm border-1": selected == category.id,
+            "hover:bg-primary-foreground hover:dark:bg-accent hover:cursor-pointer hover:rounded-sm": !category.requiredNested,
             "hover:bg-accent hover:cursor-pointer hover:rounded-sm": !toolMode,
           })}
           onclick={(e) => {
@@ -264,7 +262,7 @@
 
           {#if db && category && $idb_updated_at}
             {#key $idb_updated_at}
-              <Badge variant="gray">
+              <Badge variant="gray" class="text-xs">
                 {#await db.getAllStartingWith("category", category.id)}
                   ...
                 {:then anns}
@@ -311,17 +309,16 @@
   </Collapsible>
 {/snippet}
 
-<div class="flex-col">
+<div class="flex-col overflow-x-hidden">
   <Collapsible open={true}>
     <CollapsibleTrigger>
-      <Text class="text-secondary-foreground" weight="semibold">{type}</Text>
+      <Text class="text-secondary-foreground" size="xs" weight="semibold">{type}</Text>
     </CollapsibleTrigger>
     <CollapsibleContent>
-      <div class="flex gap-2 py-2">
-        <Text class="text-secondary-foreground" weight="semibold">Categories</Text>
-
+      <div class="flex gap-2 py-2 items-center">
+        <Text class="text-secondary-foreground" size="xs" weight="semibold">Categories</Text>
         {#key $idb_updated_at}
-          <Badge class={cn("", { "bg-secondary-foreground": !!selected_category })} variant="gray">
+          <Badge variant="gray" class="text-xs">
             {#await db?.getAllIndex("category")}
               ...
             {:then anns}

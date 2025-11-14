@@ -17,7 +17,7 @@
 </script>
 
 <div class="my-2 flex flex-col gap-1">
-  <Label for={property.id} class="mb-2">
+  <Label for={property.id} class="mb-2 text-xs">
     {property.label}
   </Label>
 

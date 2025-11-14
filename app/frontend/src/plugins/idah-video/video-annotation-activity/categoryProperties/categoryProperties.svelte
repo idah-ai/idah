@@ -57,7 +57,7 @@
 
 <div>
   <div class="flex pb-1">
-    <Text class="text-muted-foreground" weight="medium" size="sm">Category</Text>
+    <Text class="text-muted-foreground" weight="medium" size="xs">Category</Text>
   </div>
   {#key $idb_updated_at}
     <Select type="single" onValueChange={onSelectCategory}>
@@ -80,7 +80,7 @@
 
     {#if properties?.length > 0}
       <div class="flex pb-1">
-        <Text class="text-muted-foreground" weight="medium" size="sm">Properties</Text>
+        <Text class="text-muted-foreground" weight="medium" size="xs">Properties</Text>
       </div>
 
       {#each properties as property (property.id)}
