@@ -22,6 +22,7 @@ module Project
     def create(record)
       attributes = record.attributes
       attributes[:id] = record.id || UUIDv7.generate
+      attributes[:created_by_email] = auth_context.metadata[:email]
 
       projects.transaction do
         id = projects.create(attributes)

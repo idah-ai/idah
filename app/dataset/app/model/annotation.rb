@@ -31,7 +31,7 @@ module Annotation
     def scoped(action)
       auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }
-        scope.as_user? { account_project_scoped_query(action) }
+        scope.as_user? { user_project_scoped_query(action) }
       end
     end
 
@@ -43,7 +43,7 @@ module Annotation
     # 2. annotator and reviewer project members can create, update, delete and read
     # annotations only for entries assigned to them
     query
-    def account_project_scoped_query(action)
+    def user_project_scoped_query(action)
       # Ignore create action as it will be handled in service layer
       return table if action == :create
 
