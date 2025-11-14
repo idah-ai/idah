@@ -22,7 +22,7 @@
 
   // Props
   let {
-    sidebarWidthRem = 20,
+    sidebarWidthRem = 15,
     annotationValue,
     onEditValue,
     onSelectAnnotation,

@@ -17,7 +17,7 @@
 
 <div class="my-2 flex flex-col gap-1">
   <div class="flex items-center space-x-2 text-center">
-    <Label for={property.id}>
+    <Label for={property.id} class="text-xs">
       {property.label}
     </Label>
 
