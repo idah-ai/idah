@@ -1,0 +1,22 @@
+em:
+  adapter: local
+logging:
+  level: <%= ENV.fetch("LOG_LEVEL", "debug") %>
+
+plugins:
+  - name: http
+    config:
+      show_error_details: <%= ENV.fetch("LOG_SHOW_ERROR_DETAILS", "true") %>
+  - name: sequel
+    config:
+      mode: simple
+      extensions:
+        - pg_json
+        - pg_array
+        - pg_enum
+      db:
+        uri: <%= ENV.fetch("DATABASE_URI") %>
+  - name: redis
+    config:
+      url: <%= ENV.fetch("REDIS_STREAM_URL") %>
+      max_connections: 10
