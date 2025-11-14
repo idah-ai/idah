@@ -9,10 +9,17 @@
   import SidebarMenuButton from "@/components/ui/sidebar/sidebar-menu-button.svelte";
 
   import { useSidebar } from "@/components/ui/sidebar";
+  import { accountAuthService } from "@/data/model/iam/accounts/auth/records";
+  import { AuthContext, authStatus } from "@/security/AuthContext";
+  import { getAvatarFallback } from "@/utils/string";
 
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
 
   // Variables
+  AuthContext.backend ||= accountAuthService();
+
+  let currentAccount = $derived($authStatus.authContext);
+
   const sidebar = useSidebar();
   const menus: IDropdownMenus = {
     general: {
@@ -43,8 +50,8 @@
         {
           label: "Log out",
           icon: LogOutIcon,
-          action: () => {
-            // Handle log out action
+          action: async () => {
+            await AuthContext.logout();
           },
         },
       ],
@@ -60,15 +67,18 @@
       class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
     >
       <Avatar class="size-8 rounded-lg">
-        <AvatarImage src="" alt=""></AvatarImage>
-        <AvatarFallback class="rounded-lg">EU</AvatarFallback>
+        <AvatarImage src={currentAccount?.pictureUrl} alt="" />
+        <AvatarFallback class="rounded-lg">
+          {getAvatarFallback(currentAccount?.name || currentAccount?.email || "")}
+        </AvatarFallback>
       </Avatar>
 
       <div class="grid flex-1 text-left text-sm leading-tight">
-        <span class="truncate font-medium">Example User</span>
-        <span class="truncate text-xs">example@ingedata.ai</span>
+        <span class="truncate font-medium">{currentAccount?.name || currentAccount?.email}</span>
+        <span class="truncate text-xs">{currentAccount?.email}</span>
       </div>
-      <ChevronsUpDownIcon class="ml-auto size-4"></ChevronsUpDownIcon>
+
+      <ChevronsUpDownIcon class="ml-auto size-4" />
     </SidebarMenuButton>
   {/snippet}
 </DropdownMenus>
