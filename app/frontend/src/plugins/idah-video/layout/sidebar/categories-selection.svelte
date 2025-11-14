@@ -228,7 +228,7 @@
   parent: string[] = [],
 )}
   <Collapsible open={toolMode ? !!category : openStates[category.id] || false}>
-    {#key forceRender}
+    {#key `${forceRender}-${$idb_updated_at}-${currentFrame}-${type}`}
       {#await haveAnnotationsInCategory(category.id) then hasAnnotations}
         <CollapsibleTrigger
           class={cn("text-secondary-foreground flex w-full items-center justify-between text-xs", {
