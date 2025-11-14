@@ -18,7 +18,8 @@
   // Variables
   AuthContext.backend ||= accountAuthService();
 
-  let currentAccount = $derived($authStatus.authContext);
+  let loggedInAccount = $derived($authStatus.authContext);
+  let { name, email, pictureUrl } = $derived(loggedInAccount || { name: "", email: "", pictureUrl: "" });
 
   const sidebar = useSidebar();
   const menus: IDropdownMenus = {
@@ -67,15 +68,15 @@
       class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
     >
       <Avatar class="size-8 rounded-lg">
-        <AvatarImage src={currentAccount?.pictureUrl} alt="" />
+        <AvatarImage src={pictureUrl} alt="" />
         <AvatarFallback class="rounded-lg">
-          {getAvatarFallback(currentAccount?.name || currentAccount?.email || "")}
+          {getAvatarFallback(name || email || "")}
         </AvatarFallback>
       </Avatar>
 
       <div class="grid flex-1 text-left text-sm leading-tight">
-        <span class="truncate font-medium">{currentAccount?.name || currentAccount?.email}</span>
-        <span class="truncate text-xs">{currentAccount?.email}</span>
+        <span class="truncate font-medium">{name || email}</span>
+        <span class="truncate text-xs">{email}</span>
       </div>
 
       <ChevronsUpDownIcon class="ml-auto size-4" />

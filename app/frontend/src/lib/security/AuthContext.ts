@@ -3,7 +3,9 @@ import { resolve } from "$app/paths";
 import { writable, type Writable } from "svelte/store";
 
 import { AccountAuthRecord, type AuthService } from "@/data/model/iam/accounts/auth/records";
+import { ActionMap } from "@/security/ActionMap";
 
+import type { Action, Resource, Scope } from "@/security/types";
 import type { Hash } from "@/utils/types";
 
 export type AuthenticationStatus = {
@@ -81,6 +83,8 @@ export class AuthContext {
     await goto(resolve("/login"), { replaceState: true });
   }
 
+  public readonly actionMap: ActionMap;
+
   public readonly email: string;
   public readonly name: string | null;
   public readonly pictureUrl: string | null;
@@ -92,6 +96,8 @@ export class AuthContext {
   public readonly exp: number;
 
   constructor(record: AccountAuthRecord | Hash) {
+    this.actionMap = new ActionMap(record.role_rights || []);
+
     this.email = record.email;
     this.name = record.name;
     this.pictureUrl = record.picture_url;
@@ -101,5 +107,34 @@ export class AuthContext {
     this.roleRights = record.role_rights || [];
 
     this.exp = record.exp * 1000;
+  }
+
+  /*
+   * Tell whether the account can perform the given action on the given resource
+   */
+  hasScope(action: Action, resource: Resource, scope?: Scope): boolean {
+    const rights = this.actionMap.get(action, resource);
+
+    if (!scope) return !!rights;
+    if (!rights) return false;
+
+    return rights.includes(scope) || rights.includes("*") || rights.includes("all");
+  }
+
+  can(action: Action, resource: Resource, scopes?: Scope[]): boolean {
+    let result = false;
+
+    if (!scopes) {
+      return this.hasScope(action, resource);
+    } else {
+      for (const scope of scopes) {
+        if (this.hasScope(action, resource, scope)) {
+          result = true;
+          break;
+        }
+      }
+    }
+
+    return result;
   }
 }
