@@ -60,15 +60,16 @@
     <Text class="text-muted-foreground" weight="medium" size="xs">Category</Text>
   </div>
   {#key $idb_updated_at}
+
     <Select type="single" onValueChange={onSelectCategory}>
-      <SelectTrigger class="data-[placeholder]:text-secondary-foreground bg-secondary w-full">
-        {category?.label}
+      <SelectTrigger class="data-[placeholder]:text-secondary-foreground bg-secondary w-full text-xs">
+        {category?.label || "Select category"}
       </SelectTrigger>
 
       <SelectContent>
         <SelectGroup>
           {#each typeConfig.values as c (c.id)}
-            <SelectItem value={c.id} label={c.label}>
+            <SelectItem value={c.id} label={c.label} class="text-xs">
               {c.label}
             </SelectItem>
           {/each}
