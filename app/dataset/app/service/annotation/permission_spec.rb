@@ -33,7 +33,7 @@ RSpec.describe Annotation::Service, database: true do
       project_id: first_project_id,
       account_id: project_owner_account_id,
       role: "project_owner",
-      email: "po@example.com",
+      email: "project_owner@example.com",
       invited_by_id: 1
     )
   }
@@ -42,7 +42,7 @@ RSpec.describe Annotation::Service, database: true do
       project_id: first_project_id,
       account_id: annotator_account_id,
       role: "annotator",
-      email: "an@example.com",
+      email: "reviewer@example.com",
       invited_by_id: 1
     )
   }
@@ -51,7 +51,7 @@ RSpec.describe Annotation::Service, database: true do
       project_id: second_project_id,
       account_id: reviewer_account_id,
       role: "reviewer",
-      email: "re@example.com",
+      email: "reviewer@example.com",
       invited_by_id: 1
     )
   }
@@ -60,7 +60,7 @@ RSpec.describe Annotation::Service, database: true do
       project_id: third_project_id,
       account_id: another_annotator_account_id,
       role: "annotator",
-      email: "an2@example.com",
+      email: "annotator2@example.com",
       invited_by_id: 1
     )
   }
@@ -137,7 +137,7 @@ RSpec.describe Annotation::Service, database: true do
       entry_id: first_entry_id,
       dimensions: { x: 10, y: 20, width: 30, height: 40 },
       annotation: { label: "cat" },
-      created_by_email: "an@example.com"
+      created_by_email: "reviewer@example.com"
     )
   }
   let(:second_annotation_id) {
@@ -147,7 +147,7 @@ RSpec.describe Annotation::Service, database: true do
       entry_id: second_entry_id,
       dimensions: { x: 50, y: 60, width: 70, height: 80 },
       annotation: { label: "dog" },
-      created_by_email: "re@example.com"
+      created_by_email: "reviewer@example.com"
     )
   }
   let(:third_annotation_id) {
@@ -157,7 +157,7 @@ RSpec.describe Annotation::Service, database: true do
       entry_id: third_entry_id,
       dimensions: { x: 90, y: 100, width: 110, height: 120 },
       annotation: { label: "mouse" },
-      created_by_email: "an2@example.com"
+      created_by_email: "annnotator2@example.com"
     )
   }
 
@@ -350,7 +350,7 @@ RSpec.describe Annotation::Service, database: true do
           project_id: third_project_id,
           account_id: annotator_account_id,
           role: "annotator",
-          email: "an@example.com",
+          email: "annotator@example.com",
           invited_by_id: 1
         )
       end
@@ -498,7 +498,7 @@ RSpec.describe Annotation::Service, database: true do
           project_id: third_project_id,
           account_id: reviewer_account_id,
           role: "reviewer",
-          email: "an@example.com",
+          email: "reviewer@example.com",
           invited_by_id: 1
         )
       end

@@ -32,7 +32,7 @@ RSpec.describe Dataset::Service, database: true do
       project_id: first_project_id,
       account_id: project_owner_account_id,
       role: "project_owner",
-      email: "po@example.com",
+      email: "project_owner@example.com",
       invited_by_id: 1
     )
   }
@@ -41,7 +41,7 @@ RSpec.describe Dataset::Service, database: true do
       project_id: first_project_id,
       account_id: annotator_account_id,
       role: "annotator",
-      email: "an@example.com",
+      email: "annotator@example.com",
       invited_by_id: 1
     )
   }
@@ -50,7 +50,7 @@ RSpec.describe Dataset::Service, database: true do
       project_id: second_project_id,
       account_id: reviewer_account_id,
       role: "reviewer",
-      email: "re@example.com",
+      email: "reviewer@example.com",
       invited_by_id: 1
     )
   }
@@ -59,7 +59,7 @@ RSpec.describe Dataset::Service, database: true do
       project_id: third_project_id,
       account_id: another_annotator_account_id,
       role: "annotator",
-      email: "an2@example.com",
+      email: "annotator2@example.com",
       invited_by_id: 1
     )
   }
@@ -310,7 +310,7 @@ RSpec.describe Dataset::Service, database: true do
           project_id: third_project_id,
           account_id: annotator_account_id,
           role: "annotator",
-          email: "an@example.com",
+          email: "annotator@example.com",
           invited_by_id: 1
         )
       end
@@ -409,6 +409,33 @@ RSpec.describe Dataset::Service, database: true do
         expect {
           subject.delete(first_dataset_id)
         }.to raise_error(Verse::Error::RecordNotFound)
+      end
+    end
+
+    describe "with assigned project and not assigned entries" do
+      before do
+        # Add annotator member to third project
+        project_member_repo.create(
+          project_id: third_project_id,
+          account_id: reviewer_account_id,
+          role: "reviewer",
+          email: "reviewer@example.com",
+          invited_by_id: 1
+        )
+      end
+
+      it "cannot index" do
+        # Setup: Create entries as "Annotator" datasets are accessed via assigned entries
+        [first_entry_id, second_entry_id, third_entry_id]
+
+        # Ensure that the annotator is a member of the third project
+        member = project_member_repo.find_by!({ account_id: reviewer_account_id, project_id: third_project_id })
+        expect(member.project_id).to eq third_project_id
+
+        # Ensure that the annotator cannot see unassigned entries in the third project
+        result = subject.index({})
+        expect(result.count).to eq 1
+        expect(result.first.id).to_not eq third_entry_id
       end
     end
 
