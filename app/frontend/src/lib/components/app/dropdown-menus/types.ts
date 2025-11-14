@@ -1,5 +1,8 @@
 import { type Icon as IconType } from "@lucide/svelte";
 
+export type DropdownMenuContentAlignment = "start" | "center" | "end";
+export type DropdownMenuContentSide = "top" | "right" | "bottom" | "left";
+
 export interface IDropdownMenuItem {
   label: string;
   icon?: typeof IconType;

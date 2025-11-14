@@ -1,6 +1,8 @@
 <script lang="ts">
+  import { EllipsisVerticalIcon } from "@lucide/svelte";
   import type { Snippet } from "svelte";
 
+  import { Button } from "@/components/ui/button";
   import {
     DropdownMenu,
     DropdownMenuContent,
@@ -16,15 +18,20 @@
 
   import { cn } from "@/utils";
 
-  import type { IDropdownMenuItem, IDropdownMenus } from "@/components/app/dropdown-menus/types";
+  import type {
+    DropdownMenuContentAlignment,
+    DropdownMenuContentSide,
+    IDropdownMenuItem,
+    IDropdownMenus,
+  } from "@/components/app/dropdown-menus/types";
 
   // Props
   interface Props {
     class?: string | null;
-    align?: "start" | "center" | "end";
-    side?: "top" | "right" | "bottom" | "left";
+    align?: DropdownMenuContentAlignment;
+    side?: DropdownMenuContentSide;
     menus: IDropdownMenus;
-    trigger: Snippet<[{ props: Record<string, unknown> }]>;
+    trigger?: Snippet<[{ props: Record<string, unknown> }]>;
   }
   let { class: className, align = "start", side = "bottom", menus, trigger }: Props = $props();
 </script>
@@ -39,7 +46,7 @@
     onclick={() => item.action?.()}
   >
     {#if item.icon}
-      <item.icon class="size-4"></item.icon>
+      <item.icon class="size-4" />
     {/if}
 
     {item.label}
@@ -49,7 +56,21 @@
 <DropdownMenu>
   <DropdownMenuTrigger>
     {#snippet child({ props })}
-      {@render trigger({ props })}
+      {#if trigger}
+        {@render trigger({ props })}
+      {:else}
+        {@const isOpen = props["data-state"] === "open"}
+        <Button
+          {...props}
+          variant={isOpen ? "secondary" : "ghost"}
+          size="icon"
+          class={cn({
+            "opacity-100": isOpen,
+          })}
+        >
+          <EllipsisVerticalIcon />
+        </Button>
+      {/if}
     {/snippet}
   </DropdownMenuTrigger>
 
