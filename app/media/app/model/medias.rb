@@ -45,7 +45,52 @@ module Medias
 
         scope.as_org_owner? { table.where(project_id: fetch_project_from_orgs) }
 
-        scope.as_user? { table.where(project_id: fetch_project_from_memberships) }
+
+        # WIP: this should be changed, tbc
+        scope.as_user? {
+          table.where(
+            project_id: fetch_project_from_memberships
+                          .select { |m| m.role == "project_owner"}
+                          .map(&:project_id)
+          )
+        }
+      end
+    end
+
+    # WIP: this should be changed, tbc
+    query
+    def membership_project_scoped_query(action)
+      account_id = auth_context.metadata[:id]
+      scoped_fragment = <<-SQL
+        EXISTS (
+          SELECT 1
+          FROM project_members pm
+          WHERE pm.account_id = :account_id
+            AND pm.project_id = datasets.project_id
+            AND pm.role IN :roles
+        )
+      SQL
+
+      case action
+      when :read
+        table.where(
+          Sequel.lit(
+            scoped_fragment,
+            account_id:,
+            roles: %w[project_owner reviewer annotator]
+          )
+        )
+      when :create
+        table.where(
+          Sequel.lit(
+            scoped_fragment,
+            account_id:,
+            roles: %w[project_owner]
+          )
+        )
+      else
+        raise Verse::Error::Unauthorized,
+              "Permission denied for \"#{action}\" action on #{self.class.resource}"
       end
     end
 
@@ -72,6 +117,7 @@ module Medias
         expires_in: 180
       ) do
         Api[:idah].dataset.project_members.index(filter: {account_id: }).data.map(&:project_id).uniq
+        members.select { |m| m.role == "project_owner"}.map(&:project_id)
       end
     end
   end
