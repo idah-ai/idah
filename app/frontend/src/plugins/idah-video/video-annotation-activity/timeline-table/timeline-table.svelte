@@ -171,7 +171,7 @@
     {@const isLastIndex = index == annotations.length - 1}
     <TableRow
       class={cn("border-b-0", {
-        "bg-primary border-t border-b": isSelected,
+        "bg-primary/20 border-t border-b": isSelected,
       })}
     >
       <TableCell
@@ -230,8 +230,8 @@
 
 {#snippet tooltipFrame(
   thisFrame: number,
-  bgColor: string = "bg-secondary",
-  textColor: string = "text-secondary-foreground",
+  bgColor: string = "bg:foreground dark:bg-secondary",
+  textColor: string = "text:background dark:text-secondary-foreground",
   extraClass: string = "",
 )}
   <span
@@ -349,7 +349,7 @@
                 onmouseleave={() => (hoveredColumn = undefined)}
               >
                 {#if isHovered}
-                  {@render tooltipFrame(thisFrame, "bg-secondary", "text-secondary-foreground")}
+                  {@render tooltipFrame(thisFrame, "bg-foreground dark:bg-secondary", "text-background dark:text-secondary-foreground")}
                 {:else}
                   {thisFrame}
                 {/if}
@@ -369,7 +369,7 @@
                 onmouseleave={() => (hoveredColumn = undefined)}
               >
                 {#if isHovered}
-                  {@render tooltipFrame(thisFrame, "bg-secondary", "text-secondary-foreground", "-top-3")}
+                  {@render tooltipFrame(thisFrame, "bg-foreground dark:bg-secondary", "text-background dark:text-secondary-foreground", "-top-3")}
                 {/if}
               </button>
             {/if}
