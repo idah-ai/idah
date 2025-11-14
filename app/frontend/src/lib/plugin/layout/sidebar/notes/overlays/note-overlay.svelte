@@ -244,7 +244,7 @@
     {/if}
 
     <!-- NOTE FEED POPUP::SELECTED -->
-    {#if selectedNoteFeed}
+    {#if selectedNoteFeed && selectedNoteFeed.position && Object.keys(selectedNoteFeed.position || {}).length > 0}
       {@const posX = selectedNoteFeed.position.x || 0}
       {@const posY = selectedNoteFeed.position.y || 0}
       {@const targetSizeX = selectedNoteFeed.position.target_size[0] || containerWidth || 0}
@@ -281,6 +281,9 @@
 
             <!-- ACTIONS -->
             <div class="ml-auto flex items-center gap-1">
+              <span class="sr-only" role="button" tabindex="0" aria-hidden="true">
+                <!-- Note: This span is to prevent resolve note feed button being open unintentionally -->
+              </span>
               <ResolveNoteFeedButton noteFeed={selectedNoteFeed} onNoteResolved={closeSelectedNoteFeedPopup} />
               <NoteDropdownMenus noteFeedId={selectedNoteFeed.id} deletable onDelete={deleteNote} />
               <Button variant="ghost" size="icon-sm" onclick={closeSelectedNoteFeedPopup}>
