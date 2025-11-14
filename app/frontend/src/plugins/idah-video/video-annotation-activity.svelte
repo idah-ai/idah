@@ -653,15 +653,20 @@
     annotationValue = value;
     mode = valueMode;
     if (valueMode == ENTRY_ROOT && !selectedAnnotation && $entryRoot?.metadata.id) selectedAnnotation = $entryRoot;
-    if (valueMode == ENTRY_ROOT && !selectedAnnotation) {
-      if (value.category && value.category != "" && requirementFullfilled)
-        addAnnotation({ type: valueMode }, $state.snapshot(value));
-    } else if (selectedAnnotation) {
-      selectedAnnotation = { ...selectedAnnotation, value: annotationValue };
-      if (requirementFullfilled) updateAnnotationValue($state.snapshot(selectedAnnotation), $state.snapshot(value));
-    } else if (shapeSelectionArgs && requirementFullfilled) {
-      showPopOver = false;
-      onShapeSelection(...shapeSelectionArgs);
+    //wait for confirmation
+    if (showPopOver) {
+      if (selectedAnnotation) selectedAnnotation = { ...selectedAnnotation, value: annotationValue };
+    } else {
+      if (valueMode == ENTRY_ROOT && !selectedAnnotation) {
+        if (value.category && value.category != "" && requirementFullfilled)
+          addAnnotation({ type: valueMode }, $state.snapshot(value));
+      } else if (selectedAnnotation) {
+        selectedAnnotation = { ...selectedAnnotation, value: annotationValue };
+        if (requirementFullfilled) updateAnnotationValue($state.snapshot(selectedAnnotation), $state.snapshot(value));
+      } else if (shapeSelectionArgs && requirementFullfilled) {
+        showPopOver = false;
+        onShapeSelection(...shapeSelectionArgs);
+      }
     }
   }
 
@@ -686,6 +691,7 @@
         context.config[type]?.values.some((v) => v.id == annotation_value_from.category) &&
         requiredFullfilled(annotation_value_from, context.config[type]?.properties)
       ) {
+        shapeSelectionArgs = undefined;
         addAnnotation(shape, annotation_value_from);
       } else {
         shapeSelectionArgs = [type, frame, _points, selectedId];
@@ -818,6 +824,7 @@
         onclick={() => {
           showPopOver = false;
           annotationValue = {};
+          shapeSelectionArgs = undefined;
           selectAnnotation();
         }}
       >
