@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { IDAH_NOTE } from "../type";
   import { X, Y, type Point } from "./VideoAnnotationContext";
 
   let {
@@ -8,6 +9,7 @@
     editable = false,
     cursor,
     color,
+    mode,
     onChange,
     onmousedown,
   }: {
@@ -17,6 +19,7 @@
     editable?: boolean;
     cursor?: Point;
     color: string;
+    mode: string;
     onmousedown?: (e: MouseEvent) => void;
     onChange?: (bb: BoundingBox) => void;
   } = $props();
@@ -170,6 +173,16 @@
 
     return cursors[handle_index] || "default";
   }
+
+  function getCursor() {
+    if (editable) {
+      return "cursor-move";
+    } else if (mode === IDAH_NOTE) {
+      return "cursor-note";
+    } else {
+      return "cursor-default";
+    }
+  }
 </script>
 
 {#snippet BoundingBoxHandle(bb: BoundingBox)}
@@ -211,7 +224,7 @@
       style:transform-origin="top left"
       style:transform={`translate(${offset[X]}px, ${offset[Y]}px) scale(${ratio[X]}, ${ratio[Y]})`}
       vector-effect="non-scaling-stroke"
-      class={editable ? "cursor-move" : "cursor-pointer"}
+      class={getCursor()}
       fill-opacity="0.4"
       style:fill={color}
       style:stroke={color}
@@ -233,3 +246,9 @@
 {#if editable && !isEditing()}
   {@render BoundingBoxHandle(boundingBox(bounding_box, cursor))}
 {/if}
+
+<style>
+  .cursor-note {
+    cursor: url("/app/frontend/src/plugins/assets/icons/message-circle.svg"), auto;
+  }
+</style>

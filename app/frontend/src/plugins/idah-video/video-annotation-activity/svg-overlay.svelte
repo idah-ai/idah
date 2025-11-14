@@ -282,6 +282,7 @@
         {#if annotation.metadata.id != selected?.metadata.id}
           {#if annotation.shape.type == IDAH_VIDEO_BOUNDING_BOX}
             <BoundingBox
+              {mode}
               points={currentShape(annotation.shape, frame) || []}
               ratio={target_size}
               offset={zoomInfo.offset}
@@ -308,6 +309,7 @@
         {#if annotation.metadata.id != selected?.metadata.id}
           {#if annotation.shape.type == IDAH_VIDEO_BOUNDING_BOX}
             <BoundingBox
+              {mode}
               points={currentShape(annotation.shape, frame) || []}
               ratio={target_size}
               offset={zoomInfo.offset}
@@ -336,6 +338,7 @@
     {#if shape?.type == IDAH_VIDEO_BOUNDING_BOX || mode == IDAH_VIDEO_BOUNDING_BOX}
       <BoundingBox
         bind:this={toolSelection}
+        {mode}
         {points}
         ratio={target_size}
         offset={zoomInfo.offset}

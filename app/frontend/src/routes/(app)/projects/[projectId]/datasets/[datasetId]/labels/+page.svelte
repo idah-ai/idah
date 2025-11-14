@@ -20,13 +20,13 @@
   import {
     labelColors,
     type LabelConfigurationProperty,
-    type LabelConfigurations,
     type LabelConfigurationValue,
     type LabelingConfiguration,
   } from "@/data/model/dataset/labels";
   import { pluginsBackendDataSource } from "@/data/model/setting/plugin/record";
 
   import type { ModalityShapes } from "@/data/model/setting/plugin/types";
+  import type { IConfig } from "@/plugin/interface/Activity";
 
   // Contexts
   const project: ProjectRecord = getContext("project");
@@ -39,7 +39,7 @@
   let saving: boolean = $state(false);
   let modality: string = $state("");
   let shapes = $state<ModalityShapes>({});
-  let labelConfig: LabelConfigurations = $state({});
+  let labelConfig: IConfig = $state({});
   let initialLabelConfig: LabelingConfiguration | undefined = $state(undefined);
   let isLabelConfigChanged: boolean = $derived.by(() => {
     return JSON.stringify(labelConfig) !== JSON.stringify(initialLabelConfig);
@@ -75,7 +75,7 @@
     /**
      * Remove unset config
      */
-    const cleanedLabelConfig: LabelConfigurations = {};
+    const cleanedLabelConfig: IConfig = {};
     Object.entries(labelConfig).forEach(([key, config]) => {
       if (config.values.length > 0 || config.properties.length > 0) {
         cleanedLabelConfig[key] = config;
@@ -107,6 +107,19 @@
         properties: [],
       };
     }
+  }
+
+  function duplicateConfig(sourceLabelConfigKey: string, targetLabelConfigKey: string) {
+    if (!labelConfig) return;
+
+    labelConfig[targetLabelConfigKey] = JSON.parse(JSON.stringify(labelConfig[sourceLabelConfigKey]));
+  }
+
+  function removeLabelConfig(key: string) {
+    if (!labelConfig) return;
+    labelConfig = Object.fromEntries(
+      Object.entries(labelConfig).filter(([labelConfigKey, _]) => labelConfigKey !== key),
+    );
   }
 
   function addCategory(labelConfigKey: string, nodeId?: string) {
@@ -282,6 +295,8 @@
     {shapes}
     {labelConfig}
     onAddLabelConfig={addLabelConfig}
+    onDuplicateConfig={duplicateConfig}
+    onRemoveLabelConfig={removeLabelConfig}
     onAddCategory={addCategory}
     onEditCategoryId={editCategoryId}
     onEditCategory={editCategory}
