@@ -230,8 +230,8 @@
 
 {#snippet tooltipFrame(
   thisFrame: number,
-  bgColor: string = "bg:foreground dark:bg-secondary",
-  textColor: string = "text:background dark:text-secondary-foreground",
+  bgColor: string = "bg:secondary-foreground dark:bg-secondary",
+  textColor: string = "text:secondary dark:text-secondary-foreground",
   extraClass: string = "",
 )}
   <span
@@ -338,9 +338,9 @@
               </button>
             {:else if isDefault}
               <button
-                class={cn("border-border absolute top-0 h-full cursor-pointer border-l", {
-                  "bg-primary/30 text-primary z-100": isHovered,
-                  "text-muted-foreground/50 z-0": !isHovered,
+                class={cn("border-border text-muted-foreground/50 absolute top-0 h-full cursor-pointer border-l", {
+                  "z-100": isHovered,
+                  "z-0": !isHovered,
                 })}
                 style:width="{width}%"
                 style:left="{startLeftPosition}%"
@@ -349,7 +349,11 @@
                 onmouseleave={() => (hoveredColumn = undefined)}
               >
                 {#if isHovered}
-                  {@render tooltipFrame(thisFrame, "bg-foreground dark:bg-secondary", "text-background dark:text-secondary-foreground")}
+                  {@render tooltipFrame(
+                    thisFrame,
+                    "bg-secondary-foreground dark:bg-secondary",
+                    "text-secondary dark:text-secondary-foreground",
+                  )}
                 {:else}
                   {thisFrame}
                 {/if}
@@ -369,7 +373,12 @@
                 onmouseleave={() => (hoveredColumn = undefined)}
               >
                 {#if isHovered}
-                  {@render tooltipFrame(thisFrame, "bg-foreground dark:bg-secondary", "text-background dark:text-secondary-foreground", "-top-3")}
+                  {@render tooltipFrame(
+                    thisFrame,
+                    "bg-secondary-foreground dark:bg-secondary",
+                    "text-secondary dark:text-secondary-foreground",
+                    "-top-2.5",
+                  )}
                 {/if}
               </button>
             {/if}
@@ -379,11 +388,11 @@
     </TableRow>
   </TableHeader>
 
-    <TableBody>
-      {#await annotations_promise}
-        {@render row($boundingBoxes)}
-      {:then annotations}
-        {@render row(annotations)}
-      {/await}
-    </TableBody>
+  <TableBody>
+    {#await annotations_promise}
+      {@render row($boundingBoxes)}
+    {:then annotations}
+      {@render row(annotations)}
+    {/await}
+  </TableBody>
 </Table>
