@@ -1,4 +1,3 @@
-import CommandManager from "@/command/CommandManager";
 import { KeyMapBuilder } from "@/shortcut/KeyMapBuilder";
 import { ShortcutManager } from "@/shortcut/ShortcutManager";
 import { DEFAULT_MODE, IDAH_VIDEO_BOUNDING_BOX } from "../type";
