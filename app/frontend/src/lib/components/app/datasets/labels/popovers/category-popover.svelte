@@ -123,30 +123,32 @@
       </section>
 
       <!-- COLOR -->
-      <Separator />
-      <section class="flex flex-col gap-2 p-2">
-        <FormFieldLabel required={false} class="px-2">Color</FormFieldLabel>
-        <div class="grid grid-cols-5 gap-1">
-          {#each labelColors as { label, color: c, text_color } (c)}
-            {@const isSelected = color === c}
-            <Tooltips align="center" delayDuration={0}>
-              {#snippet trigger()}
-                <button
-                  class="inline-flex size-6 items-center justify-center rounded-lg border"
-                  style="background-color: {c}; color: {text_color}"
-                  onclick={() => updateCategory({ color: c, text_color })}
-                >
-                  <CheckIcon class={cn("size-4", isSelected ? "opacity-100" : "opacity-0")} />
-                </button>
-              {/snippet}
+      {#if selectable}
+        <Separator />
+        <section class="flex flex-col gap-2 p-2">
+          <FormFieldLabel required={false} class="px-2">Color</FormFieldLabel>
+          <div class="grid grid-cols-5 gap-1">
+            {#each labelColors as { label, color: c, text_color } (c)}
+              {@const isSelected = color === c}
+              <Tooltips align="center" delayDuration={0}>
+                {#snippet trigger()}
+                  <button
+                    class="inline-flex size-6 items-center justify-center rounded-lg border"
+                    style="background-color: {c}; color: {text_color}"
+                    onclick={() => updateCategory({ color: c, text_color })}
+                  >
+                    <CheckIcon class={cn("size-4", isSelected ? "opacity-100" : "opacity-0")} />
+                  </button>
+                {/snippet}
 
-              {#snippet content()}
-                {label}
-              {/snippet}
-            </Tooltips>
-          {/each}
-        </div>
-      </section>
+                {#snippet content()}
+                  {label}
+                {/snippet}
+              </Tooltips>
+            {/each}
+          </div>
+        </section>
+      {/if}
     </div>
   </PopoverContent>
 </Popover>
