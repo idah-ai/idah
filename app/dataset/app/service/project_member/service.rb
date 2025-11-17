@@ -27,8 +27,9 @@ module ProjectMember
               "project relationship is required to create a project member"
       end
 
-      # With "as_user" access ensure account can "create" project member to the project
       access = auth_context.can?(:create, project_members.class.resource)
+
+      # With "as_user" access ensure account can "create" project member to the project
       if access == :as_user && !ScopedQuery::Service.with_project_access?(
         auth_context.metadata[:id],
         record.project.id,
@@ -39,8 +40,9 @@ module ProjectMember
       end
 
       # "project_owner" can only be added by an org_owner of the project
-      if record.attributes[:role] == "project_owner"
-        project = projects.find!(record.project.id)
+      if access == :as_org_owner || record.attributes[:role] == "project_owner"
+        project = projects.find!(record.project.id) # this can raise Verse::Error::RecordNotFound if not in org scope
+
         unless auth_context.custom_scopes[:org]&.include?(project.organization_id)
           raise Verse::Error::Unauthorized,
                 "You do not have permission to create a project owner member for this project"
