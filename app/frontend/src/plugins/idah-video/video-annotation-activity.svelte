@@ -556,7 +556,7 @@
 
             p.then(async () => {
               const annotation = await annotationsIDB?.get("annotations", annotationId);
-              if (annotation && annotation.metadata.updatedAt == updatedAt) {
+              if (annotation && annotation.metadata.updatedAt.valueOf() == updatedAt.valueOf()) {
                 annotation.synced = true;
                 selectedAnnotation = annotation;
                 if ($entryRoot?.metadata.id == annotation.metadata.id) $entryRoot = annotation;
@@ -586,7 +586,7 @@
 
             p.then(async () => {
               const annotation = await annotationsIDB?.get("annotations", annotationId);
-              if (annotation && annotation.metadata.updatedAt == updatedAt) {
+              if (annotation && annotation.metadata.updatedAt.valueOf() == updatedAt.valueOf()) {
                 annotation.synced = true;
                 selectedAnnotation = annotation;
                 if ($entryRoot?.metadata.id == annotation.metadata.id) $entryRoot = annotation;
