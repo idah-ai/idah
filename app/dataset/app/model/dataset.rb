@@ -69,8 +69,10 @@ module Dataset
             WHERE pm.account_id = :account_id
               AND pm.project_id = datasets.project_id
               AND (
+                -- All with roles
                 pm.role IN :with_roles OR
                 (
+                  -- From assigned entries with roles
                   pm.role IN :assigned_to_roles
                   AND EXISTS (
                     SELECT 1
