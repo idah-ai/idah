@@ -4,8 +4,7 @@ module NoteFeed
   class Service < Verse::Service::Base
     use note_feeds: NoteFeed::Repository
     use_system entries: Entry::Repository,
-               annotations: Annotation::Repository,
-               project_members: ProjectMember::Repository
+               annotations: Annotation::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       note_feeds.index(
@@ -34,8 +33,7 @@ module NoteFeed
     end
 
     def resolve(id)
-      note_feeds.update!(id, { status: "resolved" })
-      note_feeds.find!(id)
+      note_feeds.resolve!(id)
     end
 
     def create_from_params(data)
