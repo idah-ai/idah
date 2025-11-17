@@ -374,8 +374,9 @@
           annotation: v.value,
         });
 
-        p.then(async () => {
-          if (v.metadata.updatedAt == updatedAt) {
+        p.then(async (a) => {
+          const v = await annotationsIDB?.get("annotations", props.id);
+          if (v && v?.metadata.updatedAt.valueOf() == updatedAt.valueOf()) {
             v.synced = true;
             await annotationsIDB?.addAnnotations([v]);
             selectedAnnotation = v;
@@ -413,7 +414,9 @@
         });
 
         p.then(async () => {
-          if (v.metadata.updatedAt == updatedAt) {
+          const v = await annotationsIDB?.get("annotations", props.id);
+          if (v?.metadata.updatedAt.valueOf() == updatedAt.valueOf()) {
+            // if (v.metadata.updatedAt == updatedAt) {
             v.synced = true;
             await annotationsIDB?.addAnnotations([v]);
             selectedAnnotation = v;
@@ -425,8 +428,8 @@
       combine: (c) => c,
     };
   });
-  context.commands.on("keyframe.delete", async (props: { annotation_id: string; frame: number }) => {
-    const annotation = await annotationsIDB?.get("annotations", props.annotation_id);
+  context.commands.on("keyframe.delete", async (props: { annotationId: string; frame: number }) => {
+    const annotation = await annotationsIDB?.get("annotations", props.annotationId);
 
     if (!annotation) return toast.error("cannot remove selection, annotation not found");
 
@@ -439,7 +442,7 @@
       name: "delete bounding box keyframe",
       async apply() {
         const updatedAt = new Date();
-        const annotation = await annotationsIDB?.get("annotations", props.annotation_id);
+        const annotation = await annotationsIDB?.get("annotations", props.annotationId);
 
         if (!annotation) return toast.error("cannot remove keyframe, annotation not found");
 
@@ -472,7 +475,8 @@
         });
 
         p.then(async () => {
-          if (annotation.metadata.updatedAt == updatedAt) {
+          const annotation = await annotationsIDB?.get("annotations", props.annotationId);
+          if (annotation && annotation.metadata.updatedAt == updatedAt) {
             annotation.synced = true;
             await annotationsIDB?.addAnnotations([annotation]);
             selectedAnnotation = annotation;
@@ -482,7 +486,7 @@
       },
       async undo() {
         const updatedAt = new Date();
-        let annotation = await annotationsIDB?.get("annotations", props.annotation_id);
+        let annotation = await annotationsIDB?.get("annotations", props.annotationId);
 
         if (!annotation) return toast.error("cannot undo remove selection, annotation not found");
 
@@ -507,7 +511,8 @@
         });
 
         p.then(async () => {
-          if (annotation.metadata.updatedAt == updatedAt) {
+          const annotation = await annotationsIDB?.get("annotations", props.annotationId);
+          if (annotation && annotation.metadata.updatedAt == updatedAt) {
             annotation.synced = true;
             await annotationsIDB?.addAnnotations([annotation]);
             selectedAnnotation = annotation;
@@ -525,12 +530,12 @@
       annotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
       value: AnnotationValue;
     }) => {
-      const annotation_id = props.annotation.metadata.id;
+      const annotationId = props.annotation.metadata.id;
       const value_from = props.annotation.value;
       return {
         name: "update annotation value",
         async apply() {
-          const annotation = await annotationsIDB?.get("annotations", annotation_id);
+          const annotation = await annotationsIDB?.get("annotations", annotationId);
           const updatedAt = new Date();
           if (annotation) {
             annotation.value = props.value;
@@ -550,7 +555,8 @@
             });
 
             p.then(async () => {
-              if (annotation.metadata.updatedAt == updatedAt) {
+              const annotation = await annotationsIDB?.get("annotations", annotationId);
+              if (annotation && annotation.metadata.updatedAt == updatedAt) {
                 annotation.synced = true;
                 selectedAnnotation = annotation;
                 if ($entryRoot?.metadata.id == annotation.metadata.id) $entryRoot = annotation;
@@ -561,7 +567,7 @@
           }
         },
         async undo() {
-          const annotation = await annotationsIDB?.get("annotations", annotation_id);
+          const annotation = await annotationsIDB?.get("annotations", annotationId);
           if (annotation) {
             const updatedAt = new Date();
             annotation.value = value_from;
@@ -579,7 +585,8 @@
             if ($entryRoot?.metadata.id == annotation.metadata.id) $entryRoot = annotation;
 
             p.then(async () => {
-              if (annotation.metadata.updatedAt == updatedAt) {
+              const annotation = await annotationsIDB?.get("annotations", annotationId);
+              if (annotation && annotation.metadata.updatedAt == updatedAt) {
                 annotation.synced = true;
                 selectedAnnotation = annotation;
                 if ($entryRoot?.metadata.id == annotation.metadata.id) $entryRoot = annotation;
@@ -655,8 +662,8 @@
     context.commands.run("keyframe.add", { id, selection });
   }
 
-  async function deleteSelection(annotation_id: string, frame: number) {
-    context.commands.run("keyframe.delete", { annotation_id, frame });
+  async function deleteSelection(annotationId: string, frame: number) {
+    context.commands.run("keyframe.delete", { annotationId, frame });
   }
 
   function onDeleteAnnotation(
@@ -779,7 +786,7 @@
          */
         sidebar_width: annotationSidebarWidthRem * 16,
       },
-      annotation_id: annotationId,
+      annotationId: annotationId,
     });
   }
 
