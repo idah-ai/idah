@@ -169,6 +169,37 @@
       }
     }
   }
+
+  function handleRowClick(annotation: VideoAnnotation) {
+    onSelectAnnotation(annotation);
+    pos_offset = annotation.shape.start || 0;
+    onSeekFrame(annotation.shape.start || 0);
+  }
+
+  let rowElements = new Map<string, HTMLElement>();
+  let prevSelectedId = $state<string | undefined>();
+
+  function trackRow(node: HTMLElement, params: { id: string }) {
+    rowElements.set(params.id, node);
+    return {
+      destroy() {
+        rowElements.delete(params.id);
+      }
+    };
+  }
+
+  $effect(() => {
+    const currentSelectedId = selectedAnnotation?.metadata.id;
+    if (currentSelectedId && currentSelectedId !== prevSelectedId) {
+      const element = rowElements.get(currentSelectedId);
+      if (element) {
+        requestAnimationFrame(() => {
+          element.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        });
+      }
+      prevSelectedId = currentSelectedId;
+    }
+  });
 </script>
 
 {#snippet row(annotations: VideoAnnotation[])}
@@ -180,14 +211,13 @@
         "bg-primary/20 border-t border-b": isSelected,
       })}
     >
-      <TableCell
+      <td
+        use:trackRow={{ id: annotation.metadata.id }}
         class={cn("justify-end p-0", {
           "border-b": isLastIndex,
         })}
         onclick={() => {
-          onSelectAnnotation(annotation);
-          pos_offset = annotation.shape.start || 0;
-          onSeekFrame(annotation.shape.start || 0);
+          handleRowClick(annotation);
         }}
       >
         <button class={cn("group flex w-full cursor-pointer items-center justify-end px-2 py-1")}>
@@ -213,7 +243,7 @@
             <Trash2Icon class="size-3"></Trash2Icon>
           </Button>
         </button>
-      </TableCell>
+      </td>
 
       <TableCell class="p-0">
         <Timeline
