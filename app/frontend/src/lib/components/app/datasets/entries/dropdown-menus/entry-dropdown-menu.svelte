@@ -31,12 +31,12 @@
     onAssign: openAssignEntryModal,
     onSetPriority: () => {},
     onDelete: () => {
-      openConfirmDeleteTaskModal = true;
+      openConfirmDeleteEntryModal = true;
     },
   }).filter((m) => m.label !== "Set Priority");
 
   let openAssignEntryFormModal: boolean = $state(false);
-  let openConfirmDeleteTaskModal: boolean = $state(false);
+  let openConfirmDeleteEntryModal: boolean = $state(false);
 
   // Functions
   async function openAssignEntryModal() {
@@ -48,11 +48,11 @@
     openAssignEntryFormModal = true;
   }
 
-  async function deleteTask() {
+  async function deleteEntry() {
     await entriesBackendDataSource.delete(entry.id);
-    toast.success("Task successfully deleted!");
+    toast.success("Entry successfully deleted!");
     $refetches.entries.list = new Date();
-    openConfirmDeleteTaskModal = false;
+    openConfirmDeleteEntryModal = false;
   }
 </script>
 
@@ -60,7 +60,7 @@
   <DropdownMenuTrigger>
     {#snippet child({ props })}
       <Button variant="ghost" size="icon" {...props}>
-        <EllipsisVerticalIcon class="size-4" />
+        <EllipsisVerticalIcon />
       </Button>
     {/snippet}
   </DropdownMenuTrigger>
@@ -78,13 +78,12 @@
 </DropdownMenu>
 
 <!-- MODAL::ASSIGN ANNOTATOR  -->
-<AssignEntryFormModal action="update" {entryRecord} entryIds={[entry.id]} bind:open={openAssignEntryFormModal}
-></AssignEntryFormModal>
+<AssignEntryFormModal action="update" {entryRecord} entryIds={[entry.id]} bind:open={openAssignEntryFormModal} />
 
 <!-- MODAL::CONFIRM DELETE -->
 <ConfirmModal
-  title="Delete task"
-  description="Are you sure you want to delete this task?"
-  onConfirm={deleteTask}
-  bind:open={openConfirmDeleteTaskModal}
-></ConfirmModal>
+  title="Delete entry"
+  description="Are you sure you want to delete this entry?"
+  onConfirm={deleteEntry}
+  bind:open={openConfirmDeleteEntryModal}
+/>

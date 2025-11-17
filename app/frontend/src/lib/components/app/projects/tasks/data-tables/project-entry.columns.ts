@@ -2,7 +2,7 @@ import { EntryRecord } from "@/data/model/dataset/entries/record";
 
 import type { ColumnsSettings } from "@/components/app/datasource-table/types";
 
-export const projectTaskColumns: ColumnsSettings<EntryRecord> = {
+export const projectEntryColumns: ColumnsSettings<EntryRecord> = {
   name: {
     label: "Name",
     dataType: "string",

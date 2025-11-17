@@ -1,11 +1,10 @@
 <script lang="ts">
-  import { EllipsisVerticalIcon, SquarePenIcon, Trash2Icon } from "@lucide/svelte";
+  import { SquarePenIcon, Trash2Icon } from "@lucide/svelte";
   import { toast } from "svelte-sonner";
 
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import AccountFormModal from "@/components/app/iam/accounts/overlays/account-form-modal.svelte";
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
-  import Button from "@/components/ui/button/button.svelte";
 
   import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
   import { refetches } from "@/utils/refetch";
@@ -61,20 +60,13 @@
   }
 </script>
 
-<DropdownMenus {menus} align="center">
-  {#snippet trigger({ props })}
-    <Button variant="ghost" size="icon" {...props}>
-      <EllipsisVerticalIcon class="size-4"></EllipsisVerticalIcon>
-    </Button>
-  {/snippet}
-</DropdownMenus>
+<DropdownMenus {menus} align="center" />
 
-<AccountFormModal title="Account" action="update" {accountRecord} bind:open={openEditAccountFormModal}
-></AccountFormModal>
+<AccountFormModal title="Account" action="update" {accountRecord} bind:open={openEditAccountFormModal} />
 
 <ConfirmModal
   title="Delete account"
   description="Are you sure you want to remove this account?"
   onConfirm={removeAccount}
   bind:open={openConfirmDeleteAccountModal}
-></ConfirmModal>
+/>

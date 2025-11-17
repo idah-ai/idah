@@ -5,7 +5,8 @@
   import { getContext } from "svelte";
   import { toast } from "svelte-sonner";
 
-  import LabelEditor from "@/components/app/datasets/labels/label-editor.svelte";
+  import LabelConfigEditor from "@/components/app/datasets/labels/label-config-editor.svelte";
+
   import PageHeader from "@/components/app/page/page-header.svelte";
   import PageLoading from "@/components/app/page/page-loading.svelte";
   import Button from "@/components/ui/button/button.svelte";
@@ -18,11 +19,14 @@
 
   import {
     labelColors,
-    type CategoryField,
+    type LabelConfigurationProperty,
+    type LabelConfigurationValue,
     type LabelingConfiguration,
-    type PropertyField,
-    type TagField,
   } from "@/data/model/dataset/labels";
+  import { pluginsBackendDataSource } from "@/data/model/setting/plugin/record";
+
+  import type { ModalityShapes } from "@/data/model/setting/plugin/types";
+  import type { IConfig } from "@/plugin/interface/Activity";
 
   // Contexts
   const project: ProjectRecord = getContext("project");
@@ -33,31 +37,20 @@
   let datasetId: string = page.params.datasetId as string;
 
   let saving: boolean = $state(false);
-  let modality: string = $state("video");
-  let defaultCategoryType: string = $derived(`${modality}:bounding_box`);
-  let labelConfig: LabelingConfiguration | undefined = $state(undefined);
+  let modality: string = $state("");
+  let shapes = $state<ModalityShapes>({});
+  let labelConfig: IConfig = $state({});
   let initialLabelConfig: LabelingConfiguration | undefined = $state(undefined);
   let isLabelConfigChanged: boolean = $derived.by(() => {
     return JSON.stringify(labelConfig) !== JSON.stringify(initialLabelConfig);
   });
 
-  let usedColors = $derived.by(() => {
-    return labelConfig ? labelConfig.categories.map((cat) => cat.color) : [];
-  });
-
-  const availableColors = $derived(labelColors.filter((color) => !usedColors.includes(color.color)));
-  const firstAvailableColor = $derived.by(() => {
-    return availableColors.length
-      ? availableColors[0].color
-      : labelColors[Math.floor(Math.random() * labelColors.length)].color;
-  });
-
   pageBreadcrumbsStore.set([
     homeBreadcrumb,
     projectBreadcrumb,
-    { label: project.name },
-    { label: "Datasets" },
-    { label: dataset.name, href: resolve(`/projects/${projectId}/datasets`) },
+    { label: project.name, href: resolve(`/projects/${projectId}/datasets`) },
+    { label: "Datasets", href: resolve(`/projects/${projectId}/datasets`) },
+    { label: dataset.name, href: resolve(`/projects/${projectId}/datasets/${datasetId}/labels`) },
     { label: "Label Editor" },
   ]);
 
@@ -69,16 +62,30 @@
       },
     });
     modality = datasetRes.data.modality;
+
+    const showModalityRes = await pluginsBackendDataSource.showModality(modality);
+    shapes = showModalityRes.shapes;
+
     labelConfig = datasetRes.data.labeling_configuration;
     initialLabelConfig = JSON.parse(JSON.stringify(labelConfig));
   }
 
   async function saveLabelConfigChanges(): Promise<void> {
     saving = true;
+    /**
+     * Remove unset config
+     */
+    const cleanedLabelConfig: IConfig = {};
+    Object.entries(labelConfig).forEach(([key, config]) => {
+      if (config.values.length > 0 || config.properties.length > 0) {
+        cleanedLabelConfig[key] = config;
+      }
+    });
+
     try {
       const updatedDatasetRes = await datasetsBackendDataSource.update(datasetId, {
         attributes: {
-          labeling_configuration: labelConfig,
+          labeling_configuration: cleanedLabelConfig,
         },
       });
       initialLabelConfig = JSON.parse(JSON.stringify(updatedDatasetRes.data.labeling_configuration));
@@ -91,53 +98,81 @@
     }
   }
 
-  function addCategory(nodeId?: string) {
+  function addLabelConfig(labelConfigKey: string) {
+    if (!labelConfig) return;
+
+    if (!labelConfig[labelConfigKey]) {
+      labelConfig[labelConfigKey] = {
+        values: [],
+        properties: [],
+      };
+    }
+  }
+
+  function duplicateConfig(sourceLabelConfigKey: string, targetLabelConfigKey: string) {
+    if (!labelConfig) return;
+
+    labelConfig[targetLabelConfigKey] = JSON.parse(JSON.stringify(labelConfig[sourceLabelConfigKey]));
+  }
+
+  function removeLabelConfig(key: string) {
+    if (!labelConfig) return;
+    labelConfig = Object.fromEntries(
+      Object.entries(labelConfig).filter(([labelConfigKey, _]) => labelConfigKey !== key),
+    );
+  }
+
+  function addCategory(labelConfigKey: string, nodeId?: string) {
     if (!labelConfig) return;
 
     const currentTime = new Date().getTime().toString();
     const newLabel = "New Category";
-    const newId = slugify(`${newLabel} ${currentTime}`);
+    const newId = slugify(currentTime);
+    const selectedLabelConfig: LabelingConfiguration = labelConfig[labelConfigKey];
+    const usedColors = selectedLabelConfig.values.map((cat) => cat.color);
+    const availableColors = labelColors.filter((color) => !usedColors.includes(color.color));
+    const firstAvailableColor = availableColors[0];
 
     /** Add a new root category, if nodeId is not provided */
     if (!nodeId) {
-      labelConfig.categories.push({
+      selectedLabelConfig.values.push({
         id: newId,
-        type: defaultCategoryType,
         label: newLabel,
-        color: firstAvailableColor,
+        color: firstAvailableColor.color,
+        text_color: firstAvailableColor.text_color,
       });
       return;
     }
 
-    const parentCategories = labelConfig.categories.filter((cat) => cat.id.startsWith(nodeId));
+    const parentCategories = selectedLabelConfig.values.filter((cat) => cat.id.startsWith(nodeId));
     /** Add a new sub-category, if parent category not exists */
     if (!parentCategories.length) {
-      labelConfig.categories.push({
+      selectedLabelConfig.values.push({
         id: `${nodeId}/${currentTime}`,
         label: newLabel,
-        type: defaultCategoryType,
-        color: firstAvailableColor,
+        color: firstAvailableColor.color,
+        text_color: firstAvailableColor.text_color,
       });
       return;
     }
 
     /** Add a new sub-category, if parent category exists */
     if (parentCategories.length === 1) {
-      const parentCategoryIndex = labelConfig.categories.findIndex((cat) => cat.id === nodeId);
+      const parentCategoryIndex = selectedLabelConfig.values.findIndex((cat) => cat.id === nodeId);
       if (parentCategoryIndex !== -1) {
         /** Update the existing one with currentTime */
-        labelConfig.categories[parentCategoryIndex] = {
-          ...labelConfig.categories[parentCategoryIndex],
-          id: `${labelConfig.categories[parentCategoryIndex].id}/${currentTime}`,
+        selectedLabelConfig.values[parentCategoryIndex] = {
+          ...selectedLabelConfig.values[parentCategoryIndex],
+          id: `${selectedLabelConfig.values[parentCategoryIndex].id}/${currentTime}`,
           label: newLabel,
         };
       } else {
         /** Just in case, if not found, add a new one */
-        labelConfig.categories.push({
+        selectedLabelConfig.values.push({
           id: `${nodeId}/${currentTime}`,
           label: newLabel,
-          type: defaultCategoryType,
-          color: firstAvailableColor,
+          color: firstAvailableColor.color,
+          text_color: firstAvailableColor.text_color,
         });
       }
 
@@ -145,149 +180,95 @@
     }
 
     /** Add a new sub-category, if multiple parent categories exist */
-    labelConfig.categories.push({
+    selectedLabelConfig.values.push({
       id: `${nodeId}/${currentTime}`,
       label: newLabel,
-      type: defaultCategoryType,
-      color: firstAvailableColor,
+      color: firstAvailableColor.color,
+      text_color: firstAvailableColor.text_color,
     });
   }
 
-  function editCategory(category: CategoryField) {
+  function editCategory(labelConfigKey: string, category: LabelConfigurationValue) {
     if (!labelConfig) return;
 
-    const categoryToUpdateIndex = labelConfig.categories.findIndex((cat) => cat.id === category.id);
+    const selectedLabelConfig = labelConfig[labelConfigKey];
+    const categoryToUpdateIndex = selectedLabelConfig.values.findIndex((cat) => cat.id === category.id);
 
     if (categoryToUpdateIndex >= 0) {
-      const existingCategory = labelConfig.categories[categoryToUpdateIndex];
+      const existingCategory = selectedLabelConfig.values[categoryToUpdateIndex];
       const slugifiedLabel: string = slugify(category.label);
       const newId = existingCategory.id.split("/").slice(0, -1).concat(slugifiedLabel).join("/");
 
-      labelConfig.categories[categoryToUpdateIndex] = {
+      selectedLabelConfig.values[categoryToUpdateIndex] = {
         ...existingCategory,
         ...category,
         label: category.label,
         id: newId,
       };
     } else {
-      labelConfig.categories.push(category);
+      selectedLabelConfig.values.push(category);
     }
   }
 
-  function editCategoryId(oldId: string, newId: string) {
+  function editCategoryId(labelConfigKey: string, oldId: string, newId: string) {
     if (!labelConfig) return;
 
-    const categoryToUpdateIndex = labelConfig.categories.findIndex((cat) => cat.id === oldId);
-
+    const selectedLabelConfig = labelConfig[labelConfigKey];
+    const categoryToUpdateIndex = selectedLabelConfig.values.findIndex((cat) => cat.id === oldId);
     if (categoryToUpdateIndex >= 0) {
-      labelConfig.categories[categoryToUpdateIndex].id = newId;
-      // labelConfig.categories[categoryToUpdateIndex].label = newId;
+      selectedLabelConfig.values[categoryToUpdateIndex].id = newId;
     }
   }
 
-  function removeCategory(categoryId: string) {
+  function removeCategory(labelConfigKey: string, categoryId: string) {
     if (!labelConfig) return;
-
     // Filter out the exact category with the given ID
     // This will only remove the exact match, keeping any parent categories
-    labelConfig.categories = labelConfig.categories.filter((cat) => !cat.id.includes(categoryId));
+    const selectedLabelConfig: LabelingConfiguration = labelConfig[labelConfigKey];
+    const usedColors = selectedLabelConfig.values.map((cat) => cat.color);
+    const availableColors = labelColors.filter((color) => !usedColors.includes(color.color));
+    const firstAvailableColor = availableColors[0];
+
+    selectedLabelConfig.values = selectedLabelConfig.values.filter((cat) => !cat.id.includes(categoryId));
 
     // Check if we need to create a parent category
     const categoryPaths = categoryId.split("/");
     if (categoryPaths.length > 1) {
       // Create the parent path by removing the last segment
       const parentPath = categoryPaths.slice(0, -1).join("/");
-
       // Check if the parent category already exists
-      const parentExists = labelConfig.categories.some((cat) => cat.id === parentPath);
+      const parentExists = selectedLabelConfig.values.some((cat) => cat.id === parentPath);
 
       // If parent doesn't exist, create it
       if (!parentExists) {
-        labelConfig.categories.push({
+        selectedLabelConfig.values.push({
           id: parentPath,
           label: humanize(parentPath),
-          type: defaultCategoryType,
-          color: firstAvailableColor,
+          color: firstAvailableColor.color,
+          text_color: firstAvailableColor.text_color,
         });
       }
     }
-
-    // Remove the category from property selectors
-    if (labelConfig.properties && labelConfig.properties.length > 0) {
-      labelConfig.properties = labelConfig.properties.map((property) => {
-        // Filter out selectors that match the removed category
-        // This handles both exact matches and wildcard patterns
-        const updatedSelector = property.selector.filter((selector) => {
-          // Remove exact matches
-          if (selector === categoryId) {
-            return false;
-          }
-
-          // Remove wildcard patterns that include the category
-          if (selector === `${categoryId}/*`) {
-            return false;
-          }
-
-          // Remove if the selector is a child of the removed category
-          if (selector.startsWith(`${categoryId}/`)) {
-            return false;
-          }
-
-          return true;
-        });
-
-        return {
-          ...property,
-          selector: updatedSelector,
-        };
-      });
-    }
   }
 
-  function setProperty(property: PropertyField) {
+  function setProperty(labelConfigKey: string, property: LabelConfigurationProperty) {
     if (!labelConfig) return;
-
-    const propertyToUpdateIndex = labelConfig.properties.findIndex((p) => p.id === property.id);
-
+    const selectedLabelConfig = labelConfig[labelConfigKey];
+    const propertyToUpdateIndex = selectedLabelConfig.properties.findIndex((p) => p.id === property.id);
     if (propertyToUpdateIndex >= 0) {
-      labelConfig.properties[propertyToUpdateIndex] = {
+      selectedLabelConfig.properties[propertyToUpdateIndex] = {
         ...property,
         id: slugify(property.label),
       };
     } else {
-      labelConfig.properties.push(property);
+      selectedLabelConfig.properties.push(property);
     }
   }
 
-  function removeProperty(propertyId: string) {
+  function removeProperty(labelConfigKey: string, propertyId: string) {
     if (!labelConfig) return;
-
-    labelConfig.properties = labelConfig.properties.filter((p) => p.id !== propertyId);
-  }
-
-  function setTag(tag: TagField) {
-    if (!labelConfig) return;
-
-    if (!labelConfig.taggings) {
-      labelConfig.taggings = [];
-    }
-
-    const tagToUpdateIndex = labelConfig.taggings.findIndex((t) => t.id === tag.id);
-
-    if (tagToUpdateIndex >= 0) {
-      labelConfig.taggings[tagToUpdateIndex] = {
-        ...tag,
-        id: slugify(tag.label),
-      };
-    } else {
-      labelConfig.taggings.push(tag);
-    }
-  }
-
-  function removeTag(tagId: string) {
-    if (!labelConfig || !labelConfig.taggings) return;
-
-    labelConfig.taggings = labelConfig.taggings.filter((t) => t.id !== tagId);
+    const selectedLabelConfig = labelConfig[labelConfigKey];
+    selectedLabelConfig.properties = selectedLabelConfig.properties.filter((p) => p.id !== propertyId);
   }
 </script>
 
@@ -309,15 +290,18 @@
     {/snippet}
   </PageHeader>
 
-  <LabelEditor
+  <LabelConfigEditor
+    {modality}
+    {shapes}
     {labelConfig}
+    onAddLabelConfig={addLabelConfig}
+    onDuplicateConfig={duplicateConfig}
+    onRemoveLabelConfig={removeLabelConfig}
     onAddCategory={addCategory}
-    onEditCategory={editCategory}
     onEditCategoryId={editCategoryId}
+    onEditCategory={editCategory}
     onRemoveCategory={removeCategory}
     onSetProperty={setProperty}
     onRemoveProperty={removeProperty}
-    onSetTag={setTag}
-    onRemoveTag={removeTag}
-  ></LabelEditor>
+  />
 {/await}

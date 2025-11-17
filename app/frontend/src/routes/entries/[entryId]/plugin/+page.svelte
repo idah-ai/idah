@@ -12,22 +12,27 @@
   onMount(async () => {
     plugins_promise = new Promise<string[]>((ok, ko) => {
       // pluginsBackendDataSource.modalities().then(async (modalities) => {
-      entriesBackendDataSource.get(entryId, { included: ["dataset"] }).then((entry) => {
-        // const plugins = modalities[entry.data.dataset.modality];
-        const plugins = ["idah-video"];
+      entriesBackendDataSource
+        .get(entryId, {
+          included: ["dataset"],
+          noCache: true,
+        })
+        .then((entry) => {
+          // const plugins = modalities[entry.data.dataset.modality];
+          const plugins = ["idah-video"];
 
-        if (!plugins) ko(`no available plugin for modality ${entry.data.dataset.modality}`);
+          if (!plugins) ko(`no available plugin for modality ${entry.data.dataset.modality}`);
 
-        if (plugins.length == 1)
-          goto(
-            resolve("/entries/[entryId]/plugin/[pluginId]", {
-              entryId: entry.data.id,
-              pluginId: plugins[0],
-            }),
-          );
+          if (plugins.length == 1)
+            goto(
+              resolve("/entries/[entryId]/plugin/[pluginId]", {
+                entryId: entry.data.id,
+                pluginId: plugins[0],
+              }),
+            );
 
-        ok(plugins);
-      }, ko);
+          ok(plugins);
+        }, ko);
       // }, reject);
     });
   });

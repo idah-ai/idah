@@ -89,6 +89,9 @@ importers:
       paneforge:
         specifier: 1.0.0-next.5
         version: 1.0.0-next.5(svelte@5.38.7)
+      peggy:
+        specifier: ^5.0.6
+        version: 5.0.6
       prettier:
         specifier: ^3.5.3
         version: 3.6.2
@@ -516,6 +519,11 @@ packages:
     resolution:
       { integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg== }
     engines: { node: ">= 8" }
+
+  "@peggyjs/from-mem@3.1.1":
+    resolution:
+      { integrity: sha512-m5OEjgJaePWpyNtQCvRZkpLoV+z44eh6QIO9yEwQuOThdUdkECO3wcKLT3tFA3H8WM5bxU/K/dpmo7r/X16UEw== }
+    engines: { node: ">=20.8" }
 
   "@polka/url@1.0.0-next.29":
     resolution:
@@ -1183,6 +1191,11 @@ packages:
   color-name@1.1.4:
     resolution:
       { integrity: sha512-dOy+3AuW3a2wNbZHIuMZpTcgjGuLU/uBL/ubcZF9OXbDo8ff4O8yVp5Bf0efS8uEoYo5q4Fx7dY9OgQGXgAsQA== }
+
+  commander@14.0.2:
+    resolution:
+      { integrity: sha512-TywoWNNRbhoD0BXs1P3ZEScW8W5iKrnbithIl0YH+uCmBd0QpPOA8yc82DS3BIE5Ma6FnBVUsJ7wVUDz4dvOWQ== }
+    engines: { node: ">=20" }
 
   commondir@1.0.1:
     resolution:
@@ -1940,6 +1953,12 @@ packages:
       { integrity: sha512-//nshmD55c46FuFw26xV/xFAaB5HF9Xdap7HJBBnrKdAd6/GxDBaNA1870O79+9ueg61cZLSVc+OaFlfmObYVQ== }
     engines: { node: ">= 14.16" }
 
+  peggy@5.0.6:
+    resolution:
+      { integrity: sha512-Sud8Zus0JAgE+U4zwkJv29OOaXhviFI7J90/6cGfy3OoqR8dpnieeF9a46dj0bTtqiFnrFatldA6ltQyOJvNmg== }
+    engines: { node: ">=20" }
+    hasBin: true
+
   picocolors@1.1.1:
     resolution:
       { integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA== }
@@ -2229,6 +2248,11 @@ packages:
     resolution:
       { integrity: sha512-2wcC/oGxHis/BoHkkPwldgiPSYcpZK3JU28WoMVv55yHJgcZ8rlXvuG9iZggz+sU1d4bRgIGASwyWqjxu3FM0g== }
     engines: { node: ">=18" }
+
+  source-map-generator@2.0.2:
+    resolution:
+      { integrity: sha512-unCl5BQhF/us51DiT7SvlSY3QUPhyfAdHJxd8l7FXdwzqxli0UDMV2dEuei2SeGp3Z4rB/AJ9zKi1mGOp2K2ww== }
+    engines: { node: ">=20" }
 
   source-map-js@1.2.1:
     resolution:
@@ -2926,6 +2950,10 @@ snapshots:
       "@nodelib/fs.scandir": 2.1.5
       fastq: 1.19.1
 
+  "@peggyjs/from-mem@3.1.1":
+    dependencies:
+      semver: 7.7.2
+
   "@polka/url@1.0.0-next.29": {}
 
   "@rollup/plugin-alias@5.1.1(rollup@4.50.1)":
@@ -3478,6 +3506,8 @@ snapshots:
       color-name: 1.1.4
 
   color-name@1.1.4: {}
+
+  commander@14.0.2: {}
 
   commondir@1.0.1: {}
 
@@ -4061,6 +4091,12 @@ snapshots:
 
   pathval@2.0.1: {}
 
+  peggy@5.0.6:
+    dependencies:
+      "@peggyjs/from-mem": 3.1.1
+      commander: 14.0.2
+      source-map-generator: 2.0.2
+
   picocolors@1.1.1: {}
 
   picomatch@2.3.1: {}
@@ -4240,6 +4276,8 @@ snapshots:
       "@polka/url": 1.0.0-next.29
       mrmime: 2.0.1
       totalist: 3.0.1
+
+  source-map-generator@2.0.2: {}
 
   source-map-js@1.2.1: {}
 

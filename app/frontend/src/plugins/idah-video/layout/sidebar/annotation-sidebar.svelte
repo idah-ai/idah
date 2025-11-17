@@ -1,22 +1,24 @@
 <script lang="ts">
+  import { CircleXIcon } from "@lucide/svelte";
   import { SvelteMap } from "svelte/reactivity";
 
-  import Input from "@/components/ui/input/input.svelte";
+  import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import SidebarContent from "@/components/ui/sidebar/sidebar-content.svelte";
   import SidebarGroupContent from "@/components/ui/sidebar/sidebar-group-content.svelte";
   import SidebarGroup from "@/components/ui/sidebar/sidebar-group.svelte";
   import SidebarHeader from "@/components/ui/sidebar/sidebar-header.svelte";
   import Sidebar from "@/components/ui/sidebar/sidebar.svelte";
 
-  import AnnotationTabs from "../../video-annotation-activity/tabs/AnnotationTabs.svelte";
   import CategoriesSelection from "./categories-selection.svelte";
 
   import type { AnnotationValue } from "$lib/context/AnnotationContext";
-  import type { IActivityContext, ICategoryField } from "@/plugin/interface/Activity";
+  import type { IActivityContext, IConfigValue } from "@/plugin/interface/Activity";
 
   import type { AnnotationsIndexedDB } from "../../video-annotation-activity/indexedDB";
 
-  import type { CategoryConfiguration, VideoAnnotation } from "../../video-annotation-activity/VideoAnnotationContext";
+  import { ENTRY_ROOT } from "../../type";
+  import type { VideoAnnotation } from "../../video-annotation-activity/VideoAnnotationContext";
+  import { entryRoot } from "../../video-annotation-activity/idb_store.svelte";
 
   // Props
   let {
@@ -43,18 +45,11 @@
     selected_id?: string;
   } = $props();
 
-  let tools = context.config.categories.reduce((acc, v: ICategoryField) => {
-    if (!acc.has(v.type)) acc.set(v.type, [v]);
-    else {
-      let categories = acc.get(v.type);
-
-      if (categories) categories.push(v);
-      else categories = [v] as CategoryConfiguration[];
-
-      acc.set(v.type, categories);
-    }
-    return acc;
-  }, new Map<string, CategoryConfiguration[]>());
+  let tools = new Map<string, IConfigValue[]>(
+    Object.entries(context.config)
+      .filter(([shapeType, _]) => shapeType != ENTRY_ROOT)
+      .map(([shapeType, { values }]) => [shapeType, values]),
+  );
 
   let searchValue = $state("");
   let debounceTimer: ReturnType<typeof setTimeout> | undefined;
@@ -62,7 +57,7 @@
   let filteredTools = $derived.by(() => {
     if (!searchValue) return tools;
 
-    const filtered = new SvelteMap<string, CategoryConfiguration[]>();
+    const filtered = new SvelteMap<string, IConfigValue[]>();
     for (const [toolType, categories] of tools) {
       const matchingCategories = categories.filter((category) =>
         category.label.toLowerCase().includes(searchValue.toLowerCase()),
@@ -75,9 +70,10 @@
   });
 
   // Functions
-  function categorySelection(mode: string, category?: string) {
+  function categorySelection(shape_type: string, category?: string) {
     if (category) {
-      onEditValue({ category }, mode);
+      if (shape_type != mode) onSelectAnnotation();
+      onEditValue({ category }, shape_type);
     } // else {
     //   onEditValue(
     //     Object.fromEntries(Object.entries(annotationValue).filter(([type, _]) => type == "categories")),
@@ -104,34 +100,27 @@
 <Sidebar variant="inset" collapsible="none" style="width: {sidebarWidthRem}rem;">
   {#if !tools.has(mode)}
     <SidebarHeader>
-      <AnnotationTabs></AnnotationTabs>
-
-      <Input placeholder="search" value={searchValue} oninput={(e) => searchCategory(e)} />
+      <InputField
+        name="input/plugin/search"
+        placeholder="search"
+        value={searchValue}
+        oninput={(e) => searchCategory(e)}
+      >
+        {#snippet suffixIcon()}
+          <CircleXIcon
+            class="hover:cursor-pointer"
+            onclick={() => {
+              searchValue = "";
+            }}
+          />
+        {/snippet}
+      </InputField>
     </SidebarHeader>
   {/if}
 
   <SidebarContent>
     {#each filteredTools as [tool, categories] (tool)}
-      <!-- {#if !tools.has(mode) || mode == "visual"} -->
-      <SidebarGroup>
-        <SidebarGroupContent>
-          <CategoriesSelection
-            {db}
-            toolMode={tool == mode}
-            type={tool}
-            {currentFrame}
-            {categories}
-            selected_category={annotationValue.category}
-            {selected_id}
-            {onSelectAnnotation}
-            {onDeleteAnnotation}
-            {annotationValue}
-            onEditValue={(v) => onEditValue(v, tool)}
-            onSelect={(s) => categorySelection(tool, s)}
-          />
-        </SidebarGroupContent>
-      </SidebarGroup>
-      <!-- {:else if tool == mode}
+      {#if !filteredTools.has(mode) || (filteredTools.has(mode) && tool == mode) || mode == ENTRY_ROOT}
         <SidebarGroup>
           <SidebarGroupContent>
             <CategoriesSelection
@@ -140,7 +129,9 @@
               type={tool}
               {currentFrame}
               {categories}
-              selected_category={annotationValue.category}
+              selected_category={tool == ENTRY_ROOT && !(tool == mode)
+                ? $entryRoot?.value.category
+                : annotationValue.category}
               {selected_id}
               {onSelectAnnotation}
               {onDeleteAnnotation}
@@ -148,7 +139,7 @@
             />
           </SidebarGroupContent>
         </SidebarGroup>
-      {/if} -->
+      {/if}
     {/each}
   </SidebarContent>
 </Sidebar>

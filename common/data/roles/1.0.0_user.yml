@@ -12,3 +12,6 @@ user:
     - "dataset:project_members.*.as_user"
     - "dataset:datasets.*.as_user"
     - "dataset:entries.*.as_user"
+    - "dataset:annotations.*.as_user"
+    - "dataset:note_feeds.*.as_user"
+    - "dataset:note_comments.*.as_user"

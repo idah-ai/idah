@@ -1,7 +1,6 @@
-// duplicate from yacine's
-
 import type { Command } from "@/command/Command";
 import type { AnnotationHeaderBarBaseTool } from "@/plugin/layout/header/annotation-header-bar.types";
+import type { ASTNode } from "../../../plugins/idah-video/test_ast_resolution";
 
 interface IUser {
   id: number;
@@ -75,56 +74,47 @@ export interface INotes {
   onNoteSelected: (cb: (noteFeedId: string | null, noteCommentId?: string) => Promise<void> | void) => void;
 }
 
-export interface ICategoryField {
-  id: string;
-  type: string;
-  color: string;
-  text_color?: string;
-  label: string;
-}
+export type IConfigPropertyType = "text" | "integer" | "boolean" | "single-select" | "multi-select";
 
-export type FieldTypeValue = "text" | "integer" | "boolean" | "single-select" | "multi-select";
-
-export type LabelPropertyOption = {
+export type IConfigPropertyOption = {
   id: string;
   label: string;
 };
-export interface FieldFormat {
+
+export type IConfigPropertyFormatKeys = keyof IConfigPropertyFormat;
+export interface IConfigPropertyFormat {
   // placeholder?: string;
   // readonly?: boolean;
   minimum: number | null;
   maximum: number | null;
   step: number | null;
   info: string | null;
-  options: Array<LabelPropertyOption>;
+  options: Array<IConfigPropertyOption>;
+} // we should probably just send what we need ?
+
+export interface IConfigValue {
+  id: string;
+  label: string;
+  color: string | null;
 }
 
-export interface FieldBase {
+export interface IConfigProperty {
   id: string;
-  type: FieldTypeValue;
   label: string;
   description: string;
+  type: IConfigPropertyType;
   required: boolean;
-  format: FieldFormat;
-  visible_if?: {
-    [key: string]: Array<string | number | boolean>;
+  visibility: ASTNode | boolean;
+  format: IConfigPropertyFormat;
+}
+export interface IConfig {
+  [shape_type: string]: {
+    values: IConfigValue[];
+    properties: IConfigProperty[];
   };
 }
-
-export interface PropertyField extends FieldBase {
-  selector: Array<string>;
-}
-
-/* eslint-disable-next-line @typescript-eslint/no-empty-object-type */
-export interface TagField extends FieldBase {}
-
-export interface IConfig {
-  categories: Array<ICategoryField>;
-  properties: Array<PropertyField>;
-  taggings: Array<TagField>;
-}
 export interface ICommands {
-  on(name: string, commandBuilder: (props?: object) => Command): void;
+  on(name: string, commandBuilder: (props?: object) => Command, manager?: boolean): void;
   run(name: string, props?: object): void;
   undo(times?: number): void;
   redo(times?: number): void;
