@@ -94,7 +94,7 @@ module Medias
       end
     end
 
-    privates
+    private
 
     def fetch_project_from_orgs
       org_ids = auth_context.custom_scopes[:org]
