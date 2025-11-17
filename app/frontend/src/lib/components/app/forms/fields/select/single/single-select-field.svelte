@@ -62,7 +62,7 @@
   <Popover bind:open>
     <PopoverTrigger
       class={cn("w-full justify-between", {
-        "border-1 border-destructive": errors,
+        "border-destructive border-1": errors,
       })}
     >
       {#snippet child({ props })}
