@@ -194,7 +194,7 @@
           {#await getCategoryName(annotation.value.category, annotation)}
             <Spinner size="sm"></Spinner>
           {:then title}
-            <Text size="sm" weight={isSelected ? "semibold" : "normal"} class="text-foreground">
+            <Text size="xs" weight={isSelected ? "semibold" : "normal"} class="text-foreground">
               {humanize(title)}
             </Text>
           {/await}
@@ -304,7 +304,7 @@
   <TableHeader class="bg-background sticky z-50" style="inset-block-start: 0">
     <TableRow>
       <!-- HEADER::ANNOTATIONS -->
-      <TableHead class="h-7 w-80"></TableHead>
+      <TableHead class="h-7 w-60"></TableHead>
 
       <!-- HEADER::TIMELINES -->
       <TableHead class="h-7 p-0">
