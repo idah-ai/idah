@@ -1,10 +1,11 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
 
+  import InputField from "@/components/app/forms/fields/input/input-field.svelte";
+  import Form from "@/components/app/forms/form.svelte";
   import AuthenticationCard from "@/components/app/iam/auth/card/authentication-card.svelte";
   import Button from "@/components/ui/button/button.svelte";
-  import Form from "@/components/app/forms/form.svelte";
-  import InputField from "@/components/app/forms/fields/input/input-field.svelte";
 
   import { resetPasswordSchema } from "@/data/model/iam/accounts/auth-schema";
 
@@ -22,11 +23,11 @@
 
   // Functions
   async function updatePassword(): Promise<void> {
-    if (true) {
-      updated = true;
-    } else {
-      updated = false;
-    }
+    // if (true) {
+    //   updated = true;
+    // } else {
+    //   updated = false;
+    // }
   }
 </script>
 
@@ -61,7 +62,7 @@
 
         <Button class="w-full" disabled={disabledResetPasswordButton} onclick={updatePassword}>Update Password</Button>
       {:else}
-        <Button class="w-full" onclick={() => goto("/login")}>Go to login</Button>
+        <Button class="w-full" onclick={() => goto(resolve("/login"))}>Go to login</Button>
       {/if}
     </Form>
   {/snippet}

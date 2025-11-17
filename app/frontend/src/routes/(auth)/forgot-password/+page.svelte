@@ -1,11 +1,9 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
-
+  import InputField from "@/components/app/forms/fields/input/input-field.svelte";
+  import Form from "@/components/app/forms/form.svelte";
   import AuthenticationAlert from "@/components/app/iam/auth/alert/authentication-alert.svelte";
   import AuthenticationCard from "@/components/app/iam/auth/card/authentication-card.svelte";
   import Button from "@/components/ui/button/button.svelte";
-  import Form from "@/components/app/forms/form.svelte";
-  import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import Link from "@/components/ui/text/Link.svelte";
 
   import { sendResetPasswordLinkSchema } from "@/data/model/iam/accounts/auth-schema";
@@ -15,7 +13,7 @@
   let email = $state("");
   let showErrorAlert = $state(false);
   let passwordResetLinkHasBeenSent: boolean = $state(false);
-  let sentDate: Date | null = $state(null);
+  // let sentDate: Date | null = $state(null);
   let disabledSendPasswordResetLink = $derived.by(() => {
     const validated = sendResetPasswordLinkSchema.safeParse({ email });
     return !validated.success;
@@ -36,16 +34,15 @@
     //   },
     //   noCache: true
     // })
-
     // if (!existingAccount.data)
-    if (true) {
-      passwordResetLinkHasBeenSent = true;
-      sentDate = new Date();
-      showErrorAlert = false;
-      goto("/reset-password");
-    } else {
-      showErrorAlert = true;
-    }
+    // if (true) {
+    //   passwordResetLinkHasBeenSent = true;
+    // sentDate = new Date();
+    // showErrorAlert = false;
+    // goto("/reset-password");
+    // } else {
+    // showErrorAlert = true;
+    // }
   }
 </script>
 

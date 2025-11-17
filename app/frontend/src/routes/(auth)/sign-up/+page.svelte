@@ -1,9 +1,9 @@
 <script lang="ts">
+  import InputField from "@/components/app/forms/fields/input/input-field.svelte";
+  import Form from "@/components/app/forms/form.svelte";
   import AuthenticationAlert from "@/components/app/iam/auth/alert/authentication-alert.svelte";
   import AuthenticationCard from "@/components/app/iam/auth/card/authentication-card.svelte";
   import Button from "@/components/ui/button/button.svelte";
-  import Form from "@/components/app/forms/form.svelte";
-  import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import Link from "@/components/ui/text/Link.svelte";
   import Text from "@/components/ui/text/Text.svelte";
 
@@ -34,13 +34,12 @@
     //   },
     //   noCache: true
     // })
-
-    if (false) {
-      showErrorAlert = false;
-    } else {
-      /** Show error that email is already in used */
-      showErrorAlert = true;
-    }
+    // if (false) {
+    //   showErrorAlert = false;
+    // } else {
+    //   /** Show error that email is already in used */
+    //   showErrorAlert = true;
+    // }
   }
 </script>
 
