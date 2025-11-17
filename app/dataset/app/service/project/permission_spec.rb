@@ -12,7 +12,7 @@ RSpec.describe Project::Service, database: true do
     project_repo.create(name: "Project 1", created_by_email: "system@example.com", organization_id: 1)
   }
   let(:second_project_id) {
-    project_repo.create(name: "Project 2", created_by_email: "system@example.com", organization_id: 1)
+    project_repo.create(name: "Project 2", created_by_email: "system@example.com", organization_id: 2)
   }
 
   # Accounts IDs
@@ -75,6 +75,86 @@ RSpec.describe Project::Service, database: true do
         }
       }
     }
+  end
+
+  # Permission: Organization Owner
+  # ------------------------------------------------
+  # Projects         | index | create | update | delete
+  # ------------------------------------------------
+  # in owned Org     |  yes  |  yes   |   yes  |   yes
+  # Not in owned Org |   x   |   x    |    x   |    x
+  context "as Organization Owner", as: :org_owner do
+    subject { described_class.new(current_auth_context) }
+    before do
+      @org_scope = current_auth_context.custom_scopes[:org]
+    end
+
+    describe "with projects in owned organization scope" do
+      it "can index" do
+        result = subject.index({})
+
+        expect(result.count).to eq 1
+        expect(result.map(&:organization_id)).to all(satisfy { |id| @org_scope.include?(id) })
+      end
+
+      it "can create" do
+        result = subject.create(deserialize(create_data))
+
+        expect(result.name).to eq create_data[:data][:attributes][:name]
+        expect(@org_scope).to include(result.organization_id)
+      end
+
+      it "can update" do
+        updated_project = subject.update(deserialize(update_data))
+
+        expect(updated_project.name).to eq "Updated Project"
+        expect(@org_scope).to include(updated_project.organization_id)
+      end
+
+      it "can delete" do
+        subject.delete(first_project_id)
+
+        expect {
+          subject.show(first_project_id)
+        }.to raise_error(Verse::Error::RecordNotFound)
+
+        # the record we tried to delete should not be there anymore
+        expect { project_repo.find!(first_project_id) }.to raise_error(Verse::Error::RecordNotFound)
+      end
+    end
+
+    describe "with projects not in owned organization scope" do
+      it "cannot index projects outside scope org scope" do
+        result = subject.index({})
+
+        expect(result.first.id).to_not eq second_project_id
+        expect(result.map(&:organization_id)).to all(satisfy { |id| @org_scope.include?(id) })
+      end
+
+      it "cannot create project with organization_id outside org scope" do
+        create_data[:data][:attributes][:organization_id] = 2
+        expect {
+          subject.create(deserialize(create_data))
+        }.to raise_error(Verse::Error::Unauthorized)
+      end
+
+      it "cannot update project with organization_id outside org scope" do
+        update_data[:data][:id] = second_project_id
+
+        expect {
+          subject.update(deserialize(update_data))
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
+
+      it "cannot delete" do
+        expect {
+          subject.delete(second_project_id)
+        }.to raise_error(Verse::Error::RecordNotFound)
+
+        # the record we tried to delete should still be there
+        expect { project_repo.find!(second_project_id) }.not_to raise_error(Verse::Error::RecordNotFound)
+      end
+    end
   end
 
   # Permission: Project Owner
