@@ -688,7 +688,7 @@ RSpec.describe NoteComment::Service, database: true do
         result = subject.index({})
 
         expect(result.count).to eq 1
-        expect(result.first.id).to_not include(
+        expect(result.map(&:id)).to_not include(
           project_owner_note_feed_id,
           annotator_note_feed_id,
           reviewer_first_note_feed_id,

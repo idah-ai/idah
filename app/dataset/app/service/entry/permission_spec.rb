@@ -230,7 +230,7 @@ RSpec.describe Entry::Service, database: true do
         result = subject.index({})
 
         expect(result.count).to eq 1
-        expect(result.first.id).to_not include second_entry_id, third_entry_id
+        expect(result.map(&:id)).to_not include second_entry_id, third_entry_id
       end
 
       it "cannot create" do
@@ -378,7 +378,7 @@ RSpec.describe Entry::Service, database: true do
         result = subject.index({})
 
         expect(result.count).to eq 1
-        expect(result.first.id).to_not include second_entry_id, third_entry_id
+        expect(result.map(&:id)).to_not include second_entry_id, third_entry_id
       end
 
       it "cannot create" do
@@ -501,7 +501,7 @@ RSpec.describe Entry::Service, database: true do
         result = subject.index({})
 
         expect(result.count).to eq 1
-        expect(result.first.id).to_not include first_entry_id, third_entry_id
+        expect(result.map(&:id)).to_not include first_entry_id, third_entry_id
       end
 
       it "cannot create" do
