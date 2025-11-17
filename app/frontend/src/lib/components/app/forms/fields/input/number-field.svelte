@@ -17,7 +17,7 @@
 
   // Props
   interface Props extends NumberFieldBaseProps {
-    value: number | null;
+    value: number | null | undefined;
   }
   let {
     value = $bindable(null),
