@@ -47,6 +47,7 @@ module ProjectMember
       account_id = auth_context.metadata[:id]
       scoped_fragment = <<-SQL
         EXISTS (
+          -- All with roles
           SELECT 1
           FROM project_members pm
           WHERE pm.account_id = :account_id

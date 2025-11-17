@@ -56,7 +56,10 @@ module Annotation
           WHERE pm.account_id = :account_id
             AND pm.project_id = annotations.project_id
             AND (
-              pm.role IN :with_roles OR (
+              -- All with roles
+              pm.role IN :with_roles OR
+              (
+                -- From assigned entries with roles
                 pm.role IN :assigned_to_roles AND
                 EXISTS (
                   SELECT 1
