@@ -1,6 +1,7 @@
 <script lang="ts">
   import { CheckIcon, SquareDashedMousePointerIcon } from "@lucide/svelte";
 
+  import CheckboxField from "@/components/app/forms/fields/input/checkbox-field.svelte";
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import FormFieldLabel from "@/components/app/forms/form-field-label.svelte";
   import Tooltips from "@/components/app/tooltips/tooltips.svelte";
@@ -9,26 +10,40 @@
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
   import Separator from "@/components/ui/separator/separator.svelte";
 
-  import { labelColors, type LabelConfigurationValue } from "@/data/model/dataset/labels";
+  import { labelColors } from "@/data/model/dataset/labels";
   import { cn } from "@/utils";
 
   import type { ICategoryTreeNode } from "@/components/app/datasets/labels/categories/category-tree-node.svelte";
+  import type { IConfigValue } from "@/plugin/interface/Activity";
 
   // Props
   interface Props {
+    values: IConfigValue[];
     treeItem: ICategoryTreeNode;
     onEditCategoryId: (oldId: string, newId: string) => void;
-    onEditCategory: (editedCategory: LabelConfigurationValue) => void;
+    onEditCategory: (editedCategory: IConfigValue) => void;
+    onChangeSelectableCategory: (editedCategory: IConfigValue, selectable: boolean) => void;
   }
-  let { treeItem, onEditCategoryId, onEditCategory }: Props = $props();
+  let { values, treeItem, onEditCategoryId, onEditCategory, onChangeSelectableCategory }: Props = $props();
 
   // Variables
-  let { id, color, text_color, label } = $derived(treeItem);
+  let { id, color, text_color, label, children } = $derived(treeItem);
+  let selectable = $derived.by(() => {
+    /** If the category has no children, it is selectable */
+    if (children.length === 0) return true;
+
+    /** If the category exists in the values list, it is selectable */
+    if (values.find((v) => v.id === id)) return true;
+
+    /** Otherwise, root it is not selectable (by default) */
+    return false;
+  });
+  let disabledSelectable = $derived(children.length === 0);
 
   // Functions
-  function updateCategory(updatedFields: Partial<LabelConfigurationValue>) {
+  function updateCategory(updatedFields: Partial<IConfigValue>) {
     onEditCategory({
-      ...treeItem,
+      ...(treeItem as IConfigValue),
       ...updatedFields,
     });
   }
@@ -78,7 +93,7 @@
             const newValue = parentPath ? `${parentPath}/${value}` : value;
             onEditCategoryId(id, newValue);
           }}
-        ></InputField>
+        />
 
         <!-- LABEL -->
         <InputField
@@ -90,39 +105,50 @@
             const value = e.currentTarget.value;
             updateCategory({ label: value });
           }}
-        ></InputField>
+        />
 
         <!-- SHORTCUT KEY -->
 
         <!-- SELECTABLE -->
-        <!-- NOTE: We will implement selectable feature later -->
+        <CheckboxField
+          name="{id}/selectable"
+          class="mx-2"
+          label="Selectable"
+          bordered
+          info="Determines if this category can be selected when labeling data or not."
+          disabled={disabledSelectable}
+          checked={selectable}
+          onCheckedChange={(checked) => onChangeSelectableCategory(treeItem as IConfigValue, checked)}
+        />
       </section>
 
       <!-- COLOR -->
-      <Separator />
-      <section class="flex flex-col gap-2 p-2">
-        <FormFieldLabel required={false} class="px-2">Color</FormFieldLabel>
-        <div class="grid grid-cols-5 gap-1">
-          {#each labelColors as { label, color: c, text_color } (c)}
-            {@const isSelected = color === c}
-            <Tooltips align="center" delayDuration={0}>
-              {#snippet trigger()}
-                <button
-                  class="inline-flex size-6 items-center justify-center rounded-lg border"
-                  style="background-color: {c}; color: {text_color}"
-                  onclick={() => updateCategory({ color: c, text_color })}
-                >
-                  <CheckIcon class={cn("size-4", isSelected ? "opacity-100" : "opacity-0")}></CheckIcon>
-                </button>
-              {/snippet}
+      {#if selectable}
+        <Separator />
+        <section class="flex flex-col gap-2 p-2">
+          <FormFieldLabel required={false} class="px-2">Color</FormFieldLabel>
+          <div class="grid grid-cols-5 gap-1">
+            {#each labelColors as { label, color: c, text_color } (c)}
+              {@const isSelected = color === c}
+              <Tooltips align="center" delayDuration={0}>
+                {#snippet trigger()}
+                  <button
+                    class="inline-flex size-6 items-center justify-center rounded-lg border"
+                    style="background-color: {c}; color: {text_color}"
+                    onclick={() => updateCategory({ color: c, text_color })}
+                  >
+                    <CheckIcon class={cn("size-4", isSelected ? "opacity-100" : "opacity-0")} />
+                  </button>
+                {/snippet}
 
-              {#snippet content()}
-                {label}
-              {/snippet}
-            </Tooltips>
-          {/each}
-        </div>
-      </section>
+                {#snippet content()}
+                  {label}
+                {/snippet}
+              </Tooltips>
+            {/each}
+          </div>
+        </section>
+      {/if}
     </div>
   </PopoverContent>
 </Popover>
