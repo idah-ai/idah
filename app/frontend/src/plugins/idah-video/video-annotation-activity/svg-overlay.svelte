@@ -139,6 +139,13 @@
   // let svg: SVGElement
   let zoomableElement: Zoomable;
 
+  export function zoomIn() {
+    zoomableElement.zoomIn();
+  }
+  export function zoomOut() {
+    zoomableElement.zoomOut();
+  }
+
   export function currentShape(
     shape: AnnotationShape,
     current_frame: number,
