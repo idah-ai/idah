@@ -27,5 +27,4 @@ org_owner:
     - "dataset:note_comments.*.as_org_owner"
 
     # Media Service
-    # TODO: review media scope
-    - "media:medias.*.*"
+    - "media:medias.*.as_org_owner"

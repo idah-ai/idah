@@ -2,7 +2,8 @@
 
 module ProjectMember
   class Service < Verse::Service::Base
-    use project_members: ProjectMember::Repository
+    use project_members: ProjectMember::Repository,
+        projects: Project::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       project_members.index(
@@ -35,6 +36,15 @@ module ProjectMember
       )
         raise Verse::Error::Unauthorized,
               "You do not have permission to create project member on this project"
+      end
+
+      # "project_owner" can only be added by an org_owner of the project
+      if record.attributes[:role] == "project_owner"
+        project = projects.find!(record.project.id)
+        unless auth_context.custom_scopes[:org]&.include?(project.organization_id)
+          raise Verse::Error::Unauthorized,
+                "You do not have permission to create a project owner member for this project"
+        end
       end
 
       # Assign attributes

@@ -29,7 +29,7 @@ module Medias
       # With "as_user" ensure account can "create" media
       access = auth_context.can?(:create, medias.class.resource)
       if access == :as_user && medias.account_can_access_project?(record.project_id, :create)
-        raise Errors::Service::UnauthorizedProjectAccess
+        raise Verse::Error::Unauthorized, "You do not have permission to create dataset on this project"
       end
 
       medias.transaction do

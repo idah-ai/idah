@@ -28,5 +28,4 @@ user:
     - "dataset:note_comments.*.as_user"
 
     # Media Service
-    # TODO: review media scope
     - "media:medias.read.*"
