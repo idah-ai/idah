@@ -65,7 +65,7 @@
   let range_span = $derived(Math.min(scale * zoom, totalFrames));
 
   let pos_offset: number = $state(1);
-  let range: [number, number] = $derived([pos_offset, pos_offset + range_span]);
+  let range: [number, number] = $derived([pos_offset, Math.min(pos_offset + range_span, totalFrames)]);
   let wheelthrottling = $state(false);
   let hoveredColumn: number | undefined = $state();
   let prevCurrentFrame: number = $state(currentFrame);
@@ -322,17 +322,24 @@
             isResizing = false;
           }}
         >
-          {#each [...Array(range[1] - range[0] + (scale - (range_span % scale)))].map((v, i) => i) as i (i)}
+          {#each Array.from({ length: (() => {
+                const span = range[1] - range[0]; // actual range span
+                const padding = (scale - (span % scale)) % scale; // align to scale
+                // clamp to range length
+                return Math.min(span + padding + 1, range[1] - range[0] + 1);
+              })() }, (_, i) => i) as i (i)}
             {@const thisFrame = i + range[0]}
             {@const width = (1 / ((range[1] - range[0] + (scale - (range_span % scale))) / 100)) * scale}
             {@const isSelected = Math.floor(thisFrame) == currentFrame}
             {@const isHovered = thisFrame == hoveredColumn}
+            {@const cellIndex = Math.floor(i / scale)}
             {@const isDefault =
-              i % (Math.floor(zoom / Math.min(zoom, 20)) * Math.ceil((range[1] - range[0]) / zoom)) == 0}
-            {@const isTick = i % (1 * Math.ceil((range[1] - range[0]) / zoom)) == 0}
+              cellIndex % Math.floor(zoom / Math.min(zoom, 20)) == 0 && i % scale == 0}
+            {@const isTick = i % scale == 0}
             {@const startLeftPosition = (i / (range[1] - range[0] + (scale - (range_span % scale)))) * 100}
+            {@const isOutOfRange = thisFrame > totalFrames}
 
-            {#if isSelected}
+            {#if !isOutOfRange && isSelected}
               <button
                 class="border-border text-primary bg-background absolute top-0 z-50 h-full cursor-col-resize border-l"
                 style:width="{width}%"
@@ -342,7 +349,7 @@
               >
                 {@render tooltipFrame(thisFrame, "bg-primary", "text-primary-foreground")}
               </button>
-            {:else if isDefault}
+            {:else if !isOutOfRange && isDefault}
               <button
                 class={cn("border-border text-muted-foreground/50 absolute top-0 h-full cursor-pointer border-l", {
                   "z-100": isHovered,
@@ -364,7 +371,7 @@
                   {thisFrame}
                 {/if}
               </button>
-            {:else if isTick}
+            {:else if !isOutOfRange && isTick}
               <button
                 aria-label="tick"
                 class={cn("border-border absolute bottom-0 cursor-pointer border-l", {
