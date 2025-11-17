@@ -103,7 +103,7 @@ RSpec.describe Annotation::Service, database: true do
       resource: "http://example.com/first.mp4",
       wf_step: "start",
       status: "pending",
-      assigned_to_id: 4, # annotator
+      assigned_to_id: annotator_account_id
     )
   }
   let(:second_entry_id) {
@@ -114,7 +114,7 @@ RSpec.describe Annotation::Service, database: true do
       resource: "http://example.com/second.mp4",
       wf_step: "start",
       status: "pending",
-      assigned_to_id: 5, # reviewer
+      assigned_to_id: reviewer_account_id,
     )
   }
   let(:third_entry_id) {
