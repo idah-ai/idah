@@ -36,9 +36,15 @@
       await AuthContext.signInWithEmailAndPassword(email, password);
       // eslint-disable-next-line svelte/no-navigation-without-resolve
       goto(redirectTo);
-    } catch (_error) {
+    } catch (error) {
       signingIn = false;
       showErrorAlert = true;
+
+      if (error instanceof Error) {
+        console.error("Error signing in:", error.message);
+      } else {
+        console.error("Unknown error signing in:", error);
+      }
     }
   }
 </script>
