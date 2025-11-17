@@ -1,4 +1,5 @@
-import { identity, type Hash, type Constructor } from "@/utils/types";
+import { identity, type Constructor, type Hash } from "@/utils/types";
+
 import type { IncludeList } from "@/data/model/includes";
 import type { FieldOptions, JsonApiRecord, JsonApiReference, RelationshipOptions } from "@/data/model/types";
 
@@ -169,7 +170,7 @@ export class RecordFactory {
     if (constructor) {
       return new constructor(data, includeList);
     } else {
-      throw `Type ${data.type} not registered`;
+      throw `Type "${data.type}" is not registered, Please register "${data.type}" Record class in '@/data/model/directory' using RecordFactory.registerTypes()`;
     }
   }
 }
