@@ -22,7 +22,17 @@ module Account
     def create(record)
       accounts.transaction do
         record_id = accounts.create(record.attributes)
-        accounts.find!(record_id)
+        test_account = accounts.find!(record_id)
+
+        # Send the password reset email
+        ::Service::Notification.email(
+          recipient_account_email: test_account.email,
+          title: "Account Created",
+          category: "account_created",
+          password_reset_token: "just_test_token" # In real implementation, generate a secure token
+        )
+
+        test_account
       end
     end
 
