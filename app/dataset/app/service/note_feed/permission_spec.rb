@@ -116,7 +116,7 @@ RSpec.describe NoteFeed::Service, database: true do
       project_id: third_project_id,
       dataset_id: third_dataset_id,
       priority: 1,
-      resource: "http://example.com/second.mp4",
+      resource: "http://example.com/third.mp4",
       wf_step: "review",
       status: "in_progress",
       assigned_to_id: reviewer_account_id,
