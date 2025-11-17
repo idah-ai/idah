@@ -2,14 +2,13 @@
   import Input from "@/components/ui/input/input.svelte";
   import Label from "@/components/ui/label/label.svelte";
   import { formatConformity, propertyFullfilled } from "..";
-
-  import type { PropertyField } from "@/plugin/interface/Activity";
+  import type { IConfigProperty } from "@/plugin/interface/Activity";
 
   let {
     property,
     value,
     onValueChange,
-  }: { property: PropertyField; value: string; onValueChange: (v: string) => void } = $props();
+  }: { property: IConfigProperty; value: string; onValueChange: (v: string) => void } = $props();
 
   const invalid = $derived(!propertyFullfilled(value, property));
 
