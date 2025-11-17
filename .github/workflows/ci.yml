@@ -39,6 +39,10 @@ jobs:
     outputs:
       frontend: ${{ steps.filter.outputs.frontend }}
       iam: ${{ steps.filter.outputs.iam }}
+      notification: ${{ steps.filter.outputs.notification }}
+      setting: ${{ steps.filter.outputs.setting }}
+      audit: ${{ steps.filter.outputs.audit }}
+      sync: ${{ steps.filter.outputs.sync }}
       media: ${{ steps.filter.outputs.media }}
       dataset: ${{ steps.filter.outputs.dataset }}
     steps:
@@ -53,6 +57,14 @@ jobs:
               - added|modified: '${{ env.IAM_DIR }}/**'
             media:
               - added|modified: '${{ env.MEDIA_DIR }}/**'
+            notification:
+              - added|modified: '${{ env.NOTIFICATION_DIR }}/**'
+            setting:
+              - added|modified: '${{ env.SETTING_DIR }}/**'
+            audit:
+              - added|modified: '${{ env.AUDIT_DIR }}/**'
+            sync:
+              - added|modified: '${{ env.SYNC_DIR }}/**'
             dataset:
               - added|modified: '${{ env.DATASET_DIR }}/**'
 
