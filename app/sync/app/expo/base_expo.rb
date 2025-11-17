@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+# Test CI
 require "verse/json_api"
 
 class BaseExpo < Verse::Exposition::Base
