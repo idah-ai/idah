@@ -1,0 +1,9 @@
+
+Hello <%= account.name %>,
+
+Account Created
+
+Your account has been successfully created. To access your account, please reset your password.
+
+Reset password:
+<%= [ENV.fetch("IDAH_URL"), "/reset_password?token=#{notification.password_reset_token}"].join("") %>
