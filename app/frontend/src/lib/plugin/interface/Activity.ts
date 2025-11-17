@@ -85,17 +85,18 @@ export type IConfigPropertyFormatKeys = keyof IConfigPropertyFormat;
 export interface IConfigPropertyFormat {
   // placeholder?: string;
   // readonly?: boolean;
-  minimum: number | null;
-  maximum: number | null;
-  step: number | null;
-  info: string | null;
-  options: Array<IConfigPropertyOption>;
+  minimum?: number;
+  maximum?: number;
+  step?: number;
+  info?: string;
+  options?: Array<IConfigPropertyOption>;
 } // we should probably just send what we need ?
 
 export interface IConfigValue {
   id: string;
   label: string;
   color: string | null;
+  text_color: string | null;
 }
 
 export interface IConfigProperty {

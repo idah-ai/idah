@@ -6,15 +6,17 @@
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
   import Text from "@/components/ui/text/Text.svelte";
 
-  import { fieldTypes, type FieldType, type FieldTypeValue } from "@/data/model/dataset/labels";
   import { truncate } from "@/utils/string";
+
+  import { fieldTypes, type FieldType } from "@/data/model/dataset/labels";
+  import type { IConfigPropertyType } from "@/plugin/interface/Activity";
 
   // Props
   interface Props {
     label: string;
     selectedFieldType: FieldType | undefined;
     onSetLabel: (params: { label: string }) => void;
-    onSetType: (params: { type: FieldTypeValue }) => void;
+    onSetType: (params: { type: IConfigPropertyType }) => void;
   }
   let { label, selectedFieldType, onSetLabel, onSetType }: Props = $props();
 </script>
@@ -43,8 +45,7 @@
     <Command>
       <CommandList>
         <CommandGroup heading="Label">
-          <InputField name={label} value={label} onblur={(e) => onSetLabel({ label: e.currentTarget.value })}
-          ></InputField>
+          <InputField name={label} value={label} onblur={(e) => onSetLabel({ label: e.currentTarget.value })} />
         </CommandGroup>
 
         <CommandGroup heading="Type">
