@@ -4,11 +4,11 @@
   import Tooltips from "@/components/app/tooltips/tooltips.svelte";
   import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
   import {
-    InputGroup,
-    InputGroupAddon,
-    InputGroupButton,
-    InputGroupInput,
-    InputGroupText,
+      InputGroup,
+      InputGroupAddon,
+      InputGroupButton,
+      InputGroupInput,
+      InputGroupText,
   } from "@/components/ui/input-group";
 
   import { cn } from "@/utils";
@@ -18,6 +18,7 @@
   // Props
   interface Props extends NumberFieldBaseProps {
     value: number | null;
+    groupInputClass?: string;
   }
   let {
     value = $bindable(null),
@@ -43,13 +44,18 @@
     class: className,
     slotDescription,
     slotErrors,
+    groupInputClass = "",
   }: Props = $props();
 </script>
 
 <Field class={cn("", className)}>
-  <FieldLabel for={name} {required}>{label}</FieldLabel>
+  <FieldLabel
+    for={name}
+    {required}
+    class={cn("", { hidden: !label })}>{label}</FieldLabel
+  >
 
-  <InputGroup>
+  <InputGroup class={cn("", groupInputClass)}>
     {#if PrefixIcon}
       <InputGroupAddon align="inline-start">
         <PrefixIcon />

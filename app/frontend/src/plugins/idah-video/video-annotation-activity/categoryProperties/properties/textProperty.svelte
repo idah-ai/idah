@@ -25,7 +25,7 @@
   {#if invalid}
     <ul>
       {#each format as [k, v] (k)}
-        <li style:color="red">{k}:<span>{v}</span></li>
+        <li class="text-xs text-red-600">{k}:<span>{v}</span></li>
       {/each}
     </ul>
   {/if}
