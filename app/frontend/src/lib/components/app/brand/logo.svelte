@@ -12,7 +12,11 @@
   let { class: className }: WithElementRef<HTMLAttributes<HTMLImageElement>> = $props();
 
   // Variables
-  let isLightMode = $derived(mode.current === "light")
+  let isLightMode = $derived(mode.current === "light");
 </script>
 
-<img src={isLightMode ? idahLogoLightSvg : idahLogoDarkSvg} alt="idah-logo-{isLightMode ? "light" : "dark"}" class={cn("size-24", className)} />
+<img
+  src={isLightMode ? idahLogoLightSvg : idahLogoDarkSvg}
+  alt="idah-logo-{isLightMode ? 'light' : 'dark'}"
+  class={cn("size-24", className)}
+/>
