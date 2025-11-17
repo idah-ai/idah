@@ -64,6 +64,7 @@
 
     <InputGroupInput
       id={name}
+      aria-invalid={errors ? "true" : "false"}
       type="number"
       {inputmode}
       {placeholder}
