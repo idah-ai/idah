@@ -122,10 +122,65 @@ module NoteFeed
             assigned_to_roles: %w[reviewer annotator]
           )
         )
+      when :resolve
+        scoped_fragment = <<-SQL
+          EXISTS (
+            SELECT 1
+            FROM project_members pm
+            WHERE pm.account_id = :account_id
+              AND pm.project_id = note_feeds.project_id
+              AND (
+                -- All with roles
+                pm.role IN :with_roles OR
+                (
+                  -- From assigned entries with roles
+                  pm.role IN :assigned_to_roles
+                  AND EXISTS (
+                    SELECT 1
+                    FROM entries e
+                    WHERE e.id = note_feeds.entry_id
+                      AND e.assigned_to_id = :account_id
+                  )
+                )
+              )
+          ) OR (
+            -- From assigned entries with only own note feeds
+            note_feeds.created_by_email = :email AND
+            EXISTS (
+              SELECT 1
+              FROM project_members pm
+              WHERE pm.account_id = :account_id
+                AND pm.project_id = note_feeds.project_id
+                AND pm.role IN :own_roles
+                AND EXISTS (
+                  SELECT 1
+                  FROM entries e
+                  WHERE e.id = note_feeds.entry_id
+                    AND e.assigned_to_id = :account_id
+                )
+            )
+          )
+        SQL
+
+        table.where(
+          Sequel.lit(
+            scoped_fragment,
+            account_id:,
+            email:,
+            with_roles: %w[project_owner],
+            assigned_to_roles: %w[reviewer],
+            own_roles: %w[annotator],
+          )
+        )
       else
         raise Verse::Error::Unauthorized,
               "Permission denied for \"#{action}\" action on #{self.class.resource}"
       end
+    end
+
+    def resolve!(id)
+      update!(id, { status: "resolved" }, scope: scoped(:resolve))
+      find!(id)
     end
   end
 end

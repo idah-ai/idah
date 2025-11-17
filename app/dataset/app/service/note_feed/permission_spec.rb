@@ -168,6 +168,28 @@ RSpec.describe NoteFeed::Service, database: true do
       created_by_email: "reviewer@example.com"
     )
   }
+  let(:annotator_note_feed_id) {
+    note_feed_repo.create(
+      project_id: first_project_id,
+      dataset_id: first_dataset_id,
+      entry_id: first_entry_id,
+      anchor_type: "entry",
+      position: { "x" => 100, "y" => 200 },
+      content_md: "This is a second test note",
+      created_by_email: "annotator@example.com",
+    )
+  }
+  let(:annotator_other_note_feed_id) {
+    note_feed_repo.create(
+      project_id: second_project_id,
+      dataset_id: second_dataset_id,
+      entry_id: second_entry_id,
+      anchor_type: "entry",
+      position: { "x" => 100, "y" => 200 },
+      content_md: "This is a second test note",
+      created_by_email: "annotator@example.com",
+    )
+  }
   let(:other_note_feed_id) {
     note_feed_repo.create(
       project_id: third_project_id,
@@ -266,6 +288,18 @@ RSpec.describe NoteFeed::Service, database: true do
         }.to raise_error(Verse::Error::RecordNotFound)
       end
 
+      it "can resolve own note feed" do
+        record = subject.resolve(project_owner_note_feed_id)
+
+        expect(record.status).to eq "resolved"
+      end
+
+      it "can resolve others note feed" do
+        record = subject.resolve(reviewer_first_note_feed_id)
+
+        expect(record.status).to eq "resolved"
+      end
+
       it "cannot update others note feed" do
         update_data[:data][:id] = reviewer_first_note_feed_id
 
@@ -317,6 +351,12 @@ RSpec.describe NoteFeed::Service, database: true do
           subject.delete(reviewer_third_note_feed_id)
         }.to raise_error(Verse::Error::RecordNotFound)
       end
+
+      it "cannot resolve others note feed" do
+        expect {
+          subject.resolve(other_note_feed_id)
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
     end
   end
 
@@ -364,15 +404,51 @@ RSpec.describe NoteFeed::Service, database: true do
         expect(record.created_by_email).to eq "annotator@example.com"
       end
 
-      it "can update" do
+      it "can update own note feed" do
+        update_data[:data][:id] = annotator_note_feed_id
+
+        record = subject.update(deserialize(update_data))
+
+        expect(record.project_id).to eq first_project_id
+        expect(record.dataset_id).to eq first_dataset_id
+        expect(record.entry_id).to eq first_entry_id
+        expect(record.anchor_type).to eq "entry"
+        expect(record.position).to eq({ x: 300, y: 400 })
+        expect(record.content_md).to eq "This is an updated test note"
+        expect(record.created_by_email).to eq "annotator@example.com"
+      end
+
+      it "can delete own note feed" do
+        subject.delete(annotator_note_feed_id)
+
+        expect {
+          subject.show(annotator_note_feed_id)
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
+
+      it "can resolve own note feed" do
+        record = subject.resolve(annotator_note_feed_id)
+
+        expect(record.status).to eq "resolved"
+      end
+
+      it "cannot update others note feed" do
+        update_data[:data][:id] = reviewer_first_note_feed_id
+
         expect {
           subject.update(deserialize(update_data))
         }.to raise_error(Verse::Error::RecordNotFound)
       end
 
-      it "can delete" do
+      it "cannot delete others note feed" do
         expect {
-          subject.delete(project_owner_note_feed_id)
+          subject.delete(reviewer_first_note_feed_id)
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
+
+      it "cannot resolve others note feed" do
+        expect {
+          subject.resolve(reviewer_first_note_feed_id)
         }.to raise_error(Verse::Error::RecordNotFound)
       end
     end
@@ -404,7 +480,7 @@ RSpec.describe NoteFeed::Service, database: true do
         # Ensure that the annotator cannot see unassigned entries in the third project
         result = subject.index({})
         expect(result.count).to eq 3
-        expect(result.map(&:id)).to_not include reviewer_third_note_feed_id
+        expect(result.map(&:id)).to_not include reviewer_third_note_feed_id, other_note_feed_id
       end
 
       it "cannot create" do
@@ -429,6 +505,26 @@ RSpec.describe NoteFeed::Service, database: true do
       it "cannot delete" do
         expect {
           subject.delete(project_owner_note_feed_id)
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
+
+      it "cannot resolve own note feed" do
+        expect {
+          subject.resolve(annotator_other_note_feed_id)
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
+
+      it "cannot resolve others note feed" do
+        expect {
+          subject.resolve(reviewer_third_note_feed_id)
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
+
+      it "cannot update others note feed" do
+        update_data[:data][:id] = reviewer_third_note_feed_id
+
+        expect {
+          subject.update(deserialize(update_data))
         }.to raise_error(Verse::Error::RecordNotFound)
       end
     end
@@ -510,7 +606,7 @@ RSpec.describe NoteFeed::Service, database: true do
         expect(record.created_by_email).to eq "reviewer@example.com"
       end
 
-      it "can update" do
+      it "can update own note feed" do
         update_data[:data][:id] = reviewer_third_note_feed_id
 
         record = subject.update(deserialize(update_data))
@@ -524,11 +620,37 @@ RSpec.describe NoteFeed::Service, database: true do
         expect(record.created_by_email).to eq "reviewer@example.com"
       end
 
-      it "can delete" do
+      it "can delete own note feed" do
         subject.delete(reviewer_third_note_feed_id)
 
         expect {
           subject.show(reviewer_third_note_feed_id)
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
+
+      it "can resolve own note feed" do
+        record = subject.resolve(reviewer_third_note_feed_id)
+
+        expect(record.status).to eq "resolved"
+      end
+
+      it "cannot update others note feed" do
+        update_data[:data][:id] = project_owner_note_feed_id
+
+        expect {
+          subject.update(deserialize(update_data))
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
+
+      it "cannot delete others note feed" do
+        expect {
+          subject.delete(project_owner_note_feed_id)
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
+
+      it "cannot resolve others note feed" do
+        expect {
+          subject.resolve(project_owner_note_feed_id)
         }.to raise_error(Verse::Error::RecordNotFound)
       end
     end
@@ -587,6 +709,26 @@ RSpec.describe NoteFeed::Service, database: true do
           subject.delete(project_owner_note_feed_id)
         }.to raise_error(Verse::Error::RecordNotFound)
       end
+
+      it "cannot resolve own note feed" do
+        expect {
+          subject.resolve(reviewer_first_note_feed_id)
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
+
+      it "cannot resolve others note feed" do
+        expect {
+          subject.resolve(other_note_feed_id)
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
+
+      it "cannot update others note feed" do
+        update_data[:data][:id] = project_owner_note_feed_id
+
+        expect {
+          subject.update(deserialize(update_data))
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
     end
 
     describe "with not assigned project" do
@@ -630,6 +772,12 @@ RSpec.describe NoteFeed::Service, database: true do
       it "cannot delete" do
         expect {
           subject.delete(other_note_feed_id)
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
+
+      it "cannot resolve note feed" do
+        expect {
+          subject.resolve(other_note_feed_id)
         }.to raise_error(Verse::Error::RecordNotFound)
       end
     end
