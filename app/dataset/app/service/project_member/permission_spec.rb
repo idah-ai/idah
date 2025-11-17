@@ -119,6 +119,12 @@ RSpec.describe ProjectMember::Service, database: true do
         expect(record.project_id).to eq first_project_id
       end
 
+      it "cannot create a 'project_owner' member" do
+        create_data[:data][:attributes][:role] = "project_owner"
+
+        expect{ subject.create(deserialize(create_data)) }.to raise_error(Verse::Error::Unauthorized)
+      end
+
       it "can update" do
         record = subject.update(deserialize(update_data))
 
