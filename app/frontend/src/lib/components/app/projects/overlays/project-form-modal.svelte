@@ -62,7 +62,6 @@
         name: project.name,
         description: project.description,
         organization_id: project.organization_id,
-        created_by_email: "user@example.com", // TODO: Replace with actual user email from auth context when implement authentication system
       },
     });
 

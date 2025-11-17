@@ -131,7 +131,6 @@
         anchor_type: newNoteFeed.anchor_type,
         position: newNoteFeed.position,
         annotation_id: newNoteFeed.annotation_id || undefined,
-        created_by_email: "reviewer_user@example.com",
       },
       relationships: {
         annotation: {
@@ -162,7 +161,6 @@
     await noteCommentsBackendDataSource.create({
       attributes: {
         content_md: contentMd,
-        created_by_email: "annotator@example.com",
       },
       relationships: {
         note_feed: {
@@ -229,8 +227,8 @@
         <NoteDialogContent
           class="w-80 p-0"
           style="
-            top: {top}; 
-            left: {left}; 
+            top: {top};
+            left: {left};
             transform: translate({sidebarLeftWidth + zoomOffsetX + 32}px, {zoomOffsetY}px);
           "
         >
