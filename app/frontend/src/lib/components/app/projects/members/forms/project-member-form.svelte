@@ -31,7 +31,7 @@
   <FieldGroup>
     <!-- EACH MEMBERS -->
     {#each members as member, index (index)}
-      <div class="flex w-full items-end gap-4">
+      <div class="flex w-full items-end gap-2">
         <!-- EMAIL -->
         <InputField
           name="{resource}/email"
@@ -60,7 +60,7 @@
         />
 
         <!-- REMOVE MEMBER BUTTON -->
-        <Button variant="ghost" size="icon" class="mb-1" onclick={() => removeMember(index)}>
+        <Button variant="ghost" size="icon" onclick={() => removeMember(index)}>
           <Trash2Icon class="size-4" />
         </Button>
       </div>
