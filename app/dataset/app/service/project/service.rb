@@ -20,6 +20,17 @@ module Project
     end
 
     def create(record)
+      access = auth_context.can?(:create, projects.class.resource)
+      unless access == :as_org_owner
+        raise Verse::Error::Unauthorized,
+              "You do not have permission to create a project"
+      end
+
+      unless auth_context.custom_scopes[:org]&.include?(record.attributes[:organization_id])
+        raise Verse::Error::Unauthorized,
+              "You do not have permission to create a project for this organization"
+      end
+
       attributes = record.attributes
       attributes[:id] = record.id || UUIDv7.generate
       attributes[:created_by_email] = auth_context.metadata[:email]

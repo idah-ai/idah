@@ -13,7 +13,7 @@ module Project
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
 
-    field :organization_id, type: Integer
+    field :organization_id, type: Integer, readonly: true
 
     has_many :project_members, repository: "ProjectMember::Repository", foreign_key: :project_id
     has_many :datasets, repository: "Dataset::Repository", foreign_key: :project_id
