@@ -54,10 +54,10 @@
 
     <PopoverContent align="center" class="max-w-40 p-0">
       <Command>
-        <CommandGroup heading="Task Priority">
+        <CommandGroup heading="Entry Priority">
           {#each entryPriorities as { label, value, iconColor } (value)}
             <CommandItem onclick={() => changePriority(value)}>
-              <FlagIcon class="size-4" color={iconColor} fill={iconColor}></FlagIcon>
+              <FlagIcon class="size-4" color={iconColor} fill={iconColor} />
               {label}
             </CommandItem>
           {/each}

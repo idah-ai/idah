@@ -141,7 +141,8 @@ export class JsonRpcDatasource {
               } else if (JsonRpcMethod_res.result) {
                 methodPromise.onResolve?.(JsonRpcMethod_res.result);
               } else {
-                reject(console.error({ JsonRpcMethod_res }));
+                failed.push(methodPromise);
+                methodPromise.onReject?.({ code: 42, message: "?" });
               }
             });
 

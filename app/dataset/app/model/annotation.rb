@@ -31,21 +31,28 @@ module Annotation
     def scoped(action)
       auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }
-
+        
         scope.as_org_owner? do
           org_ids = auth_context.custom_scopes[:org]
           table.where(table.db[:projects].where(organization_id: org_ids).select(1).exists)
         end
-
-        scope.as_user? { account_project_scoped_query(action) }
+        
+        scope.as_user? { user_project_scoped_query(action) }
       end
     end
 
-    # Actions                | Roles
-    # read                   | project_owner, annotator, reviewer
-    # create, update, delete | project_owner, annotator, reviewer
+    # Actions                       | Roles
+    # read, create, update, delete  | project_owner, annotator, reviewer
+    #
+    # Info:
+    # 1. org_owner role and project_owner(member) can create, update and delete annotations
+    # 2. annotator and reviewer project members can create, update, delete and read
+    # annotations only for entries assigned to them
     query
-    def account_project_scoped_query(action)
+    def user_project_scoped_query(action)
+      # Ignore create action as it will be handled in service layer
+      return table if action == :create
+
       account_id = auth_context.metadata[:id]
 
       scoped_fragment = <<-SQL
@@ -53,30 +60,35 @@ module Annotation
           SELECT 1
           FROM project_members pm
           WHERE pm.account_id = :account_id
-            AND pm.project_id = entries.project_id
-            AND pm.role IN :roles
+            AND pm.project_id = annotations.project_id
+            AND (
+              pm.role IN :with_roles OR (
+                pm.role IN :assigned_to_roles AND
+                EXISTS (
+                  SELECT 1
+                  FROM entries e
+                  WHERE e.id = annotations.entry_id
+                    AND e.assigned_to_id = :account_id
+                )
+              )
+            )
         )
       SQL
 
-      # TODO: review
       case action
-      when :create, :read, :update, :delete
+      when :read, :update, :delete
         table.where(
           Sequel.lit(
             scoped_fragment,
             account_id:,
-            roles: %w[project_owner annotator reviewer]
+            with_roles: %w[project_owner],
+            assigned_to_roles: %w[annotator reviewer]
           )
         )
       else
         raise Verse::Error::Unauthorized,
               "Permission denied for \"#{action}\" action on #{self.class.resource}"
       end
-    end
-
-    query
-    def account_can_access_project?(project_id, action)
-      account_project_scoped_query(action).where(project_id:).limit(1).any?
     end
   end
 end

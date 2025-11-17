@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import { PlusIcon } from "@lucide/svelte";
   import { getContext } from "svelte";
@@ -18,11 +19,16 @@
   // Contexts
   const project: ProjectRecord = getContext("project");
 
-  pageBreadcrumbsStore.set([homeBreadcrumb, projectBreadcrumb, { label: project.name }, { label: "Datasets" }]);
-
   // Variables
   let projectId: string = page.params.projectId as string;
   let openNewDatasetModal: boolean = $state(false);
+
+  pageBreadcrumbsStore.set([
+    homeBreadcrumb,
+    projectBreadcrumb,
+    { label: project.name, href: resolve(`/projects/${projectId}/datasets`) },
+    { label: "Datasets" },
+  ]);
 </script>
 
 {#snippet AddNewDatasetButton()}

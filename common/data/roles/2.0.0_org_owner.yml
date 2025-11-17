@@ -22,6 +22,9 @@ org_owner:
     - "dataset:project_members.*.as_org_owner"
     - "dataset:datasets.*.as_org_owner"
     - "dataset:entries.*.as_org_owner"
+    - "dataset:annotations.*.as_org_owner"
+    - "dataset:note_feeds.*.as_org_owner"
+    - "dataset:note_comments.*.as_org_owner"
 
     # Media Service
     # TODO: review media scope
