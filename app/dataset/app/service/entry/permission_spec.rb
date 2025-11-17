@@ -179,7 +179,9 @@ RSpec.describe Entry::Service, database: true do
     describe "with assigned project" do
       it "can index" do
         # Setup: Create entries as "Project Owner" can see all entries in assigned project
-        [first_entry_id, second_entry_id, third_entry_id]
+        first_entry_id # assigned
+        second_entry_id # not assigned
+        third_entry_id # not assigned
 
         result = subject.index({})
 
@@ -221,7 +223,9 @@ RSpec.describe Entry::Service, database: true do
     describe "with not assigned project" do
       it "cannot index" do
         # Setup: Create entries as "Project Owner" can see all entries in assigned project
-        [first_entry_id, second_entry_id, third_entry_id]
+        first_entry_id # assigned
+        second_entry_id # not assigned
+        third_entry_id # not assigned
 
         result = subject.index({})
 
@@ -300,7 +304,9 @@ RSpec.describe Entry::Service, database: true do
     describe "with assigned project and assigned entries" do
       it "can index" do
         # Setup: Create entries as "Annotator" can see all entries in assigned entries
-        [first_entry_id, second_entry_id, third_entry_id]
+        first_entry_id # assigned
+        second_entry_id # not assigned
+        third_entry_id # not assigned
 
         result = subject.index({})
 
@@ -347,7 +353,9 @@ RSpec.describe Entry::Service, database: true do
 
       it "cannot index" do
         # Setup: Create entries as "Annotator" can see all entries in assigned entries
-        [first_entry_id, second_entry_id, third_entry_id]
+        first_entry_id # assigned
+        second_entry_id # not assigned
+        third_entry_id # not assigned
 
         # Ensure that the annotator is a member of the third project
         member = project_member_repo.find_by!({ account_id: annotator_account_id, project_id: third_project_id })
@@ -363,7 +371,9 @@ RSpec.describe Entry::Service, database: true do
     describe "with not assigned project" do
       it "cannot index" do
         # Setup: Create entries as "Annotator" can see all entries in assigned entries
-        [first_entry_id, second_entry_id, third_entry_id]
+        first_entry_id # assigned
+        second_entry_id # not assigned
+        third_entry_id # not assigned
 
         result = subject.index({})
 
@@ -415,7 +425,9 @@ RSpec.describe Entry::Service, database: true do
     describe "with assigned project on assigned entries" do
       it "can index" do
         # Setup: Create entries as "Reviewer" can see all entries in assigned entries
-        [first_entry_id, second_entry_id, third_entry_id]
+        first_entry_id # not assigned
+        second_entry_id # assigned
+        third_entry_id # not assigned
 
         result = subject.index({})
 
@@ -464,7 +476,9 @@ RSpec.describe Entry::Service, database: true do
 
       it "cannot index" do
         # Setup: Create entries as "Reviewer" can see all entries in assigned entries
-        [first_entry_id, second_entry_id, third_entry_id]
+        first_entry_id # not assigned
+        second_entry_id # assigned
+        third_entry_id # not assigned
 
         # Ensure that the reviewer is a member of the third project
         member = project_member_repo.find_by!({ account_id: reviewer_account_id, project_id: third_project_id })
@@ -480,7 +494,9 @@ RSpec.describe Entry::Service, database: true do
     describe "with not assigned project" do
       it "cannot index" do
         # Setup: Create entries as "Annotator" can see all entries in assigned entries
-        [first_entry_id, second_entry_id, third_entry_id]
+        first_entry_id # not assigned
+        second_entry_id # assigned
+        third_entry_id # not assigned
 
         result = subject.index({})
 
