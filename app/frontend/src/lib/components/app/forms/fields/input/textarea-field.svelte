@@ -58,7 +58,17 @@
       </InputGroupAddon>
     {/if}
 
-    <InputGroupTextarea id={name} {placeholder} {disabled} {required} {readonly} {value} {oninput} {onblur} />
+    <InputGroupTextarea
+      id={name}
+      aria-invalid={errors ? "true" : "false"}
+      {placeholder}
+      {disabled}
+      {required}
+      {readonly}
+      {value}
+      {oninput}
+      {onblur}
+    />
 
     {#if suffix}
       <InputGroupAddon align="inline-end">
