@@ -51,7 +51,7 @@ module Dataset
     # create, update, delete | project_owner
     #
     # Info:
-    # 1. only org_owner and project_owner(member) role can create, update and delete datasets
+    # 1. only org_owner role and project_owner(member) can create, update and delete datasets
     # 2. annotator and reviewer can only read datasets
     query
     def user_project_scoped_query(action)
@@ -68,19 +68,17 @@ module Dataset
             FROM project_members pm
             WHERE pm.account_id = :account_id
               AND pm.project_id = datasets.project_id
-              AND pm.role IN :with_roles
-          ) OR
-          EXISTS (
-            SELECT 1
-            FROM project_members pm
-            WHERE pm.account_id = :account_id
-              AND pm.project_id = datasets.project_id
-              AND pm.role IN :assigned_to_roles
-              AND EXISTS (
-                SELECT 1
-                FROM entries e
-                WHERE e.dataset_id = datasets.id
-                  AND e.assigned_to_id = :account_id
+              AND (
+                pm.role IN :with_roles OR
+                (
+                  pm.role IN :assigned_to_roles
+                  AND EXISTS (
+                    SELECT 1
+                    FROM entries e
+                    WHERE e.dataset_id = datasets.id
+                      AND e.assigned_to_id = :account_id
+                  )
+                )
               )
           )
         SQL
