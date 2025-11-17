@@ -697,7 +697,7 @@ RSpec.describe NoteFeed::Service, database: true do
       end
 
       it "cannot update" do
-        update_data[:data][:id] = project_owner_note_feed_id
+        update_data[:data][:id] = reviewer_first_note_feed_id
 
         expect {
           subject.update(deserialize(update_data))
@@ -706,7 +706,7 @@ RSpec.describe NoteFeed::Service, database: true do
 
       it "cannot delete" do
         expect {
-          subject.delete(project_owner_note_feed_id)
+          subject.delete(reviewer_first_note_feed_id)
         }.to raise_error(Verse::Error::RecordNotFound)
       end
 
@@ -718,7 +718,7 @@ RSpec.describe NoteFeed::Service, database: true do
 
       it "cannot resolve others note feed" do
         expect {
-          subject.resolve(other_note_feed_id)
+          subject.resolve(project_owner_note_feed_id)
         }.to raise_error(Verse::Error::RecordNotFound)
       end
 
