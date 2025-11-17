@@ -25,6 +25,8 @@ module NoteComment
               "note feed relationship is required to create a comment"
       end
 
+      # Project Owner can find the note feed in their projects
+      # Annotator and Reviewer can find the note feed only if entry is assigned to them
       note_feed = note_feeds.find(record.note_feed.id)
 
       unless note_feed
@@ -40,7 +42,7 @@ module NoteComment
            ["project_owner", "reviewer", "annotator"]
          )
         raise Verse::Error::Unauthorized,
-              "You do not have permission to create note feed on this project"
+              "You do not have permission to create comment on this project"
       end
 
       attributes = record.attributes

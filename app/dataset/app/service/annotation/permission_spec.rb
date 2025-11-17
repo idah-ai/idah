@@ -261,7 +261,7 @@ RSpec.describe Annotation::Service, database: true do
         result = subject.index({})
 
         expect(result.count).to eq 1
-        expect(result.first.id).to_not include second_annotation_id, third_annotation_id
+        expect(result.map(&:id)).to_not include second_annotation_id, third_annotation_id
       end
 
       it "cannot create" do
@@ -411,7 +411,7 @@ RSpec.describe Annotation::Service, database: true do
         result = subject.index({})
 
         expect(result.count).to eq 1
-        expect(result.first.id).to_not include second_annotation_id, third_annotation_id
+        expect(result.map(&:id)).to_not include second_annotation_id, third_annotation_id
       end
 
       it "cannot create" do
@@ -565,7 +565,7 @@ RSpec.describe Annotation::Service, database: true do
         result = subject.index({})
 
         expect(result.count).to eq 1
-        expect(result.first.id).to_not include first_annotation_id, third_annotation_id
+        expect(result.map(&:id)).to_not include first_annotation_id, third_annotation_id
       end
 
       it "cannot create" do

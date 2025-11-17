@@ -40,7 +40,7 @@ module Entry
       end
 
       # Project Owner can find the dataset in their projects
-      # Annotator and Reviewer can find the dataset only if assigned to them
+      # Annotator and Reviewer can find the dataset only if entry is assigned to them
       dataset = datasets.find(record.dataset.id)
 
       unless dataset
