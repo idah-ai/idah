@@ -333,8 +333,7 @@
             {@const isSelected = Math.floor(thisFrame) == currentFrame}
             {@const isHovered = thisFrame == hoveredColumn}
             {@const cellIndex = Math.floor(i / scale)}
-            {@const isDefault =
-              cellIndex % Math.floor(zoom / Math.min(zoom, 20)) == 0 && i % scale == 0}
+            {@const isDefault = cellIndex % Math.floor(zoom / Math.min(zoom, 20)) == 0 && i % scale == 0}
             {@const isTick = i % scale == 0}
             {@const startLeftPosition = (i / (range[1] - range[0] + (scale - (range_span % scale)))) * 100}
             {@const isOutOfRange = thisFrame > totalFrames}
