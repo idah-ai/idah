@@ -23,8 +23,8 @@ module Medias
     field :updated_at, type: Time
 
     field :project_id, type: Integer
-    field :dataset_id, type: Integer
-    field :entry_id, type: Integer
+    # field :dataset_id, type: Integer
+    # field :entry_id, type: Integer
 
     def open
       Verse::Plugin[:shrine].with_storage do |storage|
@@ -43,54 +43,24 @@ module Medias
       auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }
 
-        scope.as_org_owner? { table.where(project_id: fetch_project_from_orgs) }
+        scope.as_org_owner? { table.where(project_id: fetch_project_from_orgs.map(&:id).uniq) }
 
-
-        # WIP: this should be changed, tbc
-        scope.as_user? {
-          table.where(
-            project_id: fetch_project_from_memberships
-                          .select { |m| m.role == "project_owner"}
-                          .map(&:project_id)
-          )
-        }
-      end
-    end
-
-    # WIP: this should be changed, tbc
-    query
-    def membership_project_scoped_query(action)
-      account_id = auth_context.metadata[:id]
-      scoped_fragment = <<-SQL
-        EXISTS (
-          SELECT 1
-          FROM project_members pm
-          WHERE pm.account_id = :account_id
-            AND pm.project_id = datasets.project_id
-            AND pm.role IN :roles
-        )
-      SQL
-
-      case action
-      when :read
-        table.where(
-          Sequel.lit(
-            scoped_fragment,
-            account_id:,
-            roles: %w[project_owner reviewer annotator]
-          )
-        )
-      when :create
-        table.where(
-          Sequel.lit(
-            scoped_fragment,
-            account_id:,
-            roles: %w[project_owner]
-          )
-        )
-      else
-        raise Verse::Error::Unauthorized,
-              "Permission denied for \"#{action}\" action on #{self.class.resource}"
+        scope.as_user? do
+          case action
+          when :read
+            table.where(
+              project_id: fetch_project_from_memberships(roles: %w[project_owner annotator reviewer])
+                            .map(&:project_id).uniq
+            )
+          when :create
+            table.where(
+              project_id: fetch_project_from_memberships(roles: %w[project_owner])
+                            .map(&:project_id).uniq
+            )
+          else
+            raise Verse::Error::Unauthorized, "Permission denied for \"#{action}\" action on #{self.class.resource}"
+          end
+        end
       end
     end
 
@@ -104,11 +74,12 @@ module Medias
         "account_id:#{auth_context.metadata[:id]}",
         expires_in: 180
       ) do
-        Api[:idah].dataset.projects.index(organization_id: org_ids).data.map(&:id).uniq
+        Api[:idah].dataset.projects.index(organization_id: org_ids).data
       end
     end
 
-    def fetch_project_from_memberships
+    # TODO: recheck if only the project_ids are needed, not the membership roles
+    def fetch_project_from_memberships(roles:)
       account_id = auth_context.metadata[:id]
 
       Verse::Cache.with_cache(
@@ -116,8 +87,9 @@ module Medias
         "account_id:#{account_id}",
         expires_in: 180
       ) do
-        Api[:idah].dataset.project_members.index(filter: {account_id: }).data.map(&:project_id).uniq
-        members.select { |m| m.role == "project_owner"}.map(&:project_id)
+        memberships = Api[:idah].dataset.project_members.index(filter: { account_id: }).data
+
+        roles ? memberships.select { |m| roles.include?(m.role) } : memberships
       end
     end
   end
