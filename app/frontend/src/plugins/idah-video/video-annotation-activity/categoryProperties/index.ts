@@ -22,8 +22,8 @@ export function propertyFullfilled(value: string | number | string[] | boolean |
 const formatValidators = [
   {
     type: "text",
-    minimum: (v: string, format: IConfigPropertyFormat) => v?.length >= (format.minimum || 0),
-    maximum: (v: string, format: IConfigPropertyFormat) => v?.length <= (format.maximum || v?.length || 0),
+    minimum: (v: string, format: IConfigPropertyFormat) => v?.length || 0 >= (format.minimum || 0),
+    maximum: (v: string, format: IConfigPropertyFormat) => v?.length || 0 <= (format.maximum || v?.length || 0),
     step: (_v: string, _format: IConfigPropertyFormat) => true,
     options: (_v: string, _format: IConfigPropertyFormat) => true,
     info: (_v: string) => true,
