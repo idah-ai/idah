@@ -11,6 +11,7 @@ module Auth
 
     use_system_repo \
       system_accounts: Account::Repository,
+      system_account_sessions: AccountSession::Repository,
       system_roles: RoleRepository
 
     def create_refresh_token(account, nonce:, session_id: nil, ip: "", user_agent: nil)
@@ -59,7 +60,7 @@ module Auth
     def delete_session(refresh_token)
       _uid, session_id, _nonce = RefreshToken.validate(refresh_token)
 
-      account_sessions.delete(session_id)
+      system_account_sessions.delete(session_id)
     end
 
     private
