@@ -3,13 +3,13 @@
   import { Switch } from "@/components/ui/switch";
   import { formatConformity, propertyFullfilled } from "..";
 
-  import type { PropertyField } from "@/plugin/interface/Activity";
+  import type { IConfigProperty } from "@/plugin/interface/Activity";
 
   let {
     property,
     value,
     onValueChange,
-  }: { property: PropertyField; value: boolean; onValueChange: (v: boolean) => void } = $props();
+  }: { property: IConfigProperty; value: boolean; onValueChange: (v: boolean) => void } = $props();
 
   const invalid = $derived(!propertyFullfilled(value, property));
   const format = $derived(invalid ? formatConformity(value, property) : []);
