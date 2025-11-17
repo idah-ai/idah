@@ -12,7 +12,7 @@
 </script>
 
 <svelte:head>
-	<link rel="icon" href={favicon} />
+  <link rel="icon" href={favicon} />
 </svelte:head>
 
 <main class="bg-background relative flex min-h-screen flex-col">
