@@ -202,6 +202,7 @@
     }
 
     registerVisualModeShortcuts({
+      context,
       player: () => player,
       toggleCommandCB: () => {
         commandOpen = !commandOpen;

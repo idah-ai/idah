@@ -3,6 +3,7 @@ import { KeyMapBuilder } from "@/shortcut/KeyMapBuilder";
 import { ShortcutManager } from "@/shortcut/ShortcutManager";
 import { DEFAULT_MODE, IDAH_VIDEO_BOUNDING_BOX } from "../type";
 import type Video from "./video.svelte";
+import type { IActivityContext } from "@/plugin/interface/Activity";
 
 const CommonInjecter = (context: KeyMapContext) => {
   const flushAction = () => {
@@ -10,11 +11,11 @@ const CommonInjecter = (context: KeyMapContext) => {
   };
 
   const redoAction = () => {
-    CommandManager.redo();
+    context.context.commands.redo();
   };
 
   const undoAction = () => {
-    CommandManager.undo();
+    context.context.commands.undo();
   };
 
   const toggleCommand = () => {
@@ -53,6 +54,7 @@ const createBoundingBoxModeKeyMap = (context: KeyMapContext) => {
 
 // let see what we need
 type KeyMapContext = {
+  context: IActivityContext;
   player: () => Video | undefined;
   toggleCommandCB: () => void;
   flush: () => void;
