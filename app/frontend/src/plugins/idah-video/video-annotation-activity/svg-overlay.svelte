@@ -249,6 +249,12 @@
       // 4. Return the absolute position for the top left corner of the note feed.
     });
   });
+
+  const cursorConstraints = new Map([[IDAH_VIDEO_BOUNDING_BOX, 4]]);
+
+  let pointer = $derived.by(() => {
+    return mode != DEFAULT_MODE ? (points.length < (cursorConstraints.get(mode) || 0) ? "crosshair" : "grab") : "grab";
+  });
 </script>
 
 <div class="svg-overlay flex-1" class:cursor-note={isNoteMode}>
@@ -276,8 +282,9 @@
     onmousedown={(e) => selectionStart(e)}
     onwheel={(e) => zoomableElement.onWheel(e)}
     {...restProps}
+    style:cursor={pointer}
   >
-    {#if width && height && !isNoteMode}
+    {#if width && height && !isNoteMode && (pointer == "crosshair" || toolSelection?.isEditing())}
       <!-- prevent display issue on load for now -->
       <line x1={0} y1={target_line[Y]} x2={width} y2={target_line[Y]} stroke="#2b7fff" />
       <line x1={target_line[X]} y1={0} x2={target_line[X]} y2={height} stroke="#2b7fff" />
@@ -290,6 +297,7 @@
           {#if annotation.shape.type == IDAH_VIDEO_BOUNDING_BOX}
             <BoundingBox
               {mode}
+              {pointer}
               points={currentShape(annotation.shape, frame) || []}
               ratio={target_size}
               offset={zoomInfo.offset}
@@ -317,6 +325,7 @@
           {#if annotation.shape.type == IDAH_VIDEO_BOUNDING_BOX}
             <BoundingBox
               {mode}
+              {pointer}
               points={currentShape(annotation.shape, frame) || []}
               ratio={target_size}
               offset={zoomInfo.offset}
@@ -344,6 +353,7 @@
 
     {#if shape?.type == IDAH_VIDEO_BOUNDING_BOX || mode == IDAH_VIDEO_BOUNDING_BOX}
       <BoundingBox
+        {pointer}
         bind:this={toolSelection}
         {mode}
         {points}
