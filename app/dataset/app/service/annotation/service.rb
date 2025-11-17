@@ -36,12 +36,12 @@ module Annotation
       end
 
       # With "as_user" ensure account can "create" annotation to the project
-      access = auth_context.can?(:create, annotations.class.resource)
-      if access == :as_user && !ScopedQuery::Service.with_project_access?(
-        auth_context.metadata[:id],
-        entry.project_id,
-        ["project_owner", "annotator", "reviewer"]
-      )
+      if auth_context.can?(:create, annotations.class.resource) == :as_user &&
+         !ScopedQuery::Service.with_project_access?(
+           auth_context.metadata[:id],
+           entry.project_id,
+           ["project_owner", "annotator", "reviewer"]
+         )
         raise Verse::Error::Unauthorized,
               "You do not have permission to create annotation"
       end

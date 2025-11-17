@@ -51,7 +51,7 @@ module Dataset
     # create, update, delete | project_owner
     #
     # Info:
-    # 1. only org_owner role and project_owner(member) can create, update and delete datasets
+    # 1. project_owner can create, update and delete datasets
     # 2. annotator and reviewer can only read datasets
     query
     def user_project_scoped_query(action)

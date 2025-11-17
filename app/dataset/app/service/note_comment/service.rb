@@ -33,12 +33,12 @@ module NoteComment
       end
 
       # With "as_user" access ensure account can "create" note feed to the project
-      access = auth_context.can?(:create, note_comments.class.resource)
-      if access == :as_user && !ScopedQuery::Service.with_project_access?(
-        auth_context.metadata[:id],
-        note_feed.project_id,
-        ["project_owner", "reviewer", "annotator"]
-      )
+      if auth_context.can?(:create, note_comments.class.resource) == :as_user &&
+         ScopedQuery::Service.without_project_access?(
+           auth_context.metadata[:id],
+           note_feed.project_id,
+           ["project_owner", "reviewer", "annotator"]
+         )
         raise Verse::Error::Unauthorized,
               "You do not have permission to create note feed"
       end

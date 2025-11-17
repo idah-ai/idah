@@ -49,12 +49,12 @@ module Entry
       end
 
       # With "as_user" access ensure account can "create" entry to the project
-      access = auth_context.can?(:create, entries.class.resource)
-      if access == :as_user && !ScopedQuery::Service.with_project_access?(
-        auth_context.metadata[:id],
-        dataset.project_id,
-        ["project_owner"]
-      )
+      if auth_context.can?(:create, entries.class.resource) == :as_user &&
+         ScopedQuery::Service.without_project_access?(
+           auth_context.metadata[:id],
+           dataset.project_id,
+           ["project_owner"]
+         )
         raise Verse::Error::Unauthorized,
               "You do not have permission to create entry on this project"
       end

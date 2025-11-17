@@ -39,7 +39,7 @@ module Annotation
     # read, create, update, delete  | project_owner, annotator, reviewer
     #
     # Info:
-    # 1. org_owner role and project_owner(member) can create, update and delete annotations
+    # 1. project_owner can create, update and delete annotations
     # 2. annotator and reviewer project members can create, update, delete and read
     # annotations only for entries assigned to them
     query
