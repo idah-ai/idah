@@ -172,7 +172,7 @@ RSpec.describe Jobs::Scheduler do
         end
 
         subject.start
-        sleep 0.01 # allow the thread to run
+        sleep 0.05 # allow the thread to run
 
         expect(Spec::CustomJob.ran).to be true
       end
