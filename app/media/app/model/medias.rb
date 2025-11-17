@@ -43,54 +43,56 @@ module Medias
       auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }
 
-        scope.as_org_owner? { table.where(project_id: fetch_project_from_orgs.map(&:id).uniq) }
+        scope.as_org_owner? { project_from_orgs_scoped }
 
-        scope.as_user? do
-          case action
-          when :read
-            table.where(
-              project_id: fetch_project_from_memberships(roles: %w[project_owner annotator reviewer])
-                            .map(&:project_id).uniq
-            )
-          when :create
-            table.where(
-              project_id: fetch_project_from_memberships(roles: %w[project_owner])
-                            .map(&:project_id).uniq
-            )
-          else
-            raise Verse::Error::Unauthorized, "Permission denied for \"#{action}\" action on #{self.class.resource}"
-          end
-        end
+        scope.as_user? { project_from_memberships_scoped(action) }
       end
     end
 
     private
 
-    def fetch_project_from_orgs
+    def project_from_orgs_scoped
       org_ids = auth_context.custom_scopes[:org]
 
-      Verse::Cache.with_cache(
+      projects = Verse::Cache.with_cache(
         "media/medias/service/projects",
         "account_id:#{auth_context.metadata[:id]}",
         expires_in: 180
       ) do
         Api[:idah].dataset.projects.index(organization_id: org_ids).data
       end
+
+      table.where(project_id: projects.map(&:id).uniq)
     end
 
-    # TODO: recheck if only the project_ids are needed, not the membership roles
-    def fetch_project_from_memberships(roles:)
+    def project_from_memberships_scoped(action)
       account_id = auth_context.metadata[:id]
 
-      Verse::Cache.with_cache(
+      case action
+      when :read
+        roles = %w[project_owner annotator reviewer]
+      # TODO: users might be able to create media, e.g. add images to comments, so this might be changed
+      when :create
+        roles = %w[project_owner]
+      else
+        raise Verse::Error::Unauthorized, "Permission denied for \"#{action}\" action on #{self.class.resource}"
+      end
+
+      memberships = Verse::Cache.with_cache(
         "media/medias/service/memberships",
         "account_id:#{account_id}",
         expires_in: 180
       ) do
-        memberships = Api[:idah].dataset.project_members.index(filter: { account_id: }).data
-
-        roles ? memberships.select { |m| roles.include?(m.role) } : memberships
+        Api[:idah].dataset.project_members.index(filter: { account_id: }).data
       end
+
+      table.where(project_id: memberships.select { |m| roles.include?(m.role) }.map(&:project_id).uniq)
+    end
+
+    query
+    # TODO: this might be changed if everyone can create media, then changed to based on target resource ?
+    def account_can_access_project?(project_id, action)
+      project_from_memberships_scoped(action).where(project_id:).limit(1).any?
     end
   end
 end

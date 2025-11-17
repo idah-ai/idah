@@ -26,6 +26,12 @@ module Medias
     end
 
     def create(record)
+      # With "as_user" ensure account can "create" media
+      access = auth_context.can?(:create, medias.class.resource)
+      if access == :as_user && medias.account_can_access_project?(record.project_id, :create)
+        raise Errors::Service::UnauthorizedProjectAccess
+      end
+
       medias.transaction do
         record_id = medias.create(record.attributes)
         medias.find!(record_id)
