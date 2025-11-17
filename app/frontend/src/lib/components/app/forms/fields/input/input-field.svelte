@@ -19,7 +19,7 @@
   // Props
   interface Props extends InputFieldBaseProps {
     type?: HTMLInputTypeAttribute;
-    value: string | null;
+    value: string | null | undefined;
   }
   let {
     value = $bindable(null),

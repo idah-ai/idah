@@ -17,16 +17,11 @@
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
   import { humanize, slugify } from "@/utils/string";
 
-  import {
-    labelColors,
-    type LabelConfigurationProperty,
-    type LabelConfigurationValue,
-    type LabelingConfiguration,
-  } from "@/data/model/dataset/labels";
+  import { labelColors } from "@/data/model/dataset/labels";
   import { pluginsBackendDataSource } from "@/data/model/setting/plugin/record";
 
   import type { ModalityShapes } from "@/data/model/setting/plugin/types";
-  import type { IConfig } from "@/plugin/interface/Activity";
+  import type { IConfig, IConfigProperty, IConfigValue } from "@/plugin/interface/Activity";
 
   // Contexts
   const project: ProjectRecord = getContext("project");
@@ -40,7 +35,7 @@
   let modality: string = $state("");
   let shapes = $state<ModalityShapes>({});
   let labelConfig: IConfig = $state({});
-  let initialLabelConfig: LabelingConfiguration | undefined = $state(undefined);
+  let initialLabelConfig: IConfig | undefined = $state(undefined);
   let isLabelConfigChanged: boolean = $derived.by(() => {
     return JSON.stringify(labelConfig) !== JSON.stringify(initialLabelConfig);
   });
@@ -128,7 +123,7 @@
     const currentTime = new Date().getTime().toString();
     const newLabel = "New Category";
     const newId = slugify(currentTime);
-    const selectedLabelConfig: LabelingConfiguration = labelConfig[labelConfigKey];
+    const selectedLabelConfig = labelConfig[labelConfigKey];
     const usedColors = selectedLabelConfig.values.map((cat) => cat.color);
     const availableColors = labelColors.filter((color) => !usedColors.includes(color.color));
     const firstAvailableColor = availableColors[0];
@@ -188,7 +183,7 @@
     });
   }
 
-  function editCategory(labelConfigKey: string, category: LabelConfigurationValue) {
+  function editCategory(labelConfigKey: string, category: IConfigValue) {
     if (!labelConfig) return;
 
     const selectedLabelConfig = labelConfig[labelConfigKey];
@@ -220,11 +215,31 @@
     }
   }
 
+  function changeSelectableCategory(labelConfigKey: string, editedCategory: IConfigValue, selectable: boolean) {
+    if (!labelConfig) return;
+
+    const selectedLabelConfig = labelConfig[labelConfigKey];
+    const usedColors = selectedLabelConfig.values.map((cat) => cat.color);
+    const availableColors = labelColors.filter((color) => !usedColors.includes(color.color));
+    const firstAvailableColor = availableColors[0];
+
+    if (selectable) {
+      selectedLabelConfig.values.push({
+        id: editedCategory.id,
+        label: editedCategory.label,
+        color: firstAvailableColor.color,
+        text_color: firstAvailableColor.text_color,
+      });
+    } else {
+      selectedLabelConfig.values = selectedLabelConfig.values.filter((cat) => cat.id !== editedCategory.id);
+    }
+  }
+
   function removeCategory(labelConfigKey: string, categoryId: string) {
     if (!labelConfig) return;
     // Filter out the exact category with the given ID
     // This will only remove the exact match, keeping any parent categories
-    const selectedLabelConfig: LabelingConfiguration = labelConfig[labelConfigKey];
+    const selectedLabelConfig = labelConfig[labelConfigKey];
     const usedColors = selectedLabelConfig.values.map((cat) => cat.color);
     const availableColors = labelColors.filter((color) => !usedColors.includes(color.color));
     const firstAvailableColor = availableColors[0];
@@ -251,7 +266,7 @@
     }
   }
 
-  function setProperty(labelConfigKey: string, property: LabelConfigurationProperty) {
+  function setProperty(labelConfigKey: string, property: IConfigProperty) {
     if (!labelConfig) return;
     const selectedLabelConfig = labelConfig[labelConfigKey];
     const propertyToUpdateIndex = selectedLabelConfig.properties.findIndex((p) => p.id === property.id);
@@ -300,6 +315,7 @@
     onAddCategory={addCategory}
     onEditCategoryId={editCategoryId}
     onEditCategory={editCategory}
+    onChangeSelectableCategory={changeSelectableCategory}
     onRemoveCategory={removeCategory}
     onSetProperty={setProperty}
     onRemoveProperty={removeProperty}
