@@ -335,7 +335,7 @@ RSpec.describe NoteFeed::Service, database: true do
 
         expect {
           subject.create_from_params(create_attributes)
-        }.to raise_error(Verse::Error::Unauthorized, "You do not have permission to create note feed")
+        }.to raise_error(Verse::Error::Unauthorized, "You do not have permission to create note feed on this project")
       end
 
       it "cannot update" do
@@ -490,7 +490,7 @@ RSpec.describe NoteFeed::Service, database: true do
           subject.create_from_params(create_attributes)
         }.to raise_error(
           Verse::Error::Unauthorized,
-          "You do not have permission to create note feed"
+          "You do not have permission to create note feed on this project"
         )
       end
 
@@ -544,7 +544,7 @@ RSpec.describe NoteFeed::Service, database: true do
 
         expect {
           subject.create_from_params(create_attributes)
-        }.to raise_error(Verse::Error::Unauthorized, "You do not have permission to create note feed")
+        }.to raise_error(Verse::Error::Unauthorized, "You do not have permission to create note feed on this project")
       end
 
       it "cannot update" do
@@ -692,7 +692,7 @@ RSpec.describe NoteFeed::Service, database: true do
           subject.create_from_params(create_attributes)
         }.to raise_error(
           Verse::Error::Unauthorized,
-          "You do not have permission to create note feed"
+          "You do not have permission to create note feed on this project"
         )
       end
 
@@ -757,7 +757,7 @@ RSpec.describe NoteFeed::Service, database: true do
           subject.create_from_params(create_attributes)
         }.to raise_error(
           Verse::Error::Unauthorized,
-          "You do not have permission to create note feed"
+          "You do not have permission to create note feed on this project"
         )
       end
 

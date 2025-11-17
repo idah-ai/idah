@@ -61,7 +61,7 @@ module NoteFeed
            ["project_owner", "reviewer", "annotator"]
          )
         raise Verse::Error::Unauthorized,
-              "You do not have permission to create note feed"
+              "You do not have permission to create note feed on this project"
       end
 
       attributes[:id] = UUIDv7.generate
