@@ -231,7 +231,7 @@ RSpec.describe Dataset::Service, database: true do
         result = subject.index({})
 
         expect(result.count).to eq 1
-        expect(result.first.id).to_not include second_dataset_id, third_dataset_id
+        expect(result.map(&:id)).to_not include second_dataset_id, third_dataset_id
       end
 
       it "cannot create" do
@@ -348,7 +348,7 @@ RSpec.describe Dataset::Service, database: true do
         result = subject.index({})
 
         expect(result.count).to eq 1
-        expect(result.first.id).to_not include second_dataset_id, third_dataset_id
+        expect(result.map(&:id)).to_not include second_dataset_id, third_dataset_id
       end
 
       it "cannot create" do
@@ -463,7 +463,7 @@ RSpec.describe Dataset::Service, database: true do
         result = subject.index({})
 
         expect(result.count).to eq 1
-        expect(result.first.id).to_not include first_dataset_id, third_dataset_id
+        expect(result.map(&:id)).to_not include first_dataset_id, third_dataset_id
       end
 
       it "cannot create" do
