@@ -43,7 +43,7 @@ module Annotation
            ["project_owner", "annotator", "reviewer"]
          )
         raise Verse::Error::Unauthorized,
-              "You do not have permission to create annotation"
+              "You do not have permission to create annotation on this project"
       end
 
       # Assign attributes
