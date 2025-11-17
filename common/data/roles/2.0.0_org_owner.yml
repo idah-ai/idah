@@ -8,13 +8,11 @@ org_owner:
     # Login
     - "iam:accounts.login.*"
     - "iam:accounts.logout.*"
-    - "iam:account_sessions.delete.*" # TODO: Implement scope self
 
     # Accounts
     - "iam:accounts.read.*"
 
     # Organizations
-    # TODO: review org scope; owned ?
     - "iam:organizations.read.*"
 
     # Dataset Service
