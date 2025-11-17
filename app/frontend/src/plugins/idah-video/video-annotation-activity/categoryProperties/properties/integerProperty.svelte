@@ -13,12 +13,12 @@
 
   const invalid = $derived(!propertyFullfilled(value, property));
   const format = $derived(invalid ? formatConformity(value, property) : []);
-  const formatters = new Map([
+  const formatters = new Map<string, ((v: boolean) => string) | ((v: number) => string)>([
     // probably need fixing on requirement same as boolean for value = 0
-    ["required", (v: any) => [property.label, "is required"].join(" ")],
-    ["minimum", (v: any) => [property.label, "minimum value:", v].join(" ")],
-    ["maximum", (v: any) => [property.label, "maximum value:", v].join(" ")],
-    ["step", (v: any) => [property.label, "required step", v].join(" ")],
+    ["required", (_: boolean) => [property.label, "is required"].join(" ")],
+    ["minimum", (v: number) => [property.label, "minimum value:", v].join(" ")],
+    ["maximum", (v: number) => [property.label, "maximum value:", v].join(" ")],
+    ["step", (v: number) => [property.label, "required step", v].join(" ")],
   ]);
 </script>
 

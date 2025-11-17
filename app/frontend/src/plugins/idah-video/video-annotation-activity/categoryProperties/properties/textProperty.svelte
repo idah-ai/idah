@@ -14,18 +14,19 @@
   const invalid = $derived(!propertyFullfilled(value, property));
 
   const format = $derived(invalid ? formatConformity(value, property) : []);
-  const formatters = new Map([
-    ["required", (v: any) => [property.label, "is required"].join(" ")],
+  const formatters = new Map<string, ((v: boolean) => string) | ((v: number) => string)>([
+    ["required", (_: boolean) => [property.label, "is required"].join(" ")],
     [
       "minimum",
-      (v: any) => [property.label, "should contains at least", v, ["character", v > 1 ? "s" : ""].join("")].join(" "),
+      (v: number) =>
+        [property.label, "should contains at least", v, ["character", v > 1 ? "s" : ""].join("")].join(" "),
     ],
     [
       "maximum",
-      (v: any) =>
+      (v: number) =>
         [property.label, "should contains no more than", v, ["character", v > 1 ? "s" : ""].join("")].join(" "),
     ],
-    ["step", (v: any) => [property.label, "required step", v].join(" ")],
+    ["step", (v: number) => [property.label, "required step", v].join(" ")],
   ]);
 </script>
 

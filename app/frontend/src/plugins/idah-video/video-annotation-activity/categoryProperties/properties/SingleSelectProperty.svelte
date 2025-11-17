@@ -22,9 +22,9 @@
   const options = property.format.options;
   const invalid = $derived(!propertyFullfilled(value, property));
   const format = $derived(invalid ? formatConformity(value, property) : []);
-  const formatters = new Map([
-    ["required", (v: any) => [property.label, "is required"].join(" ")],
-    ["step", (v: any) => [property.label, "required step", v].join(" ")],
+  const formatters = new Map<string, ((v: boolean) => string) | ((v: number) => string)>([
+    ["required", (_: boolean) => [property.label, "is required"].join(" ")],
+    ["step", (v: number) => [property.label, "required step", v].join(" ")],
   ]);
 </script>
 
