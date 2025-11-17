@@ -45,7 +45,7 @@ module Medias
 
         scope.as_org_owner? { project_from_orgs_scoped }
 
-        scope.as_user? { project_from_memberships_scoped(action) }
+        scope.as_user? { project_from_memberships_scoped }
       end
     end
 
@@ -65,18 +65,8 @@ module Medias
       table.where(project_id: projects.map(&:id).uniq)
     end
 
-    def project_from_memberships_scoped(action)
+    def project_from_memberships_scoped
       account_id = auth_context.metadata[:id]
-
-      case action
-      when :read
-        roles = %w[project_owner annotator reviewer]
-      # TODO: users might be able to create media, e.g. add images to comments, so this might be changed
-      when :create
-        roles = %w[project_owner]
-      else
-        raise Verse::Error::Unauthorized, "Permission denied for \"#{action}\" action on #{self.class.resource}"
-      end
 
       memberships = Verse::Cache.with_cache(
         "media/medias/service/memberships",
@@ -87,12 +77,6 @@ module Medias
       end
 
       table.where(project_id: memberships.select { |m| roles.include?(m.role) }.map(&:project_id).uniq)
-    end
-
-    query
-    # TODO: this might be changed if everyone can create media, then changed to based on target resource ?
-    def account_can_access_project?(project_id, action)
-      project_from_memberships_scoped(action).where(project_id:).limit(1).any?
     end
   end
 end
