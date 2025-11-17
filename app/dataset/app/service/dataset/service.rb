@@ -29,8 +29,13 @@ module Dataset
 
       # With "as_user" ensure account can "create" dataset to the project
       access = auth_context.can?(:create, datasets.class.resource)
-      if access == :as_user && !datasets.account_can_access_project?(record.project.id, :create)
-        raise Errors::Service::UnauthorizedProjectAccess
+      if access == :as_user && !ScopedQuery::Service.with_project_access?(
+        auth_context.metadata[:id],
+        record.project.id,
+        ["project_owner"]
+      )
+        raise Verse::Error::Unauthorized,
+              "You do not have permission to create dataset on this project"
       end
 
       # Assign attributes

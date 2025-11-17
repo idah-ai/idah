@@ -33,5 +33,99 @@ module NoteFeed
     self.resource = Resource::Dataset::NoteFeeds
 
     encoder :position, Verse::Sequel::JsonEncoder
+
+    def scoped(action)
+      auth_context.can!(action, self.class.resource) do |scope|
+        scope.all? { table }
+        scope.as_user? { user_project_scoped_query(action) }
+      end
+    end
+
+    # Actions                      Member Roles
+    # read, create                | project_owner, reviewer, annotator
+    # update(own), delete(own)    | project_owner, reviewer, annotator
+    # resolve                     | project_owner, reviewer
+    #
+    # Info:
+    # 1. org owner and project owner can read/create note feeds in their projects
+    # 2. reviewer and annotator can read/create note feeds in their assigned entries in their projects
+    # 2. all roles can update and delete only their own note feeds in their projects
+    # 3. org owner, project owner and reviewer can resolve note feeds in their projects
+    query
+    def user_project_scoped_query(action)
+      # Ignore create action as it will be handled in service layer
+      return table if action == :create
+
+      account_id = auth_context.metadata[:id]
+      email = auth_context.metadata[:email]
+
+      case action
+      when :read
+        scoped_fragment = <<-SQL
+          EXISTS (
+            SELECT 1
+            FROM project_members pm
+            WHERE pm.account_id = :account_id
+              AND pm.project_id = note_feeds.project_id
+              AND (
+                pm.role IN :with_roles OR
+                (
+                  pm.role IN :assigned_to_roles
+                  AND EXISTS (
+                    SELECT 1
+                    FROM entries e
+                    WHERE e.id = note_feeds.entry_id
+                      AND e.assigned_to_id = :account_id
+                  )
+                )
+              )
+          )
+        SQL
+
+        table.where(
+          Sequel.lit(
+            scoped_fragment,
+            account_id:,
+            with_roles: %w[project_owner],
+            assigned_to_roles: %w[reviewer annotator]
+          )
+        )
+      when :update, :delete
+        scoped_fragment = <<-SQL
+          note_feeds.created_by_email = :email AND
+          EXISTS (
+            SELECT 1
+            FROM project_members pm
+            WHERE pm.account_id = :account_id
+              AND pm.project_id = note_feeds.project_id
+              AND (
+                pm.role IN :with_roles OR
+                (
+                  pm.role IN :assigned_to_roles
+                  AND EXISTS (
+                    SELECT 1
+                    FROM entries e
+                    WHERE e.id = note_feeds.entry_id
+                      AND e.assigned_to_id = :account_id
+                  )
+                )
+              )
+          )
+        SQL
+
+        table.where(
+          Sequel.lit(
+            scoped_fragment,
+            account_id:,
+            email:,
+            with_roles: %w[project_owner],
+            assigned_to_roles: %w[reviewer annotator]
+          )
+        )
+      else
+        raise Verse::Error::Unauthorized,
+              "Permission denied for \"#{action}\" action on #{self.class.resource}"
+      end
+    end
   end
 end

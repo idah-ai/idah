@@ -6,6 +6,8 @@
 
   import { cn } from "@/utils";
 
+  import type { EmptyMediaVariant } from "@/components/ui/empty/empty-media.svelte";
+
   // Props
   interface Props {
     icon?: typeof IconType;
@@ -13,26 +15,57 @@
     title: string;
     description: string;
 
+    size?: "sm" | "md";
+
     class?: string | null;
-    actions: Snippet;
+    actions?: Snippet;
   }
-  let { icon: Icon, title, description, class: className, actions }: Props = $props();
+  let { icon: Icon, title, description, size = "md", class: className, actions }: Props = $props();
+
+  // Variables
+  interface ResponseBlockSize {
+    icon: EmptyMediaVariant;
+    title: string;
+    description: string;
+  }
+  let responseBlockSize = $derived.by<ResponseBlockSize>(() => {
+    switch (size) {
+      case "sm": {
+        return {
+          icon: "icon-sm",
+          title: "text-base",
+          description: "text-xs/relaxed",
+        };
+      }
+      default: {
+        return {
+          icon: "icon",
+          title: "text-lg",
+          description: "text-sm/relaxed",
+        };
+      }
+    }
+  });
 </script>
 
 <Empty class={cn("", className)}>
   <EmptyHeader>
-    <EmptyMedia variant={Icon ? "icon" : "default"}>
+    <EmptyMedia variant={Icon ? responseBlockSize.icon : "default"}>
       {#if Icon}
-        <Icon class="size-4"></Icon>
+        <Icon />
       {/if}
     </EmptyMedia>
 
-    <EmptyTitle>{title}</EmptyTitle>
+    <EmptyTitle class={responseBlockSize.title}>
+      {title}
+    </EmptyTitle>
 
-    <EmptyDescription>{description}</EmptyDescription>
+    <EmptyDescription class={responseBlockSize.description}>
+      {description}
+    </EmptyDescription>
   </EmptyHeader>
 
   <EmptyContent class="flex-row justify-center">
-    {@render actions()}
+    {@render actions?.()}
   </EmptyContent>
 </Empty>

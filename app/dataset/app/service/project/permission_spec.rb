@@ -15,31 +15,36 @@ RSpec.describe Project::Service, database: true do
     project_repo.create(name: "Project 2", created_by_email: "system@example.com", organization_id: 1)
   }
 
+  # Accounts IDs
+  let(:project_owner_account_id) { 3 }
+  let(:annotator_account_id) { 4 }
+  let(:reviewer_account_id) { 5 }
+
   # Project Members
   let!(:project_owner_member_id) {
     project_member_repo.create(
       project_id: first_project_id,
-      account_id: 3,
+      account_id: project_owner_account_id,
       role: "project_owner",
-      email: "po@example.com",
+      email: "project_owner@example.com",
       invited_by_id: 1
     )
   }
   let!(:annotator_member_id) {
     project_member_repo.create(
       project_id: first_project_id,
-      account_id: 4,
+      account_id: annotator_account_id,
       role: "annotator",
-      email: "an@example.com",
+      email: "annotator@example.com",
       invited_by_id: 1
     )
   }
   let!(:reviewer_member_id) {
     project_member_repo.create(
       project_id: second_project_id,
-      account_id: 5,
+      account_id: reviewer_account_id,
       role: "reviewer",
-      email: "re@example.com",
+      email: "reviewer@example.com",
       invited_by_id: 1
     )
   }
@@ -72,15 +77,21 @@ RSpec.describe Project::Service, database: true do
     }
   end
 
+  # Permission: Project Owner
+  # ------------------------------------------------
+  # Projects      | index | create | update | delete
+  # ------------------------------------------------
+  # Assigned      |  yes  |   x    |   yes  |   yes
+  # Not Assigned  |   x   |   x    |    x   |    x
   context "as Project Owner", as: :project_owner do
     subject { described_class.new(current_auth_context) }
 
-    describe "scoped projects" do
+    describe "with assigned project" do
       it "can index" do
         result = subject.index({})
 
         expect(result.count).to eq 1
-        expect(result.map(&:name)).to eq ["Project 1"]
+        expect(result.first.id).to eq first_project_id
       end
 
       it "cannot create" do
@@ -104,12 +115,12 @@ RSpec.describe Project::Service, database: true do
       end
     end
 
-    describe "not scoped projects" do
+    describe "with not assigned project" do
       it "cannot index" do
         result = subject.index({})
 
         expect(result.count).to eq 1
-        expect(result.first.name).to_not eq "Project 2"
+        expect(result.first.id).to_not eq second_project_id
       end
 
       it "cannot create" do
@@ -134,15 +145,21 @@ RSpec.describe Project::Service, database: true do
     end
   end
 
+  # Permission: Annotator
+  # ------------------------------------------------
+  # Projects      | index | create | update | delete
+  # ------------------------------------------------
+  # Assigned      |  yes  |   x    |    x   |    x
+  # Not Assigned  |   x   |   x    |    x   |    x
   context "as Annotator", as: :annotator do
     subject { described_class.new(current_auth_context) }
 
-    describe "scoped projects" do
+    describe "with assigned project" do
       it "can index" do
         result = subject.index({})
 
         expect(result.count).to eq 1
-        expect(result.first.name).to eq "Project 1"
+        expect(result.first.id).to eq first_project_id
       end
 
       it "cannot create" do
@@ -164,12 +181,12 @@ RSpec.describe Project::Service, database: true do
       end
     end
 
-    describe "not scoped projects" do
+    describe "with not assigned project" do
       it "cannot index" do
         result = subject.index({})
 
         expect(result.count).to eq 1
-        expect(result.first.name).to_not eq "Project 2"
+        expect(result.first.id).to_not eq second_project_id
       end
 
       it "cannot create" do
@@ -194,15 +211,21 @@ RSpec.describe Project::Service, database: true do
     end
   end
 
+  # Permission: Reviewer
+  # ------------------------------------------------
+  # Projects      | index | create | update | delete
+  # ------------------------------------------------
+  # Assigned      |  yes  |   x    |    x   |    x
+  # Not Assigned  |   x   |   x    |    x   |    x
   context "as Reviewer", as: :reviewer do
     subject { described_class.new(current_auth_context) }
 
-    describe "scoped projects" do
+    describe "with assigned project" do
       it "can index" do
         result = subject.index({})
 
         expect(result.count).to eq 1
-        expect(result.first.name).to eq "Project 2"
+        expect(result.first.id).to eq second_project_id
       end
 
       it "cannot create" do
@@ -224,12 +247,12 @@ RSpec.describe Project::Service, database: true do
       end
     end
 
-    describe "not scoped projects" do
+    describe "with not assigned project" do
       it "cannot index" do
         result = subject.index({})
 
         expect(result.count).to eq 1
-        expect(result.first.name).to_not eq "Project 1"
+        expect(result.first.id).to_not eq first_project_id
       end
 
       it "cannot create" do

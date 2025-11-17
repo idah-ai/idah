@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { IDAH_NOTE } from "../type";
   import { X, Y, type Point } from "./VideoAnnotationContext";
 
   let {
@@ -8,6 +9,7 @@
     editable = false,
     cursor,
     color,
+    mode,
     onChange,
     onmousedown,
   }: {
@@ -17,6 +19,7 @@
     editable?: boolean;
     cursor?: Point;
     color: string;
+    mode: string;
     onmousedown?: (e: MouseEvent) => void;
     onChange?: (bb: BoundingBox) => void;
   } = $props();
@@ -116,10 +119,10 @@
     }
   }
 
-  const BB_TOP_LEFT: number = 0;
-  const BB_TOP_RIGHT: number = 1;
-  const BB_BOTTOM_RIGHT: number = 2;
-  const BB_BOTTOM_LEFT: number = 3;
+  const BB_TOP_LEFT: 0 = 0 as const;
+  const BB_TOP_RIGHT: 1 = 1 as const;
+  const BB_BOTTOM_RIGHT: 2 = 2 as const;
+  const BB_BOTTOM_LEFT: 3 = 3 as const;
 
   const BB_HANDLE_POINTS = [
     [BB_BOTTOM_RIGHT],
@@ -170,13 +173,26 @@
 
     return cursors[handle_index] || "default";
   }
+
+  function getCursor() {
+    if (editable) {
+      return "cursor-move";
+    } else if (mode === IDAH_NOTE) {
+      return "cursor-note";
+    } else {
+      return "cursor-default";
+    }
+  }
 </script>
 
 {#snippet BoundingBoxHandle(bb: BoundingBox)}
   {#each boundingBoxHandle(bb) as point, handle (handle)}
+    <!-- 
+      NOTE: Do not add role="button" and tabindex="" to <circle>
+      as it will raise an unexpected ellipse shape during moving annotation bounding box.
+    -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
     <circle
-      role="button"
-      tabindex="0"
       onmousedown={(e) => {
         e.stopPropagation();
         remove_resizeable_points(bb, handle);
@@ -198,14 +214,17 @@
 
 {#snippet bb(path?: string)}
   {#if path}
+    <!-- 
+      NOTE: Do not add role="button" and tabindex="" to <path>
+      as it will raise an unexpected ellipse shape during moving annotation bounding box.
+    -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
     <path
-      role="button"
-      tabindex="0"
       d={path}
       style:transform-origin="top left"
       style:transform={`translate(${offset[X]}px, ${offset[Y]}px) scale(${ratio[X]}, ${ratio[Y]})`}
       vector-effect="non-scaling-stroke"
-      class={editable ? "cursor-move" : "cursor-pointer"}
+      class={getCursor()}
       fill-opacity="0.4"
       style:fill={color}
       style:stroke={color}
@@ -227,3 +246,9 @@
 {#if editable && !isEditing()}
   {@render BoundingBoxHandle(boundingBox(bounding_box, cursor))}
 {/if}
+
+<style>
+  .cursor-note {
+    cursor: url("/app/frontend/src/plugins/assets/icons/message-circle.svg"), auto;
+  }
+</style>

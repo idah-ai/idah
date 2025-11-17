@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { onDestroy } from "svelte";
+
   import EntryPriority from "@/components/app/datasets/entries/badges/entry-priority.svelte";
   import EntryStatus from "@/components/app/datasets/entries/badges/entry-status.svelte";
   import LoadingEntryCard from "@/components/app/datasets/entries/cards/loading-entry-card.svelte";
@@ -9,11 +11,15 @@
   import { AspectRatio } from "@/components/ui/aspect-ratio";
   import { Card, CardContent } from "@/components/ui/card";
   import Checkbox from "@/components/ui/checkbox/checkbox.svelte";
+  import Progress from "@/components/ui/progress/progress.svelte";
   import Link from "@/components/ui/text/Link.svelte";
   import Text from "@/components/ui/text/Text.svelte";
 
-  import { EntryRecord } from "@/data/model/dataset/entries/record";
+  import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
+  import { JobRecord, jobsBackendDataSource } from "@/data/model/media/jobs/record";
   import { mediaBackendDataSource } from "@/data/model/media/medias/medias-record";
+
+  import type { EntryStatus as EntryStatusType } from "@/data/model/dataset/entries/constants";
 
   // Props
   interface Props {
@@ -31,16 +37,18 @@
   let thumbnailError = $state(false);
   let currentImagePosition = $state(0);
   let animationInterval: number | null = $state(null);
+  let jobProgress: number = $state(1);
 
+  const processingStatuses: EntryStatusType[] = ["processing", "pending"];
   const TOTAL_POSITIONS = 10; // 10 images inside the larger image
   const ANIMATION_INTERVAL_MS = 350; // 1 second per position
 
   // Functions
   async function fetchData(): Promise<void> {
-    await Promise.all([fetchThumbnail()]);
+    await periodicCheckJobStatus();
   }
 
-  async function fetchThumbnail(): Promise<void> {
+  async function loadThumbnail(): Promise<void> {
     try {
       thumbnailUrl = await mediaBackendDataSource.getFiles({
         resource: entry.resource,
@@ -58,6 +66,60 @@
       console.error("Error fetching thumbnail:", error);
       thumbnailError = true;
       thumbnailUrl = null;
+    }
+  }
+
+  /**
+   * Fetch jobs data every 10 seconds, to keep the status updated
+   * Note: Only fetch if the entry is in a processing state
+   */
+  async function periodicCheckJobStatus() {
+    if (processingStatuses.includes(entry.status)) {
+      const intervalId = setInterval(async () => {
+        try {
+          let jobId = entry.job_id;
+
+          /**
+           * If job_id is null (should happen when the entry was created and job is not yet assigned),
+           * fetch the entry again to get the job_id
+           */
+          if (!jobId) {
+            const entryRes = await entriesBackendDataSource.get(entry.id, {
+              fields: {
+                [EntryRecord.type]: ["job_id"],
+              },
+              noCache: true,
+            });
+            jobId = entryRes.data.job_id;
+          }
+
+          const jobRes = await jobsBackendDataSource.get(jobId!, {
+            fields: {
+              [JobRecord.type]: ["progress", "status"],
+            },
+            noCache: true,
+          });
+          jobProgress = jobRes.data.progress;
+
+          // If progress = 100%, update entry status to 'ready'
+          if (jobRes.data.progress === 1) {
+            entry.status = "ready";
+            await loadThumbnail();
+          }
+
+          // If the entry is no longer processing, stop the interval
+          if (!processingStatuses.includes(entry.status)) {
+            clearInterval(intervalId);
+          }
+        } catch (error) {
+          console.error("Error fetching updated entry:", error);
+        }
+      }, 5_000);
+    } else {
+      /**
+       * Then load the thumbnail once the job is complete
+       */
+      await loadThumbnail();
     }
   }
 
@@ -88,7 +150,7 @@
     }
   }
 
-  $effect(() => {
+  onDestroy(() => {
     return cleanup;
   });
 </script>
@@ -184,7 +246,19 @@
       <!-- STATUS & ACTIONS -->
       <div>
         <div class="flex items-center gap-2">
-          <EntryStatus {entry}></EntryStatus>
+          {#if jobProgress < 1}
+            <div class="flex flex-col gap-1">
+              <div class="text-muted-foreground flex items-center justify-between gap-4 text-xs font-medium">
+                <span> Processing media... </span>
+                <span>{Math.round(jobProgress * 100)}%</span>
+              </div>
+
+              <Progress value={jobProgress * 100} />
+            </div>
+          {:else}
+            <EntryStatus {entry}></EntryStatus>
+          {/if}
+
           <EntryDropdownMenu {entry}></EntryDropdownMenu>
         </div>
       </div>

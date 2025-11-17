@@ -26,11 +26,24 @@ module Annotation
               "entry relationship is required to create an annotation"
       end
 
+      # Project Owner can find the entry in their projects
+      # Annotator and Reviewer can find the entry only if assigned to them
       entry = entries.find(record.entry.id)
 
       unless entry
         raise Verse::Error::ValidationFailed,
               "entry not found to create an annotation"
+      end
+
+      # With "as_user" ensure account can "create" annotation to the project
+      access = auth_context.can?(:create, annotations.class.resource)
+      if access == :as_user && !ScopedQuery::Service.with_project_access?(
+        auth_context.metadata[:id],
+        entry.project_id,
+        ["project_owner", "annotator", "reviewer"]
+      )
+        raise Verse::Error::Unauthorized,
+              "You do not have permission to create annotation"
       end
 
       # Assign attributes
@@ -39,7 +52,7 @@ module Annotation
       attributes[:project_id] = entry.project_id
       attributes[:dataset_id] = entry.dataset_id
       attributes[:entry_id] = entry.id
-      attributes[:created_by_email] ||= auth_context.metadata[:email] || "email@example.com"
+      attributes[:created_by_email] = auth_context.metadata[:email]
 
       annotations.transaction do
         id = annotations.create(attributes)
@@ -62,7 +75,7 @@ module Annotation
     end
 
     def delete(id)
-      annotations.delete(id)
+      annotations.delete!(id)
     end
   end
 end

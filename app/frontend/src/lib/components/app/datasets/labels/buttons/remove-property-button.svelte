@@ -12,10 +12,10 @@
   let { propertyKey, onClick }: Props = $props();
 </script>
 
-<Tooltips>
+<Tooltips align="center">
   {#snippet trigger()}
-    <Button variant="ghost" size="icon" onclick={onClick}>
-      <Trash2Icon class="size-4"></Trash2Icon>
+    <Button variant="ghost" size="icon-sm" onclick={onClick}>
+      <Trash2Icon />
     </Button>
   {/snippet}
 

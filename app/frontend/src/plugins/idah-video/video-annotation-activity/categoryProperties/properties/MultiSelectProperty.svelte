@@ -3,14 +3,14 @@
   import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger } from "@/components/ui/select";
   import { formatConformity, propertyFullfilled } from "..";
 
-  import type { PropertyField } from "@/plugin/interface/Activity";
+  import type { IConfigProperty } from "@/plugin/interface/Activity";
 
   let {
     property,
     value,
     onValueChange,
   }: {
-    property: PropertyField;
+    property: IConfigProperty;
     value: string[];
     onValueChange: (v: string[]) => void;
   } = $props();
@@ -26,8 +26,11 @@
   </Label>
 
   <Select type="multiple" {value} {onValueChange}>
-    <SelectTrigger class="w-full bg-white data-[placeholder]:text-gray-900" aria-invalid={invalid}>
-      {value || "Select property"}
+    <SelectTrigger class="data-[placeholder]:text-secondary-foreground bg-secondary w-full" aria-invalid={invalid}>
+      {options
+        .filter(({ id }) => value?.includes(id))
+        .map((o) => o.label)
+        .join(", ") || "Select property"}
     </SelectTrigger>
     <SelectContent>
       <SelectGroup>

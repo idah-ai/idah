@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import { getContext } from "svelte";
 
@@ -18,7 +19,12 @@
   // Contexts
   const project: ProjectRecord = getContext("project");
 
-  pageBreadcrumbsStore.set([homeBreadcrumb, projectBreadcrumb, { label: project.name }, { label: "Members" }]);
+  pageBreadcrumbsStore.set([
+    homeBreadcrumb,
+    projectBreadcrumb,
+    { label: project.name, href: resolve(`/projects/${project.id}/members`) },
+    { label: "Members" },
+  ]);
 
   // Variables
   let projectId: string | undefined = $derived(page.params.projectId);
