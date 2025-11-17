@@ -48,7 +48,6 @@
     ox = offset[X] / zoom.current;
     oy = offset[Y] / zoom.current;
 
-    const z = zoom.current;
     let dsx = sx - (sx * scopedZoom(zoom.current + zoom.step)) / zoom.current;
     let dsy = sy - (sy * scopedZoom(zoom.current + zoom.step)) / zoom.current;
     setZoom(zoom.current + zoom.step);

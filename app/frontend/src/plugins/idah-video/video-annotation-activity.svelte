@@ -374,7 +374,7 @@
           annotation: v.value,
         });
 
-        p.then(async (a) => {
+        p.then(async () => {
           const v = await annotationsIDB?.get("annotations", props.id);
           if (v && v?.metadata.updatedAt.valueOf() == updatedAt.valueOf()) {
             v.synced = true;
