@@ -181,7 +181,9 @@ RSpec.describe Dataset::Service, database: true do
     describe "with assigned project" do
       it "can index" do
         # Setup: Create datasets as "Project Owner" can see all datasets in assigned project
-        [first_dataset_id, second_dataset_id, third_dataset_id]
+        first_dataset_id # assigned
+        second_dataset_id # not assigned
+        third_dataset_id # not assigned
 
         result = subject.index({})
 
@@ -222,7 +224,9 @@ RSpec.describe Dataset::Service, database: true do
     describe "with not assigned project" do
       it "cannot index" do
         # Setup: Create datasets as "Project Owner" can see all datasets in assigned project
-        [first_dataset_id, second_dataset_id, third_dataset_id]
+        first_dataset_id # assigned
+        second_dataset_id # not assigned
+        third_dataset_id # not assigned
 
         result = subject.index({})
 
@@ -273,7 +277,9 @@ RSpec.describe Dataset::Service, database: true do
     describe "with assigned project and assigned entries" do
       it "can index" do
         # Setup: Create entries as "Annotator" datasets are accessed via assigned entries
-        [first_entry_id, second_entry_id, third_entry_id]
+        first_entry_id # assigned
+        second_entry_id # not assigned
+        third_entry_id # not assigned
 
         result = subject.index({})
 
@@ -317,7 +323,9 @@ RSpec.describe Dataset::Service, database: true do
 
       it "cannot index" do
         # Setup: Create entries as "Annotator" datasets are accessed via assigned entries
-        [first_entry_id, second_entry_id, third_entry_id]
+        first_entry_id # assigned
+        second_entry_id # not assigned
+        third_entry_id # not assigned
 
         # Ensure that the annotator is a member of the third project
         member = project_member_repo.find_by!({ account_id: annotator_account_id, project_id: third_project_id })
@@ -326,14 +334,16 @@ RSpec.describe Dataset::Service, database: true do
         # Ensure that the annotator cannot see unassigned entries in the third project
         result = subject.index({})
         expect(result.count).to eq 1
-        expect(result.first.id).to_not eq third_entry_id
+        expect(result.first.id).to_not eq third_dataset_id
       end
     end
 
     describe "with not assigned project" do
       it "cannot index" do
-        # Setup: Create entries as "Reviewer" datasets are accessed via assigned entries
-        [first_entry_id, second_entry_id, third_entry_id]
+        # Setup: Create entries as "Annotator" datasets are accessed via assigned entries
+        first_entry_id # assigned
+        second_entry_id # not assigned
+        third_entry_id # not assigned
 
         result = subject.index({})
 
@@ -382,7 +392,9 @@ RSpec.describe Dataset::Service, database: true do
     describe "with assigned project and assigned entries" do
       it "can index" do
         # Setup: Create entries as "Reviewer" datasets are accessed via assigned entries
-        [first_entry_id, second_entry_id, third_entry_id]
+        first_entry_id # not assigned
+        second_entry_id # assigned
+        third_entry_id # not assigned
 
         result = subject.index({})
 
@@ -426,7 +438,9 @@ RSpec.describe Dataset::Service, database: true do
 
       it "cannot index" do
         # Setup: Create entries as "Annotator" datasets are accessed via assigned entries
-        [first_entry_id, second_entry_id, third_entry_id]
+        first_entry_id # not assigned
+        second_entry_id # assigned
+        third_entry_id # not assigned
 
         # Ensure that the annotator is a member of the third project
         member = project_member_repo.find_by!({ account_id: reviewer_account_id, project_id: third_project_id })
@@ -435,19 +449,21 @@ RSpec.describe Dataset::Service, database: true do
         # Ensure that the annotator cannot see unassigned entries in the third project
         result = subject.index({})
         expect(result.count).to eq 1
-        expect(result.first.id).to_not eq third_entry_id
+        expect(result.first.id).to_not eq third_dataset_id
       end
     end
 
     describe "with not assigned project" do
       it "cannot index" do
         # Setup: Create entries as "Reviewer" datasets are accessed via assigned entries
-        [first_entry_id, second_entry_id, third_entry_id]
+        first_entry_id # not assigned
+        second_entry_id # assigned
+        third_entry_id # not assigned
 
         result = subject.index({})
 
         expect(result.count).to eq 1
-        expect(result.first.id).to_not eq first_dataset_id
+        expect(result.first.id).to_not include first_dataset_id, third_dataset_id
       end
 
       it "cannot create" do

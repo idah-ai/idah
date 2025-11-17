@@ -211,14 +211,14 @@ RSpec.describe Annotation::Service, database: true do
     describe "with assigned project" do
       it "can index" do
         # Setup: Create annotations as "Project Owner" can see all annotations in assigned project
-        [first_annotation_id, second_annotation_id, third_annotation_id]
+        first_annotation_id # assigned
+        second_annotation_id # not assigned
+        third_annotation_id # not assigned
 
         result = subject.index({})
 
         expect(result.count).to eq 1
-
-        record = result.first
-        expect(record.id).to eq first_annotation_id
+        expect(result.first.id).to eq first_annotation_id
       end
 
       it "can create" do
@@ -254,7 +254,9 @@ RSpec.describe Annotation::Service, database: true do
     describe "with not assigned project" do
       it "cannot index" do
         # Setup: Create annotations as "Project Owner" can see all annotations in assigned project
-        [first_annotation_id, second_annotation_id, third_annotation_id]
+        first_annotation_id # assigned
+        second_annotation_id # not assigned
+        third_annotation_id # not assigned
 
         result = subject.index({})
 
@@ -305,7 +307,9 @@ RSpec.describe Annotation::Service, database: true do
     describe "with assigned project and assigned entries" do
       it "can index" do
         # Setup: Create annotations as "Annotator" can see all annotations in assigned entries
-        [first_annotation_id, second_annotation_id, third_annotation_id]
+        first_annotation_id # assigned
+        second_annotation_id # not assigned
+        third_annotation_id # not assigned
 
         result = subject.index({})
 
@@ -357,7 +361,9 @@ RSpec.describe Annotation::Service, database: true do
 
       it "cannot index" do
         # Setup: Create annotations as "Annotator" can see all annotations in assigned project
-        [first_annotation_id, second_annotation_id, third_annotation_id]
+        first_annotation_id # assigned
+        second_annotation_id # not assigned
+        third_annotation_id # not assigned
 
         # Ensure that the annotator is a member of the third project
         member = project_member_repo.find_by!({ account_id: annotator_account_id, project_id: third_project_id })
@@ -398,7 +404,9 @@ RSpec.describe Annotation::Service, database: true do
     describe "with not assigned project" do
       it "cannot index" do
         # Setup: Create annotations as "Annotator" can see all annotations in assigned project
-        [first_annotation_id, second_annotation_id, third_annotation_id]
+        first_annotation_id # assigned
+        second_annotation_id # not assigned
+        third_annotation_id # not assigned
 
         result = subject.index({})
 
@@ -449,7 +457,9 @@ RSpec.describe Annotation::Service, database: true do
     describe "with assigned project and assigned entries" do
       it "can index" do
         # Setup: Create annotations as "Reviewer" can see all annotations in assigned project
-        [first_annotation_id, second_annotation_id, third_annotation_id]
+        first_annotation_id # not assigned
+        second_annotation_id # assigned
+        third_annotation_id # not assigned
 
         result = subject.index({})
 
@@ -505,7 +515,9 @@ RSpec.describe Annotation::Service, database: true do
 
       it "cannot index" do
         # Setup: Create annotations as "Reviewer" can see all annotations in assigned project
-        [first_annotation_id, second_annotation_id, third_annotation_id]
+        first_annotation_id # not assigned
+        second_annotation_id # assigned
+        third_annotation_id # not assigned
 
         # Ensure that the reviewer is a member of the third project
         member = project_member_repo.find_by!({ account_id: reviewer_account_id, project_id: third_project_id })
@@ -546,7 +558,9 @@ RSpec.describe Annotation::Service, database: true do
     describe "with not assigned project" do
       it "cannot index" do
         # Setup: Create annotations as "Reviewer" can see all annotations in assigned project
-        [first_annotation_id, second_annotation_id, third_annotation_id]
+        first_annotation_id # not assigned
+        second_annotation_id # assigned
+        third_annotation_id # not assigned
 
         result = subject.index({})
 

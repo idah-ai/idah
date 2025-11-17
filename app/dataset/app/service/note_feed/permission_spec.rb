@@ -240,11 +240,11 @@ RSpec.describe NoteFeed::Service, database: true do
     describe "with assigned project" do
       it "can index" do
         # Setup: create note feeds to test visibility
-        project_owner_note_feed_id
-        reviewer_first_note_feed_id
-        reviewer_second_note_feed_id
-        reviewer_third_note_feed_id
-        other_note_feed_id
+        project_owner_note_feed_id # assigned
+        reviewer_first_note_feed_id # assigned
+        reviewer_second_note_feed_id # assigned
+        reviewer_third_note_feed_id # not assigned
+        other_note_feed_id # not assigned
 
         result_ids = subject.index({}).map(&:id)
 
@@ -318,11 +318,11 @@ RSpec.describe NoteFeed::Service, database: true do
     describe "with not assigned project" do
       it "cannot index" do
         # Setup: create note feeds to test visibility
-        project_owner_note_feed_id
-        reviewer_first_note_feed_id
-        reviewer_second_note_feed_id
-        reviewer_third_note_feed_id
-        other_note_feed_id
+        project_owner_note_feed_id # assigned
+        reviewer_first_note_feed_id # assigned
+        reviewer_second_note_feed_id # assigned
+        reviewer_third_note_feed_id # not assigned
+        other_note_feed_id # not assigned
 
         result = subject.index({})
 
@@ -376,11 +376,11 @@ RSpec.describe NoteFeed::Service, database: true do
     describe "with assigned project and assigned entries" do
       it "can index" do
         # Setup: create note feeds to test visibility
-        project_owner_note_feed_id
-        reviewer_first_note_feed_id
-        reviewer_second_note_feed_id
-        reviewer_third_note_feed_id
-        other_note_feed_id
+        project_owner_note_feed_id # assigned
+        reviewer_first_note_feed_id # assigned
+        reviewer_second_note_feed_id # assigned
+        reviewer_third_note_feed_id # not assigned
+        other_note_feed_id # not assigned
 
         result = subject.index({})
 
@@ -467,11 +467,11 @@ RSpec.describe NoteFeed::Service, database: true do
 
       it "cannot index" do
         # Setup: create note feeds to test visibility
-        project_owner_note_feed_id
-        reviewer_first_note_feed_id
-        reviewer_second_note_feed_id
-        reviewer_third_note_feed_id
-        other_note_feed_id
+        project_owner_note_feed_id # assigned
+        reviewer_first_note_feed_id # assigned
+        reviewer_second_note_feed_id # assigned
+        reviewer_third_note_feed_id # not assigned
+        other_note_feed_id # not assigned
 
         # Ensure that the annotator is a member of the third project
         member = project_member_repo.find_by!({ account_id: annotator_account_id, project_id: second_project_id })
@@ -531,12 +531,16 @@ RSpec.describe NoteFeed::Service, database: true do
 
     describe "with not assigned project" do
       it "cannot index" do
-        _all_ids = [project_owner_note_feed_id, reviewer_first_note_feed_id, reviewer_third_note_feed_id]
+        project_owner_note_feed_id # assigned
+        reviewer_first_note_feed_id # assigned
+        reviewer_second_note_feed_id # assigned
+        reviewer_third_note_feed_id # not assigned
+        other_note_feed_id # not assigned
 
         result = subject.index({})
 
-        expect(result.count).to eq 2
-        expect(result.map(&:id)).to_not include reviewer_third_note_feed_id
+        expect(result.count).to eq 3
+        expect(result.map(&:id)).to_not include reviewer_third_note_feed_id, other_note_feed_id
       end
 
       it "cannot create" do
@@ -579,11 +583,11 @@ RSpec.describe NoteFeed::Service, database: true do
     describe "with assigned project and assigned entries" do
       it "can index" do
         # Setup: create note feeds to test visibility
-        project_owner_note_feed_id
-        reviewer_first_note_feed_id
-        reviewer_second_note_feed_id
-        reviewer_third_note_feed_id
-        other_note_feed_id
+        project_owner_note_feed_id # not assigned
+        reviewer_first_note_feed_id # not assigned
+        reviewer_second_note_feed_id # not assigned
+        reviewer_third_note_feed_id # assigned
+        other_note_feed_id # not assigned
 
         result = subject.index({})
 
@@ -669,11 +673,11 @@ RSpec.describe NoteFeed::Service, database: true do
 
       it "cannot index" do
         # Setup: create note feeds to test visibility
-        project_owner_note_feed_id
-        reviewer_first_note_feed_id
-        reviewer_second_note_feed_id
-        reviewer_third_note_feed_id
-        other_note_feed_id
+        project_owner_note_feed_id # not assigned
+        reviewer_first_note_feed_id # not assigned
+        reviewer_second_note_feed_id # not assigned
+        reviewer_third_note_feed_id # assigned
+        other_note_feed_id # not assigned
 
         # Ensure that the reviewer is a member of the third project
         member = project_member_repo.find_by!({ account_id: reviewer_account_id, project_id: second_project_id })
@@ -734,11 +738,11 @@ RSpec.describe NoteFeed::Service, database: true do
     describe "with not assigned project" do
       it "cannot index" do
         # Setup: create note feeds to test visibility
-        project_owner_note_feed_id
-        reviewer_first_note_feed_id
-        reviewer_second_note_feed_id
-        reviewer_third_note_feed_id
-        other_note_feed_id
+        project_owner_note_feed_id # not assigned
+        reviewer_first_note_feed_id # not assigned
+        reviewer_second_note_feed_id # not assigned
+        reviewer_third_note_feed_id # assigned
+        other_note_feed_id # not assigned
 
         result = subject.index({})
 
@@ -746,7 +750,8 @@ RSpec.describe NoteFeed::Service, database: true do
         expect(result.first.id).to_not include(
           project_owner_note_feed_id,
           reviewer_first_note_feed_id,
-          reviewer_second_note_feed_id
+          reviewer_second_note_feed_id,
+          other_note_feed_id
         )
       end
 
