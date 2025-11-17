@@ -37,8 +37,8 @@ module Project
     # create           | N/A
     #
     # Info:
-    # 1. annotators and reviewers can only read projects
-    # 2. only org_owner and project_owner(member) can update and delete projects
+    # 1. annotators and reviewers can only read projects assigned to them
+    # 2. project_owner(member) can update and delete projects
     # 3. only org_owner and admin roles can create projects
     query
     def user_project_scoped_query(action)

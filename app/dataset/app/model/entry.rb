@@ -45,7 +45,7 @@ module Entry
     # create, update, delete | project_owner
     #
     # Info:
-    # 1. only org_owner and project_owner(member) can create, update and delete entries
+    # 1. project_owner can create, update and delete entries
     # 2. annotator and reviewer can only read entries assigned to them
     query
     def user_project_scoped_query(action)

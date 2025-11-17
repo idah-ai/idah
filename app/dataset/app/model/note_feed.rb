@@ -47,10 +47,10 @@ module NoteFeed
     # resolve                     | project_owner, reviewer
     #
     # Info:
-    # 1. org owner and project owner can read/create note feeds in their projects
+    # 1. project_owner can read/create note feeds in their projects
     # 2. reviewer and annotator can read/create note feeds in their assigned entries in their projects
     # 2. all roles can update and delete only their own note feeds in their projects
-    # 3. org owner, project owner and reviewer can resolve note feeds in their projects
+    # 3. project_owner and reviewer can resolve note feeds in their projects
     query
     def user_project_scoped_query(action)
       # Ignore create action as it will be handled in service layer
