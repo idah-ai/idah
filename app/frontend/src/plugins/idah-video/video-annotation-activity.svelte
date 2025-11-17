@@ -41,6 +41,7 @@
   import CategoryProperties from "./video-annotation-activity/categoryProperties/categoryProperties.svelte";
   import type { Point, VideoFrameSelection, VideoShape } from "./video-annotation-activity/VideoAnnotationContext";
   import VideoController from "./video-annotation-activity/VideoController.svelte";
+  import { registerVisualModeShortcuts } from "./video-annotation-activity/shortcut";
 
   // Props
   interface Props {
@@ -82,50 +83,45 @@
 
   let commandOpen = $state(false);
 
-  // registerVisualModeShortcuts({
-  //   player: () => player,
-  //   toggleCommandCB: () => {
-  //     commandOpen = !commandOpen;
-  //   },
-  //   flush: () => context.annotations.flush(),
-  //   switch_mode: (_mode: string) => {},
-  //   zoom: { in: () => {}, out: () => {} },
-  // });
+  window.onkeydown = (e) => {
+    const activeElement = document.activeElement;
+    const isTyping =
+      activeElement?.tagName === "INPUT" || activeElement?.tagName === "TEXTAREA" || activeElement?.isContentEditable;
 
-  // window.onkeydown = (e) => {
-  //   const current_mode = ShortcutManager.getCurrentMode();
-  //   const keymap = ShortcutManager.keyMap[current_mode];
+    if (isTyping) return;
 
-  //   if (!keymap) return console.error("no keymap found for", { current_mode });
+    const current_mode = ShortcutManager.getCurrentMode();
+    const keymap = ShortcutManager.keyMap[current_mode];
 
-  //   const modifier_keys = [
-  //     e.altKey && "Alt",
-  //     e.ctrlKey && "Control",
-  //     e.metaKey && "Meta",
-  //     e.shiftKey && "Shift",
-  //   ].sort();
+    if (!keymap) return console.error("no keymap found for", { current_mode });
 
-  //   const shortcut_keys = (
-  //     ["Control", "Alt", "Shift", "Meta"].includes(e.key)
-  //       ? [undefined]
-  //       : e.code.startsWith("Key")
-  //         ? [e.key.toLocaleUpperCase(), e.key.toLocaleLowerCase()]
-  //         : [e.code]
-  //   ).map((k) => [...modifier_keys, k].filter((k) => k).join("+"));
+    const modifier_keys = [
+      e.altKey && "Alt",
+      e.ctrlKey && "Control",
+      e.metaKey && "Meta",
+      e.shiftKey && "Shift",
+    ].sort();
 
-  //   for (let index = 0; index < shortcut_keys.length; index++) {
-  //     let shortcut_key = shortcut_keys[index];
+    const shortcut_keys = (
+      ["Control", "Alt", "Shift", "Meta"].includes(e.key)
+        ? [undefined]
+        : e.code.startsWith("Key")
+          ? [e.key.toLocaleUpperCase(), e.key.toLocaleLowerCase()]
+          : [e.code]
+    ).map((k) => [...modifier_keys, k].filter((k) => k).join("+"));
 
-  //     let shortcut = keymap[shortcut_key];
+    for (let index = 0; index < shortcut_keys.length; index++) {
+      let shortcut_key = shortcut_keys[index];
 
-  //     if (!shortcut) continue;
+      let shortcut = keymap[shortcut_key];
 
-  //     e.preventDefault();
-  //     shortcut.action();
-  //     console.log({ shortcut_key, shortcut });
-  //     break;
-  //   }
-  // };
+      if (!shortcut) continue;
+
+      e.preventDefault();
+      shortcut.action();
+      break;
+    }
+  };
 
   // for now
   $effect(() => {
@@ -204,6 +200,30 @@
         });
       });
     }
+
+    registerVisualModeShortcuts({
+      player: () => player,
+      toggleCommandCB: () => {
+        commandOpen = !commandOpen;
+      },
+      flush: () => context.annotations.flush(),
+      switch_mode: (mode: string) => {
+        let tool;
+        switch (mode) {
+          case IDAH_VIDEO_BOUNDING_BOX:
+            tool = "tools.bounding_box";
+            break;
+          case IDAH_NOTE:
+            tool = "tools.note";
+            break;
+          default:
+            tool = "tools.visual";
+        }
+        console.log({ context, commands: context.commands, mode, tool });
+        context.commands.run(tool);
+      },
+      zoom: { in: overlay.zoomIn, out: overlay.zoomOut },
+    });
   });
 
   // need to store dependancy and extract thos commands definitions

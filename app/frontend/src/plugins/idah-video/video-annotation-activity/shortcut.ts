@@ -21,7 +21,7 @@ const CommonInjecter = (context: KeyMapContext) => {
     context.toggleCommandCB();
   };
 
-  const _enterMode = (mode: string, replace: boolean = false) => {
+  const enterMode = (mode: string, replace: boolean = false) => {
     return () => {
       ShortcutManager.enterMode(mode, replace);
       context.switch_mode(mode);
@@ -34,7 +34,7 @@ const CommonInjecter = (context: KeyMapContext) => {
     b.on([b.Ctrl], "Space", toggleCommand, "Commands Dialog", "Toggle this commands dialog");
 
     b.on([b.Ctrl, b.Shift], "Z", redoAction, "Redo", "Redo last undone action if any");
-    // b.on(null, "D", enterMode(ShortcutManager.defaultMode, true), "Default View", "Reset View");
+    b.on(null, "D", enterMode(ShortcutManager.defaultMode, true), "Default View", "Reset View");
   };
 };
 
@@ -84,12 +84,12 @@ const createVisualModeKeyMap = (context: KeyMapContext) => {
     console.log("endFrame executed");
   };
 
-  //   const enterMode = (mode: string, replace: boolean = false) => {
-  //     return () => {
-  //       ShortcutManager.enterMode(mode, replace);
-  //       context.switch_mode(mode);
-  //     };
-  //   };
+  const enterMode = (mode: string, replace: boolean = false) => {
+    return () => {
+      ShortcutManager.enterMode(mode, replace);
+      context.switch_mode(mode);
+    };
+  };
 
   const keyMap = KeyMapBuilder((b) => {
     CommonInjecter(context)(b);
@@ -98,9 +98,10 @@ const createVisualModeKeyMap = (context: KeyMapContext) => {
     b.on(null, "ArrowLeft", previousFrame, "Previous", "go to the previous frame");
     b.on([b.Ctrl, b.Alt], "ArrowRight", endFrame, "End", "go to the starting frame");
     b.on([b.Ctrl, b.Alt], "ArrowLeft", startFrame, "Start", "go to the ending frame");
-    // b.on(null, "B", enterMode(IDAH_VIDEO_BOUNDING_BOX), "Bounding box", "Enter Bouding box mode");
-    // b.on(null, "+", () => context.zoom.in(), "Zoom in", "Zoom In");
-    // b.on(null, "-", () => context.zoom.out(), "Zoom Out", "Zoom Out");
+    b.on(null, "B", enterMode(IDAH_VIDEO_BOUNDING_BOX), "Bounding box", "Enter Bouding box mode");
+    // test, need uniform way to map accross keyboards (-/+)
+    b.on(null, "Equal", context.zoom.in, "Zoom in", "Zoom In");
+    b.on(null, "Minus", context.zoom.out, "Zoom Out", "Zoom Out");
   });
 
   return keyMap;
