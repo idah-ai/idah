@@ -121,7 +121,7 @@ RSpec.describe Dataset::Service, database: true do
       project_id: third_project_id,
       dataset_id: third_dataset_id,
       priority: 1,
-      resource: "http://example.com/second.mp4",
+      resource: "http://example.com/third.mp4",
       wf_step: "start",
       status: "pending",
       assigned_to_id: another_annotator_account_id,
