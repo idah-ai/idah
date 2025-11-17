@@ -49,11 +49,11 @@
 </script>
 
 <div id="annotation-header-bar-tools" class="flex h-full items-center justify-center gap-1">
-  {#each tools as { label, type, iconName, handleClick }, toolIndex (toolIndex)}
+  {#each tools as { label, type, iconName, disabled, handleClick }, toolIndex (toolIndex)}
     <Tooltips align="center" delayDuration={100}>
       {#snippet trigger()}
         {#await loadIcon(iconName) then iconSvg}
-          <Button variant={mode === type ? "default" : "ghost"} size="icon-sm" onclick={handleClick}>
+          <Button variant={mode === type ? "default" : "ghost"} size="icon-sm" {disabled} onclick={handleClick}>
             <!-- eslint-disable-next-line svelte/no-at-html-tags -->
             {@html iconSvg}
 

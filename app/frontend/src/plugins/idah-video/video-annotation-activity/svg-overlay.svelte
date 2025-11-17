@@ -4,6 +4,7 @@
   import BoundingBox, { type ToolSelection } from "./bounding-box.svelte";
   import { boundingBoxes } from "./idb_store.svelte";
 
+  import { DEFAULT_MODE, ENTRY_ROOT, IDAH_VIDEO_BOUNDING_BOX, type EntryRoot } from "../type";
   import {
     HEIGHT,
     ORIGIN,
@@ -13,10 +14,15 @@
     type Point,
     type VideoAnnotation,
     type VideoFrameSelection,
-    type VideoShape,
   } from "./VideoAnnotationContext";
   import Zoomable from "./zoomable.svelte";
 
+  import type {
+    AnnotationMetadata,
+    AnnotationObj,
+    AnnotationShape,
+    AnnotationValue,
+  } from "@/context/AnnotationContext";
   import type { IActivityContext, INoteFeed } from "@/plugin/interface/Activity";
 
   // Types
@@ -29,12 +35,12 @@
   // Props
   type Props = {
     frame: number;
-    selected: VideoAnnotation | undefined;
+    selected: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata> | undefined;
     mode: string;
     target_container: () => HTMLDivElement; // ..
-    annotations_promise: Promise<VideoAnnotation[]>;
+    annotations_promise: Promise<AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]>;
     children: Snippet;
-    onSelectAnnotation: (annotation?: VideoAnnotation) => void;
+    onSelectAnnotation: (annotation?: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) => void;
     onmouseup?: (e: MouseEvent) => void;
     onmousedown?: (e: MouseEvent) => void;
     onmousemove?: (e: MouseEvent) => void;
@@ -75,16 +81,18 @@
   let height = $state(0);
   let width = $state(0);
   let mouse: Point = $state([0, 0]);
-  let shape: VideoShape | undefined = $derived(
+  let shape: AnnotationShape | { type: EntryRoot } | undefined = $derived(
     selected
       ? selected.shape
-      : mode != "visual"
-        ? {
-            type: mode,
-            start: frame,
-            end: frame,
-            frames: [],
-          }
+      : mode != DEFAULT_MODE
+        ? mode == ENTRY_ROOT
+          ? { type: ENTRY_ROOT }
+          : {
+              type: mode,
+              start: frame,
+              end: frame,
+              frames: [],
+            }
         : undefined,
   );
   let points: Point[] = $derived.by(() => {
@@ -132,22 +140,24 @@
   let zoomableElement: Zoomable;
 
   export function currentShape(
-    shape: VideoShape,
+    shape: AnnotationShape,
     current_frame: number,
     interpolate: boolean = true,
   ): Point[] | undefined {
+    if (!shape.frames) return; // no render (eg. entry:root)
+
     if (shape.start > current_frame || shape.end < current_frame) return; // out of scope
 
-    const current_points = shape.frames.find((v) => v.frame == current_frame)?.points;
+    const current_points = shape.frames.find((v: VideoFrameSelection) => v.frame == current_frame)?.points;
     if (current_points || !interpolate) return current_points; // exists!
 
-    const frame_start = shape.frames.reduce(
+    const frame_start: VideoFrameSelection = shape.frames.reduce(
       (acc: VideoFrameSelection | null, v: VideoFrameSelection) =>
         (!acc || acc.frame < v.frame) && v.frame < frame ? v : acc,
       null,
     );
 
-    const frame_end = shape.frames.reduce(
+    const frame_end: VideoFrameSelection = shape.frames.reduce(
       (acc: VideoFrameSelection | null, v: VideoFrameSelection) =>
         (!acc || acc.frame > v.frame) && v.frame > frame ? v : acc,
       null,
@@ -164,7 +174,7 @@
     }
   }
 
-  let tool_selection: ToolSelection | undefined = $state();
+  let toolSelection: ToolSelection | undefined = $state();
 
   export function selectionStart(e: MouseEvent) {
     if (!shape) {
@@ -172,16 +182,18 @@
       return;
     }
 
-    tool_selection?.startSelection(cursor_downscaled);
+    toolSelection?.startSelection(cursor_downscaled);
 
-    if (!tool_selection?.isEditing()) {
+    if (!toolSelection?.isEditing()) {
+      if (!toolSelection)
+        console.error("no tool for mode:", mode, "deselecting annotation (and reverting to mode", DEFAULT_MODE, ")");
       onSelectAnnotation();
       zoomableElement.mouseDown(e);
     }
   }
 
   export function selectionEnd(e: MouseEvent) {
-    tool_selection?.endSelection(cursor_downscaled);
+    toolSelection?.endSelection(cursor_downscaled);
 
     showNewNoteFeedPopup();
 
@@ -253,8 +265,8 @@
       // console.log({mouse:{x: mouse[X], y:mouse[Y]}, e})
       zoomableElement.mouseMove(e);
     }}
+    onmouseup={(e) => selectionEnd(e)}
     onmousedown={(e) => selectionStart(e)}
-    onmouseup={selectionEnd}
     onwheel={(e) => zoomableElement.onWheel(e)}
     {...restProps}
   >
@@ -268,16 +280,19 @@
     {#await annotations_promise}
       {#each $boundingBoxes as annotation (annotation.metadata.id)}
         {#if annotation.metadata.id != selected?.metadata.id}
-          {#if annotation.shape.type == "video:bounding_box"}
+          {#if annotation.shape.type == IDAH_VIDEO_BOUNDING_BOX}
             <BoundingBox
+              {mode}
               points={currentShape(annotation.shape, frame) || []}
               ratio={target_size}
               offset={zoomInfo.offset}
-              color={context.config.categories.find((c) => c.id == annotation.value?.category)?.color || "grey"}
+              color={Object.entries(context.config)
+                .find(([k, _]) => k == IDAH_VIDEO_BOUNDING_BOX)?.[1]
+                .values.find((c) => c.id == annotation.value?.category)?.color || "grey"}
               onmousedown={(e) => {
                 e.stopPropagation();
 
-                if (mode == "visual" || selected) {
+                if (mode == DEFAULT_MODE || selected) {
                   onSelectAnnotation(annotation);
                 }
 
@@ -292,17 +307,21 @@
     {:then annotations}
       {#each annotations as annotation (annotation.metadata.id)}
         {#if annotation.metadata.id != selected?.metadata.id}
-          {#if annotation.shape.type == "video:bounding_box"}
+          {#if annotation.shape.type == IDAH_VIDEO_BOUNDING_BOX}
             <BoundingBox
+              {mode}
               points={currentShape(annotation.shape, frame) || []}
               ratio={target_size}
               offset={zoomInfo.offset}
               color={annotation?.synced
-                ? context.config.categories.find((c) => c.id == annotation?.value?.category)?.color || "grey"
+                ? Object.entries(context.config)
+                    .find(([k, _]) => k == IDAH_VIDEO_BOUNDING_BOX)?.[1]
+                    .values.find((c) => c.id == annotation?.value?.category)?.color || "grey"
                 : "grey"}
               onmousedown={(e) => {
                 e.stopPropagation();
-                if (mode == "visual" || selected) {
+
+                if (mode == DEFAULT_MODE || selected) {
                   onSelectAnnotation(annotation);
                 }
 
@@ -316,24 +335,26 @@
       {/each}
     {/await}
 
-    <BoundingBox
-      bind:this={tool_selection}
-      {points}
-      ratio={target_size}
-      offset={zoomInfo.offset}
-      cursor={cursor_downscaled}
-      editable={mode == "video:bounding_box"}
-      color={selected?.synced
-        ? context.config.categories.find((c) => c.id == selected?.value?.category)?.color || "grey"
-        : "grey"}
-      onChange={(bb) => {
-        onSelection("video:bounding_box", frame, bb, selected?.metadata.id);
-        points = bb;
-      }}
-      onmousedown={(e) => {
-        console.error("clicked anyway", e);
-      }}
-    />
+    {#if shape?.type == IDAH_VIDEO_BOUNDING_BOX || mode == IDAH_VIDEO_BOUNDING_BOX}
+      <BoundingBox
+        bind:this={toolSelection}
+        {mode}
+        {points}
+        ratio={target_size}
+        offset={zoomInfo.offset}
+        cursor={cursor_downscaled}
+        editable={shape?.type == IDAH_VIDEO_BOUNDING_BOX || mode == IDAH_VIDEO_BOUNDING_BOX}
+        color={selected?.synced
+          ? Object.entries(context.config)
+              .find(([k, _]) => k == mode)?.[1]
+              .values.find((c) => c.id == selected?.value?.category)?.color || "grey"
+          : "grey"}
+        onChange={(bb) => {
+          onSelection(IDAH_VIDEO_BOUNDING_BOX, frame, bb, selected?.metadata.id);
+          points = bb;
+        }}
+      />
+    {/if}
   </svg>
 </div>
 

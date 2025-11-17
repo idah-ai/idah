@@ -14,11 +14,11 @@
 
 <Tooltips>
   {#snippet trigger()}
-    <Button variant="ghost" size="icon" onclick={onClick}>
+    <Button variant="ghost" size="icon-sm" onclick={onClick}>
       {#if showContent}
-        <ChevronDownIcon class="size-4"></ChevronDownIcon>
+        <ChevronDownIcon />
       {:else}
-        <ChevronRightIcon class="size-4"></ChevronRightIcon>
+        <ChevronRightIcon />
       {/if}
     </Button>
   {/snippet}

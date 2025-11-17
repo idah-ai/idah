@@ -52,13 +52,13 @@
 
 {#key $refetches.projects.get}
   {#await fetchProject()}
-    <PageLoading></PageLoading>
+    <PageLoading />
   {:then project}
     <PageProvider name="project-detail">
       {#if !isDatasetPage}
         <PageHeader title={project.name} description={project.description}>
           {#snippet actions()}
-            <ProjectDropdownMenu {projectId}></ProjectDropdownMenu>
+            <ProjectDropdownMenu {projectId} align="end" />
           {/snippet}
         </PageHeader>
 

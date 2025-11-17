@@ -4,35 +4,32 @@
   import Text from "@/components/ui/text/Text.svelte";
   import { getContext } from "svelte";
 
-  import { visibleFullfilled } from ".";
+  import { visibilityFullfilled } from ".";
   import { idb_updated_at } from "../idb_store.svelte";
   import BooleanProperty from "./properties/booleanProperty.svelte";
   import IntegerProperty from "./properties/integerProperty.svelte";
   import TextProperty from "./properties/textProperty.svelte";
 
   import type { AnnotationValue } from "@/context/AnnotationContext";
-  import type { IActivityContext, PropertyField } from "@/plugin/interface/Activity";
+  import type { IActivityContext, IConfigProperty } from "@/plugin/interface/Activity";
   import MultiSelectProperty from "./properties/MultiSelectProperty.svelte";
   import SingleSelectProperty from "./properties/SingleSelectProperty.svelte";
 
   type Props = {
+    type: string;
     selectedCategory: string;
     annotationValue: AnnotationValue;
     onSelectCategory: (id?: string) => void;
     onEditValue: (value?: AnnotationValue) => void;
   };
 
-  let { selectedCategory, annotationValue, onSelectCategory, onEditValue }: Props = $props();
+  let { type, selectedCategory, annotationValue, onSelectCategory, onEditValue }: Props = $props();
 
   // Contexts
   const context: IActivityContext = getContext("context");
-  const category = () => context.config.categories.find((c) => c.id == selectedCategory);
-  const properties = () =>
-    context.config.properties.filter((p) =>
-      p.selector.some(
-        (s) => selectedCategory === s || s === selectedCategory + "/*" || s === selectedCategory.split("/")[0] + "/*",
-      ),
-    );
+  const typeConfig = context.config[type];
+  const category = typeConfig?.values.find((c) => c.id == selectedCategory);
+  const properties = typeConfig?.properties.filter((p) => visibilityFullfilled(annotationValue, p));
 
   const propertyComponents: {
     type: string;
@@ -50,7 +47,7 @@
     { type: "multi-select", component: MultiSelectProperty },
   ];
 
-  function onValueChange(property: PropertyField, v: string | number | string[] | undefined | boolean) {
+  function onValueChange(property: IConfigProperty, v: string | number | string[] | undefined | boolean) {
     onEditValue({
       ...annotationValue,
       attributes: { ...(annotationValue.attributes || {}), [property.id]: v },
@@ -60,17 +57,21 @@
 
 <div>
   <div class="flex pb-1">
-    <Text class="text-gray-500" weight="medium" size="sm">Category</Text>
+    <Text class="text-muted-foreground" weight="medium" size="sm"
+      >{((s: string) => [s.slice(0, 1).toUpperCase(), s.slice(1)].join(""))(
+        type.split(":").reverse()[0].split(new RegExp(/-|_/)).join(" "),
+      )}</Text
+    >
   </div>
   {#key $idb_updated_at}
     <Select type="single" onValueChange={onSelectCategory}>
-      <SelectTrigger class="w-full bg-white data-[placeholder]:text-gray-900">
-        {category()?.label}
+      <SelectTrigger class="data-[placeholder]:text-secondary-foreground bg-secondary w-full">
+        {category?.label}
       </SelectTrigger>
 
       <SelectContent>
         <SelectGroup>
-          {#each context.config.categories as c (c.id)}
+          {#each typeConfig.values as c (c.id)}
             <SelectItem value={c.id} label={c.label}>
               {c.label}
             </SelectItem>
@@ -81,15 +82,15 @@
 
     <hr class="my-3 border-t border-gray-200" />
 
-    {#if properties().length > 0}
+    {#if category && properties?.length > 0}
       <div class="flex pb-1">
-        <Text class="text-gray-500" weight="medium" size="sm">Properties</Text>
+        <Text class="text-muted-foreground" weight="medium" size="sm">Properties</Text>
       </div>
 
-      {#each properties() as property (property.id)}
+      {#each properties as property (property.id)}
         {@const pc = propertyComponents.find((p) => p.type == property.type)}
 
-        {#if pc && visibleFullfilled(property)}
+        {#if pc}
           <div class="flex flex-col gap-2">
             <pc.component
               {...{
