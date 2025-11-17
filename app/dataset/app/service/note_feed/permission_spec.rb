@@ -364,7 +364,7 @@ RSpec.describe NoteFeed::Service, database: true do
   # ------------------------------------------------
   # Note Feeds    | index | create | update | delete
   # ------------------------------------------------
-  # Assigned      |  yes  |   x    |    x   |    x
+  # Assigned      |  yes  |  yes   |   own  |   own
   # Not Assigned  |   x   |   x    |    x   |    x
   context "as Annotator", as: :annotator do
     subject { described_class.new(current_auth_context) }
