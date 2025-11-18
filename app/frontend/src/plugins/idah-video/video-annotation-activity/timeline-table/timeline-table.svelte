@@ -87,7 +87,7 @@
 
   export function setZoom(value: number): void {
     const s = Math.min(150, Math.max(20, value));
-    
+
     const minZoom = 20;
     const maxZoom = 150;
     const midZoom = (minZoom + maxZoom) / 2;
@@ -184,7 +184,6 @@
   }
 
   let rowElements = new Map<string, HTMLElement>();
-  let prevSelectedId = $state<string | undefined>();
   let annotationsSnapshot = $state<VideoAnnotation[]>([]);
 
   function trackRow(node: HTMLElement, params: { id: string }) {
@@ -192,17 +191,17 @@
     return {
       destroy() {
         rowElements.delete(params.id);
-      }
+      },
     };
   }
 
   // Effect to scroll to selected annotation whenever it changes or annotations update
   $effect(() => {
     const currentSelectedId = selectedAnnotation?.metadata.id;
-    
+
     // Track annotations changes to ensure we react when they update
     void annotationsSnapshot;
-    
+
     if (currentSelectedId) {
       const element = rowElements.get(currentSelectedId);
       if (element) {
@@ -213,7 +212,6 @@
           });
         });
       }
-      prevSelectedId = currentSelectedId;
     }
   });
 </script>
