@@ -4,11 +4,11 @@
   import Tooltips from "@/components/app/tooltips/tooltips.svelte";
   import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
   import {
-      InputGroup,
-      InputGroupAddon,
-      InputGroupButton,
-      InputGroupInput,
-      InputGroupText,
+    InputGroup,
+    InputGroupAddon,
+    InputGroupButton,
+    InputGroupInput,
+    InputGroupText,
   } from "@/components/ui/input-group";
 
   import { cn } from "@/utils";
@@ -49,11 +49,7 @@
 </script>
 
 <Field class={cn("", className)}>
-  <FieldLabel
-    for={name}
-    {required}
-    class={cn("", { hidden: !label })}>{label}</FieldLabel
-  >
+  <FieldLabel for={name} {required} class={cn("", { hidden: !label })}>{label}</FieldLabel>
 
   <InputGroup class={cn("", groupInputClass)}>
     {#if PrefixIcon}
