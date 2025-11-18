@@ -12,6 +12,7 @@
   import { datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { refetches } from "@/utils/refetch";
+  import { OrganizationRecord, organizationsBackendDataSource } from "@/data/model/iam/organizations/record";
 
   import type { Record } from "@/data/model/Record";
   import type { CollectionResponse } from "@/data/model/types";
@@ -41,7 +42,18 @@
       included: ["project"],
     });
 
-    return { datasets: datasetsRes.data };
+    /** Fetch related organizations from projectIds */
+    const organizationIds = Array.from(new Set(response.data.map((project) => project.organization_id)));
+    const organizationsRes = await organizationsBackendDataSource.list({
+      fields: {
+        [OrganizationRecord.type]: ["name"],
+      },
+      filters: {
+        id__in: organizationIds,
+      },
+    });
+
+    return { datasets: datasetsRes.data, organizations: organizationsRes.data };
   }
 </script>
 
@@ -68,7 +80,7 @@
       dataSource={projectsBackendDataSource}
       listOptions={{
         fields: {
-          "dataset:projects": ["name", "description", "created_at"],
+          "dataset:projects": ["name", "description", "organization_id", "created_at"],
         },
         sort: ["-created_at"],
       }}
