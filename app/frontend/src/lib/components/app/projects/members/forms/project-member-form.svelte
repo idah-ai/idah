@@ -61,7 +61,7 @@
 
         <!-- REMOVE MEMBER BUTTON -->
         <Button variant="ghost" size="icon" class="mb-1" onclick={() => removeMember(index)}>
-          <Trash2Icon class="size-4" />
+          <Trash2Icon />
         </Button>
       </div>
     {/each}
@@ -69,7 +69,7 @@
     <div>
       <!-- ADD MORE MEMBERS BUTTON -->
       <Button variant="secondary" onclick={addMember}>
-        <PlusIcon class="size-4" />
+        <PlusIcon />
         Add Members
       </Button>
     </div>

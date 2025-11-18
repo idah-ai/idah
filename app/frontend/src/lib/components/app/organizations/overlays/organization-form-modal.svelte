@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
   import { toast } from "svelte-sonner";
 
   import OrganizationForm from "@/components/app/organizations/forms/organization-form.svelte";
@@ -56,7 +58,7 @@
 
   async function createOrganization(): Promise<void> {
     try {
-      await organizationsBackendDataSource.create({
+      const createdOrganizationRes = await organizationsBackendDataSource.create({
         attributes: {
           name: organization.name,
         },
@@ -65,6 +67,7 @@
       $refetches.organizations.list = new Date();
       closeThisModal();
       toast.success("Organization created successfully");
+      goto(resolve(`/organizations/${createdOrganizationRes.data.id}/projects`));
     } catch (error) {
       toast.error("Failed to create organization");
       throw error;
