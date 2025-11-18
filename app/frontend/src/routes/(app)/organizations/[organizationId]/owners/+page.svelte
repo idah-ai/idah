@@ -1,12 +1,10 @@
 <script lang="ts">
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
-  import { PlusIcon } from "@lucide/svelte";
   import { getContext } from "svelte";
 
   import DatasourceTable from "@/components/app/datasource-table/datasource-table.svelte";
-  import OrganizationOwnersFormModal from "@/components/app/organizations/overlays/organization-owners-form-modal.svelte";
-  import Button from "@/components/ui/button/button.svelte";
+  import AddOrgOwnersButton from "@/components/app/organizations/buttons/add-org-owners-button.svelte";
 
   import { organizationOwnerColumns } from "@/components/app/organizations/data-tables/organization-owner-column";
   import { homeBreadcrumb, organizationBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
@@ -20,7 +18,6 @@
 
   // Variables
   let organizationId: string = page.params.organizationId as string;
-  let openAddNewOrgOwnersModal: boolean = $state(false);
 
   pageBreadcrumbsStore.set([
     homeBreadcrumb,
@@ -28,19 +25,7 @@
     { label: organization.name, href: resolve(`/organizations/${organizationId}/owners`) },
     { label: "Owners" },
   ]);
-
-  // Functions
-  function openAddNewOrgOwnersDialog() {
-    openAddNewOrgOwnersModal = true;
-  }
 </script>
-
-{#snippet AddNewOrgOwnersButton()}
-  <Button onclick={openAddNewOrgOwnersDialog}>
-    <PlusIcon />
-    Add Owners
-  </Button>
-{/snippet}
 
 {#key $refetches.projects.list}
   <DatasourceTable
@@ -56,14 +41,8 @@
       },
     }}
   >
-    {#snippet actions()}
-      {@render AddNewOrgOwnersButton()}
-    {/snippet}
-
     {#snippet addNewRecordButton()}
-      {@render AddNewOrgOwnersButton()}
+      <AddOrgOwnersButton />
     {/snippet}
   </DatasourceTable>
 {/key}
-
-<OrganizationOwnersFormModal title="Owners" action="create" bind:open={openAddNewOrgOwnersModal} />

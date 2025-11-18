@@ -4,12 +4,14 @@
   import { page } from "$app/state";
   import { setContext, type Snippet } from "svelte";
 
+  import AddOrgOwnersButton from "@/components/app/organizations/buttons/add-org-owners-button.svelte";
   import OrganizationDropdownMenu from "@/components/app/organizations/dropdowns/organization-dropdown-menu.svelte";
   import PageHeader from "@/components/app/page/page-header.svelte";
   import PageLoading from "@/components/app/page/page-loading.svelte";
   import PageProvider from "@/components/app/page/page-provider.svelte";
+  import AddNewProjectButton from "@/components/app/projects/buttons/add-new-project-button.svelte";
 
-  import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+  import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
   import { OrganizationRecord, organizationsBackendDataSource } from "@/data/model/iam/organizations/record";
   import { refetches } from "@/utils/refetch";
 
@@ -66,13 +68,25 @@
       </PageHeader>
 
       <Tabs bind:value={activeTab}>
-        <TabsList>
-          {#each organizationTabs as { label, value } (value)}
-            <TabsTrigger {value} onclick={() => handleTabChange(value)}>
-              {label}
-            </TabsTrigger>
-          {/each}
-        </TabsList>
+        <div class="flex items-center gap-4">
+          <TabsList>
+            {#each organizationTabs as { label, value } (value)}
+              <TabsTrigger {value} onclick={() => handleTabChange(value)}>
+                {label}
+              </TabsTrigger>
+            {/each}
+          </TabsList>
+
+          <div class="ml-auto">
+            <TabsContent value="projects">
+              <AddNewProjectButton />
+            </TabsContent>
+
+            <TabsContent value="owners">
+              <AddOrgOwnersButton />
+            </TabsContent>
+          </div>
+        </div>
       </Tabs>
 
       {@render children()}
