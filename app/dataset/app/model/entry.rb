@@ -42,7 +42,7 @@ module Entry
           table.where(
             table.db[:projects]
               .where(organization_id: org_ids)
-              .where(id: Sequel[:project_members][:project_id])
+              .where(id: Sequel[:entries][:project_id])
               .select(1).exists
           )
         end
