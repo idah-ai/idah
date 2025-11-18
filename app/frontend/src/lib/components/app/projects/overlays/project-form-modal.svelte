@@ -94,7 +94,8 @@
     try {
       const validated = validateData(schema, {
         name: project.name,
-        organization_id: project.organization_id,
+        organization_id: Number(project.organization_id),
+        description: project.description,
       });
 
       if (!validated.success) {
