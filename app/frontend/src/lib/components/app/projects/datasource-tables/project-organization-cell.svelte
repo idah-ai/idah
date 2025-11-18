@@ -1,4 +1,6 @@
 <script lang="ts">
+  import Link from "@/components/ui/text/Link.svelte";
+
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
   import { OrganizationRecord } from "@/data/model/iam/organizations/record";
 
@@ -14,4 +16,6 @@
   );
 </script>
 
-{projectOrganization?.name}
+<Link href="/organizations/{project.organization_id}/projects" showIcon>
+  {projectOrganization?.name}
+</Link>
