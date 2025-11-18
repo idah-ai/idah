@@ -187,7 +187,7 @@
 
   function trackRow(node: HTMLElement, params: { id: string; isSelected: boolean }) {
     rowElements[params.id] = node;
-    
+
     return {
       update(newParams: { id: string; isSelected: boolean }) {
         // Scroll into view when this row becomes selected
