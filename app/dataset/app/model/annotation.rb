@@ -37,7 +37,7 @@ module Annotation
           table.where(
             table.db[:projects]
               .where(organization_id: org_ids)
-              .where(id: Sequel[:project_members][:project_id])
+              .where(id: Sequel[:annotations][:project_id])
               .select(1).exists
           )
         end
