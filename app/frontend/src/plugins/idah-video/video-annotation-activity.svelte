@@ -41,6 +41,7 @@
   import CategoryProperties from "./video-annotation-activity/categoryProperties/categoryProperties.svelte";
   import type { Point, VideoFrameSelection, VideoShape } from "./video-annotation-activity/VideoAnnotationContext";
   import VideoController from "./video-annotation-activity/VideoController.svelte";
+  import { registerVisualModeShortcuts } from "./video-annotation-activity/shortcut";
 
   // Props
   interface Props {
@@ -82,50 +83,45 @@
 
   let commandOpen = $state(false);
 
-  // registerVisualModeShortcuts({
-  //   player: () => player,
-  //   toggleCommandCB: () => {
-  //     commandOpen = !commandOpen;
-  //   },
-  //   flush: () => context.annotations.flush(),
-  //   switch_mode: (_mode: string) => {},
-  //   zoom: { in: () => {}, out: () => {} },
-  // });
+  window.onkeydown = (e) => {
+    const activeElement = document.activeElement;
+    const isTyping =
+      activeElement?.tagName === "INPUT" || activeElement?.tagName === "TEXTAREA" || activeElement?.isContentEditable;
 
-  // window.onkeydown = (e) => {
-  //   const current_mode = ShortcutManager.getCurrentMode();
-  //   const keymap = ShortcutManager.keyMap[current_mode];
+    if (isTyping) return;
 
-  //   if (!keymap) return console.error("no keymap found for", { current_mode });
+    const current_mode = ShortcutManager.getCurrentMode();
+    const keymap = ShortcutManager.keyMap[current_mode];
 
-  //   const modifier_keys = [
-  //     e.altKey && "Alt",
-  //     e.ctrlKey && "Control",
-  //     e.metaKey && "Meta",
-  //     e.shiftKey && "Shift",
-  //   ].sort();
+    if (!keymap) return console.error("no keymap found for", { current_mode });
 
-  //   const shortcut_keys = (
-  //     ["Control", "Alt", "Shift", "Meta"].includes(e.key)
-  //       ? [undefined]
-  //       : e.code.startsWith("Key")
-  //         ? [e.key.toLocaleUpperCase(), e.key.toLocaleLowerCase()]
-  //         : [e.code]
-  //   ).map((k) => [...modifier_keys, k].filter((k) => k).join("+"));
+    const modifier_keys = [
+      e.altKey && "Alt",
+      e.ctrlKey && "Control",
+      e.metaKey && "Meta",
+      e.shiftKey && "Shift",
+    ].sort();
 
-  //   for (let index = 0; index < shortcut_keys.length; index++) {
-  //     let shortcut_key = shortcut_keys[index];
+    const shortcut_keys = (
+      ["Control", "Alt", "Shift", "Meta"].includes(e.key)
+        ? [undefined]
+        : e.code.startsWith("Key")
+          ? [e.key.toLocaleUpperCase(), e.key.toLocaleLowerCase()]
+          : [e.code]
+    ).map((k) => [...modifier_keys, k].filter((k) => k).join("+"));
 
-  //     let shortcut = keymap[shortcut_key];
+    for (let index = 0; index < shortcut_keys.length; index++) {
+      let shortcut_key = shortcut_keys[index];
 
-  //     if (!shortcut) continue;
+      let shortcut = keymap[shortcut_key];
 
-  //     e.preventDefault();
-  //     shortcut.action();
-  //     console.log({ shortcut_key, shortcut });
-  //     break;
-  //   }
-  // };
+      if (!shortcut) continue;
+
+      e.preventDefault();
+      shortcut.action();
+      break;
+    }
+  };
 
   // for now
   $effect(() => {
@@ -204,6 +200,31 @@
         });
       });
     }
+
+    registerVisualModeShortcuts({
+      context,
+      player: () => player,
+      toggleCommandCB: () => {
+        commandOpen = !commandOpen;
+      },
+      flush: () => context.annotations.flush(),
+      switch_mode: (mode: string) => {
+        let tool;
+        switch (mode) {
+          case IDAH_VIDEO_BOUNDING_BOX:
+            tool = "tools.bounding_box";
+            break;
+          case IDAH_NOTE:
+            tool = "tools.note";
+            break;
+          default:
+            tool = "tools.visual";
+        }
+        console.log({ context, commands: context.commands, mode, tool });
+        context.commands.run(tool);
+      },
+      zoom: { in: overlay.zoomIn, out: overlay.zoomOut },
+    });
   });
 
   // need to store dependancy and extract thos commands definitions
@@ -354,7 +375,8 @@
         });
 
         p.then(async () => {
-          if (v.metadata.updatedAt == updatedAt) {
+          const v = await annotationsIDB?.get("annotations", props.id);
+          if (v && v?.metadata.updatedAt.valueOf() == updatedAt.valueOf()) {
             v.synced = true;
             await annotationsIDB?.addAnnotations([v]);
             selectedAnnotation = v;
@@ -392,7 +414,9 @@
         });
 
         p.then(async () => {
-          if (v.metadata.updatedAt == updatedAt) {
+          const v = await annotationsIDB?.get("annotations", props.id);
+          if (v?.metadata.updatedAt.valueOf() == updatedAt.valueOf()) {
+            // if (v.metadata.updatedAt == updatedAt) {
             v.synced = true;
             await annotationsIDB?.addAnnotations([v]);
             selectedAnnotation = v;
@@ -404,8 +428,8 @@
       combine: (c) => c,
     };
   });
-  context.commands.on("keyframe.delete", async (props: { annotation_id: string; frame: number }) => {
-    const annotation = await annotationsIDB?.get("annotations", props.annotation_id);
+  context.commands.on("keyframe.delete", async (props: { annotationId: string; frame: number }) => {
+    const annotation = await annotationsIDB?.get("annotations", props.annotationId);
 
     if (!annotation) return toast.error("cannot remove selection, annotation not found");
 
@@ -418,7 +442,7 @@
       name: "delete bounding box keyframe",
       async apply() {
         const updatedAt = new Date();
-        const annotation = await annotationsIDB?.get("annotations", props.annotation_id);
+        const annotation = await annotationsIDB?.get("annotations", props.annotationId);
 
         if (!annotation) return toast.error("cannot remove keyframe, annotation not found");
 
@@ -451,7 +475,8 @@
         });
 
         p.then(async () => {
-          if (annotation.metadata.updatedAt == updatedAt) {
+          const annotation = await annotationsIDB?.get("annotations", props.annotationId);
+          if (annotation && annotation.metadata.updatedAt == updatedAt) {
             annotation.synced = true;
             await annotationsIDB?.addAnnotations([annotation]);
             selectedAnnotation = annotation;
@@ -461,7 +486,7 @@
       },
       async undo() {
         const updatedAt = new Date();
-        let annotation = await annotationsIDB?.get("annotations", props.annotation_id);
+        let annotation = await annotationsIDB?.get("annotations", props.annotationId);
 
         if (!annotation) return toast.error("cannot undo remove selection, annotation not found");
 
@@ -486,7 +511,8 @@
         });
 
         p.then(async () => {
-          if (annotation.metadata.updatedAt == updatedAt) {
+          const annotation = await annotationsIDB?.get("annotations", props.annotationId);
+          if (annotation && annotation.metadata.updatedAt == updatedAt) {
             annotation.synced = true;
             await annotationsIDB?.addAnnotations([annotation]);
             selectedAnnotation = annotation;
@@ -504,12 +530,12 @@
       annotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
       value: AnnotationValue;
     }) => {
-      const annotation_id = props.annotation.metadata.id;
+      const annotationId = props.annotation.metadata.id;
       const value_from = props.annotation.value;
       return {
         name: "update annotation value",
         async apply() {
-          const annotation = await annotationsIDB?.get("annotations", annotation_id);
+          const annotation = await annotationsIDB?.get("annotations", annotationId);
           const updatedAt = new Date();
           if (annotation) {
             annotation.value = props.value;
@@ -529,7 +555,8 @@
             });
 
             p.then(async () => {
-              if (annotation.metadata.updatedAt == updatedAt) {
+              const annotation = await annotationsIDB?.get("annotations", annotationId);
+              if (annotation && annotation.metadata.updatedAt.valueOf() == updatedAt.valueOf()) {
                 annotation.synced = true;
                 selectedAnnotation = annotation;
                 if ($entryRoot?.metadata.id == annotation.metadata.id) $entryRoot = annotation;
@@ -540,7 +567,7 @@
           }
         },
         async undo() {
-          const annotation = await annotationsIDB?.get("annotations", annotation_id);
+          const annotation = await annotationsIDB?.get("annotations", annotationId);
           if (annotation) {
             const updatedAt = new Date();
             annotation.value = value_from;
@@ -558,7 +585,8 @@
             if ($entryRoot?.metadata.id == annotation.metadata.id) $entryRoot = annotation;
 
             p.then(async () => {
-              if (annotation.metadata.updatedAt == updatedAt) {
+              const annotation = await annotationsIDB?.get("annotations", annotationId);
+              if (annotation && annotation.metadata.updatedAt.valueOf() == updatedAt.valueOf()) {
                 annotation.synced = true;
                 selectedAnnotation = annotation;
                 if ($entryRoot?.metadata.id == annotation.metadata.id) $entryRoot = annotation;
@@ -634,8 +662,8 @@
     context.commands.run("keyframe.add", { id, selection });
   }
 
-  async function deleteSelection(annotation_id: string, frame: number) {
-    context.commands.run("keyframe.delete", { annotation_id, frame });
+  async function deleteSelection(annotationId: string, frame: number) {
+    context.commands.run("keyframe.delete", { annotationId, frame });
   }
 
   function onDeleteAnnotation(
@@ -758,7 +786,7 @@
          */
         sidebar_width: annotationSidebarWidthRem * 16,
       },
-      annotation_id: annotationId,
+      annotationId: annotationId,
     });
   }
 

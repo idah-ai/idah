@@ -14,8 +14,8 @@ import {
   datasetsModalities,
   datasetsStatuses,
 } from "@/data/model/dataset/datasets/constants";
-import type { Hash } from "@/utils/types";
 import type { IConfig } from "@/plugin/interface/Activity";
+import type { Hash } from "@/utils/types";
 
 @type("dataset:datasets")
 export class DatasetRecord extends Record {
@@ -60,10 +60,9 @@ export class DatasetRecord extends Record {
 
 RecordFactory.registerTypes(DatasetRecord);
 
-export const datasetsBackendDataSource = createBackendDataSource(
-  DatasetRecord,
-  `${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/datasets`,
-);
+export const datasetBasePath: string = `${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/datasets`;
+
+export const datasetsBackendDataSource = createBackendDataSource(DatasetRecord, datasetBasePath);
 
 export interface TreeItem {
   id: string;

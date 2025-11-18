@@ -48,10 +48,20 @@
   ];
 
   function onValueChange(property: IConfigProperty, v: string | number | string[] | undefined | boolean) {
-    onEditValue({
+    const newValue = {
       ...annotationValue,
-      attributes: { ...(annotationValue.attributes || {}), [property.id]: v },
-    });
+      attributes: {
+        ...(annotationValue.attributes || {}),
+        [property.id]: v,
+      },
+    };
+    const new_visible_properties = typeConfig?.properties
+      .filter((p) => visibilityFullfilled(newValue, p))
+      .map((p) => p.id);
+    const visibilityDiff = Object.keys(newValue.attributes).filter((k) => !new_visible_properties.includes(k));
+    // remove visibility false properties
+    if (visibilityDiff.length) visibilityDiff.forEach((p) => delete newValue.attributes?.[p]);
+    onEditValue(newValue);
   }
 </script>
 
