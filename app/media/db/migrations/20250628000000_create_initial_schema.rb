@@ -26,6 +26,8 @@ Sequel.migration do
       column :public, TrueClass, null: false, default: false, index: true
       column :meta, :jsonb, null: false, default: "{}"
 
+      column :project_id, String, index: true
+
       # Able to use LIKE on media key.
       index :key, opclass: :gin_trgm_ops, type: :gin
 

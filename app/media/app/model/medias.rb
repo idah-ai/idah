@@ -22,9 +22,7 @@ module Medias
     field :created_at, type: Time
     field :updated_at, type: Time
 
-    field :project_id, type: Integer
-    # field :dataset_id, type: Integer
-    # field :entry_id, type: Integer
+    field :project_id, type: String, readonly: true
 
     def open
       Verse::Plugin[:shrine].with_storage do |storage|
