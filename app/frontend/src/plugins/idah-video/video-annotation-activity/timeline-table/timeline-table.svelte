@@ -184,7 +184,6 @@
   }
 
   let rowElements: Record<string, HTMLElement> = $state({});
-  let annotationsSnapshot = $state<VideoAnnotation[]>([]);
 
   function trackRow(node: HTMLElement, params: { id: string; isSelected: boolean }) {
     rowElements[params.id] = node;
@@ -211,7 +210,6 @@
 </script>
 
 {#snippet row(annotations: VideoAnnotation[])}
-  {void (annotationsSnapshot = annotations)}
   {#each annotations as annotation, index (annotation.metadata.id)}
     {@const isSelected = selectedAnnotation?.metadata.id == annotation.metadata.id}
     {@const isLastIndex = index == annotations.length - 1}
