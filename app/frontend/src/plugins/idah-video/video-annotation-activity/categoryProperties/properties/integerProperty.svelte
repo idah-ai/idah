@@ -40,7 +40,7 @@
     onchange={(e) => onValueChange(Number.parseInt(e.target?.value || ""))}
   />
   {#if invalid}
-    <ul>
+    <ul class="text-xs">
       {#each format as [k, v] (k)}
         {@const formatter = formatters.get(k)}
 
