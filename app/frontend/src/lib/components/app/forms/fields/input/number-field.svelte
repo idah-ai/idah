@@ -17,7 +17,7 @@
 
   // Props
   interface Props extends NumberFieldBaseProps {
-    value: number | null;
+    value: number | null | undefined;
     groupInputClass?: string;
   }
   let {
@@ -70,6 +70,7 @@
 
     <InputGroupInput
       id={name}
+      aria-invalid={errors ? "true" : "false"}
       type="number"
       {inputmode}
       {placeholder}

@@ -12,9 +12,8 @@
   import { humanize } from "@/utils/string";
 
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
-  import type { LabelConfigurationProperty, LabelConfigurationValue } from "@/data/model/dataset/labels";
   import type { ModalityShape, ModalityShapes } from "@/data/model/setting/plugin/types";
-  import type { IConfig } from "@/plugin/interface/Activity";
+  import type { IConfig, IConfigProperty, IConfigValue } from "@/plugin/interface/Activity";
 
   // Props
   interface Props {
@@ -26,9 +25,10 @@
     onRemoveLabelConfig: (labelConfigKey: string) => void;
     onAddCategory: (labelConfigKey: string, nodeId?: string) => void;
     onEditCategoryId: (labelConfigKey: string, oldId: string, newId: string) => void;
-    onEditCategory: (labelConfigKey: string, category: LabelConfigurationValue) => void;
+    onEditCategory: (labelConfigKey: string, category: IConfigValue) => void;
+    onChangeSelectableCategory: (labelConfigKey: string, editedCategory: IConfigValue, selectable: boolean) => void;
     onRemoveCategory: (labelConfigKey: string, categoryId: string) => void;
-    onSetProperty: (labelConfigKey: string, property: LabelConfigurationProperty) => void;
+    onSetProperty: (labelConfigKey: string, property: IConfigProperty) => void;
     onRemoveProperty: (labelConfigKey: string, propertyId: string) => void;
   }
   let {
@@ -41,6 +41,7 @@
     onAddCategory,
     onEditCategoryId,
     onEditCategory,
+    onChangeSelectableCategory,
     onRemoveCategory,
     onSetProperty,
     onRemoveProperty,
@@ -160,7 +161,7 @@
     onEditCategoryId(selectedConfigKey, oldId, newId);
   }
 
-  function editCategory(editedCategory: LabelConfigurationValue) {
+  function editCategory(editedCategory: IConfigValue) {
     onEditCategory(selectedConfigKey, editedCategory);
   }
 
@@ -186,8 +187,12 @@
     });
   }
 
-  function setProperty(property: LabelConfigurationProperty) {
+  function setProperty(property: IConfigProperty) {
     onSetProperty(selectedConfigKey, property);
+  }
+
+  function changeSelectableCategory(editedCategory: IConfigValue, selectable: boolean) {
+    onChangeSelectableCategory(selectedConfigKey, editedCategory, selectable);
   }
 
   function removeProperty(propertyId: string) {
@@ -278,10 +283,11 @@
         {#if !labelConfigIsEmpty}
           <CategoryTree
             values={selectedLabelConfig.values}
-            onAddCategory={(nodeId) => addCategory(nodeId)}
-            onEditCategoryId={(oldId, newId) => editCategoryId(oldId, newId)}
-            onEditCategory={(editedCategory) => editCategory(editedCategory)}
-            onRemoveCategory={(categoryId) => removeCategory(categoryId)}
+            onAddCategory={addCategory}
+            onEditCategoryId={editCategoryId}
+            onEditCategory={editCategory}
+            onChangeSelectableCategory={changeSelectableCategory}
+            onRemoveCategory={removeCategory}
           />
         {:else}
           <ResponseBlock
@@ -312,11 +318,7 @@
       <CardContent class="flex flex-col gap-2">
         {#if !labelConfigIsEmpty}
           {#each Object.values(selectedLabelConfig.properties) as property (property.id)}
-            <PropertyCard
-              {property}
-              onSetProperty={(editedProperty) => setProperty(editedProperty)}
-              onRemoveProperty={(propertyId) => removeProperty(propertyId)}
-            />
+            <PropertyCard {property} onSetProperty={setProperty} onRemoveProperty={removeProperty} />
           {:else}
             <ResponseBlock
               icon={BoltIcon}
