@@ -119,6 +119,11 @@
     open = false;
     await onSelected?.(value);
   }
+
+  function clearSelection(event: MouseEvent): void {
+    event.stopPropagation();
+    value = null;
+  }
 </script>
 
 <Field id={name} class={cn("", className)}>
@@ -155,7 +160,7 @@
             <button
               type="button"
               class={cn("cursor-pointer", clearable && selectedChoice ? "opacity-50" : "opacity-0")}
-              onclick={() => {}}
+              onclick={clearSelection}
             >
               <CircleXIcon class="size-4 shrink-0"></CircleXIcon>
             </button>
@@ -183,7 +188,7 @@
             <CommandEmpty>No option found.</CommandEmpty>
 
             {#await initialFetchChoices()}
-              <Spinner size="sm"></Spinner>
+              <Spinner size="sm" />
             {:then _}
               {#each choices as choice, index (index)}
                 {#if slotChoice}
@@ -194,7 +199,7 @@
                       class={cn("mr-2 size-4", {
                         "opacity-0": choice.value != value,
                       })}
-                    ></CheckIcon>
+                    />
 
                     {choice.label}
                   </CommandItem>

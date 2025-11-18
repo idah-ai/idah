@@ -51,7 +51,7 @@
     await onSelected?.(choice.value);
   }
 
-  function clearValue(event: MouseEvent): void {
+  function clearSelection(event: MouseEvent): void {
     event.stopPropagation();
     values = [];
   }
@@ -84,7 +84,7 @@
             <button
               type="button"
               class={cn("cursor-pointer", clearable && selectedValues ? "opacity-50" : "opacity-0")}
-              onclick={clearValue}
+              onclick={clearSelection}
             >
               <CircleXIcon class="size-4 shrink-0"></CircleXIcon>
             </button>
