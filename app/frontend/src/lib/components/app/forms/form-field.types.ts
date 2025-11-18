@@ -80,3 +80,29 @@ export interface SelectDataSourceFieldBaseProps<T extends Record> extends Omit<S
   listOptions?: ListOptions;
   searchKeyWithOperation: string;
 }
+
+export interface MultipleSelectFieldBaseProps<T extends Record>
+  extends Omit<SelectFieldBaseProps, "choices" | "slotTrigger"> {
+  displayKey: keyof T;
+  valueKey?: keyof T;
+  dataSource: DataSource<T>;
+  listOptions?: ListOptions;
+  searchKeyWithOperation: string;
+  closeOnSelect?: boolean;
+  slotTrigger?: Snippet<
+    [
+      {
+        selectedChoices: LabelValue<string | number>[] | undefined;
+        clearable: boolean;
+        disabled: boolean;
+      },
+    ]
+  >;
+  slotTriggerValues?: Snippet<
+    [
+      {
+        selectedChoices: LabelValue<string | number>[];
+      },
+    ]
+  >;
+}
