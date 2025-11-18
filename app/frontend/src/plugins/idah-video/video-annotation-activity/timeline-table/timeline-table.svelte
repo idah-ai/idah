@@ -183,14 +183,14 @@
     onSeekFrame(annotation.shape.start || 0);
   }
 
-  let rowElements = new Map<string, HTMLElement>();
+  let rowElements: Record<string, HTMLElement> = $state({});
   let annotationsSnapshot = $state<VideoAnnotation[]>([]);
 
   function trackRow(node: HTMLElement, params: { id: string }) {
-    rowElements.set(params.id, node);
+    rowElements[params.id] = node;
     return {
       destroy() {
-        rowElements.delete(params.id);
+        delete rowElements[params.id];
       },
     };
   }
@@ -203,7 +203,7 @@
     void annotationsSnapshot;
 
     if (currentSelectedId) {
-      const element = rowElements.get(currentSelectedId);
+      const element = rowElements[currentSelectedId];
       if (element) {
         // Use a small delay to ensure DOM is fully updated
         requestAnimationFrame(() => {
