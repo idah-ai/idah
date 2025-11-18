@@ -46,6 +46,7 @@ module NoteFeed
               "entry_id field is required to create a note feed"
       end
 
+      # Organization Owner can find the entry in their scope
       # Project Owner can find the entry in their projects
       # Annotator and Reviewer can find the entry only if assigned to them
       entry = entries.find(attributes[:entry_id], included: ["dataset"])

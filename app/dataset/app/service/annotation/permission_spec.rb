@@ -206,7 +206,7 @@ RSpec.describe Annotation::Service, database: true do
 
     before do
       @not_owned_org_project = project_repo.create(
-        name: "Project 2",
+        name: "Project xxx",
         created_by_email: "system@example.com",
         organization_id: 999
       )
@@ -229,7 +229,7 @@ RSpec.describe Annotation::Service, database: true do
         assigned_to_id: another_annotator_account_id,
       )
 
-      @not_owner_org_annotation = annotation_repo.create(
+      @not_owned_org_annotation = annotation_repo.create(
         project_id: @not_owned_org_project,
         dataset_id: @not_owned_org_dataset,
         entry_id: @not_owned_org_entry,
@@ -292,7 +292,7 @@ RSpec.describe Annotation::Service, database: true do
       end
 
       it "cannot update" do
-        update_data[:data][:id] = @not_owner_org_annotation
+        update_data[:data][:id] = @not_owned_org_annotation
 
         expect {
           subject.update(deserialize(update_data))
@@ -301,11 +301,11 @@ RSpec.describe Annotation::Service, database: true do
 
       it "cannot delete" do
         expect {
-          subject.delete(@not_owner_org_annotation)
+          subject.delete(@not_owned_org_annotation)
         }.to raise_error(Verse::Error::RecordNotFound)
 
         # the record we tried to delete should still be there
-        expect { annotation_repo.find!(@not_owner_org_annotation) }.not_to raise_error(Verse::Error::RecordNotFound)
+        expect { annotation_repo.find!(@not_owned_org_annotation) }.not_to raise_error(Verse::Error::RecordNotFound)
       end
     end
   end

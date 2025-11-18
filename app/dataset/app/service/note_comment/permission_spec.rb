@@ -125,6 +125,17 @@ RSpec.describe NoteComment::Service, database: true do
   }
 
   # Note Feeds
+  let(:org_owner_note_feed_id) {
+    note_feed_repo.create(
+      project_id: first_project_id,
+      dataset_id: first_dataset_id,
+      entry_id: first_entry_id,
+      anchor_type: "entry",
+      position: { "x" => 100, "y" => 200 },
+      content_md: "This is an org owner test note",
+      created_by_email: "org_owner@example.com"
+    )
+  }
   let(:project_owner_note_feed_id) {
     note_feed_repo.create(
       project_id: first_project_id,
@@ -193,6 +204,13 @@ RSpec.describe NoteComment::Service, database: true do
   }
 
   # Note Feed Comments
+  let(:org_owner_note_comment_id) {
+    note_comment_repo.create(
+      note_feed_id: org_owner_note_feed_id,
+      content_md: "This is a test note comment",
+      created_by_email: "org_owner@example.com"
+    )
+  }
   let(:project_owner_note_comment_id) {
     note_comment_repo.create(
       note_feed_id: project_owner_note_feed_id,
@@ -262,6 +280,157 @@ RSpec.describe NoteComment::Service, database: true do
         }
       }
     }
+  end
+
+  # Permission: Organization Owner
+  # ------------------------------------------------
+  # Note Comments    | index | create | update | delete
+  # ------------------------------------------------
+  # in owned Org     |  yes  |  yes   |   own  |   own
+  # Not in owned Org |   x   |   x    |    x   |    x
+  context "as Organization Owner", as: :org_owner do
+    subject { described_class.new(current_auth_context) }
+
+    before do
+      @not_owned_org_project = project_repo.create(
+        name: "Project xxx",
+        created_by_email: "system@example.com",
+        organization_id: 999
+      )
+
+      @not_owned_org_dataset = dataset_repo.create(
+        name: "Dataset xxx",
+        project_id: @not_owned_org_project,
+        modality: "video",
+        workflow_configuration: {},
+        labeling_configuration: {}
+      )
+
+      @not_owned_org_entry = entry_repo.create(
+        project_id: @not_owned_org_project,
+        dataset_id: @not_owned_org_dataset,
+        priority: 1,
+        resource: "http://example.com/first.mp4",
+        wf_step: "start",
+        status: "pending",
+        assigned_to_id: 999,
+      )
+
+      @not_owned_org_note_feed = note_feed_repo.create(
+        project_id: @not_owned_org_project,
+        dataset_id: @not_owned_org_dataset,
+        entry_id: @not_owned_org_entry,
+        anchor_type: "entry",
+        position: { "x" => 100, "y" => 200 },
+        content_md: "This is a second test note",
+        created_by_email: "reviewer@example.com"
+      )
+
+      @not_owned_org_note_comment = note_comment_repo.create(
+        note_feed_id: @not_owned_org_note_feed,
+        content_md: "This is a test note comment",
+        created_by_email: "project_owner@example.com"
+      )
+    end
+
+    describe "with project in owned org scope" do
+      it "can index" do
+        # Setup: create note comments to test visibility
+        project_owner_note_comment_id
+        annotator_note_comment_id
+        reviewer_first_note_comment_id
+        reviewer_second_note_comment_id
+        reviewer_third_note_comment_id
+        other_note_comment_id
+
+        result_ids = subject.index({}).map(&:id)
+
+        expect(result_ids.count).to eq 6
+        expect(result_ids).to contain_exactly(
+          project_owner_note_comment_id,
+          annotator_note_comment_id,
+          reviewer_first_note_comment_id,
+          reviewer_second_note_comment_id,
+          reviewer_third_note_comment_id,
+          other_note_comment_id
+        )
+      end
+
+      it "can create" do
+        record = subject.create(deserialize(create_data))
+
+        expect(record.note_feed_id).to eq project_owner_note_feed_id
+        expect(record.content_md).to eq "This is a created test note comment"
+        expect(record.created_by_email).to eq "org_owner@example.com"
+      end
+
+      it "can update own note feed comment" do
+        update_data[:data][:id] = org_owner_note_comment_id
+        record = subject.update(deserialize(update_data))
+
+        expect(record.note_feed_id).to eq org_owner_note_feed_id
+        expect(record.content_md).to eq "This is an updated test note comment"
+        expect(record.created_by_email).to eq "org_owner@example.com"
+      end
+
+      it "can delete own note feed comment" do
+        subject.delete(org_owner_note_comment_id)
+
+        expect { note_comment_repo.find!(org_owner_note_comment_id) }.to raise_error(Verse::Error::RecordNotFound)
+      end
+
+      it "cannot update others note feed comment" do
+        update_data[:data][:id] = reviewer_first_note_comment_id
+
+        expect {
+          subject.update(deserialize(update_data))
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
+
+      it "cannot delete others note feed comment" do
+        expect {
+          subject.delete(reviewer_first_note_comment_id)
+        }.to raise_error(Verse::Error::RecordNotFound)
+
+        # the record we tried to delete should still be there
+        expect { note_comment_repo.find!(reviewer_first_note_comment_id) }.not_to raise_error(Verse::Error::RecordNotFound)
+      end
+    end
+
+    describe "with project not in owned org scope" do
+      it "cannot index" do
+        result = subject.index({})
+
+        expect(result.count).to eq 0
+      end
+
+      it "cannot create" do
+        create_data[:data][:relationships][:note_feed][:data][:id] = @not_owned_org_note_feed
+
+        expect {
+          subject.create(deserialize(create_data))
+        }.to raise_error(
+          Verse::Error::ValidationFailed
+        )
+      end
+
+      it "cannot update" do
+        update_data[:data][:id] = @not_owned_org_note_comment
+
+        expect {
+          subject.update(deserialize(update_data))
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
+
+      it "cannot delete" do
+        expect {
+          subject.delete(@not_owned_org_note_comment)
+        }.to raise_error(Verse::Error::RecordNotFound)
+
+        # the record we tried to delete should still be there
+        expect { note_comment_repo.find!(@not_owned_org_note_comment) }.not_to raise_error(Verse::Error::RecordNotFound)
+      end
+    end
   end
 
   # Permission: Project Owner

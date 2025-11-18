@@ -176,7 +176,7 @@ RSpec.describe Dataset::Service, database: true do
 
     before do
       @not_owned_org_project = project_repo.create(
-        name: "Project 2",
+        name: "Project xxx",
         created_by_email: "system@example.com",
         organization_id: 999
       )
