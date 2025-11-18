@@ -185,6 +185,7 @@
 
   let rowElements = new Map<string, HTMLElement>();
   let prevSelectedId = $state<string | undefined>();
+  let annotationsSnapshot = $state<VideoAnnotation[]>([]);
 
   function trackRow(node: HTMLElement, params: { id: string }) {
     rowElements.set(params.id, node);
@@ -195,13 +196,21 @@
     };
   }
 
+  // Effect to scroll to selected annotation whenever it changes or annotations update
   $effect(() => {
     const currentSelectedId = selectedAnnotation?.metadata.id;
-    if (currentSelectedId && currentSelectedId !== prevSelectedId) {
+    
+    // Track annotations changes to ensure we react when they update
+    void annotationsSnapshot;
+    
+    if (currentSelectedId) {
       const element = rowElements.get(currentSelectedId);
       if (element) {
+        // Use a small delay to ensure DOM is fully updated
         requestAnimationFrame(() => {
-          element.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          requestAnimationFrame(() => {
+            element.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+          });
         });
       }
       prevSelectedId = currentSelectedId;
@@ -210,6 +219,7 @@
 </script>
 
 {#snippet row(annotations: VideoAnnotation[])}
+  {void (annotationsSnapshot = annotations)}
   {#each annotations as annotation, index (annotation.metadata.id)}
     {@const isSelected = selectedAnnotation?.metadata.id == annotation.metadata.id}
     {@const isLastIndex = index == annotations.length - 1}
