@@ -37,7 +37,7 @@
     max={property.format?.maximum}
     step={property.format?.step || "1"}
     {value}
-    onchange={(e) => onValueChange(e.target?.value)}
+    onchange={(e) => onValueChange(Number.parseInt(e.target?.value || ""))}
   />
   {#if invalid}
     <ul>
