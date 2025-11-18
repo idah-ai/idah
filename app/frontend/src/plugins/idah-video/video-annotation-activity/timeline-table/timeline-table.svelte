@@ -69,7 +69,6 @@
   let wheelthrottling = $state(false);
   let hoveredColumn: number | undefined = $state();
   let prevCurrentFrame: number = $state(currentFrame);
-
   $effect(() => {
     // Auto-scroll to center currentFrame only when it's outside the visible range
     if (currentFrame !== prevCurrentFrame) {
@@ -87,27 +86,35 @@
   }
 
   export function setZoom(value: number): void {
-    const s = Math.min(100, Math.max(1, Math.round(value)));
+    const s = Math.min(150, Math.max(20, value));
+    
     const minZoom = 20;
     const maxZoom = 150;
     const midZoom = (minZoom + maxZoom) / 2;
 
-    // maximum scale based on zoom
-    const maxScale = Math.ceil(totalFrames / zoom);
+    // maximum scale based on new zoom value
+    const maxScale = Math.ceil(totalFrames / s);
 
-    // Determine new scale based on zoom value
-    const newScale = value <= midZoom ? 1 : Math.ceil(1 + ((value - midZoom) / (maxZoom - midZoom)) * (maxScale - 1));
+    // Determine new scale based on zoom value with smoother interpolation
+    let newScale: number;
+    if (s <= midZoom) {
+      newScale = 1;
+    } else {
+      // Use smooth linear interpolation for scale when zoom > midZoom
+      const scaleProgress = (s - midZoom) / (maxZoom - midZoom);
+      newScale = 1 + scaleProgress * (maxScale - 1);
+    }
 
-    scale = Math.ceil(newScale);
+    scale = Math.max(1, Math.round(newScale));
     zoom = s;
 
-    onScaleChange?.(scale);
-    onZoomChange?.(zoom);
-
-    // Re-center on current frame after zoom change
+    // Recenter the range on current frame after zoom/scale change
     const newRangeSpan = Math.min(scale * zoom, totalFrames);
     const centerOffset = currentFrame - Math.floor(newRangeSpan / 2);
     setOffset(centerOffset);
+
+    onScaleChange?.(scale);
+    onZoomChange?.(zoom);
   }
 
   function seekToFrame(frameToGo: number) {
@@ -208,7 +215,7 @@
     {@const isLastIndex = index == annotations.length - 1}
     <TableRow
       class={cn("border-b-0", {
-        "bg-primary/20 border-t border-b": isSelected,
+        "bg-primary/20": isSelected,
       })}
     >
       <td
