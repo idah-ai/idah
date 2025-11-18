@@ -31,16 +31,6 @@
   const category = typeConfig?.values.find((c) => c.id == selectedCategory);
   const properties = typeConfig?.properties.filter((p) => visibilityFullfilled(annotationValue, p));
 
-  const visible_properties_id = properties.map((p) => p.id);
-  const visibilityDiff = Object.keys(annotationValue.attributes || {}).filter(
-    (k) => !visible_properties_id.includes(k),
-  );
-
-  if (visibilityDiff.length) {
-    visibilityDiff.forEach((p) => delete annotationValue.attributes?.[p]);
-    onEditValue(annotationValue);
-  }
-
   const propertyComponents: {
     type: string;
     component:
@@ -58,10 +48,20 @@
   ];
 
   function onValueChange(property: IConfigProperty, v: string | number | string[] | undefined | boolean) {
-    onEditValue({
+    const newValue = {
       ...annotationValue,
-      attributes: { ...(annotationValue.attributes || {}), [property.id]: v },
-    });
+      attributes: {
+        ...(annotationValue.attributes || {}),
+        [property.id]: v,
+      },
+    };
+    const new_visible_properties = typeConfig?.properties
+      .filter((p) => visibilityFullfilled(newValue, p))
+      .map((p) => p.id);
+    const visibilityDiff = Object.keys(newValue.attributes).filter((k) => !new_visible_properties.includes(k));
+    // remove visibility false properties
+    if (visibilityDiff.length) visibilityDiff.forEach((p) => delete newValue.attributes?.[p]);
+    onEditValue(newValue);
   }
 </script>
 
