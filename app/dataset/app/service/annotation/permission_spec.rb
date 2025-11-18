@@ -195,6 +195,121 @@ RSpec.describe Annotation::Service, database: true do
     }
   end
 
+  # Permission: Organization Owner
+  # ------------------------------------------------
+  # Annotations   | index | create | update | delete
+  # ------------------------------------------------
+  # in owned Org     |  yes  |  yes   |   yes  |   yes
+  # Not in owned Org |   x   |   x    |    x   |    x
+  context "as Organization Owner", as: :org_owner do
+    subject { described_class.new(current_auth_context) }
+
+    before do
+      @not_owned_org_project = project_repo.create(
+        name: "Project 2",
+        created_by_email: "system@example.com",
+        organization_id: 999
+      )
+
+      @not_owned_org_dataset = dataset_repo.create(
+        name: "Dataset xxx",
+        project_id: @not_owned_org_project,
+        modality: "video",
+        workflow_configuration: {},
+        labeling_configuration: {}
+      )
+
+      @not_owned_org_entry = entry_repo.create(
+        project_id: @not_owned_org_project,
+        dataset_id: @not_owned_org_dataset,
+        priority: 1,
+        resource: "http://example.com/first.mp4",
+        wf_step: "start",
+        status: "pending",
+        assigned_to_id: another_annotator_account_id,
+      )
+
+      @not_owner_org_annotation = annotation_repo.create(
+        project_id: @not_owned_org_project,
+        dataset_id: @not_owned_org_dataset,
+        entry_id: @not_owned_org_entry,
+        dimensions: { x: 10, y: 20, width: 30, height: 40 },
+        annotation: { label: "cat" },
+        created_by_email: "reviewer@example.com"
+      )
+    end
+
+    describe "with project in owned org scope" do
+      it "can index" do
+        # Setup: Create annotations as "Project Owner" can see all annotations in assigned project
+        [first_annotation_id, second_annotation_id, third_annotation_id]
+
+        result = subject.index({})
+
+        expect(result.count).to eq 3
+        expect(result.map(&:project_id)).to all(satisfy { |pid| pid != @not_owned_org_project })
+      end
+
+      it "can create" do
+        record = subject.create(deserialize(create_data))
+
+        expect(record.project_id).to eq first_project_id
+        expect(record.dataset_id).to eq first_dataset_id
+        expect(record.entry_id).to eq first_entry_id
+        expect(record.dimensions).to eq({ x: 10, y: 20, width: 30, height: 40 })
+        expect(record.annotation).to eq({ label: "cat" })
+        expect(record.created_by_email).to eq "org_owner@example.com"
+      end
+
+      it "can update" do
+        record = subject.update(deserialize(update_data))
+
+        expect(record.project_id).to eq first_project_id
+        expect(record.dataset_id).to eq first_dataset_id
+        expect(record.entry_id).to eq first_entry_id
+        expect(record.dimensions).to eq({ x: 11, y: 21, width: 31, height: 41 })
+        expect(record.annotation).to eq({ label: "mouse" })
+      end
+
+      it "can delete" do
+        subject.delete(first_annotation_id)
+
+        expect { annotation_repo.find!(first_annotation_id) }.to raise_error(Verse::Error::RecordNotFound)
+      end
+    end
+
+    describe "with project not in owned org scope" do
+      it "cannot index" do
+        result = subject.index({})
+
+        expect(result.count).to eq 0
+      end
+
+      it "cannot create with project_id outside org scope" do
+        create_data[:data][:relationships][:entry][:data][:id] = @not_owned_org_entry
+
+        expect { subject.create(deserialize(create_data)) }.to raise_error Verse::Error::ValidationFailed
+      end
+
+      it "cannot update" do
+        update_data[:data][:id] = @not_owner_org_annotation
+
+        expect {
+          subject.update(deserialize(update_data))
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
+
+      it "cannot delete" do
+        expect {
+          subject.delete(@not_owner_org_annotation)
+        }.to raise_error(Verse::Error::RecordNotFound)
+
+        # the record we tried to delete should still be there
+        expect { annotation_repo.find!(@not_owner_org_annotation) }.not_to raise_error(Verse::Error::RecordNotFound)
+      end
+    end
+  end
+
   # Permission: Project Owner
   # ------------------------------------------------
   # Annotations   | index | create | update | delete
