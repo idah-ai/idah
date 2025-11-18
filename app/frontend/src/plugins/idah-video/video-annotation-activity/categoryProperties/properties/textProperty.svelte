@@ -1,8 +1,8 @@
 <script lang="ts">
   import Input from "@/components/ui/input/input.svelte";
   import Label from "@/components/ui/label/label.svelte";
-  import { formatConformity, propertyFullfilled } from "..";
   import type { IConfigProperty } from "@/plugin/interface/Activity";
+  import { formatConformity, propertyFullfilled } from "..";
 
   let {
     property,
@@ -39,7 +39,7 @@
 
   <Input type="text" aria-invalid={invalid} {value} onchange={(e) => onValueChange(e.target.value)} />
   {#if invalid}
-    <ul>
+    <ul class="text-xs">
       {#each format as [k, v] (k)}
         {@const formatter = formatters.get(k)}
 

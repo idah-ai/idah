@@ -848,29 +848,34 @@
           selected_id={selectedAnnotation?.metadata.id}
         />
       {/if}
-      <Button
-        onclick={() => {
-          showPopOver = false;
-          annotationValue = {};
-          shapeSelectionArgs = undefined;
-          selectAnnotation();
-        }}
-      >
-        Cancel
-      </Button>
-      <Button
-        onclick={() => {
-          showPopOver = false;
-          switch (mode) {
-            case ENTRY_ROOT:
-              onShapeSelection(ENTRY_ROOT, currentFrame);
-              break;
-            default:
-              if (shapeSelectionArgs) onShapeSelection(...shapeSelectionArgs);
-          }
-        }}
-        disabled={shapeSelectionArgs == undefined && ENTRY_ROOT != mode}>Confirm</Button
-      >
+      <div class="mt-4 flex justify-end gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          onclick={() => {
+            showPopOver = false;
+            annotationValue = {};
+            shapeSelectionArgs = undefined;
+            selectAnnotation();
+          }}
+        >
+          Cancel
+        </Button>
+        <Button
+          size="sm"
+          onclick={() => {
+            showPopOver = false;
+            switch (mode) {
+              case ENTRY_ROOT:
+                onShapeSelection(ENTRY_ROOT, currentFrame);
+                break;
+              default:
+                if (shapeSelectionArgs) onShapeSelection(...shapeSelectionArgs);
+            }
+          }}
+          disabled={shapeSelectionArgs == undefined && ENTRY_ROOT != mode}>Confirm</Button
+        >
+      </div>
     </PopoverContent>
   </Popover>
 
