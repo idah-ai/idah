@@ -186,34 +186,28 @@
   let rowElements: Record<string, HTMLElement> = $state({});
   let annotationsSnapshot = $state<VideoAnnotation[]>([]);
 
-  function trackRow(node: HTMLElement, params: { id: string }) {
+  function trackRow(node: HTMLElement, params: { id: string; isSelected: boolean }) {
     rowElements[params.id] = node;
+    
     return {
+      update(newParams: { id: string; isSelected: boolean }) {
+        // Scroll into view when this row becomes selected
+        if (newParams.isSelected && !params.isSelected) {
+          requestAnimationFrame(() => {
+            node.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+              inline: "nearest",
+            });
+          });
+        }
+        params = newParams;
+      },
       destroy() {
         delete rowElements[params.id];
       },
     };
   }
-
-  // Effect to scroll to selected annotation whenever it changes or annotations update
-  $effect(() => {
-    const currentSelectedId = selectedAnnotation?.metadata.id;
-
-    // Track annotations changes to ensure we react when they update
-    void annotationsSnapshot;
-
-    if (currentSelectedId) {
-      const element = rowElements[currentSelectedId];
-      if (element) {
-        // Use a small delay to ensure DOM is fully updated
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            element.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
-          });
-        });
-      }
-    }
-  });
 </script>
 
 {#snippet row(annotations: VideoAnnotation[])}
@@ -227,7 +221,7 @@
       })}
     >
       <td
-        use:trackRow={{ id: annotation.metadata.id }}
+        use:trackRow={{ id: annotation.metadata.id, isSelected }}
         class={cn("justify-end p-0", {
           "border-b": isLastIndex,
         })}
