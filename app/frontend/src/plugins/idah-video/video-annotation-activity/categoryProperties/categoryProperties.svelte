@@ -31,6 +31,16 @@
   const category = typeConfig?.values.find((c) => c.id == selectedCategory);
   const properties = typeConfig?.properties.filter((p) => visibilityFullfilled(annotationValue, p));
 
+  const visible_properties_id = properties.map((p) => p.id);
+  const visibilityDiff = Object.keys(annotationValue.attributes || {}).filter(
+    (k) => !visible_properties_id.includes(k),
+  );
+
+  if (visibilityDiff.length) {
+    visibilityDiff.forEach((p) => delete annotationValue.attributes?.[p]);
+    onEditValue(annotationValue);
+  }
+
   const propertyComponents: {
     type: string;
     component:
