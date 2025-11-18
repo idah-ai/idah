@@ -4,8 +4,9 @@ import ProjectNameCell from "@/components/app/projects/datasource-tables/project
 import ProjectOrganizationCell from "@/components/app/projects/datasource-tables/project-organization-cell.svelte";
 import ProjectRowActionCell from "@/components/app/projects/datasource-tables/project-row-action-cell.svelte";
 
+import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
+
 import type { ColumnsSettings } from "@/components/app/datasource-table/types";
-import type { ProjectRecord } from "@/data/model/dataset/projects/project-record";
 
 export const projectColumns: ColumnsSettings<ProjectRecord> = {
   name: {
@@ -24,7 +25,7 @@ export const projectColumns: ColumnsSettings<ProjectRecord> = {
     cellComponent: ProjectNameCell,
   },
   organization_id: {
-    label: "Organization ID",
+    label: "Organization",
     dataType: "number",
     sortable: true,
     filterable: true,
@@ -35,8 +36,8 @@ export const projectColumns: ColumnsSettings<ProjectRecord> = {
     },
     visible: true,
     hidable: false,
-    cellComponent: ProjectOrganizationCell,
     filterComponent: FilterByOrganization,
+    cellComponent: ProjectOrganizationCell,
   },
   datasets: {
     label: "Datasets",

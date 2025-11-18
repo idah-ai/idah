@@ -6,7 +6,10 @@ class OrganizationsExpo < BaseExpo
   use_service Organization::Service
 
   json_api Organization::Record do
-    index
+    index do
+      allowed_filters :id__in
+    end
+    
     show
     create
     update
