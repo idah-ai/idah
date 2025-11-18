@@ -2,7 +2,7 @@
 
 module Dataset
   class Service < Verse::Service::Base
-    use datasets: Dataset::Repository
+    use datasets: Dataset::Repository, projects: Project::Repository
     use_system project_members: ProjectMember::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
@@ -36,6 +36,14 @@ module Dataset
       )
         raise Verse::Error::Unauthorized,
               "You do not have permission to create dataset on this project"
+      end
+
+      if access == :as_org_owner
+        project = projects.find!(record.project.id) # this can raise Verse::Error::RecordNotFound if not in org scope
+        unless auth_context.custom_scopes[:org]&.include?(project.organization_id)
+          raise Verse::Error::Unauthorized,
+                "You do not have permission to create dataset on this project"
+        end
       end
 
       # Assign attributes
