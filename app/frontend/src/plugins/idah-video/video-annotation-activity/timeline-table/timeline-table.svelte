@@ -190,14 +190,12 @@
 
     return {
       update(newParams: { id: string; isSelected: boolean }) {
-        // Scroll into view when this row becomes selected
+        // Scroll into view immediately when this row becomes selected
         if (newParams.isSelected && !params.isSelected) {
-          requestAnimationFrame(() => {
-            node.scrollIntoView({
-              behavior: "smooth",
-              block: "center",
-              inline: "nearest",
-            });
+          node.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+            inline: "nearest",
           });
         }
         params = newParams;
