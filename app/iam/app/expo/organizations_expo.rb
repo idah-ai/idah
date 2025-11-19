@@ -12,7 +12,7 @@ class OrganizationsExpo < BaseExpo
                       :created_at__gte,
                       :created_at__lte
     end
-    
+
     show
     create
     update

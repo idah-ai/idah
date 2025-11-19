@@ -41,10 +41,10 @@
       listOptions={{
         sort: ["email"],
       }}
-      placeholder="Select owners"
+      placeholder="Select accounts"
       searchKeyWithOperation="email__match"
       searchable
-      searchPlaceholder="Search owners by email"
+      searchPlaceholder="Search accounts by email"
       displayKey="email"
       clearable
       onSelected={(selectedChoices) => {

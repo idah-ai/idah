@@ -15,7 +15,7 @@
 
 <Button onclick={openAddNewOrgOwnersDialog}>
   <PlusIcon />
-  Add Owners
+  Add Organization Owners
 </Button>
 
-<OrganizationOwnersFormModal title="Owners" action="create" bind:open={openAddNewOrgOwnersModal} />
+<OrganizationOwnersFormModal title="Organization Owners" action="create" bind:open={openAddNewOrgOwnersModal} />
