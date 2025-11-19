@@ -381,6 +381,7 @@
                 style:left="{startLeftPosition}%"
                 onclick={() => seekToFrame(thisFrame)}
               >
+                <div class="absolute left-1/2 top-0 w-0.5 -translate-x-1/2 bg-primary z-50" style="height: 80vh;"></div>
                 {@render tooltipFrame(thisFrame, "bg-primary", "text-primary-foreground")}
               </button>
             {:else if !isOutOfRange && isDefault}

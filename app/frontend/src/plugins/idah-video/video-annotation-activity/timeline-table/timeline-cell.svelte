@@ -63,7 +63,6 @@
 
 <div
   class={cn("inline-block h-full border-b py-1 first:border-l", {
-    "bg-primary/50": isSelected,
     "bg-muted-foreground/30 dark:bg-accent cursor-pointer": isHovered,
   })}
   style:box-sizing="border-box"
@@ -76,7 +75,7 @@
 >
   {#if inSpan}
     <div
-      class={cn("relative h-full", {
+      class={cn("relative h-full z-20", {
         "bg-primary/5": isHovered || isSelected,
       })}
       style:background-color={categoryColor ? categoryColor + "30" : "#FEF9C2"}
