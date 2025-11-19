@@ -17,13 +17,13 @@
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
   import Spinner from "@/components/ui/spinner/spinner.svelte";
 
-  import type { MultipleSelectFieldBaseProps } from "@/components/app/forms/form-field.types";
+  import type { MultipleSelectDataSourceFieldBaseProps } from "@/components/app/forms/form-field.types";
   import type { ListOptions } from "@/data/DataSource";
   import type { Record } from "@/data/model/Record";
   import type { LabelValue } from "@/utils/types";
 
   // Props
-  interface Props extends MultipleSelectFieldBaseProps<T> {
+  interface Props extends MultipleSelectDataSourceFieldBaseProps<T> {
     values: Array<string | number>;
   }
   let {

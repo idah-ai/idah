@@ -58,9 +58,11 @@ export interface SelectFieldBaseProps extends FormFieldBaseProps {
   searchPlaceholder?: string;
   searchValue?: string;
   clearable?: boolean;
+  slotChoice?: Snippet<[{ choice: LabelValue<string | number> }]>;
+}
 
+export interface SingleSelectFieldBaseProps extends SelectFieldBaseProps {
   onSelected?: (value: string | number) => Promise<void> | void;
-
   slotTrigger?: Snippet<
     [
       {
@@ -70,24 +72,9 @@ export interface SelectFieldBaseProps extends FormFieldBaseProps {
       },
     ]
   >;
-  slotChoice?: Snippet<[{ choice: LabelValue<string | number> }]>;
 }
 
-export interface SelectDataSourceFieldBaseProps<T extends Record> extends Omit<SelectFieldBaseProps, "choices"> {
-  displayKey: keyof T;
-  valueKey?: keyof T;
-  dataSource: DataSource<T>;
-  listOptions?: ListOptions;
-  searchKeyWithOperation: string;
-}
-
-export interface MultipleSelectFieldBaseProps<T extends Record>
-  extends Omit<SelectFieldBaseProps, "choices" | "onSelected" | "slotTrigger"> {
-  displayKey: keyof T;
-  valueKey?: keyof T;
-  dataSource: DataSource<T>;
-  listOptions?: ListOptions;
-  searchKeyWithOperation: string;
+export interface MultipleSelectFieldBaseProps extends SelectFieldBaseProps {
   closeOnSelect?: boolean;
   onSelected?: (selectedChoices: LabelValue<string | number>[]) => Promise<void> | void;
   slotTrigger?: Snippet<
@@ -107,3 +94,19 @@ export interface MultipleSelectFieldBaseProps<T extends Record>
     ]
   >;
 }
+
+export interface SelectDataSourceFieldBaseProps<T extends Record> extends Omit<SelectFieldBaseProps, "choices"> {
+  displayKey: keyof T;
+  valueKey?: keyof T;
+  dataSource: DataSource<T>;
+  listOptions?: ListOptions;
+  searchKeyWithOperation: string;
+}
+
+export interface SingleSelectDataSourceFieldBaseProps<T extends Record>
+  extends Omit<SingleSelectFieldBaseProps, "choices">,
+    SelectDataSourceFieldBaseProps<T> {}
+
+export interface MultipleSelectDataSourceFieldBaseProps<T extends Record>
+  extends Omit<MultipleSelectFieldBaseProps, "choices">,
+    SelectDataSourceFieldBaseProps<T> {}

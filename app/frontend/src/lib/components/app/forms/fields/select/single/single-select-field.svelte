@@ -8,11 +8,11 @@
 
   import { cn } from "@/utils";
 
-  import type { SelectFieldBaseProps } from "@/components/app/forms/form-field.types";
+  import type { SingleSelectFieldBaseProps } from "@/components/app/forms/form-field.types";
   import type { LabelValue } from "@/components/app/types";
 
   // Props
-  interface Props extends SelectFieldBaseProps {
+  interface Props extends SingleSelectFieldBaseProps {
     value: string | number | null;
   }
   let {
