@@ -30,7 +30,7 @@
 
   const organizationTabs: BaseTabs<OrganizationTab> = [
     { label: "Projects", value: "projects" },
-    { label: "Owners", value: "owners" },
+    { label: "Organization Owners", value: "owners" },
   ];
 
   // Records
