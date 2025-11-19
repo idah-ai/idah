@@ -2,15 +2,14 @@
   import DatasourceTable from "@/components/app/datasource-table/datasource-table.svelte";
   import PageHeader from "@/components/app/page/page-header.svelte";
   import PageProvider from "@/components/app/page/page-provider.svelte";
-  import ProjectFormModal from "@/components/app/projects/overlays/project-form-modal.svelte";
-  import Button from "@/components/ui/button/button.svelte";
-  import { PlusIcon } from "@lucide/svelte";
+  import AddNewProjectButton from "@/components/app/projects/buttons/add-new-project-button.svelte";
 
   import { homeBreadcrumb, projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
   import { projectColumns } from "@/components/app/projects/datasource-tables/project-columns";
   import { datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
+  import { OrganizationRecord, organizationsBackendDataSource } from "@/data/model/iam/organizations/record";
   import { refetches } from "@/utils/refetch";
 
   import type { Record } from "@/data/model/Record";
@@ -19,14 +18,7 @@
 
   pageBreadcrumbsStore.set([homeBreadcrumb, projectBreadcrumb]);
 
-  // Variables
-  let openNewProjectModal: boolean = $state(false);
-
   // Functions
-  function openNewProjectFormModal(): void {
-    openNewProjectModal = true;
-  }
-
   async function onLoadSetContexts<T extends Record = ProjectRecord>(response: CollectionResponse<T>): Promise<Hash> {
     /** Fetch related datasets from projectIds */
     const projectIds = Array.from(new Set(response.data.map((project) => project.id)));
@@ -41,21 +33,25 @@
       included: ["project"],
     });
 
-    return { datasets: datasetsRes.data };
+    /** Fetch related organizations from projectIds */
+    const organizationIds = Array.from(new Set(response.data.map((project) => project.organization_id)));
+    const organizationsRes = await organizationsBackendDataSource.list({
+      fields: {
+        [OrganizationRecord.type]: ["name"],
+      },
+      filters: {
+        id__in: organizationIds,
+      },
+    });
+
+    return { datasets: datasetsRes.data, organizations: organizationsRes.data };
   }
 </script>
-
-{#snippet AddNewProjectButton()}
-  <Button onclick={openNewProjectFormModal}>
-    <PlusIcon class="size-4"></PlusIcon>
-    New Project
-  </Button>
-{/snippet}
 
 <PageProvider name="projects">
   <PageHeader title="Projects">
     {#snippet actions()}
-      {@render AddNewProjectButton()}
+      <AddNewProjectButton />
     {/snippet}
   </PageHeader>
 
@@ -68,17 +64,15 @@
       dataSource={projectsBackendDataSource}
       listOptions={{
         fields: {
-          "dataset:projects": ["name", "description", "created_at"],
+          "dataset:projects": ["name", "description", "organization_id", "created_at"],
         },
         sort: ["-created_at"],
       }}
       {onLoadSetContexts}
     >
       {#snippet addNewRecordButton()}
-        {@render AddNewProjectButton()}
+        <AddNewProjectButton />
       {/snippet}
     </DatasourceTable>
   {/key}
 </PageProvider>
-
-<ProjectFormModal title="Project" action="create" bind:open={openNewProjectModal} />

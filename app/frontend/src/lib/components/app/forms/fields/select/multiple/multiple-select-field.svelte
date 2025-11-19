@@ -9,15 +9,17 @@
 
   import { cn } from "@/utils";
 
-  import type { SelectFieldBaseProps } from "@/components/app/forms/form-field.types";
+  import type { MultipleSelectFieldBaseProps } from "@/components/app/forms/form-field.types";
   import type { LabelValue } from "@/components/app/types";
 
   // Props
-  interface Props extends SelectFieldBaseProps {
+  interface Props extends MultipleSelectFieldBaseProps {
     values: Array<string | number | null>;
   }
   let {
     choices,
+    // hiddenChoices = [],
+    // disabledChoices = [],
     values = $bindable([]),
     name,
     label,
@@ -32,6 +34,7 @@
     class: className,
     onSelected,
     slotLabel,
+    slotChoice,
     slotInfo,
     slotErrors,
   }: Props = $props();
@@ -48,10 +51,10 @@
       values = [...values, choice.value];
     }
     open = false;
-    await onSelected?.(choice.value);
+    await onSelected?.(selectedValues);
   }
 
-  function clearValue(event: MouseEvent): void {
+  function clearSelection(event: MouseEvent): void {
     event.stopPropagation();
     values = [];
   }
@@ -84,7 +87,7 @@
             <button
               type="button"
               class={cn("cursor-pointer", clearable && selectedValues ? "opacity-50" : "opacity-0")}
-              onclick={clearValue}
+              onclick={clearSelection}
             >
               <CircleXIcon class="size-4 shrink-0"></CircleXIcon>
             </button>
@@ -95,7 +98,7 @@
       {/snippet}
     </PopoverTrigger>
 
-    <PopoverContent align="start" class="p-0">
+    <PopoverContent align="start" class="w-auto min-w-90 p-0">
       <Command>
         {#if searchable}
           <CommandInput placeholder={searchPlaceholder}></CommandInput>
@@ -105,14 +108,18 @@
           <CommandEmpty>No option found.</CommandEmpty>
           <CommandGroup>
             {#each choices as choice (choice.value)}
-              <CommandItem value={String(choice.value)} onSelect={() => select(choice)}>
-                <CheckIcon
-                  class={cn("mr-2 size-4", {
-                    "opacity-0": !values.includes(choice.value),
-                  })}
-                />
-                {choice.label}
-              </CommandItem>
+              {#if slotChoice}
+                {@render slotChoice({ choice, select })}
+              {:else}
+                <CommandItem value={String(choice.value)} onSelect={() => select(choice)}>
+                  <CheckIcon
+                    class={cn("mr-2 size-4", {
+                      "opacity-0": !values.includes(choice.value),
+                    })}
+                  />
+                  {choice.label}
+                </CommandItem>
+              {/if}
             {/each}
           </CommandGroup>
         </CommandList>

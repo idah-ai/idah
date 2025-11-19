@@ -1,3 +1,5 @@
+import OrganizationNameCell from "@/components/app/organizations/data-tables/organization-name-cell.svelte";
+
 import { OrganizationRecord } from "@/data/model/iam/organizations/record";
 
 import type { ColumnsSettings } from "@/components/app/datasource-table/types";
@@ -6,7 +8,7 @@ export const organizationColumns: ColumnsSettings<OrganizationRecord> = {
   name: {
     label: "Name",
     dataType: "string",
-    clickable: false,
+    clickable: true,
     sortable: true,
     filterable: true,
     filterOptions: {
@@ -16,6 +18,7 @@ export const organizationColumns: ColumnsSettings<OrganizationRecord> = {
     },
     visible: true,
     hidable: false,
+    cellComponent: OrganizationNameCell,
   },
   created_at: {
     label: "Created At",
