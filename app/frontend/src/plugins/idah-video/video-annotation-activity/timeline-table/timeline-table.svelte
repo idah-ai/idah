@@ -396,10 +396,10 @@
                 onmouseleave={() => (hoveredColumn = undefined)}
               >
                 {#if isHovered}
-                  <div class="bg-secondary-foreground dark:bg-secondary absolute top-0 left-1/2 z-50 w-0.5 -translate-x-1/2" style="height: 80vh;"></div>
+                  <div class="bg-secondary-foreground dark:bg-gray-700 absolute top-0 left-1/2 z-50 w-0.5 -translate-x-1/2" style="height: 80vh;"></div>
                   {@render tooltipFrame(
                     thisFrame,
-                    "bg-secondary-foreground dark:bg-secondary",
+                    "bg-secondary-foreground dark:bg-gray-700",
                     "text-secondary dark:text-secondary-foreground",
                   )}
                 {:else}
@@ -421,10 +421,10 @@
                 onmouseleave={() => (hoveredColumn = undefined)}
               >
                 {#if isHovered}
-                  <div class="bg-secondary-foreground dark:bg-secondary absolute top-0 left-1/2 z-50 w-0.5 -translate-x-1/2" style="height: 80vh;"></div>
+                  <div class="bg-secondary-foreground dark:bg-gray-700 absolute top-0 left-1/2 z-50 w-0.5 -translate-x-1/2" style="height: 80vh;"></div>
                   {@render tooltipFrame(
                     thisFrame,
-                    "bg-secondary-foreground dark:bg-secondary",
+                    "bg-secondary-foreground dark:bg-gray-700",
                     "text-secondary dark:text-secondary-foreground",
                     "-top-2.5",
                   )}
