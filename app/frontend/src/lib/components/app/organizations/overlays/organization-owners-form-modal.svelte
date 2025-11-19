@@ -51,7 +51,7 @@
             role_name: "org_owner",
             role_scope: {
               ...account.role_scope,
-              org: [...(account.role_scope.org || []), Number(organizationId)],
+              org: [...(account.role_scope.org || []), String(organizationId)],
             },
           },
         });

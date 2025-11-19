@@ -31,7 +31,7 @@
 
       /** If org in role_scope is empty after remove organizationId, change role_name from "org_owner" to "user" */
       /** Remove organizationId from account role_scope */
-      const updatedOrgRoleScope = (account.role_scope?.org || []).filter((scope) => scope !== Number(organizationId));
+      const updatedOrgRoleScope = (account.role_scope?.org || []).filter((scope) => scope !== String(organizationId));
 
       if (updatedOrgRoleScope.length === 0) {
         account.role_name = "user";

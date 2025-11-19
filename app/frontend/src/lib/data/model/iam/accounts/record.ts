@@ -3,7 +3,7 @@ import { field, Record, RecordFactory, type } from "@/data/model/Record";
 import { Transformers } from "@/data/model/transformers";
 
 export interface AccountRoleScope {
-  org?: Array<number>;
+  org?: Array<string>;
 }
 
 @type("iam:accounts")
