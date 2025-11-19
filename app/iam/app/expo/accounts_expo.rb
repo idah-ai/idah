@@ -24,28 +24,4 @@ class AccountsExpo < BaseExpo
     update
     delete
   end
-
-  # TODO: move to frontend logic
-
-  expose on_http(:patch, "/:account_id/add_org_scope/:org_id") do
-    desc "Add an account as organization owner"
-    input do
-      field :account_id, String
-      field :org_id, String
-    end
-  end
-  def add_org_scope
-    service.add_org_scope(org_id: params[:org_id].to_i, account_id: params[:account_id])
-  end
-
-  expose on_http(:patch, "/:account_id/remove_org_scope/:org_id") do
-    desc "Remove an account as organization owner"
-    input do
-      field :account_id, String
-      field :org_id, String
-    end
-  end
-  def remove_org_scope
-    service.remove_org_scope(org_id: params[:org_id].to_i, account_id: params[:account_id])
-  end
 end
