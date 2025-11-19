@@ -2,7 +2,7 @@
 
 module Entry
   class Service < Verse::Service::Base
-    use entries: Entry::Repository, datasets: Dataset::Repository
+    use entries: Entry::Repository, datasets: Dataset::Repository, projects: Project::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       entries.index(
@@ -39,6 +39,7 @@ module Entry
               "Entry with resource #{attributes[:resource]} already exists"
       end
 
+      # Organization Owner can find the dataset in their scope
       # Project Owner can find the dataset in their projects
       # Annotator and Reviewer can find the dataset only if assigned to them
       dataset = datasets.find(record.dataset.id)

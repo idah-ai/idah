@@ -60,6 +60,21 @@ module ProjectMember
     end
 
     def update(record)
+      access = auth_context.can?(:update, project_members.class.resource)
+      # "project_owner" can only be added by an org_owner of the project
+      if record.attributes[:role] == "project_owner"
+        unless access == :as_org_owner
+          raise Verse::Error::Unauthorized,
+                "You do not have permission to update a member for this project"
+        end
+
+        project = projects.find!(record.project.id) # this can raise Verse::Error::RecordNotFound if not in org scope
+        unless auth_context.custom_scopes[:org]&.include?(project.organization_id)
+          raise Verse::Error::Unauthorized,
+                "You do not have permission to update a member to a project owner for this project"
+        end
+      end
+
       project_members.update!(record.id, record.attributes)
       project_members.find!(record.id)
     end

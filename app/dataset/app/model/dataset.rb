@@ -45,7 +45,12 @@ module Dataset
 
         scope.as_org_owner? do
           org_ids = auth_context.custom_scopes[:org]
-          table.where(table.db[:projects].where(organization_id: org_ids).select(1).exists)
+          table.where(
+            table.db[:projects]
+              .where(organization_id: org_ids)
+              .where(id: Sequel[:datasets][:project_id])
+              .select(1).exists
+          )
         end
 
         scope.as_user? { user_project_scoped_query(action) }

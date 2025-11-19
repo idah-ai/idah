@@ -163,6 +163,112 @@ RSpec.describe Entry::Service, database: true do
     }
   end
 
+  # Permission: Organization Owner
+  # ------------------------------------------------
+  # Entries          | index | create | update | delete
+  # ------------------------------------------------
+  # in owned Org     |  yes  |  yes   |   yes  |   yes
+  # Not in owned Org |   x   |   x    |    x   |    x
+  context "as Organization Owner", as: :org_owner do
+    subject { described_class.new(current_auth_context) }
+
+    before do
+      @not_owned_org_project = project_repo.create(
+        name: "Project xxx",
+        created_by_email: "system@example.com",
+        organization_id: 999
+      )
+
+      @not_owned_org_dataset = dataset_repo.create(
+        name: "Dataset xxx",
+        project_id: @not_owned_org_project,
+        modality: "video",
+        workflow_configuration: {},
+        labeling_configuration: {}
+      )
+
+      @not_owned_org_entry = entry_repo.create(
+        project_id: @not_owned_org_project,
+        dataset_id: @not_owned_org_dataset,
+        priority: 1,
+        resource: "http://example.com/first.mp4",
+        wf_step: "start",
+        status: "pending",
+        assigned_to_id: another_annotator_account_id,
+      )
+    end
+
+    describe "with project in owned org scope" do
+      it "can index" do
+        [first_entry_id, second_entry_id, third_entry_id]
+
+        result = subject.index({})
+
+        expect(result.count).to eq 3
+        expect(result.map(&:project_id)).to all(satisfy { |pid| pid != @not_owned_org_project })
+      end
+
+      it "can create" do
+        record = subject.create(deserialize(create_data))
+
+        expect(record.project_id).to eq first_project_id
+        expect(record.dataset_id).to eq first_dataset_id
+        expect(record.resource).to eq "http://example.com/created.mp4"
+        expect(record.status).to eq "pending"
+        expect(record.wf_step).to eq "start"
+        expect(record.priority).to eq 1
+        expect(record.assigned_to_id).to be_nil
+      end
+
+      it "can update" do
+        record = subject.update(deserialize(update_data))
+
+        expect(record.priority).to eq 2
+        expect(record.resource).to eq "http://example.com/updated.mp4"
+        expect(record.wf_step).to eq "end"
+        expect(record.status).to eq "done"
+        expect(record.assigned_to_id).to eq 4
+      end
+
+      it "can delete" do
+        subject.delete(first_entry_id)
+
+        expect { entry_repo.find!(first_entry_id) }.to raise_error(Verse::Error::RecordNotFound)
+      end
+    end
+
+    describe "with project not in owned org scope" do
+      it "cannot index" do
+        result = subject.index({})
+
+        expect(result.count).to eq 0
+      end
+
+      it "cannot create with project_id outside org scope" do
+        create_data[:data][:relationships][:dataset][:data][:id] = @not_owned_org_dataset
+
+        expect { subject.create(deserialize(create_data)) }.to raise_error Verse::Error::ValidationFailed
+      end
+
+      it "cannot update" do
+        update_data[:data][:id] = @not_owned_org_entry
+
+        expect {
+          subject.update(deserialize(update_data))
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
+
+      it "cannot delete" do
+        expect {
+          subject.delete(@not_owned_org_entry)
+        }.to raise_error(Verse::Error::RecordNotFound)
+
+        # the record we tried to delete should still be there
+        expect { entry_repo.find!(@not_owned_org_entry) }.not_to raise_error(Verse::Error::RecordNotFound)
+      end
+    end
+  end
+
   # Permission: Project Owner
   # ------------------------------------------------
   # Entries       | index | create | update | delete

@@ -34,6 +34,12 @@ module Account
     self.table = "accounts"
     self.resource = Resource::Iam::Accounts
 
+    custom_filter :with_role_scope do |collection, role_scope|
+      role_scope = role_scope.to_json unless role_scope.is_a?(String)
+
+      collection.where(Sequel.lit("role_scope @> ?", role_scope))
+    end
+
     def login(email, password)
       account = scoped(:login).where(email:).first
 

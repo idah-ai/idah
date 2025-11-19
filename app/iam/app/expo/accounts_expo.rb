@@ -15,7 +15,8 @@ class AccountsExpo < BaseExpo
                       :joined_at__gte,
                       :joined_at__lte,
                       :created_at__gte,
-                      :created_at__lte
+                      :created_at__lte,
+                      :with_role_scope
 
       blacklist_filters :hashed_password
     end
@@ -24,29 +25,5 @@ class AccountsExpo < BaseExpo
     create
     update
     delete
-  end
-
-  # TODO: move to frontend logic
-
-  expose on_http(:patch, "/:account_id/add_org_scope/:org_id") do
-    desc "Add an account as organization owner"
-    input do
-      field :account_id, String
-      field :org_id, String
-    end
-  end
-  def add_org_scope
-    service.add_org_scope(org_id: params[:org_id].to_i, account_id: params[:account_id])
-  end
-
-  expose on_http(:patch, "/:account_id/remove_org_scope/:org_id") do
-    desc "Remove an account as organization owner"
-    input do
-      field :account_id, String
-      field :org_id, String
-    end
-  end
-  def remove_org_scope
-    service.remove_org_scope(org_id: params[:org_id].to_i, account_id: params[:account_id])
   end
 end
