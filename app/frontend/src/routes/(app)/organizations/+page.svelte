@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { PlusIcon } from "@lucide/svelte";
+
   import DatasourceTable from "@/components/app/datasource-table/datasource-table.svelte";
   import OrganizationFormModal from "@/components/app/organizations/overlays/organization-form-modal.svelte";
   import PageHeader from "@/components/app/page/page-header.svelte";
@@ -11,7 +13,6 @@
 
   import { OrganizationRecord, organizationsBackendDataSource } from "@/data/model/iam/organizations/record";
   import { refetches } from "@/utils/refetch";
-  import { PlusIcon } from "@lucide/svelte";
 
   pageBreadcrumbsStore.set([homeBreadcrumb, organizationBreadcrumb]);
 
@@ -26,7 +27,7 @@
 
 {#snippet AddNewOrganizationButton()}
   <Button onclick={openNewOrganizationModal}>
-    <PlusIcon class="size-4"></PlusIcon>
+    <PlusIcon />
     New Organization
   </Button>
 {/snippet}
@@ -58,5 +59,4 @@
   {/key}
 </PageProvider>
 
-<OrganizationFormModal action="create" title="Organization" bind:open={openNewOrganizationFormModal}
-></OrganizationFormModal>
+<OrganizationFormModal action="create" title="Organization" bind:open={openNewOrganizationFormModal} />

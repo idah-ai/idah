@@ -16,8 +16,9 @@
   // Props
   interface Props extends FormModalBaseProps {
     projectRecord?: ProjectRecord;
+    preSelectedOrganizationId?: string;
   }
-  let { action, open = $bindable(), title, projectRecord }: Props = $props();
+  let { action, open = $bindable(), title, projectRecord, preSelectedOrganizationId }: Props = $props();
 
   // Variables
   let newRecord: boolean = $derived(action === "create");
@@ -32,7 +33,7 @@
           attributes: {
             name: null,
             description: null,
-            organization_id: null,
+            organization_id: preSelectedOrganizationId || null,
           },
         }),
   );
@@ -45,7 +46,7 @@
       attributes: {
         name: null,
         description: null,
-        organization_id: null,
+        organization_id: preSelectedOrganizationId || null,
       },
     });
   }
@@ -93,7 +94,8 @@
     try {
       const validated = validateData(schema, {
         name: project.name,
-        organization_id: project.organization_id,
+        organization_id: Number(project.organization_id),
+        description: project.description,
       });
 
       if (!validated.success) {
@@ -114,5 +116,5 @@
 </script>
 
 <FormModal {action} {title} loading={submitting} onCancel={resetForm} onConfirm={submit} bind:open>
-  <ProjectForm {project} {fieldErrors} onValueChange={setValue}></ProjectForm>
+  <ProjectForm {project} {fieldErrors} {preSelectedOrganizationId} onValueChange={setValue}></ProjectForm>
 </FormModal>

@@ -4,27 +4,44 @@ import ProjectNameCell from "@/components/app/projects/datasource-tables/project
 import ProjectOrganizationCell from "@/components/app/projects/datasource-tables/project-organization-cell.svelte";
 import ProjectRowActionCell from "@/components/app/projects/datasource-tables/project-row-action-cell.svelte";
 
-import type { ColumnsSettings } from "@/components/app/datasource-table/types";
-import type { ProjectRecord } from "@/data/model/dataset/projects/project-record";
+import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
+
+import type { ColumnSettings, ColumnsSettings } from "@/components/app/datasource-table/types";
+
+export const projectNameColumn: ColumnSettings<ProjectRecord> = {
+  label: "Project name",
+  dataType: "string",
+  clickable: true,
+  sortable: true,
+  filterable: true,
+  filterOptions: {
+    filterKey: "name",
+    filterBy: "string",
+    filterOperation: "match",
+  },
+  visible: true,
+  hidable: false,
+  cellComponent: ProjectNameCell,
+};
+
+export const projectCreatedAtColumn: ColumnSettings<ProjectRecord> = {
+  label: "Created At",
+  dataType: "datetime",
+  sortable: true,
+  filterable: true,
+  filterOptions: {
+    filterKey: "created_at",
+    filterBy: "date-range",
+    filterOperation: "match",
+  },
+  visible: true,
+  hidable: false,
+};
 
 export const projectColumns: ColumnsSettings<ProjectRecord> = {
-  name: {
-    label: "Project name",
-    dataType: "string",
-    clickable: true,
-    sortable: true,
-    filterable: true,
-    filterOptions: {
-      filterKey: "name",
-      filterBy: "string",
-      filterOperation: "match",
-    },
-    visible: true,
-    hidable: false,
-    cellComponent: ProjectNameCell,
-  },
+  name: projectNameColumn,
   organization_id: {
-    label: "Organization ID",
+    label: "Organization",
     dataType: "number",
     sortable: true,
     filterable: true,
@@ -35,8 +52,8 @@ export const projectColumns: ColumnsSettings<ProjectRecord> = {
     },
     visible: true,
     hidable: false,
-    cellComponent: ProjectOrganizationCell,
     filterComponent: FilterByOrganization,
+    cellComponent: ProjectOrganizationCell,
   },
   datasets: {
     label: "Datasets",
@@ -47,19 +64,7 @@ export const projectColumns: ColumnsSettings<ProjectRecord> = {
     hidable: false,
     cellComponent: ProjectDatasetsCell,
   },
-  created_at: {
-    label: "Created At",
-    dataType: "datetime",
-    sortable: true,
-    filterable: true,
-    filterOptions: {
-      filterKey: "created_at",
-      filterBy: "date-range",
-      filterOperation: "match",
-    },
-    visible: true,
-    hidable: false,
-  },
+  created_at: projectCreatedAtColumn,
   action: {
     label: "Action",
     dataType: "string",

@@ -4,16 +4,17 @@
   import SingleSelectDatasourceField from "@/components/app/forms/fields/select/single/single-select-datasource-field.svelte";
   import { FieldGroup, FieldSet } from "@/components/ui/field";
 
-  import { organizationsBackendDataSource } from "@/data/model/iam/organizations/record";
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
+  import { organizationsBackendDataSource } from "@/data/model/iam/organizations/record";
 
   import type { FormBaseProps } from "@/components/app/forms/form.types";
 
   // Props
   interface Props extends FormBaseProps {
     project: ProjectRecord;
+    preSelectedOrganizationId?: string;
   }
-  let { project, fieldErrors, onValueChange }: Props = $props();
+  let { project, preSelectedOrganizationId, fieldErrors, onValueChange }: Props = $props();
 
   // Variables
   let resource: string = ProjectRecord.type;
@@ -41,20 +42,22 @@
     ></InputField>
 
     <!-- PROJECT::ORGANIZATION -->
-    <SingleSelectDatasourceField
-      name="{resource}/organization_id"
-      label="Organization"
-      placeholder="Select an organization"
-      dataSource={organizationsBackendDataSource}
-      displayKey="name"
-      required
-      errors={fieldErrors["organization_id"]}
-      value={organization_id}
-      onSelected={(value: string | number) => {
-        organization_id = value as number;
-      }}
-      searchKeyWithOperation="name__match"
-    ></SingleSelectDatasourceField>
+    {#if !preSelectedOrganizationId}
+      <SingleSelectDatasourceField
+        name="{resource}/organization_id"
+        label="Organization"
+        placeholder="Select an organization"
+        dataSource={organizationsBackendDataSource}
+        displayKey="name"
+        required
+        errors={fieldErrors["organization_id"]}
+        value={organization_id}
+        onSelected={(value: string | number) => {
+          organization_id = value as number;
+        }}
+        searchKeyWithOperation="name__match"
+      ></SingleSelectDatasourceField>
+    {/if}
 
     <!-- PROJECT::DESCRIPTION -->
     <TextareaField

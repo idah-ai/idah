@@ -11,6 +11,8 @@ class ProjectsExpo < BaseExpo
       allowed_filters :created_by_email__match,
                       :created_at__gte,
                       :created_at__lte,
+                      :organization_id,
+                      :organization_id__in,
                       :updated_at__gte,
                       :updated_at__lte
     end

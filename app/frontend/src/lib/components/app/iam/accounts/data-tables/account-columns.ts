@@ -4,7 +4,40 @@ import AccountStatusCell from "@/components/app/iam/accounts/data-tables/account
 
 import { AccountRecord } from "@/data/model/iam/accounts/record";
 
-import type { ColumnsSettings } from "@/components/app/datasource-table/types";
+import type { ColumnSettings, ColumnsSettings } from "@/components/app/datasource-table/types";
+
+export const accountEmailColumn: ColumnSettings<AccountRecord> = {
+  label: "Email",
+  dataType: "email",
+  clickable: true,
+  sortable: true,
+  filterable: true,
+  filterOptions: {
+    filterKey: "email",
+    filterBy: "string",
+    filterOperation: "match",
+  },
+  visible: true,
+  hidable: false,
+};
+
+export const accountCreatedAtColumn = (params: { label: string }): ColumnSettings<AccountRecord> => {
+  const { label = "Created At" } = params;
+  return {
+    label,
+    dataType: "datetime",
+    clickable: false,
+    sortable: true,
+    filterable: true,
+    filterOptions: {
+      filterKey: "created_at",
+      filterBy: "date-range",
+      filterOperation: "gte",
+    },
+    visible: true,
+    hidable: false,
+  };
+};
 
 export const accountColumns: ColumnsSettings<AccountRecord> = {
   name: {
@@ -21,20 +54,7 @@ export const accountColumns: ColumnsSettings<AccountRecord> = {
     visible: true,
     hidable: false,
   },
-  email: {
-    label: "Email",
-    dataType: "email",
-    clickable: true,
-    sortable: true,
-    filterable: true,
-    filterOptions: {
-      filterKey: "email",
-      filterBy: "string",
-      filterOperation: "match",
-    },
-    visible: true,
-    hidable: false,
-  },
+  email: accountEmailColumn,
   enabled: {
     label: "Status",
     dataType: "boolean",
@@ -69,20 +89,7 @@ export const accountColumns: ColumnsSettings<AccountRecord> = {
     hidable: false,
     cellComponent: AccountJoinedAtCell,
   },
-  created_at: {
-    label: "Created At",
-    dataType: "datetime",
-    clickable: false,
-    sortable: true,
-    filterable: true,
-    filterOptions: {
-      filterKey: "created_at",
-      filterBy: "date-range",
-      filterOperation: "gte",
-    },
-    visible: true,
-    hidable: false,
-  },
+  created_at: accountCreatedAtColumn({ label: "Created At" }),
   action: {
     label: "Action",
     dataType: "string",
