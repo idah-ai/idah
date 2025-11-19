@@ -75,7 +75,7 @@
 >
   {#if inSpan}
     <div
-      class={cn("relative h-full z-20", {
+      class={cn("relative z-20 h-full", {
         "bg-primary/5": isHovered || isSelected,
       })}
       style:background-color={categoryColor ? categoryColor + "30" : "#FEF9C2"}

@@ -286,7 +286,11 @@
           {#await db.getAllIndex("category", category.id) then anns}
             {@const filteredAnns = anns.filter((annotation) => {
               // prettier-ignore ...
-              return currentFrame >= annotation.shape.start && currentFrame <= annotation.shape.end && annotation.shape.type == type;
+              return (
+                currentFrame >= annotation.shape.start &&
+                currentFrame <= annotation.shape.end &&
+                annotation.shape.type == type
+              );
             })}
             {#each filteredAnns as annotation, i (annotation.metadata.id)}
               {@render annotationSelection(annotation, `${category.name}_${i}`)}
@@ -322,12 +326,13 @@
         <Text class="text-secondary-foreground" size="xs" weight="semibold">Categories</Text>
         {#key $idb_updated_at}
           {#await db?.getAllIndex("category") then anns}
-            {@const filteredCount = anns?.filter(
-              (annotation) =>
-                currentFrame >= annotation.shape.start &&
-                currentFrame <= annotation.shape.end &&
-                annotation.shape.type == type,
-            ).length || 0}
+            {@const filteredCount =
+              anns?.filter(
+                (annotation) =>
+                  currentFrame >= annotation.shape.start &&
+                  currentFrame <= annotation.shape.end &&
+                  annotation.shape.type == type,
+              ).length || 0}
             <Badge variant="gray" class="text-xs">
               {filteredCount}
             </Badge>

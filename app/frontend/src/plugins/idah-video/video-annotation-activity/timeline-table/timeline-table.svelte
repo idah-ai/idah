@@ -64,7 +64,7 @@
 
   let range_span = $derived(Math.min(scale * zoom, totalFrames));
   let manual_offset: number = $state(1);
-  
+
   let pos_offset = $derived.by(() => {
     // Check if currentFrame is outside the currently visible range
     if (currentFrame < manual_offset || currentFrame > manual_offset + range_span) {
@@ -75,7 +75,7 @@
     // Use manual offset when currentFrame is in visible range
     return manual_offset;
   });
-  
+
   let range: [number, number] = $derived([pos_offset, Math.min(pos_offset + range_span, totalFrames)]);
   let wheelthrottling = $state(false);
   let hoveredColumn: number | undefined = $state();
@@ -380,7 +380,7 @@
                 style:left="{startLeftPosition}%"
                 onclick={() => seekToFrame(thisFrame)}
               >
-                <div class="absolute left-1/2 top-0 w-0.5 -translate-x-1/2 bg-primary z-50" style="height: 80vh;"></div>
+                <div class="bg-primary absolute top-0 left-1/2 z-50 w-0.5 -translate-x-1/2" style="height: 80vh;"></div>
                 {@render tooltipFrame(thisFrame, "bg-primary", "text-primary-foreground")}
               </button>
             {:else if !isOutOfRange && isDefault}
