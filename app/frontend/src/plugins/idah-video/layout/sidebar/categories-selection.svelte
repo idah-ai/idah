@@ -228,7 +228,7 @@
   parent: string[] = [],
 )}
   <Collapsible open={toolMode ? !!category : openStates[category.id] || false}>
-    {#key `${forceRender}-${$idb_updated_at}-${currentFrame}-${type}`}
+    {#key `${forceRender}-${$idb_updated_at}-${type}`}
       {#await haveAnnotationsInCategory(category.id) then hasAnnotations}
         <CollapsibleTrigger
           class={cn("text-secondary-foreground flex w-full items-center justify-between pr-1 text-xs", {
@@ -261,20 +261,19 @@
             openStates[category.id] || false,
           )}
 
-          {#if db && category && $idb_updated_at}
+          {#if db && category}
             {#key $idb_updated_at}
-              <Badge variant="gray" class="text-xs">
-                {#await db.getAllStartingWith("category", category.id)}
-                  ...
-                {:then anns}
-                  {anns.filter(
-                    (annotation) =>
-                      currentFrame >= annotation.shape.start &&
-                      currentFrame <= annotation.shape.end &&
-                      annotation.shape.type == type,
-                  ).length}
-                {/await}
-              </Badge>
+              {#await db.getAllStartingWith("category", category.id) then anns}
+                {@const filteredCount = anns.filter(
+                  (annotation) =>
+                    currentFrame >= annotation.shape.start &&
+                    currentFrame <= annotation.shape.end &&
+                    annotation.shape.type == type,
+                ).length}
+                <Badge variant="gray" class="text-xs">
+                  {filteredCount}
+                </Badge>
+              {/await}
             {/key}
           {/if}
         </CollapsibleTrigger>
@@ -284,13 +283,12 @@
     <CollapsibleContent class="ml-5" hidden={!openStates[category.id]}>
       {#key $idb_updated_at}
         {#if !toolMode && db && category}
-          {#await db.getAllIndex("category", category.id)}
-            ...
-          {:then anns}
-            {#each anns.filter((annotation) => {
+          {#await db.getAllIndex("category", category.id) then anns}
+            {@const filteredAnns = anns.filter((annotation) => {
               // prettier-ignore ...
               return currentFrame >= annotation.shape.start && currentFrame <= annotation.shape.end && annotation.shape.type == type;
-            }) as annotation, i (annotation.metadata.id)}
+            })}
+            {#each filteredAnns as annotation, i (annotation.metadata.id)}
               {@render annotationSelection(annotation, `${category.name}_${i}`)}
             {/each}
           {/await}
@@ -323,18 +321,17 @@
       <div class="flex items-center gap-2 py-2">
         <Text class="text-secondary-foreground" size="xs" weight="semibold">Categories</Text>
         {#key $idb_updated_at}
-          <Badge variant="gray" class="text-xs">
-            {#await db?.getAllIndex("category")}
-              ...
-            {:then anns}
-              {anns?.filter(
-                (annotation) =>
-                  currentFrame >= annotation.shape.start &&
-                  currentFrame <= annotation.shape.end &&
-                  annotation.shape.type == type,
-              ).length}
-            {/await}
-          </Badge>
+          {#await db?.getAllIndex("category") then anns}
+            {@const filteredCount = anns?.filter(
+              (annotation) =>
+                currentFrame >= annotation.shape.start &&
+                currentFrame <= annotation.shape.end &&
+                annotation.shape.type == type,
+            ).length || 0}
+            <Badge variant="gray" class="text-xs">
+              {filteredCount}
+            </Badge>
+          {/await}
         {/key}
       </div>
       {#each categoriesTree as category (category.id)}
