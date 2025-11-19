@@ -24,7 +24,7 @@
 
   // Props
   interface Props extends MultipleSelectFieldBaseProps<T> {
-    values: Array<string | number | null>;
+    values: Array<string | number>;
   }
   let {
     displayKey,
@@ -128,7 +128,7 @@
     }
 
     open = closeOnSelect ? false : true;
-    await onSelected?.(choice.value);
+    await onSelected?.(selectedChoices);
   }
 
   function clearSelection(event: MouseEvent): void {

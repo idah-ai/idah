@@ -2,7 +2,9 @@ import { createBackendDataSource } from "@/data/BackendDataSource";
 import { field, Record, RecordFactory, type } from "@/data/model/Record";
 import { Transformers } from "@/data/model/transformers";
 
-import type { Hash } from "@/utils/types";
+export interface AccountRoleScope {
+  org?: Array<number>;
+}
 
 @type("iam:accounts")
 export class AccountRecord extends Record {
@@ -13,7 +15,7 @@ export class AccountRecord extends Record {
 
   @field() public enabled!: boolean;
   @field() public role_name!: string | null;
-  @field() public role_scope!: Hash;
+  @field() public role_scope!: AccountRoleScope;
 
   @field() public readonly picture_url!: string | null;
 
