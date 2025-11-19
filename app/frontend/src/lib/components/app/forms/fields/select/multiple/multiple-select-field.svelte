@@ -9,11 +9,11 @@
 
   import { cn } from "@/utils";
 
-  import type { SelectFieldBaseProps } from "@/components/app/forms/form-field.types";
+  import type { MultipleSelectFieldBaseProps } from "@/components/app/forms/form-field.types";
   import type { LabelValue } from "@/components/app/types";
 
   // Props
-  interface Props extends SelectFieldBaseProps {
+  interface Props extends MultipleSelectFieldBaseProps {
     values: Array<string | number | null>;
   }
   let {
@@ -48,7 +48,7 @@
       values = [...values, choice.value];
     }
     open = false;
-    await onSelected?.(choice.value);
+    await onSelected?.(selectedValues);
   }
 
   function clearSelection(event: MouseEvent): void {

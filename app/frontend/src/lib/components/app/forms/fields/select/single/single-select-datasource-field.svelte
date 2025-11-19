@@ -12,13 +12,13 @@
 
   import { cn } from "@/utils";
 
-  import type { SelectDataSourceFieldBaseProps } from "@/components/app/forms/form-field.types";
+  import type { SingleSelectDataSourceFieldBaseProps } from "@/components/app/forms/form-field.types";
   import type { ListOptions } from "@/data/DataSource";
   import type { Record } from "@/data/model/Record";
   import type { LabelValue } from "@/utils/types";
 
   // Props
-  interface Props extends SelectDataSourceFieldBaseProps<T> {
+  interface Props extends SingleSelectDataSourceFieldBaseProps<T> {
     value: string | number | null;
   }
 
