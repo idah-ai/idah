@@ -46,44 +46,5 @@ module Account
     def delete(id)
       accounts.delete(id)
     end
-
-    def add_org_scope(org_id:, account_id:)
-      begin
-        organization_service.show(org_id)
-      rescue Verse::Error::RecordNotFound
-        raise Verse::Error::ValidationFailed, "Invalid organization"
-      end
-
-      account = accounts.find!(account_id)
-      return account if account.role_name == "admin" ||
-                        (account.role_name == "org_owner" && account.role_scope&.dig("org")&.include?(org_id))
-
-      update_role_scope = JSON.parse((account.role_scope || {}).to_json)
-      update_role_scope["org"] ||= []
-      (update_role_scope["org"] << org_id).uniq!
-
-      update_attr = { role_scope: update_role_scope.to_json }
-      update_attr[:role_name] = "org_owner" if account.role_name == "user"
-
-      accounts.update!(account_id, update_attr)
-      accounts.find!(account_id)
-    end
-
-    def remove_org_scope(org_id:, account_id:)
-      account = accounts.find!(account_id)
-      return account unless account.role_name == "org_owner" || account.role_scope&.dig("org")&.include?(org_id)
-
-      update_role_scope = JSON.parse((account.role_scope || {}).to_json)
-      update_role_scope["org"]&.delete(org_id)
-
-      # clean up empty org array
-      update_role_scope.delete("org") if update_role_scope["org"] && update_role_scope["org"].empty?
-
-      update_attr = { role_scope: update_role_scope.to_json }
-      update_attr[:role_name] = "user" if update_role_scope.empty? && account.role_name != "user"
-
-      accounts.update!(account_id, update_attr)
-      accounts.find!(account_id)
-    end
   end
 end

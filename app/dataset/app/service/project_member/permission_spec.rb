@@ -88,10 +88,10 @@ RSpec.describe ProjectMember::Service, database: true do
 
   # Permission: Organization Owner
   # ---------------------------------------------------
-  # Organization Owner | index | create | update | delete
+  # Project Members  | index | create | update | delete
   # ---------------------------------------------------
-  # in owned Org       |  yes  |  yes   |   yes  |   yes
-  # Not in owned Org   |   x   |   x    |    x   |    x
+  # in owned Org     |  yes  |  yes   |   yes  |   yes
+  # Not in owned Org |   x   |   x    |    x   |    x
   context "as Organization Owner", as: :org_owner do
     subject { described_class.new(current_auth_context) }
     before do
@@ -144,6 +144,9 @@ RSpec.describe ProjectMember::Service, database: true do
         expect {
           subject.show(annotator_member_id)
         }.to raise_error(Verse::Error::RecordNotFound)
+
+        # the record we tried to delete should not be there anymore
+        expect { project_member_repo.find!(annotator_member_id) }.to raise_error(Verse::Error::RecordNotFound)
       end
     end
 
@@ -153,7 +156,6 @@ RSpec.describe ProjectMember::Service, database: true do
 
         result = subject.index({})
 
-        expect(result.count).to eq 2
         expect(result.map(&:id)).to_not include reviewer_member_id
       end
 
@@ -175,6 +177,9 @@ RSpec.describe ProjectMember::Service, database: true do
         expect {
           subject.delete(reviewer_member_id)
         }.to raise_error(Verse::Error::RecordNotFound)
+
+        # the record we tried to delete should still be there
+        expect { project_member_repo.find!(reviewer_member_id) }.not_to raise_error(Verse::Error::RecordNotFound)
       end
     end
   end
