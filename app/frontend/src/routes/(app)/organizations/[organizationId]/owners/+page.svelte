@@ -36,7 +36,9 @@
     dataSource={accountsBackendDataSource}
     listOptions={{
       filters: {
-        organization_id: organizationId,
+        with_role_scope: {
+          org: [organizationId],
+        },
         role_name__in: ["org_owner"],
       },
     }}
