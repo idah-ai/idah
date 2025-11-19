@@ -4,18 +4,19 @@ require "mail"
 
 module Email
   class Service < Verse::Service::Base
-
     def send_email(to_email, notification)
-      account = Api[:idah].iam.accounts.index({
-        filter: { email: to_email }
-      }).data.first
+      account = Api[:idah].iam.accounts.index(
+        {
+          filter: { email: to_email }
+        }
+      ).data.first
 
       unless account
         raise Verse::Error::NotFound, "Account not found for email: #{to_email}"
       end
 
       mail = Mail.new do
-        from    'Idah Notification <no-reply@idah.ai>'
+        from    "Idah Notification <no-reply@idah.ai>"
         to      to_email
         subject notification.title
       end
@@ -27,7 +28,7 @@ module Email
       end
 
       mail.html_part = Mail::Part.new do
-        content_type 'text/html; charset=UTF-8'
+        content_type "text/html; charset=UTF-8"
         body renderer.render_html
       end
 

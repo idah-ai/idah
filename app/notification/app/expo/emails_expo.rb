@@ -14,7 +14,7 @@ class EmailsExpo < BaseExpo
       )
     end
 
-    notify =  Verse::JsonApi::Struct.new(content)
+    notify = Verse::JsonApi::Struct.new(content)
     service.send_email(
       notify.account_email,
       notify
