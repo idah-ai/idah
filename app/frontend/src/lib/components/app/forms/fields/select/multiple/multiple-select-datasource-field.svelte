@@ -42,6 +42,8 @@
     searchable = false,
     searchPlaceholder = "Search an option",
     searchValue = $bindable(""),
+    hiddenChoices = [],
+    disabledChoices = [],
     closeOnSelect = false,
     info,
     errors,
@@ -63,7 +65,6 @@
   // Variables
   let open: boolean = $state(false);
   let choices: Choice[] = $state([]);
-  // let selectedValue
   let selectedChoices = $derived(choices.filter((choice) => values.includes(choice.value)));
 
   // Lifecycle
@@ -113,14 +114,18 @@
 
     const response = await dataSource.list(listOpts);
 
-    return response.data.map((item) => ({
-      label: item[displayKey],
-      value: item[valueKey],
-      data: item,
-    }));
+    // Return filtered choices excluding hiddenChoices
+    return response.data
+      .map((item) => ({
+        label: item[displayKey],
+        value: item[valueKey],
+        disabled: disabledChoices.includes(item[valueKey]),
+        data: item,
+      }))
+      .filter((choice) => !hiddenChoices.includes(choice.value));
   }
 
-  async function select(choice: Choice): Promise<void> {
+  async function select(choice: LabelValue<string | number>): Promise<void> {
     if (values.find((v) => v == choice.value)) {
       values = values.filter((value) => value != choice.value);
     } else {
@@ -177,16 +182,16 @@
               class={cn("cursor-pointer", clearable && selectedChoices.length > 0 ? "opacity-50" : "opacity-0")}
               onclick={clearSelection}
             >
-              <CircleXIcon class="size-4 shrink-0"></CircleXIcon>
+              <CircleXIcon class="size-4 shrink-0" />
             </button>
 
-            <ChevronsUpDownIcon class="size-4 shrink-0 opacity-50"></ChevronsUpDownIcon>
+            <ChevronsUpDownIcon class="size-4 shrink-0 opacity-50" />
           </div>
         </Button>
       {/if}
     </PopoverTrigger>
 
-    <PopoverContent align="start" class="w-auto min-w-64 p-0">
+    <PopoverContent align="start" class="w-auto min-w-80 p-0">
       <Command>
         {#if searchable}
           <InputField
@@ -207,7 +212,7 @@
             {:then _}
               {#each choices as choice, index (index)}
                 {#if slotChoice}
-                  {@render slotChoice({ choice })}
+                  {@render slotChoice({ choice, select })}
                 {:else}
                   <CommandItem onclick={() => select(choice)}>
                     <CheckIcon

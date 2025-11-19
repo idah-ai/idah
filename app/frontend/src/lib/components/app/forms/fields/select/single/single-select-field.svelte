@@ -17,6 +17,8 @@
   }
   let {
     choices,
+    // hiddenChoices = [],
+    // disabledChoices = [],
     value = $bindable(null),
     name,
     label,
@@ -31,6 +33,7 @@
     class: className,
     onSelected,
     slotLabel,
+    slotChoice,
     slotInfo,
     slotErrors,
   }: Props = $props();
@@ -95,7 +98,7 @@
       {/snippet}
     </PopoverTrigger>
 
-    <PopoverContent align="start" class="p-0">
+    <PopoverContent align="start" class="w-auto min-w-80 p-0">
       <Command>
         {#if searchable}
           <CommandInput placeholder={searchPlaceholder}></CommandInput>
@@ -105,14 +108,18 @@
           <CommandEmpty>No option found.</CommandEmpty>
           <CommandGroup>
             {#each choices as choice (choice.value)}
-              <CommandItem value={String(choice.value)} onSelect={() => select(choice)}>
-                <CheckIcon
-                  class={cn("mr-2 size-4", {
-                    "opacity-0": choice.value !== value,
-                  })}
-                />
-                {choice.label}
-              </CommandItem>
+              {#if slotChoice}
+                {@render slotChoice({ choice, select })}
+              {:else}
+                <CommandItem value={String(choice.value)} onSelect={() => select(choice)}>
+                  <CheckIcon
+                    class={cn("mr-2 size-4", {
+                      "opacity-0": choice.value !== value,
+                    })}
+                  />
+                  {choice.label}
+                </CommandItem>
+              {/if}
             {/each}
           </CommandGroup>
         </CommandList>

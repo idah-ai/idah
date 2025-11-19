@@ -54,11 +54,20 @@ export interface TextAreaFieldBaseProps extends FormFieldBaseProps {
 
 export interface SelectFieldBaseProps extends FormFieldBaseProps {
   choices: LabelValue<string | number>[];
+  hiddenChoices?: Array<string | number>;
+  disabledChoices?: Array<string | number>;
   searchable?: boolean;
   searchPlaceholder?: string;
   searchValue?: string;
   clearable?: boolean;
-  slotChoice?: Snippet<[{ choice: LabelValue<string | number> }]>;
+  slotChoice?: Snippet<
+    [
+      {
+        choice: LabelValue<string | number>;
+        select: (choice: LabelValue<string | number>) => Promise<void> | void;
+      },
+    ]
+  >;
 }
 
 export interface SingleSelectFieldBaseProps extends SelectFieldBaseProps {
