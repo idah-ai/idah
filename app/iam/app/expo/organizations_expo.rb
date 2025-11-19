@@ -7,7 +7,10 @@ class OrganizationsExpo < BaseExpo
 
   json_api Organization::Record do
     index do
-      allowed_filters :id__in
+      allowed_filters :id__in,
+                      :name__match,
+                      :created_at__gte,
+                      :created_at__lte
     end
     
     show
