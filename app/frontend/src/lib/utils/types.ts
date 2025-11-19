@@ -19,6 +19,7 @@ export interface HumanizeOption {
 export type LabelValue<Value, T extends Record = Record> = {
   label: string;
   value: Value;
+  disabled?: boolean;
   data?: T;
   [key: string]: unknown;
 };

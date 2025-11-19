@@ -34,6 +34,8 @@
     searchable = false,
     searchPlaceholder = "Search an option",
     searchValue = $bindable(""),
+    hiddenChoices = [],
+    disabledChoices = [],
     clearable = false,
     searchKeyWithOperation,
     disabled = false,
@@ -102,11 +104,15 @@
 
     const response = await dataSource.list(listOpts);
 
-    return response.data.map((item) => ({
-      label: item[displayKey],
-      value: item[valueKey],
-      data: item,
-    }));
+    // Return filtered choices excluding hiddenChoices
+    return response.data
+      .map((item) => ({
+        label: item[displayKey],
+        value: item[valueKey],
+        disabled: disabledChoices.includes(item[valueKey]),
+        data: item,
+      }))
+      .filter((choice) => !hiddenChoices.includes(choice.value));
   }
 
   const filterChoices: FormEventHandler<HTMLInputElement> = async (event) => {
@@ -114,7 +120,7 @@
     choices = await fetchChoices();
   };
 
-  async function select(choice: Choice): Promise<void> {
+  async function select(choice: LabelValue<string | number>): Promise<void> {
     value = choice.value;
     open = false;
     await onSelected?.(value);
@@ -171,7 +177,7 @@
       {/if}
     </PopoverTrigger>
 
-    <PopoverContent align="start" class="w-auto min-w-64 p-0">
+    <PopoverContent align="start" class="w-auto min-w-80 p-0">
       <Command>
         <CommandList>
           <CommandGroup>
@@ -192,7 +198,7 @@
             {:then _}
               {#each choices as choice, index (index)}
                 {#if slotChoice}
-                  {@render slotChoice({ choice })}
+                  {@render slotChoice({ choice, select })}
                 {:else}
                   <CommandItem onclick={() => select(choice)}>
                     <CheckIcon
