@@ -64,25 +64,26 @@
 
   let range_span = $derived(Math.min(scale * zoom, totalFrames));
 
-  let pos_offset: number = $state(1);
+  let manual_offset: number = $state(1);
+  
+  // Compute pos_offset with auto-centering logic in a single derived pass
+  let pos_offset = $derived.by(() => {
+    // Check if currentFrame is outside the currently visible range
+    if (currentFrame < manual_offset || currentFrame > manual_offset + range_span) {
+      // Auto-center on currentFrame
+      const centerOffset = currentFrame - Math.floor(range_span / 2);
+      return Math.max(1, Math.min(totalFrames - range_span, centerOffset || 0));
+    }
+    // Use manual offset when currentFrame is in visible range
+    return manual_offset;
+  });
+  
   let range: [number, number] = $derived([pos_offset, Math.min(pos_offset + range_span, totalFrames)]);
   let wheelthrottling = $state(false);
   let hoveredColumn: number | undefined = $state();
-  let prevCurrentFrame: number = $state(currentFrame);
-  $effect(() => {
-    // Auto-scroll to center currentFrame only when it's outside the visible range
-    if (currentFrame !== prevCurrentFrame) {
-      // Only center if the frame is outside the currently visible range
-      if (currentFrame < pos_offset || currentFrame > pos_offset + range_span) {
-        const centerOffset = currentFrame - Math.floor(range_span / 2);
-        setOffset(centerOffset);
-      }
-      prevCurrentFrame = currentFrame;
-    }
-  });
 
   export function setOffset(offset: number) {
-    pos_offset = Math.max(1, Math.min(totalFrames - range_span, offset || 0));
+    manual_offset = Math.max(1, Math.min(totalFrames - range_span, offset || 0));
   }
 
   export function setZoom(value: number): void {
@@ -179,7 +180,7 @@
 
   function handleRowClick(annotation: VideoAnnotation) {
     onSelectAnnotation(annotation);
-    pos_offset = annotation.shape.start || 0;
+    manual_offset = annotation.shape.start || 0;
     onSeekFrame(annotation.shape.start || 0);
   }
 
