@@ -17,11 +17,12 @@
   // Variables
   let organizationId = page.params.organizationId as string;
   let openConfirmRemoveOrgOwnerModal: boolean = $state(false);
+  let { id: accountId, email } = $derived(accountRecord);
 
   // Functions
   async function removeOrgOwner() {
     try {
-      const { data: account } = await accountsBackendDataSource.get(accountRecord.id, {
+      const { data: account } = await accountsBackendDataSource.get(accountId, {
         noCache: true,
       });
 
@@ -63,7 +64,7 @@
 
 <ConfirmModal
   title="Remove Organization Owner"
-  description="Are you sure you want to remove this owner from the organization? This action cannot be undone."
+  description="Are you sure you want to remove {email} from the organization owner? This action cannot be undone."
   onConfirm={removeOrgOwner}
   bind:open={openConfirmRemoveOrgOwnerModal}
 />
