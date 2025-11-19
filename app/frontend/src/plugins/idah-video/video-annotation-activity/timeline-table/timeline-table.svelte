@@ -63,10 +63,8 @@
   // })
 
   let range_span = $derived(Math.min(scale * zoom, totalFrames));
-
   let manual_offset: number = $state(1);
   
-  // Compute pos_offset with auto-centering logic in a single derived pass
   let pos_offset = $derived.by(() => {
     // Check if currentFrame is outside the currently visible range
     if (currentFrame < manual_offset || currentFrame > manual_offset + range_span) {
