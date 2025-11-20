@@ -17,6 +17,8 @@ Sequel.migration do
       column :picture_url, String, null: true
 
       column :hashed_password, String, null: true
+      column :password_reset_token, String, null: true
+      column :password_reset_token_expires_at, DateTime, null: true
       column :sso_channel, String, null: true
 
       column :enabled, TrueClass, index: true
