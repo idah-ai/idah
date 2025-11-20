@@ -65,16 +65,16 @@
   let range_span = $derived(Math.min(scale * zoom, totalFrames));
 
   let pos_offset: number = $state(1);
-  let range: [number, number] = $derived([pos_offset, pos_offset + range_span]);
+  let range: [number, number] = $derived([pos_offset, Math.min(pos_offset + range_span, totalFrames)]);
   let wheelthrottling = $state(false);
   let hoveredColumn: number | undefined = $state();
   let prevCurrentFrame: number = $state(currentFrame);
-
   $effect(() => {
-    // Auto-scroll to center currentFrame only when currentFrame actually changes
+    // Auto-scroll to center currentFrame only when it's outside the visible range
     if (currentFrame !== prevCurrentFrame) {
-      const centerOffset = currentFrame - Math.floor(range_span / 2);
+      // Only center if the frame is outside the currently visible range
       if (currentFrame < pos_offset || currentFrame > pos_offset + range_span) {
+        const centerOffset = currentFrame - Math.floor(range_span / 2);
         setOffset(centerOffset);
       }
       prevCurrentFrame = currentFrame;
@@ -86,19 +86,32 @@
   }
 
   export function setZoom(value: number): void {
-    const s = Math.min(100, Math.max(1, Math.round(value)));
+    const s = Math.min(150, Math.max(20, value));
+
     const minZoom = 20;
     const maxZoom = 150;
     const midZoom = (minZoom + maxZoom) / 2;
 
-    // maximum scale based on zoom
-    const maxScale = Math.ceil(totalFrames / zoom);
+    // maximum scale based on new zoom value
+    const maxScale = Math.ceil(totalFrames / s);
 
-    // Determine new scale based on zoom value
-    const newScale = value <= midZoom ? 1 : Math.ceil(1 + ((value - midZoom) / (maxZoom - midZoom)) * (maxScale - 1));
+    // Determine new scale based on zoom value with smoother interpolation
+    let newScale: number;
+    if (s <= midZoom) {
+      newScale = 1;
+    } else {
+      // Use smooth linear interpolation for scale when zoom > midZoom
+      const scaleProgress = (s - midZoom) / (maxZoom - midZoom);
+      newScale = 1 + scaleProgress * (maxScale - 1);
+    }
 
-    scale = Math.ceil(newScale);
+    scale = Math.max(1, Math.round(newScale));
     zoom = s;
+
+    // Recenter the range on current frame after zoom/scale change
+    const newRangeSpan = Math.min(scale * zoom, totalFrames);
+    const centerOffset = currentFrame - Math.floor(newRangeSpan / 2);
+    setOffset(centerOffset);
 
     onScaleChange?.(scale);
     onZoomChange?.(zoom);
@@ -163,6 +176,35 @@
       }
     }
   }
+
+  function handleRowClick(annotation: VideoAnnotation) {
+    onSelectAnnotation(annotation);
+    pos_offset = annotation.shape.start || 0;
+    onSeekFrame(annotation.shape.start || 0);
+  }
+
+  let rowElements: Record<string, HTMLElement> = $state({});
+
+  function trackRow(node: HTMLElement, params: { id: string; isSelected: boolean }) {
+    rowElements[params.id] = node;
+
+    return {
+      update(newParams: { id: string; isSelected: boolean }) {
+        // Scroll into view immediately when this row becomes selected
+        if (newParams.isSelected && !params.isSelected) {
+          node.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+            inline: "nearest",
+          });
+        }
+        params = newParams;
+      },
+      destroy() {
+        delete rowElements[params.id];
+      },
+    };
+  }
 </script>
 
 {#snippet row(annotations: VideoAnnotation[])}
@@ -171,24 +213,23 @@
     {@const isLastIndex = index == annotations.length - 1}
     <TableRow
       class={cn("border-b-0", {
-        "bg-primary/20 border-t border-b": isSelected,
+        "bg-primary/20": isSelected,
       })}
     >
-      <TableCell
+      <td
+        use:trackRow={{ id: annotation.metadata.id, isSelected }}
         class={cn("justify-end p-0", {
           "border-b": isLastIndex,
         })}
         onclick={() => {
-          onSelectAnnotation(annotation);
-          pos_offset = annotation.shape.start || 0;
-          onSeekFrame(annotation.shape.start || 0);
+          handleRowClick(annotation);
         }}
       >
         <button class={cn("group flex w-full cursor-pointer items-center justify-end px-2 py-1")}>
           {#await getCategoryName(annotation.value.category, annotation)}
             <Spinner size="sm"></Spinner>
           {:then title}
-            <Text size="sm" weight={isSelected ? "semibold" : "normal"} class="text-foreground">
+            <Text size="xs" weight={isSelected ? "semibold" : "normal"} class="text-foreground">
               {humanize(title)}
             </Text>
           {/await}
@@ -207,7 +248,7 @@
             <Trash2Icon class="size-3"></Trash2Icon>
           </Button>
         </button>
-      </TableCell>
+      </td>
 
       <TableCell class="p-0">
         <Timeline
@@ -298,7 +339,7 @@
   <TableHeader class="bg-background sticky z-50" style="inset-block-start: 0">
     <TableRow>
       <!-- HEADER::ANNOTATIONS -->
-      <TableHead class="h-7 w-80"></TableHead>
+      <TableHead class="h-7 w-60"></TableHead>
 
       <!-- HEADER::TIMELINES -->
       <TableHead class="h-7 p-0">
@@ -316,17 +357,23 @@
             isResizing = false;
           }}
         >
-          {#each [...Array(range[1] - range[0] + (scale - (range_span % scale)))].map((v, i) => i) as i (i)}
+          {#each Array.from({ length: (() => {
+                const span = range[1] - range[0]; // actual range span
+                const padding = (scale - (span % scale)) % scale; // align to scale
+                // clamp to range length
+                return Math.min(span + padding + 1, range[1] - range[0] + 1);
+              })() }, (_, i) => i) as i (i)}
             {@const thisFrame = i + range[0]}
             {@const width = (1 / ((range[1] - range[0] + (scale - (range_span % scale))) / 100)) * scale}
             {@const isSelected = Math.floor(thisFrame) == currentFrame}
             {@const isHovered = thisFrame == hoveredColumn}
-            {@const isDefault =
-              i % (Math.floor(zoom / Math.min(zoom, 20)) * Math.ceil((range[1] - range[0]) / zoom)) == 0}
-            {@const isTick = i % (1 * Math.ceil((range[1] - range[0]) / zoom)) == 0}
+            {@const cellIndex = Math.floor(i / scale)}
+            {@const isDefault = cellIndex % Math.floor(zoom / Math.min(zoom, 20)) == 0 && i % scale == 0}
+            {@const isTick = i % scale == 0}
             {@const startLeftPosition = (i / (range[1] - range[0] + (scale - (range_span % scale)))) * 100}
+            {@const isOutOfRange = thisFrame > totalFrames}
 
-            {#if isSelected}
+            {#if !isOutOfRange && isSelected}
               <button
                 class="border-border text-primary bg-background absolute top-0 z-50 h-full cursor-col-resize border-l"
                 style:width="{width}%"
@@ -336,7 +383,7 @@
               >
                 {@render tooltipFrame(thisFrame, "bg-primary", "text-primary-foreground")}
               </button>
-            {:else if isDefault}
+            {:else if !isOutOfRange && isDefault}
               <button
                 class={cn("border-border text-muted-foreground/50 absolute top-0 h-full cursor-pointer border-l", {
                   "z-100": isHovered,
@@ -358,7 +405,7 @@
                   {thisFrame}
                 {/if}
               </button>
-            {:else if isTick}
+            {:else if !isOutOfRange && isTick}
               <button
                 aria-label="tick"
                 class={cn("border-border absolute bottom-0 cursor-pointer border-l", {

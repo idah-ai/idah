@@ -14,7 +14,6 @@
   const invalid = $derived(!propertyFullfilled(value, property));
   const format = $derived(invalid ? formatConformity(value, property) : []);
   const formatters = new Map<string, ((v: boolean) => string) | ((v: number) => string)>([
-    // probably need fixing on requirement same as boolean for value = 0
     ["required", (_: boolean) => [property.label, "is required"].join(" ")],
     ["minimum", (v: number) => [property.label, "minimum value:", v].join(" ")],
     ["maximum", (v: number) => [property.label, "maximum value:", v].join(" ")],
@@ -38,10 +37,10 @@
     max={property.format?.maximum}
     step={property.format?.step || "1"}
     {value}
-    onchange={(e) => onValueChange(e.target?.value)}
+    onchange={(e) => onValueChange(Number.parseInt(e.target?.value || ""))}
   />
   {#if invalid}
-    <ul>
+    <ul class="text-xs">
       {#each format as [k, v] (k)}
         {@const formatter = formatters.get(k)}
 
