@@ -4,17 +4,8 @@
   import BoundingBox, { type ToolSelection } from "./bounding-box.svelte";
   import { boundingBoxes } from "./idb_store.svelte";
 
-  import { DEFAULT_MODE, ENTRY_ROOT, IDAH_VIDEO_BOUNDING_BOX, type EntryRoot } from "../type";
-  import {
-    HEIGHT,
-    ORIGIN,
-    WIDTH,
-    X,
-    Y,
-    type Point,
-    type VideoAnnotation,
-    type VideoFrameSelection,
-  } from "./VideoAnnotationContext";
+  import { DEFAULT_MODE, ENTRY_ROOT, IDAH_NOTE, IDAH_VIDEO_BOUNDING_BOX, type EntryRoot } from "../type";
+  import { HEIGHT, ORIGIN, WIDTH, X, Y, type Point, type VideoFrameSelection } from "./VideoAnnotationContext";
   import Zoomable from "./zoomable.svelte";
 
   import type {
@@ -98,7 +89,7 @@
   let points: Point[] = $derived.by(() => {
     return shape ? currentShape(shape, frame) || [] : [];
   });
-  let isNoteMode: boolean = $derived(mode === "note");
+  let isNoteMode: boolean = $derived(mode === IDAH_NOTE);
 
   function updatedSize(): Point {
     videoResizedAt; // eslint-disable-line @typescript-eslint/no-unused-expressions
@@ -207,11 +198,11 @@
     zoomableElement.mouseUp(e);
   }
 
-  function showNewNoteFeedPopup(annotation?: VideoAnnotation) {
+  function showNewNoteFeedPopup(annotation?: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) {
     /**
      * Show new note feed dialog only when there is no dragging (i.e. zoom offset did not change)
      */
-    if (mode === "note") {
+    if (mode === IDAH_NOTE) {
       onAddNewNote({
         anchorType: annotation ? "annotation" : "entry",
         position: {
@@ -311,7 +302,7 @@
                   onSelectAnnotation(annotation);
                 }
 
-                if (mode === "note") {
+                if (mode === IDAH_NOTE) {
                   showNewNoteFeedPopup(annotation);
                 }
               }}
@@ -341,7 +332,7 @@
                   onSelectAnnotation(annotation);
                 }
 
-                if (mode === "note") {
+                if (mode === IDAH_NOTE) {
                   showNewNoteFeedPopup(annotation);
                 }
               }}
