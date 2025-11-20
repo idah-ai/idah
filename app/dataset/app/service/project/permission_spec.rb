@@ -94,21 +94,21 @@ RSpec.describe Project::Service, database: true do
         result = subject.index({})
 
         expect(result.count).to eq 1
-        expect(result.map(&:organization_id)).to all(satisfy { |id| @org_scope.include?(id) })
+        expect(result.map(&:organization_id)).to all(satisfy { |id| @org_scope.include?(id.to_s) })
       end
 
       it "can create" do
         result = subject.create(deserialize(create_data))
 
         expect(result.name).to eq create_data[:data][:attributes][:name]
-        expect(@org_scope).to include(result.organization_id)
+        expect(@org_scope).to include(result.organization_id.to_s)
       end
 
       it "can update" do
         updated_project = subject.update(deserialize(update_data))
 
         expect(updated_project.name).to eq "Updated Project"
-        expect(@org_scope).to include(updated_project.organization_id)
+        expect(@org_scope).to include(updated_project.organization_id.to_s)
       end
 
       it "can delete" do
@@ -128,7 +128,7 @@ RSpec.describe Project::Service, database: true do
         result = subject.index({})
 
         expect(result.first.id).to_not eq second_project_id
-        expect(result.map(&:organization_id)).to all(satisfy { |id| @org_scope.include?(id) })
+        expect(result.map(&:organization_id)).to all(satisfy { |id| @org_scope.include?(id.to_s) })
       end
 
       it "cannot create project with organization_id outside org scope" do

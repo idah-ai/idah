@@ -105,7 +105,7 @@ RSpec.describe ProjectMember::Service, database: true do
 
         expect(result.count).to eq 2
         expect(result.map(&:project_id)).to all(eq(first_project_id))
-        expect(@org_scope).to include(project_repo.find!(first_project_id).organization_id)
+        expect(@org_scope).to include(project_repo.find!(first_project_id).organization_id.to_s)
       end
 
       it "can create" do
@@ -115,7 +115,7 @@ RSpec.describe ProjectMember::Service, database: true do
         expect(record.email).to eq create_data[:data][:attributes][:email]
         expect(record.account_id).to eq create_data[:data][:attributes][:account_id]
         expect(record.project_id).to eq create_data[:data][:relationships][:project][:data][:id]
-        expect(@org_scope).to include(project_repo.find!(record.project_id).organization_id)
+        expect(@org_scope).to include(project_repo.find!(record.project_id).organization_id.to_s)
       end
 
       it "can create a 'project_owner' member" do
@@ -127,7 +127,7 @@ RSpec.describe ProjectMember::Service, database: true do
         expect(record.email).to eq create_data[:data][:attributes][:email]
         expect(record.account_id).to eq create_data[:data][:attributes][:account_id]
         expect(record.project_id).to eq create_data[:data][:relationships][:project][:data][:id]
-        expect(@org_scope).to include(project_repo.find!(record.project_id).organization_id)
+        expect(@org_scope).to include(project_repo.find!(record.project_id).organization_id.to_s)
       end
 
       it "can update" do
