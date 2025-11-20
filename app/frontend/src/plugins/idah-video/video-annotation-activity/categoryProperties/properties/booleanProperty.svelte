@@ -14,7 +14,9 @@
   const invalid = $derived(!propertyFullfilled(value, property));
   const format = $derived(invalid ? formatConformity(value, property) : []);
 
-  // need to fix requirement first on boolean
+  // set default value to false if boolean is required
+  if (value == undefined && property.required) onValueChange(false);
+
   const formatters = new Map<string, ((v: boolean) => string) | ((v: number) => string)>([
     ["required", (_: boolean) => [property.label, "is required"].join(" ")],
   ]);
@@ -33,7 +35,7 @@
   </div>
 
   {#if invalid}
-    <ul>
+    <ul class="text-xs">
       {#each format as [k, v] (k)}
         {@const formatter = formatters.get(k)}
 
