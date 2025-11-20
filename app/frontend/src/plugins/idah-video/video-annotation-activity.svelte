@@ -39,9 +39,9 @@
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import PropertiesSidebar from "./layout/sidebar/properties-sidebar.svelte";
   import CategoryProperties from "./video-annotation-activity/categoryProperties/categoryProperties.svelte";
+  import { registerVisualModeShortcuts } from "./video-annotation-activity/shortcut";
   import type { Point, VideoFrameSelection, VideoShape } from "./video-annotation-activity/VideoAnnotationContext";
   import VideoController from "./video-annotation-activity/VideoController.svelte";
-  import { registerVisualModeShortcuts } from "./video-annotation-activity/shortcut";
 
   // Props
   interface Props {
@@ -962,30 +962,14 @@
               onSelection={onShapeSelection}
               target_container={() => player_container}
               {videoResizedAt}
+              {isPlaying}
               onScaleChange={(s) => {
                 scale = s;
               }}
               onZoomChange={(z) => {
                 zoom = z;
               }}
-            >
-              <!-- container context ?-->
-              <Video
-                bind:this={player}
-                bind:element={player_container}
-                onResize={() => {
-                  videoResizedAt = new Date();
-                }}
-                onFramesChange={(current, total, playing) => {
-                  currentFrame = current;
-                  totalFrames = total;
-                  isPlaying = playing;
-                  isPlaying = playing;
-                  // console.debug({onFramesChange: {current, total, playing}})
-                }}
-                onVolumeChange={(level, muted) => (volume = { level, muted })}
-              />
-            </TimelineTable>
+            />
           </ScrollArea>
         </AnnotationFooter>
       </ResizablePane>
