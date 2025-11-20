@@ -969,24 +969,7 @@
               onZoomChange={(z) => {
                 zoom = z;
               }}
-            >
-              <!-- container context ?-->
-              <Video
-                bind:this={player}
-                bind:element={player_container}
-                onResize={() => {
-                  videoResizedAt = new Date();
-                }}
-                onFramesChange={(current, total, playing) => {
-                  currentFrame = current;
-                  totalFrames = total;
-                  isPlaying = playing;
-                  isPlaying = playing;
-                  // console.debug({onFramesChange: {current, total, playing}})
-                }}
-                onVolumeChange={(level, muted) => (volume = { level, muted })}
-              />
-            </TimelineTable>
+            />
           </ScrollArea>
         </AnnotationFooter>
       </ResizablePane>
