@@ -40,7 +40,7 @@ module Dataset
 
       if access == :as_org_owner
         project = projects.find!(record.project.id) # this can raise Verse::Error::RecordNotFound if not in org scope
-        unless auth_context.custom_scopes[:org]&.include?(project.organization_id)
+        unless auth_context.custom_scopes[:org]&.include?(project.organization_id.to_s)
           raise Verse::Error::Unauthorized,
                 "You do not have permission to create dataset on this project"
         end

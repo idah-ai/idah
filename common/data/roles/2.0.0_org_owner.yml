@@ -26,3 +26,5 @@ org_owner:
 
     # Media Service
     - "media:medias.*.as_org_owner"
+    # - "media:jobs.*.as_org_owner"
+    - "media:jobs.*.*"

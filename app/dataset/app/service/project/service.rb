@@ -26,7 +26,7 @@ module Project
               "You do not have permission to create a project"
       end
 
-      unless auth_context.custom_scopes[:org]&.include?(record.attributes[:organization_id])
+      unless auth_context.custom_scopes[:org]&.include?(record.attributes[:organization_id].to_s)
         raise Verse::Error::Unauthorized,
               "You do not have permission to create a project for this organization"
       end
