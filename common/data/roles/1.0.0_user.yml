@@ -27,4 +27,5 @@ user:
     - "dataset:note_comments.*.as_user"
 
     # Media Service
-    - "media:medias.read.*"
+    - "media:medias.*.as_user"
+    - "media:jobs.*.as_user"

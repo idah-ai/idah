@@ -43,7 +43,7 @@ module ProjectMember
       if access == :as_org_owner || record.attributes[:role] == "project_owner"
         project = projects.find!(record.project.id) # this can raise Verse::Error::RecordNotFound if not in org scope
 
-        unless auth_context.custom_scopes[:org]&.include?(project.organization_id)
+        unless auth_context.custom_scopes[:org]&.include?(project.organization_id.to_s)
           raise Verse::Error::Unauthorized,
                 "You do not have permission to create a project owner member for this project"
         end
@@ -69,7 +69,7 @@ module ProjectMember
         end
 
         project = projects.find!(record.project.id) # this can raise Verse::Error::RecordNotFound if not in org scope
-        unless auth_context.custom_scopes[:org]&.include?(project.organization_id)
+        unless auth_context.custom_scopes[:org]&.include?(project.organization_id.to_s)
           raise Verse::Error::Unauthorized,
                 "You do not have permission to update a member to a project owner for this project"
         end
