@@ -8,7 +8,6 @@
   import AuthenticationCard from "@/components/app/iam/auth/card/authentication-card.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import Link from "@/components/ui/text/Link.svelte";
-  import Text from "@/components/ui/text/Text.svelte";
 
   import { loginSchema } from "@/data/model/iam/accounts/auth-schema";
   import { accountAuthService } from "@/data/model/iam/accounts/auth/records";
@@ -92,12 +91,5 @@
         Sign In
       </Button>
     </Form>
-  {/snippet}
-
-  {#snippet footer()}
-    <div class="flex w-full items-center justify-center gap-2">
-      <Text size="sm" class="text-muted-foreground">Don't have an account?</Text>
-      <Link href="/sign-up" class="text-sm">Sign up</Link>
-    </div>
   {/snippet}
 </AuthenticationCard>

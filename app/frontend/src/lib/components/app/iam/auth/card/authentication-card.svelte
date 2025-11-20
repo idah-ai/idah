@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
   import Logo from "@/components/app/brand/logo.svelte";
+  import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
   import type { Snippet } from "svelte";
 
@@ -17,7 +17,7 @@
 
 <Card>
   <CardHeader class="flex w-full flex-col items-center">
-    <Logo class="mb-4"></Logo>
+    <Logo class="h-16 w-24" />
 
     <CardTitle>{title}</CardTitle>
     <CardDescription>{description}</CardDescription>
@@ -29,7 +29,9 @@
     {@render content()}
   </CardContent>
 
-  <CardFooter class="flex w-full flex-col items-center">
-    {@render footer?.()}
-  </CardFooter>
+  {#if footer}
+    <CardFooter class="flex w-full flex-col items-center">
+      {@render footer?.()}
+    </CardFooter>
+  {/if}
 </Card>
