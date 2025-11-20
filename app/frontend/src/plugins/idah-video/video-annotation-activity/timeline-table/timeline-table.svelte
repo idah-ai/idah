@@ -31,6 +31,7 @@
     onZoomChange,
     onScaleChange,
     db,
+    isPlaying = false,
   }: {
     annotations_promise: Promise<VideoAnnotation[]>;
     // tracking?: boolean;
@@ -45,6 +46,7 @@
     onZoomChange?: (zoom: number) => void;
     onScaleChange?: (zoom: number) => void;
     db?: AnnotationsIndexedDB;
+    isPlaying?: boolean;
   } = $props();
 
   // Contexts
@@ -64,15 +66,21 @@
 
   let range_span = $derived(Math.min(scale * zoom, totalFrames));
   let manual_offset: number = $state(1);
-
+  
   let pos_offset = $derived.by(() => {
-    // Check if currentFrame is outside the currently visible range
-    if (currentFrame < manual_offset || currentFrame > manual_offset + range_span) {
-      // Auto-center on currentFrame
-      const centerOffset = currentFrame - Math.floor(range_span / 2);
-      return Math.max(1, Math.min(totalFrames - range_span, centerOffset || 0));
+    // Only auto-scroll when video is playing
+    if (isPlaying) {
+      // Check if currentFrame is outside the currently visible range
+      const isOutsideRange = currentFrame < manual_offset || currentFrame > manual_offset + range_span;
+      
+      if (isOutsideRange) {
+        // Auto-center on currentFrame when it goes out of view during playback
+        const centerOffset = currentFrame - Math.floor(range_span / 2);
+        return Math.max(1, Math.min(totalFrames - range_span, centerOffset || 0));
+      }
     }
-    // Use manual offset when currentFrame is in visible range
+    
+    // Use manual offset when video is paused or currentFrame is in visible range
     return manual_offset;
   });
 

@@ -4,14 +4,14 @@
   import { uuidv7 } from "uuidv7";
 
   import {
-    CommandDialog,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-    CommandList,
-    CommandSeparator,
-    CommandShortcut,
+      CommandDialog,
+      CommandEmpty,
+      CommandGroup,
+      CommandInput,
+      CommandItem,
+      CommandList,
+      CommandSeparator,
+      CommandShortcut,
   } from "$lib/components/ui/command";
   import Button from "@/components/ui/button/button.svelte";
   import { Popover, PopoverContent } from "@/components/ui/popover";
@@ -39,9 +39,9 @@
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import PropertiesSidebar from "./layout/sidebar/properties-sidebar.svelte";
   import CategoryProperties from "./video-annotation-activity/categoryProperties/categoryProperties.svelte";
+  import { registerVisualModeShortcuts } from "./video-annotation-activity/shortcut";
   import type { Point, VideoFrameSelection, VideoShape } from "./video-annotation-activity/VideoAnnotationContext";
   import VideoController from "./video-annotation-activity/VideoController.svelte";
-  import { registerVisualModeShortcuts } from "./video-annotation-activity/shortcut";
 
   // Props
   interface Props {
@@ -962,6 +962,7 @@
               onSelection={onShapeSelection}
               target_container={() => player_container}
               {videoResizedAt}
+              {isPlaying}
               onScaleChange={(s) => {
                 scale = s;
               }}
