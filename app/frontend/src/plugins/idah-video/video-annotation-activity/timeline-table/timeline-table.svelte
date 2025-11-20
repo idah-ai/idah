@@ -66,22 +66,19 @@
 
   let range_span = $derived(Math.min(scale * zoom, totalFrames));
   let manual_offset: number = $state(1);
-  
+  let lastOffset = manual_offset;
   let pos_offset = $derived.by(() => {
-    // Only auto-scroll when video is playing
     if (isPlaying) {
-      // Check if currentFrame is outside the currently visible range
       const isOutsideRange = currentFrame < manual_offset || currentFrame > manual_offset + range_span;
-      
       if (isOutsideRange) {
-        // Auto-center on currentFrame when it goes out of view during playback
         const centerOffset = currentFrame - Math.floor(range_span / 2);
-        return Math.max(1, Math.min(totalFrames - range_span, centerOffset || 0));
+        lastOffset = Math.max(1, Math.min(totalFrames - range_span, centerOffset));
+      } else {
+        lastOffset = manual_offset;
       }
     }
-    
-    // Use manual offset when video is paused or currentFrame is in visible range
-    return manual_offset;
+    // when paused, just return the last offset
+    return lastOffset;
   });
 
   let range: [number, number] = $derived([pos_offset, Math.min(pos_offset + range_span, totalFrames)]);
