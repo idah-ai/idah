@@ -65,15 +65,19 @@
   // })
 
   let range_span = $derived(Math.min(scale * zoom, totalFrames));
-  let manual_offset: number = $state(1);
+  let manual_offset = 1;
+
   let pos_offset = $derived.by(() => {
     let offset = manual_offset;
 
-    if (isPlaying) {
-      const isOutsideRange = currentFrame < offset || currentFrame > offset + range_span;
-      if (isOutsideRange) {
-        const centerOffset = currentFrame - Math.floor(range_span / 2);
-        offset = Math.max(1, Math.min(totalFrames - range_span, centerOffset));
+    const isOutsideRange = currentFrame < offset || currentFrame > offset + range_span;
+
+    if (isOutsideRange) {
+      const centerOffset = currentFrame - Math.floor(range_span / 2);
+      offset = Math.max(1, Math.min(totalFrames - range_span, centerOffset));
+
+      if (isPlaying) {
+        manual_offset = offset;
       }
     }
 
@@ -85,7 +89,7 @@
   let hoveredColumn: number | undefined = $state();
 
   export function setOffset(offset: number) {
-    manual_offset = Math.max(1, Math.min(totalFrames - range_span, offset || 0));
+    pos_offset = Math.max(1, Math.min(totalFrames - range_span, offset || 0));
   }
 
   export function setZoom(value: number): void {
@@ -182,7 +186,7 @@
 
   function handleRowClick(annotation: VideoAnnotation) {
     onSelectAnnotation(annotation);
-    manual_offset = annotation.shape.start || 0;
+    pos_offset = annotation.shape.start || 0;
     onSeekFrame(annotation.shape.start || 0);
   }
 
