@@ -1,12 +1,11 @@
 <script lang="ts">
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
-  import { PlusIcon } from "@lucide/svelte";
+
   import { getContext } from "svelte";
 
-  import DatasetFormModal from "@/components/app/datasets/overlays/dataset-form-modal.svelte";
+  import AddNewDatasetButton from "@/components/app/datasets/buttons/add-new-dataset-button.svelte";
   import DatasourceTable from "@/components/app/datasource-table/datasource-table.svelte";
-  import Button from "@/components/ui/button/button.svelte";
 
   import { projectDatasetColumns } from "@/components/app/datasets/datasource-tables/project-dataset.columns";
   import { homeBreadcrumb, projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
@@ -21,7 +20,6 @@
 
   // Variables
   let projectId: string = page.params.projectId as string;
-  let openNewDatasetModal: boolean = $state(false);
 
   pageBreadcrumbsStore.set([
     homeBreadcrumb,
@@ -31,18 +29,10 @@
   ]);
 </script>
 
-{#snippet AddNewDatasetButton()}
-  <Button onclick={() => (openNewDatasetModal = true)}>
-    <PlusIcon class="size-4" />
-    New Dataset
-  </Button>
-{/snippet}
-
 {#key $refetches.datasets.list}
   <DatasourceTable
     id="datasets"
     name="dataset"
-    title="Datasets"
     refetchKey="datasets"
     columns={projectDatasetColumns}
     dataSource={datasetsBackendDataSource}
@@ -59,14 +49,8 @@
       sort: ["-created_at"],
     }}
   >
-    {#snippet actions()}
-      {@render AddNewDatasetButton()}
-    {/snippet}
-
     {#snippet addNewRecordButton()}
-      {@render AddNewDatasetButton()}
+      <AddNewDatasetButton />
     {/snippet}
   </DatasourceTable>
 {/key}
-
-<DatasetFormModal title="Dataset" action="create" bind:open={openNewDatasetModal} />
