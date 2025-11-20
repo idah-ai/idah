@@ -66,19 +66,18 @@
 
   let range_span = $derived(Math.min(scale * zoom, totalFrames));
   let manual_offset: number = $state(1);
-  let lastOffset = manual_offset;
   let pos_offset = $derived.by(() => {
+    let offset = manual_offset;
+
     if (isPlaying) {
-      const isOutsideRange = currentFrame < manual_offset || currentFrame > manual_offset + range_span;
+      const isOutsideRange = currentFrame < offset || currentFrame > offset + range_span;
       if (isOutsideRange) {
         const centerOffset = currentFrame - Math.floor(range_span / 2);
-        lastOffset = Math.max(1, Math.min(totalFrames - range_span, centerOffset));
-      } else {
-        lastOffset = manual_offset;
+        offset = Math.max(1, Math.min(totalFrames - range_span, centerOffset));
       }
     }
-    // when paused, just return the last offset
-    return lastOffset;
+
+    return offset;
   });
 
   let range: [number, number] = $derived([pos_offset, Math.min(pos_offset + range_span, totalFrames)]);
