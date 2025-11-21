@@ -8,10 +8,7 @@ class EmailsExpo < BaseExpo
     content = message.content
 
     unless content[:account_email]
-      raise Verse::Error.new(
-        :invalid_email,
-        "Missing account_email in email content"
-      )
+      raise Verse::Error::ValidationFailed, "Missing account_email in email content"
     end
 
     notify = Verse::JsonApi::Struct.new(content)
