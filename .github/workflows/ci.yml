@@ -21,6 +21,10 @@ on:
 env:
   FRONTEND_DIR: ./app/frontend
   IAM_DIR: ./app/iam
+  NOTIFICATION_DIR: ./app/notification
+  SETTING_DIR: ./app/setting
+  AUDIT_DIR: ./app/audit
+  SYNC_DIR: ./app/sync
   MEDIA_DIR: ./app/media
   DATASET_DIR: ./app/dataset
 
@@ -35,6 +39,10 @@ jobs:
     outputs:
       frontend: ${{ steps.filter.outputs.frontend }}
       iam: ${{ steps.filter.outputs.iam }}
+      notification: ${{ steps.filter.outputs.notification }}
+      setting: ${{ steps.filter.outputs.setting }}
+      audit: ${{ steps.filter.outputs.audit }}
+      sync: ${{ steps.filter.outputs.sync }}
       media: ${{ steps.filter.outputs.media }}
       dataset: ${{ steps.filter.outputs.dataset }}
     steps:
@@ -49,6 +57,14 @@ jobs:
               - added|modified: '${{ env.IAM_DIR }}/**'
             media:
               - added|modified: '${{ env.MEDIA_DIR }}/**'
+            notification:
+              - added|modified: '${{ env.NOTIFICATION_DIR }}/**'
+            setting:
+              - added|modified: '${{ env.SETTING_DIR }}/**'
+            audit:
+              - added|modified: '${{ env.AUDIT_DIR }}/**'
+            sync:
+              - added|modified: '${{ env.SYNC_DIR }}/**'
             dataset:
               - added|modified: '${{ env.DATASET_DIR }}/**'
 
@@ -198,14 +214,14 @@ jobs:
           name: iam-code-coverage
           path: ${{ env.IAM_DIR }}/coverage
 
-  dataset:
-    name: Dataset Service
-    if: ${{ needs.changes.outputs.dataset == 'true' }}
+  notification:
+    name: Notification Service
+    if: ${{ needs.changes.outputs.notification == 'true' }}
     needs: changes
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ${{ env.DATASET_DIR }}
+        working-directory: ${{ env.NOTIFICATION_DIR }}
     services:
       postgres:
         image: postgres:17
@@ -224,21 +240,29 @@ jobs:
           list-files: shell
           filters: |
             ruby:
-              - added|modified: '${{ env.DATASET_DIR }}/Gemfile.lock'
-              - added|modified: '${{ env.DATASET_DIR }}/**/*.rb'
-              - added|modified: '${{ env.DATASET_DIR }}/**/*.rake'
+              - added|modified: '${{ env.NOTIFICATION_DIR }}/Gemfile.lock'
+              - added|modified: '${{ env.NOTIFICATION_DIR }}/**/*.rb'
+              - added|modified: '${{ env.NOTIFICATION_DIR }}/**/*.rake'
 
       - name: Format Changed files
         id: filter-format
         run: |
-          echo "ruby_files=$(echo '${{ steps.filter.outputs.ruby_files }}' | sed -r 's/app\/dataset\/+//g')" >> $GITHUB_OUTPUT
+          echo "ruby_files=$(echo '${{ steps.filter.outputs.ruby_files }}' | sed -r 's/app\/notification\/+//g')" >> $GITHUB_OUTPUT
+
+      - name: Install dependencies
+        if: ${{ steps.filter.outputs.ruby == 'true' }}
+        run: |
+          sudo apt-get install -y \
+            imagemagick \
+            libmagickcore-dev \
+            libmagickwand-dev
 
       - uses: ruby/setup-ruby@v1
         if: ${{ steps.filter.outputs.ruby == 'true'  }}
         with:
           # runs 'bundle install' and caches installed gems automatically
           bundler-cache: true
-          working-directory: ${{ env.DATASET_DIR }}
+          working-directory: ${{ env.NOTIFICATION_DIR }}
         env:
           APP_ENVIRONMENT: test
 
@@ -274,8 +298,269 @@ jobs:
         if: ${{ steps.filter.outputs.ruby == 'true' || (steps.filter.outputs.ruby == 'true' && failure()) }}
         uses: actions/upload-artifact@v4
         with:
-          name: dataset-code-coverage
-          path: ${{ env.DATASET_DIR }}/coverage
+          name: notification-code-coverage
+          path: ${{ env.MEDIA_DIR }}/coverage
+
+  setting:
+    name: Setting Service
+    if: ${{ needs.changes.outputs.setting == 'true' }}
+    needs: changes
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.SETTING_DIR }}
+    services:
+      postgres:
+        image: postgres:17
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          list-files: shell
+          filters: |
+            ruby:
+              - added|modified: '${{ env.SETTING_DIR }}/Gemfile.lock'
+              - added|modified: '${{ env.SETTING_DIR }}/**/*.rb'
+              - added|modified: '${{ env.SETTING_DIR }}/**/*.rake'
+
+      - name: Format Changed files
+        id: filter-format
+        run: |
+          echo "ruby_files=$(echo '${{ steps.filter.outputs.ruby_files }}' | sed -r 's/app\/setting\/+//g')" >> $GITHUB_OUTPUT
+
+      - name: Install dependencies
+        if: ${{ steps.filter.outputs.ruby == 'true' }}
+        run: |
+          sudo apt-get install -y \
+            imagemagick \
+            libmagickcore-dev \
+            libmagickwand-dev
+
+      - uses: ruby/setup-ruby@v1
+        if: ${{ steps.filter.outputs.ruby == 'true'  }}
+        with:
+          # runs 'bundle install' and caches installed gems automatically
+          bundler-cache: true
+          working-directory: ${{ env.SETTING_DIR }}
+        env:
+          APP_ENVIRONMENT: test
+
+      - name: Setup Database
+        if: ${{ steps.filter.outputs.ruby == 'true' }}
+        run: |
+          bundle exec rake db:test:prepare
+        env:
+          APP_ENVIRONMENT: test
+          POSTGRES_CREDENTIALS: postgres:postgres
+
+      - name: Run Rubocop
+        if: ${{ steps.filter.outputs.ruby == 'true' || (steps.filter.outputs.ruby == 'true' && failure()) }}
+        run: |
+          bundle exec rubocop --force-exclusion ${{ steps.filter-format.outputs.ruby_files }}
+        env:
+          APP_ENVIRONMENT: test
+
+      - name: Run RSpec
+        if: ${{ steps.filter.outputs.ruby == 'true' || (steps.filter.outputs.ruby == 'true' && failure()) }}
+        run: LOG_LEVEL=error bundle exec rspec --fail-fast
+        env:
+          CI: true
+          APP_ENVIRONMENT: test
+          POSTGRES_CREDENTIALS: postgres:postgres
+
+      - name: Check Code Coverage
+        if: ${{ steps.filter.outputs.ruby == 'true' }}
+        run: |
+          cp -r ../../common/bin ./bin && bin/check-coverage
+
+      - name: Upload Code Coverage
+        if: ${{ steps.filter.outputs.ruby == 'true' || (steps.filter.outputs.ruby == 'true' && failure()) }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: setting-code-coverage
+          path: ${{ env.MEDIA_DIR }}/coverage
+
+  audit:
+    name: Audit Service
+    if: ${{ needs.changes.outputs.audit == 'true' }}
+    needs: changes
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.AUDIT_DIR }}
+    services:
+      postgres:
+        image: postgres:17
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          list-files: shell
+          filters: |
+            ruby:
+              - added|modified: '${{ env.AUDIT_DIR }}/Gemfile.lock'
+              - added|modified: '${{ env.AUDIT_DIR }}/**/*.rb'
+              - added|modified: '${{ env.AUDIT_DIR }}/**/*.rake'
+
+      - name: Format Changed files
+        id: filter-format
+        run: |
+          echo "ruby_files=$(echo '${{ steps.filter.outputs.ruby_files }}' | sed -r 's/app\/audit\/+//g')" >> $GITHUB_OUTPUT
+
+      - name: Install dependencies
+        if: ${{ steps.filter.outputs.ruby == 'true' }}
+        run: |
+          sudo apt-get install -y \
+            imagemagick \
+            libmagickcore-dev \
+            libmagickwand-dev
+
+      - uses: ruby/setup-ruby@v1
+        if: ${{ steps.filter.outputs.ruby == 'true'  }}
+        with:
+          # runs 'bundle install' and caches installed gems automatically
+          bundler-cache: true
+          working-directory: ${{ env.AUDIT_DIR }}
+        env:
+          APP_ENVIRONMENT: test
+
+      - name: Setup Database
+        if: ${{ steps.filter.outputs.ruby == 'true' }}
+        run: |
+          bundle exec rake db:test:prepare
+        env:
+          APP_ENVIRONMENT: test
+          POSTGRES_CREDENTIALS: postgres:postgres
+
+      - name: Run Rubocop
+        if: ${{ steps.filter.outputs.ruby == 'true' || (steps.filter.outputs.ruby == 'true' && failure()) }}
+        run: |
+          bundle exec rubocop --force-exclusion ${{ steps.filter-format.outputs.ruby_files }}
+        env:
+          APP_ENVIRONMENT: test
+
+      - name: Run RSpec
+        if: ${{ steps.filter.outputs.ruby == 'true' || (steps.filter.outputs.ruby == 'true' && failure()) }}
+        run: LOG_LEVEL=error bundle exec rspec --fail-fast
+        env:
+          CI: true
+          APP_ENVIRONMENT: test
+          POSTGRES_CREDENTIALS: postgres:postgres
+
+      - name: Check Code Coverage
+        if: ${{ steps.filter.outputs.ruby == 'true' }}
+        run: |
+          cp -r ../../common/bin ./bin && bin/check-coverage
+
+      - name: Upload Code Coverage
+        if: ${{ steps.filter.outputs.ruby == 'true' || (steps.filter.outputs.ruby == 'true' && failure()) }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-code-coverage
+          path: ${{ env.MEDIA_DIR }}/coverage
+
+  sync:
+    name: Sync Service
+    if: ${{ needs.changes.outputs.sync == 'true' }}
+    needs: changes
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.SYNC_DIR }}
+    services:
+      postgres:
+        image: postgres:17
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          list-files: shell
+          filters: |
+            ruby:
+              - added|modified: '${{ env.SYNC_DIR }}/Gemfile.lock'
+              - added|modified: '${{ env.SYNC_DIR }}/**/*.rb'
+              - added|modified: '${{ env.SYNC_DIR }}/**/*.rake'
+
+      - name: Format Changed files
+        id: filter-format
+        run: |
+          echo "ruby_files=$(echo '${{ steps.filter.outputs.ruby_files }}' | sed -r 's/app\/sync\/+//g')" >> $GITHUB_OUTPUT
+
+      - name: Install dependencies
+        if: ${{ steps.filter.outputs.ruby == 'true' }}
+        run: |
+          sudo apt-get install -y \
+            imagemagick \
+            libmagickcore-dev \
+            libmagickwand-dev
+
+      - uses: ruby/setup-ruby@v1
+        if: ${{ steps.filter.outputs.ruby == 'true'  }}
+        with:
+          # runs 'bundle install' and caches installed gems automatically
+          bundler-cache: true
+          working-directory: ${{ env.SYNC_DIR }}
+        env:
+          APP_ENVIRONMENT: test
+
+      - name: Setup Database
+        if: ${{ steps.filter.outputs.ruby == 'true' }}
+        run: |
+          bundle exec rake db:test:prepare
+        env:
+          APP_ENVIRONMENT: test
+          POSTGRES_CREDENTIALS: postgres:postgres
+
+      - name: Run Rubocop
+        if: ${{ steps.filter.outputs.ruby == 'true' || (steps.filter.outputs.ruby == 'true' && failure()) }}
+        run: |
+          bundle exec rubocop --force-exclusion ${{ steps.filter-format.outputs.ruby_files }}
+        env:
+          APP_ENVIRONMENT: test
+
+      - name: Run RSpec
+        if: ${{ steps.filter.outputs.ruby == 'true' || (steps.filter.outputs.ruby == 'true' && failure()) }}
+        run: LOG_LEVEL=error bundle exec rspec --fail-fast
+        env:
+          CI: true
+          APP_ENVIRONMENT: test
+          POSTGRES_CREDENTIALS: postgres:postgres
+
+      - name: Check Code Coverage
+        if: ${{ steps.filter.outputs.ruby == 'true' }}
+        run: |
+          cp -r ../../common/bin ./bin && bin/check-coverage
+
+      - name: Upload Code Coverage
+        if: ${{ steps.filter.outputs.ruby == 'true' || (steps.filter.outputs.ruby == 'true' && failure()) }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: sync-code-coverage
+          path: ${{ env.MEDIA_DIR }}/coverage
 
   media:
     name: Media Service
@@ -363,3 +648,82 @@ jobs:
         with:
           name: media-code-coverage
           path: ${{ env.MEDIA_DIR }}/coverage
+
+  dataset:
+    name: Dataset Service
+    if: ${{ needs.changes.outputs.dataset == 'true' }}
+    needs: changes
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.DATASET_DIR }}
+    services:
+      postgres:
+        image: postgres:17
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          list-files: shell
+          filters: |
+            ruby:
+              - added|modified: '${{ env.DATASET_DIR }}/Gemfile.lock'
+              - added|modified: '${{ env.DATASET_DIR }}/**/*.rb'
+              - added|modified: '${{ env.DATASET_DIR }}/**/*.rake'
+
+      - name: Format Changed files
+        id: filter-format
+        run: |
+          echo "ruby_files=$(echo '${{ steps.filter.outputs.ruby_files }}' | sed -r 's/app\/dataset\/+//g')" >> $GITHUB_OUTPUT
+
+      - uses: ruby/setup-ruby@v1
+        if: ${{ steps.filter.outputs.ruby == 'true'  }}
+        with:
+          # runs 'bundle install' and caches installed gems automatically
+          bundler-cache: true
+          working-directory: ${{ env.DATASET_DIR }}
+        env:
+          APP_ENVIRONMENT: test
+
+      - name: Setup Database
+        if: ${{ steps.filter.outputs.ruby == 'true' }}
+        run: |
+          bundle exec rake db:test:prepare
+        env:
+          APP_ENVIRONMENT: test
+          POSTGRES_CREDENTIALS: postgres:postgres
+
+      - name: Run Rubocop
+        if: ${{ steps.filter.outputs.ruby == 'true' || (steps.filter.outputs.ruby == 'true' && failure()) }}
+        run: |
+          bundle exec rubocop --force-exclusion ${{ steps.filter-format.outputs.ruby_files }}
+        env:
+          APP_ENVIRONMENT: test
+
+      - name: Run RSpec
+        if: ${{ steps.filter.outputs.ruby == 'true' || (steps.filter.outputs.ruby == 'true' && failure()) }}
+        run: LOG_LEVEL=error bundle exec rspec --fail-fast
+        env:
+          CI: true
+          APP_ENVIRONMENT: test
+          POSTGRES_CREDENTIALS: postgres:postgres
+
+      - name: Check Code Coverage
+        if: ${{ steps.filter.outputs.ruby == 'true' }}
+        run: |
+          cp -r ../../common/bin ./bin && bin/check-coverage
+
+      - name: Upload Code Coverage
+        if: ${{ steps.filter.outputs.ruby == 'true' || (steps.filter.outputs.ruby == 'true' && failure()) }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: dataset-code-coverage
+          path: ${{ env.DATASET_DIR }}/coverage

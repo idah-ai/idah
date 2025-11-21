@@ -13,6 +13,10 @@ services:
       - dataset
       - iam
       - setting
+      - audit
+      - sync
+      - notification
+      - mails
     networks:
       - app-network
 
@@ -127,6 +131,99 @@ services:
     command: ./dev-entrypoint.sh puma
     stdin_open: true
     tty: true
+
+  audit:
+    build:
+      context: ./app/audit
+      dockerfile: Dockerfile
+      args:
+        BUNDLE_WITHOUT: "" # Allow all groups for dev.
+        APP_ENVIRONMENT: development
+    environment:
+      - POSTGRES_HOST=host.docker.internal
+      - REDIS_STREAM_URL=redis://host.docker.internal:6379/0
+      - EAGER_LOAD=1
+    ports:
+      - "3000"
+    volumes:
+      - ./app/audit:/app
+      - ./app/audit/common:/app/common
+      - ./dev/nginx/ssl/cert.pem:/etc/ssl/certs/ca-certificates.crt
+      - bundler_cache:/usr/local/bundle
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+      - "idah.localhost:host-gateway"
+    networks:
+      - app-network
+    command: ./dev-entrypoint.sh puma
+    stdin_open: true
+    tty: true
+
+  sync:
+    build:
+      context: ./app/sync
+      dockerfile: Dockerfile
+      args:
+        BUNDLE_WITHOUT: "" # Allow all groups for dev.
+        APP_ENVIRONMENT: development
+    environment:
+      - POSTGRES_HOST=host.docker.internal
+      - REDIS_STREAM_URL=redis://host.docker.internal:6379/0
+      - EAGER_LOAD=1
+    ports:
+      - "3000"
+    volumes:
+      - ./app/sync:/app
+      - ./app/sync/common:/app/common
+      - ./dev/nginx/ssl/cert.pem:/etc/ssl/certs/ca-certificates.crt
+      - bundler_cache:/usr/local/bundle
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+      - "idah.localhost:host-gateway"
+    networks:
+      - app-network
+    command: ./dev-entrypoint.sh puma
+    stdin_open: true
+    tty: true
+
+  notification:
+    build:
+      context: ./app/notification
+      dockerfile: Dockerfile
+      args:
+        BUNDLE_WITHOUT: "" # Allow all groups for dev.
+        APP_ENVIRONMENT: development
+    environment:
+      - POSTGRES_HOST=host.docker.internal
+      - REDIS_STREAM_URL=redis://host.docker.internal:6379/0
+      - EAGER_LOAD=1
+    ports:
+      - "3000"
+    volumes:
+      - ./app/notification:/app
+      - ./app/notification/common:/app/common
+      - ./dev/nginx/ssl/cert.pem:/etc/ssl/certs/ca-certificates.crt
+      - bundler_cache:/usr/local/bundle
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+      - "idah.localhost:host-gateway"
+    networks:
+      - app-network
+    command: ./dev-entrypoint.sh puma
+    stdin_open: true
+    tty: true
+
+  mails:
+    image: mailhog/mailhog
+    platform: linux/amd64
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+      - "idah.localhost:host-gateway"
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - app-network
 
   frontend:
     build:

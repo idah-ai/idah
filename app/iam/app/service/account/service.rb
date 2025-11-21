@@ -32,7 +32,17 @@ module Account
         record.attributes[:hashed_password] = BCrypt::Password.create(password)
 
         record_id = accounts.create(record.attributes)
-        accounts.find!(record_id)
+        created_account = accounts.find!(record_id)
+
+        # Send the password reset email
+        ::Service::Notification.email(
+          recipient_account_email: created_account.email,
+          title: "Account Created",
+          category: "account_created",
+          password_reset_token: "just_test_token"
+        )
+
+        created_account
       end
     end
 

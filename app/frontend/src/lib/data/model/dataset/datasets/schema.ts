@@ -6,7 +6,7 @@ export const datasetSchema = z.object({
   // labels
 
   // modality: z.string("Dataset modality is required."),
-  modality: z.string("Dataset modality is required."),
+  modality: z.string("Dataset modality is required.").min(1, "Dataset modality is required."),
 
   // labeling_configuration
   // workflow_configuration
