@@ -33,7 +33,7 @@ namespace :service_accounts do
       repo.transaction do
         services.each do |(service, password)|
           email = "#{service}@#{service_name}"
-          role = "anonymous"
+          role = "system"
 
           record = repo.find_by({ email: })
 
