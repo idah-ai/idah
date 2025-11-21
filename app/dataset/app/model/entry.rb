@@ -45,7 +45,7 @@ module Entry
     # create, update, delete | project_owner
     #
     # Info:
-    # 1. only org_owner and project_owner(member) can create, update and delete entries
+    # 1. project_owner can create, update and delete entries
     # 2. annotator and reviewer can only read entries assigned to them
     query
     def user_project_scoped_query(action)
@@ -58,12 +58,14 @@ module Entry
       when :read
         scoped_fragment = <<-SQL
           EXISTS (
+            -- All with roles
             SELECT 1
             FROM project_members pm
             WHERE pm.account_id = :account_id
               AND pm.project_id = entries.project_id
               AND pm.role IN :with_roles
           ) OR (
+            -- Only assigned entries with roles
             entries.assigned_to_id = :account_id
             AND EXISTS (
               SELECT 1
