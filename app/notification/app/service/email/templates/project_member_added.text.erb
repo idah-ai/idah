@@ -1,0 +1,8 @@
+
+You have been invited to project <%= notification.project_name %>
+
+Hello <%= account.name %>,
+<%= notification.inviter_email %> has invited you to join the project <%= notification.project_name %>.
+
+Accept Invitation:
+<%= [ENV.fetch("IDAH_URL"), "/login"].join("") %>

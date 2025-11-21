@@ -19,7 +19,7 @@
   // Props
   interface Props extends InputFieldBaseProps {
     type?: HTMLInputTypeAttribute;
-    value: string | null;
+    value: string | null | undefined;
   }
   let {
     value = $bindable(null),
@@ -61,7 +61,18 @@
       </InputGroupAddon>
     {/if}
 
-    <InputGroupInput id={name} {type} {placeholder} {disabled} {required} {readonly} {value} {oninput} {onblur} />
+    <InputGroupInput
+      id={name}
+      aria-invalid={errors ? "true" : "false"}
+      {type}
+      {placeholder}
+      {disabled}
+      {required}
+      {readonly}
+      {value}
+      {oninput}
+      {onblur}
+    />
 
     {#if suffix}
       <InputGroupAddon align="inline-end">
