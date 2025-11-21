@@ -4,7 +4,7 @@ module Service
   module Notification
     module_function
 
-    SEND_EMAIL_CHANNEL = "service.notification.send_email".freeze
+    SEND_EMAIL_CHANNEL = "notification:email"
 
     def email(
       title:,
