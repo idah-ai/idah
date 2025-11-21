@@ -21,7 +21,7 @@ RSpec.describe Project::Service, database: true do
   let(:reviewer_account_id) { 5 }
 
   # Project Members
-  let!(:project_owner_member_id) {
+  let(:project_owner_member_id) {
     project_member_repo.create(
       project_id: first_project_id,
       account_id: project_owner_account_id,
@@ -30,7 +30,7 @@ RSpec.describe Project::Service, database: true do
       invited_by_id: 1
     )
   }
-  let!(:annotator_member_id) {
+  let(:annotator_member_id) {
     project_member_repo.create(
       project_id: first_project_id,
       account_id: annotator_account_id,
@@ -39,7 +39,7 @@ RSpec.describe Project::Service, database: true do
       invited_by_id: 1
     )
   }
-  let!(:reviewer_member_id) {
+  let(:reviewer_member_id) {
     project_member_repo.create(
       project_id: second_project_id,
       account_id: reviewer_account_id,
@@ -166,6 +166,12 @@ RSpec.describe Project::Service, database: true do
   context "as Project Owner", as: :project_owner do
     subject { described_class.new(current_auth_context) }
 
+    before do
+      project_owner_member_id # assigned
+      annotator_member_id # not assigned
+      reviewer_member_id # not assigned
+    end
+
     describe "with assigned project" do
       it "can index" do
         result = subject.index({})
@@ -234,6 +240,12 @@ RSpec.describe Project::Service, database: true do
   context "as Annotator", as: :annotator do
     subject { described_class.new(current_auth_context) }
 
+    before do
+      project_owner_member_id # not assigned
+      annotator_member_id # assigned
+      reviewer_member_id # not assigned
+    end
+
     describe "with assigned project" do
       it "can index" do
         result = subject.index({})
@@ -299,6 +311,12 @@ RSpec.describe Project::Service, database: true do
   # Not Assigned  |   x   |   x    |    x   |    x
   context "as Reviewer", as: :reviewer do
     subject { described_class.new(current_auth_context) }
+
+    before do
+      project_owner_member_id # not assigned
+      annotator_member_id # not assigned
+      reviewer_member_id # assigned
+    end
 
     describe "with assigned project" do
       it "can index" do
