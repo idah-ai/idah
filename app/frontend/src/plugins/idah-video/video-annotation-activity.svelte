@@ -150,7 +150,7 @@
         label: "Notes",
         type: IDAH_NOTE,
         iconName: "message-circle",
-        disabled: context.workflowStep !== "review", // Note: This should be checked with dataset.workflow_configuration.noteable_steps after Tojo implements it
+        disabled: !["annotate", "review"].includes(context.workflowStep), // Note: Only allow to create note when workflow steps are "annotate" and "review"
         handleClick: () => context.commands.run("tools.note"),
       },
     ]);
@@ -786,7 +786,7 @@
          */
         sidebar_width: annotationSidebarWidthRem * 16,
       },
-      annotationId: annotationId,
+      annotation_id: annotationId,
     });
   }
 

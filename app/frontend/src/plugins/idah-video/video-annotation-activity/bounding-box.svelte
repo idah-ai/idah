@@ -182,7 +182,7 @@
     } else if (mode === IDAH_NOTE) {
       return "cursor-note";
     } else {
-      return "cursor-grab";
+      return pointer;
     }
   }
 </script>
