@@ -37,7 +37,7 @@ module ProjectMember
     # create, update, delete       | project_owner
     #
     # Info:
-    # 1. only allowed for org_owner and project_owner(member) can create, update and delete project members
+    # 1. project_owner can create, update and delete project members
     # 2. annotator and reviewer can only read project members in their projects
     query
     def user_project_scoped_query(action)
@@ -47,6 +47,7 @@ module ProjectMember
       account_id = auth_context.metadata[:id]
       scoped_fragment = <<-SQL
         EXISTS (
+          -- All with roles
           SELECT 1
           FROM project_members pm
           WHERE pm.account_id = :account_id
