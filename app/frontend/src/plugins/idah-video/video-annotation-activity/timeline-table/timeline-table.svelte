@@ -275,7 +275,7 @@
 )}
   <span
     class={cn(
-      `${bgColor} ${textColor} pointer-events-none absolute top-0 left-1/2 z-50 -translate-x-1/2 transform rounded-md px-2 py-1 text-xs font-medium whitespace-nowrap transition-all duration-150`,
+      `${bgColor} ${textColor} pointer-events-none absolute top-0 left-1/2 z-40 -translate-x-1/2 transform rounded-md px-2 py-1 text-xs font-medium whitespace-nowrap transition-all duration-150`,
       extraClass,
     )}
   >
@@ -334,7 +334,7 @@
     if (delta || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) e.preventDefault();
   }}
 >
-  <TableHeader class="bg-background sticky z-50" style="inset-block-start: 0">
+  <TableHeader class="bg-background sticky z-40" style="inset-block-start: 0">
     <TableRow>
       <!-- HEADER::ANNOTATIONS -->
       <TableHead class="h-7 w-60"></TableHead>
@@ -373,19 +373,19 @@
 
             {#if !isOutOfRange && isSelected}
               <button
-                class="border-border text-primary bg-background absolute top-0 z-50 h-full cursor-col-resize border-l"
+                class="border-border text-primary bg-background absolute top-0 z-40 h-full cursor-col-resize border-l"
                 style:width="{width}%"
                 style:padding-left="0.125rem"
                 style:left="{startLeftPosition}%"
                 onclick={() => seekToFrame(thisFrame)}
               >
-                <div class="bg-primary absolute top-0 left-1/2 z-50 w-0.5 -translate-x-1/2" style="height: 80vh;"></div>
+                <div class="bg-primary absolute top-0 left-1/2 z-40 w-0.5 -translate-x-1/2" style="height: 80vh;"></div>
                 {@render tooltipFrame(thisFrame, "bg-primary", "text-primary-foreground")}
               </button>
             {:else if !isOutOfRange && isDefault}
               <button
                 class={cn("border-border text-muted-foreground/50 absolute top-0 h-full cursor-pointer border-l", {
-                  "z-100": isHovered,
+                  "z-40": isHovered,
                   "z-0": !isHovered,
                 })}
                 style:width="{width}%"
@@ -396,7 +396,7 @@
               >
                 {#if isHovered}
                   <div
-                    class="bg-secondary-foreground absolute top-0 left-1/2 z-50 w-0.5 -translate-x-1/2 dark:bg-gray-700"
+                    class="bg-secondary-foreground absolute top-0 left-1/2 z-40 w-0.5 -translate-x-1/2 dark:bg-gray-700"
                     style="height: 80vh;"
                   ></div>
                   {@render tooltipFrame(
@@ -412,7 +412,7 @@
               <button
                 aria-label="tick"
                 class={cn("border-border absolute bottom-0 cursor-pointer border-l", {
-                  "z-100": isHovered,
+                  "z-40": isHovered,
                   "z-0": !isHovered,
                 })}
                 style:height="60%"
@@ -424,7 +424,7 @@
               >
                 {#if isHovered}
                   <div
-                    class="bg-secondary-foreground absolute top-0 left-1/2 z-50 w-0.5 -translate-x-1/2 dark:bg-gray-700"
+                    class="bg-secondary-foreground absolute top-0 left-1/2 z-40 w-0.5 -translate-x-1/2 dark:bg-gray-700"
                     style="height: 80vh;"
                   ></div>
                   {@render tooltipFrame(
