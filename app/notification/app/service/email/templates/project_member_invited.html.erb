@@ -5,12 +5,12 @@
 
   <p style="font-size: 14px;line-height: 20px;">Hi <%= account.name %>,</p>
   <p style="text-align: center;font-size: 14px;line-height: 20px;margin: 0 100px;">
-    '<%= notification.inviter_email %>' has invited you to join the project '<%= notification.project_name %>'.
+  You have been added to the project '<%= notification.project_name %>' by '<%= notification.inviter_email %>'.
   </p>
 
-  <div style="border: 1px solid rgba(81, 232, 203, 1); border-radius: 8px; padding: 10px 14px;width: 150px;margin: 20px auto;">
-    <a href="<%= [ENV.fetch("IDAH_URL"), "/login"].join("") %>" style="text-decoration: none; color: rgba(81, 232, 203, 1); font-size: 14px; font-weight: 600;width: 150px;margin: 0 auto;">
-      Accept Invitation
+   <div style="background-color:#3A81F6; border-radius: 8px; padding: 10px 14px;width: 150px;margin: 20px auto;">
+    <a href="<%= [ENV.fetch("IDAH_URL"), "/projects/#{notification.project_id}"].join("") %>" style="text-decoration: none; color: #fff; font-size: 14px; font-weight: 600;width: 150px;margin: 0 auto;">
+      go to project
     </a>
   </div>
 </div>
