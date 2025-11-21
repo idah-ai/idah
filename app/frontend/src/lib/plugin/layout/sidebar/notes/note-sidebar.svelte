@@ -1,12 +1,12 @@
 <script lang="ts">
   import { page } from "$app/state";
   import {
-      ArrowLeftIcon,
-      FunnelIcon,
-      MessageCircleDashedIcon,
-      SquareCheckBigIcon,
-      SquareIcon,
-      XIcon,
+    ArrowLeftIcon,
+    FunnelIcon,
+    MessageCircleDashedIcon,
+    SquareCheckBigIcon,
+    SquareIcon,
+    XIcon,
   } from "@lucide/svelte";
   import { onMount } from "svelte";
   import { toast } from "svelte-sonner";
