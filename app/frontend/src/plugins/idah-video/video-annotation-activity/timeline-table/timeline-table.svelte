@@ -31,6 +31,7 @@
     onZoomChange,
     onScaleChange,
     db,
+    isPlaying = false,
   }: {
     annotations_promise: Promise<VideoAnnotation[]>;
     // tracking?: boolean;
@@ -45,6 +46,7 @@
     onZoomChange?: (zoom: number) => void;
     onScaleChange?: (zoom: number) => void;
     db?: AnnotationsIndexedDB;
+    isPlaying?: boolean;
   } = $props();
 
   // Contexts
@@ -53,33 +55,29 @@
   // Variables
   let isResizing: boolean = $state(false);
 
-  // $effect(() => {
-  //     if (tracking) {
-  //         if (currentFrame < pos_offset)
-  //         setOffset(currentFrame)
-  //         else if (currentFrame > pos_offset + range_span)
-  //         setOffset(currentFrame - range_span)
-  //     }
-  // })
-
   let range_span = $derived(Math.min(scale * zoom, totalFrames));
+  let manual_offset = 1;
 
-  let pos_offset: number = $state(1);
+  let pos_offset = $derived.by(() => {
+    let offset = manual_offset;
+
+    const isOutsideRange = currentFrame < offset || currentFrame > offset + range_span;
+
+    if (isOutsideRange) {
+      const centerOffset = currentFrame - Math.floor(range_span / 2);
+      offset = Math.max(1, Math.min(totalFrames - range_span, centerOffset));
+
+      if (isPlaying) {
+        manual_offset = offset;
+      }
+    }
+
+    return offset;
+  });
+
   let range: [number, number] = $derived([pos_offset, Math.min(pos_offset + range_span, totalFrames)]);
   let wheelthrottling = $state(false);
   let hoveredColumn: number | undefined = $state();
-  let prevCurrentFrame: number = $state(currentFrame);
-  $effect(() => {
-    // Auto-scroll to center currentFrame only when it's outside the visible range
-    if (currentFrame !== prevCurrentFrame) {
-      // Only center if the frame is outside the currently visible range
-      if (currentFrame < pos_offset || currentFrame > pos_offset + range_span) {
-        const centerOffset = currentFrame - Math.floor(range_span / 2);
-        setOffset(centerOffset);
-      }
-      prevCurrentFrame = currentFrame;
-    }
-  });
 
   export function setOffset(offset: number) {
     pos_offset = Math.max(1, Math.min(totalFrames - range_span, offset || 0));
@@ -381,6 +379,7 @@
                 style:left="{startLeftPosition}%"
                 onclick={() => seekToFrame(thisFrame)}
               >
+                <div class="bg-primary absolute top-0 left-1/2 z-50 w-0.5 -translate-x-1/2" style="height: 80vh;"></div>
                 {@render tooltipFrame(thisFrame, "bg-primary", "text-primary-foreground")}
               </button>
             {:else if !isOutOfRange && isDefault}
@@ -396,9 +395,13 @@
                 onmouseleave={() => (hoveredColumn = undefined)}
               >
                 {#if isHovered}
+                  <div
+                    class="bg-secondary-foreground absolute top-0 left-1/2 z-50 w-0.5 -translate-x-1/2 dark:bg-gray-700"
+                    style="height: 80vh;"
+                  ></div>
                   {@render tooltipFrame(
                     thisFrame,
-                    "bg-secondary-foreground dark:bg-secondary",
+                    "bg-secondary-foreground dark:bg-gray-700",
                     "text-secondary dark:text-secondary-foreground",
                   )}
                 {:else}
@@ -420,9 +423,13 @@
                 onmouseleave={() => (hoveredColumn = undefined)}
               >
                 {#if isHovered}
+                  <div
+                    class="bg-secondary-foreground absolute top-0 left-1/2 z-50 w-0.5 -translate-x-1/2 dark:bg-gray-700"
+                    style="height: 80vh;"
+                  ></div>
                   {@render tooltipFrame(
                     thisFrame,
-                    "bg-secondary-foreground dark:bg-secondary",
+                    "bg-secondary-foreground dark:bg-gray-700",
                     "text-secondary dark:text-secondary-foreground",
                     "-top-2.5",
                   )}
