@@ -4,17 +4,8 @@
   import BoundingBox, { type ToolSelection } from "./bounding-box.svelte";
   import { boundingBoxes } from "./idb_store.svelte";
 
-  import { DEFAULT_MODE, ENTRY_ROOT, IDAH_VIDEO_BOUNDING_BOX, type EntryRoot } from "../type";
-  import {
-    HEIGHT,
-    ORIGIN,
-    WIDTH,
-    X,
-    Y,
-    type Point,
-    type VideoAnnotation,
-    type VideoFrameSelection,
-  } from "./VideoAnnotationContext";
+  import { DEFAULT_MODE, ENTRY_ROOT, IDAH_NOTE, IDAH_VIDEO_BOUNDING_BOX, type EntryRoot } from "../type";
+  import { HEIGHT, ORIGIN, WIDTH, X, Y, type Point, type VideoFrameSelection } from "./VideoAnnotationContext";
   import Zoomable from "./zoomable.svelte";
 
   import type {
@@ -24,6 +15,7 @@
     AnnotationValue,
   } from "@/context/AnnotationContext";
   import type { IActivityContext, INoteFeed } from "@/plugin/interface/Activity";
+  import { cn } from "@/utils";
 
   // Types
   export interface OnAddNewNoteParams {
@@ -98,7 +90,7 @@
   let points: Point[] = $derived.by(() => {
     return shape ? currentShape(shape, frame) || [] : [];
   });
-  let isNoteMode: boolean = $derived(mode === "note");
+  let isNoteMode: boolean = $derived(mode === IDAH_NOTE);
 
   function updatedSize(): Point {
     videoResizedAt; // eslint-disable-line @typescript-eslint/no-unused-expressions
@@ -182,7 +174,6 @@
   }
 
   let toolSelection: ToolSelection | undefined = $state();
-
   export function selectionStart(e: MouseEvent) {
     if (!shape) {
       zoomableElement.mouseDown(e);
@@ -207,11 +198,11 @@
     zoomableElement.mouseUp(e);
   }
 
-  function showNewNoteFeedPopup(annotation?: VideoAnnotation) {
+  function showNewNoteFeedPopup(annotation?: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) {
     /**
      * Show new note feed dialog only when there is no dragging (i.e. zoom offset did not change)
      */
-    if (mode === "note") {
+    if (mode === IDAH_NOTE) {
       onAddNewNote({
         anchorType: annotation ? "annotation" : "entry",
         position: {
@@ -253,11 +244,17 @@
   const cursorConstraints = new Map([[IDAH_VIDEO_BOUNDING_BOX, 4]]);
 
   let pointer = $derived.by(() => {
-    return mode != DEFAULT_MODE ? (points.length < (cursorConstraints.get(mode) || 0) ? "crosshair" : "grab") : "grab";
+    return mode != DEFAULT_MODE
+      ? mode == IDAH_NOTE
+        ? "cursor-note"
+        : points.length < (cursorConstraints.get(mode) || 0) || toolSelection?.isEditing()
+          ? "cursor-crosshair"
+          : "cursor-grab"
+      : "cursor-grab";
   });
 </script>
 
-<div class="svg-overlay flex-1" class:cursor-note={isNoteMode}>
+<div class={cn("svg-overlay flex-1", pointer)}>
   <div>
     <Zoomable bind:this={zoomableElement} {mode} onZoomChange={(scale, offset) => (zoomInfo = { scale, offset })}>
       {@render children?.()}
@@ -282,7 +279,6 @@
     onmousedown={(e) => selectionStart(e)}
     onwheel={(e) => zoomableElement.onWheel(e)}
     {...restProps}
-    style:cursor={pointer}
   >
     {#if width && height && !isNoteMode && (pointer == "crosshair" || toolSelection?.isEditing())}
       <!-- prevent display issue on load for now -->
@@ -311,7 +307,7 @@
                   onSelectAnnotation(annotation);
                 }
 
-                if (mode === "note") {
+                if (mode === IDAH_NOTE) {
                   showNewNoteFeedPopup(annotation);
                 }
               }}
@@ -341,7 +337,7 @@
                   onSelectAnnotation(annotation);
                 }
 
-                if (mode === "note") {
+                if (mode === IDAH_NOTE) {
                   showNewNoteFeedPopup(annotation);
                 }
               }}
