@@ -103,7 +103,7 @@ RSpec.describe Annotation::Service, database: true do
       resource: "http://example.com/first.mp4",
       wf_step: "start",
       status: "pending",
-      assigned_to_id: 4, # annotator
+      assigned_to_id: annotator_account_id
     )
   }
   let(:second_entry_id) {
@@ -114,7 +114,7 @@ RSpec.describe Annotation::Service, database: true do
       resource: "http://example.com/second.mp4",
       wf_step: "start",
       status: "pending",
-      assigned_to_id: 5, # reviewer
+      assigned_to_id: reviewer_account_id,
     )
   }
   let(:third_entry_id) {
@@ -122,7 +122,7 @@ RSpec.describe Annotation::Service, database: true do
       project_id: third_project_id,
       dataset_id: third_dataset_id,
       priority: 1,
-      resource: "http://example.com/second.mp4",
+      resource: "http://example.com/third.mp4",
       wf_step: "start",
       status: "pending",
       assigned_to_id: another_annotator_account_id,
@@ -326,14 +326,14 @@ RSpec.describe Annotation::Service, database: true do
     describe "with assigned project" do
       it "can index" do
         # Setup: Create annotations as "Project Owner" can see all annotations in assigned project
-        [first_annotation_id, second_annotation_id, third_annotation_id]
+        first_annotation_id # assigned
+        second_annotation_id # not assigned
+        third_annotation_id # not assigned
 
         result = subject.index({})
 
         expect(result.count).to eq 1
-
-        record = result.first
-        expect(record.id).to eq first_annotation_id
+        expect(result.first.id).to eq first_annotation_id
       end
 
       it "can create" do
@@ -369,12 +369,14 @@ RSpec.describe Annotation::Service, database: true do
     describe "with not assigned project" do
       it "cannot index" do
         # Setup: Create annotations as "Project Owner" can see all annotations in assigned project
-        [first_annotation_id, second_annotation_id, third_annotation_id]
+        first_annotation_id # assigned
+        second_annotation_id # not assigned
+        third_annotation_id # not assigned
 
         result = subject.index({})
 
         expect(result.count).to eq 1
-        expect(result.first.id).to_not include second_annotation_id, third_annotation_id
+        expect(result.map(&:id)).to_not include second_annotation_id, third_annotation_id
       end
 
       it "cannot create" do
@@ -420,7 +422,9 @@ RSpec.describe Annotation::Service, database: true do
     describe "with assigned project and assigned entries" do
       it "can index" do
         # Setup: Create annotations as "Annotator" can see all annotations in assigned entries
-        [first_annotation_id, second_annotation_id, third_annotation_id]
+        first_annotation_id # assigned
+        second_annotation_id # not assigned
+        third_annotation_id # not assigned
 
         result = subject.index({})
 
@@ -472,7 +476,9 @@ RSpec.describe Annotation::Service, database: true do
 
       it "cannot index" do
         # Setup: Create annotations as "Annotator" can see all annotations in assigned project
-        [first_annotation_id, second_annotation_id, third_annotation_id]
+        first_annotation_id # assigned
+        second_annotation_id # not assigned
+        third_annotation_id # not assigned
 
         # Ensure that the annotator is a member of the third project
         member = project_member_repo.find_by!({ account_id: annotator_account_id, project_id: third_project_id })
@@ -513,12 +519,14 @@ RSpec.describe Annotation::Service, database: true do
     describe "with not assigned project" do
       it "cannot index" do
         # Setup: Create annotations as "Annotator" can see all annotations in assigned project
-        [first_annotation_id, second_annotation_id, third_annotation_id]
+        first_annotation_id # assigned
+        second_annotation_id # not assigned
+        third_annotation_id # not assigned
 
         result = subject.index({})
 
         expect(result.count).to eq 1
-        expect(result.first.id).to_not include second_annotation_id, third_annotation_id
+        expect(result.map(&:id)).to_not include second_annotation_id, third_annotation_id
       end
 
       it "cannot create" do
@@ -564,7 +572,9 @@ RSpec.describe Annotation::Service, database: true do
     describe "with assigned project and assigned entries" do
       it "can index" do
         # Setup: Create annotations as "Reviewer" can see all annotations in assigned project
-        [first_annotation_id, second_annotation_id, third_annotation_id]
+        first_annotation_id # not assigned
+        second_annotation_id # assigned
+        third_annotation_id # not assigned
 
         result = subject.index({})
 
@@ -620,7 +630,9 @@ RSpec.describe Annotation::Service, database: true do
 
       it "cannot index" do
         # Setup: Create annotations as "Reviewer" can see all annotations in assigned project
-        [first_annotation_id, second_annotation_id, third_annotation_id]
+        first_annotation_id # not assigned
+        second_annotation_id # assigned
+        third_annotation_id # not assigned
 
         # Ensure that the reviewer is a member of the third project
         member = project_member_repo.find_by!({ account_id: reviewer_account_id, project_id: third_project_id })
@@ -661,12 +673,14 @@ RSpec.describe Annotation::Service, database: true do
     describe "with not assigned project" do
       it "cannot index" do
         # Setup: Create annotations as "Reviewer" can see all annotations in assigned project
-        [first_annotation_id, second_annotation_id, third_annotation_id]
+        first_annotation_id # not assigned
+        second_annotation_id # assigned
+        third_annotation_id # not assigned
 
         result = subject.index({})
 
         expect(result.count).to eq 1
-        expect(result.first.id).to_not include first_annotation_id, third_annotation_id
+        expect(result.map(&:id)).to_not include first_annotation_id, third_annotation_id
       end
 
       it "cannot create" do
