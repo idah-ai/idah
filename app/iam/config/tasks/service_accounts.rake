@@ -45,7 +45,7 @@ namespace :service_accounts do
               {
                 hashed_password: BCrypt::Password.create(password),
                 enabled: true,
-                role: role
+                role_name: role
               }
             )
           else
@@ -57,7 +57,7 @@ namespace :service_accounts do
                 email:,
                 hashed_password: BCrypt::Password.create(password),
                 enabled: true,
-                role: role
+                role_name: role
               }
             )
           end
