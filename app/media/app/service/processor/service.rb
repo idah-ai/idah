@@ -47,6 +47,7 @@ module Processor
         )
         # TODO: what to do with multiple job ids?
         # Update the entry with the job_id
+        binding.pry
         Api[:idah].dataset.entries.update(
           id: entry.id,
           status: "processing",
