@@ -15,7 +15,6 @@ RSpec.describe EmailsExpo, type: :exposition, as: :system do
       }
     end
 
-
     it "sends an email notification" do
       expect_any_instance_of(
         Email::Service
