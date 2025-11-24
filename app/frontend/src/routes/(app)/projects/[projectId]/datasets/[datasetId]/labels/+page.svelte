@@ -15,7 +15,7 @@
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
-  import { slugify } from "@/utils/string";
+  import { humanize, slugify } from "@/utils/string";
 
   import { labelColors } from "@/data/model/dataset/labels";
   import { pluginsBackendDataSource } from "@/data/model/setting/plugin/record";
@@ -84,6 +84,7 @@
         },
       });
       initialLabelConfig = JSON.parse(JSON.stringify(updatedDatasetRes.data.labeling_configuration));
+      labelConfig = updatedDatasetRes.data.labeling_configuration;
       toast.success("Labeling configuration changes saved successfully.");
     } catch (error) {
       console.error(error);
@@ -278,7 +279,7 @@
       if (!anyExistingCategoryStartsWithParent) {
         selectedLabelConfig.values.push({
           id: parentPath,
-          label: slugify(parentPath),
+          label: humanize(parentPath),
           color: firstAvailableColor.color,
           text_color: firstAvailableColor.text_color,
         });
