@@ -12,6 +12,7 @@ class AccountsExpo < BaseExpo
                       :email__match,
                       :enabled,
                       :role_name__in,
+                      :role_name__nin,
                       :joined_at__gte,
                       :joined_at__lte,
                       :created_at__gte,
