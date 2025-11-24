@@ -379,7 +379,10 @@
                 style:left="{startLeftPosition}%"
                 onclick={() => seekToFrame(thisFrame)}
               >
-                <div class="bg-primary absolute top-0 left-1/2 z-40 w-0.5 -translate-x-1/2" style="height: 80vh;"></div>
+                <div
+                  class="bg-primary absolute top-0 left-1/2 z-50 w-0.5 -translate-x-1/2"
+                  style="min-height: 24vh;"
+                ></div>
                 {@render tooltipFrame(thisFrame, "bg-primary", "text-primary-foreground")}
               </button>
             {:else if !isOutOfRange && isDefault}
@@ -396,8 +399,8 @@
               >
                 {#if isHovered}
                   <div
-                    class="bg-secondary-foreground absolute top-0 left-1/2 z-40 w-0.5 -translate-x-1/2 dark:bg-gray-700"
-                    style="height: 80vh;"
+                    class="bg-secondary-foreground absolute top-0 left-1/2 z-50 w-0.5 -translate-x-1/2 dark:bg-gray-700"
+                    style="min-height: 24vh;"
                   ></div>
                   {@render tooltipFrame(
                     thisFrame,
@@ -424,8 +427,8 @@
               >
                 {#if isHovered}
                   <div
-                    class="bg-secondary-foreground absolute top-0 left-1/2 z-40 w-0.5 -translate-x-1/2 dark:bg-gray-700"
-                    style="height: 80vh;"
+                    class="bg-secondary-foreground absolute top-0 left-1/2 z-50 w-0.5 -translate-x-1/2 dark:bg-gray-700"
+                    style="min-height: 24vh;"
                   ></div>
                   {@render tooltipFrame(
                     thisFrame,
