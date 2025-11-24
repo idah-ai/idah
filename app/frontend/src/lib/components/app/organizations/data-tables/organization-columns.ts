@@ -1,4 +1,5 @@
 import OrganizationNameCell from "@/components/app/organizations/data-tables/organization-name-cell.svelte";
+import OrganizationRowActionCell from "@/components/app/organizations/data-tables/organization-row-action-cell.svelte";
 
 import { OrganizationRecord } from "@/data/model/iam/organizations/record";
 
@@ -33,5 +34,14 @@ export const organizationColumns: ColumnsSettings<OrganizationRecord> = {
     },
     visible: true,
     hidable: false,
+  },
+  action: {
+    label: "Action",
+    dataType: "string",
+    sortable: false,
+    filterable: false,
+    visible: true,
+    hidable: false,
+    cellComponent: OrganizationRowActionCell,
   },
 };
