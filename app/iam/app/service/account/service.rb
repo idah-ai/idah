@@ -44,5 +44,11 @@ module Account
     def delete(id)
       accounts.delete(id)
     end
+
+    def mark_as_joined(id, joined_at)
+      accounts.transaction do
+        accounts.update!(id, { joined_at: joined_at })
+      end
+    end
   end
 end
