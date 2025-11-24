@@ -4,8 +4,7 @@ module NoteFeed
   class Service < Verse::Service::Base
     use note_feeds: NoteFeed::Repository
     use_system entries: Entry::Repository,
-               annotations: Annotation::Repository,
-               project_members: ProjectMember::Repository
+               annotations: Annotation::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       note_feeds.index(
@@ -34,8 +33,7 @@ module NoteFeed
     end
 
     def resolve(id)
-      note_feeds.update!(id, { status: "resolved" })
-      note_feeds.find!(id)
+      note_feeds.resolve!(id)
     end
 
     def create_from_params(data)
@@ -57,14 +55,14 @@ module NoteFeed
       end
 
       # With "as_user" access ensure account can "create" note feed to the project
-      access = auth_context.can?(:create, note_feeds.class.resource)
-      if access == :as_user && !ScopedQuery::Service.with_project_access?(
-        auth_context.metadata[:id],
-        entry.project_id,
-        ["project_owner", "reviewer", "annotator"]
-      )
+      if auth_context.can?(:create, note_feeds.class.resource) == :as_user &&
+         ScopedQuery::Service.without_project_access?(
+           auth_context.metadata[:id],
+           entry.project_id,
+           ["project_owner", "reviewer", "annotator"]
+         )
         raise Verse::Error::Unauthorized,
-              "You do not have permission to create note feed"
+              "You do not have permission to create note feed on this project"
       end
 
       attributes[:id] = UUIDv7.generate

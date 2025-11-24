@@ -26,5 +26,9 @@ module ScopedQuery
         )
       ).limit(1).any?
     end
+
+    def without_project_access?(account_id, project_id, roles)
+      !with_project_access?(account_id, project_id, roles)
+    end
   end
 end
