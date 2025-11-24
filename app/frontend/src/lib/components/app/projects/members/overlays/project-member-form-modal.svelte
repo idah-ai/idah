@@ -77,6 +77,14 @@
             role,
             invited_by_id: 1,
           },
+          relationships: {
+            project: {
+              data: {
+                type: "dataset:projects",
+                id: projectId,
+              },
+            },
+          },
         });
       }
 
