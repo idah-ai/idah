@@ -2,9 +2,9 @@ import type { Icon as IconType } from "@lucide/svelte";
 import type { Snippet } from "svelte";
 import type { FormEventHandler } from "svelte/elements";
 
+import type { LabelValue } from "@/components/app/types";
 import type { DataSource, ListOptions } from "@/data/DataSource";
 import type { Record } from "@/data/model/Record";
-import type { LabelValue } from "@/utils/types";
 
 export interface FormFieldBaseProps {
   name: string;
