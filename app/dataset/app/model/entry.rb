@@ -69,22 +69,19 @@ module Entry
       when :read
         scoped_fragment = <<-SQL
           EXISTS (
-            -- All with roles
             SELECT 1
             FROM project_members pm
             WHERE pm.account_id = :account_id
               AND pm.project_id = entries.project_id
-              AND pm.role IN :with_roles
-          ) OR (
-            -- Only assigned entries with roles
-            entries.assigned_to_id = :account_id
-            AND EXISTS (
-              SELECT 1
-              FROM project_members pm
-              WHERE pm.account_id = :account_id
-                AND pm.project_id = entries.project_id
-                AND pm.role IN :assigned_to_roles
-            )
+              AND (
+                -- All with roles
+                pm.role IN :with_roles OR
+                -- From assigned entries with roles
+                (
+                  (pm.role IN :assigned_to_roles)
+                  AND entries.assigned_to_id = pm.id
+                )
+              )
           )
         SQL
 
