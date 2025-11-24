@@ -31,7 +31,7 @@
   <FieldGroup>
     <!-- EACH MEMBERS -->
     {#each members as member, index (index)}
-      <div class="flex w-full items-end gap-4">
+      <div class="flex w-full items-end gap-2">
         <!-- EMAIL -->
         <InputField
           name="{resource}/email"

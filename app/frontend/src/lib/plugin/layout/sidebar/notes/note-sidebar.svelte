@@ -44,7 +44,7 @@
   // Variables
   let selectedNoteFeed: NoteFeedRecord | null = $state(null);
   let selectedNoteCommentId: string | null = $state(null);
-  let isInReviewStep = $derived(context.workflowStep === "review");
+  let isAllowToCreateNewNote = $derived(["annotate", "review"].includes(context.workflowStep));
   let isListView = $derived(!selectedNoteFeed);
   let isDetailView = $derived(!!selectedNoteFeed);
   let noteFeedFilters = $state<Hash>({ status__in: ["pending"] });
@@ -296,7 +296,7 @@
     <!-- FOOTER -->
     <section class="bg-background sticky bottom-0 mt-auto flex border-t p-2">
       <NoteInputField
-        disabled={!isInReviewStep}
+        disabled={!isAllowToCreateNewNote}
         placeholder={isListView ? "Write your note" : "Reply"}
         value={contentMd}
         onInput={(e) => (contentMd = e.currentTarget.value)}

@@ -125,12 +125,12 @@
 </script>
 
 {#snippet annotationSelection(annotation: VideoAnnotation, name: string)}
-  <SidebarMenuItem class="group list-none p-1">
+  <SidebarMenuItem class="list-none">
     <SidebarMenuButton
-      class={cn("ml-5 w-full justify-between px-5 hover:cursor-pointer")}
+      class={cn("group ml-5 w-full justify-between pr-3 hover:cursor-pointer")}
       onclick={() => onSelectAnnotation(annotation)}
     >
-      <div class="flex gap-2">
+      <div class="flex gap-1 text-xs">
         <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
           <!-- prettier-ignore -->
           <path
@@ -141,14 +141,13 @@
             stroke-linejoin="round"
           />
         </svg>
-
         {name}
       </div>
 
       <Button
         variant="ghost"
         size="icon"
-        class="hidden group-hover:inline-flex "
+        class="hidden group-hover:inline-flex"
         onclick={(e) => {
           e.stopPropagation();
           onDeleteAnnotation(annotation);
@@ -162,14 +161,14 @@
 
 {#snippet showCategoryTitle(category: CategoryDefinition, haveChildren: boolean = false, open: boolean = false)}
   <div
-    class={cn("flex items-center gap-2", {
-      // "p-2": !haveChildren && !toolMode,
+    class={cn("flex items-center gap-1 text-xs", {
+      "p-2": toolMode && selected_id,
     })}
   >
     <Button
       variant="ghost"
       class={cn("p-0 hover:cursor-pointer", {
-        "opacity-0": (!haveChildren && !toolMode) || selected_id,
+        "opacity-0": !haveChildren || selected_id,
         hidden: toolMode && selected_id,
       })}
       onclick={(e) => {
@@ -182,7 +181,6 @@
       disabled={toolMode}
     >
       {@const selected = selected_category == category.id}
-
       {#if selected && toolMode && !selected_id}
         <PlusIcon class="text-primary size-4 " strokeWidth={4}></PlusIcon>
       {:else if !category.nestedCategories && toolMode && !selected_id}
@@ -230,12 +228,13 @@
   parent: string[] = [],
 )}
   <Collapsible open={toolMode ? !!category : openStates[category.id] || false}>
-    {#key forceRender}
+    {#key `${forceRender}-${$idb_updated_at}-${type}`}
       {#await haveAnnotationsInCategory(category.id) then hasAnnotations}
         <CollapsibleTrigger
-          class={cn("text-secondary-foreground flex w-full items-center justify-between", {
-            "bg-primary-foreground rounded-sm border-1 border-blue-300": selected == category.id,
-            "hover:bg-muted-foreground hover:cursor-pointer hover:rounded-sm": !category.requiredNested,
+          class={cn("text-secondary-foreground flex w-full items-center justify-between pr-1 text-xs", {
+            "bg-secondary border-ring text-secondary-foreground rounded-sm border-1": selected == category.id,
+            "hover:bg-primary-foreground hover:dark:bg-accent hover:cursor-pointer hover:rounded-sm":
+              !category.requiredNested,
             "hover:bg-accent hover:cursor-pointer hover:rounded-sm": !toolMode,
           })}
           onclick={(e) => {
@@ -262,20 +261,19 @@
             openStates[category.id] || false,
           )}
 
-          {#if db && category && $idb_updated_at}
+          {#if db && category}
             {#key $idb_updated_at}
-              <Badge variant="gray">
-                {#await db.getAllStartingWith("category", category.id)}
-                  ...
-                {:then anns}
-                  {anns.filter(
-                    (annotation) =>
-                      currentFrame >= annotation.shape.start &&
-                      currentFrame <= annotation.shape.end &&
-                      annotation.shape.type == type,
-                  ).length}
-                {/await}
-              </Badge>
+              {#await db.getAllStartingWith("category", category.id) then anns}
+                {@const filteredCount = anns.filter(
+                  (annotation) =>
+                    currentFrame >= annotation.shape.start &&
+                    currentFrame <= annotation.shape.end &&
+                    annotation.shape.type == type,
+                ).length}
+                <Badge variant="gray" class="text-xs">
+                  {filteredCount}
+                </Badge>
+              {/await}
             {/key}
           {/if}
         </CollapsibleTrigger>
@@ -285,13 +283,16 @@
     <CollapsibleContent class="ml-5" hidden={!openStates[category.id]}>
       {#key $idb_updated_at}
         {#if !toolMode && db && category}
-          {#await db.getAllIndex("category", category.id)}
-            ...
-          {:then anns}
-            {#each anns.filter((annotation) => {
+          {#await db.getAllIndex("category", category.id) then anns}
+            {@const filteredAnns = anns.filter((annotation) => {
               // prettier-ignore ...
-              return currentFrame >= annotation.shape.start && currentFrame <= annotation.shape.end && annotation.shape.type == type;
-            }) as annotation, i (annotation.metadata.id)}
+              return (
+                currentFrame >= annotation.shape.start &&
+                currentFrame <= annotation.shape.end &&
+                annotation.shape.type == type
+              );
+            })}
+            {#each filteredAnns as annotation, i (annotation.metadata.id)}
               {@render annotationSelection(annotation, `${category.name}_${i}`)}
             {/each}
           {/await}
@@ -311,32 +312,31 @@
   </Collapsible>
 {/snippet}
 
-<div class="flex-col">
+<div class="flex-col overflow-x-hidden">
   <Collapsible open={true}>
     <CollapsibleTrigger>
-      <Text class="text-secondary-foreground" weight="semibold"
-        >{((s: string) => [s.slice(0, 1).toUpperCase(), s.slice(1)].join(""))(
+      <Text class="text-secondary-foreground" weight="semibold" size="xs">
+        {((s: string) => [s.slice(0, 1).toUpperCase(), s.slice(1)].join(""))(
           type.split(":").reverse()[0].split(new RegExp(/-|_/)).join(" "),
-        )}</Text
-      >
+        )}
+      </Text>
     </CollapsibleTrigger>
     <CollapsibleContent>
-      <div class="flex gap-2 py-2">
-        <Text class="text-secondary-foreground" weight="semibold">Categories</Text>
-
+      <div class="flex items-center gap-2 py-2">
+        <Text class="text-secondary-foreground" size="xs" weight="semibold">Categories</Text>
         {#key $idb_updated_at}
-          <Badge class={cn("", { "bg-secondary-foreground": !!selected_category })} variant="gray">
-            {#await db?.getAllIndex("category")}
-              ...
-            {:then anns}
-              {anns?.filter(
+          {#await db?.getAllIndex("category") then anns}
+            {@const filteredCount =
+              anns?.filter(
                 (annotation) =>
                   currentFrame >= annotation.shape.start &&
                   currentFrame <= annotation.shape.end &&
                   annotation.shape.type == type,
-              ).length}
-            {/await}
-          </Badge>
+              ).length || 0}
+            <Badge variant="gray" class="text-xs">
+              {filteredCount}
+            </Badge>
+          {/await}
         {/key}
       </div>
       {#each categoriesTree as category (category.id)}
