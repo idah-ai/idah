@@ -176,13 +176,7 @@
       type: "text",
       description: "",
       required: false,
-      format: {
-        minimum: null,
-        maximum: null,
-        step: 1,
-        info: null,
-        options: [],
-      },
+      format: {},
       visibility: true,
     });
   }
