@@ -44,7 +44,7 @@
   // Variables
   let selectedNoteFeed: NoteFeedRecord | null = $state(null);
   let selectedNoteCommentId: string | null = $state(null);
-  let isInReviewStep = $derived(context.workflowStep === "review");
+  let isAllowToCreateNewNote = $derived(["annotate", "review"].includes(context.workflowStep));
   let isListView = $derived(!selectedNoteFeed);
   let isDetailView = $derived(!!selectedNoteFeed);
   let noteFeedFilters = $state<Hash>({ status__in: ["pending"] });
@@ -204,7 +204,7 @@
 {#if open}
   <div
     transition:slide={{ axis: "x" }}
-    class="bg-background absolute top-11 right-0 z-100 ml-auto flex h-[calc(100%-3rem)] w-80 flex-col border-l"
+    class="bg-background absolute top-11 right-0 z-50 ml-auto flex h-[calc(100%-3rem)] w-80 flex-col border-l"
   >
     <!-- HEADER -->
     <section class="flex items-center gap-1 border-b p-2">
@@ -298,7 +298,7 @@
     <!-- FOOTER -->
     <section class="bg-background sticky bottom-0 mt-auto flex border-t p-2">
       <NoteInputField
-        disabled={!isInReviewStep}
+        disabled={!isAllowToCreateNewNote}
         placeholder={isListView ? "Write your note" : "Reply"}
         value={contentMd}
         onInput={(e) => (contentMd = e.currentTarget.value)}
