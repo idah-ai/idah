@@ -1,3 +1,4 @@
+import type { IConfigPropertyType } from "@/plugin/interface/Activity";
 import type { LabelValue } from "@/utils/types";
 import {
   CircleCheckBigIcon,
@@ -7,10 +8,8 @@ import {
   TypeIcon,
   type Icon as IconType,
 } from "@lucide/svelte";
-import type { ASTNode } from "../../../../plugins/idah-video/test_ast_resolution";
 
-export type FieldTypeValue = "text" | "integer" | "boolean" | "single-select" | "multi-select";
-export interface FieldType extends LabelValue<FieldTypeValue> {
+export interface FieldType extends LabelValue<IConfigPropertyType> {
   icon: typeof IconType;
 }
 export const fieldTypes: FieldType[] = [
@@ -20,43 +19,6 @@ export const fieldTypes: FieldType[] = [
   { label: "Single Select", value: "single-select", icon: CircleCheckBigIcon },
   { label: "Multiple Select", value: "multi-select", icon: SquareCheckBigIcon },
 ];
-
-export type LabelPropertyOption = {
-  id: string;
-  label: string;
-};
-
-export interface LabelConfigurationProperty {
-  id: string;
-  type: FieldTypeValue;
-  label: string;
-  description: string;
-  required: boolean;
-  format: {
-    minimum: number | null;
-    maximum: number | null;
-    step: number | null;
-    info: string | null;
-    options: Array<LabelPropertyOption>;
-  };
-  visibility: ASTNode | boolean;
-}
-
-export interface LabelConfigurationValue {
-  id: string;
-  color: string | null;
-  label: string;
-  text_color?: string | null;
-}
-
-export interface LabelingConfiguration {
-  values: Array<LabelConfigurationValue>;
-  properties: Array<LabelConfigurationProperty>;
-}
-
-export interface LabelConfigurations {
-  [key: string]: LabelingConfiguration;
-}
 
 interface LabelColor {
   label: string;

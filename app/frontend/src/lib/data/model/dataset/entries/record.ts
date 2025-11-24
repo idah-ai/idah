@@ -1,6 +1,7 @@
 import { createBackendDataSource, encodeModel, resourcePath } from "@/data/BackendDataSource";
 import { clearCache } from "@/data/Cache";
 import { field, Record, RecordFactory, relationship, type } from "@/data/model/Record";
+import { datasetBasePath, DatasetRecord } from "@/data/model/dataset/dataset-record";
 import {
   entryPriorities,
   entryStatuses,
@@ -11,7 +12,6 @@ import {
 } from "@/data/model/dataset/entries/constants";
 import { parseSingleElementError, parseSingleElementReturn } from "@/data/model/json_api";
 
-import { DatasetRecord } from "@/data/model/dataset/dataset-record";
 import type { JsonApiErrorResponse, RecordResponse } from "@/data/model/types";
 import type { Hash } from "@/utils/types";
 
@@ -115,7 +115,10 @@ export const entriesBackendDataSource = createBackendDataSource(EntryRecord, ent
 
     // Cache Management
     const cacheIndexKey = resourcePath(entryBasePath, null, undefined);
+    // Note: Clear dataset cache as well to update progress at DataTable
+    const cacheDatasetIndexKey = resourcePath(datasetBasePath, null, undefined);
     clearCache(cacheIndexKey);
+    clearCache(cacheDatasetIndexKey);
 
     if (body && body.errors) {
       if (body.errors.length > 0) {
