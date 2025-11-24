@@ -117,7 +117,7 @@ RSpec.describe NoteComment::Service, database: true do
       project_id: third_project_id,
       dataset_id: third_dataset_id,
       priority: 1,
-      resource: "http://example.com/second.mp4",
+      resource: "http://example.com/third.mp4",
       wf_step: "review",
       status: "in_progress",
       assigned_to_id: reviewer_account_id,
@@ -449,12 +449,12 @@ RSpec.describe NoteComment::Service, database: true do
     describe "with assigned project" do
       it "can index" do
         # Setup: create note comments to test visibility
-        project_owner_note_comment_id
-        annotator_note_comment_id
-        reviewer_first_note_comment_id
-        reviewer_second_note_comment_id
-        reviewer_third_note_comment_id
-        other_note_comment_id
+        project_owner_note_comment_id # assigned
+        annotator_note_comment_id # assigned
+        reviewer_first_note_comment_id # assigned
+        reviewer_second_note_comment_id # assigned
+        reviewer_third_note_comment_id # not assigned
+        other_note_comment_id # not assigned
 
         result_ids = subject.index({}).map(&:id)
 
@@ -509,12 +509,12 @@ RSpec.describe NoteComment::Service, database: true do
     describe "with not assigned project" do
       it "cannot index" do
         # Setup: create note feeds to test visibility
-        project_owner_note_comment_id
-        annotator_note_comment_id
-        reviewer_first_note_comment_id
-        reviewer_second_note_comment_id
-        reviewer_third_note_comment_id
-        other_note_comment_id
+        project_owner_note_comment_id # assigned
+        annotator_note_comment_id # assigned
+        reviewer_first_note_comment_id # assigned
+        reviewer_second_note_comment_id # assigned
+        reviewer_third_note_comment_id # not assigned
+        other_note_comment_id # not assigned
 
         result = subject.index({})
 
@@ -565,12 +565,12 @@ RSpec.describe NoteComment::Service, database: true do
     describe "with assigned project and assigned entries" do
       it "can index" do
         # Setup: create note feeds to test visibility
-        project_owner_note_comment_id
-        annotator_note_comment_id
-        reviewer_first_note_comment_id
-        reviewer_second_note_comment_id
-        reviewer_third_note_comment_id
-        other_note_comment_id
+        project_owner_note_comment_id # assigned
+        annotator_note_comment_id # assigned
+        reviewer_first_note_comment_id # assigned
+        reviewer_second_note_comment_id # assigned
+        reviewer_third_note_comment_id # not assigned
+        other_note_comment_id # not assigned
 
         result = subject.index({})
 
@@ -640,12 +640,12 @@ RSpec.describe NoteComment::Service, database: true do
 
       it "cannot index" do
         # Setup: create note feeds to test visibility
-        project_owner_note_comment_id
-        annotator_note_comment_id
-        reviewer_first_note_comment_id
-        reviewer_second_note_comment_id
-        reviewer_third_note_comment_id
-        other_note_comment_id
+        project_owner_note_comment_id # assigned
+        annotator_note_comment_id # assigned
+        reviewer_first_note_comment_id # assigned
+        reviewer_second_note_comment_id # assigned
+        reviewer_third_note_comment_id # not assigned
+        other_note_comment_id # not assigned
 
         # Ensure that the annotator is a member of the third project
         member = project_member_repo.find_by!({ account_id: annotator_account_id, project_id: second_project_id })
@@ -687,12 +687,12 @@ RSpec.describe NoteComment::Service, database: true do
     describe "with not assigned project" do
       it "cannot index" do
         # Setup: create note feeds to test visibility
-        project_owner_note_comment_id
-        annotator_note_comment_id
-        reviewer_first_note_comment_id
-        reviewer_second_note_comment_id
-        reviewer_third_note_comment_id
-        other_note_comment_id
+        project_owner_note_comment_id # assigned
+        annotator_note_comment_id # assigned
+        reviewer_first_note_comment_id # assigned
+        reviewer_second_note_comment_id # assigned
+        reviewer_third_note_comment_id # not assigned
+        other_note_comment_id # not assigned
 
         result = subject.index({})
 
@@ -743,12 +743,12 @@ RSpec.describe NoteComment::Service, database: true do
     describe "with assigned project and assigned entries" do
       it "can index" do
         # Setup: create note comments to test visibility
-        project_owner_note_comment_id
-        annotator_note_comment_id
-        reviewer_first_note_comment_id
-        reviewer_second_note_comment_id
-        reviewer_third_note_comment_id
-        other_note_comment_id
+        project_owner_note_comment_id # not assigned
+        annotator_note_comment_id # not assigned
+        reviewer_first_note_comment_id # not assigned
+        reviewer_second_note_comment_id # not assigned
+        reviewer_third_note_comment_id # assigned
+        other_note_comment_id # not assigned
 
         result = subject.index({})
 
@@ -800,12 +800,12 @@ RSpec.describe NoteComment::Service, database: true do
 
       it "cannot index" do
         # Setup: create note comments to test visibility
-        project_owner_note_comment_id
-        annotator_note_comment_id
-        reviewer_first_note_comment_id
-        reviewer_second_note_comment_id
-        reviewer_third_note_comment_id
-        other_note_comment_id
+        project_owner_note_comment_id # not assigned
+        annotator_note_comment_id # not assigned
+        reviewer_first_note_comment_id # not assigned
+        reviewer_second_note_comment_id # not assigned
+        reviewer_third_note_comment_id # assigned
+        other_note_comment_id # not assigned
 
         # Ensure that the reviewer is a member of the second project
         member = project_member_repo.find_by!({ account_id: reviewer_account_id, project_id: second_project_id })
@@ -847,17 +847,17 @@ RSpec.describe NoteComment::Service, database: true do
     describe "with not assigned project" do
       it "cannot index" do
         # Setup: create note feeds to test visibility
-        project_owner_note_comment_id
-        annotator_note_comment_id
-        reviewer_first_note_comment_id
-        reviewer_second_note_comment_id
-        reviewer_third_note_comment_id
-        other_note_comment_id
+        project_owner_note_comment_id # not assigned
+        annotator_note_comment_id # not assigned
+        reviewer_first_note_comment_id # not assigned
+        reviewer_second_note_comment_id # not assigned
+        reviewer_third_note_comment_id # assigned
+        other_note_comment_id # not assigned
 
         result = subject.index({})
 
         expect(result.count).to eq 1
-        expect(result.first.id).to_not include(
+        expect(result.map(&:id)).to_not include(
           project_owner_note_feed_id,
           annotator_note_feed_id,
           reviewer_first_note_feed_id,
