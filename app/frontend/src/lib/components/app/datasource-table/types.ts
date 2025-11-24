@@ -88,7 +88,7 @@ export interface DataTableBaseProps<T extends Record> {
   onLoadSetContexts?: (response: CollectionResponse<T>) => Promise<Hash>;
 
   // Snippets
-  actions?: Snippet;
+  actions?: Snippet<[{ tablePreferences?: TablePreferences }]>;
   addNewRecordButton?: Snippet;
   emptyState?: Snippet;
   filteredState?: Snippet;

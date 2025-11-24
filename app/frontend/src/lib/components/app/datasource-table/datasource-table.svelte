@@ -254,7 +254,7 @@
         <DataTableToggleColumns {columns}></DataTableToggleColumns>
       {/if}
 
-      {@render actions?.()}
+      {@render actions?.({ tablePreferences })}
     </DataTableToolbarActions>
   </DataTableHeader>
 
