@@ -18,6 +18,7 @@ export class ProjectMemberRecord extends Record {
 
   @field({ transformer: Transformers.Time }) public created_at!: Date;
   @field({ transformer: Transformers.Time }) public updated_at!: Date;
+  @field({ transformer: Transformers.Time }) public joined_at!: Date | null;
 
   @relationship() public project!: ProjectRecord;
 }

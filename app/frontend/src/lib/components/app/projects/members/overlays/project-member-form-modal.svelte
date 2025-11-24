@@ -76,6 +76,7 @@
             email,
             role,
             invited_by_id: 1,
+            joined_at: new Date(),
           },
         });
       }
