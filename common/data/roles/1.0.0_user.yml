@@ -28,4 +28,3 @@ user:
 
     # Media Service
     - "media:medias.*.as_user"
-    - "media:jobs.*.as_user"
