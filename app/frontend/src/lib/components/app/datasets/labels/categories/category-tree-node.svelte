@@ -7,30 +7,42 @@
 
   import { cn } from "@/utils";
 
-  import type { LabelConfigurationValue } from "@/data/model/dataset/labels";
+  import type { IConfigValue } from "@/plugin/interface/Activity";
 
   // Interfaces and Types
-  interface ICategoryTreeNode extends LabelConfigurationValue {
+  interface ICategoryTreeNode extends IConfigValue {
+    parent: string | null;
     children: Array<ICategoryTreeNode>;
     expanded: boolean;
   }
 
   // Props
   interface CategoryTreeNodeProps {
+    values: IConfigValue[];
     treeItem: ICategoryTreeNode;
     level: number;
     onToggleExpand: (id: string) => void;
     onAddCategory: (nodeId?: string) => void;
     onEditCategoryId: (oldId: string, newId: string) => void;
-    onEditCategory: (editedCategory: LabelConfigurationValue) => void;
+    onEditCategory: (editedCategory: IConfigValue) => void;
     onRemoveCategory: (categoryId: string) => void;
+    onChangeSelectableCategory: (editedCategory: IConfigValue, selectable: boolean) => void;
   }
 
   export { CategoryTreeNode, type ICategoryTreeNode };
 </script>
 
 {#snippet CategoryTreeNode(props: CategoryTreeNodeProps)}
-  {@const { treeItem, onToggleExpand, onAddCategory, onEditCategoryId, onEditCategory, onRemoveCategory } = props}
+  {@const {
+    values,
+    treeItem,
+    onToggleExpand,
+    onAddCategory,
+    onEditCategoryId,
+    onEditCategory,
+    onRemoveCategory,
+    onChangeSelectableCategory,
+  } = props}
   {@const { id, children } = treeItem}
   {@const level = props.level}
   {@const hasChildren = children.length > 0}
@@ -49,7 +61,7 @@
       />
     </Button>
 
-    <CategoryPopover {treeItem} {onEditCategoryId} {onEditCategory} />
+    <CategoryPopover {values} {treeItem} {onEditCategoryId} {onEditCategory} {onChangeSelectableCategory} />
 
     <CategoryDropdownMenusActions
       {treeItem}
@@ -64,6 +76,7 @@
       {#each children as child (child.id)}
         {@const level = child.id.split("/").length}
         {@render CategoryTreeNode({
+          values,
           treeItem: child,
           level,
           onToggleExpand,
@@ -71,6 +84,7 @@
           onEditCategoryId,
           onEditCategory,
           onRemoveCategory,
+          onChangeSelectableCategory,
         })}
       {/each}
     {/if}

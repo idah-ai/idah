@@ -174,6 +174,7 @@
         suffix={`/ ${Math.max(0, totalFrames)}`}
         value={currentFrame}
         oninput={seekToFrame}
+        groupInputClass="h-7"
       />
     </div>
   </div>

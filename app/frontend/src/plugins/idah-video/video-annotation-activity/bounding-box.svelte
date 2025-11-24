@@ -12,6 +12,7 @@
     mode,
     onChange,
     onmousedown,
+    pointer,
   }: {
     ratio: Point;
     offset: Point;
@@ -22,6 +23,7 @@
     mode: string;
     onmousedown?: (e: MouseEvent) => void;
     onChange?: (bb: BoundingBox) => void;
+    pointer: string;
   } = $props();
 
   export function isEditing(): boolean {
@@ -171,23 +173,23 @@
       "ew-resize", // 7: right edge
     ];
 
-    return cursors[handle_index] || "default";
+    return cursors[handle_index] || "grab";
   }
 
   function getCursor() {
-    if (editable) {
-      return "cursor-move";
+    if (isEditing()) {
+      return "cursor-crosshair";
     } else if (mode === IDAH_NOTE) {
       return "cursor-note";
     } else {
-      return "cursor-default";
+      return pointer;
     }
   }
 </script>
 
 {#snippet BoundingBoxHandle(bb: BoundingBox)}
   {#each boundingBoxHandle(bb) as point, handle (handle)}
-    <!-- 
+    <!--
       NOTE: Do not add role="button" and tabindex="" to <circle>
       as it will raise an unexpected ellipse shape during moving annotation bounding box.
     -->
@@ -214,13 +216,14 @@
 
 {#snippet bb(path?: string)}
   {#if path}
-    <!-- 
+    <!--
       NOTE: Do not add role="button" and tabindex="" to <path>
       as it will raise an unexpected ellipse shape during moving annotation bounding box.
     -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <path
       d={path}
+      style:cursor={pointer}
       style:transform-origin="top left"
       style:transform={`translate(${offset[X]}px, ${offset[Y]}px) scale(${ratio[X]}, ${ratio[Y]})`}
       vector-effect="non-scaling-stroke"
