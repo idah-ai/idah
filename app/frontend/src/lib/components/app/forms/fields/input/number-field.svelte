@@ -17,7 +17,8 @@
 
   // Props
   interface Props extends NumberFieldBaseProps {
-    value: number | null;
+    value: number | null | undefined;
+    groupInputClass?: string;
   }
   let {
     value = $bindable(null),
@@ -43,13 +44,14 @@
     class: className,
     slotDescription,
     slotErrors,
+    groupInputClass = "",
   }: Props = $props();
 </script>
 
 <Field class={cn("", className)}>
-  <FieldLabel for={name} {required}>{label}</FieldLabel>
+  <FieldLabel for={name} {required} class={cn("", { hidden: !label })}>{label}</FieldLabel>
 
-  <InputGroup>
+  <InputGroup class={cn("", groupInputClass)}>
     {#if PrefixIcon}
       <InputGroupAddon align="inline-start">
         <PrefixIcon />
@@ -64,6 +66,7 @@
 
     <InputGroupInput
       id={name}
+      aria-invalid={errors ? "true" : "false"}
       type="number"
       {inputmode}
       {placeholder}

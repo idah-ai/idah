@@ -48,8 +48,8 @@
   let categoryColor: string | undefined = $derived(getCategory(annotation.value.category)?.color);
   let range_span = $derived(Math.min(scale * zoom, totalFrames));
   let cellWidth: number = $derived((1 / ((range[1] - range[0] + (scale - (range_span % scale))) / 100)) * scale);
-  let isSelected: boolean = $derived(Math.floor(currentFrame / scale) == Math.floor(frame / scale));
-  let isHovered: boolean = $derived(hovered && !isSelected);
+  let isSelected: boolean = $derived(currentFrame >= frame && currentFrame < frame + scale && frame <= totalFrames);
+  let isHovered: boolean = $derived(hovered && !isSelected && frame <= totalFrames);
 
   // Functions
   function getCategory(categoryId: string | undefined) {
@@ -63,8 +63,7 @@
 
 <div
   class={cn("inline-block h-full border-b py-1 first:border-l", {
-    "bg-primary/50": isSelected,
-    "bg-primary/60 cursor-pointer": isHovered,
+    "cursor-pointer": isHovered,
   })}
   style:box-sizing="border-box"
   style:width="{cellWidth}%"
@@ -76,7 +75,7 @@
 >
   {#if inSpan}
     <div
-      class={cn("relative h-full", {
+      class={cn("relative z-20 h-full", {
         "bg-primary/5": isHovered || isSelected,
       })}
       style:background-color={categoryColor ? categoryColor + "30" : "#FEF9C2"}
@@ -99,7 +98,7 @@
 
               <ContextMenuItem onclick={() => onDeleteFrame?.(keyframe)}>
                 <Trash2Icon class="size-4"></Trash2Icon>
-                Delete frame
+                Delete frame {keyframe}
               </ContextMenuItem>
             {/each}
           </ContextMenuContent>

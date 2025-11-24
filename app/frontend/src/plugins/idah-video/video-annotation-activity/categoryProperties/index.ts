@@ -19,83 +19,96 @@ export function propertyFullfilled(value: string | number | string[] | boolean |
     : value == undefined || conformToformat(value, property);
 }
 
-const formatValidators = [
-  {
-    type: "text",
-    minimum: (v: string, format: IConfigPropertyFormat) => v?.length >= (format.minimum || 0),
-    maximum: (v: string, format: IConfigPropertyFormat) => v?.length <= (format.maximum || v?.length || 0),
-    step: (_v: string, _format: IConfigPropertyFormat) => true,
-    options: (_v: string, _format: IConfigPropertyFormat) => true,
-    info: (_v: string) => true,
-  },
-  {
-    type: "integer",
-    minimum: (v: number, format: IConfigPropertyFormat) => v >= (format.minimum || 0),
-    maximum: (v: number, format: IConfigPropertyFormat) => v <= (format.maximum || v),
-    step: (v: number, format: IConfigPropertyFormat) =>
-      !((v - (format.minimum || 0)) % (format.step || 1)) || v == format.maximum,
-    options: (_v: number, _format: IConfigPropertyFormat) => true,
-    info: (_v: number) => true,
-  },
-  {
-    type: "boolean",
-    minimum: (_v: boolean, _format: IConfigPropertyFormat) => true,
-    maximum: (_v: boolean, _format: IConfigPropertyFormat) => true,
-    step: (_v: boolean, _format: IConfigPropertyFormat) => true,
-    options: (_v: boolean, _format: IConfigPropertyFormat) => true,
-    info: (_v: boolean) => true,
-  },
-  {
-    type: "single-select",
-    minimum: (_v: string, _format: IConfigPropertyFormat) => true,
-    maximum: (_v: string, _format: IConfigPropertyFormat) => true,
-    step: (_v: string, _format: IConfigPropertyFormat) => true,
-    options: (v: string, format: IConfigPropertyFormat) => format.options?.map((o) => o.id).includes(v),
-    info: (_v: string) => true,
-  },
-  {
-    type: "multi-select",
-    minimum: (v: string[], format: IConfigPropertyFormat) => v?.length >= (format.minimum || 0),
-    maximum: (v: string[], format: IConfigPropertyFormat) =>
-      v?.length <= (format.maximum || format.options.length || 0),
-    step: (_v: string[], _format: IConfigPropertyFormat) => true,
-    options: (v: string[], format: IConfigPropertyFormat) => {
-      const optionIds = format.options?.map((o) => o.id);
-      return v?.every((s) => optionIds?.includes(s));
+const formatValidators = new Map([
+  [
+    "text",
+    {
+      minimum: (v: string, format: IConfigPropertyFormat) => (v?.length || 0) >= (format.minimum || 0),
+      maximum: (v: string, format: IConfigPropertyFormat) => (v?.length || 0) <= (format.maximum || v?.length || 0),
+      step: (_v: string, _format: IConfigPropertyFormat) => true,
+      options: (_v: string, _format: IConfigPropertyFormat) => true,
+      info: (_v: string) => true,
     },
-    info: (_v: string[]) => true,
-  },
-];
+  ],
+  [
+    "integer",
+    {
+      minimum: (v: number, format: IConfigPropertyFormat) => (v || 0) >= (format.minimum || 0),
+      maximum: (v: number, format: IConfigPropertyFormat) => (v || 0) <= (format.maximum || v),
+      step: (v: number, format: IConfigPropertyFormat) =>
+        !((v - (format.minimum || 0)) % (format.step || 1)) || v == format.maximum,
+      options: (_v: number, _format: IConfigPropertyFormat) => true,
+      info: (_v: number) => true,
+    },
+  ],
+  [
+    "boolean",
+    {
+      minimum: (_v: boolean, _format: IConfigPropertyFormat) => true,
+      maximum: (_v: boolean, _format: IConfigPropertyFormat) => true,
+      step: (_v: boolean, _format: IConfigPropertyFormat) => true,
+      options: (_v: boolean, _format: IConfigPropertyFormat) => true,
+      info: (_v: boolean) => true,
+    },
+  ],
+  [
+    "single-select",
+    {
+      minimum: (_v: string, _format: IConfigPropertyFormat) => true,
+      maximum: (_v: string, _format: IConfigPropertyFormat) => true,
+      step: (_v: string, _format: IConfigPropertyFormat) => true,
+      options: (v: string, format: IConfigPropertyFormat) => !!format.options?.map((o) => o.id).includes(v),
+      info: (_v: string) => true,
+    },
+  ],
+  [
+    "multi-select",
+    {
+      minimum: (v: string[], format: IConfigPropertyFormat) => v?.length >= (format.minimum || 0),
+      maximum: (v: string[], format: IConfigPropertyFormat) =>
+        (v?.length || 0) <= (format.maximum || format.options?.length || 0),
+      step: (_v: string[], _format: IConfigPropertyFormat) => true,
+      options: (v: string[], format: IConfigPropertyFormat) => {
+        const optionIds = format.options?.map((o) => o.id);
+        return v?.every((s) => optionIds?.includes(s));
+      },
+      info: (_v: string[]) => true,
+    },
+  ],
+]);
 
 function conformToformat(
   value: string | number | string[] | boolean | undefined,
   propertyField: IConfigProperty,
 ): boolean {
-  const validator = formatValidators.find((f) => f.type == propertyField.type);
+  const validator = formatValidators.get(propertyField.type);
 
   if (!validator) return false;
 
-  return Object.entries(propertyField.format)
-    .filter(([k, _]) => k != "type")
-    .every(([k, _v]: [k: string, _v: string | number | Array<IConfigPropertyOption>]) => {
-      return validator[k](value, propertyField.format);
-    });
+  return Object.entries(propertyField.format).every(
+    ([k, _v]: [k: string, _v: string | number | Array<IConfigPropertyOption>]) => {
+      return validator[k as keyof IConfigPropertyFormat](value, propertyField.format);
+    },
+  );
 }
 
 export function formatConformity(
   value: string | number | string[] | boolean | undefined,
   propertyField: IConfigProperty,
 ) {
-  const validator = formatValidators.find((f) => f.type == propertyField.type);
+  const validator = formatValidators.get(propertyField.type);
 
   return [
     [["required", propertyField.required], propertyField.required ? value != undefined : true],
-    ...Object.entries(propertyField.format)
-      .filter(([k, _]) => k != "type")
-      .map(([k, _]) => [
-        [k, k == "options" ? propertyField.format[k].map((o) => o.label) : propertyField.format[k]],
-        !validator ? false : validator[k](value, propertyField.format),
-      ]),
+    ...Object.entries(propertyField.format).map(([k, _]) => [
+      [
+        k,
+        k == "options"
+          ? propertyField.format[k as "options"]?.map((o) => o.label)
+          : propertyField.format[k as keyof IConfigPropertyFormat],
+      ],
+      !validator ? false : validator[k as keyof IConfigPropertyFormat](value, propertyField.format),
+    ]),
   ]
     .filter(([_, b]) => !b)
     .map(([a, _]) => a);
