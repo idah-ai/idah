@@ -97,4 +97,22 @@ RSpec.describe AccountsExpo, type: :exposition, as: :system do
 
     expect(last_response.status).to eq 204
   end
+
+  it "mark account as joined" do
+    expect(service).to receive(:mark_as_joined) do |id, joined_at|
+      expect(id).to eq "1"
+      expect(joined_at).to be_within(1).of(Time.now.utc)
+    end
+
+    patch "/accounts/1/join",
+          {
+            data: {
+              attributes: {
+                joined_at: Time.now.utc.iso8601
+              }
+            }
+          }
+
+    expect(last_response.status).to eq 200
+  end
 end

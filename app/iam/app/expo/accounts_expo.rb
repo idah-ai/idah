@@ -24,4 +24,22 @@ class AccountsExpo < BaseExpo
     update
     delete
   end
+
+  expose on_http(:patch, "/:id/join", auth: nil) do
+    desc "Mark account as joined when user accepts invitation"
+    input do
+      field :id, String
+      field :data, Hash do
+        field :attributes, Hash do
+          field :joined_at, Time
+        end
+      end
+    end
+  end
+  def join
+    id = params[:id]
+    joined_at = params.dig(:data, :attributes, :joined_at)
+
+    service.mark_as_joined(id, joined_at)
+  end
 end

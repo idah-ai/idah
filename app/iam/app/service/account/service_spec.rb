@@ -72,4 +72,16 @@ RSpec.describe Account::Service, database: true do
       expect { account_repo.find!(account_id) }.to raise_error(Verse::Error::NotFound)
     end
   end
+
+  describe "#mark_as_joined" do
+    it "marks an account as joined" do
+      account_id = account_repo.create(attributes)
+      joined_at = Time.now
+
+      subject.mark_as_joined(account_id, joined_at)
+
+      updated_account = account_repo.find!(account_id)
+      expect(updated_account.joined_at.to_i).to eq(joined_at.to_i)
+    end
+  end
 end
