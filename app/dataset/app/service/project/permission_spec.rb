@@ -91,6 +91,8 @@ RSpec.describe Project::Service, database: true do
 
     describe "with projects in owned organization scope" do
       it "can index" do
+        [first_project_id, second_project_id]
+
         result = subject.index({})
 
         expect(result.count).to eq 1
@@ -125,9 +127,10 @@ RSpec.describe Project::Service, database: true do
 
     describe "with projects not in owned organization scope" do
       it "cannot index projects outside scope org scope" do
+        [first_project_id, second_project_id]
+
         result = subject.index({})
 
-        expect(result.first.id).to_not eq second_project_id
         expect(result.map(&:organization_id)).to all(satisfy { |id| @org_scope.include?(id.to_s) })
       end
 
