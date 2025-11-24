@@ -39,6 +39,7 @@
       values={owners}
       dataSource={accountsBackendDataSource}
       listOptions={{
+        filters: { role_name__nin: ["system", "admin"] },
         sort: ["email"],
       }}
       placeholder="Select accounts"
