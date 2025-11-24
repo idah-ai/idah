@@ -23,11 +23,14 @@ module Project
       access = auth_context.can?(:create, projects.class.resource)
 
       unless access == :all ||
+             # TODO: review this
              (access == :as_org_owner &&
              auth_context.custom_scopes[:org]&.include?(record.attributes[:organization_id].to_s))
         raise Verse::Error::Unauthorized,
               "You do not have permission to create a project"
       end
+
+      # TODO: check to not allow create system account
 
       attributes = record.attributes
       attributes[:id] = record.id || UUIDv7.generate
@@ -40,6 +43,7 @@ module Project
     end
 
     def update(record)
+      # TODO: check to not allow create system account
       projects.update!(record.id, record.attributes)
       projects.find!(record.id)
     end

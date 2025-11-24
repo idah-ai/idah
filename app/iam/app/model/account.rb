@@ -34,6 +34,10 @@ module Account
     self.table = "accounts"
     self.resource = Resource::Iam::Accounts
 
+    custom_filter :role_name__nin do |collection, role_name|
+      collection.where(Sequel.lit("role_name NOT IN ?", role_name))
+    end
+
     custom_filter :with_role_scope do |collection, role_scope|
       role_scope = role_scope.to_json unless role_scope.is_a?(String)
 
