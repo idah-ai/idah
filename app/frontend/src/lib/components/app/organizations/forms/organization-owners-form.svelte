@@ -70,9 +70,7 @@
       {/snippet}
 
       {#snippet slotChoice({ choice, select })}
-        {@const isAlreadyAdded = choice.data
-          ? (choice.data["role_scope"].org || []).includes(Number(organizationId))
-          : false}
+        {@const isAlreadyAdded = choice.data ? (choice.data["role_scope"].org || []).includes(organizationId) : false}
         <CommandItem disabled={isAlreadyAdded} onclick={() => select(choice)}>
           <CheckIcon
             class={cn("mr-2 size-4", {
