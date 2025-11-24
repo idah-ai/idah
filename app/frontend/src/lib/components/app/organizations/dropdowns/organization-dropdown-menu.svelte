@@ -1,12 +1,14 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
+  import { onMount } from "svelte";
 
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import OrganizationFormModal from "@/components/app/organizations/overlays/organization-form-modal.svelte";
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
   import { SquarePenIcon, Trash2Icon } from "@lucide/svelte";
 
+  import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { OrganizationRecord, organizationsBackendDataSource } from "@/data/model/iam/organizations/record";
   import { refetches } from "@/utils/refetch";
 
@@ -19,42 +21,60 @@
   }
   let { organizationId, align = "center" }: Props = $props();
 
+  // Lifecycle
+  onMount(async () => {
+    await fetchOrganization();
+    await loadRelatedProjects();
+  });
+
   // Variables
-  const menus: IDropdownMenus = {
+  let organizationRecord: OrganizationRecord | undefined = $state(undefined);
+  let relatedProjectRecords: ProjectRecord[] = $state([]);
+  let openEditOrganizationFormModal: boolean = $state(false);
+  let openConfirmDeleteOrganizationModal: boolean = $state(false);
+  let menus: IDropdownMenus = $derived({
     actions: {
       items: [
         {
           label: "Edit",
           icon: SquarePenIcon,
           action: async () => {
-            const organizationRes = await fetchOrganization();
-            organizationRecord = organizationRes.data;
+            await fetchOrganization();
             openEditOrganizationFormModal = true;
           },
         },
         {
           label: "Delete",
           icon: Trash2Icon,
+          disabled: relatedProjectRecords.length > 1,
           action: () => {
             openConfirmDeleteOrganizationModal = true;
           },
         },
       ],
     },
-  };
-
-  let organizationRecord: OrganizationRecord | undefined = $state(undefined);
-  let openEditOrganizationFormModal: boolean = $state(false);
-  let openConfirmDeleteOrganizationModal: boolean = $state(false);
+  });
 
   // Functions
   async function fetchOrganization() {
-    return await organizationsBackendDataSource.get(organizationId, {
+    const organizationRes = await organizationsBackendDataSource.get(organizationId, {
       fields: {
         [OrganizationRecord.type]: ["name"],
       },
       noCache: true,
     });
+    organizationRecord = organizationRes.data;
+    return organizationRecord;
+  }
+
+  async function loadRelatedProjects() {
+    const projectsRes = await projectsBackendDataSource.list({
+      filters: {
+        organization_id: organizationId,
+      },
+    });
+    relatedProjectRecords = projectsRes.data;
+    return projectsRes.data;
   }
 
   async function deleteOrganization() {
