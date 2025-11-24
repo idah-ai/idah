@@ -60,7 +60,8 @@ module ProjectMember
             title: "You have been removed from the project '#{member.project.name}'",
             category: "project_member_removed",
             project_id: member.project_id,
-            project_name: member.project.name
+            project_name: member.project.name,
+            remover_email: "" # TO DO: get remover email from auth_context
           )
         end
       end
