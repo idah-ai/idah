@@ -4,14 +4,14 @@
   import { uuidv7 } from "uuidv7";
 
   import {
-    CommandDialog,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-    CommandList,
-    CommandSeparator,
-    CommandShortcut,
+      CommandDialog,
+      CommandEmpty,
+      CommandGroup,
+      CommandInput,
+      CommandItem,
+      CommandList,
+      CommandSeparator,
+      CommandShortcut,
   } from "$lib/components/ui/command";
   import Button from "@/components/ui/button/button.svelte";
   import { Popover, PopoverContent } from "@/components/ui/popover";
