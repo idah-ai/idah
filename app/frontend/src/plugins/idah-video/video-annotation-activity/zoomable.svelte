@@ -43,15 +43,35 @@
   }
 
   export function zoomIn() {
-    console.log("zoomin");
+    let [ox, oy] = offset;
+    let [sx, sy] = size;
+    ox = offset[X] / zoom.current;
+    oy = offset[Y] / zoom.current;
+
+    let dsx = sx - (sx * scopedZoom(zoom.current + zoom.step)) / zoom.current;
+    let dsy = sy - (sy * scopedZoom(zoom.current + zoom.step)) / zoom.current;
+    setZoom(zoom.current + zoom.step);
+    setOffset([ox * zoom.current + dsx / 2, oy * zoom.current + dsy / 2]);
   }
 
   export function zoomOut() {
-    console.log("zoomout");
+    let [ox, oy] = offset;
+    let [sx, sy] = size;
+    ox = offset[X] / zoom.current;
+    oy = offset[Y] / zoom.current;
+
+    let dsx = sx - (sx * scopedZoom(zoom.current - zoom.step)) / zoom.current;
+    let dsy = sy - (sy * scopedZoom(zoom.current - zoom.step)) / zoom.current;
+    setZoom(zoom.current - zoom.step);
+    setOffset([ox * zoom.current + dsx / 2, oy * zoom.current + dsy / 2]);
+  }
+
+  function scopedZoom(value: number) {
+    return Math.max(zoom.min, Math.min(zoom.max, value));
   }
 
   export function setZoom(newZoom: number) {
-    zoom = { ...zoom, current: newZoom };
+    zoom = { ...zoom, current: scopedZoom(newZoom) };
   }
 
   export function setOffset(newOffset: Point) {

@@ -9,7 +9,7 @@
   import Separator from "@/components/ui/separator/separator.svelte";
   import Text from "@/components/ui/text/Text.svelte";
 
-  import type { LabelConfigurationProperty } from "@/data/model/dataset/labels";
+  import type { IConfigProperty } from "@/plugin/interface/Activity";
   import type { Hash } from "@/utils/types";
 
   import * as parser from "@build/parser.js";
@@ -17,7 +17,7 @@
 
   // Props
   interface Props {
-    property: LabelConfigurationProperty;
+    property: IConfigProperty;
     onSetValue: (valueToSet: Hash) => void;
   }
   let { property, onSetValue }: Props = $props();
@@ -119,7 +119,7 @@
               onSetValue({
                 format: {
                   ...format,
-                  options: format.options.map((opt, i) => (i === index ? { ...opt, id: e.currentTarget.value } : opt)),
+                  options: format.options?.map((opt, i) => (i === index ? { ...opt, id: e.currentTarget.value } : opt)),
                 },
               })}
           />
@@ -133,7 +133,7 @@
               onSetValue({
                 format: {
                   ...format,
-                  options: format.options.map((opt, i) =>
+                  options: format.options?.map((opt, i) =>
                     i === index ? { ...opt, label: e.currentTarget.value } : opt,
                   ),
                 },
@@ -142,7 +142,8 @@
           <Button
             variant="ghost"
             size="icon"
-            onclick={() => onSetValue({ format: { ...format, options: format.options.filter((_, i) => i !== index) } })}
+            onclick={() =>
+              onSetValue({ format: { ...format, options: format.options?.filter((_, i) => i !== index) } })}
           >
             <Trash2Icon />
           </Button>
@@ -183,7 +184,7 @@
 
   <!-- PROPERTY::CONDITIONAL VISIBLE -->
   <Separator />
-  <div class="flex flex-col gap-2 px-6">
+  <div class="flex flex-col gap-2 px-6 pb-4">
     <TextareaField
       name="{id}/visibility"
       class="col-span-1 md:col-span-2"
@@ -201,9 +202,7 @@
           }
         }
       }}
+      errors={visibilityError ? [visibilityError] : []}
     />
-    {#if visibilityError}
-      <p class="text-red-500">{visibilityError}</p>
-    {/if}
   </div>
 </div>

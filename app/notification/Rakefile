@@ -1,0 +1,4 @@
+# frozen_string_literal: true
+
+Dir.glob("common/rake/**.rake").each(&method(:load))
+Dir.glob("config/tasks/**.rake").each(&method(:load))

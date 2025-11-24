@@ -10,21 +10,23 @@
 
   import { humanize } from "@/utils/string";
 
-  import type { LabelConfigurationValue, LabelingConfiguration } from "@/data/model/dataset/labels";
+  import type { IConfigValue } from "@/plugin/interface/Activity";
   import type { Hash } from "@/utils/types";
 
   // Props
   interface Props {
-    values: LabelingConfiguration["values"];
+    values: IConfigValue[];
     onAddCategory: (nodeId?: string) => void;
     onEditCategoryId: (oldId: string, newId: string) => void;
-    onEditCategory: (editedCategory: LabelConfigurationValue) => void;
+    onEditCategory: (editedCategory: IConfigValue) => void;
     onRemoveCategory: (categoryId: string) => void;
+    onChangeSelectableCategory: (editedCategory: IConfigValue, selectable: boolean) => void;
   }
-  let { values, onAddCategory, onEditCategoryId, onEditCategory, onRemoveCategory }: Props = $props();
+  let { values, onAddCategory, onEditCategoryId, onEditCategory, onRemoveCategory, onChangeSelectableCategory }: Props =
+    $props();
 
   // Functions
-  function constructCategoryTree(values: LabelingConfiguration["values"]) {
+  function constructCategoryTree(values: IConfigValue[]) {
     const root: Hash = {};
 
     for (const category of values) {
@@ -107,6 +109,7 @@
 <div class="flex w-full flex-col gap-1">
   {#each treeItems as treeItem (treeItem.id)}
     {@render CategoryTreeNode({
+      values,
       treeItem: treeItem,
       level: 1,
       onToggleExpand: toggleExpand,
@@ -114,6 +117,7 @@
       onEditCategoryId,
       onEditCategory,
       onRemoveCategory,
+      onChangeSelectableCategory,
     })}
   {:else}
     <ResponseBlock title="No categories yet" description="Add category to get started" icon={WorkflowIcon} size="sm">
