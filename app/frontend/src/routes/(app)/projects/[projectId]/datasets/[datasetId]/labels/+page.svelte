@@ -84,6 +84,7 @@
         },
       });
       initialLabelConfig = JSON.parse(JSON.stringify(updatedDatasetRes.data.labeling_configuration));
+      labelConfig = updatedDatasetRes.data.labeling_configuration;
       toast.success("Labeling configuration changes saved successfully.");
     } catch (error) {
       console.error(error);
@@ -190,6 +191,7 @@
     const categoryToUpdateIndex = selectedLabelConfig.values.findIndex((cat) => cat.id === category.id);
 
     if (categoryToUpdateIndex >= 0) {
+      /** If the edited category is exactly the same as an existing one */
       const existingCategory = selectedLabelConfig.values[categoryToUpdateIndex];
       const slugifiedLabel: string = slugify(category.label);
       const newId = existingCategory.id.split("/").slice(0, -1).concat(slugifiedLabel).join("/");
@@ -201,7 +203,24 @@
         id: newId,
       };
     } else {
-      selectedLabelConfig.values.push(category);
+      /** Check if there are any categories with parent ID starts with the edited category's ID */
+      if (selectedLabelConfig.values.some((cat) => cat.id.startsWith(category.id + "/"))) {
+        /** Update all child categories to reflect the new parent ID */
+        selectedLabelConfig.values = selectedLabelConfig.values.map((cat) => {
+          if (cat.id.startsWith(category.id + "/")) {
+            const suffix = cat.id.slice(category.id.length);
+            const slugifiedLabel: string = slugify(category.label);
+            const newId = category.id.split("/").slice(0, -1).concat(slugifiedLabel).join("/") + suffix;
+            return {
+              ...cat,
+              id: newId,
+            };
+          }
+          return cat;
+        });
+      } else {
+        selectedLabelConfig.values.push(category);
+      }
     }
   }
 
@@ -251,11 +270,13 @@
     if (categoryPaths.length > 1) {
       // Create the parent path by removing the last segment
       const parentPath = categoryPaths.slice(0, -1).join("/");
-      // Check if the parent category already exists
-      const parentExists = selectedLabelConfig.values.some((cat) => cat.id === parentPath);
+      // Check if any existing category starts with the parent path
+      const anyExistingCategoryStartsWithParent = selectedLabelConfig.values.some((cat) =>
+        cat.id.startsWith(parentPath + "/"),
+      );
 
       // If parent doesn't exist, create it
-      if (!parentExists) {
+      if (!anyExistingCategoryStartsWithParent) {
         selectedLabelConfig.values.push({
           id: parentPath,
           label: humanize(parentPath),
