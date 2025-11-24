@@ -76,7 +76,7 @@ module Annotation
                   SELECT 1
                   FROM entries e
                   WHERE e.id = annotations.entry_id
-                    AND e.assigned_to_id = :account_id
+                    AND e.assigned_to_id = pm.id
                 )
               )
             )

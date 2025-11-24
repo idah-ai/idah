@@ -82,14 +82,14 @@ module Dataset
               AND (
                 -- All with roles
                 pm.role IN :with_roles OR
+                -- From assigned entries with roles
                 (
-                  -- From assigned entries with roles
                   pm.role IN :assigned_to_roles
                   AND EXISTS (
                     SELECT 1
                     FROM entries e
                     WHERE e.dataset_id = datasets.id
-                      AND e.assigned_to_id = :account_id
+                      AND e.assigned_to_id = pm.id
                   )
                 )
               )
