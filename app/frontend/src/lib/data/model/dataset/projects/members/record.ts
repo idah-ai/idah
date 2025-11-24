@@ -30,7 +30,7 @@ export const projectMembersBackendDataSource = createBackendDataSource(
 );
 
 export const projectMemberRoles = [
-  { label: "Project Owner", value: "proj_owner" },
+  { label: "Project Owner", value: "project_owner" },
   { label: "Reviewer", value: "reviewer" },
   { label: "Annotator", value: "annotator" },
 ];

@@ -74,7 +74,7 @@ module Medias
         Api[:idah].dataset.project_members.index(filter: { account_id: }).data
       end
 
-      table.where(project_id: memberships.select { |m| roles.include?(m.role) }.map(&:project_id).uniq)
+      table.where(project_id: memberships.map(&:project_id).uniq)
     end
   end
 end

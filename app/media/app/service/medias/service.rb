@@ -20,6 +20,7 @@ module Medias
       medias.find_by!({ resource:, key: }, included:)
     end
 
+    # TODO: check who can delete ? only system ?
     def delete(resource, key)
       file = medias.find_by!({ resource:, key: })
       medias.delete(file.id)
