@@ -30,6 +30,7 @@
   // Functions
   function closeThisModal(): void {
     open = false;
+    submitting = false;
   }
 
   function resetForm(): void {
