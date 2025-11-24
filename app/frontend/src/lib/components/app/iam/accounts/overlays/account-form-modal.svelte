@@ -32,6 +32,7 @@
           attributes: {
             name: null,
             email: null,
+            role_name: "user",
             sso_channel: null,
             enabled: true,
           },
@@ -59,6 +60,7 @@
   function setValue(value: Hash): void {
     account.name = value.name;
     account.email = value.email;
+    account.role_name = value.role_name;
     account.sso_channel = value.sso_channel;
     account.enabled = value.enabled;
   }
@@ -89,6 +91,7 @@
         attributes: {
           name: account.name,
           email: account.email,
+          role_name: account.role_name,
           sso_channel: account.sso_channel,
           enabled: account.enabled,
         },
@@ -112,6 +115,7 @@
       const validated = validateData(schema, {
         name: account.name,
         email: account.email,
+        role_name: account.role_name,
         sso_channel: account.sso_channel,
         enabled: account.enabled,
       });
@@ -135,5 +139,5 @@
 </script>
 
 <FormModal {action} {title} loading={submitting} onCancel={resetForm} onConfirm={submit} bind:open>
-  <AccountForm {account} {fieldErrors} onValueChange={setValue} />
+  <AccountForm {account} {newRecord} {fieldErrors} onValueChange={setValue} />
 </FormModal>

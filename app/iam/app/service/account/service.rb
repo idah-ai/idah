@@ -38,6 +38,8 @@ module Account
     end
 
     def update(record)
+      auth_context.reject! unless auth_context.can?(:update, accounts.class.resource)
+
       record.attributes[:role_scope] = (record.attributes[:role_scope] || {}).to_json
       accounts.update!(record.id, record.attributes)
       accounts.find!(record.id)
