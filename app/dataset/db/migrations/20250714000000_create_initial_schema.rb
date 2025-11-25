@@ -149,7 +149,7 @@ Sequel.migration do
       # processing, pending, assigned, in_progress, completed, errored, ready
       column :status, String, null: false, index: true, default: "pending"
 
-      column :assigned_to_id, :bigint, null: true, index: true
+      column :assigned_to_member_id, :bigint, null: true, index: true
 
       Migration::Timestamps.timestamps(self)
     end
