@@ -1,11 +1,16 @@
 import OrganizationOwnerRowActionCell from "@/components/app/organizations/data-tables/organization-owner-row-action-cell.svelte";
 
-import { accountCreatedAtColumn, accountEmailColumn } from "@/components/app/iam/accounts/data-tables/account-columns";
+import {
+  accountCreatedAtColumn,
+  accountEmailColumn,
+  accountNameColumn,
+} from "@/components/app/iam/accounts/data-tables/account-columns";
 import { AccountRecord } from "@/data/model/iam/accounts/record";
 
 import type { ColumnsSettings } from "@/components/app/datasource-table/types";
 
 export const organizationOwnerColumns: ColumnsSettings<AccountRecord> = {
+  name: accountNameColumn,
   email: accountEmailColumn,
   created_at: accountCreatedAtColumn({ label: "Added At" }),
   action: {

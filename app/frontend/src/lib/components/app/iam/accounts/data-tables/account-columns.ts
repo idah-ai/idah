@@ -1,4 +1,5 @@
 import AccountJoinedAtCell from "@/components/app/iam/accounts/data-tables/account-joined-at-cell.svelte";
+import AccountNameCell from "@/components/app/iam/accounts/data-tables/account-name-cell.svelte";
 import AccountRoleNameCell from "@/components/app/iam/accounts/data-tables/account-role-name-cell.svelte";
 import AccountRowActionCell from "@/components/app/iam/accounts/data-tables/account-row-action-cell.svelte";
 import AccountStatusCell from "@/components/app/iam/accounts/data-tables/account-status-cell.svelte";
@@ -7,6 +8,22 @@ import { roles } from "@/data/model/iam/accounts/constants";
 import { AccountRecord } from "@/data/model/iam/accounts/record";
 
 import type { ColumnSettings, ColumnsSettings } from "@/components/app/datasource-table/types";
+
+export const accountNameColumn: ColumnSettings<AccountRecord> = {
+  label: "Name",
+  dataType: "string",
+  clickable: false,
+  sortable: true,
+  filterable: true,
+  filterOptions: {
+    filterKey: "name",
+    filterBy: "string",
+    filterOperation: "match",
+  },
+  visible: true,
+  hidable: false,
+  cellComponent: AccountNameCell,
+};
 
 export const accountEmailColumn: ColumnSettings<AccountRecord> = {
   label: "Email",
@@ -42,20 +59,7 @@ export const accountCreatedAtColumn = (params: { label: string }): ColumnSetting
 };
 
 export const accountColumns: ColumnsSettings<AccountRecord> = {
-  name: {
-    label: "Name",
-    dataType: "string",
-    clickable: false,
-    sortable: true,
-    filterable: true,
-    filterOptions: {
-      filterKey: "name",
-      filterBy: "string",
-      filterOperation: "match",
-    },
-    visible: true,
-    hidable: false,
-  },
+  name: accountNameColumn,
   email: accountEmailColumn,
   role_name: {
     label: "Role",
