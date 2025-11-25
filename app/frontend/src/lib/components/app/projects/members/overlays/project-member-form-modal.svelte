@@ -67,7 +67,6 @@
           await accountsBackendDataSource.join({ id: account.id, joinedAt: new Date() });
         }
 
-
         await projectMembersBackendDataSource.create({
           attributes: {
             project_id: projectId!,
