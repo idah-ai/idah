@@ -86,7 +86,7 @@
         <span class="truncate font-medium">{name || email}</span>
         <span class="truncate text-xs">{email}</span>
 
-        <Badge variant="outline" class="mt-1">{humanize(roleName)}</Badge>
+        <Badge variant="outline" class="mt-1">{humanize(roleName || "")}</Badge>
       </div>
     </SidebarMenuButton>
   {/snippet}
