@@ -1,17 +1,18 @@
 <script lang="ts">
-  import { ChevronsUpDownIcon, CircleUserRoundIcon, LogOutIcon, SettingsIcon, SunMoonIcon } from "@lucide/svelte";
+  import { CircleUserRoundIcon, LogOutIcon, SettingsIcon, SunMoonIcon } from "@lucide/svelte";
   import { toggleMode } from "mode-watcher";
 
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import AvatarFallback from "@/components/ui/avatar/avatar-fallback.svelte";
   import AvatarImage from "@/components/ui/avatar/avatar-image.svelte";
   import Avatar from "@/components/ui/avatar/avatar.svelte";
+  import Badge from "@/components/ui/badge/badge.svelte";
   import SidebarMenuButton from "@/components/ui/sidebar/sidebar-menu-button.svelte";
 
   import { useSidebar } from "@/components/ui/sidebar";
   import { accountAuthService } from "@/data/model/iam/accounts/auth/records";
   import { AuthContext, authStatus } from "@/security/AuthContext";
-  import { getAvatarFallback } from "@/utils/string";
+  import { getAvatarFallback, humanize } from "@/utils/string";
 
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
 
@@ -19,7 +20,14 @@
   AuthContext.backend ||= accountAuthService();
 
   let loggedInAccount = $derived($authStatus.authContext);
-  let { name, email, pictureUrl } = $derived(loggedInAccount || { name: "", email: "", pictureUrl: "" });
+  let { name, email, pictureUrl, roleName } = $derived(
+    loggedInAccount || {
+      name: "",
+      email: "",
+      pictureUrl: "",
+      roleName: "user",
+    },
+  );
 
   const sidebar = useSidebar();
   const menus: IDropdownMenus = {
@@ -65,7 +73,7 @@
     <SidebarMenuButton
       {...props}
       size="lg"
-      class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+      class="data-[state=open]:bg-background data-[state=open]:text-foreground hover:bg-background hover:text-foreground h-auto items-start"
     >
       <Avatar class="size-8 rounded-lg">
         <AvatarImage src={pictureUrl} alt="" />
@@ -77,9 +85,9 @@
       <div class="grid flex-1 text-left text-sm leading-tight">
         <span class="truncate font-medium">{name || email}</span>
         <span class="truncate text-xs">{email}</span>
-      </div>
 
-      <ChevronsUpDownIcon class="ml-auto size-4" />
+        <Badge variant="outline" class="mt-1">{humanize(roleName)}</Badge>
+      </div>
     </SidebarMenuButton>
   {/snippet}
 </DropdownMenus>
