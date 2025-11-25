@@ -66,7 +66,7 @@ module Entry
       account_id = auth_context.metadata[:id]
 
       case action
-      when :read
+      when :read, :submit
         scoped_fragment = <<-SQL
           EXISTS (
             SELECT 1
@@ -115,6 +115,12 @@ module Entry
       else
         raise Verse::Error::Unauthorized,
               "Permission denied for \"#{action}\" action on #{self.class.resource}"
+      end
+    end
+
+    def submit(id, attributes)
+      transaction do
+        update!(id, attributes)
       end
     end
 
