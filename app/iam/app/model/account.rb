@@ -10,11 +10,15 @@ module Account
     field :email, type: String, readonly: true
 
     field :hashed_password, type: [String, NilClass], visible: false, readonly: true
+    field :password_reset_token, type: [String, NilClass], visible: false, readonly: true
+    field :password_reset_token_expires_at, type: [Time, NilClass], visible: false, readonly: true
+
     field :sso_channel, type: [String, NilClass], readonly: true
 
     field :enabled, type: [TrueClass]
 
     field :joined_at, type: [Time, NilClass], readonly: true
+    field :invitation_expired_at, type: [Time, NilClass], readonly: true
 
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
