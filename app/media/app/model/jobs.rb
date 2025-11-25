@@ -29,6 +29,8 @@ module Jobs
 
     encoder :arguments, Verse::Sequel::JsonEncoder
 
+    # TODO: implement job scope to read progress ?
+
     # Lock available jobs for processing, up to {count} jobs.
     # The jobs are locked for update and their status is set to "running".
     #
