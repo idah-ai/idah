@@ -171,7 +171,7 @@
               <CircleXIcon class="size-4 shrink-0"></CircleXIcon>
             </button>
 
-            <ChevronsUpDownIcon class="size-4 shrink-0 opacity-50"></ChevronsUpDownIcon>
+            <ChevronsUpDownIcon class="size-4 shrink-0 opacity-50" />
           </div>
         </Button>
       {/if}
@@ -188,7 +188,7 @@
                 placeholder={searchPlaceholder}
                 value={searchValue}
                 oninput={filterChoices}
-              ></InputField>
+              />
             {/if}
 
             <CommandEmpty>No option found.</CommandEmpty>
