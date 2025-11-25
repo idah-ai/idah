@@ -64,11 +64,9 @@
         });
 
         if (existingProjectMember.data.length) {
-          // Re-invite existing member
-          continue;
+          await accountsBackendDataSource.join({ id: account.id, joinedAt: new Date() });
         }
 
-        await accountsBackendDataSource.join({ id: account.id, joinedAt: new Date() });
 
         await projectMembersBackendDataSource.create({
           attributes: {
@@ -88,6 +86,8 @@
     } catch (error) {
       toast.error("Failed to send invite. Please try again.");
       throw error;
+    } finally {
+      submitting = false;
     }
   }
 
