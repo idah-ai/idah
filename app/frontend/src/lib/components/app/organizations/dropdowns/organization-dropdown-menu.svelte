@@ -46,7 +46,9 @@
         {
           label: "Delete",
           icon: Trash2Icon,
-          disabled: relatedProjectRecords.length > 1,
+          description:
+            relatedProjectRecords.length > 0 ? "Cannot delete organization when projects are associated." : undefined,
+          disabled: relatedProjectRecords.length > 0,
           action: () => {
             openConfirmDeleteOrganizationModal = true;
           },
