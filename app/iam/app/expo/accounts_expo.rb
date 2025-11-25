@@ -32,7 +32,7 @@ class AccountsExpo < BaseExpo
     end
   end
   def join
-    account, password_reset_token = service.mark_as_joined(id = params[:id])
+    account, password_reset_token = service.mark_as_joined(params[:id])
     renderer.meta = {
       password_reset_token: password_reset_token
     }
@@ -47,6 +47,6 @@ class AccountsExpo < BaseExpo
     end
   end
   def resend_invitation
-    service.resend_pending_invitations(id = params[:id])
+    service.resend_pending_invitations(params[:id])
   end
 end
