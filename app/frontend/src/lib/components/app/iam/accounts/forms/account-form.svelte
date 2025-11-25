@@ -55,7 +55,7 @@
     />
 
     <!-- ACCOUNT:ROLE -->
-    {#if !newRecord}
+    {#if !newRecord && account.role_name !== "org_owner"}
       <SingleSelectField
         name="{resource}/role_name"
         label="Role"
