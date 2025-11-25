@@ -100,7 +100,8 @@
 
       if (!validated.success) {
         fieldErrors = getFieldErrors(validated.error);
-        throw new Error("Failed to submit form");
+        submitting = false;
+        return;
       }
 
       if (newRecord) {

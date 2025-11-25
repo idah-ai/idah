@@ -102,6 +102,13 @@
     submitting = true;
 
     try {
+      const validated = createMultipleProjectMembersSchema.safeParse(members);
+
+      if (!validated.success) {
+        submitting = false;
+        return;
+      }
+
       await createProjectMember();
     } catch (error) {
       console.error(error);
