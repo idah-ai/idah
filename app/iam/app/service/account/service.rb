@@ -49,12 +49,14 @@ module Account
         account = accounts.find!(id)
 
         # account invitation expires in 3 days
-        if account.invitation_expired_at < Time.now
+        if account.invitation_expired_at.nil? || account.invitation_expired_at < Time.now
           raise Verse::Error::ValidationFailed, "Invitation has expired"
         end
 
+        accounts.update!(id, { joined_at: Time.now, invitation_expired_at: nil })
+
         [
-          accounts.update!(id, { joined_at: Time.now, invitation_expired_at: nil }),
+          accounts.find!(id),
           update_password_reset_token(account)
         ]
       end
