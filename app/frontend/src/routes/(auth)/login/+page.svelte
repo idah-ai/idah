@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
+  import { LockIcon, LockOpenIcon, MailIcon } from "@lucide/svelte";
 
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import Form from "@/components/app/forms/form.svelte";
@@ -16,6 +17,7 @@
   // Variables
   let resource: string = "iam:account";
   let showErrorAlert = $state(false);
+  let showPassword = $state(false);
   let signingIn = $state(false);
   let email = $state("");
   let password = $state("");
@@ -46,6 +48,10 @@
       }
     }
   }
+
+  function toggleShowPassword(): void {
+    showPassword = !showPassword;
+  }
 </script>
 
 <AuthenticationCard title="Welcome Back!" description="We missed you!. Please enter your details.">
@@ -61,24 +67,32 @@
       <InputField
         name="{resource}/email"
         label="Email"
+        prefixIcon={MailIcon}
         placeholder="Enter your email"
         value={email}
         oninput={(e) => (email = e.currentTarget.value)}
       />
 
       <!-- PASSWORD -->
-      <InputField
-        name="{resource}/password"
-        label="Password"
-        type="password"
-        placeholder="Enter your password"
-        value={password}
-        oninput={(e) => (password = e.currentTarget.value)}
-      />
+      <section class="flex flex-col">
+        <InputField
+          name="{resource}/password"
+          label="Password"
+          type={showPassword ? "text" : "password"}
+          prefixIcon={showPassword ? LockOpenIcon : LockIcon}
+          placeholder="Enter your password"
+          value={password}
+          oninput={(e) => (password = e.currentTarget.value)}
+        />
 
-      <div class="flex items-center justify-end">
-        <Link href="/forgot-password" class="text-primary text-sm">Forgot password?</Link>
-      </div>
+        <div class="flex items-center justify-between">
+          <Button variant="link" class="p-0" onclick={toggleShowPassword}>
+            {showPassword ? "Hide" : "Show"} password
+          </Button>
+
+          <Link href="/forgot-password" class="text-primary text-sm">Forgot password?</Link>
+        </div>
+      </section>
 
       <Button
         type="submit"
