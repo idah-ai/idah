@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { Trash2Icon } from "@lucide/svelte";
+  import { UserRoundXIcon } from "@lucide/svelte";
   import { toast } from "svelte-sonner";
 
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
@@ -59,7 +59,7 @@
 </script>
 
 <Button variant="ghost" size="icon-sm" onclick={() => (openConfirmRemoveOrgOwnerModal = true)}>
-  <Trash2Icon />
+  <UserRoundXIcon />
 </Button>
 
 <ConfirmModal
