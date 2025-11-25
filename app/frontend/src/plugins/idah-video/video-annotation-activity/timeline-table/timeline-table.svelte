@@ -275,7 +275,7 @@
 )}
   <span
     class={cn(
-      `${bgColor} ${textColor} pointer-events-none absolute top-0 left-1/2 z-40 -translate-x-1/2 transform rounded-md px-2 py-1 text-xs font-medium whitespace-nowrap transition-all duration-150`,
+      `${bgColor} ${textColor} pointer-events-none absolute top-0 left-1/2 z-50 -translate-x-1/2 transform rounded-md px-2 py-1 text-xs font-medium whitespace-nowrap transition-all duration-150`,
       extraClass,
     )}
   >
