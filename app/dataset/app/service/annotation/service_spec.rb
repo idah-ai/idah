@@ -36,7 +36,7 @@ RSpec.describe Annotation::Service, database: true do
       priority: 1,
       wf_step: "start",
       status: "pending",
-      assigned_to_id: 1,
+      assigned_to_member_id: 1,
       project_id:,
       dataset_id:
     )

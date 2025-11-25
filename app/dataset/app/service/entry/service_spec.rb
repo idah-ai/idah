@@ -36,7 +36,7 @@ RSpec.describe Entry::Service, database: true do
       resource: "http://example.com/video.mp4",
       wf_step: "start",
       status: "pending",
-      assigned_to_id: 1,
+      assigned_to_member_id: 1,
       dataset_id:
     }
   end
@@ -291,7 +291,7 @@ RSpec.describe Entry::Service, database: true do
             type: "entries",
             id: entry.id,
             attributes: {
-              assigned_to_id: 2,
+              assigned_to_member_id: 2,
             }
           }
         }
@@ -300,7 +300,7 @@ RSpec.describe Entry::Service, database: true do
       subject.assign_member(record.id, 2)
 
       updated_entry = repo.find!(record.id)
-      expect(updated_entry.assigned_to_id).to eq(2)
+      expect(updated_entry.assigned_to_member_id).to eq(2)
     end
   end
 
