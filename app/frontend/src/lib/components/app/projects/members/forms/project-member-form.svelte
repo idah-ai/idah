@@ -2,6 +2,7 @@
   import { page } from "$app/state";
   import { CheckIcon, PlusIcon, Trash2Icon } from "@lucide/svelte";
   import { Combobox } from "bits-ui";
+  import { onMount } from "svelte";
 
   import ComboboxField from "@/components/app/forms/fields/combobox/combobox-field.svelte";
   import SingleSelectField from "@/components/app/forms/fields/select/single/single-select-field.svelte";
@@ -16,7 +17,6 @@
   } from "@/data/model/dataset/projects/members/record";
   import { accountsBackendDataSource } from "@/data/model/iam/accounts/record";
   import { cn } from "@/utils";
-  import { onMount } from "svelte";
 
   // Props
   interface Props {
