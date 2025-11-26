@@ -28,7 +28,7 @@ export class EntryRecord extends Record {
 
   @field() public resource!: string;
 
-  @field() public assigned_to_id!: number | null;
+  @field() public assigned_to_id!: number | null; // assigned_to_member_id
 
   @field() public created_at!: Date;
   @field() public updated_at!: Date;
