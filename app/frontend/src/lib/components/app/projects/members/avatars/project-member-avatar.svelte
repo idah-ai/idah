@@ -1,13 +1,11 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import Copyable from "@/components/app/texts/copyable.svelte";
-  import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+  import AccountAvatar from "@/components/app/iam/accounts/avatars/account-avatar.svelte";
   import Spinner from "@/components/ui/spinner/spinner.svelte";
   import Text from "@/components/ui/text/Text.svelte";
 
-  import { getAvatarFallback } from "@/utils/string";
-  import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
+  import { ProjectMemberRecord, projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
 
   // Props
   interface Props {
@@ -22,9 +20,9 @@
       return undefined;
     }
 
-    return await accountsBackendDataSource.get(String(memberAccountId), {
+    return await projectMembersBackendDataSource.get(String(memberAccountId), {
       fields: {
-        [AccountRecord.type]: ["name", "email", "picture_url"],
+        [ProjectMemberRecord.type]: ["name", "email", "picture_url"],
       },
     });
   }
@@ -34,16 +32,9 @@
   <Spinner size="sm"></Spinner>
 {:then projectMemberRes}
   {#if projectMemberRes}
-    {@const { name, email, picture_url } = projectMemberRes.data}
+    {@const { name, email, picture_url: pictureUrl } = projectMemberRes.data}
 
-    <div class="flex items-center">
-      <Avatar class="size-6 text-sm">
-        <AvatarImage src={picture_url}></AvatarImage>
-        <AvatarFallback>{getAvatarFallback(name || email)}</AvatarFallback>
-      </Avatar>
-
-      <Copyable title="email" value={email}></Copyable>
-    </div>
+    <AccountAvatar size="sm" {name} {email} {pictureUrl} showEmail />
   {:else if slotUnassigned}
     {@render slotUnassigned()}
   {:else}
