@@ -99,19 +99,21 @@ RSpec.describe AccountsExpo, type: :exposition, as: :system do
   end
 
   it "mark account as joined" do
-    expect(service).to receive(:mark_as_joined) do |id, joined_at|
+    expect(service).to receive(:mark_as_joined) do |id|
       expect(id).to eq "1"
-      expect(joined_at).to be_within(1).of(Time.now.utc)
     end
 
-    patch "/accounts/1/join",
-          {
-            data: {
-              attributes: {
-                joined_at: Time.now.utc.iso8601
-              }
-            }
-          }
+    patch "/accounts/1/join"
+
+    expect(last_response.status).to eq 200
+  end
+
+  it "resend account invitation" do
+    expect(service).to receive(:resend_pending_invitations) do |id|
+      expect(id).to eq "1"
+    end
+
+    post "/accounts/1/resend_invitation"
 
     expect(last_response.status).to eq 200
   end

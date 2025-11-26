@@ -24,12 +24,11 @@ module Account
         record_id = accounts.create(record.attributes)
         created_account = accounts.find!(record_id)
 
-        # Send the password reset email
+        # Send the join invitation email
         ::Service::Notification.email(
           recipient_account_email: created_account.email,
           title: "Account Created",
           category: "account_created",
-          password_reset_token: "just_test_token"
         )
 
         created_account
@@ -45,10 +44,59 @@ module Account
       accounts.delete(id)
     end
 
-    def mark_as_joined(id, joined_at)
+    def mark_as_joined(id)
       accounts.transaction do
-        accounts.update!(id, { joined_at: joined_at })
+        account = accounts.find!(id)
+
+        # account invitation expires in 3 days
+        if account.invitation_expired_at.nil? || account.invitation_expired_at < Time.now
+          raise Verse::Error::ValidationFailed, "Invitation has expired"
+        end
+
+        accounts.update!(id, { joined_at: Time.now, invitation_expired_at: nil })
+
+        [
+          accounts.find!(id),
+          update_password_reset_token(account)
+        ]
       end
+    end
+
+    def resend_pending_invitations(id)
+      account = accounts.find!(id)
+
+      unless account.joined_at.nil?
+        raise Verse::Error::NotFound, "Account with email #{account.email} already joined"
+      end
+
+      accounts.update!(
+        id,
+        { invitation_expired_at: Time.now + 3 * 24 * 60 * 60 }
+      )
+
+      ::Service::Notification.email(
+        recipient_account_email: account.email,
+        title: "Reminder: Please join your account",
+        category: "account_created"
+      )
+    end
+
+    private
+
+    def update_password_reset_token(account)
+      password_reset_token = SecureRandom.hex(32)
+
+      accounts.no_event do
+        accounts.update!(
+          account.id,
+          {
+            password_reset_token:,
+            password_reset_token_expires_at: Time.now + 3600 # Token valid for 1 hour
+          }
+        )
+      end
+
+      password_reset_token
     end
   end
 end
