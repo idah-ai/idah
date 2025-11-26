@@ -79,7 +79,6 @@ module NoteFeed
               "Cannot add note feed to entry in current step (#{entry.wf_step})"
       end
 
-      # TODO: check if the user has permission to add note feed to the entry
       if attributes[:annotation_id] && attributes[:anchor_type] == "annotation"
         annotation_id = attributes[:annotation_id]
         annotations.find!(annotation_id)
