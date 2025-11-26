@@ -93,7 +93,6 @@ module Entry
             assigned_to_roles: %w[annotator reviewer]
           )
         )
-      # TODO: check :update for submission, or create new :submit action
       when :update, :delete
         scoped_fragment = <<-SQL
           EXISTS (
