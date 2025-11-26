@@ -13,9 +13,17 @@ RUN apt-get update && apt-get install -y \
     curl \
     wget \
     git \
+    unzip \
     # Clean up apt cache to reduce image size
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+# download duckDB lib dependency
+RUN wget https://github.com/duckdb/duckdb/releases/download/v1.4.2/libduckdb-linux-amd64.zip \
+&& unzip libduckdb-linux-amd64.zip \
+&& mv duckdb.* /usr/local/include/ \
+&& mv libduckdb.so /usr/local/lib \
+&& rm libduckdb*
 
 # Build arguments
 ARG BUNDLE_WITHOUT="development test"
