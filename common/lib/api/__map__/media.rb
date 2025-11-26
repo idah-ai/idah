@@ -21,3 +21,14 @@ Api[:idah].register(
   )
   deserialize output.body
 end
+
+Api[:idah].register(
+  :media, :medias, :resource_info,
+) do |resource:, **opts|
+  output = get(
+    "media/medias/info/:resource",
+    options: { auth: nil },
+    params: { resource:, **opts }
+  )
+  deserialize output.body
+end

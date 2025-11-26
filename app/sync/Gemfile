@@ -34,3 +34,5 @@ group :test do
   gem "simplecov"
   gem "webmock"
 end
+
+gem "duckdb", "~> 1.4"
