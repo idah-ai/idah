@@ -13,19 +13,13 @@
   import { boundingBoxes } from "../idb_store.svelte";
 
   import type {
-      AnnotationMetadata,
-      AnnotationObj,
-      AnnotationShape,
-      AnnotationValue,
-  } from "@/context/AnnotationContext";
-  import type { IActivityContext } from "@/plugin/interface/Activity";
-  import type { AnnotationsIndexedDB } from "../indexedDB";
-  import type {
     AnnotationMetadata,
     AnnotationObj,
     AnnotationShape,
     AnnotationValue,
   } from "@/context/AnnotationContext";
+  import type { IActivityContext } from "@/plugin/interface/Activity";
+  import type { AnnotationsIndexedDB } from "../indexedDB";
 
   // Props
   let {
@@ -397,7 +391,7 @@
                 onclick={() => seekToFrame(thisFrame)}
               >
                 <div
-                  class="bg-primary absolute top-0 left-1/2 z-50 w-0.5 -translate-x-1/2 pointer-events-none"
+                  class="bg-primary pointer-events-none absolute top-0 left-1/2 z-50 w-0.5 -translate-x-1/2"
                   style="min-height: 24vh;"
                 ></div>
                 {@render tooltipFrame(thisFrame, "bg-primary", "text-primary-foreground")}
