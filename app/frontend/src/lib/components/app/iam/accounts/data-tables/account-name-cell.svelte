@@ -12,4 +12,4 @@
   let { name, email, picture_url: pictureUrl } = $derived(accountRecord);
 </script>
 
-<AccountAvatar {name} {email} {pictureUrl} showName />
+<AccountAvatar {name} {email} {pictureUrl} size="sm" showName />
