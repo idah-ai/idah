@@ -10,6 +10,7 @@ org_owner:
     - "iam:accounts.logout.*"
 
     # Accounts
+    - "iam:accounts.create.*"
     - "iam:accounts.read.*"
 
     # Organizations
@@ -26,3 +27,4 @@ org_owner:
 
     # Media Service
     - "media:medias.*.as_org_owner"
+    - "media:jobs.read.as_org_owner"
