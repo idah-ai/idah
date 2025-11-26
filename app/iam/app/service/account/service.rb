@@ -21,7 +21,13 @@ module Account
 
     def create(record)
       accounts.transaction do
-        record_id = accounts.create(record.attributes)
+        attr = record.attributes.dup
+
+        attr.merge!(
+          invitation_expired_at: Time.now + 3 * 24 * 60 * 60
+        )
+
+        record_id = accounts.create(attr)
         created_account = accounts.find!(record_id)
 
         # Send the join invitation email
