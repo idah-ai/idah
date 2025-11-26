@@ -19,7 +19,7 @@ RSpec.describe Processor::Service, type: :service, database: true do
           status: "ready",
           job_id: 123,
           resource: "some-resource-identifier",
-          assigned_to_id: nil,
+          assigned_to_member_id: nil,
           created_at: "2023-10-27T10:00:00Z",
           updated_at: "2023-10-27T10:00:00Z"
         },

@@ -18,7 +18,7 @@ module Entry
     field :resource, type: String
 
     # Add through assign method
-    field :assigned_to_id, type: Integer, readonly: true
+    field :assigned_to_member_id, type: Integer, readonly: true
 
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
@@ -66,7 +66,7 @@ module Entry
       account_id = auth_context.metadata[:id]
 
       case action
-      when :read
+      when :read, :submit
         scoped_fragment = <<-SQL
           EXISTS (
             SELECT 1
@@ -79,7 +79,7 @@ module Entry
                 -- From assigned entries with roles
                 (
                   (pm.role IN :assigned_to_roles)
-                  AND entries.assigned_to_id = pm.id
+                  AND entries.assigned_to_member_id = pm.id
                 )
               )
           )
@@ -115,6 +115,12 @@ module Entry
       else
         raise Verse::Error::Unauthorized,
               "Permission denied for \"#{action}\" action on #{self.class.resource}"
+      end
+    end
+
+    def submit(id, attributes)
+      transaction do
+        update!(id, attributes)
       end
     end
 

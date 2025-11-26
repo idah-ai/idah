@@ -28,7 +28,7 @@ export class EntryRecord extends Record {
 
   @field() public resource!: string;
 
-  @field() public assigned_to_id!: number | null; // assigned_to_member_id
+  @field() public assigned_to_member_id!: number | null;
 
   @field() public created_at!: Date;
   @field() public updated_at!: Date;
@@ -72,7 +72,7 @@ export const entriesBackendDataSource = createBackendDataSource(EntryRecord, ent
   }): Promise<RecordResponse<EntryRecord> | JsonApiErrorResponse> => {
     const res = await fetch(`${entryBasePath}/${params.id}/assign`, {
       method: "PATCH",
-      body: encodeModel(EntryRecord, { attributes: { assigned_to_id: params.memberId } }),
+      body: encodeModel(EntryRecord, { attributes: { assigned_to_member_id: params.memberId } }),
       headers: { "Content-Type": "application/vnd.api+json" },
     });
 

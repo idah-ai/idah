@@ -162,7 +162,7 @@ RSpec.describe ProjectMember::Service, database: true do
       it "cannot create" do
         create_data[:data][:relationships][:project][:data][:id] = second_project_id
 
-        expect { subject.create(deserialize(create_data)) }.to raise_error(Verse::Error::RecordNotFound)
+        expect { subject.create(deserialize(create_data)) }.to raise_error(Verse::Error::Unauthorized)
       end
 
       it "cannot update" do

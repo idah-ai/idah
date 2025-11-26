@@ -94,7 +94,7 @@ module NoteComment
                         SELECT 1
                         FROM entries e
                         WHERE e.id = nf.entry_id
-                          AND e.assigned_to_id = pm.id
+                          AND e.assigned_to_member_id = pm.id
                       )
                     )
                   )
@@ -130,7 +130,7 @@ module NoteComment
                         SELECT 1
                         FROM entries e
                         WHERE e.id = nf.entry_id
-                          AND e.assigned_to_id = pm.id
+                          AND e.assigned_to_member_id = pm.id
                       )
                     )
                   )

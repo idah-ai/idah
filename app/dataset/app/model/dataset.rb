@@ -89,7 +89,7 @@ module Dataset
                     SELECT 1
                     FROM entries e
                     WHERE e.dataset_id = datasets.id
-                      AND e.assigned_to_id = pm.id
+                      AND e.assigned_to_member_id = pm.id
                   )
                 )
               )
