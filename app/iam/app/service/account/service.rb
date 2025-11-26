@@ -21,6 +21,12 @@ module Account
     end
 
     def create(record)
+      if record.attributes[:role_name] == ("system" || "admin") &&
+         auth_context.can?(:create, projects.class.resource) != :all
+
+        raise Verse::Error::ValidationFailed, "System account can't be created"
+      end
+
       accounts.transaction do
         email = record.attributes[:email]
 

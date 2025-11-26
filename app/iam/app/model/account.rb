@@ -30,6 +30,7 @@ module Account
     end
   end
 
+  # TODO: scope for account creation might neede to be created and checked for different creator's account role
   class Repository < Verse::Sequel::Repository
     self.table = "accounts"
     self.resource = Resource::Iam::Accounts
