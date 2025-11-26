@@ -2,7 +2,12 @@
   import TimelineCell from "./timeline-cell.svelte";
 
   import { ENTRY_ROOT } from "../../type";
-  import type { VideoAnnotation } from "../VideoAnnotationContext";
+  import type {
+    AnnotationMetadata,
+    AnnotationObj,
+    AnnotationShape,
+    AnnotationValue,
+  } from "@/context/AnnotationContext";
 
   let {
     annotation,
@@ -18,7 +23,7 @@
     onDeleteAnnotation,
     ...restProps
   }: {
-    annotation: VideoAnnotation;
+    annotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
     currentFrame: number;
     range: [number, number];
     scale: number;
@@ -27,8 +32,11 @@
     hoveredColumn?: number;
     onCellHover: (column?: number) => void;
     onSeekFrame: (frame: number) => void;
-    onSelectAnnotation: (annotation: VideoAnnotation) => void;
-    onDeleteAnnotation: (annotation: VideoAnnotation, frame: number) => void;
+    onSelectAnnotation: (annotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) => void;
+    onDeleteAnnotation: (
+      annotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>,
+      frame: number,
+    ) => void;
   } = $props();
 
   // Variables
