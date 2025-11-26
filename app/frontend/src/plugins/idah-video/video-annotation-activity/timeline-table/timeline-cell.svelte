@@ -8,18 +8,12 @@
   import { ArrowLeftRightIcon, Trash2Icon } from "@lucide/svelte";
 
   import type {
-      AnnotationMetadata,
-      AnnotationObj,
-      AnnotationShape,
-      AnnotationValue,
-  } from "@/context/AnnotationContext";
-  import type { IActivityContext } from "@/plugin/interface/Activity";
-  import type {
     AnnotationMetadata,
     AnnotationObj,
     AnnotationShape,
     AnnotationValue,
   } from "@/context/AnnotationContext";
+  import type { IActivityContext } from "@/plugin/interface/Activity";
 
   let {
     annotation,
