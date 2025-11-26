@@ -29,6 +29,7 @@ module Account
           recipient_account_email: created_account.email,
           title: "Account Created",
           category: "account_created",
+          recipient_account_id: created_account.id
         )
 
         created_account
@@ -77,7 +78,8 @@ module Account
       ::Service::Notification.email(
         recipient_account_email: account.email,
         title: "Reminder: Please join your account",
-        category: "account_created"
+        category: "account_created",
+        recipient_account_id: account.id
       )
     end
 
