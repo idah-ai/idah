@@ -7,13 +7,13 @@
   import { cn } from "@/utils";
   import { ArrowLeftRightIcon, Trash2Icon } from "@lucide/svelte";
 
-  import type { IActivityContext } from "@/plugin/interface/Activity";
   import type {
     AnnotationMetadata,
     AnnotationObj,
     AnnotationShape,
     AnnotationValue,
   } from "@/context/AnnotationContext";
+  import type { IActivityContext } from "@/plugin/interface/Activity";
 
   let {
     annotation,
@@ -89,7 +89,7 @@
         <ContextMenu>
           <ContextMenuTrigger class="absolute top-[3px] h-full w-full pt-0">
             <div
-              class="m-auto h-3/4 w-3/4 cursor-context-menu rounded"
+              class="m-auto h-3/4 w-3/4 rounded"
               style:background-color={categoryColor ? categoryColor : "#FF0000"}
             ></div>
           </ContextMenuTrigger>
