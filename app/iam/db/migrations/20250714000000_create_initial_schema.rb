@@ -13,11 +13,14 @@ Sequel.migration do
       column :email, String, unique: true, null: false, index: true
 
       column :hashed_password, String, null: true
+      column :password_reset_token, String, null: true
+      column :password_reset_token_expires_at, Time, null: true
       column :sso_channel, String, null: true
 
       column :enabled, TrueClass, index: true
 
       column :joined_at, Time, null: true
+      column :invitation_expired_at, Time, null: true
 
       Migration::Timestamps.timestamps(self)
     end
