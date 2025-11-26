@@ -58,8 +58,8 @@
 
         {#if formatter && formatter(v)}
           <li style:color="red">{formatter(v)}</li>
-        {:else}
-          <li style:color="red">{k}:<span>{v}</span></li>
+          <!-- {:else}
+          <li style:color="red">{k}:<span>{v}</span></li> -->
         {/if}
       {/each}
     </ul>
