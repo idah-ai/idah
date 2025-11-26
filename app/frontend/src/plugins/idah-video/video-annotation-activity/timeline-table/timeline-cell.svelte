@@ -7,8 +7,13 @@
   import { cn } from "@/utils";
   import { ArrowLeftRightIcon, Trash2Icon } from "@lucide/svelte";
 
+  import type {
+      AnnotationMetadata,
+      AnnotationObj,
+      AnnotationShape,
+      AnnotationValue,
+  } from "@/context/AnnotationContext";
   import type { IActivityContext } from "@/plugin/interface/Activity";
-  import type { VideoAnnotation } from "../VideoAnnotationContext";
 
   let {
     annotation,
@@ -26,7 +31,7 @@
     totalFrames,
     ...restProps
   }: HTMLAttributes<HTMLDivElement> & {
-    annotation: VideoAnnotation;
+    annotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
     frame: number;
     currentFrame: number;
     range: [number, number];
@@ -37,7 +42,7 @@
     zoom: number;
     totalFrames: number;
     onSeekFrame: (frame: number) => void;
-    onSelectAnnotation: (annotation: VideoAnnotation) => void;
+    onSelectAnnotation: (annotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) => void;
     onDeleteFrame: (frame: number) => void;
   } = $props();
 
@@ -45,7 +50,7 @@
   const context: IActivityContext = getContext("context");
 
   // Variables
-  let categoryColor: string | undefined = $derived(getCategory(annotation.value.category)?.color);
+  let categoryColor: string | undefined | null = $derived(getCategory(annotation.value.category)?.color); // null....
   let range_span = $derived(Math.min(scale * zoom, totalFrames));
   let cellWidth: number = $derived((1 / ((range[1] - range[0] + (scale - (range_span % scale))) / 100)) * scale);
   let isSelected: boolean = $derived(currentFrame >= frame && currentFrame < frame + scale && frame <= totalFrames);
@@ -84,7 +89,7 @@
         <ContextMenu>
           <ContextMenuTrigger class="absolute top-[3px] h-full w-full pt-0">
             <div
-              class="m-auto h-3/4 w-3/4 cursor-context-menu rounded"
+              class="m-auto h-3/4 w-3/4 rounded"
               style:background-color={categoryColor ? categoryColor : "#FF0000"}
             ></div>
           </ContextMenuTrigger>
