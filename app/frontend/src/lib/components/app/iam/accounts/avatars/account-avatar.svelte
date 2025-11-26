@@ -1,11 +1,13 @@
 <script lang="ts">
   import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
   import { Badge } from "@/components/ui/badge";
+  import { cn } from "@/utils";
 
   import { getAvatarFallback, humanize } from "@/utils/string";
 
   // Props
   interface Props {
+    align?: "start" | "center" | "end";
     size?: "sm" | "md";
     name?: string | null;
     email?: string | null;
@@ -16,6 +18,7 @@
     showRole?: boolean;
   }
   let {
+    align = "center",
     size = "md",
     name,
     email,
@@ -33,8 +36,8 @@
   };
 </script>
 
-<div class="flex items-center gap-2">
-  <Avatar class={sizeClasses[size] + " rounded-lg"}>
+<div class="flex items-{align} gap-2">
+  <Avatar class={cn("rounded-lg", sizeClasses[size])}>
     <AvatarImage src={pictureUrl} alt={name} />
     <AvatarFallback class="rounded-lg">
       {getAvatarFallback(name || email || "")}

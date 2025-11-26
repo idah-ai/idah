@@ -71,7 +71,7 @@
       size="lg"
       class="data-[state=open]:bg-background data-[state=open]:text-foreground hover:bg-background hover:text-foreground h-auto items-start"
     >
-      <AccountAvatar {name} {email} {pictureUrl} {roleName} showName showEmail showRole />
+      <AccountAvatar align="start" {name} {email} {pictureUrl} {roleName} showName showEmail showRole />
     </SidebarMenuButton>
   {/snippet}
 </DropdownMenus>
