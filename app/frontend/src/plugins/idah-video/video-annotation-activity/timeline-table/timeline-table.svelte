@@ -14,7 +14,12 @@
 
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import type { AnnotationsIndexedDB } from "../indexedDB";
-  import type { VideoAnnotation } from "../VideoAnnotationContext";
+  import type {
+    AnnotationMetadata,
+    AnnotationObj,
+    AnnotationShape,
+    AnnotationValue,
+  } from "@/context/AnnotationContext";
 
   // Props
   let {
@@ -33,16 +38,19 @@
     db,
     isPlaying = false,
   }: {
-    annotations_promise: Promise<VideoAnnotation[]>;
+    annotations_promise: Promise<AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]>;
     // tracking?: boolean;
     scale: number;
     zoom: number;
     currentFrame: number;
     totalFrames: number;
-    selectedAnnotation?: VideoAnnotation;
+    selectedAnnotation?: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
     onSeekFrame: (frame: number) => void;
-    onSelectAnnotation: (annotation: VideoAnnotation) => void;
-    onDeleteAnnotation: (VideoAnnotation: VideoAnnotation, frame?: number) => void;
+    onSelectAnnotation: (annotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) => void;
+    onDeleteAnnotation: (
+      VideoAnnotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>,
+      frame?: number,
+    ) => void;
     onZoomChange?: (zoom: number) => void;
     onScaleChange?: (zoom: number) => void;
     db?: AnnotationsIndexedDB;
@@ -125,7 +133,10 @@
       .values.find((cat) => cat.id === categoryId);
   }
 
-  async function getCategoryName(categoryId: string | undefined, selected: VideoAnnotation) {
+  async function getCategoryName(
+    categoryId: string | undefined,
+    selected: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>,
+  ) {
     if (!categoryId) return "Uncategorized";
 
     const selectedCategory = getCategory(categoryId, selected.shape.type);
@@ -175,7 +186,7 @@
     }
   }
 
-  function handleRowClick(annotation: VideoAnnotation) {
+  function handleRowClick(annotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) {
     onSelectAnnotation(annotation);
     pos_offset = annotation.shape.start || 0;
     onSeekFrame(annotation.shape.start || 0);
@@ -205,7 +216,7 @@
   }
 </script>
 
-{#snippet row(annotations: VideoAnnotation[])}
+{#snippet row(annotations: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[])}
   {#each annotations as annotation, index (annotation.metadata.id)}
     {@const isSelected = selectedAnnotation?.metadata.id == annotation.metadata.id}
     {@const isLastIndex = index == annotations.length - 1}
@@ -275,12 +286,12 @@
 )}
   <span
     class={cn(
-      `${bgColor} ${textColor} pointer-events-none absolute top-0 left-1/2 z-50 -translate-x-1/2 transform rounded-md px-2 py-1 text-xs font-medium whitespace-nowrap transition-all duration-150`,
+      `${bgColor} ${textColor} pointer-events-none absolute left-1/2 top-0 z-50 -translate-x-1/2 transform whitespace-nowrap rounded-md px-2 py-1 text-xs font-medium transition-all duration-150`,
       extraClass,
     )}
   >
     {thisFrame}
-    <span class={`absolute top-full left-1/2 -mt-1 h-1.5 w-1.5 -translate-x-1/2 rotate-45 ${bgColor}`}></span>
+    <span class={`absolute left-1/2 top-full -mt-1 h-1.5 w-1.5 -translate-x-1/2 rotate-45 ${bgColor}`}></span>
   </span>
 {/snippet}
 
@@ -380,7 +391,7 @@
                 onclick={() => seekToFrame(thisFrame)}
               >
                 <div
-                  class="bg-primary absolute top-0 left-1/2 z-50 w-0.5 -translate-x-1/2"
+                  class="bg-primary absolute left-1/2 top-0 z-50 w-0.5 -translate-x-1/2"
                   style="min-height: 24vh;"
                 ></div>
                 {@render tooltipFrame(thisFrame, "bg-primary", "text-primary-foreground")}
@@ -399,7 +410,7 @@
               >
                 {#if isHovered}
                   <div
-                    class="bg-secondary-foreground absolute top-0 left-1/2 z-50 w-0.5 -translate-x-1/2 dark:bg-gray-700"
+                    class="bg-secondary-foreground absolute left-1/2 top-0 z-50 w-0.5 -translate-x-1/2 dark:bg-gray-700"
                     style="min-height: 24vh;"
                   ></div>
                   {@render tooltipFrame(
@@ -427,7 +438,7 @@
               >
                 {#if isHovered}
                   <div
-                    class="bg-secondary-foreground absolute top-0 left-1/2 z-50 w-0.5 -translate-x-1/2 dark:bg-gray-700"
+                    class="bg-secondary-foreground absolute left-1/2 top-0 z-50 w-0.5 -translate-x-1/2 dark:bg-gray-700"
                     style="min-height: 24vh;"
                   ></div>
                   {@render tooltipFrame(
