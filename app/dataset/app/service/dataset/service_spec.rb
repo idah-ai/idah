@@ -118,4 +118,73 @@ RSpec.describe Dataset::Service, database: true do
       expect { repo.find!(dataset_id) }.to raise_error(Verse::Error::NotFound)
     end
   end
+
+  describe "#notify_dataset_completed" do
+    let(:project_member_repo) { ProjectMember::Repository.new(auth_context) }
+    let(:dataset_id) { repo.create(attributes.merge(name: "Test Dataset")) }
+
+    before do
+      # Create project owner member
+      project_member_repo.create(
+        project_id: project_id,
+        account_id: 123,
+        invited_by_id: 1,
+        email: "owner@example.com",
+        name: "Project Owner",
+        role: "project_owner"
+      )
+
+      # Mock the notification service
+      allow(::Service::Notification).to receive(:email)
+    end
+
+    it "sends notification to project owners when dataset is completed" do
+      subject.notify_dataset_completed(dataset_id)
+
+      expect(::Service::Notification).to have_received(:email).with(
+        hash_including(
+          recipient_account_email: "owner@example.com",
+          title: "Dataset has been Completed",
+          category: "dataset_completed",
+          recipient_account_id: 123,
+          dataset_name: "Test Dataset",
+          project_name: "Test Project",
+          recipient_name: "Project Owner"
+        )
+      )
+    end
+
+    it "sends notification to all project owners" do
+      # Create another project owner
+      project_member_repo.create(
+        project_id: project_id,
+        account_id: 456,
+        email: "owner2@example.com",
+        name: "Project Owner 2",
+        role: "project_owner",
+        invited_by_id: 1
+      )
+
+      subject.notify_dataset_completed(dataset_id)
+
+      expect(::Service::Notification).to have_received(:email).exactly(2).times
+    end
+
+    it "does not send notification to non-owner members" do
+      # Create a non-owner member
+      project_member_repo.create(
+        project_id: project_id,
+        account_id: 789,
+        email: "member@example.com",
+        name: "Regular Member",
+        role: "project_member",
+        invited_by_id: 1
+      )
+
+      subject.notify_dataset_completed(dataset_id)
+
+      # Should only send to the one owner, not the regular member
+      expect(::Service::Notification).to have_received(:email).once
+    end
+  end
 end
