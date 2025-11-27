@@ -3,6 +3,7 @@
 module Dataset
   class Service < Verse::Service::Base
     use datasets: Dataset::Repository
+    use_system project_members: ProjectMember::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       datasets.index(
@@ -46,6 +47,26 @@ module Dataset
 
     def delete(id)
       datasets.delete(id)
+    end
+
+    def notify_dataset_completed(dataset_id)
+      dataset = datasets.find!(dataset_id, included: ["project"])
+
+      project_owner_members = project_members.index(
+        { project_id: dataset.project_id, role: "project_owner" },
+      )
+
+      project_owner_members.each do |member|
+        ::Service::Notification.email(
+          recipient_account_email: member.email,
+          title: "Dataset has been Completed",
+          category: "dataset_completed",
+          recipient_account_id: member.account_id,
+          dataset_name: dataset.name,
+          project_name: dataset.project.name,
+          recipient_name: member.name
+        )
+      end
     end
   end
 end

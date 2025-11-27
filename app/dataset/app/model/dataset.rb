@@ -37,5 +37,59 @@ module Dataset
     encoder :labeling_configuration, Verse::Sequel::JsonEncoder
     encoder :workflow_configuration, Verse::Sequel::JsonEncoder
     encoder :labels, Verse::Sequel::PgArrayEncoder
+
+    def update_progress!(dataset_id)
+      total_entries_frag = <<-SQL
+        (SELECT COUNT(*)
+         FROM entries
+         WHERE entries.dataset_id = ?)
+      SQL
+
+      total_entries = table.db.fetch(total_entries_frag, dataset_id).first[:count]
+
+      return if total_entries.zero?
+
+      completed_entries_frag = <<-SQL
+        (SELECT COUNT(*)
+         FROM entries
+         WHERE entries.dataset_id = ?
+         AND entries.status = 'completed')
+      SQL
+
+      completed_count = table.db.fetch(completed_entries_frag, dataset_id).first[:count]
+
+      in_progress_entries_frag = <<-SQL
+        (SELECT COUNT(*)
+         FROM entries
+         WHERE entries.dataset_id = ?
+         AND entries.status = 'in_progress')
+      SQL
+
+      in_progress_count = table.db.fetch(in_progress_entries_frag, dataset_id).first[:count]
+
+      # Calculate progress as a float (0.0 to 1.0)
+      progress = completed_count.to_f / total_entries
+
+      # Determine new status and update accordingly
+      if progress >= 1.0
+        completed!(dataset_id, progress)
+      elsif in_progress_count > 0 || completed_count > 0
+        in_progress!(dataset_id, progress)
+      end
+    end
+
+    event(name: "completed")
+    def completed!(dataset_id, progress)
+      no_event do
+        update!(dataset_id, { progress: progress, status: "completed" })
+      end
+    end
+
+    event(name: "in_progress")
+    def in_progress!(dataset_id, progress)
+      no_event do
+        update!(dataset_id, { progress: progress, status: "in_progress" })
+      end
+    end
   end
 end
