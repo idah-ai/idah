@@ -24,6 +24,7 @@ Sequel.migration do
       column :enabled, TrueClass, index: true
 
       column :joined_at, Time, null: true
+      column :invitation_expired_at, Time, null: true
 
       Migration::Timestamps.timestamps(self)
     end

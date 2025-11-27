@@ -24,4 +24,29 @@ class AccountsExpo < BaseExpo
     update
     delete
   end
+
+  expose on_http(:patch, "/:id/join", auth: nil) do
+    desc "Mark account as joined when user accepts invitation"
+    input do
+      field :id, String
+    end
+  end
+  def join
+    account, password_reset_token = service.mark_as_joined(params[:id])
+    renderer.meta = {
+      password_reset_token: password_reset_token
+    }
+
+    account
+  end
+
+  expose on_http(:post, "/:id/resend_invitation", auth: nil) do
+    desc "Resend account invitation email"
+    input do
+      field :id, String
+    end
+  end
+  def resend_invitation
+    service.resend_pending_invitations(params[:id])
+  end
 end
