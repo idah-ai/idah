@@ -103,6 +103,10 @@ module Entry
             status: entry_workflow.aasm.current_state == :done ? "completed" : "in_progress"
           }
         )
+
+        # Update dataset progress after entry status change
+        datasets.update_progress!(entry.dataset.id)
+
         entries.find!(entry.id, included: [:dataset])
       end
     end
