@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
   import { ChevronsUpDownIcon, CircleUserRoundIcon, LogOutIcon, SettingsIcon, SunMoonIcon } from "@lucide/svelte";
   import { toggleMode } from "mode-watcher";
 
@@ -33,7 +35,7 @@
           label: "Settings",
           icon: SettingsIcon,
           action: () => {
-            // Handle settings action
+            goto(resolve("/settings/notifications"));
           },
         },
       ],
