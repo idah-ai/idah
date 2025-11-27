@@ -4,7 +4,6 @@
     import { accountsBackendDataSource } from "@/data/model/iam/accounts/record";
 
   let accountId: string = page.url.searchParams.get("id") as string;
-  console.log(accountId);
 
   async function joinAccount(): Promise<void> {
     try{
