@@ -25,6 +25,8 @@ module NoteComment
               "note feed relationship is required to create a comment"
       end
 
+      # Project Owner can find the note feed in their projects
+      # Annotator and Reviewer can find the note feed only if entry is assigned to them
       note_feed = note_feeds.find(record.note_feed.id)
 
       unless note_feed
@@ -33,14 +35,14 @@ module NoteComment
       end
 
       # With "as_user" access ensure account can "create" note feed to the project
-      access = auth_context.can?(:create, note_comments.class.resource)
-      if access == :as_user && !ScopedQuery::Service.with_project_access?(
-        auth_context.metadata[:id],
-        note_feed.project_id,
-        ["project_owner", "reviewer", "annotator"]
-      )
+      if auth_context.can?(:create, note_comments.class.resource) == :as_user &&
+         ScopedQuery::Service.without_project_access?(
+           auth_context.metadata[:id],
+           note_feed.project_id,
+           ["project_owner", "reviewer", "annotator"]
+         )
         raise Verse::Error::Unauthorized,
-              "You do not have permission to create note feed"
+              "You do not have permission to create comment on this project"
       end
 
       attributes = record.attributes

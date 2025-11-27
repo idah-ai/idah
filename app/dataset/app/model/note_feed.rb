@@ -47,10 +47,10 @@ module NoteFeed
     # resolve                     | project_owner, reviewer
     #
     # Info:
-    # 1. org owner and project owner can read/create note feeds in their projects
+    # 1. project_owner can read/create note feeds in their projects
     # 2. reviewer and annotator can read/create note feeds in their assigned entries in their projects
     # 2. all roles can update and delete only their own note feeds in their projects
-    # 3. org owner, project owner and reviewer can resolve note feeds in their projects
+    # 3. project_owner and reviewer can resolve note feeds in their projects
     query
     def user_project_scoped_query(action)
       # Ignore create action as it will be handled in service layer
@@ -122,10 +122,65 @@ module NoteFeed
             assigned_to_roles: %w[reviewer annotator]
           )
         )
+      when :resolve
+        scoped_fragment = <<-SQL
+          EXISTS (
+            SELECT 1
+            FROM project_members pm
+            WHERE pm.account_id = :account_id
+              AND pm.project_id = note_feeds.project_id
+              AND (
+                -- All with roles
+                pm.role IN :with_roles OR
+                (
+                  -- From assigned entries with roles
+                  pm.role IN :assigned_to_roles
+                  AND EXISTS (
+                    SELECT 1
+                    FROM entries e
+                    WHERE e.id = note_feeds.entry_id
+                      AND e.assigned_to_id = :account_id
+                  )
+                )
+              )
+          ) OR (
+            -- From assigned entries with only own note feeds
+            note_feeds.created_by_email = :email AND
+            EXISTS (
+              SELECT 1
+              FROM project_members pm
+              WHERE pm.account_id = :account_id
+                AND pm.project_id = note_feeds.project_id
+                AND pm.role IN :own_roles
+                AND EXISTS (
+                  SELECT 1
+                  FROM entries e
+                  WHERE e.id = note_feeds.entry_id
+                    AND e.assigned_to_id = :account_id
+                )
+            )
+          )
+        SQL
+
+        table.where(
+          Sequel.lit(
+            scoped_fragment,
+            account_id:,
+            email:,
+            with_roles: %w[project_owner],
+            assigned_to_roles: %w[reviewer],
+            own_roles: %w[annotator],
+          )
+        )
       else
         raise Verse::Error::Unauthorized,
               "Permission denied for \"#{action}\" action on #{self.class.resource}"
       end
+    end
+
+    def resolve!(id)
+      update!(id, { status: "resolved" }, scope: scoped(:resolve))
+      find!(id)
     end
   end
 end
