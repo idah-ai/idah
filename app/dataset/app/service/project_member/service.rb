@@ -27,12 +27,12 @@ module ProjectMember
       end
 
       # With "as_user" access ensure account can "create" project member to the project
-      access = auth_context.can?(:create, project_members.class.resource)
-      if access == :as_user && !ScopedQuery::Service.with_project_access?(
-        auth_context.metadata[:id],
-        record.project.id,
-        ["project_owner"]
-      )
+      if auth_context.can?(:create, project_members.class.resource) == :as_user &&
+         ScopedQuery::Service.without_project_access?(
+           auth_context.metadata[:id],
+           record.project.id,
+           ["project_owner"]
+         )
         raise Verse::Error::Unauthorized,
               "You do not have permission to create project member on this project"
       end

@@ -116,7 +116,7 @@ RSpec.describe NoteFeed::Service, database: true do
       project_id: third_project_id,
       dataset_id: third_dataset_id,
       priority: 1,
-      resource: "http://example.com/second.mp4",
+      resource: "http://example.com/third.mp4",
       wf_step: "review",
       status: "in_progress",
       assigned_to_id: reviewer_account_id,
@@ -166,6 +166,28 @@ RSpec.describe NoteFeed::Service, database: true do
       position: { "x" => 100, "y" => 200 },
       content_md: "This is a second test note",
       created_by_email: "reviewer@example.com"
+    )
+  }
+  let(:annotator_note_feed_id) {
+    note_feed_repo.create(
+      project_id: first_project_id,
+      dataset_id: first_dataset_id,
+      entry_id: first_entry_id,
+      anchor_type: "entry",
+      position: { "x" => 100, "y" => 200 },
+      content_md: "This is a second test note",
+      created_by_email: "annotator@example.com",
+    )
+  }
+  let(:annotator_other_note_feed_id) {
+    note_feed_repo.create(
+      project_id: second_project_id,
+      dataset_id: second_dataset_id,
+      entry_id: second_entry_id,
+      anchor_type: "entry",
+      position: { "x" => 100, "y" => 200 },
+      content_md: "This is a second test note",
+      created_by_email: "annotator@example.com",
     )
   }
   let(:other_note_feed_id) {
@@ -218,11 +240,11 @@ RSpec.describe NoteFeed::Service, database: true do
     describe "with assigned project" do
       it "can index" do
         # Setup: create note feeds to test visibility
-        project_owner_note_feed_id
-        reviewer_first_note_feed_id
-        reviewer_second_note_feed_id
-        reviewer_third_note_feed_id
-        other_note_feed_id
+        project_owner_note_feed_id # assigned
+        reviewer_first_note_feed_id # assigned
+        reviewer_second_note_feed_id # assigned
+        reviewer_third_note_feed_id # not assigned
+        other_note_feed_id # not assigned
 
         result_ids = subject.index({}).map(&:id)
 
@@ -266,6 +288,18 @@ RSpec.describe NoteFeed::Service, database: true do
         }.to raise_error(Verse::Error::RecordNotFound)
       end
 
+      it "can resolve own note feed" do
+        record = subject.resolve(project_owner_note_feed_id)
+
+        expect(record.status).to eq "resolved"
+      end
+
+      it "can resolve others note feed" do
+        record = subject.resolve(reviewer_first_note_feed_id)
+
+        expect(record.status).to eq "resolved"
+      end
+
       it "cannot update others note feed" do
         update_data[:data][:id] = reviewer_first_note_feed_id
 
@@ -284,11 +318,11 @@ RSpec.describe NoteFeed::Service, database: true do
     describe "with not assigned project" do
       it "cannot index" do
         # Setup: create note feeds to test visibility
-        project_owner_note_feed_id
-        reviewer_first_note_feed_id
-        reviewer_second_note_feed_id
-        reviewer_third_note_feed_id
-        other_note_feed_id
+        project_owner_note_feed_id # assigned
+        reviewer_first_note_feed_id # assigned
+        reviewer_second_note_feed_id # assigned
+        reviewer_third_note_feed_id # not assigned
+        other_note_feed_id # not assigned
 
         result = subject.index({})
 
@@ -301,7 +335,7 @@ RSpec.describe NoteFeed::Service, database: true do
 
         expect {
           subject.create_from_params(create_attributes)
-        }.to raise_error(Verse::Error::Unauthorized, "You do not have permission to create note feed")
+        }.to raise_error(Verse::Error::Unauthorized, "You do not have permission to create note feed on this project")
       end
 
       it "cannot update" do
@@ -317,6 +351,12 @@ RSpec.describe NoteFeed::Service, database: true do
           subject.delete(reviewer_third_note_feed_id)
         }.to raise_error(Verse::Error::RecordNotFound)
       end
+
+      it "cannot resolve others note feed" do
+        expect {
+          subject.resolve(other_note_feed_id)
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
     end
   end
 
@@ -324,7 +364,7 @@ RSpec.describe NoteFeed::Service, database: true do
   # ------------------------------------------------
   # Note Feeds    | index | create | update | delete
   # ------------------------------------------------
-  # Assigned      |  yes  |   x    |    x   |    x
+  # Assigned      |  yes  |  yes   |   own  |   own
   # Not Assigned  |   x   |   x    |    x   |    x
   context "as Annotator", as: :annotator do
     subject { described_class.new(current_auth_context) }
@@ -336,11 +376,11 @@ RSpec.describe NoteFeed::Service, database: true do
     describe "with assigned project and assigned entries" do
       it "can index" do
         # Setup: create note feeds to test visibility
-        project_owner_note_feed_id
-        reviewer_first_note_feed_id
-        reviewer_second_note_feed_id
-        reviewer_third_note_feed_id
-        other_note_feed_id
+        project_owner_note_feed_id # assigned
+        reviewer_first_note_feed_id # assigned
+        reviewer_second_note_feed_id # assigned
+        reviewer_third_note_feed_id # not assigned
+        other_note_feed_id # not assigned
 
         result = subject.index({})
 
@@ -364,15 +404,51 @@ RSpec.describe NoteFeed::Service, database: true do
         expect(record.created_by_email).to eq "annotator@example.com"
       end
 
-      it "can update" do
+      it "can update own note feed" do
+        update_data[:data][:id] = annotator_note_feed_id
+
+        record = subject.update(deserialize(update_data))
+
+        expect(record.project_id).to eq first_project_id
+        expect(record.dataset_id).to eq first_dataset_id
+        expect(record.entry_id).to eq first_entry_id
+        expect(record.anchor_type).to eq "entry"
+        expect(record.position).to eq({ x: 300, y: 400 })
+        expect(record.content_md).to eq "This is an updated test note"
+        expect(record.created_by_email).to eq "annotator@example.com"
+      end
+
+      it "can delete own note feed" do
+        subject.delete(annotator_note_feed_id)
+
+        expect {
+          subject.show(annotator_note_feed_id)
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
+
+      it "can resolve own note feed" do
+        record = subject.resolve(annotator_note_feed_id)
+
+        expect(record.status).to eq "resolved"
+      end
+
+      it "cannot update others note feed" do
+        update_data[:data][:id] = reviewer_first_note_feed_id
+
         expect {
           subject.update(deserialize(update_data))
         }.to raise_error(Verse::Error::RecordNotFound)
       end
 
-      it "can delete" do
+      it "cannot delete others note feed" do
         expect {
-          subject.delete(project_owner_note_feed_id)
+          subject.delete(reviewer_first_note_feed_id)
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
+
+      it "cannot resolve others note feed" do
+        expect {
+          subject.resolve(reviewer_first_note_feed_id)
         }.to raise_error(Verse::Error::RecordNotFound)
       end
     end
@@ -391,11 +467,11 @@ RSpec.describe NoteFeed::Service, database: true do
 
       it "cannot index" do
         # Setup: create note feeds to test visibility
-        project_owner_note_feed_id
-        reviewer_first_note_feed_id
-        reviewer_second_note_feed_id
-        reviewer_third_note_feed_id
-        other_note_feed_id
+        project_owner_note_feed_id # assigned
+        reviewer_first_note_feed_id # assigned
+        reviewer_second_note_feed_id # assigned
+        reviewer_third_note_feed_id # not assigned
+        other_note_feed_id # not assigned
 
         # Ensure that the annotator is a member of the third project
         member = project_member_repo.find_by!({ account_id: annotator_account_id, project_id: second_project_id })
@@ -404,7 +480,7 @@ RSpec.describe NoteFeed::Service, database: true do
         # Ensure that the annotator cannot see unassigned entries in the third project
         result = subject.index({})
         expect(result.count).to eq 3
-        expect(result.map(&:id)).to_not include reviewer_third_note_feed_id
+        expect(result.map(&:id)).to_not include reviewer_third_note_feed_id, other_note_feed_id
       end
 
       it "cannot create" do
@@ -414,7 +490,7 @@ RSpec.describe NoteFeed::Service, database: true do
           subject.create_from_params(create_attributes)
         }.to raise_error(
           Verse::Error::Unauthorized,
-          "You do not have permission to create note feed"
+          "You do not have permission to create note feed on this project"
         )
       end
 
@@ -431,16 +507,40 @@ RSpec.describe NoteFeed::Service, database: true do
           subject.delete(project_owner_note_feed_id)
         }.to raise_error(Verse::Error::RecordNotFound)
       end
+
+      it "cannot resolve own note feed" do
+        expect {
+          subject.resolve(annotator_other_note_feed_id)
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
+
+      it "cannot resolve others note feed" do
+        expect {
+          subject.resolve(reviewer_third_note_feed_id)
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
+
+      it "cannot update others note feed" do
+        update_data[:data][:id] = reviewer_third_note_feed_id
+
+        expect {
+          subject.update(deserialize(update_data))
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
     end
 
     describe "with not assigned project" do
       it "cannot index" do
-        _all_ids = [project_owner_note_feed_id, reviewer_first_note_feed_id, reviewer_third_note_feed_id]
+        project_owner_note_feed_id # assigned
+        reviewer_first_note_feed_id # assigned
+        reviewer_second_note_feed_id # assigned
+        reviewer_third_note_feed_id # not assigned
+        other_note_feed_id # not assigned
 
         result = subject.index({})
 
-        expect(result.count).to eq 2
-        expect(result.map(&:id)).to_not include reviewer_third_note_feed_id
+        expect(result.count).to eq 3
+        expect(result.map(&:id)).to_not include reviewer_third_note_feed_id, other_note_feed_id
       end
 
       it "cannot create" do
@@ -448,7 +548,7 @@ RSpec.describe NoteFeed::Service, database: true do
 
         expect {
           subject.create_from_params(create_attributes)
-        }.to raise_error(Verse::Error::Unauthorized, "You do not have permission to create note feed")
+        }.to raise_error(Verse::Error::Unauthorized, "You do not have permission to create note feed on this project")
       end
 
       it "cannot update" do
@@ -483,11 +583,11 @@ RSpec.describe NoteFeed::Service, database: true do
     describe "with assigned project and assigned entries" do
       it "can index" do
         # Setup: create note feeds to test visibility
-        project_owner_note_feed_id
-        reviewer_first_note_feed_id
-        reviewer_second_note_feed_id
-        reviewer_third_note_feed_id
-        other_note_feed_id
+        project_owner_note_feed_id # not assigned
+        reviewer_first_note_feed_id # not assigned
+        reviewer_second_note_feed_id # not assigned
+        reviewer_third_note_feed_id # assigned
+        other_note_feed_id # not assigned
 
         result = subject.index({})
 
@@ -510,7 +610,7 @@ RSpec.describe NoteFeed::Service, database: true do
         expect(record.created_by_email).to eq "reviewer@example.com"
       end
 
-      it "can update" do
+      it "can update own note feed" do
         update_data[:data][:id] = reviewer_third_note_feed_id
 
         record = subject.update(deserialize(update_data))
@@ -524,11 +624,37 @@ RSpec.describe NoteFeed::Service, database: true do
         expect(record.created_by_email).to eq "reviewer@example.com"
       end
 
-      it "can delete" do
+      it "can delete own note feed" do
         subject.delete(reviewer_third_note_feed_id)
 
         expect {
           subject.show(reviewer_third_note_feed_id)
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
+
+      it "can resolve own note feed" do
+        record = subject.resolve(reviewer_third_note_feed_id)
+
+        expect(record.status).to eq "resolved"
+      end
+
+      it "cannot update others note feed" do
+        update_data[:data][:id] = project_owner_note_feed_id
+
+        expect {
+          subject.update(deserialize(update_data))
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
+
+      it "cannot delete others note feed" do
+        expect {
+          subject.delete(project_owner_note_feed_id)
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
+
+      it "cannot resolve others note feed" do
+        expect {
+          subject.resolve(project_owner_note_feed_id)
         }.to raise_error(Verse::Error::RecordNotFound)
       end
     end
@@ -547,11 +673,11 @@ RSpec.describe NoteFeed::Service, database: true do
 
       it "cannot index" do
         # Setup: create note feeds to test visibility
-        project_owner_note_feed_id
-        reviewer_first_note_feed_id
-        reviewer_second_note_feed_id
-        reviewer_third_note_feed_id
-        other_note_feed_id
+        project_owner_note_feed_id # not assigned
+        reviewer_first_note_feed_id # not assigned
+        reviewer_second_note_feed_id # not assigned
+        reviewer_third_note_feed_id # assigned
+        other_note_feed_id # not assigned
 
         # Ensure that the reviewer is a member of the third project
         member = project_member_repo.find_by!({ account_id: reviewer_account_id, project_id: second_project_id })
@@ -570,12 +696,12 @@ RSpec.describe NoteFeed::Service, database: true do
           subject.create_from_params(create_attributes)
         }.to raise_error(
           Verse::Error::Unauthorized,
-          "You do not have permission to create note feed"
+          "You do not have permission to create note feed on this project"
         )
       end
 
       it "cannot update" do
-        update_data[:data][:id] = project_owner_note_feed_id
+        update_data[:data][:id] = reviewer_first_note_feed_id
 
         expect {
           subject.update(deserialize(update_data))
@@ -584,7 +710,27 @@ RSpec.describe NoteFeed::Service, database: true do
 
       it "cannot delete" do
         expect {
-          subject.delete(project_owner_note_feed_id)
+          subject.delete(reviewer_first_note_feed_id)
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
+
+      it "cannot resolve own note feed" do
+        expect {
+          subject.resolve(reviewer_first_note_feed_id)
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
+
+      it "cannot resolve others note feed" do
+        expect {
+          subject.resolve(project_owner_note_feed_id)
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
+
+      it "cannot update others note feed" do
+        update_data[:data][:id] = project_owner_note_feed_id
+
+        expect {
+          subject.update(deserialize(update_data))
         }.to raise_error(Verse::Error::RecordNotFound)
       end
     end
@@ -592,19 +738,20 @@ RSpec.describe NoteFeed::Service, database: true do
     describe "with not assigned project" do
       it "cannot index" do
         # Setup: create note feeds to test visibility
-        project_owner_note_feed_id
-        reviewer_first_note_feed_id
-        reviewer_second_note_feed_id
-        reviewer_third_note_feed_id
-        other_note_feed_id
+        project_owner_note_feed_id # not assigned
+        reviewer_first_note_feed_id # not assigned
+        reviewer_second_note_feed_id # not assigned
+        reviewer_third_note_feed_id # assigned
+        other_note_feed_id # not assigned
 
         result = subject.index({})
 
         expect(result.count).to eq 1
-        expect(result.first.id).to_not include(
+        expect(result.map(&:id)).to_not include(
           project_owner_note_feed_id,
           reviewer_first_note_feed_id,
-          reviewer_second_note_feed_id
+          reviewer_second_note_feed_id,
+          other_note_feed_id
         )
       end
 
@@ -615,7 +762,7 @@ RSpec.describe NoteFeed::Service, database: true do
           subject.create_from_params(create_attributes)
         }.to raise_error(
           Verse::Error::Unauthorized,
-          "You do not have permission to create note feed"
+          "You do not have permission to create note feed on this project"
         )
       end
 
@@ -630,6 +777,12 @@ RSpec.describe NoteFeed::Service, database: true do
       it "cannot delete" do
         expect {
           subject.delete(other_note_feed_id)
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
+
+      it "cannot resolve note feed" do
+        expect {
+          subject.resolve(other_note_feed_id)
         }.to raise_error(Verse::Error::RecordNotFound)
       end
     end
