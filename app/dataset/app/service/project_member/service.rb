@@ -73,7 +73,8 @@ module ProjectMember
     def delete(id)
       project_members.transaction do
         member = project_members.find!(id, included: [:project])
-        project_members.delete(id)
+
+        project_members.delete!(id)
 
         project_members.after_commit do
           ::Service::Notification.email(
