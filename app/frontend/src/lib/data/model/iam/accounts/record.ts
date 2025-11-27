@@ -16,6 +16,7 @@ export class AccountRecord extends Record {
   @field() public enabled!: boolean;
 
   @field() public joined_at!: Date | null;
+  @field() public readonly invitation_expired_at!: Date | null;
 
   @field({ transformer: Transformers.Time }) public created_at!: Date;
   @field({ transformer: Transformers.Time }) public updated_at!: Date;
@@ -48,7 +49,6 @@ export const accountsBackendDataSource = createBackendDataSource(AccountRecord, 
 
       return Promise.reject(parseSingleElementError({ status: res.status, errors: body.errors }));
     }
-    console.log(body);
 
     if (body) {
       return Promise.resolve(body);
