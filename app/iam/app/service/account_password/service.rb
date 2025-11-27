@@ -34,7 +34,7 @@ module AccountPassword
         account_repo.update!(
           account.id,
           {
-            password_digest: BCrypt::Password.create(new_password),
+            hashed_password: BCrypt::Password.create(new_password),
             password_reset_token: nil,
             password_reset_token_expires_at: nil
           }
