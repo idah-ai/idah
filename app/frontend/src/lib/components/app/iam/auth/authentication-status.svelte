@@ -1,41 +1,40 @@
 <script lang="ts">
-	import { onMount, type Snippet } from "svelte";
+  import { onMount, type Snippet } from "svelte";
 
-	import ApplicationLoading from "@/components/app/application/application-loading.svelte";
+  import { cn } from "@/utils";
 
-	import { cn } from "@/utils";
+  // Props
+  interface Props {
+    class?: string | null;
+    // Slots
+    loading?: Snippet;
+    authorized?: Snippet;
+    unauthorized?: Snippet;
+  }
+  let { class: className, loading, authorized, unauthorized }: Props = $props();
 
-	// Props
-	interface Props {
-		class?: string | null;
-		// Slots
-		loading?: Snippet;
-		authorized?: Snippet;
-		unauthorized?: Snippet;
-	}
-	let { class: className, loading, authorized, unauthorized }: Props = $props();
+  // Lifecycle
+  onMount(async () => {
+    await checkAuthStatus();
+  });
 
-	// Lifecycle
-	onMount(async () => {
-		await checkAuthStatus();
-	});
-
-	// Functions
-	async function checkAuthStatus(): Promise<void> {}
+  // Functions
+  async function checkAuthStatus(): Promise<void> {
+  }
 </script>
 
 <div class={cn("", className)}>
-	<!-- {#if loading}
+  <!-- {#if loading}
 		{@render loading?.()}
 	{:else}
 		<ApplicationLoading />
 	{/if} -->
 
-	{@render authorized?.()}
+  {@render authorized?.()}
 
-	<!-- {#if unauthorized}
+  {#if unauthorized}
 		{@render unauthorized?.()}
 	{:else}
-		<Redirect to="/login" />
-	{/if} -->
+		<!-- <Redirect to="/login" /> -->
+	{/if}
 </div>
