@@ -13,8 +13,8 @@
       });
       const passwordResetToken = accountResponse.meta.password_reset_token || "";
       
-       goto(`/reset-password?password_reset_token=${passwordResetToken}`);
-    } catch (e) {
+       goto(resolve(`/reset-password?password_reset_token=${passwordResetToken}`));
+    } catch (_error) {
       goto(resolve("/error"));
     }
   }
