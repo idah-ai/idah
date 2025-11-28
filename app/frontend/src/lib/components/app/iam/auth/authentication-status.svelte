@@ -11,7 +11,7 @@
     authorized?: Snippet;
     unauthorized?: Snippet;
   }
-  let { class: className, authorized, unauthorized }: Props = $props();
+  let { class: className, loading, authorized, unauthorized }: Props = $props();
 
   // Lifecycle
   onMount(async () => {
