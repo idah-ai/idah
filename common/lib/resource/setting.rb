@@ -3,7 +3,7 @@
 module Resource
   module Setting
     Settings = "setting:settings"
-    UserSettings = "setting:user_settings"
+    AccountSettings = "setting:account_settings"
 
     Plugins = "setting:plugins"
   end

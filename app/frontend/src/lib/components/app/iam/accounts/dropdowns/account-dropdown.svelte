@@ -1,8 +1,17 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
-  import { ChevronsUpDownIcon, CircleUserRoundIcon, LogOutIcon, SettingsIcon, SunMoonIcon } from "@lucide/svelte";
-  import { toggleMode } from "mode-watcher";
+  import {
+    ChevronsUpDownIcon,
+    CircleUserRoundIcon,
+    LogOutIcon,
+    MoonIcon,
+    SettingsIcon,
+    SunIcon,
+    SunMoonIcon,
+    TabletSmartphoneIcon,
+  } from "@lucide/svelte";
+  import { mode, resetMode, setMode } from "mode-watcher";
 
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import AvatarFallback from "@/components/ui/avatar/avatar-fallback.svelte";
@@ -16,7 +25,7 @@
 
   // Variables
   const sidebar = useSidebar();
-  const menus: IDropdownMenus = {
+  const menus: IDropdownMenus = $derived({
     general: {
       items: [
         {
@@ -29,7 +38,29 @@
         {
           label: "Theme",
           icon: SunMoonIcon,
-          action: toggleMode,
+          items: {
+            modes: {
+              items: [
+                {
+                  label: "Light",
+                  icon: SunIcon,
+                  disabled: mode.current === "light",
+                  action: () => setMode("light"),
+                },
+                {
+                  label: "Dark",
+                  icon: MoonIcon,
+                  disabled: mode.current === "dark",
+                  action: () => setMode("dark"),
+                },
+                {
+                  label: "System",
+                  icon: TabletSmartphoneIcon,
+                  action: () => resetMode(),
+                },
+              ],
+            },
+          },
         },
         {
           label: "Settings",
@@ -51,7 +82,7 @@
         },
       ],
     },
-  };
+  });
 </script>
 
 <DropdownMenus {menus} align="end" side={sidebar.isMobile ? "bottom" : "right"} class="min-w-56">

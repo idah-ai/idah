@@ -2,6 +2,7 @@
 
 module AccountSetting
   class Record < Verse::Model::Record::Base
+    type Resource::Setting::AccountSettings
     field :id, type: Integer, primary: true
 
     field :account_id, type: Integer
