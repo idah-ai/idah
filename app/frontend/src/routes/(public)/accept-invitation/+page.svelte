@@ -12,9 +12,10 @@
         id: page.url.searchParams.get("accountId") as string,
       });
       const passwordResetToken = accountResponse.meta.password_reset_token || "";
-      
-       goto(resolve(`/reset-password?password_reset_token=${passwordResetToken}`));
+
+      goto(resolve(`/reset-password?password_reset_token=${passwordResetToken}`));
     } catch (_error) {
+      // Handle error if needed
       goto(resolve("/error"));
     }
   }
