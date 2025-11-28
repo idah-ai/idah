@@ -1,10 +1,11 @@
 import { createBackendDataSource, encodeModel, resourcePath } from "@/data/BackendDataSource";
 import { clearCache } from "@/data/Cache";
-import { parseSingleElementError } from "@/data/model/json_api";
+import { parseSingleElementError, parseSingleElementReturn } from "@/data/model/json_api";
 import { field, Record, RecordFactory, type } from "@/data/model/Record";
 import { Transformers } from "@/data/model/transformers";
 
 import type { Hash } from "@/utils/types";
+import type { RecordResponse } from "../../types";
 
 @type("iam:accounts")
 export class AccountRecord extends Record {
@@ -27,7 +28,7 @@ RecordFactory.registerTypes(AccountRecord);
 const accountBasePath: string = `${import.meta.env.VITE_IDAH_HOST}/api/v1/iam/accounts`;
 
 export const accountsBackendDataSource = createBackendDataSource(AccountRecord, accountBasePath, {
-  join: async (params: { id: string }): Promise<{ data: null }> => {
+  join: async (params: { id: string }): Promise<RecordResponse<AccountRecord> | { data: null }> => {
     const res = await fetch(`${accountBasePath}/${params.id}/join`, {
       method: "PATCH",
       body: encodeModel(AccountRecord, { attributes: { joined_at: new Date() } }),
@@ -51,6 +52,8 @@ export const accountsBackendDataSource = createBackendDataSource(AccountRecord, 
     }
 
     if (body) {
+      if (body.data) return Promise.resolve(parseSingleElementReturn<AccountRecord>(body));
+
       return Promise.resolve(body);
     }
 
