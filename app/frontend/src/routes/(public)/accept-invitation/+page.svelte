@@ -14,8 +14,8 @@
       const passwordResetToken = accountResponse.meta.password_reset_token || "";
 
       goto(resolve(`/reset-password?password_reset_token=${passwordResetToken}`));
-    } catch (_error) {
-      // Handle error if needed
+    } catch (error) {
+      console.error("Error accepting invitation", error);
       goto(resolve("/error"));
     }
   }
