@@ -50,6 +50,8 @@ services:
       args:
         BUNDLE_WITHOUT: "" # Allow all groups for dev.
         APP_ENVIRONMENT: staging
+    cpus: 0.5
+    mem_limit: 2g
     environment:
       - DATABASE_URI=postgres://postgres:postgres@host.docker.internal:5432/idah_iam_development
       - REDIS_STREAM_URL=redis://host.docker.internal:6379/0
@@ -76,6 +78,8 @@ services:
       args:
         BUNDLE_WITHOUT: "" # Allow all groups for dev.
         APP_ENVIRONMENT: staging
+    cpus: 0.6
+    mem_limit: 3g
     environment:
       - DATABASE_URI=postgres://postgres:postgres@host.docker.internal:5432/idah_media_development
       - REDIS_STREAM_URL=redis://host.docker.internal:6379/0
@@ -85,6 +89,8 @@ services:
     volumes:
       - ../app/media:/app
       - ../app/media/common:/app/common
+      - ../plugins:/app/plugins
+      - frontend_build:/app/plugins/idah-video/frontend/build
       - bundler_cache:/usr/local/bundle
     networks:
       - app-network
@@ -102,6 +108,8 @@ services:
       args:
         BUNDLE_WITHOUT: "" # Allow all groups for dev.
         APP_ENVIRONMENT: staging
+    cpus: 0.5
+    mem_limit: 2g
     environment:
       - DATABASE_URI=postgres://postgres:postgres@host.docker.internal:5432/idah_dataset_development
       - REDIS_STREAM_URL=redis://host.docker.internal:6379/0
@@ -121,18 +129,135 @@ services:
     stdin_open: true
     tty: true
 
+  notification:
+    build:
+      context: ../app/notification
+      dockerfile: Dockerfile
+      args:
+        BUNDLE_WITHOUT: "" # Allow all groups for dev.
+        APP_ENVIRONMENT: staging
+    cpus: 0.5
+    mem_limit: 2g
+    environment:
+      - DATABASE_URI=postgres://postgres:postgres@host.docker.internal:5432/idah_notification_staging
+      - REDIS_STREAM_URL=redis://host.docker.internal:6379/0
+      - EAGER_LOAD=1
+    ports:
+      - "3000"
+    volumes:
+      - ../app/notification:/app
+      - ../app/notification/common:/app/common
+      - bundler_cache:/usr/local/bundle
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+      - "localhost:host-gateway"
+    networks:
+      - app-network
+    command: ./dev-entrypoint.sh puma
+    stdin_open: true
+    tty: true
+
+  audit:
+    build:
+      context: ../app/audit
+      dockerfile: Dockerfile
+      args:
+        BUNDLE_WITHOUT: "" # Allow all groups for dev.
+        APP_ENVIRONMENT: staging
+    environment:
+      - DATABASE_URI=postgres://postgres:postgres@host.docker.internal:5432/idah_audit_staging
+      - REDIS_STREAM_URL=redis://host.docker.internal:6379/0
+      - EAGER_LOAD=1
+    ports:
+      - "3000"
+    volumes:
+      - ../app/audit:/app
+      - ../app/audit/common:/app/common
+      - bundler_cache:/usr/local/bundle
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+      - "localhost:host-gateway"
+    networks:
+      - app-network
+    command: ./dev-entrypoint.sh puma
+    stdin_open: true
+    tty: true
+
+  sync:
+    build:
+      context: ../app/sync
+      dockerfile: Dockerfile
+      args:
+        BUNDLE_WITHOUT: "" # Allow all groups for dev.
+        APP_ENVIRONMENT: staging
+    cpus: 0.5
+    mem_limit: 2g
+    environment:
+      - DATABASE_URI=postgres://postgres:postgres@host.docker.internal:5432/idah_sync_staging
+      - REDIS_STREAM_URL=redis://host.docker.internal:6379/0
+      - EAGER_LOAD=1
+    ports:
+      - "3000"
+    volumes:
+      - ../app/sync:/app
+      - ../app/sync/common:/app/common
+      - bundler_cache:/usr/local/bundle
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+      - "localhost:host-gateway"
+    networks:
+      - app-network
+    command: ./dev-entrypoint.sh puma
+    stdin_open: true
+    tty: true
+
+  setting:
+    build:
+      context: ../app/setting
+      dockerfile: Dockerfile
+      args:
+        BUNDLE_WITHOUT: "" # Allow all groups for dev.
+        APP_ENVIRONMENT: staging
+    cpus: 0.5
+    mem_limit: 2g
+    environment:
+      - DATABASE_URI=postgres://postgres:postgres@host.docker.internal:5432/idah_setting_development
+      - REDIS_STREAM_URL=redis://host.docker.internal:6379/0
+      - EAGER_LOAD=1
+    ports:
+      - "3000"
+    volumes:
+      - ../app/setting:/app
+      - ../app/setting/common:/app/common
+      - ../plugins:/app/plugins
+      - frontend_build:/app/plugins/idah-video/frontend/build
+      - bundler_cache:/usr/local/bundle
+    networks:
+      - app-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+      - "localhost:host-gateway"
+    depends_on:
+      - frontend
+    command: ./dev-entrypoint.sh puma
+    stdin_open: true
+    tty: true
+
   frontend:
     build:
       context: ../.
       dockerfile: ./staging/Dockerfile.frontend
     ports:
       - "3000"
+    volumes:
+      - frontend_build:/app/frontend/build
     networks:
       - app-network
     stdin_open: true
     tty: true
 
 volumes:
+  frontend_build:
   bundler_cache:
   postgres_data:
   redis_data:
