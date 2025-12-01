@@ -83,9 +83,9 @@
       closeThisModal();
       toast.success(`${members.length} member(s) invite sent!`);
     } catch (error) {
-              console.error(error);
+      console.error(error);
       toast.error("Failed to send invite. Please try again.");
-    } 
+    }
   }
 
   async function submit(): Promise<void> {
@@ -94,7 +94,7 @@
     try {
       await createProjectMember();
     } catch (error) {
-        console.error(error);
+      console.error(error);
       submitting = false;
     }
   }
