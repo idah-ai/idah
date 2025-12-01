@@ -11,17 +11,19 @@ class LogsExpo < BaseExpo
   end
 
   def create_audit_log
-    service.create(message)
+    service.create(message.event, message.content)
   end
 
   # resources we want to include in Audit Logs
   # TODO: complete this list and refactor/regex somehow ?
   %w[
     iam:accounts
+    iam:organizations
     dataset:projects
     dataset:project_members
     dataset:datasets
     dataset:entries
+    media:medias
   ].each do |resource|
     # events/actions we want to include in Audit Logs
     %w[created updated deleted].each do |event|
