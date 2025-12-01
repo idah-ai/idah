@@ -22,7 +22,6 @@ class LogsExpo < BaseExpo
     dataset:project_members
     dataset:datasets
     dataset:entries
-    dataset:annotations
   ].each do |resource|
     # events/actions we want to include in Audit Logs
     %w[created updated deleted].each do |event|
@@ -31,5 +30,12 @@ class LogsExpo < BaseExpo
         build_expose(on_resource_event(resource, event))
       )
     end
+  end
+
+  %w[assigned unassigned submitted].each do |event|
+    attach_exposition(
+      :create_audit_log,
+      build_expose(on_resource_event("dataset:entries", event))
+    )
   end
 end
