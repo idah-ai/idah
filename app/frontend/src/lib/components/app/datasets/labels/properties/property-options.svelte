@@ -202,7 +202,7 @@
           }
         }
       }}
-      errors={visibilityError ? [visibilityError] : []}
+      errors={visibilityError ? [visibilityError] : undefined}
     />
   </div>
 </div>
