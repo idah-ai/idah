@@ -5,6 +5,9 @@ module Account
     use accounts: Account::Repository,
         organization_service: Organization::Service
 
+    use_system accounts_system: Account::Repository
+               organization_repo_system: Organization::Repository
+
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       accounts.index(
         filter,
@@ -63,9 +66,19 @@ module Account
     def update(record)
       auth_context.reject! unless auth_context.can?(:update, accounts.class.resource)
 
-      record.attributes[:role_scope] = (record.attributes[:role_scope] || {}).to_json
-      accounts.update!(record.id, record.attributes)
-      accounts.find!(record.id)
+      accounts.transaction do
+        previous_account = accounts.find!(record.id)
+
+        # Ensure role_scope is stored as JSON
+        record.attributes[:role_scope] = (record.attributes[:role_scope] || {}).to_json
+        accounts.update!(record.id, record.attributes)
+
+        accounts.after_commit do
+          notify_role_change_if_needed(previous_account, record)
+        end
+
+        accounts.find!(record.id)
+      end
     end
 
     def delete(id)
@@ -126,6 +139,39 @@ module Account
       end
 
       password_reset_token
+    end
+
+    def notify_role_change_if_needed(previous_account, record)
+      old_role = previous_account.role_name
+      new_role = record.attributes[:role_name]
+      return if old_role == new_role
+
+      email_params = build_email_params(previous_account, record, old_role, new_role)
+
+      RoleChangeNotification.new(
+        from_role: old_role,
+        to_role: new_role,
+        recipient_account_email: previous_account.email,
+        recipient_account_id: previous_account.id,
+        email_params: email_params
+      ).deliver!
+    end
+
+    def build_email_params(previous_account, record, old_role, new_role)
+      base_params = { recipient_name: previous_account.name }
+
+      # Include organization info if relevant
+      if old_role == "org_owner" || new_role == "org_owner"
+        org_id = previous_account.role_scope["org"]&.first || record.attributes.dig(:role_scope, "org")&.first
+        organization = organization_repo_system.find!(org_id)
+        base_params[:organization_name] = organization.name
+      end
+
+      # Include admin name
+      admin_name = accounts_system.find!(auth_context.metadata[:id]).name
+      base_params[:admin_name] = admin_name
+
+      base_params
     end
   end
 end
