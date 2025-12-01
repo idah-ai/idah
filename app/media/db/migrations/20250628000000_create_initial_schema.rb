@@ -94,8 +94,7 @@ Sequel.migration do
     end
 
     create_table(:jobs) do
-      column :id, :bigserial, primary_key: true
-      # column :id, :uuid, primary_key: true, default: Sequel.lit("uuid_generate_v7()")
+      column :id, :uuid, primary_key: true, default: Sequel.lit("uuid_generate_v7()")
 
       column :job_class, String, null: false, index: true
       column :arguments, :jsonb, text: true, null: false
