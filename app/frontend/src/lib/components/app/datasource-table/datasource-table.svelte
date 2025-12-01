@@ -137,7 +137,9 @@
       /** Update TablePreferences */
       tableState.tablePreferences.update((prefs) => ({
         ...prefs,
+        filters: mergedFilters,
         pagination: { ...prefs.pagination, ...mergedPagination },
+        sort: mergedSort,
       }));
     } catch (error) {
       /** Set TableData status to 'error'*/
@@ -280,7 +282,7 @@
                     {tableData}
                     {columnKey}
                     {columnSetting}
-                    tablePreferences={{ ...tablePreferences, ...listOptions }}
+                    {tablePreferences}
                     onFilter={filterDataSource}
                     onSort={sortDataSource}
                     onHide={hideColumn}
