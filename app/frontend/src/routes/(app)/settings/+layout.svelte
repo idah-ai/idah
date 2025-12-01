@@ -47,7 +47,7 @@
   <PageHeader title="Settings"></PageHeader>
 
   <div class="flex gap-4">
-    <div class="bg-sidebar flex h-full min-w-64 max-w-72 flex-col gap-0.5 rounded-lg p-2">
+    <div class="bg-sidebar flex h-full max-w-72 min-w-64 flex-col gap-0.5 rounded-lg p-2">
       {#each settingsTabs as tab (tab.value)}
         {@const isSelected = page.url.pathname.includes(tab.value)}
 
