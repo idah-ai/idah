@@ -86,7 +86,7 @@ module Entry
 
     def assign_member(id, assigned_to_member_id)
       entries.transaction do
-        entries.update!(id, { assigned_to_member_id: })
+        entries.assign(id, { assigned_to_member_id: })
         entries.find!(id)
       end
     end
