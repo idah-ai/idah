@@ -3,7 +3,7 @@
 require "spec_helper"
 
 RSpec.describe Entry::Service, database: true do
-  let(:auth_context){ Verse::Auth::Context.new }
+  let(:auth_context) { Verse::Auth::Context[:system] }
 
   subject { described_class.new(auth_context) }
 
@@ -12,7 +12,12 @@ RSpec.describe Entry::Service, database: true do
   let(:dataset_repo) { Dataset::Repository.new(auth_context) }
 
   let!(:project_id) do
-    project_repo.create(name: "Test Project", description: "A test project", created_by_email: "user@example.com")
+    project_repo.create(
+      name: "Test Project",
+      description: "A test project",
+      created_by_email: "user@example.com",
+      organization_id: 1,
+    )
   end
 
   let!(:dataset_id) do
@@ -31,7 +36,7 @@ RSpec.describe Entry::Service, database: true do
       resource: "http://example.com/video.mp4",
       wf_step: "start",
       status: "pending",
-      assigned_to_id: 1,
+      assigned_to_member_id: 1,
       dataset_id:
     }
   end
@@ -106,6 +111,8 @@ RSpec.describe Entry::Service, database: true do
         )
         result = subject.create(entry_record)
         expect(result.status).to eq("pending")
+        expect(result.project_id).to eq(project_id)
+        expect(result.dataset_id).to eq(dataset_id)
       end
     end
 
@@ -182,21 +189,8 @@ RSpec.describe Entry::Service, database: true do
     let(:job_id) { 456 }
 
     before do
-      repo.create(
-        {
-          dataset_id: dataset_id,
-          job_id: job_id,
-          status: "processing"
-        }
-      )
-
-      repo.create(
-        {
-          dataset_id: dataset_id,
-          job_id: 789,
-          status: "pending"
-        }
-      )
+      repo.create({ project_id:, dataset_id:, job_id:, status: "processing" })
+      repo.create({ project_id:, dataset_id:, job_id: 789, status: "pending" })
     end
 
     it "marks entries with the given job_id as ready" do
@@ -297,7 +291,7 @@ RSpec.describe Entry::Service, database: true do
             type: "entries",
             id: entry.id,
             attributes: {
-              assigned_to_id: 2,
+              assigned_to_member_id: 2,
             }
           }
         }
@@ -306,7 +300,7 @@ RSpec.describe Entry::Service, database: true do
       subject.assign_member(record.id, 2)
 
       updated_entry = repo.find!(record.id)
-      expect(updated_entry.assigned_to_id).to eq(2)
+      expect(updated_entry.assigned_to_member_id).to eq(2)
     end
   end
 
@@ -321,7 +315,8 @@ RSpec.describe Entry::Service, database: true do
     let!(:test_entry) do
       repo.create(
         {
-          dataset_id: dataset_id,
+          project_id:,
+          dataset_id:,
           resource: "test-video.mp4",
           status: "ready",
           wf_step: "start"
@@ -431,7 +426,8 @@ RSpec.describe Entry::Service, database: true do
     let!(:test_entry) do
       repo.create(
         {
-          dataset_id: dataset_id,
+          project_id:,
+          dataset_id:,
           resource: "test-video.mp4",
           status: "in_progress",
           wf_step: "annotate"

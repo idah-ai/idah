@@ -21,18 +21,18 @@
   let projectId = page.params.projectId as string;
 
   // Variables::Reactive
-  let assignedToId = $derived(selectedMember);
+  let assignedToMemberId = $derived(selectedMember);
 
   // Functions
   $effect(() => {
-    onValueChange({ assigned_to_id: assignedToId });
+    onValueChange({ assigned_to_member_id: assignedToMemberId });
   });
 </script>
 
 <FieldSet class="p-1">
   <FieldGroup>
     <SingleSelectDatasourceField
-      name="{resource}/assigned_to_id"
+      name="{resource}/assigned_to_member_id"
       label="Member"
       placeholder="Select a member"
       displayKey="email"
@@ -43,9 +43,9 @@
         },
       }}
       searchKeyWithOperation="email__match"
-      value={assignedToId}
+      value={assignedToMemberId}
       onSelected={(value: string | number) => {
-        assignedToId = value as number;
+        assignedToMemberId = value as number;
       }}
     ></SingleSelectDatasourceField>
   </FieldGroup>

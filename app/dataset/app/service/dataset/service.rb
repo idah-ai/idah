@@ -2,7 +2,8 @@
 
 module Dataset
   class Service < Verse::Service::Base
-    use datasets: Dataset::Repository
+    use datasets: Dataset::Repository, projects: Project::Repository
+    use_system project_members: ProjectMember::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       datasets.index(
@@ -20,23 +21,43 @@ module Dataset
     end
 
     def create(record)
-      attr = record.attributes
-
-      # attr[:created_by_email] ||= auth_context.metadata[:email]
-      attr[:id] = record.id || UUIDv7.generate
-
-      if record.project
-        attr[:project_id] = record.project.id
-      else
+      # Validate required relationships
+      unless record.project
         raise Verse::Error::ValidationFailed,
-              "project is required to create a dataset"
+              "project relationship is required to create a dataset"
       end
 
-      id = datasets.create(
-        record.attributes
-      )
+      access = auth_context.can?(:create, datasets.class.resource)
 
-      datasets.find!(id)
+      if access == :as_org_owner
+        project = projects.find!(record.project.id) # this can raise Verse::Error::RecordNotFound if not in org scope
+        unless auth_context.custom_scopes[:org]&.include?(project.organization_id.to_s)
+          raise Verse::Error::Unauthorized,
+                "You do not have permission to create dataset on this project"
+        end
+      end
+
+      # With "as_user" ensure account can "create" dataset to the project
+      if access == :as_user &&
+         ScopedQuery::Service.without_project_access?(
+           auth_context.metadata[:id],
+           record.project.id,
+           ["project_owner"]
+         )
+        raise Verse::Error::Unauthorized,
+              "You do not have permission to create dataset on this project"
+      end
+
+      # Assign attributes
+      attributes = record.attributes
+      attributes[:id] = record.id || UUIDv7.generate
+      attributes[:project_id] = record.project.id
+      # attributes[:created_by_email] ||= auth_context.metadata[:email]
+
+      datasets.transaction do
+        id = datasets.create(attributes)
+        datasets.find(id)
+      end
     end
 
     def update(record)
@@ -45,7 +66,7 @@ module Dataset
     end
 
     def delete(id)
-      datasets.delete(id)
+      datasets.delete!(id)
     end
   end
 end

@@ -30,6 +30,7 @@
   // Functions
   function closeThisModal(): void {
     open = false;
+    submitting = false;
   }
 
   function resetForm(): void {
@@ -77,6 +78,14 @@
             role,
             invited_by_id: 1,
           },
+          relationships: {
+            project: {
+              data: {
+                type: "dataset:projects",
+                id: projectId,
+              },
+            },
+          },
         });
       }
 
@@ -93,6 +102,13 @@
     submitting = true;
 
     try {
+      const validated = createMultipleProjectMembersSchema.safeParse(members);
+
+      if (!validated.success) {
+        submitting = false;
+        return;
+      }
+
       await createProjectMember();
     } catch (error) {
       console.error(error);
