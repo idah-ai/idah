@@ -64,7 +64,9 @@ module Dataset
           recipient_account_id: member.account_id,
           dataset_name: dataset.name,
           project_name: dataset.project.name,
-          recipient_name: member.name
+          recipient_name: member.name,
+          dataset_id: dataset.id,
+          project_id: dataset.project.id
         )
       end
     end
