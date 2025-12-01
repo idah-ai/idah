@@ -90,7 +90,7 @@
             {@const isAlreadyAdded = disabledMemberEmails.includes(String(choice.value))}
             <Combobox.Item
               class={cn(
-                "rounded-button data-highlighted:bg-muted outline-hidden flex w-full select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm",
+                "rounded-button data-highlighted:bg-muted flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none",
                 {
                   "text-muted-foreground cursor-not-allowed": choice.disabled || isAlreadyAdded,
                 },
