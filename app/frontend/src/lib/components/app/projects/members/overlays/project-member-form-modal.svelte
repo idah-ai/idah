@@ -83,6 +83,7 @@
       closeThisModal();
       toast.success(`${members.length} member(s) invite sent!`);
     } catch (error) {
+              console.error(error);
       toast.error("Failed to send invite. Please try again.");
     } 
   }
@@ -93,6 +94,7 @@
     try {
       await createProjectMember();
     } catch (error) {
+        console.error(error);
       submitting = false;
     }
   }
