@@ -1,7 +1,7 @@
 <script lang="ts">
   import { cn } from "@/utils";
   import { onMount, type Snippet } from "svelte";
-  
+
   // Props
   interface Props {
     class?: string | null;
@@ -18,22 +18,21 @@
   });
 
   // Functions
-  async function checkAuthStatus(): Promise<void> {
-  }
+  async function checkAuthStatus(): Promise<void> {}
 </script>
 
 <div class={cn("", className)}>
   {#if loading}
-		{@render loading?.()}
-	{:else}
-		<!-- <ApplicationLoading /> -->
-	{/if}
+    {@render loading?.()}
+  {:else}
+    <!-- <ApplicationLoading /> -->
+  {/if}
 
   {@render authorized?.()}
 
   {#if unauthorized}
-		{@render unauthorized?.()}
-	{:else}
-		<!-- <Redirect to="/login" /> -->
-	{/if}
+    {@render unauthorized?.()}
+  {:else}
+    <!-- <Redirect to="/login" /> -->
+  {/if}
 </div>
