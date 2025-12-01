@@ -1,0 +1,444 @@
+# frozen_string_literal: true
+
+require "spec_helper"
+
+RSpec.describe ProjectMember::Service, database: true do
+  let(:system_context) { Verse::Auth::Context[:system] }
+  let(:project_repo) { Project::Repository.new(system_context) }
+  let(:project_member_repo) { ProjectMember::Repository.new(system_context) }
+
+  # Projects
+  let!(:first_project_id) {
+    project_repo.create(name: "Project 1", created_by_email: "system@example.com", organization_id: 1)
+  }
+  let!(:second_project_id) {
+    project_repo.create(name: "Project 2", created_by_email: "system@example.com", organization_id: 2)
+  }
+
+  # Accounts IDs
+  let(:project_owner_account_id) { 3 }
+  let(:annotator_account_id) { 4 }
+  let(:reviewer_account_id) { 5 }
+
+  # Project Members
+  let(:project_owner_member_id) {
+    project_member_repo.create(
+      project_id: first_project_id,
+      account_id: project_owner_account_id,
+      role: "project_owner",
+      name: "Project Owner",
+      email: "project_owner@example.com",
+      invited_by_id: 1
+    )
+  }
+  let(:annotator_member_id) {
+    project_member_repo.create(
+      project_id: first_project_id,
+      account_id: annotator_account_id,
+      role: "annotator",
+      name: "Annotator",
+      email: "annotator@example.com",
+      invited_by_id: 1
+    )
+  }
+  let(:reviewer_member_id) {
+    project_member_repo.create(
+      project_id: second_project_id,
+      account_id: reviewer_account_id,
+      role: "reviewer",
+      name: "Reviewer",
+      email: "reviewer@example.com",
+      invited_by_id: 1
+    )
+  }
+
+  let(:update_data) do
+    {
+      data: {
+        type: "dataset:project_members",
+        id: annotator_member_id,
+        attributes: {
+          name: "Jane Doe",
+          email: "janedoe@example.com",
+          role: "reviewer",
+        }
+      }
+    }
+  end
+
+  let(:create_data) do
+    {
+      data: {
+        type: "dataset:project_members",
+        attributes: {
+          name: "John Doe",
+          email: "johndoe@example.com",
+          role: "annotator",
+          account_id: annotator_account_id,
+          invited_by_id: 1
+        },
+        relationships: {
+          project: {
+            data: { type: "dataset:projects", id: first_project_id }
+          }
+        }
+      }
+    }
+  end
+
+  # Permission: Organization Owner
+  # ---------------------------------------------------
+  # Project Members  | index | create | update | delete
+  # ---------------------------------------------------
+  # in owned Org     |  yes  |  yes   |   yes  |   yes
+  # Not in owned Org |   x   |   x    |    x   |    x
+  context "as Organization Owner", as: :org_owner do
+    subject { described_class.new(current_auth_context) }
+    before do
+      @org_scope = current_auth_context.custom_scopes[:org]
+    end
+
+    describe "with projects in owned organization scope" do
+      it "can index" do
+        [project_owner_member_id, annotator_member_id, reviewer_member_id]
+        result = subject.index({})
+
+        expect(result.count).to eq 2
+        expect(result.map(&:project_id)).to all(eq(first_project_id))
+        expect(@org_scope).to include(project_repo.find!(first_project_id).organization_id.to_s)
+      end
+
+      it "can create" do
+        record = subject.create(deserialize(create_data))
+
+        expect(record.name).to eq create_data[:data][:attributes][:name]
+        expect(record.email).to eq create_data[:data][:attributes][:email]
+        expect(record.account_id).to eq create_data[:data][:attributes][:account_id]
+        expect(record.project_id).to eq create_data[:data][:relationships][:project][:data][:id]
+        expect(@org_scope).to include(project_repo.find!(record.project_id).organization_id.to_s)
+      end
+
+      it "can create a 'project_owner' member" do
+        create_data[:data][:attributes][:role] = "project_owner"
+        record = subject.create(deserialize(create_data))
+
+        expect(record.role).to eq "project_owner"
+        expect(record.name).to eq create_data[:data][:attributes][:name]
+        expect(record.email).to eq create_data[:data][:attributes][:email]
+        expect(record.account_id).to eq create_data[:data][:attributes][:account_id]
+        expect(record.project_id).to eq create_data[:data][:relationships][:project][:data][:id]
+        expect(@org_scope).to include(project_repo.find!(record.project_id).organization_id.to_s)
+      end
+
+      it "can update" do
+        record = subject.update(deserialize(update_data))
+
+        expect(record.name).to eq update_data[:data][:attributes][:name]
+        expect(record.email).to eq update_data[:data][:attributes][:email]
+        expect(record.role).to eq update_data[:data][:attributes][:role]
+      end
+
+      it "can delete" do
+        subject.delete(annotator_member_id)
+
+        expect {
+          subject.show(annotator_member_id)
+        }.to raise_error(Verse::Error::RecordNotFound)
+
+        # the record we tried to delete should not be there anymore
+        expect { project_member_repo.find!(annotator_member_id) }.to raise_error(Verse::Error::RecordNotFound)
+      end
+    end
+
+    describe "with projects not in owned organization scope" do
+      it "cannot index" do
+        [project_owner_member_id, annotator_member_id, reviewer_member_id]
+
+        result = subject.index({})
+
+        expect(result.map(&:id)).to_not include reviewer_member_id
+      end
+
+      it "cannot create" do
+        create_data[:data][:relationships][:project][:data][:id] = second_project_id
+
+        expect { subject.create(deserialize(create_data)) }.to raise_error(Verse::Error::Unauthorized)
+      end
+
+      it "cannot update" do
+        update_data[:data][:id] = reviewer_member_id
+
+        expect {
+          subject.update(deserialize(update_data))
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
+
+      it "cannot delete" do
+        expect {
+          subject.delete(reviewer_member_id)
+        }.to raise_error(Verse::Error::RecordNotFound)
+
+        # the record we tried to delete should still be there
+        expect { project_member_repo.find!(reviewer_member_id) }.not_to raise_error(Verse::Error::RecordNotFound)
+      end
+    end
+  end
+
+  # Permission: Project Owner
+  # ---------------------------------------------------
+  # Project Members | index | create | update | delete
+  # ---------------------------------------------------
+  # Assigned        |  yes  |  yes   |   yes  |   yes
+  # Not Assigned    |   x   |   x    |    x   |    x
+  context "as Project Owner", as: :project_owner do
+    subject { described_class.new(current_auth_context) }
+
+    before do
+      project_owner_member_id # Assign user to project
+    end
+
+    describe "with assigned project" do
+      it "can index" do
+        # Setup: create other project members to test visibility
+        [annotator_member_id, reviewer_member_id]
+
+        result = subject.index({})
+
+        expect(result.count).to eq 2
+        expect(result.map(&:name)).to eq ["Project Owner", "Annotator"]
+      end
+
+      it "can create" do
+        record = subject.create(deserialize(create_data))
+
+        expect(record.name).to eq "John Doe"
+        expect(record.email).to eq "johndoe@example.com"
+        expect(record.account_id).to eq annotator_account_id
+        expect(record.project_id).to eq first_project_id
+      end
+
+      it "cannot create a 'project_owner' member" do
+        create_data[:data][:attributes][:role] = "project_owner"
+
+        expect{ subject.create(deserialize(create_data)) }.to raise_error(Verse::Error::Unauthorized)
+      end
+
+      it "can update" do
+        record = subject.update(deserialize(update_data))
+
+        expect(record.name).to eq "Jane Doe"
+        expect(record.email).to eq "janedoe@example.com"
+        expect(record.role).to eq "reviewer"
+      end
+
+      it "can delete" do
+        subject.delete(annotator_member_id)
+
+        expect {
+          subject.show(annotator_member_id)
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
+    end
+
+    describe "with not assigned project" do
+      it "cannot index" do
+        # Setup: create other project members to test visibility
+        [annotator_member_id, reviewer_member_id]
+
+        result = subject.index({})
+
+        expect(result.count).to eq 2
+        expect(result.map(&:name)).to_not include "Reviewer"
+      end
+
+      it "cannot create" do
+        create_data[:data][:relationships][:project][:data][:id] = second_project_id
+
+        expect {
+          subject.create(deserialize(create_data))
+        }.to raise_error(
+          Verse::Error::Unauthorized,
+          "You do not have permission to create project member on this project"
+        )
+      end
+
+      it "cannot update" do
+        update_data[:data][:id] = reviewer_member_id
+
+        expect {
+          subject.update(deserialize(update_data))
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
+
+      it "cannot delete" do
+        expect {
+          subject.delete(reviewer_member_id)
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
+    end
+  end
+
+  # Permission: Annotator
+  # ---------------------------------------------------
+  # Project Members | index | create | update | delete
+  # ---------------------------------------------------
+  # Assigned        |  yes  |   x    |    x   |    x
+  # Not Assigned    |   x   |   x    |    x   |    x
+  context "as Annotator", as: :annotator do
+    subject { described_class.new(current_auth_context) }
+
+    before do
+      annotator_member_id # Assign user to project
+    end
+
+    describe "with assigned project" do
+      it "can index" do
+        # Setup: create other project members to test visibility
+        [project_owner_member_id, reviewer_member_id]
+
+        result = subject.index({})
+
+        expect(result.count).to eq 2
+        expect(result.map(&:name).sort).to eq ["Annotator", "Project Owner"]
+      end
+
+      it "cannot create" do
+        expect {
+          subject.create(deserialize(create_data))
+        }.to raise_error(
+          Verse::Error::Unauthorized,
+          "You do not have permission to create project member on this project"
+        )
+      end
+
+      it "cannot update" do
+        expect {
+          subject.update(deserialize(update_data))
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
+
+      it "cannot delete" do
+        expect {
+          subject.delete(annotator_member_id)
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
+    end
+
+    describe "with not assigned project" do
+      it "cannot index" do
+        # Setup: create other project members to test visibility
+        [project_owner_member_id, reviewer_member_id]
+
+        result = subject.index({})
+
+        expect(result.count).to eq 2
+        expect(result.map(&:name)).to_not include "Reviewer"
+      end
+
+      it "cannot create" do
+        expect {
+          subject.create(deserialize(create_data))
+        }.to raise_error(
+          Verse::Error::Unauthorized,
+          "You do not have permission to create project member on this project"
+        )
+      end
+
+      it "cannot update" do
+        update_data[:data][:id] = reviewer_member_id
+
+        expect {
+          subject.update(deserialize(update_data))
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
+
+      it "cannot delete" do
+        expect {
+          subject.delete(reviewer_member_id)
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
+    end
+  end
+
+  # Permission: Reviewer
+  # ---------------------------------------------------
+  # Project Members | index | create | update | delete
+  # ---------------------------------------------------
+  # Assigned        |  yes  |   x    |    x   |    x
+  # Not Assigned    |   x   |   x    |    x   |    x
+  context "as Reviewer", as: :reviewer do
+    subject { described_class.new(current_auth_context) }
+
+    before do
+      reviewer_member_id # Assign user to project
+    end
+
+    describe "with assigned project" do
+      it "can index" do
+        # Setup: create other project members to test visibility
+        [project_owner_member_id, annotator_member_id]
+
+        result = subject.index({})
+
+        expect(result.count).to eq 1
+        expect(result.map(&:name)).to eq ["Reviewer"]
+      end
+
+      it "cannot create" do
+        expect {
+          subject.create(deserialize(create_data))
+        }.to raise_error(
+          Verse::Error::Unauthorized,
+          "You do not have permission to create project member on this project"
+        )
+      end
+
+      it "cannot update" do
+        expect {
+          subject.update(deserialize(update_data))
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
+
+      it "cannot delete" do
+        expect {
+          subject.delete(annotator_member_id)
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
+    end
+
+    describe "with not assigned project" do
+      it "cannot index" do
+        # Setup: create other project members from different project
+        [project_owner_member_id, annotator_member_id]
+
+        result = subject.index({})
+
+        expect(result.count).to eq 1
+        expect(result.map(&:name)).to_not include "Project Owner", "Annotator"
+      end
+
+      it "cannot create" do
+        expect {
+          subject.create(deserialize(create_data))
+        }.to raise_error(
+          Verse::Error::Unauthorized,
+          "You do not have permission to create project member on this project"
+        )
+      end
+
+      it "cannot update" do
+        update_data[:data][:id] = annotator_member_id
+
+        expect {
+          subject.update(deserialize(update_data))
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
+
+      it "cannot delete" do
+        expect {
+          subject.delete(annotator_member_id)
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
+    end
+  end
+end

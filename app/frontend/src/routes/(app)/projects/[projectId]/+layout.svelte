@@ -4,11 +4,13 @@
   import { page } from "$app/state";
   import { setContext, type Snippet } from "svelte";
 
+  import AddNewDatasetButton from "@/components/app/datasets/buttons/add-new-dataset-button.svelte";
   import PageHeader from "@/components/app/page/page-header.svelte";
   import PageLoading from "@/components/app/page/page-loading.svelte";
   import PageProvider from "@/components/app/page/page-provider.svelte";
   import ProjectDropdownMenu from "@/components/app/projects/dropdowns/project-dropdown-menu.svelte";
-  import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+  import InviteMemberButton from "@/components/app/projects/members/buttons/invite-member-button.svelte";
+  import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
   import { projectTabs, type ProjectTab } from "@/components/app/projects/tabs/project.tabs";
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
@@ -63,11 +65,23 @@
         </PageHeader>
 
         <Tabs bind:value={activeTab}>
-          <TabsList>
-            {#each projectTabs as { label, value } (value)}
-              <TabsTrigger {value} onclick={() => handleTabChange(value)}>{label}</TabsTrigger>
-            {/each}
-          </TabsList>
+          <div class="flex items-center gap-4">
+            <TabsList>
+              {#each projectTabs as { label, value } (value)}
+                <TabsTrigger {value} onclick={() => handleTabChange(value)}>{label}</TabsTrigger>
+              {/each}
+            </TabsList>
+
+            <div class="ml-auto">
+              <TabsContent value="datasets">
+                <AddNewDatasetButton />
+              </TabsContent>
+
+              <TabsContent value="members">
+                <InviteMemberButton />
+              </TabsContent>
+            </div>
+          </div>
         </Tabs>
       {/if}
 

@@ -1,12 +1,22 @@
 <script lang="ts">
-  import { PlusIcon, Trash2Icon } from "@lucide/svelte";
+  import { page } from "$app/state";
+  import { CheckIcon, PlusIcon, Trash2Icon } from "@lucide/svelte";
+  import { Combobox } from "bits-ui";
+  import { onMount } from "svelte";
 
-  import InputField from "@/components/app/forms/fields/input/input-field.svelte";
+  import ComboboxField from "@/components/app/forms/fields/combobox/combobox-field.svelte";
   import SingleSelectField from "@/components/app/forms/fields/select/single/single-select-field.svelte";
+  import Badge from "@/components/ui/badge/badge.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import { FieldGroup, FieldSet } from "@/components/ui/field";
 
-  import { ProjectMemberRecord, projectMemberRoles } from "@/data/model/dataset/projects/members/record";
+  import {
+    ProjectMemberRecord,
+    projectMemberRoles,
+    projectMembersBackendDataSource,
+  } from "@/data/model/dataset/projects/members/record";
+  import { accountsBackendDataSource } from "@/data/model/iam/accounts/record";
+  import { cn } from "@/utils";
 
   // Props
   interface Props {
@@ -17,7 +27,29 @@
   // Variables
   const resource: string = ProjectMemberRecord.type;
 
+  let projectId = page.params.projectId as string;
+  let projectMemberEmails: Array<string> = $state([]);
+  let selectedMemberEmails: Array<string> = $derived(members.map((member) => member.email));
+  let disabledMemberEmails: Array<string> = $derived([...projectMemberEmails, ...selectedMemberEmails]);
+
+  // Lifecycle
+  onMount(() => {
+    fetchProjectMembers();
+  });
+
   // Functions
+  async function fetchProjectMembers() {
+    const projectMembersRes = await projectMembersBackendDataSource.list({
+      fields: {
+        [ProjectMemberRecord.type]: ["email"],
+      },
+      filters: {
+        project_id: projectId,
+      },
+    });
+    projectMemberEmails = projectMembersRes.data.map((member) => member.email);
+  }
+
   function addMember(): void {
     members.push({ email: "", role: "" });
   }
@@ -33,15 +65,55 @@
     {#each members as member, index (index)}
       <div class="flex w-full items-end gap-2">
         <!-- EMAIL -->
-        <InputField
-          name="{resource}/email"
+        <ComboboxField
+          name="{resource}/member"
           class="flex-1"
-          label="Email"
-          placeholder="Write an email address"
+          dataSource={accountsBackendDataSource}
+          searchKeyWithOperation="email__match"
+          displayKey="email"
+          valueKey="email"
+          listOptions={{
+            filters: {
+              role_name__nin: ["system", "admin"],
+            },
+          }}
+          label="Member"
+          placeholder="Search account by email"
           required
           value={member.email}
-          oninput={(e) => (member.email = e.currentTarget.value)}
-        />
+          onSelected={(selectedValue) => {
+            member.email = selectedValue as string;
+          }}
+        >
+          {#snippet slotChoice({ choice, select })}
+            {@const isSelected = choice.value === member.email}
+            {@const isAlreadyAdded = disabledMemberEmails.includes(String(choice.value))}
+            <Combobox.Item
+              class={cn(
+                "rounded-button data-highlighted:bg-muted outline-hidden flex w-full select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm",
+                {
+                  "text-muted-foreground cursor-not-allowed": choice.disabled || isAlreadyAdded,
+                },
+              )}
+              value={String(choice.value)}
+              label={choice.label}
+              disabled={choice.disabled || isAlreadyAdded}
+              onclick={() => select(choice)}
+            >
+              {choice.label}
+
+              <div class="ml-auto">
+                {#if isSelected}
+                  <CheckIcon class="size-4" />
+                {/if}
+
+                {#if isAlreadyAdded}
+                  <Badge variant="outline" rounded="full">Already added</Badge>
+                {/if}
+              </div>
+            </Combobox.Item>
+          {/snippet}
+        </ComboboxField>
 
         <!-- ROLE -->
         <SingleSelectField
@@ -61,7 +133,7 @@
 
         <!-- REMOVE MEMBER BUTTON -->
         <Button variant="ghost" size="icon" onclick={() => removeMember(index)}>
-          <Trash2Icon class="size-4" />
+          <Trash2Icon />
         </Button>
       </div>
     {/each}
@@ -69,7 +141,7 @@
     <div>
       <!-- ADD MORE MEMBERS BUTTON -->
       <Button variant="secondary" onclick={addMember}>
-        <PlusIcon class="size-4" />
+        <PlusIcon />
         Add Members
       </Button>
     </div>

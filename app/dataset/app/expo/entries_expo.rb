@@ -5,15 +5,15 @@ class EntriesExpo < BaseExpo
 
   use_service Entry::Service
 
-  json_api Entry::Record, http_opts: { auth: nil } do
+  json_api Entry::Record do
     allowed_included "dataset", "dataset.project"
     show
     index do
       allowed_filters :status__in,
                       :priority__in,
-                      :assigned_to_id,
-                      :assigned_to_id__eq,
-                      :assigned_to_id__in,
+                      :assigned_to_member_id,
+                      :assigned_to_member_id__eq,
+                      :assigned_to_member_id__in,
                       :wf_step__in
     end
     create do
@@ -23,26 +23,25 @@ class EntriesExpo < BaseExpo
     delete
   end
 
-  expose on_http(:patch, "/:id/assign", auth: nil) do
+  expose on_http(:patch, "/:id/assign") do
     desc "Assign a project member to an entry"
     input do
       field :id, String
       field :data, Hash do
         field :attributes, Hash do
-          field :assigned_to_id, Integer
+          field :assigned_to_member_id, Integer
         end
       end
     end
   end
   def assign_member
     id = params[:id]
-    member_id = params.dig(:data, :attributes, :assigned_to_id)
+    member_id = params.dig(:data, :attributes, :assigned_to_member_id)
 
     service.assign_member(id, member_id)
   end
 
-  # POST /api/v1/dataset/entries/:id/submit
-  expose on_http(:post, "/:id/submit", auth: nil) do
+  expose on_http(:post, "/:id/submit") do
     desc "Submit workflow event for an entry"
     input do
       field :id, String
@@ -58,8 +57,7 @@ class EntriesExpo < BaseExpo
     service.submit(entry_id, **opts)
   end
 
-  # POST /api/v1/dataset/entries/:id/error
-  expose on_http(:post, "/:id/error", auth: nil) do
+  expose on_http(:post, "/:id/error") do
     desc "Trigger error event for an entry"
     input do
       field :id, String
