@@ -81,6 +81,13 @@ export interface SingleSelectFieldBaseProps extends SelectFieldBaseProps {
       },
     ]
   >;
+  slotTriggerValue?: Snippet<
+    [
+      {
+        selectedChoice: LabelValue<string | number> | undefined;
+      },
+    ]
+  >;
 }
 
 export interface MultipleSelectFieldBaseProps extends SelectFieldBaseProps {

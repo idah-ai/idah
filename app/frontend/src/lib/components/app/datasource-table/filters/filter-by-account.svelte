@@ -1,6 +1,4 @@
 <script lang="ts" generics="T extends Record">
-  import { CheckIcon } from "@lucide/svelte";
-
   import SingleSelectDatasourceField from "@/components/app/forms/fields/select/single/single-select-datasource-field.svelte";
   import AccountAvatar from "@/components/app/iam/accounts/avatars/account-avatar.svelte";
   import { CommandItem } from "@/components/ui/command";
@@ -48,18 +46,32 @@
   value={filters[filterKeyWithOperation]}
   onSelected={handleFilter}
 >
+  {#snippet slotTriggerValue({ selectedChoice })}
+    {#if selectedChoice?.data}
+      <AccountAvatar size="sm" email={selectedChoice.data["email"]} showEmail />
+    {:else}
+      <span class="truncate">{selectedChoice?.label || filters[filterKeyWithOperation]}</span>
+    {/if}
+  {/snippet}
+
   {#snippet slotChoice({ choice, select })}
     {#if choice.data}
       {@const isSelected = filters[filterKeyWithOperation] === choice.value}
 
-      <CommandItem onclick={() => select(choice)}>
-        <CheckIcon
-          class={cn("size-4 opacity-0", {
-            "opacity-100": isSelected,
-          })}
+      <CommandItem
+        class={cn("group cursor-pointer", {
+          "bg-primary/10": isSelected,
+        })}
+        onclick={() => select(choice)}
+      >
+        <AccountAvatar
+          name={choice.data["name"]}
+          email={choice.data["email"]}
+          showName
+          showEmail
+          size="sm"
+          {isSelected}
         />
-
-        <AccountAvatar name={choice.data["name"]} email={choice.data["email"]} showName showEmail size="sm" />
       </CommandItem>
     {/if}
   {/snippet}
