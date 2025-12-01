@@ -31,6 +31,7 @@ module Organization
       organizations.find!(record.id)
     end
 
+    # TODO: add check to be able to deleted only if there's no project
     def delete(id)
       organizations.delete(id)
     end
