@@ -49,7 +49,10 @@
       dataSource={accountsBackendDataSource}
       listOptions={{
         fields: {
-          [AccountRecord.type]: ["name", "email", "enabled", "joined_at", "created_at", "updated_at"],
+          [AccountRecord.type]: ["name", "email", "enabled", "role_name", "joined_at", "created_at", "updated_at"],
+        },
+        filters: {
+          role_name__nin: ["system"],
         },
       }}
     >

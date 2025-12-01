@@ -8,6 +8,7 @@ export const accountSchema = z.object({
   sso_channel: z.string().nullable(),
 
   enabled: z.boolean().default(true),
+  role_name: z.string().nullable(),
 
   joined_at: z
     .string()
@@ -24,8 +25,9 @@ export const createAccountSchema = accountSchema.pick({
   enabled: true,
 });
 
-export const updateAccountSchema = createAccountSchema.pick({
+export const updateAccountSchema = accountSchema.pick({
   name: true,
   email: true,
   enabled: true,
+  role_name: true,
 });

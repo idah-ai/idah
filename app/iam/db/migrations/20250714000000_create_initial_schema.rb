@@ -12,6 +12,11 @@ Sequel.migration do
       column :name, String
       column :email, String, unique: true, null: false, index: true
 
+      column :role_name, String, null: false, default: "user"
+      column :role_scope, :jsonb, null: false, default: "{}"
+
+      column :picture_url, String, null: true
+
       column :hashed_password, String, null: true
       column :sso_channel, String, null: true
 
@@ -23,33 +28,47 @@ Sequel.migration do
     end
     Migration::Timestamps.trg_updated_at(self, :accounts)
 
-    create_table(:teams) do
+    create_table(:organizations) do
       primary_key :id, :bigserial
       column :name, String
 
       Migration::Timestamps.timestamps(self)
     end
-    Migration::Timestamps.trg_updated_at(self, :teams)
+    Migration::Timestamps.trg_updated_at(self, :organizations)
 
-    create_table(:account_teams) do
-      primary_key :id, :bigserial
+    create_table(:account_sessions) do
+      primary_key :id
 
       foreign_key :account_id,
                   :accounts,
                   type: :bigint,
                   null: false,
                   on_delete: :cascade,
-                  on_update: :cascade
+                  on_update: :cascade,
+                  index: true
 
-      foreign_key :team_id,
-                  :teams,
-                  type: :bigint,
-                  null: false,
-                  on_delete: :cascade,
-                  on_update: :cascade
+      column :ip, String
+      column :user_agent, String
+
+      column :refresh_seq, :bigint, null: false, default: 0
+      column :nonce, :bigint, null: false, default: 0
 
       Migration::Timestamps.timestamps(self)
     end
-    Migration::Timestamps.trg_updated_at(self, :account_teams)
+    Migration::Timestamps.trg_updated_at(self, :account_sessions)
+
+    # Create initial admin account
+    now = Time.now
+    from(:accounts).insert(
+      name: "admin",
+      email: "admin@idah.ai",
+      role_name: "admin",
+      role_scope: "{}",
+      hashed_password: BCrypt::Password.create("password"),
+      enabled: true,
+      joined_at: now,
+      created_at: now,
+      updated_at: now,
+    )
   end
 end

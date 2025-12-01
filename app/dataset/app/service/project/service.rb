@@ -20,10 +20,27 @@ module Project
     end
 
     def create(record)
-      attr = record.attributes
-      attr[:id] = record.id || UUIDv7.generate
-      id = projects.create(attr)
-      projects.find!(id)
+      authorize_creation(
+        record.attributes[:organization_id].to_s,
+        auth_context.can?(:create, projects.class.resource)
+      )
+
+      attributes = record.attributes
+      attributes[:id] = record.id || UUIDv7.generate
+      attributes[:created_by_email] = auth_context.metadata[:email]
+
+      projects.transaction do
+        id = projects.create(attributes)
+        projects.find!(id)
+      end
+    end
+
+    def authorize_creation(organization_id, access)
+      authorized = access == :all ||
+                   # is in scope of org_owner
+                   (access == :as_org_owner && auth_context.custom_scopes[:org]&.include?(organization_id))
+
+      raise Verse::Error::Unauthorized, "You do not have permission to create this project" unless authorized
     end
 
     def update(record)
@@ -32,7 +49,7 @@ module Project
     end
 
     def delete(id)
-      projects.delete(id)
+      projects.delete!(id)
     end
   end
 end
