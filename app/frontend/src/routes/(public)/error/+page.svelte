@@ -1,6 +1,6 @@
 <script lang="ts">
+  import Invalidlink from "@/components/app/response-block/invalid-link.svg";
   import Text from "@/components/ui/text/Text.svelte";
-  import Invalidlink from "../invalid-link.svg";
 </script>
 
 <div class="flex h-screen w-full items-center justify-center">
