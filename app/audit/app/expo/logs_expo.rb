@@ -34,6 +34,13 @@ class LogsExpo < BaseExpo
     end
   end
 
+  %w[login logout].each do |event|
+    attach_exposition(
+      :create_audit_log,
+      build_expose(on_resource_event("iam:accounts", event))
+    )
+  end
+
   %w[assigned unassigned submitted].each do |event|
     attach_exposition(
       :create_audit_log,
