@@ -1,16 +1,21 @@
-<script lang="ts">
+<script lang="ts" generics="T extends Record">
+  import { CheckIcon } from "@lucide/svelte";
+
   import SingleSelectDatasourceField from "@/components/app/forms/fields/select/single/single-select-datasource-field.svelte";
+  import AccountAvatar from "@/components/app/iam/accounts/avatars/account-avatar.svelte";
+  import { CommandItem } from "@/components/ui/command";
 
   import { ProjectMemberRecord, projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
+  import { Record } from "@/data/model/Record";
+  import { cn } from "@/utils";
 
   import type {
     DataTableColumnFilterOperation,
     DataTableFilterBaseProps,
   } from "@/components/app/datasource-table/types";
-  import type { EntryRecord } from "@/data/model/dataset/entries/record";
 
   // Props
-  let { columnSetting, contexts, filters, onFilter }: DataTableFilterBaseProps<EntryRecord> = $props();
+  let { columnSetting, contexts, filters, onFilter }: DataTableFilterBaseProps<T> = $props();
 
   // Contexts
   if (!contexts || !("projectId" in contexts)) {
@@ -48,4 +53,19 @@
   searchKeyWithOperation="email__match"
   value={filters[filterKeyWithOperation]}
   onSelected={handleFilter}
-></SingleSelectDatasourceField>
+>
+  {#snippet slotChoice({ choice, select })}
+    {#if choice.data}
+      {@const isSelected = filters[filterKeyWithOperation] === choice.value}
+      <CommandItem onclick={() => select(choice)}>
+        <CheckIcon
+          class={cn("size-4 opacity-0", {
+            "opacity-100": isSelected,
+          })}
+        />
+
+        <AccountAvatar name={choice.data["name"]} email={choice.data["email"]} showName showEmail size="sm" />
+      </CommandItem>
+    {/if}
+  {/snippet}
+</SingleSelectDatasourceField>
