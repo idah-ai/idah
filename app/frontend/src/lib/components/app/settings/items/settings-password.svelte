@@ -1,9 +1,11 @@
 <script lang="ts">
+  import { RectangleEllipsisIcon } from "@lucide/svelte";
+
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import { Button } from "@/components/ui/button";
   import { Item, ItemActions, ItemContent, ItemDescription, ItemMedia, ItemTitle } from "@/components/ui/item";
+
   import { AccountSettingRecord } from "@/data/model/setting/account_setting/record";
-  import { RectangleEllipsisIcon } from "@lucide/svelte";
 
   // Variables
   const accountSettingsResource = AccountSettingRecord.type;
