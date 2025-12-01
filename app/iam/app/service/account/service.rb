@@ -2,7 +2,8 @@
 
 module Account
   class Service < Verse::Service::Base
-    use accounts: Account::Repository
+    use accounts: Account::Repository,
+        organization_service: Organization::Service
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       accounts.index(
@@ -20,13 +21,32 @@ module Account
     end
 
     def create(record)
+      if record.attributes[:role_name] == ("system" || "admin") &&
+         auth_context.can?(:create, projects.class.resource) != :all
+
+        raise Verse::Error::ValidationFailed, "System account can't be created"
+      end
+
       accounts.transaction do
+        email = record.attributes[:email]
+
+        if accounts.find_by({ email: email })
+          raise Verse::Error::ValidationFailed, "Email already exists"
+        end
+
+        # Set a default random password for the account if none is provided
+        password = record.attributes.delete(:password) || SecureRandom.hex(16)
+        record.attributes[:hashed_password] = BCrypt::Password.create(password)
+
         record_id = accounts.create(record.attributes)
         accounts.find!(record_id)
       end
     end
 
     def update(record)
+      auth_context.reject! unless auth_context.can?(:update, accounts.class.resource)
+
+      record.attributes[:role_scope] = (record.attributes[:role_scope] || {}).to_json
       accounts.update!(record.id, record.attributes)
       accounts.find!(record.id)
     end

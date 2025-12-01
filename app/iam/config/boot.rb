@@ -19,6 +19,7 @@ ENV["APP_PATH"] = File.expand_path("..", __dir__)
 require "zeitwerk"
 
 loader = Zeitwerk::Loader.new
+loader.push_dir(File.join(ENV["APP_PATH"], "app"))
 loader.push_dir(File.join(ENV["APP_PATH"], "app", "expo"))
 loader.push_dir(File.join(ENV["APP_PATH"], "app", "model"))
 loader.push_dir(File.join(ENV["APP_PATH"], "app", "service"))

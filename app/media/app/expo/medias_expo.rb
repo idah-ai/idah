@@ -11,7 +11,7 @@ class MediasExpo < BaseExpo
     This exposition provides access to the media records in the system.
   MD
 
-  expose on_http(:get, "info/:resource(/:key)?", auth: nil) do
+  expose on_http(:get, "info/:resource(/:key)?") do
     desc <<-MD
       ## Get Media Info by ID and Key
 
@@ -32,7 +32,7 @@ class MediasExpo < BaseExpo
     service.show(params[:resource], params[:key])
   end
 
-  expose on_http(:get, "files/:resource(/:key)?", renderer: Verse::Http::Renderer::Stream, auth: nil) do
+  expose on_http(:get, "files/:resource(/:key)?", renderer: Verse::Http::Renderer::Stream) do
     desc <<-MD
       ## Get Media by ID and Key
 
@@ -58,7 +58,7 @@ class MediasExpo < BaseExpo
     media.open
   end
 
-  expose on_http(:post, "files/:resource(/:key)?", auth: nil) do
+  expose on_http(:post, "files/:resource(/:key)?") do
     desc <<-MD
       ## Upload Media
 
@@ -67,6 +67,7 @@ class MediasExpo < BaseExpo
     MD
     input do
       field(:file, Verse::Http::UploadedFile).meta(desc: "The media to upload")
+      field :project_id, String
 
       field :resource, String
       field(:key, [String, NilClass]).transform { |v| v || "" }.meta(
@@ -81,7 +82,8 @@ class MediasExpo < BaseExpo
     service.upload(
       params[:file],
       resource: params[:resource],
-      key: params[:key]
+      key: params[:key],
+      project_id: params[:project_id]
     )
   end
 end

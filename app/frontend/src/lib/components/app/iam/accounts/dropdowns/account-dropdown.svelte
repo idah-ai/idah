@@ -14,16 +14,28 @@
   import { mode, resetMode, setMode } from "mode-watcher";
 
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
-  import AvatarFallback from "@/components/ui/avatar/avatar-fallback.svelte";
-  import AvatarImage from "@/components/ui/avatar/avatar-image.svelte";
-  import Avatar from "@/components/ui/avatar/avatar.svelte";
+  import AccountAvatar from "@/components/app/iam/accounts/avatars/account-avatar.svelte";
   import SidebarMenuButton from "@/components/ui/sidebar/sidebar-menu-button.svelte";
 
   import { useSidebar } from "@/components/ui/sidebar";
+  import { accountAuthService } from "@/data/model/iam/accounts/auth/records";
+  import { AuthContext, authStatus } from "@/security/AuthContext";
 
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
 
   // Variables
+  AuthContext.backend ||= accountAuthService();
+
+  let loggedInAccount = $derived($authStatus.authContext);
+  let { name, email, pictureUrl, roleName } = $derived(
+    loggedInAccount || {
+      name: "",
+      email: "",
+      pictureUrl: "",
+      roleName: "user",
+    },
+  );
+
   const sidebar = useSidebar();
   const menus: IDropdownMenus = $derived({
     general: {
@@ -76,8 +88,8 @@
         {
           label: "Log out",
           icon: LogOutIcon,
-          action: () => {
-            // Handle log out action
+          action: async () => {
+            await AuthContext.logout();
           },
         },
       ],
@@ -90,18 +102,9 @@
     <SidebarMenuButton
       {...props}
       size="lg"
-      class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+      class="data-[state=open]:bg-background data-[state=open]:text-foreground hover:bg-background hover:text-foreground h-auto items-start"
     >
-      <Avatar class="size-8 rounded-lg">
-        <AvatarImage src="" alt=""></AvatarImage>
-        <AvatarFallback class="rounded-lg">EU</AvatarFallback>
-      </Avatar>
-
-      <div class="grid flex-1 text-left text-sm leading-tight">
-        <span class="truncate font-medium">Example User</span>
-        <span class="truncate text-xs">example@ingedata.ai</span>
-      </div>
-      <ChevronsUpDownIcon class="ml-auto size-4"></ChevronsUpDownIcon>
+      <AccountAvatar align="start" {name} {email} {pictureUrl} {roleName} showName showEmail showRole />
     </SidebarMenuButton>
   {/snippet}
 </DropdownMenus>

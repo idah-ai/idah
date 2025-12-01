@@ -27,7 +27,7 @@
 <SidebarMenu>
   <SidebarMenuItem class={cn("", className)}>
     <SidebarMenuButton
-      isActive={page.url.pathname.includes(href || "#")}
+      isActive={page.url.pathname.startsWith(href || "#")}
       onclick={() => {
         onClick?.();
       }}

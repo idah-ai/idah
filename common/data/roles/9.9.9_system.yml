@@ -1,0 +1,5 @@
+system:
+  mask: "9.9.9"
+  assignable: false
+  rights:
+    - "*.*.*"

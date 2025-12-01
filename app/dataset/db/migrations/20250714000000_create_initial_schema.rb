@@ -76,6 +76,8 @@ Sequel.migration do
 
       index :created_by_email, opclass: :gin_trgm_ops, type: :gin
 
+      column :organization_id, :bigint, null: false, index: true
+
       Migration::Timestamps.timestamps(self)
     end
     Migration::Timestamps.trg_updated_at(self, :projects)
@@ -111,14 +113,20 @@ Sequel.migration do
 
       column :progress, Float, null: false, default: 0.0 # from 0.0 to 1.0
 
-      index :name, opclass: :gin_trgm_ops, type: :gin
-
       Migration::Timestamps.timestamps(self)
     end
     Migration::Timestamps.trg_updated_at(self, :datasets)
 
     create_table(:entries) do
       column :id, :uuid, primary_key: true, default: Sequel.lit("uuid_generate_v7()")
+
+      foreign_key :project_id,
+                  :projects,
+                  type: :uuid,
+                  null: false,
+                  index: true,
+                  on_delete: :cascade,
+                  on_update: :cascade
 
       foreign_key :dataset_id,
                   :datasets,
@@ -141,7 +149,7 @@ Sequel.migration do
       # processing, pending, assigned, in_progress, completed, errored, ready
       column :status, String, null: false, index: true, default: "pending"
 
-      column :assigned_to_id, :bigint, null: true, index: true
+      column :assigned_to_member_id, :bigint, null: true, index: true
 
       Migration::Timestamps.timestamps(self)
     end
@@ -150,11 +158,29 @@ Sequel.migration do
     create_table(:annotations) do
       column :id, :uuid, primary_key: true, default: Sequel.lit("uuid_generate_v7()")
 
+      foreign_key :project_id,
+                  :projects,
+                  type: :uuid,
+                  null: false,
+                  index: true,
+                  on_delete: :cascade,
+                  on_update: :cascade
+
+      foreign_key :dataset_id,
+                  :datasets,
+                  type: :uuid,
+                  null: false,
+                  index: true,
+                  on_delete: :cascade,
+                  on_update: :cascade
+
       foreign_key :entry_id,
                   :entries,
                   type: :uuid,
                   null: false,
-                  index: true
+                  index: true,
+                  on_delete: :cascade,
+                  on_update: :cascade
 
       # Dimension of the annotation, e.g. coordinates or pixel mask.
       column :dimensions, :jsonb, text: true, null: false
@@ -172,6 +198,22 @@ Sequel.migration do
 
     create_table(:note_feeds) do
       column :id, :uuid, primary_key: true, default: Sequel.lit("uuid_generate_v7()")
+
+      foreign_key :project_id,
+                  :projects,
+                  type: :uuid,
+                  null: false,
+                  index: true,
+                  on_delete: :cascade,
+                  on_update: :cascade
+
+      foreign_key :dataset_id,
+                  :datasets,
+                  type: :uuid,
+                  null: false,
+                  index: true,
+                  on_delete: :cascade,
+                  on_update: :cascade
 
       foreign_key :entry_id,
                   :entries,
@@ -217,7 +259,9 @@ Sequel.migration do
                   :note_feeds,
                   type: :uuid,
                   null: false,
-                  index: true
+                  index: true,
+                  on_delete: :cascade,
+                  on_update: :cascade
 
       column :content_md, String, null: false
 
@@ -228,5 +272,31 @@ Sequel.migration do
       Migration::Timestamps.timestamps(self)
     end
     Migration::Timestamps.trg_updated_at(self, :note_comments)
+
+    create_table(:project_members) do
+      primary_key :id, :bigserial
+
+      foreign_key :project_id,
+                  :projects,
+                  type: :uuid,
+                  null: false,
+                  index: true,
+                  on_delete: :cascade,
+                  on_update: :cascade
+
+      column :account_id, :bigint, null: false, index: true
+      column :name, String
+      column :email, String, null: false, index: true
+
+      column :role, String, null: false
+
+      column :invited_by_id, :bigint, null: false
+
+      index [:project_id, :account_id]
+      index [:project_id, :role]
+
+      Migration::Timestamps.timestamps(self)
+    end
+    Migration::Timestamps.trg_updated_at(self, :project_members)
   end
 end

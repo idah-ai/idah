@@ -2,7 +2,7 @@
 
 module Annotation
   class Service < Verse::Service::Base
-    use annotations: Annotation::Repository
+    use annotations: Annotation::Repository, entries: Entry::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       annotations.index(
@@ -20,17 +20,40 @@ module Annotation
     end
 
     def create(record)
-      attributes = record.attributes
-      attributes[:created_by_email] = "harcoded_value@annotation.service.rb"
-      # attributes[:created_by_email] ||= auth_context.metadata[:email] || "email@example.com"
-      attributes[:id] = record.id || UUIDv7.generate
-
-      if record.entry
-        attributes[:entry_id] = record.entry.id
-      else
+      # Validate required relationships
+      unless record.entry
         raise Verse::Error::ValidationFailed,
               "entry relationship is required to create an annotation"
       end
+
+      # Organization Owner can find the entry in their scope
+      # Project Owner can find the entry in their projects
+      # Annotator and Reviewer can find the entry only if assigned to them
+      entry = entries.find(record.entry.id)
+
+      unless entry
+        raise Verse::Error::ValidationFailed,
+              "entry not found to create an annotation"
+      end
+
+      # With "as_user" ensure account can "create" annotation to the project
+      if auth_context.can?(:create, annotations.class.resource) == :as_user &&
+         !ScopedQuery::Service.with_project_access?(
+           auth_context.metadata[:id],
+           entry.project_id,
+           ["project_owner", "annotator", "reviewer"]
+         )
+        raise Verse::Error::Unauthorized,
+              "You do not have permission to create annotation on this project"
+      end
+
+      # Assign attributes
+      attributes = record.attributes
+      attributes[:id] = record.id || UUIDv7.generate
+      attributes[:project_id] = entry.project_id
+      attributes[:dataset_id] = entry.dataset_id
+      attributes[:entry_id] = entry.id
+      attributes[:created_by_email] = auth_context.metadata[:email]
 
       annotations.transaction do
         id = annotations.create(attributes)
@@ -53,7 +76,7 @@ module Annotation
     end
 
     def delete(id)
-      annotations.delete(id)
+      annotations.delete!(id)
     end
   end
 end

@@ -77,7 +77,8 @@ module Processor
               size: file.size,
               mime_type: mime_type || file.mime_type,
               created_by: nil,
-              created_role: "processor"
+              created_role: "processor",
+              project_id: medias.find_by({ resource: })&.project_id
             }
           )
         end

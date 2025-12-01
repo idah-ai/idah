@@ -20,6 +20,7 @@ module Medias
       medias.find_by!({ resource:, key: }, included:)
     end
 
+    # TODO: check who can delete ? only system ?
     def delete(resource, key)
       file = medias.find_by!({ resource:, key: })
       medias.delete(file.id)
@@ -32,7 +33,7 @@ module Medias
       end
     end
 
-    def upload(file, resource:, key: "")
+    def upload(file, resource:, project_id:, key: "")
       Verse::Plugin[:shrine].with_storage do |storage|
         # Verify that the resource/key combination is not already used:
         existing = medias.find_by({ resource:, key: })
@@ -60,7 +61,8 @@ module Medias
             size: output.size,
             mime_type: output.mime_type || "application/octet-stream",
             created_by: metadata[:id],
-            created_role: metadata[:role]&.to_s
+            created_role: metadata[:role]&.to_s,
+            project_id:
           }
         )
         medias.find!(id)

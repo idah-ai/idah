@@ -5,7 +5,7 @@ class NoteCommentsExpo < BaseExpo
 
   use_service NoteComment::Service
 
-  json_api NoteComment::Record, http_opts: { auth: nil } do
+  json_api NoteComment::Record do
     allowed_included "note_feed"
 
     show
