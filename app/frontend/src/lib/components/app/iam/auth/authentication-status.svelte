@@ -1,8 +1,7 @@
 <script lang="ts">
-  import { onMount, type Snippet } from "svelte";
-
   import { cn } from "@/utils";
-
+  import { onMount, type Snippet } from "svelte";
+  
   // Props
   interface Props {
     class?: string | null;
@@ -24,11 +23,11 @@
 </script>
 
 <div class={cn("", className)}>
-  <!-- {#if loading}
+  {#if loading}
 		{@render loading?.()}
 	{:else}
-		<ApplicationLoading />
-	{/if} -->
+		<!-- <ApplicationLoading /> -->
+	{/if}
 
   {@render authorized?.()}
 
