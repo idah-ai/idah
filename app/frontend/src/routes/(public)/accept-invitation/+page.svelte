@@ -6,7 +6,7 @@
   import { resolve } from "$app/paths";
   import { accountsBackendDataSource } from "@/data/model/iam/accounts/record";
 
-  async function updateAccount(): Promise<void> {
+  async function acceptInvitation(): Promise<void> {
     try {
       const accountResponse = await accountsBackendDataSource.join({
         id: page.url.searchParams.get("accountId") as string,
@@ -21,6 +21,6 @@
   }
 
   onMount(() => {
-    updateAccount();
+    acceptInvitation();
   });
 </script>

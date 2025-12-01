@@ -4,8 +4,8 @@ import { parseSingleElementError, parseSingleElementReturn } from "@/data/model/
 import { field, Record, RecordFactory, type } from "@/data/model/Record";
 import { Transformers } from "@/data/model/transformers";
 
+import type { RecordResponse } from "@/data/model/types";
 import type { Hash } from "@/utils/types";
-import type { RecordResponse } from "../../types";
 
 @type("iam:accounts")
 export class AccountRecord extends Record {
