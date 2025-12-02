@@ -91,14 +91,14 @@ module Auth
       )
 
       refresh_token = unless account_role == "system"
-        create_refresh_token(
-          account,
-          session_id:,
-          ip:,
-          nonce:,
-          user_agent:
-        )
-      end
+                        create_refresh_token(
+                          account,
+                          session_id:,
+                          ip:,
+                          nonce:,
+                          user_agent:
+                        )
+                      end
 
       AccountAuth::Record.new(
         {
