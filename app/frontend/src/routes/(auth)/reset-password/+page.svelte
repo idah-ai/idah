@@ -5,6 +5,7 @@
   import AuthenticationCard from "@/components/app/iam/auth/card/authentication-card.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import Link from "@/components/ui/text/Link.svelte";
+  import { accountPasswordsBackendDataSource } from "@/data/model/iam/account-passwords/record";
 
   import { sendResetPasswordLinkSchema } from "@/data/model/iam/accounts/auth-schema";
 
@@ -25,6 +26,10 @@
   // Functions
   async function sendPasswordResetLink(): Promise<void> {
     /** Check if email is valid and exist in out platform? */
+    const response = await accountPasswordsBackendDataSource.request_reset_password({
+      email: email,
+    });
+    
     // const existingAccount = await AccountsBackendDataSource.list({
     //   fields: {
     //     [AccountRecord.type]: []
@@ -56,7 +61,13 @@
   {#snippet content()}
     <Form>
       <!-- EMAIL -->
-      <InputField name="{resource}/email" label="Email" placeholder="Enter your email" required bind:value={email}
+      <InputField
+        name="{resource}/email"
+        label="Email"
+        placeholder="Enter your email"
+        required
+        value={email}
+        oninput={(e) => (email = e.currentTarget.value)}
       ></InputField>
 
       <Button class="w-full" disabled={disabledSendPasswordResetLink} onclick={sendPasswordResetLink}>
