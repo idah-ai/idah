@@ -6,13 +6,13 @@ module Account
 
     TRANSITION_SETTINGS = {
       ["user", "org_owner"] => {
-        category: "upgrade_user_to_org_owner",
+        category: "org_owner_role_assigned",
         send_notification: true,
         title: "You have been assigned as organization owner"
       },
       ["user", "admin"]     => { category: "upgrade_user_to_admin", send_notification: false },
       ["org_owner", "user"] => {
-        category: "downgrade_org_owner_to_user",
+        category: "org_owner_role_removed",
         send_notification: true,
         title: "You have been removed as organization owner"
       },
@@ -22,7 +22,7 @@ module Account
     }.freeze
 
 
-    def initialize(from_role:, to_role:, email_title: nil, email_params: {})
+    def initialize(from_role:, to_role:, email_params: {}, recipient_email:, recipient_id:)
       @from_role = from_role
       @to_role = to_role
       settings = TRANSITION_SETTINGS[[from_role, to_role]] || {}
@@ -31,8 +31,8 @@ module Account
       @send_notification = settings.fetch(:send_notification, false)
       @email_title = settings[:title] || default_title
       @email_params = email_params
-      @recipient_email = email_params[:recipient_account_email]
-      @recipient_id = email_params[:recipient_account_id]
+      @recipient_email = recipient_email
+      @recipient_id = recipient_id
     end
 
     def deliver!
