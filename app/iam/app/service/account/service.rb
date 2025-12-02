@@ -37,7 +37,6 @@ module Account
           raise Verse::Error::ValidationFailed, "Email already exists"
         end
 
-
         attr = record.attributes.dup
 
         # Set a default random password for the account if none is provided
@@ -160,7 +159,6 @@ module Account
     def build_email_params(previous_account, record, old_role, new_role)
       base_params = { recipient_name: previous_account.name }
 
-      binding.pry
       # Include organization info if relevant
       if old_role == "org_owner" || new_role == "org_owner"
         org_id = previous_account.role_scope["org"]&.first || JSON.parse(record.attributes[:role_scope])["org"]&.first

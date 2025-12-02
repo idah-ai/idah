@@ -2,7 +2,14 @@
 
 module Account
   class RoleChangeNotification
-    attr_reader :from_role, :to_role, :email_title, :category, :email_params, :send_notification, :recipient_email, :recipient_id
+    attr_reader :from_role,
+                :to_role,
+                :email_title,
+                :category,
+                :email_params,
+                :send_notification,
+                :recipient_email,
+                :recipient_id
 
     TRANSITION_SETTINGS = {
       ["user", "org_owner"] => {
@@ -10,19 +17,18 @@ module Account
         send_notification: true,
         title: "You have been assigned as organization owner"
       },
-      ["user", "admin"]     => { category: "upgrade_user_to_admin", send_notification: false },
+      ["user", "admin"] => { category: "upgrade_user_to_admin", send_notification: false },
       ["org_owner", "user"] => {
         category: "org_owner_role_removed",
         send_notification: true,
         title: "You have been removed as organization owner"
       },
-      ["org_owner", "admin"]=> { category: "upgrade_org_owner_to_admin", send_notification: false },
-      ["admin", "user"]     => { category: "downgrade_admin_to_user", send_notification: false },
-      ["admin", "org_owner"]=> { category: "downgrade_admin_to_org_owner", send_notification: false },
+      ["org_owner", "admin"] => { category: "upgrade_org_owner_to_admin", send_notification: false },
+      ["admin", "user"] => { category: "downgrade_admin_to_user", send_notification: false },
+      ["admin", "org_owner"] => { category: "downgrade_admin_to_org_owner", send_notification: false },
     }.freeze
 
-
-    def initialize(from_role:, to_role:, email_params: {}, recipient_email:, recipient_id:)
+    def initialize(from_role:, to_role:, recipient_email:, recipient_id:, email_params: {})
       @from_role = from_role
       @to_role = to_role
       settings = TRANSITION_SETTINGS[[from_role, to_role]] || {}
