@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { BuildingIcon, RocketIcon, UsersRoundIcon } from "@lucide/svelte";
+  import { BuildingIcon, FileClockIcon, RocketIcon, UsersRoundIcon } from "@lucide/svelte";
 
   import ApplicationSidebarMenuItem from "@/components/app/application/sidebar/application-sidebar-menu-item.svelte";
   import { SidebarContent, SidebarGroup, SidebarGroupContent } from "@/components/ui/sidebar";
@@ -22,6 +22,11 @@
       label: "Organizations",
       href: "/organizations",
       icon: BuildingIcon,
+    },
+    {
+      label: "Audit Logs",
+      href: "/audit-logs",
+      icon: FileClockIcon,
     },
   ]);
 </script>

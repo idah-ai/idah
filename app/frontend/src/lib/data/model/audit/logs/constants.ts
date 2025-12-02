@@ -1,5 +1,4 @@
 import type { LabelValue } from "@/components/app/types";
-import type { BadgeVariant } from "@/components/ui/badge";
 
 export const logResourceTypes: LabelValue<string>[] = [
   /** IAM */
@@ -14,11 +13,8 @@ export const logResourceTypes: LabelValue<string>[] = [
 ];
 
 export type LogAction = "created" | "updated" | "deleted";
-export interface ILogAction extends LabelValue<LogAction> {
-  badgeVariant: BadgeVariant;
-}
-export const logActions: ILogAction[] = [
-  { label: "Created", value: "created", badgeVariant: "success" },
-  { label: "Updated", value: "updated", badgeVariant: "default" },
-  { label: "Deleted", value: "deleted", badgeVariant: "destructive" },
+export const logActions: LabelValue<LogAction>[] = [
+  { label: "Created", value: "created" },
+  { label: "Updated", value: "updated" },
+  { label: "Deleted", value: "deleted" },
 ];
