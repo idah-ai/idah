@@ -56,7 +56,7 @@
   {#await fetchProject()}
     <PageLoading />
   {:then project}
-    <PageProvider name="project-detail">
+    <PageProvider name="project-detail" roles={["admin", "org_owner", "user"]}>
       {#if !isDatasetPage}
         <PageHeader title={project.name} description={project.description}>
           {#snippet actions()}

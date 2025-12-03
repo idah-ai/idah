@@ -1,10 +1,13 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-
   import ApplicationHeader from "@/components/app/application/application-header.svelte";
+  import Redirect from "@/components/app/misc/redirect.svelte";
+  import ShowToast from "@/components/app/misc/show-toast.svelte";
+
+  import { authStatus } from "@/security/AuthContext";
 
   import type { WithElementRef } from "@/utils";
   import type { HTMLAttributes } from "svelte/elements";
+  import type { Role } from "@/data/model/iam/accounts/auth/constants";
 
   // Props
   type Props = WithElementRef<HTMLAttributes<HTMLElement>> & {
@@ -12,29 +15,41 @@
     // action: Action;
     // resource: Resource;
     // scopes: Scope[];
-    // roles: Role[];
-    // redirectTo?: string;
+    roles?: Array<Role>;
+    redirectTo?: string;
   };
-  let { ref, children, name }: Props = $props();
+  let { ref, children, name, roles, redirectTo = "/" }: Props = $props();
 
-  // Variables
-  let hasAccess: boolean = $state(false);
+  // Functions
+  async function checkAccess() {
+    const currentAccount = $authStatus.authContext;
 
-  // Lifecycle
-  onMount(async () => {
-    // const currentAccount = $authStatus.authContext;
+    if (!currentAccount) {
+      return false;
+    }
+
+    if (roles) {
+      return roles.includes(currentAccount.roleName);
+    }
+
     // if (await checkRights(action, resource, scopes, roles)) {
     // hasAccess = true;
     // } else {
-    hasAccess = true;
+
+    return true;
     // }
-  });
+  }
 </script>
 
-{#if hasAccess}
-  <ApplicationHeader></ApplicationHeader>
+{#await checkAccess() then hasAccess}
+  {#if hasAccess}
+    <ApplicationHeader />
 
-  <section id={name} bind:this={ref} class="flex flex-col gap-4">
-    {@render children?.()}
-  </section>
-{/if}
+    <section id={name} bind:this={ref} class="flex flex-col gap-4">
+      {@render children?.()}
+    </section>
+  {:else}
+    <ShowToast type="error" title="Access Denied" description="You do not have access to this page." />
+    <Redirect to={redirectTo} />
+  {/if}
+{/await}

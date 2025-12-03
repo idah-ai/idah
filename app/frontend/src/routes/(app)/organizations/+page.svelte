@@ -32,7 +32,7 @@
   </Button>
 {/snippet}
 
-<PageProvider name="organizations">
+<PageProvider name="organizations" roles={["admin", "org_owner"]}>
   <PageHeader title="Organizations">
     {#snippet actions()}
       {@render AddNewOrganizationButton()}

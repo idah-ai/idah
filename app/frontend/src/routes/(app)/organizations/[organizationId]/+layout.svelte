@@ -60,7 +60,7 @@
   {#await fetchOrganization()}
     <PageLoading />
   {:then organization}
-    <PageProvider name="organization-detail">
+    <PageProvider name="organization-detail" roles={["admin", "org_owner"]}>
       <PageHeader title={organization.name}>
         {#snippet actions()}
           <OrganizationDropdownMenu {organizationId} align="end" />
