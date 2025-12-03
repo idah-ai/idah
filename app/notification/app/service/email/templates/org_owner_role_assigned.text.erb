@@ -1,8 +1,9 @@
 
-You are now the organization owner of <%= notification.organization_name %>.
+You are now the organization owner of 
+<%= notification.organization_name %> organization
 
 Hi <%= notification.recipient_name %>,
-You have been assigned as organization owner of <%= notification.organization_name %> by '<%= notification.admin_name %>'.
+You have been assigned as organization owner of <%= notification.organization_name %> organization by <%= notification.admin_name %>.
 
 go to organization:
-<%= [ENV.fetch("IDAH_URL"), "/organizations/#{notification.organization_id}"].join("") %>
+<%= [ENV.fetch("IDAH_URL"), "/organizations"].join("") %>
