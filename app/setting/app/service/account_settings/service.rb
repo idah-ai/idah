@@ -19,10 +19,23 @@ module AccountSettings
       account_settings.find!(id, included: included)
     end
 
-    def create(record)
-      account_settings.transaction do
-        record_id = account_settings.create(record.attributes)
-        account_settings.find!(record_id)
+    DEFAULT_ACCOUNT_SETTINGS = {
+      "notification:organization:ownership.assigned": true,
+      "notification:organization:ownership.unassigned": true,
+      "notification:project:member.invited": true,
+      "notification:project:member.removed": true,
+      "notification:dataset.completed": true,
+    }
+    def create(params)
+      DEFAULT_ACCOUNT_SETTINGS.each do |key, value|
+        account_settings.transaction do
+          record = AccountSetting::Record.new({
+            account_id: params[:resource_id],
+            key: key,
+            value: value, 
+          })
+          account_settings.create(record)
+        end
       end
     end
 

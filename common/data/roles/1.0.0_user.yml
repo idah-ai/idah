@@ -29,4 +29,7 @@ user:
 
     # Media Service
     - "media:medias.*.as_user"
-    - "media:jobs.read.as_org_owner"
+    - "media:jobs.read.as_user"
+
+    # Setting Service
+    - "setting:account_settings.*.own"
