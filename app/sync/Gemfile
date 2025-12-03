@@ -35,4 +35,4 @@ group :test do
   gem "webmock"
 end
 
-gem "duckdb", "~> 1.4"
+gem "open3", "~> 0.2.1"
