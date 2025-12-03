@@ -8,6 +8,6 @@
   pageBreadcrumbsStore.set([homeBreadcrumb]);
 </script>
 
-<PageProvider name="home">
-  <PageHeader title="Home"></PageHeader>
+<PageProvider name="home" roles={["admin", "org_owner", "user"]}>
+  <PageHeader title="Home" />
 </PageProvider>

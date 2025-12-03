@@ -33,7 +33,7 @@
   </Button>
 {/snippet}
 
-<PageProvider name="accounts">
+<PageProvider name="accounts" roles={["admin", "org_owner"]}>
   <PageHeader title="Accounts">
     {#snippet actions()}
       {@render AddNewAccountButton()}
@@ -63,4 +63,4 @@
   {/key}
 </PageProvider>
 
-<AccountFormModal action="create" title="Account" bind:open={openNewAccountFormModal}></AccountFormModal>
+<AccountFormModal action="create" title="Account" bind:open={openNewAccountFormModal} />

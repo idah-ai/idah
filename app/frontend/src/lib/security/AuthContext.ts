@@ -7,6 +7,7 @@ import { ActionMap } from "@/security/ActionMap";
 
 import type { Action, Resource, Scope } from "@/security/types";
 import type { Hash } from "@/utils/types";
+import type { Role } from "@/data/model/iam/accounts/auth/constants";
 
 export type AuthenticationStatus = {
   status: "loading" | "logged-in" | "logged-out";
@@ -89,7 +90,7 @@ export class AuthContext {
   public readonly name: string | null;
   public readonly pictureUrl: string | null;
 
-  public readonly roleName: string;
+  public readonly roleName: Role;
   public readonly roleScope: Hash;
   public readonly roleRights: string[] = [];
 
@@ -107,6 +108,10 @@ export class AuthContext {
     this.roleRights = record.role_rights || [];
 
     this.exp = record.exp * 1000;
+  }
+
+  isRole(roleToCheck: Role): boolean {
+    return this.roleName === roleToCheck;
   }
 
   /*

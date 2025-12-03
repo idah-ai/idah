@@ -11,16 +11,19 @@
     {
       label: "Projects",
       href: "/projects",
+      visibleIfRoles: ["admin", "org_owner", "user"],
       icon: RocketIcon,
     },
     {
       label: "Accounts",
       href: "/accounts",
+      visibleIfRoles: ["admin", "org_owner"],
       icon: UsersRoundIcon,
     },
     {
       label: "Organizations",
       href: "/organizations",
+      visibleIfRoles: ["admin", "org_owner"],
       icon: BuildingIcon,
     },
   ]);
