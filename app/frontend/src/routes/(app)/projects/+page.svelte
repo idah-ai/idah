@@ -48,7 +48,7 @@
   }
 </script>
 
-<PageProvider name="projects">
+<PageProvider name="projects" roles={["admin", "org_owner", "user"]}>
   <PageHeader title="Projects">
     {#snippet actions()}
       <AddNewProjectButton />

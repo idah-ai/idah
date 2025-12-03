@@ -46,7 +46,7 @@
   }
 </script>
 
-<PageProvider name="audit-logs">
+<PageProvider name="audit-logs" roles={["admin"]}>
   <PageHeader title="Audit Logs">
     {#snippet actions()}
       <Button onclick={downloadAudits}>
