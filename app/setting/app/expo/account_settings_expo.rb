@@ -5,7 +5,7 @@ class AccountSettingsExpo < BaseExpo
 
   use_service AccountSettings::Service
 
-  json_api AccountSetting::Record, http_opts: { auth: nil } do
+  json_api AccountSetting::Record do
     show
     index do
       allowed_filters :key
