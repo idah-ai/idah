@@ -11,6 +11,7 @@
     projectMemberInvitedKey,
     projectMemberRemovedKey,
   } from "@/data/model/setting/account_setting/record";
+  import { authStatus } from "@/security/AuthContext";
 
   // Variables
   let notifications = $state({
@@ -28,8 +29,11 @@
   }
 
   async function loadSetting(key: keyof typeof notifications, defaultValue: boolean = true) {
+    if (!$authStatus.authContext?.id) return;
+
     const response = await accountSettingBackendDataSource.list({
       filters: {
+        account_id: $authStatus.authContext.id,
         key,
       },
     });
@@ -39,7 +43,6 @@
     if (!response.data.length) {
       const createdRes = await accountSettingBackendDataSource.create({
         attributes: {
-          account_id: "1",
           key,
           value: defaultValue,
         },

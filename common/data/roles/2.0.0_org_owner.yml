@@ -28,3 +28,6 @@ org_owner:
     # Media Service
     - "media:medias.*.as_org_owner"
     - "media:jobs.read.as_org_owner"
+
+    # Setting Service
+    - "setting:account_settings.*.own"

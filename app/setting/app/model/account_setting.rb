@@ -20,6 +20,18 @@ module AccountSetting
 
     encoder :value, Verse::Sequel::JsonEncoder
 
+    def scoped(action)
+      auth_context.can!(action, self.class.resource) do |scope|
+        scope.all? { table }
+
+        scope.own? {
+          table if action == :create
+          
+          table.where(account_id: auth_context.metadata[:id])
+        }
+      end
+    end
+
     query
     def get(key, account_id:, plugin: "", default: nil)
       find_by(

@@ -8,11 +8,15 @@ class AccountSettingsExpo < BaseExpo
   json_api AccountSetting::Record do
     show
     index do
-      allowed_filters :key
+      allowed_filters :account_id,
+                      :key
     end
 
-    create
     update
-    delete
+  end
+
+  expose on_resource_event("iam:accounts", "created")
+  def create_account_settings
+    service.create(params)
   end
 end

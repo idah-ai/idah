@@ -85,6 +85,8 @@ export class AuthContext {
 
   public readonly actionMap: ActionMap;
 
+  public readonly id: string;
+
   public readonly email: string;
   public readonly name: string | null;
   public readonly pictureUrl: string | null;
@@ -97,6 +99,8 @@ export class AuthContext {
 
   constructor(record: AccountAuthRecord | Hash) {
     this.actionMap = new ActionMap(record.role_rights || []);
+
+    this.id = record.id;
 
     this.email = record.email;
     this.name = record.name;
