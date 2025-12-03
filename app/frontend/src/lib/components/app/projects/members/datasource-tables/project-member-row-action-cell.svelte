@@ -1,12 +1,12 @@
 <script lang="ts">
+  import { UserRoundXIcon } from "@lucide/svelte";
+  import { toast } from "svelte-sonner";
+
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
   import Button from "@/components/ui/button/button.svelte";
 
-  import { refetches } from "@/utils/refetch";
-  import { Trash2Icon } from "@lucide/svelte";
-  import { toast } from "svelte-sonner";
-
   import { ProjectMemberRecord, projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
+  import { refetches } from "@/utils/refetch";
 
   import type { DataTableCellBaseProps } from "@/components/app/datasource-table/types";
 
@@ -28,8 +28,8 @@
   }
 </script>
 
-<Button variant="ghost" size="icon" onclick={() => (openConfirmRemoveMemberModal = true)}>
-  <Trash2Icon class="size-4" />
+<Button variant="ghost" size="icon-sm" onclick={() => (openConfirmRemoveMemberModal = true)}>
+  <UserRoundXIcon />
 </Button>
 
 <ConfirmModal

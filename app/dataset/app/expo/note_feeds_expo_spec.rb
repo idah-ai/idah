@@ -72,9 +72,10 @@ RSpec.describe NoteFeedsExpo, type: :exposition, as: :system do
       expect(args[:anchor_type]).to eq "entry"
       expect(args[:position]).to eq({ x: 100, y: 200 })
       expect(args[:content_md]).to eq "This is a test note"
-      expect(args[:created_by_email]).to eq "user@example.com"
+      expect(args[:created_by_email]).to be_nil # system context has no email
       note_feed_record
     end
+
     post "/note_feeds", note_feed_data
 
     expect(last_response.status).to eq 201

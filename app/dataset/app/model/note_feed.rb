@@ -37,7 +37,31 @@ module NoteFeed
     def scoped(action)
       auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }
+        scope.as_org_owner? { org_owner_project_scoped_query(action) }
         scope.as_user? { user_project_scoped_query(action) }
+      end
+    end
+
+    def org_owner_project_scoped_query(action)
+      # Ignore create action as it will be handled in service layer
+      return table if action == :create
+
+      org_ids = auth_context.custom_scopes[:org]
+      email = auth_context.metadata[:email]
+
+      case action
+      when :read
+        table.where(
+          table.db[:projects]
+            .where(organization_id: org_ids)
+            .where(id: Sequel[:note_feeds][:project_id])
+            .select(1).exists
+        )
+      when :update, :delete
+        table.where(created_by_email: email)
+      else
+        raise Verse::Error::Unauthorized,
+              "Permission denied for \"#{action}\" action on #{self.class.resource}"
       end
     end
 
@@ -75,7 +99,7 @@ module NoteFeed
                     SELECT 1
                     FROM entries e
                     WHERE e.id = note_feeds.entry_id
-                      AND e.assigned_to_id = :account_id
+                      AND e.assigned_to_member_id = pm.id
                   )
                 )
               )
@@ -106,7 +130,7 @@ module NoteFeed
                     SELECT 1
                     FROM entries e
                     WHERE e.id = note_feeds.entry_id
-                      AND e.assigned_to_id = :account_id
+                      AND e.assigned_to_member_id = pm.id
                   )
                 )
               )
@@ -139,7 +163,7 @@ module NoteFeed
                     SELECT 1
                     FROM entries e
                     WHERE e.id = note_feeds.entry_id
-                      AND e.assigned_to_id = :account_id
+                      AND e.assigned_to_member_id = pm.id
                   )
                 )
               )
@@ -156,7 +180,7 @@ module NoteFeed
                   SELECT 1
                   FROM entries e
                   WHERE e.id = note_feeds.entry_id
-                    AND e.assigned_to_id = :account_id
+                    AND e.assigned_to_member_id = pm.id
                 )
             )
           )
