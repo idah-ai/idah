@@ -4,7 +4,7 @@
 
   import type { WithElementRef } from "@/utils";
   import type { HTMLAttributes } from "svelte/elements";
-
+  
   // Props
   let { children }: WithElementRef<HTMLAttributes<HTMLDivElement>> = $props();
 </script>
