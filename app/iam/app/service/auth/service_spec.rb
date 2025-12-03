@@ -22,7 +22,7 @@ RSpec.describe Auth::Service, database: true do
       name: test_name,
       email: test_email,
       hashed_password:,
-      role: test_role,
+      role_name: test_role,
       enabled: true
     ).to_i
   end

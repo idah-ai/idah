@@ -150,4 +150,64 @@ RSpec.describe Account::Service, database: true do
       end
     end
   end
+
+  describe "#organization owner management" do
+    before do
+      @user_account = subject.create(
+        deserialize(
+          {
+            data: {
+              type: Resource::Iam::Accounts,
+              attributes: {
+                name: "User",
+                email: "user@test.com",
+                role_name: "user",
+                role_scope: "{}",
+                enabled: true,
+              },
+            }
+          }
+        )
+      )
+      @org_owner_account = subject.create(
+        deserialize(
+          {
+            data: {
+              type: Resource::Iam::Accounts,
+              attributes: {
+                name: "Org Owner",
+                email: "org_owner@test.com",
+                role_name: "org_owner",
+                role_scope: '{"org": [999]}',
+                enabled: true,
+              },
+            }
+          }
+        )
+      )
+      @another_org_owner_account = subject.create(
+        deserialize(
+          {
+            data: {
+              type: Resource::Iam::Accounts,
+              attributes: {
+                name: "Another Org Owner",
+                email: "another_org_owner@test.com",
+                role_name: "org_owner",
+                role_scope: '{"org": [222, 999]}',
+                enabled: true,
+              },
+            }
+          }
+        )
+      )
+
+      allow_any_instance_of(Organization::Service).to receive(:show).with(anything) do |org_id|
+        Verse::JsonApi::Struct.new(
+          { id: org_id,
+            name: "org #{org_id}", }
+        )
+      end
+    end
+  end
 end

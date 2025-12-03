@@ -42,6 +42,17 @@ module Dataset
     def scoped(action)
       auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }
+
+        scope.as_org_owner? do
+          org_ids = auth_context.custom_scopes[:org]
+          table.where(
+            table.db[:projects]
+              .where(organization_id: org_ids)
+              .where(id: Sequel[:datasets][:project_id])
+              .select(1).exists
+          )
+        end
+
         scope.as_user? { user_project_scoped_query(action) }
       end
     end
@@ -71,14 +82,14 @@ module Dataset
               AND (
                 -- All with roles
                 pm.role IN :with_roles OR
+                -- From assigned entries with roles
                 (
-                  -- From assigned entries with roles
                   pm.role IN :assigned_to_roles
                   AND EXISTS (
                     SELECT 1
                     FROM entries e
                     WHERE e.dataset_id = datasets.id
-                      AND e.assigned_to_id = :account_id
+                      AND e.assigned_to_member_id = pm.id
                   )
                 )
               )

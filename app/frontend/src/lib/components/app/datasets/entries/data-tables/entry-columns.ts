@@ -36,14 +36,14 @@ export const entryColumns: ColumnsSettings<EntryRecord> = {
     visible: true,
     hidable: false,
   },
-  assigned_to_id: {
+  assigned_to_member_id: {
     label: "Assigned to",
     dataType: "string",
     clickable: false,
     sortable: true,
     filterable: true,
     filterOptions: {
-      filterKey: "assigned_to_id",
+      filterKey: "assigned_to_member_id",
       filterBy: "datasource",
       filterOperation: "eq",
     },

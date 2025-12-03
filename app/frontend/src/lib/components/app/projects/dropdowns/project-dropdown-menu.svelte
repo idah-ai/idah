@@ -51,7 +51,7 @@
   async function fetchProject() {
     return await projectsBackendDataSource.get(projectId, {
       fields: {
-        "datasets:projects": ["name", "description"],
+        "datasets:projects": ["name", "description", "organization_id"],
       },
       noCache: true,
     });

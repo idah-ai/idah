@@ -61,7 +61,7 @@ RSpec.describe Account, database: true do
         name: "Test User",
         email: test_email,
         hashed_password:,
-        role: "user",
+        role_name: "user",
         enabled: true
       ).to_i
     end

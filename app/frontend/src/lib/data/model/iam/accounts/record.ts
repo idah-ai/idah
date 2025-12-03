@@ -2,19 +2,27 @@ import { createBackendDataSource } from "@/data/BackendDataSource";
 import { field, Record, RecordFactory, type } from "@/data/model/Record";
 import { Transformers } from "@/data/model/transformers";
 
+export interface AccountRoleScope {
+  org?: Array<string>;
+}
+
 @type("iam:accounts")
 export class AccountRecord extends Record {
   @field() public name!: string;
-  @field() public email!: string;
+  @field() public readonly email!: string;
 
-  @field() public sso_channel!: string | null;
+  @field() public readonly sso_channel!: string | null;
 
   @field() public enabled!: boolean;
+  @field() public role_name!: string | null;
+  @field() public role_scope!: AccountRoleScope;
 
-  @field() public joined_at!: Date | null;
+  @field() public readonly picture_url!: string | null;
 
-  @field({ transformer: Transformers.Time }) public created_at!: Date;
-  @field({ transformer: Transformers.Time }) public updated_at!: Date;
+  @field() public readonly joined_at!: Date | null;
+
+  @field({ transformer: Transformers.Time }) public readonly created_at!: Date;
+  @field({ transformer: Transformers.Time }) public readonly updated_at!: Date;
 }
 
 RecordFactory.registerTypes(AccountRecord);

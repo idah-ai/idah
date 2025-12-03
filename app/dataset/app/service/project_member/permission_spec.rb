@@ -8,11 +8,11 @@ RSpec.describe ProjectMember::Service, database: true do
   let(:project_member_repo) { ProjectMember::Repository.new(system_context) }
 
   # Projects
-  let(:first_project_id) {
-    project_repo.create(name: "Project 1", created_by_email: "system@example.com")
+  let!(:first_project_id) {
+    project_repo.create(name: "Project 1", created_by_email: "system@example.com", organization_id: 1)
   }
-  let(:second_project_id) {
-    project_repo.create(name: "Project 2", created_by_email: "system@example.com")
+  let!(:second_project_id) {
+    project_repo.create(name: "Project 2", created_by_email: "system@example.com", organization_id: 2)
   }
 
   # Accounts IDs
@@ -86,6 +86,104 @@ RSpec.describe ProjectMember::Service, database: true do
     }
   end
 
+  # Permission: Organization Owner
+  # ---------------------------------------------------
+  # Project Members  | index | create | update | delete
+  # ---------------------------------------------------
+  # in owned Org     |  yes  |  yes   |   yes  |   yes
+  # Not in owned Org |   x   |   x    |    x   |    x
+  context "as Organization Owner", as: :org_owner do
+    subject { described_class.new(current_auth_context) }
+    before do
+      @org_scope = current_auth_context.custom_scopes[:org]
+    end
+
+    describe "with projects in owned organization scope" do
+      it "can index" do
+        [project_owner_member_id, annotator_member_id, reviewer_member_id]
+        result = subject.index({})
+
+        expect(result.count).to eq 2
+        expect(result.map(&:project_id)).to all(eq(first_project_id))
+        expect(@org_scope).to include(project_repo.find!(first_project_id).organization_id.to_s)
+      end
+
+      it "can create" do
+        record = subject.create(deserialize(create_data))
+
+        expect(record.name).to eq create_data[:data][:attributes][:name]
+        expect(record.email).to eq create_data[:data][:attributes][:email]
+        expect(record.account_id).to eq create_data[:data][:attributes][:account_id]
+        expect(record.project_id).to eq create_data[:data][:relationships][:project][:data][:id]
+        expect(@org_scope).to include(project_repo.find!(record.project_id).organization_id.to_s)
+      end
+
+      it "can create a 'project_owner' member" do
+        create_data[:data][:attributes][:role] = "project_owner"
+        record = subject.create(deserialize(create_data))
+
+        expect(record.role).to eq "project_owner"
+        expect(record.name).to eq create_data[:data][:attributes][:name]
+        expect(record.email).to eq create_data[:data][:attributes][:email]
+        expect(record.account_id).to eq create_data[:data][:attributes][:account_id]
+        expect(record.project_id).to eq create_data[:data][:relationships][:project][:data][:id]
+        expect(@org_scope).to include(project_repo.find!(record.project_id).organization_id.to_s)
+      end
+
+      it "can update" do
+        record = subject.update(deserialize(update_data))
+
+        expect(record.name).to eq update_data[:data][:attributes][:name]
+        expect(record.email).to eq update_data[:data][:attributes][:email]
+        expect(record.role).to eq update_data[:data][:attributes][:role]
+      end
+
+      it "can delete" do
+        subject.delete(annotator_member_id)
+
+        expect {
+          subject.show(annotator_member_id)
+        }.to raise_error(Verse::Error::RecordNotFound)
+
+        # the record we tried to delete should not be there anymore
+        expect { project_member_repo.find!(annotator_member_id) }.to raise_error(Verse::Error::RecordNotFound)
+      end
+    end
+
+    describe "with projects not in owned organization scope" do
+      it "cannot index" do
+        [project_owner_member_id, annotator_member_id, reviewer_member_id]
+
+        result = subject.index({})
+
+        expect(result.map(&:id)).to_not include reviewer_member_id
+      end
+
+      it "cannot create" do
+        create_data[:data][:relationships][:project][:data][:id] = second_project_id
+
+        expect { subject.create(deserialize(create_data)) }.to raise_error(Verse::Error::Unauthorized)
+      end
+
+      it "cannot update" do
+        update_data[:data][:id] = reviewer_member_id
+
+        expect {
+          subject.update(deserialize(update_data))
+        }.to raise_error(Verse::Error::RecordNotFound)
+      end
+
+      it "cannot delete" do
+        expect {
+          subject.delete(reviewer_member_id)
+        }.to raise_error(Verse::Error::RecordNotFound)
+
+        # the record we tried to delete should still be there
+        expect { project_member_repo.find!(reviewer_member_id) }.not_to raise_error(Verse::Error::RecordNotFound)
+      end
+    end
+  end
+
   # Permission: Project Owner
   # ---------------------------------------------------
   # Project Members | index | create | update | delete
@@ -117,6 +215,12 @@ RSpec.describe ProjectMember::Service, database: true do
         expect(record.email).to eq "johndoe@example.com"
         expect(record.account_id).to eq annotator_account_id
         expect(record.project_id).to eq first_project_id
+      end
+
+      it "cannot create a 'project_owner' member" do
+        create_data[:data][:attributes][:role] = "project_owner"
+
+        expect{ subject.create(deserialize(create_data)) }.to raise_error(Verse::Error::Unauthorized)
       end
 
       it "can update" do

@@ -20,7 +20,7 @@ RSpec.describe AccountSession::Service, database: true do
       name: "Test User",
       email: test_email,
       hashed_password:,
-      role: test_role,
+      role_name: test_role,
       enabled: true
     ).to_i
   end
