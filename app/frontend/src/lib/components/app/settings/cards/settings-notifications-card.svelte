@@ -39,22 +39,11 @@
     });
     notifications[key] = response.data.length ? (response.data[0].value as boolean) : false;
 
-    /** If there is no setting, create one with default value */
-    if (!response.data.length) {
-      const createdRes = await accountSettingBackendDataSource.create({
-        attributes: {
-          key,
-          value: defaultValue,
-        },
-      });
-      notifications[key] = createdRes.data.value as boolean;
-      return createdRes.data;
-    }
-
     return response.data[0];
   }
 
-  async function updateAccountSetting(id: string, value: boolean) {
+  async function updateAccountSetting(id: string | undefined, value: boolean) {
+    if (!id) return;
     await accountSettingBackendDataSource.update(id, {
       attributes: {
         value,
@@ -62,10 +51,11 @@
     });
   }
 
-  async function toggleAllNotifications(ids: string[], checkedValue: boolean) {
+  async function toggleAllNotifications(ids: Array<string | undefined>, checkedValue: boolean) {
     if (!ids.length) return;
 
     ids.forEach(async (id) => {
+      if (!id) return;
       await updateAccountSetting(id, checkedValue);
     });
 
@@ -89,11 +79,11 @@
           onCheckedChange={(checkedValue) => {
             toggleAllNotifications(
               [
-                orgOwnershipAssigned.id,
-                orgOwnershipUnassigned.id,
-                projectMemberInvited.id,
-                projectMemberRemoved.id,
-                datasetCompleted.id,
+                orgOwnershipAssigned?.id,
+                orgOwnershipUnassigned?.id,
+                projectMemberInvited?.id,
+                projectMemberRemoved?.id,
+                datasetCompleted?.id,
               ],
               checkedValue,
             );
@@ -114,7 +104,7 @@
         <Switch
           checked={notifications[orgOwnershipAssignedKey]}
           onCheckedChange={(checkedChange) => {
-            updateAccountSetting(orgOwnershipAssigned.id, checkedChange);
+            updateAccountSetting(orgOwnershipAssigned?.id, checkedChange);
             notifications[orgOwnershipAssignedKey] = checkedChange;
           }}
         />
@@ -131,7 +121,7 @@
         <Switch
           checked={notifications[orgOwnershipUnassignedKey]}
           onCheckedChange={(checkedChange) => {
-            updateAccountSetting(orgOwnershipUnassigned.id, checkedChange);
+            updateAccountSetting(orgOwnershipUnassigned?.id, checkedChange);
             notifications[orgOwnershipUnassignedKey] = checkedChange;
           }}
         />
@@ -150,7 +140,7 @@
         <Switch
           checked={notifications[projectMemberInvitedKey]}
           onCheckedChange={(checkedChange) => {
-            updateAccountSetting(projectMemberInvited.id, checkedChange);
+            updateAccountSetting(projectMemberInvited?.id, checkedChange);
             notifications[projectMemberInvitedKey] = checkedChange;
           }}
         />
@@ -167,7 +157,7 @@
         <Switch
           checked={notifications[projectMemberRemovedKey]}
           onCheckedChange={(checkedChange) => {
-            updateAccountSetting(projectMemberRemoved.id, checkedChange);
+            updateAccountSetting(projectMemberRemoved?.id, checkedChange);
             notifications[projectMemberRemovedKey] = checkedChange;
           }}
         />
@@ -184,7 +174,7 @@
         <Switch
           checked={notifications[datasetCompletedKey]}
           onCheckedChange={(checkedChange) => {
-            updateAccountSetting(datasetCompleted.id, checkedChange);
+            updateAccountSetting(datasetCompleted?.id, checkedChange);
             notifications[datasetCompletedKey] = checkedChange;
           }}
         />
