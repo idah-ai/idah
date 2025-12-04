@@ -31,21 +31,11 @@ module Account
       end
 
       accounts.transaction do
-        email = record.attributes[:email]
-
-        if accounts.find_by({ email: email })
-          raise Verse::Error::ValidationFailed, "Email already exists"
-        end
-
         attr = record.attributes.dup
-        email = attr[:email]
 
-        if accounts.find_by({ email: email })
+        if accounts.find_by({ email: attr[:email] })
           raise Verse::Error::ValidationFailed, "Email already exists"
         end
-
-        # Set a default random password for the account if none is provided
-        password = attr.delete(:password) || SecureRandom.hex(16)
 
         # Set a default random password for the account if none is provided
         password = attr.delete(:password) || SecureRandom.hex(16)
