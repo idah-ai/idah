@@ -5,21 +5,15 @@
 
   import {
     accountSettingBackendDataSource,
-    datasetCompletedKey,
-    orgOwnershipAssignedKey,
-    orgOwnershipUnassignedKey,
-    projectMemberInvitedKey,
-    projectMemberRemovedKey,
+    organizationActivitiesKey,
+    projectActivitiesKey,
   } from "@/data/model/setting/account_setting/record";
   import { authStatus } from "@/security/AuthContext";
 
   // Variables
   let notifications = $state({
-    [orgOwnershipAssignedKey]: true,
-    [orgOwnershipUnassignedKey]: true,
-    [projectMemberInvitedKey]: true,
-    [projectMemberRemovedKey]: true,
-    [datasetCompletedKey]: true,
+    [organizationActivitiesKey]: true,
+    [projectActivitiesKey]: true,
   });
   let allNotificationsChecked = $derived(Object.values(notifications).every((value) => value === true));
 
@@ -65,7 +59,7 @@
   }
 </script>
 
-{#await loadNotificationSettings() then [orgOwnershipAssigned, orgOwnershipUnassigned, projectMemberInvited, projectMemberRemoved, datasetCompleted]}
+{#await loadNotificationSettings() then [organizationActivities, projectActivities]}
   <SettingsCard title="Notifications">
     <Item variant="outline">
       <ItemContent>
@@ -77,108 +71,44 @@
         <Switch
           checked={allNotificationsChecked}
           onCheckedChange={(checkedValue) => {
-            toggleAllNotifications(
-              [
-                orgOwnershipAssigned?.id,
-                orgOwnershipUnassigned?.id,
-                projectMemberInvited?.id,
-                projectMemberRemoved?.id,
-                datasetCompleted?.id,
-              ],
-              checkedValue,
-            );
+            toggleAllNotifications([organizationActivities?.id, projectActivities?.id], checkedValue);
           }}
         />
       </ItemActions>
     </Item>
   </SettingsCard>
 
-  <SettingsCard title="Organizations">
-    <Item variant="outline">
-      <ItemContent>
-        <ItemTitle>Organization ownership assigned</ItemTitle>
-        <ItemDescription>Receive an email notification when organization ownership is assigned.</ItemDescription>
-      </ItemContent>
+  <Item variant="outline">
+    <ItemContent>
+      <ItemTitle>Organization activities</ItemTitle>
+      <ItemDescription>Organization ownership changes</ItemDescription>
+    </ItemContent>
 
-      <ItemActions>
-        <Switch
-          checked={notifications[orgOwnershipAssignedKey]}
-          onCheckedChange={(checkedChange) => {
-            updateAccountSetting(orgOwnershipAssigned?.id, checkedChange);
-            notifications[orgOwnershipAssignedKey] = checkedChange;
-          }}
-        />
-      </ItemActions>
-    </Item>
+    <ItemActions>
+      <Switch
+        checked={notifications[organizationActivitiesKey]}
+        onCheckedChange={(checkedChange) => {
+          updateAccountSetting(organizationActivities?.id, checkedChange);
+          notifications[organizationActivitiesKey] = checkedChange;
+        }}
+      />
+    </ItemActions>
+  </Item>
 
-    <Item variant="outline">
-      <ItemContent>
-        <ItemTitle>Organization ownership unassigned</ItemTitle>
-        <ItemDescription>Receive an email notification when organization ownership is unassigned.</ItemDescription>
-      </ItemContent>
+  <Item variant="outline">
+    <ItemContent>
+      <ItemTitle>Project activities</ItemTitle>
+      <ItemDescription>Project membership changes • Dataset completed</ItemDescription>
+    </ItemContent>
 
-      <ItemActions>
-        <Switch
-          checked={notifications[orgOwnershipUnassignedKey]}
-          onCheckedChange={(checkedChange) => {
-            updateAccountSetting(orgOwnershipUnassigned?.id, checkedChange);
-            notifications[orgOwnershipUnassignedKey] = checkedChange;
-          }}
-        />
-      </ItemActions>
-    </Item>
-  </SettingsCard>
-
-  <SettingsCard title="Projects">
-    <Item variant="outline">
-      <ItemContent>
-        <ItemTitle>Project member invited</ItemTitle>
-        <ItemDescription>Receive an email notification when a new member is invited to a project.</ItemDescription>
-      </ItemContent>
-
-      <ItemActions>
-        <Switch
-          checked={notifications[projectMemberInvitedKey]}
-          onCheckedChange={(checkedChange) => {
-            updateAccountSetting(projectMemberInvited?.id, checkedChange);
-            notifications[projectMemberInvitedKey] = checkedChange;
-          }}
-        />
-      </ItemActions>
-    </Item>
-
-    <Item variant="outline">
-      <ItemContent>
-        <ItemTitle>Project member removed</ItemTitle>
-        <ItemDescription>Receive an email notification when a project member is removed.</ItemDescription>
-      </ItemContent>
-
-      <ItemActions>
-        <Switch
-          checked={notifications[projectMemberRemovedKey]}
-          onCheckedChange={(checkedChange) => {
-            updateAccountSetting(projectMemberRemoved?.id, checkedChange);
-            notifications[projectMemberRemovedKey] = checkedChange;
-          }}
-        />
-      </ItemActions>
-    </Item>
-
-    <Item variant="outline">
-      <ItemContent>
-        <ItemTitle>Dataset completed</ItemTitle>
-        <ItemDescription>Receive an email notification when a dataset is completed.</ItemDescription>
-      </ItemContent>
-
-      <ItemActions>
-        <Switch
-          checked={notifications[datasetCompletedKey]}
-          onCheckedChange={(checkedChange) => {
-            updateAccountSetting(datasetCompleted?.id, checkedChange);
-            notifications[datasetCompletedKey] = checkedChange;
-          }}
-        />
-      </ItemActions>
-    </Item>
-  </SettingsCard>
+    <ItemActions>
+      <Switch
+        checked={notifications[projectActivitiesKey]}
+        onCheckedChange={(checkedChange) => {
+          updateAccountSetting(projectActivities?.id, checkedChange);
+          notifications[projectActivitiesKey] = checkedChange;
+        }}
+      />
+    </ItemActions>
+  </Item>
 {/await}
