@@ -7,23 +7,24 @@
   import Link from "@/components/ui/text/Link.svelte";
 
   import { sendResetPasswordLinkSchema } from "@/data/model/iam/accounts/auth-schema";
+  import { AccountRecord } from "@/data/model/iam/accounts/record";
 
   // Variables
-  let resource: string = "iam:account";
+  let resource = AccountRecord.type;
   let email = $state("");
   let showErrorAlert = $state(false);
   let passwordResetLinkHasBeenSent: boolean = $state(false);
   // let sentDate: Date | null = $state(null);
-  let disabledSendPasswordResetLink = $derived.by(() => {
+  let disabledSendPasswordResetEmail = $derived.by(() => {
     const validated = sendResetPasswordLinkSchema.safeParse({ email });
     return !validated.success;
   });
-  let disabledResendPasswordResetLink = $derived.by(() => {
+  let disabledResendPasswordResetEmail = $derived.by(() => {
     return !passwordResetLinkHasBeenSent;
   });
 
   // Functions
-  async function sendPasswordResetLink(): Promise<void> {
+  async function sendPasswordResetEmail(): Promise<void> {
     /** Check if email is valid and exist in out platform? */
     // const existingAccount = await AccountsBackendDataSource.list({
     //   fields: {
@@ -46,24 +47,33 @@
   }
 </script>
 
-<AuthenticationCard title="Welcome Back!" description="We missed you!. Please enter your details.">
+<AuthenticationCard
+  title="Reset your password"
+  description="Enter your user account's verified email address and we will send you a password reset link."
+>
   {#snippet alert()}
     {#if showErrorAlert}
-      <AuthenticationAlert title="Unable to send reset link" description="Please try again."></AuthenticationAlert>
+      <AuthenticationAlert title="Unable to send reset link" description="Please try again." />
     {/if}
   {/snippet}
 
   {#snippet content()}
     <Form>
       <!-- EMAIL -->
-      <InputField name="{resource}/email" label="Email" placeholder="Enter your email" required bind:value={email}
-      ></InputField>
+      <InputField
+        name="{resource}/email"
+        label="Email"
+        placeholder="Enter your email"
+        required
+        value={email}
+        oninput={(e) => (email = e.currentTarget.value)}
+      />
 
-      <Button class="w-full" disabled={disabledSendPasswordResetLink} onclick={sendPasswordResetLink}>
+      <Button class="w-full" disabled={disabledSendPasswordResetEmail} onclick={sendPasswordResetEmail}>
         {#if passwordResetLinkHasBeenSent}
           Sent! 🎉
         {:else}
-          Send Password Reset Link
+          Send password reset email
         {/if}
       </Button>
     </Form>
@@ -72,7 +82,7 @@
   {#snippet footer()}
     <div class="flex w-full items-center justify-between gap-2">
       <Link href="/login" class="text-sm">Return to login</Link>
-      <Button variant="ghost" disabled={disabledResendPasswordResetLink}>Resend link</Button>
+      <Button variant="ghost" disabled={disabledResendPasswordResetEmail}>Resend link</Button>
     </div>
   {/snippet}
 </AuthenticationCard>

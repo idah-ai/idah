@@ -20,7 +20,7 @@
     <Logo class="h-16 w-24" />
 
     <CardTitle>{title}</CardTitle>
-    <CardDescription>{description}</CardDescription>
+    <CardDescription class="text-center">{description}</CardDescription>
   </CardHeader>
 
   <CardContent class="py-4">

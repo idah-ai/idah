@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
   import { RectangleEllipsisIcon } from "@lucide/svelte";
 
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
@@ -17,6 +19,10 @@
   // Functions
   function toggleShowChangePassword() {
     showChangePassword = !showChangePassword;
+  }
+
+  function gotoForgotPasswordPage() {
+    goto(resolve("/forgot-password"));
   }
 </script>
 
@@ -75,7 +81,7 @@
 
         <div class="flex items-center">
           <Button variant="secondary" size="sm">Update password</Button>
-          <Button variant="link" size="sm">I forgot my password</Button>
+          <Button variant="link" size="sm" onclick={gotoForgotPasswordPage}>I forgot my password</Button>
         </div>
       </div>
     </div>
