@@ -1,0 +1,20 @@
+{
+  "type": "idah-plugin",
+  "name": "idah-sync-upd",
+  "version": "1.0.0",
+
+  "title": "IDAH UPD Sync plugin",
+  "description": "A module for UPD import/export",
+
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+
+  "entryPoints": {
+    "backend": {
+      "module": "UniversalPortableDataset",
+      "path": "backends"
+    }
+  }
+}
