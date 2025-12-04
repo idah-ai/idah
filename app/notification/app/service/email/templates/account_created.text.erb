@@ -1,9 +1,8 @@
+Your invited to join IDAH
 
-Hello <%= account.name %>,
+Hi <%= account.name %>,
 
-Account Created
+Your IDAH account has been successfully created. Please accept the invitation to start working on IDAH.
 
-Your account has been successfully created. To access your account, please reset your password.
-
-Reset password:
+Accept Invitation:
 <%= [ENV.fetch("IDAH_URL"), "/reset_password?token=#{notification.password_reset_token}"].join("") %>
