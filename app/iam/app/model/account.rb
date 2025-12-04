@@ -49,6 +49,12 @@ module Account
       collection.where(Sequel.lit("role_scope @> ?", role_scope))
     end
 
+    def scoped(action)
+      auth_context.can!(action, self.class.resource) do |scope|
+        scope.all? { table }
+      end
+    end
+
     def login(email, password)
       account = scoped(:login).where(email:).first
 
