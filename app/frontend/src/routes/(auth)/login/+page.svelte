@@ -6,7 +6,9 @@
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import Form from "@/components/app/forms/form.svelte";
   import AuthenticationAlert from "@/components/app/iam/auth/alert/authentication-alert.svelte";
+  import AuthenticationStatus from "@/components/app/iam/auth/authentication-status.svelte";
   import AuthenticationCard from "@/components/app/iam/auth/card/authentication-card.svelte";
+  import Redirect from "@/components/app/misc/redirect.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import Link from "@/components/ui/text/Link.svelte";
 
@@ -54,56 +56,64 @@
   }
 </script>
 
-<AuthenticationCard title="Welcome Back!" description="We missed you!. Please enter your details.">
-  {#snippet alert()}
-    {#if showErrorAlert}
-      <AuthenticationAlert title="Incorrect email or password" description="Please try again." />
-    {/if}
+<AuthenticationStatus>
+  {#snippet authorized()}
+    <Redirect to="/" />
   {/snippet}
 
-  {#snippet content()}
-    <Form>
-      <!-- EMAIL -->
-      <InputField
-        name="{resource}/email"
-        label="Email"
-        prefixIcon={MailIcon}
-        placeholder="Enter your email"
-        value={email}
-        oninput={(e) => (email = e.currentTarget.value)}
-      />
+  {#snippet unauthorized()}
+    <AuthenticationCard title="Welcome Back!" description="We missed you!. Please enter your details.">
+      {#snippet alert()}
+        {#if showErrorAlert}
+          <AuthenticationAlert title="Incorrect email or password" description="Please try again." />
+        {/if}
+      {/snippet}
 
-      <!-- PASSWORD -->
-      <section class="flex flex-col">
-        <InputField
-          name="{resource}/password"
-          label="Password"
-          type={showPassword ? "text" : "password"}
-          prefixIcon={showPassword ? LockOpenIcon : LockIcon}
-          placeholder="Enter your password"
-          value={password}
-          oninput={(e) => (password = e.currentTarget.value)}
-        />
+      {#snippet content()}
+        <Form>
+          <!-- EMAIL -->
+          <InputField
+            name="{resource}/email"
+            label="Email"
+            prefixIcon={MailIcon}
+            placeholder="Enter your email"
+            value={email}
+            oninput={(e) => (email = e.currentTarget.value)}
+          />
 
-        <div class="flex items-center justify-between">
-          <Button variant="link" class="p-0" onclick={toggleShowPassword}>
-            {showPassword ? "Hide" : "Show"} password
+          <!-- PASSWORD -->
+          <section class="flex flex-col">
+            <InputField
+              name="{resource}/password"
+              label="Password"
+              type={showPassword ? "text" : "password"}
+              prefixIcon={showPassword ? LockOpenIcon : LockIcon}
+              placeholder="Enter your password"
+              value={password}
+              oninput={(e) => (password = e.currentTarget.value)}
+            />
+
+            <div class="flex items-center justify-between">
+              <Button variant="link" class="p-0" onclick={toggleShowPassword}>
+                {showPassword ? "Hide" : "Show"} password
+              </Button>
+
+              <Link href="/forgot-password" class="text-primary text-sm">Forgot password?</Link>
+            </div>
+          </section>
+
+          <Button
+            type="submit"
+            class="w-full"
+            loading={signingIn}
+            loadingLabel="Signing In..."
+            disabled={disabledSignInButton}
+            onclick={signInWithEmailAndPassword}
+          >
+            Sign In
           </Button>
-
-          <Link href="/forgot-password" class="text-primary text-sm">Forgot password?</Link>
-        </div>
-      </section>
-
-      <Button
-        type="submit"
-        class="w-full"
-        loading={signingIn}
-        loadingLabel="Signing In..."
-        disabled={disabledSignInButton}
-        onclick={signInWithEmailAndPassword}
-      >
-        Sign In
-      </Button>
-    </Form>
+        </Form>
+      {/snippet}
+    </AuthenticationCard>
   {/snippet}
-</AuthenticationCard>
+</AuthenticationStatus>
