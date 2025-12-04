@@ -14,11 +14,7 @@ export const accountPasswordsBackendDataSource = createBackendDataSource(Account
     const res = await fetch(`${accountPasswordsBasePath}/request_reset`, {
       method: "POST",
       body: JSON.stringify({
-        data: {
-          attributes: {
-            email: params.email,
-          },
-        },
+        email: params.email,
       }),
       headers: { "Content-Type": "application/vnd.api+json" },
     });
@@ -54,12 +50,8 @@ export const accountPasswordsBackendDataSource = createBackendDataSource(Account
     const res = await fetch(`${accountPasswordsBasePath}/reset`, {
       method: "POST",
       body: JSON.stringify({
-        data: {
-          attributes: {
-            token: params.token,
-            password: params.password,
-          },
-        },
+        token: params.token,
+        password: params.password,
       }),
       headers: { "Content-Type": "application/vnd.api+json" },
     });
