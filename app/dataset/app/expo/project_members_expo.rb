@@ -27,7 +27,9 @@ class ProjectMembersExpo < BaseExpo
     end
 
     show
-    create
+    create do
+      authorized_relationships project: [:link]
+    end
     update
     delete
   end

@@ -6,7 +6,7 @@
   import Form from "@/components/app/forms/form.svelte";
   import AuthenticationCard from "@/components/app/iam/auth/card/authentication-card.svelte";
   import Button from "@/components/ui/button/button.svelte";
-  
+
   import { resetPasswordSchema } from "@/data/model/iam/accounts/auth-schema";
 
   // Variables

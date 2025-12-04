@@ -76,6 +76,8 @@ Sequel.migration do
 
       index :created_by_email, opclass: :gin_trgm_ops, type: :gin
 
+      column :organization_id, :bigint, null: false, index: true
+
       Migration::Timestamps.timestamps(self)
     end
     Migration::Timestamps.trg_updated_at(self, :projects)
@@ -147,7 +149,7 @@ Sequel.migration do
       # processing, pending, assigned, in_progress, completed, errored, ready
       column :status, String, null: false, index: true, default: "pending"
 
-      column :assigned_to_id, :bigint, null: true, index: true
+      column :assigned_to_member_id, :bigint, null: true, index: true
 
       Migration::Timestamps.timestamps(self)
     end

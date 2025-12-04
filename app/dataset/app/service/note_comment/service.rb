@@ -25,6 +25,7 @@ module NoteComment
               "note feed relationship is required to create a comment"
       end
 
+      # Organization Owner can find the note feed in their scope
       # Project Owner can find the note feed in their projects
       # Annotator and Reviewer can find the note feed only if entry is assigned to them
       note_feed = note_feeds.find(record.note_feed.id)

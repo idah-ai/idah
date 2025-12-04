@@ -28,6 +28,17 @@ module ProjectMember
     def scoped(action)
       auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }
+
+        scope.as_org_owner? do
+          org_ids = auth_context.custom_scopes[:org]
+          table.where(
+            table.db[:projects]
+              .where(organization_id: org_ids)
+              .where(id: Sequel[:project_members][:project_id])
+              .select(1).exists
+          )
+        end
+
         scope.as_user? { user_project_scoped_query(action) }
       end
     end

@@ -66,7 +66,7 @@ module AccountSession
               {
                 account_id: account.id,
                 account_email: account.email,
-                account_role: account.role,
+                account_role: account.role_name,
                 ip: ip,
                 user_agent: user_agent,
                 at: at,

@@ -1,10 +1,11 @@
 <script lang="ts">
+  import type { HTMLAttributes } from "svelte/elements";
+
   import AuthenticationStatus from "@/components/app/iam/auth/authentication-status.svelte";
   import Redirect from "@/components/app/misc/redirect.svelte";
 
   import type { WithElementRef } from "@/utils";
-  import type { HTMLAttributes } from "svelte/elements";
-  
+
   // Props
   let { children }: WithElementRef<HTMLAttributes<HTMLDivElement>> = $props();
 </script>

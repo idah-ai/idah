@@ -46,7 +46,7 @@
   async function fetchAccount() {
     return await accountsBackendDataSource.get(account.id, {
       fields: {
-        "iam:accounts": ["name", "email", "enabled", "sso_channel"],
+        "iam:accounts": ["name", "email", "enabled", "role_name", "sso_channel"],
       },
       noCache: true,
     });
