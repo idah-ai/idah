@@ -34,6 +34,14 @@ GIT
       verse-schema (>= 1)
 
 GIT
+  remote: https://github.com/verse-rb/verse-periodic
+  revision: f46dbd667ae36c7d132b0eba89714d167f4ad2db
+  branch: master
+  specs:
+    verse-periodic (0.1.0)
+      fugit (~> 1.8)
+
+GIT
   remote: https://github.com/verse-rb/verse-redis
   revision: b37e874d12f5ceef240d0afec6139094eba7ac72
   branch: master
@@ -208,6 +216,7 @@ DEPENDENCIES
   verse-http!
   verse-jsonapi!
   verse-jsonrpc!
+  verse-periodic!
   verse-redis!
   verse-schema (~> 1.1)
   verse-sequel!
