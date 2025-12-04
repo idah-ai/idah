@@ -1,21 +1,20 @@
 
 <div style="padding: 24px;text-align: center;">
-  <p style="font-size: 14px;line-height: 20px;">Hello <%= account.name %>,</p>
 
-  <h1>Account Created</h1>
+<h1>Your invited to join IDAH</h1>
+
+    <img src="<%= [ENV.fetch("IDAH_URL"), "/assets/images/email-illustration-account_created.png"].join("") %>" style="width: 120px; height: 120px;margin: 0 auto;" />
+
+
+<p style="font-size: 14px;line-height: 20px;">Hi <%= account.name %>,</p>
 
   <p style="text-align: center;font-size: 14px;line-height: 20px;margin: 0 100px;">
-    Your account has been successfully created. To access your account, please reset your password.
+  Your IDAH account has been successfully created. Please accept the invitation to start working on IDAH.
   </p>
 
-  <div style="border: 1px solid rgba(81, 232, 203, 1); border-radius: 8px; padding: 10px 14px;width: 150px;margin: 20px auto;">
-    <a href="<%= [ENV.fetch("IDAH_URL"), "/reset_password?token=#{notification.password_reset_token}"].join("") %>" style="text-decoration: none; color: rgba(81, 232, 203, 1); font-size: 14px; font-weight: 600;width: 150px;margin: 0 auto;">
-      Reset password
+  <div style="background-color:#3A81F6; border-radius: 8px; padding: 10px 14px;width: 150px;margin: 20px auto;">
+    <a href="<%= [ENV.fetch("IDAH_URL"), "/accept-invitation?accountId=#{notification.recipient_account_id}"].join("") %>" style="text-decoration: none; color: #fff; font-size: 14px; font-weight: 600;width: 150px;margin: 0 auto;">
+      Accept Invitation
     </a>
   </div>
-
-  <p style="text-align: center;font-size: 12px;line-height: 18px;margin: 0 100px;">
-  This password reset link will expire in 1 hour. If you are unable to complete the reset within this time, please request a new link.
-  </p>
 </div>
-
