@@ -4,7 +4,7 @@ Api[:idah].register(
   :dataset, :entries, :show
 ) do |id:, **opts|
   output = get(
-    'dataset/entries/:id',
+    "dataset/entries/:id",
     params: {
       id:, **opts
     },
@@ -18,7 +18,7 @@ Api[:idah].register(
   :dataset, :entries, :update
 ) do |id:, **attributes|
   output = patch(
-    'dataset/entries/:id',
+    "dataset/entries/:id",
     params: {
       id:,
       data: {
@@ -36,7 +36,7 @@ Api[:idah].register(
   :dataset, :projects, :index
 ) do |params = {}|
   output = get(
-    'dataset/projects',
+    "dataset/projects",
     params:,
     options: { auth: :bearer }  # Enable authentication
   )
@@ -48,7 +48,7 @@ Api[:idah].register(
   :dataset, :project_members, :index
 ) do |params = {}|
   output = get(
-    'dataset/project_members',
+    "dataset/project_members",
     params:,
     options: { auth: :bearer }  # Enable authentication
   )
