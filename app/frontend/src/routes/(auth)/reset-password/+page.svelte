@@ -1,7 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
-  import { onMount } from "svelte";
 
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import Form from "@/components/app/forms/form.svelte";
@@ -10,7 +9,6 @@
   import Button from "@/components/ui/button/button.svelte";
   import { accountPasswordsBackendDataSource } from "@/data/model/iam/account-passwords/record";
 
-  import { page } from "$app/state";
   import { resetPasswordSchema } from "@/data/model/iam/accounts/auth-schema";
   import { cn } from "@/utils";
 
@@ -26,24 +24,19 @@
     return !validated.success;
   });
 
-  // let accountId = $derived(page.url.);
-
+  // let token = $derived(page.url.);
 
   // Functions
   async function updatePassword(): Promise<void> {
-    const res = accountPasswordsBackendDataSource.reset({token: "", password: credentials.password});
-    // if (true) {
-    //   updated = true;
-    // } else {
-    //   updated = false;
-    // }
-  }
+    try {
+      
+      const res = accountPasswordsBackendDataSource.reset({token: "", password: credentials.password});
+      updated = true;
+    } catch (error) {
+            updated = false;
 
-  onMount(async () => { 
-    console.log({accountId : page});
-    
-    
-  });
+    }
+  }
 </script>
 
 <AuthenticationCard
