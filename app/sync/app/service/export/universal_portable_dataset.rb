@@ -29,20 +29,25 @@ module Export
           }.to_json)
 
           dataset_context.entries.each do |entry_context|
-            # stdin.puts({
-            #   command: 'media:create',
-            #   args: {
-            #     id: entry_context.media[:id],
-            #     key: entry_context.media[:attributes][:key],
-            #     file: entry_context.file.path,
-            #     mimetype: entry_context.media[:attributes][:mime_type],
-            #     metadata: {
-            #       "Created-At": entry_context.media[:attributes][:created_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
-            #       "Updated-At": entry_context.media[:attributes][:updated_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
-            #       "Created-By": entry_context.media[:attributes][:created_by]
-            #     }.to_json
-            #   }
-            # }.to_json)
+            file = Tempfile.new(entry_context.entry[:attributes][:resource])
+            file.write(entry_context.media_file)
+            file.close
+
+            stdin.puts({
+              command: 'media:create',
+              args: {
+                id: entry_context.media_info[:id],
+                key: entry_context.media_info[:attributes][:key],
+                file: file.path,
+                mimetype: entry_context.media_info[:attributes][:mime_type],
+                metadata: {
+                  "Created-At": entry_context.media_info[:attributes][:created_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
+                  "Updated-At": entry_context.media_info[:attributes][:updated_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
+                  "Created-By": entry_context.media_info[:attributes][:created_by]
+                }.to_json
+              }
+            }.to_json)
+
             stdin.puts({
               command: 'entry:create',
               args: {

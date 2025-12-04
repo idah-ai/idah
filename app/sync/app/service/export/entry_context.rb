@@ -1,32 +1,30 @@
 module Export
   class EntryContext
-    attr_reader :entry, :annotations
+    attr_reader :entry, :media_info, :media_file, :annotations
 
-    def initialize(entry, annotations)
+    def initialize(entry, media_info, io, annotations)
       @entry = entry
+      @media_info = media_info
+      @media_file = io # todo IO
       @annotations = annotations
     end
 
     def self.from_entry(entry)
-        # media_response = Api[:idah].media.medias.resource_info(
-        #   resource: entry.data[:attributes][:resource]
-        # ) # ? seems loose
+      media_response = Api[:idah].media.medias.resource_info(
+        resource: entry[:attributes][:resource]
+      ) # ? seems loose
 
-        # raise if media_response.errors
+      raise if media_response.errors
 
-        # media = media_response.data
-        # file_response = Api[:idah].media.medias.files(
-        #   resource: entry.data[:attributes][:resource]
-        # )
-        # # raise if errors ?
-
-        # file = Tempfile.new(entry.data[:attributes][:resource])
-        # file.write(file_response)
-        # file.close
-
+      media_info = media_response.data
+      file_response = Api[:idah].media.medias.files(
+        resource: entry[:attributes][:resource]
+      )
 
       EntryContext.new(
         entry,
+        media_info,
+        file_response,
         Verse::Util::Iterator.chunk_iterator(1) do |annotation_page|
           annotations_response = Api[:idah].dataset.annotations.index(
             filters: {entry_id: entry[:id]},
@@ -34,13 +32,9 @@ module Export
 
           raise annotations_response.errors if annotations_response.errors
 
-          if annotations_response.data.empty?
-            nil
-          else
-            annotations_response.data.lazy.map(&:data).map do |annotation|
-              AnnotationContext.from_annotation annotation
-            end
-          end
+          annotations_response.data.lazy.map(&:data).map do |annotation|
+            AnnotationContext.from_annotation annotation
+          end unless annotations_response.data.empty?
         end
       )
     end
