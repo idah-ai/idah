@@ -16,11 +16,7 @@ module Export
             page: {number: entry_page, size: 100}, query_count: false)
           raise entries_response.errors if entries_response.errors
 
-          if entries_response.data.empty?
-            nil
-          else
-            entries_response.data
-          end
+          entries_response.data if !entries_response.data.empty?
         end.lazy.map(&:data).map do |entry|
           EntryContext.from_entry entry
         end
