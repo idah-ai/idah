@@ -86,17 +86,17 @@ module Account
 
     def mark_as_joined(id)
       accounts.transaction do
-        account = accounts.find!(id)
+        account = accounts.find!(id, scope: accounts.scoped(:join))
 
         # account invitation expires in 3 days
         if account.invitation_expired_at.nil? || account.invitation_expired_at < Time.now
           raise Verse::Error::ValidationFailed, "Invitation has expired"
         end
 
-        accounts.update!(id, { joined_at: Time.now, invitation_expired_at: nil })
+        accounts.update!(id, { joined_at: Time.now, invitation_expired_at: nil }, scope: accounts.scoped(:join))
 
         [
-          accounts.find!(id),
+          accounts.find!(id, scope: accounts.scoped(:join)),
           update_password_reset_token(account)
         ]
       end
@@ -133,7 +133,8 @@ module Account
           {
             password_reset_token:,
             password_reset_token_expires_at: Time.now + 3600 # Token valid for 1 hour
-          }
+          },
+          scope: accounts.scoped(:join)
         )
       end
 
