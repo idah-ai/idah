@@ -13,11 +13,8 @@ export class AccountSettingRecord extends Record {
 
 RecordFactory.registerTypes(AccountSettingRecord);
 
-export const orgOwnershipAssignedKey = "notification:organization:ownership.assigned";
-export const orgOwnershipUnassignedKey = "notification:organization:ownership.unassigned";
-export const projectMemberInvitedKey = "notification:project:member.invited";
-export const projectMemberRemovedKey = "notification:project:member.removed";
-export const datasetCompletedKey = "notification:dataset.completed";
+export const organizationActivitiesKey = "notification:organization:activities";
+export const projectActivitiesKey = "notification:project:activities";
 
 export const accountSettingBackendDataSource = createBackendDataSource(
   AccountSettingRecord,
