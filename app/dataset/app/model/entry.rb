@@ -18,7 +18,7 @@ module Entry
     field :resource, type: String
 
     # Add through assign method
-    field :assigned_to_id, type: Integer, readonly: true
+    field :assigned_to_member_id, type: Integer, readonly: true
 
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
@@ -36,6 +36,17 @@ module Entry
     def scoped(action)
       auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }
+
+        scope.as_org_owner? do
+          org_ids = auth_context.custom_scopes[:org]
+          table.where(
+            table.db[:projects]
+              .where(organization_id: org_ids)
+              .where(id: Sequel[:entries][:project_id])
+              .select(1).exists
+          )
+        end
+
         scope.as_user? { user_project_scoped_query(action) }
       end
     end
@@ -55,25 +66,22 @@ module Entry
       account_id = auth_context.metadata[:id]
 
       case action
-      when :read
+      when :read, :submit
         scoped_fragment = <<-SQL
           EXISTS (
-            -- All with roles
             SELECT 1
             FROM project_members pm
             WHERE pm.account_id = :account_id
               AND pm.project_id = entries.project_id
-              AND pm.role IN :with_roles
-          ) OR (
-            -- Only assigned entries with roles
-            entries.assigned_to_id = :account_id
-            AND EXISTS (
-              SELECT 1
-              FROM project_members pm
-              WHERE pm.account_id = :account_id
-                AND pm.project_id = entries.project_id
-                AND pm.role IN :assigned_to_roles
-            )
+              AND (
+                -- All with roles
+                pm.role IN :with_roles OR
+                -- From assigned entries with roles
+                (
+                  (pm.role IN :assigned_to_roles)
+                  AND entries.assigned_to_member_id = pm.id
+                )
+              )
           )
         SQL
 
@@ -106,6 +114,12 @@ module Entry
       else
         raise Verse::Error::Unauthorized,
               "Permission denied for \"#{action}\" action on #{self.class.resource}"
+      end
+    end
+
+    def submit(id, attributes)
+      transaction do
+        update!(id, attributes)
       end
     end
 

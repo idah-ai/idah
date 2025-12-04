@@ -16,7 +16,8 @@ module Account
     field :sso_channel, type: [String, NilClass], readonly: true
 
     field :enabled, type: [TrueClass]
-    field :role, type: [String, NilClass]
+    field :role_name, type: [String, NilClass]
+    field :role_scope, type: Hash
 
     field :picture_url, type: [String, NilClass], readonly: true
 
@@ -33,9 +34,20 @@ module Account
     end
   end
 
+  # TODO: scope for account creation might neede to be created and checked for different creator's account role
   class Repository < Verse::Sequel::Repository
     self.table = "accounts"
     self.resource = Resource::Iam::Accounts
+
+    custom_filter :role_name__nin do |collection, role_name|
+      collection.where(Sequel.lit("role_name NOT IN ?", role_name))
+    end
+
+    custom_filter :with_role_scope do |collection, role_scope|
+      role_scope = role_scope.to_json unless role_scope.is_a?(String)
+
+      collection.where(Sequel.lit("role_scope @> ?", role_scope))
+    end
 
     def login(email, password)
       account = scoped(:login).where(email:).first

@@ -2,7 +2,7 @@
 
 module Dataset
   class Service < Verse::Service::Base
-    use datasets: Dataset::Repository
+    use datasets: Dataset::Repository, projects: Project::Repository
     use_system project_members: ProjectMember::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
@@ -27,8 +27,18 @@ module Dataset
               "project relationship is required to create a dataset"
       end
 
+      access = auth_context.can?(:create, datasets.class.resource)
+
+      if access == :as_org_owner
+        project = projects.find!(record.project.id) # this can raise Verse::Error::RecordNotFound if not in org scope
+        unless auth_context.custom_scopes[:org]&.include?(project.organization_id.to_s)
+          raise Verse::Error::Unauthorized,
+                "You do not have permission to create dataset on this project"
+        end
+      end
+
       # With "as_user" ensure account can "create" dataset to the project
-      if auth_context.can?(:create, datasets.class.resource) == :as_user &&
+      if access == :as_user &&
          ScopedQuery::Service.without_project_access?(
            auth_context.metadata[:id],
            record.project.id,

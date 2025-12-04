@@ -1,10 +1,13 @@
 <script lang="ts">
-  import ApplicationLoading from "@/components/app/application/application-loading.svelte";
-  import Redirect from "@/components/app/misc/redirect.svelte";
-  import { accountAuthService } from "@/data/model/iam/accounts/auth/records";
-  import { AuthContext, authStatus } from "@/security/AuthContext";
   import { onMount, type Snippet } from "svelte";
   import { toast } from "svelte-sonner";
+
+  import ApplicationLoading from "@/components/app/application/application-loading.svelte";
+  import Redirect from "@/components/app/misc/redirect.svelte";
+
+  import { accountAuthService } from "@/data/model/iam/accounts/auth/records";
+  import { AuthContext, authStatus } from "@/security/AuthContext";
+
   // Props
   interface Props {
     loading?: Snippet;
@@ -12,12 +15,15 @@
     unauthorized?: Snippet;
   }
   let { loading, authorized, unauthorized }: Props = $props();
+
   // Variables
   AuthContext.backend ||= accountAuthService();
+
   // Lifecycle
   onMount(async () => {
     await checkAuthStatus();
   });
+
   // Functions
   async function checkAuthStatus(): Promise<void> {
     try {

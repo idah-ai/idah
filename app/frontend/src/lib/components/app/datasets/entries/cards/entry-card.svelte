@@ -238,7 +238,7 @@
         <DataDisplay label="Stage" value={entry.wf_step}></DataDisplay>
         <DataDisplay label="Assigned to">
           {#snippet slotValue()}
-            <ProjectMemberAvatar memberId={entry.assigned_to_id}></ProjectMemberAvatar>
+            <ProjectMemberAvatar memberAccountId={entry.assigned_to_member_id}></ProjectMemberAvatar>
           {/snippet}
         </DataDisplay>
       </div>

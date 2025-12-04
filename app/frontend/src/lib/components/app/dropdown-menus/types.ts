@@ -5,6 +5,7 @@ export type DropdownMenuContentSide = "top" | "right" | "bottom" | "left";
 
 export interface IDropdownMenuItem {
   label: string;
+  description?: string;
   icon?: typeof IconType;
   disabled?: boolean;
   hidden?: boolean;
