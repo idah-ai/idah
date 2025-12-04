@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
+  import { page } from "$app/state";
 
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import Form from "@/components/app/forms/form.svelte";
@@ -24,17 +25,16 @@
     return !validated.success;
   });
 
-  // let token = $derived(page.url.);
+  let token = $derived(page.url.searchParams.get("password_reset_token") as string);
 
   // Functions
   async function updatePassword(): Promise<void> {
     try {
-      
-      const res = accountPasswordsBackendDataSource.reset({token: "", password: credentials.password});
+      const res = accountPasswordsBackendDataSource.reset({ token, password: credentials.password });
+
       updated = true;
     } catch (error) {
-            updated = false;
-
+      updated = false;
     }
   }
 </script>
@@ -45,11 +45,15 @@
     ? "Your password has been updated. You can now login with your new password."
     : "Enter a new password to reset your password."}
 >
-{#snippet responseBlock()}
-    <img class={cn("h-30 p-2 w-full items-center justify-center",{
-      "hidden": !updated,
-    })} src={ResetPassword} alt="invalid-link" />
-{/snippet}
+  {#snippet responseBlock()}
+    <img
+      class={cn("h-30 w-full items-center justify-center p-2", {
+        hidden: !updated,
+      })}
+      src={ResetPassword}
+      alt="invalid-link"
+    />
+  {/snippet}
 
   {#snippet content()}
     <Form>
@@ -61,7 +65,8 @@
           type="password"
           placeholder="Enter your password"
           required
-          bind:value={credentials.password}
+          value={credentials.password}
+          oninput={(e) => (credentials.password = e.currentTarget.value)}
         ></InputField>
 
         <!-- CONFIRM PASSWORD -->
@@ -71,11 +76,12 @@
           type="password"
           placeholder="Enter your password"
           required
-          bind:value={credentials.confirmPassword}
+          value={credentials.confirmPassword}
+          oninput={(e) => (credentials.confirmPassword = e.currentTarget.value)}
         ></InputField>
 
         <Button class="w-full" disabled={disabledResetPasswordButton} onclick={updatePassword}>Update Password</Button>
-      {:else}      
+      {:else}
         <Button class="w-full" onclick={() => goto(resolve("/login"))}>Go to login</Button>
       {/if}
     </Form>
