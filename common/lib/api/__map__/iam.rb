@@ -29,7 +29,7 @@ Api[:idah].register(
   output = post(
     "iam/accounts",
     body: { data: { type: "iam:accounts", attributes: } },
-    options: { auth: :bearer }  # Enable authentication
+    options: { auth: :bearer } # Enable authentication
   )
   deserialize output.body
 end
