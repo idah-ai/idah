@@ -12,8 +12,8 @@ module Export
         "append"
       ) do |stdin, stdout, stderr, wait_thr|
         stdout_thr = Thread.new do
-          stdout.readline do |line|
-            Verse.logger.info {"#{line.chomp}"}
+          until (line = stdout.gets).nil?
+            Verse.logger.info { "#{line.strip}"}
           end
         end
 
