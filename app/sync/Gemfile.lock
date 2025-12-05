@@ -89,7 +89,6 @@ GEM
     mustermann (3.0.4)
       ruby2_keywords (~> 0.0.1)
     nio4r (2.7.4)
-    open3 (0.2.1)
     parallel (1.27.0)
     parser (3.3.9.0)
       ast (~> 2.4.1)
@@ -196,7 +195,6 @@ DEPENDENCIES
   aasm
   bootsnap (~> 1.16)
   dotenv
-  open3 (~> 0.2.1)
   pg
   pry
   puma (~> 6)

@@ -9,7 +9,10 @@ module Export
 
       # todo registry
       UniversalPortableDataset.new(
-        RootContext.new('name', [DatasetContext.from_dataset(dataset_response.data)])
+        RootContext.new(
+          [:export, dataset_response.data[:id], Time.now.to_i],
+          [DatasetContext.from_dataset(dataset_response.data)]
+        )
       ).run
     end
   end
