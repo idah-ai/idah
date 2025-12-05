@@ -18,8 +18,11 @@ module Export
         end
 
         begin
-          process stdin
-        ## todo review VVV
+          process do |s|
+            stdin.puts(s)
+            stdin.flush
+          end
+          ## todo review VVV
         rescue Exception => e
           Verse.logger.error {"UPD export error:#{e}"}
           raise e
@@ -39,17 +42,16 @@ module Export
 
     private
 
-    def process(stdin)
-      stdin.puts({command: 'init', args: {}}.to_json)
-      stdin.flush
+    def process(&block)
+      yield({command: 'init', args: {}}.to_json)
 
       @context.datasets.each do |dataset_context|
-        process_dataset_context stdin, dataset_context
+        process_dataset_context dataset_context, &block
       end
     end
 
-    def process_dataset_context(stdin, dataset_context)
-      stdin.puts({
+    def process_dataset_context(dataset_context, &block)
+      yield({
         command: 'dataset:create',
         args: {
           id: dataset_context.dataset[:id],
@@ -62,18 +64,17 @@ module Export
           }
         }
       }.to_json)
-      stdin.flush
       dataset_context.entries.each do |entry_context|
-        process_entry_context stdin, entry_context
+        process_entry_context entry_context, &block
       end
     end
 
-    def process_entry_context(stdin, entry_context)
+    def process_entry_context(entry_context, &block)
       file = Tempfile.new(entry_context.entry[:attributes][:resource])
       file.write(entry_context.media_file)
       file.close
       @files << file
-      stdin.puts({
+      yield({
         command: 'media:create',
         args: {
           id: entry_context.media_info[:id],
@@ -87,8 +88,7 @@ module Export
           }
         }
       }.to_json)
-      stdin.flush
-      stdin.puts({
+      yield({
         command: 'entry:create',
         args: {
           id: entry_context.entry[:id],
@@ -101,14 +101,13 @@ module Export
           }
         }
       }.to_json)
-      stdin.flush
       entry_context.annotations.each do |annotation_context|
-        process_annotation_context stdin, annotation_context
+        process_annotation_context annotation_context, &block
       end
     end
 
-    def process_annotation_context(stdin, annotation_context)
-      stdin.puts({
+    def process_annotation_context(annotation_context, &block)
+      yield({
         command: 'annotation:create',
         args: {
           id: annotation_context.annotation[:id],
@@ -123,7 +122,6 @@ module Export
           }
         }
       }.to_json)
-      stdin.flush
     end
   end
 end
