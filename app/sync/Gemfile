@@ -34,5 +34,3 @@ group :test do
   gem "simplecov"
   gem "webmock"
 end
-
-gem "open3", "~> 0.2.1"
