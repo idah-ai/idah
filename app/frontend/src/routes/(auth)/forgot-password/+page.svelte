@@ -1,5 +1,4 @@
 <script lang="ts">
-
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import Form from "@/components/app/forms/form.svelte";
   import AuthenticationAlert from "@/components/app/iam/auth/alert/authentication-alert.svelte";
