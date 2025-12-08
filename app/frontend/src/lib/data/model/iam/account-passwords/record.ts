@@ -19,7 +19,6 @@ export const accountPasswordsBackendDataSource = createBackendDataSource(Account
       headers: { "Content-Type": "application/vnd.api+json" },
     });
 
-    const body = await res.json();
     // Cache Management
     const cacheIndexKey = resourcePath(accountPasswordsBasePath, null, undefined);
     // Note: Clear dataset cache as well to update progress at DataTable
@@ -27,21 +26,16 @@ export const accountPasswordsBackendDataSource = createBackendDataSource(Account
     clearCache(cacheIndexKey);
     clearCache(cacheDatasetIndexKey);
 
-    if (body && body.errors) {
-      if (body.errors.length > 0) {
-        body.errors.forEach((err: Hash) => {
-          console.error(`Error submitting entry: ${err.title} - ${err.detail}`, err);
-        });
-      }
-
-      return Promise.reject(parseSingleElementError({ status: res.status, errors: body.errors }));
+    if (!res.ok) {
+      return Promise.reject(
+        parseSingleElementError({
+          status: res.status,
+          errors: [{ title: "Request failed", detail: `Status code: ${res.status}` }],
+        }),
+      );
+    } else {
+      return Promise.resolve();
     }
-
-    if (body && body.data) {
-      // return Promise.resolve(parseSingleElementReturn<AccountRecord>(body));
-    }
-
-    throw "No data returned";
   },
   reset: async (params: {
     token: string;

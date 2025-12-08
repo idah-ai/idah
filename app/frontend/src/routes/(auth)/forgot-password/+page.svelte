@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
-  import { resolve } from "$app/paths";
 
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import Form from "@/components/app/forms/form.svelte";
@@ -31,9 +29,7 @@
     try {
       await accountPasswordsBackendDataSource.request_reset({ email });
       passwordResetLinkHasBeenSent = true;
-
       showErrorAlert = false;
-      goto(resolve("/reset-password"));
     } catch (error) {
       console.error(error);
       showErrorAlert = true;
