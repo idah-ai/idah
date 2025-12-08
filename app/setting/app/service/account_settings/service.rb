@@ -19,24 +19,18 @@ module AccountSettings
       account_settings.find!(id, included: included)
     end
 
-    DEFAULT_ACCOUNT_SETTINGS = {
-      "notification:organization:ownership.assigned": true,
-      "notification:organization:ownership.unassigned": true,
-      "notification:project:member.invited": true,
-      "notification:project:member.removed": true,
-      "notification:dataset.completed": true,
-    }
-    def create(params)
-      DEFAULT_ACCOUNT_SETTINGS.each do |key, value|
+    def create(account_id)
+      Defaults::DEFAULT_ACCOUNT_SETTINGS.each do |key, value|
         account_settings.transaction do
-          record = AccountSetting::Record.new({
-            account_id: params[:resource_id],
-            key: key,
-            value: value, 
-          })
-          account_settings.create(record)
+          attributes = {
+              account_id: ,
+              key: key,
+              value: value,
+            }
+          account_settings.create(attributes)
         end
       end
+      account_settings.index({account_id:})
     end
 
     def update(record)
@@ -44,8 +38,11 @@ module AccountSettings
       account_settings.find!(record.id)
     end
 
-    def delete(id)
-      account_settings.delete(id)
+    def delete(account_id)
+      settings = account_settings.index({account_id:})
+      settings.each do |setting|
+        account_settings.delete(setting.id)
+      end
     end
   end
 end
