@@ -39,9 +39,6 @@ module Account
         end
 
         # Set a default random password for the account if none is provided
-        password = record.attributes.delete(:password) || SecureRandom.hex(16)
-
-        # Set a default random password for the account if none is provided
         password = attr.delete(:password) || SecureRandom.hex(16)
 
         attr.merge!(
