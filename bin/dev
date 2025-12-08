@@ -1,6 +1,6 @@
 #!/bin/sh
 
-SERVICES="media dataset"
+SERVICES="iam media dataset setting"
 
 case $1 in
   migrate)

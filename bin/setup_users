@@ -1,0 +1,5 @@
+#!/bin/sh
+
+set -e
+echo "Setting up Services Accounts and IAM users..."
+docker compose run --rm iam bundle exec rake dev:setup dev:users
