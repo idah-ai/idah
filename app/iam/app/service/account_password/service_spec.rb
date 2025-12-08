@@ -178,4 +178,26 @@ RSpec.describe AccountPassword::Service, database: true do
       end
     end
   end
+
+  describe "#change_password" do
+    let(:old_password) { "OldPassword123!" }
+    let(:new_password) { "NewSecureP@ss123" }
+
+    it "changes the password when old password is correct" do
+      account_id = account_repo.create(account_attributes)
+
+      subject.change_password(account_id, old_password, new_password)
+
+      account = account_repo.find!(account_id)
+      expect(BCrypt::Password.new(account.hashed_password)).to eq(new_password)
+    end
+
+    it "raises ValidationFailed error when old password is incorrect" do
+      account_id = account_repo.create(account_attributes)
+
+      expect {
+        subject.change_password(account_id, "WrongOldPassword!", new_password)
+      }.to raise_error(Verse::Error::ValidationFailed, "Old password is incorrect")
+    end
+  end
 end
