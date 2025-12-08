@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { goto } from "$app/navigation";
+  import { goto } from "$app/navigation";
 
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import Form from "@/components/app/forms/form.svelte";
@@ -7,10 +7,9 @@
   import AuthenticationCard from "@/components/app/iam/auth/card/authentication-card.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import Link from "@/components/ui/text/Link.svelte";
-  
+
   import { accountPasswordsBackendDataSource } from "@/data/model/iam/account-passwords/record";
   import { sendResetPasswordLinkSchema } from "@/data/model/iam/accounts/auth-schema";
-  import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
 
   // Variables
   let resource: string = "iam:account";
@@ -28,48 +27,15 @@
 
   // Functions
   async function sendPasswordResetLink(): Promise<void> {
-     const existingAccount = await accountsBackendDataSource.list({
-      fields: {
-        [AccountRecord.type]: []
-      },
-      filters: {
-        email: email
-      },
-      noCache: true
-    });
+    try {
+      const sentPasswordResetResponse = await accountPasswordsBackendDataSource.request_reset({ email });
+      passwordResetLinkHasBeenSent = true;
 
-    if (!existingAccount.data) {
-      try {
-        const sentPasswordResetResponse = await accountPasswordsBackendDataSource.request_reset({ email });
-        passwordResetLinkHasBeenSent = true;
-
-            // sentDate = new Date();
-    showErrorAlert = false;
-    goto("/reset-password");
-      } catch (error) {
-        showErrorAlert = true;
-      }
-      
+      showErrorAlert = false;
+      goto("/reset-password");
+    } catch (error) {      
+      showErrorAlert = true;
     }
-    /** Check if email is valid and exist in out platform? */
-    // const existingAccount = await AccountsBackendDataSource.list({
-    //   fields: {
-    //     [AccountRecord.type]: []
-    //   }
-    //   filters: {
-    //     email: email
-    //   },
-    //   noCache: true
-    // })
-    // if (!existingAccount.data)
-    // if (true) {
-    //   passwordResetLinkHasBeenSent = true;
-    // sentDate = new Date();
-    // showErrorAlert = false;
-    // goto("/reset-password");
-    // } else {
-    // showErrorAlert = true;
-    // }
   }
 </script>
 
