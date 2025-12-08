@@ -44,7 +44,8 @@ RSpec.describe ProjectMember::Service, database: true do
       another_project_id = project_repo.create(
         name: "Another Project",
         description: "Another test project",
-        created_by_email: "user2@example.com"
+        created_by_email: "user2@example.com",
+        organization_id: 1
       )
       project_member_repo.create(attributes.merge(project_id: another_project_id, email: "annotator2@email.com"))
 
