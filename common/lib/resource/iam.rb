@@ -3,5 +3,7 @@
 module Resource
   module Iam
     Accounts = "iam:accounts"
+    AccountSessions = "iam:account_sessions"
+    AccountAuths = "iam:account_auths"
   end
 end

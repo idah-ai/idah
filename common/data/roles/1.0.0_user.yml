@@ -1,0 +1,17 @@
+user:
+  mask: "1.0.0"
+  description: |
+    This role is assigned to registered users
+    who have access to their own projects.
+  assignable: true
+  rights:
+    - "iam:accounts.login.*"
+    - "dataset:projects.read.as_user"
+    - "dataset:projects.update.as_user"
+    - "dataset:projects.delete.as_user"
+    - "dataset:project_members.*.as_user"
+    - "dataset:datasets.*.as_user"
+    - "dataset:entries.*.as_user"
+    - "dataset:annotations.*.as_user"
+    - "dataset:note_feeds.*.as_user"
+    - "dataset:note_comments.*.as_user"
