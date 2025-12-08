@@ -21,6 +21,16 @@ module Account
 
     def create(record)
       accounts.transaction do
+        email = record.attributes[:email]
+
+        if accounts.find_by({ email: email })
+          raise Verse::Error::ValidationFailed, "Email already exists"
+        end
+
+        # Set a default random password for the account if none is provided
+        password = record.attributes.delete(:password) || SecureRandom.hex(16)
+        record.attributes[:hashed_password] = BCrypt::Password.create(password)
+
         record_id = accounts.create(record.attributes)
         accounts.find!(record_id)
       end

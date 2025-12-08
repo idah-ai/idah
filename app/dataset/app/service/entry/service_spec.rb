@@ -3,7 +3,7 @@
 require "spec_helper"
 
 RSpec.describe Entry::Service, database: true do
-  let(:auth_context){ Verse::Auth::Context.new }
+  let(:auth_context) { Verse::Auth::Context[:system] }
 
   subject { described_class.new(auth_context) }
 
@@ -106,6 +106,8 @@ RSpec.describe Entry::Service, database: true do
         )
         result = subject.create(entry_record)
         expect(result.status).to eq("pending")
+        expect(result.project_id).to eq(project_id)
+        expect(result.dataset_id).to eq(dataset_id)
       end
     end
 
@@ -182,21 +184,8 @@ RSpec.describe Entry::Service, database: true do
     let(:job_id) { 456 }
 
     before do
-      repo.create(
-        {
-          dataset_id: dataset_id,
-          job_id: job_id,
-          status: "processing"
-        }
-      )
-
-      repo.create(
-        {
-          dataset_id: dataset_id,
-          job_id: 789,
-          status: "pending"
-        }
-      )
+      repo.create({ project_id:, dataset_id:, job_id:, status: "processing" })
+      repo.create({ project_id:, dataset_id:, job_id: 789, status: "pending" })
     end
 
     it "marks entries with the given job_id as ready" do
@@ -321,7 +310,8 @@ RSpec.describe Entry::Service, database: true do
     let!(:test_entry) do
       repo.create(
         {
-          dataset_id: dataset_id,
+          project_id:,
+          dataset_id:,
           resource: "test-video.mp4",
           status: "ready",
           wf_step: "start"
@@ -431,7 +421,8 @@ RSpec.describe Entry::Service, database: true do
     let!(:test_entry) do
       repo.create(
         {
-          dataset_id: dataset_id,
+          project_id:,
+          dataset_id:,
           resource: "test-video.mp4",
           status: "in_progress",
           wf_step: "annotate"
