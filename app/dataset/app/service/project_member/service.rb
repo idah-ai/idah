@@ -38,7 +38,7 @@ module ProjectMember
       attributes[:project_id] = record.project.id
 
       project_members.transaction do
-        record_id = project_members.create(record.attributes)
+        record_id = project_members.create(attributes)
         member = project_members.find!(record_id, included: [:project])
 
         project_members.after_commit do
@@ -110,7 +110,6 @@ module ProjectMember
     def delete(id)
       project_members.transaction do
         member = project_members.find!(id, included: [:project])
-
         project_members.delete!(id)
 
         project_members.after_commit do
@@ -120,7 +119,7 @@ module ProjectMember
             category: "project_member_removed",
             project_id: member.project_id,
             project_name: member.project.name,
-            remover_email: "" # TO DO: get remover email from auth_context
+            remover_email: Api[:idah].iam.accounts.show(id: auth_context.metadata[:id]).email
           )
         end
       end
