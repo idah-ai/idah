@@ -31,8 +31,10 @@ module Organization
       organizations.find!(record.id)
     end
 
-    # TODO: add check to be able to deleted only if there's no project
     def delete(id)
+      projects = Api[:idah].dataset.projects.index(filter: { organization_id: id }).data
+      raise Verse::Error::Unauthorized, "Unable to delete organization that still has project(s)" unless projects.empty?
+
       organizations.delete(id)
     end
   end
