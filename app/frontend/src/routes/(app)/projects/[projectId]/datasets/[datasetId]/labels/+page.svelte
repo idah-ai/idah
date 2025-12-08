@@ -10,6 +10,7 @@
   import PageHeader from "@/components/app/page/page-header.svelte";
   import PageLoading from "@/components/app/page/page-loading.svelte";
   import Button from "@/components/ui/button/button.svelte";
+  import Can from "@/security/can.svelte";
 
   import { homeBreadcrumb, projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
@@ -309,20 +310,22 @@
 </script>
 
 {#await fetchData()}
-  <PageLoading></PageLoading>
+  <PageLoading />
 {:then _}
   <PageHeader title="Label">
     {#snippet slotTitle()}
-      <Button
-        loading={saving}
-        loadingLabel="Saving"
-        disabled={!isLabelConfigChanged}
-        class="ml-auto"
-        onclick={saveLabelConfigChanges}
-      >
-        <SaveIcon class="size-4"></SaveIcon>
-        {isLabelConfigChanged ? "Save Changes" : "Saved"}
-      </Button>
+      <Can action="update" resource="dataset:datasets">
+        <Button
+          loading={saving}
+          loadingLabel="Saving"
+          disabled={!isLabelConfigChanged}
+          class="ml-auto"
+          onclick={saveLabelConfigChanges}
+        >
+          <SaveIcon />
+          {isLabelConfigChanged ? "Save Changes" : "Saved"}
+        </Button>
+      </Can>
     {/snippet}
   </PageHeader>
 

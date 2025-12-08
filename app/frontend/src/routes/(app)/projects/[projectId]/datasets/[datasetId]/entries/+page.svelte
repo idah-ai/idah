@@ -24,6 +24,7 @@
     DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu";
   import Spinner from "@/components/ui/spinner/spinner.svelte";
+  import Can from "@/security/can.svelte";
 
   import {
     ArrowDownAZIcon,
@@ -237,10 +238,15 @@
 </script>
 
 {#snippet AddEntryButton()}
-  <Button onclick={openNewEntryFormModal}>
-    <PlusIcon class="size-4"></PlusIcon>
-    Add Entry
-  </Button>
+  <Can action="create" resource="dataset:entries" scopes={["as_org_owner", "as_user"]}>
+    <Button onclick={openNewEntryFormModal}>
+      <PlusIcon />
+      Add Entry
+    </Button>
+
+    <!-- MODAL::ADD TASK -->
+    <CreateEntryFormModal action="create" title="Entry" bind:open={openNewEntryModal} />
+  </Can>
 {/snippet}
 
 <PageHeader title="Datasets">
@@ -365,9 +371,6 @@
     ></AppPaginator>
   {/await}
 {/key}
-
-<!-- MODAL::ADD TASK -->
-<CreateEntryFormModal action="create" title="Entry" bind:open={openNewEntryModal} />
 
 <!-- MODAL::ASSIGN ANNOTATOR  -->
 <AssignEntryFormModal action="update" entryIds={selectedRows} bind:open={openAssignEntryFormModal} />

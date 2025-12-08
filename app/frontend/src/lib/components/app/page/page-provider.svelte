@@ -5,20 +5,21 @@
 
   import { authStatus } from "@/security/AuthContext";
 
+  import type { Role } from "@/data/model/iam/accounts/auth/constants";
+  import type { Action, Resource, Scope } from "@/security/types";
   import type { WithElementRef } from "@/utils";
   import type { HTMLAttributes } from "svelte/elements";
-  import type { Role } from "@/data/model/iam/accounts/auth/constants";
 
   // Props
   type Props = WithElementRef<HTMLAttributes<HTMLElement>> & {
     name: string; // Name of the page
-    // action: Action;
-    // resource: Resource;
-    // scopes: Scope[];
+    action?: Action;
+    resource?: Resource;
+    scopes?: Scope[];
     roles?: Array<Role>;
     redirectTo?: string;
   };
-  let { ref, children, name, roles, redirectTo = "/" }: Props = $props();
+  let { ref, children, name, action, resource, scopes, roles, redirectTo = "/" }: Props = $props();
 
   // Functions
   async function checkAccess() {
@@ -32,12 +33,11 @@
       return roles.includes(currentAccount.roleName);
     }
 
-    // if (await checkRights(action, resource, scopes, roles)) {
-    // hasAccess = true;
-    // } else {
+    if (!action || !resource || !scopes) {
+      return false;
+    }
 
-    return true;
-    // }
+    return currentAccount.can(action, resource, scopes);
   }
 </script>
 

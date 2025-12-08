@@ -1,5 +1,6 @@
 <script lang="ts">
   import { ChevronsUpDownIcon, FlagIcon } from "@lucide/svelte";
+  import { onMount } from "svelte";
 
   import Badge from "@/components/ui/badge/badge.svelte";
   import { Command, CommandGroup, CommandItem } from "@/components/ui/command";
@@ -7,6 +8,7 @@
 
   import { entryPriorities } from "@/data/model/dataset/entries/constants";
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
+  import { authStatus } from "@/security/AuthContext";
   import { cn } from "@/utils";
   import { refetches } from "@/utils/refetch";
 
@@ -17,7 +19,19 @@
   }
   let { entry, updatable }: Props = $props();
 
+  // Lifecycle
+  onMount(async () => {
+    await checkRights();
+  });
+
+  // Variables
+  let canUpdateEntry = $state(false);
+
   // Function
+  async function checkRights() {
+    canUpdateEntry = $authStatus.authContext?.can("update", "dataset:entries") || false;
+  }
+
   async function changePriority(priorityValue: number) {
     await entriesBackendDataSource.update(entry.id, {
       attributes: {
@@ -36,17 +50,17 @@
       "cursor-pointer": isDropdown,
     })}
   >
-    <FlagIcon class="size-4"></FlagIcon>
+    <FlagIcon />
 
     {entry.priorityBadge.label}
 
     {#if isDropdown}
-      <ChevronsUpDownIcon class="size-4"></ChevronsUpDownIcon>
+      <ChevronsUpDownIcon />
     {/if}
   </Badge>
 {/snippet}
 
-{#if updatable}
+{#if updatable && canUpdateEntry}
   <Popover>
     <PopoverTrigger>
       {@render EntryPriorityBadge({ isDropdown: true })}

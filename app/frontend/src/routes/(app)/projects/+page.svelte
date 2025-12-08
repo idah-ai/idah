@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { onMount } from "svelte";
+
   import DatasourceTable from "@/components/app/datasource-table/datasource-table.svelte";
   import PageHeader from "@/components/app/page/page-header.svelte";
   import PageProvider from "@/components/app/page/page-provider.svelte";
@@ -10,6 +12,7 @@
   import { datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { OrganizationRecord, organizationsBackendDataSource } from "@/data/model/iam/organizations/record";
+  import { authStatus } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
 
   import type { Record } from "@/data/model/Record";
@@ -17,6 +20,21 @@
   import type { Hash } from "@/utils/types";
 
   pageBreadcrumbsStore.set([homeBreadcrumb, projectBreadcrumb]);
+
+  // Variables
+  let canUpdateProject = $state(false);
+  let canDeleteProject = $state(false);
+  let columns = $state(projectColumns);
+
+  // Lifecycle
+  onMount(() => {
+    canUpdateProject = $authStatus.authContext?.can("update", "dataset:projects", ["as_org_owner"]) || false;
+    canDeleteProject = $authStatus.authContext?.can("delete", "dataset:projects", ["as_org_owner"]) || false;
+
+    if (!canUpdateProject && !canDeleteProject) {
+      columns.action.visible = false;
+    }
+  });
 
   // Functions
   async function onLoadSetContexts<T extends Record = ProjectRecord>(response: CollectionResponse<T>): Promise<Hash> {
@@ -60,7 +78,7 @@
       id="projects"
       name="project"
       refetchKey="projects"
-      columns={projectColumns}
+      {columns}
       dataSource={projectsBackendDataSource}
       listOptions={{
         fields: {
