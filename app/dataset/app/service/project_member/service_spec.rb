@@ -11,7 +11,12 @@ RSpec.describe ProjectMember::Service, database: true do
   let(:project_member_repo) { ProjectMember::Repository.new(auth_context) }
 
   let!(:project_id) do
-    project_repo.create(name: "Test Project", description: "A test project", created_by_email: "user@example.com")
+    project_repo.create(
+      name: "Test Project",
+      description: "A test project",
+      created_by_email: "user@example.com",
+      organization_id: 1
+    )
   end
 
   let(:attributes) do
