@@ -3,6 +3,7 @@
 
   import ProjectMemberFormModal from "@/components/app/projects/members/overlays/project-member-form-modal.svelte";
   import Button from "@/components/ui/button/button.svelte";
+  import Can from "@/security/can.svelte";
 
   // Variables
   let openNewProjectMemberFormModal: boolean = $state(false);
@@ -13,9 +14,11 @@
   }
 </script>
 
-<Button onclick={openNewProjectMemberModal}>
-  <PlusIcon />
-  Invite Members
-</Button>
+<Can action="create" resource="dataset:project_members" scopes={["as_org_owner"]}>
+  <Button onclick={openNewProjectMemberModal}>
+    <PlusIcon />
+    Invite Members
+  </Button>
 
-<ProjectMemberFormModal action="create" title="Members" bind:open={openNewProjectMemberFormModal} />
+  <ProjectMemberFormModal action="create" title="Members" bind:open={openNewProjectMemberFormModal} />
+</Can>

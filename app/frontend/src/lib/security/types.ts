@@ -26,6 +26,6 @@ export const resources = [
 
 export type Resource = (typeof resources)[number];
 
-export const scopes = ["as_user"] as const;
+export const scopes = ["as_user", "as_org_owner"] as const;
 
 export type Scope = (typeof scopes)[number];

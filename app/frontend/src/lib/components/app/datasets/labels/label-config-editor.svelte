@@ -7,6 +7,7 @@
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import { Button } from "@/components/ui/button";
   import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+  import Can from "@/security/can.svelte";
 
   import { cn } from "@/utils";
   import { humanize } from "@/utils/string";
@@ -196,21 +197,23 @@
 
 <section class="flex w-full flex-col gap-2 lg:flex-row">
   <!-- LABEL CONFIG::NAVIGATION -->
-  <div class="flex w-full lg:max-w-80 lg:min-w-72">
+  <div class="flex w-full lg:min-w-72 lg:max-w-80">
     <Card class="w-full gap-2">
       <CardHeader>
         <CardTitle>Configurations</CardTitle>
         <CardDescription class="text-xs">Select a label configuration to manage</CardDescription>
 
-        <CardAction>
-          <DropdownMenus menus={labelConfigMenus} align="end">
-            {#snippet trigger({ props })}
-              <Button {...props} variant="secondary" size="icon-sm">
-                <PlusIcon />
-              </Button>
-            {/snippet}
-          </DropdownMenus>
-        </CardAction>
+        <Can action="update" resource="dataset:datasets">
+          <CardAction>
+            <DropdownMenus menus={labelConfigMenus} align="end">
+              {#snippet trigger({ props })}
+                <Button {...props} variant="secondary" size="icon-sm">
+                  <PlusIcon />
+                </Button>
+              {/snippet}
+            </DropdownMenus>
+          </CardAction>
+        </Can>
       </CardHeader>
 
       <CardContent class="flex flex-col gap-2">
