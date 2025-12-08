@@ -12,6 +12,10 @@ Sequel.migration do
       column :name, String
       column :email, String, unique: true, null: false, index: true
 
+      column :role, String, null: false, default: "user"
+
+      column :picture_url, String, null: true
+
       column :hashed_password, String, null: true
       column :sso_channel, String, null: true
 
@@ -51,5 +55,26 @@ Sequel.migration do
       Migration::Timestamps.timestamps(self)
     end
     Migration::Timestamps.trg_updated_at(self, :account_teams)
+
+    create_table(:account_sessions) do
+      primary_key :id
+
+      foreign_key :account_id,
+                  :accounts,
+                  type: :bigint,
+                  null: false,
+                  on_delete: :cascade,
+                  on_update: :cascade,
+                  index: true
+
+      column :ip, String
+      column :user_agent, String
+
+      column :refresh_seq, :bigint, null: false, default: 0
+      column :nonce, :bigint, null: false, default: 0
+
+      Migration::Timestamps.timestamps(self)
+    end
+    Migration::Timestamps.trg_updated_at(self, :account_sessions)
   end
 end
