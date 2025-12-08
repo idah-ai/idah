@@ -79,7 +79,7 @@
 
   let annotationsIDB: AnnotationsIndexedDB | undefined = $state();
   let isPlaying = $state(false);
-  let volume = $state({ level: 0, mute: false });
+  let volume = $state({ level: 0, muted: false });
 
   let commandOpen = $state(false);
 
@@ -463,7 +463,7 @@
           frames: newframes,
         };
         annotation.metadata.updatedAt = updatedAt;
-        await annotationsIDB?.deleteKeyFrame(annotation, props.frame);
+        await annotationsIDB?.addAnnotations([annotation]);
         $idb_updated_at = new Date();
 
         selectedAnnotation = annotation;
@@ -476,7 +476,7 @@
 
         p.then(async () => {
           const annotation = await annotationsIDB?.get("annotations", props.annotationId);
-          if (annotation && annotation.metadata.updatedAt == updatedAt) {
+          if (annotation && annotation?.metadata.updatedAt.valueOf() == updatedAt.valueOf()) {
             annotation.synced = true;
             await annotationsIDB?.addAnnotations([annotation]);
             selectedAnnotation = annotation;
@@ -512,7 +512,7 @@
 
         p.then(async () => {
           const annotation = await annotationsIDB?.get("annotations", props.annotationId);
-          if (annotation && annotation.metadata.updatedAt == updatedAt) {
+          if (annotation && annotation?.metadata.updatedAt.valueOf() == updatedAt.valueOf()) {
             annotation.synced = true;
             await annotationsIDB?.addAnnotations([annotation]);
             selectedAnnotation = annotation;
@@ -937,7 +937,6 @@
               bind:this={videoController}
               {isPlaying}
               {zoom}
-              {scale}
               {currentFrame}
               {totalFrames}
               {volume}
@@ -959,9 +958,6 @@
               onSeekFrame={seekToFrame}
               {onDeleteAnnotation}
               onSelectAnnotation={selectAnnotation}
-              onSelection={onShapeSelection}
-              target_container={() => player_container}
-              {videoResizedAt}
               {isPlaying}
               onScaleChange={(s) => {
                 scale = s;
