@@ -22,12 +22,12 @@
   // Variables
   let submitting: boolean = $state(false);
   let fieldErrors: Hash = $state({});
-  let selectedMember: number | null = $state(entryRecord?.assigned_to_member_id ?? null);
+  let selectedMember: number | null = $state(entryRecord?.assigned_to_id ?? null);
   let selectedEntryCount: number = $derived(entryIds.length);
 
   // Functions
   function setValue(value: Hash): void {
-    selectedMember = value.assigned_to_member_id;
+    selectedMember = value.assigned_to_id;
   }
 
   async function assignMember(): Promise<void> {

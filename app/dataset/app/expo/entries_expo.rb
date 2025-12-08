@@ -11,9 +11,9 @@ class EntriesExpo < BaseExpo
     index do
       allowed_filters :status__in,
                       :priority__in,
-                      :assigned_to_member_id,
-                      :assigned_to_member_id__eq,
-                      :assigned_to_member_id__in,
+                      :assigned_to_id,
+                      :assigned_to_id__eq,
+                      :assigned_to_id__in,
                       :wf_step__in
     end
     create do
@@ -29,14 +29,14 @@ class EntriesExpo < BaseExpo
       field :id, String
       field :data, Hash do
         field :attributes, Hash do
-          field :assigned_to_member_id, Integer
+          field :assigned_to_id, Integer
         end
       end
     end
   end
   def assign_member
     id = params[:id]
-    member_id = params.dig(:data, :attributes, :assigned_to_member_id)
+    member_id = params.dig(:data, :attributes, :assigned_to_id)
 
     service.assign_member(id, member_id)
   end

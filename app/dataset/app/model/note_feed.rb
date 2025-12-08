@@ -99,7 +99,7 @@ module NoteFeed
                     SELECT 1
                     FROM entries e
                     WHERE e.id = note_feeds.entry_id
-                      AND e.assigned_to_member_id = pm.id
+                      AND e.assigned_to_id = :account_id
                   )
                 )
               )
@@ -130,7 +130,7 @@ module NoteFeed
                     SELECT 1
                     FROM entries e
                     WHERE e.id = note_feeds.entry_id
-                      AND e.assigned_to_member_id = pm.id
+                      AND e.assigned_to_id = :account_id
                   )
                 )
               )
@@ -163,7 +163,7 @@ module NoteFeed
                     SELECT 1
                     FROM entries e
                     WHERE e.id = note_feeds.entry_id
-                      AND e.assigned_to_member_id = pm.id
+                      AND e.assigned_to_id = :account_id
                   )
                 )
               )
@@ -180,7 +180,7 @@ module NoteFeed
                   SELECT 1
                   FROM entries e
                   WHERE e.id = note_feeds.entry_id
-                    AND e.assigned_to_member_id = pm.id
+                    AND e.assigned_to_id = :account_id
                 )
             )
           )

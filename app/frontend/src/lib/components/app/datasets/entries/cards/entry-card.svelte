@@ -179,7 +179,7 @@
               <img
                 src={thumbnailUrl}
                 alt="Entry thumbnail"
-                class="absolute top-0 left-0 cursor-pointer object-cover"
+                class="absolute left-0 top-0 cursor-pointer object-cover"
                 style:height="{imgContainer?.clientHeight}px"
                 style:width="{containerWidth * TOTAL_POSITIONS}px"
                 style:max-width="none"
@@ -238,7 +238,7 @@
         <DataDisplay label="Stage" value={entry.wf_step}></DataDisplay>
         <DataDisplay label="Assigned to">
           {#snippet slotValue()}
-            <ProjectMemberAvatar memberAccountId={entry.assigned_to_member_id}></ProjectMemberAvatar>
+            <ProjectMemberAvatar memberAccountId={entry.assigned_to_id}></ProjectMemberAvatar>
           {/snippet}
         </DataDisplay>
       </div>

@@ -84,24 +84,41 @@ module Entry
       entries.delete!(id)
     end
 
-    def assign_member(id, assigned_to_member_id)
+    def assign_member(id, assigned_to_id)
       entries.transaction do
-        entries.update!(id, { assigned_to_member_id: })
+        entries.update!(id, { assigned_to_id: })
+        entries.find!(id)
+      end
+    end
+
+    def unassign_member(id)
+      entries.transaction do
+        entries.update!(id, { assigned_to_id: nil })
         entries.find!(id)
       end
     end
 
     def submit(entry_id, **opts)
+      # check self reviewing here, reject
       entries.transaction do
         entry = entries.find!(entry_id, included: [:dataset])
         entry_workflow = entry.dataset.entry_workflow.new(entry, **opts)
 
         entry_workflow.submit!
+
+        account_id = auth_context.metadata[:id]
+        from_state = entry_workflow.aasm.from_state
+
         entries.submit(
           entry.id,
           {
+            # steps and status
             wf_step: entry_workflow.aasm.current_state.to_s,
-            status: entry_workflow.aasm.current_state == :done ? "completed" : "in_progress"
+            status: entry_workflow.aasm.current_state == :done ? "completed" : "in_progress",
+            # assignments
+            assigned_to_id: nil, # remove on step change
+            submitted_by_id: from_state == :annotate ? account_id : entry.submitted_by_id,
+            reviewed_by_id: from_state == :review ? account_id : entry.reviewed_by_id,
           }
         )
         entries.find!(entry.id, included: [:dataset])
