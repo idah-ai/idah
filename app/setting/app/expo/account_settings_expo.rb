@@ -22,7 +22,6 @@ class AccountSettingsExpo < BaseExpo
 
   expose on_resource_event("iam:accounts", "deleted")
   def delete_account_settings
-    binding.pry
     service.delete(params[:resource_id])
   end
 end
