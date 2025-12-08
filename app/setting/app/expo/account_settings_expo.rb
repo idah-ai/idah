@@ -17,6 +17,12 @@ class AccountSettingsExpo < BaseExpo
 
   expose on_resource_event("iam:accounts", "created")
   def create_account_settings
-    service.create(params)
+    service.create(params[:resource_id])
+  end
+
+  expose on_resource_event("iam:accounts", "deleted")
+  def delete_account_settings
+    binding.pry
+    service.delete(params[:resource_id])
   end
 end
