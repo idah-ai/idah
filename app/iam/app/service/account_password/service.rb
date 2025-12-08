@@ -2,6 +2,7 @@
 
 module AccountPassword
   class Service < Verse::Service::Base
+    use accounts: Account::Repository
     use_system account_repo: Account::Repository
 
     def request_password_reset(email)
@@ -50,6 +51,21 @@ module AccountPassword
       return false if account_token_expired?(account)
 
       true
+    end
+
+    def change_password(id, old_password, new_password)
+      accounts.transaction do
+        account = accounts.find!(id)
+
+        unless account.password_match?(old_password)
+          raise Verse::Error::ValidationFailed, "Old password is incorrect"
+        end
+
+        account_repo.update!(
+          id,
+          { hashed_password: BCrypt::Password.create(new_password) }
+        )
+      end
     end
 
     private

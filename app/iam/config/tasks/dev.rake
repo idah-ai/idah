@@ -7,6 +7,9 @@ namespace :dev do
       dataset
       media
       setting
+      notification
+      sync
+      audit
     ].join(",")
     Rake::Task["service_accounts:create"].invoke
   end
