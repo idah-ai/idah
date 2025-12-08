@@ -29,13 +29,13 @@
   // Functions
   async function sendPasswordResetLink(): Promise<void> {
     try {
-       await accountPasswordsBackendDataSource.request_reset({ email });
+      await accountPasswordsBackendDataSource.request_reset({ email });
       passwordResetLinkHasBeenSent = true;
 
       showErrorAlert = false;
       goto(resolve("/reset-password"));
-    } catch (error) {  
-      console.error(error)    
+    } catch (error) {
+      console.error(error);
       showErrorAlert = true;
     }
   }

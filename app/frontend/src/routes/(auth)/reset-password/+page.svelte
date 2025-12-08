@@ -34,7 +34,7 @@
 
       updated = true;
     } catch (error) {
-      console.error(error)
+      console.error(error);
       updated = false;
     }
   }
