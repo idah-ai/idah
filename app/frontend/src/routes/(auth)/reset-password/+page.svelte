@@ -30,7 +30,7 @@
   // Functions
   async function updatePassword(): Promise<void> {
     try {
-      const res = accountPasswordsBackendDataSource.reset({ token, password: credentials.password });
+      const res = await accountPasswordsBackendDataSource.reset({ token, password: credentials.password });
 
       updated = true;
     } catch (error) {
