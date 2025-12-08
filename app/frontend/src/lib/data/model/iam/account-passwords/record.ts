@@ -109,4 +109,5 @@ export const accountPasswordsBackendDataSource = createBackendDataSource(Account
 
     throw "No data returned";
   },
+  change_password: async (params: { oldPassword: string; newPassword: string }) => {},
 });
