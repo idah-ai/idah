@@ -4,6 +4,7 @@ Sequel.migration do
   change do
     execute(%(CREATE EXTENSION IF NOT EXISTS "pg_trgm"))
     execute(%(CREATE EXTENSION IF NOT EXISTS "uuid-ossp"))
+    execute(%(CREATE EXTENSION IF NOT EXISTS "pgcrypto"))
 
     # Credits goes to:
     # https://gist.githubusercontent.com/kjmph/5bd772b2c2df145aa645b837da7eca74/raw/3c410c9dfae89d1dfbcf4202f21974e2d30ed1d7/A_UUID_v7_for_Postgres.sql
