@@ -1,10 +1,11 @@
 <script lang="ts">
+  import { ArrowLeftIcon } from "@lucide/svelte";
+
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import Form from "@/components/app/forms/form.svelte";
   import AuthenticationAlert from "@/components/app/iam/auth/alert/authentication-alert.svelte";
   import AuthenticationCard from "@/components/app/iam/auth/card/authentication-card.svelte";
   import Button from "@/components/ui/button/button.svelte";
-  import Link from "@/components/ui/text/Link.svelte";
 
   import { sendResetPasswordLinkSchema } from "@/data/model/iam/accounts/auth-schema";
   import { AccountRecord } from "@/data/model/iam/accounts/record";
@@ -24,6 +25,10 @@
   });
 
   // Functions
+  function goBack() {
+    window.history.back();
+  }
+
   async function sendPasswordResetEmail(): Promise<void> {
     /** Check if email is valid and exist in out platform? */
     // const existingAccount = await AccountsBackendDataSource.list({
@@ -81,7 +86,11 @@
 
   {#snippet footer()}
     <div class="flex w-full items-center justify-between gap-2">
-      <Link href="/login" class="text-sm">Return to login</Link>
+      <Button variant="link" class="p-2 text-sm" onclick={goBack}>
+        <ArrowLeftIcon />
+        Back
+      </Button>
+
       <Button variant="ghost" disabled={disabledResendPasswordResetEmail}>Resend link</Button>
     </div>
   {/snippet}
