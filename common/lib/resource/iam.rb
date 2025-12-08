@@ -2,9 +2,9 @@
 
 module Resource
   module Iam
-    Accounts = 'iam:accounts'
-    AccountSessions = 'iam:account_sessions'
-    AccountAuths = 'iam:account_auths'
-    Organizations = 'iam:organizations'
+    Accounts = "iam:accounts"
+    AccountSessions = "iam:account_sessions"
+    AccountAuths = "iam:account_auths"
+    Organizations = "iam:organizations"
   end
 end
