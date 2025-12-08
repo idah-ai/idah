@@ -11,39 +11,19 @@ namespace :dev do
     Rake::Task["service_accounts:create"].invoke
   end
 
-  task users: :environment do
-    hashed_password = BCrypt::Password.create(ENV["DEV_PASSWORD"])
-
-    users = [
-      {
-        email: "admin@ingedata.ai",
-        name: "Admin User",
-        role: "anonymous"
-      },
-      {
-        email: "user@ingedata.ai",
-        name: "Staff User",
-        role: "anonymous"
-      },
-    ]
-
+  task create_admin_account: :environment do
     context = Verse::Auth::Context[:system]
     account_repo = Account::Repository.new(context)
 
-    users.each do |user_data|
-      account = account_repo.find_by({ email: user_data[:email] })
-
-      next unless account.nil?
-
-      account_repo.create(
-        {
-          name: user_data[:name],
-          email: user_data[:email],
-          hashed_password: hashed_password,
-          enabled: true,
-          role: user_data[:role]
-        }
-      )
-    end
+    account_repo.create(
+      {
+        name: "admin",
+        email: "admin@idah.ai",
+        hashed_password: BCrypt::Password.create("password"),
+        enabled: true,
+        role_name: "admin",
+        joined_at: Time.now,
+      }
+    )
   end
 end
