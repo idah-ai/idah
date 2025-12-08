@@ -40,3 +40,7 @@ counter:
 
 logging:
   level: <%= ENV.fetch("LOG_LEVEL", "info") %>
+
+credentials:
+  account: <%= ENV.fetch("IDAH_SERVICE_ACCOUNT") %>
+  password: <%= ENV.fetch("IDAH_SERVICE_PASSWORD") %>
