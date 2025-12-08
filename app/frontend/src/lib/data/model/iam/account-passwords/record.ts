@@ -11,7 +11,7 @@ const accountPasswordsBasePath: string = `${import.meta.env.VITE_IDAH_HOST}/api/
 
 export const accountPasswordsBackendDataSource = createBackendDataSource(AccountRecord, accountPasswordsBasePath, {
   request_reset: async (params: { email: string }): Promise<void | JsonApiErrorResponse> => {
-    const res = await fetch(`${accountPasswordsBasePath}/request_reset`, {
+    const response = await fetch(`${accountPasswordsBasePath}/request_reset`, {
       method: "POST",
       body: JSON.stringify({
         email: params.email,
@@ -26,14 +26,12 @@ export const accountPasswordsBackendDataSource = createBackendDataSource(Account
     clearCache(cacheIndexKey);
     clearCache(cacheDatasetIndexKey);
 
-    if (!res.ok) {
-      return Promise.reject(
-        parseSingleElementError({
-          status: res.status,
-          errors: [{ title: "Request failed", detail: `Status code: ${res.status}` }],
-        }),
-      );
-    } else {
+    if (!response.ok) {
+      const body = await response.json();
+      return Promise.reject(parseSingleElementError({ status: response.status, errors: body.errors }));
+    }
+
+    if (response.ok) {
       return Promise.resolve();
     }
   },
