@@ -17,8 +17,9 @@ module Entry
 
     field :resource, type: String
 
-    # Add through assign method
-    field :assigned_to_member_id, type: Integer, readonly: true
+    field :assigned_to_id, type: Integer # Add through assign method
+    field :submitted_by_id, type: Integer # Add through submit method
+    field :reviewed_by_id, type: Integer # Add through review method
 
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
@@ -79,7 +80,7 @@ module Entry
                 -- From assigned entries with roles
                 (
                   (pm.role IN :assigned_to_roles)
-                  AND entries.assigned_to_member_id = pm.id
+                  AND entries.assigned_to_id = :account_id
                 )
               )
           )
