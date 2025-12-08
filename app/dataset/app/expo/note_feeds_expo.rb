@@ -5,7 +5,7 @@ class NoteFeedsExpo < BaseExpo
 
   use_service NoteFeed::Service
 
-  json_api NoteFeed::Record, http_opts: { auth: nil } do
+  json_api NoteFeed::Record do
     allowed_included "entry", "annotation", "note_comments"
 
     show
@@ -22,7 +22,7 @@ class NoteFeedsExpo < BaseExpo
     delete
   end
 
-  expose on_http(:post, "", auth: nil) do
+  expose on_http(:post, "") do
     desc <<-MD
       Create a new note feed
       This endpoint creates a new note feed for an entry.
@@ -43,7 +43,7 @@ class NoteFeedsExpo < BaseExpo
     service.create_from_params(params.dig(:data, :attributes))
   end
 
-  expose on_http(:post, "/:id/resolve", auth: nil) do
+  expose on_http(:post, "/:id/resolve") do
     desc "Resolve a note feed by updating status from pending to resolved"
     input do
       field :id, String
