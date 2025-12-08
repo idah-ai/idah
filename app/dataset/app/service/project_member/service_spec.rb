@@ -186,6 +186,9 @@ RSpec.describe ProjectMember::Service, database: true do
       before do
         expect_any_instance_of(ProjectMember::Repository).to receive(:after_commit).and_yield
         allow(Service::Notification).to receive(:email)
+        allow(Api[:idah].iam.accounts).to receive(:show).and_return(
+          double(email: "remover@example.com", joined_at: Time.now)
+        )
       end
 
       it "sends notification email when project member is deleted" do
@@ -198,7 +201,8 @@ RSpec.describe ProjectMember::Service, database: true do
             recipient_account_email: "annotator@email.com",
             title: "You have been removed from the project 'Test Project'",
             category: "project_member_removed",
-            project_name: "Test Project"
+            project_name: "Test Project",
+            remover_email: "remover@example.com"
           )
         )
       end
