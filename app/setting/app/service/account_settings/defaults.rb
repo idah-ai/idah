@@ -5,11 +5,8 @@ module AccountSettings
     # keep string keys to put in db
     DEFAULT_ACCOUNT_SETTINGS = {
       # notifications
-      "notification:organization:ownership.assigned" => true,
-      "notification:organization:ownership.unassigned" => true,
-      "notification:project:member.invited" => true,
-      "notification:project:member.removed" => true,
-      "notification:dataset.completed" => true,
+      "notification:organization:activities" => true,
+      "notification:project:activities" => true,
     }
   end
 end
