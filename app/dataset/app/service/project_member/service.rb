@@ -20,8 +20,29 @@ module ProjectMember
     end
 
     def create(record)
+      # Validate required relationships
+      unless record.project
+        raise Verse::Error::ValidationFailed,
+              "project relationship is required to create a project member"
+      end
+
+      # With "as_user" access ensure account can "create" project member to the project
+      if auth_context.can?(:create, project_members.class.resource) == :as_user &&
+         ScopedQuery::Service.without_project_access?(
+           auth_context.metadata[:id],
+           record.project.id,
+           ["project_owner"]
+         )
+        raise Verse::Error::Unauthorized,
+              "You do not have permission to create project member on this project"
+      end
+
+      # Assign attributes
+      attributes = record.attributes
+      attributes[:project_id] = record.project.id
+
       project_members.transaction do
-        record_id = project_members.create(record.attributes)
+        record_id = project_members.create(attributes)
         member = project_members.find!(record_id, included: [:project])
 
         project_members.after_commit do
@@ -52,7 +73,7 @@ module ProjectMember
     def delete(id)
       project_members.transaction do
         member = project_members.find!(id, included: [:project])
-        project_members.delete(id)
+        project_members.delete!(id)
 
         project_members.after_commit do
           ::Service::Notification.email(
@@ -61,7 +82,7 @@ module ProjectMember
             category: "project_member_removed",
             project_id: member.project_id,
             project_name: member.project.name,
-            remover_email: "" # TO DO: get remover email from auth_context
+            remover_email: Api[:idah].iam.accounts.show(id: auth_context.metadata[:id]).email
           )
         end
       end

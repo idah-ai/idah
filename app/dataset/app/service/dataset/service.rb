@@ -21,23 +21,33 @@ module Dataset
     end
 
     def create(record)
-      attr = record.attributes
-
-      # attr[:created_by_email] ||= auth_context.metadata[:email]
-      attr[:id] = record.id || UUIDv7.generate
-
-      if record.project
-        attr[:project_id] = record.project.id
-      else
+      # Validate required relationships
+      unless record.project
         raise Verse::Error::ValidationFailed,
-              "project is required to create a dataset"
+              "project relationship is required to create a dataset"
       end
 
-      id = datasets.create(
-        record.attributes
-      )
+      # With "as_user" ensure account can "create" dataset to the project
+      if auth_context.can?(:create, datasets.class.resource) == :as_user &&
+         ScopedQuery::Service.without_project_access?(
+           auth_context.metadata[:id],
+           record.project.id,
+           ["project_owner"]
+         )
+        raise Verse::Error::Unauthorized,
+              "You do not have permission to create dataset on this project"
+      end
 
-      datasets.find!(id)
+      # Assign attributes
+      attributes = record.attributes
+      attributes[:id] = record.id || UUIDv7.generate
+      attributes[:project_id] = record.project.id
+      # attributes[:created_by_email] ||= auth_context.metadata[:email]
+
+      datasets.transaction do
+        id = datasets.create(attributes)
+        datasets.find(id)
+      end
     end
 
     def update(record)
@@ -46,7 +56,7 @@ module Dataset
     end
 
     def delete(id)
-      datasets.delete(id)
+      datasets.delete!(id)
     end
 
     def notify_dataset_completed(dataset_id)

@@ -15,7 +15,7 @@ class ProjectMembersExpo < BaseExpo
               email: :email
             }
 
-  json_api ProjectMember::Record, http_opts: { auth: nil } do
+  json_api ProjectMember::Record do
     allowed_included "projects"
 
     index do
