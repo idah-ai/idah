@@ -51,7 +51,7 @@ RSpec.describe AccountPassword::Service, database: true do
 
         expect {
           subject.request_password_reset("nonexistent@example.com")
-        }.not_to raise_error
+        }.to raise_error(Verse::Error::NotFound, "account not found")
       end
     end
   end
