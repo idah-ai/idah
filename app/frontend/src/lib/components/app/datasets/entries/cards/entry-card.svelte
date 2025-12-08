@@ -156,13 +156,13 @@
 </script>
 
 {#await fetchData()}
-  <LoadingEntryCard></LoadingEntryCard>
+  <LoadingEntryCard />
 {:then _}
   <Card class="hover:bg-primary/5 hover:shadow-primary/10 group transition-shadow hover:shadow-md">
     <CardContent class="flex flex-row gap-4">
       <!-- CHECKBOX -->
       <div class="my-auto">
-        <Checkbox checked={selectedRows.includes(entry.id)} onCheckedChange={() => onRowSelect(entry.id)}></Checkbox>
+        <Checkbox checked={selectedRows.includes(entry.id)} onCheckedChange={() => onRowSelect(entry.id)} />
       </div>
 
       <!-- THUMBNAIL -->
@@ -179,7 +179,7 @@
               <img
                 src={thumbnailUrl}
                 alt="Entry thumbnail"
-                class="absolute top-0 left-0 cursor-pointer object-cover"
+                class="absolute left-0 top-0 cursor-pointer object-cover"
                 style:height="{imgContainer?.clientHeight}px"
                 style:width="{containerWidth * TOTAL_POSITIONS}px"
                 style:max-width="none"
@@ -214,31 +214,41 @@
         <div class="flex flex-col items-start">
           <DataDisplay label="Created at">
             {#snippet slotValue()}
-              <DateText datetime={entry.created_at} datetimeFormat="MMM dd, yyyy" size="sm" weight="light" showTooltip
-              ></DateText>
+              <DateText
+                datetime={entry.created_at}
+                datetimeFormat="MMM dd, yyyy"
+                size="sm"
+                weight="light"
+                showTooltip
+              />
             {/snippet}
           </DataDisplay>
 
           <DataDisplay label="Updated at">
             {#snippet slotValue()}
-              <DateText datetime={entry.updated_at} datetimeFormat="MMM dd, yyyy" size="sm" weight="light" showTooltip
-              ></DateText>
+              <DateText
+                datetime={entry.updated_at}
+                datetimeFormat="MMM dd, yyyy"
+                size="sm"
+                weight="light"
+                showTooltip
+              />
             {/snippet}
           </DataDisplay>
         </div>
 
         <!-- PRIORITY AT -->
         <div>
-          <EntryPriority {entry} updatable></EntryPriority>
+          <EntryPriority {entry} updatable />
         </div>
       </div>
 
       <!-- STAGE & ASSIGNED TO -->
       <div class="my-auto flex flex-1 flex-col gap-2">
-        <DataDisplay label="Stage" value={entry.wf_step}></DataDisplay>
+        <DataDisplay label="Stage" value={entry.wf_step} />
         <DataDisplay label="Assigned to">
           {#snippet slotValue()}
-            <ProjectMemberAvatar memberAccountId={entry.assigned_to_member_id}></ProjectMemberAvatar>
+            <ProjectMemberAvatar memberAccountId={entry.assigned_to_member_id} />
           {/snippet}
         </DataDisplay>
       </div>
@@ -256,10 +266,10 @@
               <Progress value={jobProgress * 100} />
             </div>
           {:else}
-            <EntryStatus {entry}></EntryStatus>
+            <EntryStatus {entry} />
           {/if}
 
-          <EntryDropdownMenu {entry}></EntryDropdownMenu>
+          <EntryDropdownMenu {entry} />
         </div>
       </div>
     </CardContent>

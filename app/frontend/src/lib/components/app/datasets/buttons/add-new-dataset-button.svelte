@@ -3,6 +3,7 @@
 
   import DatasetFormModal from "@/components/app/datasets/overlays/dataset-form-modal.svelte";
   import Button from "@/components/ui/button/button.svelte";
+  import Can from "@/security/can.svelte";
 
   // Variables
   let openNewDatasetModal: boolean = $state(false);
@@ -13,9 +14,11 @@
   }
 </script>
 
-<Button onclick={openNewDatasetDialog}>
-  <PlusIcon />
-  New Dataset
-</Button>
+<Can action="create" resource="dataset:datasets" scopes={["as_org_owner", "as_user"]}>
+  <Button onclick={openNewDatasetDialog}>
+    <PlusIcon />
+    New Dataset
+  </Button>
 
-<DatasetFormModal title="Dataset" action="create" bind:open={openNewDatasetModal} />
+  <DatasetFormModal title="Dataset" action="create" bind:open={openNewDatasetModal} />
+</Can>
