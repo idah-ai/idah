@@ -45,6 +45,13 @@ RSpec.describe Processor::Service, type: :service, database: true do
     }.to_json
 
     stub_request(
+      :post,
+      "https://idah.example.com/api/v1/iam/auth/login"
+    ).to_return(
+      status: 200, body: %{{ "data": {} }}, headers: {}
+    )
+
+    stub_request(
       :get,
       "https://idah.example.com/api/v1/dataset/entries/entry-id?included%5B%5D=dataset"
     ).to_return(
