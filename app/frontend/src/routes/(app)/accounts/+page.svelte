@@ -31,12 +31,9 @@
 
   // Functions
   async function checkRights() {
-    canCreateAccount = $authStatus.authContext?.can("create", "iam:accounts") || false;
-    canDeleteAccount = $authStatus.authContext?.can("delete", "iam:accounts") || false;
-
-    if (!canCreateAccount || !canDeleteAccount) {
-      columns.action.visible = false;
-    }
+    canCreateAccount = (await $authStatus.authContext?.can("create", "iam:accounts")) || false;
+    canDeleteAccount = (await $authStatus.authContext?.can("delete", "iam:accounts")) || false;
+    columns.action.visible = canCreateAccount || canDeleteAccount;
   }
 
   function openNewAccountModal(): void {

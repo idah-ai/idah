@@ -1,3 +1,5 @@
+import type { ProjectMemberRole } from "@/data/model/dataset/projects/members/record";
+
 export const actions = [
   //
   "login",
@@ -28,4 +30,9 @@ export type Resource = (typeof resources)[number];
 
 export const scopes = ["as_user", "as_org_owner"] as const;
 
-export type Scope = (typeof scopes)[number];
+export type ProjectMemberScope = {
+  projectId: string;
+  projectMemberRoles: ProjectMemberRole[];
+};
+
+export type Scope = (typeof scopes)[number] | { as_user: ProjectMemberScope };

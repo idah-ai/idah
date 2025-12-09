@@ -64,8 +64,8 @@
 
   // Functions
   async function checkRights() {
-    canUpdateOrganization = currentAccount?.can("update", "iam:organizations") || false;
-    canDeleteOrganization = currentAccount?.can("delete", "iam:organizations") || false;
+    canUpdateOrganization = (await currentAccount?.can("update", "iam:organizations")) || false;
+    canDeleteOrganization = (await currentAccount?.can("delete", "iam:organizations")) || false;
   }
 
   async function fetchOrganization() {

@@ -23,6 +23,7 @@
 
   import type { ModalityShapes } from "@/data/model/setting/plugin/types";
   import type { IConfig, IConfigProperty, IConfigValue } from "@/plugin/interface/Activity";
+  import type { ProjectMemberScope } from "@/security/types";
 
   // Contexts
   const project: ProjectRecord = getContext("project");
@@ -40,6 +41,13 @@
   let isLabelConfigChanged: boolean = $derived.by(() => {
     return JSON.stringify(labelConfig) !== JSON.stringify(initialLabelConfig);
   });
+
+  const as_project_owner: { as_user: ProjectMemberScope } = {
+    as_user: {
+      projectId,
+      projectMemberRoles: ["project_owner"],
+    },
+  };
 
   pageBreadcrumbsStore.set([
     homeBreadcrumb,
@@ -314,7 +322,7 @@
 {:then _}
   <PageHeader title="Label">
     {#snippet slotTitle()}
-      <Can action="update" resource="dataset:datasets">
+      <Can action="update" resource="dataset:datasets" scopes={["as_org_owner", as_project_owner]}>
         <Button
           loading={saving}
           loadingLabel="Saving"
