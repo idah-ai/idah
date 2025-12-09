@@ -7,6 +7,7 @@
   import AuthenticationCard from "@/components/app/iam/auth/card/authentication-card.svelte";
   import Button from "@/components/ui/button/button.svelte";
 
+  import { accountPasswordsBackendDataSource } from "@/data/model/iam/account-passwords/record";
   import { sendResetPasswordLinkSchema } from "@/data/model/iam/accounts/auth-schema";
   import { AccountRecord } from "@/data/model/iam/accounts/record";
 
@@ -25,30 +26,15 @@
   });
 
   // Functions
-  function goBack() {
-    window.history.back();
-  }
-
-  async function sendPasswordResetEmail(): Promise<void> {
-    /** Check if email is valid and exist in out platform? */
-    // const existingAccount = await AccountsBackendDataSource.list({
-    //   fields: {
-    //     [AccountRecord.type]: []
-    //   }
-    //   filters: {
-    //     email: email
-    //   },
-    //   noCache: true
-    // })
-    // if (!existingAccount.data)
-    // if (true) {
-    //   passwordResetLinkHasBeenSent = true;
-    // sentDate = new Date();
-    // showErrorAlert = false;
-    // goto("/reset-password");
-    // } else {
-    // showErrorAlert = true;
-    // }
+  async function sendPasswordResetLink(): Promise<void> {
+    try {
+      await accountPasswordsBackendDataSource.request_reset({ email });
+      passwordResetLinkHasBeenSent = true;
+      showErrorAlert = false;
+    } catch (error) {
+      console.error(error);
+      showErrorAlert = true;
+    }
   }
 </script>
 
@@ -72,7 +58,7 @@
         required
         value={email}
         oninput={(e) => (email = e.currentTarget.value)}
-      />
+      ></InputField>
 
       <Button class="w-full" disabled={disabledSendPasswordResetEmail} onclick={sendPasswordResetEmail}>
         {#if passwordResetLinkHasBeenSent}
