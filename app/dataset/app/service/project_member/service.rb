@@ -38,8 +38,8 @@ module ProjectMember
       attributes[:project_id] = record.project.id
 
       project_members.transaction do
-        record_id = project_members.create(record.attributes)
-        member = project_members.find!(record_id, included: [:project])
+        id = project_members.create(attributes)
+        member = project_members.find!(id, included: [:project])
 
         project_members.after_commit do
           member_account = Api[:idah].iam.accounts.show(id: member.account_id)
@@ -110,7 +110,6 @@ module ProjectMember
     def delete(id)
       project_members.transaction do
         member = project_members.find!(id, included: [:project])
-
         project_members.delete!(id)
 
         project_members.after_commit do

@@ -70,6 +70,80 @@ RSpec.describe Account::Service, database: true do
       updated_account = subject.update(record)
       expect(updated_account.name).to eq("Updated Test Account Name")
     end
+
+    context "when updating role from user to org_owner" do
+      before do
+        expect_any_instance_of(Account::Repository).to receive(:after_commit).and_yield
+
+        admin_id = account_repo.create(
+          {
+            name: "Admin User",
+            email: "admin@test.com",
+            role_name: "admin",
+            role_scope: "{}",
+            enabled: true,
+          }
+        )
+        allow(auth_context).to receive(:metadata).and_return({ id: admin_id })
+
+        allow_any_instance_of(Organization::Repository).to receive(:find!).with(999) do
+          Verse::JsonApi::Struct.new(
+            { id: 999,
+              name: "Test Organization" }
+          )
+        end
+      end
+
+      it "updates role from user to org_owner and sends notification" do
+        user_account = subject.create(
+          deserialize(
+            {
+              data: {
+                type: Resource::Iam::Accounts,
+                attributes: {
+                  name: "Regular User",
+                  email: "user@test.com",
+                  role_name: "user",
+                  role_scope: "{}",
+                  enabled: true,
+                },
+              }
+            }
+          )
+        )
+
+        expect(::Service::Notification).to receive(:email).with(
+          {
+            recipient_account_email: "user@test.com",
+            title: "You have been assigned as organization owner",
+            category: "org_owner_role_assigned",
+            recipient_account_id: user_account.id,
+            recipient_name: "Regular User",
+            organization_name: "Test Organization",
+            admin_name: "Admin User"
+          }
+        )
+
+        record = deserialize(
+          {
+            data: {
+              type: Resource::Iam::Accounts,
+              id: user_account.id,
+              attributes: {
+                role_name: "org_owner",
+                role_scope: { org: [999] }
+              }
+            }
+          }
+        )
+
+        updated_account = subject.update(record)
+
+        expect(updated_account.role_name).to eq("org_owner")
+
+        expect(updated_account.role_scope).to eq({ "org" => [999] })
+      end
+    end
   end
 
   describe "#delete" do
@@ -77,6 +151,66 @@ RSpec.describe Account::Service, database: true do
       account_id = account_repo.create(attributes)
       subject.delete(account_id)
       expect { account_repo.find!(account_id) }.to raise_error(Verse::Error::NotFound)
+    end
+  end
+
+  describe "#organization owner management" do
+    before do
+      @user_account = subject.create(
+        deserialize(
+          {
+            data: {
+              type: Resource::Iam::Accounts,
+              attributes: {
+                name: "User",
+                email: "user@test.com",
+                role_name: "user",
+                role_scope: "{}",
+                enabled: true,
+              },
+            }
+          }
+        )
+      )
+      @org_owner_account = subject.create(
+        deserialize(
+          {
+            data: {
+              type: Resource::Iam::Accounts,
+              attributes: {
+                name: "Org Owner",
+                email: "org_owner@test.com",
+                role_name: "org_owner",
+                role_scope: '{"org": [999]}',
+                enabled: true,
+              },
+            }
+          }
+        )
+      )
+      @another_org_owner_account = subject.create(
+        deserialize(
+          {
+            data: {
+              type: Resource::Iam::Accounts,
+              attributes: {
+                name: "Another Org Owner",
+                email: "another_org_owner@test.com",
+                role_name: "org_owner",
+                role_scope: '{"org": [222, 999]}',
+                enabled: true,
+              },
+            }
+          }
+        )
+      )
+
+      allow_any_instance_of(Organization::Service).to receive(:show).with(anything) do |org_id|
+        Verse::JsonApi::Struct.new(
+          { id: org_id,
+            name: "org #{org_id}", }
+        )
+      end
     end
   end
 
@@ -147,66 +281,6 @@ RSpec.describe Account::Service, database: true do
         expect {
           subject.resend_pending_invitations(account_id)
         }.to raise_error(Verse::Error::NotFound)
-      end
-    end
-  end
-
-  describe "#organization owner management" do
-    before do
-      @user_account = subject.create(
-        deserialize(
-          {
-            data: {
-              type: Resource::Iam::Accounts,
-              attributes: {
-                name: "User",
-                email: "user@test.com",
-                role_name: "user",
-                role_scope: "{}",
-                enabled: true,
-              },
-            }
-          }
-        )
-      )
-      @org_owner_account = subject.create(
-        deserialize(
-          {
-            data: {
-              type: Resource::Iam::Accounts,
-              attributes: {
-                name: "Org Owner",
-                email: "org_owner@test.com",
-                role_name: "org_owner",
-                role_scope: '{"org": [999]}',
-                enabled: true,
-              },
-            }
-          }
-        )
-      )
-      @another_org_owner_account = subject.create(
-        deserialize(
-          {
-            data: {
-              type: Resource::Iam::Accounts,
-              attributes: {
-                name: "Another Org Owner",
-                email: "another_org_owner@test.com",
-                role_name: "org_owner",
-                role_scope: '{"org": [222, 999]}',
-                enabled: true,
-              },
-            }
-          }
-        )
-      )
-
-      allow_any_instance_of(Organization::Service).to receive(:show).with(anything) do |org_id|
-        Verse::JsonApi::Struct.new(
-          { id: org_id,
-            name: "org #{org_id}", }
-        )
       end
     end
   end
