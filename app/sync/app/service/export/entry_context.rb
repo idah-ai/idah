@@ -21,13 +21,15 @@ module Export
         resource: entry[:attributes][:resource]
       )
 
+      entry_id = entry[:id]
+
       EntryContext.new(
         entry,
         media_info,
         file_response,
         Verse::Util::Iterator.chunk_iterator(1) do |annotation_page|
           annotations_response = Api[:idah].dataset.annotations.index(
-            filters: {entry_id: entry[:id]},
+            filters: {entry_id:},
             page: {number: annotation_page, size: 100}, query_count: false)
 
           raise annotations_response.errors if annotations_response.errors
