@@ -40,33 +40,17 @@ module Dataset
     encoder :labels, Verse::Sequel::PgArrayEncoder
 
     def update_progress!(dataset_id)
-      total_entries_frag = <<-SQL
-        (SELECT COUNT(*)
-         FROM entries
-         WHERE entries.dataset_id = ?)
-      SQL
+      # Get counter values from the dataset record
+      dataset = table.where(id: dataset_id).first
 
-      total_entries = table.db.fetch(total_entries_frag, dataset_id).first[:count]
+      return unless dataset
+
+      total_entries = dataset[:total_entries_count]
 
       return if total_entries.zero?
 
-      completed_entries_frag = <<-SQL
-        (SELECT COUNT(*)
-         FROM entries
-         WHERE entries.dataset_id = ?
-         AND entries.status = 'completed')
-      SQL
-
-      completed_count = table.db.fetch(completed_entries_frag, dataset_id).first[:count]
-
-      in_progress_entries_frag = <<-SQL
-        (SELECT COUNT(*)
-         FROM entries
-         WHERE entries.dataset_id = ?
-         AND entries.status = 'in_progress')
-      SQL
-
-      in_progress_count = table.db.fetch(in_progress_entries_frag, dataset_id).first[:count]
+      completed_count = dataset[:completed_entries_count]
+      in_progress_count = dataset[:in_progress_entries_count]
 
       # Calculate progress as a float (0.0 to 1.0)
       progress = completed_count.to_f / total_entries
