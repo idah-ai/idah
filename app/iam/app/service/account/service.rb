@@ -32,9 +32,8 @@ module Account
 
       accounts.transaction do
         attr = record.attributes.dup
-        email = attr[:email]
 
-        if accounts.find_by({ email: email })
+        if accounts.find_by({ email: attr[:email] })
           raise Verse::Error::ValidationFailed, "Email already exists"
         end
 
