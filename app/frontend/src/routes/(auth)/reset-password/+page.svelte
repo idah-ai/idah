@@ -8,8 +8,8 @@
   import AuthenticationCard from "@/components/app/iam/auth/card/authentication-card.svelte";
   import ResetPassword from "@/components/app/response-block/reset-password.svg";
   import Button from "@/components/ui/button/button.svelte";
-  import { accountPasswordsBackendDataSource } from "@/data/model/iam/account-passwords/record";
 
+  import { accountPasswordsBackendDataSource } from "@/data/model/iam/account-passwords/record";
   import { resetPasswordSchema } from "@/data/model/iam/accounts/auth-schema";
   import { cn } from "@/utils";
 

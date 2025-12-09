@@ -31,16 +31,7 @@ module Account
       end
 
       accounts.transaction do
-        email = record.attributes[:email]
-
-        if accounts.find_by({ email: email })
-          raise Verse::Error::ValidationFailed, "Email already exists"
-        end
-
         attr = record.attributes.dup
-
-        # Set a default random password for the account if none is provided
-        password = attr.delete(:password) || SecureRandom.hex(16)
 
         attr.merge!(
           invitation_expired_at: Time.now + 3 * 24 * 60 * 60,
