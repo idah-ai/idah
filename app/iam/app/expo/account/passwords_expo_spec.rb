@@ -247,4 +247,19 @@ RSpec.describe Account::PasswordsExpo, type: :exposition, as: :system do
       )
     end
   end
+
+  describe "POST /account/passwords/change" do
+    it "changes password for authenticated user" do
+      current_auth_context.metadata[:id] = 42
+
+      expect(service).to receive(:change_password).with(42, "oldPass1!", "NewP@ssw0rd!")
+
+      post "/account/passwords/change",
+           {
+             current_password: "oldPass1!",
+             new_password: "NewP@ssw0rd!"
+           }
+      expect(last_response.status).to eq 204
+    end
+  end
 end

@@ -79,5 +79,49 @@ module Account
     def token_valid
       { valid: service.token_valid?(params[:token]) }
     end
+
+    expose on_http(:post, "change") do
+      desc <<-MD
+        Change the password for the authenticated account.
+
+        This endpoint allows an authenticated user to change their password by providing
+        the current password and a new password.
+
+        Password requirements:
+        - Minimum 8 characters
+        - At least one uppercase letter
+        - At least one lowercase letter
+        - At least one digit
+        - At least one special character
+      MD
+      input do
+        field(:current_password, String).filled
+        field(:new_password, String)
+          .filled
+          .rule(
+            "must be at least 8 characters"
+          ) { |value| value.length >= 8 }
+          .rule(
+            "must include at least one uppercase letter"
+          ) { |value| value =~ /[A-Z]/ }
+          .rule(
+            "must include at least one lowercase letter"
+          ) { |value| value =~ /[a-z]/ }
+          .rule(
+            "must include at least one digit"
+          ) { |value| value =~ /\d/ }
+          .rule(
+            "must include at least one special character"
+          ) { |value| value =~ %r([!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?]) }
+      end
+    end
+    def change_password
+      service.change_password(
+        auth_context.metadata[:id],
+        params[:current_password],
+        params[:new_password]
+      )
+      server.no_content
+    end
   end
 end
