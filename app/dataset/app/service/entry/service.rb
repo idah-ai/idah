@@ -124,6 +124,10 @@ module Entry
             status: "errored"
           }
         )
+
+        # Update dataset progress after entry status change
+        datasets.update_progress!(entry.dataset.id)
+
         entries.find!(entry.id, included: [:dataset])
       end
     end
