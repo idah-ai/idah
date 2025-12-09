@@ -5,7 +5,7 @@ class AccountsExpo < BaseExpo
 
   use_service Account::Service
 
-  json_api Account::Record, http_opts: { auth: nil } do
+  json_api Account::Record do
     index do
       allowed_filters :name__match,
                       :email,
