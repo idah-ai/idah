@@ -86,5 +86,26 @@ export const accountPasswordsBackendDataSource = createBackendDataSource(Account
 
     throw "No data returned";
   },
-  change_password: async (params: { oldPassword: string; newPassword: string }) => {},
+  change_password: async (params: { oldPassword: string; newPassword: string }) => {
+    const res = await fetch(`${accountPasswordsBasePath}/change`, {
+      method: "POST",
+      body: JSON.stringify({
+        current_password: params.oldPassword,
+        new_password: params.newPassword,
+      }),
+      headers: { "Content-Type": "application/vnd.api+json" },
+    });
+
+    if (!res.ok) {
+      const body = await res.json();
+      if (body.errors.length > 0) {
+        body.errors.forEach((err: Hash) => {
+          console.error(`Error submitting entry: ${err.title} - ${err.detail}`, err);
+        });
+      }
+      return Promise.reject(parseSingleElementError({ status: res.status, errors: body.errors }));
+    }
+
+    return Promise.resolve();
+  },
 });
