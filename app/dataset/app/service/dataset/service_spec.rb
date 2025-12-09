@@ -143,10 +143,10 @@ RSpec.describe Dataset::Service, database: true do
 
       expect(::Service::Notification).to have_received(:email).with(
         hash_including(
-          recipient_account_email: "owner@example.com",
+          to: "owner@example.com",
           title: "Dataset has been Completed",
           category: "dataset_completed",
-          recipient_account_id: 123,
+          recipient_id: 123,
           dataset_name: "Test Dataset",
           project_name: "Test Project",
           recipient_name: "Project Owner"

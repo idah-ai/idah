@@ -108,7 +108,7 @@ RSpec.describe Email::Service, database: true do
           title: "Account created",
           category: "account_created",
           password_reset_token: "some_token",
-          recipient_account_id: 1
+          recipient_id: 1
         )
 
         subject.send_email(to_email, notification)
