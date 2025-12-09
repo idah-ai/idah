@@ -41,8 +41,8 @@ module Account
         password = attr.delete(:password) || SecureRandom.hex(16)
 
         attr.merge!(
-          invitation_expired_at: Time.now + 3 * 24 * 60 * 60,
-          hashed_password: BCrypt::Password.create(password)
+          hashed_password: BCrypt::Password.create(password),
+          invitation_expired_at: Time.now + 3 * 24 * 60 * 60
         )
 
         id = accounts.create(attr)
