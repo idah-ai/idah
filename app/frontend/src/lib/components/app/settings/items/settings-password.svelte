@@ -112,7 +112,13 @@
         </span>
 
         <div class="flex items-center">
-          <Button variant="secondary" size="sm" disabled={disabledUpdatePasswordButton} loading={updatingPassword} onclick={updatePassword}>
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={disabledUpdatePasswordButton}
+            loading={updatingPassword}
+            onclick={updatePassword}
+          >
             Update password
           </Button>
 
