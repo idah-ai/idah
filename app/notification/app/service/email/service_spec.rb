@@ -38,9 +38,8 @@ RSpec.describe Email::Service, database: true do
 
   describe "#send_email" do
     it "sends an email to the specified recipient" do
-      binding.pry
       subject.send_email(to_email, notification)
-      binding.pry
+
       expect(Mail).to have_received(:deliver)
     end
 
