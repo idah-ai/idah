@@ -29,7 +29,7 @@
 
   // Function
   async function checkRights() {
-    canUpdateEntry = $authStatus.authContext?.can("update", "dataset:entries") || false;
+    canUpdateEntry = (await $authStatus.authContext?.can("update", "dataset:entries")) || false;
   }
 
   async function changePriority(priorityValue: number) {

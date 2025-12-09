@@ -31,17 +31,10 @@
     openNewOrganizationFormModal = true;
   }
 
-  async function checkRights() {
-    canUpdateOrganization = currentAccount?.can("update", "iam:organizations") || false;
-    canDeleteOrganization = currentAccount?.can("delete", "iam:organizations") || false;
-  }
-
   onMount(async () => {
-    await checkRights();
-
-    if (!canUpdateOrganization && !canDeleteOrganization) {
-      columns.action.visible = false;
-    }
+    canUpdateOrganization = (await currentAccount?.can("update", "iam:organizations")) || false;
+    canDeleteOrganization = (await currentAccount?.can("delete", "iam:organizations")) || false;
+    columns.action.visible = canUpdateOrganization || canDeleteOrganization;
   });
 </script>
 

@@ -14,6 +14,8 @@
   import { authStatus } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
 
+  import type { ProjectMemberScope } from "@/security/types";
+
   // Contexts
   const project: ProjectRecord = getContext("project");
 
@@ -25,18 +27,22 @@
   ]);
 
   // Variables
-  let projectId: string | undefined = $derived(page.params.projectId);
+  let projectId = page.params.projectId as string;
   let canDeleteProjectMember = $state(false);
   let columns = $state(projectMemberColumns);
 
   // Lifecycle
-  onMount(() => {
+  onMount(async () => {
+    const currentAccount = $authStatus.authContext;
+    const as_project_owner: { as_user: ProjectMemberScope } = {
+      as_user: {
+        projectId,
+        projectMemberRoles: ["project_owner"],
+      },
+    };
     canDeleteProjectMember =
-      $authStatus.authContext?.can("delete", "dataset:project_members", ["as_org_owner"]) || false;
-
-    if (!canDeleteProjectMember) {
-      columns.action.visible = false;
-    }
+      (await currentAccount?.can("delete", "dataset:project_members", ["as_org_owner", as_project_owner])) || false;
+    columns.action.visible = canDeleteProjectMember;
   });
 </script>
 

@@ -13,6 +13,7 @@
   import { refetches } from "@/utils/refetch";
 
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
+  import type { ProjectMemberScope } from "@/security/types";
 
   // Props
   interface Props {
@@ -61,8 +62,17 @@
 
   // Functions
   async function checkRights() {
-    canUpdateDataset = $authStatus.authContext?.can("update", "dataset:datasets") || false;
-    canDeleteDataset = $authStatus.authContext?.can("delete", "dataset:datasets") || false;
+    const as_project_owner: { as_user: ProjectMemberScope } = {
+      as_user: {
+        projectId,
+        projectMemberRoles: ["project_owner"],
+      },
+    };
+
+    canUpdateDataset =
+      (await $authStatus.authContext?.can("update", "dataset:datasets", ["as_org_owner", as_project_owner])) || false;
+    canDeleteDataset =
+      (await $authStatus.authContext?.can("delete", "dataset:datasets", ["as_org_owner", as_project_owner])) || false;
   }
 
   async function fetchDataset() {

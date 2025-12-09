@@ -45,15 +45,11 @@
 
   // Lifecycle
   onMount(async () => {
-    await checkRights();
+    canUpdateEntry = (await currentAccount?.can("update", "dataset:entries")) || false;
+    canDeleteEntry = (await currentAccount?.can("delete", "dataset:entries")) || false;
   });
 
   // Functions
-  async function checkRights() {
-    canUpdateEntry = currentAccount?.can("update", "dataset:entries") || false;
-    canDeleteEntry = currentAccount?.can("delete", "dataset:entries") || false;
-  }
-
   async function openAssignEntryModal() {
     const entryRes = await entriesBackendDataSource.get(entry.id, {
       noCache: true,

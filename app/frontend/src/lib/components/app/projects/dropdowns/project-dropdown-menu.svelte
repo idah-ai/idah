@@ -13,6 +13,7 @@
   import { refetches } from "@/utils/refetch";
 
   import type { DropdownMenuContentAlignment, IDropdownMenus } from "@/components/app/dropdown-menus/types";
+  import type { ProjectMemberScope } from "@/security/types";
 
   // Props
   interface Props {
@@ -61,8 +62,16 @@
 
   // Functions
   async function checkRights() {
-    canUpdateProject = currentAccount?.can("update", "dataset:projects", ["as_org_owner"]) || false;
-    canDeleteProject = currentAccount?.can("delete", "dataset:projects", ["as_org_owner"]) || false;
+    const as_project_owner: { as_user: ProjectMemberScope } = {
+      as_user: {
+        projectId,
+        projectMemberRoles: ["project_owner"],
+      },
+    };
+    canUpdateProject =
+      (await currentAccount?.can("update", "dataset:projects", ["as_org_owner", as_project_owner])) || false;
+    canDeleteProject =
+      (await currentAccount?.can("delete", "dataset:projects", ["as_org_owner", as_project_owner])) || false;
   }
 
   async function fetchProject() {
