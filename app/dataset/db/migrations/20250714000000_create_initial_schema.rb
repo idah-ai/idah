@@ -112,9 +112,9 @@ Sequel.migration do
 
       column :progress, Float, null: false, default: 0.0 # from 0.0 to 1.0
 
-      column :total_entries_count, Integer, null: false, default: 0
-      column :completed_entries_count, Integer, null: false, default: 0
-      column :in_progress_entries_count, Integer, null: false, default: 0
+      column :entries_total_count, Integer, null: false, default: 0
+      column :entries_completed_count, Integer, null: false, default: 0
+      column :entries_in_progress_count, Integer, null: false, default: 0
 
       Migration::Timestamps.timestamps(self)
     end
@@ -166,7 +166,7 @@ Sequel.migration do
         -- Handle INSERT
         IF (TG_OP = 'INSERT') THEN
           UPDATE datasets
-          SET total_entries_count = total_entries_count + 1
+          SET entries_total_count = entries_total_count + 1
           WHERE id = NEW.dataset_id;
           RETURN NEW;
         END IF;
@@ -177,9 +177,9 @@ Sequel.migration do
           IF (OLD.status != NEW.status) THEN
             -- Increment counters in dataset
             UPDATE datasets
-            SET completed_entries_count = completed_entries_count + CASE WHEN NEW.status = 'completed' OR NEW.status = 'errored' THEN 1 ELSE 0 END,
-                in_progress_entries_count =
-                  in_progress_entries_count
+            SET entries_completed_count = entries_completed_count + CASE WHEN NEW.status = 'completed' OR NEW.status = 'errored' THEN 1 ELSE 0 END,
+                entries_in_progress_count =
+                  entries_in_progress_count
                   + CASE WHEN NEW.status = 'in_progress' THEN 1 ELSE 0 END
                   - CASE WHEN OLD.status = 'in_progress' THEN 1 ELSE 0 END
             WHERE id = NEW.dataset_id;
@@ -190,9 +190,9 @@ Sequel.migration do
         -- Handle DELETE
         IF (TG_OP = 'DELETE') THEN
           UPDATE datasets
-          SET total_entries_count = total_entries_count - 1,
-              completed_entries_count = completed_entries_count - CASE WHEN OLD.status = 'completed' OR OLD.status = 'errored' THEN 1 ELSE 0 END,
-              in_progress_entries_count = in_progress_entries_count - CASE WHEN OLD.status = 'in_progress' THEN 1 ELSE 0 END
+          SET entries_total_count = entries_total_count - 1,
+              entries_completed_count = entries_completed_count - CASE WHEN OLD.status = 'completed' OR OLD.status = 'errored' THEN 1 ELSE 0 END,
+              entries_in_progress_count = entries_in_progress_count - CASE WHEN OLD.status = 'in_progress' THEN 1 ELSE 0 END
           WHERE id = OLD.dataset_id;
           RETURN OLD;
         END IF;

@@ -45,12 +45,12 @@ module Dataset
 
       return unless dataset
 
-      total_entries = dataset[:total_entries_count]
+      total_entries = dataset[:entries_total_count]
 
       return if total_entries.zero?
 
-      completed_count = dataset[:completed_entries_count]
-      in_progress_count = dataset[:in_progress_entries_count]
+      completed_count = dataset[:entries_completed_count]
+      in_progress_count = dataset[:entries_in_progress_count]
 
       # Calculate progress as a float (0.0 to 1.0)
       progress = completed_count.to_f / total_entries

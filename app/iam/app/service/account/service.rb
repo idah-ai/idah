@@ -41,10 +41,10 @@ module Account
 
         # Send the join invitation email
         ::Service::Notification.email(
-          recipient_account_email: created_account.email,
+          to: created_account.email,
           title: "Account Created",
           category: "account_created",
-          recipient_account_id: created_account.id
+          recipient_id: created_account.id
         )
 
         created_account
@@ -91,10 +91,10 @@ module Account
       )
 
       ::Service::Notification.email(
-        recipient_account_email: account.email,
+        to: account.email,
         title: "Reminder: Please join your account",
         category: "account_created",
-        recipient_account_id: account.id
+        recipient_id: account.id
       )
     end
 

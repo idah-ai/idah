@@ -106,7 +106,7 @@ RSpec.describe ProjectMember::Service, database: true do
 
         expect(Service::Notification).to have_received(:email).with(
           hash_including(
-            recipient_account_email: "annotator@email.com",
+            to: "annotator@email.com",
             title: "You have been assigned to the project 'Test Project'",
             category: "project_member_added",
             project_name: "Test Project"
@@ -198,7 +198,7 @@ RSpec.describe ProjectMember::Service, database: true do
 
         expect(Service::Notification).to have_received(:email).with(
           hash_including(
-            recipient_account_email: "annotator@email.com",
+            to: "annotator@email.com",
             title: "You have been removed from the project 'Test Project'",
             category: "project_member_removed",
             project_name: "Test Project",

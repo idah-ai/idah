@@ -68,10 +68,10 @@ module Dataset
 
       project_owner_members.each do |member|
         ::Service::Notification.email(
-          recipient_account_email: member.email,
+          to: member.email,
           title: "Dataset has been Completed",
           category: "dataset_completed",
-          recipient_account_id: member.account_id,
+          recipient_id: member.account_id,
           dataset_name: dataset.name,
           project_name: dataset.project.name,
           recipient_name: member.name,
