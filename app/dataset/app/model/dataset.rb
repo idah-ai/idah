@@ -50,7 +50,6 @@ module Dataset
       return if total_entries.zero?
 
       completed_entries = dataset[:entries_completed_count]
-      in_progress_entries = dataset[:entries_in_progress_count]
 
       progress = completed_entries.to_f / total_entries
 
