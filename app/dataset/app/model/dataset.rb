@@ -49,16 +49,14 @@ module Dataset
 
       return if total_entries.zero?
 
-      completed_count = dataset[:entries_completed_count]
-      in_progress_count = dataset[:entries_in_progress_count]
+      completed_entries = dataset[:entries_completed_count]
+      in_progress_entries = dataset[:entries_in_progress_count]
 
-      # Calculate progress as a float (0.0 to 1.0)
-      progress = completed_count.to_f / total_entries
+      progress = completed_entries.to_f / total_entries
 
-      # Determine new status and update accordingly
-      if progress >= 1.0
+      if completed_entries >= total_entries
         completed!(dataset_id, progress)
-      elsif in_progress_count > 0 || completed_count > 0
+      else
         in_progress!(dataset_id, progress)
       end
     end
