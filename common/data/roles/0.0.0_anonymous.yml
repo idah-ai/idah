@@ -6,3 +6,4 @@ anonymous:
   mask: "0.0.0"
   rights:
     - "iam:accounts.login.*"
+    - "iam:accounts.join.*"
