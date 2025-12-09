@@ -2,9 +2,11 @@
 
 # Setup jobs scheduler for sync processing.
 SCHEDULER = Jobs::Scheduler.new
+EXECUTOR = Executor.new(4)
 
 Verse.on_stop do
   SCHEDULER.stop
+  EXECUTOR.stop
 end
 
 puts ENV["PUMA_WORKERS"]
@@ -16,7 +18,7 @@ if ENV["PUMA_WORKERS"] &&
   # start the scheduler immediately.
   # Otherwise, puma on_worker_boot will handle it.
   Verse.on_boot do
-    puts "starting schehuler ?"
     SCHEDULER.start
+    EXECUTOR.start
   end
 end
