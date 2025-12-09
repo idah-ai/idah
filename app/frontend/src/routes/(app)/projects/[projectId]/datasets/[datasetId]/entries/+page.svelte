@@ -53,6 +53,7 @@
   } from "@/components/app/datasource-table/types";
   import type { ListOptions } from "@/data/DataSource";
   import type { CollectionResponse } from "@/data/model/types";
+  import type { ProjectMemberScope } from "@/security/types";
 
   // Contexts
   const project: ProjectRecord = getContext("project");
@@ -75,6 +76,13 @@
   let openAssignEntryFormModal: boolean = $state(false);
   let openSetPriorityModal: boolean = $state(false);
   let openConfirmDeleteEntriesModal: boolean = $state(false);
+
+  const as_project_owner: { as_user: ProjectMemberScope } = {
+    as_user: {
+      projectId,
+      projectMemberRoles: ["project_owner"],
+    },
+  };
 
   pageBreadcrumbsStore.set([
     homeBreadcrumb,
@@ -238,7 +246,7 @@
 </script>
 
 {#snippet AddEntryButton()}
-  <Can action="create" resource="dataset:entries" scopes={["as_org_owner", "as_user"]}>
+  <Can action="create" resource="dataset:entries" scopes={["as_org_owner", as_project_owner]}>
     <Button onclick={openNewEntryFormModal}>
       <PlusIcon />
       Add Entry
@@ -337,11 +345,11 @@
 <!-- LIST OF TASKS (ENTRY) -->
 {#key $refetches.entries.list}
   {#await fetchEntries()}
-    <Spinner></Spinner>
+    <Spinner />
   {:then _}
     <div class="flex flex-col gap-4">
       {#each response.data as entry (entry.id)}
-        <EntryCard {entry} {selectedRows} onRowSelect={selectRow}></EntryCard>
+        <EntryCard {entry} {selectedRows} onRowSelect={selectRow} />
       {:else}
         <Card>
           <CardContent class="min-h-64 flex items-center justify-center">
@@ -368,7 +376,7 @@
       hasMore={response.meta?.more || false}
       onPageChange={changePage}
       onItemsPerPageSelect={setItemsPerPage}
-    ></AppPaginator>
+    />
   {/await}
 {/key}
 

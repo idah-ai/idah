@@ -37,7 +37,7 @@
       return false;
     }
 
-    return currentAccount.can(action, resource, scopes);
+    return await currentAccount.can(action, resource, scopes);
   }
 </script>
 

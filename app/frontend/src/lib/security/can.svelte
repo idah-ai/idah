@@ -1,37 +1,3 @@
-<!-- <script lang="ts">
-  import { onMount } from "svelte";
-
-  import { AuthContext, authStatus } from "$/lib/security/AuthContext";
-  import { checkRights } from "$/lib/security/CheckRights";
-
-  import type { Action } from "$/lib/security/can.types";
-  import type { Resource } from "$/lib/security/resource.types";
-  import type { RoleValue } from "$/lib/data/model/iam/role/role.constants";
-  import type { Scope } from "$/lib/security/scope.types";
-
-  export let resource: Resource;
-  export let action: Action;
-  export let scopes: Scope[] | undefined = undefined;
-
-  export let roles: RoleValue[] | undefined = undefined;
-
-  let hasAccess = false;
-
-  onMount(async () => {
-    const authContext: AuthContext | null = $authStatus.authContext;
-
-    if (await checkRights(authContext, action, resource, scopes, roles)) {
-      hasAccess = true;
-    }
-  });
-</script>
-
-{#if hasAccess}
-  <slot />
-{:else}
-  <slot name="else" />
-{/if} -->
-
 <script lang="ts">
   import { onMount, type Snippet } from "svelte";
 
@@ -55,10 +21,10 @@
   let hasAccess: boolean = $state(false);
 
   // Lifecycle
-  onMount(() => {
+  onMount(async () => {
     const currentAccount = $authStatus.authContext;
 
-    hasAccess = currentAccount?.can(action, resource, scopes) || false;
+    hasAccess = (await currentAccount?.can(action, resource, scopes)) || false;
   });
 </script>
 

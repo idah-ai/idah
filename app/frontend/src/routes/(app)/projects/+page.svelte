@@ -27,13 +27,15 @@
   let columns = $state(projectColumns);
 
   // Lifecycle
-  onMount(() => {
-    canUpdateProject = $authStatus.authContext?.can("update", "dataset:projects", ["as_org_owner"]) || false;
-    canDeleteProject = $authStatus.authContext?.can("delete", "dataset:projects", ["as_org_owner"]) || false;
-
-    if (!canUpdateProject && !canDeleteProject) {
-      columns.action.visible = false;
-    }
+  onMount(async () => {
+    const currentAccount = $authStatus.authContext;
+    /**
+     * Note: Can not check with `as_project_owner` scope
+     * because we need to check each project id
+     */
+    canUpdateProject = (await currentAccount?.can("update", "dataset:projects", ["as_org_owner", "as_user"])) || false;
+    canDeleteProject = (await currentAccount?.can("delete", "dataset:projects", ["as_org_owner", "as_user"])) || false;
+    columns.action.visible = canUpdateProject || canDeleteProject;
   });
 
   // Functions

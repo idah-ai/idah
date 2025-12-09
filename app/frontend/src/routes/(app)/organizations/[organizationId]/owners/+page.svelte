@@ -29,12 +29,10 @@
     { label: "Owners" },
   ]);
 
-  onMount(() => {
-    canUpdateAccount = $authStatus.authContext?.can("update", "iam:accounts") || false;
-
-    if (!canUpdateAccount) {
-      columns.action.visible = false;
-    }
+  onMount(async () => {
+    const currentAccount = $authStatus.authContext;
+    canUpdateAccount = (await currentAccount?.can("update", "iam:accounts")) || false;
+    columns.action.visible = canUpdateAccount;
   });
 </script>
 
