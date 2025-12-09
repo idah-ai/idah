@@ -68,5 +68,25 @@ module Dataset
     def delete(id)
       datasets.delete!(id)
     end
+
+    def notify_dataset_completed(dataset_id)
+      dataset = datasets.find!(dataset_id, included: ["project"])
+
+      project_owner_members = project_members.index(
+        { project_id: dataset.project_id, role: "project_owner" },
+      )
+
+      project_owner_members.each do |member|
+        ::Service::Notification.email(
+          recipient_account_email: member.email,
+          title: "Dataset has been Completed",
+          category: "dataset_completed",
+          recipient_account_id: member.account_id,
+          dataset_name: dataset.name,
+          project_name: dataset.project.name,
+          recipient_name: member.name
+        )
+      end
+    end
   end
 end
