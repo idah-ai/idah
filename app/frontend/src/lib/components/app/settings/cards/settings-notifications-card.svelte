@@ -4,9 +4,9 @@
   import Switch from "@/components/ui/switch/switch.svelte";
 
   import {
-      accountSettingBackendDataSource,
-      organizationActivitiesKey,
-      projectActivitiesKey,
+    accountSettingBackendDataSource,
+    organizationActivitiesKey,
+    projectActivitiesKey,
   } from "@/data/model/setting/account_setting/record";
   import { authStatus } from "@/security/AuthContext";
 
