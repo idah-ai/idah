@@ -4,9 +4,9 @@
   import Switch from "@/components/ui/switch/switch.svelte";
 
   import {
-    accountSettingBackendDataSource,
-    organizationActivitiesKey,
-    projectActivitiesKey,
+      accountSettingBackendDataSource,
+      organizationActivitiesKey,
+      projectActivitiesKey,
   } from "@/data/model/setting/account_setting/record";
   import { authStatus } from "@/security/AuthContext";
 
@@ -22,7 +22,7 @@
     return await Promise.all(Object.keys(notifications).map((key) => loadSetting(key as keyof typeof notifications)));
   }
 
-  async function loadSetting(key: keyof typeof notifications, defaultValue: boolean = true) {
+  async function loadSetting(key: keyof typeof notifications) {
     if (!$authStatus.authContext?.id) return;
 
     const response = await accountSettingBackendDataSource.list({
