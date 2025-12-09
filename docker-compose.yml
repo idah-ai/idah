@@ -120,7 +120,6 @@ services:
       - ./app/setting:/app
       - ./app/setting/common:/app/common
       - ./plugins:/app/plugins
-      - ./app/frontend/build:/app/plugins/idah-video/frontend/build
       - bundler_cache:/usr/local/bundle
     networks:
       - app-network
@@ -174,6 +173,7 @@ services:
     volumes:
       - ./app/sync:/app
       - ./app/sync/common:/app/common
+      - ./plugins:/app/plugins
       - ./dev/nginx/ssl/cert.pem:/etc/ssl/certs/ca-certificates.crt
       - bundler_cache:/usr/local/bundle
     extra_hosts:
