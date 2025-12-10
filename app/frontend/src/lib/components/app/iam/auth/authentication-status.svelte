@@ -1,41 +1,38 @@
 <script lang="ts">
-	import { onMount, type Snippet } from "svelte";
+  import { cn } from "@/utils";
+  import { onMount, type Snippet } from "svelte";
 
-	import ApplicationLoading from "@/components/app/application/application-loading.svelte";
+  // Props
+  interface Props {
+    class?: string | null;
+    // Slots
+    loading?: Snippet;
+    authorized?: Snippet;
+    unauthorized?: Snippet;
+  }
+  let { class: className, loading, authorized, unauthorized }: Props = $props();
 
-	import { cn } from "@/utils";
+  // Lifecycle
+  onMount(async () => {
+    await checkAuthStatus();
+  });
 
-	// Props
-	interface Props {
-		class?: string | null;
-		// Slots
-		loading?: Snippet;
-		authorized?: Snippet;
-		unauthorized?: Snippet;
-	}
-	let { class: className, loading, authorized, unauthorized }: Props = $props();
-
-	// Lifecycle
-	onMount(async () => {
-		await checkAuthStatus();
-	});
-
-	// Functions
-	async function checkAuthStatus(): Promise<void> {}
+  // Functions
+  async function checkAuthStatus(): Promise<void> {}
 </script>
 
 <div class={cn("", className)}>
-	<!-- {#if loading}
-		{@render loading?.()}
-	{:else}
-		<ApplicationLoading />
-	{/if} -->
+  {#if loading}
+    {@render loading?.()}
+  {:else}
+    <!-- <ApplicationLoading /> -->
+  {/if}
 
-	{@render authorized?.()}
+  {@render authorized?.()}
 
-	<!-- {#if unauthorized}
-		{@render unauthorized?.()}
-	{:else}
-		<Redirect to="/login" />
-	{/if} -->
+  {#if unauthorized}
+    {@render unauthorized?.()}
+  {:else}
+    <!-- <Redirect to="/login" /> -->
+  {/if}
 </div>
