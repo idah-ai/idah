@@ -39,6 +39,41 @@ module Dataset
     encoder :workflow_configuration, Verse::Sequel::JsonEncoder
     encoder :labels, Verse::Sequel::PgArrayEncoder
 
+    def update_progress!(dataset_id)
+      # Get counter values from the dataset record
+      dataset = table.where(id: dataset_id).first
+
+      return unless dataset
+
+      total_entries = dataset[:entries_total_count]
+
+      return if total_entries.zero?
+
+      completed_entries = dataset[:entries_completed_count]
+
+      progress = completed_entries.to_f / total_entries
+
+      if completed_entries >= total_entries
+        completed!(dataset_id, progress)
+      else
+        in_progress!(dataset_id, progress)
+      end
+    end
+
+    event(name: "completed")
+    def completed!(dataset_id, progress)
+      no_event do
+        update!(dataset_id, { progress: progress, status: "completed" })
+      end
+    end
+
+    event(name: "in_progress")
+    def in_progress!(dataset_id, progress)
+      no_event do
+        update!(dataset_id, { progress: progress, status: "in_progress" })
+      end
+    end
+
     def scoped(action)
       auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }
