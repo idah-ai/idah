@@ -9,15 +9,15 @@ module Service
     def email(
       title:,
       category:,
-      recipient_account_email: nil,
+      to: nil,
       **params
     )
-      if recipient_account_email.nil?
-        raise ArgumentError, "recipient_account_email must be provided"
+      if to.nil?
+        raise ArgumentError, "to email must be provided"
       end
 
       hash = {
-        account_email: recipient_account_email,
+        account_email: to,
         title:,
         category:,
       }.merge(params)
