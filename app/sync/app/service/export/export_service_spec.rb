@@ -2,6 +2,6 @@
 
 require "spec_helper"
 
-RSpec.describe Export::Service, database: false do
+RSpec.describe Sync::Service, database: false do
 
 end

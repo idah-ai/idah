@@ -3,10 +3,16 @@
 module Export
   class Service < Verse::Service::Base
 
-    def export(dataset_id)
+    def export
+    # "UniversalPortableDataset::Export"
+    # infer api/setting/registry...
       Jobs::Service.new(auth_context).create(
         "Export::Job",
-        arguments: {dataset_id:}
+        arguments: {
+          context_args: {},
+          process_class: "UniversalPortableDataset::Export",
+          process_args: {},
+        }
       )
     end
   end

@@ -1,4 +1,4 @@
-module Export
+module IdahApiContext
   class EntryContext
     attr_reader :entry, :media_info, :media_file, :annotations
 
@@ -23,7 +23,7 @@ module Export
 
       entry_id = entry[:id]
 
-      EntryContext.new(
+      new(
         entry,
         media_info,
         file_response,

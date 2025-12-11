@@ -39,6 +39,19 @@ Api[:idah].register(
 end
 
 Api[:idah].register(
+  :dataset, :datasets, :index
+) do |**opts|
+  output = get(
+    "dataset/datasets",
+    params: { **opts },
+    options: { auth: nil },
+  )
+
+  deserialize output.body
+end
+
+
+Api[:idah].register(
   :dataset, :datasets, :show
 ) do |id:, **opts|
   output = get(

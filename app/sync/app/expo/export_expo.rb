@@ -5,13 +5,12 @@ class ExportExpo < BaseExpo
 
   use_service Export::Service
 
-  expose on_http(:post, "/:dataset_id", auth: nil) do
-    desc "Export Datasets"
+  expose on_http(:get, "", auth: nil) do
+    desc "export endpoint"
     input do
-      field :dataset_id, String
     end
   end
   def export_dataset
-    service.export(params[:dataset_id])
+    service.export
   end
 end

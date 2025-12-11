@@ -52,9 +52,7 @@ idah:
     path: <%= ENV.fetch("IDAH_PLUGIN_PATH", "plugins") %>
     # Mount modules manually using their path in the modules
     # directory
-    manual:
-      - idah-sync-upd
-      - idah-sync-jsonl
+    # manual: []
     # Auto reload modules when files change (only manual plugins)
     # True if the IDAH_DEV_PLUGIN env var is set to any value
     watch: <%= !!ENV["IDAH_DEV_PLUGIN"] %>

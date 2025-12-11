@@ -1,4 +1,4 @@
-module Export
+module IdahApiContext
   class DatasetContext
     attr_reader :dataset, :entries
 
@@ -9,8 +9,7 @@ module Export
 
     def self.from_dataset(dataset)
       dataset_id =  dataset[:id] #
-
-      DatasetContext.new(
+      new(
         dataset,
         Verse::Util::Iterator.chunk_iterator(1) do |entry_page|
           entries_response = Api[:idah].dataset.entries.index(

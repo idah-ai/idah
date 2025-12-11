@@ -1,4 +1,4 @@
-module Export
+module IdahApiContext
   class AnnotationContext
     attr_reader :annotation
 
@@ -7,7 +7,8 @@ module Export
     end
 
     def self.from_annotation(annotation)
-      AnnotationContext.new(annotation)
+      # could be extended with comments or else
+      new(annotation)
     end
   end
 end
