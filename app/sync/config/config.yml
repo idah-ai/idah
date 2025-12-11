@@ -53,6 +53,7 @@ idah:
     # Mount modules manually using their path in the modules
     # directory
     manual:
+      - idah-sync-idah
       - idah-sync-upd
       - idah-sync-jsonl
     # Auto reload modules when files change (only manual plugins)

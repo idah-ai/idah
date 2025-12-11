@@ -1,0 +1,20 @@
+{
+  "type": "idah-plugin",
+  "name": "idah-sync-jsonl-context",
+  "version": "1.0.0",
+
+  "title": "IDAH Sync JSONL context plugin",
+  "description": "A sync module to contextualize jsonl",
+
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+
+  "entryPoints": {
+    "backend": {
+      "module": "JsonlContext",
+      "path": "backends"
+    }
+  }
+}

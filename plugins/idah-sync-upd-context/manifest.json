@@ -1,0 +1,20 @@
+{
+  "type": "idah-plugin",
+  "name": "idah-sync-upd-context",
+  "version": "1.0.0",
+
+  "title": "IDAH Sync UPD context plugin",
+  "description": "A sync module to contextualize UPD",
+
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+
+  "entryPoints": {
+    "backend": {
+      "module": "UniversalPortableDatasetContext",
+      "path": "backends"
+    }
+  }
+}
