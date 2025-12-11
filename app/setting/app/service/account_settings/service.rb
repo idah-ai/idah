@@ -23,14 +23,14 @@ module AccountSettings
       Defaults::DEFAULT_ACCOUNT_SETTINGS.each do |key, value|
         account_settings.transaction do
           attributes = {
-              account_id: ,
-              key: key,
-              value: value,
-            }
+            account_id:,
+            key: key,
+            value: value,
+          }
           account_settings.create(attributes)
         end
       end
-      account_settings.index({account_id:})
+      account_settings.index({ account_id: })
     end
 
     def update(record)
@@ -39,7 +39,7 @@ module AccountSettings
     end
 
     def delete(account_id)
-      settings = account_settings.index({account_id:})
+      settings = account_settings.index({ account_id: })
       settings.each do |setting|
         account_settings.delete(setting.id)
       end
