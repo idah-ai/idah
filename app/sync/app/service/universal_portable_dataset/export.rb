@@ -1,9 +1,18 @@
-module UniversalPortableDatasetProcess
-  class Sync
+module UniversalPortableDataset
+  class Export
     def initialize(context)
       @context = context
       @files = []
     end
+
+    def run
+      # @context.open do |block|
+      open do |&block|
+        process &block
+      end
+    end
+
+    private
 
     def open(&block)
       Open3.popen3(
@@ -18,7 +27,7 @@ module UniversalPortableDatasetProcess
         end
 
         begin
-          yield do |s|
+          block.call do |s|
             stdin.puts(s)
             stdin.flush
           end
@@ -40,7 +49,6 @@ module UniversalPortableDatasetProcess
           Verse::logger.info { "UPD export done: #{value}" }
         end
       end
-      end
     end
 
     def on_dataset(dataset_context, &block)
@@ -60,6 +68,7 @@ module UniversalPortableDatasetProcess
     end
 
     def on_entry(entry_context, &block)
+      # @context.Tempfile.new(entry_context.entry[:attributes][:resource])
       file = Tempfile.new(entry_context.entry[:attributes][:resource])
       file.write(entry_context.media_file)
       file.close
@@ -115,14 +124,6 @@ module UniversalPortableDatasetProcess
       # ?
     end
 
-
-    def run
-      open do |&block|
-        process &block
-      end
-    end
-
-    private
 
     def process(&block)
       yield({command: 'init', args: {}}.to_json)
