@@ -18,11 +18,14 @@ Sequel.migration do
       column :picture_url, String, null: true
 
       column :hashed_password, String, null: true
+      column :password_reset_token, String, null: true
+      column :password_reset_token_expires_at, DateTime, null: true
       column :sso_channel, String, null: true
 
       column :enabled, TrueClass, index: true
 
       column :joined_at, Time, null: true
+      column :invitation_expired_at, Time, null: true
 
       Migration::Timestamps.timestamps(self)
     end
