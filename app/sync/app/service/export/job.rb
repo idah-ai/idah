@@ -7,7 +7,7 @@ module Export
       Verse::Util::Reflection.constantize(
         arguments.fetch(:process_class)
       ).new(
-        IdahApiContext::Root.from(arguments.fetch(:process_args))
+        IdahApiContext::RootContext.from(arguments.fetch(:process_args))
       ).run # arguments.fetch(:process_args) # or init ? or both ?
     end
   end
