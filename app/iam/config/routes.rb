@@ -5,6 +5,8 @@ Verse.on_boot do
     HealthcheckExpo,
     AccountsExpo,
     AccountSessionsExpo,
-    Auth::SimpleExpo
+    Auth::SimpleExpo,
+    Account::PasswordsExpo,
+    OrganizationsExpo
   ].each(&:register)
 end

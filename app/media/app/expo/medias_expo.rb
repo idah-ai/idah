@@ -67,6 +67,7 @@ class MediasExpo < BaseExpo
     MD
     input do
       field(:file, Verse::Http::UploadedFile).meta(desc: "The media to upload")
+      field :project_id, String
 
       field :resource, String
       field(:key, [String, NilClass]).transform { |v| v || "" }.meta(
@@ -81,7 +82,8 @@ class MediasExpo < BaseExpo
     service.upload(
       params[:file],
       resource: params[:resource],
-      key: params[:key]
+      key: params[:key],
+      project_id: params[:project_id]
     )
   end
 end

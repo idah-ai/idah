@@ -7,11 +7,13 @@ module Project
     field :id, type: String, primary: true
 
     field :name, type: String
-    field :description, type: String
+    field :description, type: [String, NilClass]
     field :created_by_email, type: String, readonly: true
 
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
+
+    field :organization_id, type: Integer, readonly: true
 
     has_many :project_members, repository: "ProjectMember::Repository", foreign_key: :project_id
     has_many :datasets, repository: "Dataset::Repository", foreign_key: :project_id
@@ -27,6 +29,12 @@ module Project
     def scoped(action)
       auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }
+
+        scope.as_org_owner? {
+          org_ids = auth_context.custom_scopes[:org]
+          table.where(organization_id: org_ids)
+        }
+
         scope.as_user? { user_project_scoped_query(action) }
       end
     end

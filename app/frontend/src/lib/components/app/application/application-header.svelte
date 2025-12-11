@@ -1,8 +1,10 @@
 <script lang="ts">
   import { PanelLeftCloseIcon, PanelLeftOpenIcon } from "@lucide/svelte";
+  import { onMount } from "svelte";
 
   import PageBreadcrumb from "@/components/app/page/page-breadcrumb.svelte";
   import Button from "@/components/ui/button/button.svelte";
+  import { Kbd, KbdGroup } from "@/components/ui/kbd";
   import Separator from "@/components/ui/separator/separator.svelte";
   import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -11,25 +13,47 @@
 
   // Variables
   const sidebar = useSidebar();
+
   let sidebarIsOpen: boolean = $derived(sidebar.open);
+
+  onMount(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.metaKey) {
+        if (event.key === "\\") {
+          sidebar.toggle();
+          event.preventDefault();
+        }
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  });
 </script>
 
 <header class="flex h-16 shrink-0 items-center gap-2">
-  <div class="flex items-center gap-2 px-4">
+  <div class="flex items-center gap-2">
     <TooltipProvider>
       <Tooltip delayDuration={100}>
         <TooltipTrigger>
-          <Button variant="ghost" size="icon" class="-ml-1" onclick={() => sidebar.toggle()}>
+          <Button variant="ghost" size="icon-sm" class="-ml-1" onclick={() => sidebar.toggle()}>
             {#if sidebarIsOpen}
-              <PanelLeftCloseIcon class="size-4"></PanelLeftCloseIcon>
+              <PanelLeftCloseIcon />
             {:else}
-              <PanelLeftOpenIcon class="size-4"></PanelLeftOpenIcon>
+              <PanelLeftOpenIcon />
             {/if}
           </Button>
         </TooltipTrigger>
 
         <TooltipContent>
           {sidebarIsOpen ? "Collapse Sidebar" : "Expand Sidebar"}
+
+          <KbdGroup>
+            <Kbd>⌘</Kbd>
+            <Kbd>\</Kbd>
+          </KbdGroup>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

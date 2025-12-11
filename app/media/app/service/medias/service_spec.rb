@@ -33,7 +33,8 @@ RSpec.describe Medias::Service, as: :system, database: true do
           }
         ),
         resource: "test_resource",
-        key: "test_key"
+        key: "test_key",
+        project_id: "mocked_project_id"
       )
 
       expect(result).to be_truthy
@@ -57,7 +58,8 @@ RSpec.describe Medias::Service, as: :system, database: true do
           }
         ),
         resource: "test_resource",
-        key: "test_key"
+        key: "test_key",
+        project_id: "mocked_project_id"
       )
 
       # Try to upload duplicate
@@ -71,7 +73,8 @@ RSpec.describe Medias::Service, as: :system, database: true do
             }
           ),
           resource: "test_resource",
-          key: "test_key"
+          key: "test_key",
+          project_id: "mocked_project_id"
         )
       end.to raise_error(Verse::Error::ValidationFailed, /Resource test_resource with key test_key already exists/)
     ensure
@@ -89,7 +92,8 @@ RSpec.describe Medias::Service, as: :system, database: true do
           }
         ),
         resource: "test_resource_no_key",
-        key: ""
+        key: "",
+        project_id: "mocked_project_id"
       )
 
       expect(result).to be_truthy
@@ -138,7 +142,8 @@ RSpec.describe Medias::Service, as: :system, database: true do
           }
         ),
         resource: "resource1",
-        key: "key1"
+        key: "key1",
+        project_id: "mocked_project_id"
       )
 
       subject.upload(
@@ -150,7 +155,8 @@ RSpec.describe Medias::Service, as: :system, database: true do
           }
         ),
         resource: "resource2",
-        key: "key2"
+        key: "key2",
+        project_id: "mocked_project_id"
       )
       file&.close
     end
@@ -175,7 +181,8 @@ RSpec.describe Medias::Service, as: :system, database: true do
           }
         ),
         resource: "show_resource",
-        key: "show_key"
+        key: "show_key",
+        project_id: "mocked_project_id"
       )
       file&.close
       result
@@ -209,7 +216,8 @@ RSpec.describe Medias::Service, as: :system, database: true do
           }
         ),
         resource: "delete_resource",
-        key: "delete_key"
+        key: "delete_key",
+        project_id: "mocked_project_id"
       )
       file&.close
       result

@@ -20,7 +20,12 @@ RSpec.describe NoteComment::Service, database: true do
   let(:project_repo) { Project::Repository.new(auth_context) }
 
   let!(:project_id) do
-    project_repo.create(name: "Test Project", description: "A test project", created_by_email: "user@example.com")
+    project_repo.create(
+      name: "Test Project",
+      description: "A test project",
+      created_by_email: "user@example.com",
+      organization_id: 1,
+    )
   end
 
   let!(:dataset_id) do
@@ -39,7 +44,7 @@ RSpec.describe NoteComment::Service, database: true do
       resource: "http://example.com/video.mp4",
       wf_step: "start",
       status: "pending",
-      assigned_to_id: 1,
+      assigned_to_member_id: 1,
       project_id:,
       dataset_id:
     )

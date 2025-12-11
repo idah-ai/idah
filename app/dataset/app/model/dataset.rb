@@ -39,44 +39,20 @@ module Dataset
     encoder :workflow_configuration, Verse::Sequel::JsonEncoder
     encoder :labels, Verse::Sequel::PgArrayEncoder
 
-    def update_progress!(dataset_id)
-      # Get counter values from the dataset record
-      dataset = table.where(id: dataset_id).first
-
-      return unless dataset
-
-      total_entries = dataset[:entries_total_count]
-
-      return if total_entries.zero?
-
-      completed_entries = dataset[:entries_completed_count]
-
-      progress = completed_entries.to_f / total_entries
-
-      if completed_entries >= total_entries
-        completed!(dataset_id, progress)
-      else
-        in_progress!(dataset_id, progress)
-      end
-    end
-
-    event(name: "completed")
-    def completed!(dataset_id, progress)
-      no_event do
-        update!(dataset_id, { progress: progress, status: "completed" })
-      end
-    end
-
-    event(name: "in_progress")
-    def in_progress!(dataset_id, progress)
-      no_event do
-        update!(dataset_id, { progress: progress, status: "in_progress" })
-      end
-    end
-
     def scoped(action)
       auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }
+
+        scope.as_org_owner? do
+          org_ids = auth_context.custom_scopes[:org]
+          table.where(
+            table.db[:projects]
+              .where(organization_id: org_ids)
+              .where(id: Sequel[:datasets][:project_id])
+              .select(1).exists
+          )
+        end
+
         scope.as_user? { user_project_scoped_query(action) }
       end
     end
@@ -106,14 +82,14 @@ module Dataset
               AND (
                 -- All with roles
                 pm.role IN :with_roles OR
+                -- From assigned entries with roles
                 (
-                  -- From assigned entries with roles
                   pm.role IN :assigned_to_roles
                   AND EXISTS (
                     SELECT 1
                     FROM entries e
                     WHERE e.dataset_id = datasets.id
-                      AND e.assigned_to_id = :account_id
+                      AND e.assigned_to_member_id = pm.id
                   )
                 )
               )
@@ -149,6 +125,41 @@ module Dataset
       else
         raise Verse::Error::Unauthorized,
               "Permission denied for \"#{action}\" action on #{self.class.resource}"
+      end
+    end
+
+    def update_progress!(dataset_id)
+      # Get counter values from the dataset record
+      dataset = table.where(id: dataset_id).first
+
+      return unless dataset
+
+      total_entries = dataset[:entries_total_count]
+
+      return if total_entries.zero?
+
+      completed_entries = dataset[:entries_completed_count]
+
+      progress = completed_entries.to_f / total_entries
+
+      if completed_entries >= total_entries
+        completed!(dataset_id, progress)
+      else
+        in_progress!(dataset_id, progress)
+      end
+    end
+
+    event(name: "completed")
+    def completed!(dataset_id, progress)
+      no_event do
+        update!(dataset_id, { progress: progress, status: "completed" })
+      end
+    end
+
+    event(name: "in_progress")
+    def in_progress!(dataset_id, progress)
+      no_event do
+        update!(dataset_id, { progress: progress, status: "in_progress" })
       end
     end
   end

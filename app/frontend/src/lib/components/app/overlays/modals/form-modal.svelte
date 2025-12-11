@@ -2,12 +2,14 @@
   import { onMount } from "svelte";
 
   import Button from "@/components/ui/button/button.svelte";
-  import { Dialog } from "@/components/ui/dialog";
-  import DialogClose from "@/components/ui/dialog/dialog-close.svelte";
-  import DialogContent from "@/components/ui/dialog/dialog-content.svelte";
-  import DialogDescription from "@/components/ui/dialog/dialog-description.svelte";
-  import DialogFooter from "@/components/ui/dialog/dialog-footer.svelte";
-  import DialogTitle from "@/components/ui/dialog/dialog-title.svelte";
+  import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogTitle,
+  } from "@/components/ui/dialog";
   import ScrollArea from "@/components/ui/scroll-area/scroll-area.svelte";
 
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
@@ -70,7 +72,9 @@
     function handlePressEnter(event: KeyboardEvent) {
       if (event.key === "Enter" && !event.shiftKey && !loading) {
         event.preventDefault();
-        handleClickConfirm();
+        if (open) {
+          handleClickConfirm();
+        }
       }
     }
 
