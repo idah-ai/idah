@@ -81,6 +81,7 @@ RSpec.describe Email::Service, database: true do
           title: "Added to project",
           category: "project_member_added",
           project_name: "Project X",
+          project_id: 2,
           inviter_email: "inviter@example.com"
         )
 
@@ -93,7 +94,8 @@ RSpec.describe Email::Service, database: true do
         notification = double(
           title: "Removed from project",
           category: "project_member_removed",
-          project_name: "Project X"
+          project_name: "Project X",
+          remover_email: "remover@example.com"
         )
 
         subject.send_email(to_email, notification)
