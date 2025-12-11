@@ -25,27 +25,27 @@ class ExportExpo < BaseExpo
 
       [
         service.sync(
-          "IdahContext::Root",
+          "IdahApiContext::Root",
           {},
           "UniversalPortableDatasetProcess::Sync",
           {},
           true
         ),
         service.sync(
-          "IdahContext::Root",
+          "IdahApiContext::Root",
           {},
           "JsonlProcess::Sync",
           {},
           true
         ),
         service.sync(
-          "IdahContext::Root",
+          "IdahApiContext::Root",
           {},
           "UniversalPortableDatasetProcess::Sync",
           {}
         ),
         service.sync(
-          "IdahContext::Root",
+          "IdahApiContext::Root",
           {},,
           "JsonlProcess::Sync",
           {}
@@ -56,7 +56,7 @@ class ExportExpo < BaseExpo
     #     Jobs::Service.new(auth_context).create(
     #       "Sync::Job",
     #       arguments: {
-    #         process_class: "IdahProcess::Sync",
+    #         process_class: "IdahApiProcess::Sync",
     #         process_args:,
     #         context_class:,
     #         context_args:,
