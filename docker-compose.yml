@@ -16,6 +16,7 @@ services:
       - audit
       - sync
       - notification
+      - mails
     networks:
       - app-network
 
@@ -211,6 +212,18 @@ services:
     command: ./dev-entrypoint.sh puma
     stdin_open: true
     tty: true
+
+  mails:
+    image: mailhog/mailhog
+    platform: linux/amd64
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+      - "idah.localhost:host-gateway"
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - app-network
 
   frontend:
     build:
