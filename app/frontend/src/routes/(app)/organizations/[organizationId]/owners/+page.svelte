@@ -36,7 +36,7 @@
   });
 </script>
 
-{#key $refetches.projects.list}
+{#key $refetches.accounts.list}
   <DatasourceTable
     id="organization-owners-{organizationId}"
     name="owner"

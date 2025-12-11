@@ -24,6 +24,9 @@ export const resources = [
   "dataset:entries",
   "dataset:projects",
   "dataset:project_members",
+
+  /** AUDIT */
+  "audit:logs",
 ] as const;
 
 export type Resource = (typeof resources)[number];
