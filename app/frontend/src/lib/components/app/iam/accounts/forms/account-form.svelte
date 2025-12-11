@@ -55,7 +55,7 @@
     />
 
     <!-- ACCOUNT:ROLE -->
-    {#if !newRecord && account.role_name !== "org_owner"}
+    <!-- {#if !newRecord && account.role_name !== "org_owner"} -->
       <SingleSelectField
         name="{resource}/role_name"
         label="Role"
@@ -68,7 +68,7 @@
           role_name = selectedValue as string;
         }}
       />
-    {/if}
+    <!-- {/if} -->
 
     <!-- ACCOUNT::ENABLED -->
     <CheckboxField
