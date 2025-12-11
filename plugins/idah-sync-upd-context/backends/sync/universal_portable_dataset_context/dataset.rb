@@ -1,4 +1,4 @@
-module IdahApiContext
+module UniversalPortableDatasetContext
   class Dataset
     attr_reader :dataset, :entries
 

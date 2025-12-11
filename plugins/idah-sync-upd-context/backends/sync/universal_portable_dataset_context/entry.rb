@@ -1,4 +1,4 @@
-module IdahApiContext
+module UniversalPortableDatasetContext
   class Entry
     attr_reader :entry, :media_info, :media_file, :annotations
 
