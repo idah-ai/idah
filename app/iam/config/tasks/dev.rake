@@ -15,7 +15,7 @@ namespace :dev do
   end
 
   task users: :environment do
-    password = "password"
+    password = "P@ssword01"
     hashed_password = BCrypt::Password.create(password)
 
     users = [
