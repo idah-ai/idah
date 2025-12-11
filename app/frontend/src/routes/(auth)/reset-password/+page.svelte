@@ -25,7 +25,7 @@
     return !validated.success;
   });
 
-  let token = $derived(page.url.searchParams.get("password_reset_token") as string);
+  let token = $derived(page.url.searchParams.get("token") as string);
 
   // Functions
   async function updatePassword(): Promise<void> {
