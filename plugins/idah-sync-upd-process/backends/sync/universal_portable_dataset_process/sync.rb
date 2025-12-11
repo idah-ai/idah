@@ -117,39 +117,8 @@ module UniversalPortableDatasetProcess
 
 
     def run
-      Open3.popen3(
-        "bin/datset-static", # TODO: build or embed binary within plugin
-        "-i", [@context.name, :upd].join('.'),
-        "append"
-      ) do |stdin, stdout, stderr, wait_thr|
-        stdout_thr = Thread.new do
-          until (line = stdout.gets).nil?
-            Verse.logger.info { "#{line.strip}"}
-          end
-        end
-
-        begin
-          process do |s|
-            stdin.puts(s)
-            stdin.flush
-          end
-
-          [@context.name, :upd].join('.')
-          ## todo review VVV
-        rescue Exception => e
-          Verse.logger.error {"UPD export error:#{e}"}
-          raise e
-        ensure
-          stdin.close
-          stdout_thr.join
-          error = stderr.read
-          value = wait_thr.value
-          if value.exitstatus != 0
-            raise "updcli error #{value} #{error}"
-          end
-          @files.each &:unlink # earlier ?
-          Verse::logger.info { "UPD export done: #{value}" }
-        end
+      open do |&block|
+        process &block
       end
     end
 
