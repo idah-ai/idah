@@ -53,9 +53,12 @@ idah:
     # Mount modules manually using their path in the modules
     # directory
     manual:
-      - idah-sync-idah
-      - idah-sync-upd
-      - idah-sync-jsonl
+      - idah-sync-idah-api-context
+      - idah-sync-idah-api-process
+      - idah-sync-upd-context
+      - idah-sync-upd-process
+      - idah-sync-jsonl-context
+      - idah-sync-jsonl-process
     # Auto reload modules when files change (only manual plugins)
     # True if the IDAH_DEV_PLUGIN env var is set to any value
     watch: <%= !!ENV["IDAH_DEV_PLUGIN"] %>
