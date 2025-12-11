@@ -31,6 +31,17 @@ module Annotation
     def scoped(action)
       auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }
+
+        scope.as_org_owner? do
+          org_ids = auth_context.custom_scopes[:org]
+          table.where(
+            table.db[:projects]
+              .where(organization_id: org_ids)
+              .where(id: Sequel[:annotations][:project_id])
+              .select(1).exists
+          )
+        end
+
         scope.as_user? { user_project_scoped_query(action) }
       end
     end
@@ -65,7 +76,7 @@ module Annotation
                   SELECT 1
                   FROM entries e
                   WHERE e.id = annotations.entry_id
-                    AND e.assigned_to_id = :account_id
+                    AND e.assigned_to_member_id = pm.id
                 )
               )
             )

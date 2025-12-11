@@ -24,7 +24,8 @@ RSpec.describe NoteFeed::Service, database: true do
     project_repo.create(
       name: "Test Project",
       description: "A test project",
-      created_by_email: "user@example.com"
+      created_by_email: "user@example.com",
+      organization_id: 1,
     )
   end
 
@@ -44,7 +45,7 @@ RSpec.describe NoteFeed::Service, database: true do
       resource: "http://example.com/video.mp4",
       wf_step: "review",
       status: "in_progress",
-      assigned_to_id: 1,
+      assigned_to_member_id: 1,
       project_id:,
       dataset_id:
     )
@@ -125,7 +126,7 @@ RSpec.describe NoteFeed::Service, database: true do
             resource: "http://example.com/video2.mp4",
             wf_step: "start",
             status: "pending",
-            assigned_to_id: 1,
+            assigned_to_member_id: 1,
             project_id:,
             dataset_id:
           )

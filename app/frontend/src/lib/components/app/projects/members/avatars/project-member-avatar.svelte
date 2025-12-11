@@ -1,30 +1,28 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import Copyable from "@/components/app/texts/copyable.svelte";
-  import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+  import AccountAvatar from "@/components/app/iam/accounts/avatars/account-avatar.svelte";
   import Spinner from "@/components/ui/spinner/spinner.svelte";
   import Text from "@/components/ui/text/Text.svelte";
 
   import { ProjectMemberRecord, projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
-  import { getAvatarFallback } from "@/utils/string";
 
   // Props
   interface Props {
-    memberId: number | null;
+    memberAccountId: number | null;
     slotUnassigned?: Snippet;
   }
-  let { memberId, slotUnassigned }: Props = $props();
+  let { memberAccountId, slotUnassigned }: Props = $props();
 
   // Functions
   async function fetchProjectMember() {
-    if (!memberId) {
+    if (!memberAccountId) {
       return undefined;
     }
 
-    return await projectMembersBackendDataSource.get(String(memberId), {
+    return await projectMembersBackendDataSource.get(String(memberAccountId), {
       fields: {
-        [ProjectMemberRecord.type]: ["name", "email"],
+        [ProjectMemberRecord.type]: ["name", "email", "picture_url"],
       },
     });
   }
@@ -34,16 +32,9 @@
   <Spinner size="sm"></Spinner>
 {:then projectMemberRes}
   {#if projectMemberRes}
-    {@const { name, email } = projectMemberRes.data}
+    {@const { name, email, picture_url: pictureUrl } = projectMemberRes.data}
 
-    <div class="flex items-center">
-      <Avatar class="size-6 text-sm">
-        <AvatarImage></AvatarImage>
-        <AvatarFallback>{getAvatarFallback(name || email)}</AvatarFallback>
-      </Avatar>
-
-      <Copyable title="email" value={email}></Copyable>
-    </div>
+    <AccountAvatar size="sm" {name} {email} {pictureUrl} showEmail />
   {:else if slotUnassigned}
     {@render slotUnassigned()}
   {:else}

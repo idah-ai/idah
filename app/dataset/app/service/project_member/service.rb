@@ -2,7 +2,8 @@
 
 module ProjectMember
   class Service < Verse::Service::Base
-    use project_members: ProjectMember::Repository
+    use project_members: ProjectMember::Repository,
+        projects: Project::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       project_members.index(
@@ -26,16 +27,11 @@ module ProjectMember
               "project relationship is required to create a project member"
       end
 
-      # With "as_user" access ensure account can "create" project member to the project
-      if auth_context.can?(:create, project_members.class.resource) == :as_user &&
-         ScopedQuery::Service.without_project_access?(
-           auth_context.metadata[:id],
-           record.project.id,
-           ["project_owner"]
-         )
-        raise Verse::Error::Unauthorized,
-              "You do not have permission to create project member on this project"
-      end
+      authorize_creation(
+        record.attributes[:role],
+        record.project.id,
+        auth_context.can?(:create, project_members.class.resource)
+      )
 
       # Assign attributes
       attributes = record.attributes
@@ -65,7 +61,48 @@ module ProjectMember
       end
     end
 
+    private def authorize_creation(creating_role, project_id, access)
+      case access
+      when :as_org_owner
+        begin
+          projects.find!(project_id)
+        rescue Verse::Error::RecordNotFound # if it can't be found then we assume it's not in org_owner's scope
+          raise Verse::Error::Unauthorized,
+                "You do not have permission to create a project member for this project"
+        end
+      when :as_user
+        if creating_role == "project_owner"
+          raise Verse::Error::Unauthorized,
+                "You do not have permission to create a project owner member for this project"
+        end
+
+        if ScopedQuery::Service.without_project_access?(
+          auth_context.metadata[:id],
+          project_id,
+          ["project_owner"]
+        )
+          raise Verse::Error::Unauthorized,
+                "You do not have permission to create project member on this project"
+        end
+      end
+    end
+
     def update(record)
+      access = auth_context.can?(:update, project_members.class.resource)
+      # "project_owner" can only be added by an org_owner of the project
+      if record.attributes[:role] == "project_owner"
+        unless access == :as_org_owner
+          raise Verse::Error::Unauthorized,
+                "You do not have permission to update a member for this project"
+        end
+
+        project = projects.find!(record.project.id) # this can raise Verse::Error::RecordNotFound if not in org scope
+        unless auth_context.custom_scopes[:org]&.include?(project.organization_id.to_s)
+          raise Verse::Error::Unauthorized,
+                "You do not have permission to update a member to a project owner for this project"
+        end
+      end
+
       project_members.update!(record.id, record.attributes)
       project_members.find!(record.id)
     end

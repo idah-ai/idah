@@ -1,0 +1,22 @@
+
+<div style="padding: 24px;text-align: center;">
+
+<h1>You are now the organization owner of</h1>
+<h1><%= notification.organization_name %> organization</h1>
+
+
+    <img src="<%= [ENV.fetch("IDAH_URL"), "/assets/images/email-illustration-org_owner_role_assigned.png"].join("") %>" style="width: 120px; height: 120px;margin: 0 auto;" />
+
+
+<p style="font-size: 14px;line-height: 20px;">Hi <%= notification.recipient_name %>,</p>
+
+  <p style="text-align: center;font-size: 14px;line-height: 20px;margin: 0 100px;">
+You have been assigned as organization owner of <%= notification.organization_name %> organization by <%= notification.admin_name %>.
+  </p>
+
+<div style="background-color:#3A81F6; border-radius: 8px; padding: 10px 14px;width: 150px;margin: 20px auto;">
+    <a href="<%= [ENV.fetch("IDAH_URL"), "/organizations"].join("") %>" style="text-decoration: none; color: #fff; font-size: 14px; font-weight: 600;width: 150px;margin: 0 auto;">
+      go to organization
+    </a>
+  </div>
+</div>

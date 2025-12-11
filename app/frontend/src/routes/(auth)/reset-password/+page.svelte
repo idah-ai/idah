@@ -1,78 +1,86 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
+
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import Form from "@/components/app/forms/form.svelte";
-  // import AuthenticationAlert from "@/components/app/iam/auth/alert/authentication-alert.svelte";
   import AuthenticationCard from "@/components/app/iam/auth/card/authentication-card.svelte";
+  import ResetPassword from "@/components/app/response-block/reset-password.svg";
   import Button from "@/components/ui/button/button.svelte";
-  import Link from "@/components/ui/text/Link.svelte";
 
-  import { sendResetPasswordLinkSchema } from "@/data/model/iam/accounts/auth-schema";
+  import { accountPasswordsBackendDataSource } from "@/data/model/iam/account-passwords/record";
+  import { resetPasswordSchema } from "@/data/model/iam/accounts/auth-schema";
+  import { cn } from "@/utils";
 
   // Variables
   let resource: string = "iam:account";
-  let email = $state("");
-  let showErrorAlert = $state(false);
-  let passwordResetLinkHasBeenSent: boolean = $state(false);
-  // let sentDate: Date | null = $state(null);
-  let disabledSendPasswordResetLink = $derived.by(() => {
-    const validated = sendResetPasswordLinkSchema.safeParse({ email });
+  let updated: boolean = $state(false);
+  let credentials = $state({
+    password: "",
+    confirmPassword: "",
+  });
+  let disabledResetPasswordButton = $derived.by(() => {
+    const validated = resetPasswordSchema.safeParse(credentials);
     return !validated.success;
   });
-  let disabledResendPasswordResetLink = $derived.by(() => {
-    return !passwordResetLinkHasBeenSent;
-  });
+
+  // let token = $derived(page.url.);
 
   // Functions
-  async function sendPasswordResetLink(): Promise<void> {
-    /** Check if email is valid and exist in out platform? */
-    // const existingAccount = await AccountsBackendDataSource.list({
-    //   fields: {
-    //     [AccountRecord.type]: []
-    //   }
-    //   filters: {
-    //     email: email
-    //   },
-    //   noCache: true
-    // })
-    // if (!existingAccount.data)
-    // if (true) {
-    //   passwordResetLinkHasBeenSent = true;
-    // sentDate = new Date();
-    // showErrorAlert = false;
-    // goto("/reset-password");
-    // } else {
-    // showErrorAlert = true;
-    // }
+  async function updatePassword(): Promise<void> {
+    try {
+      await accountPasswordsBackendDataSource.reset({ token: "", password: credentials.password });
+      updated = true;
+    } catch (error) {
+      console.error(error);
+      updated = false;
+    }
   }
 </script>
 
-<AuthenticationCard title="Welcome Back!" description="We missed you!. Please enter your details.">
-  {#snippet alert()}
-    {#if showErrorAlert}
-      <!-- <AuthenticationAlert title="Unable to send reset link" description="Please try again."></AuthenticationAlert> -->
-    {/if}
+<AuthenticationCard
+  title={updated ? "Password changed successfully!" : "Reset your password"}
+  description={updated
+    ? "Your password has been updated. You can now login with your new password."
+    : "Enter a new password to reset your password."}
+>
+  {#snippet responseBlock()}
+    <img
+      class={cn("h-30 w-full items-center justify-center p-2", {
+        hidden: !updated,
+      })}
+      src={ResetPassword}
+      alt="invalid-link"
+    />
   {/snippet}
 
   {#snippet content()}
     <Form>
-      <!-- EMAIL -->
-      <InputField name="{resource}/email" label="Email" placeholder="Enter your email" required bind:value={email}
-      ></InputField>
+      {#if !updated}
+        <!-- PASSWORD -->
+        <InputField
+          name="{resource}/password"
+          label="Password"
+          type="password"
+          placeholder="Enter your password"
+          required
+          bind:value={credentials.password}
+        />
 
-      <Button class="w-full" disabled={disabledSendPasswordResetLink} onclick={sendPasswordResetLink}>
-        {#if passwordResetLinkHasBeenSent}
-          Sent! 🎉
-        {:else}
-          Send Password Reset Link
-        {/if}
-      </Button>
+        <!-- CONFIRM PASSWORD -->
+        <InputField
+          name="{resource}/confirm_password"
+          label="Confirm new password"
+          type="password"
+          placeholder="Enter your password"
+          required
+          bind:value={credentials.confirmPassword}
+        />
+
+        <Button class="w-full" disabled={disabledResetPasswordButton} onclick={updatePassword}>Update Password</Button>
+      {:else}
+        <Button class="w-full" onclick={() => goto(resolve("/login"))}>Go to login</Button>
+      {/if}
     </Form>
-  {/snippet}
-
-  {#snippet footer()}
-    <div class="flex w-full items-center justify-between gap-2">
-      <Link href="/login" class="text-sm">Return to login</Link>
-      <Button variant="ghost" disabled={disabledResendPasswordResetLink}>Resend link</Button>
-    </div>
   {/snippet}
 </AuthenticationCard>

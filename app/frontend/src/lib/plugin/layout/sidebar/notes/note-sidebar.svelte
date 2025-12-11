@@ -162,7 +162,6 @@
           annotation_id: undefined,
           anchor_type: "entry",
           content_md: contentMd,
-          created_by_email: "reviewer_user@example.com",
         },
       });
       toast.success("General note added successfully.");
@@ -175,7 +174,6 @@
         attributes: {
           note_feed_id: selectedNoteFeed.id,
           content_md: contentMd,
-          created_by_email: "reply_user@example.com",
         },
         relationships: {
           note_feed: {

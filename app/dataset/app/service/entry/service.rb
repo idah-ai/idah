@@ -2,7 +2,7 @@
 
 module Entry
   class Service < Verse::Service::Base
-    use entries: Entry::Repository, datasets: Dataset::Repository
+    use entries: Entry::Repository, datasets: Dataset::Repository, projects: Project::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       entries.index(
@@ -39,6 +39,7 @@ module Entry
               "Entry with resource #{attributes[:resource]} already exists"
       end
 
+      # Organization Owner can find the dataset in their scope
       # Project Owner can find the dataset in their projects
       # Annotator and Reviewer can find the dataset only if entry is assigned to them
       dataset = datasets.find(record.dataset.id)
@@ -83,9 +84,9 @@ module Entry
       entries.delete!(id)
     end
 
-    def assign_member(id, assigned_to_id)
+    def assign_member(id, assigned_to_member_id)
       entries.transaction do
-        entries.update!(id, { assigned_to_id: })
+        entries.update!(id, { assigned_to_member_id: })
         entries.find!(id)
       end
     end
@@ -96,7 +97,7 @@ module Entry
         entry_workflow = entry.dataset.entry_workflow.new(entry, **opts)
 
         entry_workflow.submit!
-        entries.update!(
+        entries.submit(
           entry.id,
           {
             wf_step: entry_workflow.aasm.current_state.to_s,

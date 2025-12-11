@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 namespace :service_accounts do
-  # SERVICES=iam,dataset,media,setting bundle exec rake service_accounts:create
+  # SERVICES=iam,dataset,media,setting,notification,sync,audit bundle exec rake service_accounts:create
   desc "Create the different service users for each services of idah"
   task create: :environment do
     Verse.logger.level = Logger::WARN
@@ -45,7 +45,7 @@ namespace :service_accounts do
               {
                 hashed_password: BCrypt::Password.create(password),
                 enabled: true,
-                role: role
+                role_name: role
               }
             )
           else
@@ -57,7 +57,7 @@ namespace :service_accounts do
                 email:,
                 hashed_password: BCrypt::Password.create(password),
                 enabled: true,
-                role: role
+                role_name: role
               }
             )
           end

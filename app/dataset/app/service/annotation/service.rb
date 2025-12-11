@@ -26,6 +26,7 @@ module Annotation
               "entry relationship is required to create an annotation"
       end
 
+      # Organization Owner can find the entry in their scope
       # Project Owner can find the entry in their projects
       # Annotator and Reviewer can find the entry only if assigned to them
       entry = entries.find(record.entry.id)
