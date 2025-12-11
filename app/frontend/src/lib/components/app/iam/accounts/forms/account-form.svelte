@@ -56,18 +56,18 @@
 
     <!-- ACCOUNT:ROLE -->
     <!-- {#if !newRecord && account.role_name !== "org_owner"} -->
-      <SingleSelectField
-        name="{resource}/role_name"
-        label="Role"
-        placeholder="Select a role"
-        required
-        choices={roles}
-        errors={fieldErrors["role_name"]}
-        value={role_name}
-        onSelected={(selectedValue) => {
-          role_name = selectedValue as string;
-        }}
-      />
+    <SingleSelectField
+      name="{resource}/role_name"
+      label="Role"
+      placeholder="Select a role"
+      required
+      choices={roles}
+      errors={fieldErrors["role_name"]}
+      value={role_name}
+      onSelected={(selectedValue) => {
+        role_name = selectedValue as string;
+      }}
+    />
     <!-- {/if} -->
 
     <!-- ACCOUNT::ENABLED -->
