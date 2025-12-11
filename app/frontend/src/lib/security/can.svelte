@@ -24,7 +24,16 @@
   onMount(async () => {
     const currentAccount = $authStatus.authContext;
 
+    if (!currentAccount) {
+      hasAccess = false;
+      return;
+    }
+
     hasAccess = (await currentAccount?.can(action, resource, scopes)) || false;
+
+    if (roles?.length) {
+      hasAccess = roles.includes(currentAccount.roleName);
+    }
   });
 </script>
 
