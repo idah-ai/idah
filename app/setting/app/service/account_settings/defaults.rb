@@ -7,6 +7,6 @@ module AccountSettings
       # notifications
       "notification:organization:activities" => true,
       "notification:project:activities" => true,
-    }
+    }.freeze
   end
 end
