@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/state";
   import { EllipsisVerticalIcon } from "@lucide/svelte";
   import { onMount } from "svelte";
   import { toast } from "svelte-sonner";
@@ -19,6 +20,8 @@
   import { authStatus } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
 
+  import type { ProjectMemberScope } from "@/security/types";
+
   // Props
   interface Props {
     entry: EntryRecord;
@@ -26,6 +29,7 @@
   let { entry }: Props = $props();
 
   // Records
+  let projectId = page.params.projectId as string;
   let entryRecord: EntryRecord | undefined = $state(undefined);
 
   // Variables
@@ -45,8 +49,17 @@
 
   // Lifecycle
   onMount(async () => {
-    canUpdateEntry = (await currentAccount?.can("update", "dataset:entries")) || false;
-    canDeleteEntry = (await currentAccount?.can("delete", "dataset:entries")) || false;
+    const as_project_owner: { as_user: ProjectMemberScope } = {
+      as_user: {
+        projectId,
+        projectMemberRoles: ["project_owner"],
+      },
+    };
+
+    canUpdateEntry =
+      (await currentAccount?.can("update", "dataset:entries", ["as_org_owner", as_project_owner])) || false;
+    canDeleteEntry =
+      (await currentAccount?.can("delete", "dataset:entries", ["as_org_owner", as_project_owner])) || false;
   });
 
   // Functions

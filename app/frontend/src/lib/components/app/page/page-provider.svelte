@@ -9,7 +9,6 @@
   import type { Action, Resource, Scope } from "@/security/types";
   import type { WithElementRef } from "@/utils";
   import type { HTMLAttributes } from "svelte/elements";
-  import type { Role } from "@/data/model/iam/accounts/auth/constants";
 
   // Props
   type Props = WithElementRef<HTMLAttributes<HTMLElement>> & {
