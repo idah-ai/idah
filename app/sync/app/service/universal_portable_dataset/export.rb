@@ -6,49 +6,41 @@ module UniversalPortableDataset
     end
 
     def run
-      # @context.open do |block|
-      open do |&block|
+      # @context.updcli_append do |block|
+      updcli_append do |&block|
         process &block
       end
     end
 
     private
 
-    def open(&block)
-      Open3.popen3(
-        "bin/datset-static", # TODO: build or embed binary within plugin
-        "-i", [@context.name, :upd].join('.'),
-        "append"
-      ) do |stdin, stdout, stderr, wait_thr|
-        stdout_thr = Thread.new do
-          until (line = stdout.gets).nil?
-            Verse.logger.info { "#{line.strip}"}
-          end
-        end
-
-        begin
-          block.call do |s|
-            stdin.puts(s)
-            stdin.flush
-          end
-
-          [@context.name, :upd].join('.')
-          ## todo review VVV
-        rescue Exception => e
-          Verse.logger.error {"UPD export error:#{e}"}
-          raise e
-        ensure
-          stdin.close
-          stdout_thr.join
-          error = stderr.read
-          value = wait_thr.value
-          if value.exitstatus != 0
-            raise "updcli error #{value} #{error}"
-          end
-          @files.each &:unlink # earlier ?
-          Verse::logger.info { "UPD export done: #{value}" }
-        end
+    def process(&block)
+      on_init &block
+      @context.datasets.each do |dataset_context|
+        process_dataset_context dataset_context, &block
       end
+    end
+
+    def process_dataset_context(dataset_context, &block)
+      on_dataset dataset_context, &block
+      dataset_context.entries.each do |entry_context|
+        process_entry_context entry_context, &block
+      end
+    end
+
+    def process_entry_context(entry_context, &block)
+      on_entry entry_context, &block
+      entry_context.annotations.each do |annotation_context|
+        process_annotation_context annotation_context, &block
+      end
+    end
+
+    def process_annotation_context(annotation_context, &block)
+      on_annotation annotation_context, &block
+    end
+
+    def on_init(&block)
+      yield({command: 'init', args: {}}.to_json)
     end
 
     def on_dataset(dataset_context, &block)
@@ -124,31 +116,41 @@ module UniversalPortableDataset
       # ?
     end
 
+    def updcli_append(&block)
+      Open3.popen3(
+        "bin/datset-static", # TODO: build or embed binary within plugin
+        "-i", [@context.name, :upd].join('.'),
+        "append"
+      ) do |stdin, stdout, stderr, wait_thr|
+        stdout_thr = Thread.new do # todo read some expectation in block.call instead or risk throughput bottleneck
+          until (line = stdout.gets).nil?
+            Verse.logger.info { "#{line.strip}"}
+          end
+        end
 
-    def process(&block)
-      yield({command: 'init', args: {}}.to_json)
+        begin
+          block.call do |s|
+            stdin.puts(s)
+            stdin.flush
+          end
 
-      @context.datasets.each do |dataset_context|
-        process_dataset_context dataset_context, &block
+          [@context.name, :upd].join('.')
+          ## todo review VVV
+        rescue Exception => e
+          Verse.logger.error {"UPD export error:#{e}"}
+          raise e
+        ensure
+          stdin.close
+          stdout_thr.join
+          error = stderr.read
+          value = wait_thr.value
+          if value.exitstatus != 0
+            raise "updcli error #{value} #{error}"
+          end
+          @files.each &:unlink # earlier ?
+          Verse::logger.info { "UPD export done: #{value}" }
+        end
       end
-    end
-
-    def process_dataset_context(dataset_context, &block)
-      on_dataset dataset_context, &block
-      dataset_context.entries.each do |entry_context|
-        process_entry_context entry_context, &block
-      end
-    end
-
-    def process_entry_context(entry_context, &block)
-      on_entry entry_context, &block
-      entry_context.annotations.each do |annotation_context|
-        process_annotation_context annotation_context, &block
-      end
-    end
-
-    def process_annotation_context(annotation_context, &block)
-      on_annotation annotation_context, &block
     end
   end
 end
