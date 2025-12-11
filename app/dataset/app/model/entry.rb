@@ -117,9 +117,21 @@ module Entry
       end
     end
 
+    event(name: "assigned")
+    def assign(id, attributes)
+      no_event do
+        transaction do
+          update!(id, attributes)
+        end
+      end
+    end
+
+    event(name: "submitted")
     def submit(id, attributes)
-      transaction do
-        update!(id, attributes)
+      no_event do
+        transaction do
+          update!(id, attributes)
+        end
       end
     end
 

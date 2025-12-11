@@ -18,18 +18,19 @@ class LogsExpo < BaseExpo
   end
 
   def create_audit_log
-    service.create(message)
+    service.create(message.event, message.content)
   end
 
   # resources we want to include in Audit Logs
   # TODO: complete this list and refactor/regex somehow ?
   %w[
     iam:accounts
+    iam:organizations
     dataset:projects
     dataset:project_members
     dataset:datasets
     dataset:entries
-    dataset:annotations
+    media:medias
   ].each do |resource|
     # events/actions we want to include in Audit Logs
     %w[created updated deleted].each do |event|
@@ -38,5 +39,19 @@ class LogsExpo < BaseExpo
         build_expose(on_resource_event(resource, event))
       )
     end
+  end
+
+  %w[login logout].each do |event|
+    attach_exposition(
+      :create_audit_log,
+      build_expose(on_resource_event("iam:accounts", event))
+    )
+  end
+
+  %w[assigned unassigned submitted].each do |event|
+    attach_exposition(
+      :create_audit_log,
+      build_expose(on_resource_event("dataset:entries", event))
+    )
   end
 end

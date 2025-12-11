@@ -5,9 +5,12 @@
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import Form from "@/components/app/forms/form.svelte";
   import AuthenticationCard from "@/components/app/iam/auth/card/authentication-card.svelte";
+  import ResetPassword from "@/components/app/response-block/reset-password.svg";
   import Button from "@/components/ui/button/button.svelte";
 
+  import { accountPasswordsBackendDataSource } from "@/data/model/iam/account-passwords/record";
   import { resetPasswordSchema } from "@/data/model/iam/accounts/auth-schema";
+  import { cn } from "@/utils";
 
   // Variables
   let resource: string = "iam:account";
@@ -21,13 +24,17 @@
     return !validated.success;
   });
 
+  // let token = $derived(page.url.);
+
   // Functions
   async function updatePassword(): Promise<void> {
-    // if (true) {
-    //   updated = true;
-    // } else {
-    //   updated = false;
-    // }
+    try {
+      await accountPasswordsBackendDataSource.reset({ token: "", password: credentials.password });
+      updated = true;
+    } catch (error) {
+      console.error(error);
+      updated = false;
+    }
   }
 </script>
 
@@ -37,6 +44,16 @@
     ? "Your password has been updated. You can now login with your new password."
     : "Enter a new password to reset your password."}
 >
+  {#snippet responseBlock()}
+    <img
+      class={cn("h-30 w-full items-center justify-center p-2", {
+        hidden: !updated,
+      })}
+      src={ResetPassword}
+      alt="invalid-link"
+    />
+  {/snippet}
+
   {#snippet content()}
     <Form>
       {#if !updated}
@@ -48,7 +65,7 @@
           placeholder="Enter your password"
           required
           bind:value={credentials.password}
-        ></InputField>
+        />
 
         <!-- CONFIRM PASSWORD -->
         <InputField
@@ -58,7 +75,7 @@
           placeholder="Enter your password"
           required
           bind:value={credentials.confirmPassword}
-        ></InputField>
+        />
 
         <Button class="w-full" disabled={disabledResetPasswordButton} onclick={updatePassword}>Update Password</Button>
       {:else}
