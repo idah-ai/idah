@@ -9,6 +9,7 @@ import { ActionMap } from "@/security/ActionMap";
 import type { Role } from "@/data/model/iam/accounts/auth/constants";
 import type { Action, Resource, Scope } from "@/security/types";
 import type { Hash } from "@/utils/types";
+import type { Role } from "@/data/model/iam/accounts/auth/constants";
 
 export type AuthenticationStatus = {
   status: "loading" | "logged-in" | "logged-out";
