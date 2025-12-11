@@ -47,7 +47,7 @@ module ProjectMember
           # only send notification email if the account has joined already
           unless member_account.joined_at.nil?
             ::Service::Notification.email(
-              recipient_account_email: member.email,
+              to: member.email,
               title: "You have been assigned to the project '#{member.project.name}'",
               category: "project_member_added",
               project_id: member.project_id,
@@ -114,7 +114,7 @@ module ProjectMember
 
         project_members.after_commit do
           ::Service::Notification.email(
-            recipient_account_email: member.email,
+            to: member.email,
             title: "You have been removed from the project '#{member.project.name}'",
             category: "project_member_removed",
             project_id: member.project_id,
