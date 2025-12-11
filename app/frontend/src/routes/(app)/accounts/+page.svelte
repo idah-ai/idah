@@ -42,7 +42,7 @@
 </script>
 
 {#snippet AddNewAccountButton()}
-  <Can action="create" resource="iam:accounts">
+  <Can action="create" resource="iam:accounts" roles={"admin"}>
     <Button onclick={openNewAccountModal}>
       <PlusIcon />
       New Account
