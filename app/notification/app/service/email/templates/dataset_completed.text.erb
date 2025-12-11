@@ -1,0 +1,9 @@
+
+The dataset <%= notification.dataset_name %> has been completed.
+
+Hi <%= account.name %>,
+The dataset <%= notification.dataset_name %> in project <%= notification.project_name %> is now completed.
+All tasks in the dataset have been finished.
+
+go to dataset:
+<%= [ENV.fetch("IDAH_URL"), "/projects/#{notification.project_id}/dataset/#{notification.dataset_id}"].join("") %>
