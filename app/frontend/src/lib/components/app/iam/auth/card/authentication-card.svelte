@@ -22,6 +22,16 @@
 
     {@render responseBlock?.()}
 
+    content: Snippet;
+    footer?: Snippet;
+  }
+  let { title, description, alert, content, footer }: Props = $props();
+</script>
+
+<Card>
+  <CardHeader class="flex w-full flex-col items-center">
+    <Logo class="h-16 w-24" />
+
     <CardTitle>{title}</CardTitle>
     <CardDescription class="text-center">{description}</CardDescription>
   </CardHeader>
