@@ -1,7 +1,7 @@
 <script lang="ts">
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
-  import { getContext } from "svelte";
+  import { getContext, onMount } from "svelte";
   import { toast } from "svelte-sonner";
 
   import ResponseBlock from "@/components/app/blocks/response-block.svelte";
@@ -43,6 +43,7 @@
   import { DatasetRecord } from "@/data/model/dataset/dataset-record";
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
+  import { authStatus } from "@/security/AuthContext";
   import { cn } from "@/utils";
   import { refetches } from "@/utils/refetch";
 
@@ -68,6 +69,8 @@
   // Variables
   let projectId: string = page.params.projectId as string;
   let datasetId = page.params.datasetId as string;
+  let canUpdateEntry = $state(false);
+  let canDeleteEntry = $state(false);
   let currentPage: number = $state(1);
   let itemsPerPage: number = $state(10);
   let selectedRows: string[] = $state([]);
@@ -83,6 +86,15 @@
       projectMemberRoles: ["project_owner"],
     },
   };
+
+  // Lifecycle
+  onMount(async () => {
+    const currentAccount = $authStatus.authContext;
+    canUpdateEntry =
+      (await currentAccount?.can("update", "dataset:entries", ["as_org_owner", as_project_owner])) || false;
+    canDeleteEntry =
+      (await currentAccount?.can("delete", "dataset:entries", ["as_org_owner", as_project_owner])) || false;
+  });
 
   pageBreadcrumbsStore.set([
     homeBreadcrumb,
@@ -263,9 +275,11 @@
       <div class="flex w-full flex-col items-center justify-between gap-4 md:flex-row">
         <div class="flex flex-1 items-center gap-4">
           <!-- SELECT ALL -->
-          <div class="pl-6">
-            <Checkbox checked={selectedRows.length > 0} onCheckedChange={toggleSelectAll}></Checkbox>
-          </div>
+          {#if canUpdateEntry || canDeleteEntry}
+            <div class="pl-6">
+              <Checkbox checked={selectedRows.length > 0} onCheckedChange={toggleSelectAll} />
+            </div>
+          {/if}
 
           <div class="">
             {#each Object.entries(entryColumns) as [columnKey, columnSetting] (columnKey)}
