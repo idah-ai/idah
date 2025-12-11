@@ -1,6 +1,6 @@
 #!/bin/sh
 
-SERVICES="iam media dataset setting"
+SERVICES="audit dataset iam media notification setting sync"
 
 case $1 in
   migrate)

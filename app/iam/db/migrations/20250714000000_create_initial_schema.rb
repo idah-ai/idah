@@ -59,19 +59,5 @@ Sequel.migration do
       Migration::Timestamps.timestamps(self)
     end
     Migration::Timestamps.trg_updated_at(self, :account_sessions)
-
-    # Create initial admin account
-    now = Time.now
-    from(:accounts).insert(
-      name: "admin",
-      email: "admin@idah.ai",
-      role_name: "admin",
-      role_scope: "{}",
-      hashed_password: BCrypt::Password.create("password"),
-      enabled: true,
-      joined_at: now,
-      created_at: now,
-      updated_at: now,
-    )
   end
 end
