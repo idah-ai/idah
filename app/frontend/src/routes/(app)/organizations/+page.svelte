@@ -49,7 +49,7 @@
   </Can>
 {/snippet}
 
-<PageProvider name="organizations" roles={["admin", "org_owner"]}>
+<PageProvider name="organizations" roles={["admin", "org_owner"]} action="read" resource="iam:organizations">
   <PageHeader title="Organizations">
     {#snippet actions()}
       {@render AddNewOrganizationButton()}

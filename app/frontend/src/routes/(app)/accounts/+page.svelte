@@ -52,7 +52,7 @@
   </Can>
 {/snippet}
 
-<PageProvider name="accounts" roles={["admin", "org_owner"]}>
+<PageProvider name="accounts" roles={["admin", "org_owner"]} action="read" resource="iam:accounts">
   <PageHeader title="Accounts">
     {#snippet actions()}
       {@render AddNewAccountButton()}

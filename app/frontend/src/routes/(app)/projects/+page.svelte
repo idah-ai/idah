@@ -68,7 +68,7 @@
   }
 </script>
 
-<PageProvider name="projects" roles={["admin", "org_owner", "user"]}>
+<PageProvider name="projects" roles={["admin", "org_owner", "user"]} action="read" resource="dataset:projects">
   <PageHeader title="Projects">
     {#snippet actions()}
       <AddNewProjectButton />

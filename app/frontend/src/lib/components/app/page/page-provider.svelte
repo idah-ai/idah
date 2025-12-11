@@ -13,8 +13,8 @@
   // Props
   type Props = WithElementRef<HTMLAttributes<HTMLElement>> & {
     name: string; // Name of the page
-    action?: Action;
-    resource?: Resource;
+    action: Action;
+    resource: Resource;
     scopes?: Scope[];
     roles?: Array<Role>;
     redirectTo?: string;
@@ -24,20 +24,17 @@
   // Functions
   async function checkAccess() {
     const currentAccount = $authStatus.authContext;
+    let result = false;
 
-    if (!currentAccount) {
-      return false;
-    }
+    if (!currentAccount) return;
+
+    result = await currentAccount.can(action, resource, scopes);
 
     if (roles) {
-      return roles.includes(currentAccount.roleName);
+      result = roles.includes(currentAccount.roleName);
     }
 
-    if (!action || !resource || !scopes) {
-      return false;
-    }
-
-    return await currentAccount.can(action, resource, scopes);
+    return result;
   }
 </script>
 
