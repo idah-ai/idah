@@ -29,6 +29,8 @@ namespace :service_accounts do
       [username, password]
     }
 
+    puts "Creating service accounts..."
+
     repo.no_event do
       repo.transaction do
         services.each do |(service, password)|
