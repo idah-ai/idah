@@ -1,5 +1,5 @@
 module IdahApiContext
-  class Entry
+  class EntryContext
     attr_reader :entry, :media_info, :media_file, :annotations
 
     def initialize(entry, media_info, io, annotations)
@@ -23,7 +23,7 @@ module IdahApiContext
 
       entry_id = entry[:id]
 
-      Entry.new(
+      new(
         entry,
         media_info,
         file_response,
@@ -35,7 +35,7 @@ module IdahApiContext
           raise annotations_response.errors if annotations_response.errors
 
           annotations_response.data.lazy.map(&:data).map do |annotation|
-            Annotation.from_annotation annotation
+            AnnotationContext.from_annotation annotation
           end unless annotations_response.data.empty?
         end
       )

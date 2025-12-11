@@ -1,5 +1,5 @@
 module IdahApiContext
-  class Root
+  class RootContext
     attr_reader :name, :datasets
 
     def initialize(name, datasets)
@@ -22,7 +22,7 @@ module IdahApiContext
 
           dataset_response.data if !dataset_response.data.empty?
         end.lazy.map(&:data).map do |dataset|
-          Dataset.from_dataset dataset
+          DatasetContext.from_dataset dataset
         end
       )
     end

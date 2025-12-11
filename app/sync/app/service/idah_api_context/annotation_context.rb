@@ -1,5 +1,5 @@
 module IdahApiContext
-  class Annotation
+  class AnnotationContext
     attr_reader :annotation
 
     def initialize(annotation)
@@ -7,7 +7,8 @@ module IdahApiContext
     end
 
     def self.from_annotation(annotation)
-      Annotation.new(annotation)
+      # could be extended with comments or else
+      new(annotation)
     end
   end
 end

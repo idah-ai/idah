@@ -1,5 +1,5 @@
 module IdahApiContext
-  class Dataset
+  class DatasetContext
     attr_reader :dataset, :entries
 
     def initialize(dataset, entries)
@@ -9,8 +9,7 @@ module IdahApiContext
 
     def self.from_dataset(dataset)
       dataset_id =  dataset[:id] #
-
-      Dataset.new(
+      new(
         dataset,
         Verse::Util::Iterator.chunk_iterator(1) do |entry_page|
           entries_response = Api[:idah].dataset.entries.index(
@@ -20,7 +19,7 @@ module IdahApiContext
 
           entries_response.data if !entries_response.data.empty?
         end.lazy.map(&:data).map do |entry|
-          Entry.from_entry entry
+          EntryContext.from_entry entry
         end
       )
     end
