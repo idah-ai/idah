@@ -18,11 +18,14 @@ Sequel.migration do
       column :picture_url, String, null: true
 
       column :hashed_password, String, null: true
+      column :password_reset_token, String, null: true
+      column :password_reset_token_expires_at, DateTime, null: true
       column :sso_channel, String, null: true
 
       column :enabled, TrueClass, index: true
 
       column :joined_at, Time, null: true
+      column :invitation_expired_at, Time, null: true
 
       Migration::Timestamps.timestamps(self)
     end
@@ -56,19 +59,5 @@ Sequel.migration do
       Migration::Timestamps.timestamps(self)
     end
     Migration::Timestamps.trg_updated_at(self, :account_sessions)
-
-    # Create initial admin account
-    now = Time.now
-    from(:accounts).insert(
-      name: "admin",
-      email: "admin@idah.ai",
-      role_name: "admin",
-      role_scope: "{}",
-      hashed_password: BCrypt::Password.create("password"),
-      enabled: true,
-      joined_at: now,
-      created_at: now,
-      updated_at: now,
-    )
   end
 end

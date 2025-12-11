@@ -59,6 +59,10 @@ RSpec.describe Organization::Service, database: true do
   end
 
   describe "#delete" do
+    before do
+      allow(Api[:idah].dataset.projects).to receive(:index).and_return(Verse::JsonApi::Struct.new([]))
+    end
+
     it "deletes an organization" do
       organization_id = organization_repo.create(attributes)
       subject.delete(organization_id)

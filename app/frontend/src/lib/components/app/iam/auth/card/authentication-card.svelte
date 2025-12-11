@@ -9,6 +9,19 @@
     title: string;
     description: string;
     alert?: Snippet;
+    responseBlock?: Snippet;
+    content: Snippet;
+    footer?: Snippet;
+  }
+  let { title, description, alert, responseBlock, content, footer }: Props = $props();
+</script>
+
+<Card>
+  <CardHeader class="flex w-full flex-col items-center text-center">
+    <Logo class="h-16 w-24" />
+
+    {@render responseBlock?.()}
+
     content: Snippet;
     footer?: Snippet;
   }

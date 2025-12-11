@@ -10,6 +10,9 @@ module Account
     field :email, type: String, readonly: true
 
     field :hashed_password, type: [String, NilClass], visible: false, readonly: true
+    field :password_reset_token, type: [String, NilClass], visible: false, readonly: true
+    field :password_reset_token_expires_at, type: [Time, NilClass], visible: false, readonly: true
+
     field :sso_channel, type: [String, NilClass], readonly: true
 
     field :enabled, type: [TrueClass]
@@ -19,6 +22,7 @@ module Account
     field :picture_url, type: [String, NilClass], readonly: true
 
     field :joined_at, type: [Time, NilClass], readonly: true
+    field :invitation_expired_at, type: [Time, NilClass], readonly: true
 
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
@@ -43,6 +47,12 @@ module Account
       role_scope = role_scope.to_json unless role_scope.is_a?(String)
 
       collection.where(Sequel.lit("role_scope @> ?", role_scope))
+    end
+
+    def scoped(action)
+      auth_context.can!(action, self.class.resource) do |scope|
+        scope.all? { table }
+      end
     end
 
     def login(email, password)
