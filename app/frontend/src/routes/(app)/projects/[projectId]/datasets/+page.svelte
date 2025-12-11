@@ -48,7 +48,7 @@
       (await currentAccount?.can("update", "dataset:datasets", ["as_org_owner", as_project_owner])) || false;
     canDeleteDataset =
       (await currentAccount?.can("delete", "dataset:datasets", ["as_org_owner", as_project_owner])) || false;
-    columns.action.visible = canUpdateDataset || canUpdateDataset;
+    columns.action.visible = canUpdateDataset || canDeleteDataset;
   });
 </script>
 
