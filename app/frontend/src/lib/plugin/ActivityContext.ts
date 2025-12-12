@@ -1,6 +1,7 @@
 import { goto } from "$app/navigation";
 import { resolve } from "$app/paths";
 
+import { datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
 import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
 
 import type { Command } from "@/command/Command";
@@ -91,11 +92,25 @@ export function activityContextForEntry(entry: EntryRecord): IActivityContext {
       );
     },
     submit(opts?: { approved: boolean }) {
-      return new Promise<void>((resolve, reject) => {
-        entriesBackendDataSource.submit(entry.id, opts).then(
-          (_v) => resolve(),
-          (_e) => reject(),
-        );
+      return new Promise<void>((res, rej) => {
+        entriesBackendDataSource
+          .submit(entry.id, opts)
+          .then(async () => {
+            try {
+              const datasetsRes = await datasetsBackendDataSource.list();
+              if (datasetsRes.data.length) {
+                goto(resolve(`/projects/${entry.dataset.project.id}/datasets/${entry.dataset.id}/entries`));
+              } else {
+                goto(resolve(`/projects/${entry.dataset.project.id}/datasets`));
+              }
+            } catch (error) {
+              goto(resolve(`/projects/${entry.dataset.project.id}/datasets`));
+            }
+          })
+          .then(
+            (_v) => res(),
+            (_e) => rej(),
+          );
       });
     },
     error(message: string) {
