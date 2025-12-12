@@ -1,7 +1,7 @@
 <script lang="ts">
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
-  import { getContext } from "svelte";
+  import { getContext, onMount } from "svelte";
 
   import DatasourceTable from "@/components/app/datasource-table/datasource-table.svelte";
   import AddOrgOwnersButton from "@/components/app/organizations/buttons/add-org-owners-button.svelte";
@@ -11,6 +11,7 @@
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
   import { accountsBackendDataSource } from "@/data/model/iam/accounts/record";
   import { OrganizationRecord } from "@/data/model/iam/organizations/record";
+  import { authStatus } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
 
   // Contexts
@@ -18,6 +19,8 @@
 
   // Variables
   let organizationId: string = page.params.organizationId as string;
+  let canUpdateAccount = $state(false);
+  let columns = $state(organizationOwnerColumns);
 
   pageBreadcrumbsStore.set([
     homeBreadcrumb,
@@ -25,14 +28,20 @@
     { label: organization.name, href: resolve(`/organizations/${organizationId}/owners`) },
     { label: "Owners" },
   ]);
+
+  onMount(async () => {
+    const currentAccount = $authStatus.authContext;
+    canUpdateAccount = (await currentAccount?.can("update", "iam:accounts")) || false;
+    columns.action.visible = canUpdateAccount;
+  });
 </script>
 
-{#key $refetches.projects.list}
+{#key $refetches.accounts.list}
   <DatasourceTable
     id="organization-owners-{organizationId}"
     name="owner"
     refetchKey="accounts"
-    columns={organizationOwnerColumns}
+    {columns}
     dataSource={accountsBackendDataSource}
     listOptions={{
       filters: {

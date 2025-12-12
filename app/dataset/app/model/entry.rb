@@ -118,9 +118,22 @@ module Entry
       end
     end
 
+    event(name: "assigned")
+    def assign(id, attributes)
+      no_event do
+        transaction do
+          update!(id, attributes)
+        end
+      end
+    end
+
+    event(name: "submitted")
     def submit(id, attributes)
-      transaction do
-        update!(id, attributes)
+      no_event do
+        transaction do
+          # Use read scope when updating as anyone with read access can submit
+          update!(id, attributes, scope: scoped(:read))
+        end
       end
     end
 

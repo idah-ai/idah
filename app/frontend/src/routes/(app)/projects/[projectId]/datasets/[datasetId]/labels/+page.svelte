@@ -10,6 +10,7 @@
   import PageHeader from "@/components/app/page/page-header.svelte";
   import PageLoading from "@/components/app/page/page-loading.svelte";
   import Button from "@/components/ui/button/button.svelte";
+  import Can from "@/security/can.svelte";
 
   import { homeBreadcrumb, projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
@@ -22,6 +23,7 @@
 
   import type { ModalityShapes } from "@/data/model/setting/plugin/types";
   import type { IConfig, IConfigProperty, IConfigValue } from "@/plugin/interface/Activity";
+  import type { ProjectMemberScope } from "@/security/types";
 
   // Contexts
   const project: ProjectRecord = getContext("project");
@@ -39,6 +41,13 @@
   let isLabelConfigChanged: boolean = $derived.by(() => {
     return JSON.stringify(labelConfig) !== JSON.stringify(initialLabelConfig);
   });
+
+  const as_project_owner: { as_user: ProjectMemberScope } = {
+    as_user: {
+      projectId,
+      projectMemberRoles: ["project_owner"],
+    },
+  };
 
   pageBreadcrumbsStore.set([
     homeBreadcrumb,
@@ -309,20 +318,22 @@
 </script>
 
 {#await fetchData()}
-  <PageLoading></PageLoading>
+  <PageLoading />
 {:then _}
   <PageHeader title="Label">
     {#snippet slotTitle()}
-      <Button
-        loading={saving}
-        loadingLabel="Saving"
-        disabled={!isLabelConfigChanged}
-        class="ml-auto"
-        onclick={saveLabelConfigChanges}
-      >
-        <SaveIcon class="size-4"></SaveIcon>
-        {isLabelConfigChanged ? "Save Changes" : "Saved"}
-      </Button>
+      <Can action="update" resource="dataset:datasets" scopes={["as_org_owner", as_project_owner]}>
+        <Button
+          loading={saving}
+          loadingLabel="Saving"
+          disabled={!isLabelConfigChanged}
+          class="ml-auto"
+          onclick={saveLabelConfigChanges}
+        >
+          <SaveIcon />
+          {isLabelConfigChanged ? "Save Changes" : "Saved"}
+        </Button>
+      </Can>
     {/snippet}
   </PageHeader>
 

@@ -2,11 +2,14 @@ import { goto } from "$app/navigation";
 import { resolve } from "$app/paths";
 import { writable, type Writable } from "svelte/store";
 
+import { projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
 import { AccountAuthRecord, type AuthService } from "@/data/model/iam/accounts/auth/records";
 import { ActionMap } from "@/security/ActionMap";
 
+import type { Role } from "@/data/model/iam/accounts/auth/constants";
 import type { Action, Resource, Scope } from "@/security/types";
 import type { Hash } from "@/utils/types";
+import type { Role } from "@/data/model/iam/accounts/auth/constants";
 
 export type AuthenticationStatus = {
   status: "loading" | "logged-in" | "logged-out";
@@ -85,11 +88,13 @@ export class AuthContext {
 
   public readonly actionMap: ActionMap;
 
+  public readonly id: string;
+
   public readonly email: string;
   public readonly name: string | null;
   public readonly pictureUrl: string | null;
 
-  public readonly roleName: string;
+  public readonly roleName: Role;
   public readonly roleScope: Hash;
   public readonly roleRights: string[] = [];
 
@@ -97,6 +102,8 @@ export class AuthContext {
 
   constructor(record: AccountAuthRecord | Hash) {
     this.actionMap = new ActionMap(record.role_rights || []);
+
+    this.id = record.id;
 
     this.email = record.email;
     this.name = record.name;
@@ -109,6 +116,10 @@ export class AuthContext {
     this.exp = record.exp * 1000;
   }
 
+  isRole(roleToCheck: Role): boolean {
+    return this.roleName === roleToCheck;
+  }
+
   /*
    * Tell whether the account can perform the given action on the given resource
    */
@@ -116,21 +127,47 @@ export class AuthContext {
     const rights = this.actionMap.get(action, resource);
 
     if (!scope) return !!rights;
+
     if (!rights) return false;
 
     return rights.includes(scope) || rights.includes("*") || rights.includes("all");
   }
 
-  can(action: Action, resource: Resource, scopes?: Scope[]): boolean {
+  async can(action: Action, resource: Resource, scopes?: Scope[]): Promise<boolean> {
     let result = false;
 
     if (!scopes) {
       return this.hasScope(action, resource);
     } else {
       for (const scope of scopes) {
-        if (this.hasScope(action, resource, scope)) {
-          result = true;
-          break;
+        if (typeof scope === "string") {
+          if (this.hasScope(action, resource, scope)) {
+            result = true;
+            break;
+          }
+        }
+
+        /** If scopes contains "as_user" object */
+        if (typeof scope === "object") {
+          const { projectId, projectMemberRoles } = scope["as_user"];
+
+          const projectMemberRes = await projectMembersBackendDataSource.list({
+            filters: {
+              project_id: projectId,
+              account_id: this.id,
+            },
+          });
+
+          const currentAccountProjectMember = projectMemberRes.data[0];
+          if (!currentAccountProjectMember) return false;
+
+          if (projectMemberRoles.includes(currentAccountProjectMember.role)) {
+            result = true;
+            break;
+          } else {
+            result = false;
+            break;
+          }
         }
       }
     }

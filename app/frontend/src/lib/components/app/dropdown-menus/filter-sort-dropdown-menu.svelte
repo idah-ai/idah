@@ -339,19 +339,24 @@
           isFilteringOrSorting ? "text-primary-foreground" : "text-primary",
         )}
       >
-        {#if isFiltering}
-          <FunnelIcon class="size-4"></FunnelIcon>
+        {#if filterable}
+          {#if isFiltering}
+            <FunnelIcon />
+            <div class="absolute top-2 left-[1.4rem] size-2 animate-pulse rounded-full bg-amber-500"></div>
+          {:else}
+            <FunnelIcon />
+          {/if}
         {/if}
 
         {label}
 
-        {#if sortable || filterable}
+        {#if sortable}
           {#if isSortingAsc}
-            <ArrowDownAZIcon class="size-4"></ArrowDownAZIcon>
+            <ArrowDownAZIcon />
           {:else if isSortingDesc}
-            <ArrowDownZAIcon class="size-4"></ArrowDownZAIcon>
+            <ArrowDownZAIcon />
           {:else}
-            <ArrowUpDownIcon class="size-4"></ArrowUpDownIcon>
+            <ArrowUpDownIcon />
           {/if}
         {/if}
       </Button>

@@ -1,8 +1,8 @@
-<script lang="ts">
+<script lang="ts" generics="T extends Record">
   import MultipleSelectDatasourceField from "@/components/app/forms/fields/select/multiple/multiple-select-datasource-field.svelte";
 
-  import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
   import { OrganizationRecord, organizationsBackendDataSource } from "@/data/model/iam/organizations/record";
+  import { Record } from "@/data/model/Record";
 
   import type {
     DataTableColumnFilterOperation,
@@ -11,7 +11,7 @@
   import type { LabelValue } from "@/utils/types";
 
   // Props
-  let { columnSetting, filters, onFilter }: DataTableFilterBaseProps<ProjectRecord> = $props();
+  let { columnSetting, filters, onFilter }: DataTableFilterBaseProps<T> = $props();
 
   // Variables
   const resource: string = OrganizationRecord.type;
@@ -37,4 +37,4 @@
   placeholder="Select an organization"
   searchKeyWithOperation="name__match"
   onSelected={handleFilter}
-></MultipleSelectDatasourceField>
+/>
