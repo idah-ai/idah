@@ -47,6 +47,7 @@
       newPassword = "";
       confirmPassword = "";
       toast.success("Password updated successfully.");
+      updatingPassword = false;
     } catch (error) {
       console.error(error);
       updatingPassword = false;
@@ -100,15 +101,14 @@
         name="{accountSettingsResource}/confirm_password"
         class="w-1/2"
         type="password"
-        label="Confirm password"
+        label="Confirm new password"
         value={confirmPassword}
         oninput={(e) => (confirmPassword = e.currentTarget.value)}
       />
 
       <div class="flex flex-col gap-1">
         <span class="text-muted-foreground text-xs">
-          Make sure it's at least 8 characters including a number and a lowercase letter, uppercase letter, special
-          character.
+         Password must contain at least 8 characters, one lowercase letter, one uppercase letter, one number and one special character. 
         </span>
 
         <div class="flex items-center">
