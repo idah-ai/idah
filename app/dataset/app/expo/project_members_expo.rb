@@ -24,7 +24,8 @@ class ProjectMembersExpo < BaseExpo
                       :account_id,
                       :role__in,
                       :created_at__gte,
-                      :created_at__lte
+                      :created_at__lte,
+                      :organization_id__in
     end
 
     show

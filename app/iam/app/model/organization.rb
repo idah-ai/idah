@@ -25,13 +25,13 @@ module Organization
           table.where(id: org_ids)
         end
 
-        scope.as_user? { project_from_memberships_scoped }
+        scope.as_user? { organizations_from_project_member_scoped }
       end
     end
 
     private
 
-    def project_from_memberships_scoped
+    def organizations_from_project_member_scoped
       account_id = auth_context.metadata[:id]
 
       memberships = Verse::Cache.with_cache(
