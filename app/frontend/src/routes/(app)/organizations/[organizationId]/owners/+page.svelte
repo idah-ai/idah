@@ -7,7 +7,7 @@
   import AddOrgOwnersButton from "@/components/app/organizations/buttons/add-org-owners-button.svelte";
 
   import { organizationOwnerColumns } from "@/components/app/organizations/data-tables/organization-owner-column";
-  import { homeBreadcrumb, organizationBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
+  import { organizationBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
   import { accountsBackendDataSource } from "@/data/model/iam/accounts/record";
   import { OrganizationRecord } from "@/data/model/iam/organizations/record";
@@ -23,7 +23,6 @@
   let columns = $state(organizationOwnerColumns);
 
   pageBreadcrumbsStore.set([
-    homeBreadcrumb,
     organizationBreadcrumb,
     { label: organization.name, href: resolve(`/organizations/${organizationId}/owners`) },
     { label: "Owners" },
