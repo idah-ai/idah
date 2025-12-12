@@ -81,15 +81,22 @@ module Account
       account_id = auth_context.metadata[:id]
       org_ids = auth_context[:org] || []
 
-      memberships = Verse::Cache.with_cache(
-        "dataset/datasets/service/memberships",
-        "org_ids:#{org_ids.sort.join(",")}",
-        expires_in: 180
-      ) do
-        Api[:idah].dataset.project_members.index(filter: { organization_id__in: org_ids }).data
-      end
+      membership_account_ids =
+        if org_ids.any?
+          Verse::Cache.with_cache(
+            "dataset/datasets/service/memberships",
+            "org_ids:#{org_ids.sort.join(",")}",
+            expires_in: 180
+          ) do
+            Api[:idah].dataset.project_members.index(
+              filter: { organization_id__in: org_ids }
+            ).data.map(&:account_id).uniq
+          end
+        else
+          []
+        end
 
-      account_ids = [account_id] + memberships.map(&:account_id).uniq
+      account_ids = [account_id] + membership_account_ids
 
       table.where(id: account_ids)
     end
