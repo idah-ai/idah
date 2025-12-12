@@ -62,7 +62,7 @@
   {/snippet}
 
   {#snippet unauthorized()}
-    <AuthenticationCard title="Welcome Back!" description="We missed you!. Please enter your details.">
+    <AuthenticationCard title="Welcome Back!" description="We missed you! Please enter your details.">
       {#snippet alert()}
         {#if showErrorAlert}
           <AuthenticationAlert title="Incorrect email or password" description="Please try again." />
@@ -106,11 +106,11 @@
             type="submit"
             class="w-full"
             loading={signingIn}
-            loadingLabel="Signing In..."
+            loadingLabel="Logging In..."
             disabled={disabledSignInButton}
             onclick={signInWithEmailAndPassword}
           >
-            Sign In
+            Login
           </Button>
         </Form>
       {/snippet}

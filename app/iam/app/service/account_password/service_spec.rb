@@ -31,7 +31,7 @@ RSpec.describe AccountPassword::Service, database: true do
         account_id = account_repo.create(account_attributes)
 
         expect(::Service::Notification).to receive(:email).with(
-          recipient_account_email: "test@example.com",
+          to: "test@example.com",
           title: "Reset Password",
           category: "password_reset",
           password_reset_token: instance_of(String)
@@ -51,7 +51,7 @@ RSpec.describe AccountPassword::Service, database: true do
 
         expect {
           subject.request_password_reset("nonexistent@example.com")
-        }.not_to raise_error
+        }.to raise_error(Verse::Error::NotFound, "account not found")
       end
     end
   end
