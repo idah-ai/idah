@@ -21,7 +21,7 @@
 
   // Variables
   let resource: string = ProjectRecord.type;
-  let canUpdateOrganization = $state(false);
+  let canReadOrganizationAsOrgOwner = $state(false);
 
   // Variables::Reactive
   let { name, description, organization_id } = $derived(project);
@@ -29,7 +29,7 @@
   // Lifecycle
   onMount(async () => {
     const currentAccount = $authStatus.authContext;
-    canUpdateOrganization = (await currentAccount?.can("update", "iam:organizations")) || false;
+    canReadOrganizationAsOrgOwner = (await currentAccount?.can("read", "iam:organizations", ["as_org_owner"])) || false;
   });
 
   // Functions
@@ -52,7 +52,7 @@
     />
 
     <!-- PROJECT::ORGANIZATION -->
-    {#if !preSelectedOrganizationId && canUpdateOrganization}
+    {#if !preSelectedOrganizationId && canReadOrganizationAsOrgOwner}
       <SingleSelectDatasourceField
         name="{resource}/organization_id"
         label="Organization"
