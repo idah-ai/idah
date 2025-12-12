@@ -48,7 +48,7 @@
   }
 </script>
 
-<div id="annotation-header-bar-tools" class="flex h-full items-center justify-start gap-1">
+<div id="annotation-header-bar-tools" class="flex h-full items-center justify-center gap-1">
   {#each tools as { label, type, iconName, disabled, handleClick }, toolIndex (toolIndex)}
     <Tooltips align="center" delayDuration={100}>
       {#snippet trigger()}
