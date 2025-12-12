@@ -1,50 +1,51 @@
-module UniversalPortableDataset
-  class Export
+module Export
+  class UniversalPortableDataset
     def initialize(context)
+      puts context
       @context = context
       @files = []
     end
 
     def run
       # @context.updcli_append do |block|
-      updcli_append do |&block|
-        process &block
+      updcli_append do |&append|
+        process_context &append
       end
     end
 
     private
 
-    def process(&block)
-      on_init &block
-      @context.datasets.each do |dataset_context|
-        process_dataset_context dataset_context, &block
+    def process_context(&append)
+      on_init &append
+      @context.dataset.list.call.each do |dataset_context|
+        process_dataset_context dataset_context, &append
       end
     end
 
-    def process_dataset_context(dataset_context, &block)
-      on_dataset dataset_context, &block
-      dataset_context.entries.each do |entry_context|
-        process_entry_context entry_context, &block
+    def process_dataset_context(dataset_context, &append)
+      on_dataset_context dataset_context, &append
+      dataset_context.entry.list.call.each do |entry_context|
+        process_entry_context entry_context, &append
       end
     end
 
-    def process_entry_context(entry_context, &block)
-      on_entry entry_context, &block
-      entry_context.annotations.each do |annotation_context|
-        process_annotation_context annotation_context, &block
+    def process_entry_context(entry_context, &append)
+      on_entry_context entry_context, &append
+      entry_context.annotation.list.call.each do |annotation_context|
+        process_annotation_context annotation_context, &append
       end
     end
 
-    def process_annotation_context(annotation_context, &block)
-      on_annotation annotation_context, &block
+    def process_annotation_context(annotation_context, &append)
+      on_annotation_context annotation_context, &append
     end
 
-    def on_init(&block)
-      yield({command: 'init', args: {}}.to_json)
+    def on_init(&append)
+      append.call({command: 'init', args: {}}.to_json)
     end
 
-    def on_dataset(dataset_context, &block)
-      yield({
+    def on_dataset_context(dataset_context, &append)
+      append.call({
         command: 'dataset:create',
         args: {
           id: dataset_context.dataset[:id],
@@ -59,13 +60,13 @@ module UniversalPortableDataset
       }.to_json)
     end
 
-    def on_entry(entry_context, &block)
+    def on_entry_context(entry_context, &append)
       # @context.Tempfile.new(entry_context.entry[:attributes][:resource])
       file = Tempfile.new(entry_context.entry[:attributes][:resource])
       file.write(entry_context.media_file)
       file.close
       @files << file
-      yield({
+      append.call({
         command: 'media:create',
         args: {
           id: entry_context.media_info[:id],
@@ -79,7 +80,7 @@ module UniversalPortableDataset
           }
         }
       }.to_json)
-      yield({
+      append.call({
         command: 'entry:create',
         args: {
           id: entry_context.entry[:id],
@@ -94,8 +95,8 @@ module UniversalPortableDataset
       }.to_json)
     end
 
-    def on_annotation(annotation_context, &block)
-      yield({
+    def on_annotation_context(annotation_context, &append)
+      append.call({
         command: 'annotation:create',
         args: {
           id: annotation_context.annotation[:id],
@@ -116,7 +117,7 @@ module UniversalPortableDataset
       # ?
     end
 
-    def updcli_append(&block)
+    def updcli_append(&process_append_records)
       Open3.popen3(
         "bin/datset-static", # TODO: build or embed binary within plugin
         "-i", [@context.name, :upd].join('.'),
@@ -129,7 +130,7 @@ module UniversalPortableDataset
         end
 
         begin
-          block.call do |s|
+          process_append_records.call do |s|
             stdin.puts(s)
             stdin.flush
           end
