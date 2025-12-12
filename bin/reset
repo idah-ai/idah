@@ -1,6 +1,6 @@
 #!/bin/sh
 
-SERVICES="dataset iam media setting"
+SERVICES="audit dataset iam media notification setting sync"
 
 reset_service() {
   service=$1
@@ -16,7 +16,7 @@ else
   service=$1
 
   case $service in
-    dataset|iam|media|setting)
+    audit|dataset|iam|media|notification|setting|sync)
       reset_service $service
       ;;
     *)

@@ -14,7 +14,7 @@ org_owner:
     - "iam:accounts.read.*"
 
     # Organizations
-    - "iam:organizations.read.*"
+    - "iam:organizations.read.as_org_owner"
 
     # Dataset Service
     - "dataset:projects.*.as_org_owner"

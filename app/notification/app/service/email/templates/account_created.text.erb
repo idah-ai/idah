@@ -5,4 +5,4 @@ Hi <%= account.name %>,
 Your IDAH account has been successfully created. Please accept the invitation to start working on IDAH.
 
 Accept Invitation:
-<%= [ENV.fetch("IDAH_URL"), "/accept-invitation?accountId=#{notification.recipient_account_id}"].join("") %>
+<%= [ENV.fetch("IDAH_URL"), "/accept-invitation?accountId=#{account.id}"].join("") %>

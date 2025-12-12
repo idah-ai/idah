@@ -15,5 +15,16 @@ module Organization
   class Repository < Verse::Sequel::Repository
     self.table = "organizations"
     self.resource = Resource::Iam::Organizations
+
+    def scoped(action)
+      auth_context.can!(action, self.class.resource) do |scope|
+        scope.all? { table }
+
+        scope.as_org_owner? do
+          org_ids = auth_context[:org] || []
+          table.where(id: org_ids)
+        end
+      end
+    end
   end
 end
