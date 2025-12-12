@@ -54,7 +54,7 @@
 
 {#key $refetches.datasets.list}
   <DatasourceTable
-    id="datasets"
+    id={`projects:${projectId}:datasets`}
     name="dataset"
     refetchKey="datasets"
     {columns}
