@@ -17,21 +17,21 @@ module Export
 
     def process_context(&append)
       on_init &append
-      @context.dataset.list.call.each do |dataset_context|
+      @context.dataset.index.each do |dataset_context|
         process_dataset_context dataset_context, &append
       end
     end
 
     def process_dataset_context(dataset_context, &append)
       on_dataset_context dataset_context, &append
-      dataset_context.entry.list.call.each do |entry_context|
+      dataset_context.entry.index.each do |entry_context|
         process_entry_context entry_context, &append
       end
     end
 
     def process_entry_context(entry_context, &append)
       on_entry_context entry_context, &append
-      entry_context.annotation.list.call.each do |annotation_context|
+      entry_context.annotation.index.each do |annotation_context|
         process_annotation_context annotation_context, &append
       end
     end
