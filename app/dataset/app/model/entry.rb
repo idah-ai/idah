@@ -77,10 +77,21 @@ module Entry
               AND (
                 -- All with roles
                 pm.role IN :with_roles OR
-                -- From assigned entries with roles
+                -- Annotators can access only assigned entries
                 (
-                  (pm.role IN :assigned_to_roles)
+                  (pm.role IN :annotator_roles)
                   AND entries.assigned_to_id = :account_id
+                ) OR
+                -- Reviewers can access assigned and unassigned entries in review step
+                (
+                  (pm.role IN :reviewer_roles)
+                  AND (
+                    entries.assigned_to_id = :account_id OR
+                    (
+                      entries.wf_step = 'review' AND
+                      entries.assigned_to_id IS NULL
+                    )
+                  )
                 )
               )
           )
@@ -91,7 +102,8 @@ module Entry
             scoped_fragment,
             account_id:,
             with_roles: %w[project_owner],
-            assigned_to_roles: %w[annotator reviewer]
+            annotator_roles: %w[annotator],
+            reviewer_roles: %w[reviewer]
           )
         )
       when :update, :delete
