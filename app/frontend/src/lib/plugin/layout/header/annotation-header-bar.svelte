@@ -23,9 +23,9 @@
   }: WithElementRef<HTMLAttributes<HTMLElement>> & Props = $props();
 </script>
 
-<nav bind:this={ref} id="annotation-header-bar" class="grid grid-cols-4 p-1">
+<nav bind:this={ref} id="annotation-header-bar" class="grid grid-cols-3 p-1">
   <!-- LEFT::NAVIGATIONS -->
-  <div id="navigations" class="col-span-2 flex h-full items-center gap-2">
+  <div id="navigations" class="flex h-full items-center gap-2">
     <!-- BACK BUTTON -->
     <AnnotationHeaderBarBackButton {context} />
 
