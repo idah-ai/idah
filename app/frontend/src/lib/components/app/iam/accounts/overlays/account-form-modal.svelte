@@ -73,6 +73,7 @@
           email: account.email,
           sso_channel: account.sso_channel,
           enabled: account.enabled,
+          role_name: account.role_name,
         },
       });
 

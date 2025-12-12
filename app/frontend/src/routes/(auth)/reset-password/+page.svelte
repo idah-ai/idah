@@ -25,7 +25,7 @@
     return !validated.success;
   });
 
-  let token = $derived(page.url.searchParams.get("password_reset_token") as string);
+  let token = $derived(page.url.searchParams.get("token") as string);
 
   // Functions
   async function updatePassword(): Promise<void> {
@@ -79,6 +79,7 @@
           required
           value={credentials.confirmPassword}
           oninput={(e) => (credentials.confirmPassword = e.currentTarget.value)}
+          description="Password must contain at least 6 characters, one lowercase letter, one uppercase letter, one number and one special character."
         ></InputField>
 
         <Button class="w-full" disabled={disabledResetPasswordButton} onclick={updatePassword}>Update Password</Button>

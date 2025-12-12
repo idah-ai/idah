@@ -15,7 +15,7 @@ module AccountPassword
 
       # Send the password reset email
       ::Service::Notification.email(
-        recipient_account_email: account.email,
+        to: account.email,
         title: "Reset Password",
         category: "password_reset",
         password_reset_token:,
