@@ -12,7 +12,7 @@ user:
     # Accounts
     - "iam:accounts.create.*"
     - "iam:accounts.update.own"
-    - "iam:accounts.read.own"
+    - "iam:accounts.read.*"
 
     # Organizations
     - "iam:organizations.read.as_user"
