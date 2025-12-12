@@ -17,7 +17,8 @@ import type { Hash } from "@/utils/types";
 
 @type("dataset:entries")
 export class EntryRecord extends Record {
-  @field() public dataset_id!: string;
+  @field() public readonly project_id!: string;
+  @field() public readonly dataset_id!: string;
 
   @field() public priority!: number;
 
@@ -29,6 +30,8 @@ export class EntryRecord extends Record {
   @field() public resource!: string;
 
   @field() public assigned_to_id!: number | null;
+  @field() public submitted_by_id!: number | null;
+  @field() public reviewed_by_id!: number | null;
 
   @field() public created_at!: Date;
   @field() public updated_at!: Date;
