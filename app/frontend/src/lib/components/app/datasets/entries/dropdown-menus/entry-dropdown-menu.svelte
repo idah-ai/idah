@@ -1,5 +1,7 @@
 <script lang="ts">
+  import { page } from "$app/state";
   import { EllipsisVerticalIcon } from "@lucide/svelte";
+  import { onMount } from "svelte";
   import { toast } from "svelte-sonner";
 
   import AssignEntryFormModal from "@/components/app/datasets/entries/overlays/assign-entry-form-modal.svelte";
@@ -15,7 +17,10 @@
 
   import { getEntryDropdownMenuActions } from "@/components/app/datasets/entries/dropdown-menus/entry-dropdown-menu";
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
+  import { authStatus } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
+
+  import type { ProjectMemberScope } from "@/security/types";
 
   // Props
   interface Props {
@@ -24,6 +29,7 @@
   let { entry }: Props = $props();
 
   // Records
+  let projectId = page.params.projectId as string;
   let entryRecord: EntryRecord | undefined = $state(undefined);
 
   // Variables
@@ -35,8 +41,26 @@
     },
   }).filter((m) => m.label !== "Set Priority");
 
+  let currentAccount = $authStatus.authContext;
+  let canUpdateEntry = $state(false);
+  let canDeleteEntry = $state(false);
   let openAssignEntryFormModal: boolean = $state(false);
   let openConfirmDeleteEntryModal: boolean = $state(false);
+
+  // Lifecycle
+  onMount(async () => {
+    const as_project_owner: { as_user: ProjectMemberScope } = {
+      as_user: {
+        projectId,
+        projectMemberRoles: ["project_owner"],
+      },
+    };
+
+    canUpdateEntry =
+      (await currentAccount?.can("update", "dataset:entries", ["as_org_owner", as_project_owner])) || false;
+    canDeleteEntry =
+      (await currentAccount?.can("delete", "dataset:entries", ["as_org_owner", as_project_owner])) || false;
+  });
 
   // Functions
   async function openAssignEntryModal() {
@@ -56,34 +80,36 @@
   }
 </script>
 
-<DropdownMenu>
-  <DropdownMenuTrigger>
-    {#snippet child({ props })}
-      <Button variant="ghost" size="icon" {...props}>
-        <EllipsisVerticalIcon />
-      </Button>
-    {/snippet}
-  </DropdownMenuTrigger>
+{#if canUpdateEntry || canDeleteEntry}
+  <DropdownMenu>
+    <DropdownMenuTrigger>
+      {#snippet child({ props })}
+        <Button variant="ghost" size="icon" {...props}>
+          <EllipsisVerticalIcon />
+        </Button>
+      {/snippet}
+    </DropdownMenuTrigger>
 
-  <DropdownMenuContent align="end">
-    <DropdownMenuGroup>
-      {#each menus as { label, icon: Icon, action }, index (index)}
-        <DropdownMenuItem onclick={action}>
-          <Icon class="size-4" />
-          {label}
-        </DropdownMenuItem>
-      {/each}
-    </DropdownMenuGroup>
-  </DropdownMenuContent>
-</DropdownMenu>
+    <DropdownMenuContent align="end">
+      <DropdownMenuGroup>
+        {#each menus as { label, icon: Icon, action }, index (index)}
+          <DropdownMenuItem onclick={action}>
+            <Icon class="size-4" />
+            {label}
+          </DropdownMenuItem>
+        {/each}
+      </DropdownMenuGroup>
+    </DropdownMenuContent>
+  </DropdownMenu>
 
-<!-- MODAL::ASSIGN ANNOTATOR  -->
-<AssignEntryFormModal action="update" {entryRecord} entryIds={[entry.id]} bind:open={openAssignEntryFormModal} />
+  <!-- MODAL::ASSIGN ANNOTATOR  -->
+  <AssignEntryFormModal action="update" {entryRecord} entryIds={[entry.id]} bind:open={openAssignEntryFormModal} />
 
-<!-- MODAL::CONFIRM DELETE -->
-<ConfirmModal
-  title="Delete entry"
-  description="Are you sure you want to delete this entry?"
-  onConfirm={deleteEntry}
-  bind:open={openConfirmDeleteEntryModal}
-/>
+  <!-- MODAL::CONFIRM DELETE -->
+  <ConfirmModal
+    title="Delete entry"
+    description="Are you sure you want to delete this entry?"
+    onConfirm={deleteEntry}
+    bind:open={openConfirmDeleteEntryModal}
+  />
+{/if}

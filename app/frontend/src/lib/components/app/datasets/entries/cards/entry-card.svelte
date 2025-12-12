@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { onDestroy } from "svelte";
+  import { page } from "$app/state";
+  import { onDestroy, onMount } from "svelte";
 
   import EntryPriority from "@/components/app/datasets/entries/badges/entry-priority.svelte";
   import EntryStatus from "@/components/app/datasets/entries/badges/entry-status.svelte";
@@ -18,8 +19,10 @@
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
   import { JobRecord, jobsBackendDataSource } from "@/data/model/media/jobs/record";
   import { mediaBackendDataSource } from "@/data/model/media/medias/medias-record";
+  import { authStatus } from "@/security/AuthContext";
 
   import type { EntryStatus as EntryStatusType } from "@/data/model/dataset/entries/constants";
+  import type { ProjectMemberScope } from "@/security/types";
 
   // Props
   interface Props {
@@ -28,6 +31,27 @@
     onRowSelect: (selectedId: string) => void;
   }
   let { entry, selectedRows, onRowSelect }: Props = $props();
+
+  // Variables
+  let projectId = page.params.projectId as string;
+  let canUpdateEntry = $state(false);
+  let canDeleteEntry = $state(false);
+
+  const as_project_owner: { as_user: ProjectMemberScope } = {
+    as_user: {
+      projectId,
+      projectMemberRoles: ["project_owner"],
+    },
+  };
+
+  // Lifecycle
+  onMount(async () => {
+    const currentAccount = $authStatus.authContext;
+    canUpdateEntry =
+      (await currentAccount?.can("update", "dataset:entries", ["as_org_owner", as_project_owner])) || false;
+    canDeleteEntry =
+      (await currentAccount?.can("delete", "dataset:entries", ["as_org_owner", as_project_owner])) || false;
+  });
 
   // State for thumbnail
   let imgContainer: HTMLDivElement | undefined = $state(undefined);
@@ -156,14 +180,16 @@
 </script>
 
 {#await fetchData()}
-  <LoadingEntryCard></LoadingEntryCard>
+  <LoadingEntryCard showCheckbox={canUpdateEntry || canDeleteEntry} />
 {:then _}
   <Card class="hover:bg-primary/5 hover:shadow-primary/10 group transition-shadow hover:shadow-md">
     <CardContent class="flex flex-row gap-4">
       <!-- CHECKBOX -->
-      <div class="my-auto">
-        <Checkbox checked={selectedRows.includes(entry.id)} onCheckedChange={() => onRowSelect(entry.id)}></Checkbox>
-      </div>
+      {#if canUpdateEntry || canDeleteEntry}
+        <div class="my-auto">
+          <Checkbox checked={selectedRows.includes(entry.id)} onCheckedChange={() => onRowSelect(entry.id)} />
+        </div>
+      {/if}
 
       <!-- THUMBNAIL -->
       <div class="h-full overflow-hidden" style:width="{containerWidth}px" style:max-width="{containerWidth}px">
@@ -214,28 +240,38 @@
         <div class="flex flex-col items-start">
           <DataDisplay label="Created at">
             {#snippet slotValue()}
-              <DateText datetime={entry.created_at} datetimeFormat="MMM dd, yyyy" size="sm" weight="light" showTooltip
-              ></DateText>
+              <DateText
+                datetime={entry.created_at}
+                datetimeFormat="MMM dd, yyyy"
+                size="sm"
+                weight="light"
+                showTooltip
+              />
             {/snippet}
           </DataDisplay>
 
           <DataDisplay label="Updated at">
             {#snippet slotValue()}
-              <DateText datetime={entry.updated_at} datetimeFormat="MMM dd, yyyy" size="sm" weight="light" showTooltip
-              ></DateText>
+              <DateText
+                datetime={entry.updated_at}
+                datetimeFormat="MMM dd, yyyy"
+                size="sm"
+                weight="light"
+                showTooltip
+              />
             {/snippet}
           </DataDisplay>
         </div>
 
         <!-- PRIORITY AT -->
         <div>
-          <EntryPriority {entry} updatable></EntryPriority>
+          <EntryPriority {entry} updatable />
         </div>
       </div>
 
       <!-- STAGE & ASSIGNED TO -->
       <div class="my-auto flex flex-1 flex-col gap-2">
-        <DataDisplay label="Stage" value={entry.wf_step}></DataDisplay>
+        <DataDisplay label="Stage" value={entry.wf_step} />
         <DataDisplay label="Assigned to">
           {#snippet slotValue()}
             <ProjectMemberAvatar memberAccountId={entry.assigned_to_id}></ProjectMemberAvatar>
@@ -256,10 +292,10 @@
               <Progress value={jobProgress * 100} />
             </div>
           {:else}
-            <EntryStatus {entry}></EntryStatus>
+            <EntryStatus {entry} />
           {/if}
 
-          <EntryDropdownMenu {entry}></EntryDropdownMenu>
+          <EntryDropdownMenu {entry} />
         </div>
       </div>
     </CardContent>

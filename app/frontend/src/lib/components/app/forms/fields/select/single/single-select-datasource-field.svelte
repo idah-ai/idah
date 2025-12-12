@@ -48,6 +48,7 @@
     // Slots
     slotLabel,
     slotTrigger,
+    slotTriggerValue,
     slotChoice,
     slotInfo,
     slotErrors,
@@ -157,7 +158,11 @@
           onclick={openPopover}
         >
           {#if selectedChoice}
-            <span class="truncate">{selectedChoice.label}</span>
+            {#if slotTriggerValue}
+              {@render slotTriggerValue({ selectedChoice })}
+            {:else}
+              <span class="truncate">{selectedChoice.label}</span>
+            {/if}
           {:else}
             <span class="text-muted-foreground">{placeholder}</span>
           {/if}
@@ -177,7 +182,7 @@
       {/if}
     </PopoverTrigger>
 
-    <PopoverContent align="start" class="w-auto min-w-80 p-0">
+    <PopoverContent align="start" class="w-auto min-w-[var(--bits-floating-anchor-width)] p-0">
       <Command>
         <CommandList>
           <CommandGroup>
