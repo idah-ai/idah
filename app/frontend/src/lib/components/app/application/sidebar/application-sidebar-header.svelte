@@ -13,7 +13,7 @@
     <SidebarMenuItem>
       <SidebarMenuButton size="lg">
         {#snippet child({ props })}
-          <a href={resolve("/")} {...props}>
+          <a href={resolve("/projects")} {...props}>
             <Logo />
           </a>
         {/snippet}

@@ -27,7 +27,7 @@
     const validated = loginSchema.safeParse({ email: email, password: password });
     return !validated.success;
   });
-  let redirectTo = page.url.searchParams.get("redirectTo") || "/";
+  let redirectTo = page.url.searchParams.get("redirectTo") || "/projects";
 
   AuthContext.backend ||= accountAuthService();
 
@@ -58,7 +58,7 @@
 
 <AuthenticationStatus>
   {#snippet authorized()}
-    <Redirect to="/" />
+    <Redirect to="/projects" />
   {/snippet}
 
   {#snippet unauthorized()}

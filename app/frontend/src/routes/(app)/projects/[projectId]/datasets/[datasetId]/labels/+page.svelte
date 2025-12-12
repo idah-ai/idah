@@ -12,7 +12,7 @@
   import Button from "@/components/ui/button/button.svelte";
   import Can from "@/security/can.svelte";
 
-  import { homeBreadcrumb, projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
+  import { projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
@@ -50,7 +50,6 @@
   };
 
   pageBreadcrumbsStore.set([
-    homeBreadcrumb,
     projectBreadcrumb,
     { label: project.name, href: resolve(`/projects/${projectId}/datasets`) },
     { label: "Datasets", href: resolve(`/projects/${projectId}/datasets`) },
