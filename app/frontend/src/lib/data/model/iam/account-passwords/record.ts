@@ -2,28 +2,23 @@ import { createBackendDataSource, resourcePath } from "@/data/BackendDataSource"
 import { clearCache } from "@/data/Cache";
 import { AccountRecord } from "@/data/model/iam/accounts/record";
 
-import { parseSingleElementError, parseSingleElementReturn } from "@/data/model/json_api";
+import { parseSingleElementError } from "@/data/model/json_api";
 
-import type { JsonApiErrorResponse, RecordResponse } from "@/data/model/types";
+import type { JsonApiErrorResponse } from "@/data/model/types";
 import type { Hash } from "@/utils/types";
 
 const accountPasswordsBasePath: string = `${import.meta.env.VITE_IDAH_HOST}/api/v1/iam/account/passwords`;
 
 export const accountPasswordsBackendDataSource = createBackendDataSource(AccountRecord, accountPasswordsBasePath, {
   request_reset: async (params: { email: string }): Promise<void | JsonApiErrorResponse> => {
-    const res = await fetch(`${accountPasswordsBasePath}/request_reset`, {
+    const response = await fetch(`${accountPasswordsBasePath}/request_reset`, {
       method: "POST",
       body: JSON.stringify({
-        data: {
-          attributes: {
-            email: params.email,
-          },
-        },
+        email: params.email,
       }),
       headers: { "Content-Type": "application/vnd.api+json" },
     });
 
-    const body = await res.json();
     // Cache Management
     const cacheIndexKey = resourcePath(accountPasswordsBasePath, null, undefined);
     // Note: Clear dataset cache as well to update progress at DataTable
@@ -31,39 +26,24 @@ export const accountPasswordsBackendDataSource = createBackendDataSource(Account
     clearCache(cacheIndexKey);
     clearCache(cacheDatasetIndexKey);
 
-    if (body && body.errors) {
-      if (body.errors.length > 0) {
-        body.errors.forEach((err: Hash) => {
-          console.error(`Error submitting entry: ${err.title} - ${err.detail}`, err);
-        });
-      }
-
-      return Promise.reject(parseSingleElementError({ status: res.status, errors: body.errors }));
+    if (!response.ok) {
+      const body = await response.json();
+      return Promise.reject(parseSingleElementError({ status: response.status, errors: body.errors }));
     }
 
-    if (body && body.data) {
-      // return Promise.resolve(parseSingleElementReturn<AccountRecord>(body));
+    if (response.ok) {
+      return Promise.resolve();
     }
-
-    throw "No data returned";
   },
-  reset: async (params: {
-    token: string;
-    password: string;
-  }): Promise<RecordResponse<AccountRecord> | JsonApiErrorResponse> => {
+  reset: async (params: { token: string; password: string }): Promise<void | JsonApiErrorResponse> => {
     const res = await fetch(`${accountPasswordsBasePath}/reset`, {
       method: "POST",
       body: JSON.stringify({
-        data: {
-          attributes: {
-            token: params.token,
-            password: params.password,
-          },
-        },
+        token: params.token,
+        password: params.password,
       }),
       headers: { "Content-Type": "application/vnd.api+json" },
     });
-    const body = await res.json();
     // Cache Management
     const cacheIndexKey = resourcePath(accountPasswordsBasePath, null, undefined);
     // Note: Clear dataset cache as well to update progress at DataTable
@@ -71,7 +51,8 @@ export const accountPasswordsBackendDataSource = createBackendDataSource(Account
     clearCache(cacheIndexKey);
     clearCache(cacheDatasetIndexKey);
 
-    if (body && body.errors) {
+    if (!res.ok) {
+      const body = await res.json();
       if (body.errors.length > 0) {
         body.errors.forEach((err: Hash) => {
           console.error(`Error submitting entry: ${err.title} - ${err.detail}`, err);
@@ -81,11 +62,7 @@ export const accountPasswordsBackendDataSource = createBackendDataSource(Account
       return Promise.reject(parseSingleElementError({ status: res.status, errors: body.errors }));
     }
 
-    if (body && body.data) {
-      return Promise.resolve(parseSingleElementReturn<AccountRecord>(body));
-    }
-
-    throw "No data returned";
+    return Promise.resolve();
   },
   token_valid: async (params: { token: string }): Promise<void | JsonApiErrorResponse> => {
     const res = await fetch(`${accountPasswordsBasePath}/token_valid?token=${encodeURIComponent(params.token)}`, {
