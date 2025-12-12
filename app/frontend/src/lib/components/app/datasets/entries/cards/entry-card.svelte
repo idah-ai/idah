@@ -94,9 +94,10 @@
 
     try {
       await entriesBackendDataSource.assign({ id: entry.id, memberAccountId: Number(currentAccount.id) });
-      goto(`/entries/${entry.id}/plugin`);
     } catch (error) {
       toast.error("Failed to assign entry to you");
+    } finally {
+      goto(`/entries/${entry.id}/plugin`);
     }
   }
 
@@ -234,7 +235,7 @@
               <img
                 src={thumbnailUrl}
                 alt="Entry thumbnail"
-                class="absolute top-0 left-0 cursor-pointer object-cover"
+                class="absolute left-0 top-0 cursor-pointer object-cover"
                 style:height="{imgContainer?.clientHeight}px"
                 style:width="{containerWidth * TOTAL_POSITIONS}px"
                 style:max-width="none"
