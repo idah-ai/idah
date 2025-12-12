@@ -1,6 +1,9 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { page } from "$app/state";
+  import { ExternalLinkIcon } from "@lucide/svelte";
   import { onDestroy, onMount } from "svelte";
+  import { toast } from "svelte-sonner";
 
   import EntryPriority from "@/components/app/datasets/entries/badges/entry-priority.svelte";
   import EntryStatus from "@/components/app/datasets/entries/badges/entry-status.svelte";
@@ -10,10 +13,10 @@
   import DataDisplay from "@/components/app/texts/data-display.svelte";
   import DateText from "@/components/app/texts/date-text.svelte";
   import { AspectRatio } from "@/components/ui/aspect-ratio";
+  import Button from "@/components/ui/button/button.svelte";
   import { Card, CardContent } from "@/components/ui/card";
   import Checkbox from "@/components/ui/checkbox/checkbox.svelte";
   import Progress from "@/components/ui/progress/progress.svelte";
-  import Link from "@/components/ui/text/Link.svelte";
   import Text from "@/components/ui/text/Text.svelte";
 
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
@@ -38,7 +41,15 @@
   let projectId = page.params.projectId as string;
   let canUpdateEntry = $state(false);
   let canDeleteEntry = $state(false);
-  let isEntryAssignedToMe = $derived(entry.assigned_to_id == Number(currentAccount?.id));
+  let canOpenEntry = $derived.by(() => {
+    if (!currentAccount?.id) return false;
+
+    /** If entry is not assigned to anyone, it can open by anyone */
+    if (entry.assigned_to_id === null) return true;
+
+    /** If entry is assigned to someone, it can open by the assigned user */
+    return entry.assigned_to_id == Number(currentAccount.id);
+  });
 
   const as_project_owner: { as_user: ProjectMemberScope } = {
     as_user: {
@@ -72,6 +83,21 @@
   // Functions
   async function fetchData(): Promise<void> {
     await periodicCheckJobStatus();
+  }
+
+  async function autoAssignReviewer() {
+    if (!currentAccount?.id) return;
+
+    if (entry.wf_step !== "review") return;
+
+    if (entry.reviewed_by_id !== null) return;
+
+    try {
+      await entriesBackendDataSource.assign({ id: entry.id, memberAccountId: Number(currentAccount.id) });
+      goto(`/entries/${entry.id}/plugin`);
+    } catch (error) {
+      toast.error("Failed to assign entry to you");
+    }
   }
 
   async function loadThumbnail(): Promise<void> {
@@ -208,7 +234,7 @@
               <img
                 src={thumbnailUrl}
                 alt="Entry thumbnail"
-                class="absolute left-0 top-0 cursor-pointer object-cover"
+                class="absolute top-0 left-0 cursor-pointer object-cover"
                 style:height="{imgContainer?.clientHeight}px"
                 style:width="{containerWidth * TOTAL_POSITIONS}px"
                 style:max-width="none"
@@ -230,16 +256,16 @@
       <!-- INFO -->
       <div class="flex flex-1 flex-col gap-6">
         <!-- RESOURCE -->
-        {#if isEntryAssignedToMe}
-          <Link
-            href="/entries/{entry.id}/plugin"
-            class="group-hover:text-primary group-hover:cursor-pointer group-hover:underline group-hover:underline-offset-4"
-            showIcon
+        {#if canOpenEntry}
+          <Button
+            variant="link"
+            class="group-hover:text-primary justify-start px-0 group-hover:cursor-pointer group-hover:underline group-hover:underline-offset-4"
+            onclick={autoAssignReviewer}
           >
-            <Text size="sm" weight="medium">
-              {entry.resource}
-            </Text>
-          </Link>
+            <span class="-ml-3">{entry.resource}</span>
+
+            <ExternalLinkIcon class="opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
+          </Button>
         {:else}
           <Text size="sm" weight="medium" class="text-muted-foreground">
             {entry.resource}
