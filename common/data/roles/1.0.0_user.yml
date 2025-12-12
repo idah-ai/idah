@@ -11,7 +11,8 @@ user:
 
     # Accounts
     - "iam:accounts.create.*"
-    - "iam:accounts.read.*"
+    - "iam:accounts.update.own"
+    - "iam:accounts.read.own"
 
     # Organizations
     - "iam:organizations.read.as_user"
