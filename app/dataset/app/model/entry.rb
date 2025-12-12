@@ -17,9 +17,9 @@ module Entry
 
     field :resource, type: String
 
-    field :assigned_to_id, type: Integer # Add through assign method
-    field :submitted_by_id, type: Integer # Add through submit method
-    field :reviewed_by_id, type: Integer # Add through review method
+    field :assigned_to_id, type: [Integer, NilClass] # Add through assign method
+    field :submitted_by_id, type: [Integer, NilClass] # Add through submit method
+    field :reviewed_by_id, type: [Integer, NilClass] # Add through review method
 
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true

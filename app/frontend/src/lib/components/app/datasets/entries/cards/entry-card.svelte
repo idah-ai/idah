@@ -33,10 +33,13 @@
   let { entry, selectedRows, onRowSelect }: Props = $props();
 
   // Variables
+  const currentAccount = $authStatus.authContext;
+
   let projectId = page.params.projectId as string;
   let intervalId: number | null = $state(null);
   let canUpdateEntry = $state(false);
   let canDeleteEntry = $state(false);
+  let isEntryAssignedToMe = $derived(entry.assigned_to_id == Number(currentAccount?.id));
 
   const as_project_owner: { as_user: ProjectMemberScope } = {
     as_user: {
@@ -47,7 +50,6 @@
 
   // Lifecycle
   onMount(async () => {
-    const currentAccount = $authStatus.authContext;
     canUpdateEntry =
       (await currentAccount?.can("update", "dataset:entries", ["as_org_owner", as_project_owner])) || false;
     canDeleteEntry =
@@ -230,15 +232,21 @@
       <!-- INFO -->
       <div class="flex flex-1 flex-col gap-6">
         <!-- RESOURCE -->
-        <Link
-          href="/entries/{entry.id}/plugin"
-          class="group-hover:text-primary group-hover:cursor-pointer group-hover:underline group-hover:underline-offset-4"
-          showIcon
-        >
-          <Text size="sm" weight="medium">
+        {#if isEntryAssignedToMe}
+          <Link
+            href="/entries/{entry.id}/plugin"
+            class="group-hover:text-primary group-hover:cursor-pointer group-hover:underline group-hover:underline-offset-4"
+            showIcon
+          >
+            <Text size="sm" weight="medium">
+              {entry.resource}
+            </Text>
+          </Link>
+        {:else}
+          <Text size="sm" weight="medium" class="text-muted-foreground">
             {entry.resource}
           </Text>
-        </Link>
+        {/if}
 
         <div class="flex flex-col items-start">
           <DataDisplay label="Created at">
