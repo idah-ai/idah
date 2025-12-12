@@ -14,7 +14,7 @@ user:
     - "iam:accounts.read.*"
 
     # Organizations
-    - "iam:organizations.read.*"
+    - "iam:organizations.read.as_user"
 
     # Dataset Service
     - "dataset:projects.read.as_user"
