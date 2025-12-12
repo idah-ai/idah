@@ -13,7 +13,7 @@
       });
       const passwordResetToken = accountResponse.meta.password_reset_token || "";
 
-      goto(resolve(`/reset-password?password_reset_token=${passwordResetToken}`));
+      goto(resolve(`/reset-password?token=${passwordResetToken}`));
     } catch (error) {
       console.error("Error accepting invitation", error);
       goto(resolve("/error"));
