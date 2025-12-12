@@ -16,7 +16,7 @@ class ProjectMembersExpo < BaseExpo
             }
 
   json_api ProjectMember::Record do
-    allowed_included "projects"
+    allowed_included "project"
 
     index do
       allowed_filters :email__match,

@@ -3,7 +3,7 @@
 module Entry
   class Service < Verse::Service::Base
     use entries: Entry::Repository, datasets: Dataset::Repository, projects: Project::Repository
-    use_system system_datasets_repo: Dataset::Repository
+    use_system system_datasets_repo: Dataset::Repository, system_entries_repo: Entry::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       entries.index(
@@ -108,18 +108,39 @@ module Entry
         entry_workflow.submit!
 
         account_id = auth_context.metadata[:id]
-        from_state = entry_workflow.aasm.from_state
+        aasm = entry_workflow.aasm
+        from_state = aasm.from_state
+        to_state = aasm.to_state
+
+        assigned_to_id =
+          case from_state
+          when :start
+            # if moving from start to annotate, assign to current user
+            account_id
+          when :annotate
+            # If moving to review step, assign to reviewer (nil for unassigned)
+            entry.reviewed_by_id
+          when :review
+            # If moving back to annotation step, re-assign to original annotator
+            to_state == :annotate ? entry.submitted_by_id : nil
+          else
+            nil
+          end
+
+        # Set submitted_by_id coming from annotation step
+        submitted_by_id = from_state == :annotate ? account_id : entry.submitted_by_id
+
+        # Set reviewed_by_id coming from review step
+        reviewed_by_id = from_state == :review ? account_id : entry.reviewed_by_id
 
         entries.submit(
           entry.id,
           {
-            # steps and status
             wf_step: entry_workflow.aasm.current_state.to_s,
             status: entry_workflow.aasm.current_state == :done ? "completed" : "in_progress",
-            # assignments
-            assigned_to_id: nil, # remove on step change
-            submitted_by_id: from_state == :annotate ? account_id : entry.submitted_by_id,
-            reviewed_by_id: from_state == :review ? account_id : entry.reviewed_by_id,
+            assigned_to_id:,
+            submitted_by_id:,
+            reviewed_by_id:,
           }
         )
 
@@ -127,7 +148,8 @@ module Entry
         # Use system dataset repo to avoid permission issues with update
         system_datasets_repo.update_progress!(entry.dataset.id)
 
-        entries.find!(entry.id, included: [:dataset])
+        # Use system entry repo as annotator/reviewer may not have read access after submission
+        system_entries_repo.find!(entry.id, included: [:dataset])
       end
     end
 
