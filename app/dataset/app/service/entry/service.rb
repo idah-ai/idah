@@ -123,8 +123,6 @@ module Entry
           when :review
             # If moving back to annotation step, re-assign to original annotator
             to_state == :annotate ? entry.submitted_by_id : nil
-          else
-            nil
           end
 
         # Set submitted_by_id coming from annotation step
