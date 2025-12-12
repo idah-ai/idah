@@ -4,7 +4,7 @@
   import SettingsPassword from "@/components/app/settings/items/settings-password.svelte";
 </script>
 
-<SettingsCard title="Sign in methods">
+<SettingsCard title="Login methods">
   <!-- <SettingsEmail /> -->
 
   <SettingsPassword />
