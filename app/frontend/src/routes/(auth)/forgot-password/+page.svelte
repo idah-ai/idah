@@ -36,7 +36,7 @@
   }
 </script>
 
-<AuthenticationCard title="Welcome Back!" description="We missed you!. Please enter your details.">
+<AuthenticationCard title="Forgot Password?" description="Enter your user's verified email address and we will send you a link to reset your password.">
   {#snippet alert()}
     {#if showErrorAlert}
       <AuthenticationAlert title="Unable to send reset link" description="Please try again."></AuthenticationAlert>
@@ -59,7 +59,7 @@
         {#if passwordResetLinkHasBeenSent}
           Sent! 🎉
         {:else}
-          Send Password Reset Link
+          Send reset password email
         {/if}
       </Button>
     </Form>
