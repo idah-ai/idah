@@ -34,7 +34,7 @@
     if (entryIds.length === 0 || !selectedMember) return;
 
     for (const entryId of entryIds) {
-      await entriesBackendDataSource.assign({ id: entryId, memberId: selectedMember });
+      await entriesBackendDataSource.assign({ id: entryId, memberAccountId: selectedMember });
     }
 
     toast.success("Member assigned successfully");
