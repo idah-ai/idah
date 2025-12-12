@@ -112,10 +112,10 @@ module Entry
         from_state = aasm.from_state
         to_state = aasm.to_state
 
-        # Auto assign to current user if starting annotation otherwise clear assignment on submit
         assigned_to_id =
           case from_state
           when :start
+            # if moving from start to annotate, assign to current user
             account_id
           when :annotate
             # If moving to review step, assign to reviewer (nil for unassigned)
