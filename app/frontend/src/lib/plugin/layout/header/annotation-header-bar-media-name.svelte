@@ -1,5 +1,6 @@
 <script lang="ts">
   import Button from "@/components/ui/button/button.svelte";
+  import { truncate } from "@/utils/string";
 
   // Props
   interface Props {
@@ -9,5 +10,5 @@
 </script>
 
 <Button variant="ghost" size="sm">
-  {name}
+  {truncate(name, 90)}
 </Button>
