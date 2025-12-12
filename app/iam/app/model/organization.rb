@@ -24,7 +24,25 @@ module Organization
           org_ids = auth_context[:org] || []
           table.where(id: org_ids)
         end
+
+        scope.as_user? { project_from_memberships_scoped }
       end
+    end
+
+    private
+
+    def project_from_memberships_scoped
+      account_id = auth_context.metadata[:id]
+
+      memberships = Verse::Cache.with_cache(
+        "dataset/datasets/service/memberships",
+        "account_id:#{account_id}",
+        expires_in: 180
+      ) do
+        Api[:idah].dataset.project_members.index(filter: { account_id: }, included: ["project"]).data
+      end
+
+      table.where(id: memberships.map{ |pm| pm.project.organization_id }.uniq)
     end
   end
 end
