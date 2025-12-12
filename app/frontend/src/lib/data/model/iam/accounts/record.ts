@@ -20,8 +20,8 @@ export class AccountRecord extends Record {
   @field() public role_scope!: Hash;
 
   @field() public readonly picture_url!: string | null;
-
   @field() public readonly joined_at!: Date | null;
+
   @field() public readonly invitation_expired_at!: Date | null;
 
   @field({ transformer: Transformers.Time }) public created_at!: Date;
