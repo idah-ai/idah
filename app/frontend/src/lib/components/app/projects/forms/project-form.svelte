@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { onMount } from "svelte";
+
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import TextareaField from "@/components/app/forms/fields/input/textarea-field.svelte";
   import SingleSelectDatasourceField from "@/components/app/forms/fields/select/single/single-select-datasource-field.svelte";
@@ -6,6 +8,7 @@
 
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
   import { organizationsBackendDataSource } from "@/data/model/iam/organizations/record";
+  import { authStatus } from "@/security/AuthContext";
 
   import type { FormBaseProps } from "@/components/app/forms/form.types";
 
@@ -18,9 +21,16 @@
 
   // Variables
   let resource: string = ProjectRecord.type;
+  let canUpdateOrganization = $state(false);
 
   // Variables::Reactive
   let { name, description, organization_id } = $derived(project);
+
+  // Lifecycle
+  onMount(async () => {
+    const currentAccount = $authStatus.authContext;
+    canUpdateOrganization = (await currentAccount?.can("update", "iam:organizations")) || false;
+  });
 
   // Functions
   $effect(() => {
@@ -39,10 +49,10 @@
       errors={fieldErrors["name"]}
       value={name}
       oninput={(e) => (name = e.currentTarget.value)}
-    ></InputField>
+    />
 
     <!-- PROJECT::ORGANIZATION -->
-    {#if !preSelectedOrganizationId}
+    {#if !preSelectedOrganizationId && canUpdateOrganization}
       <SingleSelectDatasourceField
         name="{resource}/organization_id"
         label="Organization"
@@ -56,7 +66,7 @@
           organization_id = value as number;
         }}
         searchKeyWithOperation="name__match"
-      ></SingleSelectDatasourceField>
+      />
     {/if}
 
     <!-- PROJECT::DESCRIPTION -->
@@ -66,6 +76,6 @@
       placeholder="Enter project description"
       value={description}
       oninput={(e) => (description = e.currentTarget.value)}
-    ></TextareaField>
+    />
   </FieldGroup>
 </FieldSet>
