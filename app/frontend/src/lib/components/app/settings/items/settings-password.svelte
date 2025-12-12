@@ -108,7 +108,8 @@
 
       <div class="flex flex-col gap-1">
         <span class="text-muted-foreground text-xs">
-         Password must contain at least 8 characters, one lowercase letter, one uppercase letter, one number and one special character. 
+          Password must contain at least 8 characters, one lowercase letter, one uppercase letter, one number and one
+          special character.
         </span>
 
         <div class="flex items-center">
