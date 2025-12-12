@@ -36,7 +36,10 @@
   }
 </script>
 
-<AuthenticationCard title="Forgot Password?" description="Enter your user's verified email address and we will send you a link to reset your password.">
+<AuthenticationCard
+  title="Forgot Password?"
+  description="Enter your user's verified email address and we will send you a link to reset your password."
+>
   {#snippet alert()}
     {#if showErrorAlert}
       <AuthenticationAlert title="Unable to send reset link" description="Please try again."></AuthenticationAlert>
