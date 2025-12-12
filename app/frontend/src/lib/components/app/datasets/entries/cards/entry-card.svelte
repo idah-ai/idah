@@ -36,7 +36,6 @@
   const currentAccount = $authStatus.authContext;
 
   let projectId = page.params.projectId as string;
-  let intervalId: number | null = $state(null);
   let canUpdateEntry = $state(false);
   let canDeleteEntry = $state(false);
   let isEntryAssignedToMe = $derived(entry.assigned_to_id == Number(currentAccount?.id));
@@ -102,7 +101,7 @@
    */
   async function periodicCheckJobStatus() {
     if (processingStatuses.includes(entry.status)) {
-      intervalId = setInterval(async () => {
+      const intervalId = setInterval(async () => {
         try {
           let jobId = entry.job_id;
 
@@ -140,6 +139,7 @@
           }
         } catch (error) {
           console.error("Error fetching updated entry:", error);
+          clearInterval(intervalId);
         }
       }, 2_000);
     } else {
@@ -170,8 +170,6 @@
 
   // Clean up blob URL and animation when component is destroyed
   function cleanup() {
-    if (intervalId) clearInterval(intervalId);
-
     stopAnimation();
 
     if (thumbnailUrl) {
@@ -210,7 +208,7 @@
               <img
                 src={thumbnailUrl}
                 alt="Entry thumbnail"
-                class="absolute top-0 left-0 cursor-pointer object-cover"
+                class="absolute left-0 top-0 cursor-pointer object-cover"
                 style:height="{imgContainer?.clientHeight}px"
                 style:width="{containerWidth * TOTAL_POSITIONS}px"
                 style:max-width="none"

@@ -67,12 +67,12 @@
         {
           label: "Approve",
           icon: SquareCheckIcon,
-          action: () => reviewAnnotation(true),
+          action: () => reviewAnnotation({ approved: true }),
         },
         {
           label: "Request changes",
           icon: SquareXIcon,
-          action: () => reviewAnnotation(false),
+          action: () => reviewAnnotation({ approved: false }),
         },
       ],
     },
@@ -89,13 +89,12 @@
   async function submitAnnotation() {
     loading = true;
     await context.submit();
-    window.location.reload();
   }
 
-  async function reviewAnnotation(approved: boolean) {
+  async function reviewAnnotation(props: { approved: boolean }) {
+    const { approved } = props;
     loading = true;
     await context.submit({ approved });
-    window.location.reload();
   }
 </script>
 
