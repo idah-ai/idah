@@ -3,7 +3,7 @@
 module Entry
   class Service < Verse::Service::Base
     use entries: Entry::Repository, datasets: Dataset::Repository, projects: Project::Repository
-    use_system system_datasets_repo: Dataset::Repository
+    use_system system_datasets_repo: Dataset::Repository, system_entries_repo: Entry::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       entries.index(
@@ -127,7 +127,8 @@ module Entry
         # Use system dataset repo to avoid permission issues with update
         system_datasets_repo.update_progress!(entry.dataset.id)
 
-        entries.find!(entry.id, included: [:dataset])
+        # Use system entry repo as annotator/reviewer may not have read access after submission
+        system_entries_repo.find!(entry.id, included: [:dataset])
       end
     end
 
