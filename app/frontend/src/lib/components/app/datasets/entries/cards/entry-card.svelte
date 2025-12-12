@@ -34,6 +34,7 @@
 
   // Variables
   let projectId = page.params.projectId as string;
+  let intervalId: number | null = $state(null);
   let canUpdateEntry = $state(false);
   let canDeleteEntry = $state(false);
 
@@ -99,7 +100,7 @@
    */
   async function periodicCheckJobStatus() {
     if (processingStatuses.includes(entry.status)) {
-      const intervalId = setInterval(async () => {
+      intervalId = setInterval(async () => {
         try {
           let jobId = entry.job_id;
 
@@ -133,12 +134,12 @@
 
           // If the entry is no longer processing, stop the interval
           if (!processingStatuses.includes(entry.status)) {
-            clearInterval(intervalId);
+            if (intervalId) clearInterval(intervalId);
           }
         } catch (error) {
           console.error("Error fetching updated entry:", error);
         }
-      }, 5_000);
+      }, 2_000);
     } else {
       /**
        * Then load the thumbnail once the job is complete
@@ -167,6 +168,8 @@
 
   // Clean up blob URL and animation when component is destroyed
   function cleanup() {
+    if (intervalId) clearInterval(intervalId);
+
     stopAnimation();
 
     if (thumbnailUrl) {
@@ -205,7 +208,7 @@
               <img
                 src={thumbnailUrl}
                 alt="Entry thumbnail"
-                class="absolute left-0 top-0 cursor-pointer object-cover"
+                class="absolute top-0 left-0 cursor-pointer object-cover"
                 style:height="{imgContainer?.clientHeight}px"
                 style:width="{containerWidth * TOTAL_POSITIONS}px"
                 style:max-width="none"
