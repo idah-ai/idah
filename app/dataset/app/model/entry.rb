@@ -130,7 +130,8 @@ module Entry
     def submit(id, attributes)
       no_event do
         transaction do
-          update!(id, attributes)
+          # Use read scope when updating as anyone with read access can submit
+          update!(id, attributes, scope: scoped(:read))
         end
       end
     end
