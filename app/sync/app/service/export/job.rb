@@ -5,7 +5,7 @@ module Export
       Verse::Util::Reflection.constantize(
         arguments.fetch(:process_class)
       ).new(
-        Context::IdahApi.context(arguments.fetch(:context_args))
+        Context::root(arguments.fetch(:context_args))
       ).run # arguments.fetch(:process_args) # or init ? or both ?
     end
   end

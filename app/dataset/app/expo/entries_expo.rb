@@ -14,8 +14,7 @@ class EntriesExpo < BaseExpo
                       :assigned_to_id,
                       :assigned_to_id__eq,
                       :assigned_to_id__in,
-                      :wf_step__in,
-                      :dataset_id
+                      :wf_step__in
     end
     create do
       authorized_relationships dataset: [:link]

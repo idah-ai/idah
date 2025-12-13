@@ -17,21 +17,21 @@ module Export
 
     def process_context(&append)
       on_init &append
-      @context.dataset.index.each do |dataset_context|
+      @context.datasets.index.each do |dataset_context|
         process_dataset_context dataset_context, &append
       end
     end
 
     def process_dataset_context(dataset_context, &append)
       on_dataset_context dataset_context, &append
-      dataset_context.entry.index.each do |entry_context|
+      dataset_context.entries.index.each do |entry_context|
         process_entry_context entry_context, &append
       end
     end
 
     def process_entry_context(entry_context, &append)
       on_entry_context entry_context, &append
-      entry_context.annotation.index.each do |annotation_context|
+      entry_context.annotations.index.each do |annotation_context|
         process_annotation_context annotation_context, &append
       end
     end
@@ -61,22 +61,22 @@ module Export
     end
 
     def on_entry_context(entry_context, &append)
-      # @context.Tempfile.new(entry_context.entry[:attributes][:resource])
       file = Tempfile.new(entry_context.entry[:attributes][:resource])
-      file.write(entry_context.media_file)
+      file.write(entry_context.medias.files)
       file.close
       @files << file
+      resource_info = entry_context.medias.resource_info
       append.call({
         command: 'media:create',
         args: {
-          id: entry_context.media_info[:id],
-          key: entry_context.media_info[:attributes][:key],
+          id: resource_info[:id],
+          key: resource_info[:attributes][:key],
           file: file.path,
-          mimetype: entry_context.media_info[:attributes][:mime_type],
+          mimetype: resource_info[:attributes][:mime_type],
           metadata: {
-            "Created-At": entry_context.media_info[:attributes][:created_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
-            "Updated-At": entry_context.media_info[:attributes][:updated_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
-            "Created-By": entry_context.media_info[:attributes][:created_by]
+            "Created-At": resource_info[:attributes][:created_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
+            "Updated-At": resource_info[:attributes][:updated_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
+            "Created-By": resource_info[:attributes][:created_by]
           }
         }
       }.to_json)
@@ -133,6 +133,7 @@ module Export
           process_append_records.call do |s|
             stdin.puts(s)
             stdin.flush
+            Verse::logger::debug {"#{self}: #{s}"}
           end
 
           [@context.name, :upd].join('.')
