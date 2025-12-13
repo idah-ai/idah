@@ -8,19 +8,19 @@ class ExportExpo < BaseExpo
   expose on_http(:get, "", auth: nil) do
     desc "export endpoint"
     input do
-      field? :filters do
-        field? :dataset do
+      field? :filter do
+        field? :datasets do
           field? :id, String
           field? :project_id, String
           field? :modality, String
         end
-        field? :entry do
+        field? :entries do
           field? :id, String
         end
       end
     end
   end
   def export_dataset
-    service.export(params[:filters])
+    service.export(Hash(params[:filter]))
   end
 end

@@ -2,7 +2,6 @@
 
 module Export
   class Service < Verse::Service::Base
-
     def export(context_args)
     # "UniversalPortableDataset::Export"
     # infer api/setting/registry...
@@ -11,8 +10,7 @@ module Export
         arguments: {
           context_args:,
           process_class: "Export::UniversalPortableDataset",
-          process_args: {},
-        }
+          process_args: {},}
       )
     end
   end
