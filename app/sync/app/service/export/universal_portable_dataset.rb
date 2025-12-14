@@ -9,8 +9,8 @@ module Export
       # TODO embed append/std_* in context
       updcli_append do |&append|
         begin
-          linear_processing &append
-          # loop_processing &append
+          # linear_processing &append
+          loop_processing &append
         rescue Exception => e
           Verse::logger::error{"#{self} Error processing #{@context.name} #{e}"}
           raise e

@@ -1,7 +1,7 @@
 module Context
   module ContextApi
     class Crud < Base
-      def create(attributes)
+      def create(attributes = {})
         raise :not_implemented
       end
 
@@ -20,7 +20,7 @@ module Context
       end
 
       def show(id = nil)
-        filters = merge_filters({id:})
+        filters = merge_filters(id ? {id:} : nil)
         raise Verse::Error::NotFound if !filters[:id] || (id && filters[:id] != id) # overriden by context
 
         query_result = @context_api.index(filters:, page: {number: 1, size: 1})
@@ -32,11 +32,11 @@ module Context
         @context_builder.call(record)
       end
 
-      def update(id, attributes)
+      def update(attributes, id = nil)
         raise :not_implemented
       end
 
-      def delete(id)
+      def delete(id = nil)
         raise :not_implemented
       end
     end
