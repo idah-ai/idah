@@ -3,15 +3,18 @@ module Context
     class Datasets < Crud
       Context = Data.define(:record, :api, :entries)
 
-      def initialize(context_filters, args, api = :idah)
+      def initialize(api = :idah, args = {}, context_filters = {})
         super(
+          Api[api].dataset.datasets,
+          api,
+          args,
+          context_filters,
           proc do |dataset|
             Context.new(dataset,
-              Datasets.new({id: dataset[:id]}, args, api),
-              Entries.new({dataset_id: dataset[:id]}, args, api)
+              Datasets.new(api, args, merge_context_filters(id: dataset[:id])),
+              Entries.new(api, args, merge_context_filters({dataset_id: dataset[:id]}, :entries))
             )
-          end, Api[api].dataset.datasets,
-          context_filters, args, api
+          end
         )
       end
     end

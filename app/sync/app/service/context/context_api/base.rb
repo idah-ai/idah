@@ -1,19 +1,29 @@
 module Context
   module ContextApi
     class Base
-      def initialize(context_builder, context_api, context_filters, args, api = :idah)
-        @context_builder = context_builder
-        @context_api = context_api
-        @context_filters = context_filters
-        @args = args
+      def initialize(
+        context_api,
+        api = :idah,
+        args = {},
+        context_filters = {},
+        context_builder = Proc.new {|record| record}
+      )
         @api = api
+        @args = args
+        @context_api = context_api
+        @context_builder = context_builder
+        @context_filters = context_filters
       end
 
       protected
-      def merge_filters(filters)
+      def merge_filters(filters = {}, context_api_name = @context_api.name)
         Hash(filters)
-          .merge(@context_filters)
-          .merge(Hash(@args).slice(@context_api.name))
+          .merge(Hash(Hash(@context_filters)[context_api_name]))
+          .merge(Hash(Hash(@args)[context_api_name]))
+      end
+
+      def merge_context_filters(filters = {}, context_api_name = @context_api.name)
+        Hash(@context_filters).merge([[context_api_name, merge_filters(filters, context_api_name)]].to_h)
       end
     end
   end
