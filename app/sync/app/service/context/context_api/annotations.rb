@@ -10,7 +10,6 @@ module Context
           args,
           context_filters,
           proc do |annotation|
-            Verse::logger.debug {{self: self, annotation:}}
             Context.new(
               annotation,
               Annotations.new(api, args, merge_context_filters(id: annotation[:id])),

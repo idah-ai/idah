@@ -13,17 +13,23 @@ class ExportExpo < BaseExpo
           field? :id, String
           field? :project_id, String
           field? :modality, String
+          field? :status, String
         end
         field? :entries do
           field? :id, String
+          field? :wf_step, String
+          field? :status, String
+          field? :resource, String
+          field? :assigned_to_id, String
         end
         field? :annotations do
           field? :id, String
+          # field? :shape_type, String
         end
       end
     end
   end
   def export_dataset
-    service.export(Hash(params[:filter]))
+    service.export(params[:filter])
   end
 end
