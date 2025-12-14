@@ -1,11 +1,11 @@
 module Context
   module ContextApi
-    class Medias < Crud
-      def initialize(context_filters, args, api = Api[:idah])
+    class Medias < Base
+      def initialize(context_filters, args, api = :idah)
         super(
-          proc do |medias|
-            medias
-          end, api.media.medias, context_filters, args, api)
+          proc {|media| media},
+          Api[api].media.medias,
+          context_filters, args, api)
       end
 
       def resource_info(filters = {})

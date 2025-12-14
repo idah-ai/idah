@@ -1,12 +1,8 @@
 module Context
   module ContextApi
-    class Crud
-      def initialize(context_builder, context_api, context_filters, args, api = Api[:idah])
-        @context_builder = context_builder
-        @context_api = context_api
-        @context_filters = context_filters
-        @args = args
-        @api = api
+    class Crud < Base
+      def create(attributes)
+        raise :not_implemented
       end
 
       def index(filters = {})
@@ -23,9 +19,9 @@ module Context
         end
       end
 
-      def show(id)
+      def show(id = nil)
         filters = merge_filters({id:})
-        raise Verse::Error::NotFound if filters[:id] != id # overriden by context
+        raise Verse::Error::NotFound if !filters[:id] || (id && filters[:id] != id) # overriden by context
 
         query_result = @context_api.index(filters:, page: {number: 1, size: 1})
         raise query_result.errors if query_result.errors
@@ -36,16 +32,12 @@ module Context
         @context_builder.call(record)
       end
 
-      protected
-      def merge_filters(filters)
-        puts({merge_filters:{
-          name: @context_api.name,
-          args: @args,
-          context_filters: @context_filters,
-          filters:,
-          merge_output: Hash(filters).merge(@context_filters).merge(Hash(@args).slice(@context_api.name))
-        }})
-        Hash(filters).merge(@context_filters).merge(Hash(@args).slice(@context_api.name))
+      def update(id, attributes)
+        raise :not_implemented
+      end
+
+      def delete(id)
+        raise :not_implemented
       end
     end
   end

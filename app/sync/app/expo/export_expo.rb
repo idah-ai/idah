@@ -17,6 +17,9 @@ class ExportExpo < BaseExpo
         field? :entries do
           field? :id, String
         end
+        field? :annotations do
+          field? :id, String
+        end
       end
     end
   end
