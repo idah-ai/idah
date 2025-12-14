@@ -18,13 +18,13 @@ module Export
     def linear_processing(&append)
       begin
         start &append
-        @context.datasets.index.each do |dataset_context|
+        @context.api.datasets.index.each do |dataset_context|
           on_dataset dataset_context, &append
         end
-        @context.entries.index.each do |entry_context|
+        @context.api.entries.index.each do |entry_context|
           on_entry entry_context, &append
         end
-        @context.annotations.index.each do |annotation_context|
+        @context.api.annotations.index.each do |annotation_context|
           on_annotation annotation_context, &append
         end
         done &append
@@ -37,7 +37,7 @@ module Export
     def inner_loop_processing(&append)
       begin
         start &append
-        @context.datasets.index.each do |dataset_context|
+        @context.api.datasets.index.each do |dataset_context|
           process_dataset dataset_context, &append
         end
         done &append
