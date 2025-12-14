@@ -8,89 +8,89 @@ module Export
     def run
       # TODO embed append/std_* in context
       updcli_append do |&append|
-        linear_processing &append
-        # inner_loop_processing &append
+        begin
+          linear_processing &append
+          # loop_processing &append
+        rescue Exception => e
+          Verse::logger::error{"#{self} Error processing #{@context.name} #{e}"}
+          raise e
+        end
       end
     end
 
     private
-
-    def linear_processing(&append)
-      begin
-        start &append
-        @context.api.datasets.index.each do |dataset_context|
-          on_dataset dataset_context, &append
-        end
-        @context.api.entries.index.each do |entry_context|
-          on_entry entry_context, &append
-        end
-        @context.api.annotations.index.each do |annotation_context|
-          on_annotation annotation_context, &append
-        end
-        done &append
-      rescue Exception => e
-        Verse::logger::error{"#{self} Error while processing #{@context.name} #{e}"}
-      end
-    end
-
-
-    def inner_loop_processing(&append)
-      begin
-        start &append
-        @context.api.datasets.index.each do |dataset_context|
-          process_dataset dataset_context, &append
-        end
-        done &append
-      rescue Exception => e
-        Verse::logger::error{"#{self} Error while processing #{@context.name} #{e}"}
-      end
-    end
-
-    def process_dataset(dataset_context, &append)
-      on_dataset dataset_context, &append
-      dataset_context.entries.index.each do |entry_context|
-        process_entry entry_context, &append
-      end
-    end
-
-    def process_entry(entry_context, &append)
-      on_entry entry_context, &append
-      entry_context.annotations.index.each do |annotation_context|
-        process_annotation annotation_context, &append
-      end
-    end
-
-    def process_annotation(annotation_context, &append)
-      on_annotation annotation_context, &append
-    end
 
     def start(&append)
       Verse::logger::debug{"#{self} Start processing #{@context.name}"}
       append.call({command: 'init', args: {}}.to_json)
     end
 
-    def on_dataset(dataset_context, &append)
+    def done
+      Verse::logger::debug{"#{self} #{@context.name} Process complete"}
+    end
+
+    def linear_processing(&append)
+      start &append
+      @context.api.datasets.index.each do |dataset|
+        on_dataset dataset, &append
+      end
+      @context.api.entries.index.each do |entry|
+        on_entry entry, &append
+      end
+      @context.api.annotations.index.each do |annotation|
+        on_annotation annotation, &append
+      end
+      done &append
+    end
+
+    def loop_processing(&append)
+      start &append
+      @context.api.datasets.index.each do |dataset|
+        process_dataset dataset, &append
+      end
+      done &append
+    end
+
+    def process_dataset(dataset, &append)
+      on_dataset dataset, &append
+      dataset.entries.index.each do |entry|
+        process_entry entry, &append
+      end
+    end
+
+    def process_entry(entry, &append)
+      on_entry entry, &append
+      entry.annotations.index.each do |annotation|
+        process_annotation annotation, &append
+      end
+    end
+
+    def process_annotation(annotation, &append)
+      on_annotation annotation, &append
+    end
+
+    def on_dataset(dataset, &append)
       append.call({
         command: 'dataset:create',
         args: {
-          id: dataset_context.record[:id],
-          name: dataset_context.record[:attributes][:name],
-          modality: dataset_context.record[:attributes][:modality],
+          id: dataset.record[:id],
+          name: dataset.record[:attributes][:name],
+          modality: dataset.record[:attributes][:modality],
           metadata: {
-            "Created-At": dataset_context.record[:attributes][:created_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
-            "Updated-At": dataset_context.record[:attributes][:updated_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
+            "Created-At": dataset.record[:attributes][:created_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
+            "Updated-At": dataset.record[:attributes][:updated_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
             "Created-By": nil
           }
         }
       }.to_json)
     end
 
-    def on_entry(entry_context, &append)
-      file = Tempfile.new(entry_context.record[:attributes][:resource])
-      file.write(entry_context.medias.files)
+    def on_entry(entry, &append)
+      file = Tempfile.new(entry.record[:attributes][:resource])
+      file.write(entry.medias.files)
       file.close
       @files << file
-      resource_info = entry_context.medias.resource_info
+      resource_info = entry.medias.resource_info
       append.call({
         command: 'media:create',
         args: {
@@ -108,38 +108,34 @@ module Export
       append.call({
         command: 'entry:create',
         args: {
-          id: entry_context.record[:id],
-          dataset_id: entry_context.record[:attributes][:dataset_id],
-          url: entry_context.record[:attributes][:resource],
+          id: entry.record[:id],
+          dataset_id: entry.record[:attributes][:dataset_id],
+          url: entry.record[:attributes][:resource],
           metadata: {
-            "Created-At": entry_context.record[:attributes][:created_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
-            "Updated-At": entry_context.record[:attributes][:updated_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
+            "Created-At": entry.record[:attributes][:created_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
+            "Updated-At": entry.record[:attributes][:updated_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
             "Created-By": nil
           }
         }
       }.to_json)
     end
 
-    def on_annotation(annotation_context, &append)
+    def on_annotation(annotation, &append)
       append.call({
         command: 'annotation:create',
         args: {
-          id: annotation_context.record[:id],
-          entry_id: annotation_context.record[:attributes][:entry_id],
-          type: Hash(annotation_context.record[:attributes][:dimensions])[:type],
-          shape: Hash(annotation_context.record[:attributes][:dimensions]).select {|k, _| k != :type}.to_json,
-          annotation: Hash(annotation_context.record[:attributes][:annotation]).to_json,
+          id: annotation.record[:id],
+          entry_id: annotation.record[:attributes][:entry_id],
+          type: Hash(annotation.record[:attributes][:dimensions])[:type],
+          shape: Hash(annotation.record[:attributes][:dimensions]).select {|k, _| k != :type}.to_json,
+          annotation: Hash(annotation.record[:attributes][:annotation]).to_json,
           metadata: {
-            "Created-At": annotation_context.record[:attributes][:created_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
-            "Updated-At": annotation_context.record[:attributes][:updated_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
+            "Created-At": annotation.record[:attributes][:created_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
+            "Updated-At": annotation.record[:attributes][:updated_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
             "Created-By": nil
           }
         }
       }.to_json)
-    end
-
-    def done
-      Verse::logger::debug{"#{self} #{@context.name} Process complete"}
     end
 
     def updcli_append(&process_append_records)
