@@ -16,7 +16,7 @@ module Email
       end
 
       mail = Mail.new do
-        from    "Idah Notification <no-reply@idah.ai>"
+        from    "Idah Notification <no-reply@idah.ingedata.ai>"
         to      to_email
         subject notification.title
       end
