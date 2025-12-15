@@ -102,7 +102,7 @@ RSpec.describe Entry::Service, database: true do
       resource: "http://example.com/first.mp4",
       wf_step: "start",
       status: "pending",
-      assigned_to_member_id: annotator_member_id,
+      assigned_to_id: annotator_account_id,
     )
   }
   let(:second_entry_id) {
@@ -113,7 +113,7 @@ RSpec.describe Entry::Service, database: true do
       resource: "http://example.com/second.mp4",
       wf_step: "start",
       status: "pending",
-      assigned_to_member_id: reviewer_member_id,
+      assigned_to_id: reviewer_account_id,
     )
   }
   let(:third_entry_id) {
@@ -124,7 +124,7 @@ RSpec.describe Entry::Service, database: true do
       resource: "http://example.com/third.mp4",
       wf_step: "start",
       status: "pending",
-      assigned_to_member_id: another_annotator_member_id,
+      assigned_to_id: another_annotator_account_id,
     )
   }
 
@@ -138,7 +138,7 @@ RSpec.describe Entry::Service, database: true do
           resource: "http://example.com/updated.mp4",
           wf_step: "end",
           status: "done",
-          assigned_to_member_id: annotator_member_id,
+          assigned_to_id: annotator_account_id,
         }
       }
     }
@@ -194,7 +194,7 @@ RSpec.describe Entry::Service, database: true do
         resource: "http://example.com/first.mp4",
         wf_step: "start",
         status: "pending",
-        assigned_to_member_id: another_annotator_account_id,
+        assigned_to_id: another_annotator_account_id,
       )
     end
 
@@ -217,7 +217,7 @@ RSpec.describe Entry::Service, database: true do
         expect(record.status).to eq "pending"
         expect(record.wf_step).to eq "start"
         expect(record.priority).to eq 1
-        expect(record.assigned_to_member_id).to be_nil
+        expect(record.assigned_to_id).to be_nil
       end
 
       it "can update" do
@@ -227,7 +227,7 @@ RSpec.describe Entry::Service, database: true do
         expect(record.resource).to eq "http://example.com/updated.mp4"
         expect(record.wf_step).to eq "end"
         expect(record.status).to eq "done"
-        expect(record.assigned_to_member_id.to_s).to eq update_data[:data][:attributes][:assigned_to_member_id]
+        expect(record.assigned_to_id).to eq update_data[:data][:attributes][:assigned_to_id]
       end
 
       it "can delete" do
@@ -304,7 +304,7 @@ RSpec.describe Entry::Service, database: true do
         expect(record.status).to eq "pending"
         expect(record.wf_step).to eq "start"
         expect(record.priority).to eq 1
-        expect(record.assigned_to_member_id).to be_nil
+        expect(record.assigned_to_id).to be_nil
       end
 
       it "can update" do
@@ -314,7 +314,7 @@ RSpec.describe Entry::Service, database: true do
         expect(record.resource).to eq "http://example.com/updated.mp4"
         expect(record.wf_step).to eq "end"
         expect(record.status).to eq "done"
-        expect(record.assigned_to_member_id.to_s).to eq update_data[:data][:attributes][:assigned_to_member_id]
+        expect(record.assigned_to_id).to eq update_data[:data][:attributes][:assigned_to_id]
       end
 
       it "can delete" do
@@ -365,7 +365,7 @@ RSpec.describe Entry::Service, database: true do
           resource: "http://example.com/second.mp4",
           wf_step: "start",
           status: "pending",
-          assigned_to_member_id: project_owner_member_id,
+          assigned_to_id: project_owner_account_id,
         )
 
         create_data[:data][:relationships][:dataset][:data][:id] = second_dataset_id
@@ -373,8 +373,7 @@ RSpec.describe Entry::Service, database: true do
         expect {
           subject.create(deserialize(create_data))
         }.to raise_error(
-          Verse::Error::ValidationFailed,
-          "dataset not found to create an entry"
+          Verse::Error::Unauthorized
         )
       end
 

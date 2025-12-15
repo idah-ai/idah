@@ -11,6 +11,7 @@
 
   import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
   import { cn } from "@/utils";
+  import { humanize } from "@/utils/string";
 
   // Props
   interface Props {
@@ -70,7 +71,9 @@
       {/snippet}
 
       {#snippet slotChoice({ choice, select })}
-        {@const isAlreadyAdded = choice.data ? (choice.data["role_scope"].org || []).includes(organizationId) : false}
+        {@const isAlreadyAdded = choice.data
+          ? ((choice.data["role_scope"] || {}).org || []).includes(organizationId)
+          : false}
         <CommandItem disabled={isAlreadyAdded} onclick={() => select(choice)}>
           <CheckIcon
             class={cn("mr-2 size-4", {
@@ -80,9 +83,13 @@
 
           {choice.label}
 
-          {#if isAlreadyAdded}
-            <Badge variant="outline" rounded="full" class="ml-auto">Already added</Badge>
-          {/if}
+          <div class="ml-auto flex items-center gap-1">
+            {#if isAlreadyAdded}
+              <Badge variant="outline" rounded="full">Already added</Badge>
+            {/if}
+
+            <Badge variant="outline" rounded="full">{humanize(choice.data?.role_name)}</Badge>
+          </div>
         </CommandItem>
       {/snippet}
     </MultipleSelectDatasourceField>

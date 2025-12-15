@@ -1,16 +1,19 @@
-<script lang="ts">
+<script lang="ts" generics="T extends Record">
   import SingleSelectDatasourceField from "@/components/app/forms/fields/select/single/single-select-datasource-field.svelte";
+  import AccountAvatar from "@/components/app/iam/accounts/avatars/account-avatar.svelte";
+  import { CommandItem } from "@/components/ui/command";
 
   import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
+  import { Record } from "@/data/model/Record";
+  import { cn } from "@/utils";
 
   import type {
     DataTableColumnFilterOperation,
     DataTableFilterBaseProps,
   } from "@/components/app/datasource-table/types";
-  import type { EntryRecord } from "@/data/model/dataset/entries/record";
 
   // Props
-  let { columnSetting, filters, onFilter }: DataTableFilterBaseProps<EntryRecord> = $props();
+  let { columnSetting, filters, onFilter }: DataTableFilterBaseProps<T> = $props();
 
   // Variables
   const resource: string = AccountRecord.type;
@@ -31,8 +34,45 @@
 <SingleSelectDatasourceField
   name="{resource}/account_id"
   dataSource={accountsBackendDataSource}
-  displayKey="name"
-  value={filters[filterKeyWithOperation]}
+  displayKey="email"
+  searchable
   searchKeyWithOperation="email__match"
+  listOptions={{
+    filters: {
+      role_name__nin: ["system"],
+    },
+    sort: ["name"],
+  }}
+  value={filters[filterKeyWithOperation]}
   onSelected={handleFilter}
-></SingleSelectDatasourceField>
+>
+  {#snippet slotTriggerValue({ selectedChoice })}
+    {#if selectedChoice?.data}
+      <AccountAvatar size="sm" email={selectedChoice.data["email"]} showEmail />
+    {:else}
+      <span class="truncate">{selectedChoice?.label || filters[filterKeyWithOperation]}</span>
+    {/if}
+  {/snippet}
+
+  {#snippet slotChoice({ choice, select })}
+    {#if choice.data}
+      {@const isSelected = filters[filterKeyWithOperation] === choice.value}
+
+      <CommandItem
+        class={cn("group cursor-pointer", {
+          "bg-primary/10": isSelected,
+        })}
+        onclick={() => select(choice)}
+      >
+        <AccountAvatar
+          name={choice.data["name"]}
+          email={choice.data["email"]}
+          showName
+          showEmail
+          size="sm"
+          {isSelected}
+        />
+      </CommandItem>
+    {/if}
+  {/snippet}
+</SingleSelectDatasourceField>

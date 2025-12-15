@@ -9,9 +9,7 @@
 
   // Variables
   const datasets: DatasetRecord[] = $derived(contexts?.datasets ?? []);
-  const projectDatasets = $derived(
-    datasets.filter((dataset) => dataset._jsonapiData.relationships?.project.data.id === project.id),
-  );
+  const projectDatasets = $derived(datasets.filter((dataset) => dataset.project.id === project.id));
 </script>
 
 {projectDatasets.length}
