@@ -10,6 +10,7 @@
 
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { OrganizationRecord, organizationsBackendDataSource } from "@/data/model/iam/organizations/record";
+  import { authStatus } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
 
   import type { DropdownMenuContentAlignment, IDropdownMenus } from "@/components/app/dropdown-menus/types";
@@ -23,11 +24,13 @@
 
   // Lifecycle
   onMount(async () => {
-    await fetchOrganization();
-    await loadRelatedProjects();
+    await Promise.all([checkRights(), fetchOrganization(), loadRelatedProjects()]);
   });
 
   // Variables
+  let currentAccount = $authStatus.authContext;
+  let canUpdateOrganization = $state(false);
+  let canDeleteOrganization = $state(false);
   let organizationRecord: OrganizationRecord | undefined = $state(undefined);
   let relatedProjectRecords: ProjectRecord[] = $state([]);
   let openEditOrganizationFormModal: boolean = $state(false);
@@ -38,6 +41,7 @@
         {
           label: "Edit",
           icon: SquarePenIcon,
+          hidden: !canUpdateOrganization,
           action: async () => {
             await fetchOrganization();
             openEditOrganizationFormModal = true;
@@ -46,6 +50,7 @@
         {
           label: "Delete",
           icon: Trash2Icon,
+          hidden: !canDeleteOrganization,
           description:
             relatedProjectRecords.length > 0 ? "Cannot delete organization when projects are associated." : undefined,
           disabled: relatedProjectRecords.length > 0,
@@ -58,6 +63,11 @@
   });
 
   // Functions
+  async function checkRights() {
+    canUpdateOrganization = (await currentAccount?.can("update", "iam:organizations")) || false;
+    canDeleteOrganization = (await currentAccount?.can("delete", "iam:organizations")) || false;
+  }
+
   async function fetchOrganization() {
     const organizationRes = await organizationsBackendDataSource.get(organizationId, {
       fields: {
@@ -87,18 +97,20 @@
   }
 </script>
 
-<DropdownMenus {menus} {align} />
+{#if canUpdateOrganization || canDeleteOrganization}
+  <DropdownMenus {menus} {align} />
 
-<OrganizationFormModal
-  title="Organization"
-  action="update"
-  {organizationRecord}
-  bind:open={openEditOrganizationFormModal}
-/>
+  <OrganizationFormModal
+    title="Organization"
+    action="update"
+    {organizationRecord}
+    bind:open={openEditOrganizationFormModal}
+  />
 
-<ConfirmModal
-  title="Delete Organization"
-  description="Are you sure you want to delete this organization? This action cannot be undone."
-  onConfirm={deleteOrganization}
-  bind:open={openConfirmDeleteOrganizationModal}
-/>
+  <ConfirmModal
+    title="Delete Organization"
+    description="Are you sure you want to delete this organization? This action cannot be undone."
+    onConfirm={deleteOrganization}
+    bind:open={openConfirmDeleteOrganizationModal}
+  />
+{/if}

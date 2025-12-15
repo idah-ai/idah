@@ -97,7 +97,7 @@ RSpec.describe NoteFeed::Service, database: true do
       resource: "http://example.com/first.mp4",
       wf_step: "review",
       status: "in_progress",
-      assigned_to_member_id: annotator_member_id,
+      assigned_to_id: annotator_account_id,
     )
   }
   let(:second_entry_id) {
@@ -108,7 +108,7 @@ RSpec.describe NoteFeed::Service, database: true do
       resource: "http://example.com/second.mp4",
       wf_step: "review",
       status: "in_progress",
-      assigned_to_member_id: reviewer_member_id,
+      assigned_to_id: reviewer_account_id,
     )
   }
   let(:third_entry_id) {
@@ -119,7 +119,7 @@ RSpec.describe NoteFeed::Service, database: true do
       resource: "http://example.com/third.mp4",
       wf_step: "review",
       status: "in_progress",
-      assigned_to_member_id: reviewer_member_id,
+      assigned_to_id: reviewer_account_id,
     )
   }
 
@@ -266,7 +266,7 @@ RSpec.describe NoteFeed::Service, database: true do
         resource: "http://example.com/first.mp4",
         wf_step: "start",
         status: "pending",
-        assigned_to_member_id: 999,
+        assigned_to_id: 999,
       )
 
       @not_owned_org_note_feed = note_feed_repo.create(

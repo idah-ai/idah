@@ -17,7 +17,8 @@ import type { Hash } from "@/utils/types";
 
 @type("dataset:entries")
 export class EntryRecord extends Record {
-  @field() public dataset_id!: string;
+  @field() public readonly project_id!: string;
+  @field() public readonly dataset_id!: string;
 
   @field() public priority!: number;
 
@@ -28,7 +29,9 @@ export class EntryRecord extends Record {
 
   @field() public resource!: string;
 
-  @field() public assigned_to_member_id!: number | null;
+  @field() public assigned_to_id!: number | null;
+  @field() public submitted_by_id!: number | null;
+  @field() public reviewed_by_id!: number | null;
 
   @field() public created_at!: Date;
   @field() public updated_at!: Date;
@@ -66,13 +69,40 @@ const entryBasePath: string = `${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/
 RecordFactory.registerTypes(EntryRecord);
 
 export const entriesBackendDataSource = createBackendDataSource(EntryRecord, entryBasePath, {
+  select: async (params: { id: string }): Promise<RecordResponse<EntryRecord> | JsonApiErrorResponse> => {
+    const res = await fetch(`${entryBasePath}/${params.id}/select`, {
+      method: "GET",
+    });
+
+    const body = await res.json();
+
+    // Cache Management
+    const cacheIndexKey = resourcePath(entryBasePath, null, undefined);
+    clearCache(cacheIndexKey);
+
+    if (body && body.errors) {
+      if (body.errors.length > 0) {
+        body.errors.forEach((err: Hash) => {
+          console.error(`Error assigning entry: ${err.title} - ${err.detail}`, err);
+        });
+      }
+
+      return Promise.reject(parseSingleElementError({ status: res.status, errors: body.errors }));
+    }
+
+    if (body && body.data) {
+      return Promise.resolve(parseSingleElementReturn<EntryRecord>(body));
+    }
+
+    throw "No data returned";
+  },
   assign: async (params: {
     id: string;
-    memberId: number;
+    memberAccountId: number;
   }): Promise<RecordResponse<EntryRecord> | JsonApiErrorResponse> => {
     const res = await fetch(`${entryBasePath}/${params.id}/assign`, {
       method: "PATCH",
-      body: encodeModel(EntryRecord, { attributes: { assigned_to_member_id: params.memberId } }),
+      body: encodeModel(EntryRecord, { attributes: { assigned_to_id: params.memberAccountId } }),
       headers: { "Content-Type": "application/vnd.api+json" },
     });
 

@@ -24,7 +24,7 @@
   {#each tableData.response.data as record (record.id)}
     <TableRow>
       {#each Object.entries(columns) as [columnKey, columnSetting] (columnKey)}
-        {@const { dataType, clickable, cellComponent: CellComponent, visible } = columnSetting}
+        {@const { dataType, clickable, cellComponent: CellComponent, filterOptions, visible } = columnSetting}
         {@const value = record[columnKey] || ""}
 
         {#if visible}
@@ -53,7 +53,9 @@
             {:else if dataType === "time"}
               <DateText size="sm" showTooltip datetime={value as Date} datetimeFormat="HH:mm:ss"></DateText>
             {:else if dataType === "enum"}
-              {value}
+              {filterOptions?.choices
+                ? filterOptions.choices.find((choice) => choice.value === value)?.label || value
+                : value}
             {/if}
           </TableCell>
         {/if}

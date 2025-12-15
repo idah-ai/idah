@@ -82,14 +82,27 @@ module Dataset
               AND (
                 -- All with roles
                 pm.role IN :with_roles OR
-                -- From assigned entries with roles
+                -- Annotators can access only if they have entries assigned
                 (
-                  pm.role IN :assigned_to_roles
+                  pm.role IN :annotator_roles
                   AND EXISTS (
                     SELECT 1
                     FROM entries e
                     WHERE e.dataset_id = datasets.id
-                      AND e.assigned_to_member_id = pm.id
+                      AND e.assigned_to_id = :account_id
+                  )
+                ) OR
+                -- Reviewers can access assigned and unassigned entries in review step
+                (
+                  pm.role IN :reviewer_roles
+                  AND EXISTS (
+                    SELECT 1
+                    FROM entries e
+                    WHERE e.dataset_id = datasets.id
+                      AND (
+                        e.assigned_to_id = :account_id OR
+                        (e.wf_step = 'review' AND e.assigned_to_id IS NULL)
+                      )
                   )
                 )
               )
@@ -101,7 +114,8 @@ module Dataset
             scoped_fragment,
             account_id:,
             with_roles: %w[project_owner],
-            assigned_to_roles: %w[annotator reviewer]
+            annotator_roles: %w[annotator],
+            reviewer_roles: %w[reviewer]
           )
         )
       when :update, :delete

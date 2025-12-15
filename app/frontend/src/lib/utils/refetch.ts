@@ -17,6 +17,9 @@ export interface Refetches {
   organizations: Refetch;
   noteFeeds: Refetch;
   noteComments: Refetch;
+
+  /** AUDIT */
+  logs: Refetch;
 }
 
 export type RefetchesKey = keyof Refetches;
@@ -54,6 +57,12 @@ export const refetches = writable<Refetches>({
     get: new Date(),
   },
   noteComments: {
+    list: new Date(),
+    get: new Date(),
+  },
+
+  /** AUDIT */
+  logs: {
     list: new Date(),
     get: new Date(),
   },
