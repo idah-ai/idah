@@ -46,7 +46,10 @@ module Account
         )
 
         id = accounts.create(attr)
-        created_account = accounts.find!(id)
+
+        # Use the system repository to avoid permission issues
+        # As project membership will be create after account creation
+        created_account = accounts_system.find!(id)
 
         # Send the join invitation email
         ::Service::Notification.email(
