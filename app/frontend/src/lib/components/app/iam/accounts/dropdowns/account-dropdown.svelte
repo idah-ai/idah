@@ -1,14 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
-  import {
-      LogOutIcon,
-      MoonIcon,
-      SettingsIcon,
-      SunIcon,
-      SunMoonIcon,
-      TabletSmartphoneIcon
-  } from "@lucide/svelte";
+  import { LogOutIcon, MoonIcon, SettingsIcon, SunIcon, SunMoonIcon, TabletSmartphoneIcon } from "@lucide/svelte";
   import { mode, resetMode, setMode } from "mode-watcher";
 
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
