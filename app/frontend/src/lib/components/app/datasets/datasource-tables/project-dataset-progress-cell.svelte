@@ -10,17 +10,14 @@
   let { record: dataset }: DataTableCellBaseProps<DatasetRecord> = $props();
 
   // Variables
-  let entries = dataset.entries;
-  let completedEntries = entries.filter((entry) => entry.status === "completed");
-  let totalEntries = entries.length;
-  let totalProgress = $derived(totalEntries > 0 ? Math.floor(completedEntries.length / totalEntries) * 100 : 0);
+  let { progress } = $derived(dataset);
+  let progressPercentage = $derived(Math.floor(progress * 100));
 </script>
 
 <div class="flex flex-col gap-1">
   <div class="flex items-center gap-1">
-    <Text size="xs" weight="semibold" class="text-primary">{totalProgress}%</Text>
-    <Text size="xs" class="text-muted-foreground">({completedEntries.length} of {totalEntries})</Text>
+    <Text size="xs" weight="semibold" class="text-primary">{progressPercentage}%</Text>
   </div>
 
-  <Progress value={totalProgress}></Progress>
+  <Progress value={progressPercentage} />
 </div>

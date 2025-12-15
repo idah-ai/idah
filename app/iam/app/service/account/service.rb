@@ -46,7 +46,10 @@ module Account
         )
 
         id = accounts.create(attr)
-        created_account = accounts.find!(id)
+
+        # Use the system repository to avoid permission issues
+        # As project membership will be create after account creation
+        created_account = accounts_system.find!(id)
 
         # Send the join invitation email
         ::Service::Notification.email(
@@ -67,7 +70,9 @@ module Account
         previous_account = accounts.find!(record.id)
 
         # Ensure role_scope is stored as JSON
-        record.attributes[:role_scope] = (record.attributes[:role_scope] || {}).to_json
+        role_scope = record.attributes[:role_scope]
+        record.attributes[:role_scope] = role_scope.to_json if role_scope&.any?
+
         accounts.update!(record.id, record.attributes)
 
         accounts.after_commit do
