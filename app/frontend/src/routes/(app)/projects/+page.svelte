@@ -1,22 +1,42 @@
 <script lang="ts">
+  import { onMount } from "svelte";
+
   import DatasourceTable from "@/components/app/datasource-table/datasource-table.svelte";
   import PageHeader from "@/components/app/page/page-header.svelte";
   import PageProvider from "@/components/app/page/page-provider.svelte";
   import AddNewProjectButton from "@/components/app/projects/buttons/add-new-project-button.svelte";
 
-  import { homeBreadcrumb, projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
+  import { projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
   import { projectColumns } from "@/components/app/projects/datasource-tables/project-columns";
   import { datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { OrganizationRecord, organizationsBackendDataSource } from "@/data/model/iam/organizations/record";
+  import { authStatus } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
 
   import type { Record } from "@/data/model/Record";
   import type { CollectionResponse } from "@/data/model/types";
   import type { Hash } from "@/utils/types";
 
-  pageBreadcrumbsStore.set([homeBreadcrumb, projectBreadcrumb]);
+  pageBreadcrumbsStore.set([projectBreadcrumb]);
+
+  // Variables
+  let canUpdateProject = $state(false);
+  let canDeleteProject = $state(false);
+  let columns = $state(projectColumns);
+
+  // Lifecycle
+  onMount(async () => {
+    const currentAccount = $authStatus.authContext;
+    /**
+     * Note: Can not check with `as_project_owner` scope
+     * because we need to check each project id
+     */
+    canUpdateProject = (await currentAccount?.can("update", "dataset:projects", ["as_org_owner", "as_user"])) || false;
+    canDeleteProject = (await currentAccount?.can("delete", "dataset:projects", ["as_org_owner", "as_user"])) || false;
+    columns.action.visible = canUpdateProject || canDeleteProject;
+  });
 
   // Functions
   async function onLoadSetContexts<T extends Record = ProjectRecord>(response: CollectionResponse<T>): Promise<Hash> {
@@ -48,7 +68,7 @@
   }
 </script>
 
-<PageProvider name="projects" roles={["admin", "org_owner", "user"]}>
+<PageProvider name="projects" roles={["admin", "org_owner", "user"]} action="read" resource="dataset:projects">
   <PageHeader title="Projects">
     {#snippet actions()}
       <AddNewProjectButton />
@@ -60,7 +80,7 @@
       id="projects"
       name="project"
       refetchKey="projects"
-      columns={projectColumns}
+      {columns}
       dataSource={projectsBackendDataSource}
       listOptions={{
         fields: {
