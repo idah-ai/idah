@@ -134,8 +134,7 @@ module Entry
     def assign(id, attributes)
       no_event do
         transaction do
-          # Use read scope when updating as anyone with read access can assign
-          update!(id, attributes, scope: scoped(:read))
+          update!(id, attributes)
         end
       end
     end
