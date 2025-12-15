@@ -18,7 +18,7 @@ module Context
           end
           begin
             yield Context.new(
-              name, stdin, stdout, stderr, wait_thr,
+              filename, stdin, stdout, stderr, wait_thr,
               proc do |s|
                 stdin.puts(s)
                 stdin.flush
