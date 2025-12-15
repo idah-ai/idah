@@ -22,7 +22,9 @@ module Export
     end
 
     def error(e, record)
-      Verse::logger::error {"#{self} failed to process #{record}"}
+      Verse::logger::error {
+        "#{self} failed to process #{[record[:type], record[:id]].join(":")}"
+      }
       raise e
     end
 
@@ -74,7 +76,7 @@ module Export
           }
         }.to_json)
       rescue Exception => e
-        error e, [dataset.record[:type], dataset.record[:id]].join(":")
+        error e, dataset.record
       end
     end
 
@@ -117,7 +119,7 @@ module Export
           }
         }.to_json)
       rescue Exception => e
-        error e, [entry.record[:type], entry.record[:id]].join(":")
+        error e, entry.record
       end
     end
 
@@ -139,7 +141,7 @@ module Export
           }
         }.to_json)
       rescue Exception => e
-        error e, [annotation.record[:type], annotation.record[:id]].join(":")
+        error e, annotation.record
       end
     end
   end
