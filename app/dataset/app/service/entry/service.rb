@@ -99,6 +99,21 @@ module Entry
       end
     end
 
+    def select(entry_id)
+      entries.transaction do
+        account_id = auth_context.metadata[:id]
+        entry = entries.find!(entry_id)
+
+        if entry.assigned_to_id && entry.assigned_to_id != account_id
+          raise Verse::Error::Unauthorized,
+                "You are not assigned to this entry"
+        end
+
+        # Use read scope when updating as anyone with read access can select
+        entries.update!(entry.id, { assigned_to_id: account_id }, scope: scoped(:read))
+      end
+    end
+
     def submit(entry_id, **opts)
       # check self reviewing here, reject
       entries.transaction do
@@ -112,18 +127,15 @@ module Entry
         from_state = aasm.from_state
         to_state = aasm.to_state
 
-        assigned_to_id =
-          case from_state
-          when :start
-            # if moving from start to annotate, assign to current user
-            account_id
-          when :annotate
-            # If moving to review step, assign to reviewer (nil for unassigned)
-            entry.reviewed_by_id
-          when :review
-            # If moving back to annotation step, re-assign to original annotator
-            to_state == :annotate ? entry.submitted_by_id : nil
-          end
+        # assigned_to_id =
+        #   case from_state
+        #   when :annotate
+        #     # If moving to review step, assign to reviewer (nil for unassigned)
+        #     entry.reviewed_by_id
+        #   when :review
+        #     # If moving back to annotation step, re-assign to original annotator
+        #     to_state == :annotate ? entry.submitted_by_id : nil
+        #   end
 
         # Set submitted_by_id coming from annotation step
         submitted_by_id = from_state == :annotate ? account_id : entry.submitted_by_id
@@ -136,7 +148,7 @@ module Entry
           {
             wf_step: entry_workflow.aasm.current_state.to_s,
             status: entry_workflow.aasm.current_state == :done ? "completed" : "in_progress",
-            assigned_to_id:,
+            # assigned_to_id:,
             submitted_by_id:,
             reviewed_by_id:,
           }
