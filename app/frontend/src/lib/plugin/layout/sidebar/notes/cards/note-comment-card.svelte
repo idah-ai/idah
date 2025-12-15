@@ -27,7 +27,8 @@
       noteCommentRecord = updatedNoteCommentRes.data;
       toast.success("Note comment updated successfully.");
       $refetches.noteComments.list = new Date();
-    } catch (_e) {
+    } catch (error) {
+      console.error(error);
       toast.error("You are not authorized to do this action.");
     }
   }

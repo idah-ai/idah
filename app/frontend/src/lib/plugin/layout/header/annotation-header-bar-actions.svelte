@@ -1,13 +1,5 @@
 <script lang="ts">
-  import {
-    ChevronDownIcon,
-    InfoIcon,
-    MessageCircleIcon,
-    Settings2Icon,
-    SquareCheckIcon,
-    SquareXIcon,
-    SunMoonIcon,
-  } from "@lucide/svelte";
+  import { ChevronDownIcon, MessageCircleIcon, SquareCheckIcon, SquareXIcon, SunMoonIcon } from "@lucide/svelte";
   import { toggleMode } from "mode-watcher";
 
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";

@@ -25,7 +25,8 @@ export async function updateNoteFeedContentMd(id: string, newContentMd: string) 
     toast.success("Note feed updated successfully.");
     refetchNoteFeeds();
     return updatedNoteFeedRes.data;
-  } catch (_e) {
+  } catch (error) {
+    console.error(error);
     toast.error("You are not authorized to do this action.");
     return null;
   }
