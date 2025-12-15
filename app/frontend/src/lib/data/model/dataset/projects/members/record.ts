@@ -12,7 +12,7 @@ export class ProjectMemberRecord extends Record {
   @field() public name!: string | null;
   @field() public email!: string;
 
-  @field() public role!: string;
+  @field() public role!: ProjectMemberRole;
 
   @field() public invited_by_id!: number;
 
@@ -33,4 +33,5 @@ export const projectMemberRoles = [
   { label: "Project Owner", value: "project_owner" },
   { label: "Reviewer", value: "reviewer" },
   { label: "Annotator", value: "annotator" },
-];
+] as const;
+export type ProjectMemberRole = (typeof projectMemberRoles)[number]["value"];

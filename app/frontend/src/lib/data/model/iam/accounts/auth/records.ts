@@ -3,6 +3,7 @@ import { field, Record, RecordFactory, type } from "@/data/model/Record";
 
 import type { RecordResponse } from "@/data/model/types";
 import type { Hash } from "@/utils/types";
+import type { Role } from "@/data/model/iam/accounts/auth/constants";
 
 @type("iam:account_auths")
 export class AccountAuthRecord extends Record {
@@ -10,7 +11,7 @@ export class AccountAuthRecord extends Record {
   @field() public name!: string;
   @field() public picture_url!: string;
 
-  @field() public role_name!: string;
+  @field() public role_name!: Role;
   @field() public role_scope!: Hash;
 
   @field() public role_rights!: string[];

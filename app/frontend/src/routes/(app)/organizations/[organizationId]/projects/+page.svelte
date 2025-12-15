@@ -8,7 +8,7 @@
   import AddNewProjectButton from "@/components/app/projects/buttons/add-new-project-button.svelte";
 
   import { organizationProjectColumns } from "@/components/app/organizations/data-tables/organization-project-columns";
-  import { homeBreadcrumb, organizationBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
+  import { organizationBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
   import { projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { OrganizationRecord } from "@/data/model/iam/organizations/record";
@@ -21,7 +21,6 @@
   let organizationId: string = page.params.organizationId as string;
 
   pageBreadcrumbsStore.set([
-    homeBreadcrumb,
     organizationBreadcrumb,
     { label: organization.name, href: resolve(`/organizations/${organizationId}/projects`) },
     { label: "Projects" },

@@ -15,6 +15,10 @@ case $1 in
       docker compose run --rm $service ./dev-entrypoint.sh rake db:reset db:migrate
     done
     ;;
+  setup)
+    echo "Setting up Services Accounts and IAM users..."
+    docker compose run --rm iam bundle exec rake dev:setup dev:users
+    ;;
   *)
     echo "Unknown command: `$1`"
     echo "Usage: $0 {reset}"

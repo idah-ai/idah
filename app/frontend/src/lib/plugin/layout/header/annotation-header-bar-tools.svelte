@@ -20,6 +20,7 @@
     type: string;
   }
 
+  const disabledToolsIfWorkflowSteps = ["done"];
   let tools: HeaderBarModeTool[] = $state([]);
   let mode: string | undefined = $state();
 
@@ -30,11 +31,13 @@
     {
       label: "Undo",
       icon: UndoIcon,
+      disabled: disabledToolsIfWorkflowSteps.includes(context.workflowStep),
       handleClick: () => context.commands.undo(),
     },
     {
       label: "Redo",
       icon: RedoIcon,
+      disabled: disabledToolsIfWorkflowSteps.includes(context.workflowStep),
       handleClick: () => context.commands.redo(),
     },
   ];
@@ -72,10 +75,10 @@
 
   <Separator orientation="vertical"></Separator>
 
-  {#each commands as { label, icon: Icon, handleClick }, commandIndex (commandIndex)}
+  {#each commands as { label, icon: Icon, disabled, handleClick }, commandIndex (commandIndex)}
     <Tooltips align="center" delayDuration={100}>
       {#snippet trigger()}
-        <Button variant="ghost" size="icon-sm" onclick={handleClick}>
+        <Button variant="ghost" size="icon-sm" {disabled} onclick={handleClick}>
           <Icon />
         </Button>
       {/snippet}
