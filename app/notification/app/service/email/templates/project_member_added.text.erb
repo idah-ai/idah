@@ -1,7 +1,7 @@
 
 You have been invited to project <%= notification.project_name %>
 
-Hi <%= account.name %>,
+Hi <%= account.name || account.email %>,
 You have been added to the project '<%= notification.project_name %>' by '<%= notification.inviter_email %>'.
 
 Go to project:

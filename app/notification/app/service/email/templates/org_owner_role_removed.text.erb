@@ -2,5 +2,5 @@
 You have been removed as organization owner of 
 <%= notification.organization_name %> organization
 
-Hi <%= notification.recipient_name %>,
+Hi <%= notification.recipient_name || notification.to %>,
 You have been removed as organization owner of <%= notification.organization_name %> organization by <%= notification.admin_name %>.
