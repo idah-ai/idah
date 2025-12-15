@@ -8,8 +8,8 @@
   import DialogTitle from "@/components/ui/dialog/dialog-title.svelte";
 
   import {
-      projectMembersBackendDataSource,
-      type ProjectMemberRole,
+    projectMembersBackendDataSource,
+    type ProjectMemberRole,
   } from "@/data/model/dataset/projects/members/record";
   import { createMultipleProjectMembersSchema } from "@/data/model/dataset/projects/members/schema";
   import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
@@ -23,7 +23,7 @@
 
   // Variables
   const currentAccount = $authStatus.authContext;
-  
+
   let projectId: string | undefined = $derived(page.params.projectId);
   let submitting: boolean = $state(false);
   let members: Array<{ email: string; role: ProjectMemberRole | null }> = $state([{ email: "", role: null }]);
