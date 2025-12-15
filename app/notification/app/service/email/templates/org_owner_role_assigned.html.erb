@@ -5,10 +5,10 @@
 <h1><%= notification.organization_name %> organization</h1>
 
 
-    <img src="<%= [ENV.fetch("IDAH_URL"), "/assets/images/email-illustration-org_owner_role_assigned.png"].join("") %>" style="width: 120px; height: 120px;margin: 0 auto;" />
+    <img src="<%= [ENV.fetch("IDAH_URL"), "/assets/images/email-illustration-org_owner_role_assigned.svg"].join("") %>" style="width: 120px; height: 120px;margin: 0 auto;" />
 
 
-<p style="font-size: 14px;line-height: 20px;">Hi <%= notification.recipient_name || notification.to %>,</p>
+<p style="font-size: 14px;line-height: 20px;">Hi <%= notification.recipient_name || notification.recipient_account_email %>,</p>
 
   <p style="text-align: center;font-size: 14px;line-height: 20px;margin: 0 100px;">
 You have been assigned as organization owner of <%= notification.organization_name %> organization by <%= notification.admin_name %>.
