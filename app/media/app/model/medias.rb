@@ -47,9 +47,7 @@ module Medias
       end
     end
 
-    private
-
-    def project_from_orgs_scoped
+    private def project_from_orgs_scoped
       org_ids = auth_context.custom_scopes[:org]
 
       projects = Verse::Cache.with_cache(
@@ -63,7 +61,7 @@ module Medias
       table.where(project_id: projects.map(&:id).uniq)
     end
 
-    def project_from_memberships_scoped
+    private def project_from_memberships_scoped
       account_id = auth_context.metadata[:id]
 
       memberships = Verse::Cache.with_cache(
@@ -75,6 +73,43 @@ module Medias
       end
 
       table.where(project_id: memberships.map(&:project_id).uniq)
+    end
+
+    def create(attributes)
+      with_metadata do
+        add_metadata(
+          email: auth_context.metadata[:email],
+          project_id: attributes[:project_id],
+        )
+
+        super(attributes)
+      end
+    end
+
+    def update!(id, attributes)
+      with_metadata do
+        media = find!(id)
+
+        add_metadata(
+          email: auth_context.metadata[:email],
+          project_id: media.project_id,
+        )
+
+        super(id, attributes)
+      end
+    end
+
+    def delete!(id)
+      with_metadata do
+        media = find!(id)
+
+        add_metadata(
+          email: auth_context.metadata[:email],
+          project_id: media.project_id,
+        ) if media
+
+        super(id)
+      end
     end
   end
 end

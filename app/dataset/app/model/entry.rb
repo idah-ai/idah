@@ -130,6 +130,48 @@ module Entry
       end
     end
 
+    def create(attributes)
+      with_metadata do
+        add_metadata(
+          email: auth_context.metadata[:email],
+          project_id: attributes[:project_id],
+          dataset_id: attributes[:dataset_id],
+        )
+
+        super(attributes)
+      end
+    end
+
+    def update!(id, attributes)
+      with_metadata do
+        entry = find!(id)
+
+        add_metadata(
+          email: auth_context.metadata[:email],
+          project_id: attributes[:project_id] || entry.project_id,
+          dataset_id: attributes[:dataset_id] || entry.dataset_id,
+          entry_id: id,
+        )
+
+        super(id, attributes)
+      end
+    end
+
+    def delete!(id)
+      with_metadata do
+        entry = find!(id)
+
+        add_metadata(
+          email: auth_context.metadata[:email],
+          project_id: entry.project_id,
+          dataset_id: entry.dataset_id,
+          entry_id: id,
+        ) if entry
+
+        super(id)
+      end
+    end
+
     event(name: "selected")
     def select(id)
       no_event do

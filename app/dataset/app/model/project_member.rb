@@ -102,5 +102,42 @@ module ProjectMember
               "Permission denied for \"#{action}\" action on #{self.class.resource}"
       end
     end
+
+    def create(attributes)
+      with_metadata do
+        add_metadata(
+          email: auth_context.metadata[:email],
+          project_id: attributes[:project_id],
+        )
+
+        super(attributes)
+      end
+    end
+
+    def update!(id, attributes)
+      with_metadata do
+        membership = find!(id)
+
+        add_metadata(
+          email: auth_context.metadata[:email],
+          project_id: attributes[:project_id] || membership.project_id,
+        )
+
+        super(id, attributes)
+      end
+    end
+
+    def delete!(id)
+      with_metadata do
+        membership = find!(id)
+
+        add_metadata(
+          email: auth_context.metadata[:email],
+          project_id: membership.project_id,
+        ) if membership
+
+        super(id)
+      end
+    end
   end
 end
