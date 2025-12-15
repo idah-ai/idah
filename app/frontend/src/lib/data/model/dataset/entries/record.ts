@@ -69,6 +69,35 @@ const entryBasePath: string = `${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/
 RecordFactory.registerTypes(EntryRecord);
 
 export const entriesBackendDataSource = createBackendDataSource(EntryRecord, entryBasePath, {
+  select: async (params: {
+    id: string;
+  }): Promise<RecordResponse<EntryRecord> | JsonApiErrorResponse> => {
+    const res = await fetch(`${entryBasePath}/${params.id}/select`, {
+      method: "GET",
+    });
+
+    const body = await res.json();
+
+    // Cache Management
+    const cacheIndexKey = resourcePath(entryBasePath, null, undefined);
+    clearCache(cacheIndexKey);
+
+    if (body && body.errors) {
+      if (body.errors.length > 0) {
+        body.errors.forEach((err: Hash) => {
+          console.error(`Error assigning entry: ${err.title} - ${err.detail}`, err);
+        });
+      }
+
+      return Promise.reject(parseSingleElementError({ status: res.status, errors: body.errors }));
+    }
+
+    if (body && body.data) {
+      return Promise.resolve(parseSingleElementReturn<EntryRecord>(body));
+    }
+
+    throw "No data returned";
+  },
   assign: async (params: {
     id: string;
     memberAccountId: number;

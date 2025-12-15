@@ -130,6 +130,16 @@ module Entry
       end
     end
 
+    event(name: "selected")
+    def select(id)
+      no_event do
+        transaction do
+          # Use read scope when updating as anyone with read access can select
+          update!(id, { assigned_to_id: auth_context.metadata[:id] }, scope: scoped(:read))
+        end
+      end
+    end
+
     event(name: "assigned")
     def assign(id, attributes)
       no_event do

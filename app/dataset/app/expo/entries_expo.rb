@@ -41,7 +41,7 @@ class EntriesExpo < BaseExpo
     service.assign_member(id, member_id)
   end
 
-  expose on_http(:post, "/:id/select") do
+  expose on_http(:get, "/:id/select") do
     desc "Select workflow event for an entry"
     input do
       field :id, String
