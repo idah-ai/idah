@@ -10,7 +10,7 @@ module Export
         # linear_processing
         loop_processing
       rescue Exception => e
-        Verse::logger::error{"#{self} Error processing #{@context.file.name} #{e}"}
+        Verse::logger::error{"#{self} Error processing #{@context.io.name} #{e}"}
         raise e
       end
     end
@@ -18,12 +18,12 @@ module Export
     private
 
     def start
-      Verse::logger::debug{"#{self} Start processing #{@context.file.name}"}
-      @context.file.append.call({command: 'init', args: {}}.to_json)
+      Verse::logger::debug{"#{self} Start processing #{@context.io.name}"}
+      @context.io.append.call({command: 'init', args: {}}.to_json)
     end
 
     def done
-      Verse::logger::debug{"#{self} #{@context.file.name} Process complete"}
+      Verse::logger::debug{"#{self} #{@context.io.name} Process complete"}
     end
 
     def linear_processing
@@ -55,7 +55,7 @@ module Export
     end
 
     def on_dataset(dataset)
-      @context.file.append.call({
+      @context.io.append.call({
         command: 'dataset:create',
         args: {
           id: dataset.record[:id],
@@ -75,7 +75,7 @@ module Export
       file.write(entry.medias.files)
       file.close
       resource_info = entry.medias.resource_info
-      @context.file.append.call({
+      @context.io.append.call({
         command: 'media:create',
         args: {
           id: resource_info[:id],
@@ -90,7 +90,7 @@ module Export
         }
       }.to_json)
       file.unlink
-      @context.file.append.call({
+      @context.io.append.call({
         command: 'entry:create',
         args: {
           id: entry.record[:id],
@@ -106,7 +106,7 @@ module Export
     end
 
     def on_annotation(annotation)
-      @context.file.append.call({
+      @context.io.append.call({
         command: 'annotation:create',
         args: {
           id: annotation.record[:id],

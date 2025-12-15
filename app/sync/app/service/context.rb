@@ -1,9 +1,9 @@
 module Context
-  Root = Data.define(:file, :api)
+  Root = Data.define(:io, :api)
 
-  def self.root(file, args, api = :idah)
+  def self.root(io, args, api = :idah)
     Root.new(
-      file,
+      io,
       ContextApi.api(args, api)
     )
   end
