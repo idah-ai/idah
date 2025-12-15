@@ -41,7 +41,7 @@
   const currentAccount = $authStatus.authContext;
 
   let projectId = page.params.projectId as string;
-  let { id: entryId, wf_step, assigned_to_id, reviewed_by_id } = $derived(entry);
+  let { id: entryId, wf_step, assigned_to_id, submitted_by_id, reviewed_by_id } = $derived(entry);
   let canUpdateEntry = $state(false);
   let canDeleteEntry = $state(false);
   let canOpenEntry = $derived.by(() => {
@@ -97,7 +97,7 @@
        */
       if (assigned_to_id === null) {
         await entriesBackendDataSource.select({
-          id: entryId
+          id: entryId,
         });
       }
     } catch (error) {
@@ -327,7 +327,23 @@
           {#if wf_step !== "done"}
             <DataDisplay label="Assigned to">
               {#snippet slotValue()}
-                <ProjectMemberAvatar memberAccountId={assigned_to_id}></ProjectMemberAvatar>
+                <ProjectMemberAvatar memberAccountId={assigned_to_id} />
+              {/snippet}
+            </DataDisplay>
+          {/if}
+
+          {#if submitted_by_id}
+            <DataDisplay label="Submitted by">
+              {#snippet slotValue()}
+                <ProjectMemberAvatar memberAccountId={submitted_by_id} />
+              {/snippet}
+            </DataDisplay>
+          {/if}
+
+          {#if reviewed_by_id}
+            <DataDisplay label="Reviewed by">
+              {#snippet slotValue()}
+                <ProjectMemberAvatar memberAccountId={reviewed_by_id} />
               {/snippet}
             </DataDisplay>
           {/if}
