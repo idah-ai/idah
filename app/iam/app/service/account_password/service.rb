@@ -8,14 +8,14 @@ module AccountPassword
     def request_password_reset(email)
       account = account_repo.find_by({ email: })
 
-      return unless account
+      raise Verse::Error::NotFound, "account not found" unless account
 
       # Save the token to the database
       password_reset_token = update_password_reset_token(account)
 
       # Send the password reset email
       ::Service::Notification.email(
-        recipient_account_email: account.email,
+        to: account.email,
         title: "Reset Password",
         category: "password_reset",
         password_reset_token:,

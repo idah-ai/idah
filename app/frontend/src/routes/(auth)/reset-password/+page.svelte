@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
+  import { page } from "$app/state";
 
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import Form from "@/components/app/forms/form.svelte";
@@ -24,12 +25,13 @@
     return !validated.success;
   });
 
-  // let token = $derived(page.url.);
+  let token = $derived(page.url.searchParams.get("token") as string);
 
   // Functions
   async function updatePassword(): Promise<void> {
     try {
-      await accountPasswordsBackendDataSource.reset({ token: "", password: credentials.password });
+      await accountPasswordsBackendDataSource.reset({ token, password: credentials.password });
+
       updated = true;
     } catch (error) {
       console.error(error);
@@ -64,8 +66,9 @@
           type="password"
           placeholder="Enter your password"
           required
-          bind:value={credentials.password}
-        />
+          value={credentials.password}
+          oninput={(e) => (credentials.password = e.currentTarget.value)}
+        ></InputField>
 
         <!-- CONFIRM PASSWORD -->
         <InputField
@@ -74,8 +77,10 @@
           type="password"
           placeholder="Enter your password"
           required
-          bind:value={credentials.confirmPassword}
-        />
+          value={credentials.confirmPassword}
+          oninput={(e) => (credentials.confirmPassword = e.currentTarget.value)}
+          description="Password must contain at least 6 characters, one lowercase letter, one uppercase letter, one number and one special character."
+        ></InputField>
 
         <Button class="w-full" disabled={disabledResetPasswordButton} onclick={updatePassword}>Update Password</Button>
       {:else}

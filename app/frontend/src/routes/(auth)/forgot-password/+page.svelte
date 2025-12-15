@@ -6,6 +6,7 @@
   import Button from "@/components/ui/button/button.svelte";
   import Link from "@/components/ui/text/Link.svelte";
 
+  import { accountPasswordsBackendDataSource } from "@/data/model/iam/account-passwords/record";
   import { sendResetPasswordLinkSchema } from "@/data/model/iam/accounts/auth-schema";
 
   // Variables
@@ -24,29 +25,21 @@
 
   // Functions
   async function sendPasswordResetLink(): Promise<void> {
-    /** Check if email is valid and exist in out platform? */
-    // const existingAccount = await AccountsBackendDataSource.list({
-    //   fields: {
-    //     [AccountRecord.type]: []
-    //   }
-    //   filters: {
-    //     email: email
-    //   },
-    //   noCache: true
-    // })
-    // if (!existingAccount.data)
-    // if (true) {
-    //   passwordResetLinkHasBeenSent = true;
-    // sentDate = new Date();
-    // showErrorAlert = false;
-    // goto("/reset-password");
-    // } else {
-    // showErrorAlert = true;
-    // }
+    try {
+      await accountPasswordsBackendDataSource.request_reset({ email });
+      passwordResetLinkHasBeenSent = true;
+      showErrorAlert = false;
+    } catch (error) {
+      console.error(error);
+      showErrorAlert = true;
+    }
   }
 </script>
 
-<AuthenticationCard title="Welcome Back!" description="We missed you!. Please enter your details.">
+<AuthenticationCard
+  title="Forgot Password?"
+  description="Enter your user's verified email address and we will send you a link to reset your password."
+>
   {#snippet alert()}
     {#if showErrorAlert}
       <AuthenticationAlert title="Unable to send reset link" description="Please try again."></AuthenticationAlert>
@@ -56,14 +49,20 @@
   {#snippet content()}
     <Form>
       <!-- EMAIL -->
-      <InputField name="{resource}/email" label="Email" placeholder="Enter your email" required bind:value={email}
+      <InputField
+        name="{resource}/email"
+        label="Email"
+        placeholder="Enter your email"
+        required
+        value={email}
+        oninput={(e) => (email = e.currentTarget.value)}
       ></InputField>
 
       <Button class="w-full" disabled={disabledSendPasswordResetLink} onclick={sendPasswordResetLink}>
         {#if passwordResetLinkHasBeenSent}
           Sent! 🎉
         {:else}
-          Send Password Reset Link
+          Send reset password email
         {/if}
       </Button>
     </Form>
