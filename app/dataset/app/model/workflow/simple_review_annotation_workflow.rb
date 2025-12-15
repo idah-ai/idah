@@ -3,7 +3,7 @@
 require_relative "base"
 
 module Workflow
-  class EntryWorkflow < Workflow::Base
+  class SimpleReviewAnnotationWorkflow < Workflow::Base
     aasm do
       state :start, initial: true
       state :annotate
