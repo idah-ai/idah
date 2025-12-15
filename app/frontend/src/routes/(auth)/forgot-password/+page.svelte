@@ -14,6 +14,7 @@
   let email = $state("");
   let showErrorAlert = $state(false);
   let passwordResetLinkHasBeenSent: boolean = $state(false);
+  let sendingPasswordResetLink = $state(false);
   // let sentDate: Date | null = $state(null);
   let disabledSendPasswordResetLink = $derived.by(() => {
     const validated = sendResetPasswordLinkSchema.safeParse({ email });
@@ -25,11 +26,14 @@
 
   // Functions
   async function sendPasswordResetLink(): Promise<void> {
+    sendingPasswordResetLink = true;
+    
     try {
       await accountPasswordsBackendDataSource.request_reset({ email });
       passwordResetLinkHasBeenSent = true;
       showErrorAlert = false;
     } catch (error) {
+      sendingPasswordResetLink = false;
       console.error(error);
       showErrorAlert = true;
     }
@@ -58,7 +62,7 @@
         oninput={(e) => (email = e.currentTarget.value)}
       ></InputField>
 
-      <Button class="w-full" disabled={disabledSendPasswordResetLink} onclick={sendPasswordResetLink}>
+      <Button class="w-full" disabled={disabledSendPasswordResetLink} loading={sendingPasswordResetLink} loadingLabel="Sending..."  onclick={sendPasswordResetLink}>
         {#if passwordResetLinkHasBeenSent}
           Sent! 🎉
         {:else}
