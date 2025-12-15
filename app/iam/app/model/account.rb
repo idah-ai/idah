@@ -75,9 +75,7 @@ module Account
       valid ? account : nil
     end
 
-    private
-
-    def accounts_from_project_member_scoped
+   private  def accounts_from_project_member_scoped
       account_id = auth_context.metadata[:id]
       org_ids = auth_context[:org] || []
 
@@ -93,6 +91,38 @@ module Account
       account_ids = [account_id] + membership_account_ids
 
       table.where(id: account_ids)
+    end
+
+    private def create(attributes)
+      with_metadata do
+        add_metadata(
+          email: auth_context.metadata[:email],
+        )
+
+        super(attributes)
+      end
+    end
+
+    def update!(id, attributes)
+      with_metadata do
+        add_metadata(
+          email: auth_context.metadata[:email],
+        )
+
+        super(id, attributes)
+      end
+    end
+
+    def delete!(id)
+      with_metadata do
+        account = find!(id)
+
+        add_metadata(
+          email: auth_context.metadata[:email],
+        ) if account
+
+        super(id)
+      end
     end
   end
 end

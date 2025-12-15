@@ -163,6 +163,45 @@ module Dataset
       end
     end
 
+    def create(attributes)
+      with_metadata do
+        add_metadata(
+          email: auth_context.metadata[:email],
+          project_id: attributes[:project_id],
+        )
+
+        super(attributes)
+      end
+    end
+
+    def update!(id, attributes)
+      with_metadata do
+        dataset = find!(id)
+
+        add_metadata(
+          email: auth_context.metadata[:email],
+          project_id: attributes[:project_id] || dataset.project_id,
+          dataset_id: id,
+        )
+
+        super(id, attributes)
+      end
+    end
+
+    def delete!(id)
+      with_metadata do
+        dataset = find!(id)
+
+        add_metadata(
+          email: auth_context.metadata[:email],
+          project_id: dataset.project_id,
+          dataset_id: id,
+        ) if dataset
+
+        super(id)
+      end
+    end
+
     event(name: "completed")
     def completed!(dataset_id, progress)
       no_event do

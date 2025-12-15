@@ -87,5 +87,44 @@ module Project
               "Permission denied for \"#{action}\" action on #{self.class.resource}"
       end
     end
+
+    def create(attributes)
+      with_metadata do
+        add_metadata(
+          email: auth_context.metadata[:email],
+          organization_id: attributes[:organization_id],
+        )
+
+        super(attributes)
+      end
+    end
+
+    def update!(id, attributes)
+      with_metadata do
+        project = find!(id)
+
+        add_metadata(
+          email: auth_context.metadata[:email],
+          organization_id: attributes[:organization_id] || project.organization_id,
+          project_id: id,
+        ) if project
+
+        super(id, attributes)
+      end
+    end
+
+    def delete!(id)
+      with_metadata do
+        project = find!(id)
+
+        add_metadata(
+          email: auth_context.metadata[:email],
+          organization_id: project.organization_id,
+          project_id: id,
+        ) if project
+
+        super(id)
+      end
+    end
   end
 end

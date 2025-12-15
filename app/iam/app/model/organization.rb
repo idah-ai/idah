@@ -29,9 +29,7 @@ module Organization
       end
     end
 
-    private
-
-    def organizations_from_project_member_scoped
+    private def organizations_from_project_member_scoped
       account_id = auth_context.metadata[:id]
 
       memberships = Verse::Cache.with_cache(
@@ -43,6 +41,40 @@ module Organization
       end
 
       table.where(id: memberships.map{ |pm| pm.project.organization_id }.uniq)
+    end
+
+    def create(attributes)
+      with_metadata do
+        add_metadata(
+          email: auth_context.metadata[:email],
+        )
+
+        super(attributes)
+      end
+    end
+
+    def update!(id, attributes)
+      with_metadata do
+        add_metadata(
+          email: auth_context.metadata[:email],
+          organization_id: id,
+        )
+
+        super(id, attributes)
+      end
+    end
+
+    def delete!(id)
+      with_metadata do
+        organization = find!(id)
+
+        add_metadata(
+          email: auth_context.metadata[:email],
+          organization_id: id,
+        ) if organization
+
+        super(id)
+      end
     end
   end
 end
