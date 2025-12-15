@@ -26,8 +26,6 @@ module Context
         entry = entries.show
         datasets = entry.datasets
       end
-
-
       Context.new(
         datasets || ContextApi::Datasets.new(api, args),
         entries || ContextApi::Entries.new(api, args),
