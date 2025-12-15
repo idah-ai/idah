@@ -119,43 +119,8 @@ module Entry
       # check self reviewing here, reject
       entries.transaction do
         entry = entries.find!(entry_id, included: [:dataset])
-        entry_workflow = entry.dataset.entry_workflow.new(entry, **opts)
-
+        entry_workflow = entry.dataset.entry_workflow.new(entries, entry, **opts)
         entry_workflow.submit!
-
-        account_id = auth_context.metadata[:id]
-        aasm = entry_workflow.aasm
-        from_state = aasm.from_state
-        to_state = aasm.to_state
-
-        assigned_to_id =
-          case from_state
-          when :start
-            account_id
-          when :annotate
-            # If moving to review step, assign to reviewer (nil for unassigned)
-            entry.reviewed_by_id
-          when :review
-            # If moving back to annotation step, re-assign to original annotator
-            to_state == :annotate ? entry.submitted_by_id : nil
-          end
-
-        # Set submitted_by_id coming from annotation step
-        submitted_by_id = from_state == :annotate ? account_id : entry.submitted_by_id
-
-        # Set reviewed_by_id coming from review step
-        reviewed_by_id = from_state == :review ? account_id : entry.reviewed_by_id
-
-        entries.submit(
-          entry.id,
-          {
-            wf_step: entry_workflow.aasm.current_state.to_s,
-            status: entry_workflow.aasm.current_state == :done ? "completed" : "in_progress",
-            assigned_to_id:,
-            submitted_by_id:,
-            reviewed_by_id:,
-          }
-        )
 
         # Update dataset progress after entry status change
         # Use system dataset repo to avoid permission issues with update

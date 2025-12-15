@@ -27,7 +27,7 @@ module Dataset
     has_many :note_feeds, repository: "NoteFeed::Repository", foreign_key: :dataset_id
 
     def entry_workflow
-      Workflow::EntryWorkflow
+      Workflow::SimpleReviewAnnotationWorkflow
     end
   end
 
