@@ -25,10 +25,14 @@
   async function markAsResolved() {
     if (isResolved) return;
 
-    const resolvedNoteFeedRes = await noteFeedsBackendDataSource.markAsResolved(id);
-    onNoteResolved?.(resolvedNoteFeedRes.data);
-    toast.success("Note feed marked as resolved successfully.");
-    $refetches.noteFeeds.list = new Date();
+    try {
+      const resolvedNoteFeedRes = await noteFeedsBackendDataSource.markAsResolved(id);
+      onNoteResolved?.(resolvedNoteFeedRes.data);
+      toast.success("Note feed marked as resolved successfully.");
+      $refetches.noteFeeds.list = new Date();
+    } catch (_e) {
+      toast.error("You are not authorized to do this action.");
+    }
   }
 </script>
 

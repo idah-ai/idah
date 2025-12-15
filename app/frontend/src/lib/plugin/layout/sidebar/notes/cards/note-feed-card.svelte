@@ -54,6 +54,7 @@
 
   async function updateNoteFeed(editedContentMd: string) {
     const updatedNoteFeedRes = await updateNoteFeedContentMd(id, editedContentMd);
+    if (!updatedNoteFeedRes) return;
     onNoteFeedUpdated?.(updatedNoteFeedRes);
   }
 </script>

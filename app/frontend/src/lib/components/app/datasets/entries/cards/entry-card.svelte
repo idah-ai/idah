@@ -23,6 +23,7 @@
   import { JobRecord, jobsBackendDataSource } from "@/data/model/media/jobs/record";
   import { mediaBackendDataSource } from "@/data/model/media/medias/medias-record";
   import { authStatus } from "@/security/AuthContext";
+  import { humanize } from "@/utils/string";
 
   import type { EntryStatus as EntryStatusType } from "@/data/model/dataset/entries/constants";
   import type { ProjectMemberScope } from "@/security/types";
@@ -88,12 +89,16 @@
   async function autoAssignReviewer() {
     if (!currentAccount?.id) return;
 
-    if (entry.wf_step !== "review") return;
-
-    if (entry.reviewed_by_id !== null) return;
-
     try {
-      await entriesBackendDataSource.assign({ id: entry.id, memberAccountId: Number(currentAccount.id) });
+      /**
+       * If entry is in review step and not reviewed by anyone, assign it to the current user
+       */
+      if (entry.wf_step === "review" && entry.reviewed_by_id === null) {
+        await entriesBackendDataSource.assign({
+          id: entry.id,
+          memberAccountId: Number(currentAccount.id),
+        });
+      }
     } catch (error) {
       toast.error("Failed to assign entry to you");
     } finally {
@@ -154,13 +159,13 @@
           });
           jobProgress = jobRes.data.progress;
 
-          // If progress = 100%, update entry status to 'ready'
+          /** If progress = 100%, update entry status to 'ready' */
           if (jobRes.data.progress === 1) {
             entry.status = "ready";
             await loadThumbnail();
           }
 
-          // If the entry is no longer processing, stop the interval
+          /** If the entry is no longer processing, stop the interval */
           if (!processingStatuses.includes(entry.status)) {
             if (intervalId) clearInterval(intervalId);
           }
@@ -307,7 +312,7 @@
 
       <!-- STAGE & ASSIGNED TO -->
       <div class="my-auto flex flex-1 flex-col gap-2">
-        <DataDisplay label="Stage" value={entry.wf_step} />
+        <DataDisplay label="Stage" value={humanize(entry.wf_step)} />
         <DataDisplay label="Assigned to">
           {#snippet slotValue()}
             <ProjectMemberAvatar memberAccountId={entry.assigned_to_id}></ProjectMemberAvatar>
