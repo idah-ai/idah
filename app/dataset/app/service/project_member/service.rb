@@ -114,6 +114,8 @@ module ProjectMember
         member = project_members.find!(id, included: [:project])
         project_members.delete!(id)
 
+        remover = Api[:idah].iam.accounts.show(id: auth_context.metadata[:id])
+
         project_members.after_commit do
           ::Service::Notification.email(
             to: member.email,
@@ -121,7 +123,8 @@ module ProjectMember
             category: "project_member_removed",
             project_id: member.project_id,
             project_name: member.project.name,
-            remover_email: Api[:idah].iam.accounts.show(id: auth_context.metadata[:id]).email
+            remover_email: remover.email,
+            remover_name: remover.name,
           )
         end
       end
