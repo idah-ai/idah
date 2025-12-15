@@ -35,7 +35,6 @@ module Context
             if value.exitstatus != 0
               raise "updcli error #{value} #{error}"
             end
-            @files.each &:unlink # earlier ?
             Verse::logger.info { "UPD export done: #{value}" }
           end
         end
