@@ -21,6 +21,11 @@ module Export
       @context.io.append.call({command: 'init', args: {}}.to_json)
     end
 
+    def error(e, record)
+      Verse::logger::error {"#{self} failed to process #{record}"}
+      raise e
+    end
+
     def done
       Verse::logger::debug{"#{self} #{@context.io.name} Process complete"}
     end
@@ -54,76 +59,88 @@ module Export
     end
 
     def on_dataset(dataset)
-      @context.io.append.call({
-        command: 'dataset:create',
-        args: {
-          id: dataset.record[:id],
-          name: dataset.record[:attributes][:name],
-          modality: dataset.record[:attributes][:modality],
-          metadata: {
-            "Created-At": dataset.record[:attributes][:created_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
-            "Updated-At": dataset.record[:attributes][:updated_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
-            "Created-By": nil
-          }
-        }
-      }.to_json)
-    end
-
-    def on_entry(entry)
-      resource_info = entry.medias.resource_info
-      file = Tempfile.new(entry.record[:attributes][:resource])
       begin
-        file.write(entry.medias.files)
-        file.close
         @context.io.append.call({
-          command: 'media:create',
+          command: 'dataset:create',
           args: {
-            id: resource_info[:id],
-            key: resource_info[:attributes][:key],
-            file: file.path,
-            mimetype: resource_info[:attributes][:mime_type],
+            id: dataset.record[:id],
+            name: dataset.record[:attributes][:name],
+            modality: dataset.record[:attributes][:modality],
             metadata: {
-              "Created-At": resource_info[:attributes][:created_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
-              "Updated-At": resource_info[:attributes][:updated_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
-              "Created-By": resource_info[:attributes][:created_by]
+              "Created-At": dataset.record[:attributes][:created_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
+              "Updated-At": dataset.record[:attributes][:updated_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
+              "Created-By": nil
             }
           }
         }.to_json)
-      ensure
-        file.close unless file.closed?
-        file.unlink
+      rescue Exception => e
+        error e, [dataset.record[:type], dataset.record[:id]].join(":")
       end
-      @context.io.append.call({
-        command: 'entry:create',
-        args: {
-          id: entry.record[:id],
-          dataset_id: entry.record[:attributes][:dataset_id],
-          url: entry.record[:attributes][:resource],
-          metadata: {
-            "Created-At": entry.record[:attributes][:created_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
-            "Updated-At": entry.record[:attributes][:updated_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
-            "Created-By": nil
+    end
+
+    def on_entry(entry)
+      begin
+        resource_info = entry.medias.resource_info
+        file = Tempfile.new(entry.record[:attributes][:resource])
+        begin
+          file.write(entry.medias.files)
+          file.close
+          @context.io.append.call({
+            command: 'media:create',
+            args: {
+              id: resource_info[:id],
+              key: resource_info[:attributes][:key],
+              file: file.path,
+              mimetype: resource_info[:attributes][:mime_type],
+              metadata: {
+                "Created-At": resource_info[:attributes][:created_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
+                "Updated-At": resource_info[:attributes][:updated_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
+                "Created-By": resource_info[:attributes][:created_by]
+              }
+            }
+          }.to_json)
+        ensure
+          file.close unless file.closed?
+          file.unlink
+        end
+        @context.io.append.call({
+          command: 'entry:create',
+          args: {
+            id: entry.record[:id],
+            dataset_id: entry.record[:attributes][:dataset_id],
+            url: entry.record[:attributes][:resource],
+            metadata: {
+              "Created-At": entry.record[:attributes][:created_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
+              "Updated-At": entry.record[:attributes][:updated_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
+              "Created-By": nil
+            }
           }
-        }
-      }.to_json)
+        }.to_json)
+      rescue Exception => e
+        error e, [entry.record[:type], entry.record[:id]].join(":")
+      end
     end
 
     def on_annotation(annotation)
-      @context.io.append.call({
-        command: 'annotation:create',
-        args: {
-          id: annotation.record[:id],
-          entry_id: annotation.record[:attributes][:entry_id],
-          type: Hash(annotation.record[:attributes][:dimensions])[:type],
-          shape: Hash(annotation.record[:attributes][:dimensions]).select {|k, _| k != :type}.to_json,
-          annotation: Hash(annotation.record[:attributes][:annotation]).to_json,
-          metadata: {
-            "Created-At": annotation.record[:attributes][:created_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
-            "Updated-At": annotation.record[:attributes][:updated_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
-            "Created-By": nil
+      begin
+        @context.io.append.call({
+          command: 'annotation:create',
+          args: {
+            id: annotation.record[:id],
+            entry_id: annotation.record[:attributes][:entry_id],
+            type: Hash(annotation.record[:attributes][:dimensions])[:type],
+            shape: Hash(annotation.record[:attributes][:dimensions]).select {|k, _| k != :type}.to_json,
+            annotation: Hash(annotation.record[:attributes][:annotation]).to_json,
+            metadata: {
+              "Created-At": annotation.record[:attributes][:created_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
+              "Updated-At": annotation.record[:attributes][:updated_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
+              "Created-By": nil
+            }
           }
-        }
-      }.to_json)
+        }.to_json)
+      rescue Exception => e
+        error e, [annotation.record[:type], annotation.record[:id]].join(":")
+      end
     end
   end
 end
