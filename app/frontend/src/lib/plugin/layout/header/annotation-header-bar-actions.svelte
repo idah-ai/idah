@@ -37,11 +37,11 @@
       icon: SunMoonIcon,
       handleClick: toggleMode,
     },
-    {
-      label: "Settings",
-      icon: Settings2Icon,
-      handleClick: () => {},
-    },
+    // {
+    //   label: "Settings",
+    //   icon: Settings2Icon,
+    //   handleClick: () => {},
+    // },
     {
       label: "Notes Sidebar",
       icon: MessageCircleIcon,
@@ -54,11 +54,11 @@
         }
       },
     },
-    {
-      label: "Help",
-      icon: InfoIcon,
-      handleClick: () => {},
-    },
+    // {
+    //   label: "Help",
+    //   icon: InfoIcon,
+    //   handleClick: () => {},
+    // },
   ]);
 
   const reviewMenus: IDropdownMenus = {
