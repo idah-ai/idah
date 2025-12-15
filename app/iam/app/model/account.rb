@@ -52,6 +52,10 @@ module Account
     def scoped(action)
       auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }
+
+        scope.as_org_owner? { accounts_from_project_member_scoped }
+
+        scope.own { table.where(id: auth_context.metadata[:id]) }
       end
     end
 
@@ -69,6 +73,32 @@ module Account
       end
 
       valid ? account : nil
+    end
+
+    private
+
+    def accounts_from_project_member_scoped
+      account_id = auth_context.metadata[:id]
+      org_ids = auth_context[:org] || []
+
+      membership_account_ids =
+        if org_ids.any?
+          Verse::Cache.with_cache(
+            "dataset/datasets/service/memberships",
+            "org_ids:#{org_ids.sort.join(",")}",
+            expires_in: 180
+          ) do
+            Api[:idah].dataset.project_members.index(
+              filter: { organization_id__in: org_ids }
+            ).data.map(&:account_id).uniq
+          end
+        else
+          []
+        end
+
+      account_ids = [account_id] + membership_account_ids
+
+      table.where(id: account_ids)
     end
   end
 end

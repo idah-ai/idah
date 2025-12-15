@@ -14,7 +14,7 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
         priority: 1,
         wf_step: "start",
         status: "pending",
-        assigned_to_member_id: 1,
+        assigned_to_id: 1,
         created_at: now,
         updated_at: now
       }
@@ -29,7 +29,7 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
           id: uuid,
           attributes: {
             priority: 1,
-            assigned_to_member_id: 1,
+            assigned_to_id: 1,
             created_at: now.iso8601,
             updated_at: now.iso8601
           }
@@ -82,9 +82,9 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
   end
 
   it "assign member" do
-    expect(service).to receive(:assign_member) do |id, assigned_to_member_id|
+    expect(service).to receive(:assign_member) do |id, assigned_to_id|
       expect(id).to eq uuid
-      expect(assigned_to_member_id).to eq 1
+      expect(assigned_to_id).to eq 1
       entry_record
     end
 
@@ -94,7 +94,7 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
               type: Resource::Dataset::Entries,
               id: uuid,
               attributes: {
-                assigned_to_member_id: 1,
+                assigned_to_id: 1,
               }
             }
           }

@@ -1,13 +1,5 @@
 <script lang="ts">
-  import {
-    ChevronDownIcon,
-    InfoIcon,
-    MessageCircleIcon,
-    Settings2Icon,
-    SquareCheckIcon,
-    SquareXIcon,
-    SunMoonIcon,
-  } from "@lucide/svelte";
+  import { ChevronDownIcon, MessageCircleIcon, SquareCheckIcon, SquareXIcon, SunMoonIcon } from "@lucide/svelte";
   import { toggleMode } from "mode-watcher";
 
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
@@ -37,11 +29,11 @@
       icon: SunMoonIcon,
       handleClick: toggleMode,
     },
-    {
-      label: "Settings",
-      icon: Settings2Icon,
-      handleClick: () => {},
-    },
+    // {
+    //   label: "Settings",
+    //   icon: Settings2Icon,
+    //   handleClick: () => {},
+    // },
     {
       label: "Notes Sidebar",
       icon: MessageCircleIcon,
@@ -54,11 +46,11 @@
         }
       },
     },
-    {
-      label: "Help",
-      icon: InfoIcon,
-      handleClick: () => {},
-    },
+    // {
+    //   label: "Help",
+    //   icon: InfoIcon,
+    //   handleClick: () => {},
+    // },
   ]);
 
   const reviewMenus: IDropdownMenus = {
@@ -67,12 +59,12 @@
         {
           label: "Approve",
           icon: SquareCheckIcon,
-          action: () => reviewAnnotation(true),
+          action: () => reviewAnnotation({ approved: true }),
         },
         {
           label: "Request changes",
           icon: SquareXIcon,
-          action: () => reviewAnnotation(false),
+          action: () => reviewAnnotation({ approved: false }),
         },
       ],
     },
@@ -89,13 +81,12 @@
   async function submitAnnotation() {
     loading = true;
     await context.submit();
-    window.location.reload();
   }
 
-  async function reviewAnnotation(approved: boolean) {
+  async function reviewAnnotation(props: { approved: boolean }) {
+    const { approved } = props;
     loading = true;
     await context.submit({ approved });
-    window.location.reload();
   }
 </script>
 
@@ -116,7 +107,6 @@
     {/each}
   </div>
 
-  <Button variant="outline" size="sm" class="border-primary text-primary hover:text-primary">Skip</Button>
   {#if context.workflowStep === "done"}
     <!-- TODO: What to show? -->
   {:else if context.workflowStep === "review"}
