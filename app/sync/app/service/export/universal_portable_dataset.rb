@@ -70,11 +70,11 @@ module Export
     end
 
     def on_entry(entry)
+      resource_info = entry.medias.resource_info
       file = Tempfile.new(entry.record[:attributes][:resource])
       begin
         file.write(entry.medias.files)
         file.close
-        resource_info = entry.medias.resource_info
         @context.io.append.call({
           command: 'media:create',
           args: {
