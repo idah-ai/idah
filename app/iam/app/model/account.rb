@@ -52,7 +52,52 @@ module Account
     def scoped(action)
       auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }
+
+        scope.as_org_owner? { table.where(id: accounts_under_org_scope) } # under org scope projects
+
+        scope.as_user? { table } # under assigned projects
+
+        scope.self? { table.where(id: auth_context.metadata[:id]) }
       end
+    end
+
+    private def accounts_under_org_scope
+      org_ids = auth_context.custom_scopes[:org]
+
+      projects = Verse::Cache.with_cache(
+        "iam/accounts/service/projects",
+        "account_id:#{auth_context.metadata[:id]}",
+        expires_in: 180
+      ) do
+        Api[:idah].dataset.projects.index(organization_id: org_ids).data
+      end
+
+      memberships = Verse::Cache.with_cache(
+        "iam/accounts/service/memberships",
+        "account_id:#{auth_context.metadata[:id]}",
+        expires_in: 180
+      ) do
+        Api[:idah].dataset.project_members.index(project_id: projects.map(&:id).uniq).data
+      end
+
+      memberships.map(&:account_id).uniq
+    end
+
+    private def accounts_under_participated_projects
+      account_id = auth_context.metadata[:id]
+
+      participated_memberships = Verse::Cache.with_cache(
+        "iam/accounts/service/memberships",
+        "account_id:#{auth_context.metadata[:id]}",
+        expires_in: 180
+      ) do
+        participated_projects = Api[:idah].dataset.project_members.index(account_id: account_id)
+                                          .data.map(&:project_id).uniq
+
+        Api[:idah].dataset.project_members.index(project_id: participated_projects).data
+      end
+
+      participated_memberships.map(&:account_id).uniq
     end
 
     def login(email, password)
