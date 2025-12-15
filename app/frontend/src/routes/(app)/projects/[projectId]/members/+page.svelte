@@ -6,7 +6,7 @@
   import DatasourceTable from "@/components/app/datasource-table/datasource-table.svelte";
   import InviteMemberButton from "@/components/app/projects/members/buttons/invite-member-button.svelte";
 
-  import { homeBreadcrumb, projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
+  import { projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
   import { projectMemberColumns } from "@/components/app/projects/members/datasource-tables/project-member-columns";
   import { projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
@@ -20,7 +20,6 @@
   const project: ProjectRecord = getContext("project");
 
   pageBreadcrumbsStore.set([
-    homeBreadcrumb,
     projectBreadcrumb,
     { label: project.name, href: resolve(`/projects/${project.id}/members`) },
     { label: "Members" },

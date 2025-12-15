@@ -6,7 +6,7 @@
   import PageProvider from "@/components/app/page/page-provider.svelte";
   import AddNewProjectButton from "@/components/app/projects/buttons/add-new-project-button.svelte";
 
-  import { homeBreadcrumb, projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
+  import { projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
   import { projectColumns } from "@/components/app/projects/datasource-tables/project-columns";
   import { datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
@@ -19,7 +19,7 @@
   import type { CollectionResponse } from "@/data/model/types";
   import type { Hash } from "@/utils/types";
 
-  pageBreadcrumbsStore.set([homeBreadcrumb, projectBreadcrumb]);
+  pageBreadcrumbsStore.set([projectBreadcrumb]);
 
   // Variables
   let canUpdateProject = $state(false);

@@ -10,14 +10,14 @@
   import Can from "@/security/can.svelte";
 
   import { organizationColumns } from "@/components/app/organizations/data-tables/organization-columns";
-  import { homeBreadcrumb, organizationBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
+  import { organizationBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
 
   import { OrganizationRecord, organizationsBackendDataSource } from "@/data/model/iam/organizations/record";
   import { authStatus } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
 
-  pageBreadcrumbsStore.set([homeBreadcrumb, organizationBreadcrumb]);
+  pageBreadcrumbsStore.set([organizationBreadcrumb]);
 
   // Variables
   let currentAccount = $authStatus.authContext;

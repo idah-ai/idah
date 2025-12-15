@@ -1,6 +1,10 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
   import { page } from "$app/state";
+  import { ExternalLinkIcon } from "@lucide/svelte";
   import { onDestroy, onMount } from "svelte";
+  import { toast } from "svelte-sonner";
 
   import EntryPriority from "@/components/app/datasets/entries/badges/entry-priority.svelte";
   import EntryStatus from "@/components/app/datasets/entries/badges/entry-status.svelte";
@@ -10,16 +14,18 @@
   import DataDisplay from "@/components/app/texts/data-display.svelte";
   import DateText from "@/components/app/texts/date-text.svelte";
   import { AspectRatio } from "@/components/ui/aspect-ratio";
+  import Button from "@/components/ui/button/button.svelte";
   import { Card, CardContent } from "@/components/ui/card";
   import Checkbox from "@/components/ui/checkbox/checkbox.svelte";
   import Progress from "@/components/ui/progress/progress.svelte";
-  import Link from "@/components/ui/text/Link.svelte";
   import Text from "@/components/ui/text/Text.svelte";
 
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
   import { JobRecord, jobsBackendDataSource } from "@/data/model/media/jobs/record";
   import { mediaBackendDataSource } from "@/data/model/media/medias/medias-record";
+  import { RecordFactory } from "@/data/model/Record";
   import { authStatus } from "@/security/AuthContext";
+  import { humanize } from "@/utils/string";
 
   import type { EntryStatus as EntryStatusType } from "@/data/model/dataset/entries/constants";
   import type { ProjectMemberScope } from "@/security/types";
@@ -33,9 +39,21 @@
   let { entry, selectedRows, onRowSelect }: Props = $props();
 
   // Variables
+  const currentAccount = $authStatus.authContext;
+
   let projectId = page.params.projectId as string;
+  let { id: entryId, wf_step, assigned_to_id, submitted_by_id, reviewed_by_id } = $derived(entry);
   let canUpdateEntry = $state(false);
   let canDeleteEntry = $state(false);
+  let canOpenEntry = $derived.by(() => {
+    if (!currentAccount?.id) return false;
+
+    /** If entry is not assigned to anyone, it can open by anyone */
+    if (assigned_to_id === null) return true;
+
+    /** If entry is assigned to someone, it can open by the assigned user */
+    return assigned_to_id == Number(currentAccount.id);
+  });
 
   const as_project_owner: { as_user: ProjectMemberScope } = {
     as_user: {
@@ -46,7 +64,6 @@
 
   // Lifecycle
   onMount(async () => {
-    const currentAccount = $authStatus.authContext;
     canUpdateEntry =
       (await currentAccount?.can("update", "dataset:entries", ["as_org_owner", as_project_owner])) || false;
     canDeleteEntry =
@@ -70,6 +87,26 @@
   // Functions
   async function fetchData(): Promise<void> {
     await periodicCheckJobStatus();
+  }
+
+  async function selectEntry() {
+    if (!currentAccount?.id) return;
+
+    try {
+      /**
+       * If the entry is unassigned, assign it to the current user
+       */
+      if (assigned_to_id === null) {
+        await entriesBackendDataSource.select({
+          id: entryId,
+        });
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to assign entry to you");
+    } finally {
+      goto(resolve(`/entries/${entryId}/plugin`));
+    }
   }
 
   async function loadThumbnail(): Promise<void> {
@@ -98,6 +135,9 @@
    * Note: Only fetch if the entry is in a processing state
    */
   async function periodicCheckJobStatus() {
+    RecordFactory.registerTypes(EntryRecord);
+    RecordFactory.registerTypes(JobRecord);
+
     if (processingStatuses.includes(entry.status)) {
       const intervalId = setInterval(async () => {
         try {
@@ -108,7 +148,7 @@
            * fetch the entry again to get the job_id
            */
           if (!jobId) {
-            const entryRes = await entriesBackendDataSource.get(entry.id, {
+            const entryRes = await entriesBackendDataSource.get(entryId, {
               fields: {
                 [EntryRecord.type]: ["job_id"],
               },
@@ -125,20 +165,21 @@
           });
           jobProgress = jobRes.data.progress;
 
-          // If progress = 100%, update entry status to 'ready'
+          /** If progress = 100%, update entry status to 'ready' */
           if (jobRes.data.progress === 1) {
             entry.status = "ready";
             await loadThumbnail();
           }
 
-          // If the entry is no longer processing, stop the interval
+          /** If the entry is no longer processing, stop the interval */
           if (!processingStatuses.includes(entry.status)) {
-            clearInterval(intervalId);
+            if (intervalId) clearInterval(intervalId);
           }
         } catch (error) {
           console.error("Error fetching updated entry:", error);
+          clearInterval(intervalId);
         }
-      }, 5_000);
+      }, 2_000);
     } else {
       /**
        * Then load the thumbnail once the job is complete
@@ -183,121 +224,153 @@
   <LoadingEntryCard showCheckbox={canUpdateEntry || canDeleteEntry} />
 {:then _}
   <Card class="hover:bg-primary/5 hover:shadow-primary/10 group transition-shadow hover:shadow-md">
-    <CardContent class="flex flex-row gap-4">
-      <!-- CHECKBOX -->
-      {#if canUpdateEntry || canDeleteEntry}
-        <div class="my-auto">
-          <Checkbox checked={selectedRows.includes(entry.id)} onCheckedChange={() => onRowSelect(entry.id)} />
-        </div>
-      {/if}
+    <CardContent class="grid grid-cols-2">
+      <!-- SECTION::LEFT -->
+      <section class="flex flex-row gap-4">
+        <!-- CHECKBOX -->
+        {#if canUpdateEntry || canDeleteEntry}
+          <div class="my-auto">
+            <Checkbox checked={selectedRows.includes(entryId)} onCheckedChange={() => onRowSelect(entryId)} />
+          </div>
+        {/if}
 
-      <!-- THUMBNAIL -->
-      <div class="h-full overflow-hidden" style:width="{containerWidth}px" style:max-width="{containerWidth}px">
-        <AspectRatio ratio={16 / 9} class="bg-muted h-full rounded-lg">
-          {#if thumbnailUrl}
-            <div
-              bind:this={imgContainer}
-              role="img"
-              class="relative h-full w-full overflow-hidden rounded-lg"
-              onmouseenter={startAnimation}
-              onmouseleave={stopAnimation}
-            >
-              <img
-                src={thumbnailUrl}
-                alt="Entry thumbnail"
-                class="absolute left-0 top-0 cursor-pointer object-cover"
-                style:height="{imgContainer?.clientHeight}px"
-                style:width="{containerWidth * TOTAL_POSITIONS}px"
-                style:max-width="none"
-                style:transform="translateX(-{currentImagePosition * containerWidth || 0}px)"
-              />
-            </div>
-          {:else if thumbnailError}
-            <div class="text-muted-foreground flex h-full items-center justify-center text-sm">
-              Unable to load thumbnail
-            </div>
-          {:else}
-            <div class="flex h-full items-center justify-center">
-              <div class="bg-muted/50 h-full w-full animate-pulse rounded-lg"></div>
-            </div>
-          {/if}
-        </AspectRatio>
-      </div>
-
-      <!-- INFO -->
-      <div class="flex flex-1 flex-col gap-6">
-        <!-- RESOURCE -->
-        <Link
-          href="/entries/{entry.id}/plugin"
-          class="group-hover:text-primary group-hover:cursor-pointer group-hover:underline group-hover:underline-offset-4"
-          showIcon
-        >
-          <Text size="sm" weight="medium">
-            {entry.resource}
-          </Text>
-        </Link>
-
-        <div class="flex flex-col items-start">
-          <DataDisplay label="Created at">
-            {#snippet slotValue()}
-              <DateText
-                datetime={entry.created_at}
-                datetimeFormat="MMM dd, yyyy"
-                size="sm"
-                weight="light"
-                showTooltip
-              />
-            {/snippet}
-          </DataDisplay>
-
-          <DataDisplay label="Updated at">
-            {#snippet slotValue()}
-              <DateText
-                datetime={entry.updated_at}
-                datetimeFormat="MMM dd, yyyy"
-                size="sm"
-                weight="light"
-                showTooltip
-              />
-            {/snippet}
-          </DataDisplay>
-        </div>
-
-        <!-- PRIORITY AT -->
-        <div>
-          <EntryPriority {entry} updatable />
-        </div>
-      </div>
-
-      <!-- STAGE & ASSIGNED TO -->
-      <div class="my-auto flex flex-1 flex-col gap-2">
-        <DataDisplay label="Stage" value={entry.wf_step} />
-        <DataDisplay label="Assigned to">
-          {#snippet slotValue()}
-            <ProjectMemberAvatar memberAccountId={entry.assigned_to_id}></ProjectMemberAvatar>
-          {/snippet}
-        </DataDisplay>
-      </div>
-
-      <!-- STATUS & ACTIONS -->
-      <div>
-        <div class="flex items-center gap-2">
-          {#if jobProgress < 1}
-            <div class="flex flex-col gap-1">
-              <div class="text-muted-foreground flex items-center justify-between gap-4 text-xs font-medium">
-                <span> Processing media... </span>
-                <span>{Math.round(jobProgress * 100)}%</span>
+        <!-- THUMBNAIL -->
+        <div class="h-full overflow-hidden" style:width="{containerWidth}px" style:max-width="{containerWidth}px">
+          <AspectRatio ratio={16 / 9} class="bg-muted h-full rounded-lg">
+            {#if thumbnailUrl}
+              <div
+                bind:this={imgContainer}
+                role="img"
+                class="relative h-full w-full overflow-hidden rounded-lg"
+                onmouseenter={startAnimation}
+                onmouseleave={stopAnimation}
+              >
+                <img
+                  src={thumbnailUrl}
+                  alt="Entry thumbnail"
+                  class="absolute top-0 left-0 cursor-pointer object-cover"
+                  style:height="{imgContainer?.clientHeight}px"
+                  style:width="{containerWidth * TOTAL_POSITIONS}px"
+                  style:max-width="none"
+                  style:transform="translateX(-{currentImagePosition * containerWidth || 0}px)"
+                />
               </div>
+            {:else if thumbnailError}
+              <div class="text-muted-foreground flex h-full items-center justify-center text-sm">
+                Unable to load thumbnail
+              </div>
+            {:else}
+              <div class="flex h-full items-center justify-center">
+                <div class="bg-muted/50 h-full w-full animate-pulse rounded-lg"></div>
+              </div>
+            {/if}
+          </AspectRatio>
+        </div>
 
-              <Progress value={jobProgress * 100} />
-            </div>
+        <!-- INFO -->
+        <div class="flex flex-1 flex-col gap-6">
+          <!-- RESOURCE -->
+          {#if canOpenEntry}
+            <Button
+              variant="link"
+              class="group-hover:text-primary justify-start px-0 group-hover:cursor-pointer group-hover:underline group-hover:underline-offset-4"
+              onclick={selectEntry}
+            >
+              <span class="-ml-3">{entry.resource}</span>
+
+              <ExternalLinkIcon class="opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
+            </Button>
           {:else}
-            <EntryStatus {entry} />
+            <Text size="sm" weight="medium" class="text-muted-foreground">
+              {entry.resource}
+            </Text>
           {/if}
 
-          <EntryDropdownMenu {entry} />
+          <div class="flex flex-col items-start">
+            <DataDisplay label="Created at">
+              {#snippet slotValue()}
+                <DateText
+                  datetime={entry.created_at}
+                  datetimeFormat="MMM dd, yyyy"
+                  size="sm"
+                  weight="light"
+                  showTooltip
+                />
+              {/snippet}
+            </DataDisplay>
+
+            <DataDisplay label="Updated at">
+              {#snippet slotValue()}
+                <DateText
+                  datetime={entry.updated_at}
+                  datetimeFormat="MMM dd, yyyy"
+                  size="sm"
+                  weight="light"
+                  showTooltip
+                />
+              {/snippet}
+            </DataDisplay>
+          </div>
+
+          <!-- PRIORITY AT -->
+          <div>
+            <EntryPriority {entry} updatable />
+          </div>
         </div>
-      </div>
+      </section>
+
+      <!-- SECTION::RIGHT -->
+      <section class="flex flex-row gap-4">
+        <!-- STAGE & ASSIGNED TO -->
+        <div class="my-auto flex flex-1 flex-col gap-2">
+          <DataDisplay label="Stage" value={humanize(wf_step)} />
+
+          <!-- NOTE: Only show assigned to if wf_step is not "done" -->
+          {#if wf_step !== "done"}
+            <DataDisplay label="Assigned to">
+              {#snippet slotValue()}
+                <ProjectMemberAvatar memberAccountId={assigned_to_id} />
+              {/snippet}
+            </DataDisplay>
+          {/if}
+
+          {#if submitted_by_id}
+            <DataDisplay label="Submitted by">
+              {#snippet slotValue()}
+                <ProjectMemberAvatar memberAccountId={submitted_by_id} />
+              {/snippet}
+            </DataDisplay>
+          {/if}
+
+          {#if reviewed_by_id}
+            <DataDisplay label="Reviewed by">
+              {#snippet slotValue()}
+                <ProjectMemberAvatar memberAccountId={reviewed_by_id} />
+              {/snippet}
+            </DataDisplay>
+          {/if}
+        </div>
+
+        <!-- STATUS & ACTIONS -->
+        <div>
+          <div class="flex items-center gap-2">
+            {#if jobProgress < 1}
+              <div class="flex flex-col gap-1">
+                <div class="text-muted-foreground flex items-center justify-between gap-4 text-xs font-medium">
+                  <span> Processing media... </span>
+                  <span>{Math.round(jobProgress * 100)}%</span>
+                </div>
+
+                <Progress value={jobProgress * 100} />
+              </div>
+            {:else}
+              <EntryStatus {entry} />
+            {/if}
+
+            <EntryDropdownMenu {entry} />
+          </div>
+        </div>
+      </section>
     </CardContent>
   </Card>
 {/await}

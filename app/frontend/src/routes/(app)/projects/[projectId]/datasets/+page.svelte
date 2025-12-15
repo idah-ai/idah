@@ -8,7 +8,7 @@
   import DatasourceTable from "@/components/app/datasource-table/datasource-table.svelte";
 
   import { projectDatasetColumns } from "@/components/app/datasets/datasource-tables/project-dataset.columns";
-  import { homeBreadcrumb, projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
+  import { projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { EntryRecord } from "@/data/model/dataset/entries/record";
@@ -28,7 +28,6 @@
   let columns = $state(projectDatasetColumns);
 
   pageBreadcrumbsStore.set([
-    homeBreadcrumb,
     projectBreadcrumb,
     { label: project.name, href: resolve(`/projects/${projectId}/datasets`) },
     { label: "Datasets" },
