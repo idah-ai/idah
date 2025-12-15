@@ -72,7 +72,7 @@ module NoteFeed
       attributes[:status] = "pending"
 
       # Check if the current workflow step allows note feeds
-      entry_workflow = entry.dataset.entry_workflow.new(entry)
+      entry_workflow = entry.dataset.entry_workflow.new(entries, entry)
 
       unless entry_workflow.allowed_note_feed? && entry.status == "in_progress"
         raise Verse::Error::ValidationFailed,

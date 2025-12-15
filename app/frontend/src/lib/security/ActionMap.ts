@@ -23,10 +23,20 @@ export class ActionMap {
   }
 
   public get(action: Action, resource: Resource): string[] | null {
-    const child = this.map[resource];
+    const existResource = this.map[resource];
 
-    if (!child) return null;
+    if (!existResource) {
+      /**
+       * If the resource does not exist in the map
+       * Check if logged in account is an admin with rights of "*.*.*"
+       */
+      if (this.map["*"]) {
+        return this.map["*"]["*"];
+      }
 
-    return child[action] || child["*"];
+      return null;
+    }
+
+    return existResource[action] || existResource["*"];
   }
 }

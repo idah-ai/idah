@@ -5,7 +5,7 @@
   import Spinner from "@/components/ui/spinner/spinner.svelte";
   import Text from "@/components/ui/text/Text.svelte";
 
-  import { ProjectMemberRecord, projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
+  import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
 
   // Props
   interface Props {
@@ -20,9 +20,9 @@
       return undefined;
     }
 
-    return await projectMembersBackendDataSource.get(String(memberAccountId), {
+    return await accountsBackendDataSource.get(String(memberAccountId), {
       fields: {
-        [ProjectMemberRecord.type]: ["name", "email", "picture_url"],
+        [AccountRecord.type]: ["name", "email", "picture_url"],
       },
     });
   }

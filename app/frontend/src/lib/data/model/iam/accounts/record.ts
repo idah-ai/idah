@@ -4,20 +4,23 @@ import { parseSingleElementError, parseSingleElementReturn } from "@/data/model/
 import { field, Record, RecordFactory, type } from "@/data/model/Record";
 import { Transformers } from "@/data/model/transformers";
 
+import type { Role } from "@/data/model/iam/accounts/auth/constants";
 import type { RecordResponse } from "@/data/model/types";
 import type { Hash } from "@/utils/types";
 
 @type("iam:accounts")
 export class AccountRecord extends Record {
   @field() public name!: string;
-  @field() public email!: string;
+  @field() public readonly email!: string;
 
-  @field() public sso_channel!: string | null;
+  @field() public readonly sso_channel!: string | null;
 
   @field() public enabled!: boolean;
+  @field() public role_name!: Role | null;
+  @field() public role_scope!: Hash;
 
-  @field() public joined_at!: Date | null;
-  @field() public role_name!: string;
+  @field() public readonly picture_url!: string | null;
+  @field() public readonly joined_at!: Date | null;
 
   @field() public readonly invitation_expired_at!: Date | null;
 
