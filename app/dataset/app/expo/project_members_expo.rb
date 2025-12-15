@@ -16,14 +16,16 @@ class ProjectMembersExpo < BaseExpo
             }
 
   json_api ProjectMember::Record do
-    allowed_included "projects"
+    allowed_included "project"
 
     index do
       allowed_filters :email__match,
+                      :project_id,
                       :account_id,
                       :role__in,
                       :created_at__gte,
-                      :created_at__lte
+                      :created_at__lte,
+                      :organization_id__in
     end
 
     show

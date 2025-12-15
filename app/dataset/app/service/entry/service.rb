@@ -3,6 +3,7 @@
 module Entry
   class Service < Verse::Service::Base
     use entries: Entry::Repository, datasets: Dataset::Repository, projects: Project::Repository
+    use_system system_datasets_repo: Dataset::Repository, system_entries_repo: Entry::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       entries.index(
@@ -84,31 +85,84 @@ module Entry
       entries.delete!(id)
     end
 
-    def assign_member(id, assigned_to_member_id)
+    def assign_member(id, assigned_to_id)
       entries.transaction do
-        entries.assign(id, { assigned_to_member_id: })
+        entries.update!(id, { assigned_to_id: })
         entries.find!(id)
       end
     end
 
+    def unassign_member(id)
+      entries.transaction do
+        entries.update!(id, { assigned_to_id: nil })
+        entries.find!(id)
+      end
+    end
+
+    def select(entry_id)
+      entries.transaction do
+        account_id = auth_context.metadata[:id]
+        entry = entries.find!(entry_id)
+
+        if entry.assigned_to_id && entry.assigned_to_id != account_id
+          raise Verse::Error::Unauthorized,
+                "You are not assigned to this entry"
+        end
+
+        # Use read scope when updating as anyone with read access can select
+        entries.select(entry.id)
+        entries.find!(entry.id)
+      end
+    end
+
     def submit(entry_id, **opts)
+      # check self reviewing here, reject
       entries.transaction do
         entry = entries.find!(entry_id, included: [:dataset])
         entry_workflow = entry.dataset.entry_workflow.new(entry, **opts)
 
         entry_workflow.submit!
+
+        account_id = auth_context.metadata[:id]
+        aasm = entry_workflow.aasm
+        from_state = aasm.from_state
+        to_state = aasm.to_state
+
+        assigned_to_id =
+          case from_state
+          when :start
+            account_id
+          when :annotate
+            # If moving to review step, assign to reviewer (nil for unassigned)
+            entry.reviewed_by_id
+          when :review
+            # If moving back to annotation step, re-assign to original annotator
+            to_state == :annotate ? entry.submitted_by_id : nil
+          end
+
+        # Set submitted_by_id coming from annotation step
+        submitted_by_id = from_state == :annotate ? account_id : entry.submitted_by_id
+
+        # Set reviewed_by_id coming from review step
+        reviewed_by_id = from_state == :review ? account_id : entry.reviewed_by_id
+
         entries.submit(
           entry.id,
           {
             wf_step: entry_workflow.aasm.current_state.to_s,
-            status: entry_workflow.aasm.current_state == :done ? "completed" : "in_progress"
+            status: entry_workflow.aasm.current_state == :done ? "completed" : "in_progress",
+            assigned_to_id:,
+            submitted_by_id:,
+            reviewed_by_id:,
           }
         )
 
         # Update dataset progress after entry status change
-        datasets.update_progress!(entry.dataset.id)
+        # Use system dataset repo to avoid permission issues with update
+        system_datasets_repo.update_progress!(entry.dataset.id)
 
-        entries.find!(entry.id, included: [:dataset])
+        # Use system entry repo as annotator/reviewer may not have read access after submission
+        system_entries_repo.find!(entry.id, included: [:dataset])
       end
     end
 
@@ -127,7 +181,8 @@ module Entry
         )
 
         # Update dataset progress after entry status change
-        datasets.update_progress!(entry.dataset.id)
+        # Use system dataset repo to avoid permission issues with update
+        system_datasets_repo.update_progress!(entry.dataset.id)
 
         entries.find!(entry.id, included: [:dataset])
       end

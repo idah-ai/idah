@@ -7,7 +7,14 @@ class LogsExpo < BaseExpo
 
   json_api Log::Record do
     show
-    index
+    index do
+      allowed_filters :action__in,
+                      :actor_account_id__eq,
+                      :actor_account_id__in,
+                      :event_timestamp__gte,
+                      :event_timestamp__lte,
+                      :resource_type__in
+    end
   end
 
   def create_audit_log

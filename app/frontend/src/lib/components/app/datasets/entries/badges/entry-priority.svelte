@@ -1,5 +1,7 @@
 <script lang="ts">
+  import { page } from "$app/state";
   import { ChevronsUpDownIcon, FlagIcon } from "@lucide/svelte";
+  import { onMount } from "svelte";
 
   import Badge from "@/components/ui/badge/badge.svelte";
   import { Command, CommandGroup, CommandItem } from "@/components/ui/command";
@@ -7,8 +9,11 @@
 
   import { entryPriorities } from "@/data/model/dataset/entries/constants";
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
+  import { authStatus } from "@/security/AuthContext";
   import { cn } from "@/utils";
   import { refetches } from "@/utils/refetch";
+
+  import type { ProjectMemberScope } from "@/security/types";
 
   // Props
   interface Props {
@@ -17,7 +22,24 @@
   }
   let { entry, updatable }: Props = $props();
 
-  // Function
+  // Lifecycle
+  onMount(async () => {
+    canUpdateEntry =
+      (await $authStatus.authContext?.can("update", "dataset:entries", ["as_org_owner", as_project_owner])) || false;
+  });
+
+  // Variables
+  let projectId = page.params.projectId as string;
+  let canUpdateEntry = $state(false);
+
+  const as_project_owner: { as_user: ProjectMemberScope } = {
+    as_user: {
+      projectId,
+      projectMemberRoles: ["project_owner"],
+    },
+  };
+
+  // Functions
   async function changePriority(priorityValue: number) {
     await entriesBackendDataSource.update(entry.id, {
       attributes: {
@@ -36,17 +58,17 @@
       "cursor-pointer": isDropdown,
     })}
   >
-    <FlagIcon class="size-4"></FlagIcon>
+    <FlagIcon />
 
     {entry.priorityBadge.label}
 
     {#if isDropdown}
-      <ChevronsUpDownIcon class="size-4"></ChevronsUpDownIcon>
+      <ChevronsUpDownIcon />
     {/if}
   </Badge>
 {/snippet}
 
-{#if updatable}
+{#if updatable && canUpdateEntry}
   <Popover>
     <PopoverTrigger>
       {@render EntryPriorityBadge({ isDropdown: true })}

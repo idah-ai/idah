@@ -1,16 +1,19 @@
-<script lang="ts">
+<script lang="ts" generics="T extends Record">
   import SingleSelectDatasourceField from "@/components/app/forms/fields/select/single/single-select-datasource-field.svelte";
+  import AccountAvatar from "@/components/app/iam/accounts/avatars/account-avatar.svelte";
+  import { CommandItem } from "@/components/ui/command";
 
   import { ProjectMemberRecord, projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
+  import { Record } from "@/data/model/Record";
+  import { cn } from "@/utils";
 
   import type {
     DataTableColumnFilterOperation,
     DataTableFilterBaseProps,
   } from "@/components/app/datasource-table/types";
-  import type { EntryRecord } from "@/data/model/dataset/entries/record";
 
   // Props
-  let { columnSetting, contexts, filters, onFilter }: DataTableFilterBaseProps<EntryRecord> = $props();
+  let { columnSetting, contexts, filters, onFilter }: DataTableFilterBaseProps<T> = $props();
 
   // Contexts
   if (!contexts || !("projectId" in contexts)) {
@@ -48,4 +51,33 @@
   searchKeyWithOperation="email__match"
   value={filters[filterKeyWithOperation]}
   onSelected={handleFilter}
-></SingleSelectDatasourceField>
+>
+  {#snippet slotTriggerValue({ selectedChoice })}
+    {#if selectedChoice?.data}
+      <AccountAvatar size="sm" email={selectedChoice.data["email"]} showEmail />
+    {:else}
+      <span class="truncate">{selectedChoice?.label || filters[filterKeyWithOperation]}</span>
+    {/if}
+  {/snippet}
+
+  {#snippet slotChoice({ choice, select })}
+    {#if choice.data}
+      {@const isSelected = filters[filterKeyWithOperation] === choice.value}
+      <CommandItem
+        class={cn("group cursor-pointer", {
+          "bg-primary/10": isSelected,
+        })}
+        onclick={() => select(choice)}
+      >
+        <AccountAvatar
+          name={choice.data["name"]}
+          email={choice.data["email"]}
+          showName
+          showEmail
+          size="sm"
+          {isSelected}
+        />
+      </CommandItem>
+    {/if}
+  {/snippet}
+</SingleSelectDatasourceField>

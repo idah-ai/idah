@@ -2,15 +2,17 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
-  import { setContext, type Snippet } from "svelte";
+  import { onMount, setContext, type Snippet } from "svelte";
 
   import PageHeader from "@/components/app/page/page-header.svelte";
   import PageLoading from "@/components/app/page/page-loading.svelte";
+  import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
   import { datasetTabs, type DatasetTab } from "@/components/app/datasets/tabs/dataset.tabs";
-
-  import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
+  import { authStatus } from "@/security/AuthContext";
+
+  import type { ProjectMemberScope } from "@/security/types";
 
   // Props
   interface Props {
@@ -21,6 +23,7 @@
   // Variables
   let projectId: string = page.params.projectId as string;
   let datasetId: string = page.params.datasetId as string;
+  let tabs = $state(datasetTabs);
   let activeTab: DatasetTab = $derived(page.url.pathname.split("/").pop() as DatasetTab);
 
   // Records
@@ -28,6 +31,25 @@
 
   $effect(() => {
     setContext("dataset", dataset);
+  });
+
+  // Lifecycle
+  onMount(async () => {
+    const currentAccount = $authStatus.authContext;
+    const as_project_owner: { as_user: ProjectMemberScope } = {
+      as_user: {
+        projectId,
+        projectMemberRoles: ["project_owner"],
+      },
+    };
+    const canUpdateDataset = await currentAccount?.can("update", "dataset:datasets", [
+      "as_org_owner",
+      as_project_owner,
+    ]);
+
+    if (!canUpdateDataset) {
+      tabs = datasetTabs.filter((tab) => tab.value !== "labels");
+    }
   });
 
   // Functions
@@ -47,13 +69,14 @@
 </script>
 
 {#await fetchData()}
-  <PageLoading></PageLoading>
+  <PageLoading />
 {:then datasetRecord}
   <div class="space-y-6">
-    <PageHeader title={datasetRecord.name}></PageHeader>
+    <PageHeader title={datasetRecord.name} />
+
     <Tabs bind:value={activeTab}>
       <TabsList>
-        {#each datasetTabs as { label, value } (value)}
+        {#each tabs as { label, value } (value)}
           <TabsTrigger {value} onclick={() => handleTabChange(value)}>{label}</TabsTrigger>
         {/each}
       </TabsList>

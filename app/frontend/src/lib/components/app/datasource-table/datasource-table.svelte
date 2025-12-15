@@ -137,7 +137,9 @@
       /** Update TablePreferences */
       tableState.tablePreferences.update((prefs) => ({
         ...prefs,
+        filters: mergedFilters,
         pagination: { ...prefs.pagination, ...mergedPagination },
+        sort: mergedSort,
       }));
     } catch (error) {
       /** Set TableData status to 'error'*/
@@ -251,10 +253,10 @@
     <!-- DATA TABLE::ACTIONS -->
     <DataTableToolbarActions>
       {#if haveSomeHidableColumns}
-        <DataTableToggleColumns {columns}></DataTableToggleColumns>
+        <DataTableToggleColumns {columns} />
       {/if}
 
-      {@render actions?.()}
+      {@render actions?.({ tablePreferences })}
     </DataTableToolbarActions>
   </DataTableHeader>
 
@@ -284,7 +286,7 @@
                     onFilter={filterDataSource}
                     onSort={sortDataSource}
                     onHide={hideColumn}
-                  ></DataTableHeadOptions>
+                  />
                 {/if}
               </TableHead>
             {/if}
@@ -293,11 +295,11 @@
       </TableHeader>
 
       {#if tableData.status === "loading"}
-        <DataTableLoading></DataTableLoading>
+        <DataTableLoading />
       {:else if tableData.status === "loaded"}
-        <DataTableBody {tableData} {columns} {isFiltering}></DataTableBody>
+        <DataTableBody {tableData} {columns} {isFiltering} />
       {:else}
-        <DataTableError></DataTableError>
+        <DataTableError />
       {/if}
     </Table>
   </DataTableContent>
@@ -311,6 +313,6 @@
       hasMore={tableData.response.meta?.more || false}
       onPageChange={changePage}
       onItemsPerPageSelect={setItemsPerPage}
-    ></DataTablePaginator>
+    />
   {/if}
 </div>
