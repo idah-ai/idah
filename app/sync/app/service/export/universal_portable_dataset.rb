@@ -74,21 +74,24 @@ module Export
       file.write(entry.medias.files)
       file.close
       resource_info = entry.medias.resource_info
-      @context.io.append.call({
-        command: 'media:create',
-        args: {
-          id: resource_info[:id],
-          key: resource_info[:attributes][:key],
-          file: file.path,
-          mimetype: resource_info[:attributes][:mime_type],
-          metadata: {
-            "Created-At": resource_info[:attributes][:created_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
-            "Updated-At": resource_info[:attributes][:updated_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
-            "Created-By": resource_info[:attributes][:created_by]
+      begin
+        @context.io.append.call({
+          command: 'media:create',
+          args: {
+            id: resource_info[:id],
+            key: resource_info[:attributes][:key],
+            file: file.path,
+            mimetype: resource_info[:attributes][:mime_type],
+            metadata: {
+              "Created-At": resource_info[:attributes][:created_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
+              "Updated-At": resource_info[:attributes][:updated_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
+              "Created-By": resource_info[:attributes][:created_by]
+            }
           }
-        }
-      }.to_json)
-      file.unlink
+        }.to_json)
+      ensure
+        file.unlink
+      end
       @context.io.append.call({
         command: 'entry:create',
         args: {
