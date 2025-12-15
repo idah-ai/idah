@@ -10,13 +10,13 @@
   import Can from "@/security/can.svelte";
 
   import { accountColumns } from "@/components/app/iam/accounts/data-tables/account-columns";
-  import { accountBreadcrumb, homeBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
+  import { accountBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
   import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
   import { authStatus } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
 
-  pageBreadcrumbsStore.set([homeBreadcrumb, accountBreadcrumb]);
+  pageBreadcrumbsStore.set([accountBreadcrumb]);
 
   // Variables
   let canCreateAccount = $state(false);

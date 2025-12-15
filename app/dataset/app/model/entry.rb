@@ -17,9 +17,9 @@ module Entry
 
     field :resource, type: String
 
-    field :assigned_to_id, type: Integer # Add through assign method
-    field :submitted_by_id, type: Integer # Add through submit method
-    field :reviewed_by_id, type: Integer # Add through review method
+    field :assigned_to_id, type: [Integer, NilClass] # Add through assign method
+    field :submitted_by_id, type: [Integer, NilClass] # Add through submit method
+    field :reviewed_by_id, type: [Integer, NilClass] # Add through review method
 
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
@@ -127,6 +127,16 @@ module Entry
       else
         raise Verse::Error::Unauthorized,
               "Permission denied for \"#{action}\" action on #{self.class.resource}"
+      end
+    end
+
+    event(name: "selected")
+    def select(id)
+      no_event do
+        transaction do
+          # Use read scope when updating as anyone with read access can select
+          update!(id, { assigned_to_id: auth_context.metadata[:id] }, scope: scoped(:read))
+        end
       end
     end
 

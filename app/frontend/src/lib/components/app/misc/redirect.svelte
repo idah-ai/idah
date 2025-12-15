@@ -6,7 +6,7 @@
   interface Props {
     to?: string;
   }
-  let { to = "/" }: Props = $props();
+  let { to = "/projects" }: Props = $props();
 
   onMount(() => {
     // eslint-disable-next-line svelte/no-navigation-without-resolve

@@ -2,6 +2,7 @@ import { goto } from "$app/navigation";
 import { resolve } from "$app/paths";
 import { writable, type Writable } from "svelte/store";
 
+import { clearAllCache } from "@/data/Cache";
 import { projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
 import { AccountAuthRecord, type AuthService } from "@/data/model/iam/accounts/auth/records";
 import { ActionMap } from "@/security/ActionMap";
@@ -9,7 +10,6 @@ import { ActionMap } from "@/security/ActionMap";
 import type { Role } from "@/data/model/iam/accounts/auth/constants";
 import type { Action, Resource, Scope } from "@/security/types";
 import type { Hash } from "@/utils/types";
-import type { Role } from "@/data/model/iam/accounts/auth/constants";
 
 export type AuthenticationStatus = {
   status: "loading" | "logged-in" | "logged-out";
@@ -82,6 +82,7 @@ export class AuthContext {
     // window.AppCable.cable.disconnect();
 
     this.setAuthStatus("logged-out", null);
+    clearAllCache();
 
     await goto(resolve("/login"), { replaceState: true });
   }

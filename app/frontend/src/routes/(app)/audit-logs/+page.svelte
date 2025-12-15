@@ -8,7 +8,6 @@
 
   import { logColumns } from "@/components/app/audit/audits/datasource-tables/log-columns";
   import { getTablePreferences } from "@/components/app/datasource-table/datasource-table.stores.svelte";
-  import { homeBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
   import { LogRecord, logsBackendDataSource } from "@/data/model/audit/logs/record";
   import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
@@ -20,7 +19,7 @@
   // Variables
   const logDatasourceTableId = "audit-logs";
 
-  pageBreadcrumbsStore.set([homeBreadcrumb, { label: "Audit Logs" }]);
+  pageBreadcrumbsStore.set([{ label: "Audit Logs" }]);
 
   // Functions
   async function downloadAudits() {
