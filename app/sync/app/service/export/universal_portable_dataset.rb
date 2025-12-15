@@ -74,7 +74,6 @@ module Export
       file = Tempfile.new(entry.record[:attributes][:resource])
       file.write(entry.medias.files)
       file.close
-      @files << file
       resource_info = entry.medias.resource_info
       @context.file.append.call({
         command: 'media:create',
@@ -90,7 +89,7 @@ module Export
           }
         }
       }.to_json)
-      # file.unlink # wait stdout
+      file.unlink
       @context.file.append.call({
         command: 'entry:create',
         args: {
