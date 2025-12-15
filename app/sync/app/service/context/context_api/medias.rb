@@ -6,8 +6,7 @@ module Context
           Api[api].media.medias,
           api,
           args,
-          context_filters,
-          Proc.new {|record| record}
+          context_filters
         )
       end
 
