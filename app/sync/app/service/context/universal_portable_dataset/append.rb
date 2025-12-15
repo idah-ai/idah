@@ -17,25 +17,22 @@ module Context
                 stdin.puts(s)
                 stdin.flush
                 readers = [stdout, stderr]
-                lines_read = 0
-                stderr_output = []
+                lines_read, stderr_output = 0, []
                 while lines_read < expected_lines && !readers.empty?
                   ready = IO.select(readers, nil, nil, 0.1) # 0.1s timeout
-                  if ready
-                    ready[0].each do |fd|
-                      line = fd.gets
-                      if line
-                        if fd == stdout
-                          feedback.call(line)
-                          lines_read += 1
-                        elsif fd == stderr
-                          stderr_output << line
-                        end
-                      else
-                        readers.delete(fd)
+                  ready[0].each do |fd|
+                    line = fd.gets
+                    if line
+                      if fd == stdout
+                        feedback.call(line)
+                        lines_read += 1
+                      elsif fd == stderr
+                        stderr_output << line
                       end
+                    else
+                      readers.delete(fd)
                     end
-                  end
+                  end if ready
                   break Verse.logger.warn { "blocking read on: #{s}" } if ready.nil? && lines_read == 0
                 end
                 unless stderr_output.empty?
@@ -44,20 +41,15 @@ module Context
                 end
               end
             )
-          rescue Exception => e
-            Verse.logger.error { "UPD export error: #{e}" }
-            raise e
           ensure
-            stdin.close
+            stdin.close unless stdin.closed?
             remaining_stderr = []
-            while (line = stderr.gets)
-              remaining_stderr << line
-            end
+            remaining_stderr << line while (line = stderr.gets)
             value = wait_thr.value
             if value.exitstatus != 0
-              raise "updcli error #{value} #{remaining_stderr.join}"
+              raise "updcli append error #{value} #{remaining_stderr.join}"
             end
-            Verse.logger.info { "UPD export done: #{value}" }
+            Verse.logger.info { "updcli append complete: #{value}" }
           end
         end
       end
