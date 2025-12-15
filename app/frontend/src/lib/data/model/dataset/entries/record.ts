@@ -69,9 +69,7 @@ const entryBasePath: string = `${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/
 RecordFactory.registerTypes(EntryRecord);
 
 export const entriesBackendDataSource = createBackendDataSource(EntryRecord, entryBasePath, {
-  select: async (params: {
-    id: string;
-  }): Promise<RecordResponse<EntryRecord> | JsonApiErrorResponse> => {
+  select: async (params: { id: string }): Promise<RecordResponse<EntryRecord> | JsonApiErrorResponse> => {
     const res = await fetch(`${entryBasePath}/${params.id}/select`, {
       method: "GET",
     });
