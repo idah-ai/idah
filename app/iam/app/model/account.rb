@@ -83,15 +83,9 @@ module Account
 
       membership_account_ids =
         if org_ids.any?
-          Verse::Cache.with_cache(
-            "dataset/datasets/service/memberships",
-            "org_ids:#{org_ids.sort.join(",")}",
-            expires_in: 180
-          ) do
-            Api[:idah].dataset.project_members.index(
-              filter: { organization_id__in: org_ids }
-            ).data.map(&:account_id).uniq
-          end
+          Api[:idah].dataset.project_members.index(
+            filter: { organization_id__in: org_ids }
+          ).data.map(&:account_id).uniq
         else
           []
         end
