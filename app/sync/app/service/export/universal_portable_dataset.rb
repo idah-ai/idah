@@ -71,10 +71,10 @@ module Export
 
     def on_entry(entry)
       file = Tempfile.new(entry.record[:attributes][:resource])
-      file.write(entry.medias.files)
-      file.close
-      resource_info = entry.medias.resource_info
       begin
+        file.write(entry.medias.files)
+        file.close
+        resource_info = entry.medias.resource_info
         @context.io.append.call({
           command: 'media:create',
           args: {
@@ -90,6 +90,7 @@ module Export
           }
         }.to_json)
       ensure
+        file.close unless file.closed?
         file.unlink
       end
       @context.io.append.call({
