@@ -6,71 +6,62 @@ module Export
     end
 
     def run
-      # TODO embed append/std_* in context
-      updcli_append do |&append|
-        begin
-          # linear_processing &append
-          loop_processing &append
-        rescue Exception => e
-          Verse::logger::error{"#{self} Error processing #{@context.name} #{e}"}
-          raise e
-        end
+      begin
+        # linear_processing
+        loop_processing
+      rescue Exception => e
+        Verse::logger::error{"#{self} Error processing #{@context.file.name} #{e}"}
+        raise e
       end
     end
 
     private
 
-    def start(&append)
-      Verse::logger::debug{"#{self} Start processing #{@context.name}"}
-      append.call({command: 'init', args: {}}.to_json)
+    def start
+      Verse::logger::debug{"#{self} Start processing #{@context.file.name}"}
+      @context.file.append.call({command: 'init', args: {}}.to_json)
     end
 
     def done
-      Verse::logger::debug{"#{self} #{@context.name} Process complete"}
+      Verse::logger::debug{"#{self} #{@context.file.name} Process complete"}
     end
 
-    def linear_processing(&append)
-      start &append
-      @context.api.datasets.index.each do |dataset|
-        on_dataset dataset, &append
-      end
-      @context.api.entries.index.each do |entry|
-        on_entry entry, &append
-      end
-      @context.api.annotations.index.each do |annotation|
-        on_annotation annotation, &append
-      end
-      done &append
+    def linear_processing
+      start
+      @context.api.datasets.index.each do |dataset| on_dataset dataset end
+      @context.api.entries.index.each do |entry| on_entry entry end
+      @context.api.annotations.index.each do |annotation| on_annotation annotation end
+      done
     end
 
-    def loop_processing(&append)
-      start &append
-      @context.api.datasets.index.each do |dataset|
-        process_dataset dataset, &append
-      end
-      done &append
+    def loop_processing
+      start
+      @context.api.datasets.index.each do |dataset| process_dataset dataset end
+      done
     end
 
-    def process_dataset(dataset, &append)
-      on_dataset dataset, &append
-      dataset.entries.index.each do |entry|
-        process_entry entry, &append
-      end
+    def process_dataset(dataset)
+      Verse::logger.debug {"#{self} Start processing dataset #{dataset.record[:id]}"}
+      on_dataset dataset
+      dataset.entries.index.each do |entry| process_entry entry end
+      Verse::logger.debug {"#{self} Done processing dataset #{dataset.record[:id]}"}
     end
 
-    def process_entry(entry, &append)
-      on_entry entry, &append
-      entry.annotations.index.each do |annotation|
-        process_annotation annotation, &append
-      end
+    def process_entry(entry)
+      Verse::logger.debug {"#{self} Start processing entry #{entry.record[:id]}"}
+      on_entry entry
+      entry.annotations.index.each do |annotation| process_annotation annotation end
+      Verse::logger.debug {"#{self} Done processing entry #{entry.record[:id]}"}
     end
 
-    def process_annotation(annotation, &append)
-      on_annotation annotation, &append
+    def process_annotation(annotation)
+      Verse::logger.debug {"#{self} Start processing annotation #{annotation.record[:id]}"}
+      on_annotation annotation
+      Verse::logger.debug {"#{self} Done processing annotation #{annotation.record[:id]}"}
     end
 
-    def on_dataset(dataset, &append)
-      append.call({
+    def on_dataset(dataset)
+      @context.file.append.call({
         command: 'dataset:create',
         args: {
           id: dataset.record[:id],
@@ -85,13 +76,13 @@ module Export
       }.to_json)
     end
 
-    def on_entry(entry, &append)
+    def on_entry(entry)
       file = Tempfile.new(entry.record[:attributes][:resource])
       file.write(entry.medias.files)
       file.close
       @files << file
       resource_info = entry.medias.resource_info
-      append.call({
+      @context.file.append.call({
         command: 'media:create',
         args: {
           id: resource_info[:id],
@@ -105,7 +96,7 @@ module Export
           }
         }
       }.to_json)
-      append.call({
+      @context.file.append.call({
         command: 'entry:create',
         args: {
           id: entry.record[:id],
@@ -120,8 +111,8 @@ module Export
       }.to_json)
     end
 
-    def on_annotation(annotation, &append)
-      append.call({
+    def on_annotation(annotation)
+      @context.file.append.call({
         command: 'annotation:create',
         args: {
           id: annotation.record[:id],
@@ -136,44 +127,6 @@ module Export
           }
         }
       }.to_json)
-    end
-
-    def updcli_append(&process_append_records)
-      Open3.popen3(
-        "bin/datset-static", # TODO: build or embed binary within plugin
-        "-i", [@context.name, :upd].join('.'),
-        "append"
-      ) do |stdin, stdout, stderr, wait_thr|
-        stdout_thr = Thread.new do # todo read some expectation in block.call instead or risk throughput bottleneck
-          until (line = stdout.gets).nil?
-            Verse.logger.info { "#{line.strip}"}
-          end
-        end
-
-        begin
-          process_append_records.call(stdin, stdout, stderr, wait_thr) do |s|
-            stdin.puts(s)
-            stdin.flush
-            Verse::logger::debug {"#{self}: #{s}"}
-          end
-
-          [@context.name, :upd].join('.')
-          ## todo review VVV
-        rescue Exception => e
-          Verse.logger.error {"UPD export error:#{e}"}
-          raise e
-        ensure
-          stdin.close
-          stdout_thr.join
-          error = stderr.read
-          value = wait_thr.value
-          if value.exitstatus != 0
-            raise "updcli error #{value} #{error}"
-          end
-          @files.each &:unlink # earlier ?
-          Verse::logger.info { "UPD export done: #{value}" }
-        end
-      end
     end
   end
 end
