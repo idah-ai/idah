@@ -22,19 +22,19 @@
   // Variables
   let submitting: boolean = $state(false);
   let fieldErrors: Hash = $state({});
-  let selectedMember: number | null = $state(entryRecord?.assigned_to_member_id ?? null);
+  let selectedMember: number | null = $state(entryRecord?.assigned_to_id ?? null);
   let selectedEntryCount: number = $derived(entryIds.length);
 
   // Functions
   function setValue(value: Hash): void {
-    selectedMember = value.assigned_to_member_id;
+    selectedMember = value.assigned_to_id;
   }
 
   async function assignMember(): Promise<void> {
     if (entryIds.length === 0 || !selectedMember) return;
 
     for (const entryId of entryIds) {
-      await entriesBackendDataSource.assign({ id: entryId, memberId: selectedMember });
+      await entriesBackendDataSource.assign({ id: entryId, memberAccountId: selectedMember });
     }
 
     toast.success("Member assigned successfully");
@@ -67,7 +67,7 @@
     <DialogTitle>{title}</DialogTitle>
   {/snippet}
 
-  <AssignEntryForm {selectedMember} {fieldErrors} onValueChange={setValue} />
+  <AssignEntryForm {selectedMember} {entryRecord} {fieldErrors} onValueChange={setValue} />
 
   {#snippet confirm()}
     <Button loading={submitting} loadingLabel="Assigning" disabled={!selectedMember} onclick={submit}>Assign</Button>

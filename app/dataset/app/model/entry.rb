@@ -17,8 +17,9 @@ module Entry
 
     field :resource, type: String
 
-    # Add through assign method
-    field :assigned_to_member_id, type: Integer, readonly: true
+    field :assigned_to_id, type: [Integer, NilClass] # Add through assign method
+    field :submitted_by_id, type: [Integer, NilClass] # Add through submit method
+    field :reviewed_by_id, type: [Integer, NilClass] # Add through review method
 
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
@@ -76,10 +77,21 @@ module Entry
               AND (
                 -- All with roles
                 pm.role IN :with_roles OR
-                -- From assigned entries with roles
+                -- Annotators can access only assigned entries
                 (
-                  (pm.role IN :assigned_to_roles)
-                  AND entries.assigned_to_member_id = pm.id
+                  (pm.role IN :annotator_roles)
+                  AND entries.assigned_to_id = :account_id
+                ) OR
+                -- Reviewers can access assigned and unassigned entries in review step
+                (
+                  (pm.role IN :reviewer_roles)
+                  AND (
+                    entries.assigned_to_id = :account_id OR
+                    (
+                      entries.wf_step = 'review' AND
+                      entries.assigned_to_id IS NULL
+                    )
+                  )
                 )
               )
           )
@@ -90,7 +102,8 @@ module Entry
             scoped_fragment,
             account_id:,
             with_roles: %w[project_owner],
-            assigned_to_roles: %w[annotator reviewer]
+            annotator_roles: %w[annotator],
+            reviewer_roles: %w[reviewer]
           )
         )
       when :update, :delete
@@ -117,6 +130,16 @@ module Entry
       end
     end
 
+    event(name: "selected")
+    def select(id)
+      no_event do
+        transaction do
+          # Use read scope when updating as anyone with read access can select
+          update!(id, { assigned_to_id: auth_context.metadata[:id] }, scope: scoped(:read))
+        end
+      end
+    end
+
     event(name: "assigned")
     def assign(id, attributes)
       no_event do
@@ -130,7 +153,8 @@ module Entry
     def submit(id, attributes)
       no_event do
         transaction do
-          update!(id, attributes)
+          # Use read scope when updating as anyone with read access can submit
+          update!(id, attributes, scope: scoped(:read))
         end
       end
     end
