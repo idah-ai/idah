@@ -5,5 +5,5 @@ You are now the organization owner of
 Hi <%= notification.recipient_name || notification.recipient_account_email %>,
 You have been assigned as organization owner of <%= notification.organization_name %> organization by <%= notification.admin_name %>.
 
-go to organization:
+Go to organization:
 <%= [ENV.fetch("IDAH_URL"), "/organizations"].join("") %>

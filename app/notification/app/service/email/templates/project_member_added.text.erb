@@ -5,4 +5,4 @@ Hi <%= account.name || account.email %>,
 You have been added to the project '<%= notification.project_name %>' by '<%= notification.inviter_email %>'.
 
 Go to project:
-<%= [ENV.fetch("IDAH_URL"), "/projects/#{notification.project_id}"].join("") %>
+<%= [ENV.fetch("IDAH_URL"), "/projects/#{notification.project_id}/datasets"].join("") %>
