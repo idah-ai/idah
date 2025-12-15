@@ -88,17 +88,16 @@
     await periodicCheckJobStatus();
   }
 
-  async function autoAssignReviewer() {
+  async function selectEntry() {
     if (!currentAccount?.id) return;
 
     try {
       /**
-       * If entry is in review step and not reviewed by anyone, assign it to the current user
+       * If the entry is unassigned, assign it to the current user
        */
-      if (wf_step === "review" && reviewed_by_id === null) {
-        await entriesBackendDataSource.assign({
-          id: entryId,
-          memberAccountId: Number(currentAccount.id),
+      if (assigned_to_id === null) {
+        await entriesBackendDataSource.select({
+          id: entryId
         });
       }
     } catch (error) {
@@ -273,7 +272,7 @@
             <Button
               variant="link"
               class="group-hover:text-primary justify-start px-0 group-hover:cursor-pointer group-hover:underline group-hover:underline-offset-4"
-              onclick={autoAssignReviewer}
+              onclick={selectEntry}
             >
               <span class="-ml-3">{entry.resource}</span>
 
