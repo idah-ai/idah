@@ -2,7 +2,6 @@ module Export
   class UniversalPortableDataset
     def initialize(context)
       @context = context
-      @files = []
     end
 
     def run
