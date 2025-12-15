@@ -96,6 +96,7 @@ module Export
           }
         }
       }.to_json)
+      # file.unlink # wait stdout
       @context.file.append.call({
         command: 'entry:create',
         args: {
