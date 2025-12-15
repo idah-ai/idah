@@ -41,23 +41,17 @@ module Export
     end
 
     def process_dataset(dataset)
-      Verse::logger.debug {"#{self} Start processing dataset #{dataset.record[:id]}"}
       on_dataset dataset
       dataset.entries.index.each do |entry| process_entry entry end
-      Verse::logger.debug {"#{self} Done processing dataset #{dataset.record[:id]}"}
     end
 
     def process_entry(entry)
-      Verse::logger.debug {"#{self} Start processing entry #{entry.record[:id]}"}
       on_entry entry
       entry.annotations.index.each do |annotation| process_annotation annotation end
-      Verse::logger.debug {"#{self} Done processing entry #{entry.record[:id]}"}
     end
 
     def process_annotation(annotation)
-      Verse::logger.debug {"#{self} Start processing annotation #{annotation.record[:id]}"}
       on_annotation annotation
-      Verse::logger.debug {"#{self} Done processing annotation #{annotation.record[:id]}"}
     end
 
     def on_dataset(dataset)
