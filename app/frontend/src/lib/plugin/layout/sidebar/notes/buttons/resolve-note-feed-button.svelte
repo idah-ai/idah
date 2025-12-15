@@ -30,7 +30,8 @@
       onNoteResolved?.(resolvedNoteFeedRes.data);
       toast.success("Note feed marked as resolved successfully.");
       $refetches.noteFeeds.list = new Date();
-    } catch (_e) {
+    } catch (error) {
+      console.error(error);
       toast.error("You are not authorized to do this action.");
     }
   }

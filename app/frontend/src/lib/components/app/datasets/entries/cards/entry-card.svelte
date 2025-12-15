@@ -101,6 +101,7 @@
         });
       }
     } catch (error) {
+      console.error(error);
       toast.error("Failed to assign entry to you");
     } finally {
       goto(`/entries/${entryId}/plugin`);
