@@ -2,13 +2,12 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import {
-    CircleUserRoundIcon,
-    LogOutIcon,
-    MoonIcon,
-    SettingsIcon,
-    SunIcon,
-    SunMoonIcon,
-    TabletSmartphoneIcon,
+      LogOutIcon,
+      MoonIcon,
+      SettingsIcon,
+      SunIcon,
+      SunMoonIcon,
+      TabletSmartphoneIcon
   } from "@lucide/svelte";
   import { mode, resetMode, setMode } from "mode-watcher";
 
@@ -39,13 +38,13 @@
   const menus: IDropdownMenus = $derived({
     general: {
       items: [
-        {
-          label: "Profile",
-          icon: CircleUserRoundIcon,
-          action: () => {
-            // Handle profile action
-          },
-        },
+        // {
+        //   label: "Profile",
+        //   icon: CircleUserRoundIcon,
+        //   action: () => {
+        //     // Handle profile action
+        //   },
+        // },
         {
           label: "Theme",
           icon: SunMoonIcon,
