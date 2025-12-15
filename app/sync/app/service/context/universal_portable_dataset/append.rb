@@ -3,8 +3,8 @@ module Context
     module Append
       Context = Data.define(:name, :stdin, :stdout, :stderr, :wait_thr, :append)
 
-      def self.prepare(name, &block)
-        filename = [name, :upd].join('.')
+      def self.prepare(args, &block)
+        filename = [Hash(args).dig(:name) || ["export", Time.now.to_i], :upd].join(".")
         Open3.popen3(
           "bin/datset-static",
           "-i", filename,
