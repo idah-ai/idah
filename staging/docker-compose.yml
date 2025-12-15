@@ -55,6 +55,8 @@ services:
       - DATABASE_URI=postgres://postgres:postgres@host.docker.internal:5432/idah_iam_development
       - REDIS_STREAM_URL=redis://host.docker.internal:6379/0
       - EAGER_LOAD=1
+      - IDAH_SERVICE_ACCOUNT=iam@services.idah.ai
+      - IDAH_SERVICE_PASSWORD=EJvTU9fFRao4iNT911Lh90z
     ports:
       - "3000"
     volumes:
@@ -83,6 +85,8 @@ services:
       - DATABASE_URI=postgres://postgres:postgres@host.docker.internal:5432/idah_media_development
       - REDIS_STREAM_URL=redis://host.docker.internal:6379/0
       - EAGER_LOAD=1
+      - IDAH_SERVICE_ACCOUNT=media@services.idah.ai
+      - IDAH_SERVICE_PASSWORD=EJvTU9fFRao4iNT911Lh90z
     ports:
       - "3000"
     volumes:
@@ -113,6 +117,8 @@ services:
       - DATABASE_URI=postgres://postgres:postgres@host.docker.internal:5432/idah_dataset_development
       - REDIS_STREAM_URL=redis://host.docker.internal:6379/0
       - EAGER_LOAD=1
+      - IDAH_SERVICE_ACCOUNT=dataset@services.idah.ai
+      - IDAH_SERVICE_PASSWORD=EJvTU9fFRao4iNT911Lh90z
     ports:
       - "3000"
     volumes:
@@ -141,6 +147,8 @@ services:
       - DATABASE_URI=postgres://postgres:postgres@host.docker.internal:5432/idah_notification_staging
       - REDIS_STREAM_URL=redis://host.docker.internal:6379/0
       - EAGER_LOAD=1
+      - IDAH_SERVICE_ACCOUNT=notification@services.idah.ai
+      - IDAH_SERVICE_PASSWORD=EJvTU9fFRao4iNT911Lh90z
     ports:
       - "3000"
     volumes:
@@ -167,6 +175,8 @@ services:
       - DATABASE_URI=postgres://postgres:postgres@host.docker.internal:5432/idah_audit_staging
       - REDIS_STREAM_URL=redis://host.docker.internal:6379/0
       - EAGER_LOAD=1
+      - IDAH_SERVICE_ACCOUNT=audit@services.idah.ai
+      - IDAH_SERVICE_PASSWORD=EJvTU9fFRao4iNT911Lh90z
     ports:
       - "3000"
     volumes:
@@ -195,6 +205,8 @@ services:
       - DATABASE_URI=postgres://postgres:postgres@host.docker.internal:5432/idah_sync_staging
       - REDIS_STREAM_URL=redis://host.docker.internal:6379/0
       - EAGER_LOAD=1
+      - IDAH_SERVICE_ACCOUNT=sync@services.idah.ai
+      - IDAH_SERVICE_PASSWORD=EJvTU9fFRao4iNT911Lh90z
     ports:
       - "3000"
     volumes:
@@ -223,6 +235,8 @@ services:
       - DATABASE_URI=postgres://postgres:postgres@host.docker.internal:5432/idah_setting_development
       - REDIS_STREAM_URL=redis://host.docker.internal:6379/0
       - EAGER_LOAD=1
+      - IDAH_SERVICE_ACCOUNT=setting@services.idah.ai
+      - IDAH_SERVICE_PASSWORD=EJvTU9fFRao4iNT911Lh90z
     ports:
       - "3000"
     volumes:

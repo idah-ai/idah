@@ -4,7 +4,7 @@ module Jobs
   class Record < Verse::Model::Record::Base
     type Resource::Media::Jobs
 
-    field :id, type: Integer, primary: true
+    field :id, type: String, primary: true
     field :job_class, type: String
 
     field :arguments, type: Hash
