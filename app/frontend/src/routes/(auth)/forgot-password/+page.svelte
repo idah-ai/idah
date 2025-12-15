@@ -17,7 +17,7 @@
   // let sentDate: Date | null = $state(null);
   let disabledSendPasswordResetLink = $derived.by(() => {
     const validated = sendResetPasswordLinkSchema.safeParse({ email });
-    return !validated.success;
+    return !validated.success || passwordResetLinkHasBeenSent;
   });
   let disabledResendPasswordResetLink = $derived.by(() => {
     return !passwordResetLinkHasBeenSent;

@@ -13,7 +13,7 @@ module Entry
     field :wf_step, type: String # , readonly: true
     field :status, type: String # , readonly: true
 
-    field :job_id, type: Integer
+    field :job_id, type: String
 
     field :resource, type: String
 
