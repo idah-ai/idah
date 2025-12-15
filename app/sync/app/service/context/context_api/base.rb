@@ -17,13 +17,25 @@ module Context
 
       protected
       def merge_filters(filters = {}, context_api_name = @context_api.name)
-        Hash(filters)
+        output = Hash(filters)
           .merge(Hash(Hash(@context_filters)[context_api_name]))
           .merge(Hash(Hash(@args)[context_api_name]))
+        Verse.logger.debug {{merge_filters:{
+          filters:, context_api_name:,
+          context_filters: @context_filters, args: @args,
+          output:
+        }}}
+        output
       end
 
       def merge_context_filters(filters = {}, context_api_name = @context_api.name)
-        Hash(@context_filters).merge([[context_api_name, merge_filters(filters, context_api_name)]].to_h)
+        output = Hash(@context_filters).merge([[context_api_name, merge_filters(filters, context_api_name)]].to_h)
+        Verse.logger.debug {{merge_context_filters:{
+          filters:, context_api_name:,
+          context_filters: @context_filters, args: @args,
+          output:
+        }}}
+        output
       end
     end
   end

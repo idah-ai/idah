@@ -1,9 +1,9 @@
 module Context
-  Root = Data.define(:name, :api)
+  Root = Data.define(:file, :api)
 
-  def self.root(args, api = :idah)
+  def self.root(file, args, api = :idah)
     Root.new(
-      [:export, Time.now.to_i].join("."),
+      file,
       ContextApi.api(args, api)
     )
   end
