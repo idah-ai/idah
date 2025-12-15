@@ -25,6 +25,19 @@ module ProjectMember
     self.table = "project_members"
     self.resource = Resource::Dataset::ProjectMembers
 
+    custom_filter :organization_id__in do |collection, value|
+      where_fragment = <<-SQL
+        EXISTS (
+          SELECT 1
+          FROM projects p
+          WHERE p.organization_id IN ?
+            AND p.id = project_members.project_id
+        )
+      SQL
+
+      collection.where(Sequel.lit(where_fragment, value.map(&:to_i)))
+    end
+
     def scoped(action)
       auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }

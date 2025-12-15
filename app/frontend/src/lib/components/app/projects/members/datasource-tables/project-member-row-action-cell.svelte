@@ -1,9 +1,11 @@
 <script lang="ts">
+  import { page } from "$app/state";
   import { UserRoundXIcon } from "@lucide/svelte";
   import { toast } from "svelte-sonner";
 
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
   import Button from "@/components/ui/button/button.svelte";
+  import Can from "@/security/can.svelte";
 
   import { ProjectMemberRecord, projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
   import { refetches } from "@/utils/refetch";
@@ -17,6 +19,7 @@
   let { record: projectMember }: Props = $props();
 
   // Variables
+  let projectId = page.params.projectId as string;
   let openConfirmRemoveMemberModal: boolean = $state(false);
 
   // Functions
@@ -28,13 +31,27 @@
   }
 </script>
 
-<Button variant="ghost" size="icon-sm" onclick={() => (openConfirmRemoveMemberModal = true)}>
-  <UserRoundXIcon />
-</Button>
+<Can
+  action="delete"
+  resource="dataset:project_members"
+  scopes={[
+    "as_org_owner",
+    {
+      as_user: {
+        projectId,
+        projectMemberRoles: ["project_owner"],
+      },
+    },
+  ]}
+>
+  <Button variant="ghost" size="icon-sm" onclick={() => (openConfirmRemoveMemberModal = true)}>
+    <UserRoundXIcon />
+  </Button>
 
-<ConfirmModal
-  title="Remove member"
-  description="Are you sure you want to remove this member from the project?"
-  onConfirm={removeProjectMember}
-  bind:open={openConfirmRemoveMemberModal}
-></ConfirmModal>
+  <ConfirmModal
+    title="Remove member"
+    description="Are you sure you want to remove this member from the project?"
+    onConfirm={removeProjectMember}
+    bind:open={openConfirmRemoveMemberModal}
+  />
+</Can>

@@ -1,14 +1,14 @@
-import { encodeUri } from "@/utils/uri";
-import { filtersToHash } from "@/data/filtering";
 import { clearCache, getCache, setCache } from "@/data/Cache";
-import { generateHash } from "@/utils/string";
-import { parseCollectionReturn, parseSingleElementError, parseSingleElementReturn } from "./model/json_api";
-import { identity, type Hash } from "@/utils/types";
+import type { CacheValue } from "@/data/Cache.types";
+import { filtersToHash } from "@/data/filtering";
 import { showErrorToast } from "@/utils/error/error.toasts";
+import { generateHash } from "@/utils/string";
+import { identity, type Hash } from "@/utils/types";
+import { encodeUri } from "@/utils/uri";
+import type { DataParams, DataSource, GetOptions, ListOptions } from "./DataSource";
+import { parseCollectionReturn, parseSingleElementError, parseSingleElementReturn } from "./model/json_api";
 import type { Record, RecordClass } from "./model/Record";
 import type { CollectionResponse, JsonApiErrorResponse, RecordResponse } from "./model/types";
-import type { ListOptions, DataSource, GetOptions, DataParams } from "./DataSource";
-import type { CacheValue } from "@/data/Cache.types";
 
 export function encodeModel<T extends Record>(model: RecordClass<T>, data: DataParams<T>): string {
   const attributes: Hash = {};
@@ -235,7 +235,21 @@ export function createBackendDataSource<T extends Record, CustomMethods>(
     },
 
     async delete(id: string): Promise<boolean> {
-      await fetch(resourcePath(this.basePath, id), { method: "DELETE" });
+      const response = await fetch(resourcePath(this.basePath, id), { method: "DELETE" });
+
+      if (!response.ok) {
+        const body = await response.json();
+
+        if (body && body.errors) {
+          if (body.errors.length > 0) {
+            body.errors.forEach((err: Hash<string>) => {
+              showErrorToast({ title: err.title, message: err.detail, error: err });
+            });
+          }
+
+          return Promise.reject(parseSingleElementError({ status: response.status, errors: body.errors }));
+        }
+      }
 
       // Cache Management
       const cacheIndexKey = resourcePath(this.basePath, null, undefined);

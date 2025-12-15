@@ -28,7 +28,7 @@ namespace :dev do
         email: "orgowner@idah.ai",
         name: "Organization Owner",
         role_name: "org_owner",
-        role_scope: { org: [1] }
+        role_scope: { org: ["1"] }
       },
       {
         email: "projectowner@idah.ai",

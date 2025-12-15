@@ -7,7 +7,7 @@
   import ProjectAnalyticPerformance from "@/components/app/projects/analytics/project-analytic-performance.svelte";
   import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-  import { homeBreadcrumb, projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
+  import { projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
   import {
     projectAnalyticTabs,
@@ -25,7 +25,6 @@
   let activeTab: ProjectAnalyticTab = $state("overview");
 
   pageBreadcrumbsStore.set([
-    homeBreadcrumb,
     projectBreadcrumb,
     { label: project.name },
     { label: "Datasets" },

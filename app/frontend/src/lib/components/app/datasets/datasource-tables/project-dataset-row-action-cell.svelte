@@ -12,4 +12,4 @@
   const data = dataset._jsonapiData?.relationships?.project.data as JsonApiReference;
 </script>
 
-<ProjectDatasetDropdownMenu datasetId={dataset.id} projectId={data.id!}></ProjectDatasetDropdownMenu>
+<ProjectDatasetDropdownMenu datasetId={dataset.id} projectId={data.id!} />

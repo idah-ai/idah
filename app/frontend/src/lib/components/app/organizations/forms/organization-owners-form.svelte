@@ -11,6 +11,7 @@
 
   import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
   import { cn } from "@/utils";
+  import { humanize } from "@/utils/string";
 
   // Props
   interface Props {
@@ -82,9 +83,13 @@
 
           {choice.label}
 
-          {#if isAlreadyAdded}
-            <Badge variant="outline" rounded="full" class="ml-auto">Already added</Badge>
-          {/if}
+          <div class="ml-auto flex items-center gap-1">
+            {#if isAlreadyAdded}
+              <Badge variant="outline" rounded="full">Already added</Badge>
+            {/if}
+
+            <Badge variant="outline" rounded="full">{humanize(choice.data?.role_name)}</Badge>
+          </div>
         </CommandItem>
       {/snippet}
     </MultipleSelectDatasourceField>

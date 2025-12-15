@@ -98,7 +98,7 @@
       {/snippet}
     </PopoverTrigger>
 
-    <PopoverContent align="start" class="w-auto min-w-90 p-0">
+    <PopoverContent align="start" class="w-auto min-w-[var(--bits-floating-anchor-width)] p-0">
       <Command>
         {#if searchable}
           <CommandInput placeholder={searchPlaceholder}></CommandInput>

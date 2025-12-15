@@ -20,6 +20,9 @@ export interface Refetches {
 
   /** SETTING */
   accountSettings: Refetch;
+  
+  /** AUDIT */
+  logs: Refetch;
 }
 
 export type RefetchesKey = keyof Refetches;
@@ -63,6 +66,12 @@ export const refetches = writable<Refetches>({
 
   /** SETTING */
   accountSettings: {
+     list: new Date(),
+    get: new Date(),
+  },
+  
+  /** AUDIT */
+  logs: {
     list: new Date(),
     get: new Date(),
   },
