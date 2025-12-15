@@ -23,7 +23,6 @@
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
   import { JobRecord, jobsBackendDataSource } from "@/data/model/media/jobs/record";
   import { mediaBackendDataSource } from "@/data/model/media/medias/medias-record";
-  import { RecordFactory } from "@/data/model/Record";
   import { authStatus } from "@/security/AuthContext";
   import { humanize } from "@/utils/string";
 
@@ -135,9 +134,6 @@
    * Note: Only fetch if the entry is in a processing state
    */
   async function periodicCheckJobStatus() {
-    RecordFactory.registerTypes(EntryRecord);
-    RecordFactory.registerTypes(JobRecord);
-
     if (processingStatuses.includes(entry.status)) {
       const intervalId = setInterval(async () => {
         try {
