@@ -103,7 +103,8 @@ export function activityContextForEntry(entry: EntryRecord): IActivityContext {
               } else {
                 goto(resolve(`/projects/${entry.dataset.project.id}/datasets`));
               }
-            } catch (_e) {
+            } catch (error) {
+              console.error(error);
               goto(resolve(`/projects/${entry.dataset.project.id}/datasets`));
             }
           })

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import { ExternalLinkIcon } from "@lucide/svelte";
   import { onDestroy, onMount } from "svelte";
@@ -104,7 +105,7 @@
       console.error(error);
       toast.error("Failed to assign entry to you");
     } finally {
-      goto(`/entries/${entryId}/plugin`);
+      goto(resolve(`/entries/${entryId}/plugin`));
     }
   }
 

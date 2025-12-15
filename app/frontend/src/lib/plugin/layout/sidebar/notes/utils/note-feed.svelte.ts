@@ -56,6 +56,7 @@ export async function deleteNoteFeed(id: string) {
     toast.success("Note feed deleted successfully.");
     refetchNoteFeeds();
   } catch (error) {
+    console.error(error);
     toast.error("You are not authorized to do this action.");
   }
 }
