@@ -20,11 +20,6 @@ module Context
         Hash(filters)
           .merge(Hash(Hash(@context_filters)[context_api_name]))
           .merge(Hash(Hash(@args)[context_api_name]))
-        Verse.logger.debug {{merge_filters:{
-          filters:, context_api_name:,
-          context_filters: @context_filters, args: @args,
-          output:
-        }}}
       end
 
       def merge_context_filters(filters = {}, context_api_name = @context_api.name)
