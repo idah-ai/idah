@@ -11,10 +11,12 @@ user:
 
     # Accounts
     - "iam:accounts.create.*"
-    - "iam:accounts.read.*"
+    - "iam:accounts.read.as_user"
+    - "iam:accounts.update.self"
+    - "iam:accounts.delete.self"
 
     # Organizations
-    - "iam:organizations.read.*"
+    - "iam:organizations.read.*" # TODO: review user org read scoping
 
     # Dataset Service
     - "dataset:projects.read.as_user"

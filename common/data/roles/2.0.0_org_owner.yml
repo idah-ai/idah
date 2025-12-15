@@ -11,7 +11,9 @@ org_owner:
 
     # Accounts
     - "iam:accounts.create.*"
-    - "iam:accounts.read.*"
+    - "iam:accounts.read.as_org_owner"
+    - "iam:accounts.update.self"
+    - "iam:accounts.delete.self"
 
     # Organizations
     - "iam:organizations.read.as_org_owner"
