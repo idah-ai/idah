@@ -146,7 +146,7 @@ Sequel.migration do
       column :resource, String, null: true
       # Related job for ingesting the entry.
       # Used to change the status of the entry, e.g. for videos.
-      column :job_id, :bigint, null: true, index: true
+      column :job_id, :uuid, null: true, index: true
 
       # current workflow step, e.g. "start", "annotate", "review", "export"
       column :wf_step, String, null: false, index: true, default: "start"
