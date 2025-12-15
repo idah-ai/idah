@@ -67,7 +67,7 @@
     <DialogTitle>{title}</DialogTitle>
   {/snippet}
 
-  <AssignEntryForm {selectedMember} {fieldErrors} onValueChange={setValue} />
+  <AssignEntryForm {selectedMember} {entryRecord} {fieldErrors} onValueChange={setValue} />
 
   {#snippet confirm()}
     <Button loading={submitting} loadingLabel="Assigning" disabled={!selectedMember} onclick={submit}>Assign</Button>
