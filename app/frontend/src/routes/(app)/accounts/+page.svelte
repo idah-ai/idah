@@ -21,8 +21,8 @@
   // Variables
   let canCreateAccount = $state(false);
   let canDeleteAccount = $state(false);
-  let openNewAccountFormModal: boolean = $state(false);
   let columns = $state(accountColumns);
+  let openNewAccountFormModal: boolean = $state(false);
 
   // Lifecycle
   onMount(async () => {

@@ -45,7 +45,7 @@ module Account
       return unless send_notification
 
       ::Service::Notification.email(
-        recipient_account_email: recipient_email,
+        to: recipient_email,
         title: email_title,
         category: category,
         to: recipient_email,
