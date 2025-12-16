@@ -43,8 +43,8 @@
   }
 </script>
 
-<PageProvider name="settings">
-  <PageHeader title="Settings"></PageHeader>
+<PageProvider name="settings" roles={["admin", "org_owner", "user"]} action="read" resource="setting:account_settings">
+  <PageHeader title="Settings" />
 
   <div class="flex gap-4">
     <div class="bg-sidebar flex h-full max-w-72 min-w-64 flex-col gap-0.5 rounded-lg p-2">
