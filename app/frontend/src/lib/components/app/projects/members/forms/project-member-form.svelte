@@ -14,13 +14,14 @@
     ProjectMemberRecord,
     projectMemberRoles,
     projectMembersBackendDataSource,
+    type ProjectMemberRole,
   } from "@/data/model/dataset/projects/members/record";
   import { accountsBackendDataSource } from "@/data/model/iam/accounts/record";
   import { cn } from "@/utils";
 
   // Props
   interface Props {
-    members: Array<{ email: string; role: string }>;
+    members: Array<{ email: string; role: ProjectMemberRole | null }>;
   }
   let { members = $bindable() }: Props = $props();
 
@@ -51,7 +52,7 @@
   }
 
   function addMember(): void {
-    members.push({ email: "", role: "" });
+    members.push({ email: "", role: null });
   }
 
   function removeMember(index: number): void {
@@ -127,7 +128,7 @@
           searchPlaceholder="Search a role"
           value={member.role}
           onSelected={(selectedValue) => {
-            member.role = selectedValue as string;
+            member.role = selectedValue as ProjectMemberRole | null;
           }}
         />
 

@@ -20,6 +20,7 @@
     password: "",
     confirmPassword: "",
   });
+  let updatingPassword = $state(false);
   let disabledResetPasswordButton = $derived.by(() => {
     const validated = resetPasswordSchema.safeParse(credentials);
     return !validated.success;
@@ -29,11 +30,15 @@
 
   // Functions
   async function updatePassword(): Promise<void> {
+    updatingPassword = true;
+
     try {
       await accountPasswordsBackendDataSource.reset({ token, password: credentials.password });
 
       updated = true;
+      updatingPassword = false;
     } catch (error) {
+      updatingPassword = false;
       console.error(error);
       updated = false;
     }
@@ -82,7 +87,13 @@
           description="Password must contain at least 8 characters, one lowercase letter, one uppercase letter, one number and one special character."
         ></InputField>
 
-        <Button class="w-full" disabled={disabledResetPasswordButton} onclick={updatePassword}>Update Password</Button>
+        <Button
+          class="w-full"
+          disabled={disabledResetPasswordButton}
+          loading={updatingPassword}
+          loadingLabel="Updating..."
+          onclick={updatePassword}>Update Password</Button
+        >
       {:else}
         <Button class="w-full" onclick={() => goto(resolve("/login"))}>Go to login</Button>
       {/if}
