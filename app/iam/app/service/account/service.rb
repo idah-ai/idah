@@ -176,6 +176,7 @@ module Account
 
         organization = organization_repo_system.find!(org_id)
         base_params[:organization_name] = organization.name
+        base_params[:organization_id] = organization.id
       end
 
       # Include admin name

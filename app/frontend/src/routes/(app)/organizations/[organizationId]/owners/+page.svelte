@@ -20,6 +20,7 @@
   // Variables
   let organizationId: string = page.params.organizationId as string;
   let canUpdateAccount = $state(false);
+  let canDeleteAccount = $state(false);
   let columns = $state(organizationOwnerColumns);
 
   pageBreadcrumbsStore.set([
@@ -31,7 +32,8 @@
   onMount(async () => {
     const currentAccount = $authStatus.authContext;
     canUpdateAccount = (await currentAccount?.can("update", "iam:accounts")) || false;
-    columns.action.visible = canUpdateAccount;
+    canDeleteAccount = (await currentAccount?.can("delete", "iam:accounts")) || false;
+    columns.action.visible = canUpdateAccount && canDeleteAccount;
   });
 </script>
 
