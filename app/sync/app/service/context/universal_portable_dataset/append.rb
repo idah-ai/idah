@@ -1,7 +1,7 @@
 module Context
   module UniversalPortableDataset
     module Append
-      Context = Data.define(:name, :i, :o, :e, :wait_thr, :append)
+      Context = Data.define(:name, :i, :o, :e, :wait_thr, :puts)
 
       def self.prepare(args, &block)
         filename = [Hash(args).dig(:name) || ["export", Time.now.to_i], :upd].join(".")
