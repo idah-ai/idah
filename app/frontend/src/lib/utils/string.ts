@@ -97,6 +97,13 @@ export function truncate(str: string, length: number = 20): string {
   return str.length > length ? str.slice(0, length) + "..." : str;
 }
 
+export function truncateEmail(email: string): string {
+  /** Return truncate name and whole domain */
+  const [name, domain] = email.split("@");
+  const truncateName = name.length > 20 ? name.slice(0, 20) + "..." : name;
+  return `${truncateName}@${domain}`;
+}
+
 export function getAvatarFallback(str: string): string {
   function getNameParts(str: string) {
     if (str.includes(".")) {
