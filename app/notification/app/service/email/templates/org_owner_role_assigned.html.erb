@@ -15,7 +15,7 @@ You have been assigned as organization owner of <%= notification.organization_na
   </p>
 
 <div style="background-color:#3A81F6; border-radius: 8px; padding: 10px 14px;width: 150px;margin: 20px auto;">
-    <a href="<%= [ENV.fetch("IDAH_URL"), "/organizations"].join("") %>" style="text-decoration: none; color: #fff; font-size: 14px; font-weight: 600;width: 150px;margin: 0 auto;">
+    <a href="<%= [ENV.fetch("IDAH_URL"), "/organizations/#{notification.organization_id}/projects"].join("") %>" style="text-decoration: none; color: #fff; font-size: 14px; font-weight: 600;width: 150px;margin: 0 auto;">
       Go to organization
     </a>
   </div>
