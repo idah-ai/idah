@@ -20,7 +20,7 @@ export interface Refetches {
 
   /** SETTING */
   accountSettings: Refetch;
-  
+
   /** AUDIT */
   logs: Refetch;
 }
@@ -66,10 +66,10 @@ export const refetches = writable<Refetches>({
 
   /** SETTING */
   accountSettings: {
-     list: new Date(),
+    list: new Date(),
     get: new Date(),
   },
-  
+
   /** AUDIT */
   logs: {
     list: new Date(),
