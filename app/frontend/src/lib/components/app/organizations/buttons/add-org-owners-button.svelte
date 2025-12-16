@@ -14,7 +14,7 @@
   }
 </script>
 
-<Can action="update" resource="iam:accounts">
+<Can action="create" resource="iam:organizations">
   <Button onclick={openAddNewOrgOwnersDialog}>
     <PlusIcon />
     Add Organization Owners
