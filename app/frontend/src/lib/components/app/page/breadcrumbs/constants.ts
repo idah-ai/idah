@@ -6,3 +6,6 @@ export const organizationBreadcrumb: PageBreadcrumbItem = { label: "Organization
 
 /** DATASETS */
 export const projectBreadcrumb: PageBreadcrumbItem = { label: "Projects", href: "/projects" };
+
+/** SETTINGS */
+export const settingBreadcrumb: PageBreadcrumbItem = { label: "Settings", href: "/settings" };

@@ -17,13 +17,13 @@
 </script>
 
 <Card>
-  <CardHeader class="flex w-full flex-col items-center text-center">
+  <CardHeader class="flex w-full flex-col items-center">
     <Logo class="h-16 w-24" />
 
     {@render responseBlock?.()}
 
     <CardTitle>{title}</CardTitle>
-    <CardDescription>{description}</CardDescription>
+    <CardDescription class="text-center">{description}</CardDescription>
   </CardHeader>
 
   <CardContent class="py-4">
