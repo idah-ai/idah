@@ -8,7 +8,7 @@
   import NoteDropdownMenus from "@/plugin/layout/sidebar/notes/dropdown-menus/note-dropdown-menus.svelte";
 
   import { cn } from "@/utils";
-  import { truncate } from "@/utils/string";
+  import { truncate, truncateEmail } from "@/utils/string";
 
   // Props
   interface Props {
@@ -87,7 +87,7 @@
 
       <!-- HEADER::CREATED BY & CREATED AT -->
       <div class="flex flex-col -space-y-1 text-left text-xs">
-        <p class="w-full font-semibold">{created_by_email}</p>
+        <p class="flex-1 font-semibold">{truncateEmail(created_by_email)}</p>
         <DateText
           class="text-muted-foreground"
           datetime={new Date(created_at)}
