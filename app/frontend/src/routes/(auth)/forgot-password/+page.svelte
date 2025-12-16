@@ -20,14 +20,11 @@
     const validated = sendResetPasswordLinkSchema.safeParse({ email });
     return !validated.success || passwordResetLinkHasBeenSent;
   });
-  let disabledResendPasswordResetLink = $derived.by(() => {
-    return !passwordResetLinkHasBeenSent;
-  });
 
   // Functions
   async function sendPasswordResetLink(): Promise<void> {
     sendingPasswordResetLink = true;
-    
+
     try {
       await accountPasswordsBackendDataSource.request_reset({ email });
       passwordResetLinkHasBeenSent = true;
@@ -75,7 +72,6 @@
   {#snippet footer()}
     <div class="flex w-full items-center justify-between gap-2">
       <Link href="/login" class="text-sm">Return to login</Link>
-      <Button variant="ghost" disabled={disabledResendPasswordResetLink}>Resend link</Button>
     </div>
   {/snippet}
 </AuthenticationCard>
