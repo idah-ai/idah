@@ -9,7 +9,8 @@
 
   // Variables
   type Mode = "light" | "dark" | "system";
-  let currentMode: Mode = "system";
+  let currentMode: Mode = $state((localStorage.getItem("mode-watcher-mode") || "system") as Mode);
+
   const modes: (LabelValue<Mode> & { src: string })[] = [
     { label: "Light", value: "light", src: "/src/lib/components/app/settings/cards/theme-appearance-light.svg" },
     { label: "Dark", value: "dark", src: "/src/lib/components/app/settings/cards/theme-appearance-dark.svg" },
