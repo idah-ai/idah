@@ -114,12 +114,14 @@ RSpec.describe Account::Service, database: true do
 
         expect(::Service::Notification).to receive(:email).with(
           {
+            to: "user@test.com",
             recipient_account_email: "user@test.com",
             title: "You have been assigned as organization owner",
             category: "org_owner_role_assigned",
             recipient_account_id: user_account.id,
             recipient_name: "Regular User",
             organization_name: "Test Organization",
+            organization_id: 999,
             admin_name: "Admin User"
           }
         )

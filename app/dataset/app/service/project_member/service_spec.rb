@@ -85,7 +85,7 @@ RSpec.describe ProjectMember::Service, database: true do
       before do
         expect_any_instance_of(ProjectMember::Repository).to receive(:after_commit).and_yield
         allow(Api[:idah].iam.accounts).to receive(:show).and_return(
-          double(email: "inviter@example.com", joined_at: Time.now)
+          double(name: "Annotator User", email: "inviter@example.com", joined_at: Time.now)
         )
         allow(Service::Notification).to receive(:email)
       end
@@ -184,6 +184,10 @@ RSpec.describe ProjectMember::Service, database: true do
   describe "#delete" do
     it "deletes a project member" do
       project_member_id = project_member_repo.create(attributes)
+      allow(Api[:idah].iam.accounts).to receive(:show).and_return(
+        double(name: "Remover User", email: "remover@example.com", joined_at: Time.now)
+      )
+
       subject.delete(project_member_id)
       expect { project_member_repo.find!(project_member_id) }.to raise_error(Verse::Error::NotFound)
     end
@@ -193,7 +197,7 @@ RSpec.describe ProjectMember::Service, database: true do
         expect_any_instance_of(ProjectMember::Repository).to receive(:after_commit).and_yield
         allow(Service::Notification).to receive(:email)
         allow(Api[:idah].iam.accounts).to receive(:show).and_return(
-          double(email: "remover@example.com", joined_at: Time.now)
+          double(name: "Remover User", email: "remover@example.com", joined_at: Time.now)
         )
       end
 
