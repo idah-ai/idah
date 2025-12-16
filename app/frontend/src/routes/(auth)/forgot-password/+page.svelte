@@ -59,7 +59,13 @@
         oninput={(e) => (email = e.currentTarget.value)}
       ></InputField>
 
-      <Button class="w-full" disabled={disabledSendPasswordResetLink} loading={sendingPasswordResetLink} loadingLabel="Sending..."  onclick={sendPasswordResetLink}>
+      <Button
+        class="w-full"
+        disabled={disabledSendPasswordResetLink}
+        loading={sendingPasswordResetLink}
+        loadingLabel="Sending..."
+        onclick={sendPasswordResetLink}
+      >
         {#if passwordResetLinkHasBeenSent}
           Sent! 🎉
         {:else}
