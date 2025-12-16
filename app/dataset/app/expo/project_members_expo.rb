@@ -35,4 +35,11 @@ class ProjectMembersExpo < BaseExpo
     update
     delete
   end
+
+  expose on_resource_event(Resource::Iam::Accounts, "deleted")
+  def on_account_deleted
+    account_id = message.content[:resource_id]
+
+    service.remove_nonparticipant_member(account_id)
+  end
 end
