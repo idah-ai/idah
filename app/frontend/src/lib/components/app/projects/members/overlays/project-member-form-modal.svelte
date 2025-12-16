@@ -7,11 +7,14 @@
   import Button from "@/components/ui/button/button.svelte";
   import DialogTitle from "@/components/ui/dialog/dialog-title.svelte";
 
-  import { refetches } from "@/utils/refetch";
-
-  import { projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
+  import {
+    projectMembersBackendDataSource,
+    type ProjectMemberRole,
+  } from "@/data/model/dataset/projects/members/record";
   import { createMultipleProjectMembersSchema } from "@/data/model/dataset/projects/members/schema";
   import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
+  import { authStatus } from "@/security/AuthContext";
+  import { refetches } from "@/utils/refetch";
 
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
 
@@ -19,9 +22,11 @@
   let { action, open = $bindable() }: FormModalBaseProps = $props();
 
   // Variables
+  const currentAccount = $authStatus.authContext;
+
   let projectId: string | undefined = $derived(page.params.projectId);
   let submitting: boolean = $state(false);
-  let members: Array<{ email: string; role: string }> = $state([{ email: "", role: "" }]);
+  let members: Array<{ email: string; role: ProjectMemberRole | null }> = $state([{ email: "", role: null }]);
   let disabledSubmitButton: boolean = $derived.by(() => {
     const validated = createMultipleProjectMembersSchema.safeParse(members);
     return !validated.success;
@@ -34,10 +39,12 @@
   }
 
   function resetForm(): void {
-    members = [{ email: "", role: "" }];
+    members = [{ email: "", role: null }];
   }
 
   async function createProjectMember(): Promise<void> {
+    if (!currentAccount) return;
+
     try {
       for (const member of members) {
         const { email, role } = member;
@@ -65,7 +72,7 @@
         });
 
         if (existingProjectMember.data.length) {
-          await accountsBackendDataSource.join({ id: account.id, joinedAt: new Date() });
+          await accountsBackendDataSource.join({ id: account.id });
         }
 
         await projectMembersBackendDataSource.create({
@@ -75,7 +82,7 @@
             name: account.name,
             email,
             role,
-            invited_by_id: 1,
+            invited_by_id: Number(currentAccount?.id),
           },
           relationships: {
             project: {

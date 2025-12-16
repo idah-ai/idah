@@ -238,7 +238,12 @@
     const selectedLabelConfig = labelConfig[labelConfigKey];
     const categoryToUpdateIndex = selectedLabelConfig.values.findIndex((cat) => cat.id === oldId);
     if (categoryToUpdateIndex >= 0) {
-      selectedLabelConfig.values[categoryToUpdateIndex].id = newId;
+      selectedLabelConfig.values[categoryToUpdateIndex] = {
+        ...selectedLabelConfig.values[categoryToUpdateIndex],
+        id: newId,
+        /** Update the label to be the last part of the new ID */
+        label: humanize(newId.split("/")[newId.split("/").length - 1]) || "",
+      };
     }
   }
 
