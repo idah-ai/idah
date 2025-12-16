@@ -5,6 +5,9 @@ module ProjectMember
     use project_members: ProjectMember::Repository,
         projects: Project::Repository
 
+    use_system system_project_members: ProjectMember::Repository,
+               system_entries: Entry::Repository
+
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       project_members.index(
         filter,
@@ -127,6 +130,25 @@ module ProjectMember
             remover_name: remover.name,
           )
         end
+      end
+    end
+
+    def remove_nonparticipant_member(account_id)
+      member_project_ids = system_project_members.index({ account_id: account_id }).map(&:project_id).uniq
+      participated_project_ids = system_entries.index({
+        participated: account_id,
+        project_id: member_project_ids
+      }).map(&:project_id).uniq
+
+      non_participated_project_ids = member_project_ids - participated_project_ids
+
+      return unless non_participated_project_ids
+
+      non_participated_project_ids.each do |project_id|
+        membership = project_members.find_by({ account_id: account_id, project_id: project_id })
+
+        # directly delete, no need use service delete to send a notification as the account is already deleted
+        project_members.delete!(membership.id) if membership
       end
     end
   end
