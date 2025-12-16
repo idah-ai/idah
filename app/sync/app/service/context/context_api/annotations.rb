@@ -3,12 +3,13 @@ module Context
     class Annotations < Crud
       Context = Data.define(:record, :api, :entries)
 
-      def initialize(api = :idah, args = {}, context_filters = {})
+      def initialize(api = :idah, args = {}, context_filters = {}, opts = {})
         super(
-          Api[api].dataset.annotations,
+          Hash(opts)[:feedback] ? api : Api[api].dataset.annotations,
           api,
           args,
           context_filters,
+          opts,
           proc do |annotation|
             Context.new(
               annotation,

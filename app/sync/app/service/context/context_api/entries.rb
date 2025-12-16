@@ -3,12 +3,13 @@ module Context
     class Entries < Crud
       Context = Data.define(:record, :api, :datasets, :medias, :annotations)
 
-      def initialize(api = :idah, args = {}, context_filters = {})
+      def initialize(api = :idah, args = {}, context_filters = {}, opts = {})
         super(
-          Api[api].dataset.entries,
+          Hash(opts)[:feedback] ? api : Api[api].dataset.entries,
           api,
           args,
           context_filters,
+          opts,
           proc do |entry|
             Context.new(
               entry,

@@ -6,6 +6,7 @@ module Context
         api = :idah,
         args = {},
         context_filters = {},
+        opts = {},
         context_builder = Proc.new {|record| record}
       )
         @api = api
