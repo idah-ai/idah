@@ -6,6 +6,7 @@
   import Button from "@/components/ui/button/button.svelte";
   import Link from "@/components/ui/text/Link.svelte";
 
+  import { toast } from "svelte-sonner";
   import { accountPasswordsBackendDataSource } from "@/data/model/iam/account-passwords/record";
   import { sendResetPasswordLinkSchema } from "@/data/model/iam/accounts/auth-schema";
 
@@ -18,7 +19,7 @@
   // let sentDate: Date | null = $state(null);
   let disabledSendPasswordResetLink = $derived.by(() => {
     const validated = sendResetPasswordLinkSchema.safeParse({ email });
-    return !validated.success || passwordResetLinkHasBeenSent;
+    return !validated.success;
   });
 
   // Functions
@@ -31,6 +32,8 @@
       showErrorAlert = false;
 
       sendingPasswordResetLink = false;
+      email = "";
+      toast.info("Reset link sent!", { description: "Please check your email for the password reset link." });
     } catch (error) {
       sendingPasswordResetLink = false;
       console.error(error);
@@ -68,11 +71,7 @@
         loadingLabel="Sending..."
         onclick={sendPasswordResetLink}
       >
-        {#if passwordResetLinkHasBeenSent}
-          Sent! 🎉
-        {:else}
-          Send reset password email
-        {/if}
+        Send reset password email
       </Button>
     </Form>
   {/snippet}
