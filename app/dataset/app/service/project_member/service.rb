@@ -135,10 +135,12 @@ module ProjectMember
 
     def remove_nonparticipant_member(account_id)
       member_project_ids = system_project_members.index({ account_id: account_id }).map(&:project_id).uniq
-      participated_project_ids = system_entries.index({
-        participated: account_id,
-        project_id: member_project_ids
-      }).map(&:project_id).uniq
+      participated_project_ids = system_entries.index(
+        {
+          participated: account_id,
+          project_id: member_project_ids
+        }
+      ).map(&:project_id).uniq
 
       non_participated_project_ids = member_project_ids - participated_project_ids
 
