@@ -36,7 +36,9 @@
       await accountPasswordsBackendDataSource.reset({ token, password: credentials.password });
 
       updated = true;
+      updatingPassword = false;
     } catch (error) {
+      updatingPassword = false;
       console.error(error);
       updated = false;
     }
