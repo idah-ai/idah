@@ -12,6 +12,7 @@
 </script>
 
 <svelte:head>
+  <title>IDAH - Ingedata Annotation Hub</title>
   <link rel="icon" href={favicon} />
 </svelte:head>
 
