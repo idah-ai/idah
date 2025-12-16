@@ -59,7 +59,6 @@
   }
 </script>
 
-
 <Can action="delete" resource="iam:organizations" scopes={["as_org_owner"]}>
   <Button variant="ghost" size="icon-sm" onclick={() => (openConfirmRemoveOrgOwnerModal = true)}>
     <UserRoundXIcon />
