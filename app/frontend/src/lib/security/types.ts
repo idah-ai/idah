@@ -27,6 +27,9 @@ export const resources = [
 
   /** AUDIT */
   "audit:logs",
+
+  /** SETTINGS */
+  "setting:account_settings",
 ] as const;
 
 export type Resource = (typeof resources)[number];
