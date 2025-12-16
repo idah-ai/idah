@@ -14,7 +14,6 @@
   let resource: string = "iam:account";
   let email = $state("");
   let showErrorAlert = $state(false);
-  let passwordResetLinkHasBeenSent: boolean = $state(false);
   let sendingPasswordResetLink = $state(false);
   // let sentDate: Date | null = $state(null);
   let disabledSendPasswordResetLink = $derived.by(() => {
@@ -28,7 +27,6 @@
 
     try {
       await accountPasswordsBackendDataSource.request_reset({ email });
-      passwordResetLinkHasBeenSent = true;
       showErrorAlert = false;
 
       sendingPasswordResetLink = false;
