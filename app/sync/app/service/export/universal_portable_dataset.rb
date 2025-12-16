@@ -15,7 +15,6 @@ module Export
     end
 
     private
-
     def start
       Verse::logger::debug{"#{self} Start processing #{@context.io.name}"}
       @context.io.append.call({command: 'init', args: {}}.to_json)
@@ -42,22 +41,16 @@ module Export
 
     def loop_processing
       start
-      @context.api.datasets.index.each do |dataset| process_dataset dataset end
+      @context.api.datasets.index.each do |dataset|
+        on_dataset dataset
+        dataset.entries.index.each do |entry|
+          on_entry entry
+          entry.annotations.index.each do |annotation|
+            on_annotation annotation
+          end
+        end
+      end
       done
-    end
-
-    def process_dataset(dataset)
-      on_dataset dataset
-      dataset.entries.index.each do |entry| process_entry entry end
-    end
-
-    def process_entry(entry)
-      on_entry entry
-      entry.annotations.index.each do |annotation| process_annotation annotation end
-    end
-
-    def process_annotation(annotation)
-      on_annotation annotation
     end
 
     def on_dataset(dataset)
