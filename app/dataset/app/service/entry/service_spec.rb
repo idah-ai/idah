@@ -117,7 +117,7 @@ RSpec.describe Entry::Service, database: true do
     end
 
     context "when job_id is provided" do
-      let(:job_id) { 123 }
+      let(:job_id) { UUIDv7.generate }
       let(:entry_record) do
         deserialize(
           {
@@ -186,11 +186,12 @@ RSpec.describe Entry::Service, database: true do
   end
 
   describe "#mark_entries_status_as" do
-    let(:job_id) { 456 }
+    let(:job_id) { UUIDv7.generate }
+    let(:other_job_id) { UUIDv7.generate }
 
     before do
       repo.create({ project_id:, dataset_id:, job_id:, status: "processing" })
-      repo.create({ project_id:, dataset_id:, job_id: 789, status: "pending" })
+      repo.create({ project_id:, dataset_id:, job_id: other_job_id, status: "pending" })
     end
 
     it "marks entries with the given job_id as ready" do
@@ -199,7 +200,7 @@ RSpec.describe Entry::Service, database: true do
       entries = repo.index({ job_id: job_id })
       expect(entries.map(&:status)).to all(eq("ready"))
 
-      other_entry = repo.index({ job_id: 789 }).first
+      other_entry = repo.index({ job_id: other_job_id }).first
       expect(other_entry.status).to eq("pending")
     end
 
@@ -209,7 +210,7 @@ RSpec.describe Entry::Service, database: true do
       entries = repo.index({ job_id: job_id })
       expect(entries.map(&:status)).to all(eq("processing_error"))
 
-      other_entry = repo.index({ job_id: 789 }).first
+      other_entry = repo.index({ job_id: other_job_id }).first
       expect(other_entry.status).to eq("pending")
     end
   end
