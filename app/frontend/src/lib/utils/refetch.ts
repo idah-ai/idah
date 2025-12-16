@@ -18,6 +18,9 @@ export interface Refetches {
   noteFeeds: Refetch;
   noteComments: Refetch;
 
+  /** SETTING */
+  accountSettings: Refetch;
+
   /** AUDIT */
   logs: Refetch;
 }
@@ -57,6 +60,12 @@ export const refetches = writable<Refetches>({
     get: new Date(),
   },
   noteComments: {
+    list: new Date(),
+    get: new Date(),
+  },
+
+  /** SETTING */
+  accountSettings: {
     list: new Date(),
     get: new Date(),
   },

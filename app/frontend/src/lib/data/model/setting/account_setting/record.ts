@@ -1,5 +1,6 @@
-import { field, Record, RecordFactory, type } from "@/data/model/Record";
 import { createBackendDataSource } from "@/data/BackendDataSource";
+import { field, Record, RecordFactory, type } from "@/data/model/Record";
+
 import type { Hash } from "@/utils/types";
 
 @type("setting:account_settings")
@@ -11,6 +12,9 @@ export class AccountSettingRecord extends Record {
 }
 
 RecordFactory.registerTypes(AccountSettingRecord);
+
+export const organizationActivitiesKey = "notification:organization:activities";
+export const projectActivitiesKey = "notification:project:activities";
 
 export const accountSettingBackendDataSource = createBackendDataSource(
   AccountSettingRecord,
