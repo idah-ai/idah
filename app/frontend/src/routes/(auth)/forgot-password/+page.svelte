@@ -29,6 +29,8 @@
       await accountPasswordsBackendDataSource.request_reset({ email });
       passwordResetLinkHasBeenSent = true;
       showErrorAlert = false;
+      
+      sendingPasswordResetLink = false;
     } catch (error) {
       sendingPasswordResetLink = false;
       console.error(error);
