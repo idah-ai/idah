@@ -43,18 +43,11 @@
         const { email, role } = member;
         let account: AccountRecord;
 
-        /** Check if member is already invited */
-        const existingAccount = await accountsBackendDataSource.list({ filters: { email: email } });
-
-        if (!existingAccount.data.length) {
-          /** If account does not exist, create an account first */
-          const createdAccount = await accountsBackendDataSource.create({
-            attributes: { email: email, enabled: true },
-          });
-          account = createdAccount.data;
-        } else {
-          account = existingAccount.data[0];
-        }
+        /** Always create account for the email */
+        const createdAccount = await accountsBackendDataSource.create({
+          attributes: { email: email, enabled: true },
+        });
+        account = createdAccount.data;
 
         /** Check if member is already in the project */
         const existingProjectMember = await projectMembersBackendDataSource.list({
@@ -94,6 +87,8 @@
     } catch (error) {
       console.error(error);
       toast.error("Failed to send invite. Please try again.");
+
+      submitting = false;
     }
   }
 
