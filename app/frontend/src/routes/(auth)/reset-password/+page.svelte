@@ -13,7 +13,7 @@
   import { accountPasswordsBackendDataSource } from "@/data/model/iam/account-passwords/record";
   import { resetPasswordSchema } from "@/data/model/iam/accounts/auth-schema";
   import { cn } from "@/utils";
-  
+
   // Type definitions
   type ErrorDetail = {
     detail?: string;
