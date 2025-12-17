@@ -48,7 +48,7 @@ module Account
         to: recipient_email,
         title: email_title,
         category: category,
-        to: recipient_email,
+        recipient_account_email: recipient_email,
         recipient_account_id: recipient_id,
         **email_params
       )

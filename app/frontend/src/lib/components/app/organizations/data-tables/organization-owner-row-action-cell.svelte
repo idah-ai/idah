@@ -10,6 +10,7 @@
   import { refetches } from "@/utils/refetch";
 
   import type { DataTableCellBaseProps } from "@/components/app/datasource-table/types";
+  import Can from "@/security/can.svelte";
 
   // Props
   let { record: accountRecord }: DataTableCellBaseProps<AccountRecord> = $props();
@@ -58,13 +59,15 @@
   }
 </script>
 
-<Button variant="ghost" size="icon-sm" onclick={() => (openConfirmRemoveOrgOwnerModal = true)}>
-  <UserRoundXIcon />
-</Button>
+<Can action="delete" resource="iam:organizations" scopes={["as_org_owner"]}>
+  <Button variant="ghost" size="icon-sm" onclick={() => (openConfirmRemoveOrgOwnerModal = true)}>
+    <UserRoundXIcon />
+  </Button>
 
-<ConfirmModal
-  title="Remove Organization Owner"
-  description="Are you sure you want to remove {email} from the organization owner? This action cannot be undone."
-  onConfirm={removeOrgOwner}
-  bind:open={openConfirmRemoveOrgOwnerModal}
-/>
+  <ConfirmModal
+    title="Remove Organization Owner"
+    description="Are you sure you want to remove {email} from the organization owner? This action cannot be undone."
+    onConfirm={removeOrgOwner}
+    bind:open={openConfirmRemoveOrgOwnerModal}
+  />
+</Can>

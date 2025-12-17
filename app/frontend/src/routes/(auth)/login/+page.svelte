@@ -18,7 +18,6 @@
 
   // Variables
   let resource: string = "iam:account";
-  let showErrorAlert = $state(false);
   let showPassword = $state(false);
   let signingIn = $state(false);
   let email = $state("");
@@ -31,24 +30,43 @@
 
   AuthContext.backend ||= accountAuthService();
 
+  const errorMessages = {
+    invalid_credentials: {
+      title: "Incorrect email or password",
+      description: "Please try again.",
+    },
+    account_disabled: {
+      title: "Account disabled",
+      description: "Your account has been disabled. Please contact support.",
+    },
+    error: {
+      title: "An error occurred",
+      description: "Please try again later.",
+    },
+  };
+
+  let errorCode: "invalid_credentials" | "account_disabled" | "error" | null = $state(null);
+
   // Functions
   async function signInWithEmailAndPassword(): Promise<void> {
     signingIn = true;
 
-    try {
-      await AuthContext.signInWithEmailAndPassword(email, password);
-      // eslint-disable-next-line svelte/no-navigation-without-resolve
-      goto(redirectTo);
-    } catch (error) {
-      signingIn = false;
-      showErrorAlert = true;
-
-      if (error instanceof Error) {
-        console.error("Error signing in:", error.message);
-      } else {
-        console.error("Unknown error signing in:", error);
-      }
-    }
+    await AuthContext.signInWithEmailAndPassword(email, password)
+      .then(() => {
+        // eslint-disable-next-line svelte/no-navigation-without-resolve
+        goto(redirectTo);
+      })
+      .catch((error) => {
+        if (error.status == 401) {
+          errorCode = error.errors[0].detail;
+        } else {
+          errorCode = "error";
+          throw error;
+        }
+      })
+      .finally(() => {
+        signingIn = false;
+      });
   }
 
   function toggleShowPassword(): void {
@@ -64,8 +82,11 @@
   {#snippet unauthorized()}
     <AuthenticationCard title="Welcome Back!" description="We missed you! Please enter your details.">
       {#snippet alert()}
-        {#if showErrorAlert}
-          <AuthenticationAlert title="Incorrect email or password" description="Please try again." />
+        {#if errorCode}
+          <AuthenticationAlert
+            title={errorMessages[errorCode].title}
+            description={errorMessages[errorCode].description}
+          />
         {/if}
       {/snippet}
 
