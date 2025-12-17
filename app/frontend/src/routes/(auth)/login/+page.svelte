@@ -51,19 +51,22 @@
   async function signInWithEmailAndPassword(): Promise<void> {
     signingIn = true;
 
-    await AuthContext.signInWithEmailAndPassword(email, password).then(() => {
-      // eslint-disable-next-line svelte/no-navigation-without-resolve
-      goto(redirectTo);
-    }).catch((error) => {
-      if(error.status == 401) {
-        errorCode = error.errors[0].detail;
-      } else {
-        errorCode = "error";
-        throw error;
-      }
-    }).finally(() => {
-      signingIn = false;
-    });
+    await AuthContext.signInWithEmailAndPassword(email, password)
+      .then(() => {
+        // eslint-disable-next-line svelte/no-navigation-without-resolve
+        goto(redirectTo);
+      })
+      .catch((error) => {
+        if (error.status == 401) {
+          errorCode = error.errors[0].detail;
+        } else {
+          errorCode = "error";
+          throw error;
+        }
+      })
+      .finally(() => {
+        signingIn = false;
+      });
   }
 
   function toggleShowPassword(): void {
