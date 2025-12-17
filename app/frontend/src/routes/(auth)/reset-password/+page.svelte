@@ -39,6 +39,7 @@
   // Functions
   async function updatePassword(): Promise<void> {
     updatingPassword = true;
+    showErrorAlert = false;
 
     try {
       await accountPasswordsBackendDataSource.reset({ token, password: credentials.password });
