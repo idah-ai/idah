@@ -19,6 +19,7 @@ module Context
 
             query_result.data if !query_result.data.empty?
           end.lazy.map(&:data).map do |record|
+            Verse::logger.debug {record}
             @context_builder.call(record)
           end
         end
@@ -29,7 +30,8 @@ module Context
         filters = merge_filters(id ? {id:} : nil)
 
         if Hash(@opts)[:loopback]
-          Hash(@opts)[:loopback].show(filters[:id])
+          Verse::logger.debug {{self: self, filters:, opts: @opts}}
+           Hash(@opts)[:loopback].show(filters[:id])
         else
           raise Verse::Error::NotFound if !filters[:id] || (id && filters[:id] != id) # overriden by context
 
@@ -39,6 +41,7 @@ module Context
           raise Verse::Error::NotFound, id if query_result.data.empty?
 
           record = query_result.data.first.data
+          Verse::logger.debug {{self: self, filters:, record:}}
           @context_builder.call(record)
         end
       end

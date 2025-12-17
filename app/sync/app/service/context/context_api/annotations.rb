@@ -3,20 +3,21 @@ module Context
     class Annotations < Crud
       Context = Data.define(:record, :api, :entries)
 
-      def initialize(api = :idah, args = {}, context_filters = {}, opts = {})
+      def initialize(api = :idah, args = {}, context_filters = {}, opts = {}, &context_builder)
+        context_builder ||= proc do |annotation|
+          Context.new(
+            annotation,
+            Annotations.new(api, args, merge_context_filters(id: annotation[:id])),
+            Entries.new(api, args, merge_context_filters({id: annotation[:attributes][:entry_id]}, :entries))
+          )
+        end
         super(
           Api[api].dataset.annotations,
           api,
           args,
           context_filters,
           opts,
-          proc do |annotation|
-            Context.new(
-              annotation,
-              Annotations.new(api, args, merge_context_filters(id: annotation[:id])),
-              Entries.new(api, args, merge_context_filters({id: annotation[:attributes][:entry_id]}, :entries))
-            )
-          end
+          &context_builder
         )
       end
     end

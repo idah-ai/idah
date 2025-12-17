@@ -11,7 +11,7 @@ module Context
         Verse::logger.debug {["LoopbackApi.show", id]}
         record = _index.call(id:)&.first
         raise Verse::Error::NotFound unless record
-``
+
         record
       end
     end
@@ -26,13 +26,22 @@ module Context
         Verse::logger::debug {"FROM datasets"}
         datasets = ContextApi::Datasets.new(api, args)
         entries = ContextApi::Entries.new(
-          api, args, datasets.context_filters,
+          api, args, {},
           {loopback: LoopbackApi.new(:entries, proc do |filter|
             datasets.index.flat_map {|d| d.entries.index(merge_filters(filter))}
           end)}
-        )
+        ) do |entry|
+            Verse.logger.debug {{entry_from_context_api: entry}}
+            Entries::Context.new(
+              entry,
+              Entries.new(api, args, merge_context_filters(id: entry[:id])),
+              Datasets.new(api, args, merge_context_filters({id: entry[:attributes][:dataset_id]}, :datasets)),
+              Medias.new(api, args, merge_context_filters({resource: entry[:attributes][:resource]}, :medias)),
+              Annotations.new(api, args, merge_context_filters({entry_id: entry[:id]}, :annotations))
+            )
+        end
         annotations = ContextApi::Annotations.new(
-          api, args, entries.context_filters,
+          api, args, {},
           {loopback: LoopbackApi.new(:annotations, proc do |filter|
             # WARN: Might cause duplication ?
             # TODO: aggregate_filters and chunk filters id__in
@@ -43,7 +52,7 @@ module Context
         Verse::logger::debug {"FROM entries"}
         entries = ContextApi::Entries.new(api, args)
         datasets = ContextApi::Datasets.new(
-          api, args, entries.context_filters,
+          api, args, {},
           {loopback: LoopbackApi.new(:datasets, proc do |filter|
             # WARN: Might cause duplication ?
             # TODO: aggregate_filters and chunk filters id__in
@@ -52,7 +61,7 @@ module Context
           end)}
         )
         annotations = ContextApi::Annotations.new(
-          api, args, entries.context_filters,
+          api, args, {},
           {loopback: LoopbackApi.new(:annotations, proc do |filter|
             entries.index.flat_map { |e| e.annotations.index(merge_filters(filter)) }
           end)}
@@ -61,7 +70,7 @@ module Context
         Verse::logger::debug {"FROM annotations"}
         annotations = ContextApi::Annotations.new(api, args)
         entries = ContextApi::Entries.new(
-          api, args, annotations.context_filters,
+          api, args, {},
           {loopback: LoopbackApi.new(:entries, proc do |filter|
             # WARN: Might cause duplication ?
             # TODO: aggregate_filters and chunk filters id__in
@@ -69,7 +78,7 @@ module Context
           end)}
         )
         datasets = ContextApi::Datasets.new(
-          api, args, entries.context_filters,
+          api, args, {},
           {loopback: LoopbackApi.new(:datasets, proc do |filter|
             # WARN: Might cause duplication ?
             # TODO: aggregate_filters and chunk filters id__in
