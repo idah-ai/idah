@@ -6,7 +6,7 @@
   import IdahLogoDark from "@/components/app/brand/idah-logo-dark.svelte";
   import IdahLogoLight from "@/components/app/brand/idah-logo-light.svelte";
 
-  import { type WithElementRef } from "@/utils";
+  import type { WithElementRef } from "@/utils";
 
   // Props
   let { class: className }: WithElementRef<HTMLAttributes<HTMLImageElement>> = $props();

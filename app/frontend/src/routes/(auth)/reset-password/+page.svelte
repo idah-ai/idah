@@ -13,6 +13,11 @@
   import { accountPasswordsBackendDataSource } from "@/data/model/iam/account-passwords/record";
   import { resetPasswordSchema } from "@/data/model/iam/accounts/auth-schema";
   import { cn } from "@/utils";
+  
+  // Type definitions
+  type ErrorDetail = {
+    detail?: string;
+  };
 
   // Variables
   let resource: string = "iam:account";
@@ -21,6 +26,7 @@
     password: "",
     confirmPassword: "",
   });
+  let errorMessage = $state<string | null>(null);
   let updatingPassword = $state(false);
   let disabledResetPasswordButton = $derived.by(() => {
     const validated = resetPasswordSchema.safeParse(credentials);
@@ -40,16 +46,16 @@
       updated = true;
       updatingPassword = false;
       showErrorAlert = false;
-    } catch (error) {
+    } catch (error: any) {
       updatingPassword = false;
       updated = false;
       showErrorAlert = true;
 
-      if (error instanceof Error) {
-        console.error("Error resetting password:", error.message);
-      } else {
-        console.error("Unknown error resetting password:", error);
-      }
+      error?.errors?.forEach((err: ErrorDetail) => {
+        if (err.detail) {
+          errorMessage = err.detail;
+        }
+      });
     }
   }
 </script>
@@ -72,7 +78,7 @@
 
   {#snippet alert()}
     {#if showErrorAlert}
-      <AuthenticationAlert title="Invalid token or password" description="Please try again." />
+      <AuthenticationAlert title={errorMessage ?? "Invalid token or password"} description="" />
     {/if}
   {/snippet}
 
