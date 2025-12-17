@@ -6,7 +6,7 @@ module Context
       end
 
       def index(filters = {})
-        return @context_api.index(filters) if Hash(@opts)[:feedback]
+        return @context_api.index(filters) if Hash(@opts)[:loopback]
 
         Verse::Util::Iterator.chunk_iterator(1) do |number|
           query_result = @context_api.index(
@@ -25,7 +25,7 @@ module Context
         filters = merge_filters(id ? {id:} : nil)
         raise Verse::Error::NotFound if !filters[:id] || (id && filters[:id] != id) # overriden by context
 
-        return @context_api.show(id) if Hash(@opts)[:feedback]
+        return @context_api.show(id) if Hash(@opts)[:loopback]
 
         query_result = @context_api.index(filters:, page: {number: 1, size: 1})
         raise query_result.errors if query_result.errors

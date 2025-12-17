@@ -14,6 +14,7 @@ module Context
         @context_api = context_api
         @context_builder = context_builder
         @context_filters = context_filters
+        @opts = {}
       end
 
       protected
