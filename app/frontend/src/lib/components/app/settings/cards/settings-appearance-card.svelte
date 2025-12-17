@@ -12,9 +12,9 @@
   let currentMode: Mode = $state((localStorage.getItem("mode-watcher-mode") || "system") as Mode);
 
   const modes: (LabelValue<Mode> & { src: string })[] = [
-    { label: "Light", value: "light", src: "/src/lib/components/app/settings/cards/theme-appearance-light.svg" },
-    { label: "Dark", value: "dark", src: "/src/lib/components/app/settings/cards/theme-appearance-dark.svg" },
-    { label: "System", value: "system", src: "/src/lib/components/app/settings/cards/theme-appearance-dark.svg" },
+    { label: "Light", value: "light", src: "/assets/images/theme-appearance-light.svg" },
+    { label: "Dark", value: "dark", src: "/assets/images/theme-appearance-dark.svg" },
+    { label: "System", value: "system", src: "/assets/images/theme-appearance-system.svg" },
   ];
 
   // Functions
