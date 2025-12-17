@@ -77,6 +77,7 @@
   let thumbnailError = $state(false);
   let currentImagePosition = $state(0);
   let animationInterval: number | null = $state(null);
+  let progressInterval: number | undefined = undefined;
   let jobProgress: number = $state(1);
 
   const processingStatuses: EntryStatusType[] = ["processing", "pending"];
@@ -135,7 +136,7 @@
    */
   async function periodicCheckJobStatus() {
     if (processingStatuses.includes(entry.status)) {
-      const intervalId = setInterval(async () => {
+      progressInterval = setInterval(async () => {
         try {
           let jobId = entry.job_id;
 
@@ -144,12 +145,9 @@
            * fetch the entry again to get the job_id
            */
           if (!jobId) {
-            const entryRes = await entriesBackendDataSource.get(entryId, {
-              fields: {
-                [EntryRecord.type]: ["job_id"],
-              },
-              noCache: true,
-            });
+            /** Fetch the entry again to get the job_id and update the entry state (to prevent index cache) */
+            const entryRes = await entriesBackendDataSource.get(entryId, { noCache: true });
+            entry = entryRes.data;
             jobId = entryRes.data.job_id;
           }
 
@@ -169,11 +167,11 @@
 
           /** If the entry is no longer processing, stop the interval */
           if (!processingStatuses.includes(entry.status)) {
-            if (intervalId) clearInterval(intervalId);
+            stopPeriodicCheckJobStatus();
           }
         } catch (error) {
           console.error("Error fetching updated entry:", error);
-          clearInterval(intervalId);
+          stopPeriodicCheckJobStatus();
         }
       }, 2_000);
     } else {
@@ -203,8 +201,13 @@
   }
 
   // Clean up blob URL and animation when component is destroyed
+  function stopPeriodicCheckJobStatus() {
+    clearInterval(progressInterval);
+  }
+
   function cleanup() {
     stopAnimation();
+    stopPeriodicCheckJobStatus();
 
     if (thumbnailUrl) {
       URL.revokeObjectURL(thumbnailUrl);
@@ -212,7 +215,7 @@
   }
 
   onDestroy(() => {
-    return cleanup;
+    cleanup();
   });
 </script>
 
