@@ -1,6 +1,8 @@
 module Context
   module ContextApi
     class Base
+      attr_reader :context_filters, :args, :opts
+
       def initialize(
         context_api,
         api = :idah,
@@ -9,6 +11,7 @@ module Context
         opts = {},
         context_builder = Proc.new {|record| record}
       )
+        puts([@context_api_name, args, context_filters, opts].join(" "))
         @api = api
         @args = args
         @context_api = context_api
@@ -16,7 +19,6 @@ module Context
         @context_filters = context_filters
         @opts = {}
       end
-
       protected
       def merge_filters(filters = {}, context_api_name = @context_api.name)
         Hash(filters)
