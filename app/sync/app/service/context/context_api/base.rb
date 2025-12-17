@@ -11,7 +11,7 @@ module Context
         opts = {},
         context_builder = Proc.new {|record| record}
       )
-        puts([@context_api_name, args, context_filters, opts].join(" "))
+        Verse::logger.debug([@context_api_name, args, context_filters, opts].join(" "))
         @api = api
         @args = args
         @context_api = context_api
