@@ -3,12 +3,10 @@ module Context
     Context = Data.define(:datasets, :entries, :annotations)
     LoopbackApi = Data.define(:name, :_index) do
       def index(filter = {})
-        Verse::logger.debug {["LoopbackApi.index", filter]}
         _index.call(filter)
       end
 
       def show(id = nil)
-        Verse::logger.debug {["LoopbackApi.show", id]}
         record = _index.call(id:)&.first
         raise Verse::Error::NotFound unless record
 
@@ -21,14 +19,15 @@ module Context
       datasets = args.dig(:datasets)
       entries = args.dig(:entries)
       annotations = args.dig(:annotations)
+      filters = [datasets, entries, annotations]
       Verse::logger::debug { [args,{datasets:, entries:, annotations:}]}
-      if (datasets&.any?)
+      if (datasets&.any? || filters.none?)
         Verse::logger::debug {"FROM datasets"}
         datasets = ContextApi::Datasets.new(api, args)
         entries = ContextApi::Entries.new(
           api, args, {},
-          {loopback: LoopbackApi.new(:entries, proc do |filter|
-            datasets.index.flat_map {|d| d.entries.index(merge_filters(filter))}
+          {loopback: LoopbackApi.new(:entries, proc do |filter = {}|
+            datasets.index.flat_map {|d| d.entries.index(filter)}
           end)}
         ) do |entry|
             Verse.logger.debug {{entry_from_context_api: entry}}
@@ -42,10 +41,10 @@ module Context
         end
         annotations = ContextApi::Annotations.new(
           api, args, {},
-          {loopback: LoopbackApi.new(:annotations, proc do |filter|
+          {loopback: LoopbackApi.new(:annotations, proc do |filter = {}|
             # WARN: Might cause duplication ?
             # TODO: aggregate_filters and chunk filters id__in
-            entries.index.flat_map {|e| e.annotations.index(merge_filters(filter))}
+            entries.index.flat_map {|e| e.annotations.index(filter)}
           end)}
         )
       elsif (entries&.any?)
@@ -53,17 +52,18 @@ module Context
         entries = ContextApi::Entries.new(api, args)
         datasets = ContextApi::Datasets.new(
           api, args, {},
-          {loopback: LoopbackApi.new(:datasets, proc do |filter|
+          {loopback: LoopbackApi.new(:datasets, proc do |filter = {}|
             # WARN: Might cause duplication ?
             # TODO: aggregate_filters and chunk filters id__in
-            puts entries.index.map(&:record).to_a
-            entries.index.flat_map { |e| e.datasets.index(merge_filters(filter)) }
+            # puts entries.index.map(&:record).to_a
+            puts {{self: self, filter:}}
+            entries.index.flat_map { |e| e.datasets.index(filter) }
           end)}
         )
         annotations = ContextApi::Annotations.new(
           api, args, {},
-          {loopback: LoopbackApi.new(:annotations, proc do |filter|
-            entries.index.flat_map { |e| e.annotations.index(merge_filters(filter)) }
+          {loopback: LoopbackApi.new(:annotations, proc do |filter = {}|
+            entries.index.flat_map { |e| e.annotations.index(filter) }
           end)}
         )
       elsif (annotations&.any)
@@ -71,18 +71,18 @@ module Context
         annotations = ContextApi::Annotations.new(api, args)
         entries = ContextApi::Entries.new(
           api, args, {},
-          {loopback: LoopbackApi.new(:entries, proc do |filter|
+          {loopback: LoopbackApi.new(:entries, proc do |filter = {}|
             # WARN: Might cause duplication ?
             # TODO: aggregate_filters and chunk filters id__in
-            annotations.index.flat_map { |a| a.entries.index(merge_filters(filter)) }
+            annotations.index.flat_map { |a| a.entries.index(filter) }
           end)}
         )
         datasets = ContextApi::Datasets.new(
           api, args, {},
-          {loopback: LoopbackApi.new(:datasets, proc do |filter|
+          {loopback: LoopbackApi.new(:datasets, proc do |filter = {}|
             # WARN: Might cause duplication ?
             # TODO: aggregate_filters and chunk filters id__in
-            entries.index.flat_map { |e| e.datasets.index(merge_filters(filter)) }
+            entries.index.flat_map { |e| e.datasets.index(filter) }
           end)}
         )
       else

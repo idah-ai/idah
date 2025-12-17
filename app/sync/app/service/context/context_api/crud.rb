@@ -8,6 +8,7 @@ module Context
       def index(filters = {})
         Verse::logger::debug {[:index, @context_api.name, filters, @context_filters, @opts].join(" ")}
         if Hash(@opts)[:loopback]
+          Verse::logger::debug {{loopback_index: {self: self, filters:, loopback: Hash(@opts)[:loopback]}}}
           Hash(@opts)[:loopback].index(merge_filters(filters))
         else
           Verse::Util::Iterator.chunk_iterator(1) do |number|
@@ -19,7 +20,7 @@ module Context
 
             query_result.data if !query_result.data.empty?
           end.lazy.map(&:data).map do |record|
-            Verse::logger.debug {record}
+            Verse::logger.debug {{record:}}
             @context_builder.call(record)
           end
         end
@@ -31,7 +32,7 @@ module Context
 
         if Hash(@opts)[:loopback]
           Verse::logger.debug {{self: self, filters:, opts: @opts}}
-           Hash(@opts)[:loopback].show(filters[:id])
+          Hash(@opts)[:loopback].show(filters[:id])
         else
           raise Verse::Error::NotFound if !filters[:id] || (id && filters[:id] != id) # overriden by context
 

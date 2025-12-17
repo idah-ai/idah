@@ -11,14 +11,14 @@ module Context
         opts = {},
         context_builder = Proc.new {|record| record}
       )
-        Verse::logger.debug([@context_api_name, args, context_filters, opts].join(" "))
+        Verse::logger.debug {[:INITIALIZING_CONTEXT_API, self, context_api.name, args, context_filters, opts].join(" ")}
         @api = api
         @args = args
         @context_api = context_api
         @context_builder = context_builder
         @context_filters = context_filters
-        @opts = {}
-      end
+        @opts = opts
+     end
       protected
       def merge_filters(filters = {}, context_api_name = @context_api.name)
         Hash(filters)

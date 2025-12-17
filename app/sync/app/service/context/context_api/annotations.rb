@@ -17,7 +17,7 @@ module Context
           args,
           context_filters,
           opts,
-          &context_builder
+          context_builder
         )
       end
     end

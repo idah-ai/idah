@@ -47,7 +47,7 @@ module Context
             remaining_stderr << line while (line = stderr.gets)
             value = wait_thr.value
             if value.exitstatus != 0
-              raise "updcli append error #{value} #{remaining_stderr.join}"
+              raise "updcli append error #{value}\n#{remaining_stderr.join}"
             end
             Verse.logger.info { "updcli append complete: #{value}" }
           end
