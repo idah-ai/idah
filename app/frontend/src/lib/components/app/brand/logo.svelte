@@ -17,6 +17,6 @@
 
 <img
   src={isLightMode ? idahLogoLightSvg : idahLogoDarkSvg}
-  alt="idah-logo-{isLightMode ? 'light' : 'dark'}"
+  alt="idah-logo-{isLightMode ? "light" : "dark"}"
   class={cn("size-24", className)}
 />
