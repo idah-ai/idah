@@ -37,12 +37,13 @@ module Auth
       account = accounts.login(email, password)
 
       # check the password, raise error if incorrect
-      raise Verse::Error::Authorization, "Invalid credentials" if account.nil?
+      raise Verse::Error::Authorization, "invalid_credentials" if account.nil?
+      raise Verse::Error::Authorization, "account_disabled" unless account.enabled
 
       # build the two tokens for the account
       build_tokens(account, ip:, user_agent:, nonce: 1)
     rescue Verse::Error::RecordNotFound
-      raise Verse::Error::Authorization, "Invalid credentials"
+      raise Verse::Error::Authorization, "invalid_credentials"
     end
 
     # Check if the given token is valid and regenerate a new token
