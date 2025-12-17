@@ -46,7 +46,7 @@
       updated = true;
       updatingPassword = false;
       showErrorAlert = false;
-    } catch (error: any) {
+    } catch (error) {
       updatingPassword = false;
       updated = false;
       showErrorAlert = true;
