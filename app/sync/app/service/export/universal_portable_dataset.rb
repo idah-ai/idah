@@ -9,7 +9,12 @@ module Export
         # linear_processing
         loop_processing
       rescue Exception => e
-        Verse::logger::error{"#{self} Error processing #{@context.io.name} #{e}"}
+        Verse::logger::error{
+          [
+            "#{self} Error processing #{@context.io.name} #{e}",
+            [e, "#{e.backtrace.join("\n")}"].join("\n")
+          ].join("\n")
+        }
         raise e
       end
     end
@@ -54,6 +59,7 @@ module Export
     end
 
     def on_dataset(dataset)
+      Verse::logger::debug {{on_dataset: dataset}}
       begin
         @context.io.puts.call({
           command: 'dataset:create',
