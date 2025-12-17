@@ -25,12 +25,12 @@
     media: File;
     status: "uploading" | "success" | "error";
   }
-  let uploadStatuses: Array<UploadStatuses> = $state([]);
 
   let projectId = page.params.projectId as string;
   let datasetId = page.params.datasetId as string;
-  let uploading: boolean = $state(false);
   let selectedMedias: FileList | null = $state(null);
+  let uploading: boolean = $state(false);
+  let uploadStatuses: Array<UploadStatuses> = $state([]);
   let showUploadStatus: boolean = $derived(uploadStatuses.length > 0);
 
   let disabledUploadButton: boolean = $derived.by(() => {
@@ -141,7 +141,7 @@
 
           <div class="ml-auto">
             {#if status === "uploading"}
-              <Spinner size="sm"></Spinner>
+              <Spinner size="sm" />
             {:else if status === "success"}
               <Badge>Uploaded</Badge>
             {:else if status === "error"}
@@ -156,7 +156,7 @@
       class="py-12"
       acceptedFileTypes={[".mp4", ".mkv", ".3gp", ".avi", ".m4v", ".mov", ".webm"]}
       onFilesSelected={handleFilesSelected}
-    ></FileUpload>
+    />
   {/if}
 
   {#snippet actions()}
