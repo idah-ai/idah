@@ -5,6 +5,7 @@
 
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import Form from "@/components/app/forms/form.svelte";
+  import AuthenticationAlert from "@/components/app/iam/auth/alert/authentication-alert.svelte";
   import AuthenticationCard from "@/components/app/iam/auth/card/authentication-card.svelte";
   import ResetPassword from "@/components/app/response-block/reset-password.svg";
   import Button from "@/components/ui/button/button.svelte";
@@ -26,6 +27,7 @@
     return !validated.success;
   });
 
+  let showErrorAlert = $state(false);
   let token = $derived(page.url.searchParams.get("token") as string);
 
   // Functions
@@ -37,10 +39,17 @@
 
       updated = true;
       updatingPassword = false;
+      showErrorAlert = false;
     } catch (error) {
       updatingPassword = false;
-      console.error(error);
       updated = false;
+      showErrorAlert = true;
+
+      if (error instanceof Error) {
+        console.error("Error resetting password:", error.message);
+      } else {
+        console.error("Unknown error resetting password:", error);
+      }
     }
   }
 </script>
@@ -59,6 +68,12 @@
       src={ResetPassword}
       alt="invalid-link"
     />
+  {/snippet}
+
+  {#snippet alert()}
+    {#if showErrorAlert}
+      <AuthenticationAlert title="Invalid token or password" description="Please try again." />
+    {/if}
   {/snippet}
 
   {#snippet content()}
@@ -89,6 +104,7 @@
 
         <Button
           class="w-full"
+          type="submit"
           disabled={disabledResetPasswordButton}
           loading={updatingPassword}
           loadingLabel="Updating..."
