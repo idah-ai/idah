@@ -10,7 +10,8 @@ class DatasetsExpo < BaseExpo
 
     show
     index do
-      allowed_filters :name__match,
+      allowed_filters :id__in,
+                      :name__match,
                       :status__in,
                       :progress__gte,
                       :progress__lte,

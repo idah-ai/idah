@@ -9,7 +9,8 @@ class EntriesExpo < BaseExpo
     allowed_included "dataset", "dataset.project"
     show
     index do
-      allowed_filters :status__in,
+      allowed_filters :id__in,
+                      :status__in,
                       :priority__in,
                       :assigned_to_id,
                       :assigned_to_id__eq,

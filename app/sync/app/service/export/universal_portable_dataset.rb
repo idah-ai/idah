@@ -59,7 +59,6 @@ module Export
     end
 
     def on_dataset(dataset)
-      Verse::logger::debug {{on_dataset: dataset}}
       begin
         @context.io.puts.call({
           command: 'dataset:create',

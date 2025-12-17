@@ -6,10 +6,8 @@ module Context
       end
 
       def index(filters = {})
-        Verse::logger::debug {[:index, @context_api.name, filters, @context_filters, @opts].join(" ")}
-        if Hash(@opts)[:loopback]
-          Verse::logger::debug {{loopback_index: {self: self, filters:, loopback: Hash(@opts)[:loopback]}}}
-          Hash(@opts)[:loopback].index(merge_filters(filters))
+        if Hash(@opts)[:delegated]
+          Hash(@opts)[:delegated].index(merge_filters(filters))
         else
           Verse::Util::Iterator.chunk_iterator(1) do |number|
             query_result = @context_api.index(
@@ -20,19 +18,16 @@ module Context
 
             query_result.data if !query_result.data.empty?
           end.lazy.map(&:data).map do |record|
-            Verse::logger.debug {{record:}}
             @context_builder.call(record)
           end
         end
       end
 
       def show(id = nil)
-        Verse::logger::debug {[:show, @context_api.name, id, @opts].join(" ")}
         filters = merge_filters(id ? {id:} : nil)
 
-        if Hash(@opts)[:loopback]
-          Verse::logger.debug {{self: self, filters:, opts: @opts}}
-          Hash(@opts)[:loopback].show(filters[:id])
+        if Hash(@opts)[:delegated]
+          Hash(@opts)[:delegated].show(filters[:id])
         else
           raise Verse::Error::NotFound if !filters[:id] || (id && filters[:id] != id) # overriden by context
 
@@ -42,7 +37,6 @@ module Context
           raise Verse::Error::NotFound, id if query_result.data.empty?
 
           record = query_result.data.first.data
-          Verse::logger.debug {{self: self, filters:, record:}}
           @context_builder.call(record)
         end
       end
