@@ -5,7 +5,7 @@ module Context
 
       def initialize(api = :idah, args = {}, context_filters = {}, opts = {})
         super(
-          Hash(opts)[:feedback] ? api : Api[api].dataset.annotations,
+          Api[api].dataset.annotations,
           api,
           args,
           context_filters,
