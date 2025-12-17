@@ -7,7 +7,9 @@ class AnnotationsExpo < BaseExpo
 
   json_api Annotation::Record, http_opts: { auth: nil } do
     show
-    index
+    index do
+      allowed_filters :id__in
+    end
     create do
       authorized_relationships entry: [:link]
     end
