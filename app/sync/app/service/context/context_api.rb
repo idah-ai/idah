@@ -1,13 +1,13 @@
 module Context
   module ContextApi
     Context = Data.define(:datasets, :entries, :annotations)
-    FeedbackApi = Data.define(:name, :_index) do
+    LoopbackApi = Data.define(:name, :_index) do
       def index(filter = {})
         _index.call(filter)
       end
 
       def show(id = nil)
-        record = index.call(id:)&.first
+        record = _index.call(id:)&.first
         raise Verse::Error::NotFound unless record
 
         record
@@ -23,44 +23,44 @@ module Context
       if (datasets&.any?)
         datasets = ContextApi::Datasets.new(api, args)
         entries = ContextApi::Entries.new(
-          FeedbackApi.new(:entries, proc do |filter|
+          LoopbackApi.new(:entries, proc do |filter|
             datasets.index.flat_map {|d| d.entries.index(filter)}
           end),
-          {}, {}, {feedback: true}
+          args, {}, {loopback: true}
         )
         annotations = ContextApi::Annotations.new(
-          FeedbackApi.new(:annotations, proc do |filter|
+          LoopbackApi.new(:annotations, proc do |filter|
             entries.index.flat_map {|e| e.annotations.index(filter)}
           end),
-          {}, {}, {feedback: true}
+          args, {}, {loopback: true}
         )
       elsif (entries&.any?)
         entries = ContextApi::Entries.new(api, args)
         datasets = ContextApi::Datasets.new(
-          FeedbackApi.new(:datasets, proc do |filter| # might cause duplication and inneffective queries find alternative
+          LoopbackApi.new(:datasets, proc do |filter| # might cause duplication and inneffective queries find alternative
             entries.index.flat_map { |e| e.datasets.index(filters) }
           end),
-          {}, {}, {feedback: true}
+          args, {}, {loopback: true}
         )
         annotations = ContextApi::Annotations.new(
-          FeedbackApi.new(:annotations, proc do |filter|
+          LoopbackApi.new(:annotations, proc do |filter|
             entries.index.flat_map { |e| e.annotations.index(filters) }
           end),
-          {}, {}, {feedback: true}
+          args, {}, {loopback: true}
         )
       elsif (annotations&.any)
         annotations = ContextApi::Annotations.new(api, args)
         entries = ContextApi::Entries.new(
-          FeedbackApi.new(:entries, proc do |filter| # might cause duplication and inneffective queries find alternative
+          LoopbackApi.new(:entries, proc do |filter| # might cause duplication and inneffective queries find alternative
             annotations.index.flat_map { |a| a.entries.index(filters) }
           end),
-          {}, {}, {feedback: true}
+          args, {}, {loopback: true}
         )
         datasets = ContextApi::Datasets.new(
-          FeedbackApi.new(:datasets, proc do |filter| # might cause duplication and inneffective queries find alternative
+          LoopbackApi.new(:datasets, proc do |filter| # might cause duplication and inneffective queries find alternative
             entries.index.flat_map { |e| e.datasets.index(filters) }
           end),
-          {}, {}, {feedback: true}
+          args, {}, {loopback: true}
         )
       end
       Context.new(
