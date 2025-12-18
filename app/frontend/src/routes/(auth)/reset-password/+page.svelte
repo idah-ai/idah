@@ -5,6 +5,7 @@
 
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import Form from "@/components/app/forms/form.svelte";
+  import AuthenticationAlert from "@/components/app/iam/auth/alert/authentication-alert.svelte";
   import AuthenticationCard from "@/components/app/iam/auth/card/authentication-card.svelte";
   import ResetPassword from "@/components/app/response-block/reset-password.svg";
   import Button from "@/components/ui/button/button.svelte";
@@ -13,6 +14,11 @@
   import { resetPasswordSchema } from "@/data/model/iam/accounts/auth-schema";
   import { cn } from "@/utils";
 
+  // Type definitions
+  type ErrorDetail = {
+    detail?: string;
+  };
+
   // Variables
   let resource: string = "iam:account";
   let updated: boolean = $state(false);
@@ -20,27 +26,37 @@
     password: "",
     confirmPassword: "",
   });
+  let errorMessage = $state<string | null>(null);
   let updatingPassword = $state(false);
   let disabledResetPasswordButton = $derived.by(() => {
     const validated = resetPasswordSchema.safeParse(credentials);
     return !validated.success;
   });
 
+  let showErrorAlert = $state(false);
   let token = $derived(page.url.searchParams.get("token") as string);
 
   // Functions
   async function updatePassword(): Promise<void> {
     updatingPassword = true;
+    showErrorAlert = false;
 
     try {
       await accountPasswordsBackendDataSource.reset({ token, password: credentials.password });
 
       updated = true;
       updatingPassword = false;
+      showErrorAlert = false;
     } catch (error) {
       updatingPassword = false;
-      console.error(error);
       updated = false;
+      showErrorAlert = true;
+
+      error?.errors?.forEach((err: ErrorDetail) => {
+        if (err.detail) {
+          errorMessage = err.detail;
+        }
+      });
     }
   }
 </script>
@@ -59,6 +75,12 @@
       src={ResetPassword}
       alt="invalid-link"
     />
+  {/snippet}
+
+  {#snippet alert()}
+    {#if showErrorAlert}
+      <AuthenticationAlert title={errorMessage ?? "Invalid token or password"} description="" />
+    {/if}
   {/snippet}
 
   {#snippet content()}
@@ -89,6 +111,7 @@
 
         <Button
           class="w-full"
+          type="submit"
           disabled={disabledResetPasswordButton}
           loading={updatingPassword}
           loadingLabel="Updating..."
