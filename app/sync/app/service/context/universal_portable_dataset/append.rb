@@ -1,57 +1,44 @@
 module Context
   module UniversalPortableDataset
     module Append
-      Context = Data.define(:name, :i, :o, :e, :wait_thr, :puts)
+      Context = Data.define(:name, :filename, :i, :o, :e, :wait_thr, :puts)
 
-      def self.prepare(args, &block)
+      def self.prepare(args)
         filename = [Hash(args).dig(:name) || ["export", Time.now.to_i], :upd].join(".")
-        Open3.popen3(
+        stdin, stdout, stderr, wait_thr = Open3.popen3(
           "bin/datset-static",
           "-i", filename,
           "append"
-        ) do |stdin, stdout, stderr, wait_thr|
-          begin
-            yield Context.new(
-              filename, stdin, stdout, stderr, wait_thr,
-              proc do |s, expected_lines = 1, feedback = proc{|line| line}|
-                stdin.puts(s)
-                stdin.flush
-                readers = [stdout, stderr]
-                lines_read, stderr_output = 0, []
-                while lines_read < expected_lines && !readers.empty?
-                  ready = IO.select(readers, nil, nil, 0.1) # 0.1s timeout
-                  ready[0].each do |fd|
-                    line = fd.gets
-                    if line
-                      if fd == stdout
-                        feedback.call(line)
-                        lines_read += 1
-                      elsif fd == stderr
-                        stderr_output << line
-                      end
-                    else
-                      readers.delete(fd)
-                    end
-                  end if ready
-                  break Verse.logger.warn { "blocking read on: #{s}" } if ready.nil? && lines_read == 0
+        )
+        puts = proc do |s, expected_lines = 1, feedback = proc{|line| line}|
+          stdin.puts(s)
+          stdin.flush
+          readers = [stdout, stderr]
+          lines_read, stderr_output = 0, []
+          while lines_read < expected_lines && !readers.empty?
+            ready = IO.select(readers, nil, nil, 0.1)
+            ready[0].each do |fd|
+              line = fd.gets
+              if line
+                if fd == stdout
+                  feedback.call(line)
+                  lines_read += 1
+                elsif fd == stderr
+                  stderr_output << line
                 end
-                unless stderr_output.empty?
-                  Verse.logger.error { "stderr: #{stderr_output.join}" }
-                  raise "stderr output detected: #{stderr_output.join}"
-                end
+              else
+                readers.delete(fd)
               end
-            )
-          ensure
-            stdin.close unless stdin.closed?
-            remaining_stderr = []
-            remaining_stderr << line while (line = stderr.gets)
-            value = wait_thr.value
-            if value.exitstatus != 0
-              raise "updcli append error #{value}\n#{remaining_stderr.join}"
-            end
-            Verse.logger.info { "updcli append complete: #{value}" }
+            end if ready
+            break Verse.logger.warn { "blocking read on: #{s}" } if ready.nil? && lines_read == 0
+          end
+          unless stderr_output.empty?
+            Verse.logger.error { "stderr: #{stderr_output.join}" }
+            raise "stderr output detected: #{stderr_output.join}"
           end
         end
+
+        Context.new("UniversalPortableDataset", filename, stdin, stdout, stderr, wait_thr, puts)
       end
     end
   end

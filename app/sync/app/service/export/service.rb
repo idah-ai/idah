@@ -8,8 +8,10 @@ module Export
       Jobs::Service.new(auth_context).create(
         "Export::Job",
         arguments: {
-          io_class: "Context::UniversalPortableDataset::Append",
-          io_args: nil,
+          io_classes: [
+            "Context::UniversalPortableDataset::Append"
+          ],
+          io_args: {},
           context_args:,
           process_class: "Export::UniversalPortableDataset",
           process_args: nil
