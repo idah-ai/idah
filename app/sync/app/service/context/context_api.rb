@@ -13,7 +13,7 @@ module Context
       end
     end
     API = Data.define(:name, :api)
-    from_datasets_api = API.new(:datsets, proc do |args, api|
+    from_datasets_api = API.new(:datasets, proc do |args, api|
       datasets = ContextApi::Datasets.new(api, args)
       entries = ContextApi::Entries.new(
         api, args, {},
