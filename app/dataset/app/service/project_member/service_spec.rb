@@ -223,40 +223,46 @@ RSpec.describe ProjectMember::Service, database: true do
 
   describe "#remove_nonparticipant_member" do
     before do
-      @project_member = subject.create(deserialize(
-        {
-          data: {
-            type: "dataset:project_members",
-            attributes: attributes,
-            relationships: {
-              project: {
-                data: {
-                  type: "dataset:projects",
-                  id: project_id
+      @project_member = subject.create(
+        deserialize(
+          {
+            data: {
+              type: "dataset:project_members",
+              attributes: attributes,
+              relationships: {
+                project: {
+                  data: {
+                    type: "dataset:projects",
+                    id: project_id
+                  }
                 }
               }
             }
           }
+        )
+      )
+
+      @dataset_id = dataset_repo.create(
+        {
+          modality: "image_labeling",
+          labels: ["cat", "dog"],
+          labeling_configuration: {},
+          workflow_configuration: {},
+          project_id: project_id
         }
-      ))
+      )
 
-      @dataset_id = dataset_repo.create({
-        modality: "image_labeling",
-        labels: ["cat", "dog"],
-        labeling_configuration: {},
-        workflow_configuration: {},
-        project_id: project_id
-      })
-
-      @entry_id = entry_repo.create({
-        priority: 1,
-        resource: "http://example.com/video.mp4",
-        wf_step: "start",
-        status: "pending",
-        # assigned_to_id: @project_member,,
-        project_id: project_id,
-        dataset_id: @dataset_id
-      })
+      @entry_id = entry_repo.create(
+        {
+          priority: 1,
+          resource: "http://example.com/video.mp4",
+          wf_step: "start",
+          status: "pending",
+          # assigned_to_id: @project_member,,
+          project_id: project_id,
+          dataset_id: @dataset_id
+        }
+      )
     end
 
     it "deletes a nonparticipant project member if after the account is deleted" do
