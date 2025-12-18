@@ -762,7 +762,7 @@
     /**
      * Set mode to the annotation shape type when selecting an annotation
      */
-    if (annotation?.shape.type && context.workflowStep != "annotate") {
+    if (annotation?.shape.type && context.workflowStep == "annotate") {
       mode = annotation.shape.type;
     } else if (mode === "note") {
       mode = "note";
