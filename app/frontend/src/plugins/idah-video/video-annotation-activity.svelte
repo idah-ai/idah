@@ -141,24 +141,23 @@
      */
     const disabledToolsIfWorkflowSteps = ["done"];
 
-    tools =
-      context.workflowStep == "annotate"
-        ? [
-            {
-              label: "Visual",
-              type: DEFAULT_MODE,
-              iconName: "mouse-pointer-2",
-              handleClick: () => context.commands.run("tools.visual"),
-            },
-            {
-              label: "Bounding Box",
-              type: IDAH_VIDEO_BOUNDING_BOX,
-              iconName: "vector-square",
-              disabled: disabledToolsIfWorkflowSteps.includes(context.workflowStep),
-              handleClick: () => context.commands.run("tools.bounding_box"),
-            },
-          ]
-        : [];
+    tools = ["annotate", "review"].includes(context.workflowStep)
+      ? [
+          {
+            label: "Visual",
+            type: DEFAULT_MODE,
+            iconName: "mouse-pointer-2",
+            handleClick: () => context.commands.run("tools.visual"),
+          },
+          {
+            label: "Bounding Box",
+            type: IDAH_VIDEO_BOUNDING_BOX,
+            iconName: "vector-square",
+            disabled: disabledToolsIfWorkflowSteps.includes(context.workflowStep),
+            handleClick: () => context.commands.run("tools.bounding_box"),
+          },
+        ]
+      : [];
 
     tools.concat([
       {
@@ -694,7 +693,7 @@
   let shapeSelectionArgs: [type: string, frame: number, _points: Point[], selectedId?: string] | undefined = $state();
 
   function onEditValue(value: AnnotationValue, valueMode: string) {
-    if (context.workflowStep != "annotate") return;
+    if (["annotate", "review"].includes(context.workflowStep)) return;
 
     let requirementFullfilled = requiredFullfilled(value, context.config[valueMode]?.properties);
     annotationValue = value;
@@ -762,7 +761,7 @@
     /**
      * Set mode to the annotation shape type when selecting an annotation
      */
-    if (annotation?.shape.type && context.workflowStep == "annotate") {
+    if (annotation?.shape.type && ["review", "annotate"].includes(context.workflowStep)) {
       mode = annotation.shape.type;
     } else if (mode === "note") {
       mode = "note";
