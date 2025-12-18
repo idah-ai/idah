@@ -32,7 +32,7 @@ export const sendResetPasswordLinkSchema = z.object({
   email: z.email(),
 });
 
-const passwordRules = z
+export const passwordRules = z
   .string()
   .min(8, "Password must be at least 8 characters.")
   .regex(
