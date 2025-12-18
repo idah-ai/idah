@@ -122,7 +122,7 @@
 
   const bulkActions = getEntryDropdownMenuActions({
     onAssign: () => {
-      // openAssignEntryFormModal = true;
+      openAssignEntryFormModal = true;
     },
     onSetPriority: () => {
       openSetPriorityModal = true;
