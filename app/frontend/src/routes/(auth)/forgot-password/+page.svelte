@@ -64,6 +64,7 @@
 
       <Button
         class="w-full"
+        type="submit"
         disabled={disabledSendPasswordResetLink}
         loading={sendingPasswordResetLink}
         loadingLabel="Sending..."
