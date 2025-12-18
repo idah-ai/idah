@@ -354,7 +354,8 @@ RSpec.describe Account::Service, database: true do
           category: "org_owner_role_removed",
           recipient_account_id: @org_owner_account.id,
           recipient_name: "Org Owner",
-          admin_name: "Admin User"
+          admin_name: "Admin User",
+          type: "notification:organization:activities"
         }
       )
 
@@ -415,7 +416,8 @@ RSpec.describe Account::Service, database: true do
           organization_scope_change: "added",
           organization_name: "org 111",
           organization_id: "111",
-          admin_name: "Admin User"
+          admin_name: "Admin User",
+          type: "notification:organization:activities"
         }
       )
 
@@ -446,7 +448,8 @@ RSpec.describe Account::Service, database: true do
           organization_scope_change: "removed",
           organization_name: "org 999",
           organization_id: "999",
-          admin_name: "Admin User"
+          admin_name: "Admin User",
+          type: "notification:organization:activities"
         }
       )
 
