@@ -80,6 +80,10 @@
   let annotationsIDB: AnnotationsIndexedDB | undefined = $state();
   let isPlaying = $state(false);
   let volume = $state({ level: 0, muted: false });
+  let tools: (
+    | { label: string; type: string; iconName: string; handleClick: () => void }
+    | { label: string; type: string; iconName: string; disabled: boolean; handleClick: () => void }
+  )[] = $state([]);
 
   let commandOpen = $state(false);
 
@@ -137,20 +141,26 @@
      */
     const disabledToolsIfWorkflowSteps = ["done"];
 
-    context.tools.setTools([
-      {
-        label: "Visual",
-        type: DEFAULT_MODE,
-        iconName: "mouse-pointer-2",
-        handleClick: () => context.commands.run("tools.visual"),
-      },
-      {
-        label: "Bounding Box",
-        type: IDAH_VIDEO_BOUNDING_BOX,
-        iconName: "vector-square",
-        disabled: disabledToolsIfWorkflowSteps.includes(context.workflowStep),
-        handleClick: () => context.commands.run("tools.bounding_box"),
-      },
+    tools =
+      context.workflowStep == "annotate"
+        ? [
+            {
+              label: "Visual",
+              type: DEFAULT_MODE,
+              iconName: "mouse-pointer-2",
+              handleClick: () => context.commands.run("tools.visual"),
+            },
+            {
+              label: "Bounding Box",
+              type: IDAH_VIDEO_BOUNDING_BOX,
+              iconName: "vector-square",
+              disabled: disabledToolsIfWorkflowSteps.includes(context.workflowStep),
+              handleClick: () => context.commands.run("tools.bounding_box"),
+            },
+          ]
+        : [];
+
+    tools.concat([
       {
         label: "Notes",
         type: IDAH_NOTE,
@@ -159,6 +169,8 @@
         handleClick: () => context.commands.run("tools.note"),
       },
     ]);
+
+    context.tools.setTools(tools);
 
     $effect(() => context.tools.setTool(mode));
 
@@ -682,6 +694,8 @@
   let shapeSelectionArgs: [type: string, frame: number, _points: Point[], selectedId?: string] | undefined = $state();
 
   function onEditValue(value: AnnotationValue, valueMode: string) {
+    if (context.workflowStep != "annotate") return;
+
     let requirementFullfilled = requiredFullfilled(value, context.config[valueMode]?.properties);
     annotationValue = value;
     mode = valueMode;
@@ -748,7 +762,7 @@
     /**
      * Set mode to the annotation shape type when selecting an annotation
      */
-    if (annotation?.shape.type) {
+    if (annotation?.shape.type && context.workflowStep != "annotate") {
       mode = annotation.shape.type;
     } else if (mode === "note") {
       mode = "note";

@@ -356,7 +356,8 @@
         ratio={target_size}
         offset={zoomInfo.offset}
         cursor={cursor_downscaled}
-        editable={shape?.type == IDAH_VIDEO_BOUNDING_BOX || mode == IDAH_VIDEO_BOUNDING_BOX}
+        editable={(shape?.type == IDAH_VIDEO_BOUNDING_BOX || mode == IDAH_VIDEO_BOUNDING_BOX) &&
+          context.workflowStep == "annotate"}
         color={selected?.synced
           ? Object.entries(context.config)
               .find(([k, _]) => k == mode)?.[1]
