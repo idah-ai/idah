@@ -2,6 +2,8 @@ module Export
   class UniversalPortableDataset
     def initialize(context)
       @context = context
+      @io = context.ios.find {|io| io.name == "UniversalPortableDataset"}
+      raise "#{self} error locating required UniversalPortableDataset io"
     end
 
     def run
@@ -11,7 +13,7 @@ module Export
       rescue Exception => e
         Verse::logger::error{
           [
-            "#{self} Error processing #{@context.io.name} #{e}",
+            "#{self} Error processing #{@io.filename} #{e}",
             [e, "#{e.backtrace.join("\n")}"].join("\n")
           ].join("\n")
         }
@@ -21,8 +23,8 @@ module Export
 
     private
     def start
-      Verse::logger::debug{"#{self} Start processing #{@context.io.name}"}
-      @context.io.puts.call({command: 'init', args: {}}.to_json)
+      Verse::logger::debug{"#{self} Start processing #{@io.filename}"}
+      @io.puts.call({command: 'init', args: {}}.to_json)
     end
 
     def error(e, record)
@@ -33,7 +35,7 @@ module Export
     end
 
     def done
-      Verse::logger::debug{"#{self} #{@context.io.name} Process complete"}
+      Verse::logger::debug{"#{self} #{@io.filename} Process complete"}
     end
 
     def linear_processing
@@ -60,7 +62,7 @@ module Export
 
     def on_dataset(dataset)
       begin
-        @context.io.puts.call({
+        @io.puts.call({
           command: 'dataset:create',
           args: {
             id: dataset.record[:id],
@@ -85,7 +87,7 @@ module Export
         begin
           file.write(entry.medias.files)
           file.close
-          @context.io.puts.call({
+          @io.puts.call({
             command: 'media:create',
             args: {
               id: resource_info[:id],
@@ -103,7 +105,7 @@ module Export
           file.close unless file.closed?
           file.unlink
         end
-        @context.io.puts.call({
+        @io.puts.call({
           command: 'entry:create',
           args: {
             id: entry.record[:id],
@@ -123,7 +125,7 @@ module Export
 
     def on_annotation(annotation)
       begin
-        @context.io.puts.call({
+        @io.puts.call({
           command: 'annotation:create',
           args: {
             id: annotation.record[:id],
