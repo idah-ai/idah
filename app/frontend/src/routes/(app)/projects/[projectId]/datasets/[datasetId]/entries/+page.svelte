@@ -17,23 +17,23 @@
   import { Card, CardContent } from "@/components/ui/card";
   import Checkbox from "@/components/ui/checkbox/checkbox.svelte";
   import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuGroup,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
+      DropdownMenu,
+      DropdownMenuContent,
+      DropdownMenuGroup,
+      DropdownMenuItem,
+      DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu";
   import Spinner from "@/components/ui/spinner/spinner.svelte";
   import Can from "@/security/can.svelte";
 
   import {
-    ArrowDownAZIcon,
-    ArrowDownZAIcon,
-    ArrowUpDownIcon,
-    ChevronsUpDownIcon,
-    FunnelIcon,
-    LayoutListIcon,
-    PlusIcon,
+      ArrowDownAZIcon,
+      ArrowDownZAIcon,
+      ArrowUpDownIcon,
+      ChevronsUpDownIcon,
+      FunnelIcon,
+      LayoutListIcon,
+      PlusIcon,
   } from "@lucide/svelte";
 
   import { entryColumns } from "@/components/app/datasets/entries/data-tables/entry-columns";
@@ -48,9 +48,9 @@
   import { refetches } from "@/utils/refetch";
 
   import type {
-    ColumnSettings,
-    FilterDataSourceParams,
-    SortDataSourceParams,
+      ColumnSettings,
+      FilterDataSourceParams,
+      SortDataSourceParams,
   } from "@/components/app/datasource-table/types";
   import type { ListOptions } from "@/data/DataSource";
   import type { CollectionResponse } from "@/data/model/types";
@@ -110,6 +110,10 @@
     },
     sort: ["priority"],
     count: true,
+    pagination: {
+      page: currentPage,
+      itemsPerPage,
+    },
   });
   let isFiltering: boolean = $derived(
     Object.keys(listOptions.filters || {}).filter((key) => key !== "dataset_id").length > 0,
@@ -118,7 +122,7 @@
 
   const bulkActions = getEntryDropdownMenuActions({
     onAssign: () => {
-      openAssignEntryFormModal = true;
+      // openAssignEntryFormModal = true;
     },
     onSetPriority: () => {
       openSetPriorityModal = true;
