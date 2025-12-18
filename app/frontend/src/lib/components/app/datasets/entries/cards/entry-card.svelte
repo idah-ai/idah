@@ -1,25 +1,33 @@
 <script lang="ts">
-  import { onDestroy } from "svelte";
+  import { goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
+  import { page } from "$app/state";
+  import { ExternalLinkIcon } from "@lucide/svelte";
+  import { onDestroy, onMount } from "svelte";
+  import { toast } from "svelte-sonner";
+  import { writable } from "svelte/store";
 
   import EntryPriority from "@/components/app/datasets/entries/badges/entry-priority.svelte";
   import EntryStatus from "@/components/app/datasets/entries/badges/entry-status.svelte";
-  import LoadingEntryCard from "@/components/app/datasets/entries/cards/loading-entry-card.svelte";
   import EntryDropdownMenu from "@/components/app/datasets/entries/dropdown-menus/entry-dropdown-menu.svelte";
   import ProjectMemberAvatar from "@/components/app/projects/members/avatars/project-member-avatar.svelte";
   import DataDisplay from "@/components/app/texts/data-display.svelte";
   import DateText from "@/components/app/texts/date-text.svelte";
   import { AspectRatio } from "@/components/ui/aspect-ratio";
+  import Button from "@/components/ui/button/button.svelte";
   import { Card, CardContent } from "@/components/ui/card";
   import Checkbox from "@/components/ui/checkbox/checkbox.svelte";
   import Progress from "@/components/ui/progress/progress.svelte";
-  import Link from "@/components/ui/text/Link.svelte";
   import Text from "@/components/ui/text/Text.svelte";
 
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
   import { JobRecord, jobsBackendDataSource } from "@/data/model/media/jobs/record";
   import { mediaBackendDataSource } from "@/data/model/media/medias/medias-record";
+  import { authStatus } from "@/security/AuthContext";
+  import { humanize } from "@/utils/string";
 
   import type { EntryStatus as EntryStatusType } from "@/data/model/dataset/entries/constants";
+  import type { ProjectMemberScope } from "@/security/types";
 
   // Props
   interface Props {
@@ -29,6 +37,38 @@
   }
   let { entry, selectedRows, onRowSelect }: Props = $props();
 
+  // Variables
+  const currentAccount = $authStatus.authContext;
+
+  let projectId = page.params.projectId as string;
+  let { id: entryId, wf_step, assigned_to_id, submitted_by_id, reviewed_by_id } = $derived(entry);
+  let canUpdateEntry = $state(false);
+  let canDeleteEntry = $state(false);
+  let canOpenEntry = $derived.by(() => {
+    if (!currentAccount?.id) return false;
+
+    /** If entry is not assigned to anyone, it can open by anyone */
+    if (assigned_to_id === null) return true;
+
+    /** If entry is assigned to someone, it can open by the assigned user */
+    return assigned_to_id == Number(currentAccount.id);
+  });
+
+  const as_project_owner: { as_user: ProjectMemberScope } = {
+    as_user: {
+      projectId,
+      projectMemberRoles: ["project_owner"],
+    },
+  };
+
+  // Lifecycle
+  onMount(async () => {
+    canUpdateEntry =
+      (await currentAccount?.can("update", "dataset:entries", ["as_org_owner", as_project_owner])) || false;
+    canDeleteEntry =
+      (await currentAccount?.can("delete", "dataset:entries", ["as_org_owner", as_project_owner])) || false;
+  });
+
   // State for thumbnail
   let imgContainer: HTMLDivElement | undefined = $state(undefined);
   let containerWidth: number = $state(240);
@@ -37,6 +77,7 @@
   let thumbnailError = $state(false);
   let currentImagePosition = $state(0);
   let animationInterval: number | null = $state(null);
+  let progressInterval = writable<number | undefined>(undefined); // Note: Need to use writable because it's not reactive
   let jobProgress: number = $state(1);
 
   const processingStatuses: EntryStatusType[] = ["processing", "pending"];
@@ -44,8 +85,30 @@
   const ANIMATION_INTERVAL_MS = 350; // 1 second per position
 
   // Functions
-  async function fetchData(): Promise<void> {
-    await periodicCheckJobStatus();
+  $effect(() => {
+    periodicCheckJobStatus();
+
+    return () => stopPeriodicCheckJobStatus();
+  });
+
+  async function selectEntry() {
+    if (!currentAccount?.id) return;
+
+    try {
+      /**
+       * If the entry is unassigned, assign it to the current user
+       */
+      if (assigned_to_id === null) {
+        await entriesBackendDataSource.select({
+          id: entryId,
+        });
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to assign entry to you");
+    } finally {
+      goto(resolve(`/entries/${entryId}/plugin`));
+    }
   }
 
   async function loadThumbnail(): Promise<void> {
@@ -75,7 +138,7 @@
    */
   async function periodicCheckJobStatus() {
     if (processingStatuses.includes(entry.status)) {
-      const intervalId = setInterval(async () => {
+      $progressInterval = setInterval(async () => {
         try {
           let jobId = entry.job_id;
 
@@ -84,16 +147,26 @@
            * fetch the entry again to get the job_id
            */
           if (!jobId) {
-            const entryRes = await entriesBackendDataSource.get(entry.id, {
-              fields: {
-                [EntryRecord.type]: ["job_id"],
-              },
-              noCache: true,
-            });
+            /** Fetch the entry again to get the job_id and update the entry state (to prevent index cache) */
+            const entryRes = await entriesBackendDataSource.get(entryId, { noCache: true });
+            entry = entryRes.data;
             jobId = entryRes.data.job_id;
           }
+          if (!jobId) return;
 
-          const jobRes = await jobsBackendDataSource.get(jobId!, {
+          /** If entry is ready, stop the interval */
+          if (entry.status === "ready") {
+            stopPeriodicCheckJobStatus();
+            return;
+          }
+
+          /** If the entry is no longer processing, stop the interval */
+          if (!processingStatuses.includes(entry.status)) {
+            stopPeriodicCheckJobStatus();
+            return;
+          }
+
+          const jobRes = await jobsBackendDataSource.get(jobId, {
             fields: {
               [JobRecord.type]: ["progress", "status"],
             },
@@ -101,20 +174,18 @@
           });
           jobProgress = jobRes.data.progress;
 
-          // If progress = 100%, update entry status to 'ready'
-          if (jobRes.data.progress === 1) {
+          /** If progress = 100%, update entry status to 'ready' */
+          if (jobProgress === 1) {
             entry.status = "ready";
             await loadThumbnail();
-          }
-
-          // If the entry is no longer processing, stop the interval
-          if (!processingStatuses.includes(entry.status)) {
-            clearInterval(intervalId);
+            stopPeriodicCheckJobStatus();
+            return;
           }
         } catch (error) {
           console.error("Error fetching updated entry:", error);
+          stopPeriodicCheckJobStatus();
         }
-      }, 5_000);
+      }, 2_000);
     } else {
       /**
        * Then load the thumbnail once the job is complete
@@ -142,28 +213,32 @@
   }
 
   // Clean up blob URL and animation when component is destroyed
+  function stopPeriodicCheckJobStatus() {
+    clearInterval($progressInterval);
+  }
+
   function cleanup() {
     stopAnimation();
+    stopPeriodicCheckJobStatus();
 
     if (thumbnailUrl) {
       URL.revokeObjectURL(thumbnailUrl);
     }
   }
 
-  onDestroy(() => {
-    return cleanup;
-  });
+  onDestroy(cleanup);
 </script>
 
-{#await fetchData()}
-  <LoadingEntryCard></LoadingEntryCard>
-{:then _}
-  <Card class="hover:bg-primary/5 hover:shadow-primary/10 group transition-shadow hover:shadow-md">
-    <CardContent class="flex flex-row gap-4">
+<Card class="hover:bg-primary/5 hover:shadow-primary/10 group transition-shadow hover:shadow-md">
+  <CardContent class="grid grid-cols-2">
+    <!-- SECTION::LEFT -->
+    <section class="flex flex-row gap-4">
       <!-- CHECKBOX -->
-      <div class="my-auto">
-        <Checkbox checked={selectedRows.includes(entry.id)} onCheckedChange={() => onRowSelect(entry.id)}></Checkbox>
-      </div>
+      {#if canUpdateEntry || canDeleteEntry}
+        <div class="my-auto">
+          <Checkbox checked={selectedRows.includes(entryId)} onCheckedChange={() => onRowSelect(entryId)} />
+        </div>
+      {/if}
 
       <!-- THUMBNAIL -->
       <div class="h-full overflow-hidden" style:width="{containerWidth}px" style:max-width="{containerWidth}px">
@@ -201,46 +276,85 @@
       <!-- INFO -->
       <div class="flex flex-1 flex-col gap-6">
         <!-- RESOURCE -->
-        <Link
-          href="/entries/{entry.id}/plugin"
-          class="group-hover:text-primary group-hover:cursor-pointer group-hover:underline group-hover:underline-offset-4"
-          showIcon
-        >
-          <Text size="sm" weight="medium">
+        {#if canOpenEntry}
+          <Button
+            variant="link"
+            class="group-hover:text-primary justify-start px-0 group-hover:cursor-pointer group-hover:underline group-hover:underline-offset-4"
+            onclick={selectEntry}
+          >
+            <span class="-ml-3">{entry.resource}</span>
+
+            <ExternalLinkIcon class="opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
+          </Button>
+        {:else}
+          <Text size="sm" weight="medium" class="text-muted-foreground">
             {entry.resource}
           </Text>
-        </Link>
+        {/if}
 
         <div class="flex flex-col items-start">
           <DataDisplay label="Created at">
             {#snippet slotValue()}
-              <DateText datetime={entry.created_at} datetimeFormat="MMM dd, yyyy" size="sm" weight="light" showTooltip
-              ></DateText>
+              <DateText
+                datetime={entry.created_at}
+                datetimeFormat="MMM dd, yyyy"
+                size="sm"
+                weight="light"
+                showTooltip
+              />
             {/snippet}
           </DataDisplay>
 
           <DataDisplay label="Updated at">
             {#snippet slotValue()}
-              <DateText datetime={entry.updated_at} datetimeFormat="MMM dd, yyyy" size="sm" weight="light" showTooltip
-              ></DateText>
+              <DateText
+                datetime={entry.updated_at}
+                datetimeFormat="MMM dd, yyyy"
+                size="sm"
+                weight="light"
+                showTooltip
+              />
             {/snippet}
           </DataDisplay>
         </div>
 
         <!-- PRIORITY AT -->
         <div>
-          <EntryPriority {entry} updatable></EntryPriority>
+          <EntryPriority {entry} updatable />
         </div>
       </div>
+    </section>
 
+    <!-- SECTION::RIGHT -->
+    <section class="flex flex-row gap-4">
       <!-- STAGE & ASSIGNED TO -->
       <div class="my-auto flex flex-1 flex-col gap-2">
-        <DataDisplay label="Stage" value={entry.wf_step}></DataDisplay>
-        <DataDisplay label="Assigned to">
-          {#snippet slotValue()}
-            <ProjectMemberAvatar memberId={entry.assigned_to_id}></ProjectMemberAvatar>
-          {/snippet}
-        </DataDisplay>
+        <DataDisplay label="Stage" value={humanize(wf_step)} />
+
+        <!-- NOTE: Only show assigned to if wf_step is not "done" -->
+        {#if wf_step !== "done"}
+          <DataDisplay label="Assigned to">
+            {#snippet slotValue()}
+              <ProjectMemberAvatar memberAccountId={assigned_to_id} />
+            {/snippet}
+          </DataDisplay>
+        {/if}
+
+        {#if submitted_by_id}
+          <DataDisplay label="Submitted by">
+            {#snippet slotValue()}
+              <ProjectMemberAvatar memberAccountId={submitted_by_id} />
+            {/snippet}
+          </DataDisplay>
+        {/if}
+
+        {#if reviewed_by_id}
+          <DataDisplay label="Reviewed by">
+            {#snippet slotValue()}
+              <ProjectMemberAvatar memberAccountId={reviewed_by_id} />
+            {/snippet}
+          </DataDisplay>
+        {/if}
       </div>
 
       <!-- STATUS & ACTIONS -->
@@ -256,12 +370,12 @@
               <Progress value={jobProgress * 100} />
             </div>
           {:else}
-            <EntryStatus {entry}></EntryStatus>
+            <EntryStatus {entry} />
           {/if}
 
-          <EntryDropdownMenu {entry}></EntryDropdownMenu>
+          <EntryDropdownMenu {entry} />
         </div>
       </div>
-    </CardContent>
-  </Card>
-{/await}
+    </section>
+  </CardContent>
+</Card>

@@ -4,7 +4,7 @@ module Jobs
   class Record < Verse::Model::Record::Base
     type Resource::Media::Jobs
 
-    field :id, type: Integer, primary: true
+    field :id, type: String, primary: true
     field :job_class, type: String
 
     field :arguments, type: Hash
@@ -28,6 +28,26 @@ module Jobs
     self.resource = Resource::Media::Jobs
 
     encoder :arguments, Verse::Sequel::JsonEncoder
+
+    def scoped(action)
+      auth_context.can!(action, self.class.resource) do |scope|
+        scope.all? { table }
+
+        scope.as_org_owner? { scope_with_media_resources(action) }
+
+        scope.as_user? { scope_with_media_resources(action) }
+      end
+    end
+
+    private def scope_with_media_resources(action)
+      case action
+      when :read
+        media_repo = Medias::Repository.new(auth_context)
+        resources = media_repo.index({}).map(&:resource).uniq
+
+        table.where(Sequel.lit("arguments->>'resource' IN ?", resources))
+      end
+    end
 
     # Lock available jobs for processing, up to {count} jobs.
     # The jobs are locked for update and their status is set to "running".

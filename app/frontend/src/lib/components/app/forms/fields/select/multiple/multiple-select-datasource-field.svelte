@@ -1,24 +1,34 @@
 <script lang="ts" generics="T extends Record">
   import { cn } from "@/utils";
   import { CheckIcon, ChevronsUpDownIcon, CircleXIcon } from "@lucide/svelte";
+  import { onMount } from "svelte";
 
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import Button from "@/components/ui/button/button.svelte";
-  import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
+  import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandItem,
+    CommandList,
+    CommandSeparator,
+  } from "@/components/ui/command";
   import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
   import Spinner from "@/components/ui/spinner/spinner.svelte";
 
-  import type { SelectDataSourceFieldBaseProps } from "@/components/app/forms/form-field.types";
+  import type { MultipleSelectDataSourceFieldBaseProps } from "@/components/app/forms/form-field.types";
   import type { ListOptions } from "@/data/DataSource";
   import type { Record } from "@/data/model/Record";
   import type { LabelValue } from "@/utils/types";
 
   // Props
-  interface Props extends SelectDataSourceFieldBaseProps<T> {
-    values: Array<string | number | null>;
+  interface Props extends MultipleSelectDataSourceFieldBaseProps<T> {
+    values: Array<string | number>;
   }
   let {
+    displayKey,
+    valueKey = "id" as keyof T,
     dataSource,
     listOptions,
     values = [],
@@ -32,6 +42,9 @@
     searchable = false,
     searchPlaceholder = "Search an option",
     searchValue = $bindable(""),
+    hiddenChoices = [],
+    disabledChoices = [],
+    closeOnSelect = false,
     info,
     errors,
     class: className,
@@ -40,6 +53,7 @@
     // Slots
     slotLabel,
     slotTrigger,
+    slotTriggerValues,
     slotChoice,
     slotInfo,
     slotErrors,
@@ -51,8 +65,26 @@
   // Variables
   let open: boolean = $state(false);
   let choices: Choice[] = $state([]);
-  // let selectedValue
-  let selectedChoice = $derived(choices.find((choice) => values.includes(choice.value)));
+  let selectedChoices = $derived(choices.filter((choice) => values.includes(choice.value)));
+
+  // Lifecycle
+  onMount(async () => {
+    /** Get selected choice if value is defined */
+    if (values.length > 0) {
+      const fetchedChoices = await Promise.all(
+        values.map(async (val) => {
+          const choiceRes = await dataSource.get(String(val));
+          return {
+            label: choiceRes.data[displayKey],
+            value: choiceRes.data[valueKey],
+            data: choiceRes.data,
+          };
+        }),
+      );
+      // Assuming we want to set selectedChoice to the first matched choice
+      selectedChoices = fetchedChoices;
+    }
+  });
 
   // Functions
   function openPopover(): void {
@@ -82,21 +114,31 @@
 
     const response = await dataSource.list(listOpts);
 
-    return response.data.map((item) => ({
-      label: item.name,
-      value: item.id,
-      data: item,
-    }));
+    // Return filtered choices excluding hiddenChoices
+    return response.data
+      .map((item) => ({
+        label: item[displayKey],
+        value: item[valueKey],
+        disabled: disabledChoices.includes(item[valueKey]),
+        data: item,
+      }))
+      .filter((choice) => !hiddenChoices.includes(choice.value));
   }
 
-  async function select(choice: Choice): Promise<void> {
+  async function select(choice: LabelValue<string | number>): Promise<void> {
     if (values.find((v) => v == choice.value)) {
       values = values.filter((value) => value != choice.value);
     } else {
       values = [...values, choice.value];
     }
-    open = false;
-    await onSelected?.(choice.value);
+
+    open = closeOnSelect ? false : true;
+    await onSelected?.(selectedChoices);
+  }
+
+  function clearSelection(event: MouseEvent): void {
+    event.stopPropagation();
+    values = [];
   }
 </script>
 
@@ -114,7 +156,7 @@
       })}
     >
       {#if slotTrigger}
-        {@render slotTrigger({ selectedChoice, clearable, disabled })}
+        {@render slotTrigger({ selectedChoices, clearable, disabled })}
       {:else}
         <Button
           variant="outline"
@@ -124,8 +166,12 @@
           aria-expanded={open}
           onclick={openPopover}
         >
-          {#if selectedChoice}
-            {selectedChoice.label}
+          {#if selectedChoices.length > 0}
+            {#if slotTriggerValues}
+              {@render slotTriggerValues({ selectedChoices })}
+            {:else}
+              {selectedChoices.map((choice) => choice.label).join(", ")}
+            {/if}
           {:else}
             <span class="text-muted-foreground">{placeholder}</span>
           {/if}
@@ -133,46 +179,47 @@
           <div class="ml-auto inline-flex items-center gap-2">
             <button
               type="button"
-              class={cn("cursor-pointer", clearable && selectedChoice ? "opacity-50" : "opacity-0")}
-              onclick={() => {}}
+              class={cn("cursor-pointer", clearable && selectedChoices.length > 0 ? "opacity-50" : "opacity-0")}
+              onclick={clearSelection}
             >
-              <CircleXIcon class="size-4 shrink-0"></CircleXIcon>
+              <CircleXIcon class="size-4 shrink-0" />
             </button>
 
-            <ChevronsUpDownIcon class="size-4 shrink-0 opacity-50"></ChevronsUpDownIcon>
+            <ChevronsUpDownIcon class="size-4 shrink-0 opacity-50" />
           </div>
         </Button>
       {/if}
     </PopoverTrigger>
 
-    <PopoverContent align="start" class="w-auto p-0">
+    <PopoverContent align="start" class="w-auto min-w-[var(--bits-floating-anchor-width)] p-0">
       <Command>
         {#if searchable}
           <InputField
             name="filter/multiple-select/{searchKeyWithOperation}"
-            class="pb-2"
+            class="p-2"
             placeholder={searchPlaceholder}
             value={searchValue}
             oninput={(e) => (searchValue = e.currentTarget.value)}
-          ></InputField>
+          />
+          <CommandSeparator />
         {/if}
 
         <CommandList>
           <CommandEmpty>No option found.</CommandEmpty>
           <CommandGroup>
             {#await initialFetchChoices()}
-              <Spinner size="sm"></Spinner>
+              <Spinner size="sm" />
             {:then _}
               {#each choices as choice, index (index)}
                 {#if slotChoice}
-                  {@render slotChoice({ choice })}
+                  {@render slotChoice({ choice, select })}
                 {:else}
                   <CommandItem onclick={() => select(choice)}>
                     <CheckIcon
                       class={cn("mr-2 size-4", {
                         "opacity-0": !values.find((v) => v == choice.value),
                       })}
-                    ></CheckIcon>
+                    />
 
                     {choice.label}
                   </CommandItem>

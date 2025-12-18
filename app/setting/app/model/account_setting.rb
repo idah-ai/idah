@@ -2,6 +2,7 @@
 
 module AccountSetting
   class Record < Verse::Model::Record::Base
+    type Resource::Setting::AccountSettings
     field :id, type: Integer, primary: true
 
     field :account_id, type: Integer
@@ -18,6 +19,18 @@ module AccountSetting
     self.table = "account_settings"
 
     encoder :value, Verse::Sequel::JsonEncoder
+
+    def scoped(action)
+      auth_context.can!(action, self.class.resource) do |scope|
+        scope.all? { table }
+
+        scope.own? {
+          table if action == :create
+
+          table.where(account_id: auth_context.metadata[:id])
+        }
+      end
+    end
 
     query
     def get(key, account_id:, plugin: "", default: nil)

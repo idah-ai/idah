@@ -1,8 +1,10 @@
 <script lang="ts">
   import CheckboxField from "@/components/app/forms/fields/input/checkbox-field.svelte";
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
+  import SingleSelectField from "@/components/app/forms/fields/select/single/single-select-field.svelte";
   import { FieldGroup, FieldSet } from "@/components/ui/field";
 
+  import { roles } from "@/data/model/iam/accounts/constants";
   import { AccountRecord } from "@/data/model/iam/accounts/record";
 
   import type { FormBaseProps } from "@/components/app/forms/form.types";
@@ -10,20 +12,19 @@
   // Props
   interface Props extends FormBaseProps {
     account: AccountRecord;
+    newRecord?: boolean;
   }
-  let { account, fieldErrors, onValueChange }: Props = $props();
+  let { account, newRecord, fieldErrors, onValueChange }: Props = $props();
 
   // Variables
   let resource: string = AccountRecord.type;
 
   // Variables::Reactive
-  let name: string = $derived(account.name);
-  let email: string = $derived(account.email);
-  let enabled: boolean = $derived(account.enabled);
+  let { name, email, role_name, enabled } = $derived(account);
 
   // Functions
   $effect(() => {
-    onValueChange({ name, email, enabled });
+    onValueChange({ name, email, role_name, enabled });
   });
 </script>
 
@@ -47,10 +48,27 @@
       placeholder="E.g. john.doe@example.com"
       type="email"
       required
+      disabled={!newRecord}
       errors={fieldErrors["email"]}
       value={email}
       oninput={(e) => (email = e.currentTarget.value)}
     />
+
+    <!-- ACCOUNT:ROLE -->
+    <!-- {#if !newRecord && account.role_name !== "org_owner"} -->
+    <SingleSelectField
+      name="{resource}/role_name"
+      label="Role"
+      placeholder="Select a role"
+      required
+      choices={roles}
+      errors={fieldErrors["role_name"]}
+      value={role_name}
+      onSelected={(selectedValue) => {
+        role_name = selectedValue as string;
+      }}
+    />
+    <!-- {/if} -->
 
     <!-- ACCOUNT::ENABLED -->
     <CheckboxField

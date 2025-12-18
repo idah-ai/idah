@@ -34,7 +34,7 @@
     if (entryIds.length === 0 || !selectedMember) return;
 
     for (const entryId of entryIds) {
-      await entriesBackendDataSource.assign({ id: entryId, memberId: selectedMember });
+      await entriesBackendDataSource.assign({ id: entryId, memberAccountId: selectedMember });
     }
 
     toast.success("Member assigned successfully");
@@ -67,7 +67,7 @@
     <DialogTitle>{title}</DialogTitle>
   {/snippet}
 
-  <AssignEntryForm {selectedMember} {fieldErrors} onValueChange={setValue} />
+  <AssignEntryForm {selectedMember} {entryRecord} {fieldErrors} onValueChange={setValue} />
 
   {#snippet confirm()}
     <Button loading={submitting} loadingLabel="Assigning" disabled={!selectedMember} onclick={submit}>Assign</Button>

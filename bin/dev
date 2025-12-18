@@ -1,6 +1,6 @@
 #!/bin/sh
 
-SERVICES="media dataset"
+SERVICES="audit dataset iam media notification setting sync"
 
 case $1 in
   migrate)
@@ -14,6 +14,10 @@ case $1 in
       echo "Resetting $service service..."
       docker compose run --rm $service ./dev-entrypoint.sh rake db:reset db:migrate
     done
+    ;;
+  setup)
+    echo "Setting up Services Accounts and IAM users..."
+    docker compose run --rm iam bundle exec rake dev:setup dev:users
     ;;
   *)
     echo "Unknown command: `$1`"

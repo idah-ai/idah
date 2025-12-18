@@ -5,7 +5,7 @@ class DatasetsExpo < BaseExpo
 
   use_service Dataset::Service
 
-  json_api Dataset::Record, http_opts: { auth: nil } do
+  json_api Dataset::Record do
     allowed_included "entries", "project"
 
     show
@@ -27,5 +27,12 @@ class DatasetsExpo < BaseExpo
     end
     update
     delete
+  end
+
+  expose on_resource_event(Resource::Dataset::Datasets, "completed")
+  def on_dataset_completed
+    dataset_id = message.content[:resource_id]
+
+    service.notify_dataset_completed(dataset_id)
   end
 end

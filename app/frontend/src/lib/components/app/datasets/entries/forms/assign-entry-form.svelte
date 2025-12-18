@@ -12,13 +12,15 @@
   // Props
   interface Props extends FormBaseProps {
     selectedMember: number | null;
+    entryRecord?: EntryRecord;
   }
-  let { selectedMember, onValueChange }: Props = $props();
+  let { selectedMember, entryRecord, onValueChange }: Props = $props();
 
   // Variables
   const resource: string = EntryRecord.type;
 
   let projectId = page.params.projectId as string;
+  let wfStep = $derived(entryRecord?.wf_step || undefined);
 
   // Variables::Reactive
   let assignedToId = $derived(selectedMember);
@@ -36,10 +38,12 @@
       label="Member"
       placeholder="Select a member"
       displayKey="email"
+      valueKey="account_id"
       dataSource={projectMembersBackendDataSource}
       listOptions={{
         filters: {
           project_id: projectId,
+          role__in: wfStep === "review" ? ["reviewer", "project_owner"] : ["annotator", "project_owner"],
         },
       }}
       searchKeyWithOperation="email__match"

@@ -8,15 +8,17 @@
 
   import { cn } from "@/utils";
 
-  import type { SelectFieldBaseProps } from "@/components/app/forms/form-field.types";
+  import type { SingleSelectFieldBaseProps } from "@/components/app/forms/form-field.types";
   import type { LabelValue } from "@/components/app/types";
 
   // Props
-  interface Props extends SelectFieldBaseProps {
+  interface Props extends SingleSelectFieldBaseProps {
     value: string | number | null;
   }
   let {
     choices,
+    // hiddenChoices = [],
+    // disabledChoices = [],
     value = $bindable(null),
     name,
     label,
@@ -31,6 +33,7 @@
     class: className,
     onSelected,
     slotLabel,
+    slotChoice,
     slotInfo,
     slotErrors,
   }: Props = $props();
@@ -46,7 +49,7 @@
     await onSelected?.(value);
   }
 
-  function clearValue(event: MouseEvent): void {
+  function clearSelection(event: MouseEvent): void {
     event.stopPropagation();
     value = null;
   }
@@ -84,7 +87,7 @@
             <button
               type="button"
               class={cn("cursor-pointer", clearable && selectedValue ? "opacity-50" : "opacity-0")}
-              onclick={clearValue}
+              onclick={clearSelection}
             >
               <CircleXIcon class="size-4 shrink-0" />
             </button>
@@ -95,7 +98,7 @@
       {/snippet}
     </PopoverTrigger>
 
-    <PopoverContent align="start" class="p-0">
+    <PopoverContent align="start" class="w-auto min-w-[var(--bits-floating-anchor-width)] p-0">
       <Command>
         {#if searchable}
           <CommandInput placeholder={searchPlaceholder}></CommandInput>
@@ -105,14 +108,18 @@
           <CommandEmpty>No option found.</CommandEmpty>
           <CommandGroup>
             {#each choices as choice (choice.value)}
-              <CommandItem value={String(choice.value)} onSelect={() => select(choice)}>
-                <CheckIcon
-                  class={cn("mr-2 size-4", {
-                    "opacity-0": choice.value !== value,
-                  })}
-                />
-                {choice.label}
-              </CommandItem>
+              {#if slotChoice}
+                {@render slotChoice({ choice, select })}
+              {:else}
+                <CommandItem value={String(choice.value)} onSelect={() => select(choice)}>
+                  <CheckIcon
+                    class={cn("mr-2 size-4", {
+                      "opacity-0": choice.value !== value,
+                    })}
+                  />
+                  {choice.label}
+                </CommandItem>
+              {/if}
             {/each}
           </CommandGroup>
         </CommandList>

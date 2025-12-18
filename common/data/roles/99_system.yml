@@ -1,7 +1,0 @@
-# Until later in the development process,
-# we will keep anonymous role able to do everything on the platform
-
-system:
-  assignable: false
-  rights:
-    - "*.*.*"

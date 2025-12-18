@@ -3,7 +3,7 @@
 require "spec_helper"
 
 RSpec.describe Entry::Service, database: true do
-  let(:auth_context){ Verse::Auth::Context.new }
+  let(:auth_context) { Verse::Auth::Context[:system] }
 
   subject { described_class.new(auth_context) }
 
@@ -12,7 +12,12 @@ RSpec.describe Entry::Service, database: true do
   let(:dataset_repo) { Dataset::Repository.new(auth_context) }
 
   let!(:project_id) do
-    project_repo.create(name: "Test Project", description: "A test project", created_by_email: "user@example.com")
+    project_repo.create(
+      name: "Test Project",
+      description: "A test project",
+      created_by_email: "user@example.com",
+      organization_id: 1,
+    )
   end
 
   let!(:dataset_id) do
@@ -106,11 +111,13 @@ RSpec.describe Entry::Service, database: true do
         )
         result = subject.create(entry_record)
         expect(result.status).to eq("pending")
+        expect(result.project_id).to eq(project_id)
+        expect(result.dataset_id).to eq(dataset_id)
       end
     end
 
     context "when job_id is provided" do
-      let(:job_id) { 123 }
+      let(:job_id) { UUIDv7.generate }
       let(:entry_record) do
         deserialize(
           {
@@ -179,24 +186,12 @@ RSpec.describe Entry::Service, database: true do
   end
 
   describe "#mark_entries_status_as" do
-    let(:job_id) { 456 }
+    let(:job_id) { UUIDv7.generate }
+    let(:other_job_id) { UUIDv7.generate }
 
     before do
-      repo.create(
-        {
-          dataset_id: dataset_id,
-          job_id: job_id,
-          status: "processing"
-        }
-      )
-
-      repo.create(
-        {
-          dataset_id: dataset_id,
-          job_id: 789,
-          status: "pending"
-        }
-      )
+      repo.create({ project_id:, dataset_id:, job_id:, status: "processing" })
+      repo.create({ project_id:, dataset_id:, job_id: other_job_id, status: "pending" })
     end
 
     it "marks entries with the given job_id as ready" do
@@ -205,7 +200,7 @@ RSpec.describe Entry::Service, database: true do
       entries = repo.index({ job_id: job_id })
       expect(entries.map(&:status)).to all(eq("ready"))
 
-      other_entry = repo.index({ job_id: 789 }).first
+      other_entry = repo.index({ job_id: other_job_id }).first
       expect(other_entry.status).to eq("pending")
     end
 
@@ -215,7 +210,7 @@ RSpec.describe Entry::Service, database: true do
       entries = repo.index({ job_id: job_id })
       expect(entries.map(&:status)).to all(eq("processing_error"))
 
-      other_entry = repo.index({ job_id: 789 }).first
+      other_entry = repo.index({ job_id: other_job_id }).first
       expect(other_entry.status).to eq("pending")
     end
   end
@@ -321,7 +316,8 @@ RSpec.describe Entry::Service, database: true do
     let!(:test_entry) do
       repo.create(
         {
-          dataset_id: dataset_id,
+          project_id:,
+          dataset_id:,
           resource: "test-video.mp4",
           status: "ready",
           wf_step: "start"
@@ -350,7 +346,7 @@ RSpec.describe Entry::Service, database: true do
       before do
         repo.update!(test_entry, { wf_step: "annotate" })
         # Mock random to always trigger sampling
-        allow_any_instance_of(Workflow::EntryWorkflow).to receive(:rand).and_return(0.5)
+        allow_any_instance_of(Workflow::SimpleReviewAnnotationWorkflow).to receive(:rand).and_return(0.5)
       end
 
       it "transitions to review when should_sample? returns true" do
@@ -368,7 +364,7 @@ RSpec.describe Entry::Service, database: true do
       before do
         repo.update!(test_entry, { wf_step: "annotate" })
         # Mock random to not trigger sampling
-        allow_any_instance_of(Workflow::EntryWorkflow).to receive(:rand).and_return(0.5)
+        allow_any_instance_of(Workflow::SimpleReviewAnnotationWorkflow).to receive(:rand).and_return(0.5)
       end
 
       it "transitions to done when should_sample? returns false" do
@@ -431,7 +427,8 @@ RSpec.describe Entry::Service, database: true do
     let!(:test_entry) do
       repo.create(
         {
-          dataset_id: dataset_id,
+          project_id:,
+          dataset_id:,
           resource: "test-video.mp4",
           status: "in_progress",
           wf_step: "annotate"

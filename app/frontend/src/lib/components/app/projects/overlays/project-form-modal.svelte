@@ -16,8 +16,9 @@
   // Props
   interface Props extends FormModalBaseProps {
     projectRecord?: ProjectRecord;
+    preSelectedOrganizationId?: string;
   }
-  let { action, open = $bindable(), title, projectRecord }: Props = $props();
+  let { action, open = $bindable(), title, projectRecord, preSelectedOrganizationId }: Props = $props();
 
   // Variables
   let newRecord: boolean = $derived(action === "create");
@@ -32,6 +33,7 @@
           attributes: {
             name: null,
             description: null,
+            organization_id: preSelectedOrganizationId || null,
           },
         }),
   );
@@ -44,6 +46,7 @@
       attributes: {
         name: null,
         description: null,
+        organization_id: preSelectedOrganizationId || null,
       },
     });
   }
@@ -51,6 +54,7 @@
   function setValue(value: Hash): void {
     project.name = value.name;
     project.description = value.description;
+    project.organization_id = value.organization_id;
   }
 
   async function createProject() {
@@ -58,7 +62,7 @@
       attributes: {
         name: project.name,
         description: project.description,
-        created_by_email: "user@example.com", // TODO: Replace with actual user email from auth context when implement authentication system
+        organization_id: project.organization_id,
       },
     });
 
@@ -73,6 +77,7 @@
       attributes: {
         name: project.name,
         description: project.description,
+        organization_id: project.organization_id,
       },
     });
 
@@ -89,12 +94,14 @@
     try {
       const validated = validateData(schema, {
         name: project.name,
+        organization_id: Number(project.organization_id),
         description: project.description,
       });
 
       if (!validated.success) {
         fieldErrors = getFieldErrors(validated.error);
-        throw new Error("Failed to submit form");
+        submitting = false;
+        return;
       }
 
       if (newRecord) {
@@ -110,5 +117,5 @@
 </script>
 
 <FormModal {action} {title} loading={submitting} onCancel={resetForm} onConfirm={submit} bind:open>
-  <ProjectForm {project} {fieldErrors} onValueChange={setValue}></ProjectForm>
+  <ProjectForm {project} {fieldErrors} {preSelectedOrganizationId} onValueChange={setValue}></ProjectForm>
 </FormModal>

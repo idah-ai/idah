@@ -4,6 +4,7 @@ Sequel.migration do
   change do
     execute(%(CREATE EXTENSION IF NOT EXISTS "pg_trgm"))
     execute(%(CREATE EXTENSION IF NOT EXISTS "uuid-ossp"))
+    execute(%(CREATE EXTENSION IF NOT EXISTS "pgcrypto"))
 
     # Credits goes to:
     # https://gist.githubusercontent.com/kjmph/5bd772b2c2df145aa645b837da7eca74/raw/3c410c9dfae89d1dfbcf4202f21974e2d30ed1d7/A_UUID_v7_for_Postgres.sql
@@ -76,6 +77,8 @@ Sequel.migration do
 
       index :created_by_email, opclass: :gin_trgm_ops, type: :gin
 
+      column :organization_id, :bigint, null: false, index: true
+
       Migration::Timestamps.timestamps(self)
     end
     Migration::Timestamps.trg_updated_at(self, :projects)
@@ -111,7 +114,9 @@ Sequel.migration do
 
       column :progress, Float, null: false, default: 0.0 # from 0.0 to 1.0
 
-      index :name, opclass: :gin_trgm_ops, type: :gin
+      column :entries_total_count, Integer, null: false, default: 0
+      column :entries_completed_count, Integer, null: false, default: 0
+      column :entries_in_progress_count, Integer, null: false, default: 0
 
       Migration::Timestamps.timestamps(self)
     end
@@ -119,6 +124,14 @@ Sequel.migration do
 
     create_table(:entries) do
       column :id, :uuid, primary_key: true, default: Sequel.lit("uuid_generate_v7()")
+
+      foreign_key :project_id,
+                  :projects,
+                  type: :uuid,
+                  null: false,
+                  index: true,
+                  on_delete: :cascade,
+                  on_update: :cascade
 
       foreign_key :dataset_id,
                   :datasets,
@@ -133,7 +146,7 @@ Sequel.migration do
       column :resource, String, null: true
       # Related job for ingesting the entry.
       # Used to change the status of the entry, e.g. for videos.
-      column :job_id, :bigint, null: true, index: true
+      column :job_id, :uuid, null: true, index: true
 
       # current workflow step, e.g. "start", "annotate", "review", "export"
       column :wf_step, String, null: false, index: true, default: "start"
@@ -142,19 +155,91 @@ Sequel.migration do
       column :status, String, null: false, index: true, default: "pending"
 
       column :assigned_to_id, :bigint, null: true, index: true
+      column :submitted_by_id, :bigint, null: true, index: true
+      column :reviewed_by_id, :bigint, null: true, index: true
 
       Migration::Timestamps.timestamps(self)
     end
     Migration::Timestamps.trg_updated_at(self, :entries)
 
+    # Create trigger function to update datasets counters on entry changes
+    execute <<~SQL
+      CREATE OR REPLACE FUNCTION update_dataset_entry_counters()
+      RETURNS TRIGGER AS $$
+      BEGIN
+        -- Handle INSERT
+        IF (TG_OP = 'INSERT') THEN
+          UPDATE datasets
+          SET entries_total_count = entries_total_count + 1
+          WHERE id = NEW.dataset_id;
+          RETURN NEW;
+        END IF;
+
+        -- Handle UPDATE
+        IF (TG_OP = 'UPDATE') THEN
+          -- Only update if status changed
+          IF (OLD.status != NEW.status) THEN
+            -- Increment counters in dataset
+            UPDATE datasets
+            SET entries_completed_count = entries_completed_count + CASE WHEN NEW.status = 'completed' OR NEW.status = 'errored' THEN 1 ELSE 0 END,
+                entries_in_progress_count =
+                  entries_in_progress_count
+                  + CASE WHEN NEW.status = 'in_progress' THEN 1 ELSE 0 END
+                  - CASE WHEN OLD.status = 'in_progress' THEN 1 ELSE 0 END
+            WHERE id = NEW.dataset_id;
+          END IF;
+          RETURN NEW;
+        END IF;
+
+        -- Handle DELETE
+        IF (TG_OP = 'DELETE') THEN
+          UPDATE datasets
+          SET entries_total_count = entries_total_count - 1,
+              entries_completed_count = entries_completed_count - CASE WHEN OLD.status = 'completed' OR OLD.status = 'errored' THEN 1 ELSE 0 END,
+              entries_in_progress_count = entries_in_progress_count - CASE WHEN OLD.status = 'in_progress' THEN 1 ELSE 0 END
+          WHERE id = OLD.dataset_id;
+          RETURN OLD;
+        END IF;
+
+        RETURN NULL;
+      END;
+      $$ LANGUAGE plpgsql;
+    SQL
+
+    # Create trigger on entries table
+    execute <<~SQL
+      CREATE TRIGGER trg_update_dataset_entry_counters
+      AFTER INSERT OR UPDATE OR DELETE ON entries
+      FOR EACH ROW
+      EXECUTE FUNCTION update_dataset_entry_counters();
+    SQL
+
     create_table(:annotations) do
       column :id, :uuid, primary_key: true, default: Sequel.lit("uuid_generate_v7()")
+
+      foreign_key :project_id,
+                  :projects,
+                  type: :uuid,
+                  null: false,
+                  index: true,
+                  on_delete: :cascade,
+                  on_update: :cascade
+
+      foreign_key :dataset_id,
+                  :datasets,
+                  type: :uuid,
+                  null: false,
+                  index: true,
+                  on_delete: :cascade,
+                  on_update: :cascade
 
       foreign_key :entry_id,
                   :entries,
                   type: :uuid,
                   null: false,
-                  index: true
+                  index: true,
+                  on_delete: :cascade,
+                  on_update: :cascade
 
       # Dimension of the annotation, e.g. coordinates or pixel mask.
       column :dimensions, :jsonb, text: true, null: false
@@ -172,6 +257,22 @@ Sequel.migration do
 
     create_table(:note_feeds) do
       column :id, :uuid, primary_key: true, default: Sequel.lit("uuid_generate_v7()")
+
+      foreign_key :project_id,
+                  :projects,
+                  type: :uuid,
+                  null: false,
+                  index: true,
+                  on_delete: :cascade,
+                  on_update: :cascade
+
+      foreign_key :dataset_id,
+                  :datasets,
+                  type: :uuid,
+                  null: false,
+                  index: true,
+                  on_delete: :cascade,
+                  on_update: :cascade
 
       foreign_key :entry_id,
                   :entries,
@@ -217,7 +318,9 @@ Sequel.migration do
                   :note_feeds,
                   type: :uuid,
                   null: false,
-                  index: true
+                  index: true,
+                  on_delete: :cascade,
+                  on_update: :cascade
 
       column :content_md, String, null: false
 
@@ -228,5 +331,31 @@ Sequel.migration do
       Migration::Timestamps.timestamps(self)
     end
     Migration::Timestamps.trg_updated_at(self, :note_comments)
+
+    create_table(:project_members) do
+      primary_key :id, :bigserial
+
+      foreign_key :project_id,
+                  :projects,
+                  type: :uuid,
+                  null: false,
+                  index: true,
+                  on_delete: :cascade,
+                  on_update: :cascade
+
+      column :account_id, :bigint, null: false, index: true
+      column :name, String
+      column :email, String, null: false, index: true
+
+      column :role, String, null: false
+
+      column :invited_by_id, :bigint, null: false
+
+      index [:project_id, :account_id]
+      index [:project_id, :role]
+
+      Migration::Timestamps.timestamps(self)
+    end
+    Migration::Timestamps.trg_updated_at(self, :project_members)
   end
 end
