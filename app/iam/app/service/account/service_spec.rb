@@ -86,7 +86,7 @@ RSpec.describe Account::Service, database: true do
         )
         allow(auth_context).to receive(:metadata).and_return({ id: admin_id })
 
-        allow_any_instance_of(Organization::Repository).to receive(:find!).with(999) do
+        allow_any_instance_of(Organization::Service).to receive(:show).with(999) do
           Verse::JsonApi::Struct.new(
             { id: 999,
               name: "Test Organization" }
@@ -120,6 +120,7 @@ RSpec.describe Account::Service, database: true do
             category: "org_owner_role_assigned",
             recipient_account_id: user_account.id,
             recipient_name: "Regular User",
+            organization_scope_change: "added",
             organization_name: "Test Organization",
             organization_id: 999,
             admin_name: "Admin User"
@@ -284,6 +285,183 @@ RSpec.describe Account::Service, database: true do
           subject.resend_pending_invitations(account_id)
         }.to raise_error(Verse::Error::NotFound)
       end
+    end
+  end
+
+  describe "#notify_role_change" do
+    before do
+      allow_any_instance_of(Account::Repository).to receive(:after_commit).and_yield
+
+      admin_id = account_repo.create(
+        {
+          name: "Admin User",
+          email: "admin@test.com",
+          role_name: "admin",
+          role_scope: "{}",
+          enabled: true,
+        }
+      )
+      allow(auth_context).to receive(:metadata).and_return({ id: admin_id })
+
+      @user_account = subject.create(
+        deserialize(
+          {
+            data: {
+              type: Resource::Iam::Accounts,
+              attributes: {
+                name: "User",
+                email: "user@test.com",
+                role_name: "user",
+                role_scope: "{}",
+                enabled: true,
+              },
+            }
+          }
+        )
+      )
+
+      org_service_double = instance_double(Organization::Service)
+      allow(Organization::Service).to receive(:new).and_return(org_service_double)
+      allow(org_service_double).to receive(:show) do |org_id|
+        Verse::JsonApi::Struct.new({ id: org_id, name: "org #{org_id}" })
+      end
+
+      @org_owner_account = subject.create(
+        deserialize(
+          {
+            data: {
+              type: Resource::Iam::Accounts,
+              attributes: {
+                name: "Org Owner",
+                email: "org_owner@test.com",
+                role_name: "org_owner",
+                role_scope: '{"org": ["999"]}',
+                enabled: true,
+              },
+            }
+          }
+        )
+      )
+    end
+
+    it "notify role change" do
+      expect(::Service::Notification).to receive(:email).with(
+        {
+          to: "org_owner@test.com",
+          recipient_account_email: "org_owner@test.com",
+          title: "You have been removed as organization owner",
+          category: "org_owner_role_removed",
+          recipient_account_id: @org_owner_account.id,
+          recipient_name: "Org Owner",
+          admin_name: "Admin User"
+        }
+      )
+
+      # org_owner's org scope is added
+      updating_record = deserialize(
+        {
+          data: {
+            type: Resource::Iam::Accounts,
+            id: @org_owner_account.id,
+            attributes: { role_name: "user" }
+          }
+        }
+      )
+      subject.update(updating_record)
+    end
+
+    it "doesn't notify role change if the role doesn't change or org_owner's scope doesn't change" do
+      expect(::Service::Notification).not_to receive(:email)
+
+      # role doesn't change
+      updating_record = deserialize(
+        {
+          data: {
+            type: Resource::Iam::Accounts,
+            id: @user_account.id,
+            attributes: {
+              name: "Updated Test Account Name"
+            }
+          }
+        }
+      )
+      subject.update(updating_record)
+
+      # org_owner's org scope doesn't change
+      updating_record = deserialize(
+        {
+          data: {
+            type: Resource::Iam::Accounts,
+            id: @org_owner_account.id,
+            attributes: {
+              name: "Updated Test Account Name"
+            }
+          }
+        }
+      )
+      subject.update(updating_record)
+    end
+
+    it "notify if org_owner's scope is added" do
+      expect(::Service::Notification).to receive(:email).with(
+        {
+          to: "org_owner@test.com",
+          recipient_account_email: "org_owner@test.com",
+          title: "Your organization scope has been changed",
+          category: "org_owner_role_assigned",
+          recipient_account_id: @org_owner_account.id,
+          recipient_name: "Org Owner",
+          organization_scope_change: "added",
+          organization_name: "org 111",
+          organization_id: "111",
+          admin_name: "Admin User"
+        }
+      )
+
+      # org_owner's org scope is added
+      updating_record = deserialize(
+        {
+          data: {
+            type: Resource::Iam::Accounts,
+            id: @org_owner_account.id,
+            attributes: {
+              role_scope: { org: ["999", "111"] }
+            }
+          }
+        }
+      )
+      subject.update(updating_record)
+    end
+
+    it "notify if org_owner's scope is removed" do
+      expect(::Service::Notification).to receive(:email).with(
+        {
+          to: "org_owner@test.com",
+          recipient_account_email: "org_owner@test.com",
+          title: "Your organization scope has been changed",
+          category: "org_owner_role_assigned",
+          recipient_account_id: @org_owner_account.id,
+          recipient_name: "Org Owner",
+          organization_scope_change: "removed",
+          organization_name: "org 999",
+          organization_id: "999",
+          admin_name: "Admin User"
+        }
+      )
+
+      # org_owner's org scope is added
+      updating_record = deserialize(
+        {
+          data: {
+            type: Resource::Iam::Accounts,
+            id: @org_owner_account.id,
+            attributes: {
+              role_scope: { org: [] }
+            }
+          }
+        }
+      )
+      subject.update(updating_record)
     end
   end
 end

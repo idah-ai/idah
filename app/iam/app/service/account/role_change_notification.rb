@@ -26,6 +26,11 @@ module Account
       ["org_owner", "admin"] => { category: "upgrade_org_owner_to_admin", send_notification: false },
       ["admin", "user"] => { category: "downgrade_admin_to_user", send_notification: false },
       ["admin", "org_owner"] => { category: "downgrade_admin_to_org_owner", send_notification: false },
+      ["org_owner", "org_owner"] => {
+        category: "org_owner_role_assigned",
+        send_notification: true,
+        title: "Your organization scope has been changed"
+      },
     }.freeze
 
     def initialize(from_role:, to_role:, recipient_email:, recipient_id:, email_params: {})
