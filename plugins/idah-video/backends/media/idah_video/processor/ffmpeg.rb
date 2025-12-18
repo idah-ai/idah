@@ -80,14 +80,26 @@ module IdahVideo
 
       def call(*args, **kv, &)
         Open3.popen3("ffmpeg", *args, **kv) do |_, stdout, stderr, wait_thr|
-          yield stdout, stderr if block_given?
+          captured_stderr = nil
+
+          if block_given?
+            yield stdout, stderr
+          else
+            err_t = Thread.new { stderr.read }
+            out_t = Thread.new { stdout.read }
+
+            err_t.join
+            out_t.join
+
+            captured_stderr = err_t.value
+          end
 
           result = wait_thr.value
 
-          if result != 0
-            err = stderr.read
+          unless result.success?
+            err = captured_stderr || stderr.read
             error = "Failed to execute `ffmpeg #{args.join(" ")}`: #{result}\n#{err}"
-            Verse.logger&.error{ error }
+            Verse.logger&.error { error }
             raise error
           end
         end

@@ -6,6 +6,7 @@ module Account
                 :to_role,
                 :email_title,
                 :category,
+                :type,
                 :email_params,
                 :send_notification,
                 :recipient_email,
@@ -14,18 +15,34 @@ module Account
     TRANSITION_SETTINGS = {
       ["user", "org_owner"] => {
         category: "org_owner_role_assigned",
+        type: "notification:organization:activities",
         send_notification: true,
         title: "You have been assigned as organization owner"
       },
-      ["user", "admin"] => { category: "upgrade_user_to_admin", send_notification: false },
+      ["user", "admin"] => {
+        category: "upgrade_user_to_admin",
+        send_notification: false
+      },
       ["org_owner", "user"] => {
         category: "org_owner_role_removed",
+        type: "notification:organization:activities",
         send_notification: true,
         title: "You have been removed as organization owner"
       },
-      ["org_owner", "admin"] => { category: "upgrade_org_owner_to_admin", send_notification: false },
-      ["admin", "user"] => { category: "downgrade_admin_to_user", send_notification: false },
-      ["admin", "org_owner"] => { category: "downgrade_admin_to_org_owner", send_notification: false },
+      ["org_owner", "admin"] => {
+        category: "upgrade_org_owner_to_admin",
+        type: "notification:organization:activities",
+        send_notification: false
+      },
+      ["admin", "user"] => {
+        category: "downgrade_admin_to_user",
+        send_notification: false
+      },
+      ["admin", "org_owner"] => {
+        category: "downgrade_admin_to_org_owner",
+        type: "notification:organization:activities",
+        send_notification: false
+      },
     }.freeze
 
     def initialize(from_role:, to_role:, recipient_email:, recipient_id:, email_params: {})
@@ -34,6 +51,7 @@ module Account
       settings = TRANSITION_SETTINGS[[from_role, to_role]] || {}
 
       @category = settings[:category] || default_category
+      @type = settings[:type] || "notification:account:activities"
       @send_notification = settings.fetch(:send_notification, false)
       @email_title = settings[:title] || default_title
       @email_params = email_params
@@ -48,6 +66,7 @@ module Account
         to: recipient_email,
         title: email_title,
         category: category,
+        type: type,
         recipient_account_email: recipient_email,
         recipient_account_id: recipient_id,
         **email_params
