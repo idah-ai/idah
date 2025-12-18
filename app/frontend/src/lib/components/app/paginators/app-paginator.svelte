@@ -90,7 +90,7 @@
           <!-- PREVIOUS BUTTON -->
           {#if currentPage > 1}
             <PaginationItem>
-              <PaginationPrevButton onclick={() => onPageChange(page)} />
+              <PaginationPrevButton onclick={() => onPageChange(currentPage - 1)} />
             </PaginationItem>
           {/if}
 
@@ -115,7 +115,7 @@
           <!-- NEXT BUTTON -->
           {#if currentPage < Math.ceil(lastPage)}
             <PaginationItem>
-              <PaginationNextButton onclick={() => onPageChange(page)} />
+              <PaginationNextButton onclick={() => onPageChange(currentPage + 1)} />
             </PaginationItem>
           {/if}
         </PaginationContent>

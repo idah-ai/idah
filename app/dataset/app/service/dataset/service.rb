@@ -86,6 +86,7 @@ module Dataset
           to: member.email,
           title: "Dataset has been Completed",
           category: "dataset_completed",
+          type: "notification:project:activities",
           recipient_id: member.account_id,
           dataset_name: dataset.name,
           project_name: dataset.project.name,
