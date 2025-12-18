@@ -15,6 +15,19 @@ module Email
         raise Verse::Error::NotFound, "Account not found for email: #{to_email}"
       end
 
+      send_email_categories =
+        Api[:idah].setting.account_settings.index(
+          {
+            filter: { account_id: account.id }
+          }
+        ).data.map{ |s| [s.key, s.value] }.to_h
+
+      send_email = send_email_categories.fetch(
+        notification.type, true
+      )
+
+      return unless send_email
+
       mail = Mail.new do
         from    "Idah Notification <no-reply@idah.ingedata.ai>"
         to      to_email

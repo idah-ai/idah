@@ -118,6 +118,7 @@ RSpec.describe Account::Service, database: true do
             recipient_account_email: "user@test.com",
             title: "You have been assigned as organization owner",
             category: "org_owner_role_assigned",
+            type: "notification:organization:activities",
             recipient_account_id: user_account.id,
             recipient_name: "Regular User",
             organization_name: "Test Organization",
