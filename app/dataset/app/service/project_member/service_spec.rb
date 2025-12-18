@@ -9,6 +9,8 @@ RSpec.describe ProjectMember::Service, database: true do
 
   let(:project_repo) { Project::Repository.new(auth_context) }
   let(:project_member_repo) { ProjectMember::Repository.new(auth_context) }
+  let(:dataset_repo) { Dataset::Repository.new(auth_context) }
+  let(:entry_repo) { Entry::Repository.new(auth_context) }
 
   let!(:project_id) do
     project_repo.create(
@@ -216,6 +218,59 @@ RSpec.describe ProjectMember::Service, database: true do
           )
         )
       end
+    end
+  end
+
+  describe "#remove_nonparticipant_member" do
+    before do
+      @project_member = subject.create(deserialize(
+        {
+          data: {
+            type: "dataset:project_members",
+            attributes: attributes,
+            relationships: {
+              project: {
+                data: {
+                  type: "dataset:projects",
+                  id: project_id
+                }
+              }
+            }
+          }
+        }
+      ))
+
+      @dataset_id = dataset_repo.create({
+        modality: "image_labeling",
+        labels: ["cat", "dog"],
+        labeling_configuration: {},
+        workflow_configuration: {},
+        project_id: project_id
+      })
+
+      @entry_id = entry_repo.create({
+        priority: 1,
+        resource: "http://example.com/video.mp4",
+        wf_step: "start",
+        status: "pending",
+        # assigned_to_id: @project_member,,
+        project_id: project_id,
+        dataset_id: @dataset_id
+      })
+    end
+
+    it "deletes a nonparticipant project member if after the account is deleted" do
+      subject.remove_nonparticipant_member(@project_member.account_id)
+      expect { project_member_repo.find!(@project_member.id) }.to raise_error(Verse::Error::NotFound)
+    end
+
+    it "does not delete a project member assigned or worked on any entry in a project after the account is deleted" do
+      entry_repo.update!(@entry_id, { assigned_to_id: @project_member.account_id })
+
+      subject.remove_nonparticipant_member(@project_member.account_id)
+
+      participated_member = project_member_repo.find!(@project_member.id)
+      expect(participated_member.id).to eq @project_member.id
     end
   end
 end

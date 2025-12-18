@@ -133,6 +133,7 @@ module ProjectMember
       end
     end
 
+    # remove only memberships that haven't assigned to or worked on any entry in each project
     def remove_nonparticipant_member(account_id)
       member_project_ids = system_project_members.index({ account_id: account_id }).map(&:project_id).uniq
       participated_project_ids = system_entries.index(
