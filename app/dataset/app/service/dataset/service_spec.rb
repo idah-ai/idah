@@ -138,8 +138,12 @@ RSpec.describe Dataset::Service, database: true do
       )
       subject.update(updating_record)
 
-      expect { subject.delete(dataset_id) }.to raise_error(Verse::Error::Unauthorized, "Unable to delete In-Progress and Completed dataset")
-
+      expect {
+        subject.delete(dataset_id)
+      }.to raise_error(
+        Verse::Error::Unauthorized,
+        "Unable to delete In-Progress and Completed dataset"
+      )
 
       updating_record = deserialize(
         {
@@ -154,7 +158,12 @@ RSpec.describe Dataset::Service, database: true do
       )
       subject.update(updating_record)
 
-      expect { subject.delete(dataset_id) }.to raise_error(Verse::Error::Unauthorized, "Unable to delete In-Progress and Completed dataset")
+      expect {
+        subject.delete(dataset_id)
+      }.to raise_error(
+        Verse::Error::Unauthorized,
+        "Unable to delete In-Progress and Completed dataset"
+      )
     end
   end
 
