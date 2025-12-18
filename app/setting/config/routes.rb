@@ -3,7 +3,7 @@
 Verse.on_boot do
   [
     HealthcheckExpo,
-    UserSettingsExpo,
+    AccountSettingsExpo,
     SettingsExpo,
     PluginsExpo
   ].each(&:register)

@@ -1,0 +1,34 @@
+org_owner:
+  mask: "2.0.0"
+  description: |
+    This role is assigned to organization owners
+    who have access to all projects within their organization.
+  assignable: true
+  rights:
+    # Login
+    - "iam:accounts.login.*"
+    - "iam:accounts.logout.*"
+
+    # Accounts
+    - "iam:accounts.create.*"
+    - "iam:accounts.update.as_org_owner"
+    - "iam:accounts.read.as_org_owner"
+
+    # Organizations
+    - "iam:organizations.read.as_org_owner"
+
+    # Dataset Service
+    - "dataset:projects.*.as_org_owner"
+    - "dataset:project_members.*.as_org_owner"
+    - "dataset:datasets.*.as_org_owner"
+    - "dataset:entries.*.as_org_owner"
+    - "dataset:annotations.*.as_org_owner"
+    - "dataset:note_feeds.*.as_org_owner"
+    - "dataset:note_comments.*.as_org_owner"
+
+    # Media Service
+    - "media:medias.*.as_org_owner"
+    - "media:jobs.read.as_org_owner"
+
+    # Setting Service
+    - "setting:account_settings.*.own"

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
-  import { getContext } from "svelte";
+  import { getContext, onMount } from "svelte";
   import { toast } from "svelte-sonner";
 
   import ResponseBlock from "@/components/app/blocks/response-block.svelte";
@@ -24,6 +24,7 @@
     DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu";
   import Spinner from "@/components/ui/spinner/spinner.svelte";
+  import Can from "@/security/can.svelte";
 
   import {
     ArrowDownAZIcon,
@@ -37,11 +38,12 @@
 
   import { entryColumns } from "@/components/app/datasets/entries/data-tables/entry-columns";
   import { getEntryDropdownMenuActions } from "@/components/app/datasets/entries/dropdown-menus/entry-dropdown-menu";
-  import { homeBreadcrumb, projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
+  import { projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
   import { DatasetRecord } from "@/data/model/dataset/dataset-record";
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
+  import { authStatus } from "@/security/AuthContext";
   import { cn } from "@/utils";
   import { refetches } from "@/utils/refetch";
 
@@ -52,6 +54,7 @@
   } from "@/components/app/datasource-table/types";
   import type { ListOptions } from "@/data/DataSource";
   import type { CollectionResponse } from "@/data/model/types";
+  import type { ProjectMemberScope } from "@/security/types";
 
   // Contexts
   const project: ProjectRecord = getContext("project");
@@ -66,6 +69,8 @@
   // Variables
   let projectId: string = page.params.projectId as string;
   let datasetId = page.params.datasetId as string;
+  let canUpdateEntry = $state(false);
+  let canDeleteEntry = $state(false);
   let currentPage: number = $state(1);
   let itemsPerPage: number = $state(10);
   let selectedRows: string[] = $state([]);
@@ -75,8 +80,23 @@
   let openSetPriorityModal: boolean = $state(false);
   let openConfirmDeleteEntriesModal: boolean = $state(false);
 
+  const as_project_owner: { as_user: ProjectMemberScope } = {
+    as_user: {
+      projectId,
+      projectMemberRoles: ["project_owner"],
+    },
+  };
+
+  // Lifecycle
+  onMount(async () => {
+    const currentAccount = $authStatus.authContext;
+    canUpdateEntry =
+      (await currentAccount?.can("update", "dataset:entries", ["as_org_owner", as_project_owner])) || false;
+    canDeleteEntry =
+      (await currentAccount?.can("delete", "dataset:entries", ["as_org_owner", as_project_owner])) || false;
+  });
+
   pageBreadcrumbsStore.set([
-    homeBreadcrumb,
     projectBreadcrumb,
     { label: project.name, href: resolve(`/projects/${projectId}/datasets`) },
     { label: "Datasets", href: resolve(`/projects/${projectId}/datasets`) },
@@ -90,6 +110,10 @@
     },
     sort: ["priority"],
     count: true,
+    pagination: {
+      page: currentPage,
+      itemsPerPage,
+    },
   });
   let isFiltering: boolean = $derived(
     Object.keys(listOptions.filters || {}).filter((key) => key !== "dataset_id").length > 0,
@@ -237,10 +261,12 @@
 </script>
 
 {#snippet AddEntryButton()}
-  <Button onclick={openNewEntryFormModal}>
-    <PlusIcon class="size-4"></PlusIcon>
-    Add Entry
-  </Button>
+  <Can action="create" resource="dataset:entries" scopes={["as_org_owner", as_project_owner]}>
+    <Button onclick={openNewEntryFormModal}>
+      <PlusIcon />
+      Add Entry
+    </Button>
+  </Can>
 {/snippet}
 
 <PageHeader title="Datasets">
@@ -249,9 +275,11 @@
       <div class="flex w-full flex-col items-center justify-between gap-4 md:flex-row">
         <div class="flex flex-1 items-center gap-4">
           <!-- SELECT ALL -->
-          <div class="pl-6">
-            <Checkbox checked={selectedRows.length > 0} onCheckedChange={toggleSelectAll}></Checkbox>
-          </div>
+          {#if canUpdateEntry || canDeleteEntry}
+            <div class="pl-6">
+              <Checkbox checked={selectedRows.length > 0} onCheckedChange={toggleSelectAll} />
+            </div>
+          {/if}
 
           <div class="">
             {#each Object.entries(entryColumns) as [columnKey, columnSetting] (columnKey)}
@@ -331,11 +359,11 @@
 <!-- LIST OF TASKS (ENTRY) -->
 {#key $refetches.entries.list}
   {#await fetchEntries()}
-    <Spinner></Spinner>
+    <Spinner />
   {:then _}
     <div class="flex flex-col gap-4">
       {#each response.data as entry (entry.id)}
-        <EntryCard {entry} {selectedRows} onRowSelect={selectRow}></EntryCard>
+        <EntryCard {entry} {selectedRows} onRowSelect={selectRow} />
       {:else}
         <Card>
           <CardContent class="min-h-64 flex items-center justify-center">
@@ -362,7 +390,7 @@
       hasMore={response.meta?.more || false}
       onPageChange={changePage}
       onItemsPerPageSelect={setItemsPerPage}
-    ></AppPaginator>
+    />
   {/await}
 {/key}
 

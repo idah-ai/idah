@@ -6,9 +6,10 @@ module Workflow
   class Base
     include AASM
 
-    attr_reader :entry, :submit_opts
+    attr_reader :entries, :entry, :submit_opts
 
-    def initialize(entry, **opts)
+    def initialize(entries, entry, **opts)
+      @entries = entries
       @entry = entry
       @submit_opts = opts
       # Initialize AASM with current state from entry

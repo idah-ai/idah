@@ -22,6 +22,8 @@ module Medias
     field :created_at, type: Time
     field :updated_at, type: Time
 
+    field :project_id, type: String, readonly: true
+
     def open
       Verse::Plugin[:shrine].with_storage do |storage|
         storage.open(id)
@@ -34,5 +36,31 @@ module Medias
   class Repository < Verse::Sequel::Repository
     self.table = "medias"
     self.resource = Resource::Media::Medias
+
+    def scoped(action)
+      auth_context.can!(action, self.class.resource) do |scope|
+        scope.all? { table }
+
+        scope.as_org_owner? { project_from_orgs_scoped }
+
+        scope.as_user? { project_from_memberships_scoped }
+      end
+    end
+
+    private
+
+    def project_from_orgs_scoped
+      org_ids = auth_context.custom_scopes[:org]
+      projects = Api[:idah].dataset.projects.index(organization_id: org_ids).data
+
+      table.where(project_id: projects.map(&:id).uniq)
+    end
+
+    def project_from_memberships_scoped
+      account_id = auth_context.metadata[:id]
+      memberships = Api[:idah].dataset.project_members.index(filter: { account_id: }).data
+
+      table.where(project_id: memberships.map(&:project_id).uniq)
+    end
   end
 end

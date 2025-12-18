@@ -20,12 +20,15 @@ COPY $LOCAL_APP_PATH .
 
 # Clean install all node modules
 RUN pnpm install --frozen-lockfile
+RUN pnpm svelte-kit sync
+RUN pnpm run build:parser
 
 # Build SvelteKit app
 RUN VITE_IDAH_HOST=https://idah.ingedata.ai pnpm run build --mode $NODE_ENV_ALIAS
+RUN pnpm run build:idah-video
 
 # Delete source code files that were used to build the app that are no longer needed
-RUN rm -rf src/ static/ emailTemplates/ docker-compose.yml
+RUN rm -rf static/ emailTemplates/ docker-compose.yml
 
 # The USER instruction sets the user name to use as the default user for the remainder of the current stage
 USER node:node

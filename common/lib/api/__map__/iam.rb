@@ -5,8 +5,8 @@ Api[:idah].register(
 ) do |params = {}|
   output = get(
     "iam/accounts",
-    options: { auth: nil },
-    params:
+    params:,
+    options: { auth: :bearer } # Enable authentication
   )
 
   deserialize output.body
@@ -17,8 +17,8 @@ Api[:idah].register(
 ) do |id:|
   output = get(
     "iam/accounts/:id",
-    options: { auth: nil },
-    params: { id: }
+    params: { id: },
+    options: { auth: :bearer }
   )
   deserialize output.body
 end
@@ -28,8 +28,28 @@ Api[:idah].register(
 ) do |attributes:|
   output = post(
     "iam/accounts",
-    options: { auth: nil },
-    body: { data: { type: "iam:accounts", attributes: } }
+    body: { data: { type: "iam:accounts", attributes: } },
+    options: { auth: :bearer } # Enable authentication
+  )
+  deserialize output.body
+end
+
+Api[:idah].register(
+  :iam, :auth, :login,
+) do |email:, password:|
+  output = post(
+    "iam/auth/login",
+    params: { email:, password: }
+  )
+
+  deserialize output.body
+end
+
+Api[:idah].register(
+  :iam, :auth, :logout,
+) do |_d|
+  output = get(
+    "iam/auth/logout"
   )
   deserialize output.body
 end

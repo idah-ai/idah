@@ -1,6 +1,31 @@
 #!/bin/sh
 
-docker-compose run --rm dataset bundle exec rake db:reset
-docker-compose run --rm iam bundle exec rake db:reset
-docker-compose run --rm media bundle exec rake db:reset
-docker-compose run --rm setting bundle exec rake db:reset
+SERVICES="audit dataset iam media notification setting sync"
+
+reset_service() {
+  service=$1
+  echo "Resetting $service service..."
+  docker compose run --rm $service bundle exec rake db:reset
+}
+
+if [ -z "$1" ]; then
+  for service in $SERVICES; do
+    reset_service $service
+  done
+else
+  service=$1
+
+  case $service in
+    audit|dataset|iam|media|notification|setting|sync)
+      reset_service $service
+      ;;
+    *)
+      echo "Error: Invalid service name '$service'"
+      echo "Valid services: $SERVICES"
+      echo "Usage: $0 [service_name]"
+      echo "  $0           # Reset all services"
+      echo "  $0 dataset   # Reset only dataset service"
+      exit 1
+      ;;
+  esac
+fi

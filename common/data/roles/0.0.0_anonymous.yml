@@ -1,0 +1,9 @@
+# Until later in the development process,
+# we will keep anonymous role able to do everything on the platform
+
+anonymous:
+  assignable: false
+  mask: "0.0.0"
+  rights:
+    - "iam:accounts.login.*"
+    - "iam:accounts.join.*"

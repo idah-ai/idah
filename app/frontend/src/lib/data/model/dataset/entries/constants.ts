@@ -42,12 +42,11 @@ export interface EntryStatusBadgeProps extends LabelValue<string, EntryRecord> {
 }
 
 export const entryStatuses: EntryStatusBadgeProps[] = [
-  { label: "Processing", value: "processing", variant: "secondary" },
-  { label: "Pending", value: "pending", variant: "secondary" },
+  { label: "Processing", value: "processing", variant: "gray" },
+  { label: "Pending", value: "pending", variant: "gray" },
   { label: "Ready", value: "ready", variant: "default" },
-  { label: "Assigned", value: "assigned", variant: "outline" },
-  { label: "In Progress", value: "in_progress", variant: "outline" },
-  { label: "Completed", value: "completed", variant: "outline" },
+  { label: "In Progress", value: "in_progress", variant: "warning" },
+  { label: "Completed", value: "completed", variant: "success" },
   { label: "Errored", value: "errored", variant: "destructive" },
 ];
 

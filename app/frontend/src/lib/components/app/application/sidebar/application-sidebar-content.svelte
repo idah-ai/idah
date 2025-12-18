@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { RocketIcon, UsersRoundIcon } from "@lucide/svelte";
+  import { BuildingIcon, FileClockIcon, RocketIcon, UsersRoundIcon } from "@lucide/svelte";
 
   import ApplicationSidebarMenuItem from "@/components/app/application/sidebar/application-sidebar-menu-item.svelte";
   import { SidebarContent, SidebarGroup, SidebarGroupContent } from "@/components/ui/sidebar";
@@ -11,12 +11,26 @@
     {
       label: "Projects",
       href: "/projects",
+      visibleIfRoles: ["admin", "org_owner", "user"],
       icon: RocketIcon,
     },
     {
       label: "Accounts",
       href: "/accounts",
+      visibleIfRoles: ["admin", "org_owner"],
       icon: UsersRoundIcon,
+    },
+    {
+      label: "Organizations",
+      href: "/organizations",
+      visibleIfRoles: ["admin", "org_owner"],
+      icon: BuildingIcon,
+    },
+    {
+      label: "Audit Logs",
+      href: "/audit-logs",
+      visibleIfRoles: ["admin"],
+      icon: FileClockIcon,
     },
   ]);
 </script>

@@ -1,39 +1,75 @@
 <script lang="ts">
-  import { ChevronsUpDownIcon, CircleUserRoundIcon, LogOutIcon, SettingsIcon, SunMoonIcon } from "@lucide/svelte";
-  import { toggleMode } from "mode-watcher";
+  import { goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
+  import { LogOutIcon, MoonIcon, SettingsIcon, SunIcon, SunMoonIcon, TabletSmartphoneIcon } from "@lucide/svelte";
+  import { mode, resetMode, setMode } from "mode-watcher";
 
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
-  import AvatarFallback from "@/components/ui/avatar/avatar-fallback.svelte";
-  import AvatarImage from "@/components/ui/avatar/avatar-image.svelte";
-  import Avatar from "@/components/ui/avatar/avatar.svelte";
+  import AccountAvatar from "@/components/app/iam/accounts/avatars/account-avatar.svelte";
   import SidebarMenuButton from "@/components/ui/sidebar/sidebar-menu-button.svelte";
 
   import { useSidebar } from "@/components/ui/sidebar";
+  import { accountAuthService } from "@/data/model/iam/accounts/auth/records";
+  import { AuthContext, authStatus } from "@/security/AuthContext";
 
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
 
   // Variables
+  AuthContext.backend ||= accountAuthService();
+
+  let loggedInAccount = $derived($authStatus.authContext);
+  let { name, email, pictureUrl, roleName } = $derived(
+    loggedInAccount || {
+      name: "",
+      email: "",
+      pictureUrl: "",
+      roleName: "user",
+    },
+  );
+
   const sidebar = useSidebar();
-  const menus: IDropdownMenus = {
+  const menus: IDropdownMenus = $derived({
     general: {
       items: [
-        {
-          label: "Profile",
-          icon: CircleUserRoundIcon,
-          action: () => {
-            // Handle profile action
-          },
-        },
+        // {
+        //   label: "Profile",
+        //   icon: CircleUserRoundIcon,
+        //   action: () => {
+        //     // Handle profile action
+        //   },
+        // },
         {
           label: "Theme",
           icon: SunMoonIcon,
-          action: toggleMode,
+          items: {
+            modes: {
+              items: [
+                {
+                  label: "Light",
+                  icon: SunIcon,
+                  disabled: mode.current === "light",
+                  action: () => setMode("light"),
+                },
+                {
+                  label: "Dark",
+                  icon: MoonIcon,
+                  disabled: mode.current === "dark",
+                  action: () => setMode("dark"),
+                },
+                {
+                  label: "System",
+                  icon: TabletSmartphoneIcon,
+                  action: () => resetMode(),
+                },
+              ],
+            },
+          },
         },
         {
           label: "Settings",
           icon: SettingsIcon,
           action: () => {
-            // Handle settings action
+            goto(resolve("/settings/notifications"));
           },
         },
       ],
@@ -43,13 +79,13 @@
         {
           label: "Log out",
           icon: LogOutIcon,
-          action: () => {
-            // Handle log out action
+          action: async () => {
+            await AuthContext.logout();
           },
         },
       ],
     },
-  };
+  });
 </script>
 
 <DropdownMenus {menus} align="end" side={sidebar.isMobile ? "bottom" : "right"} class="min-w-56">
@@ -57,18 +93,9 @@
     <SidebarMenuButton
       {...props}
       size="lg"
-      class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+      class="data-[state=open]:bg-background data-[state=open]:text-foreground hover:bg-background hover:text-foreground h-auto items-start"
     >
-      <Avatar class="size-8 rounded-lg">
-        <AvatarImage src="" alt=""></AvatarImage>
-        <AvatarFallback class="rounded-lg">EU</AvatarFallback>
-      </Avatar>
-
-      <div class="grid flex-1 text-left text-sm leading-tight">
-        <span class="truncate font-medium">Example User</span>
-        <span class="truncate text-xs">example@ingedata.ai</span>
-      </div>
-      <ChevronsUpDownIcon class="ml-auto size-4"></ChevronsUpDownIcon>
+      <AccountAvatar align="start" {name} {email} {pictureUrl} {roleName} showName showEmail showRole />
     </SidebarMenuButton>
   {/snippet}
 </DropdownMenus>

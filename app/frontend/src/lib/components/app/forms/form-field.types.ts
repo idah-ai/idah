@@ -54,13 +54,24 @@ export interface TextAreaFieldBaseProps extends FormFieldBaseProps {
 
 export interface SelectFieldBaseProps extends FormFieldBaseProps {
   choices: LabelValue<string | number>[];
+  hiddenChoices?: Array<string | number>;
+  disabledChoices?: Array<string | number>;
   searchable?: boolean;
   searchPlaceholder?: string;
   searchValue?: string;
   clearable?: boolean;
+  slotChoice?: Snippet<
+    [
+      {
+        choice: LabelValue<string | number>;
+        select: (choice: LabelValue<string | number>) => Promise<void> | void;
+      },
+    ]
+  >;
+}
 
+export interface SingleSelectFieldBaseProps extends SelectFieldBaseProps {
   onSelected?: (value: string | number) => Promise<void> | void;
-
   slotTrigger?: Snippet<
     [
       {
@@ -70,7 +81,34 @@ export interface SelectFieldBaseProps extends FormFieldBaseProps {
       },
     ]
   >;
-  slotChoice?: Snippet<[{ choice: LabelValue<string | number> }]>;
+  slotTriggerValue?: Snippet<
+    [
+      {
+        selectedChoice: LabelValue<string | number> | undefined;
+      },
+    ]
+  >;
+}
+
+export interface MultipleSelectFieldBaseProps extends SelectFieldBaseProps {
+  closeOnSelect?: boolean;
+  onSelected?: (selectedChoices: LabelValue<string | number>[]) => Promise<void> | void;
+  slotTrigger?: Snippet<
+    [
+      {
+        selectedChoices: LabelValue<string | number>[] | undefined;
+        clearable: boolean;
+        disabled: boolean;
+      },
+    ]
+  >;
+  slotTriggerValues?: Snippet<
+    [
+      {
+        selectedChoices: LabelValue<string | number>[];
+      },
+    ]
+  >;
 }
 
 export interface SelectDataSourceFieldBaseProps<T extends Record> extends Omit<SelectFieldBaseProps, "choices"> {
@@ -80,3 +118,11 @@ export interface SelectDataSourceFieldBaseProps<T extends Record> extends Omit<S
   listOptions?: ListOptions;
   searchKeyWithOperation: string;
 }
+
+export interface SingleSelectDataSourceFieldBaseProps<T extends Record>
+  extends Omit<SingleSelectFieldBaseProps, "choices">,
+    SelectDataSourceFieldBaseProps<T> {}
+
+export interface MultipleSelectDataSourceFieldBaseProps<T extends Record>
+  extends Omit<MultipleSelectFieldBaseProps, "choices">,
+    SelectDataSourceFieldBaseProps<T> {}

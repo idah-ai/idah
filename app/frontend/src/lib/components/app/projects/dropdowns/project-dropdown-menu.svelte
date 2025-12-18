@@ -2,15 +2,19 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { SquarePenIcon, Trash2Icon } from "@lucide/svelte";
+  import { onMount } from "svelte";
 
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
   import ProjectFormModal from "@/components/app/projects/overlays/project-form-modal.svelte";
 
+  import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
+  import { authStatus } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
 
   import type { DropdownMenuContentAlignment, IDropdownMenus } from "@/components/app/dropdown-menus/types";
+  import type { ProjectMemberScope } from "@/security/types";
 
   // Props
   interface Props {
@@ -20,12 +24,17 @@
   let { projectId, align = "center" }: Props = $props();
 
   // Variables
-  const menus: IDropdownMenus = {
+  let currentAccount = $authStatus.authContext;
+  let canUpdateProject = $state(false);
+  let canDeleteProject = $state(false);
+  let inProgressDatasets: DatasetRecord[] = $state([]);
+  let menus: IDropdownMenus = $derived({
     actions: {
       items: [
         {
           label: "Edit",
           icon: SquarePenIcon,
+          hidden: !canUpdateProject,
           action: async () => {
             const projectRes = await fetchProject();
             projectRecord = projectRes.data;
@@ -35,26 +44,58 @@
         {
           label: "Delete",
           icon: Trash2Icon,
+          hidden: !canDeleteProject,
+          disabled: inProgressDatasets.length > 0,
           action: () => {
             openConfirmDeleteProjectModal = true;
           },
         },
       ],
     },
-  };
+  });
 
   let projectRecord: ProjectRecord | undefined = $state(undefined);
   let openEditProjectFormModal: boolean = $state(false);
   let openConfirmDeleteProjectModal: boolean = $state(false);
 
+  // Lifecycle
+  onMount(async () => {
+    await Promise.all([checkRights(), loadInProgressDatasets()]);
+  });
+
   // Functions
+  async function checkRights() {
+    const as_project_owner: { as_user: ProjectMemberScope } = {
+      as_user: {
+        projectId,
+        projectMemberRoles: ["project_owner"],
+      },
+    };
+    canUpdateProject =
+      (await currentAccount?.can("update", "dataset:projects", ["as_org_owner", as_project_owner])) || false;
+    canDeleteProject =
+      (await currentAccount?.can("delete", "dataset:projects", ["as_org_owner", as_project_owner])) || false;
+  }
+
   async function fetchProject() {
     return await projectsBackendDataSource.get(projectId, {
       fields: {
-        "datasets:projects": ["name", "description"],
+        "datasets:projects": ["name", "description", "organization_id"],
       },
       noCache: true,
     });
+  }
+
+  async function loadInProgressDatasets() {
+    const datasetsRes = await datasetsBackendDataSource.list({
+      filters: {
+        project_id: projectId,
+        status__in: ["in_progress"],
+      },
+    });
+    inProgressDatasets = datasetsRes.data;
+
+    return datasetsRes.data;
   }
 
   async function deleteProject(): Promise<void> {
@@ -65,13 +106,15 @@
   }
 </script>
 
-<DropdownMenus {menus} {align} />
+{#if canUpdateProject || canDeleteProject}
+  <DropdownMenus {menus} {align} />
 
-<ProjectFormModal title="Project" action="update" {projectRecord} bind:open={openEditProjectFormModal} />
+  <ProjectFormModal title="Project" action="update" {projectRecord} bind:open={openEditProjectFormModal} />
 
-<ConfirmModal
-  title="Delete Project"
-  description="Are you sure you want to delete this project?"
-  onConfirm={deleteProject}
-  bind:open={openConfirmDeleteProjectModal}
-/>
+  <ConfirmModal
+    title="Delete Project"
+    description="Are you sure you want to delete this project?"
+    onConfirm={deleteProject}
+    bind:open={openConfirmDeleteProjectModal}
+  />
+{/if}

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { resolve } from "$app/paths";
 
+  import Logo from "@/components/app/brand/logo.svelte";
   import SidebarHeader from "@/components/ui/sidebar/sidebar-header.svelte";
   import SidebarMenuButton from "@/components/ui/sidebar/sidebar-menu-button.svelte";
   import SidebarMenuItem from "@/components/ui/sidebar/sidebar-menu-item.svelte";
@@ -12,10 +13,8 @@
     <SidebarMenuItem>
       <SidebarMenuButton size="lg">
         {#snippet child({ props })}
-          <a href={resolve("/")} {...props}>
-            <div class="grid flex-1 text-left text-2xl leading-tight">
-              <span class="truncate font-semibold">IDAH</span>
-            </div>
+          <a href={resolve("/projects")} {...props}>
+            <Logo />
           </a>
         {/snippet}
       </SidebarMenuButton>

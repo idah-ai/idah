@@ -97,4 +97,24 @@ RSpec.describe AccountsExpo, type: :exposition, as: :system do
 
     expect(last_response.status).to eq 204
   end
+
+  it "mark account as joined" do
+    expect(service).to receive(:mark_as_joined) do |id|
+      expect(id).to eq "1"
+    end
+
+    patch "/accounts/1/join"
+
+    expect(last_response.status).to eq 200
+  end
+
+  it "resend account invitation" do
+    expect(service).to receive(:resend_pending_invitations) do |id|
+      expect(id).to eq "1"
+    end
+
+    post "/accounts/1/resend_invitation"
+
+    expect(last_response.status).to eq 200
+  end
 end

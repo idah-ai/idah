@@ -2,8 +2,8 @@
 
 module Entry
   class Service < Verse::Service::Base
-    use entries: Entry::Repository
-    use_system datasets: Dataset::Repository
+    use entries: Entry::Repository, datasets: Dataset::Repository, projects: Project::Repository
+    use_system system_datasets_repo: Dataset::Repository, system_entries_repo: Entry::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       entries.index(
@@ -21,30 +21,53 @@ module Entry
     end
 
     def create(record)
-      attr = record.attributes
+      attributes = record.attributes
 
-      attr[:id] = record.id || UUIDv7.generate
+      # Validate required relationships and fields
+      unless record.dataset
+        raise Verse::Error::ValidationFailed,
+              "dataset relationship is required to create an entry"
+      end
+
+      unless attributes[:resource]
+        raise Verse::Error::ValidationFailed,
+              "resource field is required to create an entry"
+      end
+
+      # Ensure entry with same resource does not already exist
+      if entries.find_by({ resource: attributes[:resource] })
+        raise Verse::Error::ValidationFailed,
+              "Entry with resource #{attributes[:resource]} already exists"
+      end
+
+      # Organization Owner can find the dataset in their scope
+      # Project Owner can find the dataset in their projects
+      # Annotator and Reviewer can find the dataset only if entry is assigned to them
+      dataset = datasets.find(record.dataset.id)
+
+      unless dataset
+        raise Verse::Error::ValidationFailed,
+              "dataset not found to create an entry"
+      end
+
+      # With "as_user" access ensure account can "create" entry to the project
+      if auth_context.can?(:create, entries.class.resource) == :as_user &&
+         ScopedQuery::Service.without_project_access?(
+           auth_context.metadata[:id],
+           dataset.project_id,
+           ["project_owner"]
+         )
+        raise Verse::Error::Unauthorized,
+              "You do not have permission to create entry on this project"
+      end
+
+      # Assign attributes
+      attributes[:id] = record.id || UUIDv7.generate
+      attributes[:project_id] = dataset.project_id
+      attributes[:dataset_id] = dataset.id
 
       entries.transaction do
-        unless attr[:resource]
-          raise Verse::Error::ValidationFailed,
-                "resource is required to create an entry"
-        end
-
-        if entries.find_by({ resource: attr[:resource] })
-          raise Verse::Error::ValidationFailed,
-                "Entry with resource #{attr[:resource]} already exists"
-        end
-
-        unless record.dataset
-          raise Verse::Error::ValidationFailed,
-                "dataset is required to create an entry"
-        end
-
-        attr[:dataset_id] = record.dataset.id
-
-        id = entries.create(attr)
-
+        id = entries.create(attributes)
         entries.find!(id)
       end
     end
@@ -59,7 +82,7 @@ module Entry
     end
 
     def delete(id)
-      entries.delete(id)
+      entries.delete!(id)
     end
 
     def assign_member(id, assigned_to_id)
@@ -69,27 +92,49 @@ module Entry
       end
     end
 
+    def unassign_member(id)
+      entries.transaction do
+        entries.update!(id, { assigned_to_id: nil })
+        entries.find!(id)
+      end
+    end
+
+    def select(entry_id)
+      entries.transaction do
+        account_id = auth_context.metadata[:id]
+        entry = entries.find!(entry_id)
+
+        if entry.assigned_to_id && entry.assigned_to_id != account_id
+          raise Verse::Error::Unauthorized,
+                "You are not assigned to this entry"
+        end
+
+        # Use read scope when updating as anyone with read access can select
+        entries.select(entry.id)
+        entries.find!(entry.id)
+      end
+    end
+
     def submit(entry_id, **opts)
+      # check self reviewing here, reject
       entries.transaction do
         entry = entries.find!(entry_id, included: [:dataset])
-        entry_workflow = entry.dataset.entry_workflow.new(entry, **opts)
-
+        entry_workflow = entry.dataset.entry_workflow.new(entries, entry, **opts)
         entry_workflow.submit!
-        entries.update!(
-          entry.id,
-          {
-            wf_step: entry_workflow.aasm.current_state.to_s,
-            status: entry_workflow.aasm.current_state == :done ? "completed" : "in_progress"
-          }
-        )
-        entries.find!(entry.id, included: [:dataset])
+
+        # Update dataset progress after entry status change
+        # Use system dataset repo to avoid permission issues with update
+        system_datasets_repo.update_progress!(entry.dataset.id)
+
+        # Use system entry repo as annotator/reviewer may not have read access after submission
+        system_entries_repo.find!(entry.id, included: [:dataset])
       end
     end
 
     def error(entry_id, **opts)
       entries.transaction do
         entry = entries.find!(entry_id, included: [:dataset])
-        entry_workflow = entry.dataset.entry_workflow.new(entry, **opts)
+        entry_workflow = entry.dataset.entry_workflow.new(entries, entry, **opts)
 
         entry_workflow.error!
         entries.update!(
@@ -99,6 +144,11 @@ module Entry
             status: "errored"
           }
         )
+
+        # Update dataset progress after entry status change
+        # Use system dataset repo to avoid permission issues with update
+        system_datasets_repo.update_progress!(entry.dataset.id)
+
         entries.find!(entry.id, included: [:dataset])
       end
     end

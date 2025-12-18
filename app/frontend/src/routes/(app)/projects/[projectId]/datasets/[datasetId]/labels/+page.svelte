@@ -10,8 +10,9 @@
   import PageHeader from "@/components/app/page/page-header.svelte";
   import PageLoading from "@/components/app/page/page-loading.svelte";
   import Button from "@/components/ui/button/button.svelte";
+  import Can from "@/security/can.svelte";
 
-  import { homeBreadcrumb, projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
+  import { projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
@@ -22,6 +23,7 @@
 
   import type { ModalityShapes } from "@/data/model/setting/plugin/types";
   import type { IConfig, IConfigProperty, IConfigValue } from "@/plugin/interface/Activity";
+  import type { ProjectMemberScope } from "@/security/types";
 
   // Contexts
   const project: ProjectRecord = getContext("project");
@@ -40,8 +42,14 @@
     return JSON.stringify(labelConfig) !== JSON.stringify(initialLabelConfig);
   });
 
+  const as_project_owner: { as_user: ProjectMemberScope } = {
+    as_user: {
+      projectId,
+      projectMemberRoles: ["project_owner"],
+    },
+  };
+
   pageBreadcrumbsStore.set([
-    homeBreadcrumb,
     projectBreadcrumb,
     { label: project.name, href: resolve(`/projects/${projectId}/datasets`) },
     { label: "Datasets", href: resolve(`/projects/${projectId}/datasets`) },
@@ -127,7 +135,7 @@
     const selectedLabelConfig = labelConfig[labelConfigKey];
     const usedColors = selectedLabelConfig.values.map((cat) => cat.color);
     const availableColors = labelColors.filter((color) => !usedColors.includes(color.color));
-    const firstAvailableColor = availableColors[0];
+    const firstAvailableColor = availableColors[0] ?? labelColors[0];
 
     /** Add a new root category, if nodeId is not provided */
     if (!nodeId) {
@@ -230,7 +238,12 @@
     const selectedLabelConfig = labelConfig[labelConfigKey];
     const categoryToUpdateIndex = selectedLabelConfig.values.findIndex((cat) => cat.id === oldId);
     if (categoryToUpdateIndex >= 0) {
-      selectedLabelConfig.values[categoryToUpdateIndex].id = newId;
+      selectedLabelConfig.values[categoryToUpdateIndex] = {
+        ...selectedLabelConfig.values[categoryToUpdateIndex],
+        id: newId,
+        /** Update the label to be the last part of the new ID */
+        label: humanize(newId.split("/")[newId.split("/").length - 1]) || "",
+      };
     }
   }
 
@@ -240,7 +253,7 @@
     const selectedLabelConfig = labelConfig[labelConfigKey];
     const usedColors = selectedLabelConfig.values.map((cat) => cat.color);
     const availableColors = labelColors.filter((color) => !usedColors.includes(color.color));
-    const firstAvailableColor = availableColors[0];
+    const firstAvailableColor = availableColors[0] ?? labelColors[0];
 
     if (selectable) {
       selectedLabelConfig.values.push({
@@ -261,7 +274,7 @@
     const selectedLabelConfig = labelConfig[labelConfigKey];
     const usedColors = selectedLabelConfig.values.map((cat) => cat.color);
     const availableColors = labelColors.filter((color) => !usedColors.includes(color.color));
-    const firstAvailableColor = availableColors[0];
+    const firstAvailableColor = availableColors[0] ?? labelColors[0];
 
     selectedLabelConfig.values = selectedLabelConfig.values.filter((cat) => !cat.id.includes(categoryId));
 
@@ -309,20 +322,22 @@
 </script>
 
 {#await fetchData()}
-  <PageLoading></PageLoading>
+  <PageLoading />
 {:then _}
   <PageHeader title="Label">
     {#snippet slotTitle()}
-      <Button
-        loading={saving}
-        loadingLabel="Saving"
-        disabled={!isLabelConfigChanged}
-        class="ml-auto"
-        onclick={saveLabelConfigChanges}
-      >
-        <SaveIcon class="size-4"></SaveIcon>
-        {isLabelConfigChanged ? "Save Changes" : "Saved"}
-      </Button>
+      <Can action="update" resource="dataset:datasets" scopes={["as_org_owner", as_project_owner]}>
+        <Button
+          loading={saving}
+          loadingLabel="Saving"
+          disabled={!isLabelConfigChanged}
+          class="ml-auto"
+          onclick={saveLabelConfigChanges}
+        >
+          <SaveIcon />
+          {isLabelConfigChanged ? "Save Changes" : "Saved"}
+        </Button>
+      </Can>
     {/snippet}
   </PageHeader>
 

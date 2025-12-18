@@ -12,13 +12,13 @@
 
   import { cn } from "@/utils";
 
-  import type { SelectDataSourceFieldBaseProps } from "@/components/app/forms/form-field.types";
+  import type { SingleSelectDataSourceFieldBaseProps } from "@/components/app/forms/form-field.types";
   import type { ListOptions } from "@/data/DataSource";
   import type { Record } from "@/data/model/Record";
   import type { LabelValue } from "@/utils/types";
 
   // Props
-  interface Props extends SelectDataSourceFieldBaseProps<T> {
+  interface Props extends SingleSelectDataSourceFieldBaseProps<T> {
     value: string | number | null;
   }
 
@@ -34,6 +34,8 @@
     searchable = false,
     searchPlaceholder = "Search an option",
     searchValue = $bindable(""),
+    hiddenChoices = [],
+    disabledChoices = [],
     clearable = false,
     searchKeyWithOperation,
     disabled = false,
@@ -46,6 +48,7 @@
     // Slots
     slotLabel,
     slotTrigger,
+    slotTriggerValue,
     slotChoice,
     slotInfo,
     slotErrors,
@@ -102,11 +105,15 @@
 
     const response = await dataSource.list(listOpts);
 
-    return response.data.map((item) => ({
-      label: item[displayKey],
-      value: item[valueKey],
-      data: item,
-    }));
+    // Return filtered choices excluding hiddenChoices
+    return response.data
+      .map((item) => ({
+        label: item[displayKey],
+        value: item[valueKey],
+        disabled: disabledChoices.includes(item[valueKey]),
+        data: item,
+      }))
+      .filter((choice) => !hiddenChoices.includes(choice.value));
   }
 
   const filterChoices: FormEventHandler<HTMLInputElement> = async (event) => {
@@ -114,10 +121,15 @@
     choices = await fetchChoices();
   };
 
-  async function select(choice: Choice): Promise<void> {
+  async function select(choice: LabelValue<string | number>): Promise<void> {
     value = choice.value;
     open = false;
     await onSelected?.(value);
+  }
+
+  function clearSelection(event: MouseEvent): void {
+    event.stopPropagation();
+    value = null;
   }
 </script>
 
@@ -146,7 +158,11 @@
           onclick={openPopover}
         >
           {#if selectedChoice}
-            <span class="truncate">{selectedChoice.label}</span>
+            {#if slotTriggerValue}
+              {@render slotTriggerValue({ selectedChoice })}
+            {:else}
+              <span class="truncate">{selectedChoice.label}</span>
+            {/if}
           {:else}
             <span class="text-muted-foreground">{placeholder}</span>
           {/if}
@@ -155,18 +171,18 @@
             <button
               type="button"
               class={cn("cursor-pointer", clearable && selectedChoice ? "opacity-50" : "opacity-0")}
-              onclick={() => {}}
+              onclick={clearSelection}
             >
               <CircleXIcon class="size-4 shrink-0"></CircleXIcon>
             </button>
 
-            <ChevronsUpDownIcon class="size-4 shrink-0 opacity-50"></ChevronsUpDownIcon>
+            <ChevronsUpDownIcon class="size-4 shrink-0 opacity-50" />
           </div>
         </Button>
       {/if}
     </PopoverTrigger>
 
-    <PopoverContent align="start" class="w-auto min-w-64 p-0">
+    <PopoverContent align="start" class="w-auto min-w-[var(--bits-floating-anchor-width)] p-0">
       <Command>
         <CommandList>
           <CommandGroup>
@@ -177,24 +193,24 @@
                 placeholder={searchPlaceholder}
                 value={searchValue}
                 oninput={filterChoices}
-              ></InputField>
+              />
             {/if}
 
             <CommandEmpty>No option found.</CommandEmpty>
 
             {#await initialFetchChoices()}
-              <Spinner size="sm"></Spinner>
+              <Spinner size="sm" />
             {:then _}
               {#each choices as choice, index (index)}
                 {#if slotChoice}
-                  {@render slotChoice({ choice })}
+                  {@render slotChoice({ choice, select })}
                 {:else}
                   <CommandItem onclick={() => select(choice)}>
                     <CheckIcon
                       class={cn("mr-2 size-4", {
                         "opacity-0": choice.value != value,
                       })}
-                    ></CheckIcon>
+                    />
 
                     {choice.label}
                   </CommandItem>
