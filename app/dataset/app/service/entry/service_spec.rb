@@ -329,7 +329,7 @@ RSpec.describe Entry::Service, database: true do
         subject.delete(entry.id)
       }.to raise_error(
         Verse::Error::Unauthorized,
-        "Unable to delete In-Progress or Completed entry"
+        "Unable to delete in progress or completed entry"
       )
 
       updating_record = deserialize(
@@ -349,7 +349,7 @@ RSpec.describe Entry::Service, database: true do
         subject.delete(entry.id)
       }.to raise_error(
         Verse::Error::Unauthorized,
-        "Unable to delete In-Progress or Completed entry"
+        "Unable to delete in progress or completed entry"
       )
     end
   end
