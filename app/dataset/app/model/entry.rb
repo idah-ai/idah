@@ -143,7 +143,7 @@ module Entry
       end
     end
 
-    def update!(id, attributes)
+    def update!(id, attributes, scope: scoped(:update))
       with_metadata do
         entry = find!(id)
 
@@ -154,7 +154,7 @@ module Entry
           entry_id: id,
         )
 
-        super(id, attributes)
+        super(id, attributes, scope:)
       end
     end
 

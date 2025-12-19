@@ -99,7 +99,7 @@ module Project
       end
     end
 
-    def update!(id, attributes)
+    def update!(id, attributes, scope: scoped(:update))
       with_metadata do
         project = find!(id)
 
@@ -109,7 +109,7 @@ module Project
           project_id: id,
         ) if project
 
-        super(id, attributes)
+        super(id, attributes, scope:)
       end
     end
 

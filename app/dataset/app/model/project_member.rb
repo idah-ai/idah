@@ -114,7 +114,7 @@ module ProjectMember
       end
     end
 
-    def update!(id, attributes)
+    def update!(id, attributes, scope: scoped(:update))
       with_metadata do
         membership = find!(id)
 
@@ -123,7 +123,7 @@ module ProjectMember
           project_id: attributes[:project_id] || membership.project_id,
         )
 
-        super(id, attributes)
+        super(id, attributes, scope:)
       end
     end
 

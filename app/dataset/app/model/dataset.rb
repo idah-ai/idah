@@ -174,7 +174,7 @@ module Dataset
       end
     end
 
-    def update!(id, attributes)
+    def update!(id, attributes, scope: scoped(:update))
       with_metadata do
         dataset = find!(id)
 
@@ -184,7 +184,7 @@ module Dataset
           dataset_id: id,
         )
 
-        super(id, attributes)
+        super(id, attributes, scope:)
       end
     end
 
