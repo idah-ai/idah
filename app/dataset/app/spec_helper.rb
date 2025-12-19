@@ -60,16 +60,20 @@ RSpec.configure do |config|
   config.include WebMock::API
 
   Verse::Spec.add_user(:system, "system")
-  Verse::Spec.add_user(:admin, "admin", user_data: { id: 1, email: "admin@example.com" })
+  Verse::Spec.add_user(:admin, "admin", user_data: { id: 1, email: "admin@example.com", name: "Admin User" })
   Verse::Spec.add_user(
     :org_owner,
     "org_owner",
     scopes: { org: ["1"] },
-    user_data: { id: 2, email: "org_owner@example.com" }
+    user_data: { id: 2, email: "org_owner@example.com", name: "Org Owner User" }
   )
-  Verse::Spec.add_user(:project_owner, "user", user_data: { id: 3, email: "project_owner@example.com" })
-  Verse::Spec.add_user(:annotator, "user", user_data: { id: 4, email: "annotator@example.com" })
-  Verse::Spec.add_user(:reviewer, "user", user_data: { id: 5, email: "reviewer@example.com" })
+  Verse::Spec.add_user(
+    :project_owner,
+    "user",
+    user_data: { id: 3, email: "project_owner@example.com", name: "Project Owner User" }
+  )
+  Verse::Spec.add_user(:annotator, "user", user_data: { id: 4, email: "annotator@example.com", name: "Annotator User" })
+  Verse::Spec.add_user(:reviewer, "user", user_data: { id: 5, email: "reviewer@example.com", name: "Reviewer User" })
   Verse::Spec.add_user(:anonymous, "anonymous")
 
   config.example_status_persistence_file_path = ".rspec_status"
