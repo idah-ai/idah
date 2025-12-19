@@ -243,7 +243,7 @@
             </Text>
           {/await}
 
-          {#if !["review", "annotate"].includes(context.workflowStep)}
+          {#if ["review", "annotate"].includes(context.workflowStep)}
             <Button
               variant="ghost"
               size="icon"
@@ -288,12 +288,12 @@
 )}
   <span
     class={cn(
-      `${bgColor} ${textColor} pointer-events-none absolute top-0 left-1/2 z-50 -translate-x-1/2 transform rounded-md px-2 py-1 text-xs font-medium whitespace-nowrap transition-all duration-150`,
+      `${bgColor} ${textColor} pointer-events-none absolute left-1/2 top-0 z-50 -translate-x-1/2 transform whitespace-nowrap rounded-md px-2 py-1 text-xs font-medium transition-all duration-150`,
       extraClass,
     )}
   >
     {thisFrame}
-    <span class={`absolute top-full left-1/2 -mt-1 h-1.5 w-1.5 -translate-x-1/2 rotate-45 ${bgColor}`}></span>
+    <span class={`absolute left-1/2 top-full -mt-1 h-1.5 w-1.5 -translate-x-1/2 rotate-45 ${bgColor}`}></span>
   </span>
 {/snippet}
 
@@ -393,7 +393,7 @@
                 onclick={() => seekToFrame(thisFrame)}
               >
                 <div
-                  class="bg-primary absolute top-0 left-1/2 z-50 w-0.5 -translate-x-1/2"
+                  class="bg-primary absolute left-1/2 top-0 z-50 w-0.5 -translate-x-1/2"
                   style="min-height: 24vh;"
                 ></div>
                 {@render tooltipFrame(thisFrame, "bg-primary", "text-primary-foreground")}
@@ -412,7 +412,7 @@
               >
                 {#if isHovered}
                   <div
-                    class="bg-secondary-foreground absolute top-0 left-1/2 z-50 w-0.5 -translate-x-1/2 dark:bg-gray-700"
+                    class="bg-secondary-foreground absolute left-1/2 top-0 z-50 w-0.5 -translate-x-1/2 dark:bg-gray-700"
                     style="min-height: 24vh;"
                   ></div>
                   {@render tooltipFrame(
@@ -440,7 +440,7 @@
               >
                 {#if isHovered}
                   <div
-                    class="bg-secondary-foreground absolute top-0 left-1/2 z-50 w-0.5 -translate-x-1/2 dark:bg-gray-700"
+                    class="bg-secondary-foreground absolute left-1/2 top-0 z-50 w-0.5 -translate-x-1/2 dark:bg-gray-700"
                     style="min-height: 24vh;"
                   ></div>
                   {@render tooltipFrame(
