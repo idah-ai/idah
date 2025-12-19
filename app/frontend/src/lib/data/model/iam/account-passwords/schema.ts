@@ -1,28 +1,12 @@
 import { z } from "zod";
 
+import { passwordRules } from "@/data/model/iam/accounts/auth-schema";
+
 export const accountPasswordSchema = z
   .object({
-    old_password: z
-      .string()
-      .min(8, "Password must be at least 8 characters.")
-      .regex(
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
-        "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.",
-      ),
-    new_password: z
-      .string()
-      .min(8, "Password must be at least 8 characters.")
-      .regex(
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
-        "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.",
-      ),
-    confirm_password: z
-      .string()
-      .min(8, "Password must be at least 8 characters.")
-      .regex(
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
-        "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.",
-      ),
+    old_password: passwordRules,
+    new_password: passwordRules,
+    confirm_password: passwordRules,
   })
   .refine((data) => data.new_password === data.confirm_password, {
     message: "Passwords do not match",
