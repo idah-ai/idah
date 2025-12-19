@@ -3,10 +3,10 @@
 module Account
   class Service < Verse::Service::Base
     use accounts: Account::Repository,
-        organization_service: Organization::Service
+        organization_service: Organization::Service,
+        role_change_notification: Account::RoleChangeNotification
 
-    use_system accounts_system: Account::Repository,
-               organization_repo_system: Organization::Repository
+    use_system accounts_system: Account::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       accounts.index(
@@ -82,7 +82,7 @@ module Account
         updated_account = accounts.find!(record.id)
 
         accounts.after_commit do
-          notify_role_change(previous_account, updated_account)
+          role_change_notification.deliver!(previous_account:, updated_account:)
         end
 
         updated_account
@@ -154,74 +154,6 @@ module Account
       end
 
       password_reset_token
-    end
-
-    def notify_role_change(previous_account, updated_account)
-      # email is not needed if the role doesn't change or org_owner's scope doesn't change
-      return unless role_or_org_scope_changed?(previous_account, updated_account)
-
-      RoleChangeNotification.new(
-        from_role: previous_account.role_name,
-        to_role: updated_account.role_name,
-        recipient_email: previous_account.email,
-        recipient_id: previous_account.id,
-        email_params: build_email_params(previous_account, updated_account)
-      ).deliver!
-    end
-
-    def role_or_org_scope_changed?(previous_account, updated_account)
-      # role is changed
-      return true if previous_account.role_name != updated_account.role_name
-      # role is not changed, and the account is not org_owner, so assume no org scope is changed
-      return false unless previous_account.role_name == "org_owner"
-
-      # whether org scope is changed
-      previous_account.role_scope["org"] != updated_account.role_scope["org"]
-    end
-
-    def build_email_params(previous_account, updated_account)
-      {
-        recipient_name: previous_account.name,
-        admin_name: accounts_system.find!(auth_context.metadata[:id]).name,
-        **org_owner_params(previous_account, updated_account)
-      }.compact
-    end
-
-    def org_owner_params(previous_account, updated_account)
-      old_role = previous_account.role_name
-      new_role = updated_account.role_name
-
-      return {} unless new_role == "org_owner"
-
-      org_id, scope_change = identify_org_scope_change(previous_account, updated_account, old_role, new_role)
-      organization = organization_service.show(org_id)
-
-      {
-        organization_scope_change: scope_change,
-        organization_id: organization.id,
-        organization_name: organization.name
-      }
-    end
-
-    # note: this checks only a single org scope change,
-    # need proper check implementation for multiple org scopes change from an update
-    # also email notification for this should be review to cope with multiple orgs
-    def identify_org_scope_change(previous_account, updated_account, old_role, new_role)
-      previous_orgs = previous_account.role_scope["org"] || []
-      updated_orgs = updated_account.role_scope["org"] || []
-
-      # role changed to be org_owner, an org scope is added
-      return [updated_orgs.first, "added"] if old_role != new_role
-
-      # org scope changed within org_owner role
-      added = updated_orgs - previous_orgs
-      removed = previous_orgs - updated_orgs
-
-      return [added.first, "added"] if added.any?
-      return [removed.first, "removed"] if removed.any?
-
-      # neutral case should already be skipped
-      [nil, nil]
     end
   end
 end

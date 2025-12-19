@@ -85,6 +85,7 @@ module Auth
         {
           id: account.id,
           email: account.email,
+          name: account.name,
         }.compact,
         account_role,
         account.role_scope,
