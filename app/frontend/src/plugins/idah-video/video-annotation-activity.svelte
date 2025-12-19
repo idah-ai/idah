@@ -659,6 +659,7 @@
   });
 
   function addAnnotation(shape: AnnotationShape, value: AnnotationValue = {}) {
+    if (!["review", "annotate"].includes(context.workflowStep)) return;
     const annotation = {
       // filter out indexed shape index noise for now
       shape: Object.fromEntries(
@@ -671,14 +672,20 @@
   }
 
   async function removeAnnotation(id: string) {
+    if (!["review", "annotate"].includes(context.workflowStep)) return;
+
     context.commands.run("annotation.delete", { id });
   }
 
   async function addSelection(id: string, selection: VideoFrameSelection) {
+    if (!["review", "annotate"].includes(context.workflowStep)) return;
+
     context.commands.run("keyframe.add", { id, selection });
   }
 
   async function deleteSelection(annotationId: string, frame: number) {
+    if (!["review", "annotate"].includes(context.workflowStep)) return;
+
     context.commands.run("keyframe.delete", { annotationId, frame });
   }
 
@@ -686,6 +693,8 @@
     annotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>,
     frame?: number,
   ) {
+    if (!["review", "annotate"].includes(context.workflowStep)) return;
+
     if (frame != undefined) deleteSelection(annotation.metadata.id, frame);
     else removeAnnotation(annotation.metadata.id);
   }
@@ -717,6 +726,8 @@
   }
 
   function onShapeSelection(type: string, frame: number, _points: Point[] = [], selectedId?: string) {
+    if (!["review", "annotate"].includes(context.workflowStep)) return;
+
     let points = $state.snapshot(_points) as Point[];
     if (!selectedId) {
       let annotation_value_from = $state.snapshot(annotationValue) as AnnotationValue;
@@ -752,6 +763,8 @@
     annotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>,
     value: AnnotationValue,
   ) {
+    if (!["review", "annotate"].includes(context.workflowStep)) return;
+
     context.commands.run("annotation.update", { annotation, value });
   }
 
