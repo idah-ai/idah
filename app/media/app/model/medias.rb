@@ -72,7 +72,7 @@ module Medias
       end
     end
 
-    def update!(id, attributes)
+    def update!(id, attributes, scope: scoped(:update))
       with_metadata do
         media = find!(id)
 
@@ -81,7 +81,7 @@ module Medias
           project_id: media.project_id,
         )
 
-        super(id, attributes)
+        super(id, attributes, scope:)
       end
     end
 

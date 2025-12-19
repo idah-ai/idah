@@ -46,14 +46,14 @@ module Organization
       end
     end
 
-    def update!(id, attributes)
+    def update!(id, attributes, scope: scoped(:update))
       with_metadata do
         add_metadata(
           email: auth_context.metadata[:email],
           organization_id: id,
         )
 
-        super(id, attributes)
+        super(id, attributes, scope:)
       end
     end
 
