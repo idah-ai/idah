@@ -55,7 +55,7 @@ RSpec.describe Auth::Service, database: true do
       it "raises authorization error" do
         expect {
           subject.login("invalid@example.com", test_password, ip:, user_agent:)
-        }.to raise_error(Verse::Error::Authorization, "Invalid credentials")
+        }.to raise_error(Verse::Error::Authorization, "invalid_credentials")
       end
     end
 
@@ -63,7 +63,19 @@ RSpec.describe Auth::Service, database: true do
       it "raises authorization error" do
         expect {
           subject.login(test_email, "wrong_password", ip:, user_agent:)
-        }.to raise_error(Verse::Error::Authorization, "Invalid credentials")
+        }.to raise_error(Verse::Error::Authorization, "invalid_credentials")
+      end
+    end
+
+    context "with account disabled" do
+      before do
+        account_repo.update(account_id, { enabled: false })
+      end
+
+      it "raises authorization error" do
+        expect {
+          subject.login(test_email, test_password, ip:, user_agent:)
+        }.to raise_error(Verse::Error::Authorization, "account_disabled")
       end
     end
   end

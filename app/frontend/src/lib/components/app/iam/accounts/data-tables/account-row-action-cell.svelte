@@ -1,5 +1,6 @@
 <script lang="ts">
   import { SquarePenIcon, Trash2Icon } from "@lucide/svelte";
+  import { onMount } from "svelte";
   import { toast } from "svelte-sonner";
 
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
@@ -7,6 +8,7 @@
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
 
   import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
+  import { authStatus } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
 
   import type { DataTableCellBaseProps } from "@/components/app/datasource-table/types";
@@ -16,12 +18,16 @@
   let { record: account }: DataTableCellBaseProps<AccountRecord> = $props();
 
   // Variables
-  const menus: IDropdownMenus = {
+  let currentAccount = $authStatus.authContext;
+  let canUpdateAccount = $state(false);
+  let canDeleteAccount = $state(false);
+  let menus: IDropdownMenus = $derived({
     actions: {
       items: [
         {
           label: "Edit",
           icon: SquarePenIcon,
+          hidden: !canUpdateAccount,
           action: async () => {
             const accountRes = await fetchAccount();
             accountRecord = accountRes.data;
@@ -31,16 +37,23 @@
         {
           label: "Delete",
           icon: Trash2Icon,
+          hidden: !canDeleteAccount,
           action: () => {
             openConfirmDeleteAccountModal = true;
           },
         },
       ],
     },
-  };
+  });
   let accountRecord: AccountRecord | undefined = $state(undefined);
   let openEditAccountFormModal: boolean = $state(false);
   let openConfirmDeleteAccountModal: boolean = $state(false);
+
+  // Lifecycle
+  onMount(async () => {
+    canUpdateAccount = (await currentAccount?.can("update", "iam:accounts", ["as_org_owner"])) || false;
+    canDeleteAccount = (await currentAccount?.can("delete", "iam:accounts", ["as_org_owner"])) || false;
+  });
 
   // Functions
   async function fetchAccount() {
@@ -60,13 +73,15 @@
   }
 </script>
 
-<DropdownMenus {menus} align="center" />
+{#if canUpdateAccount || canDeleteAccount}
+  <DropdownMenus {menus} align="center" />
 
-<AccountFormModal title="Account" action="update" {accountRecord} bind:open={openEditAccountFormModal} />
+  <AccountFormModal title="Account" action="update" {accountRecord} bind:open={openEditAccountFormModal} />
 
-<ConfirmModal
-  title="Delete account"
-  description="Are you sure you want to remove this account?"
-  onConfirm={removeAccount}
-  bind:open={openConfirmDeleteAccountModal}
-/>
+  <ConfirmModal
+    title="Delete account"
+    description="Are you sure you want to remove this account?"
+    onConfirm={removeAccount}
+    bind:open={openConfirmDeleteAccountModal}
+  />
+{/if}

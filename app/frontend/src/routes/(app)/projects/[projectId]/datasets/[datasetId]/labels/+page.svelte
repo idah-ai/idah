@@ -135,7 +135,7 @@
     const selectedLabelConfig = labelConfig[labelConfigKey];
     const usedColors = selectedLabelConfig.values.map((cat) => cat.color);
     const availableColors = labelColors.filter((color) => !usedColors.includes(color.color));
-    const firstAvailableColor = availableColors[0];
+    const firstAvailableColor = availableColors[0] ?? labelColors[0];
 
     /** Add a new root category, if nodeId is not provided */
     if (!nodeId) {
@@ -238,7 +238,12 @@
     const selectedLabelConfig = labelConfig[labelConfigKey];
     const categoryToUpdateIndex = selectedLabelConfig.values.findIndex((cat) => cat.id === oldId);
     if (categoryToUpdateIndex >= 0) {
-      selectedLabelConfig.values[categoryToUpdateIndex].id = newId;
+      selectedLabelConfig.values[categoryToUpdateIndex] = {
+        ...selectedLabelConfig.values[categoryToUpdateIndex],
+        id: newId,
+        /** Update the label to be the last part of the new ID */
+        label: humanize(newId.split("/")[newId.split("/").length - 1]) || "",
+      };
     }
   }
 
@@ -248,7 +253,7 @@
     const selectedLabelConfig = labelConfig[labelConfigKey];
     const usedColors = selectedLabelConfig.values.map((cat) => cat.color);
     const availableColors = labelColors.filter((color) => !usedColors.includes(color.color));
-    const firstAvailableColor = availableColors[0];
+    const firstAvailableColor = availableColors[0] ?? labelColors[0];
 
     if (selectable) {
       selectedLabelConfig.values.push({
@@ -269,7 +274,7 @@
     const selectedLabelConfig = labelConfig[labelConfigKey];
     const usedColors = selectedLabelConfig.values.map((cat) => cat.color);
     const availableColors = labelColors.filter((color) => !usedColors.includes(color.color));
-    const firstAvailableColor = availableColors[0];
+    const firstAvailableColor = availableColors[0] ?? labelColors[0];
 
     selectedLabelConfig.values = selectedLabelConfig.values.filter((cat) => !cat.id.includes(categoryId));
 

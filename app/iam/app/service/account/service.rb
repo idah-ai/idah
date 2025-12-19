@@ -33,8 +33,13 @@ module Account
       accounts.transaction do
         attr = record.attributes.dup
 
-        if accounts.find_by({ email: attr[:email] })
-          raise Verse::Error::ValidationFailed, "Email already exists"
+        # We use the system repository to check for existing accounts
+        account = accounts_system.find_by({ email: attr[:email] })
+
+        # If account with the email already exists, return it
+        if account
+          auth_context.mark_as_checked!
+          return account
         end
 
         # Set a default random password for the account if none is provided
@@ -48,7 +53,7 @@ module Account
         id = accounts.create(attr)
 
         # Use the system repository to avoid permission issues
-        # As project membership will be create after account creation
+        # As project membership will be created after account creation
         created_account = accounts_system.find!(id)
 
         # Send the join invitation email
@@ -171,6 +176,7 @@ module Account
 
         organization = organization_repo_system.find!(org_id)
         base_params[:organization_name] = organization.name
+        base_params[:organization_id] = organization.id
       end
 
       # Include admin name

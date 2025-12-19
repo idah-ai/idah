@@ -20,6 +20,7 @@ export interface DatasetStatusBadgeProps extends LabelValue<string, DatasetRecor
 }
 
 export const datasetsStatuses: DatasetStatusBadgeProps[] = [
-  { label: "Pending", value: "pending", variant: "warning" },
+  { label: "Pending", value: "pending", variant: "outline" },
+  { label: "In Progress", value: "in_progress", variant: "warning" },
   { label: "Completed", value: "completed", variant: "success" },
 ];
