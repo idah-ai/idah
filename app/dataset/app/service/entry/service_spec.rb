@@ -311,7 +311,7 @@ RSpec.describe Entry::Service, database: true do
       expect { repo.find!(entry.id) }.to raise_error(Verse::Error::NotFound)
     end
 
-    it "cannot delete a dataset with in_progress or completed status" do
+    it "cannot delete an entry with in_progress or completed status" do
       updating_record = deserialize(
         {
           data: {
@@ -329,7 +329,27 @@ RSpec.describe Entry::Service, database: true do
         subject.delete(entry.id)
       }.to raise_error(
         Verse::Error::Unauthorized,
-        "Unable to delete In Progress or Completed entry"
+        "Unable to delete In-Progress or Completed entry"
+      )
+
+      updating_record = deserialize(
+        {
+          data: {
+            type: "entries",
+            id: entry.id,
+            attributes: {
+              status: "completed",
+            }
+          }
+        }
+      )
+      subject.update(updating_record)
+
+      expect {
+        subject.delete(entry.id)
+      }.to raise_error(
+        Verse::Error::Unauthorized,
+        "Unable to delete In-Progress or Completed entry"
       )
     end
   end
