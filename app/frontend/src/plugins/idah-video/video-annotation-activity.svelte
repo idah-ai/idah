@@ -159,7 +159,7 @@
         ]
       : [];
 
-    tools.concat([
+    tools = tools.concat([
       {
         label: "Notes",
         type: IDAH_NOTE,
