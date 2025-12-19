@@ -62,6 +62,7 @@ module Account
         title: settings[:title] || default_title,
         category: settings[:category] || default_category,
         type: settings[:type] || "notification:account:activities",
+        recipient_name: previous_account.name,
         recipient_account_email: previous_account.email,
         recipient_account_id: previous_account.id,
         changed_by_name: auth_context.metadata[:name]
@@ -69,7 +70,7 @@ module Account
 
       return unless settings.fetch(:send_notification, false)
 
-      if to_role == "org_owner" || from_role == "org_owner" && to_role != "org_owner"
+      if to_role == "org_owner" || (from_role == "org_owner" && to_role != "org_owner")
         org_owner_notify_email!
         return
       end
@@ -104,7 +105,7 @@ module Account
 
     def org_owner_changed_notify_email!(org_ids, action)
       org_ids.each do |org_id|
-        organization = organization_repo.find(org_id)
+        organization = organization_repo.find!(org_id)
 
         ::Service::Notification.email(
           **default_email_params.merge(
