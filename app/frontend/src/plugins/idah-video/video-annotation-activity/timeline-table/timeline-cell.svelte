@@ -101,7 +101,7 @@
                 Seek frame {keyframe}
               </ContextMenuItem>
 
-              {#if !["review", "annotate"].includes(context.workflowStep)}
+              {#if ["review", "annotate"].includes(context.workflowStep)}
                 <ContextMenuItem onclick={() => onDeleteFrame?.(keyframe)}>
                   <Trash2Icon class="size-4"></Trash2Icon>
                   Delete frame {keyframe}
