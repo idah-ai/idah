@@ -75,7 +75,7 @@ module Account
       valid ? account : nil
     end
 
-   private  def accounts_from_project_member_scoped
+   private def accounts_from_project_member_scoped
       account_id = auth_context.metadata[:id]
       org_ids = auth_context[:org] || []
 
@@ -93,7 +93,7 @@ module Account
       table.where(id: account_ids)
     end
 
-    private def create(attributes)
+    def create(attributes)
       with_metadata do
         add_metadata(
           email: auth_context.metadata[:email],
