@@ -68,7 +68,7 @@ module Dataset
     def delete(id)
       dataset = datasets.find!(id)
       if %w[in_progress completed].include?(dataset.status)
-        raise Verse::Error::Unauthorized, "Unable to delete In-Progress and Completed dataset"
+        raise Verse::Error::Unauthorized, "Unable to delete in progress or completed dataset"
       end
 
       datasets.delete!(id)

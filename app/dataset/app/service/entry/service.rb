@@ -84,7 +84,7 @@ module Entry
     def delete(id)
       entry = entries.find!(id)
       if %w[in_progress completed].include?(entry.status)
-        raise Verse::Error::Unauthorized, "Unable to delete In-Progress or Completed entry"
+        raise Verse::Error::Unauthorized, "Unable to delete in progress or completed entry"
       end
 
       entries.delete!(id)

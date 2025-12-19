@@ -142,7 +142,7 @@ RSpec.describe Dataset::Service, database: true do
         subject.delete(dataset_id)
       }.to raise_error(
         Verse::Error::Unauthorized,
-        "Unable to delete In-Progress and Completed dataset"
+        "Unable to delete in progress or completed dataset"
       )
 
       updating_record = deserialize(
@@ -162,7 +162,7 @@ RSpec.describe Dataset::Service, database: true do
         subject.delete(dataset_id)
       }.to raise_error(
         Verse::Error::Unauthorized,
-        "Unable to delete In-Progress and Completed dataset"
+        "Unable to delete in progress or completed dataset"
       )
     end
   end
