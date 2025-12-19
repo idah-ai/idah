@@ -135,25 +135,12 @@ module ProjectMember
       end
     end
 
-    # remove only memberships that haven't assigned to or worked on any entry in each project
     def remove_nonparticipant_member(account_id)
-      member_project_ids = system_project_members.index({ account_id: account_id }).map(&:project_id).uniq
-      participated_project_ids = system_entries.index(
-        {
-          participated: account_id,
-          project_id: member_project_ids
-        }
-      ).map(&:project_id).uniq
+      project_member_ids = system_project_members.index({ account_id: account_id }).map(&:id).uniq
 
-      non_participated_project_ids = member_project_ids - participated_project_ids
-
-      return unless non_participated_project_ids
-
-      non_participated_project_ids.each do |project_id|
-        membership = project_members.find_by({ account_id: account_id, project_id: project_id })
-
+      project_member_ids.each do |project_member_id|
         # directly delete, no need use service delete to send a notification as the account is already deleted
-        project_members.delete!(membership.id) if membership
+        project_members.delete!(project_member_id)
       end
     end
   end
