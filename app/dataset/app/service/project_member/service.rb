@@ -46,7 +46,6 @@ module ProjectMember
 
         project_members.after_commit do
           member_account = Api[:idah].iam.accounts.show(id: member.account_id)
-          inviter = Api[:idah].iam.accounts.show(id: member.invited_by_id)
 
           # only send notification email if the account has joined already
           unless member_account.joined_at.nil?
@@ -57,8 +56,8 @@ module ProjectMember
               type: "notification:project:activities",
               project_id: member.project_id,
               project_name: member.project.name,
-              inviter_email: inviter.email,
-              inviter_name: inviter.name
+              inviter_email: auth_context.metadata[:email],
+              inviter_name: auth_context.metadata[:name],
             )
           end
         end
@@ -118,8 +117,6 @@ module ProjectMember
         member = project_members.find!(id, included: [:project])
         project_members.delete!(id)
 
-        remover = Api[:idah].iam.accounts.show(id: auth_context.metadata[:id])
-
         project_members.after_commit do
           ::Service::Notification.email(
             to: member.email,
@@ -128,8 +125,8 @@ module ProjectMember
             type: "notification:project:activities",
             project_id: member.project_id,
             project_name: member.project.name,
-            remover_email: remover.email,
-            remover_name: remover.name,
+            remover_email: auth_context.metadata[:email],
+            remover_name: auth_context.metadata[:name],
           )
         end
       end
