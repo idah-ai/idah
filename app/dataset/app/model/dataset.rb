@@ -192,11 +192,13 @@ module Dataset
       with_metadata do
         dataset = find!(id)
 
-        add_metadata(
-          email: auth_context.metadata[:email],
-          project_id: dataset.project_id,
-          dataset_id: id,
-        ) if dataset
+        if dataset
+          add_metadata(
+            email: auth_context.metadata[:email],
+            project_id: dataset.project_id,
+            dataset_id: id,
+          )
+        end
 
         super(id)
       end

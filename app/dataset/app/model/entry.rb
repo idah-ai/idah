@@ -162,12 +162,14 @@ module Entry
       with_metadata do
         entry = find!(id)
 
-        add_metadata(
-          email: auth_context.metadata[:email],
-          project_id: entry.project_id,
-          dataset_id: entry.dataset_id,
-          entry_id: id,
-        ) if entry
+        if entry
+          add_metadata(
+            email: auth_context.metadata[:email],
+            project_id: entry.project_id,
+            dataset_id: entry.dataset_id,
+            entry_id: id,
+          )
+        end
 
         super(id)
       end

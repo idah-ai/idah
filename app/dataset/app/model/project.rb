@@ -103,11 +103,13 @@ module Project
       with_metadata do
         project = find!(id)
 
-        add_metadata(
-          email: auth_context.metadata[:email],
-          organization_id: attributes[:organization_id] || project.organization_id,
-          project_id: id,
-        ) if project
+        if project
+          add_metadata(
+            email: auth_context.metadata[:email],
+            organization_id: attributes[:organization_id] || project.organization_id,
+            project_id: id,
+          )
+        end
 
         super(id, attributes, scope:)
       end
@@ -117,11 +119,13 @@ module Project
       with_metadata do
         project = find!(id)
 
-        add_metadata(
-          email: auth_context.metadata[:email],
-          organization_id: project.organization_id,
-          project_id: id,
-        ) if project
+        if project
+          add_metadata(
+            email: auth_context.metadata[:email],
+            organization_id: project.organization_id,
+            project_id: id,
+          )
+        end
 
         super(id)
       end
