@@ -1,6 +1,18 @@
 # frozen_string_literal: true
 
 Api[:idah].register(
+  :dataset, :entries, :index
+) do |params = {}|
+  output = get(
+    "dataset/entries",
+    params:,
+    options: { auth: :bearer }  # Enable authentication
+  )
+
+  deserialize output.body
+end
+
+Api[:idah].register(
   :dataset, :entries, :show
 ) do |id:, **opts|
   output = get(

@@ -5,6 +5,9 @@ module ProjectMember
     use project_members: ProjectMember::Repository,
         projects: Project::Repository
 
+    use_system system_project_members: ProjectMember::Repository,
+               system_entries: Entry::Repository
+
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       project_members.index(
         filter,
@@ -43,7 +46,6 @@ module ProjectMember
 
         project_members.after_commit do
           member_account = Api[:idah].iam.accounts.show(id: member.account_id)
-          inviter = Api[:idah].iam.accounts.show(id: member.invited_by_id)
 
           # only send notification email if the account has joined already
           unless member_account.joined_at.nil?
@@ -54,8 +56,8 @@ module ProjectMember
               type: "notification:project:activities",
               project_id: member.project_id,
               project_name: member.project.name,
-              inviter_email: inviter.email,
-              inviter_name: inviter.name
+              inviter_email: auth_context.metadata[:email],
+              inviter_name: auth_context.metadata[:name],
             )
           end
         end
@@ -115,8 +117,6 @@ module ProjectMember
         member = project_members.find!(id, included: [:project])
         project_members.delete!(id)
 
-        remover = Api[:idah].iam.accounts.show(id: auth_context.metadata[:id])
-
         project_members.after_commit do
           ::Service::Notification.email(
             to: member.email,
@@ -125,10 +125,19 @@ module ProjectMember
             type: "notification:project:activities",
             project_id: member.project_id,
             project_name: member.project.name,
-            remover_email: remover.email,
-            remover_name: remover.name,
+            remover_email: auth_context.metadata[:email],
+            remover_name: auth_context.metadata[:name],
           )
         end
+      end
+    end
+
+    def remove_nonparticipant_member(account_id)
+      project_member_ids = system_project_members.index({ account_id: account_id }).map(&:id).uniq
+
+      project_member_ids.each do |project_member_id|
+        # directly delete, no need use service delete to send a notification as the account is already deleted
+        project_members.delete!(project_member_id)
       end
     end
   end

@@ -110,6 +110,10 @@
     },
     sort: ["priority"],
     count: true,
+    pagination: {
+      page: currentPage,
+      itemsPerPage,
+    },
   });
   let isFiltering: boolean = $derived(
     Object.keys(listOptions.filters || {}).filter((key) => key !== "dataset_id").length > 0,

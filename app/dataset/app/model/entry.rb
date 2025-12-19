@@ -34,6 +34,16 @@ module Entry
     self.table = "entries"
     self.resource = Resource::Dataset::Entries
 
+    custom_filter :participated do |collection, value|
+      where_fragment = <<-SQL
+        assigned_to_id = :account_id
+        OR submitted_by_id = :account_id
+        OR reviewed_by_id = :account_id
+      SQL
+
+      collection.where(Sequel.lit(where_fragment, account_id: value))
+    end
+
     def scoped(action)
       auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }

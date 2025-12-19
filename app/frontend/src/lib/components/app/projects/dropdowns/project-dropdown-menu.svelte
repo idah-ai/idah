@@ -8,7 +8,6 @@
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
   import ProjectFormModal from "@/components/app/projects/overlays/project-form-modal.svelte";
 
-  import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { authStatus } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
@@ -27,7 +26,6 @@
   let currentAccount = $authStatus.authContext;
   let canUpdateProject = $state(false);
   let canDeleteProject = $state(false);
-  let inProgressDatasets: DatasetRecord[] = $state([]);
   let menus: IDropdownMenus = $derived({
     actions: {
       items: [
@@ -45,7 +43,6 @@
           label: "Delete",
           icon: Trash2Icon,
           hidden: !canDeleteProject,
-          disabled: inProgressDatasets.length > 0,
           action: () => {
             openConfirmDeleteProjectModal = true;
           },
@@ -60,7 +57,7 @@
 
   // Lifecycle
   onMount(async () => {
-    await Promise.all([checkRights(), loadInProgressDatasets()]);
+    await Promise.all([checkRights()]);
   });
 
   // Functions
@@ -84,18 +81,6 @@
       },
       noCache: true,
     });
-  }
-
-  async function loadInProgressDatasets() {
-    const datasetsRes = await datasetsBackendDataSource.list({
-      filters: {
-        project_id: projectId,
-        status__in: ["in_progress"],
-      },
-    });
-    inProgressDatasets = datasetsRes.data;
-
-    return datasetsRes.data;
   }
 
   async function deleteProject(): Promise<void> {

@@ -122,6 +122,49 @@ RSpec.describe Dataset::Service, database: true do
       subject.delete(dataset_id)
       expect { repo.find!(dataset_id) }.to raise_error(Verse::Error::NotFound)
     end
+
+    it "cannot delete a dataset with in_progress or completed status" do
+      dataset_id = repo.create(attributes)
+      updating_record = deserialize(
+        {
+          data: {
+            type: "datasets",
+            id: dataset_id,
+            attributes: {
+              status: "in_progress"
+            }
+          }
+        }
+      )
+      subject.update(updating_record)
+
+      expect {
+        subject.delete(dataset_id)
+      }.to raise_error(
+        Verse::Error::Unauthorized,
+        "Unable to delete in progress or completed dataset"
+      )
+
+      updating_record = deserialize(
+        {
+          data: {
+            type: "datasets",
+            id: dataset_id,
+            attributes: {
+              status: "completed"
+            }
+          }
+        }
+      )
+      subject.update(updating_record)
+
+      expect {
+        subject.delete(dataset_id)
+      }.to raise_error(
+        Verse::Error::Unauthorized,
+        "Unable to delete in progress or completed dataset"
+      )
+    end
   end
 
   describe "#notify_dataset_completed" do
