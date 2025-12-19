@@ -693,7 +693,7 @@
   let shapeSelectionArgs: [type: string, frame: number, _points: Point[], selectedId?: string] | undefined = $state();
 
   function onEditValue(value: AnnotationValue, valueMode: string) {
-    if (["annotate", "review"].includes(context.workflowStep)) return;
+    if (!["annotate", "review"].includes(context.workflowStep)) return;
 
     let requirementFullfilled = requiredFullfilled(value, context.config[valueMode]?.properties);
     annotationValue = value;
