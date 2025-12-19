@@ -90,6 +90,12 @@ module Account
     end
 
     def delete(id)
+      participated_projects = Api[:idah].dataset.entries.index(filter: { participated: id }).data
+      unless participated_projects.empty?
+        raise Verse::Error::ValidationFailed,
+              "Unable to delete account participated in project(s), consider disable it instead"
+      end
+
       accounts.delete(id)
     end
 

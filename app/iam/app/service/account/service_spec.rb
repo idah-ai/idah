@@ -151,10 +151,28 @@ RSpec.describe Account::Service, database: true do
   end
 
   describe "#delete" do
+    before do
+      @account_id = account_repo.create(attributes)
+    end
+
     it "deletes an account" do
-      account_id = account_repo.create(attributes)
-      subject.delete(account_id)
-      expect { account_repo.find!(account_id) }.to raise_error(Verse::Error::NotFound)
+      allow(Api[:idah].dataset.entries).to receive(:index).and_return(
+        Verse::JsonApi::Struct.new([])
+      )
+
+      subject.delete(@account_id)
+      expect { account_repo.find!(@account_id) }.to raise_error(Verse::Error::NotFound)
+    end
+
+    it "doesn't allow account deletion if it's participated in any work" do
+      allow(Api[:idah].dataset.entries).to receive(:index).and_return(
+        Verse::JsonApi::Struct.new(Verse::JsonApi::Struct.new({ id: "mocked_entry_id" }))
+      )
+
+      expect { subject.delete(@account_id) }.to raise_error(
+        Verse::Error::ValidationFailed,
+        "Unable to delete account participated in project(s), consider disable it instead"
+      )
     end
   end
 
