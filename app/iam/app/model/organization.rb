@@ -61,10 +61,12 @@ module Organization
       with_metadata do
         organization = find!(id)
 
-        add_metadata(
-          email: auth_context.metadata[:email],
-          organization_id: id,
-        ) if organization
+        if organization
+          add_metadata(
+            email: auth_context.metadata[:email],
+            organization_id: id,
+          )
+        end
 
         super(id)
       end

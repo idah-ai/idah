@@ -131,10 +131,12 @@ module ProjectMember
       with_metadata do
         membership = find!(id)
 
-        add_metadata(
-          email: auth_context.metadata[:email],
-          project_id: membership.project_id,
-        ) if membership
+        if membership
+          add_metadata(
+            email: auth_context.metadata[:email],
+            project_id: membership.project_id,
+          )
+        end
 
         super(id)
       end
