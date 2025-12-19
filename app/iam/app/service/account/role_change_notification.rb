@@ -6,61 +6,46 @@ module Account
 
     attr_reader :previous_account,
                 :updated_account,
-                :from_role,
-                :to_role,
                 :default_email_params
 
     TRANSITION_SETTINGS = {
       ["user", "org_owner"] => {
         category: "org_owner_role_assigned",
         type: "notification:organization:activities",
-        send_notification: true,
         title: "You have been assigned as organization owner"
-      },
-      ["user", "admin"] => {
-        category: "upgrade_user_to_admin",
-        send_notification: false
       },
       ["org_owner", "user"] => {
         category: "org_owner_role_removed",
         type: "notification:organization:activities",
-        send_notification: true,
         title: "You have been removed as organization owner"
       },
       ["org_owner", "org_owner"] => {
         category: "org_owner_role_assigned",
         type: "notification:organization:activities",
-        send_notification: true,
         title: "Your organization scope has been changed"
-      },
-      ["org_owner", "admin"] => {
-        category: "upgrade_org_owner_to_admin",
-        type: "notification:organization:activities",
-        send_notification: false
-      },
-      ["admin", "user"] => {
-        category: "downgrade_admin_to_user",
-        send_notification: false
-      },
-      ["admin", "org_owner"] => {
-        category: "downgrade_admin_to_org_owner",
-        type: "notification:organization:activities",
-        send_notification: false
-      },
+      }
     }.freeze
 
     def deliver!(previous_account:, updated_account:)
       @previous_account = previous_account
       @updated_account = updated_account
 
-      @from_role = previous_account.role_name
-      @to_role = updated_account.role_name
+      from_role = previous_account.role_name
+      to_role = updated_account.role_name
 
       settings = TRANSITION_SETTINGS[[from_role, to_role]] || {}
+
+      return if settings.empty?
+
+      unless settings[:title] || settings[:category]
+        raise Verse::Error::ValidationFailed,
+              "Notification settings must include title and category"
+      end
+
       @default_email_params = {
         to: previous_account.email,
-        title: settings[:title] || default_title,
-        category: settings[:category] || default_category,
+        title: settings[:title],
+        category: settings[:category],
         type: settings[:type] || "notification:account:activities",
         recipient_name: previous_account.name,
         recipient_account_email: previous_account.email,
@@ -68,8 +53,9 @@ module Account
         changed_by_name: auth_context.metadata[:name]
       }
 
-      return unless settings.fetch(:send_notification, false)
-
+      # Special handling for org_owner role changes
+      # - When an account is promoted to org_owner, we need to notify for each organization added
+      # - When an account is demoted from org_owner, we need to notify for each organization removed
       if to_role == "org_owner" || (from_role == "org_owner" && to_role != "org_owner")
         org_owner_notify_email!
         return
@@ -82,14 +68,6 @@ module Account
 
     def default_notify_email!
       ::Service::Notification.email(**default_email_params)
-    end
-
-    def default_title
-      "Your account role has changed from #{from_role} to #{to_role}"
-    end
-
-    def default_category
-      "account_role_changed_from_#{from_role}_to_#{to_role}"
     end
 
     def org_owner_notify_email!
