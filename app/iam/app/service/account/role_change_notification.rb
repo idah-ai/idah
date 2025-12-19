@@ -1,16 +1,14 @@
 # frozen_string_literal: true
 
 module Account
-  class RoleChangeNotification
-    attr_reader :from_role,
+  class RoleChangeNotification < Verse::Service::Base
+    use_system organization_repo: Organization::Repository
+
+    attr_reader :previous_account,
+                :updated_account,
+                :from_role,
                 :to_role,
-                :email_title,
-                :category,
-                :type,
-                :email_params,
-                :send_notification,
-                :recipient_email,
-                :recipient_id
+                :default_email_params
 
     TRANSITION_SETTINGS = {
       ["user", "org_owner"] => {
@@ -51,35 +49,39 @@ module Account
       },
     }.freeze
 
-    def initialize(from_role:, to_role:, recipient_email:, recipient_id:, email_params: {})
-      @from_role = from_role
-      @to_role = to_role
+    def deliver!(previous_account:, updated_account:)
+      @previous_account = previous_account
+      @updated_account = updated_account
+
+      @from_role = previous_account.role_name
+      @to_role = updated_account.role_name
+
       settings = TRANSITION_SETTINGS[[from_role, to_role]] || {}
+      @default_email_params = {
+        to: previous_account.email,
+        title: settings[:title] || default_title,
+        category: settings[:category] || default_category,
+        type: settings[:type] || "notification:account:activities",
+        recipient_account_email: previous_account.email,
+        recipient_account_id: previous_account.id,
+        changed_by_name: auth_context.metadata[:name]
+      }
 
-      @category = settings[:category] || default_category
-      @type = settings[:type] || "notification:account:activities"
-      @send_notification = settings.fetch(:send_notification, false)
-      @email_title = settings[:title] || default_title
-      @email_params = email_params
-      @recipient_email = recipient_email
-      @recipient_id = recipient_id
-    end
+      return unless settings.fetch(:send_notification, false)
 
-    def deliver!
-      return unless send_notification
+      if to_role == "org_owner" || from_role == "org_owner" && to_role != "org_owner"
+        org_owner_notify_email!
+        return
+      end
 
-      ::Service::Notification.email(
-        to: recipient_email,
-        title: email_title,
-        category: category,
-        type: type,
-        recipient_account_email: recipient_email,
-        recipient_account_id: recipient_id,
-        **email_params
-      )
+      default_notify_email!
     end
 
     private
+
+    def default_notify_email!
+      ::Service::Notification.email(**default_email_params)
+    end
 
     def default_title
       "Your account role has changed from #{from_role} to #{to_role}"
@@ -87,6 +89,31 @@ module Account
 
     def default_category
       "account_role_changed_from_#{from_role}_to_#{to_role}"
+    end
+
+    def org_owner_notify_email!
+      previous_orgs = previous_account.role_scope["org"] || []
+      updated_orgs = updated_account.role_scope["org"] || []
+
+      new_org_ids = updated_orgs - previous_orgs
+      removed_org_ids = previous_orgs - updated_orgs
+
+      org_owner_changed_notify_email!(new_org_ids, "added") if new_org_ids.any?
+      org_owner_changed_notify_email!(removed_org_ids, "removed") if removed_org_ids.any?
+    end
+
+    def org_owner_changed_notify_email!(org_ids, action)
+      org_ids.each do |org_id|
+        organization = organization_repo.find(org_id)
+
+        ::Service::Notification.email(
+          **default_email_params.merge(
+            organization_id: organization.id,
+            organization_name: organization.name,
+            organization_scope_change: action
+          )
+        )
+      end
     end
   end
 end
