@@ -59,6 +59,7 @@
             onSelectCategory={(s) => categorySelection(mode == DEFAULT_MODE || !tools.has(mode) ? ENTRY_ROOT : mode, s)}
             onEditValue={(value) =>
               value && onEditValue(value, mode == DEFAULT_MODE || !tools.has(mode) ? ENTRY_ROOT : mode)}
+            disabled={!["annotate", "review"].includes(context.workflowStep)}
           />
         {/key}
       </SidebarGroupContent>
