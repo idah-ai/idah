@@ -6,6 +6,7 @@
   import Button from "@/components/ui/button/button.svelte";
   import Link from "@/components/ui/text/Link.svelte";
 
+  import { toast } from "svelte-sonner";
   import { accountPasswordsBackendDataSource } from "@/data/model/iam/account-passwords/record";
   import { sendResetPasswordLinkSchema } from "@/data/model/iam/accounts/auth-schema";
 
@@ -13,23 +14,26 @@
   let resource: string = "iam:account";
   let email = $state("");
   let showErrorAlert = $state(false);
-  let passwordResetLinkHasBeenSent: boolean = $state(false);
+  let sendingPasswordResetLink = $state(false);
   // let sentDate: Date | null = $state(null);
   let disabledSendPasswordResetLink = $derived.by(() => {
     const validated = sendResetPasswordLinkSchema.safeParse({ email });
     return !validated.success;
   });
-  let disabledResendPasswordResetLink = $derived.by(() => {
-    return !passwordResetLinkHasBeenSent;
-  });
 
   // Functions
   async function sendPasswordResetLink(): Promise<void> {
+    sendingPasswordResetLink = true;
+
     try {
       await accountPasswordsBackendDataSource.request_reset({ email });
-      passwordResetLinkHasBeenSent = true;
       showErrorAlert = false;
+
+      sendingPasswordResetLink = false;
+      email = "";
+      toast.info("Reset link sent!", { description: "Please check your email for the password reset link." });
     } catch (error) {
+      sendingPasswordResetLink = false;
       console.error(error);
       showErrorAlert = true;
     }
@@ -58,12 +62,15 @@
         oninput={(e) => (email = e.currentTarget.value)}
       ></InputField>
 
-      <Button class="w-full" disabled={disabledSendPasswordResetLink} onclick={sendPasswordResetLink}>
-        {#if passwordResetLinkHasBeenSent}
-          Sent! 🎉
-        {:else}
-          Send reset password email
-        {/if}
+      <Button
+        class="w-full"
+        type="submit"
+        disabled={disabledSendPasswordResetLink}
+        loading={sendingPasswordResetLink}
+        loadingLabel="Sending..."
+        onclick={sendPasswordResetLink}
+      >
+        Send reset password email
       </Button>
     </Form>
   {/snippet}
@@ -71,7 +78,6 @@
   {#snippet footer()}
     <div class="flex w-full items-center justify-between gap-2">
       <Link href="/login" class="text-sm">Return to login</Link>
-      <Button variant="ghost" disabled={disabledResendPasswordResetLink}>Resend link</Button>
     </div>
   {/snippet}
 </AuthenticationCard>

@@ -1,7 +1,7 @@
 
 You have been removed from project <%= notification.project_name %>
 
-Hello <%= account.name %>,
-<%= notification.remover_email %> has removed you from the project <%= notification.project_name %>.
+Hello <%= account.name || account.email %>,
+  You have been removed from the project "<%= notification.project_name %>" by <%= notification.remover_name %>.
 
 If you have any questions, please contact the project owner.

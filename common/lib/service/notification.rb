@@ -9,17 +9,17 @@ module Service
     def email(
       title:,
       category:,
+      type: nil,
       to: nil,
       **params
     )
-      if to.nil?
-        raise ArgumentError, "to email must be provided"
-      end
+      raise ArgumentError, "to email must be provided" if to.nil?
 
       hash = {
         account_email: to,
         title:,
         category:,
+        type:
       }.merge(params)
 
       Verse.logger.debug { "Send email: #{hash}" }

@@ -139,6 +139,10 @@ RSpec.describe ProjectMember::Service, database: true do
       end
 
       it "can delete" do
+        allow(Api[:idah].iam.accounts).to receive(:show).and_return(
+          double(name: "Remover User", email: "remover@example.com", joined_at: Time.now)
+        )
+
         subject.delete(annotator_member_id)
 
         expect {
@@ -232,6 +236,10 @@ RSpec.describe ProjectMember::Service, database: true do
       end
 
       it "can delete" do
+        allow(Api[:idah].iam.accounts).to receive(:show).and_return(
+          double(name: "Remover User", email: "remover@example.com", joined_at: Time.now)
+        )
+
         subject.delete(annotator_member_id)
 
         expect {

@@ -4,7 +4,7 @@ module Resource
   module Setting
     # rubocop:disable Naming/ConstantName
     Settings = "setting:settings"
-    UserSettings = "setting:user_settings"
+    AccountSettings = "setting:account_settings"
 
     Plugins = "setting:plugins"
     # rubocop:enable Naming/ConstantName

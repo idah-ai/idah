@@ -13,7 +13,7 @@ module Entry
     field :wf_step, type: String # , readonly: true
     field :status, type: String # , readonly: true
 
-    field :job_id, type: Integer
+    field :job_id, type: String
 
     field :resource, type: String
 
@@ -82,14 +82,15 @@ module Entry
                   (pm.role IN :annotator_roles)
                   AND entries.assigned_to_id = :account_id
                 ) OR
-                -- Reviewers can access assigned and unassigned entries in review step
+                -- Reviewers can access assigned and unassigned entries not submitted by themselves in review step
                 (
                   (pm.role IN :reviewer_roles)
                   AND (
                     entries.assigned_to_id = :account_id OR
                     (
                       entries.wf_step = 'review' AND
-                      entries.assigned_to_id IS NULL
+                      entries.assigned_to_id IS NULL AND
+                      entries.submitted_by_id != :account_id
                     )
                   )
                 )

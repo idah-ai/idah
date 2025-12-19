@@ -1,6 +1,8 @@
 <script lang="ts">
-  import { CircleUserRoundIcon, LogOutIcon, SettingsIcon, SunMoonIcon } from "@lucide/svelte";
-  import { toggleMode } from "mode-watcher";
+  import { goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
+  import { LogOutIcon, MoonIcon, SettingsIcon, SunIcon, SunMoonIcon, TabletSmartphoneIcon } from "@lucide/svelte";
+  import { mode, resetMode, setMode } from "mode-watcher";
 
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import AccountAvatar from "@/components/app/iam/accounts/avatars/account-avatar.svelte";
@@ -26,26 +28,48 @@
   );
 
   const sidebar = useSidebar();
-  const menus: IDropdownMenus = {
+  const menus: IDropdownMenus = $derived({
     general: {
       items: [
-        {
-          label: "Profile",
-          icon: CircleUserRoundIcon,
-          action: () => {
-            // Handle profile action
-          },
-        },
+        // {
+        //   label: "Profile",
+        //   icon: CircleUserRoundIcon,
+        //   action: () => {
+        //     // Handle profile action
+        //   },
+        // },
         {
           label: "Theme",
           icon: SunMoonIcon,
-          action: toggleMode,
+          items: {
+            modes: {
+              items: [
+                {
+                  label: "Light",
+                  icon: SunIcon,
+                  disabled: mode.current === "light",
+                  action: () => setMode("light"),
+                },
+                {
+                  label: "Dark",
+                  icon: MoonIcon,
+                  disabled: mode.current === "dark",
+                  action: () => setMode("dark"),
+                },
+                {
+                  label: "System",
+                  icon: TabletSmartphoneIcon,
+                  action: () => resetMode(),
+                },
+              ],
+            },
+          },
         },
         {
           label: "Settings",
           icon: SettingsIcon,
           action: () => {
-            // Handle settings action
+            goto(resolve("/settings/notifications"));
           },
         },
       ],
@@ -61,7 +85,7 @@
         },
       ],
     },
-  };
+  });
 </script>
 
 <DropdownMenus {menus} align="end" side={sidebar.isMobile ? "bottom" : "right"} class="min-w-56">

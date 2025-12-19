@@ -1,6 +1,6 @@
 
 You have been removed as organization owner of 
-<%= notification.organization_name %> organization
+"<%= notification.organization_name %>" organization
 
-Hi <%= notification.recipient_name %>,
-You have been removed as organization owner of <%= notification.organization_name %> organization by <%= notification.admin_name %>.
+Hi <%= notification.recipient_name || notification.recipient_account_email %>,
+You have been removed as organization owner of "<%= notification.organization_name %>" organization by <%= notification.admin_name %>.

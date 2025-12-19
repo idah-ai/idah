@@ -57,7 +57,7 @@
 
   <div class="grid flex-1 text-left text-sm leading-tight">
     {#if showName}
-      <span class="truncate font-medium">{name || email}</span>
+      <span class="font-medium">{name || email}</span>
     {/if}
 
     {#if showEmail}
