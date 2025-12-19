@@ -8,7 +8,6 @@
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
   import ProjectFormModal from "@/components/app/projects/overlays/project-form-modal.svelte";
 
-  import { DatasetRecord } from "@/data/model/dataset/dataset-record";
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { authStatus } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
