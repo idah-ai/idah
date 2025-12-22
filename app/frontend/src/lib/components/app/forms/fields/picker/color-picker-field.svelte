@@ -1,4 +1,6 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
+
   import ColorPicker from "@/components/app/color-picker/color-picker.svelte";
   import FormFieldErrors from "@/components/app/forms/form-field-errors.svelte";
   import FormFieldInfo from "@/components/app/forms/form-field-info.svelte";
@@ -15,11 +17,12 @@
   interface Props extends FormFieldBaseProps {
     value: string | null | undefined;
     onValueChanged?: (value: string | null | undefined) => void;
+    slotSuggestion?: Snippet;
   }
   let {
     name,
     label,
-    placeholder = "Select a date",
+    placeholder = "Select a color",
     required = false,
     disabled = false,
     value = $bindable(null),
@@ -29,7 +32,8 @@
     slotLabel,
     slotInfo,
     slotErrors,
-    onValueChanged
+    onValueChanged,
+    slotSuggestion
   }: Props = $props();
 
   // Variables
@@ -64,7 +68,7 @@
     </PopoverTrigger>
 
     <PopoverContent class="w-auto p-0" align="start" side="right">
-      <ColorPicker bind:value onValueChange={handleValueChange}></ColorPicker>
+      <ColorPicker bind:value onValueChange={handleValueChange} {slotSuggestion}></ColorPicker>
     </PopoverContent>
   </Popover>
 
