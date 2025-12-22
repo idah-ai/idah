@@ -216,18 +216,18 @@
 
     <PopoverContent align="start" class="w-auto min-w-[var(--bits-floating-anchor-width)] p-0">
       <Command>
+        {#if searchable}
+          <InputField
+            name="filter/single-select/{searchKeyWithOperation}"
+            class="pb-2"
+            placeholder={searchPlaceholder}
+            value={searchValue}
+            oninput={filterChoices}
+          />
+        {/if}
+
         <CommandList bind:ref={commandListElement} onwheel={scrollToPaginate}>
           <CommandGroup>
-            {#if searchable}
-              <InputField
-                name="filter/single-select/{searchKeyWithOperation}"
-                class="pb-2"
-                placeholder={searchPlaceholder}
-                value={searchValue}
-                oninput={filterChoices}
-              />
-            {/if}
-
             <CommandEmpty>No option found.</CommandEmpty>
 
             {#each choices as choice, index (index)}
