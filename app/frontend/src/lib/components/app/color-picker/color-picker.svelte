@@ -18,7 +18,7 @@
   let { value = $bindable(null), class: className }: Props = $props();
 
   // variables
-  let hue = $derived(0); // 0-360
+  let hue = $state(0); // 0-360
   let saturation = $state(50); // 0-100
   let brightness = $state(60); // 0-100
   let opacity = $state(100); // 0-100
@@ -47,14 +47,16 @@
 
     if (colorFormat === "RGB") {
       const alpha = opacity / 100;
+      
       return alpha < 1
-        ? `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha.toFixed(2)})`
+        ? `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${fixDecimal(alpha)})`
         : `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
     } else if (colorFormat === "HSL") {
       const alpha = opacity / 100;
+
       return alpha < 1
-        ? `hsla(${hue.toFixed(2)}, ${saturation.toFixed(2)}%, ${brightness.toFixed(2)}%, ${alpha.toFixed(2)})`
-        : `hsl(${hue.toFixed(2)}, ${saturation.toFixed(2)}%, ${brightness.toFixed(2)}%)`;
+        ? `hsla(${fixDecimal(hue)}, ${fixDecimal(saturation)}%, ${fixDecimal(brightness)}%, ${fixDecimal(alpha)})`
+        : `hsl(${fixDecimal(hue)}, ${fixDecimal(saturation)}%, ${fixDecimal(brightness)}%)`;
     } else {
       // HEX format
       return rgbToHex(rgb.r, rgb.g, rgb.b);
@@ -62,6 +64,14 @@
   });
 
   // functions
+  function fixDecimal(value: number, decimals: number = 2): number {
+    if (Number.isInteger(value)) {
+      return value;
+    }
+
+    return Number(value.toFixed(decimals));
+  }
+
   function hsvToRgb(h: number, s: number, v: number): { r: number; g: number; b: number } {
     s = s / 100;
     v = v / 100;
@@ -169,7 +179,7 @@
   }
 
   // Draw the saturation/brightness canvas
-  function drawCanvas() {    
+  function drawCanvas() {
     if (!ctx || !canvas) return;
 
     const width = canvas.width;
@@ -239,10 +249,70 @@
   // Handle hue changes from slider
   function handleHueChange(value: number) {
     hue = value;
-    
     updateFromHSV();
     drawCanvas();
+  }
 
+  // Handle color input changes
+  function handleColorInputChange(e: Event) {
+    const input = e.currentTarget as HTMLInputElement;
+    const inputValue = input.value.trim();
+
+    // Try to parse HEX format
+    if (/^#?[0-9A-F]{6}$/i.test(inputValue)) {
+      const hexValue = inputValue.startsWith("#") ? inputValue : `#${inputValue}`;
+      const rgb = hexToRgb(hexValue);
+      const hsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
+      hue = hsv.h;
+      saturation = hsv.s;
+      brightness = hsv.v;
+      value = hexValue.toUpperCase();
+      hexInput = value;
+      drawCanvas();
+      updateCanvasPosition();
+      return;
+    }
+
+    // Try to parse RGB/RGBA format
+    const rgbMatch = inputValue.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/i);
+    if (rgbMatch) {
+      const r = parseInt(rgbMatch[1]);
+      const g = parseInt(rgbMatch[2]);
+      const b = parseInt(rgbMatch[3]);
+      const a = rgbMatch[4] ? parseFloat(rgbMatch[4]) : 1;
+
+      if (r >= 0 && r <= 255 && g >= 0 && g <= 255 && b >= 0 && b <= 255) {
+        const hsv = rgbToHsv(r, g, b);
+        hue = hsv.h;
+        saturation = hsv.s;
+        brightness = hsv.v;
+        opacity = Math.round(a * 100);
+        value = rgbToHex(r, g, b);
+        hexInput = value;
+        drawCanvas();
+        updateCanvasPosition();
+      }
+      return;
+    }
+
+    // Try to parse HSL/HSLA format
+    const hslMatch = inputValue.match(/hsla?\(([\d.]+),\s*([\d.]+)%,\s*([\d.]+)%(?:,\s*([\d.]+))?\)/i);
+    if (hslMatch) {
+      const h = parseFloat(hslMatch[1]);
+      const s = parseFloat(hslMatch[2]);
+      const l = parseFloat(hslMatch[3]);
+      const a = hslMatch[4] ? parseFloat(hslMatch[4]) : 1;
+
+      if (h >= 0 && h <= 360 && s >= 0 && s <= 100 && l >= 0 && l <= 100) {
+        hue = h;
+        saturation = s;
+        brightness = l;
+        opacity = Math.round(a * 100);
+        updateFromHSV();
+        drawCanvas();
+        updateCanvasPosition();
+      }
+    }
   }
 
   // Initialize
@@ -304,8 +374,7 @@
       shadow-[0_0_0_1px_rgba(0,0,0,0.3),inset_0_0_0_1px_rgba(0,0,0,0.3)]
     "
       style="left: {canvasX}px; top: {canvasY}px;"
-    >
-    </div>
+    ></div>
   </div>
 
   <!-- Sliders Row -->
@@ -345,12 +414,7 @@
       }}
     ></SingleSelectField>
 
-    <InputField
-      name="color-picker/color"
-      label=""
-      value={colorInput}
-      oninput={(e) => (hexInput = e.currentTarget.value)}
-    ></InputField>
+    <InputField name="color-picker/color" label="" value={colorInput} oninput={handleColorInputChange}></InputField>
   </div>
 </div>
 
