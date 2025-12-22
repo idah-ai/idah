@@ -136,30 +136,20 @@
 
   onMount(async () => {
     $boundingBoxes = [];
-    /**
-     * Annotation tools need to be disabled. Not allow to create new annotation once the entry is completed.
-     */
-    const disabledToolsIfWorkflowSteps = ["done"];
-
-    tools = ["annotate", "review"].includes(context.workflowStep)
-      ? [
-          {
-            label: "Visual",
-            type: DEFAULT_MODE,
-            iconName: "mouse-pointer-2",
-            handleClick: () => context.commands.run("tools.visual"),
-          },
-          {
-            label: "Bounding Box",
-            type: IDAH_VIDEO_BOUNDING_BOX,
-            iconName: "vector-square",
-            disabled: disabledToolsIfWorkflowSteps.includes(context.workflowStep),
-            handleClick: () => context.commands.run("tools.bounding_box"),
-          },
-        ]
-      : [];
-
-    tools = tools.concat([
+    tools = [
+      {
+        label: "Visual",
+        type: DEFAULT_MODE,
+        iconName: "mouse-pointer-2",
+        handleClick: () => context.commands.run("tools.visual"),
+      },
+      {
+        label: "Bounding Box",
+        type: IDAH_VIDEO_BOUNDING_BOX,
+        iconName: "vector-square",
+        disabled: !["annotate", "review"].includes(context.workflowStep),
+        handleClick: () => context.commands.run("tools.bounding_box"),
+      },
       {
         label: "Notes",
         type: IDAH_NOTE,
@@ -167,7 +157,7 @@
         disabled: !["annotate", "review", "done"].includes(context.workflowStep), // Note: Only allow to create note when workflow steps are "annotate" and "review"
         handleClick: () => context.commands.run("tools.note"),
       },
-    ]);
+    ];
 
     context.tools.setTools(tools);
 
