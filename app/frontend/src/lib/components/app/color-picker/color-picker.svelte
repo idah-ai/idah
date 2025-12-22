@@ -349,8 +349,8 @@
   <div class="relative mb-5 cursor-crosshair overflow-hidden rounded-2xl">
     <canvas
       bind:this={canvas}
-      width="700"
-      height="660"
+      width="400"
+      height="320"
       onmousedown={handleCanvasMouseDown}
       class="block h-auto w-full rounded-2xl"
     ></canvas>
