@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, type Snippet } from "svelte";
 
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import SingleSelectField from "@/components/app/forms/fields/select/single/single-select-field.svelte";
@@ -13,9 +13,10 @@
   interface Props {
     value: string | null | undefined;
     class?: string | null;
+    slotSuggestion?: Snippet;
   }
 
-  let { value = $bindable(null), class: className }: Props = $props();
+  let { value = $bindable(null), class: className, slotSuggestion }: Props = $props();
 
   // Variables
   let hue = $state(0); // 0-360
@@ -414,6 +415,10 @@
 
     <InputField name="color-picker/color" label="" value={colorInput} oninput={handleColorInputChange}></InputField>
   </div>
+
+  {#if slotSuggestion}
+    {@render slotSuggestion()}
+  {/if}
 </div>
 
 <style>
