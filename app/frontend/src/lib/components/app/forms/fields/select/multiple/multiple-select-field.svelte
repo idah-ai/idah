@@ -47,6 +47,10 @@
   let allChoicesSelected = $state(false);
 
   // Functions
+  function closePopover() {
+    open = !closeOnSelect;
+  }
+
   async function select(choice: LabelValue<string | number>): Promise<void> {
     if (values.includes(choice.value)) {
       values = values.filter((value) => value !== choice.value);
@@ -55,7 +59,7 @@
     }
 
     allChoicesSelected = values.length === choices.length;
-    open = closeOnSelect ? false : true;
+    closePopover();
     await onSelected?.(selectedChoices);
   }
 
@@ -68,7 +72,7 @@
       values = [];
     }
 
-    open = closeOnSelect ? false : true;
+    closePopover();
     await onSelected?.(selectedChoices);
   }
 
@@ -76,7 +80,7 @@
     event.stopPropagation();
     values = [];
     allChoicesSelected = false;
-    open = closeOnSelect ? false : true;
+    closePopover();
   }
 </script>
 
