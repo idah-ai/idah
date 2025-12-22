@@ -23,7 +23,6 @@
   let brightness = $state(60); // 0-100
   let opacity = $state(100); // 0-100
 
-  let hexInput = $state("#7BB2A2A");
   let colorFormat = $state("HEX");
   let colorFormats: LabelValue<string>[] = [
     { label: "HEX", value: "HEX" },
@@ -175,7 +174,6 @@
   function updateFromHSV() {
     const rgb = hsvToRgb(hue, saturation, brightness);
     value = rgbToHex(rgb.r, rgb.g, rgb.b);
-    hexInput = value;
   }
 
   // Draw the saturation/brightness canvas
@@ -267,7 +265,6 @@
       saturation = hsv.s;
       brightness = hsv.v;
       value = hexValue.toUpperCase();
-      hexInput = value;
       drawCanvas();
       updateCanvasPosition();
       return;
@@ -288,7 +285,6 @@
         brightness = hsv.v;
         opacity = Math.round(a * 100);
         value = rgbToHex(r, g, b);
-        hexInput = value;
         drawCanvas();
         updateCanvasPosition();
       }
@@ -327,7 +323,6 @@
     hue = hsv.h;
     saturation = hsv.s;
     brightness = hsv.v;
-    hexInput = initialValue;
 
     drawCanvas();
     updateCanvasPosition();
