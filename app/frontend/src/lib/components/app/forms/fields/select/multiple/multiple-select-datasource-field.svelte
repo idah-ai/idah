@@ -15,12 +15,12 @@
   } from "@/components/ui/command";
   import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-  import Spinner from "@/components/ui/spinner/spinner.svelte";
 
   import type { MultipleSelectDataSourceFieldBaseProps } from "@/components/app/forms/form-field.types";
   import type { ListOptions } from "@/data/DataSource";
   import type { Record } from "@/data/model/Record";
   import type { LabelValue } from "@/utils/types";
+  import type { FormEventHandler, WheelEventHandler } from "svelte/elements";
 
   // Props
   interface Props extends MultipleSelectDataSourceFieldBaseProps<T> {
@@ -54,6 +54,7 @@
     slotLabel,
     slotTrigger,
     slotTriggerValues,
+    slotSelectAll,
     slotChoice,
     slotInfo,
     slotErrors,
@@ -62,13 +63,22 @@
   // Type
   type Choice = LabelValue<string | number, T>;
 
+  // Elements
+  let commandListElement: HTMLDivElement | null = $state(null);
+
   // Variables
   let open: boolean = $state(false);
   let choices: Choice[] = $state([]);
+  let page = $state(1);
+  let itemsPerPage = $state(10);
+  let hasMore = $state(true);
   let selectedChoices = $derived(choices.filter((choice) => values.includes(choice.value)));
+  let allChoicesSelected = $state(false);
 
   // Lifecycle
   onMount(async () => {
+    choices = await fetchChoices();
+
     /** Get selected choice if value is defined */
     if (values.length > 0) {
       const fetchedChoices = await Promise.all(
@@ -92,8 +102,8 @@
     open = true;
   }
 
-  async function initialFetchChoices(): Promise<void> {
-    choices = await fetchChoices();
+  function closePopover() {
+    open = !closeOnSelect;
   }
 
   async function fetchChoices(): Promise<Choice[]> {
@@ -102,7 +112,7 @@
     const listOpts: ListOptions = { ...listOptions };
 
     /** Set default pagination */
-    if (!listOpts.pagination) listOpts.pagination = { page: 1, itemsPerPage: 10 };
+    if (!listOpts.pagination) listOpts.pagination = { page, itemsPerPage };
 
     /** Set default sort */
     if (!listOpts.sort) listOpts.sort = ["-id"];
@@ -114,7 +124,8 @@
       listOpts.filters = { ...listOpts.filters };
     }
 
-    const response = await dataSource.list(listOpts);
+    const response = await dataSource.list({ ...listOpts, count: true });
+    hasMore = response.meta?.count ? response.meta?.count > page * itemsPerPage : false;
 
     // Return filtered choices excluding hiddenChoices
     return response.data
@@ -127,6 +138,12 @@
       .filter((choice) => !hiddenChoices.includes(choice.value));
   }
 
+  const filterChoices: FormEventHandler<HTMLInputElement> = async (event) => {
+    searchValue = event.currentTarget.value;
+    page = 1;
+    choices = await fetchChoices();
+  };
+
   async function select(choice: LabelValue<string | number>): Promise<void> {
     if (values.find((v) => v == choice.value)) {
       values = values.filter((value) => value != choice.value);
@@ -134,14 +151,58 @@
       values = [...values, choice.value];
     }
 
-    open = closeOnSelect ? false : true;
+    allChoicesSelected = values.length === choices.length;
+    closePopover();
+    await onSelected?.(selectedChoices);
+  }
+
+  async function selectAll(selectedAllChoices: boolean): Promise<void> {
+    allChoicesSelected = selectedAllChoices;
+
+    if (selectedAllChoices) {
+      values = choices.map((choice) => choice.value);
+    } else {
+      values = [];
+    }
+
+    closePopover();
     await onSelected?.(selectedChoices);
   }
 
   function clearSelection(event: MouseEvent): void {
     event.stopPropagation();
     values = [];
+    allChoicesSelected = false;
+    closePopover();
   }
+
+  const scrollToPaginate: WheelEventHandler<HTMLDivElement> = async (event: WheelEvent) => {
+    if (!event.currentTarget) return;
+
+    if (!commandListElement) return;
+
+    // Cast event.currentTarget to HTMLElement to access scroll properties
+    const target = event.currentTarget as HTMLElement;
+
+    // Fetch more choices if user scroll to 60% of the list
+    if (event.deltaY > 0 && commandListElement.clientHeight) {
+      const scrollPosition = target.scrollTop;
+      const scrollHeight = target.scrollHeight;
+      const clientHeight = target.clientHeight;
+      const scrollPercentage = (scrollPosition / (scrollHeight - clientHeight)) * 100;
+
+      if (scrollPercentage >= 60 && hasMore) {
+        page = page + 1;
+        const scrollChoices = await fetchChoices();
+
+        choices.push(...scrollChoices);
+
+        if (allChoicesSelected) {
+          values = choices.map((choice) => choice.value);
+        }
+      }
+    }
+  };
 </script>
 
 <Field id={name} class={cn("", className)}>
@@ -201,33 +262,34 @@
             class="p-2"
             placeholder={searchPlaceholder}
             value={searchValue}
-            oninput={(e) => (searchValue = e.currentTarget.value)}
+            oninput={filterChoices}
           />
           <CommandSeparator />
         {/if}
 
-        <CommandList>
-          <CommandEmpty>No option found.</CommandEmpty>
+        <CommandList bind:ref={commandListElement} onwheel={scrollToPaginate}>
           <CommandGroup>
-            {#await initialFetchChoices()}
-              <Spinner size="sm" />
-            {:then _}
-              {#each choices as choice, index (index)}
-                {#if slotChoice}
-                  {@render slotChoice({ choice, select })}
-                {:else}
-                  <CommandItem onclick={() => select(choice)}>
-                    <CheckIcon
-                      class={cn("mr-2 size-4", {
-                        "opacity-0": !values.find((v) => v == choice.value),
-                      })}
-                    />
+            <CommandEmpty>No option found.</CommandEmpty>
 
-                    {choice.label}
-                  </CommandItem>
-                {/if}
-              {/each}
-            {/await}
+            {#if slotSelectAll}
+              {@render slotSelectAll({ selectAll, allChoicesSelected })}
+            {/if}
+
+            {#each choices as choice, index (index)}
+              {#if slotChoice}
+                {@render slotChoice({ choice, select })}
+              {:else}
+                <CommandItem onclick={() => select(choice)}>
+                  <CheckIcon
+                    class={cn("mr-2 size-4", {
+                      "opacity-0": !values.find((v) => v == choice.value),
+                    })}
+                  />
+
+                  {choice.label}
+                </CommandItem>
+              {/if}
+            {/each}
           </CommandGroup>
         </CommandList>
       </Command>
