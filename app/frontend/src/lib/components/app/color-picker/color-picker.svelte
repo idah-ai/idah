@@ -16,8 +16,8 @@
 
   // variables
   let hue = $state(0); // 0-360
-  let saturation = 50; // 0-100
-  let brightness = 60; // 0-100
+  let saturation = $state(50); // 0-100
+  let brightness = $state(60); // 0-100
   let opacity = $state(100); // 0-100
 
   let hexInput = $state("#7BB2A2A");
@@ -27,6 +27,26 @@
     { label: "RGB", value: "RGB" },
     { label: "HSL", value: "HSL" },
   ];
+
+  // Derived color input based on selected format
+  let colorInput = $derived.by(() => {
+    const rgb = hsvToRgb(hue, saturation, brightness);
+    
+    if (colorFormat === "RGB") {
+      const alpha = opacity / 100;
+      return alpha < 1 
+        ? `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha.toFixed(2)})`
+        : `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
+    } else if (colorFormat === "HSL") {
+      const alpha = opacity / 100;
+      return alpha < 1
+        ? `hsla(${hue}, ${saturation}%, ${brightness}%, ${alpha.toFixed(2)})`
+        : `hsl(${hue}, ${saturation}%, ${brightness}%)`;
+    } else {
+      // HEX format
+      return rgbToHex(rgb.r, rgb.g, rgb.b);
+    }
+  });
 
   let canvas: HTMLCanvasElement;
   let ctx: CanvasRenderingContext2D | null;
@@ -227,12 +247,12 @@
   }
 
   // Watch hue changes from slider
-  // $effect(() => {
-  //   if (hue !== undefined) {
-  //     updateFromHSV();
-  //     drawCanvas();
-  //   }
-  // });
+  $effect(() => {
+    if (hue !== undefined) {
+      updateFromHSV();
+      drawCanvas();
+    }
+  });
 
   // Handle hex input
   function handleHexInput() {
@@ -316,7 +336,7 @@
       }}
     ></SingleSelectField>
 
-    <InputField name="color-picker/color" label="" value={hexInput} oninput={(e) => (hexInput = e.currentTarget.value)}
+    <InputField name="color-picker/color" label="" value={colorInput} oninput={(e) => (hexInput = e.currentTarget.value)}
     ></InputField>
   </div>
 </div>
