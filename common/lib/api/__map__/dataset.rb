@@ -6,7 +6,7 @@ Api[:idah].register(
   output = get(
     "dataset/annotations",
     params: { **opts },
-    options: { auth: nil },
+    options: { auth: :bearer },
   )
 
   deserialize output.body
@@ -18,7 +18,7 @@ Api[:idah].register(
   output = get(
     "dataset/entries",
     params: { **opts },
-    options: { auth: nil },
+    options: { auth: :bearer },
   )
 
   deserialize output.body
@@ -44,7 +44,7 @@ Api[:idah].register(
   output = get(
     "dataset/datasets",
     params: { **opts },
-    options: { auth: nil },
+    options: { auth: :bearer },
   )
 
   deserialize output.body
@@ -59,7 +59,7 @@ Api[:idah].register(
     params: {
       id:, **opts
     },
-    options: { auth: nil },
+    options: { auth: :bearer },
   )
 
   deserialize output.body

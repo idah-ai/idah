@@ -5,7 +5,7 @@ class ExportExpo < BaseExpo
 
   use_service Export::Service
 
-  expose on_http(:get, "", auth: nil) do
+  expose on_http(:get, "") do
     desc "export endpoint"
     input do
       field? :filter do

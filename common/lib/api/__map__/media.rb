@@ -27,7 +27,7 @@ Api[:idah].register(
 ) do |resource:, **opts|
   output = get(
     "media/medias/info/:resource",
-    options: { auth: nil },
+    options: { auth: :bearer },
     params: { resource:, **opts }
   )
   deserialize output.body
@@ -38,7 +38,7 @@ Api[:idah].register(
 ) do |resource:, **opts|
   output = get(
     "media/medias/files/:resource",
-    options: { auth: nil },
+    options: { auth: :bearer },
     params: { resource:, **opts }
   )
   output.body

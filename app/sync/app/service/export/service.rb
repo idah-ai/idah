@@ -8,12 +8,14 @@ module Export
       Jobs::Service.new(auth_context).create(
         "Export::Job",
         arguments: {
-          io_classes: [
-            "Context::UniversalPortableDataset::Append"
-          ],
+          io_classes: {
+            # UniversalPortableDataset: "Context::UniversalPortableDataset::Append",
+            CvatVideo: "Context::Cvat::Video"
+          },
           io_args: {},
           context_args:,
-          process_class: "Export::UniversalPortableDataset",
+          # process_class: "Export::UniversalPortableDataset",
+          process_class: "Export::CvatVideo",
           process_args: nil
         }
       )
