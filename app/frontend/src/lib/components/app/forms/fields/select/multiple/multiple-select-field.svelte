@@ -29,11 +29,13 @@
     clearable = false,
     disabled = false,
     required = false,
+    closeOnSelect = false,
     info,
     errors,
     class: className,
     onSelected,
     slotLabel,
+    slotSelectAll,
     slotChoice,
     slotInfo,
     slotErrors,
@@ -41,7 +43,8 @@
 
   // Variables
   let open: boolean = $state(false);
-  let selectedValues = $derived(choices.filter((choice) => values.includes(choice.value)));
+  let selectedChoices = $derived(choices.filter((choice) => values.includes(choice.value)));
+  let allChoicesSelected = $state(false);
 
   // Functions
   async function select(choice: LabelValue<string | number>): Promise<void> {
@@ -51,7 +54,20 @@
       values = [...values, choice.value];
     }
     open = false;
-    await onSelected?.(selectedValues);
+    await onSelected?.(selectedChoices);
+  }
+
+  async function selectAll(selectedAllChoices: boolean): Promise<void> {
+    allChoicesSelected = selectedAllChoices;
+
+    if (selectedAllChoices) {
+      values = choices.map((choice) => choice.value);
+    } else {
+      values = [];
+    }
+
+    open = closeOnSelect ? false : true;
+    await onSelected?.(selectedChoices);
   }
 
   function clearSelection(event: MouseEvent): void {
@@ -75,8 +91,8 @@
     >
       {#snippet child({ props })}
         <Button variant="outline" class="justify-between" role="combobox" {disabled} aria-expanded={open} {...props}>
-          {#if selectedValues.length > 0}
-            {#each selectedValues as selected, index (index)}
+          {#if selectedChoices.length > 0}
+            {#each selectedChoices as selected, index (index)}
               <Badge>{selected.label}</Badge>
             {/each}
           {:else}
@@ -86,7 +102,7 @@
           <div class={cn("ml-auto inline-flex items-center gap-2")}>
             <button
               type="button"
-              class={cn("cursor-pointer", clearable && selectedValues ? "opacity-50" : "opacity-0")}
+              class={cn("cursor-pointer", clearable && selectedChoices ? "opacity-50" : "opacity-0")}
               onclick={clearSelection}
             >
               <CircleXIcon class="size-4 shrink-0"></CircleXIcon>
@@ -105,8 +121,13 @@
         {/if}
 
         <CommandList>
-          <CommandEmpty>No option found.</CommandEmpty>
           <CommandGroup>
+            <CommandEmpty>No option found.</CommandEmpty>
+
+            {#if slotSelectAll}
+              {@render slotSelectAll({ selectAll })}
+            {/if}
+
             {#each choices as choice (choice.value)}
               {#if slotChoice}
                 {@render slotChoice({ choice, select })}

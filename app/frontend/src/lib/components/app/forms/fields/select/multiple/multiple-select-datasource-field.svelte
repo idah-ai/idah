@@ -54,6 +54,7 @@
     slotLabel,
     slotTrigger,
     slotTriggerValues,
+    slotSelectAll,
     slotChoice,
     slotInfo,
     slotErrors,
@@ -72,6 +73,7 @@
   let itemsPerPage = $state(10);
   let hasMore = $state(true);
   let selectedChoices = $derived(choices.filter((choice) => values.includes(choice.value)));
+  let allChoicesSelected = $state(false);
 
   // Lifecycle
   onMount(async () => {
@@ -149,6 +151,19 @@
     await onSelected?.(selectedChoices);
   }
 
+  async function selectAll(selectedAllChoices: boolean): Promise<void> {
+    allChoicesSelected = selectedAllChoices;
+
+    if (selectedAllChoices) {
+      values = choices.map((choice) => choice.value);
+    } else {
+      values = [];
+    }
+
+    open = closeOnSelect ? false : true;
+    await onSelected?.(selectedChoices);
+  }
+
   function clearSelection(event: MouseEvent): void {
     event.stopPropagation();
     values = [];
@@ -174,6 +189,10 @@
         const scrollChoices = await fetchChoices();
 
         choices.push(...scrollChoices);
+
+        if (allChoicesSelected) {
+          values = choices.map((choice) => choice.value);
+        }
       }
     }
   };
@@ -230,20 +249,24 @@
 
     <PopoverContent align="start" class="w-auto min-w-[var(--bits-floating-anchor-width)] p-0">
       <Command>
+        {#if searchable}
+          <InputField
+            name="filter/multiple-select/{searchKeyWithOperation}"
+            class="p-2"
+            placeholder={searchPlaceholder}
+            value={searchValue}
+            oninput={filterChoices}
+          />
+          <CommandSeparator />
+        {/if}
+
         <CommandList bind:ref={commandListElement} onwheel={scrollToPaginate}>
           <CommandGroup>
-            {#if searchable}
-              <InputField
-                name="filter/multiple-select/{searchKeyWithOperation}"
-                class="p-2"
-                placeholder={searchPlaceholder}
-                value={searchValue}
-                oninput={filterChoices}
-              />
-              <CommandSeparator />
-            {/if}
-
             <CommandEmpty>No option found.</CommandEmpty>
+
+            {#if slotSelectAll}
+              {@render slotSelectAll({ selectAll })}
+            {/if}
 
             {#each choices as choice, index (index)}
               {#if slotChoice}
