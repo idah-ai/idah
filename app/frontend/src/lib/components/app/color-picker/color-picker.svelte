@@ -14,9 +14,10 @@
     value: string | null | undefined;
     class?: string | null;
     slotSuggestion?: Snippet;
+    onValueChanged?: (value: string | null | undefined) => void;
   }
 
-  let { value = $bindable(null), class: className, slotSuggestion }: Props = $props();
+  let { value = $bindable(null), class: className, slotSuggestion, onValueChanged }: Props = $props();
 
   // Variables
   let hue = $state(0); // 0-360
@@ -473,24 +474,27 @@
   </div>
 
   <!-- Input Row -->
-  <div class="flex items-center gap-2">
-    <SingleSelectField
-      name="color-picker"
-      label=""
-      choices={colorFormats}
-      value={colorFormat}
-      onSelected={(selectedValue) => {
-        colorFormat = selectedValue as string;
-        value = colorInput;
-      }}
-    ></SingleSelectField>
+  <div class="flex flex-col gap-4">
+    <div class="flex items-center gap-2">
+      <SingleSelectField
+        name="color-picker"
+        label=""
+        choices={colorFormats}
+        value={colorFormat}
+        onSelected={(selectedValue) => {
+          colorFormat = selectedValue as string;
+          value = colorInput;
+          onValueChanged?.(value);
+        }}
+      ></SingleSelectField>
 
-    <InputField name="color-picker/color" label="" value={colorInput} oninput={handleColorInputChange}></InputField>
+      <InputField name="color-picker/color" label="" value={colorInput} oninput={handleColorInputChange}></InputField>
+    </div>
+
+    {#if slotSuggestion}
+      {@render slotSuggestion()}
+    {/if}
   </div>
-
-  {#if slotSuggestion}
-    {@render slotSuggestion()}
-  {/if}
 </div>
 
 <style>
