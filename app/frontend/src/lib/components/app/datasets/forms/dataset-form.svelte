@@ -1,12 +1,16 @@
 <script lang="ts">
+  import { page } from "$app/state";
+
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
+  import SingleSelectDatasourceField from "@/components/app/forms/fields/select/single/single-select-datasource-field.svelte";
   import SingleSelectField from "@/components/app/forms/fields/select/single/single-select-field.svelte";
   import { FieldGroup, FieldSet } from "@/components/ui/field";
 
-  import { DatasetRecord } from "@/data/model/dataset/dataset-record";
+  import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { pluginsBackendDataSource } from "@/data/model/setting/plugin/record";
 
   import type { FormBaseProps } from "@/components/app/forms/form.types";
+  import type { Resource } from "@/security/types";
 
   // Props
   interface Props extends FormBaseProps {
@@ -16,17 +20,17 @@
   let { dataset, newRecord, fieldErrors, onValueChange }: Props = $props();
 
   // Variables
-  let resource = "dataset";
-
-  // Variables::Reactive
-  let name = $derived(dataset.name);
-  let modality = $derived(dataset.modality || "");
+  const resource: Resource = "dataset:datasets";
+  let projectId = $derived(page.params.projectId as string);
+  let { name, modality } = $derived(dataset);
+  let selectedDatasetId = $state<string | null>(null);
 
   // Functions
   $effect(() => {
     onValueChange({
       name,
       modality,
+      selectedDatasetId,
     });
   });
 
@@ -68,5 +72,27 @@
         }}
       />
     {/await}
+
+    <!-- DATASET::LABELING CONFIGURATION -->
+    <SingleSelectDatasourceField
+      name="{resource}/labeling_configuration"
+      label="Copy label configurations from"
+      placeholder="Select a dataset"
+      displayKey="name"
+      valueKey="id"
+      searchable
+      searchKeyWithOperation="name__match"
+      dataSource={datasetsBackendDataSource}
+      listOptions={{
+        filters: {
+          project_id: projectId,
+        },
+        sort: ["name"],
+      }}
+      value={selectedDatasetId}
+      onSelected={(selectedValue) => {
+        selectedDatasetId = selectedValue as string;
+      }}
+    ></SingleSelectDatasourceField>
   </FieldGroup>
 </FieldSet>
