@@ -6,6 +6,7 @@
   import Slider from "@/components/ui/slider/slider.svelte";
 
   import { cn } from "@/utils";
+
   import type { LabelValue } from "@/utils/types";
 
   // Props
@@ -17,7 +18,7 @@
   let { value = $bindable(null), class: className }: Props = $props();
 
   // variables
-  let hue = $state(0); // 0-360
+  let hue = $derived(0); // 0-360
   let saturation = $state(50); // 0-100
   let brightness = $state(60); // 0-100
   let opacity = $state(100); // 0-100
@@ -36,6 +37,9 @@
 
   let canvasX = $derived(0);
   let canvasY = $derived(0);
+
+  let rgb = $derived(hexToRgb(value));
+  let hsv = $derived(rgbToHsv(rgb.r, rgb.g, rgb.b));
 
   // Derived color input based on selected format
   let colorInput = $derived.by(() => {
@@ -57,7 +61,7 @@
     }
   });
 
-  // Convert HSV to RGB
+  // functions
   function hsvToRgb(h: number, s: number, v: number): { r: number; g: number; b: number } {
     s = s / 100;
     v = v / 100;
@@ -102,7 +106,6 @@
     };
   }
 
-  // Convert RGB to HSV
   function rgbToHsv(r: number, g: number, b: number): { h: number; s: number; v: number } {
     r = r / 255;
     g = g / 255;
@@ -135,7 +138,6 @@
     };
   }
 
-  // RGB to Hex
   function rgbToHex(r: number, g: number, b: number): string {
     return (
       "#" +
@@ -146,8 +148,9 @@
     );
   }
 
-  // Hex to RGB
-  function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  function hexToRgb(hex: string | null | undefined): { r: number; g: number; b: number } {
+    if (!hex) return { r: 0, g: 0, b: 0 };
+
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result
       ? {
@@ -165,23 +168,8 @@
     hexInput = value;
   }
 
-  function updateFromHex() {
-    // Validate hex
-    if (!/^#?[0-9A-F]{6}$/i.test(hexInput)) return;
-
-    const rgb = hexToRgb(hexInput);
-    const hsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
-    hue = hsv.h;
-    saturation = hsv.s;
-    brightness = hsv.v;
-    value = hexInput.toUpperCase();
-    if (!value.startsWith("#")) value = "#" + value;
-
-    updateCanvasPosition();
-  }
-
   // Draw the saturation/brightness canvas
-  function drawCanvas() {
+  function drawCanvas() {    
     if (!ctx || !canvas) return;
 
     const width = canvas.width;
@@ -248,13 +236,14 @@
     canvasY = ((100 - brightness) / 100) * rect.height;
   }
 
-  // Watch hue changes from slider
-  $effect(() => {
-    if (hue !== undefined) {
-      updateFromHSV();
-      drawCanvas();
-    }
-  });
+  // Handle hue changes from slider
+  function handleHueChange(value: number) {
+    hue = value;
+    
+    updateFromHSV();
+    drawCanvas();
+
+  }
 
   // Initialize
   onMount(() => {
@@ -262,10 +251,8 @@
 
     // Parse initial value
     const initialValue = value || "#7BB2A2A";
-    const rgb = hexToRgb(initialValue);
-    const hsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
-
-    console.log({ initialValue, rgb, hsv });
+    rgb = hexToRgb(initialValue);
+    hsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
 
     hue = hsv.h;
     saturation = hsv.s;
@@ -301,9 +288,9 @@
       bind:this={canvas}
       width="700"
       height="660"
-      on:mousedown={handleCanvasMouseDown}
+      onmousedown={handleCanvasMouseDown}
       class="block h-auto w-full rounded-2xl"
-    />
+    ></canvas>
 
     <!-- Cursor -->
     <div
@@ -317,7 +304,8 @@
       shadow-[0_0_0_1px_rgba(0,0,0,0.3),inset_0_0_0_1px_rgba(0,0,0,0.3)]
     "
       style="left: {canvasX}px; top: {canvasY}px;"
-    />
+    >
+    </div>
   </div>
 
   <!-- Sliders Row -->
@@ -326,7 +314,15 @@
       <!-- Hue Slider -->
       <div class="slider-wrapper hue-slider-wrapper">
         <div class="hue-gradient"></div>
-        <Slider bind:value={hue} min={0} max={360} step={1} type="single" class="custom-slider" />
+        <Slider
+          value={hue}
+          min={0}
+          max={360}
+          step={1}
+          type="single"
+          class="custom-slider"
+          onValueChange={handleHueChange}
+        />
       </div>
 
       <!-- Opacity Slider -->
