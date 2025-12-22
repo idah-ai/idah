@@ -1,15 +1,15 @@
 <script lang="ts">
-	import ColorPicker from '@/components/app/color-picker/color-picker.svelte';
-	import FormFieldErrors from "@/components/app/forms/form-field-errors.svelte";
-	import FormFieldInfo from "@/components/app/forms/form-field-info.svelte";
-	import FormFieldLabel from "@/components/app/forms/form-field-label.svelte";
-	import FormField from "@/components/app/forms/form-field.svelte";
-	import Button from "@/components/ui/button/button.svelte";
-	import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+  import ColorPicker from "@/components/app/color-picker/color-picker.svelte";
+  import FormFieldErrors from "@/components/app/forms/form-field-errors.svelte";
+  import FormFieldInfo from "@/components/app/forms/form-field-info.svelte";
+  import FormFieldLabel from "@/components/app/forms/form-field-label.svelte";
+  import FormField from "@/components/app/forms/form-field.svelte";
+  import Button from "@/components/ui/button/button.svelte";
+  import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
   import { cn } from "@/utils";
 
-import type { FormFieldBaseProps } from "@/components/app/forms/form-field.types";
+  import type { FormFieldBaseProps } from "@/components/app/forms/form-field.types";
 
   // Props
   interface Props extends FormFieldBaseProps {
@@ -57,8 +57,7 @@ import type { FormFieldBaseProps } from "@/components/app/forms/form-field.types
     </PopoverTrigger>
 
     <PopoverContent class="w-auto p-0" align="start" side="right">
-      <ColorPicker bind:value >
-      </ColorPicker>
+      <ColorPicker bind:value></ColorPicker>
     </PopoverContent>
   </Popover>
 
