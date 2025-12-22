@@ -5,14 +5,16 @@
   import SingleSelectField from "@/components/app/forms/fields/select/single/single-select-field.svelte";
   import Slider from "@/components/ui/slider/slider.svelte";
 
+  import { cn } from "@/utils";
   import type { LabelValue } from "@/utils/types";
 
   // Props
   interface Props {
     value: string | null | undefined;
+    class?: string | null;
   }
 
-  let { value = $bindable(null) }: Props = $props();
+  let { value = $bindable(null), class: className }: Props = $props();
 
   // variables
   let hue = $state(0); // 0-360
@@ -28,13 +30,20 @@
     { label: "HSL", value: "HSL" },
   ];
 
+  let canvas: HTMLCanvasElement;
+  let ctx = $state<CanvasRenderingContext2D | null>(null);
+  let isDraggingCanvas = $state(false);
+
+  let canvasX = $derived(0);
+  let canvasY = $derived(0);
+
   // Derived color input based on selected format
   let colorInput = $derived.by(() => {
     const rgb = hsvToRgb(hue, saturation, brightness);
-    
+
     if (colorFormat === "RGB") {
       const alpha = opacity / 100;
-      return alpha < 1 
+      return alpha < 1
         ? `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha.toFixed(2)})`
         : `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
     } else if (colorFormat === "HSL") {
@@ -47,13 +56,6 @@
       return rgbToHex(rgb.r, rgb.g, rgb.b);
     }
   });
-
-  let canvas: HTMLCanvasElement;
-  let ctx: CanvasRenderingContext2D | null;
-  let isDraggingCanvas = false;
-
-  let canvasX = $derived(0);
-  let canvasY = $derived(0);
 
   // Convert HSV to RGB
   function hsvToRgb(h: number, s: number, v: number): { r: number; g: number; b: number } {
@@ -254,11 +256,6 @@
     }
   });
 
-  // Handle hex input
-  function handleHexInput() {
-    updateFromHex();
-  }
-
   // Initialize
   onMount(() => {
     ctx = canvas.getContext("2d");
@@ -268,10 +265,8 @@
     const rgb = hexToRgb(initialValue);
     const hsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
 
-    console.log({initialValue, rgb, hsv});
-    
+    console.log({ initialValue, rgb, hsv });
 
-    
     hue = hsv.h;
     saturation = hsv.s;
     brightness = hsv.v;
@@ -299,12 +294,30 @@
   });
 </script>
 
-<div class="color-picker">
+<div class={cn("rounded-xl p-5", className)}>
   <!-- Saturation/Brightness Canvas -->
-  <div class="canvas-container">
-    <canvas bind:this={canvas} width="700" height="660" on:mousedown={handleCanvasMouseDown} class="color-canvas" />
+  <div class="relative mb-5 cursor-crosshair overflow-hidden rounded-2xl">
+    <canvas
+      bind:this={canvas}
+      width="700"
+      height="660"
+      on:mousedown={handleCanvasMouseDown}
+      class="block h-auto w-full rounded-2xl"
+    />
+
     <!-- Cursor -->
-    <div class="cursor" style="left: {canvasX}px; top: {canvasY}px;" />
+    <div
+      class="
+      pointer-events-none
+      absolute
+      h-[24px] w-[24px]
+      -translate-x-1/2 -translate-y-1/2
+      rounded-full
+      border-[4px] border-white
+      shadow-[0_0_0_1px_rgba(0,0,0,0.3),inset_0_0_0_1px_rgba(0,0,0,0.3)]
+    "
+      style="left: {canvasX}px; top: {canvasY}px;"
+    />
   </div>
 
   <!-- Sliders Row -->
@@ -325,7 +338,7 @@
   </div>
 
   <!-- Input Row -->
-  <div class="gap-md flex items-center">
+  <div class="flex items-center gap-2">
     <SingleSelectField
       name="color-picker"
       label=""
@@ -336,48 +349,16 @@
       }}
     ></SingleSelectField>
 
-    <InputField name="color-picker/color" label="" value={colorInput} oninput={(e) => (hexInput = e.currentTarget.value)}
+    <InputField
+      name="color-picker/color"
+      label=""
+      value={colorInput}
+      oninput={(e) => (hexInput = e.currentTarget.value)}
     ></InputField>
   </div>
 </div>
 
 <style>
-  .color-picker {
-    width: 740px;
-    padding: 20px;
-    background: #f5f5f5;
-    border-radius: 12px;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  }
-
-  .canvas-container {
-    position: relative;
-    margin-bottom: 20px;
-    cursor: crosshair;
-    border-radius: 16px;
-    overflow: hidden;
-  }
-
-  .color-canvas {
-    display: block;
-    width: 100%;
-    height: auto;
-    border-radius: 16px;
-  }
-
-  .cursor {
-    position: absolute;
-    width: 24px;
-    height: 24px;
-    border: 4px solid white;
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-    pointer-events: none;
-    box-shadow:
-      0 0 0 1px rgba(0, 0, 0, 0.3),
-      inset 0 0 0 1px rgba(0, 0, 0, 0.3);
-  }
-
   .sliders-row {
     display: flex;
     align-items: center;
@@ -469,16 +450,4 @@
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     background: transparent;
   }
-
-  /* .opacity-display {
-    padding: 12px 24px;
-    background: white;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    font-size: 18px;
-    font-weight: 500;
-    color: #333;
-    min-width: 80px;
-    text-align: center;
-  } */
 </style>
