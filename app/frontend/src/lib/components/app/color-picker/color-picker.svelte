@@ -46,7 +46,7 @@
 
     if (colorFormat === "RGB") {
       const alpha = opacity / 100;
-      
+
       return alpha < 1
         ? `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${fixDecimal(alpha)})`
         : `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
