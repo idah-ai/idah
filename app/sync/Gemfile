@@ -34,3 +34,5 @@ group :test do
   gem "simplecov"
   gem "webmock"
 end
+
+gem "builder", "~> 3.3"

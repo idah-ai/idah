@@ -3,7 +3,7 @@ module Export
     def initialize(context)
       @context = context
       @io = context.ios.find {|io| io.name == "UniversalPortableDataset"}
-      raise "#{self} error locating required UniversalPortableDataset io"
+      raise "#{self} error locating required UniversalPortableDataset io" unless @io
     end
 
     def run

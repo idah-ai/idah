@@ -5,12 +5,22 @@ module Export
 
       begin
         ios = []
-        arguments.fetch(:io_classes).each do |io_class|
+        arguments.fetch(:io_classes).each do |_context_type, context_klass|
           ios << Verse::Util::Reflection.constantize(
-            io_class
+            context_klass
           ).prepare(arguments.fetch(:io_args))
         end
 
+        # arguments.fetch(:io_classes).each do |io_class|
+        #   ios << Verse::Util::Reflection.constantize(
+        #     io_class
+        #   ).prepare(arguments.fetch(:io_args))
+        # end
+
+        # @io = context.ios.find {|io| io.name == "UniversalPortableDataset"}
+
+
+        puts ios
         Verse::Util::Reflection.constantize(
           arguments.fetch(:process_class)
           ).new(
@@ -21,14 +31,16 @@ module Export
         remaining_stderr = []
         completion = []
         ios.each do |io|
-          io.i.close unless io.i.closed?
-          io.o.close unless io.o.closed?
-          io.e.close unless io.e.closed?
+          io.i.close if io&.i && !io.i.closed?
+          io.o.close if io&.o && !io.o.closed?
+          io.e.close if io&.e && !io.e.closed?
 
-          remaining_stderr << line while (line = io.e.gets)
-          value = io.wait_thr.value
-          if value.exitstatus != 0
-            raise "#{io.name} error #{value}\n#{remaining_stderr.join}"
+          if (io&.e && io&.wait_thr)
+            remaining_stderr << line while (line = io.e.gets)
+            value = io.wait_thr.value
+            if value.exitstatus != 0
+              raise "#{io.name} error #{value}\n#{remaining_stderr.join}"
+            end
           end
           completion << "#{io.name} process complete"
         end
