@@ -50,6 +50,12 @@
     /** If entry is not assigned to anyone, it can open by anyone */
     if (assigned_to_id === null) return true;
 
+    /**
+     * If wf_step is "done", allow admin, org_owner, and project_owner to open it
+     * Note: Only admin, org_owner, and project_owner can update entry
+     */
+    if (wf_step === "done" && canUpdateEntry) return true;
+
     /** If entry is assigned to someone, it can open by the assigned user */
     return assigned_to_id == Number(currentAccount.id);
   });
