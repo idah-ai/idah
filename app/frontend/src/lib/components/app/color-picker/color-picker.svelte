@@ -210,9 +210,7 @@
   }
 
   function handleCanvasMouseMove(e: MouseEvent) {
-    if (isDraggingCanvas) {
       updateCanvasColor(e);
-    }
   }
 
   function handleCanvasMouseUp() {
