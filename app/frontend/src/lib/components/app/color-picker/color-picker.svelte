@@ -40,8 +40,8 @@
     } else if (colorFormat === "HSL") {
       const alpha = opacity / 100;
       return alpha < 1
-        ? `hsla(${hue}, ${saturation}%, ${brightness}%, ${alpha.toFixed(2)})`
-        : `hsl(${hue}, ${saturation}%, ${brightness}%)`;
+        ? `hsla(${hue.toFixed(2)}, ${saturation.toFixed(2)}%, ${brightness.toFixed(2)}%, ${alpha.toFixed(2)})`
+        : `hsl(${hue.toFixed(2)}, ${saturation.toFixed(2)}%, ${brightness.toFixed(2)}%)`;
     } else {
       // HEX format
       return rgbToHex(rgb.r, rgb.g, rgb.b);
