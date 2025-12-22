@@ -43,8 +43,8 @@
 
   // Derived color input based on selected format
   let colorInput = $derived.by(() => {
-    const rgb = hsvToRgb(hue, saturation, brightness);
-    return formatColor({ rgbValue: rgb });
+    const thisRgb = hsvToRgb(hue, saturation, brightness);
+    return formatColor({ rgbValue: thisRgb });
   });
 
   // Functions
@@ -176,9 +176,29 @@
       : { r: 123, g: 178, b: 162 };
   }
 
+  // Detect the format of a color string
+  function detectColorFormat(colorString: string | null | undefined): "hex" | "rgb" | "hsl" {
+    if (!colorString) return "hex";
+
+    const trimmed = colorString.trim();
+
+    // Check for RGB/RGBA
+    if (/^rgba?\(/i.test(trimmed)) {
+      return "rgb";
+    }
+
+    // Check for HSL/HSLA
+    if (/^hsla?\(/i.test(trimmed)) {
+      return "hsl";
+    }
+
+    // Default to HEX
+    return "hex";
+  }
+
   // Update color values
   function updateFromHSV() {
-    const rgb = hsvToRgb(hue, saturation, brightness);
+    rgb = hsvToRgb(hue, saturation, brightness);
     value = formatColor({ rgbValue: rgb });
   }
 
@@ -255,6 +275,17 @@
     drawCanvas();
   }
 
+  function applyParsedColor(parsed: { hue: number; saturation: number; brightness: number; opacity: number }) {
+    hue = parsed.hue;
+    saturation = parsed.saturation;
+    brightness = parsed.brightness;
+    opacity = parsed.opacity;
+
+    updateFromHSV();
+    drawCanvas();
+    updateCanvasPosition();
+  }
+
   // Handle color input changes
   function handleColorInputChange(e: Event) {
     const input = e.currentTarget as HTMLInputElement;
@@ -263,8 +294,8 @@
     // Try to parse HEX format
     if (/^#?[0-9A-F]{6}$/i.test(inputValue)) {
       const hexValue = inputValue.startsWith("#") ? inputValue : `#${inputValue}`;
-      const rgb = hexToRgb(hexValue);
-      const hsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
+      rgb = hexToRgb(hexValue);
+      hsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
       hue = hsv.h;
       saturation = hsv.s;
       brightness = hsv.v;
@@ -274,71 +305,111 @@
       return;
     }
 
-    // Try to parse RGB/RGBA format
-    const rgbMatch = inputValue.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/i);
-    if (rgbMatch) {
-      const r = parseInt(rgbMatch[1]);
-      const g = parseInt(rgbMatch[2]);
-      const b = parseInt(rgbMatch[3]);
-      const a = rgbMatch[4] ? parseFloat(rgbMatch[4]) : 1;
-
-      if (r >= 0 && r <= 255 && g >= 0 && g <= 255 && b >= 0 && b <= 255) {
-        const hsv = rgbToHsv(r, g, b);
-        hue = hsv.h;
-        saturation = hsv.s;
-        brightness = hsv.v;
-        opacity = Math.round(a * 100);
-        value = rgbToHex(r, g, b);
-        drawCanvas();
-        updateCanvasPosition();
-      }
+    const rgbParsed = initFromRgb(inputValue);
+    if (rgbParsed) {
+      applyParsedColor(rgbParsed);
+      const rgb = rgbParsed.rgb;
+      value = rgbToHex(Math.round(rgb.r), Math.round(rgb.g), Math.round(rgb.b));
       return;
     }
 
-    // Try to parse HSL/HSLA format
-    const hslMatch = inputValue.match(/hsla?\(([\d.]+),\s*([\d.]+)%,\s*([\d.]+)%(?:,\s*([\d.]+))?\)/i);
-    if (hslMatch) {
-      const h = parseFloat(hslMatch[1]);
-      const s = parseFloat(hslMatch[2]);
-      const l = parseFloat(hslMatch[3]);
-      const a = hslMatch[4] ? parseFloat(hslMatch[4]) : 1;
-
-      if (h >= 0 && h <= 360 && s >= 0 && s <= 100 && l >= 0 && l <= 100) {
-        hue = h;
-        saturation = s;
-        brightness = l;
-        opacity = Math.round(a * 100);
-        updateFromHSV();
-        drawCanvas();
-        updateCanvasPosition();
-      }
+    // ---- HSL / HSLA ----
+    const hslParsed = initFromHsl(inputValue);
+    if (hslParsed) {
+      applyParsedColor(hslParsed);
+      return;
     }
+  }
+
+  function initFromRgb(value: string) {
+    const m = value.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/i);
+
+    if (!m) return null;
+
+    const r = parseInt(m[1], 10);
+    const g = parseInt(m[2], 10);
+    const b = parseInt(m[3], 10);
+
+    const opacity = m[4] ? Math.round(parseFloat(m[4]) * 100) : 100;
+
+    const hsv = rgbToHsv(r, g, b);
+
+    return {
+      hue: hsv.h,
+      saturation: hsv.s,
+      brightness: hsv.v,
+      opacity,
+      rgb: { r, g, b },
+    };
+  }
+
+  function initFromHsl(value: string) {
+    const m = value.match(/hsla?\(([\d.]+),\s*([\d.]+)%,\s*([\d.]+)%(?:,\s*([\d.]+))?\)/i);
+
+    if (!m) return null;
+
+    return {
+      hue: parseFloat(m[1]),
+      saturation: parseFloat(m[2]),
+      brightness: parseFloat(m[3]),
+      opacity: m[4] ? Math.round(parseFloat(m[4]) * 100) : 100,
+    };
+  }
+
+  function initFromHex(value: string) {
+    const rgb = hexToRgb(value);
+    const hsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
+
+    return {
+      hue: hsv.h,
+      saturation: hsv.s,
+      brightness: hsv.v,
+      opacity: 100,
+    };
   }
 
   // Initialize
   onMount(() => {
     ctx = canvas.getContext("2d");
 
-    // Parse initial value
-    const initialValue = value || "#7BB2A2A";
-    rgb = hexToRgb(initialValue);
-    hsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
+    const initialValue = value || "#7BB2A2";
+    colorFormat = detectColorFormat(initialValue);
 
-    hue = hsv.h;
-    saturation = hsv.s;
-    brightness = hsv.v;
+    let state;
+
+    switch (colorFormat) {
+      case "rgb":
+        state = initFromRgb(initialValue);
+        break;
+
+      case "hsl":
+        state = initFromHsl(initialValue);
+        break;
+
+      case "hex":
+        state = initFromHex(initialValue);
+        break;
+
+      default:
+        state = initFromHex(initialValue);
+        break;
+    }
+
+    if (state) {
+      hue = state.hue;
+      saturation = state.saturation;
+      brightness = state.brightness;
+      opacity = state.opacity;
+    }
 
     drawCanvas();
     updateCanvasPosition();
 
-    // Global mouse listeners for dragging
     const handleGlobalMouseMove = (e: MouseEvent) => {
       if (isDraggingCanvas) handleCanvasMouseMove(e);
     };
 
-    const handleGlobalMouseUp = () => {
-      handleCanvasMouseUp();
-    };
+    const handleGlobalMouseUp = () => handleCanvasMouseUp();
 
     window.addEventListener("mousemove", handleGlobalMouseMove);
     window.addEventListener("mouseup", handleGlobalMouseUp);
