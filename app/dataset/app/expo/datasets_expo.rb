@@ -14,6 +14,7 @@ class DatasetsExpo < BaseExpo
                       :status__in,
                       :progress__gte,
                       :progress__lte,
+                      :project_id__eq,
                       :modality__in,
                       :created_at__gte,
                       :created_at__lte,
