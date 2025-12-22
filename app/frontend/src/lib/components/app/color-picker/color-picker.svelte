@@ -17,17 +17,17 @@
 
   let { value = $bindable(null), class: className }: Props = $props();
 
-  // variables
+  // Variables
   let hue = $state(0); // 0-360
   let saturation = $state(50); // 0-100
   let brightness = $state(60); // 0-100
   let opacity = $state(100); // 0-100
 
-  let colorFormat = $state("HEX");
+  let colorFormat = $state("hex");
   let colorFormats: LabelValue<string>[] = [
-    { label: "HEX", value: "HEX" },
-    { label: "RGB", value: "RGB" },
-    { label: "HSL", value: "HSL" },
+    { label: "HEX", value: "hex" },
+    { label: "RGB", value: "rgb" },
+    { label: "HSL", value: "hsl" },
   ];
 
   let canvas: HTMLCanvasElement;
@@ -43,26 +43,31 @@
   // Derived color input based on selected format
   let colorInput = $derived.by(() => {
     const rgb = hsvToRgb(hue, saturation, brightness);
-
-    if (colorFormat === "RGB") {
-      const alpha = opacity / 100;
-
-      return alpha < 1
-        ? `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${fixDecimal(alpha)})`
-        : `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
-    } else if (colorFormat === "HSL") {
-      const alpha = opacity / 100;
-
-      return alpha < 1
-        ? `hsla(${fixDecimal(hue)}, ${fixDecimal(saturation)}%, ${fixDecimal(brightness)}%, ${fixDecimal(alpha)})`
-        : `hsl(${fixDecimal(hue)}, ${fixDecimal(saturation)}%, ${fixDecimal(brightness)}%)`;
-    } else {
-      // HEX format
-      return rgbToHex(rgb.r, rgb.g, rgb.b);
-    }
+    return formatColor({ rgbValue: rgb });
   });
 
-  // functions
+  // Functions
+  function formatColor(props: { rgbValue: { r: number; g: number; b: number } }): string {
+    let { rgbValue } = props;
+    const alpha = opacity / 100;
+
+    switch (colorFormat) {
+      case "rgb":
+        return alpha < 1
+          ? `rgba(${rgbValue.r}, ${rgbValue.g}, ${rgbValue.b}, ${fixDecimal(alpha)})`
+          : `rgb(${rgbValue.r}, ${rgbValue.g}, ${rgbValue.b})`;
+
+      case "hsl":
+        return alpha < 1
+          ? `hsla(${fixDecimal(hue)}, ${fixDecimal(saturation)}%, ${fixDecimal(brightness)}%, ${fixDecimal(alpha)})`
+          : `hsl(${fixDecimal(hue)}, ${fixDecimal(saturation)}%, ${fixDecimal(brightness)}%)`;
+
+      default:
+        // HEX format
+        return rgbToHex(rgbValue.r, rgbValue.g, rgbValue.b);
+    }
+  }
+
   function fixDecimal(value: number, decimals: number = 2): number {
     if (Number.isInteger(value)) {
       return value;
@@ -173,7 +178,7 @@
   // Update color values
   function updateFromHSV() {
     const rgb = hsvToRgb(hue, saturation, brightness);
-    value = rgbToHex(rgb.r, rgb.g, rgb.b);
+    value = formatColor({ rgbValue: rgb });
   }
 
   // Draw the saturation/brightness canvas
@@ -210,7 +215,7 @@
   }
 
   function handleCanvasMouseMove(e: MouseEvent) {
-      updateCanvasColor(e);
+    updateCanvasColor(e);
   }
 
   function handleCanvasMouseUp() {
