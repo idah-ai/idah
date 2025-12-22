@@ -12,6 +12,7 @@
   import { getFieldErrors, validateData, type ZodSchema } from "@/utils/validate";
 
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
+  import type { IConfig } from "@/plugin/interface/Activity";
   import type { Hash } from "@/utils/types";
 
   // Props
@@ -25,6 +26,7 @@
   let newRecord: boolean = $derived(action === "create");
   let fieldErrors: Hash = $state({});
   let submitting: boolean = $state(false);
+  let selectedDatasetId = $state<string | null>(null);
 
   let dataset: DatasetRecord = $derived(
     datasetRecord
@@ -53,14 +55,28 @@
   function setValue(value: Hash): void {
     dataset.name = value.name;
     dataset.modality = value.modality;
+    selectedDatasetId = value.selectedDatasetId;
   }
 
   async function createDataset() {
+    let labelConfig: IConfig = {};
+
+    /** Get label config, if selected dataset */
+    if (selectedDatasetId) {
+      const datasetRes = await datasetsBackendDataSource.get(selectedDatasetId, {
+        fields: {
+          [DatasetRecord.type]: ["labeling_configuration"],
+        },
+        noCache: true,
+      });
+      labelConfig = datasetRes.data.labeling_configuration;
+    }
+
     const createdDatasetRes = await datasetsBackendDataSource.create({
       attributes: {
         name: dataset.name,
         modality: dataset.modality,
-        labeling_configuration: {},
+        labeling_configuration: labelConfig,
         workflow_configuration: {},
       },
       relationships: {
