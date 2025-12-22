@@ -53,7 +53,9 @@
     } else {
       values = [...values, choice.value];
     }
-    open = false;
+
+    allChoicesSelected = values.length === choices.length;
+    open = closeOnSelect ? false : true;
     await onSelected?.(selectedChoices);
   }
 
@@ -73,6 +75,8 @@
   function clearSelection(event: MouseEvent): void {
     event.stopPropagation();
     values = [];
+    allChoicesSelected = false;
+    open = closeOnSelect ? false : true;
   }
 </script>
 
@@ -105,10 +109,10 @@
               class={cn("cursor-pointer", clearable && selectedChoices ? "opacity-50" : "opacity-0")}
               onclick={clearSelection}
             >
-              <CircleXIcon class="size-4 shrink-0"></CircleXIcon>
+              <CircleXIcon class="size-4 shrink-0" />
             </button>
 
-            <ChevronsUpDownIcon class="size-4 shrink-0 opacity-50"></ChevronsUpDownIcon>
+            <ChevronsUpDownIcon class="size-4 shrink-0 opacity-50" />
           </div>
         </Button>
       {/snippet}
@@ -117,7 +121,7 @@
     <PopoverContent align="start" class="w-auto min-w-[var(--bits-floating-anchor-width)] p-0">
       <Command>
         {#if searchable}
-          <CommandInput placeholder={searchPlaceholder}></CommandInput>
+          <CommandInput placeholder={searchPlaceholder} />
         {/if}
 
         <CommandList>
@@ -125,7 +129,7 @@
             <CommandEmpty>No option found.</CommandEmpty>
 
             {#if slotSelectAll}
-              {@render slotSelectAll({ selectAll })}
+              {@render slotSelectAll({ selectAll, allChoicesSelected })}
             {/if}
 
             {#each choices as choice (choice.value)}

@@ -147,6 +147,7 @@
       values = [...values, choice.value];
     }
 
+    allChoicesSelected = values.length === choices.length;
     open = closeOnSelect ? false : true;
     await onSelected?.(selectedChoices);
   }
@@ -167,6 +168,8 @@
   function clearSelection(event: MouseEvent): void {
     event.stopPropagation();
     values = [];
+    allChoicesSelected = false;
+    open = closeOnSelect ? false : true;
   }
 
   const scrollToPaginate: WheelEventHandler<HTMLDivElement> = async (event: WheelEvent) => {
@@ -265,7 +268,7 @@
             <CommandEmpty>No option found.</CommandEmpty>
 
             {#if slotSelectAll}
-              {@render slotSelectAll({ selectAll })}
+              {@render slotSelectAll({ selectAll, allChoicesSelected })}
             {/if}
 
             {#each choices as choice, index (index)}
