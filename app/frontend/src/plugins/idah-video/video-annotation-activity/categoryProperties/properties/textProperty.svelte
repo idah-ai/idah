@@ -8,7 +8,8 @@
     property,
     value,
     onValueChange,
-  }: { property: IConfigProperty; value: string; onValueChange: (v: string) => void } = $props();
+    disabled,
+  }: { property: IConfigProperty; value: string; onValueChange: (v: string) => void; disabled: boolean } = $props();
 
   const invalid = $derived(!propertyFullfilled(value, property));
 
@@ -37,7 +38,7 @@
     {/if}
   </Label>
 
-  <Input type="text" aria-invalid={invalid} {value} onchange={(e) => onValueChange(e.target.value)} />
+  <Input type="text" aria-invalid={invalid} {value} onchange={(e) => onValueChange(e.target.value)} {disabled} />
   {#if invalid}
     <ul class="text-xs">
       {#each format as [k, v] (k)}

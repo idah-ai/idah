@@ -9,7 +9,8 @@
     property,
     value,
     onValueChange,
-  }: { property: IConfigProperty; value: boolean; onValueChange: (v: boolean) => void } = $props();
+    disabled,
+  }: { property: IConfigProperty; value: boolean; onValueChange: (v: boolean) => void; disabled: boolean } = $props();
 
   const invalid = $derived(!propertyFullfilled(value, property));
   const format = $derived(invalid ? formatConformity(value, property) : []);
@@ -31,7 +32,7 @@
       {/if}
     </Label>
 
-    <Switch aria-invalid={invalid} id={property.id} checked={!!value} onCheckedChange={onValueChange} />
+    <Switch aria-invalid={invalid} id={property.id} checked={!!value} onCheckedChange={onValueChange} {disabled} />
   </div>
 
   {#if invalid}
