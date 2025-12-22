@@ -102,6 +102,10 @@
     open = true;
   }
 
+  function closePopover() {
+    open = !closeOnSelect;
+  }
+
   async function fetchChoices(): Promise<Choice[]> {
     if (!dataSource) throw new Error("DataSource is required");
 
@@ -148,7 +152,7 @@
     }
 
     allChoicesSelected = values.length === choices.length;
-    open = closeOnSelect ? false : true;
+    closePopover();
     await onSelected?.(selectedChoices);
   }
 
@@ -161,7 +165,7 @@
       values = [];
     }
 
-    open = closeOnSelect ? false : true;
+    closePopover();
     await onSelected?.(selectedChoices);
   }
 
@@ -169,7 +173,7 @@
     event.stopPropagation();
     values = [];
     allChoicesSelected = false;
-    open = closeOnSelect ? false : true;
+    closePopover();
   }
 
   const scrollToPaginate: WheelEventHandler<HTMLDivElement> = async (event: WheelEvent) => {

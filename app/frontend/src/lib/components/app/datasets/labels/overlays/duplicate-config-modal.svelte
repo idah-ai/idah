@@ -39,6 +39,8 @@
 
   function resetForm(): void {
     selectedDatasets = [];
+    allSelected = false;
+    submitting = false;
   }
 
   async function submit() {
@@ -58,6 +60,7 @@
     } catch (error) {
       console.error(error);
       submitting = false;
+      toast.error("Failed to duplicate label configuration");
     }
   }
 </script>
