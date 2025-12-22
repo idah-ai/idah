@@ -32,8 +32,8 @@
   let ctx: CanvasRenderingContext2D | null;
   let isDraggingCanvas = false;
 
-  let canvasX = 0;
-  let canvasY = 0;
+  let canvasX = $derived(0);
+  let canvasY = $derived(0);
 
   // Convert HSV to RGB
   function hsvToRgb(h: number, s: number, v: number): { r: number; g: number; b: number } {
@@ -208,28 +208,31 @@
     const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
     const y = Math.max(0, Math.min(e.clientY - rect.top, rect.height));
 
-    canvasX = (x / rect.width) * canvas.width;
-    canvasY = (y / rect.height) * canvas.height;
+    // Update cursor position (in pixels relative to displayed canvas)
+    canvasX = x;
+    canvasY = y;
 
-    saturation = (canvasX / canvas.width) * 100;
-    brightness = 100 - (canvasY / canvas.height) * 100;
+    // Calculate saturation and brightness percentages
+    saturation = (x / rect.width) * 100;
+    brightness = 100 - (y / rect.height) * 100;
 
     updateFromHSV();
   }
 
   function updateCanvasPosition() {
     if (!canvas) return;
-    canvasX = (saturation / 100) * canvas.width;
-    canvasY = ((100 - brightness) / 100) * canvas.height;
+    const rect = canvas.getBoundingClientRect();
+    canvasX = (saturation / 100) * rect.width;
+    canvasY = ((100 - brightness) / 100) * rect.height;
   }
 
   // Watch hue changes from slider
-  $effect(() => {
-    if (hue !== undefined) {
-      updateFromHSV();
-      drawCanvas();
-    }
-  });
+  // $effect(() => {
+  //   if (hue !== undefined) {
+  //     updateFromHSV();
+  //     drawCanvas();
+  //   }
+  // });
 
   // Handle hex input
   function handleHexInput() {
@@ -241,12 +244,18 @@
     ctx = canvas.getContext("2d");
 
     // Parse initial value
-    const rgb = hexToRgb(value);
+    const initialValue = value || "#7BB2A2A";
+    const rgb = hexToRgb(initialValue);
     const hsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
+
+    console.log({initialValue, rgb, hsv});
+    
+
+    
     hue = hsv.h;
     saturation = hsv.s;
     brightness = hsv.v;
-    hexInput = value;
+    hexInput = initialValue;
 
     drawCanvas();
     updateCanvasPosition();
@@ -296,7 +305,7 @@
   </div>
 
   <!-- Input Row -->
-  <div class="flex gap-md items-center">
+  <div class="gap-md flex items-center">
     <SingleSelectField
       name="color-picker"
       label=""
