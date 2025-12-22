@@ -14,10 +14,10 @@
     value: string | null | undefined;
     class?: string | null;
     slotSuggestion?: Snippet;
-    onValueChanged?: (value: string | null | undefined) => void;
+    onValueChange?: (value: string | null | undefined) => void;
   }
 
-  let { value = $bindable(null), class: className, slotSuggestion, onValueChanged }: Props = $props();
+  let { value = $bindable(null), class: className, slotSuggestion, onValueChange }: Props = $props();
 
   // Variables
   let hue = $state(0); // 0-360
@@ -484,7 +484,6 @@
         onSelected={(selectedValue) => {
           colorFormat = selectedValue as string;
           value = colorInput;
-          onValueChanged?.(value);
         }}
       ></SingleSelectField>
 

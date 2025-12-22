@@ -14,6 +14,7 @@
   // Props
   interface Props extends FormFieldBaseProps {
     value: string | null | undefined;
+    onValueChanged?: (value: string | null | undefined) => void;
   }
   let {
     name,
@@ -28,9 +29,15 @@
     slotLabel,
     slotInfo,
     slotErrors,
+    onValueChanged
   }: Props = $props();
 
   // Variables
+
+  // Functions
+ function handleValueChange(value: string | null | undefined) {
+    onValueChanged?.(value);
+  }
 </script>
 
 <FormField id={name} class={cn("", className)}>
@@ -57,7 +64,7 @@
     </PopoverTrigger>
 
     <PopoverContent class="w-auto p-0" align="start" side="right">
-      <ColorPicker bind:value></ColorPicker>
+      <ColorPicker bind:value onValueChange={handleValueChange}></ColorPicker>
     </PopoverContent>
   </Popover>
 
