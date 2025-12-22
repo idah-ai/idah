@@ -481,6 +481,7 @@
       value={colorFormat}
       onSelected={(selectedValue) => {
         colorFormat = selectedValue as string;
+        value = colorInput;
       }}
     ></SingleSelectField>
 
