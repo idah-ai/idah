@@ -11,11 +11,11 @@
   import DialogTitle from "@/components/ui/dialog/dialog-title.svelte";
 
   import { datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
+  import { cn } from "@/utils";
 
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
   import type { IConfig } from "@/plugin/interface/Activity";
   import type { Resource } from "@/security/types";
-  import { cn } from "@/utils";
 
   // Props
   interface Props extends FormModalBaseProps {
@@ -111,14 +111,14 @@
       </div>
     {/snippet}
 
-    {#snippet slotSelectAll({ selectAll })}
+    {#snippet slotSelectAll({ selectAll, allChoicesSelected })}
       <CommandItem
         onclick={() => {
           allSelected = !allSelected;
           selectAll(allSelected);
         }}
       >
-        <CheckIcon class={cn("mr-2", allSelected ? "opacity-100" : "opacity-0")} />
+        <CheckIcon class={cn("mr-2", allChoicesSelected ? "opacity-100" : "opacity-0")} />
         Select all
       </CommandItem>
     {/snippet}

@@ -113,6 +113,7 @@ export interface MultipleSelectFieldBaseProps extends SelectFieldBaseProps {
     [
       {
         selectAll: (allSelected: boolean) => Promise<void> | void;
+        allChoicesSelected: boolean;
       },
     ]
   >;
