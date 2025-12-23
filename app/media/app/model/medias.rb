@@ -89,10 +89,12 @@ module Medias
       with_metadata do
         media = find!(id)
 
-        add_metadata(
-          email: auth_context.metadata[:email],
-          project_id: media.project_id,
-        ) if media
+        if media
+          add_metadata(
+            email: auth_context.metadata[:email],
+            project_id: media.project_id,
+          )
+        end
 
         super(id)
       end
