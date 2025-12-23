@@ -20,11 +20,6 @@
   let { value = $bindable(null), class: className, slotSuggestion, onValueChange }: Props = $props();
 
   // Variables
-  let hue = $state(0); // 0-360
-  let saturation = $state(50); // 0-100
-  let brightness = $state(60); // 0-100
-  let opacity = $state(100); // 0-100
-
   let colorFormat = $state("hex");
   let colorFormats: LabelValue<string>[] = [
     { label: "HEX", value: "hex" },
@@ -36,11 +31,28 @@
   let ctx = $state<CanvasRenderingContext2D | null>(null);
   let isDraggingCanvas = $state(false);
 
-  let canvasX = $derived(0);
-  let canvasY = $derived(0);
+  let canvasX = $state(0);
+  let canvasY = $state(0);
 
   let rgb = $derived(hexToRgb(value));
   let hsv = $derived(rgbToHsv(rgb.r, rgb.g, rgb.b));
+
+  // Sync internal state with external value when not interacting
+  let opacity = $state(100); // 0-100
+  let hue = $derived.by(() => {
+    const h = hsv.h;
+    // Trigger redraw whenever hue changes
+    if (ctx) {
+      queueMicrotask(() => {
+        drawCanvas();
+        updateCanvasPosition();
+      });
+    }
+    return h;
+  });
+
+  let saturation = $derived(hsv.s);
+  let brightness = $derived(hsv.v);
 
   // Derived color input based on selected format
   let colorInput = $derived.by(() => {
@@ -491,7 +503,6 @@
         value={colorFormat}
         onSelected={(selectedValue) => {
           colorFormat = selectedValue as string;
-          value = colorInput;
         }}
       ></SingleSelectField>
 
