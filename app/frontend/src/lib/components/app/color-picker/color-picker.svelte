@@ -270,7 +270,7 @@
   }
 
   // Handle hue changes from slider
-  function handleHueChange(value: number) {
+  function handleColorChange(value: number) {
     hue = value;
     updateFromHSV();
     drawCanvas();
@@ -427,8 +427,8 @@
   <div class="relative mb-5 cursor-crosshair overflow-hidden rounded-2xl">
     <canvas
       bind:this={canvas}
-      width="400"
-      height="320"
+      width="280"
+      height="160"
       onmousedown={handleCanvasMouseDown}
       class="block h-auto w-full rounded-2xl"
     ></canvas>
@@ -461,14 +461,14 @@
           step={1}
           type="single"
           class="custom-slider"
-          onValueChange={handleHueChange}
+          onValueChange={handleColorChange}
         />
       </div>
 
       <!-- Opacity Slider -->
       <div class="slider-wrapper opacity-slider-wrapper">
         <div class="opacity-gradient"></div>
-        <Slider bind:value={opacity} min={0} max={100} step={1} type="single" class="custom-slider" />
+        <Slider bind:value={opacity} min={0} max={100} step={1} type="single" class="custom-slider" onValueChange={handleColorChange} />
       </div>
     </div>
   </div>
