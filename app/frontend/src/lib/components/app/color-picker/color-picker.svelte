@@ -37,10 +37,10 @@
   // Parse external value and derive color state from it
   let colorState = $derived.by(() => {
     if (!value) return { hue: 0, saturation: 0, brightness: 0, opacity: 100 };
-    
+
     const format = detectColorFormat(value);
     let state;
-    
+
     switch (format) {
       case "rgb":
         state = initFromRgb(value);
@@ -56,13 +56,13 @@
         break;
     }
 
-     if (ctx) {
+    if (ctx) {
       queueMicrotask(() => {
         drawCanvas();
         updateCanvasPosition();
       });
     }
-    
+
     return state || { hue: 0, saturation: 0, brightness: 0, opacity: 100 };
   });
 
