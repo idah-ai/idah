@@ -34,25 +34,43 @@
   let canvasX = $state(0);
   let canvasY = $state(0);
 
-  let rgb = $derived(hexToRgb(value));
-  let hsv = $derived(rgbToHsv(rgb.r, rgb.g, rgb.b));
+  // Parse external value and derive color state from it
+  let colorState = $derived.by(() => {
+    if (!value) return { hue: 0, saturation: 0, brightness: 0, opacity: 100 };
+    
+    const format = detectColorFormat(value);
+    let state;
+    
+    switch (format) {
+      case "rgb":
+        state = initFromRgb(value);
+        break;
+      case "hsl":
+        state = initFromHsl(value);
+        break;
+      case "hex":
+        state = initFromHex(value);
+        break;
+      default:
+        state = initFromHex(value);
+        break;
+    }
 
-  // Sync internal state with external value when not interacting
-  let opacity = $state(100); // 0-100
-  let hue = $derived.by(() => {
-    const h = hsv.h;
-    // Trigger redraw whenever hue changes
-    if (ctx) {
+     if (ctx) {
       queueMicrotask(() => {
         drawCanvas();
         updateCanvasPosition();
       });
     }
-    return h;
+    
+    return state || { hue: 0, saturation: 0, brightness: 0, opacity: 100 };
   });
 
-  let saturation = $derived(hsv.s);
-  let brightness = $derived(hsv.v);
+  // Color state derived from external value
+  let opacity = $derived(colorState.opacity);
+  let hue = $derived(colorState.hue);
+  let saturation = $derived(colorState.saturation);
+  let brightness = $derived(colorState.brightness);
 
   // Derived color input based on selected format
   let colorInput = $derived.by(() => {
@@ -211,7 +229,7 @@
 
   // Update color values
   function updateFromHSV() {
-    rgb = hsvToRgb(hue, saturation, brightness);
+    const rgb = hsvToRgb(hue, saturation, brightness);
     value = formatColor({ rgbValue: rgb });
   }
 
@@ -288,6 +306,12 @@
     drawCanvas();
   }
 
+  // Handle opacity changes from slider
+  function handleOpacityChange(value: number) {
+    opacity = value;
+    updateFromHSV();
+  }
+
   function applyParsedColor(parsed: { hue: number; saturation: number; brightness: number; opacity: number }) {
     hue = parsed.hue;
     saturation = parsed.saturation;
@@ -307,8 +331,8 @@
     // Try to parse HEX format
     if (/^#?[0-9A-F]{6}$/i.test(inputValue)) {
       const hexValue = inputValue.startsWith("#") ? inputValue : `#${inputValue}`;
-      rgb = hexToRgb(hexValue);
-      hsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
+      const rgb = hexToRgb(hexValue);
+      const hsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
       hue = hsv.h;
       saturation = hsv.s;
       brightness = hsv.v;
@@ -488,7 +512,7 @@
           step={1}
           type="single"
           class="custom-slider"
-          onValueChange={handleColorChange}
+          onValueChange={handleOpacityChange}
         />
       </div>
     </div>
