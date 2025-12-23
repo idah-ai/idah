@@ -138,7 +138,7 @@
                   <Tooltips align="center" delayDuration={0}>
                     {#snippet trigger()}
                       <button
-                        class="inline-flex size-6 items-center justify-center rounded-lg border"
+                        class="inline-flex size-6 items-center justify-center rounded-lg border hover:cursor-pointer"
                         style="background-color: {c}; color: {text_color}"
                         aria-label="Select {label} color"
                         onclick={() => updateCategory({ color: c, text_color })}
