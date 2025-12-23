@@ -8,6 +8,7 @@
   import FormField from "@/components/app/forms/form-field.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+  import Text from "@/components/ui/text/Text.svelte";
 
   import { cn } from "@/utils";
 
@@ -16,18 +17,15 @@
   // Props
   interface Props extends FormFieldBaseProps {
     value: string | null | undefined;
-    textColor?: string | null;
     onValueChange?: (value: string | null | undefined) => void;
     slotSuggestion?: Snippet;
   }
   let {
     name,
     label,
-    placeholder = "Select a color",
     required = false,
     disabled = false,
     value = $bindable(null),
-    textColor = $bindable(null),
     info,
     errors,
     class: className,
@@ -39,9 +37,11 @@
   }: Props = $props();
 
   // Variables
+  let colorFormat = $derived("hex");
 
   // Functions
-  function handleValueChange(value: string | null | undefined) {
+  function handleValueChange(value: string | null | undefined, newColorFormat?: string) {    
+    colorFormat = newColorFormat ? newColorFormat : colorFormat;
     onValueChange?.(value);
   }
 </script>
@@ -50,23 +50,29 @@
   {#if slotLabel}
     {@render slotLabel()}
   {:else}
-    <FormFieldLabel {required} style="color: {textColor || "#FFFFFF"};">{label}</FormFieldLabel>
+    <FormFieldLabel {required}>{label}</FormFieldLabel>
   {/if}
 
   <Popover>
     <PopoverTrigger>
       {#snippet child({ props })}
-        <Button
-          variant="outline"
-          class={cn("w-full justify-start text-left font-normal", {
-            "text-muted-foreground": !value,
-          })}
-          style="background-color: {value || "transparent"};"
-          {disabled}
-          {...props}
-        >
-          {value ? value : placeholder}
-        </Button>
+        <div class="flex w-full items-center gap-2">
+          <Button
+            variant="outline"
+            class={cn("justify-start text-left font-normal", {
+              "text-muted-foreground": !value,
+            })}
+            style="background-color: {value || 'transparent'};"
+            {disabled}
+            {...props}
+          ></Button>
+
+          {#if value}
+            <Text size="sm" weight="semibold" class="text-muted-foreground">{colorFormat.toUpperCase()}</Text>
+
+            <Text size="sm" weight="semibold">{value}</Text>
+          {/if}
+        </div>
       {/snippet}
     </PopoverTrigger>
 
