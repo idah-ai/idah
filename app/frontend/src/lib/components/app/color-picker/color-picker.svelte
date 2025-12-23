@@ -339,7 +339,7 @@
       value = hexValue.toUpperCase();
       drawCanvas();
       updateCanvasPosition();
-      onValueChange?.(value, colorFormat);
+      onValueChange?.(colorInput, colorFormat);
       return;
     }
 
@@ -528,6 +528,7 @@
         value={colorFormat}
         onSelected={(selectedValue) => {
           colorFormat = selectedValue as string;
+          onValueChange?.(colorInput, colorFormat);
         }}
       ></SingleSelectField>
 
