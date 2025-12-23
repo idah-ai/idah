@@ -7,10 +7,10 @@ module Context
       BuilderContext = Data.define(:builder, :close)
         def builder(args, &block)
           file = File.new([filename, args.to_a.join(".")].join("/"), 'w')
-          yield Builder::XmlMarkup.new(
-            :target=> file,
-            :indent=>2
-          )
+          xml_markup = Builder::XmlMarkup.new(:target=> file)
+          xml_markup.instruct! :xml, :version=>"1.0", :encoding=>"UTF-8"
+          yield xml_markup
+
           file.close unless file.closed?
         end
 

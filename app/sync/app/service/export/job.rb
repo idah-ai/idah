@@ -11,16 +11,6 @@ module Export
           ).prepare(arguments.fetch(:io_args))
         end
 
-        # arguments.fetch(:io_classes).each do |io_class|
-        #   ios << Verse::Util::Reflection.constantize(
-        #     io_class
-        #   ).prepare(arguments.fetch(:io_args))
-        # end
-
-        # @io = context.ios.find {|io| io.name == "UniversalPortableDataset"}
-
-
-        puts ios
         Verse::Util::Reflection.constantize(
           arguments.fetch(:process_class)
           ).new(
