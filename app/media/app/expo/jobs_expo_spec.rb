@@ -6,7 +6,7 @@ RSpec.describe JobsExpo, type: :exposition, as: :system do
   let(:job) {
     Jobs::Record.new(
       {
-        id: 1,
+        id: "uuid",
         status: "pending",
         job_class: "MyJob",
         arguments: [],
@@ -28,7 +28,7 @@ RSpec.describe JobsExpo, type: :exposition, as: :system do
     body = JSON.parse(last_response.body, symbolize_names: true)
     record = deserialize body
 
-    expect(record[0].id).to eq "1"
+    expect(record[0].id).to eq "uuid"
     expect(record[0].arguments).to eq([])
     expect(record[0].error).to be_nil
     expect(record[0].job_class).to eq "MyJob"
@@ -37,22 +37,22 @@ RSpec.describe JobsExpo, type: :exposition, as: :system do
   it "show" do
     expect_any_instance_of(Jobs::Repository).to receive(:find!).and_return(job)
 
-    get "/jobs/1"
+    get "/jobs/uuid"
 
     expect(last_response.status).to eq 200
     body = JSON.parse(last_response.body, symbolize_names: true)
     record = deserialize body
 
-    expect(record.id).to eq "1"
+    expect(record.id).to eq "uuid"
     expect(record.arguments).to eq([])
     expect(record.error).to be_nil
     expect(record.job_class).to eq "MyJob"
   end
 
   it "destroy" do
-    expect_any_instance_of(Jobs::Repository).to receive(:delete).with(1).and_return(true)
+    expect_any_instance_of(Jobs::Repository).to receive(:delete).with("uuid").and_return(true)
 
-    delete "/jobs/1"
+    delete "/jobs/uuid"
 
     expect(last_response.status).to eq 204
   end
@@ -63,7 +63,7 @@ RSpec.describe JobsExpo, type: :exposition, as: :system do
 
     Verse.publish_resource_event(
       resource_type: "media:jobs",
-      resource_id: 1,
+      resource_id: "uuid",
       event: "created",
       payload: {}
     )
