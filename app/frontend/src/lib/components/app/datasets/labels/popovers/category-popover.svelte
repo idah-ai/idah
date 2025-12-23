@@ -3,6 +3,7 @@
 
   import CheckboxField from "@/components/app/forms/fields/input/checkbox-field.svelte";
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
+  import ColorPickerField from "@/components/app/forms/fields/picker/color-picker-field.svelte";
   import FormFieldLabel from "@/components/app/forms/form-field-label.svelte";
   import Tooltips from "@/components/app/tooltips/tooltips.svelte";
   import { Button } from "@/components/ui/button";
@@ -126,6 +127,13 @@
       {#if selectable}
         <Separator />
         <section class="flex flex-col gap-2 p-2">
+          <ColorPickerField
+            name="{id}/text_color"
+            label="Color"
+            value={text_color || "#000000"}
+            onValueChange={(value) => updateCategory({ text_color: value })}
+          />
+
           <FormFieldLabel required={false} class="px-2">Color</FormFieldLabel>
           <div class="grid grid-cols-5 gap-1">
             {#each labelColors as { label, color: c, text_color } (c)}

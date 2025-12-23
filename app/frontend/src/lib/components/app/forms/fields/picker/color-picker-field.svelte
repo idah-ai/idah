@@ -16,7 +16,7 @@
   // Props
   interface Props extends FormFieldBaseProps {
     value: string | null | undefined;
-    onValueChanged?: (value: string | null | undefined) => void;
+    onValueChange?: (value: string | null | undefined) => void;
     slotSuggestion?: Snippet;
   }
   let {
@@ -32,15 +32,15 @@
     slotLabel,
     slotInfo,
     slotErrors,
-    onValueChanged,
-    slotSuggestion
+    onValueChange,
+    slotSuggestion,
   }: Props = $props();
 
   // Variables
 
   // Functions
- function handleValueChange(value: string | null | undefined) {
-    onValueChanged?.(value);
+  function handleValueChange(value: string | null | undefined) {
+    onValueChange?.(value);
   }
 </script>
 
@@ -59,6 +59,7 @@
           class={cn("w-full justify-start text-left font-normal", {
             "text-muted-foreground": !value,
           })}
+          style="background-color: {value || "transparent"};"
           {disabled}
           {...props}
         >
@@ -67,7 +68,7 @@
       {/snippet}
     </PopoverTrigger>
 
-    <PopoverContent class="w-auto p-0" align="start" side="right">
+    <PopoverContent class="w-auto p-0" side="right">
       <ColorPicker bind:value onValueChange={handleValueChange} {slotSuggestion}></ColorPicker>
     </PopoverContent>
   </Popover>
