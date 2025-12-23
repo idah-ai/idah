@@ -121,7 +121,7 @@
       if (!listOpts.filters) listOpts.filters = {};
       listOpts.filters[searchKeyWithOperation] = searchValue;
     } else {
-      listOpts.filters = {};
+      listOpts.filters = { ...listOpts.filters };
     }
 
     const response = await dataSource.list({ ...listOpts, count: true });
