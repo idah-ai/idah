@@ -129,7 +129,6 @@
             name="{id}/color"
             label="Color"
             bind:value={color}
-            textColor={text_color}
             onValueChange={(value) => updateCategory({ color: value })}
           >
             {#snippet slotSuggestion()}

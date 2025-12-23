@@ -14,7 +14,7 @@
     value: string | null | undefined;
     class?: string | null;
     slotSuggestion?: Snippet;
-    onValueChange?: (value: string | null | undefined) => void;
+    onValueChange?: (value: string | null | undefined, colorFormat?: string) => void;
   }
 
   let { value = $bindable(null), class: className, slotSuggestion, onValueChange }: Props = $props();
@@ -468,7 +468,15 @@
       <!-- Opacity Slider -->
       <div class="slider-wrapper opacity-slider-wrapper">
         <div class="opacity-gradient"></div>
-        <Slider bind:value={opacity} min={0} max={100} step={1} type="single" class="custom-slider" onValueChange={handleColorChange} />
+        <Slider
+          bind:value={opacity}
+          min={0}
+          max={100}
+          step={1}
+          type="single"
+          class="custom-slider"
+          onValueChange={handleColorChange}
+        />
       </div>
     </div>
   </div>
