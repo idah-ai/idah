@@ -43,7 +43,7 @@ module Export
       start
       @context.api.datasets.index.each do |dataset|
         dataset.entries.index.each do |entry|
-          @io.builder({
+          @io.builder({ # CVAT export seems to have tasks/entries has root
             dataset: dataset.record[:id],
             entry: entry.record[:id]
           }) do |xml|
@@ -57,61 +57,139 @@ module Export
     def on_task(dataset, entry, xml)
       # media / store images by frames
       begin
-        xml.annotations do |task|
-          task.id dataset.record[:id]
-          task.tag!(:attributes) do |task_attrs|
-            task_attrs.name dataset.record[:attributes][:name]
-            task_attrs.labels dataset.record[:attributes][:labels]
-            task_attrs.modality dataset.record[:attributes][:modality]
-            task_attrs.status dataset.record[:attributes][:status]
-            task_attrs.progress dataset.record[:attributes][:progress]
-            task_attrs.project_id dataset.record[:attributes][:project_id]
-            task_attrs.metadata do |m|
-              m.created_at dataset.record[:attributes][:created_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2')
-              m.updated_at dataset.record[:attributes][:updated_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2')
-              m.created_by nil
-            end
-            task_attrs.entry do |e|
-              e.id entry.record[:id]
-              e.tag!(:attributes) do |entry_attrs|
-                entry_attrs.dataset_id entry.record[:attributes][:dataset_id]
-                entry_attrs.priority entry.record[:attributes][:priority]
-                entry_attrs.wf_step entry.record[:attributes][:wf_step]
-                entry_attrs.resource entry.record[:attributes][:resource]
-                entry_attrs.assigned_to_id entry.record[:attributes][:assigned_to_id]
-                entry_attrs.metadata do |m|
-                  m.created_at entry.record[:attributes][:created_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2')
-                  m.updated_at entry.record[:attributes][:updated_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2')
-                  m.created_by nil
-                end
-                entry_attrs.annotations do |e|
-                  entry.annotations.index.each do |annotation|
-                    on_track annotation, xml
+        xml.annotations do |annotations|
+          annotations.version 1.1
+          annotations.meta do |meta|
+            meta.task do |task|
+              task.id entry.record[:id] #!!! -> Number: id of the task
+              task.name entry.record[:attributes][:resource] # String: some task name
+              task.size 0 # Number: count of frames/images in the task
+              task.mode "interpolation" # String: interpolation or annotation
+              task.overlap 0 # Number: number of overlapped frames between segments
+              task.bugtracker "" # String: URL on an page which describe the task
+              task.flipped false # Boolean: were images of the task flipped? (True/False)
+              task.created entry.record[:attributes][:created_at] # String: date when the task was created
+              task.updated entry.record[:attributes][:updated_at] # String: date when the task was updated
+              task.labels do |labels|
+                Hash(dataset.record[:attributes][:labeling_configuration]).flat_map do |type, config|
+                  config[:values].map do |value|
+                    {
+                      name: value[:id], # value[:label] # String: name of the label (e.g. car, person)
+                      type: case type
+                      when :'entry:root'
+                        'tag'
+                      when :'idah-video:bounding-box'
+                        'bbox'
+                      else
+                        raise "unexpected label type #{type}"
+                      end, # String: any, bbox, cuboid, ellipse, mask, polygon, polyline, points, skeleton, tag
+                      attributes: config[:properties].map do |property| # TODO visibility
+                        # {
+                        #   input_type:, # String: select, checkbox, radio, number, text
+                        #   default_value: , # String: default value
+                        #   values: [], #String: possible values, separated by newlines
+                        # }
+                        {
+                          name: property[:id], # property[:label] # String: attribute name
+                          mutable: false, # Boolean: mutable (allow different values between frames)
+                        }.merge(
+                          case property[:type]
+                          when 'integer'
+                            {input_type: 'number', default_value: 0, values: []}
+                          when 'boolean'
+                            {input_type: 'radio', default_value: false , values: [true, false]}
+                          when 'text'
+                            {input_type: 'text', default_value: "", values: []}
+                          when 'single-select'
+                            {input_type: 'select', default_value: "", values: []}
+                          when 'multi-select'
+                            {input_type: 'checkbox', default_value: "", values: []}
+                          else
+                            raise "unexpected property type #{property[:type]}"
+                          end
+                        )
+                      end
+                    }
+                  end
+                end.each do |h|
+                  labels.label do |label|
+                    label.name h[:name]
+                    label.type h[:type]
+                    label.tag!(:attributes) do |attributes|
+                      h[:attributes].map do |h_attribute|
+                        attributes.attribute do |attribute|
+                          attribute.name = h_attribute[:name]
+                          attribute.mutable = h_attribute[:mutable]
+                          attribute.input_type = h_attribute[:input_type]
+                          attribute.default_value = h_attribute[:default_value]
+                          attribute.values = h_attribute[:values].join("\n")
+                        end
+                      end
+                    end
                   end
                 end
               end
+              task.segments do |segment|
+              end
+              task.owner do |owner|
+                owner.username "" # String: the author of the task
+                owner.email "" # String: email of the author
+              end
+              task.original_size do |original_size|
+                original_size.width 0 # Number: frame width
+                original_size.height 0 # Number: frame height
+              end
+            end
+            meta.dumped "" # String: date when the annotation was dumped
+          end
+          entry.annotations.index.each do |annotation|
+            begin
+              on_track entry, annotation, xml
+            rescue Exception => e
+              error e, entry.record
             end
           end
         end
       rescue Exception => e
-        error e, entry.record
+        error e, dataset.record
       end
     end
 
-    def on_track(annotation, xml)
+    def on_track(entry, annotation, xml)
       begin
-        xml.track do |track|
-          track.id annotation.record[:id]
-          track.tag!(:attributes) do |track_attrs|
-            track_attrs.entry_id annotation.record[:attributes][:entry_id]
-            track_attrs.shape_type Hash(annotation.record[:attributes][:dimensions])[:type]
-            track_attrs.shape_args Hash(annotation.record[:attributes][:dimensions]).select {|k, _| k != :type}.to_json
-            track_attrs.annotation Hash(annotation.record[:attributes][:annotation]).to_json
-            track_attrs.metadata do |m|
-              m.created_at annotation.record[:attributes][:created_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2')
-              m.updated_at annotation.record[:attributes][:updated_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2')
-              m.created_by nil
+        xml.track(
+          id: annotation.record[:id],
+          label: annotation.record.dig(:attributes, :annotation, :category), # String: the associated label
+          source:"manual" # manual or auto
+        ) do |track|
+          case Hash(annotation.record[:attributes][:dimensions])[:type]
+          when "idah-video:bounding-box"
+            Array(annotation.record.dig(:attributes, :dimensions, :frames)).each do |keyframe|
+              track.box(
+                frame: keyframe[:frame],
+                xtl: keyframe[:points][0][0], # x top left
+                ytl: keyframe[:points][0][1], # y top left
+                xbr: keyframe[:points][2][0], # x bottom right
+                ybr: keyframe[:points][2][1], # y bottom left
+                outside: 0,
+                occluded: 0,
+                keyframe: 1
+              ) do |box|
+                Hash(annotation.record.dig(:attributes, :annotation, :attributes)).each do |name, value|
+                  box.attribute(name: name.to_s) { box.text!(value.to_s) }
+                end
+              end
             end
+          when 'entry:root'
+            # video don't have tags only images does :/
+            # https://docs.cvat.ai/docs/dataset_management/formats
+            track.tag(label: "", source: "manual") do |tag|
+              Hash(annotation.record.dig(:attributes, :annotation, :attributes)).each do |name, value|
+                tag.attribute(name: name.to_s) { tag.text!(value.to_s) }
+              end
+            end
+          else
+            raise `unexpected annotation type: #{type}`
           end
         end
       rescue Exception => e
@@ -120,99 +198,3 @@ module Export
     end
   end
 end
-
-
-# reference
-# ======
-# common
-# ======
-# <?xml version="1.0" encoding="utf-8"?>
-# <annotations>
-#   <version>1.1</version>
-#   <meta>
-#     <task>
-#       <id>Number: id of the task</id>
-#       <name>String: some task name</name>
-#       <size>Number: count of frames/images in the task</size>
-#       <mode>String: interpolation or annotation</mode>
-#       <overlap>Number: number of overlapped frames between segments</overlap>
-#       <bugtracker>String: URL on an page which describe the task</bugtracker>
-#       <flipped>Boolean: were images of the task flipped? (True/False)</flipped>
-#       <created>String: date when the task was created</created>
-#       <updated>String: date when the task was updated</updated>
-#       <labels>
-#         <label>
-#           <name>String: name of the label (e.g. car, person)</name>
-#           <type>String: any, bbox, cuboid, ellipse, mask, polygon, polyline, points, skeleton, tag</type>
-#           <attributes>
-#             <attribute>
-#               <name>String: attribute name</name>
-#               <mutable>Boolean: mutable (allow different values between frames)</mutable>
-#               <input_type>String: select, checkbox, radio, number, text</input_type>
-#               <default_value>String: default value</default_value>
-#               <values>String: possible values, separated by newlines
-# ex. value 2
-# ex. value 3</values>
-#             </attribute>
-#           </attributes>
-#           <svg>String: label representation in svg, only for skeletons</svg>
-#           <parent>String: label parent name, only for skeletons</parent>
-#         </label>
-#       </labels>
-#       <segments>
-#         <segment>
-#           <id>Number: id of the segment</id>
-#           <start>Number: first frame</start>
-#           <stop>Number: last frame</stop>
-#           <url>String: URL (e.g. http://cvat.example.com/?id=213)</url>
-#         </segment>
-#       </segments>
-#       <owner>
-#         <username>String: the author of the task</username>
-#         <email>String: email of the author</email>
-#       </owner>
-#       <original_size>
-#         <width>Number: frame width</width>
-#         <height>Number: frame height</height>
-#       </original_size>
-#     </task>
-#     <dumped>String: date when the annotation was dumped</dumped>
-#   </meta>
-#   ...
-# </annotations>
-
-# =============
-# interpolation
-# =============
-
-# <?xml version="1.0" encoding="utf-8"?>
-# <annotations>
-#   ...
-#   <track id="Number: id of the track (doesn't have any special meeting)" label="String: the associated label" source="manual or auto">
-#     <box frame="Number: frame" xtl="Number: float" ytl="Number: float" xbr="Number: float" ybr="Number: float" outside="Number: 0 - False, 1 - True" occluded="Number: 0 - False, 1 - True" keyframe="Number: 0 - False, 1 - True">
-#       <attribute name="String: an attribute name">String: the attribute value</attribute>
-#       ...
-#     </box>
-#     <polygon frame="Number: frame" points="x0,y0;x1,y1;..." outside="Number: 0 - False, 1 - True" occluded="Number: 0 - False, 1 - True" keyframe="Number: 0 - False, 1 - True">
-#       <attribute name="String: an attribute name">String: the attribute value</attribute>
-#     </polygon>
-#     <polyline frame="Number: frame" points="x0,y0;x1,y1;..." outside="Number: 0 - False, 1 - True" occluded="Number: 0 - False, 1 - True" keyframe="Number: 0 - False, 1 - True">
-#       <attribute name="String: an attribute name">String: the attribute value</attribute>
-#     </polyline>
-#     <points frame="Number: frame" points="x0,y0;x1,y1;..." outside="Number: 0 - False, 1 - True" occluded="Number: 0 - False, 1 - True" keyframe="Number: 0 - False, 1 - True">
-#       <attribute name="String: an attribute name">String: the attribute value</attribute>
-#     </points>
-#     <mask frame="Number: frame" outside="Number: 0 - False, 1 - True" occluded="Number: 0 - False, 1 - True" rle="RLE mask" left="Number: left coordinate of the image where the mask begins" top="Number: top coordinate of the image where the mask begins" width="Number: width of the mask" height="Number: height of the mask" z_order="Number: z-order of the object">
-#     </mask>
-#     ...
-#   </track>
-#   <track id="Number: id of the track (doesn't have any special meeting)" label="String: the associated label" source="manual or auto">
-#     <skeleton frame="Number: frame" keyframe="Number: 0 - False, 1 - True">
-#       <points label="String: the associated label" outside="Number: 0 - False, 1 - True" occluded="Number: 0 - False, 1 - True" keyframe="Number: 0 - False, 1 - True" points="x0,y0;x1,y1">
-#       </points>
-#       ...
-#     </skeleton>
-#     ...
-#   </track>
-#   ...
-# </annotations>
