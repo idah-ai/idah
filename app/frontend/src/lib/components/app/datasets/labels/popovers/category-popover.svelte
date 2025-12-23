@@ -1,10 +1,9 @@
 <script lang="ts">
-  import { CheckIcon, SquareDashedMousePointerIcon } from "@lucide/svelte";
+  import { SquareDashedMousePointerIcon } from "@lucide/svelte";
 
   import CheckboxField from "@/components/app/forms/fields/input/checkbox-field.svelte";
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import ColorPickerField from "@/components/app/forms/fields/picker/color-picker-field.svelte";
-  import FormFieldLabel from "@/components/app/forms/form-field-label.svelte";
   import Tooltips from "@/components/app/tooltips/tooltips.svelte";
   import { Button } from "@/components/ui/button";
   import { Kbd, KbdGroup } from "@/components/ui/kbd";
@@ -12,7 +11,6 @@
   import Separator from "@/components/ui/separator/separator.svelte";
 
   import { labelColors } from "@/data/model/dataset/labels";
-  import { cn } from "@/utils";
 
   import type { ICategoryTreeNode } from "@/components/app/datasets/labels/categories/category-tree-node.svelte";
   import type { IConfigValue } from "@/plugin/interface/Activity";
@@ -128,33 +126,35 @@
         <Separator />
         <section class="flex flex-col gap-2 p-2">
           <ColorPickerField
-            name="{id}/text_color"
+            name="{id}/color"
             label="Color"
-            value={text_color || "#000000"}
-            onValueChange={(value) => updateCategory({ text_color: value })}
-          />
+            bind:value={color}
+            textColor={text_color}
+            onValueChange={(value) => updateCategory({ color: value })}
+          >
+            {#snippet slotSuggestion()}
+              <div class="grid grid-cols-5 gap-1">
+                {#each labelColors as { label, color: c, text_color } (c)}
+                  <Tooltips align="center" delayDuration={0}>
+                    {#snippet trigger()}
+                      <button
+                        class="inline-flex size-6 items-center justify-center rounded-lg border"
+                        style="background-color: {c}; color: {text_color}"
+                        aria-label="Select {label} color"
+                        onclick={() => updateCategory({ color: c, text_color })}
+                      >
+                      </button>
+                    {/snippet}
 
-          <FormFieldLabel required={false} class="px-2">Color</FormFieldLabel>
-          <div class="grid grid-cols-5 gap-1">
-            {#each labelColors as { label, color: c, text_color } (c)}
-              {@const isSelected = color === c}
-              <Tooltips align="center" delayDuration={0}>
-                {#snippet trigger()}
-                  <button
-                    class="inline-flex size-6 items-center justify-center rounded-lg border"
-                    style="background-color: {c}; color: {text_color}"
-                    onclick={() => updateCategory({ color: c, text_color })}
-                  >
-                    <CheckIcon class={cn("size-4", isSelected ? "opacity-100" : "opacity-0")} />
-                  </button>
-                {/snippet}
+                    {#snippet content()}
+                      {label}
+                    {/snippet}
+                  </Tooltips>
+                {/each}
+              </div>
+            {/snippet}
+          </ColorPickerField>
 
-                {#snippet content()}
-                  {label}
-                {/snippet}
-              </Tooltips>
-            {/each}
-          </div>
         </section>
       {/if}
     </div>

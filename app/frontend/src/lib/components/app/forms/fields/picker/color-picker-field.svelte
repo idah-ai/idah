@@ -16,6 +16,7 @@
   // Props
   interface Props extends FormFieldBaseProps {
     value: string | null | undefined;
+    textColor?: string | null;
     onValueChange?: (value: string | null | undefined) => void;
     slotSuggestion?: Snippet;
   }
@@ -26,6 +27,7 @@
     required = false,
     disabled = false,
     value = $bindable(null),
+    textColor = $bindable(null),
     info,
     errors,
     class: className,
@@ -48,7 +50,7 @@
   {#if slotLabel}
     {@render slotLabel()}
   {:else}
-    <FormFieldLabel {required}>{label}</FormFieldLabel>
+    <FormFieldLabel {required} style="color: {textColor || "#FFFFFF"};">{label}</FormFieldLabel>
   {/if}
 
   <Popover>
