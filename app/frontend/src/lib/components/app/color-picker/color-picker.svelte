@@ -14,13 +14,13 @@
     value: string | null | undefined;
     class?: string | null;
     slotSuggestion?: Snippet;
-    onValueChange?: (value: string | null | undefined, colorFormat?: string) => void;
+    onValueChange?: (value: string | null | undefined, colorFormat: string) => void;
   }
 
   let { value = $bindable(null), class: className, slotSuggestion, onValueChange }: Props = $props();
 
   // Variables
-  let colorFormat = $state("hex");
+  let colorFormat = $derived("hex");
   let colorFormats: LabelValue<string>[] = [
     { label: "HEX", value: "hex" },
     { label: "RGB", value: "rgb" },
@@ -315,6 +315,7 @@
       value = hexValue.toUpperCase();
       drawCanvas();
       updateCanvasPosition();
+      onValueChange?.(value, colorFormat);
       return;
     }
 
