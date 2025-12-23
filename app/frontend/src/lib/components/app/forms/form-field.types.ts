@@ -109,6 +109,14 @@ export interface MultipleSelectFieldBaseProps extends SelectFieldBaseProps {
       },
     ]
   >;
+  slotSelectAll?: Snippet<
+    [
+      {
+        selectAll: (allSelected: boolean) => Promise<void> | void;
+        allChoicesSelected: boolean;
+      },
+    ]
+  >;
 }
 
 export interface SelectDataSourceFieldBaseProps<T extends Record> extends Omit<SelectFieldBaseProps, "choices"> {
