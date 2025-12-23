@@ -6,7 +6,6 @@
   import { toast } from "svelte-sonner";
 
   import LabelConfigEditor from "@/components/app/datasets/labels/label-config-editor.svelte";
-
   import PageHeader from "@/components/app/page/page-header.svelte";
   import PageLoading from "@/components/app/page/page-loading.svelte";
   import Button from "@/components/ui/button/button.svelte";
@@ -33,12 +32,12 @@
   let projectId: string = page.params.projectId as string;
   let datasetId: string = page.params.datasetId as string;
 
-  let saving: boolean = $state(false);
-  let modality: string = $state("");
+  let saving = $state(false);
+  let modality = $state("");
   let shapes = $state<ModalityShapes>({});
   let labelConfig: IConfig = $state({});
   let initialLabelConfig: IConfig | undefined = $state(undefined);
-  let isLabelConfigChanged: boolean = $derived.by(() => {
+  let isLabelConfigChanged = $derived.by(() => {
     return JSON.stringify(labelConfig) !== JSON.stringify(initialLabelConfig);
   });
 
@@ -328,10 +327,10 @@
     {#snippet slotTitle()}
       <Can action="update" resource="dataset:datasets" scopes={["as_org_owner", as_project_owner]}>
         <Button
+          class="ml-auto"
           loading={saving}
           loadingLabel="Saving"
           disabled={!isLabelConfigChanged}
-          class="ml-auto"
           onclick={saveLabelConfigChanges}
         >
           <SaveIcon />

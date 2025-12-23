@@ -80,6 +80,10 @@
   let annotationsIDB: AnnotationsIndexedDB | undefined = $state();
   let isPlaying = $state(false);
   let volume = $state({ level: 0, muted: false });
+  let tools: (
+    | { label: string; type: string; iconName: string; handleClick: () => void }
+    | { label: string; type: string; iconName: string; disabled: boolean; handleClick: () => void }
+  )[] = $state([]);
 
   let commandOpen = $state(false);
 
@@ -132,12 +136,7 @@
 
   onMount(async () => {
     $boundingBoxes = [];
-    /**
-     * Annotation tools need to be disabled. Not allow to create new annotation once the entry is completed.
-     */
-    const disabledToolsIfWorkflowSteps = ["done"];
-
-    context.tools.setTools([
+    tools = [
       {
         label: "Visual",
         type: DEFAULT_MODE,
@@ -148,7 +147,7 @@
         label: "Bounding Box",
         type: IDAH_VIDEO_BOUNDING_BOX,
         iconName: "vector-square",
-        disabled: disabledToolsIfWorkflowSteps.includes(context.workflowStep),
+        disabled: !["annotate", "review"].includes(context.workflowStep),
         handleClick: () => context.commands.run("tools.bounding_box"),
       },
       {
@@ -158,7 +157,9 @@
         disabled: !["annotate", "review", "done"].includes(context.workflowStep), // Note: Only allow to create note when workflow steps are "annotate" and "review"
         handleClick: () => context.commands.run("tools.note"),
       },
-    ]);
+    ];
+
+    context.tools.setTools(tools);
 
     $effect(() => context.tools.setTool(mode));
 
@@ -648,6 +649,7 @@
   });
 
   function addAnnotation(shape: AnnotationShape, value: AnnotationValue = {}) {
+    if (!["review", "annotate"].includes(context.workflowStep)) return;
     const annotation = {
       // filter out indexed shape index noise for now
       shape: Object.fromEntries(
@@ -660,14 +662,20 @@
   }
 
   async function removeAnnotation(id: string) {
+    if (!["review", "annotate"].includes(context.workflowStep)) return;
+
     context.commands.run("annotation.delete", { id });
   }
 
   async function addSelection(id: string, selection: VideoFrameSelection) {
+    if (!["review", "annotate"].includes(context.workflowStep)) return;
+
     context.commands.run("keyframe.add", { id, selection });
   }
 
   async function deleteSelection(annotationId: string, frame: number) {
+    if (!["review", "annotate"].includes(context.workflowStep)) return;
+
     context.commands.run("keyframe.delete", { annotationId, frame });
   }
 
@@ -675,6 +683,8 @@
     annotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>,
     frame?: number,
   ) {
+    if (!["review", "annotate"].includes(context.workflowStep)) return;
+
     if (frame != undefined) deleteSelection(annotation.metadata.id, frame);
     else removeAnnotation(annotation.metadata.id);
   }
@@ -682,6 +692,8 @@
   let shapeSelectionArgs: [type: string, frame: number, _points: Point[], selectedId?: string] | undefined = $state();
 
   function onEditValue(value: AnnotationValue, valueMode: string) {
+    if (!["annotate", "review"].includes(context.workflowStep)) return;
+
     let requirementFullfilled = requiredFullfilled(value, context.config[valueMode]?.properties);
     annotationValue = value;
     mode = valueMode;
@@ -704,6 +716,8 @@
   }
 
   function onShapeSelection(type: string, frame: number, _points: Point[] = [], selectedId?: string) {
+    if (!["review", "annotate"].includes(context.workflowStep)) return;
+
     let points = $state.snapshot(_points) as Point[];
     if (!selectedId) {
       let annotation_value_from = $state.snapshot(annotationValue) as AnnotationValue;
@@ -739,6 +753,8 @@
     annotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>,
     value: AnnotationValue,
   ) {
+    if (!["review", "annotate"].includes(context.workflowStep)) return;
+
     context.commands.run("annotation.update", { annotation, value });
   }
 
@@ -748,7 +764,7 @@
     /**
      * Set mode to the annotation shape type when selecting an annotation
      */
-    if (annotation?.shape.type) {
+    if (annotation?.shape.type && ["review", "annotate"].includes(context.workflowStep)) {
       mode = annotation.shape.type;
     } else if (mode === "note") {
       mode = "note";

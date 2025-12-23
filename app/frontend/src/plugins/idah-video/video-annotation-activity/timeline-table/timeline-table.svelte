@@ -243,19 +243,21 @@
             </Text>
           {/await}
 
-          <Button
-            variant="ghost"
-            size="icon"
-            class={cn("ml-2 size-6 opacity-0 transition-opacity duration-200 ease-in-out group-hover:opacity-100", {
-              "opacity-100": isSelected,
-            })}
-            onclick={(e) => {
-              e.stopPropagation();
-              onDeleteAnnotation(annotation);
-            }}
-          >
-            <Trash2Icon class="size-3"></Trash2Icon>
-          </Button>
+          {#if ["review", "annotate"].includes(context.workflowStep)}
+            <Button
+              variant="ghost"
+              size="icon"
+              class={cn("ml-2 size-6 opacity-0 transition-opacity duration-200 ease-in-out group-hover:opacity-100", {
+                "opacity-100": isSelected,
+              })}
+              onclick={(e) => {
+                e.stopPropagation();
+                onDeleteAnnotation(annotation);
+              }}
+            >
+              <Trash2Icon class="size-3"></Trash2Icon>
+            </Button>
+          {/if}
         </button>
       </td>
 
