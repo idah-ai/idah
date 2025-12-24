@@ -58,7 +58,7 @@
     selectedDatasetId = value.selectedDatasetId;
   }
 
-  async function createDataset() {
+  async function getLabelConfig() {
     let labelConfig: IConfig = {};
 
     /** Get label config, if selected dataset */
@@ -71,6 +71,12 @@
       });
       labelConfig = datasetRes.data.labeling_configuration;
     }
+
+    return labelConfig;
+  }
+
+  async function createDataset() {
+    const labelConfig = await getLabelConfig();
 
     const createdDatasetRes = await datasetsBackendDataSource.create({
       attributes: {
@@ -96,10 +102,13 @@
   }
 
   async function updateDataset() {
+    const labelConfig = await getLabelConfig();
+
     await datasetsBackendDataSource.update(dataset.id, {
       attributes: {
         name: dataset.name,
         modality: dataset.modality,
+        labeling_configuration: labelConfig,
       },
     });
 
