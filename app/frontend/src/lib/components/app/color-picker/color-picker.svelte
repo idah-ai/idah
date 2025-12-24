@@ -87,7 +87,7 @@
 
   // Functions
   function formatColor(props: { rgbValue: { r: number; g: number; b: number } }): string {
-    let { rgbValue } = props;
+    const { rgbValue } = props;
     const alpha = opacity / 100;
 
     switch (colorFormat) {
@@ -96,10 +96,13 @@
           ? `rgba(${rgbValue.r}, ${rgbValue.g}, ${rgbValue.b}, ${fixDecimal(alpha)})`
           : `rgb(${rgbValue.r}, ${rgbValue.g}, ${rgbValue.b})`;
 
-      case "hsl":
+      case "hsl": {
+        const hsl = rgbToHsl(rgbValue.r, rgbValue.g, rgbValue.b);
+
         return alpha < 1
-          ? `hsla(${fixDecimal(hue)}, ${fixDecimal(saturation)}%, ${fixDecimal(brightness)}%, ${fixDecimal(alpha)})`
-          : `hsl(${fixDecimal(hue)}, ${fixDecimal(saturation)}%, ${fixDecimal(brightness)}%)`;
+          ? `hsla(${fixDecimal(hsl.h)}, ${fixDecimal(hsl.s)}%, ${fixDecimal(hsl.l)}%, ${fixDecimal(alpha)})`
+          : `hsl(${fixDecimal(hsl.h)}, ${fixDecimal(hsl.s)}%, ${fixDecimal(hsl.l)}%)`;
+      }
 
       default:
         // HEX format
@@ -116,8 +119,11 @@
   }
 
   function hsvToRgb(h: number, s: number, v: number): { r: number; g: number; b: number } {
-    s = s / 100;
-    v = v / 100;
+    // normalize
+    h = ((h % 360) + 360) % 360;
+    s = Math.min(Math.max(s, 0), 100) / 100;
+    v = Math.min(Math.max(v, 0), 100) / 100;
+
     const c = v * s;
     const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
     const m = v - c;
@@ -126,30 +132,44 @@
       g1 = 0,
       b1 = 0;
 
-    if (h >= 0 && h < 60) {
-      r1 = c;
-      g1 = x;
-      b1 = 0;
-    } else if (h >= 60 && h < 120) {
-      r1 = x;
-      g1 = c;
-      b1 = 0;
-    } else if (h >= 120 && h < 180) {
-      r1 = 0;
-      g1 = c;
-      b1 = x;
-    } else if (h >= 180 && h < 240) {
-      r1 = 0;
-      g1 = x;
-      b1 = c;
-    } else if (h >= 240 && h < 300) {
-      r1 = x;
-      g1 = 0;
-      b1 = c;
-    } else {
-      r1 = c;
-      g1 = 0;
-      b1 = x;
+    const sector = Math.floor(h / 60);
+
+    switch (sector) {
+      case 0: // 0–59
+        r1 = c;
+        g1 = x;
+        b1 = 0;
+        break;
+
+      case 1: // 60–119
+        r1 = x;
+        g1 = c;
+        b1 = 0;
+        break;
+
+      case 2: // 120–179
+        r1 = 0;
+        g1 = c;
+        b1 = x;
+        break;
+
+      case 3: // 180–239
+        r1 = 0;
+        g1 = x;
+        b1 = c;
+        break;
+
+      case 4: // 240–299
+        r1 = x;
+        g1 = 0;
+        b1 = c;
+        break;
+
+      default: // 300–359
+        r1 = c;
+        g1 = 0;
+        b1 = x;
+        break;
     }
 
     return {
@@ -160,9 +180,9 @@
   }
 
   function rgbToHsv(r: number, g: number, b: number): { h: number; s: number; v: number } {
-    r = r / 255;
-    g = g / 255;
-    b = b / 255;
+    r /= 255;
+    g /= 255;
+    b /= 255;
 
     const max = Math.max(r, g, b);
     const min = Math.min(r, g, b);
@@ -173,16 +193,28 @@
     const v = max;
 
     if (delta !== 0) {
-      s = delta / max;
+      switch (max) {
+        case r:
+          h = ((g - b) / delta) % 6;
+          break;
 
-      if (max === r) {
-        h = ((g - b) / delta + (g < b ? 6 : 0)) * 60;
-      } else if (max === g) {
-        h = ((b - r) / delta + 2) * 60;
-      } else {
-        h = ((r - g) / delta + 4) * 60;
+        case g:
+          h = (b - r) / delta + 2;
+          break;
+
+        case b:
+          h = (r - g) / delta + 4;
+          break;
       }
+
+      h *= 60;
     }
+
+    if (max !== 0) {
+      s = delta / max;
+    }
+
+    h = (h + 360) % 360;
 
     return {
       h: Math.round(h),
@@ -195,7 +227,7 @@
     return (
       "#" +
       [r, g, b]
-        .map((x) => x.toString(16).padStart(2, "0"))
+        .map((x) => Math.min(255, Math.max(0, x)).toString(16).padStart(2, "0"))
         .join("")
         .toUpperCase()
     );
@@ -204,14 +236,127 @@
   function hexToRgb(hex: string | null | undefined): { r: number; g: number; b: number } {
     if (!hex) return { r: 0, g: 0, b: 0 };
 
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result
-      ? {
-          r: parseInt(result[1], 16),
-          g: parseInt(result[2], 16),
-          b: parseInt(result[3], 16),
-        }
-      : { r: 123, g: 178, b: 162 };
+    let cleaned = hex.replace("#", "");
+
+    if (cleaned.length === 3) {
+      cleaned = cleaned
+        .split("")
+        .map((c) => c + c)
+        .join("");
+    }
+
+    if (cleaned.length !== 6) {
+      return { r: 0, g: 0, b: 0 };
+    }
+
+    const num = parseInt(cleaned, 16);
+
+    return {
+      r: (num >> 16) & 255,
+      g: (num >> 8) & 255,
+      b: num & 255,
+    };
+  }
+
+  function rgbToHsl(r: number, g: number, b: number): { h: number; s: number; l: number } {
+    r /= 255;
+    g /= 255;
+    b /= 255;
+
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const delta = max - min;
+
+    let h = 0;
+    let s = 0;
+    const l = (max + min) / 2;
+
+    if (delta !== 0) {
+      s = delta / (1 - Math.abs(2 * l - 1));
+
+      switch (max) {
+        case r:
+          h = ((g - b) / delta) % 6;
+          break;
+        case g:
+          h = (b - r) / delta + 2;
+          break;
+        case b:
+          h = (r - g) / delta + 4;
+          break;
+      }
+
+      h *= 60;
+    }
+
+    h = (h + 360) % 360;
+
+    return {
+      h: Math.round(h),
+      s: Math.round(s * 100),
+      l: Math.round(l * 100),
+    };
+  }
+
+  function hslToRgb(h: number, s: number, l: number): { r: number; g: number; b: number } {
+    // normalize
+    h = ((h % 360) + 360) % 360;
+    s = Math.min(Math.max(s, 0), 100) / 100;
+    l = Math.min(Math.max(l, 0), 100) / 100;
+
+    const c = (1 - Math.abs(2 * l - 1)) * s;
+    const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+    const m = l - c / 2;
+
+    let r1 = 0,
+      g1 = 0,
+      b1 = 0;
+
+    const sector = Math.floor(h / 60);
+
+    switch (sector) {
+      case 0: // 0–59
+        r1 = c;
+        g1 = x;
+        b1 = 0;
+        break;
+
+      case 1: // 60–119
+        r1 = x;
+        g1 = c;
+        b1 = 0;
+        break;
+
+      case 2: // 120–179
+        r1 = 0;
+        g1 = c;
+        b1 = x;
+        break;
+
+      case 3: // 180–239
+        r1 = 0;
+        g1 = x;
+        b1 = c;
+        break;
+
+      case 4: // 240–299
+        r1 = x;
+        g1 = 0;
+        b1 = c;
+        break;
+
+      default: // 300–359
+        r1 = c;
+        g1 = 0;
+        b1 = x;
+        break;
+    }
+
+    return {
+      r: Math.round((r1 + m) * 255),
+      g: Math.round((g1 + m) * 255),
+      b: Math.round((b1 + m) * 255),
+    };
   }
 
   // Detect the format of a color string
@@ -340,6 +485,7 @@
       const hexValue = inputValue.startsWith("#") ? inputValue : `#${inputValue}`;
       const rgb = hexToRgb(hexValue);
       const hsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
+      
       hue = hsv.h;
       saturation = hsv.s;
       brightness = hsv.v;
@@ -393,10 +539,17 @@
 
     if (!m) return null;
 
+    const h = parseFloat(m[1]);
+    const s = parseFloat(m[2]);
+    const l = parseFloat(m[3]);
+
+    const rgb = hslToRgb(h, s, l);
+    const hsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
+
     return {
-      hue: parseFloat(m[1]),
-      saturation: parseFloat(m[2]),
-      brightness: parseFloat(m[3]),
+      hue: hsv.h,
+      saturation: hsv.s,
+      brightness: hsv.v,
       opacity: m[4] ? Math.round(parseFloat(m[4]) * 100) : 100,
     };
   }
@@ -417,7 +570,7 @@
   onMount(() => {
     ctx = canvas.getContext("2d");
 
-    const initialValue = value || "#7BB2A2";
+    const initialValue = value || "#FFFFFF";
     colorFormat = detectColorFormat(initialValue);
 
     let state;
