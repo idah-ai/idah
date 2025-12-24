@@ -9,10 +9,9 @@
   interface Props {
     required: boolean;
     class?: string | null;
-    style?: string;
     children?: Snippet;
   }
-  let { required = false, class: className, style, children, ...restProps }: Props = $props();
+  let { required = false, class: className, children, ...restProps }: Props = $props();
 </script>
 
 <Label
@@ -23,7 +22,6 @@
     },
     className,
   )}
-  {style}
   {...restProps}
 >
   {@render children?.()}
