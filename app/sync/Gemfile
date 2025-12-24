@@ -36,3 +36,5 @@ group :test do
 end
 
 gem "builder", "~> 3.3"
+
+gem "rubyzip", "~> 3.2"
