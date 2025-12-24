@@ -36,14 +36,30 @@
     slotSuggestion,
   }: Props = $props();
 
-  // Variables
-  let colorFormat = $derived("hex");
-
   // Functions
-  function handleValueChange(newValue: string | null | undefined, newColorFormat: string) {
-    colorFormat = newColorFormat;
-
+  function handleValueChange(newValue: string | null | undefined) {
     onValueChange?.(newValue);
+  }
+
+  function detectColorFormat(value: string): string {
+    const v = value.trim().toLowerCase();
+
+    // HEX
+    if (/^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/.test(v)) {
+      return "HEX";
+    }
+
+    // RGB / RGBA
+    if (/^rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}(\s*,\s*(0|1|0?\.\d+))?\s*\)$/.test(v)) {
+      return "RGB";
+    }
+
+    // HSL / HSLA
+    if (/^hsla?\(\s*\d{1,3}\s*,\s*\d{1,3}%\s*,\s*\d{1,3}%(\s*,\s*(0|1|0?\.\d+))?\s*\)$/.test(v)) {
+      return "HSL";
+    }
+
+    return "unknown";
   }
 </script>
 
@@ -69,7 +85,7 @@
           ></Button>
 
           {#if value}
-            <Text size="sm" weight="semibold" class="text-muted-foreground">{colorFormat.toUpperCase()}</Text>
+            <Text size="sm" weight="semibold" class="text-muted-foreground">{detectColorFormat(value)}</Text>
 
             <Text size="sm" weight="semibold">{value}</Text>
           {/if}

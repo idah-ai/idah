@@ -14,7 +14,7 @@
     value: string | null | undefined;
     class?: string | null;
     slotSuggestion?: Snippet;
-    onValueChange?: (value: string | null | undefined, colorFormat: string) => void;
+    onValueChange?: (value: string | null | undefined) => void;
     showOpacitySlider?: boolean;
   }
 
@@ -383,7 +383,7 @@
   function updateFromHSV() {
     const rgb = hsvToRgb(hue, saturation, brightness);
     value = formatColor({ rgbValue: rgb });
-    onValueChange?.(colorInput, colorFormat);
+    onValueChange?.(colorInput);
   }
 
   // Draw the saturation/brightness canvas
@@ -493,7 +493,7 @@
       value = hexValue.toUpperCase();
       drawCanvas();
       updateCanvasPosition();
-      onValueChange?.(colorInput, colorFormat);
+      onValueChange?.(colorInput);
       return;
     }
 
@@ -691,7 +691,7 @@
         value={colorFormat}
         onSelected={(selectedValue) => {
           colorFormat = selectedValue as string;
-          onValueChange?.(colorInput, colorFormat);
+          onValueChange?.(colorInput);
         }}
       ></SingleSelectField>
 
