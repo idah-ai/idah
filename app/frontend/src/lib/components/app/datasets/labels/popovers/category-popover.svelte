@@ -153,7 +153,6 @@
               </div>
             {/snippet}
           </ColorPickerField>
-
         </section>
       {/if}
     </div>

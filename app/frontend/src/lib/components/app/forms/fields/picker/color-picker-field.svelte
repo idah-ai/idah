@@ -40,9 +40,9 @@
   let colorFormat = $derived("hex");
 
   // Functions
-  function handleValueChange(newValue: string | null | undefined, newColorFormat: string) {    
+  function handleValueChange(newValue: string | null | undefined, newColorFormat: string) {
     colorFormat = newColorFormat;
-    
+
     onValueChange?.(newValue);
   }
 </script>
