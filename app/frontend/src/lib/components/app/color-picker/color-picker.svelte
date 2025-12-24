@@ -383,6 +383,7 @@
   function updateFromHSV() {
     const rgb = hsvToRgb(hue, saturation, brightness);
     value = formatColor({ rgbValue: rgb });
+    onValueChange?.(colorInput, colorFormat);
   }
 
   // Draw the saturation/brightness canvas
@@ -485,7 +486,7 @@
       const hexValue = inputValue.startsWith("#") ? inputValue : `#${inputValue}`;
       const rgb = hexToRgb(hexValue);
       const hsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
-      
+
       hue = hsv.h;
       saturation = hsv.s;
       brightness = hsv.v;
