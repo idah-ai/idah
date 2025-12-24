@@ -90,7 +90,7 @@ module Context
       filters = args.keys
       Context.new(*APIS_FROM.filter{ |api_from|
         filters.include?(api_from.name)
-      }.first&.api.call(args, api) || [
+      }.first&.api&.call(args, api) || [
         ContextApi::Datasets.new(api, args),
         ContextApi::Entries.new(api, args),
         ContextApi::Annotations.new(api, args)
