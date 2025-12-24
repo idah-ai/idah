@@ -5,7 +5,14 @@
 
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import Button from "@/components/ui/button/button.svelte";
-  import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
+  import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandItem,
+    CommandList,
+    CommandSeparator,
+  } from "@/components/ui/command";
   import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
@@ -106,7 +113,7 @@
         [searchKeyWithOperation]: searchValue,
       };
     } else {
-      listOpts.filters = {};
+      listOpts.filters = { ...listOpts.filters };
     }
 
     const response = await dataSource.list({ ...listOpts, count: true });
@@ -219,11 +226,12 @@
         {#if searchable}
           <InputField
             name="filter/single-select/{searchKeyWithOperation}"
-            class="pb-2"
+            class="p-2"
             placeholder={searchPlaceholder}
             value={searchValue}
             oninput={filterChoices}
           />
+          <CommandSeparator />
         {/if}
 
         <CommandList bind:ref={commandListElement} onwheel={scrollToPaginate}>
