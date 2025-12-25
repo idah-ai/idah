@@ -20,11 +20,11 @@ module Dataset
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
 
-    belongs_to :project, repository: "Project::Repository", foreign_key: :project_id
+    belongs_to :project, repository: 'Project::Repository', foreign_key: :project_id
 
-    has_many :entries, repository: "Entry::Repository", foreign_key: :dataset_id
-    has_many :annotations, repository: "Annotation::Repository", foreign_key: :dataset_id
-    has_many :note_feeds, repository: "NoteFeed::Repository", foreign_key: :dataset_id
+    has_many :entries, repository: 'Entry::Repository', foreign_key: :dataset_id
+    has_many :annotations, repository: 'Annotation::Repository', foreign_key: :dataset_id
+    has_many :note_feeds, repository: 'NoteFeed::Repository', foreign_key: :dataset_id
 
     def entry_workflow
       Workflow::SimpleReviewAnnotationWorkflow
@@ -32,7 +32,7 @@ module Dataset
   end
 
   class Repository < Verse::Sequel::Repository
-    self.table = "datasets"
+    self.table = 'datasets'
     self.resource = Resource::Dataset::Datasets
 
     encoder :labeling_configuration, Verse::Sequel::JsonEncoder
@@ -166,8 +166,9 @@ module Dataset
     def create(attributes)
       with_metadata do
         add_metadata(
-          email: auth_context.metadata[:email],
-          project_id: attributes[:project_id],
+          actor_account_id: auth_context.metadata[:account_id],
+          actor_account_email: auth_context.metadata[:email],
+          project_id: attributes[:project_id]
         )
 
         super(attributes)
@@ -179,9 +180,10 @@ module Dataset
         dataset = find!(id)
 
         add_metadata(
-          email: auth_context.metadata[:email],
+          actor_account_id: auth_context.metadata[:account_id],
+          actor_account_email: auth_context.metadata[:email],
           project_id: attributes[:project_id] || dataset.project_id,
-          dataset_id: id,
+          dataset_id: id
         )
 
         super(id, attributes, scope:)
@@ -194,9 +196,10 @@ module Dataset
 
         if dataset
           add_metadata(
-            email: auth_context.metadata[:email],
+            actor_account_id: auth_context.metadata[:account_id],
+            actor_account_email: auth_context.metadata[:email],
             project_id: dataset.project_id,
-            dataset_id: id,
+            dataset_id: id
           )
         end
 
@@ -204,17 +207,17 @@ module Dataset
       end
     end
 
-    event(name: "completed")
+    event(name: 'completed')
     def completed!(dataset_id, progress)
       no_event do
-        update!(dataset_id, { progress: progress, status: "completed" })
+        update!(dataset_id, { progress: progress, status: 'completed' })
       end
     end
 
-    event(name: "in_progress")
+    event(name: 'in_progress')
     def in_progress!(dataset_id, progress)
       no_event do
-        update!(dataset_id, { progress: progress, status: "in_progress" })
+        update!(dataset_id, { progress: progress, status: 'in_progress' })
       end
     end
   end

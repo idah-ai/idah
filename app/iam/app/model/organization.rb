@@ -13,7 +13,7 @@ module Organization
   end
 
   class Repository < Verse::Sequel::Repository
-    self.table = "organizations"
+    self.table = 'organizations'
     self.resource = Resource::Iam::Organizations
 
     def scoped(action)
@@ -31,15 +31,16 @@ module Organization
 
     private def organizations_from_project_member_scoped
       account_id = auth_context.metadata[:id]
-      memberships = Api[:idah].dataset.project_members.index(filter: { account_id: }, included: ["project"]).data
+      memberships = Api[:idah].dataset.project_members.index(filter: { account_id: }, included: ['project']).data
 
-      table.where(id: memberships.map{ |pm| pm.project.organization_id }.uniq)
+      table.where(id: memberships.map { |pm| pm.project.organization_id }.uniq)
     end
 
     def create(attributes)
       with_metadata do
         add_metadata(
-          email: auth_context.metadata[:email],
+          actor_account_id: auth_context.metadata[:account_id],
+          actor_account_email: auth_context.metadata[:email]
         )
 
         super(attributes)
@@ -49,8 +50,9 @@ module Organization
     def update!(id, attributes, scope: scoped(:update))
       with_metadata do
         add_metadata(
-          email: auth_context.metadata[:email],
-          organization_id: id,
+          actor_account_id: auth_context.metadata[:account_id],
+          actor_account_email: auth_context.metadata[:email],
+          organization_id: id
         )
 
         super(id, attributes, scope:)
@@ -63,8 +65,9 @@ module Organization
 
         if organization
           add_metadata(
-            email: auth_context.metadata[:email],
-            organization_id: id,
+            actor_account_id: auth_context.metadata[:account_id],
+            actor_account_email: auth_context.metadata[:email],
+            organization_id: id
           )
         end
 

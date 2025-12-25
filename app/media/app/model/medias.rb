@@ -28,13 +28,13 @@ module Medias
       Verse::Plugin[:shrine].with_storage do |storage|
         storage.open(id)
       rescue Shrine::FileNotFound
-        raise Verse::Error::NotFound, "File not found"
+        raise Verse::Error::NotFound, 'File not found'
       end
     end
   end
 
   class Repository < Verse::Sequel::Repository
-    self.table = "medias"
+    self.table = 'medias'
     self.resource = Resource::Media::Medias
 
     def scoped(action)
@@ -64,8 +64,9 @@ module Medias
     def create(attributes)
       with_metadata do
         add_metadata(
-          email: auth_context.metadata[:email],
-          project_id: attributes[:project_id],
+          actor_account_id: auth_context.metadata[:account_id],
+          actor_account_email: auth_context.metadata[:email],
+          project_id: attributes[:project_id]
         )
 
         super(attributes)
@@ -77,8 +78,9 @@ module Medias
         media = find!(id)
 
         add_metadata(
-          email: auth_context.metadata[:email],
-          project_id: media.project_id,
+          actor_account_id: auth_context.metadata[:account_id],
+          actor_account_email: auth_context.metadata[:email],
+          project_id: media.project_id
         )
 
         super(id, attributes, scope:)
@@ -91,8 +93,9 @@ module Medias
 
         if media
           add_metadata(
-            email: auth_context.metadata[:email],
-            project_id: media.project_id,
+            actor_account_id: auth_context.metadata[:account_id],
+            actor_account_email: auth_context.metadata[:email],
+            project_id: media.project_id
           )
         end
 

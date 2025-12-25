@@ -15,25 +15,25 @@ module Project
 
     field :organization_id, type: Integer, readonly: true
 
-    has_many :project_members, repository: "ProjectMember::Repository", foreign_key: :project_id
-    has_many :datasets, repository: "Dataset::Repository", foreign_key: :project_id
-    has_many :entries, repository: "Entry::Repository", foreign_key: :project_id
-    has_many :annotations, repository: "Annotation::Repository", foreign_key: :project_id
-    has_many :note_feeds, repository: "NoteFeed::Repository", foreign_key: :project_id
+    has_many :project_members, repository: 'ProjectMember::Repository', foreign_key: :project_id
+    has_many :datasets, repository: 'Dataset::Repository', foreign_key: :project_id
+    has_many :entries, repository: 'Entry::Repository', foreign_key: :project_id
+    has_many :annotations, repository: 'Annotation::Repository', foreign_key: :project_id
+    has_many :note_feeds, repository: 'NoteFeed::Repository', foreign_key: :project_id
   end
 
   class Repository < Verse::Sequel::Repository
-    self.table = "projects"
+    self.table = 'projects'
     self.resource = Resource::Dataset::Projects
 
     def scoped(action)
       auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }
 
-        scope.as_org_owner? {
+        scope.as_org_owner? do
           org_ids = auth_context.custom_scopes[:org]
           table.where(organization_id: org_ids)
-        }
+        end
 
         scope.as_user? { user_project_scoped_query(action) }
       end
@@ -91,8 +91,9 @@ module Project
     def create(attributes)
       with_metadata do
         add_metadata(
-          email: auth_context.metadata[:email],
-          organization_id: attributes[:organization_id],
+          actor_account_id: auth_context.metadata[:account_id],
+          actor_account_email: auth_context.metadata[:email],
+          organization_id: attributes[:organization_id]
         )
 
         super(attributes)
@@ -105,9 +106,10 @@ module Project
 
         if project
           add_metadata(
-            email: auth_context.metadata[:email],
+            actor_account_id: auth_context.metadata[:account_id],
+            actor_account_email: auth_context.metadata[:email],
             organization_id: attributes[:organization_id] || project.organization_id,
-            project_id: id,
+            project_id: id
           )
         end
 
@@ -121,9 +123,10 @@ module Project
 
         if project
           add_metadata(
-            email: auth_context.metadata[:email],
+            actor_account_id: auth_context.metadata[:account_id],
+            actor_account_email: auth_context.metadata[:email],
             organization_id: project.organization_id,
-            project_id: id,
+            project_id: id
           )
         end
 

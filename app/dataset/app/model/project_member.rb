@@ -18,11 +18,11 @@ module ProjectMember
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
 
-    belongs_to :project, repository: "Project::Repository", foreign_key: :project_id
+    belongs_to :project, repository: 'Project::Repository', foreign_key: :project_id
   end
 
   class Repository < Verse::Sequel::Repository
-    self.table = "project_members"
+    self.table = 'project_members'
     self.resource = Resource::Dataset::ProjectMembers
 
     custom_filter :organization_id__in do |collection, value|
@@ -86,7 +86,7 @@ module ProjectMember
           Sequel.lit(
             scoped_fragment,
             account_id:,
-            roles: %w[project_owner reviewer annotator],
+            roles: %w[project_owner reviewer annotator]
           )
         )
       when :update, :delete
@@ -94,7 +94,7 @@ module ProjectMember
           Sequel.lit(
             scoped_fragment,
             account_id:,
-            roles: %w[project_owner],
+            roles: %w[project_owner]
           )
         )
       else
@@ -106,8 +106,9 @@ module ProjectMember
     def create(attributes)
       with_metadata do
         add_metadata(
-          email: auth_context.metadata[:email],
-          project_id: attributes[:project_id],
+          actor_account_id: auth_context.metadata[:account_id],
+          actor_account_email: auth_context.metadata[:email],
+          project_id: attributes[:project_id]
         )
 
         super(attributes)
@@ -119,8 +120,9 @@ module ProjectMember
         membership = find!(id)
 
         add_metadata(
-          email: auth_context.metadata[:email],
-          project_id: attributes[:project_id] || membership.project_id,
+          actor_account_id: auth_context.metadata[:account_id],
+          actor_account_email: auth_context.metadata[:email],
+          project_id: attributes[:project_id] || membership.project_id
         )
 
         super(id, attributes, scope:)
@@ -133,8 +135,9 @@ module ProjectMember
 
         if membership
           add_metadata(
-            email: auth_context.metadata[:email],
-            project_id: membership.project_id,
+            actor_account_id: auth_context.metadata[:account_id],
+            actor_account_email: auth_context.metadata[:email],
+            project_id: membership.project_id
           )
         end
 
