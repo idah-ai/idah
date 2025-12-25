@@ -1,9 +1,11 @@
 module Export
   class CvatVideo
+    def self.name
+      "CvatVideo"
+    end
+
     def initialize(context)
       @context = context
-      @io = context.ios.find {|io| io.name == "CvatVideo"}
-      raise "#{self} error locating required CvatVideo io" unless @io
     end
 
     def run
@@ -12,7 +14,7 @@ module Export
       rescue Exception => e
         Verse::logger::error{
           [
-            "#{self} Error processing #{@io.name} #{e}",
+            "#{self} Error processing #{@context.io.filename} #{e}",
             [e, "#{e.backtrace.join("\n")}"].join("\n")
           ].join("\n")
         }
@@ -22,7 +24,7 @@ module Export
 
     private
     def start
-      Verse::logger::debug{"#{self} Start processing #{@io.name}"}
+      Verse::logger::debug{"#{self} Start processing #{@context.io.filename}"}
     end
 
     def error(e, record)
@@ -33,15 +35,15 @@ module Export
     end
 
     def done
-      @io.zip
-      Verse::logger::debug{"#{self} #{@io.name} Process complete"}
+      @context.io.zip
+      Verse::logger::debug{"#{self} #{@context.io.filename} Process complete"}
     end
 
     def loop_processing
       start
       @context.api.datasets.index.each do |dataset|
         dataset.entries.index.each do |entry|
-          @io.builder( # CVAT export seems to have tasks/entries as root
+          @context.io.builder( # CVAT export seems to have tasks/entries as root
             entry.record[:attributes][:resource]
           ) do |xml|
             on_task dataset, entry, xml
@@ -87,15 +89,15 @@ module Export
                         }.merge(
                           case property[:type]
                           when 'integer'
-                            {input_type: 'number', default_value: 0}
+                            {input_type: 'number'}
                           when 'boolean'
                             {input_type: 'radio', default_value: false , values: [true, false]}
                           when 'text'
-                            {input_type: 'text', default_value: ""}
+                            {input_type: 'text'}
                           when 'single-select'
-                            {input_type: 'select', default_value: "", values: []} # TODO Options
+                            {input_type: 'select', values: property[:format][:options].map{ |o| o[:id]}}
                           when 'multi-select'
-                            {input_type: 'checkbox', default_value: "", values: []} # TODO Options
+                            {input_type: 'checkbox', values: property[:format][:options].map{ |o| o[:id]}}
                           else
                             raise "unexpected property type #{property[:type]}"
                           end
@@ -134,12 +136,12 @@ module Export
             end
             meta.dumped "" # String: date when the annotation was dumped
           end
-          tags = [] # for now while shape_type still don't exists outside of dimensions
+          tags = [] # for now while shape_type still doesn't exist outside of dimensions
           entry.annotations.index.each do |annotation|
             begin
               case Hash(annotation.record[:attributes][:dimensions])[:type]
               when "entry:root"
-                tags << annotation # for now while shape_type still don't exists outside of dimensions
+                tags << annotation # for now while shape_type still doesn't exist outside of dimensions
               else
                 on_track entry, annotation, xml
               end

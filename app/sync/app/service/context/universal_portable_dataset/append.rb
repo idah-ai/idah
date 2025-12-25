@@ -1,29 +1,21 @@
 module Context
   module UniversalPortableDataset
     module Append
-      Context = Data.define(:name, :filename, :i, :o, :e, :wait_thr, :puts)
-
-      def self.prepare(args)
-        filename = [Hash(args).dig(:name) || ["export", Time.now.to_i], :upd].join(".")
-        stdin, stdout, stderr, wait_thr = Open3.popen3(
-          "bin/datset-static",
-          "-i", filename,
-          "append"
-        )
-        puts = proc do |s, expected_lines = 1, feedback = proc{|line| line}|
-          stdin.puts(s)
-          stdin.flush
-          readers = [stdout, stderr]
+      Context = Data.define(:name, :filename, :i, :o, :e, :wait_thr) do
+        def puts(s, expected_lines = 1, feedback = proc{|line|line})
+          i.puts(s)
+          i.flush
+          readers = [o, e]
           lines_read, stderr_output = 0, []
           while lines_read < expected_lines && !readers.empty?
             ready = IO.select(readers, nil, nil, 0.1)
             ready[0].each do |fd|
               line = fd.gets
               if line
-                if fd == stdout
+                if fd == o
                   feedback.call(line)
                   lines_read += 1
-                elsif fd == stderr
+                elsif fd == e
                   stderr_output << line
                 end
               else
@@ -37,8 +29,16 @@ module Context
             raise "stderr output detected: #{stderr_output.join}"
           end
         end
+      end
 
-        Context.new("UniversalPortableDataset", filename, stdin, stdout, stderr, wait_thr, puts)
+      def self.prepare(args)
+        filename = [Hash(args).dig(:name) || ["export", Time.now.to_i], :upd].join(".")
+        stdin, stdout, stderr, wait_thr = Open3.popen3(
+          "bin/datset-static",
+          "-i", filename,
+          "append"
+        )
+        Context.new("UniversalPortableDataset", filename, stdin, stdout, stderr, wait_thr)
       end
     end
   end
