@@ -290,7 +290,7 @@
     {#await annotations_promise}
       {#each $boundingBoxes as annotation (annotation.metadata.id)}
         {#if annotation.metadata.id != selected?.metadata.id}
-          {#if annotation.shape.type == IDAH_VIDEO_BOUNDING_BOX}
+          {#if annotation.shape.type == IDAH_VIDEO_BOUNDING_BOX && !annotation.hidden}
             <BoundingBox
               {mode}
               {pointer}
@@ -318,7 +318,7 @@
     {:then annotations}
       {#each annotations as annotation (annotation.metadata.id)}
         {#if annotation.metadata.id != selected?.metadata.id}
-          {#if annotation.shape.type == IDAH_VIDEO_BOUNDING_BOX}
+          {#if annotation.shape.type == IDAH_VIDEO_BOUNDING_BOX && !annotation.hidden}
             <BoundingBox
               {mode}
               {pointer}
@@ -347,7 +347,7 @@
       {/each}
     {/await}
 
-    {#if shape?.type == IDAH_VIDEO_BOUNDING_BOX || mode == IDAH_VIDEO_BOUNDING_BOX}
+    {#if (shape?.type == IDAH_VIDEO_BOUNDING_BOX || mode == IDAH_VIDEO_BOUNDING_BOX) && selected ? !selected.hidden : true}
       <BoundingBox
         {pointer}
         bind:this={toolSelection}
@@ -357,6 +357,7 @@
         offset={zoomInfo.offset}
         cursor={cursor_downscaled}
         editable={(shape?.type == IDAH_VIDEO_BOUNDING_BOX || mode == IDAH_VIDEO_BOUNDING_BOX) &&
+          !selected?.locked &&
           ["annotate", "review"].includes(context.workflowStep)}
         color={selected?.synced
           ? Object.entries(context.config)
