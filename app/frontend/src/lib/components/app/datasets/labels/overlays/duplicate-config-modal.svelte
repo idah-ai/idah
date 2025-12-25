@@ -68,7 +68,9 @@
       });
 
       closeThisModal();
-      toast.success("Label configuration duplicated successfully");
+      toast.success("Label configurations duplicated", {
+        description: `The label configurations has been duplicated.`,
+      });
     } catch (error) {
       console.error(error);
       submitting = false;

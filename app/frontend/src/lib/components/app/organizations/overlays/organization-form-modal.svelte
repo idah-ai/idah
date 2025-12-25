@@ -66,7 +66,9 @@
 
       $refetches.organizations.list = new Date();
       closeThisModal();
-      toast.success("Organization created successfully");
+      toast.success("Organization created", {
+        description: `The organization ${organization.name} has been created.`,
+      });
       goto(resolve(`/organizations/${createdOrganizationRes.data.id}/projects`));
     } catch (error) {
       toast.error("Failed to create organization");
@@ -84,7 +86,9 @@
 
       $refetches.organizations.list = new Date();
       closeThisModal();
-      toast.success("Organization updated successfully");
+      toast.success("Organization updated", {
+        description: `The organization ${organization.name} has been updated.`,
+      });
     } catch (error) {
       toast.error("Failed to update organization");
       throw error;

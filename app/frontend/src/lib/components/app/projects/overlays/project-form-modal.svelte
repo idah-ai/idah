@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
+  import { toast } from "svelte-sonner";
 
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
   import ProjectForm from "@/components/app/projects/forms/project-form.svelte";
@@ -66,6 +67,9 @@
       },
     });
 
+    toast.success("Project created", {
+      description: `The project ${project.name} has been created.`,
+    });
     goto(resolve(`/projects/${createdProjectRes.data.id}/datasets`));
 
     $refetches.projects.list = new Date();
@@ -81,6 +85,9 @@
       },
     });
 
+    toast.success("Project updated", {
+      description: `The project ${project.name} has been updated.`,
+    });
     $refetches.projects.list = new Date();
     $refetches.projects.get = new Date();
     open = false;

@@ -46,7 +46,9 @@
       oldPassword = "";
       newPassword = "";
       confirmPassword = "";
-      toast.success("Password updated successfully.");
+      toast.success("Password changed", {
+        description: "Your password has been updated successfully.",
+      });
       updatingPassword = false;
     } catch (error) {
       console.error(error);

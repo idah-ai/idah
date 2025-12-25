@@ -69,7 +69,9 @@
     await accountsBackendDataSource.delete(account.id);
     $refetches.accounts.list = new Date();
     openConfirmDeleteAccountModal = false;
-    toast.success(`${account.email} is removed!`);
+    toast.success("Account deleted", {
+      description: `The account of ${account.name} has been deleted.`,
+    });
   }
 </script>
 

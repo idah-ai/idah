@@ -3,6 +3,7 @@
   import { resolve } from "$app/paths";
   import { SquarePenIcon, Trash2Icon } from "@lucide/svelte";
   import { onMount } from "svelte";
+  import { toast } from "svelte-sonner";
 
   import DatasetFormModal from "@/components/app/datasets/overlays/dataset-form-modal.svelte";
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
@@ -57,7 +58,7 @@
 
   // Lifecycle
   onMount(async () => {
-    await checkRights();
+    await Promise.all([checkRights(), fetchDataset()]);
   });
 
   // Functions
@@ -86,6 +87,9 @@
 
   async function deleteDataset(): Promise<void> {
     await datasetsBackendDataSource.delete(datasetId);
+    toast.success("Dataset deleted", {
+      description: `The dataset ${datasetRecord?.name} has been deleted.`,
+    });
     goto(resolve(`/projects/${projectId}/datasets`));
     $refetches.datasets.list = new Date();
     openConfirmDeleteDatasetModal = false;

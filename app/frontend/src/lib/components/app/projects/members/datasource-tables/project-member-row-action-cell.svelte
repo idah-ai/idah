@@ -25,9 +25,11 @@
   // Functions
   async function removeProjectMember(): Promise<void> {
     await projectMembersBackendDataSource.delete(projectMember.id);
+    toast.success("Project member removed", {
+      description: `${projectMember.email} has been removed from the project.`,
+    });
     $refetches.projectMembers.list = new Date();
     openConfirmRemoveMemberModal = false;
-    toast.success(`${projectMember.email} is removed!`);
   }
 </script>
 

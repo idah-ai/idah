@@ -74,7 +74,9 @@
 
   async function deleteEntry() {
     await entriesBackendDataSource.delete(entry.id);
-    toast.success("Entry successfully deleted!");
+    toast.success("Entry deleted", {
+      description: `The entry ${entry.name} has been deleted.`,
+    });
     $refetches.entries.list = new Date();
     openConfirmDeleteEntryModal = false;
   }
