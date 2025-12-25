@@ -24,14 +24,14 @@ module Entry
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
 
-    belongs_to :dataset, repository: 'Dataset::Repository', foreign_key: :dataset_id
-    belongs_to :project, repository: 'Project::Repository', foreign_key: :project_id
+    belongs_to :dataset, repository: "Dataset::Repository", foreign_key: :dataset_id
+    belongs_to :project, repository: "Project::Repository", foreign_key: :project_id
 
-    has_many :annotations, repository: 'Annotation::Repository', foreign_key: :entry_id
+    has_many :annotations, repository: "Annotation::Repository", foreign_key: :entry_id
   end
 
   class Repository < Verse::Sequel::Repository
-    self.table = 'entries'
+    self.table = "entries"
     self.resource = Resource::Dataset::Entries
 
     custom_filter :participated do |collection, value|
@@ -188,7 +188,7 @@ module Entry
       end
     end
 
-    event(name: 'selected')
+    event(name: "selected")
     def select(id)
       no_event do
         transaction do
@@ -198,7 +198,7 @@ module Entry
       end
     end
 
-    event(name: 'assigned')
+    event(name: "assigned")
     def assign(id, attributes)
       no_event do
         transaction do
@@ -207,7 +207,7 @@ module Entry
       end
     end
 
-    event(name: 'submitted')
+    event(name: "submitted")
     def submit(id, attributes)
       no_event do
         transaction do
@@ -218,7 +218,7 @@ module Entry
     end
 
     def mark_entries_status_as(job_id, status)
-      entry = find_by!({ job_id: job_id, status: 'processing' })
+      entry = find_by!({ job_id: job_id, status: "processing" })
 
       transaction do
         update!(entry.id, { status: status })

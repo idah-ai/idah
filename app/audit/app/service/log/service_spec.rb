@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'spec_helper'
+require "spec_helper"
 
 RSpec.describe Log::Service, database: true do
   let(:auth_context) { Verse::Auth::Context[:system] }
@@ -9,16 +9,16 @@ RSpec.describe Log::Service, database: true do
   let(:repo) { Log::Repository.new(auth_context) }
 
   let(:actor_account_id) { 1 }
-  let(:actor_account_email) { 'admin@example.com' }
+  let(:actor_account_email) { "admin@example.com" }
 
-  let(:event) { 'dataset:datasets:created' }
+  let(:event) { "dataset:datasets:created" }
   let(:content) do
     {
       args: [],
       resource_id: UUIDv7.generate,
       metadata: {
-        expo: 'DatasetsExpo',
-        service: 'Dataset::Service',
+        expo: "DatasetsExpo",
+        service: "Dataset::Service",
         at: Time.now,
         account_id: 1,
         actor_account_id:,
@@ -27,28 +27,28 @@ RSpec.describe Log::Service, database: true do
     }
   end
 
-  describe '#create_from_event' do
-    it 'creates an audit log' do
+  describe "#create_from_event" do
+    it "creates an audit log" do
       log = subject.create_from_event(event, content)
 
-      expect(log.action).to eq 'created'
-      expect(log.resource_service).to eq 'dataset'
-      expect(log.resource_type).to eq 'datasets'
+      expect(log.action).to eq "created"
+      expect(log.resource_service).to eq "dataset"
+      expect(log.resource_type).to eq "datasets"
       expect(log.resource_id).to eq content[:resource_id]
       expect(log.actor_account_id).to eq 1
     end
   end
 
-  describe '#audit_log_details' do
-    it 'creates an audit log for organization record' do
+  describe "#audit_log_details" do
+    it "creates an audit log for organization record" do
       organization_id = 1
       content = {
         args: [],
         resource_id: organization_id,
         metadata: {
           # usually included in the message
-          expo: 'OrganizationsExpo',
-          service: 'Organization::Service',
+          expo: "OrganizationsExpo",
+          service: "Organization::Service",
           at: Time.now,
           account_id: actor_account_id,
           # added metadata
@@ -60,9 +60,9 @@ RSpec.describe Log::Service, database: true do
 
       # publish an event
       Verse.publish_resource_event(
-        resource_type: 'iam:organizations',
+        resource_type: "iam:organizations",
         resource_id: organization_id,
-        event: 'created',
+        event: "created",
         payload: content
       )
 
@@ -70,22 +70,22 @@ RSpec.describe Log::Service, database: true do
 
       expect(log.actor_account_id).to eq actor_account_id
       expect(log.actor_account_email).to eq actor_account_email
-      expect(log.resource_type).to eq 'organizations'
+      expect(log.resource_type).to eq "organizations"
       expect(log.organization_id).to eq content[:resource_id]
       expect(log.project_id).to be_nil
       expect(log.dataset_id).to be_nil
       expect(log.entry_id).to be_nil
     end
 
-    it 'creates an audit log for project record' do
+    it "creates an audit log for project record" do
       project_id = UUIDv7.generate
       content = {
         args: [],
         resource_id: project_id,
         metadata: {
           # usually included in the message
-          expo: 'ProjectsExpo',
-          service: 'Project::Service',
+          expo: "ProjectsExpo",
+          service: "Project::Service",
           at: Time.now,
           account_id: actor_account_id,
           # added metadata
@@ -98,9 +98,9 @@ RSpec.describe Log::Service, database: true do
 
       # publish an event
       Verse.publish_resource_event(
-        resource_type: 'dataset:projects',
+        resource_type: "dataset:projects",
         resource_id: project_id,
-        event: 'created',
+        event: "created",
         payload: content
       )
 
@@ -108,22 +108,22 @@ RSpec.describe Log::Service, database: true do
 
       expect(log.actor_account_id).to eq actor_account_id
       expect(log.actor_account_email).to eq actor_account_email
-      expect(log.resource_type).to eq 'projects'
+      expect(log.resource_type).to eq "projects"
       expect(log.organization_id).to eq content[:metadata][:organization_id]
       expect(log.project_id).to eq content[:resource_id]
       expect(log.dataset_id).to be_nil
       expect(log.entry_id).to be_nil
     end
 
-    it 'creates an audit log for dataset record' do
+    it "creates an audit log for dataset record" do
       dataset_id = UUIDv7.generate
       content = {
         args: [],
         resource_id: dataset_id,
         metadata: {
           # usually included in the message
-          expo: 'DatasetsExpo',
-          service: 'Dataset::Service',
+          expo: "DatasetsExpo",
+          service: "Dataset::Service",
           at: Time.now,
           account_id: actor_account_id,
           # added metadata
@@ -137,9 +137,9 @@ RSpec.describe Log::Service, database: true do
 
       # publish an event
       Verse.publish_resource_event(
-        resource_type: 'dataset:datasets',
+        resource_type: "dataset:datasets",
         resource_id: dataset_id,
-        event: 'created',
+        event: "created",
         payload: content
       )
 
@@ -147,22 +147,22 @@ RSpec.describe Log::Service, database: true do
 
       expect(log.actor_account_id).to eq actor_account_id
       expect(log.actor_account_email).to eq actor_account_email
-      expect(log.resource_type).to eq 'datasets'
+      expect(log.resource_type).to eq "datasets"
       expect(log.organization_id).to eq content[:metadata][:organization_id]
       expect(log.project_id).to eq content[:metadata][:project_id]
       expect(log.dataset_id).to eq content[:resource_id]
       expect(log.entry_id).to be_nil
     end
 
-    it 'creates an audit log for entry record' do
+    it "creates an audit log for entry record" do
       entry_id = UUIDv7.generate
       content = {
         args: [],
         resource_id: entry_id,
         metadata: {
           # usually included in the message
-          expo: 'EntriesExpo',
-          service: 'Entry::Service',
+          expo: "EntriesExpo",
+          service: "Entry::Service",
           at: Time.now,
           account_id: actor_account_id,
           # added metadata
@@ -177,9 +177,9 @@ RSpec.describe Log::Service, database: true do
 
       # publish an event
       Verse.publish_resource_event(
-        resource_type: 'dataset:entries',
+        resource_type: "dataset:entries",
         resource_id: entry_id,
-        event: 'created',
+        event: "created",
         payload: content
       )
 
@@ -187,7 +187,7 @@ RSpec.describe Log::Service, database: true do
 
       expect(log.actor_account_id).to eq actor_account_id
       expect(log.actor_account_email).to eq actor_account_email
-      expect(log.resource_type).to eq 'entries'
+      expect(log.resource_type).to eq "entries"
       expect(log.organization_id).to eq content[:metadata][:organization_id]
       expect(log.project_id).to eq content[:metadata][:project_id]
       expect(log.dataset_id).to eq content[:metadata][:dataset_id]
@@ -195,29 +195,29 @@ RSpec.describe Log::Service, database: true do
     end
   end
 
-  describe '#show' do
+  describe "#show" do
     before do
       @log1 = subject.create_from_event(event, content)
     end
 
-    it 'show an audit log' do
+    it "show an audit log" do
       log = subject.show(@log1.id)
 
-      expect(log.action).to eq 'created'
-      expect(log.resource_service).to eq 'dataset'
-      expect(log.resource_type).to eq 'datasets'
+      expect(log.action).to eq "created"
+      expect(log.resource_service).to eq "dataset"
+      expect(log.resource_type).to eq "datasets"
       expect(log.resource_id).to eq content[:resource_id]
       expect(log.actor_account_id).to eq 1
     end
   end
 
-  describe '#index' do
+  describe "#index" do
     before do
       subject.create_from_event(event, content)
       subject.create_from_event(event, content)
     end
 
-    it 'list audit logs' do
+    it "list audit logs" do
       logs = subject.index({})
 
       expect(logs.size).to eq 2

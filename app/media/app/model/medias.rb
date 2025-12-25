@@ -28,13 +28,13 @@ module Medias
       Verse::Plugin[:shrine].with_storage do |storage|
         storage.open(id)
       rescue Shrine::FileNotFound
-        raise Verse::Error::NotFound, 'File not found'
+        raise Verse::Error::NotFound, "File not found"
       end
     end
   end
 
   class Repository < Verse::Sequel::Repository
-    self.table = 'medias'
+    self.table = "medias"
     self.resource = Resource::Media::Medias
 
     def scoped(action)
