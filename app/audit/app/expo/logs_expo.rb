@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class LogsExpo < BaseExpo
-  http_path "/logs"
+  http_path '/logs'
 
   use_service Log::Service
 
@@ -18,7 +18,7 @@ class LogsExpo < BaseExpo
   end
 
   def create_audit_log
-    service.create(message.event, message.content)
+    service.create_from_event(message.event, message.content)
   end
 
   # resources we want to include in Audit Logs
@@ -44,14 +44,14 @@ class LogsExpo < BaseExpo
   %w[login logout].each do |event|
     attach_exposition(
       :create_audit_log,
-      build_expose(on_resource_event("iam:accounts", event))
+      build_expose(on_resource_event('iam:accounts', event))
     )
   end
 
   %w[assigned unassigned submitted].each do |event|
     attach_exposition(
       :create_audit_log,
-      build_expose(on_resource_event("dataset:entries", event))
+      build_expose(on_resource_event('dataset:entries', event))
     )
   end
 end
