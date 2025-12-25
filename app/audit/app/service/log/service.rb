@@ -20,7 +20,7 @@ module Log
     end
 
     def create_from_event(event, content)
-      service, type, action = event.split(':')
+      service, type, action = event.split(":")
       resource_id = content[:resource_id]
       metadata = content[:metadata]
 
@@ -36,10 +36,10 @@ module Log
             # added metadata
             actor_account_id: metadata[:actor_account_id],
             actor_account_email: metadata&.[](:actor_account_email),
-            organization_id: type == 'organizations' ? resource_id : metadata&.[](:organization_id),
-            project_id: type == 'projects' ? resource_id : metadata&.[](:project_id),
-            dataset_id: type == 'datasets' ? resource_id : metadata&.[](:dataset_id),
-            entry_id: type == 'entries' ? resource_id : metadata&.[](:entry_id)
+            organization_id: type == "organizations" ? resource_id : metadata&.[](:organization_id),
+            project_id: type == "projects" ? resource_id : metadata&.[](:project_id),
+            dataset_id: type == "datasets" ? resource_id : metadata&.[](:dataset_id),
+            entry_id: type == "entries" ? resource_id : metadata&.[](:entry_id)
           }
         )
         logs.find!(id)

@@ -18,11 +18,11 @@ module ProjectMember
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
 
-    belongs_to :project, repository: 'Project::Repository', foreign_key: :project_id
+    belongs_to :project, repository: "Project::Repository", foreign_key: :project_id
   end
 
   class Repository < Verse::Sequel::Repository
-    self.table = 'project_members'
+    self.table = "project_members"
     self.resource = Resource::Dataset::ProjectMembers
 
     custom_filter :organization_id__in do |collection, value|

@@ -15,15 +15,15 @@ module Project
 
     field :organization_id, type: Integer, readonly: true
 
-    has_many :project_members, repository: 'ProjectMember::Repository', foreign_key: :project_id
-    has_many :datasets, repository: 'Dataset::Repository', foreign_key: :project_id
-    has_many :entries, repository: 'Entry::Repository', foreign_key: :project_id
-    has_many :annotations, repository: 'Annotation::Repository', foreign_key: :project_id
-    has_many :note_feeds, repository: 'NoteFeed::Repository', foreign_key: :project_id
+    has_many :project_members, repository: "ProjectMember::Repository", foreign_key: :project_id
+    has_many :datasets, repository: "Dataset::Repository", foreign_key: :project_id
+    has_many :entries, repository: "Entry::Repository", foreign_key: :project_id
+    has_many :annotations, repository: "Annotation::Repository", foreign_key: :project_id
+    has_many :note_feeds, repository: "NoteFeed::Repository", foreign_key: :project_id
   end
 
   class Repository < Verse::Sequel::Repository
-    self.table = 'projects'
+    self.table = "projects"
     self.resource = Resource::Dataset::Projects
 
     def scoped(action)

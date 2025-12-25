@@ -1,34 +1,34 @@
 # frozen_string_literal: true
 
-ENV['APP_ENVIRONMENT'] = 'test'
+ENV["APP_ENVIRONMENT"] = "test"
 
-require 'bootsnap'
-Bootsnap.setup(cache_dir: 'tmp/cache')
+require "bootsnap"
+Bootsnap.setup(cache_dir: "tmp/cache")
 
-require 'webmock'
+require "webmock"
 WebMock.enable!
 WebMock.disable_net_connect!
 
-require 'pry'
-require 'simplecov'
+require "pry"
+require "simplecov"
 
-require 'verse/spec'
-require 'verse/http/spec'
-require 'verse/sequel/spec'
+require "verse/spec"
+require "verse/http/spec"
+require "verse/sequel/spec"
 
 SimpleCov.start do
-  add_group 'Exposition', 'app/expo'
-  add_group 'Model', 'app/model'
-  add_group 'Service', 'app/service'
+  add_group "Exposition", "app/expo"
+  add_group "Model", "app/model"
+  add_group "Service", "app/service"
 
-  add_filter 'app/journey'
-  add_filter 'config'
-  add_filter 'common/lib'
+  add_filter "app/journey"
+  add_filter "config"
+  add_filter "common/lib"
 
   add_filter(/_spec.rb$/)
 end
 
-require_relative '../config/boot'
+require_relative "../config/boot"
 Verse.start(:test)
 
 def silent
@@ -46,7 +46,7 @@ RSpec.configure do |config|
   config.before :suite do
     # Remove the files in tmp/storage/test
     FileUtils.rm_rf(
-      Dir.glob('tmp/storage/test/*')
+      Dir.glob("tmp/storage/test/*")
     )
   end
 
@@ -59,10 +59,10 @@ RSpec.configure do |config|
   config.include RSpec::Mocks::ExampleMethods
   config.include WebMock::API
 
-  Verse::Spec.add_user(:system, 'system')
-  Verse::Spec.add_user(:admin, 'admin', user_data: { id: 1, email: 'admin@example.com', name: 'Admin User' })
+  Verse::Spec.add_user(:system, "system")
+  Verse::Spec.add_user(:admin, "admin", user_data: { id: 1, email: "admin@example.com", name: "Admin User" })
 
-  config.example_status_persistence_file_path = '.rspec_status'
+  config.example_status_persistence_file_path = ".rspec_status"
 
   config.expect_with :rspec do |c|
     c.include_chain_clauses_in_custom_matcher_descriptions = true
