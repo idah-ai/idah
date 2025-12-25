@@ -6,7 +6,7 @@
   import Text from "@/components/ui/text/Text.svelte";
   import { cn } from "@/utils";
   import { humanize } from "@/utils/string";
-  import { ChevronRight, CircleSmallIcon, PlusIcon, Trash2Icon } from "@lucide/svelte";
+  import { ChevronRight, CircleSmallIcon, Eye, EyeOff, Lock, LockOpen, PlusIcon, Trash2Icon } from "@lucide/svelte";
 
   import type { CategoryDefinition } from "@/context/ActivityContext";
   import type { IConfigValue } from "@/plugin/interface/Activity";
@@ -14,6 +14,12 @@
   import { idb_updated_at } from "../../video-annotation-activity/idb_store.svelte";
   import type { AnnotationsIndexedDB } from "../../video-annotation-activity/indexedDB";
   import type { VideoAnnotation } from "../../video-annotation-activity/VideoAnnotationContext";
+  import type {
+    AnnotationMetadata,
+    AnnotationObj,
+    AnnotationShape,
+    AnnotationValue,
+  } from "@/context/AnnotationContext";
 
   // Props
   let {
@@ -26,6 +32,8 @@
     onSelect,
     onSelectAnnotation,
     onDeleteAnnotation,
+    onLock,
+    onVisibility,
     db,
   }: {
     type: string;
@@ -37,6 +45,11 @@
     onSelect: (category?: string) => void;
     onSelectAnnotation: (annotation: VideoAnnotation) => void;
     onDeleteAnnotation: (annotation: VideoAnnotation) => void;
+    onLock: (locked: boolean, annotation?: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) => void;
+    onVisibility: (
+      hidden: boolean,
+      annotation?: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>,
+    ) => void;
     db?: AnnotationsIndexedDB;
   } = $props();
 
@@ -143,7 +156,36 @@
         </svg>
         {name}
       </div>
-
+      <Button
+        variant="ghost"
+        size="icon"
+        class="hidden group-hover:inline-flex"
+        onclick={(e) => {
+          e.stopPropagation();
+          onVisibility(!annotation.hidden, annotation);
+        }}
+      >
+        {#if annotation.hidden}
+          <EyeOff class="size-3" color="var(--color-gray-500)" />
+        {:else}
+          <Eye class="size-3" color="var(--color-gray-500)" />
+        {/if}
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        class="hidden group-hover:inline-flex"
+        onclick={(e) => {
+          e.stopPropagation();
+          onLock(!annotation.locked, annotation);
+        }}
+      >
+        {#if annotation.locked}
+          <Lock class="size-3" color="var(--color-gray-500)" />
+        {:else}
+          <LockOpen class="size-3" color="var(--color-gray-500)" />
+        {/if}
+      </Button>
       <Button
         variant="ghost"
         size="icon"

@@ -9,7 +9,7 @@
 
   import { cn } from "@/utils";
   import { humanize } from "@/utils/string";
-  import { Trash2Icon } from "@lucide/svelte";
+  import { Eye, EyeOff, Lock, LockOpen, Trash2Icon } from "@lucide/svelte";
   import { boundingBoxes } from "../idb_store.svelte";
 
   import type {
@@ -30,11 +30,15 @@
     totalFrames,
     selectedAnnotation,
     annotations_promise,
+    allLocked,
+    allHidden,
     onSeekFrame,
     onDeleteAnnotation,
     onSelectAnnotation,
     onZoomChange,
     onScaleChange,
+    onLock,
+    onVisibility,
     db,
     isPlaying = false,
   }: {
@@ -45,11 +49,18 @@
     currentFrame: number;
     totalFrames: number;
     selectedAnnotation?: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
+    allLocked: boolean;
+    allHidden: boolean;
     onSeekFrame: (frame: number) => void;
     onSelectAnnotation: (annotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) => void;
     onDeleteAnnotation: (
       VideoAnnotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>,
       frame?: number,
+    ) => void;
+    onLock: (locked: boolean, annotation?: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) => void;
+    onVisibility: (
+      hidden: boolean,
+      annotation?: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>,
     ) => void;
     onZoomChange?: (zoom: number) => void;
     onScaleChange?: (zoom: number) => void;
@@ -62,6 +73,14 @@
 
   // Variables
   let isResizing: boolean = $state(false);
+
+  function toggleVisibility() {
+    onVisibility(!allHidden);
+  }
+
+  function toggleLocked() {
+    onLock(!allLocked);
+  }
 
   let range_span = $derived(Math.min(scale * zoom, totalFrames));
   let manual_offset = 1;
@@ -243,6 +262,41 @@
             </Text>
           {/await}
 
+          <Button
+            variant="ghost"
+            size="icon"
+            class={cn("ml-2 size-6 opacity-0 transition-opacity duration-200 ease-in-out group-hover:opacity-100", {
+              "opacity-100": isSelected,
+            })}
+            onclick={(e) => {
+              e.stopPropagation();
+              onVisibility(!annotation.hidden, annotation);
+            }}
+          >
+            {#if annotation.hidden}
+              <EyeOff class="size-3" />
+            {:else}
+              <Eye class="size-3" />
+            {/if}
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            class={cn("ml-2 size-6 opacity-0 transition-opacity duration-200 ease-in-out group-hover:opacity-100", {
+              "opacity-100": isSelected,
+            })}
+            onclick={(e) => {
+              e.stopPropagation();
+              onLock(!annotation.locked, annotation);
+            }}
+          >
+            {#if annotation.locked}
+              <Lock class="size-3" />
+            {:else}
+              <LockOpen class="size-3" />
+            {/if}
+          </Button>
+
           {#if ["review", "annotate"].includes(context.workflowStep)}
             <Button
               variant="ghost"
@@ -350,7 +404,22 @@
   <TableHeader class="bg-background sticky z-40" style="inset-block-start: 0">
     <TableRow>
       <!-- HEADER::ANNOTATIONS -->
-      <TableHead class="h-7 w-60"></TableHead>
+      <TableHead class="h-7 w-60">
+        <Button variant="ghost" size="icon" class={cn("ml-2 size-6")} onclick={toggleVisibility}>
+          {#if allHidden}
+            <EyeOff class="size-3" />
+          {:else}
+            <Eye class="size-3" />
+          {/if}
+        </Button>
+        <Button variant="ghost" size="icon" class={cn("ml-2 size-6 ")} onclick={toggleLocked}>
+          {#if allLocked}
+            <Lock class="size-3" />
+          {:else}
+            <LockOpen class="size-3" />
+          {/if}
+        </Button>
+      </TableHead>
 
       <!-- HEADER::TIMELINES -->
       <TableHead class="h-7 p-0">

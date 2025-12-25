@@ -11,7 +11,12 @@
 
   import CategoriesSelection from "./categories-selection.svelte";
 
-  import type { AnnotationValue } from "$lib/context/AnnotationContext";
+  import type {
+    AnnotationMetadata,
+    AnnotationObj,
+    AnnotationShape,
+    AnnotationValue,
+  } from "$lib/context/AnnotationContext";
   import type { IActivityContext, IConfigValue } from "@/plugin/interface/Activity";
 
   import type { AnnotationsIndexedDB } from "../../video-annotation-activity/indexedDB";
@@ -27,6 +32,8 @@
     onEditValue,
     onSelectAnnotation,
     onDeleteAnnotation,
+    onVisibility,
+    onLock,
     context,
     mode,
     currentFrame,
@@ -39,6 +46,11 @@
     onEditValue: (annotationValue: AnnotationValue, mode: string) => void;
     onSelectAnnotation: (annotation: VideoAnnotation) => void;
     onDeleteAnnotation: (annotation: VideoAnnotation) => void;
+    onLock: (locked: boolean, annotation?: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) => void;
+    onVisibility: (
+      hidden: boolean,
+      annotation?: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>,
+    ) => void;
     context: IActivityContext;
     mode: string;
     db?: AnnotationsIndexedDB;
@@ -135,6 +147,8 @@
               {selected_id}
               {onSelectAnnotation}
               {onDeleteAnnotation}
+              {onLock}
+              {onVisibility}
               onSelect={(s) => categorySelection(tool, s)}
             />
           </SidebarGroupContent>
