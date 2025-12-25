@@ -79,7 +79,9 @@
 
       $refetches.accounts.list = new Date();
       closeThisModal();
-      toast.success("Account created successfully");
+      toast.success("Account created", {
+        description: `The account has been created and an invitation email has been sent to ${account.email}.`,
+      });
     } catch (error) {
       toast.error("Failed to create account");
       throw error;
@@ -100,7 +102,9 @@
 
       $refetches.accounts.list = new Date();
       closeThisModal();
-      toast.success("Account updated successfully");
+      toast.success("Account updated", {
+        description: `The account of ${account.name} has been updated.`,
+      });
     } catch (error) {
       toast.error("Failed to update account");
       throw error;

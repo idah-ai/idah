@@ -59,9 +59,11 @@
 
       $refetches.accounts.list = new Date();
       closeThisModal();
-      toast.success("Organization owners added successfully.");
+      toast.success("Organization owner(s) added", {
+        description: "The organization owner(s) has been added.",
+      });
     } catch (error) {
-      toast.error("Failed to add organization owners.");
+      toast.error("Failed to add organization owner(s).");
       throw error;
     }
   }

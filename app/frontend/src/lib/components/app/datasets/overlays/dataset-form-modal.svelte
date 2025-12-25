@@ -2,6 +2,7 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
+  import { toast } from "svelte-sonner";
 
   import DatasetForm from "@/components/app/datasets/forms/dataset-form.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
@@ -95,6 +96,9 @@
       },
     });
 
+    toast.success("Dataset created", {
+      description: `The dataset ${dataset.name} has been created.`,
+    });
     goto(resolve(`/projects/${projectId}/datasets/${createdDatasetRes.data.id}/entries`));
 
     $refetches.datasets.list = new Date();
@@ -112,6 +116,9 @@
       },
     });
 
+    toast.success("Dataset updated", {
+      description: `The dataset ${dataset.name} has been updated.`,
+    });
     $refetches.datasets.list = new Date();
     open = false;
   }

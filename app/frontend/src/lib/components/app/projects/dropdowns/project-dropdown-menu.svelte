@@ -3,6 +3,7 @@
   import { resolve } from "$app/paths";
   import { SquarePenIcon, Trash2Icon } from "@lucide/svelte";
   import { onMount } from "svelte";
+  import { toast } from "svelte-sonner";
 
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
@@ -85,6 +86,9 @@
 
   async function deleteProject(): Promise<void> {
     await projectsBackendDataSource.delete(projectId);
+    toast.success("Project deleted", {
+      description: `The project ${projectRecord?.name} has been deleted.`,
+    });
     goto(resolve("/projects"));
     $refetches.projects.list = new Date();
     openConfirmDeleteProjectModal = false;

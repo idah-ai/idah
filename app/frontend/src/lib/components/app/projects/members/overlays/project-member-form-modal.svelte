@@ -74,7 +74,7 @@
             account_id: Number(account.id),
             name: account.name,
             email,
-            role,
+            role: role || "annotator",
             invited_by_id: Number(currentAccount?.id),
           },
           relationships: {
@@ -86,11 +86,14 @@
             },
           },
         });
+
+        toast.success("Project member added", {
+          description: `An invitation will be sent to ${email} if the account is not yet existed.`,
+        });
       }
 
       $refetches.projectMembers.list = new Date();
       closeThisModal();
-      toast.success(`${members.length} member(s) invite sent!`);
     } catch (error) {
       console.error(error);
       toast.error("Failed to send invite. Please try again.");

@@ -92,7 +92,9 @@
       });
       initialLabelConfig = JSON.parse(JSON.stringify(updatedDatasetRes.data.labeling_configuration));
       labelConfig = updatedDatasetRes.data.labeling_configuration;
-      toast.success("Labeling configuration changes saved successfully.");
+      toast.success("Label configurations updated", {
+        description: "The changes has been saved.",
+      });
     } catch (error) {
       console.error(error);
       toast.error("Failed to save labeling configuration changes.");

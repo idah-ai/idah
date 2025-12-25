@@ -28,7 +28,9 @@
     try {
       const resolvedNoteFeedRes = await noteFeedsBackendDataSource.markAsResolved(id);
       onNoteResolved?.(resolvedNoteFeedRes.data);
-      toast.success("Note feed marked as resolved successfully.");
+      toast.success("Note resolved", {
+        description: "The note has been resolved.",
+      });
       $refetches.noteFeeds.list = new Date();
     } catch (error) {
       console.error(error);

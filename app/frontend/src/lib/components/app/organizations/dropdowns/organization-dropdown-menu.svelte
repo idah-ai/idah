@@ -2,6 +2,7 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { onMount } from "svelte";
+  import { toast } from "svelte-sonner";
 
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import OrganizationFormModal from "@/components/app/organizations/overlays/organization-form-modal.svelte";
@@ -93,6 +94,11 @@
     await organizationsBackendDataSource.delete(organizationId);
     openConfirmDeleteOrganizationModal = false;
     $refetches.organizations.list = new Date();
+    toast.success("Organization deleted", {
+      description: organizationRecord
+        ? `The organization ${organizationRecord?.name} has been deleted.`
+        : "The organization has been deleted.",
+    });
     goto(resolve("/organizations"));
   }
 </script>

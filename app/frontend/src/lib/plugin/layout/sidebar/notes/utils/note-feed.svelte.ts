@@ -22,7 +22,9 @@ export async function updateNoteFeedContentMd(id: string, newContentMd: string) 
         content_md: newContentMd,
       },
     });
-    toast.success("Note feed updated successfully.");
+    toast.success("Note updated", {
+      description: "The note has been updated.",
+    });
     refetchNoteFeeds();
     return updatedNoteFeedRes.data;
   } catch (error) {
@@ -53,7 +55,9 @@ export async function deleteNoteFeed(id: string) {
 
     await noteFeedsBackendDataSource.delete(id);
 
-    toast.success("Note feed deleted successfully.");
+    toast.success("Note deleted", {
+      description: "The note has been deleted.",
+    });
     refetchNoteFeeds();
   } catch (error) {
     console.error(error);

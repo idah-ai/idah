@@ -107,7 +107,9 @@
       }
     }
 
-    toast.success("Entries successfully uploaded!");
+    toast.success("Entry uploaded", {
+      description: "The entries has been uploaded successfully.",
+    });
     $refetches.entries.list = new Date();
   }
 

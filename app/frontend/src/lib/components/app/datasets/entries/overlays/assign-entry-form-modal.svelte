@@ -37,7 +37,9 @@
       await entriesBackendDataSource.assign({ id: entryId, memberAccountId: selectedMember });
     }
 
-    toast.success("Member assigned successfully");
+    toast.success("Entry assigned", {
+      description: `The entry ${entryRecord?.name} has been assigned to ${selectedMember}.`,
+    });
     $refetches.entries.list = new Date();
     open = false;
   }
