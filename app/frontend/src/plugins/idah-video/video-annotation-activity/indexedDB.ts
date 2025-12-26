@@ -216,15 +216,18 @@ export class AnnotationsIndexedDB {
     return new Promise<void>((resolve, reject) => {
       objectStore.openCursor().onsuccess = (event) => {
         const cursor = event.target?.result;
-        try {
-          const updateData = cursor.value;
-          updateData.hidden = hidden;
-          cursor.update(updateData);
-        } catch (error) {
-          reject(error);
-          return;
+
+        if (cursor) {
+          try {
+            const updateData = cursor.value;
+            updateData.hidden = hidden;
+            cursor.update(updateData);
+          } catch (error) {
+            reject(error);
+            return;
+          }
+          cursor.continue();
         }
-        cursor.continue();
       };
 
       transaction.oncomplete = () => {
@@ -246,15 +249,18 @@ export class AnnotationsIndexedDB {
     return new Promise<void>((resolve, reject) => {
       objectStore.openCursor().onsuccess = (event) => {
         const cursor = event.target?.result;
-        try {
-          const updateData = cursor.value;
-          updateData.locked = locked;
-          cursor.update(updateData);
-        } catch (error) {
-          reject(error);
-          return;
+
+        if (cursor) {
+          try {
+            const updateData = cursor.value;
+            updateData.locked = locked;
+            cursor.update(updateData);
+          } catch (error) {
+            reject(error);
+            return;
+          }
+          cursor.continue();
         }
-        cursor.continue();
       };
 
       transaction.oncomplete = () => {
