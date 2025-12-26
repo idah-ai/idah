@@ -102,7 +102,7 @@
               </ContextMenuItem>
 
               {#if ["review", "annotate"].includes(context.workflowStep)}
-                <ContextMenuItem onclick={() => onDeleteFrame?.(keyframe)}>
+                <ContextMenuItem onclick={() => onDeleteFrame?.(keyframe)} disabled={annotation.locked}>
                   <Trash2Icon class="size-4"></Trash2Icon>
                   Delete frame {keyframe}
                 </ContextMenuItem>
