@@ -405,7 +405,7 @@
   <TableHeader class="bg-background sticky z-40" style="inset-block-start: 0">
     <TableRow>
       <!-- HEADER::ANNOTATIONS -->
-      <TableHead class="h-7 w-60">
+      <TableHead class="h-7 w-60 text-right">
         <Button variant="ghost" size="icon" class={cn("ml-2 size-6")} onclick={toggleVisibility}>
           {#if allHidden}
             <EyeOff class="size-3" />
@@ -413,7 +413,7 @@
             <Eye class="size-3" />
           {/if}
         </Button>
-        <Button variant="ghost" size="icon" class={cn("ml-2 size-6 ")} onclick={toggleLocked}>
+        <Button variant="ghost" size="icon" class={cn("mr-8 ml-1 size-6")} onclick={toggleLocked}>
           {#if allLocked}
             <Lock class="size-3" />
           {:else}
