@@ -4,7 +4,7 @@ module Export
   class Service < Verse::Service::Base
     use_system jobs: Jobs::Service
 
-    def export(context_args)
+    def export(filters)
     # "UniversalPortableDataset::Export"
     # infer api/setting/registry...
 
@@ -25,7 +25,7 @@ module Export
             CvatVideo: "Context::Cvat::Video"
           },
           io_args: nil,
-          context_args:,
+          filters:,
           process_classes: {
             UniversalPortableDataset: "Export::UniversalPortableDataset",
             CvatVideo: "Export::CvatVideo"

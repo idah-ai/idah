@@ -18,7 +18,7 @@ module Export
           process.new(
             Context::root(
               io,
-              arguments.fetch(:context_args)
+              arguments.fetch(:filters)
             )
           ).run # arguments.fetch(:process_args) # or init ? or both ?
         end
