@@ -32,7 +32,7 @@ module Context
       end
 
       def self.prepare(args)
-        filename = [Hash(args).dig(:name) || ["export", Time.now.to_i], :upd].join(".")
+        filename = [Hash(args).dig(:name) || ["export.UniversalPortableDataset", Time.now.to_i], :upd].join(".")
         stdin, stdout, stderr, wait_thr = Open3.popen3(
           "bin/datset-static",
           "-i", filename,

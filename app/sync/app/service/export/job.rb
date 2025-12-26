@@ -5,21 +5,23 @@ module Export
       begin
         puts arguments.fetch(:auth_context)
         ios = []
-        arguments.fetch(:io_classes).each do |_context_type, context_klass|
-          ios << Verse::Util::Reflection.constantize(
-            context_klass
-          ).prepare(arguments.fetch(:io_args))
+        io_classes = Hash(arguments.fetch(:io_classes)).map do |io_type, io_class|
+          [io_type, Verse::Util::Reflection.constantize(io_class)]
+        end.to_h
+        process_classes = Hash(arguments.fetch(:process_classes)).map do |process_type, process_class|
+          [process_type, Verse::Util::Reflection.constantize(process_class)]
+        end.to_h
+        process_classes.each do |process_name, process|
+          io = io_classes[process_name]&.prepare(arguments.fetch(:io_args))
+          raise "no io to process #{process_name} ?" unless io
+          ios << io
+          process.new(
+            Context::root(
+              io,
+              arguments.fetch(:context_args)
+            )
+          ).run # arguments.fetch(:process_args) # or init ? or both ?
         end
-        # TODO: multi process ?
-        process_class = Verse::Util::Reflection.constantize(
-          arguments.fetch(:process_class)
-        )
-        io = ios.find {|io| io.name == process_class.name}
-        raise "#{self} error locating required #{process_class.name} io" unless io
-
-        process_class.new(
-          Context::root(io, arguments.fetch(:context_args)) # TODO use user AuthContext instead of service AuthContext
-        ).run # arguments.fetch(:process_args) # or init ? or both ?
       ensure
         remaining_stderr = []
         completion = []
