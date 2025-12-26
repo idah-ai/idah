@@ -53,3 +53,15 @@ Api[:idah].register(
   )
   deserialize output.body
 end
+
+Api[:idah].register(
+  :iam, :organizations, :index
+) do |params = {}|
+  output = get(
+    "iam/organizations",
+    params:,
+    options: { auth: :bearer }  # Enable authentication
+  )
+
+  deserialize output.body
+end
