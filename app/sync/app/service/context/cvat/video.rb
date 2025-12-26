@@ -56,7 +56,7 @@ module Context
       end
 
       def self.prepare(args)
-        filename = [Hash(args).dig(:name) || ["export", Time.now.to_i]].join(".")
+        filename = [Hash(args).dig(:name) || ["export.CvatVideo.bundle", Time.now.to_i]].join(".")
         FileUtils.mkdir_p filename
 
         Context.new("CvatVideo", filename, nil, nil ,nil)

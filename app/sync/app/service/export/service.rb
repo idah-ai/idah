@@ -21,13 +21,15 @@ module Export
             custom_scopes: auth_context.custom_scopes
           },
           io_classes: {
-            # UniversalPortableDataset: "Context::UniversalPortableDataset::Append",
+            UniversalPortableDataset: "Context::UniversalPortableDataset::Append",
             CvatVideo: "Context::Cvat::Video"
           },
-          io_args: {},
+          io_args: nil,
           context_args:,
-          # process_class: "Export::UniversalPortableDataset",
-          process_class: "Export::CvatVideo",
+          process_classes: {
+            UniversalPortableDataset: "Export::UniversalPortableDataset",
+            CvatVideo: "Export::CvatVideo"
+          },
           process_args: nil
         }
       )
