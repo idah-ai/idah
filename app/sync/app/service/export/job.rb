@@ -3,6 +3,7 @@ module Export
   class Job < Jobs::Base
     def run_impl
       begin
+        puts arguments.fetch(:auth_context)
         ios = []
         arguments.fetch(:io_classes).each do |_context_type, context_klass|
           ios << Verse::Util::Reflection.constantize(
