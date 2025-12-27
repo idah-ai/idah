@@ -4,13 +4,11 @@ module Context
 
     def initialize(
       context_api,
-      api = :idah,
       args = {},
       context_filters = {},
       opts = {},
       context_builder = Proc.new {|record| record}
     )
-      @api = api
       @args = args
       @context_api = context_api
       @context_builder = context_builder

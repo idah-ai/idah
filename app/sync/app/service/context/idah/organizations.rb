@@ -3,15 +3,14 @@ module Context
     class Organizations < Crud
       Context = Data.define(:record, :api)
 
-      def initialize(api = :idah, args = {}, context_filters = {}, opts = {}, &context_builder)
+      def initialize(args = {}, context_filters = {}, opts = {}, &context_builder)
         context_builder ||= proc do |organization|
           Context.new(organization,
-            Organizations.new(api, args, merge_context_filters(id: organization[:id]))
+            Organizations.new(args, merge_context_filters(id: organization[:id]))
           )
         end
         super(
-          Api[api].iam.organizations,
-          api,
+          Api[:idah].iam.organizations,
           args,
           context_filters,
           opts,
