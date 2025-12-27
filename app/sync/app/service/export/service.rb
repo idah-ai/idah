@@ -20,17 +20,38 @@ module Export
             metadata: auth_context.metadata,
             custom_scopes: auth_context.custom_scopes
           },
-          io_classes: {
-            UniversalPortableDataset: "Context::UniversalPortableDataset::Append",
-            CvatVideo: "Context::Cvat::Video"
-          },
-          io_args: nil,
-          filters:,
-          process_classes: {
-            UniversalPortableDataset: "Export::UniversalPortableDataset",
-            CvatVideo: "Export::CvatVideo"
-          },
-          process_args: nil
+          processors: {
+            UniversalPortableDataset: {
+              klass: "Export::UniversalPortableDataset",
+              context: {
+                idah: {
+                  klass: "Context::Idah",
+                  args: filters
+                },
+                io: {
+                  klass: "Context::Io",
+                  args: {
+                    klass: "Io::UniversalPortableDatasetAppend"
+                  }
+                }
+              }
+            },
+            CvatVideo:  {
+              klass: "Export::CvatVideo",
+              context: {
+                idah: {
+                  klass: "Context::Idah",
+                  args: filters
+                },
+                io: {
+                  klass: "Context::Io",
+                  args: {
+                    klass: "Io::CvatVideo"
+                  }
+                }
+              }
+            }
+          }
         }
       )
     end

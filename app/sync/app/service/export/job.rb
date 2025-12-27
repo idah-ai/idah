@@ -5,22 +5,37 @@ module Export
       begin
         puts arguments.fetch(:auth_context)
         ios = []
-        io_classes = Hash(arguments.fetch(:io_classes)).map do |io_type, io_class|
-          [io_type, Verse::Util::Reflection.constantize(io_class)]
+
+        context_classes = Hash(arguments.fetch(:processors)).flat_map do |processor, opts|
+          Hash(Hash(opts).fetch(:context)).map do |context_name, context_opts|
+            context_opts.fetch(:klass)
+          end
+        end.uniq.compact.map do|context_klass|
+          [context_klass, Verse::Util::Reflection.constantize(context_klass)]
         end.to_h
-        process_classes = Hash(arguments.fetch(:process_classes)).map do |process_type, process_class|
-          [process_type, Verse::Util::Reflection.constantize(process_class)]
+
+        processor_classes = Hash(arguments.fetch(:processors)).flat_map do |processor, opts|
+          Hash(opts).fetch(:klass)
+        end.uniq.compact.map do|context_klass|
+          [context_klass, Verse::Util::Reflection.constantize(context_klass)]
         end.to_h
-        process_classes.each do |process_name, process|
-          io = io_classes[process_name]&.prepare(arguments.fetch(:io_args))
-          raise "no io to process #{process_name} ?" unless io
-          ios << io
-          process.new(
-            Context::root(
-              io,
-              arguments.fetch(:filters)
-            )
-          ).run # arguments.fetch(:process_args) # or init ? or both ?
+
+        Hash(arguments.fetch(:processors)).flat_map do |processor_name, processor_opts|
+          classname = processor_opts.fetch(:klass)
+
+          raise "missing processor klass" unless classname
+
+          root_context = Context.new(
+            Hash(processor_opts).fetch(:context).map do |context_name, context_opts|
+              context = context_classes[Hash(context_opts).fetch(:klass)]&.new(
+                Hash(context_opts)[:args]
+              )
+              ios << context if context_name == "io" # TODO 🤷: proper release
+              context
+            end
+          )
+
+          processor_classes[classname]&.new(root_context).run
         end
       ensure
         remaining_stderr = []
