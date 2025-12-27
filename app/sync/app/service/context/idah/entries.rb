@@ -3,19 +3,18 @@ module Context
     class Entries < Crud
       Context = Data.define(:record, :api, :datasets, :medias, :annotations)
 
-      def initialize(api = :idah, args = {}, context_filters = {}, opts = {}, &context_builder)
+      def initialize(args = {}, context_filters = {}, opts = {}, &context_builder)
         context_builder ||= proc do |entry|
             Context.new(
               entry,
-              Entries.new(api, args, merge_context_filters(id: entry[:id])),
-              Datasets.new(api, args, merge_context_filters({id: entry[:attributes][:dataset_id]}, :datasets)),
-              Medias.new(api, args, merge_context_filters({resource: entry[:attributes][:resource]}, :medias)),
-              Annotations.new(api, args, merge_context_filters({entry_id: entry[:id]}, :annotations))
+              Entries.new(args, merge_context_filters(id: entry[:id])),
+              Datasets.new(args, merge_context_filters({id: entry[:attributes][:dataset_id]}, :datasets)),
+              Medias.new(args, merge_context_filters({resource: entry[:attributes][:resource]}, :medias)),
+              Annotations.new(args, merge_context_filters({entry_id: entry[:id]}, :annotations))
             )
           end
         super(
-          Api[api].dataset.entries,
-          api,
+          Api[:idah].dataset.entries,
           args,
           context_filters,
           opts,
