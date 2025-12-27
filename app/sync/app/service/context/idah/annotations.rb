@@ -24,6 +24,15 @@ module Context
           end
         )
       end
+
+      def self.from_entries(entries, args = {}, context_filters = {})
+        new(
+          args, context_filters, { delegated: true },
+          Delegated.new(:annotations, proc do |filter = {}|
+            entries.index.flat_map { |e| e.annotations.index(filter) }
+          end)
+        )
+      end
     end
   end
 end
