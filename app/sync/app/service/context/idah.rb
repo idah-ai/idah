@@ -14,78 +14,30 @@ module Context
         record
       end
     end
+
     API = Data.define(:name, :api)
+
     from_datasets_api = API.new(:datasets, proc do |args|
       datasets = Idah::Datasets.new(args)
-
-      # Batched delegated for entries via datasets
-      entries = Idah::Entries.new(
-        args, {}, { delegated: true },
-        Delegated.new(:entries, proc do |filter = {}|
-          datasets.index.flat_map { |d| d.entries.index(filter) }
-        end)
-      )
-
-      # Batched delegated for annotations via entries
-      annotations = Idah::Annotations.new(
-        args, {}, { delegated: true },
-        Delegated.new(:annotations, proc do |filter = {}|
-          entries.index.flat_map { |e| e.annotations.index(filter) }
-        end)
-      )
+      entries = Idah::Entries.from_datasets(datasets, args)
+      annotations = Idah::Annotations.from_entries(entries, args)
       [datasets, entries, annotations]
     end)
 
     from_entries_api = API.new(:entries, proc do |args|
       entries = Idah::Entries.new(args)
-
-      # Batched delegated for datasets via entries
-      datasets = Idah::Datasets.new(
-        args, {}, { delegated: true },
-        Delegated.new(:datasets, proc do |filter = {}|
-          dataset_ids = entries.index.map { |e| e.record[:attributes][:dataset_id] }.compact.uniq
-          dataset_ids.each_slice(100).flat_map do |id__in|
-            Idah::Datasets.new(args, {datasets:{id__in:}}).index(filter)
-          end
-        end)
-      )
-
-      # Batched delegated for annotations via entries
-      annotations = Idah::Annotations.new(
-        args, {}, { delegated: true },
-        Delegated.new(:annotations, proc do |filter = {}|
-          entries.index.flat_map { |e| e.annotations.index(filter) }
-        end)
-      )
+      datasets = Idah::Datasets.from_entries(entries, args)
+      annotations = Idah::Annotations.from_entries(entries, args)
       [datasets, entries, annotations]
     end)
 
     from_annotations_api = API.new(:annotations, proc do |args|
       annotations = Idah::Annotations.new(args)
-
-      # Batched delegated for entries via annotations
-      entries = Idah::Entries.new(
-        args, {}, { delegated: true },
-        Delegated.new(:entries, proc do |filter = {}|
-          entry_ids = annotations.index.map { |a| a.record[:attributes][:entry_id] }.compact.uniq
-          entry_ids.each_slice(100).flat_map do |id__in|
-            Idah::Entries.new(args, {entries:{id__in:}}).index(filter)
-          end
-        end)
-      )
-
-      # Batched delegated for datasets via entries
-      datasets = Idah::Datasets.new(
-        args, {}, { delegated: true },
-        Delegated.new(:datasets, proc do |filter = {}|
-          dataset_ids = entries.index.map { |e| e.record[:attributes][:dataset_id] }.compact.uniq
-          dataset_ids.each_slice(100).flat_map do |id__in|
-            Idah::Datasets.new(api, args, {datasets:{id__in:}}).index(filter)
-          end
-        end)
-      )
+      entries = Idah::Entries.from_annotations(annotations, args)
+      datasets = Idah::Datasets.from_entries(entries, args)
       [datasets, entries, annotations]
     end)
+
     APIS_FROM = [ # should be ordered according to need
       from_datasets_api,
       from_entries_api,

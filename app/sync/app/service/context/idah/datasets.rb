@@ -17,6 +17,18 @@ module Context
           end
         )
       end
+
+      def self.from_entries(entries, args = {}, context_filters = {})
+        new(
+          args, context_filters, { delegated: true },
+          Delegated.new(:datasets, proc do |filter = {}|
+            dataset_ids = entries.index.map { |e| e.record[:attributes][:dataset_id] }.compact.uniq
+            dataset_ids.each_slice(100).flat_map do |id__in|
+              Idah::Datasets.new(args, {datasets:{id__in:}}).index(filter)
+            end
+          end)
+        )
+      end
     end
   end
 end
