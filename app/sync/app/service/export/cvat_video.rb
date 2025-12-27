@@ -41,7 +41,7 @@ module Export
 
     def loop_processing
       start
-      @context.api.datasets.index.each do |dataset|
+      @context.idah.datasets.index.each do |dataset|
         dataset.entries.index.each do |entry|
           @context.io.builder( # CVAT export seems to have tasks/entries as root
             entry.record[:attributes][:resource]

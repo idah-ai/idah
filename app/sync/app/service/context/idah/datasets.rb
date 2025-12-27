@@ -1,5 +1,5 @@
 module Context
-  module ContextApi
+  module Idah
     class Datasets < Crud
       Context = Data.define(:record, :api, :entries)
 
