@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Export
+module Sync
   class Service < Verse::Service::Base
     use_system jobs: Jobs::Service
 
@@ -13,7 +13,7 @@ module Export
         scope.as_org_owner? {jobs}
         scope.as_user? {jobs}
       end.create(
-        "Export::Job",
+        "Sync::Job",
         arguments: {
           auth_context:{
             role: auth_context.role,
