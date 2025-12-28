@@ -2,16 +2,16 @@
 
 module Sync
   class Service < Verse::Service::Base
-    use_system jobs: Jobs::Service
+    use_system system_jobs: Jobs::Service
 
     def export(filters)
     # "UniversalPortableDataset::Export"
     # infer api/setting/registry...
 
       auth_context.can!(:export, Jobs::Repository.resource) do |scope|
-        scope.all? {jobs}
-        scope.as_org_owner? {jobs}
-        scope.as_user? {jobs}
+        scope.all? {system_jobs}
+        scope.as_org_owner? {system_jobs}
+        scope.as_user? {system_jobs}
       end.create(
         "Sync::Job",
         arguments: {
