@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-module Export
+module Sync
   class Job < Jobs::Base
     def run_impl
       begin

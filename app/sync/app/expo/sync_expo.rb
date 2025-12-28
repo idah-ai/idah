@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
-class ExportExpo < BaseExpo
-  http_path "/export"
+class SyncExpo < BaseExpo
+  http_path "/"
 
-  use_service Export::Service
+  use_service Sync::Service
 
-  expose on_http(:get, "") do
+  expose on_http(:get, "export") do
     desc "export endpoint"
     input do
       field? :filter do
