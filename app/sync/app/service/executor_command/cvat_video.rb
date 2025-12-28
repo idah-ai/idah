@@ -1,7 +1,7 @@
 require 'builder'
 require 'zip'
 
-module Executor
+module ExecutorCommand
   module CvatVideo
     Context = Data.define(:name, :filename, :i, :o, :e) do
       def builder(resource, &block)

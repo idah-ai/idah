@@ -14,28 +14,32 @@ module Export
           [context_class, Verse::Util::Reflection.constantize(context_class)]
         end.to_h
 
-        processor_classes = Hash(arguments.fetch(:processors)).flat_map do |processor, opts|
+        processor_classes = Hash(arguments.fetch(:processors)).map do |processor, opts|
           Hash(opts).fetch(:klass)
         end.uniq.compact.map do|processor_class|
           [processor_class, Verse::Util::Reflection.constantize(processor_class)]
         end.to_h
 
-        Hash(arguments.fetch(:processors)).flat_map do |processor_name, processor_opts|
-          classname = processor_opts.fetch(:klass)
-
-          raise "missing processor klass" unless classname
-
-          root_context = Context.new(
-            Hash(processor_opts).fetch(:context).map do |context_name, context_opts|
-              context = context_classes[Hash(context_opts).fetch(:klass)]&.new(
+        Hash(arguments.fetch(:processors)).lazy.map do |processor_name, processor_opts|
+          [
+            processor_classes.fetch(processor_opts.fetch(:klass)),
+            Hash(processor_opts).fetch(:context).map do |_context_name, context_opts|
+              context_classes[Hash(context_opts).fetch(:klass)]&.new(
                 Hash(context_opts)[:args]
               )
-              ios << context if context_name == "io" # TODO 🤷: proper release
-              context
             end
-          )
-
-          processor_classes[classname]&.new(root_context).run
+          ]
+        end.map do |process_class, contexts| # temp
+          io = contexts.find { |c| c.name == "io"}
+          ios << io if io # TODO: proper release
+          [process_class, Context.new(contexts)]
+        end.map do |process_class, context|
+          process_class.new(context)
+        end.map do |process|
+          [process.class.name, process.run]
+        end.each do |name, run|
+          Verse::logger::debug {{name:, run:}}
+          # TODO on processes complete
         end
       ensure
         remaining_stderr = []
