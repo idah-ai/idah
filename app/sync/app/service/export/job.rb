@@ -10,14 +10,14 @@ module Export
           Hash(Hash(opts).fetch(:context)).map do |context_name, context_opts|
             context_opts.fetch(:klass)
           end
-        end.uniq.compact.map do|context_klass|
-          [context_klass, Verse::Util::Reflection.constantize(context_klass)]
+        end.uniq.compact.map do|context_class|
+          [context_class, Verse::Util::Reflection.constantize(context_class)]
         end.to_h
 
         processor_classes = Hash(arguments.fetch(:processors)).flat_map do |processor, opts|
           Hash(opts).fetch(:klass)
-        end.uniq.compact.map do|context_klass|
-          [context_klass, Verse::Util::Reflection.constantize(context_klass)]
+        end.uniq.compact.map do|processor_class|
+          [processor_class, Verse::Util::Reflection.constantize(processor_class)]
         end.to_h
 
         Hash(arguments.fetch(:processors)).flat_map do |processor_name, processor_opts|

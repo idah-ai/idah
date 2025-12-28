@@ -1,4 +1,4 @@
-module Io
+module Executor
   module UniversalPortableDatasetAppend
     Context = Data.define(:name, :filename, :i, :o, :e, :wait_thr) do
       def puts(s, expected_lines = 1, feedback = proc{|line|line})
