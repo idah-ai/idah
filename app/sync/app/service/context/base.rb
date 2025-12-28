@@ -1,7 +1,6 @@
 module Context
   class Base
     attr_reader :context_filters, :args, :opts
-
     def initialize(
       context_api,
       args = {},

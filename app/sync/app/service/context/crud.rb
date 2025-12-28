@@ -1,4 +1,16 @@
 module Context
+  Delegated = Data.define(:name, :_index) do
+    def index(filter = {})
+      _index.call(filter)
+    end
+
+    def show(id = nil)
+      record = _index.call(id:)&.first
+      raise Verse::Error::NotFound unless record
+      record
+    end
+  end
+
   class Crud < Base
     def create(attributes = {})
       raise :not_implemented
