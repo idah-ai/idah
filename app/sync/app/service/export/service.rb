@@ -31,7 +31,7 @@ module Export
                 io: {
                   klass: "Context::Io",
                   args: {
-                    klass: "Executor::UniversalPortableDatasetAppend"
+                    klass: "ExecutorCommand::UniversalPortableDatasetAppend"
                   }
                 }
               }
@@ -46,7 +46,7 @@ module Export
                 io: {
                   klass: "Context::Io",
                   args: {
-                    klass: "Executor::CvatVideo"
+                    klass: "ExecutorCommand::CvatVideo"
                   }
                 }
               }
