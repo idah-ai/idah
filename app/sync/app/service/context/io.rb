@@ -1,10 +1,10 @@
 module Context
   class Io < Base
-    def initialize(args = {})
-      classname = Hash(args).fetch(:klass)
+    def initialize(args = {}, context = {})
+      classname = Hash(context).fetch(:klass)
       return unless classname
 
-      super(Verse::Util::Reflection.constantize(classname).new)
+      super(Verse::Util::Reflection.constantize(classname).new(args, context))
     end
 
     def method_missing(name, *args, &block)

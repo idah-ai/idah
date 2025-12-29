@@ -12,6 +12,7 @@ module Context
       opts = {},
       context_builder = Proc.new {|record| record}
     )
+      Verse.logger.debug {self.class.name.split("::").last.downcase.to_sym}
       @args = args
       @context_api = context_api
       @context_builder = context_builder
