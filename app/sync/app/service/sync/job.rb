@@ -3,8 +3,24 @@ module Sync
   class Job < Jobs::Base
     def run_impl
       begin
-        puts arguments.fetch(:auth_context)
         ios = []
+        authcontext = arguments.fetch(:auth_context)
+        role = authcontext.fetch(:role)
+        custom_scopes = authcontext.fetch(:custom_scopes)
+
+        auth_context_filters = \
+          case role
+          when "admin"
+            {}
+          when "org_owner"
+            { organizations: {
+              id__in: Array(Hash(custom_scopes).fetch(:org))
+            }}
+          when "user"
+            raise "todo"
+          else
+            raise "unexpected auth_context: #{authcontext}"
+          end
 
         context_classes = Hash(arguments.fetch(:processors)).flat_map do |processor, opts|
           Hash(Hash(opts).fetch(:context)).map do |context_name, context_opts|
@@ -23,7 +39,7 @@ module Sync
         Hash(arguments.fetch(:processors)).lazy.map do |processor_name, processor_opts|
           [
             processor_classes.fetch(processor_opts.fetch(:klass)),
-            Hash(processor_opts).fetch(:context).map do |_context_name, context_opts|
+            Hash(processor_opts).fetch(:context).map do |context_name, context_opts|
               context_classes[Hash(context_opts).fetch(:klass)]&.new(
                 Hash(context_opts)[:args]
               )
@@ -43,7 +59,6 @@ module Sync
         end
       ensure
         remaining_stderr = []
-        completion = []
         ios.each do |io|
           io.i.close if io&.i && !io.i.closed?
           if (io&.e && io&.wait_thr)
@@ -55,9 +70,7 @@ module Sync
           end
           io.o.close if io&.o && !io.o.closed?
           io.e.close if io&.e && !io.e.closed?
-          completion << "#{io.name} process complete"
         end
-        Verse::logger.info { completion.join('\n') }
       end
     end
   end

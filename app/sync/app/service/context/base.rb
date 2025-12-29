@@ -1,6 +1,10 @@
 module Context
   class Base
     attr_reader :context_filters, :args, :opts
+    def name
+      self.class.name.split("::").last.downcase.to_sym
+    end
+
     def initialize(
       context_api,
       args = {},

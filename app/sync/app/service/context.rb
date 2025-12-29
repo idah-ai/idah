@@ -1,8 +1,12 @@
 module Context
-  Context = Data.define(:contexts) do
+  Root = Data.define(:contexts) do
     def initialize(contexts: [])
-      raise "Invalid Context missing name" if Array(contexts).any? { |c| !c.respond_to?(:name) }
-      raise "Invalid Context name" if Array(contexts).any? { |c| !c.name.is_a? String }
+      Array(contexts).all? do |c|
+        raise "Invalid Context missing name for #{c}" if !c.respond_to?(:name)
+      end
+      Array(contexts).all? do |c|
+        raise "Invalid Context name #{c.name}" if !c.name.is_a? String
+      end
       super
     end
 
@@ -21,6 +25,6 @@ module Context
   end
 
   def self.new(contexts = [])
-    Context.new(contexts: contexts)
+    Root.new(contexts)
   end
 end
