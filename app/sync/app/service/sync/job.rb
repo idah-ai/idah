@@ -26,16 +26,13 @@ module Sync
           Hash(Hash(opts).fetch(:context)).map do |context_name, context_opts|
             context_opts.fetch(:klass)
           end
-        end.uniq.compact.map do|context_class|
-          puts defined?(Idah)  # Should output "constant"
-          puts defined?(Idah::Annotations)  # Should output "constant"
-
+        end.uniq.compact.map do |context_class|
           [context_class, Verse::Util::Reflection.constantize(context_class)]
         end.to_h
 
         processor_classes = Hash(arguments.fetch(:processors)).map do |processor, opts|
           Hash(opts).fetch(:klass)
-        end.uniq.compact.map do|processor_class|
+        end.uniq.compact.map do |processor_class|
           [processor_class, Verse::Util::Reflection.constantize(processor_class)]
         end.to_h
 
@@ -43,9 +40,18 @@ module Sync
           [
             processor_classes.fetch(processor_opts.fetch(:klass)),
             Hash(processor_opts).fetch(:context).map do |context_name, context_opts|
-              context_classes[Hash(context_opts).fetch(:klass)]&.new(
+              Verse::logger.debug {{context_name:, context_opts:}}
+              Verse::logger.debug {{
+                args: Hash(auth_context_filters),
+                context: Hash(context_opts)[:args]
+              }}
+              klass = context_classes[Hash(context_opts).fetch(:klass)]
+              Verse::logger.debug {{klass:}}
+              Verse::logger.debug {{parameters: klass.instance_method(:initialize).parameters}}
+              klass.new(
+                Hash(auth_context_filters),
                 Hash(context_opts)[:args]
-              )
+              ) if klass
             end
           ]
         end.map do |process_class, contexts| # temp
@@ -55,6 +61,7 @@ module Sync
         end.map do |process_class, context|
           process_class.new(context)
         end.map do |process|
+          Verse::logger::debug {{running: process.class.name}}
           [process.class.name, process.run]
         end.each do |name, run|
           Verse::logger::debug {{name:, run:}}

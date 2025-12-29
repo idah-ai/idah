@@ -54,8 +54,9 @@ module ExecutorCommand
       end
     end
 
-    def self.new(args = {})
-      filename = [Hash(args).dig(:name) || ["export.CvatVideo.bundle", Time.now.to_i]].join(".")
+    def self.new(args = {}, filters = {})
+      # TODO should be in args
+      filename = [Hash(filters).dig(:name) || ["export.CvatVideo.bundle", Time.now.to_i]].join(".")
       FileUtils.mkdir_p filename
 
       Context.new("CvatVideo", filename, nil, nil ,nil)

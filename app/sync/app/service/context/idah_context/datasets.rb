@@ -18,9 +18,9 @@ module Context
         )
       end
 
-      def self.from_entries(entries, args = {}, context_filters = {})
+      def self.from_entries(entries, args = {}, filters = {})
         new(
-          args, context_filters, { delegated: true },
+          args, filters, { delegated: true },
           Delegated.new(:datasets, proc do |filter = {}|
             dataset_ids = entries.index.map { |e| e.record[:attributes][:dataset_id] }.compact.uniq
             dataset_ids.each_slice(100).flat_map do |id__in|
@@ -29,6 +29,16 @@ module Context
           end)
         )
       end
+
+      def self.from_projects(projects, args = {}, filters = {})
+        new(
+          args, filters, { delegated: true },
+          Delegated.new(:datasets, proc do |filter = {}|
+            projects.index.flat_map { |p| p.datasets.index(filter) }
+          end)
+        )
+      end
+
     end
   end
 end

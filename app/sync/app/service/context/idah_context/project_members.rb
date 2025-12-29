@@ -26,6 +26,15 @@ module Context
           end
         )
       end
+
+      def self.from_projects(projects, args = {}, filters = {})
+        new(
+          args, filters, { delegated: true },
+          Delegated.new(:projects_members, proc do |filter = {}|
+            projects.index.flat_map { |p| p.project_members.index(filter) }
+          end)
+        )
+      end
     end
   end
 end
