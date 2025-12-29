@@ -1,24 +1,12 @@
 module Context
-  Delegated = Data.define(:name, :_index) do
-    def index(filter = {})
-      _index.call(filter)
-    end
-
-    def show(id = nil)
-      record = _index.call(id:)&.first
-      raise Verse::Error::NotFound unless record
-      record
-    end
-  end
-
   class Crud < Base
     def create(attributes = {})
       raise :not_implemented
     end
 
     def index(filters = {})
-      if Hash(@opts)[:delegated]
-        @context_api.index(merge_filters(filters))
+      if @context_api.class < Delegate
+        @context_api.show(filters[:id])
       else
         Verse::Util::Iterator.chunk_iterator(1) do |number|
           query_result = @context_api.index(
@@ -37,7 +25,7 @@ module Context
     def show(id = nil)
       filters = merge_filters(id ? {id:} : nil)
 
-      if Hash(@opts)[:delegated]
+      if @context_api.class < Delegate
         @context_api.show(filters[:id])
       else
         raise Verse::Error::NotFound if !filters[:id] || (id && filters[:id] != id) # overriden by context
