@@ -18,6 +18,7 @@ module Context
       @context_filters = context_filters
       @opts = opts
     end
+
     protected
     def merge_filters(filters = {}, context_api_name = @context_api.name)
       Hash(filters)

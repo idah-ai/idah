@@ -1,5 +1,5 @@
 module Context
-  module Idah
+  module IdahContext
     class Annotations < Crud
       Context = Data.define(:record, :api, :entries)
 
