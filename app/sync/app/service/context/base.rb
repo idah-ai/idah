@@ -2,7 +2,11 @@ module Context
   class Base
     attr_reader :context_filters, :args, :opts
     def name
-      self.class.name.split("::").last.downcase.to_sym
+      self.class
+        .name.split("::").last
+        .gsub(/(?<=[a-z])(?=[A-Z])/, '_')
+        .downcase
+        .to_sym
     end
 
     def initialize(
@@ -12,12 +16,12 @@ module Context
       opts = {},
       context_builder = Proc.new {|record| record}
     )
-      Verse.logger.debug {self.class.name.split("::").last.downcase.to_sym}
       @args = args
       @context_api = context_api
       @context_builder = context_builder
       @context_filters = context_filters
       @opts = opts
+      Verse::logger.debug {[:init_context, self.name, self].join(' ')}
     end
 
     protected
