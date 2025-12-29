@@ -1,0 +1,19 @@
+module Context
+  class Delegate < Base
+    attr_reader :name
+
+    def initialize(name, delegate)
+      @name = name
+      @delegate = delegate
+      super(self)
+    end
+
+    def index(filter = {})
+      @delegate.call(filter)
+    end
+
+    def show(id = nil)
+      @delegate.call(id:)&.first || (raise Verse::Error::NotFound)
+    end
+  end
+end

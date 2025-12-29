@@ -29,8 +29,8 @@ module Context
 
       def self.from_datasets(datasets, args = {}, filters = {})
         new(
-          args, filters, { delegated: true },
-          Delegated.new(:entries, proc do |filter = {}|
+          args, filters, {},
+          Delegate.new(:entries, proc do |filter = {}|
             datasets.index.flat_map { |d| d.entries.index(filter) }
           end)
         )
@@ -38,8 +38,8 @@ module Context
 
       def self.from_annotations(annotations, args = {}, filters = {})
         new(
-          args, filters, { delegated: true },
-          Delegated.new(:entries, proc do |filter = {}|
+          args, filters, {},
+          Delegate.new(:entries, proc do |filter = {}|
             entry_ids = annotations.index.map { |a| a.record[:attributes][:entry_id] }.compact.uniq
             entry_ids.each_slice(100).flat_map do |id__in|
               Idah::Entries.new(args, {entries:{id__in:}}).index(filter)

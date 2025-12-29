@@ -24,8 +24,8 @@ module Context
 
       def self.from_organizations(organizations, args = {}, filters = {})
         new(
-          args, filters, { delegated: true },
-          Delegated.new(:entries, proc do |filter = {}|
+          args, filters, {},
+          Delegate.new(:entries, proc do |filter = {}|
             organization_ids = organizations.index.map { |o| o.record[:id] }.compact.uniq
             organization_ids.each_slice(100).flat_map do |organization_id__in|
               Projects.new(args, {projects:{organization_id__in:}}).index(filter)
@@ -36,8 +36,8 @@ module Context
 
       def self.from_project_members(project_members, args = {}, filters = {})
         new(
-          args, filters, { delegated: true },
-          Delegated.new(:entries, proc do |filter = {}|
+          args, filters, {},
+          Delegate.new(:entries, proc do |filter = {}|
             project_ids = organizations.index.map { |o| o.record[:attributes][:project_id] }.compact.uniq
             project_ids.each_slice(100).flat_map do |id__in|
               Projects.new(args, {projects:{id__in:}}).index(filter)

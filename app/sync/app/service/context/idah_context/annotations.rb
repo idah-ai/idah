@@ -27,8 +27,8 @@ module Context
 
       def self.from_entries(entries, args = {}, filters = {})
         new(
-          args, filters, { delegated: true },
-          Delegated.new(:annotations, proc do |filter = {}|
+          args, filters, {},
+          Delegate.new(:annotations, proc do |filter = {}|
             entries.index.flat_map { |e| e.annotations.index(filter) }
           end)
         )

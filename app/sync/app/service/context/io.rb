@@ -1,10 +1,10 @@
 module Context
   class Io < Base
     def initialize(args = {}, context = {})
-      classname = Hash(context).fetch(:klass)
-      return unless classname
+      klass = Verse::Util::Reflection.constantize(Hash(context).fetch(:klass))
 
-      super(Verse::Util::Reflection.constantize(classname).new(args, context))
+      # raise "Invalid Io class #{klass.class}" unless klass.class < ExecutorCommand
+      super(klass.new(args, context))
     end
 
     def method_missing(name, *args, &block)
