@@ -27,7 +27,7 @@ module Context
 
       def self.from_entries(entries, args = {}, filters = {}, opts = {})
         new(
-          args, filters, opts,
+          entries.merge_context_filters(args), entries.merge_context_filters(filters), opts,
           Delegate.new(:annotations, proc do |filter = {}|
             entries.index.flat_map { |e| e.annotations.index(filter) }
           end)

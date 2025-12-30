@@ -27,7 +27,6 @@ module Context
       Verse::logger.debug {[:init_context, self.name, self].join(' ')}
     end
 
-    protected
     def merge_filters(filters = {}, context_api_name = @context_api.name)
       Hash(filters)
         .merge(Hash(Hash(@context_filters)[context_api_name]))
