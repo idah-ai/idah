@@ -42,10 +42,22 @@ module Context
           Delegate.new(:entries, proc do |filter = {}|
             entry_ids = annotations.index.map { |a| a.record[:attributes][:entry_id] }.compact.uniq
             entry_ids.each_slice(100).flat_map do |id__in|
-              Idah::Entries.new(args, {entries:{id__in:}}).index(filter)
+              Entries.new(args, {entries:{id__in:}}).index(filter)
             end
           end)
         )
+      end
+
+      def self.idah(args, context)
+        entries = Entries.new(args, context)
+        datasets = Datasets.from_entries(entries, args, context)
+        projects = Projects.from_datasets(datasets, args, context)
+        organizations = Organizations.from_projects(projects, args, context)
+        project_members = ProjectMembers.from_projects(projects, args, context)
+        annotations = Annotations.from_entries(entries, args, context)
+        # create APIs back up from annotations to make filtering exclusive
+        # or integrates query join/include accordingly on Entries/Crud
+        [organizations, projects, project_members, datasets, entries, annotations]
       end
     end
   end

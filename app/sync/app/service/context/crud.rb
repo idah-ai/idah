@@ -6,7 +6,7 @@ module Context
 
     def index(filters = {})
       if @context_api.class < Delegate
-        @context_api.show(filters[:id])
+        @context_api.index(filters)
       else
         Verse::Util::Iterator.chunk_iterator(1) do |number|
           query_result = @context_api.index(

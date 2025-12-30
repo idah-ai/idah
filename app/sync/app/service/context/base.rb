@@ -1,16 +1,19 @@
 module Context
   class Base
     attr_reader :context_filters, :args, :opts
-    def name
-      self.class
-        .name.split("::").last
+    def self.name
+      self.to_s.split("::").last
         .gsub(/(?<=[a-z])(?=[A-Z])/, '_')
         .downcase
         .to_sym
     end
 
+    def name
+      self.class.name
+    end
+
     def initialize(
-      context_api,
+      context_api = self,
       args = {},
       context_filters = {},
       opts = {},

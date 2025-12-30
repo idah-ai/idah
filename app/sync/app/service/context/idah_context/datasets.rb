@@ -24,7 +24,7 @@ module Context
           Delegate.new(:datasets, proc do |filter = {}|
             dataset_ids = entries.index.map { |e| e.record[:attributes][:dataset_id] }.compact.uniq
             dataset_ids.each_slice(100).flat_map do |id__in|
-              Idah::Datasets.new(args, {datasets:{id__in:}}).index(filter)
+              Datasets.new(args, {datasets:{id__in:}}).index(filter)
             end
           end)
         )
@@ -39,6 +39,17 @@ module Context
         )
       end
 
+      def self.idah(args, context)
+        datasets = Datasets.new(args, context)
+        projects = Projects.from_datasets(datasets, args, context)
+        organizations = Organizations.from_projects(projects, args, context)
+        project_members = ProjectMembers.from_projects(projects, args, context)
+        entries = Entries.from_datasets(datasets, args, context)
+        annotations = Annotations.from_entries(entries, args, context)
+        # create APIs back up from annotations to make filtering exclusive
+        # or integrates query join/include accordingly on Datasets/Crud
+        [organizations, projects, project_members, datasets, entries, annotations]
+      end
     end
   end
 end
