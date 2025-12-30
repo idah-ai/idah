@@ -18,7 +18,6 @@ module Context
       super(
         Root.new(
           IDAH_CONTEXTS.find do |idah_context|
-            idah_context.new(args, context)
             filters.include?(idah_context.name)
           end&.idah(args, context) || IDAH_CONTEXTS.map do |idah_context|
             idah_context.new(args, context)
