@@ -9,7 +9,7 @@ module Context
       IdahApi::Annotations
     ]
 
-    def initialize(args = {}, context = {}, _opts = {})
+    def initialize(args = {}, context = {}, opts = {})
       args = Hash(args)
       context = Hash(context)
       filters = args.keys
