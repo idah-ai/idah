@@ -26,7 +26,9 @@ module Context
 
       def self.from_projects(projects, args = {}, filters = {}, opts = {})
         new(
-          args, filters, opts,
+          projects.merge_context_filters(args),
+          projects.merge_context_filters(filters),
+          opts,
           Delegate.new(:entries, proc do |filter = {}|
             projects.index.flat_map { |p| p.organizations.index(filter) }
           end)
@@ -35,11 +37,36 @@ module Context
 
       def self.idah_apis(args = {}, context = {}, opts = {})
         organizations = Organizations.new(args, context, opts)
-        projects = Projects.from_organizations(organizations, args, context, opts)
-        project_members = ProjectMembers.from_projects(projects, args, context, opts)
-        datasets = Datasets.from_projects(projects, args, context, opts)
-        entries = Entries.from_datasets(datasets, args, context, opts)
-        annotations = Annotations.from_entries(entries, args, context, opts)
+        projects = Projects.from_organizations(
+          organizations,
+          organizations.merge_context_filters(args),
+          organizations.merge_context_filters(context),
+          opts
+        )
+        project_members = ProjectMembers.from_projects(
+          projects,
+          projects.merge_context_filters(args),
+          projects.merge_context_filters(context),
+          opts
+        )
+        datasets = Datasets.from_projects(
+          projects,
+          projects.merge_context_filters(args),
+          projects.merge_context_filters(context),
+          opts
+        )
+        entries = Entries.from_datasets(
+          datasets,
+          datasets.merge_context_filters(args),
+          datasets.merge_context_filters(context),
+          opts
+        )
+        annotations = Annotations.from_entries(
+          entries,
+          entries.merge_context_filters(args),
+          entries.merge_context_filters(context),
+          opts
+        )
         # create APIs back up from annotations to make filtering exclusive
         # or integrates query join/include accordingly on Organizations/Crud
         [organizations, projects, project_members, datasets, entries, annotations]

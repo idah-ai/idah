@@ -20,7 +20,7 @@ module Context
 
       def self.from_entries(entries, args = {}, filters = {}, opts = {})
         new(
-          args, filters, opts,
+          entries.merge_context_filters(args), entries.merge_context_filters(filters), opts,
           Delegate.new(:datasets, proc do |filter = {}|
             dataset_ids = entries.index.map { |e| e.record[:attributes][:dataset_id] }.compact.uniq
             dataset_ids.each_slice(100).flat_map do |id__in|
@@ -32,7 +32,7 @@ module Context
 
       def self.from_projects(projects, args = {}, filters = {}, opts = {})
         new(
-          args, filters, opts,
+          projects.merge_context_filters(args), projects.merge_context_filters(filters), opts,
           Delegate.new(:datasets, proc do |filter = {}|
             projects.index.flat_map { |p| p.datasets.index(filter) }
           end)

@@ -29,7 +29,7 @@ module Context
 
       def self.from_projects(projects, args = {}, filters = {}, opts = {})
         new(
-          args, filters, opts,
+          projects.merge_context_filters(args), projects.merge_context_filters(filters), opts,
           Delegate.new(:projects_members, proc do |filter = {}|
             projects.index.flat_map { |p| p.project_members.index(filter) }
           end)
