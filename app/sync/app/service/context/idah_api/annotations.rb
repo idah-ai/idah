@@ -25,22 +25,22 @@ module Context
         )
       end
 
-      def self.from_entries(entries, args = {}, filters = {})
+      def self.from_entries(entries, args = {}, filters = {}, opts = {})
         new(
-          args, filters, {},
+          args, filters, opts,
           Delegate.new(:annotations, proc do |filter = {}|
             entries.index.flat_map { |e| e.annotations.index(filter) }
           end)
         )
       end
 
-      def self.idah_apis(args, context)
-        annotations = Annotations.new(args, context)
-        entries = Entries.from_annotations(annotations, args, context)
-        datasets = Datasets.from_entries(entries, args, context)
-        projects = Projects.from_datasets(datasets, args, context)
-        organizations = Organizations.from_projects(projects, args, context)
-        project_members = ProjectMembers.from_projects(projects, args, context)
+      def self.idah_apis(args = {}, context = {}, opts = {})
+        annotations = Annotations.new(args, context, opts)
+        entries = Entries.from_annotations(annotations, args, context, opts)
+        datasets = Datasets.from_entries(entries, args, context, opts)
+        projects = Projects.from_datasets(datasets, args, context, opts)
+        organizations = Organizations.from_projects(projects, args, context, opts)
+        project_members = ProjectMembers.from_projects(projects, args, context, opts)
         # create APIs back up from annotations to make filtering exclusive
         # or integrates query join/include accordingly on Annotations/Crud
         [organizations, projects, project_members, datasets, entries, annotations]

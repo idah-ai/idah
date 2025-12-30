@@ -12,47 +12,47 @@ module Context
           context_builder ||= proc do |project|
             Context.new(project,
               Projects.new(args, merge_context_filters(id: project[:id])),
-              ProjectMembers.new(args, merge_context_filters(project_id: project[:id])),
-              Datasets.new(args, merge_context_filters(project_id: project[:id])),
-              Entries.new(args, merge_context_filters(project_id: project[:id])),
-              Annotations.new(args, merge_context_filters(project_id: project[:id])),
-              Organizations.new(args, merge_context_filters(id: project[:attributes][:organization_id]))
+              ProjectMembers.new(args, merge_context_filters({project_id: project[:id]}, :project_members)),
+              Datasets.new(args, merge_context_filters({project_id: project[:id]}, :datasets)),
+              Entries.new(args, merge_context_filters({project_id: project[:id]}, :entries)),
+              Annotations.new(args, merge_context_filters({project_id: project[:id]}, :annotations)),
+              Organizations.new(args, merge_context_filters({id: project[:attributes][:organization_id]}, :organizations))
             )
           end
         )
       end
 
-      def self.from_organizations(organizations, args = {}, filters = {})
+      def self.from_organizations(organizations, args = {}, filters = {}, opts = {})
         new(
-          args, filters, {},
+          args, filters, opts,
           Delegate.new(:entries, proc do |filter = {}|
             organization_ids = organizations.index.map { |o| o.record[:id] }.compact.uniq
             organization_ids.each_slice(100).flat_map do |organization_id__in|
-              Projects.new(args, {projects:{organization_id__in:}}).index(filter)
+              Projects.new(args, {projects:{organization_id__in:}}, opts).index(filter)
             end
           end)
         )
       end
 
-      def self.from_project_members(project_members, args = {}, filters = {})
+      def self.from_project_members(project_members, args = {}, filters = {}, opts = {})
         new(
-          args, filters, {},
+          args, filters, opts,
           Delegate.new(:entries, proc do |filter = {}|
             project_ids = organizations.index.map { |o| o.record[:attributes][:project_id] }.compact.uniq
             project_ids.each_slice(100).flat_map do |id__in|
-              Projects.new(args, {projects:{id__in:}}).index(filter)
+              Projects.new(args, {projects:{id__in:}}, opts).index(filter)
             end
           end)
         )
       end
 
-      def self.idah_apis(args, context)
-        projects = Projects.new(args, context)
-        organizations = Organizations.from_projects(projects, args, context)
-        project_members = ProjectMembers.from_projects(projects, args, context)
-        datasets = Datasets.from_projects(projects, args, context)
-        entries = Entries.from_datasets(datasets, args, context)
-        annotations = Entries.from_entries(entries, args, context)
+      def self.idah_apis(args = {}, context = {}, opts = {})
+        projects = Projects.new(args, context, opts)
+        organizations = Organizations.from_projects(projects, args, context, opts)
+        project_members = ProjectMembers.from_projects(projects, args, context, opts)
+        datasets = Datasets.from_projects(projects, args, context, opts)
+        entries = Entries.from_datasets(datasets, args, context, opts)
+        annotations = Entries.from_entries(entries, args, context, opts)
         # create APIs back up from annotations to make filtering exclusive
         # or integrates query join/include accordingly on Projects/Crud
         [organizations, projects, project_members, datasets, entries, annotations]

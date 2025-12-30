@@ -18,9 +18,9 @@ module Context
         )
       end
 
-      def self.from_entries(entries, args = {}, filters = {})
+      def self.from_entries(entries, args = {}, filters = {}, opts = {})
         new(
-          args, filters, {},
+          args, filters, opts,
           Delegate.new(:datasets, proc do |filter = {}|
             dataset_ids = entries.index.map { |e| e.record[:attributes][:dataset_id] }.compact.uniq
             dataset_ids.each_slice(100).flat_map do |id__in|
@@ -30,22 +30,22 @@ module Context
         )
       end
 
-      def self.from_projects(projects, args = {}, filters = {})
+      def self.from_projects(projects, args = {}, filters = {}, opts = {})
         new(
-          args, filters, {},
+          args, filters, opts,
           Delegate.new(:datasets, proc do |filter = {}|
             projects.index.flat_map { |p| p.datasets.index(filter) }
           end)
         )
       end
 
-      def self.idah_apis(args, context)
-        datasets = Datasets.new(args, context)
-        projects = Projects.from_datasets(datasets, args, context)
-        organizations = Organizations.from_projects(projects, args, context)
-        project_members = ProjectMembers.from_projects(projects, args, context)
-        entries = Entries.from_datasets(datasets, args, context)
-        annotations = Annotations.from_entries(entries, args, context)
+      def self.idah_apis(args = {}, context = {}, opts = {})
+        datasets = Datasets.new(args, context, opts)
+        projects = Projects.from_datasets(datasets, args, context, opts)
+        organizations = Organizations.from_projects(projects, args, context, opts)
+        project_members = ProjectMembers.from_projects(projects, args, context, opts)
+        entries = Entries.from_datasets(datasets, args, context, opts)
+        annotations = Annotations.from_entries(entries, args, context, opts)
         # create APIs back up from annotations to make filtering exclusive
         # or integrates query join/include accordingly on Datasets/Crud
         [organizations, projects, project_members, datasets, entries, annotations]
