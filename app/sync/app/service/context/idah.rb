@@ -1,26 +1,24 @@
 module Context
   class Idah < Base
-    API = Data.define(:name, :api)
-
-    IDAH_CONTEXTS = [
-      IdahContext::Organizations,
-      IdahContext::Projects,
-      IdahContext::ProjectMembers,
-      IdahContext::Datasets,
-      IdahContext::Entries,
-      IdahContext::Annotations
+    IDAH_APIS = [
+      IdahApi::Organizations,
+      IdahApi::Projects,
+      IdahApi::ProjectMembers,
+      IdahApi::Datasets,
+      IdahApi::Entries,
+      IdahApi::Annotations
     ]
 
-    def initialize(args = {}, context = {})
+    def initialize(args = {}, context = {}, _opts = {})
       args = Hash(args)
       context = Hash(context)
       filters = args.keys
       super(
         Root.new(
-          IDAH_CONTEXTS.find do |idah_context|
+          IDAH_APIS.find do |idah_context|
             filters.include?(idah_context.name)
-          end&.idah(args, context) || IDAH_CONTEXTS.map do |idah_context|
-            idah_context.new(args, context)
+          end&.idah_apis(args, context, opts) || IDAH_APIS.map do |idah_context|
+            idah_context.new(args, context, opts)
           end
         )
       )

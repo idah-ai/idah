@@ -1,5 +1,5 @@
 module Context
-  module IdahContext
+  module IdahApi
     class Medias < Base
       def initialize(args = {}, context_filters = {}, context_api = Api[:idah].media.medias)
         super(

@@ -1,5 +1,5 @@
 module Context
-  module IdahContext
+  module IdahApi
     class Entries < Crud
       Context = Data.define(:record, :api, :datasets, :medias, :annotations)
 
@@ -48,7 +48,7 @@ module Context
         )
       end
 
-      def self.idah(args, context)
+      def self.idah_apis(args, context)
         entries = Entries.new(args, context)
         datasets = Datasets.from_entries(entries, args, context)
         projects = Projects.from_datasets(datasets, args, context)

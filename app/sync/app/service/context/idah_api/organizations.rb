@@ -1,5 +1,5 @@
 module Context
-  module IdahContext
+  module IdahApi
     class Organizations < Crud
       Context = Data.define(:record, :api, :projects)
 
@@ -33,7 +33,7 @@ module Context
         )
       end
 
-      def self.idah(args, context)
+      def self.idah_apis(args, context)
         organizations = Organizations.new(args, context)
         projects = Projects.from_organizations(organizations, args, context)
         project_members = ProjectMembers.from_projects(projects, args, context)
