@@ -33,6 +33,18 @@ module Context
           end)
         )
       end
+
+      def self.idah(args, context)
+        annotations = Annotations.new(args, context)
+        entries = Entries.from_annotations(annotations, args, context)
+        datasets = Datasets.from_entries(entries, args, context)
+        projects = Projects.from_datasets(datasets, args, context)
+        organizations = Organizations.from_projects(projects, args, context)
+        project_members = ProjectMembers.from_projects(projects, args, context)
+        # create APIs back up from annotations to make filtering exclusive
+        # or integrates query join/include accordingly on Annotations/Crud
+        [organizations, projects, project_members, datasets, entries, annotations]
+      end
     end
   end
 end
