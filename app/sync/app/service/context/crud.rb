@@ -1,9 +1,12 @@
 module Context
   class Crud < Base
     def create(attributes = {})
-      raise :not_implemented
+      raise NotImplementedError, "#{self.class.name}#create not implemented"
     end
 
+    # Returns a lazy enumerator of records
+    # For Delegate contexts: delegates directly
+    # For API contexts: paginates through results automatically
     def index(filters = {})
       if @context_api.class < Delegate
         @context_api.index(filters)
@@ -11,11 +14,13 @@ module Context
         Verse::Util::Iterator.chunk_iterator(1) do |number|
           query_result = @context_api.index(
             filter: build_filters(filters),
-            page: {number:, size: 100})
+            page: { number:, size: @opts[:page_size] || 100 }
+          )
 
-          raise query_result.errors if query_result.errors
+          raise Sync::Error::QueryFailed, query_result.errors if query_result.errors
 
-          query_result.data if !query_result.data.empty?
+          # Return nil when empty to stop iteration
+          query_result.data unless query_result.data.empty?
         end.lazy.map(&:data).map do |record|
           @context_builder&.call(record) || builder(record)
         end
@@ -23,16 +28,24 @@ module Context
     end
 
     def show(id = nil)
-      filters = build_filters(id ? {id:} : nil)
+      filters = build_filters(id ? { id: } : nil)
+
       if @context_api.class < Delegate
         @context_api.show(filters[:id])
       else
-        raise Verse::Error::NotFound if !filters[:id] || (id && filters[:id] != id) # overriden by context
+        # Validate that an ID is present after filter merging
+        unless filters[:id]
+          raise Sync::Error::NotFound, "No ID available after applying context filters"
+        end
 
-        query_result = @context_api.index(filters:, page: {number: 1, size: 1})
-        raise query_result.errors if query_result.errors
+        # Security check: if user provided an ID but context changed it
+        if id && filters[:id] != id
+          raise Sync::Error::Forbidden, "Context does not permit access to resource #{id}"
+        end
 
-        raise Verse::Error::NotFound, id if query_result.data.empty?
+        query_result = @context_api.index(filters:, page: { number: 1, size: 1 })
+        raise Sync::Error::QueryFailed, query_result.errors if query_result.errors
+        raise Sync::Error::NotFound, id if query_result.data.empty?
 
         record = query_result.data.first.data
         @context_builder&.call(record) || builder(record)
@@ -40,11 +53,11 @@ module Context
     end
 
     def update(attributes, id = nil)
-      raise :not_implemented
+      raise NotImplementedError, "#{self.class.name}#update not implemented"
     end
 
     def delete(id = nil)
-      raise :not_implemented
+      raise NotImplementedError, "#{self.class.name}#delete not implemented"
     end
   end
 end

@@ -4,9 +4,15 @@ module Context
       Context = Data.define(:record, :api, :projects)
 
       def builder(organization)
-        Context.new(organization,
-          Organizations.new(args, build_context_filters(id: organization[:id])),
-          Projects.new(args, build_context_filters({organization_id: organization[:id]}, :projects))
+        org_id = organization[:id]
+        unless org_id
+          raise Sync::Error::InvalidData, "Organization missing id"
+        end
+
+        Context.new(
+          organization,
+          Organizations.new(args, build_context_filters(id: org_id), opts),
+          Projects.new(args, build_context_filters({ organization_id: org_id }, :projects), opts)
         )
       end
 
@@ -14,9 +20,12 @@ module Context
         args = {},
         context_filters = {},
         opts = {},
-        context_api = Api[:idah].iam.organizations,
+        context_api = nil,
         &context_builder
       )
+        # Dependency injection: allow passing context_api for testing
+        context_api ||= Api[:idah].iam.organizations
+
         super(
           context_api,
           args,
@@ -69,8 +78,8 @@ module Context
           entries.build_context_filters_from(context),
           opts
         )
-        # create APIs back up from annotations to make filtering exclusive
-        # or integrates query join/include accordingly on Organizations/Crud
+
+        # Returns APIs ordered from top-level to leaf-level
         [organizations, projects, project_members, datasets, entries, annotations]
       end
     end

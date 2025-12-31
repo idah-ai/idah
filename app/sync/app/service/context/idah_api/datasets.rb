@@ -4,13 +4,28 @@ module Context
       Context = Data.define(:record, :api, :entries)
 
       def builder(dataset)
-        Context.new(dataset,
-          Datasets.new(args, build_context_filters(id: dataset[:id])),
-          Entries.new(args, build_context_filters({dataset_id: dataset[:id]}, :entries))
+        dataset_id = dataset[:id]
+        unless dataset_id
+          raise Sync::Error::InvalidData, "Dataset missing id"
+        end
+
+        Context.new(
+          dataset,
+          Datasets.new(args, build_context_filters(id: dataset_id), opts),
+          Entries.new(args, build_context_filters({ dataset_id: dataset_id }, :entries), opts)
         )
       end
 
-      def initialize(args = {}, context_filters = {}, opts = {}, api_context = Api[:idah].dataset.datasets, &context_builder)
+      def initialize(
+        args = {},
+        context_filters = {},
+        opts = {},
+        api_context = nil,
+        &context_builder
+      )
+        # Dependency injection: allow passing api_context for testing
+        api_context ||= Api[:idah].dataset.datasets
+
         super(
           api_context,
           args,
@@ -21,12 +36,16 @@ module Context
       end
 
       def self.from_entries(entries, args = {}, filters = {}, opts = {})
+        batch_size = opts[:batch_size] || 100
+
         new(
-          entries.build_context_filters_from(args), entries.build_context_filters_from(filters), opts,
+          entries.build_context_filters_from(args),
+          entries.build_context_filters_from(filters),
+          opts,
           Delegate.new(:datasets, proc do |filter = {}|
-            dataset_ids = entries.index.map { |e| e.record[:attributes][:dataset_id] }.compact.uniq
-            dataset_ids.each_slice(100).flat_map do |id__in|
-              Datasets.new(args, {datasets:{id__in:}}).index(filter)
+            dataset_ids = entries.index.map { |e| e.record.dig(:attributes, :dataset_id) }.compact.uniq
+            dataset_ids.each_slice(batch_size).flat_map do |id__in|
+              Datasets.new(args, { datasets: { id__in: } }, opts).index(filter)
             end
           end, args, filters, opts)
         )
@@ -34,7 +53,9 @@ module Context
 
       def self.from_projects(projects, args = {}, filters = {}, opts = {})
         new(
-          projects.build_context_filters_from(args), projects.build_context_filters_from(filters), opts,
+          projects.build_context_filters_from(args),
+          projects.build_context_filters_from(filters),
+          opts,
           Delegate.new(:datasets, proc do |filter = {}|
             projects.index.flat_map { |p| p.datasets.index(filter) }
           end, args, filters, opts)
@@ -48,8 +69,8 @@ module Context
         project_members = ProjectMembers.from_projects(projects, args, context, opts)
         entries = Entries.from_datasets(datasets, args, context, opts)
         annotations = Annotations.from_entries(entries, args, context, opts)
-        # create APIs back up from annotations to make filtering exclusive
-        # or integrates query join/include accordingly on Datasets/Crud
+
+        # Returns APIs ordered from top-level to leaf-level
         [organizations, projects, project_members, datasets, entries, annotations]
       end
     end

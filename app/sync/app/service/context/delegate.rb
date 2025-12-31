@@ -1,6 +1,7 @@
 module Context
   class Delegate < Base
     attr_reader :name
+
     def initialize(name, delegate, args = {}, context_filters = {}, opts = {})
       @name = name
       @delegate = delegate
@@ -12,7 +13,13 @@ module Context
     end
 
     def show(id = nil)
-      @delegate.call(id:)&.first || (raise Verse::Error::NotFound)
+      result = @delegate.call(id:)
+
+      unless result&.first
+        raise Sync::Error::NotFound, "Resource with id '#{id}' not found via #{@name} delegate"
+      end
+
+      result.first
     end
   end
 end

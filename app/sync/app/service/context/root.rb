@@ -2,7 +2,9 @@ module Context
   class Root < Base
     def initialize(contexts = [])
       @contexts = Array(contexts).map do |context|
-        raise "invalid context class #{context.class}" unless context.class < Base
+        unless context.class < Base
+          raise Sync::Error::InvalidContext, context.class
+        end
 
         context
       end
