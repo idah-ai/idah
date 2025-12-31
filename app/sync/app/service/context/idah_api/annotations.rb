@@ -11,7 +11,7 @@ module Context
         end
 
         Context.new(
-          annotation,
+          super(annotation),
           Annotations.new(args, build_context_filters(id: annotation[:id]), opts),
           Entries.new(args, build_context_filters({ id: entry_id }, :entries), opts)
         )
@@ -48,6 +48,7 @@ module Context
       end
 
       def self.idah_apis(args = {}, context = {}, opts = {})
+        Verse::logger.debug {{idah_apis: self, args:, context:, opts:}}
         annotations = Annotations.new(args, context, opts)
         entries = Entries.from_annotations(annotations, args, context, opts)
         datasets = Datasets.from_entries(entries, args, context, opts)

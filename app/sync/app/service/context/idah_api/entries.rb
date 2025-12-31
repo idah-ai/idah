@@ -20,7 +20,7 @@ module Context
         end
 
         Context.new(
-          entry,
+          super(entry),
           Entries.new(args, build_context_filters(id: entry_id), opts),
           Datasets.new(args, build_context_filters({ id: dataset_id }, :datasets), opts),
           Medias.new(args, build_context_filters({ resource: resource }, :medias), opts),
@@ -75,6 +75,7 @@ module Context
       end
 
       def self.idah_apis(args = {}, context = {}, opts = {})
+        Verse::logger.debug {{idah_apis: self, args:, context:, opts:}}
         entries = Entries.new(args, context, opts)
         datasets = Datasets.from_entries(entries, args, context, opts)
         projects = Projects.from_datasets(datasets, args, context, opts)

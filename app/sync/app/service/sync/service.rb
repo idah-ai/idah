@@ -26,12 +26,12 @@ module Sync
               context: {
                 idah: {
                   klass: "Context::Idah",
-                  filters:,
+                  context: filters,
                   opts: nil
                 },
                 io: {
                   klass: "Context::Io",
-                  filters:,
+                  context: filters,
                   opts: {
                     klass: "ExecutorCommand::UniversalPortableDatasetAppend"
                   }
@@ -43,12 +43,12 @@ module Sync
               context: {
                 idah: {
                   klass: "Context::Idah",
-                  filters:,
+                  context: filters,
                   opts: nil
                 },
                 io: {
                   klass: "Context::Io",
-                  filters:,
+                  context: filters,
                   opts: {
                     klass: "ExecutorCommand::Cvat"
                   }
