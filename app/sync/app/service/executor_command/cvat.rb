@@ -2,7 +2,7 @@ require 'builder'
 require 'zip'
 
 module ExecutorCommand
-  module CvatVideo
+  module Cvat
     Context = Data.define(:name, :filename, :i, :o, :e) do
       def builder(resource, &block)
         directory = [
@@ -54,12 +54,12 @@ module ExecutorCommand
       end
     end
 
-    def self.new(args = {}, filters = {})
+    def self.new(args = {}, filters = {}, opts ={})
       # TODO should be in args
-      filename = [Hash(filters).dig(:name) || ["export.CvatVideo.bundle", Time.now.to_i]].join(".")
+      filename = [Hash(opts).dig(:name) || ["export.cvat.bundle", Time.now.to_i]].join(".")
       FileUtils.mkdir_p filename
 
-      Context.new("CvatVideo", filename, nil, nil ,nil)
+      Context.new("Cvat", filename, nil, nil ,nil)
     end
   end
 end

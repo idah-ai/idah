@@ -5,8 +5,8 @@ module Context
 
       def builder(organization)
         Context.new(organization,
-          Organizations.new(args, merge_context_filters(id: organization[:id])),
-          Projects.new(args, merge_context_filters({organization_id: organization[:id]}, :projects))
+          Organizations.new(args, build_context_filters(id: organization[:id])),
+          Projects.new(args, build_context_filters({organization_id: organization[:id]}, :projects))
         )
       end
 
@@ -28,10 +28,10 @@ module Context
 
       def self.from_projects(projects, args = {}, filters = {}, opts = {})
         new(
-          projects.merge_args(args),
-          projects.merge_args(filters),
+          projects.build_context_filters_from(args),
+          projects.build_context_filters_from(filters),
           opts,
-          Delegate.new(:entries, proc do |filter = {}|
+          Delegate.new(:organizations, proc do |filter = {}|
             projects.index.flat_map { |p| p.organizations.index(filter) }
           end, args, filters, opts)
         )
@@ -41,32 +41,32 @@ module Context
         organizations = Organizations.new(args, context, opts)
         projects = Projects.from_organizations(
           organizations,
-          organizations.merge_args(args),
-          organizations.merge_args(context),
+          organizations.build_context_filters_from(args),
+          organizations.build_context_filters_from(context),
           opts
         )
         project_members = ProjectMembers.from_projects(
           projects,
-          projects.merge_args(args),
-          projects.merge_args(context),
+          projects.build_context_filters_from(args),
+          projects.build_context_filters_from(context),
           opts
         )
         datasets = Datasets.from_projects(
           projects,
-          projects.merge_args(args),
-          projects.merge_args(context),
+          projects.build_context_filters_from(args),
+          projects.build_context_filters_from(context),
           opts
         )
         entries = Entries.from_datasets(
           datasets,
-          datasets.merge_args(args),
-          datasets.merge_args(context),
+          datasets.build_context_filters_from(args),
+          datasets.build_context_filters_from(context),
           opts
         )
         annotations = Annotations.from_entries(
           entries,
-          entries.merge_args(args),
-          entries.merge_args(context),
+          entries.build_context_filters_from(args),
+          entries.build_context_filters_from(context),
           opts
         )
         # create APIs back up from annotations to make filtering exclusive

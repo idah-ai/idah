@@ -10,7 +10,7 @@ module Context
       else
         Verse::Util::Iterator.chunk_iterator(1) do |number|
           query_result = @context_api.index(
-            filter: merge_filters(filters),
+            filter: build_filters(filters),
             page: {number:, size: 100})
 
           raise query_result.errors if query_result.errors
@@ -23,8 +23,7 @@ module Context
     end
 
     def show(id = nil)
-      filters = merge_filters(id ? {id:} : nil)
-
+      filters = build_filters(id ? {id:} : nil)
       if @context_api.class < Delegate
         @context_api.show(filters[:id])
       else

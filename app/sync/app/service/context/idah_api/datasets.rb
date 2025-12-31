@@ -5,8 +5,8 @@ module Context
 
       def builder(dataset)
         Context.new(dataset,
-          Datasets.new(args, merge_context_filters(id: dataset[:id])),
-          Entries.new(args, merge_context_filters({dataset_id: dataset[:id]}, :entries))
+          Datasets.new(args, build_context_filters(id: dataset[:id])),
+          Entries.new(args, build_context_filters({dataset_id: dataset[:id]}, :entries))
         )
       end
 
@@ -22,7 +22,7 @@ module Context
 
       def self.from_entries(entries, args = {}, filters = {}, opts = {})
         new(
-          entries.merge_args(args), entries.merge_args(filters), opts,
+          entries.build_context_filters_from(args), entries.build_context_filters_from(filters), opts,
           Delegate.new(:datasets, proc do |filter = {}|
             dataset_ids = entries.index.map { |e| e.record[:attributes][:dataset_id] }.compact.uniq
             dataset_ids.each_slice(100).flat_map do |id__in|
@@ -34,7 +34,7 @@ module Context
 
       def self.from_projects(projects, args = {}, filters = {}, opts = {})
         new(
-          projects.merge_args(args), projects.merge_args(filters), opts,
+          projects.build_context_filters_from(args), projects.build_context_filters_from(filters), opts,
           Delegate.new(:datasets, proc do |filter = {}|
             projects.index.flat_map { |p| p.datasets.index(filter) }
           end, args, filters, opts)

@@ -1,7 +1,7 @@
 module Context
   class Io < Base
     def initialize(args = {}, context = {}, opts = {})
-      klass = Verse::Util::Reflection.constantize(Hash(context).fetch(:klass))
+      klass = Verse::Util::Reflection.constantize(Hash(opts).fetch(:klass))
 
       # raise "Invalid Io class #{klass.class}" unless klass.class < ExecutorCommand
       super(klass.new(args, context, opts))

@@ -30,7 +30,7 @@ module ExecutorCommand
       end
     end
 
-    def self.new(args = {}, filters = {})
+    def self.new(args = {}, filters = {}, opts = {})
       filename = [Hash(args).dig(:name) || ["export.UniversalPortableDataset", Time.now.to_i], :upd].join(".")
       stdin, stdout, stderr, wait_thr = Open3.popen3(
         "bin/datset-static",

@@ -1,7 +1,7 @@
 module Export
-  class CvatVideo
+  class Cvat
     def self.name
-      "CvatVideo"
+      "Cvat"
     end
 
     def initialize(context)
