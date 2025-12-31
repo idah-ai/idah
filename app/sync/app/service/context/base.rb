@@ -36,5 +36,11 @@ module Context
     def merge_context_filters(filters = {}, context_api_name = @context_api.name)
       Hash(@context_filters).merge([[context_api_name, merge_filters(filters, context_api_name)]].to_h)
     end
+
+    def merge_args(_args = {})
+      Hash(args).reduce({}) do|h , (context_api_name, filters)|
+        h.merge(merge_context_filters(filters, context_api_name))
+      end
+    end
   end
 end

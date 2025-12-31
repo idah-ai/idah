@@ -26,12 +26,12 @@ module Context
 
       def self.from_projects(projects, args = {}, filters = {}, opts = {})
         new(
-          projects.merge_context_filters(args),
-          projects.merge_context_filters(filters),
+          projects.merge_args(args),
+          projects.merge_args(filters),
           opts,
           Delegate.new(:entries, proc do |filter = {}|
             projects.index.flat_map { |p| p.organizations.index(filter) }
-          end)
+          end, args, filters, opts)
         )
       end
 
@@ -39,32 +39,32 @@ module Context
         organizations = Organizations.new(args, context, opts)
         projects = Projects.from_organizations(
           organizations,
-          organizations.merge_context_filters(args),
-          organizations.merge_context_filters(context),
+          organizations.merge_args(args),
+          organizations.merge_args(context),
           opts
         )
         project_members = ProjectMembers.from_projects(
           projects,
-          projects.merge_context_filters(args),
-          projects.merge_context_filters(context),
+          projects.merge_args(args),
+          projects.merge_args(context),
           opts
         )
         datasets = Datasets.from_projects(
           projects,
-          projects.merge_context_filters(args),
-          projects.merge_context_filters(context),
+          projects.merge_args(args),
+          projects.merge_args(context),
           opts
         )
         entries = Entries.from_datasets(
           datasets,
-          datasets.merge_context_filters(args),
-          datasets.merge_context_filters(context),
+          datasets.merge_args(args),
+          datasets.merge_args(context),
           opts
         )
         annotations = Annotations.from_entries(
           entries,
-          entries.merge_context_filters(args),
-          entries.merge_context_filters(context),
+          entries.merge_args(args),
+          entries.merge_args(context),
           opts
         )
         # create APIs back up from annotations to make filtering exclusive
