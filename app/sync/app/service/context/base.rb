@@ -27,17 +27,21 @@ module Context
       Verse::logger.debug {[:init_context, self.name, self].join(' ')}
     end
 
+    # generate a context constrained filters hash for an api
     def merge_filters(filters = {}, context_api_name = @context_api.name)
-      Hash(filters)
-        .merge(Hash(Hash(@context_filters)[context_api_name]))
-        .merge(Hash(Hash(@args)[context_api_name]))
+      Hash(filters) # on_demand api filters
+        .merge(Hash(Hash(@context_filters)[context_api_name])) # dynamic context filters merge/override
+        .merge(Hash(Hash(@args)[context_api_name])) # general context filters merge/Override
     end
 
+    # generate a context constrained context_filters hash given an api filters hash
     def merge_context_filters(filters = {}, context_api_name = @context_api.name)
-      Hash(@context_filters).merge([[context_api_name, merge_filters(filters, context_api_name)]].to_h)
+      Hash(@context_filters)
+        .merge([[context_api_name, merge_filters(filters, context_api_name)]].to_h)
     end
 
-    def merge_args(_args = {})
+    # generate a context constrained context_filters hash given another context_filters hash
+    def merge_args(context_filters = {})
       Hash(args).reduce({}) do|h , (context_api_name, filters)|
         h.merge(merge_context_filters(filters, context_api_name))
       end
