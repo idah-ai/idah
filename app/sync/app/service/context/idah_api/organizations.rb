@@ -10,7 +10,7 @@ module Context
         end
 
         Context.new(
-          organization,
+          super(organization),
           Organizations.new(args, build_context_filters(id: org_id), opts),
           Projects.new(args, build_context_filters({ organization_id: org_id }, :projects), opts)
         )
@@ -47,6 +47,7 @@ module Context
       end
 
       def self.idah_apis(args = {}, context = {}, opts = {})
+        Verse::logger.debug {{idah_apis: self, args:, context:, opts:}}
         organizations = Organizations.new(args, context, opts)
         projects = Projects.from_organizations(
           organizations,

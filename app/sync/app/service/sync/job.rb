@@ -36,24 +36,24 @@ module Sync
           [processor_class, Verse::Util::Reflection.constantize(processor_class)]
         end.to_h
 
-        Hash(arguments.fetch(:processors)).lazy.map do |processor_name, processor_opts|
+        Hash(arguments.fetch(:processors)).lazy.map do |process_name, process|
+          Verse::logger.debug {{process_name:, process:}}
           [
-            processor_classes.fetch(processor_opts.fetch(:klass)),
-            Hash(processor_opts).fetch(:context).map do |context_name, context_opts|
-              Verse::logger.debug {{context_name:, context_opts:}}
-              Verse::logger.debug {{
-                args: Hash(auth_context_filters),
-                context: Hash(context_opts)[:filters],
-                opts: Hash(context_opts)[:opts]
-              }}
-              Verse::logger.debug {{context_opts: Hash(context_opts)}}
-              klass = context_classes[Hash(context_opts).fetch(:klass)]
+            processor_classes.fetch(process.fetch(:klass)),
+            Hash(process).fetch(:context).map do |context_name, context|
+              Verse::logger.debug {{context_name:, context:}}
+              klass = context_classes[Hash(context).fetch(:klass)]
               Verse::logger.debug {{klass:}}
               Verse::logger.debug {{parameters: klass.instance_method(:initialize).parameters}}
+              Verse::logger.debug {{
+                args: Hash(auth_context_filters),
+                context: Hash(context)[:context],
+                opts: Hash(context)[:opts]
+              }}
               klass.new(
                 Hash(auth_context_filters),
-                Hash(context_opts)[:filters],
-                Hash(context_opts)[:opts]
+                Hash(context)[:context],
+                Hash(context)[:opts]
               ) if klass
             end
           ]
