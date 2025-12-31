@@ -5,12 +5,12 @@ module Context
 
       def builder(project)
         Context.new(project,
-          Projects.new(args, merge_context_filters(id: project[:id]), opts),
-          ProjectMembers.new(args, merge_context_filters({project_id: project[:id]}, :project_members), opts),
-          Datasets.new(args, merge_context_filters({project_id: project[:id]}, :datasets), opts),
-          Entries.new(args, merge_context_filters({project_id: project[:id]}, :entries), opts),
-          Annotations.new(args, merge_context_filters({project_id: project[:id]}, :annotations), opts),
-          Organizations.new(args, merge_context_filters({id: project[:attributes][:organization_id]}, :organizations), opts)
+          Projects.new(args, build_context_filters(id: project[:id]), opts),
+          ProjectMembers.new(args, build_context_filters({project_id: project[:id]}, :project_members), opts),
+          Datasets.new(args, build_context_filters({project_id: project[:id]}, :datasets), opts),
+          Entries.new(args, build_context_filters({project_id: project[:id]}, :entries), opts),
+          Annotations.new(args, build_context_filters({project_id: project[:id]}, :annotations), opts),
+          Organizations.new(args, build_context_filters({id: project[:attributes][:organization_id]}, :organizations), opts)
         )
       end
 
@@ -26,8 +26,8 @@ module Context
 
       def self.from_organizations(organizations, args = {}, filters = {}, opts = {})
         new(
-          organizations.merge_args(args), organizations.merge_args(filters), opts,
-          Delegate.new(:entries, proc do |filter = {}|
+          organizations.build_context_filters_from(args), organizations.build_context_filters_from(filters), opts,
+          Delegate.new(:projects, proc do |filter = {}|
             organization_ids = organizations.index.map { |o| o.record[:id] }.compact.uniq
             organization_ids.each_slice(100).flat_map do |organization_id__in|
               Projects.new(args, {projects:{organization_id__in:}}, opts).index(filter)
@@ -38,9 +38,9 @@ module Context
 
       def self.from_project_members(project_members, args = {}, filters = {}, opts = {})
         new(
-          project_members.merge_args(args), project_members.merge_args(filters), opts,
-          Delegate.new(:entries, proc do |filter = {}|
-            project_ids = organizations.index.map { |o| o.record[:attributes][:project_id] }.compact.uniq
+          project_members.build_context_filters_from(args), project_members.build_context_filters_from(filters), opts,
+          Delegate.new(:projects, proc do |filter = {}|
+            project_ids = project_members.index.map { |o| o.record[:attributes][:project_id] }.compact.uniq
             project_ids.each_slice(100).flat_map do |id__in|
               Projects.new(args, {projects:{id__in:}}, opts).index(filter)
             end

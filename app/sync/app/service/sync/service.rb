@@ -26,27 +26,31 @@ module Sync
               context: {
                 idah: {
                   klass: "Context::Idah",
-                  args: filters
+                  filters:,
+                  opts: nil
                 },
                 io: {
                   klass: "Context::Io",
-                  args: {
+                  filters:,
+                  opts: {
                     klass: "ExecutorCommand::UniversalPortableDatasetAppend"
                   }
                 }
               }
             },
-            CvatVideo:  {
-              klass: "Export::CvatVideo",
+            Cvat:  {
+              klass: "Export::Cvat",
               context: {
                 idah: {
                   klass: "Context::Idah",
-                  args: filters
+                  filters:,
+                  opts: nil
                 },
                 io: {
                   klass: "Context::Io",
-                  args: {
-                    klass: "ExecutorCommand::CvatVideo"
+                  filters:,
+                  opts: {
+                    klass: "ExecutorCommand::Cvat"
                   }
                 }
               }

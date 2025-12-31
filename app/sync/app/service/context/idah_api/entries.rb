@@ -6,10 +6,10 @@ module Context
       def builder(entry)
         Context.new(
           entry,
-          Entries.new(args, merge_context_filters(id: entry[:id])),
-          Datasets.new(args, merge_context_filters({id: entry[:attributes][:dataset_id]}, :datasets)),
-          Medias.new(args, merge_context_filters({resource: entry[:attributes][:resource]}, :medias)),
-          Annotations.new(args, merge_context_filters({entry_id: entry[:id]}, :annotations))
+          Entries.new(args, build_context_filters(id: entry[:id])),
+          Datasets.new(args, build_context_filters({id: entry[:attributes][:dataset_id]}, :datasets)),
+          Medias.new(args, build_context_filters({resource: entry[:attributes][:resource]}, :medias)),
+          Annotations.new(args, build_context_filters({entry_id: entry[:id]}, :annotations))
         )
       end
 
@@ -31,7 +31,7 @@ module Context
 
       def self.from_datasets(datasets, args = {}, filters = {}, opts = {})
         new(
-          datasets.merge_args(args), datasets.merge_args(filters), opts,
+          datasets.build_context_filters_from(args), datasets.build_context_filters_from(filters), opts,
           Delegate.new(:entries, proc do |filter = {}|
             datasets.index.flat_map { |d| d.entries.index(filter) }
           end, args, filters, opts)
@@ -40,7 +40,7 @@ module Context
 
       def self.from_annotations(annotations, args = {}, filters = {}, opts = {})
         new(
-          annotations.merge_args(args), annotations.merge_args(filters), opts,
+          annotations.build_context_filters_from(args), annotations.build_context_filters_from(filters), opts,
           Delegate.new(:entries, proc do |filter = {}|
             entry_ids = annotations.index.map { |a| a.record[:attributes][:entry_id] }.compact.uniq
             entry_ids.each_slice(100).flat_map do |id__in|

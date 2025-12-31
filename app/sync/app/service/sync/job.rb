@@ -43,14 +43,17 @@ module Sync
               Verse::logger.debug {{context_name:, context_opts:}}
               Verse::logger.debug {{
                 args: Hash(auth_context_filters),
-                context: Hash(context_opts)[:args]
+                context: Hash(context_opts)[:filters],
+                opts: Hash(context_opts)[:opts]
               }}
+              Verse::logger.debug {{context_opts: Hash(context_opts)}}
               klass = context_classes[Hash(context_opts).fetch(:klass)]
               Verse::logger.debug {{klass:}}
               Verse::logger.debug {{parameters: klass.instance_method(:initialize).parameters}}
               klass.new(
                 Hash(auth_context_filters),
-                Hash(context_opts)[:args]
+                Hash(context_opts)[:filters],
+                Hash(context_opts)[:opts]
               ) if klass
             end
           ]

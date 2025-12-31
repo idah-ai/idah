@@ -11,7 +11,7 @@ module Context
 
       def resource_info(filters = {})
         media_response = @context_api.resource_info(
-          resource: merge_filters(filters)[:resource]
+          resource: build_filters(filters)[:resource]
         ) # ? seems loose
         raise media_response.errors if media_response.errors
 
@@ -19,7 +19,7 @@ module Context
       end
 
       def files(filters = {})
-        @context_api.files(resource: merge_filters(filters)[:resource]) # to do stream
+        @context_api.files(resource: build_filters(filters)[:resource]) # to do stream
       end
     end
   end

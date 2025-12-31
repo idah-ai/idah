@@ -6,8 +6,8 @@ module Context
       def builder(annotation)
         Context.new(
           annotation,
-          Annotations.new(args, merge_context_filters(id: annotation[:id])),
-          Entries.new(args, merge_context_filters({id: annotation[:attributes][:entry_id]}, :entries))
+          Annotations.new(args, build_context_filters(id: annotation[:id])),
+          Entries.new(args, build_context_filters({id: annotation[:attributes][:entry_id]}, :entries))
         )
       end
 
@@ -29,7 +29,7 @@ module Context
 
       def self.from_entries(entries, args = {}, filters = {}, opts = {})
         new(
-          entries.merge_args(args), entries.merge_args(filters), opts,
+          entries.build_context_filters_from(args), entries.build_context_filters_from(filters), opts,
           Delegate.new(:annotations, proc do |filter = {}|
             entries.index.flat_map { |e| e.annotations.index(filter) }
           end, args, filters, opts)
