@@ -4,12 +4,23 @@ module Context
       Context = Data.define(:record, :api, :projects, :datasets, :entries, :annotations)
 
       def builder(project_member)
-        Context.new(project_member,
-          ProjectMembers.new(args, build_context_filters(id: project_member[:id])),
-          Projects.new(args, build_context_filters({id: project_member[:attributes][:project_id]}, :projects)),
-          Datasets.new(args, build_context_filters({id: project_member[:attributes][:project_id]}, :datasets)),
-          Entries.new(args, build_context_filters({id: project_member[:attributes][:project_id]}, :entries)),
-          Annotations.new(args, build_context_filters({id: project_member[:attributes][:project_id]}, :annotations))
+        member_id = project_member[:id]
+        unless member_id
+          raise Sync::Error::InvalidData, "ProjectMember missing id"
+        end
+
+        project_id = project_member.dig(:attributes, :project_id)
+        unless project_id
+          raise Sync::Error::InvalidData, "ProjectMember missing project_id in attributes"
+        end
+
+        Context.new(
+          project_member,
+          ProjectMembers.new(args, build_context_filters(id: member_id), opts),
+          Projects.new(args, build_context_filters({ id: project_id }, :projects), opts),
+          Datasets.new(args, build_context_filters({ project_id: project_id }, :datasets), opts),
+          Entries.new(args, build_context_filters({ project_id: project_id }, :entries), opts),
+          Annotations.new(args, build_context_filters({ project_id: project_id }, :annotations), opts)
         )
       end
 
@@ -17,9 +28,12 @@ module Context
         args = {},
         context_filters = {},
         opts = {},
-        context_api = Api[:idah].dataset.project_members,
+        context_api = nil,
         &context_builder
       )
+        # Dependency injection: allow passing context_api for testing
+        context_api ||= Api[:idah].dataset.project_members
+
         super(
           context_api,
           args,
@@ -31,8 +45,10 @@ module Context
 
       def self.from_projects(projects, args = {}, filters = {}, opts = {})
         new(
-          projects.build_context_filters_from(args), projects.build_context_filters_from(filters), opts,
-          Delegate.new(:projects_members, proc do |filter = {}|
+          projects.build_context_filters_from(args),
+          projects.build_context_filters_from(filters),
+          opts,
+          Delegate.new(:project_members, proc do |filter = {}|
             projects.index.flat_map { |p| p.project_members.index(filter) }
           end, args, filters, opts)
         )
@@ -45,8 +61,8 @@ module Context
         datasets = Datasets.from_projects(projects, args, context, opts)
         entries = Entries.from_datasets(datasets, args, context, opts)
         annotations = Annotations.from_entries(entries, args, context, opts)
-        # create APIs back up from annotations to make filtering exclusive
-        # or integrates query join/include accordingly on ProjectMembers/Crud
+
+        # Returns APIs ordered from top-level to leaf-level
         [organizations, projects, project_members, datasets, entries, annotations]
       end
     end

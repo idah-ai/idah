@@ -3,7 +3,9 @@ module Context
     def initialize(args = {}, context = {}, opts = {})
       klass = Verse::Util::Reflection.constantize(Hash(opts).fetch(:klass))
 
-      # raise "Invalid Io class #{klass.class}" unless klass.class < ExecutorCommand
+      # Note: Add validation here if ExecutorCommand interface is defined
+      # raise Sync::Error::InvalidContext, klass unless klass < ExecutorCommand
+
       super(klass.new(args, context, opts))
     end
 
