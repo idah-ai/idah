@@ -1,11 +1,6 @@
 module Context
   class Delegate < Base
     attr_reader :name
-
-    def name
-      @name
-    end
-
     def initialize(name, delegate, args = {}, context_filters = {}, opts = {})
       @name = name
       @delegate = delegate
