@@ -3,6 +3,16 @@ module Context
     class Entries < Crud
       Context = Data.define(:record, :api, :datasets, :medias, :annotations)
 
+      def builder(entry)
+        Context.new(
+          entry,
+          Entries.new(args, merge_context_filters(id: entry[:id])),
+          Datasets.new(args, merge_context_filters({id: entry[:attributes][:dataset_id]}, :datasets)),
+          Medias.new(args, merge_context_filters({resource: entry[:attributes][:resource]}, :medias)),
+          Annotations.new(args, merge_context_filters({entry_id: entry[:id]}, :annotations))
+        )
+      end
+
       def initialize(
         args = {},
         context_filters = {},
@@ -15,15 +25,7 @@ module Context
           args,
           context_filters,
           opts,
-          context_builder ||= proc do |entry|
-            Context.new(
-              entry,
-              Entries.new(args, merge_context_filters(id: entry[:id])),
-              Datasets.new(args, merge_context_filters({id: entry[:attributes][:dataset_id]}, :datasets)),
-              Medias.new(args, merge_context_filters({resource: entry[:attributes][:resource]}, :medias)),
-              Annotations.new(args, merge_context_filters({entry_id: entry[:id]}, :annotations))
-            )
-          end
+          &context_builder
         )
       end
 

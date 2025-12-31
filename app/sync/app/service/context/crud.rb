@@ -17,7 +17,7 @@ module Context
 
           query_result.data if !query_result.data.empty?
         end.lazy.map(&:data).map do |record|
-          @context_builder.call(record)
+          @context_builder&.call(record) || builder(record)
         end
       end
     end
@@ -36,7 +36,7 @@ module Context
         raise Verse::Error::NotFound, id if query_result.data.empty?
 
         record = query_result.data.first.data
-        @context_builder.call(record)
+        @context_builder&.call(record) || builder(record)
       end
     end
 

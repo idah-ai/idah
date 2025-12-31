@@ -12,12 +12,20 @@ module Context
       self.class.name
     end
 
+    def self.builder(record)
+      record
+    end
+
+    def builder(record)
+      self.class.builder(record)
+    end
+
     def initialize(
       context_api = self,
       args = {},
       context_filters = {},
       opts = {},
-      context_builder = Proc.new {|record| record}
+      &context_builder
     )
       @args = args
       @context_api = context_api
