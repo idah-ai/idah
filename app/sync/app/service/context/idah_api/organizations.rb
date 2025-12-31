@@ -3,6 +3,13 @@ module Context
     class Organizations < Crud
       Context = Data.define(:record, :api, :projects)
 
+      def builder(organization)
+        Context.new(organization,
+          Organizations.new(args, merge_context_filters(id: organization[:id])),
+          Projects.new(args, merge_context_filters({organization_id: organization[:id]}, :projects))
+        )
+      end
+
       def initialize(
         args = {},
         context_filters = {},
@@ -15,12 +22,7 @@ module Context
           args,
           context_filters,
           opts,
-          context_builder ||= proc do |organization|
-            Context.new(organization,
-              Organizations.new(args, merge_context_filters(id: organization[:id])),
-              Projects.new(args, merge_context_filters({organization_id: organization[:id]}, :projects))
-            )
-          end
+          &context_builder
         )
       end
 

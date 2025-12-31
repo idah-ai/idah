@@ -3,22 +3,24 @@ module Context
     class Projects < Crud
       Context = Data.define(:record, :api, :members, :datasets, :entries, :annotations, :organizations)
 
+      def builder(project)
+        Context.new(project,
+          Projects.new(args, merge_context_filters(id: project[:id]), opts),
+          ProjectMembers.new(args, merge_context_filters({project_id: project[:id]}, :project_members), opts),
+          Datasets.new(args, merge_context_filters({project_id: project[:id]}, :datasets), opts),
+          Entries.new(args, merge_context_filters({project_id: project[:id]}, :entries), opts),
+          Annotations.new(args, merge_context_filters({project_id: project[:id]}, :annotations), opts),
+          Organizations.new(args, merge_context_filters({id: project[:attributes][:organization_id]}, :organizations), opts)
+        )
+      end
+
       def initialize(args = {}, context_filters = {}, opts = {}, context_api = Api[:idah].dataset.projects, &context_builder)
         super(
           context_api,
           args,
           context_filters,
           opts,
-          context_builder ||= proc do |project|
-            Context.new(project,
-              Projects.new(args, merge_context_filters(id: project[:id]), opts),
-              ProjectMembers.new(args, merge_context_filters({project_id: project[:id]}, :project_members), opts),
-              Datasets.new(args, merge_context_filters({project_id: project[:id]}, :datasets), opts),
-              Entries.new(args, merge_context_filters({project_id: project[:id]}, :entries), opts),
-              Annotations.new(args, merge_context_filters({project_id: project[:id]}, :annotations), opts),
-              Organizations.new(args, merge_context_filters({id: project[:attributes][:organization_id]}, :organizations), opts)
-            )
-          end
+          &context_builder
         )
       end
 

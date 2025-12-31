@@ -3,6 +3,14 @@ module Context
     class Annotations < Crud
       Context = Data.define(:record, :api, :entries)
 
+      def builder(annotation)
+        Context.new(
+          annotation,
+          Annotations.new(args, merge_context_filters(id: annotation[:id])),
+          Entries.new(args, merge_context_filters({id: annotation[:attributes][:entry_id]}, :entries))
+        )
+      end
+
       def initialize(
         args = {},
         context_filters = {},
@@ -15,13 +23,7 @@ module Context
           args,
           context_filters,
           opts,
-          context_builder ||= proc do |annotation|
-            Context.new(
-              annotation,
-              Annotations.new(args, merge_context_filters(id: annotation[:id])),
-              Entries.new(args, merge_context_filters({id: annotation[:attributes][:entry_id]}, :entries))
-            )
-          end
+          &context_builder
         )
       end
 
