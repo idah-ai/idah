@@ -41,8 +41,8 @@ module Export
 
     def loop_processing
       start
-      @context.idah.datasets.index.each do |dataset|
-        dataset.entries.index.each do |entry|
+      @context.idah.datasets.each do |dataset|
+        dataset.entries.each do |entry|
           @context.io.builder( # CVAT export seems to have tasks/entries as root
             entry[:attributes][:resource]
           ) do |xml|
@@ -137,7 +137,7 @@ module Export
             meta.dumped "" # String: date when the annotation was dumped
           end
           tags = [] # for now while shape_type still doesn't exist outside of dimensions
-          entry.annotations.index.each do |annotation|
+          entry.annotations.each do |annotation|
             begin
               case Hash(annotation[:attributes][:dimensions])[:type]
               when "entry:root"

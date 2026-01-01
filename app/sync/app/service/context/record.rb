@@ -5,17 +5,12 @@ module Context
       super(record)
     end
 
-
     def method_missing(name, *args, &block)
       @relations.method_missing(name, *args, &block) || super
     end
 
     def respond_to_missing?(name, include_private = false)
       @relations.respond_to_missing?(name, include_private) || super
-    end
-
-    def show(_ = nil)
-      @context_api
     end
   end
 end

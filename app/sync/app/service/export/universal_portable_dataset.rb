@@ -42,19 +42,19 @@ module Export
 
     def linear_processing
       start
-      @context.idah.datasets.index.each do |dataset| on_dataset dataset end
-      @context.idah.entries.index.each do |entry| on_entry entry end
-      @context.idah.annotations.index.each do |annotation| on_annotation annotation end
+      @context.idah.datasets.each do |dataset| on_dataset dataset end
+      @context.idah.entries.each do |entry| on_entry entry end
+      @context.idah.annotations.each do |annotation| on_annotation annotation end
       done
     end
 
     def loop_processing
       start
-      @context.idah.datasets.index.each do |dataset|
+      @context.idah.datasets.each do |dataset|
         on_dataset dataset
-        dataset.entries.index.each do |entry|
+        dataset.entries.each do |entry|
           on_entry entry
-          entry.annotations.index.each do |annotation|
+          entry.annotations.each do |annotation|
             on_annotation annotation
           end
         end
