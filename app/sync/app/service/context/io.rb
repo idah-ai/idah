@@ -4,21 +4,9 @@ module Context
       klass = Verse::Util::Reflection.constantize(Hash(opts).fetch(:klass))
 
       # Note: Add validation here if ExecutorCommand interface is defined
-      # raise Sync::Error::InvalidContext, klass unless klass < ExecutorCommand
+      # raise Context::Error::InvalidContext, klass unless klass < ExecutorCommand
 
       super(klass.new(args, context, opts))
-    end
-
-    def method_missing(name, *args, &block)
-      if @context_api.respond_to?(name)
-        @context_api.send(name, *args, &block)
-      else
-        super
-      end
-    end
-
-    def respond_to_missing?(name, include_private = false)
-      @context_api.respond_to?(name) || super
     end
   end
 end

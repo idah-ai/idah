@@ -3,7 +3,7 @@ module Context
     def initialize(contexts = [])
       @contexts = Array(contexts).map do |context|
         unless context.class < Base
-          raise Sync::Error::InvalidContext, context.class
+          raise Context::Error::InvalidContext, context.class
         end
 
         context

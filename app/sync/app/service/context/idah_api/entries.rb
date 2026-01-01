@@ -1,31 +1,29 @@
 module Context
   module IdahApi
     class Entries < Crud
-      Context = Data.define(:record, :api, :datasets, :medias, :annotations)
-
       def builder(entry)
         entry_id = entry[:id]
         unless entry_id
-          raise Sync::Error::InvalidData, "Entry missing id"
+          raise Context::Error::InvalidData, "Entry missing id"
         end
 
         dataset_id = entry.dig(:attributes, :dataset_id)
         unless dataset_id
-          raise Sync::Error::InvalidData, "Entry missing dataset_id in attributes"
+          raise Context::Error::InvalidData, "Entry missing dataset_id in attributes"
         end
 
         resource = entry.dig(:attributes, :resource)
         unless resource
-          raise Sync::Error::InvalidData, "Entry missing resource in attributes"
+          raise Context::Error::InvalidData, "Entry missing resource in attributes"
         end
 
-        Context.new(
+        Root.new([
           super(entry),
           Entries.new(args, build_context_filters(id: entry_id), opts),
           Datasets.new(args, build_context_filters({ id: dataset_id }, :datasets), opts),
           Medias.new(args, build_context_filters({ resource: resource }, :medias), opts),
           Annotations.new(args, build_context_filters({ entry_id: entry_id }, :annotations), opts)
-        )
+        ])
       end
 
       def initialize(

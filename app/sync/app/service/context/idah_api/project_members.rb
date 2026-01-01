@@ -1,27 +1,25 @@
 module Context
   module IdahApi
     class ProjectMembers < Crud
-      Context = Data.define(:record, :api, :projects, :datasets, :entries, :annotations)
-
       def builder(project_member)
         member_id = project_member[:id]
         unless member_id
-          raise Sync::Error::InvalidData, "ProjectMember missing id"
+          raise Context::Error::InvalidData, "ProjectMember missing id"
         end
 
         project_id = project_member.dig(:attributes, :project_id)
         unless project_id
-          raise Sync::Error::InvalidData, "ProjectMember missing project_id in attributes"
+          raise Context::Error::InvalidData, "ProjectMember missing project_id in attributes"
         end
 
-        Context.new(
+        Root.new([
           super(project_member),
           ProjectMembers.new(args, build_context_filters(id: member_id), opts),
           Projects.new(args, build_context_filters({ id: project_id }, :projects), opts),
           Datasets.new(args, build_context_filters({ project_id: project_id }, :datasets), opts),
           Entries.new(args, build_context_filters({ project_id: project_id }, :entries), opts),
           Annotations.new(args, build_context_filters({ project_id: project_id }, :annotations), opts)
-        )
+        ])
       end
 
       def initialize(

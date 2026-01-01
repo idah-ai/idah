@@ -1,4 +1,4 @@
-module Sync
+module Context
   module Error
     class Base < StandardError; end
 

@@ -16,7 +16,7 @@ module Context
       result = @delegate.call(id:)
 
       unless result&.first
-        raise Sync::Error::NotFound, "Resource with id '#{id}' not found via #{@name} delegate"
+        raise Context::Error::NotFound, "Resource with id '#{id}' not found via #{@name} delegate"
       end
 
       result.first

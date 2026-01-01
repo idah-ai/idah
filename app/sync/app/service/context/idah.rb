@@ -19,7 +19,7 @@ module Context
       IDAH_APIS.each do |api_class|
         Verse::logger::debug {{API_CHECK: api_class}}
         unless api_class < Base
-          raise Sync::Error::InvalidContext, api_class
+          raise Context::Error::InvalidContext, api_class
         end
       end
 

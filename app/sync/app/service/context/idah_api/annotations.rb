@@ -1,20 +1,18 @@
 module Context
   module IdahApi
     class Annotations < Crud
-      Context = Data.define(:record, :api, :entries)
-
       def builder(annotation)
         # Validate required nested attributes
         entry_id = annotation.dig(:attributes, :entry_id)
         unless entry_id
-          raise Sync::Error::InvalidData, "Annotation missing entry_id in attributes"
+          raise Context::Error::InvalidData, "Annotation missing entry_id in attributes"
         end
 
-        Context.new(
+        Root.new([
           super(annotation),
           Annotations.new(args, build_context_filters(id: annotation[:id]), opts),
           Entries.new(args, build_context_filters({ id: entry_id }, :entries), opts)
-        )
+        ])
       end
 
       def initialize(
