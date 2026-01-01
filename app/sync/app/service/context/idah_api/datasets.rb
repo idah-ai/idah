@@ -12,12 +12,13 @@ module Context
           raise Context::Error::InvalidData, "Dataset missing project_id in attributes"
         end
 
-        Root.new([
-          super(dataset),
-          Datasets.new(args, build_context_filters(id: dataset_id), opts),
-          Entries.new(args, build_context_filters({ dataset_id: dataset_id }, :entries), opts),
-          Projects.new(args, build_context_filters({ id: project_id }, :projects), opts)
-        ])
+        Record.new(
+          dataset, [
+            Datasets.new(args, build_context_filters(id: dataset_id), opts),
+            Entries.new(args, build_context_filters({ dataset_id: dataset_id }, :entries), opts),
+            Projects.new(args, build_context_filters({ id: project_id }, :projects), opts)
+          ]
+        )
       end
 
       def initialize(

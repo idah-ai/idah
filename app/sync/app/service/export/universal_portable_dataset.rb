@@ -67,25 +67,25 @@ module Export
         @context.io.puts({
           command: 'dataset:create',
           args: {
-            id: dataset.record[:id],
-            name: dataset.record[:attributes][:name],
-            modality: dataset.record[:attributes][:modality],
+            id: dataset[:id],
+            name: dataset[:attributes][:name],
+            modality: dataset[:attributes][:modality],
             metadata: {
-              "Created-At": dataset.record[:attributes][:created_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
-              "Updated-At": dataset.record[:attributes][:updated_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
+              "Created-At": dataset[:attributes][:created_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
+              "Updated-At": dataset[:attributes][:updated_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
               "Created-By": nil
             }
           }
         }.to_json)
       rescue Exception => e
-        error e, dataset.record
+        error e, dataset
       end
     end
 
     def on_entry(entry)
       begin
         resource_info = entry.medias.resource_info
-        file = Tempfile.new(entry.record[:attributes][:resource])
+        file = Tempfile.new(entry[:attributes][:resource])
         begin
           file.write(entry.medias.files)
           file.close
@@ -110,18 +110,18 @@ module Export
         @context.io.puts({
           command: 'entry:create',
           args: {
-            id: entry.record[:id],
-            dataset_id: entry.record[:attributes][:dataset_id],
-            url: entry.record[:attributes][:resource],
+            id: entry[:id],
+            dataset_id: entry[:attributes][:dataset_id],
+            url: entry[:attributes][:resource],
             metadata: {
-              "Created-At": entry.record[:attributes][:created_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
-              "Updated-At": entry.record[:attributes][:updated_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
+              "Created-At": entry[:attributes][:created_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
+              "Updated-At": entry[:attributes][:updated_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
               "Created-By": nil
             }
           }
         }.to_json)
       rescue Exception => e
-        error e, entry.record
+        error e, entry
       end
     end
 
@@ -130,20 +130,20 @@ module Export
         @context.io.puts({
           command: 'annotation:create',
           args: {
-            id: annotation.record[:id],
-            entry_id: annotation.record[:attributes][:entry_id],
-            type: Hash(annotation.record[:attributes][:dimensions])[:type],
-            shape: Hash(annotation.record[:attributes][:dimensions]).select {|k, _| k != :type}.to_json,
-            annotation: Hash(annotation.record[:attributes][:annotation]).to_json,
+            id: annotation[:id],
+            entry_id: annotation[:attributes][:entry_id],
+            type: Hash(annotation[:attributes][:dimensions])[:type],
+            shape: Hash(annotation[:attributes][:dimensions]).select {|k, _| k != :type}.to_json,
+            annotation: Hash(annotation[:attributes][:annotation]).to_json,
             metadata: {
-              "Created-At": annotation.record[:attributes][:created_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
-              "Updated-At": annotation.record[:attributes][:updated_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
+              "Created-At": annotation[:attributes][:created_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
+              "Updated-At": annotation[:attributes][:updated_at]&.gsub(/ (\+\d{2})(\d{2})/, '\1:\2'),
               "Created-By": nil
             }
           }
         }.to_json)
       rescue Exception => e
-        error e, annotation.record
+        error e, annotation
       end
     end
   end

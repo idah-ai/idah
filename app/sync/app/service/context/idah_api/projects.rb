@@ -12,9 +12,9 @@ module Context
           raise Context::Error::InvalidData, "Project missing organization_id in attributes"
         end
 
-        Root.new(
+        Record.new(
+          project,
           [
-            super(project),
             Projects.new(args, build_context_filters(id: project_id), opts),
             ProjectMembers.new(args, build_context_filters({ project_id: project_id }, :project_members), opts),
             Datasets.new(args, build_context_filters({ project_id: project_id }, :datasets), opts),

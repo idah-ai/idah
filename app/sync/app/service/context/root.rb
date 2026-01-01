@@ -17,7 +17,7 @@ module Context
     end
 
     def respond_to_missing?(name, include_private = false)
-      @contexts.any? { |c| c.name == name } || super
+      @contexts.any? { |c| c.name == name }
     end
   end
 end
