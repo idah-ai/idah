@@ -1,7 +1,7 @@
 module Context
   module IdahApi
     class Datasets < Crud
-      Context = Data.define(:record, :api, :entries)
+      Context = Data.define(:record, :api, :entries, :projects)
 
       def builder(dataset)
         dataset_id = dataset[:id]
@@ -9,10 +9,16 @@ module Context
           raise Sync::Error::InvalidData, "Dataset missing id"
         end
 
+        project_id = dataset.dig(:attributes, :project_id)
+        unless project_id
+          raise Sync::Error::InvalidData, "Dataset missing project_id in attributes"
+        end
+
         Context.new(
           super(dataset),
           Datasets.new(args, build_context_filters(id: dataset_id), opts),
-          Entries.new(args, build_context_filters({ dataset_id: dataset_id }, :entries), opts)
+          Entries.new(args, build_context_filters({ dataset_id: dataset_id }, :entries), opts),
+          Projects.new(args, build_context_filters({ id: project_id }, :projects), opts)
         )
       end
 
