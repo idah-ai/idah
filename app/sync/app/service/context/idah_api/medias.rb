@@ -17,11 +17,11 @@ module Context
         merged = build_filters(filters)
 
         unless merged[:resource]
-          raise Sync::Error::InvalidData, "resource parameter is required"
+          raise Context::Error::InvalidData, "resource parameter is required"
         end
 
         media_response = @context_api.resource_info(resource: merged[:resource])
-        raise Sync::Error::QueryFailed, media_response.errors if media_response.errors
+        raise Context::Error::QueryFailed, media_response.errors if media_response.errors
 
         media_response.data
       end
@@ -30,7 +30,7 @@ module Context
         merged = build_filters(filters)
 
         unless merged[:resource]
-          raise Sync::Error::InvalidData, "resource parameter is required"
+          raise Context::Error::InvalidData, "resource parameter is required"
         end
 
         @context_api.files(resource: merged[:resource])

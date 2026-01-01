@@ -17,7 +17,7 @@ module Context
             page: { number:, size: @opts[:page_size] || 100 }
           )
 
-          raise Sync::Error::QueryFailed, query_result.errors if query_result.errors
+          raise Context::Error::QueryFailed, query_result.errors if query_result.errors
 
           # Return nil when empty to stop iteration
           query_result.data unless query_result.data.empty?
@@ -35,17 +35,17 @@ module Context
       else
         # Validate that an ID is present after filter merging
         unless filters[:id]
-          raise Sync::Error::NotFound, "No ID available after applying context filters"
+          raise Context::Error::NotFound, "No ID available after applying context filters"
         end
 
         # Security check: if user provided an ID but context changed it
         if id && filters[:id] != id
-          raise Sync::Error::Forbidden, "Context does not permit access to resource #{id}"
+          raise Context::Error::Forbidden, "Context does not permit access to resource #{id}"
         end
 
         query_result = @context_api.index(filters:, page: { number: 1, size: 1 })
-        raise Sync::Error::QueryFailed, query_result.errors if query_result.errors
-        raise Sync::Error::NotFound, id if query_result.data.empty?
+        raise Context::Error::QueryFailed, query_result.errors if query_result.errors
+        raise Context::Error::NotFound, id if query_result.data.empty?
 
         record = query_result.data.first.data
         @context_builder&.call(record) || builder(record)

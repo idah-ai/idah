@@ -1,19 +1,17 @@
 module Context
   module IdahApi
     class Organizations < Crud
-      Context = Data.define(:record, :api, :projects)
-
       def builder(organization)
         org_id = organization[:id]
         unless org_id
-          raise Sync::Error::InvalidData, "Organization missing id"
+          raise Context::Error::InvalidData, "Organization missing id"
         end
 
-        Context.new(
+        Root.new([
           super(organization),
           Organizations.new(args, build_context_filters(id: org_id), opts),
           Projects.new(args, build_context_filters({ organization_id: org_id }, :projects), opts)
-        )
+        ])
       end
 
       def initialize(

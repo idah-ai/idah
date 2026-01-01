@@ -1,27 +1,27 @@
 module Context
   module IdahApi
     class Projects < Crud
-      Context = Data.define(:record, :api, :members, :datasets, :entries, :annotations, :organizations)
-
       def builder(project)
         project_id = project[:id]
         unless project_id
-          raise Sync::Error::InvalidData, "Project missing id"
+          raise Context::Error::InvalidData, "Project missing id"
         end
 
         org_id = project.dig(:attributes, :organization_id)
         unless org_id
-          raise Sync::Error::InvalidData, "Project missing organization_id in attributes"
+          raise Context::Error::InvalidData, "Project missing organization_id in attributes"
         end
 
-        Context.new(
-          super(project),
-          Projects.new(args, build_context_filters(id: project_id), opts),
-          ProjectMembers.new(args, build_context_filters({ project_id: project_id }, :project_members), opts),
-          Datasets.new(args, build_context_filters({ project_id: project_id }, :datasets), opts),
-          Entries.new(args, build_context_filters({ project_id: project_id }, :entries), opts),
-          Annotations.new(args, build_context_filters({ project_id: project_id }, :annotations), opts),
-          Organizations.new(args, build_context_filters({ id: org_id }, :organizations), opts)
+        Root.new(
+          [
+            super(project),
+            Projects.new(args, build_context_filters(id: project_id), opts),
+            ProjectMembers.new(args, build_context_filters({ project_id: project_id }, :project_members), opts),
+            Datasets.new(args, build_context_filters({ project_id: project_id }, :datasets), opts),
+            Entries.new(args, build_context_filters({ project_id: project_id }, :entries), opts),
+            Annotations.new(args, build_context_filters({ project_id: project_id }, :annotations), opts),
+            Organizations.new(args, build_context_filters({ id: org_id }, :organizations), opts)
+          ]
         )
       end
 

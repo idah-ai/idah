@@ -1,7 +1,6 @@
 module Context
   class Base
     attr_reader :args, :context_filters, :opts
-
     def self.name
       self.to_s.split("::").last
         .gsub(/(?<=[a-z])(?=[A-Z])/, '_')
@@ -14,7 +13,7 @@ module Context
     end
 
     def self.builder(record)
-      record
+      Record.new(record)
     end
 
     def builder(record)
@@ -34,6 +33,18 @@ module Context
       @context_filters = Hash(context_filters)
       @opts = Hash(opts)
       Verse::logger.debug { {init: self.name, args: @args, context_filters: @context_filters, opts:@opts} }
+    end
+
+    def method_missing(name, *args, &block)
+      if @context_api.respond_to?(name)
+        @context_api.send(name, *args, &block)
+      else
+        super
+      end
+    end
+
+    def respond_to_missing?(name, include_private = false)
+      @context_api.respond_to?(name) || super
     end
 
     # Generate constrained filters for an API call
