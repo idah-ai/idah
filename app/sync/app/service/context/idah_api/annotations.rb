@@ -8,9 +8,7 @@ module Context
           raise Context::Error::InvalidData, "Annotation missing entry_id in attributes"
         end
 
-        Root.new([
-          super(annotation),
-          Annotations.new(args, build_context_filters(id: annotation[:id]), opts),
+        Record.new(annotation,[
           Entries.new(args, build_context_filters({ id: entry_id }, :entries), opts)
         ])
       end

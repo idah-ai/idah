@@ -44,7 +44,7 @@ module Export
       @context.idah.datasets.index.each do |dataset|
         dataset.entries.index.each do |entry|
           @context.io.builder( # CVAT export seems to have tasks/entries as root
-            entry.record[:attributes][:resource]
+            entry[:attributes][:resource]
           ) do |xml|
             on_task dataset, entry, xml
           end
@@ -60,17 +60,17 @@ module Export
           annotations.version 1.1
           annotations.meta do |meta|
             meta.task do |task|
-              task.id entry.record[:id] #!!! -> Number: id of the task
-              task.name entry.record[:attributes][:resource] # String: some task name
+              task.id entry[:id] #!!! -> Number: id of the task
+              task.name entry[:attributes][:resource] # String: some task name
               task.size 0 # Number: count of frames/images in the task
               task.mode "interpolation" # String: interpolation or annotation
               task.overlap 0 # Number: number of overlapped frames between segments
               task.bugtracker "" # String: URL on an page which describe the task
               task.flipped false # Boolean: were images of the task flipped? (True/False)
-              task.created entry.record[:attributes][:created_at] # String: date when the task was created
-              task.updated entry.record[:attributes][:updated_at] # String: date when the task was updated
+              task.created entry[:attributes][:created_at] # String: date when the task was created
+              task.updated entry[:attributes][:updated_at] # String: date when the task was updated
               task.labels do |labels|
-                Hash(dataset.record[:attributes][:labeling_configuration]).flat_map do |type, config|
+                Hash(dataset[:attributes][:labeling_configuration]).flat_map do |type, config|
                   config[:values].map do |value|
                     {
                       name: value[:id],
@@ -139,14 +139,14 @@ module Export
           tags = [] # for now while shape_type still doesn't exist outside of dimensions
           entry.annotations.index.each do |annotation|
             begin
-              case Hash(annotation.record[:attributes][:dimensions])[:type]
+              case Hash(annotation[:attributes][:dimensions])[:type]
               when "entry:root"
                 tags << annotation # for now while shape_type still doesn't exist outside of dimensions
               else
                 on_track entry, annotation, xml
               end
             rescue Exception => e
-              error e, entry.record
+              error e, entry
             end
           end
           # once shape_type extracted from dimensions # query tag only annotations
@@ -154,20 +154,20 @@ module Export
           on_framed_annotations(entry, tags, xml)
         end
       rescue Exception => e
-        error e, dataset.record
+        error e, dataset
       end
     end
 
     def on_track(entry, annotation, xml)
       begin
         xml.track(
-          id: annotation.record[:id],
-          label: annotation.record.dig(:attributes, :annotation, :category), # String: the associated label
+          id: annotation[:id],
+          label: annotation.dig(:attributes, :annotation, :category), # String: the associated label
           source:"manual" # manual or auto
         ) do |track|
-          case Hash(annotation.record[:attributes][:dimensions])[:type]
+          case Hash(annotation[:attributes][:dimensions])[:type]
           when "idah-video:bounding-box"
-            Array(annotation.record.dig(:attributes, :dimensions, :frames)).each do |keyframe|
+            Array(annotation.dig(:attributes, :dimensions, :frames)).each do |keyframe|
               track.box(
                 frame: keyframe[:frame],
                 xtl: keyframe[:points][0][0], # x top left
@@ -178,7 +178,7 @@ module Export
                 occluded: 0,
                 keyframe: 1
               ) do |box|
-                Hash(annotation.record.dig(:attributes, :annotation, :attributes)).each do |name, value|
+                Hash(annotation.dig(:attributes, :annotation, :attributes)).each do |name, value|
                   box.attribute(name: name.to_s) do |attribute|
                     attribute.text!([value.to_s,"\n"].join)
                   end
@@ -190,7 +190,7 @@ module Export
           end
         end
       rescue Exception => e
-        error e, annotation.record
+        error e, annotation
       end
     end
 
@@ -208,7 +208,7 @@ module Export
           height: , # Number: image height
         ) do |image|
           annotations.map do |annotation|
-            case Hash(annotation.record[:attributes][:dimensions])[:type]
+            case Hash(annotation[:attributes][:dimensions])[:type]
             when 'entry:root'
               annotation
             # when 'entry:frame_tag'
@@ -220,10 +220,10 @@ module Export
             end
           end.compact.each do |annotation|
             image.tag(
-              label: annotation.record.dig(:attributes, :annotation, :category), # String: the associated label
+              label: annotation.dig(:attributes, :annotation, :category), # String: the associated label
               source: "manual" # manual or auto
             ) do |tag|
-              Hash(annotation.record.dig(:attributes, :annotation, :attributes)).each do |name, value|
+              Hash(annotation.dig(:attributes, :annotation, :attributes)).each do |name, value|
                 tag.attribute(name: name.to_s) do |attribute|
                     attribute.text!([value.to_s,"\n"].join)
                 end

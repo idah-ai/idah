@@ -7,11 +7,13 @@ module Context
           raise Context::Error::InvalidData, "Organization missing id"
         end
 
-        Root.new([
-          super(organization),
-          Organizations.new(args, build_context_filters(id: org_id), opts),
-          Projects.new(args, build_context_filters({ organization_id: org_id }, :projects), opts)
-        ])
+        Record.new(
+          organization,
+          [
+            Organizations.new(args, build_context_filters(id: org_id), opts),
+            Projects.new(args, build_context_filters({ organization_id: org_id }, :projects), opts)
+          ]
+        )
       end
 
       def initialize(

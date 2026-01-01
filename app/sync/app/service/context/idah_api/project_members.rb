@@ -12,14 +12,15 @@ module Context
           raise Context::Error::InvalidData, "ProjectMember missing project_id in attributes"
         end
 
-        Root.new([
-          super(project_member),
-          ProjectMembers.new(args, build_context_filters(id: member_id), opts),
-          Projects.new(args, build_context_filters({ id: project_id }, :projects), opts),
-          Datasets.new(args, build_context_filters({ project_id: project_id }, :datasets), opts),
-          Entries.new(args, build_context_filters({ project_id: project_id }, :entries), opts),
-          Annotations.new(args, build_context_filters({ project_id: project_id }, :annotations), opts)
-        ])
+        Record.new(
+          project_member, [
+            ProjectMembers.new(args, build_context_filters(id: member_id), opts),
+            Projects.new(args, build_context_filters({ id: project_id }, :projects), opts),
+            Datasets.new(args, build_context_filters({ project_id: project_id }, :datasets), opts),
+            Entries.new(args, build_context_filters({ project_id: project_id }, :entries), opts),
+            Annotations.new(args, build_context_filters({ project_id: project_id }, :annotations), opts)
+          ]
+        )
       end
 
       def initialize(

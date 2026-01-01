@@ -17,13 +17,14 @@ module Context
           raise Context::Error::InvalidData, "Entry missing resource in attributes"
         end
 
-        Root.new([
-          super(entry),
-          Entries.new(args, build_context_filters(id: entry_id), opts),
-          Datasets.new(args, build_context_filters({ id: dataset_id }, :datasets), opts),
-          Medias.new(args, build_context_filters({ resource: resource }, :medias), opts),
-          Annotations.new(args, build_context_filters({ entry_id: entry_id }, :annotations), opts)
-        ])
+        Record.new(
+          entry, [
+            Entries.new(args, build_context_filters(id: entry_id), opts),
+            Datasets.new(args, build_context_filters({ id: dataset_id }, :datasets), opts),
+            Medias.new(args, build_context_filters({ resource: resource }, :medias), opts),
+            Annotations.new(args, build_context_filters({ entry_id: entry_id }, :annotations), opts)
+          ]
+        )
       end
 
       def initialize(
