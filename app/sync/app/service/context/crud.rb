@@ -2,7 +2,7 @@ module Context
   class Crud < Base
     include Enumerable
     def map(filters = {}, &block)
-      return index(filters).map unless block_given?
+      return index(filters).lazy.map unless block_given?
 
       index(filters).lazy.map(&block)
     end
@@ -10,7 +10,7 @@ module Context
     def each(filters = {}, &block)
       return index(filters).each unless block_given?
 
-      index(filters).lazy.each(&block)
+      index(filters).each(&block)
     end
 
     def create(attributes = {})
