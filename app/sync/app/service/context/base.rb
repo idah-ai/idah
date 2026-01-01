@@ -33,7 +33,7 @@ module Context
       @context_builder = context_builder
       @context_filters = Hash(context_filters)
       @opts = Hash(opts)
-      Verse::logger.debug { {init: self.name, args:, context_filters:, opts:} }
+      Verse::logger.debug { {init: self.name, args: @args, context_filters: @context_filters, opts:@opts} }
     end
 
     # Generate constrained filters for an API call
