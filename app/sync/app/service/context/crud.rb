@@ -1,5 +1,18 @@
 module Context
   class Crud < Base
+    include Enumerable
+    def map(filters = {}, &block)
+      return index(filters).map unless block_given?
+
+      index(filters).lazy.map(&block)
+    end
+
+    def each(filters = {}, &block)
+      return index(filters).each unless block_given?
+
+      index(filters).lazy.each(&block)
+    end
+
     def create(attributes = {})
       raise NotImplementedError, "#{self.class.name}#create not implemented"
     end
