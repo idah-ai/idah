@@ -1,13 +1,6 @@
 module Context
   DEFAULT_BATCH_SIZE = 100
   class CrudIterator < Crud
-    include Enumerable
-    def each(&block)
-      return index.each unless block_given?
-
-      index.each(&block)
-    end
-
     # Returns a lazy enumerator of records
     # For Delegate contexts: delegates directly
     # For API contexts: paginates through results automatically

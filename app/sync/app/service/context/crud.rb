@@ -1,6 +1,13 @@
 module Context
   DEFAULT_BATCH_SIZE = 100
   class Crud < Base
+    include Enumerable
+    def each(&block)
+      return index.each unless block_given?
+
+      index.each(&block)
+    end
+
     def create(attributes = {})
       Verse::logger.debug { [self.class.name, :create].join("#")}
       raise NotImplementedError, "#{self.class.name}#create not implemented"
