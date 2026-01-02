@@ -2,16 +2,16 @@ module Context
   DEFAULT_BATCH_SIZE = 100
   class CrudIterator < Crud
     include Enumerable
-    def map(filters = {}, &block)
-      return index(filters).lazy.map unless block_given?
+    def map(&block)
+      return index.lazy.map unless block_given?
 
-      index(filters).lazy.map(&block)
+      index.lazy.map(&block)
     end
 
-    def each(filters = {}, &block)
-      return index(filters).each unless block_given?
+    def each(&block)
+      return index.each unless block_given?
 
-      index(filters).each(&block)
+      index.each(&block)
     end
 
     # Returns a lazy enumerator of records
@@ -41,10 +41,12 @@ module Context
       unless filters[:id]
         raise Context::Error::NotFound, "No ID available after applying context filters"
       end
+
       # Security check: if user provided an ID but context changed it
       if id && filters[:id] != id
         raise Context::Error::Forbidden, "Context does not permit access to resource #{id}"
       end
+
       query_result = @context_api.index(filters:, page: { number: 1, size: 1 })
       raise Context::Error::QueryFailed, query_result.errors if query_result.errors
       raise Context::Error::NotFound, id if query_result.data.empty?
