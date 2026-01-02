@@ -1,6 +1,6 @@
 module Context
   module IdahApi
-    class ProjectMembers < Crud
+    class ProjectMembers < CrudIterator
       def builder(project_member)
         member_id = project_member[:id]
         unless member_id

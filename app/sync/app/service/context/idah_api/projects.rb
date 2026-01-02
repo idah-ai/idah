@@ -1,6 +1,6 @@
 module Context
   module IdahApi
-    class Projects < Crud
+    class Projects < CrudIterator
       def builder(project)
         project_id = project[:id]
         unless project_id
@@ -45,7 +45,7 @@ module Context
       end
 
       def self.from_organizations(organizations, args = {}, filters = {}, opts = {})
-        batch_size = opts[:batch_size] || 100
+        batch_size = opts[:batch_size] || DEFAULT_BATCH_SIZE
 
         new(
           organizations.build_context_filters_from(args),
@@ -61,7 +61,7 @@ module Context
       end
 
       def self.from_project_members(project_members, args = {}, filters = {}, opts = {})
-        batch_size = opts[:batch_size] || 100
+        batch_size = opts[:batch_size] || DEFAULT_BATCH_SIZE
 
         new(
           project_members.build_context_filters_from(args),
@@ -75,6 +75,23 @@ module Context
           end, args, filters, opts)
         )
       end
+
+      def self.from_datasets(datasets, args = {}, filters = {}, opts = {})
+        batch_size = opts[:batch_size] || DEFAULT_BATCH_SIZE
+
+        new(
+          datasets.build_context_filters_from(args),
+          datasets.build_context_filters_from(filters),
+          opts,
+          Delegate.new(:projects, proc do |filter = {}|
+            project_ids = datasets.index.map { |d| d.record.dig(:attributes, :project_id) }.compact.uniq
+            project_ids.each_slice(batch_size).flat_map do |id__in|
+              Projects.new(args, { projects: { id__in: } }, opts).index(filter)
+            end
+          end, args, filters, opts)
+        )
+      end
+
 
       def self.idah_apis(args = {}, context = {}, opts = {})
         Verse::logger.debug {{idah_apis: self, args:, context:, opts:}}
