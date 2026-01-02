@@ -2,12 +2,6 @@ module Context
   DEFAULT_BATCH_SIZE = 100
   class CrudIterator < Crud
     include Enumerable
-    def map(&block)
-      return index.lazy.map unless block_given?
-
-      index.lazy.map(&block)
-    end
-
     def each(&block)
       return index.each unless block_given?
 
