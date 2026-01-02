@@ -1,6 +1,6 @@
 module Context
   module IdahApi
-    class Entries < Crud
+    class Entries < CrudIterator
       def builder(entry)
         entry_id = entry[:id]
         unless entry_id
@@ -58,7 +58,7 @@ module Context
       end
 
       def self.from_annotations(annotations, args = {}, filters = {}, opts = {})
-        batch_size = opts[:batch_size] || 100
+        batch_size = opts[:batch_size] || DEFAULT_BATCH_SIZE
 
         new(
           annotations.build_context_filters_from(args),

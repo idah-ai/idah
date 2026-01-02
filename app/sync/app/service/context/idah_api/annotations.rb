@@ -1,6 +1,6 @@
 module Context
   module IdahApi
-    class Annotations < Crud
+    class Annotations < CrudIterator
       def builder(annotation)
         # Validate required nested attributes
         entry_id = annotation.dig(:attributes, :entry_id)

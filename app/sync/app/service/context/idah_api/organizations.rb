@@ -1,6 +1,6 @@
 module Context
   module IdahApi
-    class Organizations < Crud
+    class Organizations < CrudIterator
       def builder(organization)
         org_id = organization[:id]
         unless org_id

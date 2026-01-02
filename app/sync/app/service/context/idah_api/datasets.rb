@@ -1,6 +1,6 @@
 module Context
   module IdahApi
-    class Datasets < Crud
+    class Datasets < CrudIterator
       def builder(dataset)
         dataset_id = dataset[:id]
         unless dataset_id
@@ -41,7 +41,7 @@ module Context
       end
 
       def self.from_entries(entries, args = {}, filters = {}, opts = {})
-        batch_size = opts[:batch_size] || 100
+        batch_size = opts[:batch_size] || DEFAULT_BATCH_SIZE
 
         new(
           entries.build_context_filters_from(args),

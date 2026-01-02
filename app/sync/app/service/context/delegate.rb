@@ -1,5 +1,5 @@
 module Context
-  class Delegate < Base
+  class Delegate < Crud
     attr_reader :name
 
     def initialize(name, delegate, args = {}, context_filters = {}, opts = {})
@@ -9,10 +9,12 @@ module Context
     end
 
     def index(filter = {})
+      Verse::logger{ [self, :index].join("#")}
       @delegate.call(filter)
     end
 
     def show(id = nil)
+      Verse::logger{ [self, :show].join("#")}
       result = @delegate.call(id:)
 
       unless result&.first
