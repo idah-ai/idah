@@ -27,23 +27,25 @@ module Context
       opts = nil,
       &context_builder
     )
+      @context_api = context_api
       @args = Hash(args)
-      @context_api = context_api || self
-
-      raise Error::InvalidContext, [self.name, @context_api.class].join("#") unless @context_api.is_a?(Context::Base)
-      @context_builder = context_builder
       @context_filters = Hash(context_filters)
       @opts = Hash(opts)
+      @context_builder = context_builder
     end
 
     def method_missing(s, *args, &block)
-      Verse::logger::debug([:method_missing, s].join("#"))
-      @context_api.send(s, *args, &block)
+      Verse::logger.debug{[@context_api||:nil, :method_missing, s].join("#")}
+      if @context_api.respond_to?(s)
+        @context_api.send(s, args, &block)
+      else
+        super
+      end
     end
 
     def respond_to_missing?(s, include_private = false)
-      Verse::logger::debug([:respond_to_missing?, s].join("#"))
-      @context_api.respond_to?(s, include_private)
+      Verse::logger.debug{[@context_api||:nil, :respond_to_missing?, s].join("#")}
+      @context_api.respond_to?(s, include_private) || super
     end
 
     # Generate constrained filters for an API call
@@ -55,8 +57,6 @@ module Context
         .merge(Hash(Hash(args)[context_api_name])) # general context filters merge/override (highest precedence)
     end
     def build_filters(filters = nil, context_api_name = nil)
-      puts(caller.join("\n")) unless @context_api
-      puts({name:}) unless @context_api
       self.class.build_filters(filters, context_api_name || @context_api.name, @context_filters, @args)
     end
 
@@ -83,6 +83,16 @@ module Context
     end
     def build_context_filters_from(context_filters = nil)
       self.class.build_context_filters_from(context_filters, @args)
+    end
+
+    # Build complete opts from additional opts overrides
+    # Processes ALL API names from both @opts and the parameter
+    # Ensures no context information is lost during transformation
+    def self.build_opts(opts = nil)
+      raise NotImplementedError
+    end
+    def self.build_opts(opts = nil)
+      self.class.build_opts(opts)
     end
   end
 end

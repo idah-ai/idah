@@ -1,7 +1,7 @@
 module Context
   module IoContext
     class UniversalPortableDataset < Base
-      def initialize(args = {}, filters = {}, opts = {})
+      def initialize(args = nil, filters = nil, opts = nil)
         filename = [Hash(args).dig(:name) || ["export.UniversalPortableDataset", Time.now.to_i], :upd].join(".")
         stdin, stdout, stderr, wait_thr = Open3.popen3(
           "bin/datset-static",

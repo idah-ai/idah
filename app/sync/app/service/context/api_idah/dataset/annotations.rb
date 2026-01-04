@@ -21,11 +21,8 @@ module Context
           api_context = nil,
           &context_builder
         )
-          # Dependency injection: allow passing api_context for testing
-          api_context ||= Api[:idah].dataset.annotations
-
           super(
-            api_context,
+            api_context || Api[:idah].dataset.annotations,
             args,
             context_filters,
             opts,
@@ -33,18 +30,18 @@ module Context
           )
         end
 
-        def self.from_entries(entries, args = {}, filters = {}, opts = {})
+        def self.from_entries(entries, args = nil, filters = nil, opts = nil)
           new(
             entries.build_context_filters_from(args),
             entries.build_context_filters_from(filters),
             opts,
-            ProceduralCrud.new(:annotations, proc do |filter = {}|
+            ProceduralCrud.new(:annotations, proc do |filter = nil|
               entries.index.flat_map { |e| e.annotations.index(filter) }
             end, args, filters, opts)
           )
         end
 
-        def self.idah_apis(args = {}, context = {}, opts = {})
+        def self.idah_apis(args = nil, context = nil, opts = nil)
           annotations = new(args, context, opts)
           entries = Entries.from_annotations(annotations, annotations.args, annotations.context_filters, opts.merge({delegated:true}))
           datasets = Datasets.from_entries(entries)

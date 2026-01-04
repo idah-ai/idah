@@ -1,7 +1,6 @@
 module Context
   class ProceduralCrud < ProcContext
     def index(filter = nil, **opts)
-      puts(@context_api.class)
       @context_api.call(filter, **opts)
     end
 

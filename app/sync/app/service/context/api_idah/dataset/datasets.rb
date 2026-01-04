@@ -29,11 +29,8 @@ module Context
           api_context = nil,
           &context_builder
         )
-          # Dependency injection: allow passing api_context for testing
-          api_context ||= Api[:idah].dataset.datasets
-
           super(
-            api_context,
+            api_context || Api[:idah].dataset.datasets,
             args,
             context_filters,
             opts,
@@ -41,14 +38,14 @@ module Context
           )
         end
 
-        def self.from_entries(entries, args = {}, filters = {}, opts = {})
+        def self.from_entries(entries, args = nil, filters = nil, opts = nil)
           batch_size = opts[:batch_size] || DEFAULT_BATCH_SIZE
 
           new(
             entries.build_context_filters_from(args),
             entries.build_context_filters_from(filters),
             opts,
-            ProceduralCrud.new(:datasets, proc do |filter = {}|
+            ProceduralCrud.new(:datasets, proc do |filter = nil|
               dataset_ids = entries.index.map { |e| e.record.dig(:attributes, :dataset_id) }.compact.uniq
               dataset_ids.each_slice(batch_size).flat_map do |id__in|
                 Datasets.new(args, { datasets: { id__in: } }, opts).index(filter)
@@ -57,18 +54,18 @@ module Context
           )
         end
 
-        def self.from_projects(projects, args = {}, filters = {}, opts = {})
+        def self.from_projects(projects, args = nil, filters = nil, opts = nil)
           new(
             projects.build_context_filters_from(args),
             projects.build_context_filters_from(filters),
             opts,
-            ProceduralCrud.new(:datasets, proc do |filter = {}|
+            ProceduralCrud.new(:datasets, proc do |filter = nil|
               projects.flat_map { |p| p.datasets.index(filter) }
             end)
           )
         end
 
-        def self.idah_apis(args = {}, context = {}, opts = {})
+        def self.idah_apis(args = nil, context = nil, opts = nil)
           Verse::logger.debug {{idah_apis: self, args:, context:, opts:}}
           datasets = Datasets.new(args, context, opts)
           projects = Projects.from_datasets(datasets, args, context, opts)
@@ -77,8 +74,9 @@ module Context
           entries = Entries.from_datasets(datasets, args, context, opts)
           annotations = Annotations.from_entries(entries, args, context, opts)
 
-          # Returns APIs ordered from top-level to leaf-level
-          [organizations, projects, project_members, datasets, entries, annotations]
+          super([
+            organizations, projects, project_members, datasets, entries, annotations
+          ], args, context, opts)
         end
       end
     end

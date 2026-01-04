@@ -1,24 +1,9 @@
 module Context
   module ApiIdah
     class Base < CrudIterator
-
       def name
         @api&.name || super
       end
-
-      # def each(&block)
-      #   if (@api)
-      #     return [@api.name].each unless block_given?
-
-      #     [@api.name].each &block
-      #   else
-      #     return index.each unless block_given?
-
-      #     index.each do |unit|
-      #       yield unit
-      #     end
-      #   end
-      # end
 
       def self.builder(unit)
         if @api
@@ -37,6 +22,7 @@ module Context
       )
         unless [
           Api::Exposition,
+          ApiIdah::Base,
           ProceduralCrud,
         ].any? {|whitelist| api.is_a? whitelist}
           raise Error::InvalidContext, self
@@ -54,9 +40,6 @@ module Context
           query_result = @api.index(**opts.merge(filter: build_filters(filters)))
 
           raise Error::QueryFailed, query_result.errors if query_result.errors
-
-          Verse::logger.debug {{ query_result: }}
-          Verse::logger.debug {{ data: query_result.data }}
 
           query_result.data unless query_result.data.empty?
           query_result.data.lazy.map(&:data).map {|data| builder(data)}
