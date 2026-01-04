@@ -1,6 +1,16 @@
-module ExecutorCommand
-  module UniversalPortableDatasetAppend
-    Context = Data.define(:name, :filename, :i, :o, :e, :wait_thr) do
+module Context
+  module IoContext
+    class UniversalPortableDataset < Base
+      def initialize(args = {}, filters = {}, opts = {})
+        filename = [Hash(args).dig(:name) || ["export.UniversalPortableDataset", Time.now.to_i], :upd].join(".")
+        stdin, stdout, stderr, wait_thr = Open3.popen3(
+          "bin/datset-static",
+          "-i", filename,
+          "append"
+        )
+        super(filename, stdin, stdout, stderr, wait_thr)
+      end
+
       def puts(s, expected_lines = 1, feedback = proc{|line|line})
         i.puts(s)
         i.flush
@@ -28,16 +38,6 @@ module ExecutorCommand
           raise "stderr output detected: #{stderr_output.join}"
         end
       end
-    end
-
-    def self.new(args = {}, filters = {}, opts = {})
-      filename = [Hash(args).dig(:name) || ["export.UniversalPortableDataset", Time.now.to_i], :upd].join(".")
-      stdin, stdout, stderr, wait_thr = Open3.popen3(
-        "bin/datset-static",
-        "-i", filename,
-        "append"
-      )
-      Context.new("UniversalPortableDataset", filename, stdin, stdout, stderr, wait_thr)
     end
   end
 end

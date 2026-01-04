@@ -1,45 +1,32 @@
 module Context
-  DEFAULT_BATCH_SIZE = 100
   class CrudIterator < Crud
     # Returns a lazy enumerator of records
     # For Delegate contexts: delegates directly
     # For API contexts: paginates through results automatically
-    def index(filters = {})
-      Verse::logger.debug {[self.class.name, :index].join("#")}
-      Verse::Util::Iterator.chunk_iterator(1) do |number|
-        query_result = @context_api.index(
-          filter: build_filters(filters),
-          page: { number:, size: @opts[:page_size] || DEFAULT_BATCH_SIZE }
-        )
+    def index(filters = {}, **opts)
+      Verse::logger.debug {[
+        caller.take(25).join("\n"),
+        {
+          delegated: !!Hash(opts)[:delegated],
+          context_api: @context_api.class,
+          opts:, filters:
+        }
+      ].join("\n")}
 
-        raise Context::Error::QueryFailed, query_result.errors if query_result.errors
 
-        # Return nil when empty to stop iteration
-        query_result.data unless query_result.data.empty?
-      end.lazy.map(&:data).map do |record|
+      if (delegated)
+        super(filters, opts.merge(delegate: true))
+      else
+        raise :stop if opts[:delegate]
+        Verse::Util::Iterator.chunk_iterator(1) do |number|
+          super(
+            filters,
+            page: { number:, size: @opts[:page_size] || DEFAULT_BATCH_SIZE }
+          )
+        end.lazy.map(&:data)
+      end.map do |record|
         @context_builder&.call(record) || builder(record)
       end
-    end
-
-    def show(id = nil)
-      Verse::logger.debug {[self.class.name, :show].join("#")}
-      filters = build_filters(id ? { id: } : nil)
-      # Validate that an ID is present after filter merging
-      unless filters[:id]
-        raise Context::Error::NotFound, "No ID available after applying context filters"
-      end
-
-      # Security check: if user provided an ID but context changed it
-      if id && filters[:id] != id
-        raise Context::Error::Forbidden, "Context does not permit access to resource #{id}"
-      end
-
-      query_result = @context_api.index(filters:, page: { number: 1, size: 1 })
-      raise Context::Error::QueryFailed, query_result.errors if query_result.errors
-      raise Context::Error::NotFound, id if query_result.data.empty?
-
-      record = query_result.data.first.data
-      @context_builder&.call(record) || builder(record)
     end
   end
 end

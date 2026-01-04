@@ -1,27 +1,22 @@
 module Context
-  class Delegate < Crud
-    attr_reader :name
+  class Delegate < Base
+    def name
+      @name || super
+    end
 
-    def initialize(name, delegate, args = {}, context_filters = {}, opts = {})
-      @name = name
+    def initialize(delegate, _name = nil, args = {}, context_filters = {}, opts = {})
+      @name = delegate.respond_to?(:name) ? delegate.name : _name
       @delegate = delegate
+
       super(self, args, context_filters, opts)
     end
 
-    def index(filter = {})
-      Verse::logger{ [self, :index].join("#")}
-      @delegate.call(filter)
+    def method_missing(name, *args, &block)
+      @delegate.send(name, *args, &block) || super
     end
 
-    def show(id = nil)
-      Verse::logger{ [self, :show].join("#")}
-      result = @delegate.call(id:)
-
-      unless result&.first
-        raise Context::Error::NotFound, "Resource with id '#{id}' not found via #{@name} delegate"
-      end
-
-      result.first
+    def respond_to_missing?(name, include_private = false)
+      @delegate.respond_to?(name, *args, &block) || super
     end
   end
 end

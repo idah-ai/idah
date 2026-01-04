@@ -1,0 +1,83 @@
+module Context
+  module ApiIdah
+    module Dataset
+      class ProjectMembers < Base
+        def builder(project_member)
+          member_id = project_member[:id]
+          unless member_id
+            raise Context::Error::InvalidData, "ProjectMember missing id"
+          end
+
+          project_id = project_member.dig(:attributes, :project_id)
+          unless project_id
+            raise Context::Error::InvalidData, "ProjectMember missing project_id in attributes"
+          end
+
+          Unit.new(
+            super(project_member), [
+              Projects.new(args, build_context_filters({ id: project_id }, :projects), opts),
+            ]
+          )
+        end
+
+        def initialize(
+          args = nil,
+          context_filters = nil,
+          opts = nil,
+          context_api = nil,
+          &context_builder
+        )
+          # Dependency injection: allow passing context_api for testing
+          context_api ||= Api[:idah].dataset.project_members
+
+          super(
+            context_api,
+            args,
+            context_filters,
+            opts,
+            &context_builder
+          )
+        end
+
+        def self.from_projects(projects, args = {}, filters = {}, opts = {})
+          new(
+            projects.build_context_filters_from(args),
+            projects.build_context_filters_from(filters),
+            opts,
+            ProceduralCrud.new(:project_members, proc do |filter = {}|
+              projects.index.flat_map { |p| p.project_members.index(filter) }
+            end, args, filters, opts)
+          )
+        end
+
+        def self.from_organizations(organizations, args = {}, filters = {}, opts = {})
+          new(
+            organizations.build_context_filters_from(args),
+            organizations.build_context_filters_from(filters),
+            opts,
+            ProceduralCrud.new(:project_members, proc do |filter = {}|
+              organizations.index.flat_map do |o|
+                o.projects.index.flat_map do |p|
+                  p.project_members.index(filter)
+                end
+              end
+            end, args, filters, opts)
+          )
+        end
+
+        def self.idah_apis(args = {}, context = {}, opts = {})
+          Verse::logger.debug {{idah_apis: self, args:, context:, opts:}}
+          project_members = ProjectMembers.new(args, context, opts)
+          projects = Projects.from_project_members(project_members, args, context, opts)
+          organizations = Organizations.from_projects(projects, args, context, opts)
+          datasets = Datasets.from_projects(projects, args, context, opts)
+          entries = Entries.from_datasets(datasets, args, context, opts)
+          annotations = Annotations.from_entries(entries, args, context, opts)
+
+          # Returns APIs ordered from top-level to leaf-level
+          [organizations, projects, project_members, datasets, entries, annotations]
+        end
+      end
+    end
+  end
+end

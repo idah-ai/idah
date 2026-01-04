@@ -1,39 +1,60 @@
 module Context
-  DEFAULT_BATCH_SIZE = 100
   class Crud < Base
+    DEFAULT_BATCH_SIZE = 100
     include Enumerable
     def each(&block)
       return index.each unless block_given?
 
-      index.each(&block)
+      index.each do |unit|
+        yield unit
+      end
     end
 
-    def create(attributes = {})
-      Verse::logger.debug { [self.class.name, :create].join("#")}
-      raise NotImplementedError, "#{self.class.name}#create not implemented"
+    def create(attributes = nil)
+      raise NotImplementedError
     end
 
-    def index(filters = {})
-      Verse::logger.debug { [self.class.name, :index].join("#")}
+    def index(filters = nil, **opts)
       @context_api.index(
-        filter: build_filters(filters),
-        page: { number:, size: @opts[:page_size] || DEFAULT_BATCH_SIZE }
+        build_filters(filters),
+        **opts
       )
     end
 
     def show(id = nil)
-      Verse::logger.debug { [self.class.name, :show].join("#")}
-      @context_api.show(build_filters(id:).fetch(:id))
+      filters = build_filters(id ? { id: } : nil)
+      # Validate that an ID is present after filter merging
+      unless filters[:id]
+        raise Context::Error::NotFound, "No ID available after applying context filters"
+      end
+
+      # Security check: if user provided an ID but context changed it
+      if id && filters[:id] != id
+        raise Context::Error::Forbidden, "Context does not permit access to resource #{id}"
+      end
+
+      query_result = @context_api.index(filters:, page: { number: 1, size: 1 })
+
+      Verse::logger.debug {{lazy: query_result.is_a?(Enumerator::Lazy)}}
+      record = if query_result.is_a? Enumerator::Lazy
+        query_result.first
+      else
+        raise Context::Error::QueryFailed, query_result.errors if query_result.errors
+        raise Context::Error::NotFound, id if query_result.data.empty?
+
+        query_result.data.first.data
+      end
+      Verse::logger.debug{{ record: }}
+
+      @context_builder&.call(record) || builder(record)
     end
 
     def update(attributes, id = nil)
-      Verse::logger.debug { [self.class.name, :update].join("#")}
-      raise NotImplementedError, "#{self.class.name}#update not implemented"
+      raise NotImplementedError
     end
 
     def delete(id = nil)
-      Verse::logger.debug { [self.class.name, :delete].join("#")}
-      raise NotImplementedError, "#{self.class.name}#delete not implemented"
+      raise NotImplementedError
     end
   end
 end

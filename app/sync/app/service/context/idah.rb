@@ -1,12 +1,13 @@
 module Context
-  class Idah < Root
+  class Idah < EnumerableContext
     IDAH_APIS = [
-      IdahApi::Organizations,
-      IdahApi::Projects,
-      IdahApi::ProjectMembers,
-      IdahApi::Datasets,
-      IdahApi::Entries,
-      IdahApi::Annotations
+      ApiIdah::Iam::Organizations,
+      ApiIdah::Dataset::Projects,
+      ApiIdah::Dataset::ProjectMembers,
+      ApiIdah::Dataset::Datasets,
+      ApiIdah::Media::Medias,
+      ApiIdah::Dataset::Entries,
+      ApiIdah::Dataset::Annotations
     ]
 
     def initialize(args = {}, context = {}, opts = {})
@@ -18,7 +19,7 @@ module Context
       # Validate that all IDAH_APIS are valid Context classes
       IDAH_APIS.each do |api_class|
         Verse::logger::debug {{API_CHECK: api_class}}
-        unless api_class < Base
+        unless api_class < ApiIdah::Base
           raise Context::Error::InvalidContext, api_class
         end
       end
@@ -38,7 +39,6 @@ module Context
         end
       end
 
-      Verse::logger.debug({context_apis:})
       super(context_apis)
     end
   end

@@ -1,5 +1,6 @@
 module Context
   class Base
+    attr_reader :args, :context_filters, :opts
     def self.name
       self.to_s.split("::").last
         .gsub(/(?<=[a-z])(?=[A-Z])/, '_')
@@ -11,39 +12,38 @@ module Context
       self.class.name
     end
 
-    def self.builder(record, relations = nil)
-      Record.new(record, relations)
+    def self.builder(context)
+      context
     end
 
-    def builder(record)
-      self.class.builder(record)
+    def builder(context)
+      self.class.builder(context)
     end
 
     def initialize(
-      context_api = self,
+      context_api = nil,
       args = nil,
       context_filters = nil,
       opts = nil,
       &context_builder
     )
       @args = Hash(args)
-      @context_api = context_api
+      @context_api = context_api || self
+
+      raise Error::InvalidContext, [self.name, @context_api.class].join("#") unless @context_api.is_a?(Context::Base)
       @context_builder = context_builder
       @context_filters = Hash(context_filters)
       @opts = Hash(opts)
-      Verse::logger.debug { {init: self.name, args: @args, context_filters: @context_filters, opts:@opts} }
     end
 
-    def method_missing(name, *args, &block)
-      Verse::logger.debug {[[self.class.name, :method_missing].join("#"), name, args]}
-      if @context_api&.respond_to?(name)
-        @context_api.send(name, *args, &block)
-      end
+    def method_missing(s, *args, &block)
+      Verse::logger::debug([:method_missing, s].join("#"))
+      @context_api.send(s, *args, &block)
     end
 
-    def respond_to_missing?(name, include_private = false)
-      Verse::logger.debug {[[self.class.name, :respond_to_missing?].join("#"), name, include_private]}
-      @context_api&.respond_to?(name, include_private)
+    def respond_to_missing?(s, include_private = false)
+      Verse::logger::debug([:respond_to_missing?, s].join("#"))
+      @context_api.respond_to?(s, include_private)
     end
 
     # Generate constrained filters for an API call
@@ -55,6 +55,8 @@ module Context
         .merge(Hash(Hash(args)[context_api_name])) # general context filters merge/override (highest precedence)
     end
     def build_filters(filters = nil, context_api_name = nil)
+      puts(caller.join("\n")) unless @context_api
+      puts({name:}) unless @context_api
       self.class.build_filters(filters, context_api_name || @context_api.name, @context_filters, @args)
     end
 

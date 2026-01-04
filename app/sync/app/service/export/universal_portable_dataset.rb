@@ -10,8 +10,8 @@ module Export
 
     def run
       begin
-        # linear_processing
-        loop_processing
+        linear_processing
+        # loop_processing
       rescue Exception => e
         Verse::logger::error{
           [
@@ -30,9 +30,7 @@ module Export
     end
 
     def error(e, record)
-      Verse::logger::error {
-        "#{self} failed to process #{[record[:type], record[:id]].join(":")}"
-      }
+      Verse::logger::error { "#{self} failed to process #{record}" }
       raise e
     end
 
@@ -42,9 +40,9 @@ module Export
 
     def linear_processing
       start
-      @context.idah.datasets.each do |dataset| on_dataset dataset end
-      @context.idah.entries.each do |entry| on_entry entry end
-      @context.idah.annotations.each do |annotation| on_annotation annotation end
+      @context.idah.datasets.each {|d| on_dataset(d) }
+      @context.idah.entries.each {|e| on_entry(e) }
+      @context.idah.annotations.each {|a| on_annotation(a) }
       done
     end
 
@@ -84,6 +82,7 @@ module Export
 
     def on_entry(entry)
       begin
+        Verse::logger::debug {entry.show}
         resource_info = entry.medias.resource_info
         file = Tempfile.new(entry[:attributes][:resource])
         begin

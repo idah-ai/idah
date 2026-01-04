@@ -60,7 +60,7 @@ module Sync
         end.map do |process_class, contexts| # temp
           io = contexts.find { |c| c.name == "io"}
           ios << io if io # TODO: proper release
-          [process_class, Context::Root.new(contexts)]
+          [process_class, Context.new(contexts)]
         end.map do |process_class, context|
           process_class.new(context)
         end.map do |process|
