@@ -1,9 +1,16 @@
 require 'builder'
 require 'zip'
 
-module ExecutorCommand
-  module Cvat
-    Context = Data.define(:name, :filename, :i, :o, :e) do
+module Context
+  module IoContext
+    class Cvat < Base
+      def initialize(args = {}, filters = {}, opts = {})
+        filename = [Hash(opts).dig(:name) || ["export.cvat.bundle", Time.now.to_i]].join(".")
+        FileUtils.mkdir_p filename
+
+        super(filename)
+      end
+
       def builder(resource, &block)
         directory = [
           filename,
@@ -52,14 +59,6 @@ module ExecutorCommand
         end
         FileUtils.rm_rf(filename)
       end
-    end
-
-    def self.new(args = {}, filters = {}, opts ={})
-      # TODO should be in args
-      filename = [Hash(opts).dig(:name) || ["export.cvat.bundle", Time.now.to_i]].join(".")
-      FileUtils.mkdir_p filename
-
-      Context.new("Cvat", filename, nil, nil ,nil)
     end
   end
 end
