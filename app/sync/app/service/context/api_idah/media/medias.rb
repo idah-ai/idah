@@ -2,25 +2,20 @@ module Context
   module ApiIdah
     module Media
       class Medias < Base
-        def builder(media)
-          Unit.new(
-            super(media)
-          )
+        def each(&block)
+          raise NotImplementedError
         end
 
         def initialize(args = nil, context_filters = nil, opts = nil, context_api = nil)
-          # Dependency injection: allow passing context_api for testing
-          context_api ||= Api[:idah].media.medias
-
           super(
-            context_api,
+            context_api || Api[:idah].media.medias,
             args,
             context_filters,
             opts
           )
         end
 
-        def resource_info(filters = {})
+        def resource_info(filters = nil, opts = nil)
           merged = build_filters(filters)
 
           unless merged[:resource]
@@ -33,7 +28,7 @@ module Context
           builder(media_response.data)
         end
 
-        def files(filters = {})
+        def files(filters = nil, opts = nil)
           merged = build_filters(filters)
 
           unless merged[:resource]

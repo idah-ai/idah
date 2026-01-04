@@ -11,7 +11,7 @@ module Context
           Unit.new(
             super(organization),
             [
-              Projects.new(args, build_context_filters({ organization_id: org_id }, :projects), opts)
+              ApiIdah::Dataset::Projects.new(args, build_context_filters({ organization_id: org_id }, :projects), opts)
             ]
           )
         end
@@ -23,11 +23,8 @@ module Context
           context_api = nil,
           &context_builder
         )
-          # Dependency injection: allow passing context_api for testing
-          context_api ||= Api[:idah].iam.organizations
-
           super(
-            context_api,
+            context_api || Api[:idah].iam.organizations,
             args,
             context_filters,
             opts,
@@ -35,13 +32,13 @@ module Context
           )
         end
 
-        def self.from_projects(projects, args = {}, filters = {}, opts = {})
+        def self.from_projects(projects, args = nil, filters = nil, opts = nil)
           new(
             projects.build_context_filters_from(args),
             projects.build_context_filters_from(filters),
             opts,
             ProceduralCrud.new(:organizations,
-              proc do |filter = {}|
+              proc do |filter = nil|
                 projects.flat_map { |p| p.organizations.index(filter) }
               end, args, filters, opts
             )
@@ -49,6 +46,20 @@ module Context
         end
 
         def self.from_project_members(project_members, args = nil, filters = nil, opts = nil)
+          # project_ids = project_members.map { |m| m.dig(:attributes, :project_id) }.compact.to_set
+
+          # # Create an Enumerator that yields Enumerators for each batch
+          # batches_enum = project_ids.each_slice(batch_size).map do |batch|
+          #   ApiIdah::Dataset::Projects.new(args, { projects: { id__in: batch } }, opts).index
+          # end
+
+          # # Merge all Enumerators into one lazy stream
+          # Enumerator.new do |yielder|
+          #   batches_enum.each do |batch_enum|
+          #     batch_enum.each { |project| yielder << project }
+          #   end
+          # end
+
           new(
             project_members.build_context_filters_from(args),
             project_members.build_context_filters_from(filters),
@@ -61,7 +72,7 @@ module Context
                   end.compact.each_with_object(Set.new) do |id, seen|
                     id unless seen.add?(id)
                   end.compact.each_slice(batch_size).flat_map do |id__in|
-                    Projects.new(
+                    ApiIdah::Dataset::Projects.new(
                       args, { projects: { id__in: } }, opts
                     ).index(filter)
                   end
@@ -74,40 +85,41 @@ module Context
 
         def self.idah_apis(args = nil, context = nil, opts = nil)
           Verse::logger.debug {{idah_apis: self, args:, context:, opts:}}
-          organizations = Organizations.new(args, context, opts)
-          projects = Projects.from_organizations(
+          organizations = ApiIdah::Dataset::Organizations.new(args, context, opts)
+          projects = ApiIdah::Dataset::Projects.from_organizations(
             organizations,
             organizations.build_context_filters_from(args),
             organizations.build_context_filters_from(context),
             opts
           )
-          project_members = ProjectMembers.from_projects(
+          project_members = ApiIdah::Dataset::ProjectMembers.from_projects(
             projects,
             projects.build_context_filters_from(args),
             projects.build_context_filters_from(context),
             opts
           )
-          datasets = Datasets.from_projects(
+          datasets = ApiIdah::Dataset::Datasets.from_projects(
             projects,
             projects.build_context_filters_from(args),
             projects.build_context_filters_from(context),
             opts
           )
-          entries = Entries.from_datasets(
+          entries = ApiIdah::Dataset::Entries.from_datasets(
             datasets,
             datasets.build_context_filters_from(args),
             datasets.build_context_filters_from(context),
             opts
           )
-          annotations = Annotations.from_entries(
+          annotations = ApiIdah::Dataset::Annotations.from_entries(
             entries,
             entries.build_context_filters_from(args),
             entries.build_context_filters_from(context),
             opts
           )
 
-          # Returns APIs ordered from top-level to leaf-level
-          [organizations, projects, project_members, datasets, entries, annotations]
+          super([
+            organizations, projects, project_members, datasets, entries, annotations
+          ], args, context, opts)
         end
       end
     end

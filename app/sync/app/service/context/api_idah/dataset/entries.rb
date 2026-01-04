@@ -35,11 +35,8 @@ module Context
           api_context = nil,
           &context_builder
         )
-          # Dependency injection: allow passing api_context for testing
-          api_context ||= Api[:idah].dataset.entries
-
           super(
-            api_context,
+            api_context || Api[:idah].dataset.entries,
             args,
             context_filters,
             opts,
@@ -47,25 +44,25 @@ module Context
           )
         end
 
-        def self.from_datasets(datasets, args = {}, filters = {}, opts = {})
+        def self.from_datasets(datasets, args = nil, filters = nil, opts = nil)
           new(
             datasets.build_context_filters_from(args),
             datasets.build_context_filters_from(filters),
             opts,
-            ProceduralCrud.new(:entries, proc do |filter = {}, **opts|
+            ProceduralCrud.new(:entries, proc do |filter = nil, **opts|
               datasets.index.flat_map { |d| d.entries.index(filter) }
             end, args, filters, opts)
           )
         end
 
-        def self.from_annotations(annotations, args = {}, filters = {}, opts = annotations.opts)
+        def self.from_annotations(annotations, args = nil, filters = nil, opts = annotations.opts)
           batch_size = opts[:batch_size] || DEFAULT_BATCH_SIZE
 
           new(
             annotations.build_context_filters_from(args),
             annotations.build_context_filters_from(filters),
             opts,
-            ProceduralCrud.new(:entries, proc do |filter = {}, **opts|
+            ProceduralCrud.new(:entries, proc do |filter = nil, **opts|
               entry_ids = annotations.index.map { |a| a.record.dig(:attributes, :entry_id) }.compact.uniq
               entry_ids.each_slice(batch_size).flat_map do |id__in|
                 Entries.new(args, { entries: { id__in: } }, opts).index(filter)
@@ -74,7 +71,7 @@ module Context
           )
         end
 
-        def self.idah_apis(args = {}, context = {}, opts = {})
+        def self.idah_apis(args = nil, context = nil, opts = nil)
           Verse::logger.debug {{idah_apis: self, args:, context:, opts:}}
           entries = Entries.new(args, context, opts)
           datasets = Datasets.from_entries(entries, args, context, opts)
@@ -83,8 +80,9 @@ module Context
           project_members = ProjectMembers.from_projects(projects, args, context, opts)
           annotations = Annotations.from_entries(entries, args, context, opts)
 
-          # Returns APIs ordered from top-level to leaf-level
-          [organizations, projects, project_members, datasets, entries, annotations]
+          super([
+            organizations, projects, project_members, datasets, entries, annotations
+          ], args, context, opts)
         end
       end
     end

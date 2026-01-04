@@ -1,13 +1,10 @@
 module Context
   class Crud < Base
-    DEFAULT_BATCH_SIZE = 100
     include Enumerable
     def each(&block)
       return index.each unless block_given?
 
-      index.each do |unit|
-        yield unit
-      end
+      index.each &block
     end
 
     def create(attributes = nil)
@@ -15,10 +12,19 @@ module Context
     end
 
     def index(filters = nil, **opts)
-      @context_api.index(
+      query_result = @context_api.index(
         build_filters(filters),
         **opts
       )
+      raise Context::Error::QueryFailed, query_result.errors if query_result.errors
+      raise Context::Error::NotFound, id if query_result.data.empty?
+
+      query_result.data
+        .lazy.map(&:data) # JSON API concer only ?
+        .lazy.map do |unit|
+          built_unit = builder(unit)
+          @context_builder&.call(built_unit) || built_unit
+        end
     end
 
     def show(id = nil)
