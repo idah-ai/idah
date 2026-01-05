@@ -2,7 +2,7 @@ module Context
   module IoContext
     class Base < Context::Base
       attr_reader :filename
-      attr :i, :o, :e, :wait_thr
+      attr_accessor :i, :o, :e, :wait_thr
 
       def initialize(filename, i = nil, o = nil, e = nil, wait_thr = nil)
         @filename = filename

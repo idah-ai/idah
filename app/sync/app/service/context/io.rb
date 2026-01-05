@@ -1,22 +1,16 @@
 module Context
   class Io < Base
-    def initialize(args = {}, context = {}, opts = {})
+    def initialize(args = nil, context = nil, opts = nil)
       classname = Hash(opts)[:klass]
       klass = Verse::Util::Reflection.constantize(classname) if classname
 
       raise Context::Error::InvalidContext, classname unless klass < IoContext::Base
 
-      @io = klass&.new(args, context, opts)
-      super(@io)
+      super(klass&.new(args, context, opts), args, context, opts)
     end
 
-      def method_missing(s, *args, &block)
-        @io.send(s, *args, &block)
-      end
-
-      def respond_to_missing?(s, include_private = false)
-        @io.respond_to?(s, include_private) || super
-      end
-
+    def method_missing(s, *args, &block)
+      @context_api.send(s, *args, &block)
+    end
   end
 end
