@@ -3,8 +3,8 @@ module Context
     module Dataset
       class Datasets < Base
         def builder(dataset)
-          dataset_id = dataset[:id]
-          unless dataset_id
+          id = dataset.dig(:id)
+          unless id
             raise Context::Error::InvalidData, "Dataset missing id"
           end
 
@@ -15,9 +15,12 @@ module Context
 
           Unit.new(
             super(dataset), [
-              Datasets.new(args, build_context_filters(id: dataset_id), opts),
-              Entries.new(args, build_context_filters({ dataset_id: dataset_id }, :entries), opts),
-              Projects.new(args, build_context_filters({ id: project_id }, :projects), opts)
+              Entries.new(args, build_context_filters_from({
+                datasets: { id: }, entries: { dataset_id: id }
+              }), opts),
+              Projects.new(args, build_context_filters_from({
+                datasets: { id: }, projects: { id: project_id }
+              }), opts)
             ]
           )
         end
@@ -40,11 +43,11 @@ module Context
 
         def self.from_entries(entries, args = nil, filters = nil, opts = nil)
           batch_size = opts[:batch_size] || DEFAULT_BATCH_SIZE
-
+          args = entries.build_context_filters_from(args),
+          filters = entries.build_context_filters_from(filters),
+          opts = entries.build_opts(opts),
           new(
-            entries.build_context_filters_from(args),
-            entries.build_context_filters_from(filters),
-            opts,
+            args, filters, opts,
             ProceduralCrud.new(:datasets, proc do |filter = nil|
               dataset_ids = entries.index.map { |e| e.record.dig(:attributes, :dataset_id) }.compact.uniq
               dataset_ids.each_slice(batch_size).flat_map do |id__in|
@@ -55,10 +58,11 @@ module Context
         end
 
         def self.from_projects(projects, args = nil, filters = nil, opts = nil)
+          args = projects.build_context_filters_from(args),
+          filters = projects.build_context_filters_from(filters),
+          opts = projects.build_opts(opts),
           new(
-            projects.build_context_filters_from(args),
-            projects.build_context_filters_from(filters),
-            opts,
+            args, filters, opts,
             ProceduralCrud.new(:datasets, proc do |filter = nil|
               projects.flat_map { |p| p.datasets.index(filter) }
             end)
@@ -67,14 +71,8 @@ module Context
 
         def self.root_api(args = nil, context = nil, opts = nil)
           datasets = Datasets.new(args, context, opts)
-          projects = Projects.from_datasets(datasets, args, context, opts)
-          organizations = Organizations.from_projects(projects, args, context, opts)
-          project_members = ProjectMembers.from_projects(projects, args, context, opts)
-          entries = Entries.from_datasets(datasets, args, context, opts)
-          annotations = Annotations.from_entries(entries, args, context, opts)
 
           super([
-            # organizations, projects, project_members, datasets, entries, annotations
             datasets
           ], args, context, opts)
         end

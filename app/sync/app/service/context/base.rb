@@ -44,7 +44,7 @@ module Context
 
     def method_missing(s, *args, &block)
       Verse::logger.debug{{self: self.class.to_s, context_api: @context_api.class, method_missing: s}}
-      @context_api.send(s, *args, &block)
+        @context_api.send(s, *args, &block)
     end
 
     def respond_to_missing?(s, include_private = false)
@@ -59,45 +59,110 @@ module Context
     # Generate constrained filters for an API call
     # Merges filters with precedence: on_demand < context_filters < args
     # This ensures class-level context (@args) always takes precedence
-    def self.build_filters(filters = nil, context_api_name = nil, context_filters = nil, args = nil)
-      Hash(filters) # on_demand api filters
-        .merge(Hash(Hash(context_filters)[context_api_name])) # dynamic context filters merge/override
-        .merge(Hash(Hash(args)[context_api_name])) # general context filters merge/override (highest precedence)
+    def self.build_filters(
+      passed_filters = nil,
+      context_api_name = nil,
+      passed_context_filters = nil,
+      passed_args = nil
+    )
+      # Ensure all inputs are treated as hashes, defaulting to empty if nil
+      filters_hash = Hash(passed_filters || {}).fetch(context_api_name, {})
+      context_filters_hash = Hash(passed_context_filters || {}).fetch(context_api_name, {}).merge(Hash(@context_filters || {}).fetch(context_api_name, {}))
+      passed_args_hash = Hash(passed_args || {}).fetch(context_api_name, {})
+      args_hash = Hash(@args || {}).fetch(context_api_name, {})
+
+      filters_hash
+        .merge(context_filters_hash)
+        .merge(passed_args_hash)
+        .merge(args_hash)
     end
-    def build_filters(filters = nil, context_api_name = nil)
-      self.class.build_filters(filters, context_api_name || @context_api.name, @context_filters, @args)
+
+    def build_filters(
+      passed_filters = nil,
+      context_api_name = nil,
+      passed_context_filters = nil,
+      passed_args = nil
+    )
+      self.class.build_filters(
+        passed_filters,
+        context_api_name || @context_api.name,
+        passed_context_filters || @context_filters,
+        passed_args || @args
+      )
     end
 
     # Generate a constrained context_filters hash given API filters
     # Wraps the merged filters in the appropriate context structure
-    def self.build_context_filters(filters = nil, context_api_name = nil, context_filters = nil)
-      Hash(context_filters)
-        .merge([[context_api_name || self.name, build_filters(filters, context_api_name || self.name)]].to_h)
-    end
-    def build_context_filters(filters = nil, context_api_name = nil)
-      self.class.build_context_filters(filters, context_api_name || @context_api.name, @context_filters)
-    end
-    # Build complete context_filters from additional filter overrides
-    # Processes ALL API names from both @args and the parameter
-    # Ensures no context information is lost during transformation
-    def self.build_context_filters_from(context_filters = nil, args = nil)
-      Verse::logger.debug{{context_filters:, args:}}
-      all_api_names = (Hash(args).keys + Hash(context_filters).keys).uniq
+    def self.build_context_filters(
+      passed_filters = nil,
+      context_api_name = nil,
+      passed_context_filters = nil,
+      passed_args = nil
+    )
+      new_context_filters = Hash(@context_filters)
+      merged_filters = build_filters(
+        passed_filters,
+        context_api_name,
+        passed_context_filters,
+        passed_args
+      )
 
-      all_api_names.reduce({}) do |h, context_api_name|
-        filters = Hash(context_filters)[context_api_name]
-        h.merge(build_context_filters(filters, context_api_name))
+      new_context_filters.merge(
+        context_api_name || self.name => merged_filters
+      )
+    end
+
+    def build_context_filters(
+      passed_filters = nil,
+      context_api_name = nil,
+      passed_context_filters = nil,
+      passed_args = nil
+    )
+      self.class.build_context_filters(
+        passed_filters,
+        context_api_name || @context_api.name,
+        passed_context_filters || @context_filters,
+        passed_args || @args
+      )
+    end
+
+    def self.build_context_filters_from(
+      passed_context_filters = nil,
+      passed_args = nil
+    )
+      all_context_filters = Hash(@context_filters).merge(Hash(passed_context_filters || {}))
+      all_args = Hash(@args).merge(Hash(passed_args || {}))
+
+      all_api_names = (all_args.keys + all_context_filters.keys).uniq
+
+      all_api_names.each_with_object({}) do |context_api_name, result|
+        result.merge!(
+          context_api_name => build_filters(
+            nil,
+            context_api_name,
+            all_context_filters,
+            all_args
+          )
+        )
       end
     end
-    def build_context_filters_from(context_filters = nil)
-      self.class.build_context_filters_from(context_filters, @args)
+
+    def build_context_filters_from(
+      passed_context_filters = nil,
+      passed_args = nil
+    )
+      self.class.build_context_filters_from(
+        passed_context_filters || @context_filters,
+        passed_args || @args
+      )
     end
 
     # Build complete opts from additional opts overrides
     # Processes ALL API names from both @opts and the parameter
     # Ensures no context information is lost during transformation
     def self.build_opts(opts = nil)
-      raise NotImplementedError
+      opts
+      # raise NotImplementedError
     end
     def self.build_opts(opts = nil)
       self.class.build_opts(opts)
