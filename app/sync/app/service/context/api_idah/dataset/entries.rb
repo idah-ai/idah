@@ -72,7 +72,6 @@ module Context
         end
 
         def self.idah_apis(args = nil, context = nil, opts = nil)
-          Verse::logger.debug {{idah_apis: self, args:, context:, opts:}}
           entries = Entries.new(args, context, opts)
           datasets = Datasets.from_entries(entries, args, context, opts)
           projects = Projects.from_datasets(datasets, args, context, opts)
