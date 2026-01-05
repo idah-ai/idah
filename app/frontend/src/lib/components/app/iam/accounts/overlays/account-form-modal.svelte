@@ -109,7 +109,7 @@
     closeThisModal();
     $refetches.accounts.list = new Date();
     toast.success("Account updated", {
-      description: `The account of ${account.name} has been updated.`,
+      description: `The account of "${account.name}" has been updated.`,
     });
   }
 
