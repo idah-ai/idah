@@ -91,7 +91,7 @@ module Project
     def create(attributes)
       with_metadata do
         add_metadata(
-          actor_account_id: auth_context.metadata[:account_id],
+          actor_account_id: auth_context.metadata[:id],
           actor_account_email: auth_context.metadata[:email],
           organization_id: attributes[:organization_id]
         )
@@ -106,7 +106,7 @@ module Project
 
         if project
           add_metadata(
-            actor_account_id: auth_context.metadata[:account_id],
+            actor_account_id: auth_context.metadata[:id],
             actor_account_email: auth_context.metadata[:email],
             organization_id: attributes[:organization_id] || project.organization_id,
             project_id: id
@@ -123,7 +123,7 @@ module Project
 
         if project
           add_metadata(
-            actor_account_id: auth_context.metadata[:account_id],
+            actor_account_id: auth_context.metadata[:id],
             actor_account_email: auth_context.metadata[:email],
             organization_id: project.organization_id,
             project_id: id

@@ -39,7 +39,7 @@ module Organization
     def create(attributes)
       with_metadata do
         add_metadata(
-          actor_account_id: auth_context.metadata[:account_id],
+          actor_account_id: auth_context.metadata[:id],
           actor_account_email: auth_context.metadata[:email]
         )
 
@@ -50,7 +50,7 @@ module Organization
     def update!(id, attributes, scope: scoped(:update))
       with_metadata do
         add_metadata(
-          actor_account_id: auth_context.metadata[:account_id],
+          actor_account_id: auth_context.metadata[:id],
           actor_account_email: auth_context.metadata[:email],
           organization_id: id
         )
@@ -65,7 +65,7 @@ module Organization
 
         if organization
           add_metadata(
-            actor_account_id: auth_context.metadata[:account_id],
+            actor_account_id: auth_context.metadata[:id],
             actor_account_email: auth_context.metadata[:email],
             organization_id: id
           )

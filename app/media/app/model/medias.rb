@@ -64,7 +64,7 @@ module Medias
     def create(attributes)
       with_metadata do
         add_metadata(
-          actor_account_id: auth_context.metadata[:account_id],
+          actor_account_id: auth_context.metadata[:id],
           actor_account_email: auth_context.metadata[:email],
           project_id: attributes[:project_id]
         )
@@ -77,11 +77,13 @@ module Medias
       with_metadata do
         media = find!(id)
 
-        add_metadata(
-          actor_account_id: auth_context.metadata[:account_id],
-          actor_account_email: auth_context.metadata[:email],
-          project_id: media.project_id
-        )
+        if media
+          add_metadata(
+            actor_account_id: auth_context.metadata[:id],
+            actor_account_email: auth_context.metadata[:email],
+            project_id: media.project_id
+          )
+        end
 
         super(id, attributes, scope:)
       end
@@ -93,7 +95,7 @@ module Medias
 
         if media
           add_metadata(
-            actor_account_id: auth_context.metadata[:account_id],
+            actor_account_id: auth_context.metadata[:id],
             actor_account_email: auth_context.metadata[:email],
             project_id: media.project_id
           )
