@@ -80,7 +80,7 @@
       openConfirmDeleteEntryModal = false;
       $refetches.entries.list = new Date();
       toast.success("Entry deleted", {
-        description: `The entry ${entry.name} has been deleted.`,
+        description: `The entry "${entry.name}" has been deleted.`,
       });
     } catch (error) {
       showActionFailedToast(error);

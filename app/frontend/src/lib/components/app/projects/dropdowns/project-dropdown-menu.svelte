@@ -93,7 +93,7 @@
       $refetches.projects.list = new Date();
       goto(resolve("/projects"));
       toast.success("Project deleted", {
-        description: `The project ${projectRecord?.name} has been deleted.`,
+        description: `The project "${projectRecord?.name}" has been deleted.`,
       });
     } catch (error) {
       showActionFailedToast(error);

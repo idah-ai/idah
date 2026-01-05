@@ -93,7 +93,7 @@
       $refetches.datasets.list = new Date();
       goto(resolve(`/projects/${projectId}/datasets`));
       toast.success("Dataset deleted", {
-        description: `The dataset ${datasetRecord?.name} has been deleted.`,
+        description: `The dataset "${datasetRecord?.name}" has been deleted.`,
       });
     } catch (error) {
       showActionFailedToast(error);

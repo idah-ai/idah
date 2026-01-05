@@ -106,7 +106,7 @@
     $refetches.datasets.list = new Date();
     goto(resolve(`/projects/${projectId}/datasets/${createdDatasetRes.data.id}/entries`));
     toast.success("Dataset created", {
-      description: `The dataset ${dataset.name} has been created.`,
+      description: `The dataset "${dataset.name}" has been created.`,
     });
   }
 

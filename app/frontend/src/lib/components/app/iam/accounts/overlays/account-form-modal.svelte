@@ -85,7 +85,7 @@
     closeThisModal();
     $refetches.accounts.list = new Date();
     toast.success("Account created", {
-      description: `The account has been created and an invitation email has been sent to ${account.email}.`,
+      description: `The account has been created and an invitation email has been sent to "${account.email}".`,
     });
   }
 
