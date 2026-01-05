@@ -1,5 +1,5 @@
 module Context
-  module ApiIdah
+  module Idah
     module Dataset
       class Datasets < Base
         def builder(dataset)

@@ -1,5 +1,5 @@
 module Context
-  module ApiIdah
+  module Idah
     class Base < CrudIterator
       def self.builder(unit)
         if @context_api.class == Api::Exposition
@@ -18,7 +18,7 @@ module Context
       )
         unless [
           Api::Exposition,
-          ApiIdah::Base,
+          Idah::Base,
           ProceduralCrud,
         ].any? {|whitelist| api.is_a? whitelist}
           raise Error::InvalidContext, self

@@ -1,5 +1,5 @@
 module Context
-  module ApiIdah
+  module Idah
     module Media
       class Medias < Base
         def each(&block)

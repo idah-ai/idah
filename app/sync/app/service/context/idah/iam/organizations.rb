@@ -1,5 +1,5 @@
 module Context
-  module ApiIdah
+  module Idah
     module Iam
       class Organizations < Base
         def builder(organization)
@@ -11,7 +11,7 @@ module Context
           Unit.new(
             super(organization),
             [
-              ApiIdah::Dataset::Projects.new(args, build_context_filters({ organization_id: org_id }, :projects), opts)
+              Idah::Dataset::Projects.new(args, build_context_filters({ organization_id: org_id }, :projects), opts)
             ]
           )
         end
@@ -50,7 +50,7 @@ module Context
 
           # # Create an Enumerator that yields Enumerators for each batch
           # batches_enum = project_ids.each_slice(batch_size).map do |batch|
-          #   ApiIdah::Dataset::Projects.new(args, { projects: { id__in: batch } }, opts).index
+          #   Idah::Dataset::Projects.new(args, { projects: { id__in: batch } }, opts).index
           # end
 
           # # Merge all Enumerators into one lazy stream
@@ -72,7 +72,7 @@ module Context
                   end.compact.each_with_object(Set.new) do |id, seen|
                     id unless seen.add?(id)
                   end.compact.each_slice(batch_size).flat_map do |id__in|
-                    ApiIdah::Dataset::Projects.new(
+                    Idah::Dataset::Projects.new(
                       args, { projects: { id__in: } }, opts
                     ).index(filter)
                   end
@@ -84,32 +84,32 @@ module Context
 
 
         def self.root_api(args = nil, context = nil, opts = nil)
-          organizations = ApiIdah::Dataset::Organizations.new(args, context, opts)
-          projects = ApiIdah::Dataset::Projects.from_organizations(
+          organizations = Idah::Dataset::Organizations.new(args, context, opts)
+          projects = Idah::Dataset::Projects.from_organizations(
             organizations,
             organizations.build_context_filters_from(args),
             organizations.build_context_filters_from(context),
             opts
           )
-          project_members = ApiIdah::Dataset::ProjectMembers.from_projects(
+          project_members = Idah::Dataset::ProjectMembers.from_projects(
             projects,
             projects.build_context_filters_from(args),
             projects.build_context_filters_from(context),
             opts
           )
-          datasets = ApiIdah::Dataset::Datasets.from_projects(
+          datasets = Idah::Dataset::Datasets.from_projects(
             projects,
             projects.build_context_filters_from(args),
             projects.build_context_filters_from(context),
             opts
           )
-          entries = ApiIdah::Dataset::Entries.from_datasets(
+          entries = Idah::Dataset::Entries.from_datasets(
             datasets,
             datasets.build_context_filters_from(args),
             datasets.build_context_filters_from(context),
             opts
           )
-          annotations = ApiIdah::Dataset::Annotations.from_entries(
+          annotations = Idah::Dataset::Annotations.from_entries(
             entries,
             entries.build_context_filters_from(args),
             entries.build_context_filters_from(context),

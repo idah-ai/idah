@@ -1,5 +1,5 @@
 module Context
-  module ApiIdah
+  module Idah
     module Dataset
       class Projects < Base
         def builder(project)
@@ -18,7 +18,7 @@ module Context
             [
               ProjectMembers.new(args, build_context_filters({ project_id: project_id }, :project_members), opts),
               Datasets.new(args, build_context_filters({ project_id: project_id }, :datasets), opts),
-              ApiIdah::Iam::Organizations.new(args, build_context_filters({ id: org_id }, :organizations), opts)
+              Idah::Iam::Organizations.new(args, build_context_filters({ id: org_id }, :organizations), opts)
             ]
           )
         end
