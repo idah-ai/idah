@@ -13,14 +13,15 @@ module Context
             raise Context::Error::InvalidData, "Entry missing resource in attributes"
           end
 
+          filters = build_context_filters_from({
+            entries: {id:, resource:},
+            medias: {resource:},
+            annotations: { entry_id: id }
+          })
           Unit.new(
             super(entry), [
-              Idah::Media::Medias.new(args, build_context_filters_from({
-                entries: {id:, resource:}, medias: {resource:}
-              }), opts),
-              Annotations.new(args, build_context_filters_from({
-                entries: {id:, resource:}, annotations: { entry_id: id }
-              }), opts)
+              Idah::Media::Medias.new(args, filters, opts),
+              Annotations.new(args, filters, opts)
             ]
           )
         end

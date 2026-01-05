@@ -8,13 +8,13 @@ module Context
             raise Context::Error::InvalidData, "Organization missing id"
           end
 
-          puts({context_filters:@context_filters})
+          filters = build_context_filters_from({
+            organizations: {id:}, projects: {organization_id: id}
+          })
+
           Unit.new(
-            super(organization),
-            [
-              Idah::Dataset::Projects.new(args, build_context_filters_from({
-                organizations: {id:}, projects: {organization_id: id}
-              }), opts)
+            super(organization), [
+              Idah::Dataset::Projects.new(args, filters, opts)
             ]
           )
         end

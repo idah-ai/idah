@@ -21,8 +21,7 @@ module Context
           })
 
           Unit.new(
-            super(project),
-            [
+            super(project), [
               ProjectMembers.new(args, filters, opts),
               Datasets.new(args, filters, opts),
               Idah::Iam::Organizations.new(args, filters, opts)
