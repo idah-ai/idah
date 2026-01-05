@@ -73,7 +73,7 @@
     $refetches.organizations.list = new Date();
     goto(resolve(`/organizations/${createdOrganizationRes.data.id}/projects`));
     toast.success("Organization created", {
-      description: `The organization ${organization.name} has been created.`,
+      description: `The organization "${organization.name}" has been created.`,
     });
   }
 
@@ -93,7 +93,7 @@
     closeThisModal();
     $refetches.organizations.list = new Date();
     toast.success("Organization updated", {
-      description: `The organization ${organization.name} has been updated.`,
+      description: `The organization "${organization.name}" has been updated.`,
     });
   }
 

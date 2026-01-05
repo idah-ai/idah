@@ -73,7 +73,7 @@
       openConfirmDeleteAccountModal = false;
       $refetches.accounts.list = new Date();
       toast.success("Account deleted", {
-        description: `The account of ${account.name} has been deleted.`,
+        description: `The account of "${account.name}" has been deleted.`,
       });
     } catch (error) {
       showActionFailedToast(error);

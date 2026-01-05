@@ -41,7 +41,7 @@
     open = false;
     $refetches.entries.list = new Date();
     toast.success("Entry assigned", {
-      description: `The entry ${entryRecord?.name} has been assigned to ${selectedMember}.`,
+      description: `The entry "${entryRecord?.name}" has been assigned to ${selectedMember}.`,
     });
   }
 

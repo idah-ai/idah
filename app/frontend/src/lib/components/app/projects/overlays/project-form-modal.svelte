@@ -77,7 +77,7 @@
     $refetches.projects.list = new Date();
     goto(resolve(`/projects/${createdProjectRes.data.id}/datasets`));
     toast.success("Project created", {
-      description: `The project ${project.name} has been created.`,
+      description: `The project "${project.name}" has been created.`,
     });
   }
 
@@ -100,7 +100,7 @@
     $refetches.projects.list = new Date();
     $refetches.projects.get = new Date();
     toast.success("Project updated", {
-      description: `The project ${project.name} has been updated.`,
+      description: `The project "${project.name}" has been updated.`,
     });
   }
 

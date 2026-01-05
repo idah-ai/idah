@@ -94,7 +94,7 @@
         );
 
         toast.success("Project member added", {
-          description: `An invitation will be sent to ${email} if the account is not yet existed.`,
+          description: `An invitation will be sent to "${email}" if the account is not yet existed.`,
         });
       }
 

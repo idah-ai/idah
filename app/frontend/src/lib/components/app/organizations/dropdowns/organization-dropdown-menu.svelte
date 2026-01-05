@@ -99,7 +99,7 @@
       goto(resolve("/organizations"));
       toast.success("Organization deleted", {
         description: organizationRecord
-          ? `The organization ${organizationRecord?.name} has been deleted.`
+          ? `The organization "${organizationRecord?.name}" has been deleted.`
           : "The organization has been deleted.",
       });
     } catch (error) {

@@ -31,7 +31,7 @@
       openConfirmRemoveMemberModal = false;
       $refetches.projectMembers.list = new Date();
       toast.success("Project member removed", {
-        description: `${projectMember.email} has been removed from the project.`,
+        description: `"${projectMember.email}" has been removed from the project.`,
       });
     } catch (error) {
       showActionFailedToast(error);
