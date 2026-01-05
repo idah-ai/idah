@@ -105,11 +105,7 @@ module ProjectMember
 
     def create(attributes)
       with_metadata do
-        add_metadata(
-          actor_account_id: auth_context.metadata[:id],
-          actor_account_email: auth_context.metadata[:email],
-          project_id: attributes[:project_id]
-        )
+        add_event_metadata(project_id: attributes[:project_id])
 
         super(attributes)
       end
@@ -119,13 +115,7 @@ module ProjectMember
       with_metadata do
         membership = find!(id)
 
-        if membership
-          add_metadata(
-            actor_account_id: auth_context.metadata[:id],
-            actor_account_email: auth_context.metadata[:email],
-            project_id: attributes[:project_id] || membership.project_id
-          )
-        end
+        add_event_metadata(project_id: attributes[:project_id] || membership.project_id) if membership
 
         super(id, attributes, scope:)
       end
@@ -135,16 +125,19 @@ module ProjectMember
       with_metadata do
         membership = find!(id)
 
-        if membership
-          add_metadata(
-            actor_account_id: auth_context.metadata[:id],
-            actor_account_email: auth_context.metadata[:email],
-            project_id: membership.project_id
-          )
-        end
+        add_event_metadata(project_id: membership.project_id) if membership
 
         super(id)
       end
+    end
+
+    private def add_event_metadata(**opts)
+      add_metadata(
+        actor_account_id: auth_context.metadata[:id],
+        actor_account_email: auth_context.metadata[:email],
+        actor_account_role_name: auth_context.metadata[:role],
+        **opts
+      )
     end
   end
 end
