@@ -34,19 +34,15 @@
   async function assignMember(): Promise<void> {
     if (entryIds.length === 0 || !selectedMember) return;
 
-    try {
-      for (const entryId of entryIds) {
-        await entriesBackendDataSource.assign({ id: entryId, memberAccountId: selectedMember });
-      }
-
-      open = false;
-      $refetches.entries.list = new Date();
-      toast.success("Entry assigned", {
-        description: `The entry ${entryRecord?.name} has been assigned to ${selectedMember}.`,
-      });
-    } catch (error) {
-      throw error;
+    for (const entryId of entryIds) {
+      await entriesBackendDataSource.assign({ id: entryId, memberAccountId: selectedMember });
     }
+
+    open = false;
+    $refetches.entries.list = new Date();
+    toast.success("Entry assigned", {
+      description: `The entry ${entryRecord?.name} has been assigned to ${selectedMember}.`,
+    });
   }
 
   async function submit(): Promise<void> {
