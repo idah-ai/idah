@@ -7,6 +7,7 @@
   import DialogTitle from "@/components/ui/dialog/dialog-title.svelte";
 
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
+  import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
 
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
@@ -33,15 +34,19 @@
   async function assignMember(): Promise<void> {
     if (entryIds.length === 0 || !selectedMember) return;
 
-    for (const entryId of entryIds) {
-      await entriesBackendDataSource.assign({ id: entryId, memberAccountId: selectedMember });
-    }
+    try {
+      for (const entryId of entryIds) {
+        await entriesBackendDataSource.assign({ id: entryId, memberAccountId: selectedMember });
+      }
 
-    toast.success("Entry assigned", {
-      description: `The entry ${entryRecord?.name} has been assigned to ${selectedMember}.`,
-    });
-    $refetches.entries.list = new Date();
-    open = false;
+      open = false;
+      $refetches.entries.list = new Date();
+      toast.success("Entry assigned", {
+        description: `The entry ${entryRecord?.name} has been assigned to ${selectedMember}.`,
+      });
+    } catch (error) {
+      throw error;
+    }
   }
 
   async function submit(): Promise<void> {
@@ -50,8 +55,8 @@
     try {
       await assignMember();
     } catch (error) {
-      console.error(error);
       submitting = false;
+      showActionFailedToast(error);
     }
   }
 </script>

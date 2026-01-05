@@ -8,6 +8,7 @@
   import Can from "@/security/can.svelte";
 
   import { ProjectMemberRecord, projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
+  import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
 
   import type { DataTableCellBaseProps } from "@/components/app/datasource-table/types";
@@ -24,12 +25,17 @@
 
   // Functions
   async function removeProjectMember(): Promise<void> {
-    await projectMembersBackendDataSource.delete(projectMember.id);
-    toast.success("Project member removed", {
-      description: `${projectMember.email} has been removed from the project.`,
-    });
-    $refetches.projectMembers.list = new Date();
-    openConfirmRemoveMemberModal = false;
+    try {
+      await projectMembersBackendDataSource.delete(projectMember.id, { showErrorToast: false });
+
+      openConfirmRemoveMemberModal = false;
+      $refetches.projectMembers.list = new Date();
+      toast.success("Project member removed", {
+        description: `${projectMember.email} has been removed from the project.`,
+      });
+    } catch (error) {
+      showActionFailedToast(error);
+    }
   }
 </script>
 

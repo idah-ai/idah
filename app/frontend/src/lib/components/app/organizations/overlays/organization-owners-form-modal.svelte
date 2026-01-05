@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/state";
   import { toast } from "svelte-sonner";
 
   import OrganizationOwnersForm from "@/components/app/organizations/forms/organization-owners-form.svelte";
@@ -7,9 +8,9 @@
   import { DialogTitle } from "@/components/ui/dialog";
 
   import { accountsBackendDataSource } from "@/data/model/iam/accounts/record";
+  import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
 
-  import { page } from "$app/state";
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
 
   // Props
@@ -35,18 +36,19 @@
   }
 
   async function addOrgOwners() {
-    try {
-      for (const accountId of owners) {
-        /** Get latest account data */
-        const { data: account } = await accountsBackendDataSource.get(accountId, {
-          noCache: true,
-        });
+    for (const accountId of owners) {
+      /** Get latest account data */
+      const { data: account } = await accountsBackendDataSource.get(accountId, {
+        noCache: true,
+      });
 
-        /** Skip if account is admin */
-        if (account.role_name === "admin") continue;
+      /** Skip if account is admin */
+      if (account.role_name === "admin") continue;
 
-        /** Update role_name and role_scope */
-        await accountsBackendDataSource.update(account.id, {
+      /** Update role_name and role_scope */
+      await accountsBackendDataSource.update(
+        account.id,
+        {
           attributes: {
             role_name: "org_owner",
             role_scope: {
@@ -54,18 +56,18 @@
               org: [...(account.role_scope.org || []), String(organizationId)],
             },
           },
-        });
-      }
-
-      $refetches.accounts.list = new Date();
-      closeThisModal();
-      toast.success("Organization owner(s) added", {
-        description: "The organization owner(s) has been added.",
-      });
-    } catch (error) {
-      toast.error("Failed to add organization owner(s).");
-      throw error;
+        },
+        {
+          showErrorToast: false,
+        },
+      );
     }
+
+    closeThisModal();
+    $refetches.accounts.list = new Date();
+    toast.success("Organization owner(s) added", {
+      description: "The organization owner(s) has been added.",
+    });
   }
 
   async function submit() {
@@ -76,7 +78,7 @@
         await addOrgOwners();
       }
     } catch (error) {
-      console.error(error);
+      showActionFailedToast(error);
     } finally {
       submitting = false;
     }

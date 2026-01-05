@@ -11,6 +11,7 @@
   import { accountPasswordsBackendDataSource } from "@/data/model/iam/account-passwords/record";
   import { updateAccountPasswordSchema } from "@/data/model/iam/account-passwords/schema";
   import { AccountSettingRecord } from "@/data/model/setting/account_setting/record";
+  import { showActionFailedToast } from "@/utils/error/error.toasts";
 
   // Variables
   const accountSettingsResource = AccountSettingRecord.type;
@@ -43,15 +44,16 @@
 
     try {
       await accountPasswordsBackendDataSource.change_password({ oldPassword, newPassword });
+
       oldPassword = "";
       newPassword = "";
       confirmPassword = "";
       toast.success("Password changed", {
         description: "Your password has been updated successfully.",
       });
-      updatingPassword = false;
     } catch (error) {
-      console.error(error);
+      showActionFailedToast(error);
+    } finally {
       updatingPassword = false;
     }
   }

@@ -18,6 +18,7 @@
   import { getEntryDropdownMenuActions } from "@/components/app/datasets/entries/dropdown-menus/entry-dropdown-menu";
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
   import { authStatus } from "@/security/AuthContext";
+  import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
 
   import type { ProjectMemberScope } from "@/security/types";
@@ -73,12 +74,17 @@
   }
 
   async function deleteEntry() {
-    await entriesBackendDataSource.delete(entry.id);
-    toast.success("Entry deleted", {
-      description: `The entry ${entry.name} has been deleted.`,
-    });
-    $refetches.entries.list = new Date();
-    openConfirmDeleteEntryModal = false;
+    try {
+      await entriesBackendDataSource.delete(entry.id, { showErrorToast: false });
+
+      openConfirmDeleteEntryModal = false;
+      $refetches.entries.list = new Date();
+      toast.success("Entry deleted", {
+        description: `The entry ${entry.name} has been deleted.`,
+      });
+    } catch (error) {
+      showActionFailedToast(error);
+    }
   }
 </script>
 
