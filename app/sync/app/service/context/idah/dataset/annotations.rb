@@ -1,7 +1,7 @@
 module Context
-  module ApiIdah
+  module Idah
     module Dataset
-      class Annotations < ApiIdah::Base
+      class Annotations < Idah::Base
         def builder(annotation)
           # Validate required nested attributes
           entry_id = annotation.dig(:attributes, :entry_id)
@@ -47,7 +47,7 @@ module Context
           datasets = Datasets.from_entries(entries)
           projects = Projects.from_datasets(datasets)
           project_members = ProjectMembers.from_projects(projects)
-          organizations = ApiIdah::Iam::Organizations.from_projects(projects)
+          organizations = Idah::Iam::Organizations.from_projects(projects)
 
           super([
             # organizations, projects, project_members, datasets, entries, annotations

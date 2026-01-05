@@ -1,5 +1,5 @@
 module Context
-  module ApiIdah
+  module Idah
     module Dataset
       class Entries < Base
         def builder(entry)
@@ -22,7 +22,7 @@ module Context
             super(entry), [
               Entries.new(args, build_context_filters(id: entry_id), opts),
               Datasets.new(args, build_context_filters({ id: dataset_id }, :datasets), opts),
-              ApiIdah::Media::Medias.new(args, build_context_filters({ resource: resource }, :medias), opts),
+              Idah::Media::Medias.new(args, build_context_filters({ resource: resource }, :medias), opts),
               Annotations.new(args, build_context_filters({ entry_id: entry_id }, :annotations), opts)
             ]
           )

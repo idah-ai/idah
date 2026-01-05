@@ -1,5 +1,5 @@
 module Context
-  module ApiIdah
+  module Idah
     module Dataset
       class ProjectMembers < Base
         def builder(project_member)

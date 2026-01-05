@@ -1,13 +1,13 @@
 module Context
   module Idah
     IDAH_APIS = [
-      ApiIdah::Iam::Organizations,
-      ApiIdah::Dataset::Projects,
-      ApiIdah::Dataset::ProjectMembers,
-      ApiIdah::Dataset::Datasets,
-      ApiIdah::Media::Medias,
-      ApiIdah::Dataset::Entries,
-      ApiIdah::Dataset::Annotations
+      Iam::Organizations,
+      Dataset::Projects,
+      Dataset::ProjectMembers,
+      Dataset::Datasets,
+      Media::Medias,
+      Dataset::Entries,
+      Dataset::Annotations
     ].freeze
 
     def self.new(args = nil, context = nil, opts = nil)
@@ -17,8 +17,8 @@ module Context
       # Validate that all IDAH_APIS are valid Context classes
       IDAH_APIS.each do |api_class|
         Verse::logger.debug(api_check: api_class)
-        unless api_class < ApiIdah::Base
-          raise Context::Error::InvalidContext, "#{api_class} is not a subclass of ApiIdah::Base"
+        unless api_class < Idah::Base
+          raise Context::Error::InvalidContext, "#{api_class} is not a subclass of Idah::Base"
         end
       end
 
@@ -32,12 +32,12 @@ module Context
       context_api = if matched_api
                       matched_api.root_api(args, context, opts)
                     else
-                      ApiIdah::Dataset::Datasets.new(args, filters, opts)
+                      Dataset::Datasets.new(args, filters, opts)
                     end
 
-      # Ensure the root API is only ApiIdah::Dataset::Datasets
-      unless context_api.is_a?(ApiIdah::Dataset::Datasets)
-        raise Context::Error::InvalidContext, "Expected ApiIdah::Dataset::Datasets, got #{context_api.class}"
+      # Ensure the root API is only Dataset::Datasets
+      unless context_api.is_a?(Dataset::Datasets)
+        raise Context::Error::InvalidContext, "Expected Dataset::Datasets, got #{context_api.class}"
       end
 
       context_api
