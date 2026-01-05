@@ -3,6 +3,7 @@ import type { LabelValue } from "@/components/app/types";
 export const logResourceTypes: LabelValue<string>[] = [
   /** IAM */
   { label: "Accounts", value: "accounts" },
+  { label: "Account Sessions", value: "account_sessions" },
   { label: "Organizations", value: "organizations" },
 
   /** DATASET */
@@ -20,8 +21,8 @@ export type LogAction =
   | "created"
   | "updated"
   | "deleted"
-  | "login"
-  | "logout"
+  | "logged_in"
+  | "logged_out"
   | "assigned"
   | "unassigned"
   | "submitted";
@@ -30,8 +31,8 @@ export const logActions: LabelValue<LogAction>[] = [
   { label: "Updated", value: "updated" },
   { label: "Deleted", value: "deleted" },
 
-  { label: "Login", value: "login" },
-  { label: "Logout", value: "logout" },
+  { label: "Login", value: "logged_in" },
+  { label: "Logout", value: "logged_out" },
 
   { label: "Assigned", value: "assigned" },
   { label: "Unassigned", value: "unassigned" },

@@ -9,11 +9,16 @@
   let { record: logRecord }: DataTableCellBaseProps<LogRecord> = $props();
 
   // Variables
-  let { resource_type, resource_id, organization_id, project_id, dataset_id, entry_id } = $derived(logRecord);
+  let { action, resource_type, resource_id, organization_id, project_id, dataset_id, entry_id } = $derived(logRecord);
   let url = $derived.by(() => {
     switch (resource_type) {
       case "accounts": {
+        if (action === "logged_in") return `/login`;
+
         return `/accounts/${resource_id}`;
+      }
+      case "account_sessions": {
+        return `/logout`;
       }
       case "organizations": {
         return `/organizations/${organization_id}`;
