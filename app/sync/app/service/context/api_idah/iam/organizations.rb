@@ -84,7 +84,6 @@ module Context
 
 
         def self.idah_apis(args = nil, context = nil, opts = nil)
-          Verse::logger.debug {{idah_apis: self, args:, context:, opts:}}
           organizations = ApiIdah::Dataset::Organizations.new(args, context, opts)
           projects = ApiIdah::Dataset::Projects.from_organizations(
             organizations,

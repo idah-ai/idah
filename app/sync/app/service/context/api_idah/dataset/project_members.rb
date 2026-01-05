@@ -63,7 +63,6 @@ module Context
         end
 
         def self.idah_apis(args = nil, context = nil, opts = nil)
-          Verse::logger.debug {{idah_apis: self, args:, context:, opts:}}
           project_members = ProjectMembers.new(args, context, opts)
           projects = Projects.from_project_members(project_members, args, context, opts)
           organizations = Organizations.from_projects(projects, args, context, opts)

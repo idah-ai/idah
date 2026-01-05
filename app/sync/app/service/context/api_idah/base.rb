@@ -57,7 +57,7 @@ module Context
       end
 
       def self.idah_apis(apis = [], args = {}, context = {}, opts = {})
-        Verse::logger.debug {{idah_apis: apis, args:, context:, opts:}}
+        Verse::logger.debug {{apis: [apis, :idah_apis].join("#"), args:, context:, opts:}}
         apis.each do |api|
           Verse::logger.debug {{api_check: api.class}}
           unless api.class < Base

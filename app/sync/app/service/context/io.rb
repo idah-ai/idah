@@ -2,11 +2,16 @@ module Context
   class Io < Base
     def initialize(args = nil, context = nil, opts = nil)
       classname = Hash(opts)[:klass]
-      klass = Verse::Util::Reflection.constantize(classname) if classname
+      unless classname
+        raise Context::Error::InvalidContext, :missing_io_klass
+      end
 
-      raise Context::Error::InvalidContext, classname unless klass < IoContext::Base
+      klass = Verse::Util::Reflection.constantize(classname)
+      unless klass && klass < IoContext::Base
+        raise Context::Error::InvalidContext, [:invalid_io_class, klass].join(":")
+      end
 
-      super(klass&.new(args, context, opts), args, context, opts)
+      super(klass.new(args, context, opts), args, context, opts)
     end
 
     def method_missing(s, *args, &block)
