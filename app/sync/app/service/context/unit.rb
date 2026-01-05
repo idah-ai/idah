@@ -32,7 +32,7 @@ module Context
     end
 
     def method_missing(name, *args, &block)
-      Verse::logger::debug{[[:unit, :method_missing, name].join("#"),]}
+      Verse::logger::debug{[[@unit.class, :unit, :method_missing, name].join("#"),]}
       if @unit.respond_to?(name)
         Verse::logger::debug{:on_unit}
         @unit.send(name, *args, &block)

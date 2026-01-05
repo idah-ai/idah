@@ -49,8 +49,8 @@ module Context
             datasets.build_context_filters_from(args),
             datasets.build_context_filters_from(filters),
             opts,
-            ProceduralCrud.new(:entries, proc do |filter = nil, **opts|
-              datasets.index.flat_map { |d| d.entries.index(filter) }
+            ProceduralCrud.new(:entries, proc do |filter = nil, opts = nil|
+              datasets.index.flat_map { |d| d.entries.index(filter, opts) }
             end, args, filters, opts)
           )
         end
@@ -62,7 +62,7 @@ module Context
             annotations.build_context_filters_from(args),
             annotations.build_context_filters_from(filters),
             opts,
-            ProceduralCrud.new(:entries, proc do |filter = nil, **opts|
+            ProceduralCrud.new(:entries, proc do |filter = nil, opts = nil|
               entry_ids = annotations.index.map { |a| a.record.dig(:attributes, :entry_id) }.compact.uniq
               entry_ids.each_slice(batch_size).flat_map do |id__in|
                 Entries.new(args, { entries: { id__in: } }, opts).index(filter)

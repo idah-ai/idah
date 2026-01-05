@@ -35,7 +35,7 @@ module Context
     end
 
     def method_missing(s, *args, &block)
-      Verse::logger.debug{[@context_api||:nil, :method_missing, s].join("#")}
+      Verse::logger.debug{[self.to_s, @context_api||:nil, :method_missing, s].join("#")}
       if @context_api.respond_to?(s)
         @context_api.send(s, args, &block)
       else
