@@ -59,6 +59,7 @@ module Account
       end
     end
 
+    event(name: "logged_in")
     def login(email, password)
       account = scoped(:login).where(email:).first
 
@@ -67,6 +68,12 @@ module Account
         account = decode(account)
         account = self.class.model_class.new(account)
         valid = account.password_match?(password)
+
+        add_metadata(
+          actor_account_id: account.id,
+          actor_account_email: account.email,
+          validation: valid ? "success" : "failed"
+        )
       else
         sleep(rand(0.3..0.5))
         valid = false
