@@ -34,16 +34,26 @@ module Context
       @context_builder = context_builder
     end
 
-    def method_missing(s, *args, &block)
-      if (@context_api == self)
-        raise NotImplementedError, [self.name, s].join("#")
+    def to_s
+      if @context_api == self
+        self.class.to_s
       else
-        @context_api.send(s, args, &block)
+        @context_api.to_s
       end
     end
 
+    def method_missing(s, *args, &block)
+      Verse::logger.debug{{self: self.class.to_s, context_api: @context_api.class, method_missing: s}}
+      @context_api.send(s, *args, &block)
+    end
+
     def respond_to_missing?(s, include_private = false)
-      @context_api == self ? false : @context_api.respond_to?(s, include_private) || super
+      Verse::logger.debug{{self: self.class.to_s, respond_to_missing: s}}
+      if @context_api == self
+        false
+      else
+        @context_api.respond_to?(s, include_private)
+      end
     end
 
     # Generate constrained filters for an API call

@@ -13,9 +13,5 @@ module Context
 
       super(klass.new(args, context, opts), args, context, opts)
     end
-
-    def method_missing(s, *args, &block)
-      @context_api.send(s, *args, &block)
-    end
   end
 end

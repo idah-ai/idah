@@ -1,14 +1,6 @@
 module Context
   module Idah
     class Base < CrudIterator
-      def self.builder(unit)
-        if @context_api.class == Api::Exposition
-          Unit.new(unit)
-        else
-          super
-        end
-      end
-
       def initialize(
         api = Api[:idah],
         args = {},
