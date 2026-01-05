@@ -63,11 +63,7 @@ module Medias
 
     def create(attributes)
       with_metadata do
-        add_metadata(
-          actor_account_id: auth_context.metadata[:id],
-          actor_account_email: auth_context.metadata[:email],
-          project_id: attributes[:project_id]
-        )
+        add_event_metadata(project_id: attributes[:project_id])
 
         super(attributes)
       end
@@ -77,13 +73,7 @@ module Medias
       with_metadata do
         media = find!(id)
 
-        if media
-          add_metadata(
-            actor_account_id: auth_context.metadata[:id],
-            actor_account_email: auth_context.metadata[:email],
-            project_id: media.project_id
-          )
-        end
+        add_event_metadata(project_id: media.project_id) if media
 
         super(id, attributes, scope:)
       end
@@ -93,16 +83,19 @@ module Medias
       with_metadata do
         media = find!(id)
 
-        if media
-          add_metadata(
-            actor_account_id: auth_context.metadata[:id],
-            actor_account_email: auth_context.metadata[:email],
-            project_id: media.project_id
-          )
-        end
+        add_event_metadata(project_id: media.project_id) if media
 
         super(id)
       end
+    end
+
+    private def add_event_metadata(**opts)
+      add_metadata(
+        actor_account_id: auth_context.metadata[:id],
+        actor_account_email: auth_context.metadata[:email],
+        actor_account_role_name: auth_context.metadata[:role],
+        **opts
+      )
     end
   end
 end
