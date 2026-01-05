@@ -4,7 +4,6 @@
   import PageProvider from "@/components/app/page/page-provider.svelte";
 
   import { logColumns } from "@/components/app/audit/audits/datasource-tables/log-columns";
-  import { getTablePreferences } from "@/components/app/datasource-table/datasource-table.stores.svelte";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
   import { LogRecord, logsBackendDataSource } from "@/data/model/audit/logs/record";
   import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
@@ -72,6 +71,9 @@
       columns={logColumns}
       dataSource={logsBackendDataSource}
       listOptions={{
+        filters: {
+          actor_account_role_name__nin: ["system"],
+        },
         sort: ["-event_timestamp"],
       }}
       {onLoadSetContexts}

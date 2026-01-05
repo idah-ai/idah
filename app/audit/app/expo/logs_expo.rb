@@ -14,7 +14,8 @@ class LogsExpo < BaseExpo
                       :event_timestamp__gte,
                       :event_timestamp__lte,
                       :resource_type__in,
-                      :resource_id__match
+                      :resource_id__match,
+                      :actor_account_role_name__nin
     end
   end
 

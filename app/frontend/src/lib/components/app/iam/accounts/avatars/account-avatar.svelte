@@ -3,7 +3,7 @@
   import { Badge } from "@/components/ui/badge";
   import { cn } from "@/utils";
 
-  import { getAvatarFallback, humanize } from "@/utils/string";
+  import { getAvatarFallback, humanize, truncateEmail } from "@/utils/string";
   import { CheckIcon } from "@lucide/svelte";
 
   // Props
@@ -61,7 +61,7 @@
     {/if}
 
     {#if showEmail}
-      <span class="truncate text-xs">{email}</span>
+      <span class="text-xs">{truncateEmail(email || "")}</span>
     {/if}
 
     {#if showRole}
