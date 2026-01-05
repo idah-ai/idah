@@ -69,9 +69,10 @@ module Account
         account = self.class.model_class.new(account)
         valid = account.password_match?(password)
 
-        add_metadata(
+        add_event_metadata(
           actor_account_id: account.id,
           actor_account_email: account.email,
+          actor_account_role_name: account.role_name,
           validation: valid ? "success" : "failed"
         )
       else
@@ -102,10 +103,7 @@ module Account
 
     def create(attributes)
       with_metadata do
-        add_metadata(
-          actor_account_id: auth_context.metadata[:id],
-          actor_account_email: auth_context.metadata[:email]
-        )
+        add_event_metadata
 
         super(attributes)
       end
@@ -113,10 +111,7 @@ module Account
 
     def update!(id, attributes, scope: scoped(:update))
       with_metadata do
-        add_metadata(
-          actor_account_id: auth_context.metadata[:id],
-          actor_account_email: auth_context.metadata[:email]
-        )
+        add_event_metadata
 
         super(id, attributes, scope:)
       end
@@ -126,15 +121,19 @@ module Account
       with_metadata do
         account = find!(id)
 
-        if account
-          add_metadata(
-            actor_account_id: auth_context.metadata[:id],
-            actor_account_email: auth_context.metadata[:email]
-          )
-        end
+        add_event_metadata if account
 
         super(id)
       end
+    end
+
+    private def add_event_metadata(**opts)
+      add_metadata(
+        actor_account_id: auth_context.metadata[:id],
+        actor_account_email: auth_context.metadata[:email],
+        actor_account_role_name: auth_context.metadata[:role],
+        **opts
+      )
     end
   end
 end
