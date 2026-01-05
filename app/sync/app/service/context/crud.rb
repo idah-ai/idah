@@ -20,7 +20,7 @@ module Context
       raise Context::Error::NotFound, id if query_result.data.empty?
 
       query_result.data
-        .lazy.map(&:data) # JSON API concer only ?
+        .lazy.map(&:data) # JSON API concern only ?
         .lazy.map do |unit|
           built_unit = builder(unit)
           @context_builder&.call(built_unit) || built_unit
