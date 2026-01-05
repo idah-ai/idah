@@ -8,6 +8,7 @@
 
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { createProjectSchema, updateProjectSchema } from "@/data/model/dataset/projects/schema";
+  import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
   import { getFieldErrors, validateData, type ZodSchema } from "@/utils/validate";
 
@@ -59,38 +60,48 @@
   }
 
   async function createProject() {
-    const createdProjectRes = await projectsBackendDataSource.create({
-      attributes: {
-        name: project.name,
-        description: project.description,
-        organization_id: project.organization_id,
+    const createdProjectRes = await projectsBackendDataSource.create(
+      {
+        attributes: {
+          name: project.name,
+          description: project.description,
+          organization_id: project.organization_id,
+        },
       },
-    });
+      {
+        showErrorToast: false,
+      },
+    );
 
+    open = false;
+    $refetches.projects.list = new Date();
+    goto(resolve(`/projects/${createdProjectRes.data.id}/datasets`));
     toast.success("Project created", {
       description: `The project ${project.name} has been created.`,
     });
-    goto(resolve(`/projects/${createdProjectRes.data.id}/datasets`));
-
-    $refetches.projects.list = new Date();
-    open = false;
   }
 
   async function updateProject() {
-    await projectsBackendDataSource.update(project.id, {
-      attributes: {
-        name: project.name,
-        description: project.description,
-        organization_id: project.organization_id,
+    await projectsBackendDataSource.update(
+      project.id,
+      {
+        attributes: {
+          name: project.name,
+          description: project.description,
+          organization_id: project.organization_id,
+        },
       },
-    });
+      {
+        showErrorToast: false,
+      },
+    );
 
+    open = false;
+    $refetches.projects.list = new Date();
+    $refetches.projects.get = new Date();
     toast.success("Project updated", {
       description: `The project ${project.name} has been updated.`,
     });
-    $refetches.projects.list = new Date();
-    $refetches.projects.get = new Date();
-    open = false;
   }
 
   async function submit(): Promise<void> {
@@ -117,8 +128,8 @@
         await updateProject();
       }
     } catch (error) {
-      console.error(error);
       submitting = false;
+      showActionFailedToast(error);
     }
   }
 </script>

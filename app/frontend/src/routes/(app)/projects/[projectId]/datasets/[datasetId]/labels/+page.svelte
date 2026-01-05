@@ -19,6 +19,7 @@
 
   import { labelColors } from "@/data/model/dataset/labels";
   import { pluginsBackendDataSource } from "@/data/model/setting/plugin/record";
+  import { showActionFailedToast } from "@/utils/error/error.toasts";
 
   import type { ModalityShapes } from "@/data/model/setting/plugin/types";
   import type { IConfig, IConfigProperty, IConfigValue } from "@/plugin/interface/Activity";
@@ -85,19 +86,25 @@
     });
 
     try {
-      const updatedDatasetRes = await datasetsBackendDataSource.update(datasetId, {
-        attributes: {
-          labeling_configuration: cleanedLabelConfig,
+      const updatedDatasetRes = await datasetsBackendDataSource.update(
+        datasetId,
+        {
+          attributes: {
+            labeling_configuration: cleanedLabelConfig,
+          },
         },
-      });
+        {
+          showErrorToast: false,
+        },
+      );
+
       initialLabelConfig = JSON.parse(JSON.stringify(updatedDatasetRes.data.labeling_configuration));
       labelConfig = updatedDatasetRes.data.labeling_configuration;
       toast.success("Label configurations updated", {
         description: "The changes has been saved.",
       });
     } catch (error) {
-      console.error(error);
-      toast.error("Failed to save labeling configuration changes.");
+      showActionFailedToast(error);
     } finally {
       saving = false;
     }

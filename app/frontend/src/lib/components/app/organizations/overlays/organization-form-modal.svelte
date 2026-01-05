@@ -10,6 +10,7 @@
 
   import { OrganizationRecord, organizationsBackendDataSource } from "@/data/model/iam/organizations/record";
   import { createOrganizationSchema, updateOrganizationSchema } from "@/data/model/iam/organizations/schema";
+  import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { getFieldErrors, validateData, type ZodSchema } from "@/utils/validate";
 
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
@@ -57,42 +58,43 @@
   }
 
   async function createOrganization(): Promise<void> {
-    try {
-      const createdOrganizationRes = await organizationsBackendDataSource.create({
+    const createdOrganizationRes = await organizationsBackendDataSource.create(
+      {
         attributes: {
           name: organization.name,
         },
-      });
+      },
+      {
+        showErrorToast: false,
+      },
+    );
 
-      $refetches.organizations.list = new Date();
-      closeThisModal();
-      toast.success("Organization created", {
-        description: `The organization ${organization.name} has been created.`,
-      });
-      goto(resolve(`/organizations/${createdOrganizationRes.data.id}/projects`));
-    } catch (error) {
-      toast.error("Failed to create organization");
-      throw error;
-    }
+    closeThisModal();
+    $refetches.organizations.list = new Date();
+    goto(resolve(`/organizations/${createdOrganizationRes.data.id}/projects`));
+    toast.success("Organization created", {
+      description: `The organization ${organization.name} has been created.`,
+    });
   }
 
   async function updateOrganization(): Promise<void> {
-    try {
-      await organizationsBackendDataSource.update(organization.id, {
+    await organizationsBackendDataSource.update(
+      organization.id,
+      {
         attributes: {
           name: organization.name,
         },
-      });
+      },
+      {
+        showErrorToast: false,
+      },
+    );
 
-      $refetches.organizations.list = new Date();
-      closeThisModal();
-      toast.success("Organization updated", {
-        description: `The organization ${organization.name} has been updated.`,
-      });
-    } catch (error) {
-      toast.error("Failed to update organization");
-      throw error;
-    }
+    closeThisModal();
+    $refetches.organizations.list = new Date();
+    toast.success("Organization updated", {
+      description: `The organization ${organization.name} has been updated.`,
+    });
   }
 
   async function submit(): Promise<void> {
@@ -117,7 +119,7 @@
         await updateOrganization();
       }
     } catch (error) {
-      console.error(error);
+      showActionFailedToast(error);
     } finally {
       submitting = false;
     }
