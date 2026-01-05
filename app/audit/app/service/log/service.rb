@@ -36,6 +36,7 @@ module Log
             # added metadata
             actor_account_id: metadata[:actor_account_id],
             actor_account_email: metadata&.[](:actor_account_email),
+            actor_account_role_name: metadata&.[](:actor_account_role_name),
             organization_id: type == "organizations" ? resource_id : metadata&.[](:organization_id),
             project_id: type == "projects" ? resource_id : metadata&.[](:project_id),
             dataset_id: type == "datasets" ? resource_id : metadata&.[](:dataset_id),

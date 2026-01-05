@@ -90,11 +90,7 @@ module Project
 
     def create(attributes)
       with_metadata do
-        add_metadata(
-          actor_account_id: auth_context.metadata[:id],
-          actor_account_email: auth_context.metadata[:email],
-          organization_id: attributes[:organization_id]
-        )
+        add_event_metadata(organization_id: attributes[:organization_id])
 
         super(attributes)
       end
@@ -105,9 +101,7 @@ module Project
         project = find!(id)
 
         if project
-          add_metadata(
-            actor_account_id: auth_context.metadata[:id],
-            actor_account_email: auth_context.metadata[:email],
+          add_event_metadata(
             organization_id: attributes[:organization_id] || project.organization_id,
             project_id: id
           )
@@ -122,9 +116,7 @@ module Project
         project = find!(id)
 
         if project
-          add_metadata(
-            actor_account_id: auth_context.metadata[:id],
-            actor_account_email: auth_context.metadata[:email],
+          add_event_metadata(
             organization_id: project.organization_id,
             project_id: id
           )
@@ -132,6 +124,15 @@ module Project
 
         super(id)
       end
+    end
+
+    private def add_event_metadata(**opts)
+      add_metadata(
+        actor_account_id: auth_context.metadata[:id],
+        actor_account_email: auth_context.metadata[:email],
+        actor_account_role_name: auth_context.metadata[:role],
+        **opts
+      )
     end
   end
 end

@@ -38,10 +38,7 @@ module Organization
 
     def create(attributes)
       with_metadata do
-        add_metadata(
-          actor_account_id: auth_context.metadata[:id],
-          actor_account_email: auth_context.metadata[:email]
-        )
+        add_event_metadata
 
         super(attributes)
       end
@@ -49,11 +46,7 @@ module Organization
 
     def update!(id, attributes, scope: scoped(:update))
       with_metadata do
-        add_metadata(
-          actor_account_id: auth_context.metadata[:id],
-          actor_account_email: auth_context.metadata[:email],
-          organization_id: id
-        )
+        add_event_metadata(organization_id: id)
 
         super(id, attributes, scope:)
       end
@@ -63,16 +56,19 @@ module Organization
       with_metadata do
         organization = find!(id)
 
-        if organization
-          add_metadata(
-            actor_account_id: auth_context.metadata[:id],
-            actor_account_email: auth_context.metadata[:email],
-            organization_id: id
-          )
-        end
+        add_event_metadata(organization_id: id) if organization
 
         super(id)
       end
+    end
+
+    private def add_event_metadata(**opts)
+      add_metadata(
+        actor_account_id: auth_context.metadata[:id],
+        actor_account_email: auth_context.metadata[:email],
+        actor_account_role_name: auth_context.metadata[:role],
+        **opts
+      )
     end
   end
 end

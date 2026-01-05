@@ -8,6 +8,7 @@ Sequel.migration do
       # who performed the action
       column :actor_account_id, :bigint, null: false, index: true
       column :actor_account_email, String, null: true, index: true
+      column :actor_account_role_name, String, null: true, index: true
 
       # action performed
       column :action, String, null: false, index: true
