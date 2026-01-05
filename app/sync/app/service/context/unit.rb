@@ -1,13 +1,18 @@
 module Context
   class Unit < Crud
     def name
-      if @unit.respond_to?(:name)
-        @unit.name
+      if @context_api.respond_to?(:name)
+        @context_api.name
       else
         super
       end
     end
-    def initialize(unit, context = nil)
+
+    def to_s
+      @context_api.to_s
+    end
+
+    def initialize(unit, context = nil, args = nil, filters = nil, opts = nil)
       context = Context.new(context)
       if context.respond_to? :each
         context
@@ -17,32 +22,16 @@ module Context
         instance_variable_set("@#{c.name}", c)
         self.class.send(:attr_reader, c.name)
       end
-
-      @unit = unit
-      super(self)
+      super(unit)
     end
 
     def index(filters = nil, opts = nil)
-      [@unit]
+      [@context_api]
     end
 
-    # shoudlnt be required as inferred from index ?...
+    # # shoudlnt be required as inferred from index ?...
     def show(id = nil)
-      @unit
-    end
-
-    def method_missing(name, *args, &block)
-      Verse::logger::debug{[[@unit.class, :unit, :method_missing, name].join("#"),]}
-      if @unit.respond_to?(name)
-        Verse::logger::debug{:on_unit}
-        @unit.send(name, *args, &block)
-      else
-        super
-      end
-    end
-
-    def respond_to_missing?(name, include_private = false)
-      @unit.respond_to?(name, include_private) || super
+      @context_api
     end
   end
 end

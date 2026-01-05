@@ -6,17 +6,8 @@ module Context
 
     def initialize(delegate, _name = nil, args = {}, context_filters = {}, opts = {})
       @name = delegate.respond_to?(:name) ? delegate.name : _name
-      @delegate = delegate
 
-      super(self, args, context_filters, opts)
-    end
-
-    def method_missing(name, *args, &block)
-      @delegate.send(name, *args, &block) || super
-    end
-
-    def respond_to_missing?(name, include_private = false)
-      @delegate.respond_to?(name, *args, &block) || super
+      super(delegate, args, context_filters, opts)
     end
   end
 end

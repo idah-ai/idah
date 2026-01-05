@@ -12,19 +12,12 @@ module Context
     end
 
     def index(filters = nil, **opts)
-      query_result = @context_api.index(
+      result = @context_api.index(
         build_filters(filters),
         **opts
       )
-      raise Context::Error::QueryFailed, query_result.errors if query_result.errors
-      raise Context::Error::NotFound, id if query_result.data.empty?
-
-      query_result.data
-        .lazy.map(&:data) # JSON API concern only ?
-        .lazy.map do |unit|
-          built_unit = builder(unit)
-          @context_builder&.call(built_unit) || built_unit
-        end
+      result = builder(result)
+      @context_builder&.call(result) || result
     end
 
     def show(id = nil)
@@ -39,20 +32,11 @@ module Context
         raise Context::Error::Forbidden, "Context does not permit access to resource #{id}"
       end
 
-      query_result = @context_api.index(filters:, page: { number: 1, size: 1 })
-
-      Verse::logger.debug {{lazy: query_result.is_a?(Enumerator::Lazy)}}
-      record = if query_result.is_a? Enumerator::Lazy
-        query_result.first
-      else
-        raise Context::Error::QueryFailed, query_result.errors if query_result.errors
-        raise Context::Error::NotFound, id if query_result.data.empty?
-
-        query_result.data.first.data
-      end
-      Verse::logger.debug{{ record: }}
-
-      @context_builder&.call(record) || builder(record)
+      result = @context_api.index(
+        filters:, page: { number: 1, size: 1 }
+      ).first
+      built_result = builder(result)
+      @context_builder&.call(built_result) || built_result
     end
 
     def update(attributes, id = nil)
