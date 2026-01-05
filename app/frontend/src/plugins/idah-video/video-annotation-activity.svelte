@@ -189,6 +189,8 @@
                 updatedAt: a.updated_at,
                 createdAt: a.created_at,
               },
+              hidden: false,
+              locked: false,
               synced: true,
             };
             if (annotation.shape.type == ENTRY_ROOT) $entryRoot = annotation;
@@ -251,6 +253,8 @@
             updatedAt: createdAt,
           },
           synced: false,
+          locked: false,
+          hidden: false,
         };
         selectedAnnotation = annotation;
         await annotationsIDB?.addAnnotations([annotation]);
@@ -315,6 +319,8 @@
             updatedAt: createdAt,
           },
           synced: false,
+          locked: false,
+          hidden: false,
         };
 
         await annotationsIDB?.addAnnotations([a]);
@@ -753,7 +759,7 @@
     annotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>,
     value: AnnotationValue,
   ) {
-    if (!["review", "annotate"].includes(context.workflowStep)) return;
+    if (annotation?.locked || !["review", "annotate"].includes(context.workflowStep)) return;
 
     context.commands.run("annotation.update", { annotation, value });
   }
@@ -814,6 +820,40 @@
   function seekToFrame(frame: number) {
     player?.seekToFrame(frame);
   }
+
+  function onVisibility(
+    hidden: boolean,
+    annotation?: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>,
+  ) {
+    if (annotation) {
+      annotation.hidden = hidden;
+      if (annotation.metadata.id == selectedAnnotation?.metadata.id) selectedAnnotation.hidden = hidden;
+      if (annotation.shape.type == ENTRY_ROOT) $entryRoot = annotation;
+
+      annotationsIDB?.addAnnotations([annotation]).then(() => ($idb_updated_at = new Date()));
+    } else {
+      allHidden = hidden;
+      if (selectedAnnotation) selectedAnnotation.hidden = hidden;
+      annotationsIDB?.updateAllVisibility(hidden).then(() => ($idb_updated_at = new Date()));
+    }
+  }
+
+  function onLock(locked: boolean, annotation?: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) {
+    if (annotation) {
+      annotation.locked = locked;
+      if (annotation.metadata.id == selectedAnnotation?.metadata.id) selectedAnnotation.locked = locked;
+      if (annotation.shape.type == ENTRY_ROOT) $entryRoot = annotation;
+      annotationsIDB?.addAnnotations([annotation]).then(() => ($idb_updated_at = new Date()));
+    } else {
+      allLocked = locked;
+      if ($entryRoot) $entryRoot.locked = locked;
+      if (selectedAnnotation) selectedAnnotation.locked = locked;
+      annotationsIDB?.updateAllLock(locked).then(() => ($idb_updated_at = new Date()));
+    }
+  }
+
+  let allHidden: boolean = $state(false);
+  let allLocked: boolean = $state(false);
 </script>
 
 <div class="relative flex h-full w-full flex-col">
@@ -854,6 +894,7 @@
             onEditValue({ category: annotationValue.category }, mode);
           }}
           onEditValue={(value) => value && onEditValue(value, mode)}
+          disabled={false}
         />
       {:else}
         <AnnotationSidebar
@@ -864,6 +905,8 @@
           {onEditValue}
           onSelectAnnotation={selectAnnotation}
           {onDeleteAnnotation}
+          {onLock}
+          {onVisibility}
           {context}
           {mode}
           selected_id={selectedAnnotation?.metadata.id}
@@ -910,6 +953,8 @@
           {onEditValue}
           onSelectAnnotation={selectAnnotation}
           {onDeleteAnnotation}
+          {onLock}
+          {onVisibility}
           {context}
           {mode}
           selected_id={selectedAnnotation?.metadata.id}
@@ -946,7 +991,7 @@
             />
           </SvgOverlay>
         </SidebarInset>
-        <PropertiesSidebar {annotationValue} {onEditValue} {context} {mode} />
+        <PropertiesSidebar {annotationValue} {onEditValue} {context} {mode} disabled={!!selectedAnnotation?.locked} />
       </ResizablePane>
 
       <ResizableHandle withHandle></ResizableHandle>
@@ -978,6 +1023,10 @@
               {selectedAnnotation}
               onSeekFrame={seekToFrame}
               {onDeleteAnnotation}
+              {onLock}
+              {onVisibility}
+              {allHidden}
+              {allLocked}
               onSelectAnnotation={selectAnnotation}
               {isPlaying}
               onScaleChange={(s) => {

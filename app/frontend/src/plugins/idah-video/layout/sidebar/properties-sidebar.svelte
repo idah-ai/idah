@@ -19,12 +19,14 @@
     onEditValue,
     context,
     mode,
+    disabled,
   }: {
     sidebarWidthRem?: number;
     annotationValue: AnnotationValue;
     onEditValue: (annotationValue: AnnotationValue, mode: string) => void;
     context: IActivityContext;
     mode: string;
+    disabled: boolean;
   } = $props();
 
   let tools = new Map<string, IConfigValue[]>(
@@ -37,6 +39,8 @@
   function categorySelection(shape_type: string, category?: string) {
     if (category) onEditValue({ category }, shape_type);
   }
+
+  let default_mode = $derived(mode == DEFAULT_MODE || !tools.has(mode));
 </script>
 
 <Sidebar variant="inset" collapsible="none" style="width: {sidebarWidthRem}rem;" side="right">
@@ -47,19 +51,20 @@
       <SidebarGroupContent>
         {#key [annotationValue, mode, $entryRoot?.value.category]}
           <CategoryProperties
-            type={mode == DEFAULT_MODE || !tools.has(mode) ? ENTRY_ROOT : mode}
-            selectedCategory={(mode == DEFAULT_MODE || !tools.has(mode)
+            type={default_mode ? ENTRY_ROOT : mode}
+            selectedCategory={(default_mode
               ? annotationValue.category || $entryRoot?.value.category
               : annotationValue.category) || ""}
-            annotationValue={(mode == DEFAULT_MODE || !tools.has(mode)
+            annotationValue={(default_mode
               ? Object.keys(annotationValue).length
                 ? annotationValue
                 : $entryRoot?.value
               : annotationValue) || {}}
-            onSelectCategory={(s) => categorySelection(mode == DEFAULT_MODE || !tools.has(mode) ? ENTRY_ROOT : mode, s)}
-            onEditValue={(value) =>
-              value && onEditValue(value, mode == DEFAULT_MODE || !tools.has(mode) ? ENTRY_ROOT : mode)}
-            disabled={!["annotate", "review"].includes(context.workflowStep)}
+            onSelectCategory={(s) => categorySelection(default_mode ? ENTRY_ROOT : mode, s)}
+            onEditValue={(value) => value && onEditValue(value, default_mode ? ENTRY_ROOT : mode)}
+            disabled={disabled ||
+              (default_mode || mode == ENTRY_ROOT ? !!$entryRoot?.locked : false) ||
+              !["annotate", "review"].includes(context.workflowStep)}
           />
         {/key}
       </SidebarGroupContent>
