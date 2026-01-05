@@ -7,6 +7,7 @@ import type { LogAction } from "@/data/model/audit/logs/constants";
 @type("audit:logs")
 export class LogRecord extends Record {
   @field() public readonly actor_account_id!: number;
+  @field() public readonly actor_account_email!: string | null;
 
   @field() public readonly action!: LogAction;
 
@@ -15,6 +16,9 @@ export class LogRecord extends Record {
   @field() public readonly resource_id!: string;
 
   @field() public readonly organization_id!: number | null;
+  @field() public readonly project_id!: string | null;
+  @field() public readonly dataset_id!: string | null;
+  @field() public readonly entry_id!: string | null;
 
   @field({ transformer: Transformers.Time }) public readonly event_timestamp!: Date;
 
