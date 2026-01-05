@@ -58,10 +58,10 @@ module Auth
       raise BadRefreshTokenError, "Account not found"
     end
 
-    def delete_session(refresh_token)
+    def logout(refresh_token)
       _uid, session_id, _nonce = RefreshToken.validate(refresh_token)
 
-      system_account_sessions.delete(session_id)
+      system_account_sessions.logout(session_id)
     end
 
     private
