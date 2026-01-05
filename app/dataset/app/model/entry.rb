@@ -143,9 +143,7 @@ module Entry
 
     def create(attributes)
       with_metadata do
-        add_metadata(
-          actor_account_id: auth_context.metadata[:id],
-          actor_account_email: auth_context.metadata[:email],
+        add_event_metadata(
           project_id: attributes[:project_id],
           dataset_id: attributes[:dataset_id]
         )
@@ -159,9 +157,7 @@ module Entry
         entry = find!(id)
 
         if entry
-          add_metadata(
-            actor_account_id: auth_context.metadata[:id],
-            actor_account_email: auth_context.metadata[:email],
+          add_event_metadata(
             project_id: attributes[:project_id] || entry.project_id,
             dataset_id: attributes[:dataset_id] || entry.dataset_id,
             entry_id: id
@@ -177,9 +173,7 @@ module Entry
         entry = find!(id)
 
         if entry
-          add_metadata(
-            actor_account_id: auth_context.metadata[:id],
-            actor_account_email: auth_context.metadata[:email],
+          add_event_metadata(
             project_id: entry.project_id,
             dataset_id: entry.dataset_id,
             entry_id: id
@@ -188,6 +182,15 @@ module Entry
 
         super(id)
       end
+    end
+
+    private def add_event_metadata(**opts)
+      add_metadata(
+        actor_account_id: auth_context.metadata[:id],
+        actor_account_email: auth_context.metadata[:email],
+        actor_account_role_name: auth_context.metadata[:role],
+        **opts
+      )
     end
 
     event(name: "selected")
@@ -202,6 +205,16 @@ module Entry
 
     event(name: "assigned")
     def assign(id, attributes)
+      entry = find!(id)
+
+      return unless entry
+
+      add_event_metadata(
+        project_id: attributes[:project_id] || entry.project_id,
+        dataset_id: attributes[:dataset_id] || entry.dataset_id,
+        entry_id: id
+      )
+
       no_event do
         transaction do
           update!(id, attributes)
@@ -211,6 +224,16 @@ module Entry
 
     event(name: "submitted")
     def submit(id, attributes)
+      entry = find!(id)
+
+      return unless entry
+
+      add_event_metadata(
+        project_id: attributes[:project_id] || entry.project_id,
+        dataset_id: attributes[:dataset_id] || entry.dataset_id,
+        entry_id: id
+      )
+
       no_event do
         transaction do
           # Use read scope when updating as anyone with read access can submit

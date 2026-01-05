@@ -165,9 +165,7 @@ module Dataset
 
     def create(attributes)
       with_metadata do
-        add_metadata(
-          actor_account_id: auth_context.metadata[:id],
-          actor_account_email: auth_context.metadata[:email],
+        add_event_metadata(
           project_id: attributes[:project_id]
         )
 
@@ -180,9 +178,7 @@ module Dataset
         dataset = find!(id)
 
         if dataset
-          add_metadata(
-            actor_account_id: auth_context.metadata[:id],
-            actor_account_email: auth_context.metadata[:email],
+          add_event_metadata(
             project_id: attributes[:project_id] || dataset.project_id,
             dataset_id: id
           )
@@ -197,9 +193,7 @@ module Dataset
         dataset = find!(id)
 
         if dataset
-          add_metadata(
-            actor_account_id: auth_context.metadata[:id],
-            actor_account_email: auth_context.metadata[:email],
+          add_event_metadata(
             project_id: dataset.project_id,
             dataset_id: id
           )
@@ -207,6 +201,15 @@ module Dataset
 
         super(id)
       end
+    end
+
+    private def add_event_metadata(**opts)
+      add_metadata(
+        actor_account_id: auth_context.metadata[:id],
+        actor_account_email: auth_context.metadata[:email],
+        actor_account_role_name: auth_context.metadata[:role],
+        **opts
+      )
     end
 
     event(name: "completed")

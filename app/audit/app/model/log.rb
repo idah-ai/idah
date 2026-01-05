@@ -8,6 +8,7 @@ module Log
 
     field :actor_account_id, type: Integer, readonly: true
     field :actor_account_email, type: [String, NilClass], readonly: true
+    field :actor_account_role_name, type: [String, NilClass], readonly: true
 
     field :action, type: String, readonly: true
 
@@ -28,5 +29,9 @@ module Log
   class Repository < Verse::Sequel::Repository
     self.table = "logs"
     self.resource = "audit:logs"
+
+    custom_filter :actor_account_role_name__nin do |collection, value|
+      collection.where(Sequel.lit("actor_account_role_name NOT IN ?  OR actor_account_role_name IS NULL", value))
+    end
   end
 end
