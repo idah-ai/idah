@@ -10,7 +10,7 @@ module Export
 
     def run
       begin
-        loop_processing
+        process
       rescue Exception => e
         Verse::logger::error{
           [
@@ -39,9 +39,9 @@ module Export
       Verse::logger::debug{"#{self} #{@context.io.filename} Process complete"}
     end
 
-    def loop_processing
+    def process
       start
-      @context.idah.datasets.each do |dataset|
+      @context.datasets.each do |dataset|
         dataset.entries.each do |entry|
           @context.io.builder( # CVAT export seems to have tasks/entries as root
             entry[:attributes][:resource]

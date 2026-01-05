@@ -1,5 +1,5 @@
 module Context
-  class Idah < EnumerableContext
+  module Idah
     IDAH_APIS = [
       ApiIdah::Iam::Organizations,
       ApiIdah::Dataset::Projects,
@@ -8,38 +8,39 @@ module Context
       ApiIdah::Media::Medias,
       ApiIdah::Dataset::Entries,
       ApiIdah::Dataset::Annotations
-    ]
+    ].freeze
 
-    def initialize(args = {}, context = {}, opts = {})
-      args = Hash(args)
-      context = Hash(context)
-      filters = (args.keys + context.keys).uniq # for now (let finalize authentication and see)
+    def self.new(args = nil, context = nil, opts = nil)
+      filters = (Hash(args).keys + Hash(context).keys).uniq
 
-      Verse::logger.debug({filters:})
+      Verse::logger.debug(filters: filters)
       # Validate that all IDAH_APIS are valid Context classes
       IDAH_APIS.each do |api_class|
-        Verse::logger::debug {{API_CHECK: api_class}}
+        Verse::logger.debug(api_check: api_class)
         unless api_class < ApiIdah::Base
-          raise Context::Error::InvalidContext, api_class
+          raise Context::Error::InvalidContext, "#{api_class} is not a subclass of ApiIdah::Base"
         end
       end
 
       # Find the matching API based on filter keys, or initialize all APIs
       matched_api = IDAH_APIS.find do |idah_context|
-        Verse::logger::debug {{name:idah_context.name, filters:}}
+        Verse::logger.debug(name: idah_context.name, filters: filters)
         filters.include?(idah_context.name)
       end
-      Verse::logger.debug{{matched_api:}}
-      context_apis = if matched_api
-        matched_api.idah_apis(args, context, opts)
-      else
-        # Default to all
-        IDAH_APIS.map do |idah_api|
-          idah_api.new(args, context, opts)
-        end
+
+      Verse::logger.debug(matched_api: matched_api)
+      context_api = if matched_api
+                      matched_api.root_api(args, context, opts)
+                    else
+                      ApiIdah::Dataset::Datasets.new(args, filters, opts)
+                    end
+
+      # Ensure the root API is only ApiIdah::Dataset::Datasets
+      unless context_api.is_a?(ApiIdah::Dataset::Datasets)
+        raise Context::Error::InvalidContext, "Expected ApiIdah::Dataset::Datasets, got #{context_api.class}"
       end
 
-      super(context_apis)
+      context_api
     end
   end
 end

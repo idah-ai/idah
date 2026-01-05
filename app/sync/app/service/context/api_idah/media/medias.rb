@@ -22,7 +22,7 @@ module Context
             raise Context::Error::InvalidData, "resource parameter is required"
           end
 
-          media_response = @api.resource_info(resource: merged[:resource])
+          media_response = @context_api.resource_info(resource: merged[:resource])
           raise Context::Error::QueryFailed, media_response.errors if media_response.errors
 
           builder(media_response.data)
@@ -35,7 +35,7 @@ module Context
             raise Context::Error::InvalidData, "resource parameter is required"
           end
 
-          builder(@api.files(resource: merged[:resource]))
+          builder(@context_api.files(resource: merged[:resource]))
         end
       end
     end

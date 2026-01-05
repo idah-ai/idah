@@ -83,7 +83,7 @@ module Context
         end
 
 
-        def self.idah_apis(args = nil, context = nil, opts = nil)
+        def self.root_api(args = nil, context = nil, opts = nil)
           organizations = ApiIdah::Dataset::Organizations.new(args, context, opts)
           projects = ApiIdah::Dataset::Projects.from_organizations(
             organizations,
@@ -117,7 +117,8 @@ module Context
           )
 
           super([
-            organizations, projects, project_members, datasets, entries, annotations
+            # organizations, projects, project_members, datasets, entries, annotations
+            datasets
           ], args, context, opts)
         end
       end

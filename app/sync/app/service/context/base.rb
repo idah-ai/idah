@@ -35,17 +35,15 @@ module Context
     end
 
     def method_missing(s, *args, &block)
-      Verse::logger.debug{[self.to_s, @context_api||:nil, :method_missing, s].join("#")}
-      if @context_api.respond_to?(s)
-        @context_api.send(s, args, &block)
+      if (@context_api == self)
+        raise NotImplementedError, [self.name, s].join("#")
       else
-        super
+        @context_api.send(s, args, &block)
       end
     end
 
     def respond_to_missing?(s, include_private = false)
-      Verse::logger.debug{[@context_api||:nil, :respond_to_missing?, s].join("#")}
-      @context_api.respond_to?(s, include_private) || super
+      @context_api == self ? false : @context_api.respond_to?(s, include_private) || super
     end
 
     # Generate constrained filters for an API call
