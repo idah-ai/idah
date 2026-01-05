@@ -8,6 +8,7 @@ import type { LogAction } from "@/data/model/audit/logs/constants";
 export class LogRecord extends Record {
   @field() public readonly actor_account_id!: number;
   @field() public readonly actor_account_email!: string | null;
+  @field() public readonly actor_account_role_name!: string | null;
 
   @field() public readonly action!: LogAction;
 
