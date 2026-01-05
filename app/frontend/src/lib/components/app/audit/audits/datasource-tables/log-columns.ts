@@ -1,5 +1,6 @@
 import LogActionCell from "@/components/app/audit/audits/datasource-tables/log-action-cell.svelte";
 import LogActorAccountCell from "@/components/app/audit/audits/datasource-tables/log-actor-account-cell.svelte";
+import LogResourceIdCell from "@/components/app/audit/audits/datasource-tables/log-resource-id-cell.svelte";
 import LogTimestampCell from "@/components/app/audit/audits/datasource-tables/log-timestamp-cell.svelte";
 import FilterByAccount from "@/components/app/datasource-table/filters/filter-by-account.svelte";
 
@@ -71,5 +72,20 @@ export const logColumns: ColumnsSettings<LogRecord> = {
     },
     visible: true,
     hidable: false,
+  },
+  resource_id: {
+    label: "Resource ID",
+    dataType: "string",
+    clickable: false,
+    sortable: false,
+    filterable: true,
+    filterOptions: {
+      filterKey: "resource_id",
+      filterBy: "string",
+      filterOperation: "match",
+    },
+    visible: true,
+    hidable: false,
+    cellComponent: LogResourceIdCell,
   },
 };

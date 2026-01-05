@@ -1,10 +1,7 @@
 <script lang="ts">
-  import { DownloadIcon } from "@lucide/svelte";
-
   import DatasourceTable from "@/components/app/datasource-table/datasource-table.svelte";
   import PageHeader from "@/components/app/page/page-header.svelte";
   import PageProvider from "@/components/app/page/page-provider.svelte";
-  import Button from "@/components/ui/button/button.svelte";
 
   import { logColumns } from "@/components/app/audit/audits/datasource-tables/log-columns";
   import { getTablePreferences } from "@/components/app/datasource-table/datasource-table.stores.svelte";
@@ -22,12 +19,12 @@
   pageBreadcrumbsStore.set([{ label: "Audit Logs" }]);
 
   // Functions
-  async function downloadAudits() {
-    const auditDataSourceTable = getTablePreferences(logDatasourceTableId);
-    auditDataSourceTable.subscribe((preferences) => {
-      console.log(preferences.filters);
-    });
-  }
+  // async function downloadAudits() {
+  //   const auditDataSourceTable = getTablePreferences(logDatasourceTableId);
+  //   auditDataSourceTable.subscribe((preferences) => {
+  //     console.log(preferences.filters);
+  //   });
+  // }
 
   async function onLoadSetContexts<T extends Record = LogRecord>(response: CollectionResponse<T>) {
     /** Fetch related accounts from actorAccountId */
@@ -47,13 +44,13 @@
 
 <PageProvider name="audit-logs" roles={["admin"]} action="read" resource="audit:logs">
   <PageHeader title="Audit Logs">
-    {#snippet actions()}
+    <!-- {#snippet actions()}
       <Button onclick={downloadAudits}>
         <DownloadIcon />
 
         Download
 
-        <!-- {#if Object.keys(tablePreferences?.filters || {}).includes("event_timestamp__gte")}
+        {#if Object.keys(tablePreferences?.filters || {}).includes("event_timestamp__gte")}
           <span class="text-muted-foreground text-xs">
             (
             {format(tablePreferences?.filters["event_timestamp__gte"], "MMM dd, yyyy")} -
@@ -62,9 +59,9 @@
           </span>
         {:else}
           All
-        {/if} -->
+        {/if}
       </Button>
-    {/snippet}
+    {/snippet} -->
   </PageHeader>
 
   {#key $refetches.logs.list}
@@ -75,9 +72,6 @@
       columns={logColumns}
       dataSource={logsBackendDataSource}
       listOptions={{
-        fields: {
-          [LogRecord.type]: ["event_timestamp", "actor_account_id", "action", "resource_type"],
-        },
         sort: ["-event_timestamp"],
       }}
       {onLoadSetContexts}
