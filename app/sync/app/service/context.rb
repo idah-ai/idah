@@ -1,9 +1,11 @@
 module Context
   def self.new(context = nil)
-    return context if context&.is_a?(Base)
-
-    return EnumerableContext.new(context) if context&.respond_to?(:each)
-
-    Base.new(context)
+    if context&.is_a?(Base)
+      context
+    elsif context&.respond_to?(:each)
+      EnumerableContext.new(context)
+    else
+      Base.new(context)
+    end
   end
 end

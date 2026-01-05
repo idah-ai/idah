@@ -18,7 +18,10 @@ module Context
       raise Context::Error::InvalidContext, self if !context_api.respond_to?(:each)
 
       @enumerable = context_api.each do |c|
-        raise Context::Error::InvalidContext, c unless c.respond_to?(:name)
+        unless c.respond_to?(:name)
+          Verse::logger::error(caller.join("\n"))
+          raise Context::Error::InvalidContext, [self, c.class].join("#")
+        end
 
         instance_variable_set("@#{c.name}", c)
         self.class.send(:attr_reader, c.name)

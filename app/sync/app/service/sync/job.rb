@@ -44,7 +44,6 @@ module Sync
               Verse::logger.debug {{context_name:, context:}}
               klass = context_classes[Hash(context).fetch(:klass)]
               Verse::logger.debug {{klass:}}
-              Verse::logger.debug {{parameters: klass.instance_method(:initialize).parameters}}
               Verse::logger.debug {{
                 args: Hash(auth_context_filters),
                 context: Hash(context)[:context],
