@@ -3,15 +3,18 @@ module Context
     module Iam
       class Organizations < Base
         def builder(organization)
-          org_id = organization[:id]
-          unless org_id
+          id = organization.dig(:id)
+          unless id
             raise Context::Error::InvalidData, "Organization missing id"
           end
 
+          puts({context_filters:@context_filters})
           Unit.new(
             super(organization),
             [
-              Idah::Dataset::Projects.new(args, build_context_filters({ organization_id: org_id }, :projects), opts)
+              Idah::Dataset::Projects.new(args, build_context_filters_from({
+                organizations: {id:}, projects: {organization_id: id}
+              }), opts)
             ]
           )
         end

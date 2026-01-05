@@ -3,8 +3,8 @@ module Context
     module Dataset
       class ProjectMembers < Base
         def builder(project_member)
-          member_id = project_member[:id]
-          unless member_id
+          id = project_member.dig(:id)
+          unless id
             raise Context::Error::InvalidData, "ProjectMember missing id"
           end
 
@@ -15,7 +15,9 @@ module Context
 
           Unit.new(
             super(project_member), [
-              Projects.new(args, build_context_filters({ id: project_id }, :projects), opts),
+              Projects.new(args, build_context_filters_from({
+                project_members: { id: }, projects: {id: project_id}
+              }), opts),
             ]
           )
         end
@@ -47,33 +49,12 @@ module Context
           )
         end
 
-        def self.from_organizations(organizations, args = nil, filters = nil, opts = nil)
-          new(
-            organizations.build_context_filters_from(args),
-            organizations.build_context_filters_from(filters),
-            opts,
-            ProceduralCrud.new(:project_members, proc do |filter = nil|
-              organizations.index.flat_map do |o|
-                o.projects.index.flat_map do |p|
-                  p.project_members.index(filter)
-                end
-              end
-            end, args, filters, opts)
-          )
-        end
-
         def self.root_api(args = nil, context = nil, opts = nil)
           project_members = ProjectMembers.new(args, context, opts)
           projects = Projects.from_project_members(project_members, args, context, opts)
-          organizations = Organizations.from_projects(projects, args, context, opts)
           datasets = Datasets.from_projects(projects, args, context, opts)
-          entries = Entries.from_datasets(datasets, args, context, opts)
-          annotations = Annotations.from_entries(entries, args, context, opts)
 
-          super([
-            # organizations, projects, project_members, datasets, entries, annotations
-            datasets
-          ], args, context, opts)
+          super([datasets], args, context, opts)
         end
       end
     end
