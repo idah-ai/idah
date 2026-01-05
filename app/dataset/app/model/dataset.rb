@@ -166,7 +166,7 @@ module Dataset
     def create(attributes)
       with_metadata do
         add_metadata(
-          actor_account_id: auth_context.metadata[:account_id],
+          actor_account_id: auth_context.metadata[:id],
           actor_account_email: auth_context.metadata[:email],
           project_id: attributes[:project_id]
         )
@@ -179,12 +179,14 @@ module Dataset
       with_metadata do
         dataset = find!(id)
 
-        add_metadata(
-          actor_account_id: auth_context.metadata[:account_id],
-          actor_account_email: auth_context.metadata[:email],
-          project_id: attributes[:project_id] || dataset.project_id,
-          dataset_id: id
-        )
+        if dataset
+          add_metadata(
+            actor_account_id: auth_context.metadata[:id],
+            actor_account_email: auth_context.metadata[:email],
+            project_id: attributes[:project_id] || dataset.project_id,
+            dataset_id: id
+          )
+        end
 
         super(id, attributes, scope:)
       end
@@ -196,7 +198,7 @@ module Dataset
 
         if dataset
           add_metadata(
-            actor_account_id: auth_context.metadata[:account_id],
+            actor_account_id: auth_context.metadata[:id],
             actor_account_email: auth_context.metadata[:email],
             project_id: dataset.project_id,
             dataset_id: id

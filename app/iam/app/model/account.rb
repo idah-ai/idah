@@ -96,7 +96,7 @@ module Account
     def create(attributes)
       with_metadata do
         add_metadata(
-          actor_account_id: auth_context.metadata[:account_id],
+          actor_account_id: auth_context.metadata[:id],
           actor_account_email: auth_context.metadata[:email]
         )
 
@@ -107,7 +107,7 @@ module Account
     def update!(id, attributes, scope: scoped(:update))
       with_metadata do
         add_metadata(
-          actor_account_id: auth_context.metadata[:account_id],
+          actor_account_id: auth_context.metadata[:id],
           actor_account_email: auth_context.metadata[:email]
         )
 
@@ -121,7 +121,7 @@ module Account
 
         if account
           add_metadata(
-            actor_account_id: auth_context.metadata[:account_id],
+            actor_account_id: auth_context.metadata[:id],
             actor_account_email: auth_context.metadata[:email]
           )
         end

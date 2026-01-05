@@ -106,7 +106,7 @@ module ProjectMember
     def create(attributes)
       with_metadata do
         add_metadata(
-          actor_account_id: auth_context.metadata[:account_id],
+          actor_account_id: auth_context.metadata[:id],
           actor_account_email: auth_context.metadata[:email],
           project_id: attributes[:project_id]
         )
@@ -119,11 +119,13 @@ module ProjectMember
       with_metadata do
         membership = find!(id)
 
-        add_metadata(
-          actor_account_id: auth_context.metadata[:account_id],
-          actor_account_email: auth_context.metadata[:email],
-          project_id: attributes[:project_id] || membership.project_id
-        )
+        if membership
+          add_metadata(
+            actor_account_id: auth_context.metadata[:id],
+            actor_account_email: auth_context.metadata[:email],
+            project_id: attributes[:project_id] || membership.project_id
+          )
+        end
 
         super(id, attributes, scope:)
       end
@@ -135,7 +137,7 @@ module ProjectMember
 
         if membership
           add_metadata(
-            actor_account_id: auth_context.metadata[:account_id],
+            actor_account_id: auth_context.metadata[:id],
             actor_account_email: auth_context.metadata[:email],
             project_id: membership.project_id
           )
