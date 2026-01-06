@@ -2,13 +2,16 @@ module Context
   module Idah
     module Dataset
       class Annotations < Idah::Base
-        def builder(annotation)
-          id = annotation.dig(:id)
-          unless id
-            raise Context::Error::InvalidData, "Annotation missing id"
-          end
+        def builder(annotations)
+          super(annotations)&.map do |annotation|
+            id = annotation.dig(:id)
+            unless id
+              raise Context::Error::InvalidData, "Annotation missing id"
+            end
 
-          Unit.new(super(annotation))
+            filters = build_context_filters_from({annotations: {id:}})
+            Unit.new(annotation, nil, args, filters, opts)
+          end
         end
 
         def initialize(

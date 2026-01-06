@@ -2,28 +2,30 @@ module Context
   module Idah
     module Dataset
       class Entries < Base
-        def builder(entry)
-          id = entry.dig(:id)
-          unless id
-            raise Context::Error::InvalidData, "Entry missing id"
-          end
+        def builder(entries)
+          super(entries)&.map do |entry|
+            id = entry.dig(:id)
+            unless id
+              raise Context::Error::InvalidData, "Entry missing id"
+            end
 
-          resource = entry.dig(:attributes, :resource)
-          unless resource
-            raise Context::Error::InvalidData, "Entry missing resource in attributes"
-          end
+            resource = entry.dig(:attributes, :resource)
+            unless resource
+              raise Context::Error::InvalidData, "Entry missing resource in attributes"
+            end
 
-          filters = build_context_filters_from({
-            entries: {id:, resource:},
-            medias: {resource:},
-            annotations: { entry_id: id }
-          })
-          Unit.new(
-            super(entry), [
-              Idah::Media::Medias.new(args, filters, opts),
-              Annotations.new(args, filters, opts)
-            ]
-          )
+            filters = build_context_filters_from({
+              entries: {id:, resource:},
+              medias: {resource:},
+              annotations: { entry_id: id }
+            })
+            Unit.new(
+              entry, [
+                Idah::Media::Medias.new(args, filters, opts),
+                Annotations.new(args, filters, opts)
+              ], args, filters, opts
+            )
+          end
         end
 
         def initialize(

@@ -2,21 +2,23 @@ module Context
   module Idah
     module Iam
       class Organizations < Base
-        def builder(organization)
-          id = organization.dig(:id)
-          unless id
-            raise Context::Error::InvalidData, "Organization missing id"
+        def builder(organizations)
+          super(organizations)&.map do |organization|
+            id = organization.dig(:id)
+            unless id
+              raise Context::Error::InvalidData, "Organization missing id"
+            end
+
+            filters = build_context_filters_from({
+              organizations: {id:}, projects: {organization_id: id}
+            })
+
+            Unit.new(
+              organization, [
+                Idah::Dataset::Projects.new(args, filters, opts)
+              ], args, filters, opts
+            )
           end
-
-          filters = build_context_filters_from({
-            organizations: {id:}, projects: {organization_id: id}
-          })
-
-          Unit.new(
-            super(organization), [
-              Idah::Dataset::Projects.new(args, filters, opts)
-            ]
-          )
         end
 
         def initialize(
@@ -36,10 +38,11 @@ module Context
         end
 
         def self.from_projects(projects, args = nil, filters = nil, opts = nil)
+          args = projects.build_context_filters_from(args),
+          filters = projects.build_context_filters_from(filters),
+          opts = projects.build_opts(opts),
           new(
-            projects.build_context_filters_from(args),
-            projects.build_context_filters_from(filters),
-            opts,
+            args, filters, opts,
             ProceduralCrud.new(:organizations,
               proc do |filter = nil|
                 projects.flat_map { |p| p.organizations.index(filter) }
@@ -94,35 +97,14 @@ module Context
             organizations.build_context_filters_from(context),
             opts
           )
-          project_members = Idah::Dataset::ProjectMembers.from_projects(
-            projects,
-            projects.build_context_filters_from(args),
-            projects.build_context_filters_from(context),
-            opts
-          )
           datasets = Idah::Dataset::Datasets.from_projects(
             projects,
             projects.build_context_filters_from(args),
             projects.build_context_filters_from(context),
             opts
           )
-          entries = Idah::Dataset::Entries.from_datasets(
-            datasets,
-            datasets.build_context_filters_from(args),
-            datasets.build_context_filters_from(context),
-            opts
-          )
-          annotations = Idah::Dataset::Annotations.from_entries(
-            entries,
-            entries.build_context_filters_from(args),
-            entries.build_context_filters_from(context),
-            opts
-          )
 
-          super([
-            # organizations, projects, project_members, datasets, entries, annotations
-            datasets
-          ], args, context, opts)
+          super([datasets], args, context, opts)
         end
       end
     end

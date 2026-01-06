@@ -2,29 +2,31 @@ module Context
   module Idah
     module Dataset
       class Datasets < Base
-        def builder(dataset)
-          id = dataset.dig(:id)
-          unless id
-            raise Context::Error::InvalidData, "Dataset missing id"
+        def builder(datasets)
+          super(datasets)&.map do |dataset|
+            id = dataset.dig(:id)
+            unless id
+              raise Context::Error::InvalidData, "Dataset missing id"
+            end
+
+            project_id = dataset.dig(:attributes, :project_id)
+            unless project_id
+              raise Context::Error::InvalidData, "Dataset missing project_id in attributes"
+            end
+
+            filters = build_context_filters_from({
+              projects: { id: project_id },
+              datasets: { id: },
+              entries: { dataset_id: id }
+            })
+
+            Unit.new(
+              dataset, [
+                Entries.new(args, filters, opts),
+                Projects.new(args, filters, opts)
+              ], args, filters, opts
+            )
           end
-
-          project_id = dataset.dig(:attributes, :project_id)
-          unless project_id
-            raise Context::Error::InvalidData, "Dataset missing project_id in attributes"
-          end
-
-          filters = build_context_filters_from({
-            projects: { id: project_id },
-            datasets: { id: },
-            entries: { dataset_id: id }
-          })
-
-          Unit.new(
-            super(dataset), [
-              Entries.new(args, filters, opts),
-              Projects.new(args, filters, opts)
-            ]
-          )
         end
 
         def initialize(
