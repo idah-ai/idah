@@ -12,10 +12,14 @@ module Context
     end
 
     def index(filters = nil, **opts)
-      result = @context_api.index(
-        build_filters(filters),
-        **opts
-      )
+      result = if @context_api.class == Api::Exposition # todo uniformize
+        @context_api.index(**opts.merge(filter: build_filters(filters)))
+      else
+        @context_api.index(
+          build_filters(filters),
+          **opts
+        )
+      end
       result = builder(result)
       @context_builder&.call(result) || result
     end
@@ -32,11 +36,9 @@ module Context
         raise Context::Error::Forbidden, "Context does not permit access to resource #{id}"
       end
 
-      result = @context_api.index(
+      index(
         filters:, page: { number: 1, size: 1 }
       ).first
-      built_result = builder(result)
-      @context_builder&.call(built_result) || built_result
     end
 
     def update(attributes, id = nil)

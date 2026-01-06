@@ -2,10 +2,6 @@ module Context
   module Idah
     module Media
       class Medias < Base
-        def each(&block)
-          raise NotImplementedError
-        end
-
         def initialize(args = nil, context_filters = nil, opts = nil, context_api = nil)
           super(
             context_api || Api[:idah].media.medias,
@@ -25,7 +21,7 @@ module Context
           media_response = @context_api.resource_info(resource: merged[:resource])
           raise Context::Error::QueryFailed, media_response.errors if media_response.errors
 
-          builder(media_response.data)
+          media_response.data
         end
 
         def files(filters = nil, opts = nil)
@@ -35,7 +31,7 @@ module Context
             raise Context::Error::InvalidData, "resource parameter is required"
           end
 
-          builder(@context_api.files(resource: merged[:resource]))
+          @context_api.files(resource: merged[:resource])
         end
       end
     end

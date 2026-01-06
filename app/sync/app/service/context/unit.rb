@@ -22,15 +22,14 @@ module Context
         instance_variable_set("@#{c.name}", c)
         self.class.send(:attr_reader, c.name)
       end
-      super(unit)
+      super(unit, args, filters, opts)
     end
 
     def index(filters = nil, opts = nil)
       [@context_api]
     end
 
-    # # shoudlnt be required as inferred from index ?...
-    def show(id = nil)
+    def show(filters = nil, opts = nil)
       @context_api
     end
   end
