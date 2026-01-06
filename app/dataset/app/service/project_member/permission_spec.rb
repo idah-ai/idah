@@ -138,19 +138,11 @@ RSpec.describe ProjectMember::Service, database: true do
         expect(record.role).to eq update_data[:data][:attributes][:role]
       end
 
-      it "can delete" do
-        allow(Api[:idah].iam.accounts).to receive(:show).and_return(
-          double(name: "Remover User", email: "remover@example.com", joined_at: Time.now)
-        )
-
+      it "can soft delete" do
         subject.delete(annotator_member_id)
 
-        expect {
-          subject.show(annotator_member_id)
-        }.to raise_error(Verse::Error::RecordNotFound)
-
-        # the record we tried to delete should not be there anymore
-        expect { project_member_repo.find!(annotator_member_id) }.to raise_error(Verse::Error::RecordNotFound)
+        member = project_member_repo.find(annotator_member_id)
+        expect(member.disabled_at).not_to be_nil
       end
     end
 
@@ -235,16 +227,11 @@ RSpec.describe ProjectMember::Service, database: true do
         expect(record.role).to eq "reviewer"
       end
 
-      it "can delete" do
-        allow(Api[:idah].iam.accounts).to receive(:show).and_return(
-          double(name: "Remover User", email: "remover@example.com", joined_at: Time.now)
-        )
-
+      it "can soft delete" do
         subject.delete(annotator_member_id)
 
-        expect {
-          subject.show(annotator_member_id)
-        }.to raise_error(Verse::Error::RecordNotFound)
+        member = project_member_repo.find(annotator_member_id)
+        expect(member.disabled_at).not_to be_nil
       end
     end
 
