@@ -1,10 +1,11 @@
+import { toast } from "svelte-sonner";
+
 import { errorClasses } from "$lib/utils/error/error.classes";
 
-import type { Hash } from "$lib/utils/types";
 import type { JsonApiErrorResponse } from "$lib/data/model/types";
 import type { ErrorClassDetail } from "$lib/utils/error/error.classes.types";
 import type { ShowUnexpectedErrorToastParams } from "$lib/utils/error/error.toasts.types";
-import { toast } from "svelte-sonner";
+import type { Hash } from "$lib/utils/types";
 
 type ErrorToastOptions = {
   title?: string;
@@ -22,13 +23,10 @@ export function showErrorToast(errorToastOptions: ErrorToastOptions) {
   const errorClassTitle: string = errorClass ? errorClass.title : fallbackTitle;
   const errorClassMessage: string = message ? message : errorClass?.fallbackMessage || fallbackMessage;
 
-  toast.error(
-    errorClassTitle,
-    {
-      description: errorClassMessage,
-      richColors: true,
-    }
-  )
+  toast.error(errorClassTitle, {
+    description: errorClassMessage,
+    richColors: true,
+  });
 }
 
 export function showUnexpectedErrorToast(params: ShowUnexpectedErrorToastParams) {
@@ -41,7 +39,17 @@ export function showUnexpectedErrorToast(params: ShowUnexpectedErrorToastParams)
     showErrorToast({
       title: e.title,
       message: e.detail,
-      error: e
+      error: e,
     });
+  });
+}
+
+export function showActionFailedToast(error: unknown) {
+  console.error(error);
+
+  toast.error("Action failed", {
+    description:
+      "The action could not be completed, please try again later. If the problem continues, please contact support.",
+    richColors: true,
   });
 }

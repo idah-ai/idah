@@ -169,11 +169,12 @@
     await onSelected?.(selectedChoices);
   }
 
-  function clearSelection(event: MouseEvent): void {
+  async function clearSelection(event: MouseEvent): Promise<void> {
     event.stopPropagation();
     values = [];
     allChoicesSelected = false;
     closePopover();
+    await onSelected?.(selectedChoices);
   }
 
   const scrollToPaginate: WheelEventHandler<HTMLDivElement> = async (event: WheelEvent) => {
