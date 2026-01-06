@@ -142,9 +142,10 @@
     await onSelected?.(value);
   }
 
-  function clearSelection(event: MouseEvent): void {
+  async function clearSelection(event: MouseEvent): Promise<void> {
     event.stopPropagation();
     value = null;
+    await onSelected?.(value);
   }
 
   const scrollToPaginate: WheelEventHandler<HTMLDivElement> = async (event: WheelEvent) => {
