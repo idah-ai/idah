@@ -19,7 +19,7 @@ module Context
     end
 
     def to_s
-      "#{self.class.to_s}(#{@context_api.class.to_s})"
+      "#{super}(#{@context_api.class.to_s})"
     end
 
     def initialize(unit, context = nil, args = nil, filters = nil, opts = nil)

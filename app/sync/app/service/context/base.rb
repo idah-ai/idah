@@ -34,14 +34,6 @@ module Context
       @context_builder = context_builder
     end
 
-    def to_s
-      if @context_api == self
-        self.class.to_s
-      else
-        "#{self.class.to_s}(#{@context_api.class.to_s})"
-      end
-    end
-
     def self.build_filters(
       passed_filters = nil,
       context_api_name = nil,
