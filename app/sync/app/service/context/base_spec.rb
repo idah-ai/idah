@@ -36,7 +36,7 @@ RSpec.describe Context::Base do
 
     it 'handles nil inputs' do
       result = described_class.build_filters(nil, :test_api, nil, nil)
-      expect(result).to eq({})
+      expect(result).to eq(nil)
     end
   end
 

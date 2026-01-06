@@ -43,7 +43,7 @@ module Context
     end
 
     def method_missing(s, *args, &block)
-      Verse::logger.debug{[self.to_s, s].join("#")}
+      Verse::logger.debug{[self.to_s, s, args].join("#")}
       @context_api.send(s, *args, &block)
     end
 
@@ -62,15 +62,22 @@ module Context
       passed_context_filters = nil,
       passed_args = nil
     )
-      passed_filters = Hash(passed_filters || {})
-      passed_context_filters = Hash(passed_context_filters || {})
-      passed_args = Hash(passed_args || {})
-
-      filters_hash = passed_filters.fetch(context_api_name, {})
-      context_filters_hash = passed_context_filters.fetch(context_api_name, {})
-      args_hash = passed_args.fetch(context_api_name, {})
-
-      filters_hash.merge(context_filters_hash).merge(args_hash)
+      puts({context_api_name:, passed_filters:, passed_context_filters:, passed_filters:})
+      passed_filters = Hash(passed_filters)
+      passed_context_filters = Hash(passed_context_filters)
+      passed_args = Hash(passed_args)
+      puts({context_api_name:, passed_filters:, passed_context_filters:, passed_filters:})
+      filters_hash = Hash(passed_filters.dig(context_api_name))
+      context_filters_hash = Hash(passed_context_filters.dig(context_api_name))
+      args_hash = Hash(passed_args.dig(context_api_name))
+      puts({context_api_name:, args_hash:, context_filters_hash:, filters_hash:})
+      lambda do |h|
+          h unless h.empty?
+      end.call(
+        filters_hash.merge(
+          context_filters_hash
+        ).merge(args_hash)
+      )
     end
 
     def build_filters(
@@ -86,12 +93,16 @@ module Context
       api = context_api_name
 
       combined_context_filters = {
-        api => Hash(passed_context_filters&.dig(api)).merge(@context_filters.fetch(api, {}))
-      }
+        api => lambda do |h|
+          h unless h.empty?
+        end.call(Hash(passed_context_filters&.dig(api)).merge(@context_filters.fetch(api, {})))
+      } if api
 
       combined_args = {
-        api => Hash(passed_args&.dig(api)).merge(@args.fetch(api, {}))
-      }
+        api => lambda do |h|
+            h unless h.empty?
+          end.call(Hash(passed_args&.dig(api)).merge(@args.fetch(api, {})))
+      } if api
 
       # Now delegate to class method with pre-merged values
       self.class.build_filters(
@@ -101,6 +112,7 @@ module Context
         combined_args
       )
     end
+
     def self.build_context_filters_from(
       passed_context_filters = nil,
       passed_args = nil
