@@ -7,7 +7,6 @@ export const logResourceTypes: LabelValue<string>[] = [
   { label: "Organizations", value: "organizations" },
 
   /** DATASET */
-  { label: "Annotations", value: "annotations" },
   { label: "Datasets", value: "datasets" },
   { label: "Entries", value: "entries" },
   { label: "Projects", value: "projects" },

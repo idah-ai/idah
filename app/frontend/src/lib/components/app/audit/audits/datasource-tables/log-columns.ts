@@ -74,7 +74,7 @@ export const logColumns: ColumnsSettings<LogRecord> = {
     hidable: false,
   },
   resource_id: {
-    label: "Resource ID",
+    label: "Resource Details",
     dataType: "string",
     clickable: false,
     sortable: false,
