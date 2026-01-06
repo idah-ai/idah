@@ -15,9 +15,9 @@ module Context
 
       def initialize(
         api = Api[:idah],
-        args = {},
-        context_filters = {},
-        opts = {},
+        args = nil,
+        context_filters = nil,
+        opts = nil,
         &context_builder
       )
         unless [
@@ -31,8 +31,8 @@ module Context
         super(api, args, context_filters, opts)
       end
 
-      def self.root_api(api, args = {}, context = {}, opts = {})
-        Verse::logger.debug {{root_api: api, args:, context:, opts:}}
+      def self.root_api(api, args = nil, context = nil, opts = nil)
+        Verse::logger.debug {{api:, args:, context:, opts:}}
         unless api.class < Base
           raise Context::Error::InvalidContext, api.class
         end

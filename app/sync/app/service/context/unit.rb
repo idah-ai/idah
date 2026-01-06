@@ -1,10 +1,20 @@
 module Context
   class Unit < Crud
-    def name
-      if @context_api.respond_to?(:name)
-        @context_api.name
+    def method_missing(s, *args, &block)
+      Verse::logger.debug{[self.to_s, s, args].join("#")}
+      if !@context_api.is_a?(Context::Base)
+        @context_api.send(s, *args, &block)
       else
         super
+      end
+    end
+
+    def respond_to_missing?(s, include_private = false)
+      Verse::logger.debug{[self.to_s, :respond_to, s].join("#")}
+      if @context_api == self
+        false
+      else
+        @context_api.respond_to?(s, include_private)
       end
     end
 

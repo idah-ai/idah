@@ -2,7 +2,7 @@ require 'builder'
 require 'zip'
 
 module Context
-  module IoContext
+  module Io
     class Cvat < Base
       def initialize(args = nil, filters = nil, opts = nil)
         filename = [Hash(opts).dig(:name) || ["export.cvat.bundle", Time.now.to_i]].join(".")

@@ -1,5 +1,5 @@
 module Context
-  module IoContext
+  module Io
     class ZipCommand < Base
 
     end

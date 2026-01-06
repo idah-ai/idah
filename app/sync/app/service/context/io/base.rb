@@ -1,6 +1,9 @@
 module Context
-  module IoContext
+  module Io
     class Base < Context::Base
+      def name
+        :io
+      end
       attr_reader :filename
       attr_accessor :i, :o, :e, :wait_thr
 

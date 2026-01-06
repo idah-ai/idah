@@ -41,8 +41,12 @@ module Export
 
     def process
       start
+      # puts(@context)
+      puts(@context.datasets)
       @context.datasets.each do |dataset|
+        # puts(dataset)
         dataset.entries.each do |entry|
+          # puts(entry)
           @context.io.builder( # CVAT export seems to have tasks/entries as root
             entry[:attributes][:resource]
           ) do |xml|

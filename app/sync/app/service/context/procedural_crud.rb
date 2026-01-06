@@ -1,7 +1,7 @@
 module Context
   class ProceduralCrud < ProcContext
-    def index(filter = nil, **opts)
-      @context_api.call(filter, **opts)
+    def index(filter = nil, opts = nil)
+      @context_api.call(filter, opts)
     end
 
     def show(id = nil)
