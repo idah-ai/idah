@@ -93,15 +93,11 @@ module Context
       api = context_api_name
 
       combined_context_filters = {
-        api => lambda do |h|
-          h unless h.empty?
-        end.call(Hash(passed_context_filters&.dig(api)).merge(@context_filters.fetch(api, {})))
+        api => Hash(passed_context_filters&.dig(api)).merge(@context_filters.fetch(api, {}))
       } if api
 
       combined_args = {
-        api => lambda do |h|
-            h unless h.empty?
-          end.call(Hash(passed_args&.dig(api)).merge(@args.fetch(api, {})))
+        api => Hash(passed_args&.dig(api)).merge(@args.fetch(api, {}))
       } if api
 
       # Now delegate to class method with pre-merged values
