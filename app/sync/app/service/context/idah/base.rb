@@ -5,12 +5,8 @@ module Context
         if @context_api.class == Api::Exposition
           raise Error::QueryFailed, unit.errors if unit.errors
 
-          Verse::logger.debug{{unit:}}
           unit.data.map(&:data).map do |data|
-            Verse::logger.debug{{data:}}
-            superdata = super(data)
-            Verse::logger.debug{{superdata:}}
-            superdata
+            super(data)
           end unless unit.data.empty?
         else
           super(unit)
