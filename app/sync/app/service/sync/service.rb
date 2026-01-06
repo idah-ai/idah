@@ -33,7 +33,7 @@ module Sync
                   klass: "Context::Io",
                   context: filters,
                   opts: {
-                    klass: "Context::IoContext::UniversalPortableDataset"
+                    klass: "Context::Io::UniversalPortableDataset"
                   }
                 }
               }
@@ -50,7 +50,7 @@ module Sync
                   klass: "Context::Io",
                   context: filters,
                   opts: {
-                    klass: "Context::IoContext::Cvat"
+                    klass: "Context::Io::Cvat"
                   }
                 }
               }

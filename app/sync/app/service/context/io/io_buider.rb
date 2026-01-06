@@ -1,5 +1,5 @@
 module Context
-  module IoContext
+  module Io
     class BuilderIo < Base
 
     end

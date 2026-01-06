@@ -13,10 +13,10 @@ module Context
     def self.new(args = nil, context = nil, opts = nil)
       filters = (Hash(args).keys + Hash(context).keys).uniq
 
-      Verse::logger.debug(filters: filters)
+      Verse::logger.debug(filters:)
       # Validate that all IDAH_APIS are valid Context classes
       IDAH_APIS.each do |api_class|
-        Verse::logger.debug(api_check: api_class)
+        Verse::logger.debug(api_class:)
         unless api_class < Idah::Base
           raise Context::Error::InvalidContext, "#{api_class} is not a subclass of Idah::Base"
         end
@@ -24,7 +24,7 @@ module Context
 
       # Find the matching API based on filter keys, or initialize all APIs
       matched_api = IDAH_APIS.find do |idah_context|
-        Verse::logger.debug(name: idah_context.name, filters: filters)
+        Verse::logger.debug(name: idah_context.name, filters:)
         filters.include?(idah_context.name)
       end
 
@@ -32,7 +32,7 @@ module Context
       context_api = if matched_api
                       matched_api.root_api(args, context, opts)
                     else
-                      Dataset::Datasets.new(args, filters, opts)
+                      Dataset::Datasets.new(args, context, opts)
                     end
 
       # Ensure the root API is only Dataset::Datasets

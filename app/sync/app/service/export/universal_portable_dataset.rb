@@ -25,7 +25,7 @@ module Export
     private
     def start
       Verse::logger::debug{"#{self} Start processing #{@context.io.filename}"}
-      @context.io.puts({command: 'init', args: {}}.to_json)
+      @context.io.append({command: 'init', args: {}}.to_json)
     end
 
     def error(e, record)
@@ -53,7 +53,7 @@ module Export
 
     def on_dataset(dataset)
       begin
-        @context.io.puts({
+        @context.io.append({
           command: 'dataset:create',
           args: {
             id: dataset[:id],
@@ -79,7 +79,7 @@ module Export
         begin
           file.write(entry.medias.files)
           file.close
-          @context.io.puts({
+          @context.io.append({
             command: 'media:create',
             args: {
               id: resource_info[:id],
@@ -97,7 +97,7 @@ module Export
           file.close unless file.closed?
           file.unlink
         end
-        @context.io.puts({
+        @context.io.append({
           command: 'entry:create',
           args: {
             id: entry[:id],
@@ -117,7 +117,7 @@ module Export
 
     def on_annotation(annotation)
       begin
-        @context.io.puts({
+        @context.io.append({
           command: 'annotation:create',
           args: {
             id: annotation[:id],

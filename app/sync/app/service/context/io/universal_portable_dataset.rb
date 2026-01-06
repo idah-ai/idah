@@ -1,5 +1,5 @@
 module Context
-  module IoContext
+  module Io
     class UniversalPortableDataset < Base
       def initialize(args = nil, filters = nil, opts = nil)
         filename = [Hash(args).dig(:name) || ["export.UniversalPortableDataset", Time.now.to_i], :upd].join(".")
@@ -11,7 +11,7 @@ module Context
         super(filename, stdin, stdout, stderr, wait_thr)
       end
 
-      def puts(s, expected_lines = 1, feedback = proc{|line|line})
+      def append(s, expected_lines = 1, feedback = proc{|line|line})
         i.puts(s)
         i.flush
         readers = [o, e]

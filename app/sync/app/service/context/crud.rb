@@ -11,13 +11,13 @@ module Context
       raise NotImplementedError
     end
 
-    def index(filters = nil, **opts)
+    def index(filters = nil, opts = nil)
       result = if @context_api.class == Api::Exposition # todo uniformize
-        @context_api.index(**opts.merge(filter: Hash(build_filters(filters))))
+        @context_api.index(**Hash(opts).merge(filter: Hash(build_filters(filters))))
       else
         @context_api.index(
           build_filters(filters),
-          **opts
+          opts
         )
       end
       result = builder(result)

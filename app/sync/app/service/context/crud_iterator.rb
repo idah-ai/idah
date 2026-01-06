@@ -5,7 +5,7 @@ module Context
       Verse::Util::Iterator.chunk_iterator(1) do |number|
         super(
           filters,
-          page: { number:, size: @opts[:page_size] || DEFAULT_BATCH_SIZE }
+          page: { number:, size: Hash(@opts)[:page_size] || DEFAULT_BATCH_SIZE }
         )
       end
     end
