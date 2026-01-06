@@ -19,9 +19,11 @@ class ProjectMembersExpo < BaseExpo
     allowed_included "project"
 
     index do
-      allowed_filters :email__match,
+      allowed_filters :id__in,
+                      :email__match,
                       :project_id,
                       :account_id,
+                      :account_id__in,
                       :role__in,
                       :created_at__gte,
                       :created_at__lte,
