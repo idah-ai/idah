@@ -25,7 +25,7 @@
   import AnnotationFooter from "./layout/footer/AnnotationFooter.svelte";
   import AnnotationFooterToolbar from "./layout/footer/AnnotationFooterToolbar.svelte";
   import AnnotationSidebar from "./layout/sidebar/annotation-sidebar.svelte";
-  import { DEFAULT_MODE, ENTRY_ROOT, IDAH_NOTE, IDAH_VIDEO_BOUNDING_BOX } from "./type";
+  import { DEFAULT_MODE, ENTRY_ROOT, IDAH_NOTE, IDAH_VIDEO_BOUNDING_BOX, IDAH_POLYGON } from "./type";
   import { requiredFullfilled } from "./video-annotation-activity/categoryProperties";
   import { boundingBoxes, entryRoot, idb_updated_at } from "./video-annotation-activity/idb_store.svelte";
   import { annotationsIndexedDB, AnnotationsIndexedDB } from "./video-annotation-activity/indexedDB";
@@ -157,6 +157,13 @@
         disabled: !["annotate", "review", "done"].includes(context.workflowStep), // Note: Only allow to create note when workflow steps are "annotate" and "review"
         handleClick: () => context.commands.run("tools.note"),
       },
+      {
+        label: "Polygon",
+        type: IDAH_POLYGON,
+        iconName: "polygon",
+        disabled: !["annotate", "review"].includes(context.workflowStep),
+        handleClick: () => context.commands.run("tools.polygon"),
+      },
     ];
 
     context.tools.setTools(tools);
@@ -223,10 +230,13 @@
           case IDAH_NOTE:
             tool = "tools.note";
             break;
+          case IDAH_POLYGON:
+            tool = "tools.polygon";
+            break;
           default:
             tool = "tools.visual";
         }
-        console.log({ context, commands: context.commands, mode, tool });
+
         context.commands.run(tool);
       },
       zoom: { in: overlay.zoomIn, out: overlay.zoomOut },
@@ -648,6 +658,21 @@
     };
   });
 
+  context.commands.on("tools.polygon", () => {
+    console.log("you clicked polygon tool");
+    return {
+      name: "polygon tool",
+      apply: () => {
+        mode = IDAH_POLYGON;
+        selectedAnnotation = undefined;
+        annotationValue = {};
+      },
+      undo: () => {},
+      isCombinable: () => true,
+      combine: (c) => c,
+    };
+  });
+
   function addAnnotation(shape: AnnotationShape, value: AnnotationValue = {}) {
     if (!["review", "annotate"].includes(context.workflowStep)) return;
     const annotation = {
@@ -728,6 +753,9 @@
         case DEFAULT_MODE:
           break;
         case IDAH_VIDEO_BOUNDING_BOX:
+          shape = { ...shape, start: frame, end: frame, frames: [{ frame, points }] };
+          break;
+        case IDAH_POLYGON:
           shape = { ...shape, start: frame, end: frame, frames: [{ frame, points }] };
           break;
         default:
