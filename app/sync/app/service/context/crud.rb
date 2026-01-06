@@ -13,7 +13,7 @@ module Context
 
     def index(filters = nil, **opts)
       result = if @context_api.class == Api::Exposition # todo uniformize
-        @context_api.index(**opts.merge(filter: build_filters(filters)))
+        @context_api.index(**opts.merge(filter: Hash(build_filters(filters))))
       else
         @context_api.index(
           build_filters(filters),
