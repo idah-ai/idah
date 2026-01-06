@@ -87,6 +87,7 @@ module ProjectMember
           FROM project_members pm
           WHERE pm.account_id = :account_id
             AND pm.project_id = project_members.project_id
+            AND pm.disabled_at IS NULL
             AND pm.role IN :roles
         )
       SQL
