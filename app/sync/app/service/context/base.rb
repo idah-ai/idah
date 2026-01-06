@@ -40,17 +40,17 @@ module Context
       passed_context_filters = nil,
       passed_args = nil
     )
-      passed_filters = Hash(passed_filters)
+      # passed_filters is already scoped - use directly
+      filters_hash = Hash(passed_filters)
+
+      # These still need context scoping
       passed_context_filters = Hash(passed_context_filters)
       passed_args = Hash(passed_args)
-
-      filters_hash = Hash(passed_filters.dig(context_api_name))
       context_filters_hash = Hash(passed_context_filters.dig(context_api_name))
       args_hash = Hash(passed_args.dig(context_api_name))
 
-      h = filters_hash.merge(
-        context_filters_hash
-      ).merge(args_hash)
+      # Merge with proper precedence: filters < context_filters < args
+      h = filters_hash.merge(context_filters_hash).merge(args_hash)
       h if h && !h.empty?
     end
 
@@ -60,32 +60,18 @@ module Context
       passed_context_filters = nil,
       passed_args = nil
     )
-      context_api_name ||= @context_api.name if @context_api.respond_to? :name
+      context_api_name ||= @context_api.name if @context_api.respond_to?(:name)
 
-      # Pre-merge instance vars with params at the API-specific level
-      # Instance vars have higher precedence
-      api = context_api_name
+      combined_context_filters = merge_with_instance_var(
+        context_api_name, @context_filters, passed_context_filters
+      )
+      combined_args = merge_with_instance_var(
+        context_api_name, @args, passed_args
+      )
 
-      combined_context_filters = {
-        api => lambda do |h|
-          context_api_filters = @context_filters[api] if @context_filters
-          h = h.merge(context_api_filters) if context_api_filters
-          h if h && !h.empty?
-        end.call(Hash(passed_context_filters&.dig(api)))
-      } if api
-
-      combined_args = {
-        api => lambda do |h|
-          args_api_filters = @args[api] if @args
-          h = h.merge(args_api_filters) if args_api_filters
-          h if h && !h.empty?
-      end.call(Hash(passed_args&.dig(api)))
-      } if api
-
-      # Now delegate to class method with pre-merged values
       self.class.build_filters(
         passed_filters,
-        api,
+        context_api_name,
         combined_context_filters,
         combined_args
       )
@@ -95,7 +81,10 @@ module Context
       passed_context_filters = nil,
       passed_args = nil
     )
-      all_api_names = (Hash(passed_args).keys + Hash(passed_context_filters).keys).uniq
+      all_api_names = (
+        Hash(passed_args).keys +
+        Hash(passed_context_filters).keys
+      ).uniq
 
       all_api_names.each_with_object({}) do |api_name, result|
         result[api_name] = build_filters(
@@ -129,15 +118,51 @@ module Context
       end
     end
 
-    # Build complete opts from additional opts overrides
-    # Processes ALL API names from both @opts and the parameter
-    # Ensures no context information is lost during transformation
-    def self.build_opts(opts = nil)
-      opts
-      # raise NotImplementedError
+    def self.build_opts(
+      opts = nil,
+      context_api_name = nil,
+      passed_opts = nil
+    )
+      # opts is already scoped - use directly
+      opts_hash = Hash(opts)
+
+      # passed_opts needs context scoping
+      passed_opts = Hash(passed_opts)
+      context_opts_hash = Hash(passed_opts.dig(context_api_name))
+
+      # Merge with proper precedence: opts < context_opts
+      h = opts_hash.merge(context_opts_hash)
+      h if h && !h.empty?
     end
-    def build_opts(opts = nil)
-      self.class.build_opts(opts)
+
+    def build_opts(
+      opts = nil,
+      context_api_name = nil,
+      passed_opts = nil
+    )
+      context_api_name ||= @context_api.name if @context_api.respond_to?(:name)
+
+      combined_opts = merge_with_instance_var(
+        context_api_name, @opts, passed_opts
+      )
+
+      self.class.build_opts(
+        opts,
+        context_api_name,
+        combined_opts
+      )
+    end
+
+    private
+
+    # Merges instance variable hash with passed hash for a specific API context
+    # Instance var values take precedence over passed values
+    def merge_with_instance_var(api_name, instance_var, passed_hash)
+      return nil unless api_name
+
+      h = Hash(passed_hash&.dig(api_name))
+      h = h.merge(instance_var[api_name]) if instance_var&.dig(api_name)
+      { api_name => h } unless h.empty?
     end
   end
 end
