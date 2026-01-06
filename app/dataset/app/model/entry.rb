@@ -27,6 +27,19 @@ module Entry
     belongs_to :dataset, repository: "Dataset::Repository", foreign_key: :dataset_id
     belongs_to :project, repository: "Project::Repository", foreign_key: :project_id
 
+    belongs_to :assigned_to,
+               repository: "ProjectMember::Repository",
+               primary_key: :account_id,
+               foreign_key: :assigned_to_id
+    belongs_to :submitted_by,
+               repository: "ProjectMember::Repository",
+               primary_key: :account_id,
+               foreign_key: :submitted_by_id
+    belongs_to :reviewed_by,
+               repository: "ProjectMember::Repository",
+               primary_key: :account_id,
+               foreign_key: :reviewed_by_id
+
     has_many :annotations, repository: "Annotation::Repository", foreign_key: :entry_id
   end
 

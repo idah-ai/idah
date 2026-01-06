@@ -191,7 +191,9 @@ RSpec.describe ProjectMember::Service, database: true do
         project_member_id = project_member_repo.create(attributes)
 
         subject.delete(project_member_id)
-        expect { project_member_repo.find!(project_member_id) }.to raise_error(Verse::Error::NotFound)
+
+        member = project_member_repo.find(project_member_id)
+        expect(member.disabled_at).not_to be_nil
       end
 
       context "notifications" do

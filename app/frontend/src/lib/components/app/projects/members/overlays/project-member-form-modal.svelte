@@ -57,35 +57,46 @@
         account = createdAccount.data;
 
         /** Check if member is already in the project */
-        const existingProjectMember = await projectMembersBackendDataSource.list({
+        const existingProjectMember = (await projectMembersBackendDataSource.list({
           filters: {
             project_id: projectId,
             account_id: account.id,
           },
-        });
+        })).data[0];
 
-        if (existingProjectMember.data.length) {
-          await accountsBackendDataSource.join({ id: account.id });
-        }
+        // if (existingProjectMember) {
+        //   await accountsBackendDataSource.join({ id: account.id });
+        // }
 
-        await projectMembersBackendDataSource.create({
-          attributes: {
-            project_id: projectId!,
-            account_id: Number(account.id),
-            name: account.name,
-            email,
-            role,
-            invited_by_id: Number(currentAccount?.id),
-          },
-          relationships: {
-            project: {
-              data: {
-                type: "dataset:projects",
-                id: projectId,
+        if(existingProjectMember.disabled_at) {
+          // Re-enable the existing project member
+          await projectMembersBackendDataSource.update(existingProjectMember.id, {
+            attributes: {
+              disabled_at: null,
+              role,
+            },
+          });
+        } else {
+          // Create new project member
+          await projectMembersBackendDataSource.create({
+            attributes: {
+              project_id: projectId!,
+              account_id: Number(account.id),
+              name: account.name,
+              email,
+              role,
+              invited_by_id: Number(currentAccount?.id),
+            },
+            relationships: {
+              project: {
+                data: {
+                  type: "dataset:projects",
+                  id: projectId,
+                },
               },
             },
-          },
-        });
+          });
+        }
       }
 
       $refetches.projectMembers.list = new Date();
