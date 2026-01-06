@@ -10,7 +10,7 @@ module Context
             end
 
             filters = build_context_filters_from({annotations: {id:}})
-            Unit.new(annotation, nil, args, filters, opts)
+            Context::Base.new(annotation, args, filters, opts)
           end
         end
 

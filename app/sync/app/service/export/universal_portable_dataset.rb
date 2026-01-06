@@ -73,7 +73,6 @@ module Export
 
     def on_entry(entry)
       begin
-        Verse::logger::debug {entry.show}
         resource_info = entry.medias.resource_info
         file = Tempfile.new(entry[:attributes][:resource])
         begin
