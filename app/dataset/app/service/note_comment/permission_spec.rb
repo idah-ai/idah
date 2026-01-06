@@ -506,6 +506,21 @@ RSpec.describe NoteComment::Service, database: true do
       end
     end
 
+    describe "with assigned project and disabled project member" do
+      before do
+        project_member_repo.delete(project_owner_member_id) # soft delete
+      end
+
+      it "cannot index" do
+        # Setup: create note feed to test visibility
+        project_owner_note_comment_id # assigned
+
+        result = subject.index({})
+
+        expect(result.count).to eq 0
+      end
+    end
+
     describe "with not assigned project" do
       it "cannot index" do
         # Setup: create note feeds to test visibility
@@ -623,6 +638,21 @@ RSpec.describe NoteComment::Service, database: true do
         expect {
           subject.delete(reviewer_first_note_comment_id)
         }.to raise_error(Verse::Error::RecordNotFound)
+      end
+    end
+
+    describe "with assigned project and disabled project member" do
+      before do
+        project_member_repo.delete(annotator_member_id) # soft delete
+      end
+
+      it "cannot index" do
+        # Setup: create note feed to test visibility
+        project_owner_note_comment_id # assigned
+
+        result = subject.index({})
+
+        expect(result.count).to eq 0
       end
     end
 
@@ -783,6 +813,21 @@ RSpec.describe NoteComment::Service, database: true do
         expect {
           subject.show(reviewer_third_note_comment_id)
         }.to raise_error(Verse::Error::RecordNotFound)
+      end
+    end
+
+    describe "with assigned project and disabled project member" do
+      before do
+        project_member_repo.delete(reviewer_member_id) # soft delete
+      end
+
+      it "cannot index" do
+        # Setup: create note feed to test visibility
+        reviewer_third_note_comment_id # assigned
+
+        result = subject.index({})
+
+        expect(result.count).to eq 0
       end
     end
 
