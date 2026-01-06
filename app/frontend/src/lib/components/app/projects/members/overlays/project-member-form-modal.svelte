@@ -68,7 +68,7 @@
         //   await accountsBackendDataSource.join({ id: account.id });
         // }
 
-        if(existingProjectMember.disabled_at) {
+        if(existingProjectMember) {
           // Re-enable the existing project member
           await projectMembersBackendDataSource.update(existingProjectMember.id, {
             attributes: {
