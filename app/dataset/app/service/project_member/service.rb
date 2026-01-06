@@ -96,13 +96,16 @@ module ProjectMember
       access = auth_context.can?(:update, project_members.class.resource)
       # "project_owner" can only be added by an org_owner of the project
       if record.attributes[:role] == "project_owner"
-        unless access == :as_org_owner
+        unless [:as_org_owner, :all].include?(access)
           raise Verse::Error::Unauthorized,
                 "You do not have permission to update a member for this project"
         end
 
-        project = projects.find!(record.project.id) # this can raise Verse::Error::RecordNotFound if not in org scope
-        unless auth_context.custom_scopes[:org]&.include?(project.organization_id.to_s)
+        member = project_members.find!(record.id)
+        project = projects.find!(member.project_id) # this can raise Verse::Error::RecordNotFound if not in org scope
+
+        # Check if org_owner has access to the project's organization
+        if access != :all && !auth_context.custom_scopes[:org]&.include?(project.organization_id.to_s)
           raise Verse::Error::Unauthorized,
                 "You do not have permission to update a member to a project owner for this project"
         end
@@ -115,8 +118,9 @@ module ProjectMember
     def delete(id)
       project_members.transaction do
         member = project_members.find!(id, included: [:project])
-        project_members.delete!(id)
 
+        # Soft delete project member
+        project_members.update!(id, { disabled_at: Time.now })
         project_members.after_commit do
           ::Service::Notification.email(
             to: member.email,

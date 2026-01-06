@@ -14,6 +14,7 @@ import { parseSingleElementError, parseSingleElementReturn } from "@/data/model/
 
 import type { JsonApiErrorResponse, RecordResponse } from "@/data/model/types";
 import type { Hash } from "@/utils/types";
+import type { ProjectMemberRecord } from "@/data/model/dataset/projects/members/record";
 
 @type("dataset:entries")
 export class EntryRecord extends Record {
@@ -37,6 +38,9 @@ export class EntryRecord extends Record {
   @field() public updated_at!: Date;
 
   @relationship() public dataset!: DatasetRecord;
+  @relationship() public assigned_to!: ProjectMemberRecord;
+  @relationship() public reviewed_by!: ProjectMemberRecord;
+  @relationship() public submitted_by!: ProjectMemberRecord;
 
   public get priorityBadge(): EntryPriorityBadgeProps {
     const defaultBadgeProps: EntryPriorityBadgeProps = {

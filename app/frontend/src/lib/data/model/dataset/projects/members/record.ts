@@ -15,6 +15,7 @@ export class ProjectMemberRecord extends Record {
   @field() public role!: ProjectMemberRole;
 
   @field() public invited_by_id!: number;
+  @field() public disabled_at!: Date | null;
 
   @field({ transformer: Transformers.Time }) public created_at!: Date;
   @field({ transformer: Transformers.Time }) public updated_at!: Date;
