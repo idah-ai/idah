@@ -38,17 +38,17 @@ module Context
       if @context_api == self
         self.class.to_s
       else
-        @context_api.to_s
+        "#{self.class.to_s}(#{@context_api.class.to_s})"
       end
     end
 
     def method_missing(s, *args, &block)
-      Verse::logger.debug{{self: self.class.to_s, context_api: @context_api.class, method_missing: s}}
+      Verse::logger.debug{[self.to_s, s].join("#")}
       @context_api.send(s, *args, &block)
     end
 
     def respond_to_missing?(s, include_private = false)
-      Verse::logger.debug{{self: self.class.to_s, respond_to_missing: s}}
+      Verse::logger.debug{[self.to_s, :respond_to, s].join("#")}
       if @context_api == self
         false
       else
