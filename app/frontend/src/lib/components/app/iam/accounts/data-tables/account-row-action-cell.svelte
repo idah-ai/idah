@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { SquarePenIcon, Trash2Icon } from "@lucide/svelte";
+  import { SquarePenIcon, UserXIcon } from "@lucide/svelte";
   import { onMount } from "svelte";
   import { toast } from "svelte-sonner";
 
@@ -35,9 +35,9 @@
           },
         },
         {
-          label: "Delete",
-          icon: Trash2Icon,
-          hidden: !canDeleteAccount,
+          label: "Cancel Invitation",
+          icon: UserXIcon,
+          hidden: !canDeleteAccount || account.joined_at,
           action: () => {
             openConfirmDeleteAccountModal = true;
           },
