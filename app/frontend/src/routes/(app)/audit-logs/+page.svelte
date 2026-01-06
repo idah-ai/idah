@@ -184,18 +184,18 @@
           entries.push(...entriesRes.data);
           break;
         }
-        case "medias": {
-          const mediasRes = await mediaBackendDataSource.list({
-            fields: {
-              [MediaRecord.type]: ["id", "filename"],
-            },
-            filters: {
-              id__in: _ids,
-            },
-          });
-          medias.push(...mediasRes.data);
-          break;
-        }
+        // case "medias": {
+        //   const mediasRes = await mediaBackendDataSource.list({
+        //     fields: {
+        //       [MediaRecord.type]: ["id", "filename"],
+        //     },
+        //     filters: {
+        //       id__in: _ids,
+        //     },
+        //   });
+        //   medias.push(...mediasRes.data);
+        //   break;
+        // }
         default: {
           break;
         }
