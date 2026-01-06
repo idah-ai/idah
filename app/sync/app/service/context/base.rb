@@ -34,6 +34,24 @@ module Context
       @context_builder = context_builder
     end
 
+    def to_s
+      "#{super}(#{@context_api.class})"
+    end
+
+    def method_missing(s, *args, &block)
+      Verse::logger.debug{[self.class, @context_api.class, s, args].join("#")}
+      @context_api.send(s, *args, &block)
+    end
+
+    def respond_to_missing?(s, include_private = false)
+      Verse::logger.debug{[self.class, @context_api.class, :respond_to_missin?, s].join("#")}
+      if @context_api == self
+        false
+      else
+        @context_api.respond_to?(s, include_private)
+      end
+    end
+
     def self.build_filters(
       passed_filters = nil,
       context_api_name = nil,

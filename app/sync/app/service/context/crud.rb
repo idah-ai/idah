@@ -27,7 +27,8 @@ module Context
     def show(id = nil)
       filters = build_filters(id ? { id: } : nil)
       # Validate that an ID is present after filter merging
-      unless filters[:id]
+      Verse::logger{{class: self.class, id:, filters:}}
+      unless filters&[:id]
         raise Context::Error::NotFound, "No ID available after applying context filters"
       end
 
