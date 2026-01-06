@@ -12,6 +12,6 @@ COPY $LOCAL_APP_PATH $APP_PATH
 WORKDIR $APP_PATH
 
 RUN pnpm install --frozen-lockfile --force
-RUN pnpm svelte-kit sync
 RUN pnpm run build:parser
+RUN pnpm svelte-kit sync
 RUN pnpm run build:idah-video

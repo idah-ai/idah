@@ -7,6 +7,7 @@ const annotations_rpc = new JsonRpcDatasource(`${import.meta.env.VITE_IDAH_HOST}
 export function createAnnotationDriver(entry_id: string): IAnnotationDriver {
   return {
     create(id, dimensions, annotation) {
+      console.log("test annotation", { id, dimensions, annotation });
       return annotations_rpc.call({
         method: "create",
         params: {

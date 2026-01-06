@@ -2,9 +2,10 @@
   import { getContext, onMount, type Snippet } from "svelte";
 
   import BoundingBox, { type ToolSelection } from "./bounding-box.svelte";
+  import Polygon from "./polygon.svelte";
   import { boundingBoxes } from "./idb_store.svelte";
 
-  import { DEFAULT_MODE, ENTRY_ROOT, IDAH_NOTE, IDAH_VIDEO_BOUNDING_BOX, type EntryRoot } from "../type";
+  import { DEFAULT_MODE, ENTRY_ROOT, IDAH_NOTE, IDAH_VIDEO_BOUNDING_BOX, IDAH_POLYGON, type EntryRoot } from "../type";
   import { HEIGHT, ORIGIN, WIDTH, X, Y, type Point, type VideoFrameSelection } from "./VideoAnnotationContext";
   import Zoomable from "./zoomable.svelte";
 
@@ -247,7 +248,7 @@
     return mode != DEFAULT_MODE
       ? mode == IDAH_NOTE
         ? "cursor-note"
-        : points.length < (cursorConstraints.get(mode) || 0) || toolSelection?.isEditing()
+        : points.length < (cursorConstraints.get(mode) || 0)
           ? "cursor-crosshair"
           : "cursor-grab"
       : "cursor-grab";
@@ -311,7 +312,29 @@
                   showNewNoteFeedPopup(annotation);
                 }
               }}
-            />, frame
+            />
+          {:else if annotation.shape.type == IDAH_POLYGON}
+            <Polygon
+              {mode}
+              {pointer}
+              points={currentShape(annotation.shape, frame) || []}
+              ratio={target_size}
+              offset={zoomInfo.offset}
+              color={Object.entries(context.config)
+                .find(([k, _]) => k == IDAH_POLYGON)?.[1]
+                .values.find((c) => c.id == annotation.value?.category)?.color || "grey"}
+              onmousedown={(e) => {
+                e.stopPropagation();
+
+                if (mode == DEFAULT_MODE || selected) {
+                  onSelectAnnotation(annotation);
+                }
+
+                if (mode === IDAH_NOTE) {
+                  showNewNoteFeedPopup(annotation);
+                }
+              }}
+            />
           {/if}
         {/if}
       {/each}
@@ -328,6 +351,30 @@
               color={annotation?.synced
                 ? Object.entries(context.config)
                     .find(([k, _]) => k == IDAH_VIDEO_BOUNDING_BOX)?.[1]
+                    .values.find((c) => c.id == annotation?.value?.category)?.color || "grey"
+                : "grey"}
+              onmousedown={(e) => {
+                e.stopPropagation();
+
+                if (mode == DEFAULT_MODE || selected) {
+                  onSelectAnnotation(annotation);
+                }
+
+                if (mode === IDAH_NOTE) {
+                  showNewNoteFeedPopup(annotation);
+                }
+              }}
+            />
+          {:else if annotation.shape.type == IDAH_POLYGON}
+            <Polygon
+              {mode}
+              {pointer}
+              points={currentShape(annotation.shape, frame) || []}
+              ratio={target_size}
+              offset={zoomInfo.offset}
+              color={annotation?.synced
+                ? Object.entries(context.config)
+                    .find(([k, _]) => k == IDAH_POLYGON)?.[1]
                     .values.find((c) => c.id == annotation?.value?.category)?.color || "grey"
                 : "grey"}
               onmousedown={(e) => {
@@ -366,6 +413,29 @@
         onChange={(bb) => {
           onSelection(IDAH_VIDEO_BOUNDING_BOX, frame, bb, selected?.metadata.id);
           points = bb;
+        }}
+      />
+    {/if}
+
+    {#if shape?.type == IDAH_POLYGON || mode == IDAH_POLYGON}
+      <Polygon
+        {pointer}
+        bind:this={toolSelection}
+        {mode}
+        {points}
+        ratio={target_size}
+        offset={zoomInfo.offset}
+        cursor={cursor_downscaled}
+        editable={(shape?.type == IDAH_POLYGON || mode == IDAH_POLYGON) &&
+          ["annotate", "review"].includes(context.workflowStep)}
+        color={selected?.synced
+          ? Object.entries(context.config)
+              .find(([k, _]) => k == mode)?.[1]
+              .values.find((c) => c.id == selected?.value?.category)?.color || "grey"
+          : "grey"}
+        onChange={(polygon_points) => {
+          onSelection(IDAH_POLYGON, frame, polygon_points, selected?.metadata.id);
+          points = polygon_points;
         }}
       />
     {/if}
