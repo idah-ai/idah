@@ -32,7 +32,7 @@ export function getLogResourceDetails(
   const { accounts, organizations, projects, projectMembers, datasets, entries, medias } = opts;
 
   /** 1. Construct resource hash */
-  let resourceHash = logResourceTypes.reduce((acc, resourceType) => {
+  const resourceHash = logResourceTypes.reduce((acc, resourceType) => {
     acc[resourceType.value] = {
       ids: [],
       url: `/${resourceType.value}`,
