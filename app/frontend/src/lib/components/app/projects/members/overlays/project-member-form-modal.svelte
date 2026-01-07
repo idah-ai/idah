@@ -68,8 +68,6 @@
         ).data[0];
 
         if (existingProjectMember) {
-          await accountsBackendDataSource.join({ id: account.id });
-
           // Re-enable the existing project member
           await projectMembersBackendDataSource.update(
             existingProjectMember.id,
