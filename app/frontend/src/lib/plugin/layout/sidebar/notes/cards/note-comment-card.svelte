@@ -19,14 +19,23 @@
   // Functions
   async function updateNoteCommentMd(newContentMd: string) {
     try {
-      const updatedNoteCommentRes = await noteCommentsBackendDataSource.update(id, {
-        attributes: {
-          content_md: newContentMd,
+      const updatedNoteCommentRes = await noteCommentsBackendDataSource.update(
+        id,
+        {
+          attributes: {
+            content_md: newContentMd,
+          },
         },
-      });
+        {
+          showErrorToast: false,
+        },
+      );
       noteCommentRecord = updatedNoteCommentRes.data;
-      toast.success("Note comment updated successfully.");
+
       $refetches.noteComments.list = new Date();
+      toast.success("Comment updated", {
+        description: "The note comment has been updated.",
+      });
     } catch (error) {
       console.error(error);
       toast.error("You are not authorized to do this action.");
@@ -34,9 +43,17 @@
   }
 
   async function deleteNoteComment() {
-    await noteCommentsBackendDataSource.delete(id);
-    toast.success("Note comment deleted successfully.");
-    $refetches.noteComments.list = new Date();
+    try {
+      await noteCommentsBackendDataSource.delete(id, { showErrorToast: false });
+
+      $refetches.noteComments.list = new Date();
+      toast.success("Comment deleted", {
+        description: "The note comment has been deleted.",
+      });
+    } catch (error) {
+      console.log(error);
+      toast.error("You are not authorized to do this action.");
+    }
   }
 </script>
 

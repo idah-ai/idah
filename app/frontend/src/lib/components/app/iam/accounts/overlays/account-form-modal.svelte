@@ -8,6 +8,7 @@
 
   import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
   import { createAccountSchema, updateAccountSchema } from "@/data/model/iam/accounts/schema";
+  import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { getFieldErrors, validateData, type ZodSchema } from "@/utils/validate";
 
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
@@ -66,8 +67,8 @@
   }
 
   async function createAccount(): Promise<void> {
-    try {
-      await accountsBackendDataSource.create({
+    await accountsBackendDataSource.create(
+      {
         attributes: {
           name: account.name,
           email: account.email,
@@ -75,20 +76,23 @@
           enabled: account.enabled,
           role_name: account.role_name,
         },
-      });
+      },
+      {
+        showErrorToast: false,
+      },
+    );
 
-      $refetches.accounts.list = new Date();
-      closeThisModal();
-      toast.success("Account created successfully");
-    } catch (error) {
-      toast.error("Failed to create account");
-      throw error;
-    }
+    closeThisModal();
+    $refetches.accounts.list = new Date();
+    toast.success("Account created", {
+      description: `The account has been created and an invitation email has been sent to "${account.email}".`,
+    });
   }
 
   async function updateAccount(): Promise<void> {
-    try {
-      await accountsBackendDataSource.update(account.id, {
+    await accountsBackendDataSource.update(
+      account.id,
+      {
         attributes: {
           name: account.name,
           email: account.email,
@@ -96,15 +100,17 @@
           sso_channel: account.sso_channel,
           enabled: account.enabled,
         },
-      });
+      },
+      {
+        showErrorToast: false,
+      },
+    );
 
-      $refetches.accounts.list = new Date();
-      closeThisModal();
-      toast.success("Account updated successfully");
-    } catch (error) {
-      toast.error("Failed to update account");
-      throw error;
-    }
+    closeThisModal();
+    $refetches.accounts.list = new Date();
+    toast.success("Account updated", {
+      description: `The account of "${account.email}" has been updated.`,
+    });
   }
 
   async function submit(): Promise<void> {
@@ -133,7 +139,7 @@
         await updateAccount();
       }
     } catch (error) {
-      console.error(error);
+      showActionFailedToast(error);
     } finally {
       submitting = false;
     }
