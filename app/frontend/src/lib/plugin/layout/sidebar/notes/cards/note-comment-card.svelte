@@ -25,10 +25,11 @@
         },
       });
       noteCommentRecord = updatedNoteCommentRes.data;
+
+      $refetches.noteComments.list = new Date();
       toast.success("Comment updated", {
         description: "The note comment has been updated.",
       });
-      $refetches.noteComments.list = new Date();
     } catch (error) {
       console.error(error);
       toast.error("You are not authorized to do this action.");
@@ -36,11 +37,17 @@
   }
 
   async function deleteNoteComment() {
-    await noteCommentsBackendDataSource.delete(id);
-    toast.success("Comment deleted", {
-      description: "The note comment has been deleted.",
-    });
-    $refetches.noteComments.list = new Date();
+    try {
+      await noteCommentsBackendDataSource.delete(id);
+
+      $refetches.noteComments.list = new Date();
+      toast.success("Comment deleted", {
+        description: "The note comment has been deleted.",
+      });
+    } catch (error) {
+      console.log(error);
+      toast.error("You are not authorized to do this action.");
+    }
   }
 </script>
 

@@ -130,7 +130,7 @@
     open = false;
     $refetches.datasets.list = new Date();
     toast.success("Dataset updated", {
-      description: `The dataset ${dataset.name} has been updated.`,
+      description: `The dataset "${dataset.name}" has been updated.`,
     });
   }
 
