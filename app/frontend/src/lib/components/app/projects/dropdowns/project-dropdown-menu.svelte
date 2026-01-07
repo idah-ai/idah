@@ -60,6 +60,8 @@
   // Lifecycle
   onMount(async () => {
     await Promise.all([checkRights()]);
+    const projectRes = await fetchProject();
+    projectRecord = projectRes.data;
   });
 
   // Functions
