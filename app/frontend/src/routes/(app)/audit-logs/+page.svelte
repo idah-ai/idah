@@ -12,7 +12,7 @@
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
   import { OrganizationRecord, organizationsBackendDataSource } from "@/data/model/iam/organizations/record";
-  import { mediaBackendDataSource, MediaRecord } from "@/data/model/media/medias/medias-record";
+  import { MediaRecord } from "@/data/model/media/medias/medias-record";
   import { Record } from "@/data/model/Record";
   import { refetches } from "@/utils/refetch";
 
@@ -107,100 +107,102 @@
     const entries: EntryRecord[] = [];
     const medias: MediaRecord[] = [];
     /** Fetch each resource by ids */
-    Object.entries(ids).forEach(async ([resource, _ids]) => {
-      switch (resource) {
-        case "accounts": {
-          const accountsRes = await accountsBackendDataSource.list({
-            fields: {
-              [AccountRecord.type]: ["id", "email"],
-            },
-            filters: {
-              id__in: _ids,
-            },
-          });
-          accounts.push(...accountsRes.data);
-          break;
+    await Promise.all(
+      Object.entries(ids).map(async ([resource, _ids]) => {
+        switch (resource) {
+          case "accounts": {
+            const accountsRes = await accountsBackendDataSource.list({
+              fields: {
+                [AccountRecord.type]: ["id", "email"],
+              },
+              filters: {
+                id__in: _ids,
+              },
+            });
+            accounts.push(...accountsRes.data);
+            break;
+          }
+          case "account_sessions": {
+            break;
+          }
+          case "organizations": {
+            const organizationsRes = await organizationsBackendDataSource.list({
+              fields: {
+                [OrganizationRecord.type]: ["id", "name"],
+              },
+              filters: {
+                id__in: _ids,
+              },
+            });
+            organizations.push(...organizationsRes.data);
+            break;
+          }
+          case "projects": {
+            const projectsRes = await projectsBackendDataSource.list({
+              fields: {
+                [ProjectRecord.type]: ["id", "name"],
+              },
+              filters: {
+                id__in: _ids,
+              },
+            });
+            projects.push(...projectsRes.data);
+            break;
+          }
+          case "project_members": {
+            const projectMembersRes = await projectMembersBackendDataSource.list({
+              fields: {
+                [ProjectMemberRecord.type]: ["id", "email"],
+              },
+              filters: {
+                id__in: _ids,
+              },
+            });
+            projectMembers.push(...projectMembersRes.data);
+            break;
+          }
+          case "datasets": {
+            const datasetsRes = await datasetsBackendDataSource.list({
+              fields: {
+                [DatasetRecord.type]: ["id", "name"],
+              },
+              filters: {
+                id__in: _ids,
+              },
+            });
+            datasets.push(...datasetsRes.data);
+            break;
+          }
+          case "entries": {
+            const entriesRes = await entriesBackendDataSource.list({
+              fields: {
+                [EntryRecord.type]: ["id", "resource"],
+              },
+              filters: {
+                id__in: _ids,
+              },
+            });
+            entries.push(...entriesRes.data);
+            break;
+          }
+          // case "medias": {
+          //   const mediasRes = await mediaBackendDataSource.list({
+          //     fields: {
+          //       [MediaRecord.type]: ["id", "filename"],
+          //     },
+          //     filters: {
+          //       id__in: _ids,
+          //     },
+          //   });
+          //   medias.push(...mediasRes.data);
+          //   break;
+          // }
+          default: {
+            break;
+          }
         }
-        case "account_sessions": {
-          break;
-        }
-        case "organizations": {
-          const organizationsRes = await organizationsBackendDataSource.list({
-            fields: {
-              [OrganizationRecord.type]: ["id", "name"],
-            },
-            filters: {
-              id__in: _ids,
-            },
-          });
-          organizations.push(...organizationsRes.data);
-          break;
-        }
-        case "projects": {
-          const projectsRes = await projectsBackendDataSource.list({
-            fields: {
-              [ProjectRecord.type]: ["id", "name"],
-            },
-            filters: {
-              id__in: _ids,
-            },
-          });
-          projects.push(...projectsRes.data);
-          break;
-        }
-        case "project_members": {
-          const projectMembersRes = await projectMembersBackendDataSource.list({
-            fields: {
-              [ProjectMemberRecord.type]: ["id", "email"],
-            },
-            filters: {
-              account_id__in: _ids,
-            },
-          });
-          projectMembers.push(...projectMembersRes.data);
-          break;
-        }
-        case "datasets": {
-          const datasetsRes = await datasetsBackendDataSource.list({
-            fields: {
-              [DatasetRecord.type]: ["id", "name"],
-            },
-            filters: {
-              id__in: _ids,
-            },
-          });
-          datasets.push(...datasetsRes.data);
-          break;
-        }
-        case "entries": {
-          const entriesRes = await entriesBackendDataSource.list({
-            fields: {
-              [EntryRecord.type]: ["id", "resource"],
-            },
-            filters: {
-              id__in: _ids,
-            },
-          });
-          entries.push(...entriesRes.data);
-          break;
-        }
-        // case "medias": {
-        //   const mediasRes = await mediaBackendDataSource.list({
-        //     fields: {
-        //       [MediaRecord.type]: ["id", "filename"],
-        //     },
-        //     filters: {
-        //       id__in: _ids,
-        //     },
-        //   });
-        //   medias.push(...mediasRes.data);
-        //   break;
-        // }
-        default: {
-          break;
-        }
-      }
-    });
+      }),
+    );
 
     return { accounts, organizations, projects, projectMembers, datasets, entries, medias };
   }
@@ -240,6 +242,7 @@
           actor_account_role_name__nin: ["system"],
         },
         sort: ["-event_timestamp"],
+        noCache: true,
       }}
       {onLoadSetContexts}
     ></DatasourceTable>
