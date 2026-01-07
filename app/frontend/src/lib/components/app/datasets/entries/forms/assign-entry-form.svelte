@@ -11,10 +11,10 @@
 
   // Props
   interface Props extends FormBaseProps {
-    selectedMember: number | null;
+    selectedMemberAccountId: number | null;
     entryRecord?: EntryRecord;
   }
-  let { selectedMember, entryRecord, onValueChange }: Props = $props();
+  let { selectedMemberAccountId, entryRecord, onValueChange }: Props = $props();
 
   // Variables
   const resource: string = EntryRecord.type;
@@ -23,11 +23,11 @@
   let wfStep = $derived(entryRecord?.wf_step || undefined);
 
   // Variables::Reactive
-  let assignedToId = $derived(selectedMember);
+  let assignedToAccountId = $derived(selectedMemberAccountId);
 
   // Functions
   $effect(() => {
-    onValueChange({ assigned_to_id: assignedToId });
+    onValueChange({ assigned_to_id: assignedToAccountId });
   });
 </script>
 
@@ -48,9 +48,9 @@
         },
       }}
       searchKeyWithOperation="email__match"
-      value={assignedToId}
+      value={assignedToAccountId}
       onSelected={(value: string | number) => {
-        assignedToId = value as number;
+        assignedToAccountId = value as number;
       }}
     ></SingleSelectDatasourceField>
   </FieldGroup>

@@ -59,7 +59,10 @@
 
   // Lifecycle
   onMount(async () => {
-    await Promise.all([checkRights(), fetchDataset()]);
+    await Promise.all([checkRights()]);
+
+    const datasetRes = await fetchDataset();
+    datasetRecord = datasetRes.data;
   });
 
   // Functions
