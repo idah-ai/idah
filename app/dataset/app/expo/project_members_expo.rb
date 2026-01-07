@@ -41,6 +41,16 @@ class ProjectMembersExpo < BaseExpo
   def on_account_deleted
     account_id = message.content[:resource_id]
 
-    service.remove_nonparticipant_member(account_id)
+    service.delete_account_members(account_id)
+  end
+
+  expose on_resource_event(Resource::Iam::Accounts, "updated")
+  def on_account_updated
+    account_id = message.content[:resource_id]
+
+    # Only disable project members if the account is being disabled
+    return if message.content.dig(:args, 0, :enabled)
+
+    service.disable_account_members(account_id)
   end
 end

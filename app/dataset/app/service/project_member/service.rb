@@ -120,7 +120,7 @@ module ProjectMember
         member = project_members.find!(id, included: [:project])
 
         # Soft delete project member
-        project_members.update!(id, { disabled_at: Time.now })
+        project_members.update!(member.id, { disabled_at: Time.now })
         project_members.after_commit do
           ::Service::Notification.email(
             to: member.email,
@@ -136,12 +136,16 @@ module ProjectMember
       end
     end
 
-    def remove_nonparticipant_member(account_id)
-      project_member_ids = system_project_members.index({ account_id: account_id }).map(&:id).uniq
+    def delete_account_members(account_id)
+      system_project_members.chunked_index({ account_id: account_id }).each do |member|
+        project_members.delete!(member.id)
+      end
+    end
 
-      project_member_ids.each do |project_member_id|
-        # directly delete, no need use service delete to send a notification as the account is already deleted
-        project_members.delete!(project_member_id)
+    def disable_account_members(account_id)
+      now = Time.now
+      system_project_members.chunked_index({ account_id: account_id }).each do |member|
+        project_members.update!(member.id, { disabled_at: now })
       end
     end
   end
