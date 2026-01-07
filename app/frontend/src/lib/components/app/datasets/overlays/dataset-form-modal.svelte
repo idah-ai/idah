@@ -2,12 +2,14 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
+  import { toast } from "svelte-sonner";
 
   import DatasetForm from "@/components/app/datasets/forms/dataset-form.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
 
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { createDatasetSchema, updateDatasetSchema } from "@/data/model/dataset/datasets/schema";
+  import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
   import { getFieldErrors, validateData, type ZodSchema } from "@/utils/validate";
 
@@ -58,7 +60,7 @@
     selectedDatasetId = value.selectedDatasetId;
   }
 
-  async function createDataset() {
+  async function getLabelConfig() {
     let labelConfig: IConfig = {};
 
     /** Get label config, if selected dataset */
@@ -72,39 +74,64 @@
       labelConfig = datasetRes.data.labeling_configuration;
     }
 
-    const createdDatasetRes = await datasetsBackendDataSource.create({
-      attributes: {
-        name: dataset.name,
-        modality: dataset.modality,
-        labeling_configuration: labelConfig,
-        workflow_configuration: {},
-      },
-      relationships: {
-        project: {
-          data: {
-            type: "datasets:projects",
-            id: projectId!,
+    return labelConfig;
+  }
+
+  async function createDataset() {
+    const labelConfig = await getLabelConfig();
+
+    const createdDatasetRes = await datasetsBackendDataSource.create(
+      {
+        attributes: {
+          name: dataset.name,
+          modality: dataset.modality,
+          labeling_configuration: labelConfig,
+          workflow_configuration: {},
+        },
+        relationships: {
+          project: {
+            data: {
+              type: "datasets:projects",
+              id: projectId!,
+            },
           },
         },
       },
-    });
+      {
+        showErrorToast: false,
+      },
+    );
 
-    goto(resolve(`/projects/${projectId}/datasets/${createdDatasetRes.data.id}/entries`));
-
-    $refetches.datasets.list = new Date();
     open = false;
+    $refetches.datasets.list = new Date();
+    goto(resolve(`/projects/${projectId}/datasets/${createdDatasetRes.data.id}/entries`));
+    toast.success("Dataset created", {
+      description: `The dataset "${dataset.name}" has been created.`,
+    });
   }
 
   async function updateDataset() {
-    await datasetsBackendDataSource.update(dataset.id, {
-      attributes: {
-        name: dataset.name,
-        modality: dataset.modality,
-      },
-    });
+    const labelConfig = await getLabelConfig();
 
-    $refetches.datasets.list = new Date();
+    await datasetsBackendDataSource.update(
+      dataset.id,
+      {
+        attributes: {
+          name: dataset.name,
+          modality: dataset.modality,
+          labeling_configuration: labelConfig,
+        },
+      },
+      {
+        showErrorToast: false,
+      },
+    );
+
     open = false;
+    $refetches.datasets.list = new Date();
+    toast.success("Dataset updated", {
+      description: `The dataset ${dataset.name} has been updated.`,
+    });
   }
 
   async function submit(): Promise<void> {
@@ -130,8 +157,8 @@
         await updateDataset();
       }
     } catch (error) {
-      console.error(error);
       submitting = false;
+      showActionFailedToast(error);
     }
   }
 </script>

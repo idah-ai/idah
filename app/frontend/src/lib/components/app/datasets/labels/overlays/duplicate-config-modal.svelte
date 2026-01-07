@@ -11,6 +11,7 @@
   import Switch from "@/components/ui/switch/switch.svelte";
 
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
+  import { showActionFailedToast } from "@/utils/error/error.toasts";
 
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
   import type { IConfig } from "@/plugin/interface/Activity";
@@ -60,19 +61,26 @@
       }
 
       selectedDatasets.forEach(async (datasetId) => {
-        await datasetsBackendDataSource.update(datasetId, {
-          attributes: {
-            labeling_configuration: labelConfig,
+        await datasetsBackendDataSource.update(
+          datasetId,
+          {
+            attributes: {
+              labeling_configuration: labelConfig,
+            },
           },
-        });
+          {
+            showErrorToast: false,
+          },
+        );
       });
 
       closeThisModal();
-      toast.success("Label configuration duplicated successfully");
+      toast.success("Label configurations duplicated", {
+        description: `The label configurations has been duplicated.`,
+      });
     } catch (error) {
-      console.error(error);
       submitting = false;
-      toast.error("Failed to duplicate label configuration");
+      showActionFailedToast(error);
     }
   }
 </script>
@@ -137,6 +145,8 @@
   </div>
 
   {#snippet confirm()}
-    <Button loading={submitting} onclick={submit}>Duplicate</Button>
+    <Button disabled={selectedDatasets.length === 0 && !selectAll} loading={submitting} onclick={submit}>
+      Duplicate
+    </Button>
   {/snippet}
 </FormModal>
