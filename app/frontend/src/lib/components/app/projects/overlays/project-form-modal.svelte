@@ -1,12 +1,14 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
+  import { toast } from "svelte-sonner";
 
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
   import ProjectForm from "@/components/app/projects/forms/project-form.svelte";
 
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { createProjectSchema, updateProjectSchema } from "@/data/model/dataset/projects/schema";
+  import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
   import { getFieldErrors, validateData, type ZodSchema } from "@/utils/validate";
 
@@ -58,32 +60,48 @@
   }
 
   async function createProject() {
-    const createdProjectRes = await projectsBackendDataSource.create({
-      attributes: {
-        name: project.name,
-        description: project.description,
-        organization_id: project.organization_id,
+    const createdProjectRes = await projectsBackendDataSource.create(
+      {
+        attributes: {
+          name: project.name,
+          description: project.description,
+          organization_id: project.organization_id,
+        },
       },
-    });
+      {
+        showErrorToast: false,
+      },
+    );
 
-    goto(resolve(`/projects/${createdProjectRes.data.id}/datasets`));
-
-    $refetches.projects.list = new Date();
     open = false;
+    $refetches.projects.list = new Date();
+    goto(resolve(`/projects/${createdProjectRes.data.id}/datasets`));
+    toast.success("Project created", {
+      description: `The project "${project.name}" has been created.`,
+    });
   }
 
   async function updateProject() {
-    await projectsBackendDataSource.update(project.id, {
-      attributes: {
-        name: project.name,
-        description: project.description,
-        organization_id: project.organization_id,
+    await projectsBackendDataSource.update(
+      project.id,
+      {
+        attributes: {
+          name: project.name,
+          description: project.description,
+          organization_id: project.organization_id,
+        },
       },
-    });
+      {
+        showErrorToast: false,
+      },
+    );
 
+    open = false;
     $refetches.projects.list = new Date();
     $refetches.projects.get = new Date();
-    open = false;
+    toast.success("Project updated", {
+      description: `The project "${project.name}" has been updated.`,
+    });
   }
 
   async function submit(): Promise<void> {
@@ -110,8 +128,8 @@
         await updateProject();
       }
     } catch (error) {
-      console.error(error);
       submitting = false;
+      showActionFailedToast(error);
     }
   }
 </script>
