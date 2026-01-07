@@ -184,15 +184,6 @@ module Entry
       end
     end
 
-    private def add_event_metadata(**opts)
-      add_metadata(
-        actor_account_id: auth_context.metadata[:id],
-        actor_account_email: auth_context.metadata[:email],
-        actor_account_role_name: auth_context.metadata[:role],
-        **opts
-      )
-    end
-
     event(name: "selected")
     def select(id)
       no_event do
@@ -248,6 +239,17 @@ module Entry
       transaction do
         update!(entry.id, { status: status })
       end
+    end
+
+    private
+
+    def add_event_metadata(**opts)
+      add_metadata(
+        actor_account_id: auth_context.metadata[:id],
+        actor_account_email: auth_context.metadata[:email],
+        actor_account_role_name: auth_context.metadata[:role],
+        **opts
+      )
     end
   end
 end
