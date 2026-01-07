@@ -8,7 +8,6 @@
   import { NoteFeedRecord, noteFeedsBackendDataSource } from "@/data/model/dataset/notes/feeds/record";
 
   import { cn } from "@/utils";
-  import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
 
   // Props
@@ -35,7 +34,7 @@
         description: "The note has been resolved.",
       });
     } catch (error) {
-      showActionFailedToast(error);
+      toast.error("You are not authorized to do this action.");
     }
   }
 </script>
