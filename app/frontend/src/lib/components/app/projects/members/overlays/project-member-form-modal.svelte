@@ -108,6 +108,15 @@
           );
         }
 
+        // If account is disabled we enable after adding to project
+        if(!account.enabled) {
+          await accountsBackendDataSource.update(account.id, {
+            attributes: {
+              enabled: true,
+            },
+          });
+        }
+
         toast.success("Project member added", {
           description: `An invitation will be sent to "${email}" if the account is not yet existed.`,
         });
