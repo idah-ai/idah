@@ -27,13 +27,11 @@ module Sync
                 idah: {
                   klass: "Context::Idah",
                   context: filters,
-                  opts: nil
                 },
                 io: {
                   klass: "Context::Io",
-                  context: filters,
                   opts: {
-                    klass: "Context::Io::UniversalPortableDataset"
+                    klass: "Command::UniversalPortableDataset"
                   }
                 }
               }
@@ -44,13 +42,11 @@ module Sync
                 idah: {
                   klass: "Context::Idah",
                   context: filters,
-                  opts: nil
                 },
                 io: {
                   klass: "Context::Io",
-                  context: filters,
                   opts: {
-                    klass: "Context::Io::Cvat"
+                    klass: "Command::Cvat"
                   }
                 }
               }

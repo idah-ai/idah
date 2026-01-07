@@ -1,17 +1,18 @@
 module Context
-  module Io
-    def self.new(args = nil, context = nil, opts = nil)
+  class Io < Base
+    def initialize(args = nil, context = nil, opts = nil)
       classname = Hash(opts)[:klass]
       unless classname
         raise Context::Error::InvalidContext, :missing_io_klass
       end
 
       klass = Verse::Util::Reflection.constantize(classname)
-      unless klass && klass < Base
+      unless klass && klass < Command::Base
         raise Context::Error::InvalidContext, [:invalid_io_class, klass].join(":")
       end
 
-      klass.new(args, context, opts)
+      io_opts = self.class.build_opts(nil, opts)
+      super(klass.new(io_opts), args, context, opts)
     end
   end
 end

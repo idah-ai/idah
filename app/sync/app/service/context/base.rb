@@ -137,8 +137,8 @@ module Context
     end
 
     def self.build_opts(
-      opts = nil,
       context_api_name = nil,
+      opts = nil,
       passed_opts = nil
     )
       # opts is already scoped - use directly
@@ -165,8 +165,8 @@ module Context
       )
 
       self.class.build_opts(
-        opts,
         context_api_name,
+        opts,
         combined_opts
       )
     end
