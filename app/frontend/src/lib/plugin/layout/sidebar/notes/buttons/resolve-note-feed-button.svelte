@@ -34,6 +34,7 @@
         description: "The note has been resolved.",
       });
     } catch (error) {
+      console.error(error);
       toast.error("You are not authorized to do this action.");
     }
   }

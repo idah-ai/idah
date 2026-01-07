@@ -36,6 +36,7 @@ export async function updateNoteFeedContentMd(id: string, newContentMd: string) 
 
     return updatedNoteFeedRes.data;
   } catch (error) {
+    console.error(error);
     toast.error("You are not authorized to do this action.");
     return null;
   }
@@ -67,6 +68,7 @@ export async function deleteNoteFeed(id: string) {
     });
     refetchNoteFeeds();
   } catch (error) {
+    console.error(error);
     toast.error("You are not authorized to do this action.");
   }
 }
