@@ -58,14 +58,16 @@
         account = createdAccount.data;
 
         /** Check if member is already in the project */
-        const existingProjectMember = (await projectMembersBackendDataSource.list({
-          filters: {
-            project_id: projectId,
-            account_id: account.id,
-          },
-        })).data[0];
+        const existingProjectMember = (
+          await projectMembersBackendDataSource.list({
+            filters: {
+              project_id: projectId,
+              account_id: account.id,
+            },
+          })
+        ).data[0];
 
-        if(existingProjectMember) {
+        if (existingProjectMember) {
           await accountsBackendDataSource.join({ id: account.id });
 
           // Re-enable the existing project member
@@ -75,11 +77,11 @@
               attributes: {
                 disabled_at: null,
                 role,
-              }
+              },
             },
             {
               showErrorToast: false,
-            }
+            },
           );
         } else {
           // Create new project member
@@ -104,7 +106,7 @@
             },
             {
               showErrorToast: false,
-            }
+            },
           );
         }
 
