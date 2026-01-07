@@ -51,7 +51,9 @@
       });
 
       $refetches.accounts.list = new Date();
-      toast.success("Organization owner removed successfully.");
+      toast.success("Organization owner removed", {
+        description: "The organization owner has been removed.",
+      });
     } catch (error) {
       console.error(error);
       toast.error("Failed to remove organization owner.");
