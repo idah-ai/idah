@@ -164,7 +164,9 @@
           content_md: contentMd,
         },
       });
-      toast.success("General note added successfully.");
+      toast.success("Note added", {
+        description: "The note has been added.",
+      });
       $refetches.noteFeeds.list = new Date();
     }
 
@@ -184,7 +186,9 @@
           },
         },
       });
-      toast.success("Reply added successfully.");
+      toast.success("Comment added", {
+        description: "The note comment has been added.",
+      });
       $refetches.noteComments.list = new Date();
     }
 

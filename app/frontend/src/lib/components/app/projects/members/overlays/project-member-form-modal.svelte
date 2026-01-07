@@ -14,6 +14,7 @@
   import { createMultipleProjectMembersSchema } from "@/data/model/dataset/projects/members/schema";
   import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
   import { authStatus } from "@/security/AuthContext";
+  import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
 
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
@@ -64,49 +65,59 @@
           },
         })).data[0];
 
-        // if (existingProjectMember) {
-        //   await accountsBackendDataSource.join({ id: account.id });
-        // }
-
         if(existingProjectMember) {
+          await accountsBackendDataSource.join({ id: account.id });
+
           // Re-enable the existing project member
-          await projectMembersBackendDataSource.update(existingProjectMember.id, {
-            attributes: {
-              disabled_at: null,
-              role,
+          await projectMembersBackendDataSource.update(
+            existingProjectMember.id,
+            {
+              attributes: {
+                disabled_at: null,
+                role,
+              }
             },
-          });
+            {
+              showErrorToast: false,
+            }
+          );
         } else {
           // Create new project member
-          await projectMembersBackendDataSource.create({
-            attributes: {
-              project_id: projectId!,
-              account_id: Number(account.id),
-              name: account.name,
-              email,
-              role,
-              invited_by_id: Number(currentAccount?.id),
-            },
-            relationships: {
-              project: {
-                data: {
-                  type: "dataset:projects",
-                  id: projectId,
+          await projectMembersBackendDataSource.create(
+            {
+              attributes: {
+                project_id: projectId!,
+                account_id: Number(account.id),
+                name: account.name,
+                email,
+                role,
+                invited_by_id: Number(currentAccount?.id),
+              },
+              relationships: {
+                project: {
+                  data: {
+                    type: "dataset:projects",
+                    id: projectId,
+                  },
                 },
               },
             },
-          });
+            {
+              showErrorToast: false,
+            }
+          );
         }
+
+        toast.success("Project member added", {
+          description: `An invitation will be sent to "${email}" if the account is not yet existed.`,
+        });
       }
 
-      $refetches.projectMembers.list = new Date();
       closeThisModal();
-      toast.success(`${members.length} member(s) invite sent!`);
+      $refetches.projectMembers.list = new Date();
     } catch (error) {
-      console.error(error);
-      toast.error("Failed to send invite. Please try again.");
-
       submitting = false;
+      throw error;
     }
   }
 
@@ -123,8 +134,8 @@
 
       await createProjectMember();
     } catch (error) {
-      console.error(error);
       submitting = false;
+      showActionFailedToast(error);
     }
   }
 </script>
