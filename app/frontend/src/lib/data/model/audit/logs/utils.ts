@@ -61,32 +61,32 @@ export function getLogResourceDetails(
     }
     case "organizations": {
       resource.url = `/organizations/${resource_id}`;
-      resource.name = organizations.find((organization) => organization.id === resource_id)?.name;
+      resource.name = organizations.find((organization) => organization.id == String(resource_id))?.name;
       break;
     }
     case "projects": {
       resource.url = `/projects/${resource_id}`;
-      resource.name = projects.find((project) => project.id === resource_id)?.name;
+      resource.name = projects.find((project) => project.id == String(resource_id))?.name;
       break;
     }
     case "project_members": {
       resource.url = `/projects/${project_id}/members`;
-      resource.name = projectMembers.find((projectMember) => projectMember.id === resource_id)?.email;
+      resource.name = projectMembers.find((projectMember) => projectMember.id == String(resource_id))?.email;
       break;
     }
     case "datasets": {
       resource.url = `/projects/${project_id}/datasets/${resource_id}`;
-      resource.name = datasets.find((dataset) => dataset.id === resource_id)?.name;
+      resource.name = datasets.find((dataset) => dataset.id == String(resource_id))?.name;
       break;
     }
     case "entries": {
       resource.url = `/entries/${entry_id}`;
-      resource.name = entries.find((entry) => entry.id === resource_id)?.resource;
+      resource.name = entries.find((entry) => entry.id == String(resource_id))?.resource;
       break;
     }
     case "medias": {
       resource.url = `/medias/${resource_id}`;
-      resource.name = medias.find((media) => media.id === resource_id)?.filename;
+      resource.name = medias.find((media) => media.id == String(resource_id))?.filename;
       break;
     }
     default: {
