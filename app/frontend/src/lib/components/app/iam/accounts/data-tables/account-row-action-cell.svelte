@@ -32,6 +32,8 @@
           action: async () => {
             const accountRes = await fetchAccount();
             accountRecord = accountRes.data;
+            console.log(accountRecord);
+
             openEditAccountFormModal = true;
           },
         },
@@ -73,7 +75,7 @@
       openConfirmDeleteAccountModal = false;
       $refetches.accounts.list = new Date();
       toast.success("Account deleted", {
-        description: `The account of "${account.name}" has been deleted.`,
+        description: `The account of "${account.email}" has been deleted.`,
       });
     } catch (error) {
       showActionFailedToast(error);
