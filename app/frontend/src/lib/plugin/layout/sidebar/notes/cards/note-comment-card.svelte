@@ -19,11 +19,17 @@
   // Functions
   async function updateNoteCommentMd(newContentMd: string) {
     try {
-      const updatedNoteCommentRes = await noteCommentsBackendDataSource.update(id, {
-        attributes: {
-          content_md: newContentMd,
+      const updatedNoteCommentRes = await noteCommentsBackendDataSource.update(
+        id,
+        {
+          attributes: {
+            content_md: newContentMd,
+          },
         },
-      });
+        {
+          showErrorToast: false,
+        },
+      );
       noteCommentRecord = updatedNoteCommentRes.data;
 
       $refetches.noteComments.list = new Date();
@@ -38,7 +44,7 @@
 
   async function deleteNoteComment() {
     try {
-      await noteCommentsBackendDataSource.delete(id);
+      await noteCommentsBackendDataSource.delete(id, { showErrorToast: false });
 
       $refetches.noteComments.list = new Date();
       toast.success("Comment deleted", {
