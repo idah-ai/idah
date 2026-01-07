@@ -2,7 +2,7 @@ module Context
   module Idah
     class Base < CrudIterator
       def builder(unit)
-        if @context_api.class == Api::Exposition
+        if __getobj__.class == Api::Exposition
           raise Error::QueryFailed, unit.errors if unit.errors
 
           unit.data.map(&:data).map do |data|

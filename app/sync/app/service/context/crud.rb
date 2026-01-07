@@ -12,10 +12,10 @@ module Context
     end
 
     def index(filters = nil, opts = nil)
-      result = if @context_api.class == Api::Exposition # todo uniformize
-        @context_api.index(**Hash(opts).merge(filter: Hash(build_filters(filters))))
+      result = if __getobj__.class == Api::Exposition # todo uniformize
+        super(**Hash(opts).merge(filter: Hash(build_filters(filters))))
       else
-        @context_api.index(
+        super(
           build_filters(filters),
           opts
         )
