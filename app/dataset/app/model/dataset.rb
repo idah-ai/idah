@@ -203,15 +203,6 @@ module Dataset
       end
     end
 
-    private def add_event_metadata(**opts)
-      add_metadata(
-        actor_account_id: auth_context.metadata[:id],
-        actor_account_email: auth_context.metadata[:email],
-        actor_account_role_name: auth_context.metadata[:role],
-        **opts
-      )
-    end
-
     event(name: "completed")
     def completed!(dataset_id, progress)
       no_event do
@@ -224,6 +215,17 @@ module Dataset
       no_event do
         update!(dataset_id, { progress: progress, status: "in_progress" })
       end
+    end
+
+    private
+
+    def add_event_metadata(**opts)
+      add_metadata(
+        actor_account_id: auth_context.metadata[:id],
+        actor_account_email: auth_context.metadata[:email],
+        actor_account_role_name: auth_context.metadata[:role],
+        **opts
+      )
     end
   end
 end

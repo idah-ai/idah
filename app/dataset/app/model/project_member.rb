@@ -131,7 +131,9 @@ module ProjectMember
       end
     end
 
-    private def add_event_metadata(**opts)
+    private
+
+    def add_event_metadata(**opts)
       add_metadata(
         actor_account_id: auth_context.metadata[:id],
         actor_account_email: auth_context.metadata[:email],
