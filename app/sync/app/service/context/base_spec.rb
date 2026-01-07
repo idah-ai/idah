@@ -25,7 +25,7 @@ RSpec.describe Context::Base do
       opts = { test_api: { key: 'value' } }
       instance = described_class.new(context_api, args, context_filters, opts)
 
-      expect(instance.instance_variable_get(:@context_api)).to eq(context_api)
+      expect(instance.__getobj__).to eq(context_api)
       expect(instance.instance_variable_get(:@args)).to eq(args)
       expect(instance.instance_variable_get(:@context_filters)).to eq(context_filters)
       expect(instance.instance_variable_get(:@opts)).to eq(opts)
@@ -34,7 +34,7 @@ RSpec.describe Context::Base do
     it 'initializes with minimal parameters' do
       instance = described_class.new(context_api)
 
-      expect(instance.instance_variable_get(:@context_api)).to eq(context_api)
+      expect(instance.__getobj__).to eq(context_api)
       expect(instance.instance_variable_get(:@args)).to be_nil
       expect(instance.instance_variable_get(:@context_filters)).to be_nil
       expect(instance.instance_variable_get(:@opts)).to be_nil
@@ -91,7 +91,7 @@ RSpec.describe Context::Base do
       )
     end
 
-    it 'uses @context_api.name if context_api_name is nil' do
+    it 'uses __getobj__.name if context_api_name is nil' do
       allow(context_api).to receive(:name).and_return(:test_api)
       result = instance.build_filters(passed_filters, nil, nil, nil)
 
@@ -163,8 +163,8 @@ RSpec.describe Context::Base do
 
     it 'merges opts with correct precedence' do
       result = described_class.build_opts(
-        opts,
         :test_api,
+        opts,
         passed_opts
       )
 
@@ -176,12 +176,12 @@ RSpec.describe Context::Base do
     end
 
     it 'handles nil inputs' do
-      result = described_class.build_opts(nil, :test_api, nil)
+      result = described_class.build_opts(:test_api, nil,  nil)
       expect(result).to eq(nil)
     end
 
     it 'returns nil for empty merged hash' do
-      result = described_class.build_opts({}, :test_api, {})
+      result = described_class.build_opts(:test_api, {}, {})
       expect(result).to eq(nil)
     end
   end
@@ -227,7 +227,7 @@ RSpec.describe Context::Base do
       )
     end
 
-    it 'uses @context_api.name if context_api_name is nil' do
+    it 'uses __getobj__.name if context_api_name is nil' do
       allow(context_api).to receive(:name).and_return(:test_api)
       result = instance.build_opts(opts, nil, nil)
 

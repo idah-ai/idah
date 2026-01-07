@@ -1,5 +1,5 @@
 module Context
-  class Base
+  class Base < SimpleDelegator
     attr_reader :args, :context_filters, :opts
     def self.name
       self.to_s.split("::").last
@@ -27,29 +27,11 @@ module Context
       opts = nil,
       &context_builder
     )
-      @context_api = context_api
       @args = args
       @context_filters = context_filters
       @opts = opts
       @context_builder = context_builder
-    end
-
-    def to_s
-      "#{super}(#{@context_api.class})"
-    end
-
-    def method_missing(s, *args, &block)
-      Verse::logger.debug{[self.class, @context_api.class, s, args].join("#")}
-      @context_api.send(s, *args, &block)
-    end
-
-    def respond_to_missing?(s, include_private = false)
-      Verse::logger.debug{[self.class, @context_api.class, :respond_to_missin?, s].join("#")}
-      if @context_api == self
-        false
-      else
-        @context_api.respond_to?(s, include_private)
-      end
+      super(context_api)
     end
 
     def self.build_filters(
@@ -78,7 +60,7 @@ module Context
       passed_context_filters = nil,
       passed_args = nil
     )
-      context_api_name ||= @context_api.name if @context_api.respond_to?(:name)
+      context_api_name ||= name if self.respond_to?(:name)
 
       combined_context_filters = merge_with_instance_var(
         context_api_name, @context_filters, passed_context_filters
@@ -158,7 +140,7 @@ module Context
       context_api_name = nil,
       passed_opts = nil
     )
-      context_api_name ||= @context_api.name if @context_api.respond_to?(:name)
+      context_api_name ||= name if self.respond_to?(:name)
 
       combined_opts = merge_with_instance_var(
         context_api_name, @opts, passed_opts

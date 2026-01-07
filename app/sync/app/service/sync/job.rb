@@ -63,14 +63,12 @@ module Sync
         end.map do |context, process|
           Verse::logger.debug {{running: process.class.name}}
           [context, process.class.name, process.run]
-        end.each do |context, name, run|
-          Verse::logger.debug {{name:, run:}}
+        end.each do |context, process_name, success|
+          Verse::logger.debug {{process_name:, success:}}
           context.each do |plugin_context|
             if plugin_context.respond_to? :close
               Verse::logger.debug {
-                "closing context: #{
-                  plugin_context.name
-                } #{plugin_context.close}"
+                "closing: #{plugin_context} #{plugin_context.close}"
               }
             end
           end

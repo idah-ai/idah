@@ -3,7 +3,7 @@ module Context
     def index(filters = nil, opts = nil)
       filters = merge_filters(filters)
       opts = merge_opts(opts)
-      @context_api.call(filters, opts)
+      call(filters, opts)
     end
 
     def show(id = nil)
