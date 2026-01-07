@@ -25,7 +25,9 @@
         },
       });
       noteCommentRecord = updatedNoteCommentRes.data;
-      toast.success("Note comment updated successfully.");
+      toast.success("Comment updated", {
+        description: "The note comment has been updated.",
+      });
       $refetches.noteComments.list = new Date();
     } catch (error) {
       console.error(error);
@@ -35,7 +37,9 @@
 
   async function deleteNoteComment() {
     await noteCommentsBackendDataSource.delete(id);
-    toast.success("Note comment deleted successfully.");
+    toast.success("Comment deleted", {
+      description: "The note comment has been deleted.",
+    });
     $refetches.noteComments.list = new Date();
   }
 </script>

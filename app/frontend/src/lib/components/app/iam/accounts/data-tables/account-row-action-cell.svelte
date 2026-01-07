@@ -9,6 +9,7 @@
 
   import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
   import { authStatus } from "@/security/AuthContext";
+  import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
 
   import type { DataTableCellBaseProps } from "@/components/app/datasource-table/types";
@@ -66,10 +67,17 @@
   }
 
   async function removeAccount(): Promise<void> {
-    await accountsBackendDataSource.delete(account.id);
-    $refetches.accounts.list = new Date();
-    openConfirmDeleteAccountModal = false;
-    toast.success(`${account.email} is removed!`);
+    try {
+      await accountsBackendDataSource.delete(account.id, { showErrorToast: false });
+
+      openConfirmDeleteAccountModal = false;
+      $refetches.accounts.list = new Date();
+      toast.success("Account deleted", {
+        description: `The account of "${account.name}" has been deleted.`,
+      });
+    } catch (error) {
+      showActionFailedToast(error);
+    }
   }
 </script>
 
