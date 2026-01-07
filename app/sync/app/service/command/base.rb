@@ -21,5 +21,18 @@ module Command
       puts(self)
     end
 
+    def close
+      i.close if i && !i.closed?
+      if (e && wait_thr)
+        remaining_stderr = []
+        remaining_stderr << line while (line = e.gets)
+        value = wait_thr.value
+        if value.exitstatus != 0
+          raise ["#{self}(#{value}):", remaining_stderr.join("\n")].join
+        end
+      end
+      o.close if o && !o.closed?
+      e.close if e && !e.closed?
+    end
   end
 end

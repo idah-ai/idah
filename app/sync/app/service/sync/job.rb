@@ -57,31 +57,23 @@ module Sync
             end
           ]
         end.map do |process_class, contexts| # temp
-          io = contexts.find { |c| c.name == "io"}
-          ios << io if io # TODO: proper release
           [process_class, Context.new(contexts)]
         end.map do |process_class, context|
-          process_class.new(context)
-        end.map do |process|
-          Verse::logger::debug {{running: process.class.name}}
-          [process.class.name, process.run]
-        end.each do |name, run|
-          Verse::logger::debug {{name:, run:}}
-          # TODO on processes complete
-        end
-      ensure
-        remaining_stderr = []
-        ios.each do |io|
-          io.i.close if io&.i && !io.i.closed?
-          if (io&.e && io&.wait_thr)
-            remaining_stderr << line while (line = io.e.gets)
-            value = io.wait_thr.value
-            if value.exitstatus != 0
-              raise "#{io.name} error #{value}\n#{remaining_stderr.join}"
+          [context, process_class.new(context)]
+        end.map do |context, process|
+          Verse::logger.debug {{running: process.class.name}}
+          [context, process.class.name, process.run]
+        end.each do |context, name, run|
+          Verse::logger.debug {{name:, run:}}
+          context.each do |plugin_context|
+            if plugin_context.respond_to? :close
+              Verse::logger.debug {
+                "closing context: #{
+                  plugin_context.name
+                } #{plugin_context.close}"
+              }
             end
           end
-          io.o.close if io&.o && !io.o.closed?
-          io.e.close if io&.e && !io.e.closed?
         end
       end
     end
