@@ -84,6 +84,7 @@ module NoteComment
                 FROM project_members pm
                 WHERE pm.account_id = :account_id
                   AND pm.project_id = nf.project_id
+                  AND pm.disabled_at IS NULL
                   AND (
                     -- All with roles
                     pm.role IN :with_roles OR
@@ -122,6 +123,7 @@ module NoteComment
                 FROM project_members pm
                 WHERE pm.account_id = :account_id
                   AND pm.project_id = nf.project_id
+                  AND pm.disabled_at IS NULL
                   AND (
                     pm.role IN :with_roles OR
                     (

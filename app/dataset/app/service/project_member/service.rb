@@ -96,13 +96,16 @@ module ProjectMember
       access = auth_context.can?(:update, project_members.class.resource)
       # "project_owner" can only be added by an org_owner of the project
       if record.attributes[:role] == "project_owner"
-        unless access == :as_org_owner
+        unless [:as_org_owner, :all].include?(access)
           raise Verse::Error::Unauthorized,
                 "You do not have permission to update a member for this project"
         end
 
-        project = projects.find!(record.project.id) # this can raise Verse::Error::RecordNotFound if not in org scope
-        unless auth_context.custom_scopes[:org]&.include?(project.organization_id.to_s)
+        member = project_members.find!(record.id)
+        project = projects.find!(member.project_id) # this can raise Verse::Error::RecordNotFound if not in org scope
+
+        # Check if org_owner has access to the project's organization
+        if access != :all && !auth_context.custom_scopes[:org]&.include?(project.organization_id.to_s)
           raise Verse::Error::Unauthorized,
                 "You do not have permission to update a member to a project owner for this project"
         end
@@ -115,8 +118,9 @@ module ProjectMember
     def delete(id)
       project_members.transaction do
         member = project_members.find!(id, included: [:project])
-        project_members.delete!(id)
 
+        # Soft delete project member
+        project_members.update!(member.id, { disabled_at: Time.now })
         project_members.after_commit do
           ::Service::Notification.email(
             to: member.email,
@@ -132,12 +136,16 @@ module ProjectMember
       end
     end
 
-    def remove_nonparticipant_member(account_id)
-      project_member_ids = system_project_members.index({ account_id: account_id }).map(&:id).uniq
+    def delete_account_members(account_id)
+      system_project_members.chunked_index({ account_id: account_id }).each do |member|
+        project_members.delete!(member.id)
+      end
+    end
 
-      project_member_ids.each do |project_member_id|
-        # directly delete, no need use service delete to send a notification as the account is already deleted
-        project_members.delete!(project_member_id)
+    def disable_account_members(account_id)
+      now = Time.now
+      system_project_members.chunked_index({ account_id: account_id }).each do |member|
+        project_members.update!(member.id, { disabled_at: now })
       end
     end
   end
