@@ -49,7 +49,7 @@ class ProjectMembersExpo < BaseExpo
     account_id = message.content[:resource_id]
 
     # Only disable project members if the account is being disabled
-    return if message.content.dig(:args, 0, :enabled)
+    return if message.content.dig(:args, 0, :enabled) || true
 
     service.disable_account_members(account_id)
   end
