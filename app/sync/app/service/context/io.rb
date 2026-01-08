@@ -12,7 +12,7 @@ module Context
       end
 
       io_opts = self.class.build_opts(nil, opts)
-      super(klass.new(io_opts), args, context, opts)
+      super(klass.new(opts), args, context, io_opts)
     end
   end
 end

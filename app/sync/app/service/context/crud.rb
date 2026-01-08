@@ -13,7 +13,7 @@ module Context
 
     def index(filters = nil, opts = nil)
       result = if __getobj__.class == Api::Exposition # todo uniformize
-        super(**Hash(opts).merge(filter: Hash(build_filters(filters))))
+        super(**opts.merge(filter: Hash(build_filters(filters))))
       else
         super(
           build_filters(filters),
@@ -27,8 +27,7 @@ module Context
     def show(id = nil)
       filters = build_filters(id ? { id: } : nil)
       # Validate that an ID is present after filter merging
-      Verse::logger{{class: self.class, id:, filters:}}
-      unless filters&[:id]
+      unless filters[:id]
         raise Context::Error::NotFound, "No ID available after applying context filters"
       end
 
