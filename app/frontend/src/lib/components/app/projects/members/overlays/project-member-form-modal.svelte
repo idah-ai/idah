@@ -109,7 +109,7 @@
         }
 
         // If account is disabled we enable after adding to project
-        if(!account.enabled) {
+        if (!account.enabled) {
           await accountsBackendDataSource.update(account.id, {
             attributes: {
               enabled: true,
