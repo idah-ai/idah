@@ -17,6 +17,10 @@ module Dataset
     field :status, type: String, readonly: true
     field :progress, type: Float, readonly: true
 
+    field :entries_total_count, type: Integer, readonly: true
+    field :entries_completed_count, type: Integer, readonly: true
+    field :entries_in_progress_count, type: Integer, readonly: true
+
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
 
