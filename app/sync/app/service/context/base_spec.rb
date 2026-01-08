@@ -1,618 +1,490 @@
 require "spec_helper"
 
 RSpec.describe Context::Base do
-  let(:context_api) { double(name: :test_api) }
-  let(:args) { { test_api: { key1: 'value1_from_args' } } }
-  let(:context_filters) { { test_api: {
-    key1: "value1_from_context_filters",
-    key2: 'value2_from_context_filters',
-    key3: 'value3_from_context_filters' } } }
+  let(:delegated_obj) { double(name: :test_api) }
 
-  # passed_filters is already scoped - no nesting under API name
-  let(:passed_filters) { {
-    key1: 'value1_from_passed_filters',
-    key4: 'value4_from_passed_filters',
-    key5: 'value5_from_passed_filters' } }
+  describe "initialization" do
+    it "stores all initialization parameters" do
+      args = { test_api: { key: 'value' } }
+      context_args = { test_api: { other: 'data' } }
+      opts = { test_api: { option: 'setting' } }
 
-  # These remain contextualized (nested under API name)
-  let(:passed_context_filters) { { test_api: {
-    key2: 'value2_from_passed_context_filters',
-    key4: 'value4_from_passed_context_filters' } } }
-  let(:passed_args) { { test_api: { key3: 'value3_from_passed_args' } } }
+      instance = described_class.new(delegated_obj, args, context_args, opts)
 
-  describe 'initialization and instance variables' do
-    it 'initializes with all parameters' do
-      opts = { test_api: { key: 'value' } }
-      instance = described_class.new(context_api, args, context_filters, opts)
-
-      expect(instance.__getobj__).to eq(context_api)
+      expect(instance.__getobj__).to eq(delegated_obj)
       expect(instance.instance_variable_get(:@args)).to eq(args)
-      expect(instance.instance_variable_get(:@context_filters)).to eq(context_filters)
+      expect(instance.instance_variable_get(:@context_args)).to eq(context_args)
       expect(instance.instance_variable_get(:@opts)).to eq(opts)
     end
 
-    it 'initializes with minimal parameters' do
-      instance = described_class.new(context_api)
+    it "works with minimal parameters" do
+      instance = described_class.new(delegated_obj)
 
-      expect(instance.__getobj__).to eq(context_api)
+      expect(instance.__getobj__).to eq(delegated_obj)
       expect(instance.instance_variable_get(:@args)).to be_nil
-      expect(instance.instance_variable_get(:@context_filters)).to be_nil
+      expect(instance.instance_variable_get(:@context_args)).to be_nil
       expect(instance.instance_variable_get(:@opts)).to be_nil
     end
   end
 
-  describe '.build_filters' do
-    it 'merges filters with correct precedence' do
-      result = described_class.build_filters(
-        passed_filters,
-        :test_api,
-        passed_context_filters,
-        passed_args
-      )
-
-      expect(result).to eq(
-        key1: 'value1_from_passed_filters',     # from passed_filters (lowest precedence)
-        key2: 'value2_from_passed_context_filters', # context_filters override filters
-        key3: 'value3_from_passed_args',        # args override context_filters (highest)
-        key4: 'value4_from_passed_context_filters', # context_filters override filters
-        key5: 'value5_from_passed_filters',     # no override for key5
-      )
+  describe "#name" do
+    it "delegates to wrapped object's name method" do
+      expect(described_class.new(delegated_obj).name).to eq(:test_api)
     end
 
-    it 'handles nil inputs' do
-      result = described_class.build_filters(nil, :test_api, nil, nil)
-      expect(result).to eq(nil)
+    it "falls back to class name when object doesn't respond to name" do
+      nameless = double()
+      instance = described_class.new(nameless)
+      expect(instance.name).to eq(:base)
     end
   end
 
-  describe '#build_filters' do
-    let(:instance) do
-      described_class.new(
-        context_api,
-        args,
-        context_filters
-      )
+  describe ".build_filters" do
+    context "with precedence hierarchy" do
+      # Precedence: passed_filters < passed_context_args < passed_args
+      let(:passed_filters) { { key1: 'from_filters', key2: 'from_filters' } }
+      let(:passed_context_args) { { test_api: { key2: 'from_context_args', key3: 'from_context_args' } } }
+      let(:passed_args) { { test_api: { key3: 'from_args', key4: 'from_args' } } }
+
+      it "applies correct precedence: filters < context_args < args" do
+        result = described_class.build_filters(
+          passed_filters,
+          :test_api,
+          passed_args,
+          passed_context_args
+        )
+
+        expect(result).to eq(
+          key1: 'from_filters',        # Only in filters
+          key2: 'from_context_args',   # context_args overrides filters
+          key3: 'from_args',           # args overrides context_args (highest)
+          key4: 'from_args'            # Only in args
+        )
+      end
     end
 
-    it 'merges filters with correct precedence (instance vars take precedence)' do
-      result = instance.build_filters(
-        passed_filters,
-        :test_api,
-        passed_context_filters,
-        passed_args
-      )
+    context "with nil and empty inputs" do
+      it "returns nil when all inputs are nil" do
+        result = described_class.build_filters(nil, :test_api, nil, nil)
+        expect(result).to be_nil
+      end
 
-      expect(result).to eq(
-        key1: 'value1_from_args',               # @args (highest precedence)
-        key2: 'value2_from_context_filters',    # @context_filters override passed
-        key3: 'value3_from_passed_args',        # passed_args override @context_filters
-        key4: 'value4_from_passed_context_filters', # from passed_context_filters
-        key5: 'value5_from_passed_filters'      # from passed_filters (lowest)
-      )
+      it "returns nil when all inputs are empty hashes" do
+        result = described_class.build_filters({}, :test_api, {}, {})
+        expect(result).to be_nil
+      end
+
+      it "handles mix of nil and populated hashes" do
+        result = described_class.build_filters(
+          { key: 'value' },
+          :test_api,
+          nil,
+          { test_api: { other: 'data' } }
+        )
+
+        expect(result).to eq(key: 'value', other: 'data')
+      end
     end
 
-    it 'uses __getobj__.name if context_api_name is nil' do
-      allow(context_api).to receive(:name).and_return(:test_api)
-      result = instance.build_filters(passed_filters, nil, nil, nil)
+    context "with non-existent API names" do
+      it "returns only passed_filters when API not in contextualized hashes" do
+        result = described_class.build_filters(
+          { key: 'value' },
+          :non_existent_api,
+          { test_api: { other: 'data' } },
+          { test_api: { another: 'value' } }
+        )
 
-      expect(result).to eq(
-        key1: 'value1_from_args',               # @args override passed_filters
-        key2: 'value2_from_context_filters',    # @context_filters override passed_filters
-        key3: 'value3_from_context_filters',    # from @context_filters
-        key4: 'value4_from_passed_filters',     # from passed_filters (no override)
-        key5: 'value5_from_passed_filters',     # from passed_filters (no override)
-      )
-    end
-  end
-
-  describe '.build_context_filters_from' do
-    let(:all_args) { { test_api: { key1: 'value1_from_all_args' } } }
-    let(:all_context_filters) { { test_api: { key2: 'value2_from_all_context_filters' } } }
-
-    it 'aggregates filters for all APIs' do
-      result = described_class.build_context_filters_from(
-        all_context_filters,
-        all_args
-      )
-
-      expect(result).to eq(
-        test_api: {
-          key1: 'value1_from_all_args',
-          key2: 'value2_from_all_context_filters'
-        }
-      )
-    end
-  end
-
-  describe '#build_context_filters_from' do
-    let(:instance) do
-      described_class.new(
-        context_api,
-        args,
-        context_filters
-      )
+        expect(result).to eq(key: 'value')
+      end
     end
 
-    it 'aggregates filters for all APIs' do
-      result = instance.build_context_filters_from
+    context "with various data types" do
+      it "handles non-string values correctly" do
+        result = described_class.build_filters(
+          { int: 123, bool: true, nil_val: nil, array: [1, 2] },
+          :test_api,
+          { test_api: { hash: { nested: 'value' } } },
+          { test_api: { symbol: :sym } }
+        )
 
-      expect(result).to eq(
-        test_api: {
-          key1: 'value1_from_args',
-          key2: 'value2_from_context_filters',
-          key3: 'value3_from_context_filters'
-        }
-      )
-    end
-  end
-
-    # Add these specs to your Context::Base spec file
-
-  describe '.build_opts' do
-    # opts is already scoped - no nesting under API name
-    let(:opts) { {
-      key1: 'value1_from_opts',
-      key2: 'value2_from_opts'
-    } }
-
-    # passed_opts remains contextualized (nested under API name)
-    let(:passed_opts) { { test_api: {
-      key1: 'value1_from_passed_opts',
-      key3: 'value3_from_passed_opts'
-    } } }
-
-    it 'merges opts with correct precedence' do
-      result = described_class.build_opts(
-        :test_api,
-        opts,
-        passed_opts
-      )
-
-      expect(result).to eq(
-        key1: 'value1_from_passed_opts',  # passed_opts override opts
-        key2: 'value2_from_opts',          # from opts (no override)
-        key3: 'value3_from_passed_opts'    # from passed_opts
-      )
-    end
-
-    it 'handles nil inputs' do
-      result = described_class.build_opts(:test_api, nil,  nil)
-      expect(result).to eq(nil)
-    end
-
-    it 'returns nil for empty merged hash' do
-      result = described_class.build_opts(:test_api, {}, {})
-      expect(result).to eq(nil)
+        expect(result).to include(
+          int: 123,
+          bool: true,
+          nil_val: nil,
+          array: [1, 2],
+          hash: { nested: 'value' },
+          symbol: :sym
+        )
+      end
     end
   end
 
-  describe '#build_opts' do
-    let(:opts_instance_var) { { test_api: {
-      key1: 'value1_from_instance',
-      key2: 'value2_from_instance'
-    } } }
+  describe "#build_filters" do
+    let(:instance_args) { { test_api: { key1: 'instance_args', key2: 'instance_args' } } }
+    let(:instance_context_args) { { test_api: { key2: 'instance_context', key3: 'instance_context' } } }
+    let(:instance) { described_class.new(delegated_obj, instance_args, instance_context_args) }
 
-    let(:opts) { {
-      key2: 'value2_from_opts',
-      key3: 'value3_from_opts'
-    } }
+    context "with precedence including instance variables" do
+      # Precedence: passed_filters < passed_context_args < @context_args < passed_args < @args
+      let(:passed_filters) { { key1: 'p_filters', key5: 'p_filters' } }
+      let(:passed_context_args) { { test_api: { key3: 'p_context', key4: 'p_context' } } }
+      let(:passed_args) { { test_api: { key4: 'p_args' } } }
 
-    let(:passed_opts) { { test_api: {
-      key1: 'value1_from_passed_opts',
-      key3: 'value3_from_passed_opts',
-      key4: 'value4_from_passed_opts'
-    } } }
+      it "applies full precedence with instance vars highest" do
+        result = instance.build_filters(passed_filters, :test_api, passed_context_args, passed_args)
 
-    let(:instance) do
-      described_class.new(
-        context_api,
-        args,
-        context_filters,
-        opts_instance_var
-      )
+        expect(result).to eq(
+          key1: 'instance_args',       # @args (highest)
+          key2: 'instance_args',       # @args
+          key3: 'instance_context',    # @context_args
+          key4: 'p_args',              # passed_args
+          key5: 'p_filters'            # passed_filters (lowest)
+        )
+      end
+
+      it "allows passed params when instance vars are nil" do
+        minimal_instance = described_class.new(delegated_obj, nil, nil)
+
+        result = minimal_instance.build_filters(
+          passed_filters,
+          :test_api,
+          passed_context_args,
+          passed_args
+        )
+
+        expect(result).to eq(
+          key1: 'p_filters',
+          key3: 'p_context',
+          key4: 'p_args',              # passed_args overrides passed_context_args
+          key5: 'p_filters'
+        )
+      end
     end
 
-    it 'merges opts with correct precedence (instance @opts take precedence)' do
-      result = instance.build_opts(
-        opts,
-        :test_api,
-        passed_opts
-      )
+    context "with delegated_obj_name parameter" do
+      it "uses provided API name when specified" do
+        result = instance.build_filters({ key: 'value' }, :explicit_api)
+        expect(result).to eq(key: 'value')
+      end
 
-      expect(result).to eq(
-        key1: 'value1_from_instance',      # @opts (highest precedence)
-        key2: 'value2_from_instance',      # @opts override passed_opts
-        key3: 'value3_from_passed_opts',   # passed_opts override opts
-        key4: 'value4_from_passed_opts'    # from passed_opts
-      )
-    end
+      it "uses delegated object's name when nil" do
+        result = instance.build_filters({ key: 'value' }, nil)
+        expect(result).to eq(
+          key: 'value',
+          key1: 'instance_args',
+          key2: 'instance_args',
+          key3: 'instance_context'
+        )
+      end
 
-    it 'uses __getobj__.name if context_api_name is nil' do
-      allow(context_api).to receive(:name).and_return(:test_api)
-      result = instance.build_opts(opts, nil, nil)
+      it "handles delegated object without name method" do
+        nameless = double()
+        instance_without_name = described_class.new(nameless)
 
-      expect(result).to eq(
-        key1: 'value1_from_instance',  # @opts override opts
-        key2: 'value2_from_instance',  # @opts override opts
-        key3: 'value3_from_opts'       # from opts (no override)
-      )
-    end
-
-    it 'handles nil passed_opts' do
-      result = instance.build_opts(opts, :test_api, nil)
-
-      expect(result).to eq(
-        key1: 'value1_from_instance',
-        key2: 'value2_from_instance',
-        key3: 'value3_from_opts'
-      )
+        result = instance_without_name.build_filters({ key: 'value' }, :fallback_api)
+        expect(result).to eq(key: 'value')
+      end
     end
   end
 
-  describe '#merge_with_instance_var (private)' do
-    let(:instance) do
-      described_class.new(
-        context_api,
-        args,
-        context_filters
+  describe ".build_context_args_from" do
+    context "aggregating filters across multiple APIs" do
+      let(:passed_args) { {
+        api1: { key1: 'args1', key2: 'args1' },
+        api3: { key4: 'args3' }
+      } }
+      let(:passed_context_args) { {
+        api1: { key2: 'context1', key3: 'context1' },
+        api2: { key5: 'context2' }
+      } }
+
+      it "creates filter hash for each API with correct precedence" do
+        result = described_class.build_context_args_from(
+          passed_args,
+          passed_context_args
+        )
+
+        expect(result).to eq(
+          api1: { key1: 'args1', key2: 'args1', key3: 'context1' },  # args overrides context
+          api2: { key5: 'context2' },
+          api3: { key4: 'args3' }
+        )
+      end
+
+      it "returns nil when no APIs have any data" do
+        result = described_class.build_context_args_from(nil, nil)
+        expect(result).to be_nil
+      end
+
+      it "returns nil for empty hashes" do
+        result = described_class.build_context_args_from({}, {})
+        expect(result).to be_nil
+      end
+    end
+
+    context "with overlapping API names" do
+      it "merges data correctly when APIs appear in both inputs" do
+        result = described_class.build_context_args_from(
+          { shared: { key1: 'args', key2: 'args' } },
+          { shared: { key2: 'context', key3: 'context' } }
+        )
+
+        expect(result).to eq(
+          shared: { key1: 'args', key2: 'args', key3: 'context' }
+        )
+      end
+    end
+  end
+
+  describe "#build_context_args_from" do
+    let(:instance_args) { { api1: { key1: 'instance_args' } } }
+    let(:instance_context_args) { { api2: { key2: 'instance_context' } } }
+    let(:instance) { described_class.new(delegated_obj, instance_args, instance_context_args) }
+
+    it "aggregates from instance variables only" do
+      result = instance.build_context_args_from
+
+      expect(result).to eq(
+        api1: { key1: 'instance_args' },
+        api2: { key2: 'instance_context' }
       )
     end
 
-    let(:instance_var) { {
-      test_api: { key1: 'value1_instance', key2: 'value2_instance' },
-      other_api: { key3: 'value3_instance' }
-    } }
-
-    let(:passed_hash) { {
-      test_api: { key1: 'value1_passed', key4: 'value4_passed' },
-      other_api: { key5: 'value5_passed' }
-    } }
-
-    it 'merges instance var with passed hash for specific API' do
-      result = instance.send(
-        :merge_with_instance_var,
-        :test_api,
-        instance_var,
-        passed_hash
+    it "merges instance vars with passed parameters" do
+      result = instance.build_context_args_from(
+        { api1: { key3: 'passed' }, api3: { key5: 'passed' } }
       )
 
       expect(result).to eq(
-        test_api: {
-          key1: 'value1_instance',  # instance_var takes precedence
-          key2: 'value2_instance',  # from instance_var
-          key4: 'value4_passed'     # from passed_hash
-        }
+        api1: { key1: 'instance_args', key3: 'passed' },  # Both merged
+        api2: { key2: 'instance_context' },
+        api3: { key5: 'passed' }
       )
     end
 
-    it 'returns nil when api_name is nil' do
-      result = instance.send(
-        :merge_with_instance_var,
-        nil,
-        instance_var,
-        passed_hash
-      )
+    it "returns nil when instance has no data and nothing passed" do
+      empty_instance = described_class.new(delegated_obj)
+      result = empty_instance.build_context_args_from
 
       expect(result).to be_nil
     end
+  end
 
-    it 'handles nil instance_var' do
-      result = instance.send(
-        :merge_with_instance_var,
-        :test_api,
-        nil,
-        passed_hash
-      )
+  describe ".build_opts" do
+    context "with precedence hierarchy" do
+      # Precedence: opts < passed_opts (context-scoped)
+      let(:opts) { { key1: 'from_opts', key2: 'from_opts' } }
+      let(:passed_opts) { { test_api: { key2: 'from_passed', key3: 'from_passed' } } }
+
+      it "applies correct precedence: opts < passed_opts" do
+        result = described_class.build_opts(:test_api, opts, passed_opts)
+
+        expect(result).to eq(
+          key1: 'from_opts',           # Only in opts
+          key2: 'from_passed',         # passed_opts overrides
+          key3: 'from_passed'          # Only in passed_opts
+        )
+      end
+    end
+
+    context "with nil and empty inputs" do
+      it "returns nil when all inputs are nil" do
+        result = described_class.build_opts(:test_api, nil, nil)
+        expect(result).to be_nil
+      end
+
+      it "returns nil when all inputs are empty hashes" do
+        result = described_class.build_opts(:test_api, {}, {})
+        expect(result).to be_nil
+      end
+
+      it "handles mix of nil and populated hashes" do
+        result = described_class.build_opts(
+          :test_api,
+          { key: 'value' },
+          nil
+        )
+
+        expect(result).to eq(key: 'value')
+      end
+    end
+
+    context "with non-existent API names" do
+      it "returns only opts when API not in passed_opts" do
+        result = described_class.build_opts(
+          :non_existent_api,
+          { key: 'value' },
+          { test_api: { other: 'data' } }
+        )
+
+        expect(result).to eq(key: 'value')
+      end
+    end
+  end
+
+  describe "#build_opts" do
+    let(:instance_opts) { { test_api: { key1: 'instance_opts', key2: 'instance_opts' } } }
+    let(:instance) { described_class.new(delegated_obj, nil, nil, instance_opts) }
+
+    context "with precedence including instance variable" do
+      # Precedence: opts < passed_opts < @opts
+      let(:opts) { { key1: 'opts', key3: 'opts' } }
+      let(:passed_opts) { { test_api: { key2: 'passed_opts', key3: 'passed_opts', key4: 'passed_opts' } } }
+
+      it "applies full precedence with @opts highest" do
+        result = instance.build_opts(opts, :test_api, passed_opts)
+
+        expect(result).to eq(
+          key1: 'instance_opts',       # @opts (highest)
+          key2: 'instance_opts',       # @opts
+          key3: 'passed_opts',         # passed_opts
+          key4: 'passed_opts'          # passed_opts
+        )
+      end
+
+      it "allows passed_opts when @opts is nil" do
+        minimal_instance = described_class.new(delegated_obj, nil, nil, nil)
+
+        result = minimal_instance.build_opts(opts, :test_api, passed_opts)
+
+        expect(result).to eq(
+          key1: 'opts',
+          key2: 'passed_opts',
+          key3: 'passed_opts',         # passed_opts overrides opts
+          key4: 'passed_opts'
+        )
+      end
+    end
+
+    context "with delegated_obj_name parameter" do
+      it "uses provided API name when specified" do
+        result = instance.build_opts({ key: 'value' }, :explicit_api)
+        expect(result).to eq(key: 'value')
+      end
+
+      it "uses delegated object's name when nil" do
+        result = instance.build_opts({ key: 'value' }, nil)
+        expect(result).to eq(
+          key: 'value',
+          key1: 'instance_opts',
+          key2: 'instance_opts'
+        )
+      end
+    end
+  end
+
+  describe ".build_context_opts" do
+    context "aggregating opts across multiple APIs" do
+      let(:opts) { {
+        api1: { key1: 'opts1', key2: 'opts1' },
+        api2: { key3: 'opts2' }
+      } }
+      let(:passed_opts) { {
+        api1: { key2: 'passed1' },
+        api3: { key4: 'passed3' }
+      } }
+
+      it "creates opts hash for each API with correct precedence" do
+        result = described_class.build_context_opts(opts, passed_opts)
+
+        expect(result).to eq(
+          api1: { key1: 'opts1', key2: 'passed1' },  # passed overrides opts
+          api2: { key3: 'opts2' },
+          api3: { key4: 'passed3' }
+        )
+      end
+
+      it "returns nil when no APIs have any data" do
+        result = described_class.build_context_opts(nil, nil)
+        expect(result).to be_nil
+      end
+
+      it "returns nil for empty hashes" do
+        result = described_class.build_context_opts({}, {})
+        expect(result).to be_nil
+      end
+    end
+  end
+
+  describe "#build_context_opts" do
+    let(:instance_opts) { { api1: { key1: 'instance_opts' } } }
+    let(:instance) { described_class.new(delegated_obj, nil, nil, instance_opts) }
+
+    it "aggregates from instance variable only" do
+      result = instance.build_context_opts
 
       expect(result).to eq(
-        test_api: {
-          key1: 'value1_passed',
-          key4: 'value4_passed'
-        }
+        api1: { key1: 'instance_opts' }
       )
     end
 
-    it 'handles nil passed_hash' do
-      result = instance.send(
-        :merge_with_instance_var,
-        :test_api,
-        instance_var,
-        nil
+    it "merges instance var with passed opts" do
+      result = instance.build_context_opts(
+        { api1: { key2: 'passed_opts' }, api2: { key3: 'passed_opts' } }
       )
 
       expect(result).to eq(
-        test_api: {
-          key1: 'value1_instance',
-          key2: 'value2_instance'
-        }
+        api1: { key1: 'instance_opts', key2: 'passed_opts' },  # Both merged
+        api2: { key3: 'passed_opts' }
       )
     end
 
-    it 'returns nil for empty merged result' do
-      result = instance.send(
-        :merge_with_instance_var,
-        :non_existent_api,
-        instance_var,
-        passed_hash
-      )
+    it "returns nil when instance has no data and nothing passed" do
+      empty_instance = described_class.new(delegated_obj)
+      result = empty_instance.build_context_opts
 
       expect(result).to be_nil
     end
-
-    it 'handles API that exists in passed_hash but not instance_var' do
-      result = instance.send(
-        :merge_with_instance_var,
-        :other_api,
-        nil,
-        passed_hash
-      )
-
-      expect(result).to eq(
-        other_api: {
-          key5: 'value5_passed'
-        }
-      )
-    end
   end
 
-    describe '.build_filters edge cases' do
-    it 'handles multiple API contexts' do
-      multi_context = {
-        api1: { key1: 'value1' },
-        api2: { key2: 'value2' }
-      }
-      multi_args = {
-        api1: { key1: 'override1' },
-        api2: { key2: 'override2' }
-      }
-
-      result = described_class.build_filters(
-        { key3: 'value3' },
-        :api1,
-        multi_context,
-        multi_args
-      )
-
-      expect(result).to eq(
-        key1: 'override1',  # args override context
-        key3: 'value3'       # from filters
-      )
-    end
-
-    it 'handles non-string values' do
-      result = described_class.build_filters(
-        { int_key: 123, bool_key: true, nil_key: nil },
-        :test_api,
-        { test_api: { array_key: [1, 2, 3] } },
-        { test_api: { hash_key: { nested: 'value' } } }
-      )
-
-      expect(result).to eq(
-        int_key: 123,
-        bool_key: true,
-        nil_key: nil,
-        array_key: [1, 2, 3],
-        hash_key: { nested: 'value' }
-      )
-    end
-
-    it 'returns nil when all inputs are empty hashes' do
-      result = described_class.build_filters({}, :test_api, {}, {})
-      expect(result).to be_nil
-    end
-
-    it 'handles API name that does not exist in any hash' do
-      result = described_class.build_filters(
-        { key: 'value' },
-        :non_existent_api,
-        { test_api: { key2: 'value2' } },
-        { test_api: { key3: 'value3' } }
-      )
-
-      expect(result).to eq(key: 'value')
-    end
-  end
-
-  describe '#build_filters edge cases' do
-    let(:instance) do
-      described_class.new(
-        context_api,
-        { test_api: { key1: 'instance_args' } },
-        { test_api: { key2: 'instance_context' } },
-        { test_api: { key3: 'instance_opts' } }
-      )
-    end
-
-    it 'handles context_api without name method' do
-      api_without_name = double()
-      instance_no_name = described_class.new(api_without_name)
-
-      result = instance_no_name.build_filters(
-        { key: 'value' },
-        :explicit_api,
-        nil,
-        nil
-      )
-
-      expect(result).to eq(key: 'value')
-    end
-
-    it 'merges all four sources correctly' do
-      result = instance.build_filters(
-        { key1: 'passed_filters', key2: 'passed_filters', key3: 'passed_filters', key4: 'passed_filters' },
-        :test_api,
-        { test_api: { key2: 'passed_context', key3: 'passed_context' } },
-        { test_api: { key3: 'passed_args' } }
-      )
-
-      # Precedence: passed_filters < passed_context_filters < @context_filters < passed_args < @args
-      expect(result).to eq(
-        key1: 'instance_args',     # @args highest
-        key2: 'instance_context',  # @context_filters override passed_context
-        key3: 'passed_args',       # passed_args override @context_filters
-        key4: 'passed_filters'     # lowest precedence
-      )
-    end
-  end
-
-  describe '.build_context_filters_from edge cases' do
-    it 'handles multiple APIs with different keys' do
-      result = described_class.build_context_filters_from(
-        {
-          api1: { key1: 'value1', key2: 'value2' },
-          api2: { key3: 'value3' },
-          api3: { key4: 'value4' }
-        },
-        {
-          api1: { key2: 'override2' },
-          api2: { key5: 'value5' },
-          api4: { key6: 'value6' }
-        }
-      )
-
-      expect(result).to eq(
-        api1: { key1: 'value1', key2: 'override2' },
-        api2: { key3: 'value3', key5: 'value5' },
-        api3: { key4: 'value4' },
-        api4: { key6: 'value6' }
-      )
-    end
-
-    it 'returns empty hash when both inputs are nil' do
-      result = described_class.build_context_filters_from(nil, nil)
-      expect(result).to eq({})
-    end
-
-    it 'returns empty hash when both inputs are empty hashes' do
-      result = described_class.build_context_filters_from({}, {})
-      expect(result).to eq({})
-    end
-  end
-
-  describe '#build_context_filters_from edge cases' do
-    let(:instance) do
-      described_class.new(
-        context_api,
-        { api1: { key1: 'instance_args' } },
-        { api2: { key2: 'instance_context' } }
-      )
-    end
-
-    it 'combines instance vars with passed params across multiple APIs' do
-      result = instance.build_context_filters_from(
-        { api1: { key1: 'passed_context' }, api3: { key3: 'passed_context' } },
-        { api2: { key2: 'passed_args' }, api4: { key4: 'passed_args' } }
-      )
-
-      expect(result).to eq(
-        api1: { key1: 'instance_args' },     # instance @args take precedence
-        api2: { key2: 'passed_args' },       # passed_args override @context_filters
-        api3: { key3: 'passed_context' },
-        api4: { key4: 'passed_args' }
-      )
-    end
-
-    it 'returns empty hash when no data in instance vars or params' do
-      empty_instance = described_class.new(context_api)
-      result = empty_instance.build_context_filters_from(nil, nil)
-
-      expect(result).to eq({})
-    end
-  end
-
-  describe '#merge_with_instance_var comprehensive coverage' do
-    let(:instance) { described_class.new(context_api) }
-
-    it 'handles deeply nested values' do
-      instance_var = {
-        test_api: {
-          nested: {
-            deep: {
-              value: 'instance'
-            }
-          }
-        }
-      }
-      passed_hash = {
-        test_api: {
-          nested: {
-            deep: {
-              value: 'passed',
-              other: 'data'
-            }
-          }
-        }
-      }
-
-      result = instance.send(
-        :merge_with_instance_var,
-        :test_api,
-        instance_var,
-        passed_hash
-      )
-
-      # Note: Hash#merge does shallow merge
-      expect(result).to eq(
-        test_api: {
-          nested: { deep: { value: 'instance' } }  # instance takes precedence
-        }
-      )
-    end
-
-    it 'preserves empty hash values' do
-      result = instance.send(
-        :merge_with_instance_var,
-        :test_api,
-        { test_api: {} },
-        { test_api: {} }
-      )
-
-      expect(result).to be_nil  # Empty hash returns nil
-    end
-
-    it 'handles symbol vs string keys differently' do
-      result = instance.send(
-        :merge_with_instance_var,
-        :test_api,
-        { test_api: { key: 'symbol_key', 'key' => 'string_key' } },
-        { test_api: { other: 'value' } }
-      )
-
-      expect(result).to eq(
-        test_api: {
-          key: 'symbol_key',
-          'key' => 'string_key',
-          other: 'value'
-        }
-      )
-    end
-  end
-
-  describe 'integration scenarios' do
-    it 'handles complete workflow with all methods' do
+  describe "integration scenarios" do
+    it "handles complete workflow with all methods" do
       instance = described_class.new(
-        context_api,
-        { test_api: { shared_key: 'from_args' } },
-        { test_api: { shared_key: 'from_context' } }
+        delegated_obj,
+        { test_api: { shared: 'args', only_args: 'args' } },
+        { test_api: { shared: 'context', only_context: 'context' } },
+        { test_api: { shared: 'opts', only_opts: 'opts' } }
       )
 
-      filters = instance.build_filters(
-        { shared_key: 'from_filters' },
-        :test_api,
-        nil,
-        nil
+      # Test filters
+      filters = instance.build_filters({ shared: 'filters' }, :test_api)
+      expect(filters[:shared]).to eq('args')  # @args wins
+      expect(filters).to include(only_args: 'args', only_context: 'context')
+
+      # Test context args
+      context_args = instance.build_context_args_from
+      expect(context_args[:test_api]).to include(
+        shared: 'args',
+        only_args: 'args',
+        only_context: 'context'
       )
 
-      expect(filters).to eq(shared_key: 'from_args')
+      # Test opts
+      opts = instance.build_opts({ shared: 'new_opts' }, :test_api)
+      expect(opts[:shared]).to eq('opts')  # @opts wins
+      expect(opts).to include(only_opts: 'opts')
+    end
 
-      context_filters = instance.build_context_filters_from(
-        { test_api: { new_key: 'new_value' } },
-        nil
+    it "chains methods to build complex context" do
+      org_instance = described_class.new(
+        double(name: :organizations),
+        { organizations: { id: '123' } }
       )
 
-      expect(context_filters[:test_api]).to include(
-        shared_key: 'from_args',
-        new_key: 'new_value'
+      context_args = org_instance.build_context_args_from
+
+      project_instance = described_class.new(
+        double(name: :projects),
+        { projects: { organization_id: '123' } },
+        context_args
+      )
+
+      project_filters = project_instance.build_filters({ name: 'test' }, :projects)
+
+      expect(project_filters).to include(
+        name: 'test',
+        organization_id: '123'
       )
     end
   end

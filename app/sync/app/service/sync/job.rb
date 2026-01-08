@@ -8,13 +8,13 @@ module Sync
         role = authcontext.fetch(:role)
         custom_scopes = authcontext.fetch(:custom_scopes)
 
-        auth_context_filters = \
+        auth_context_args = \
           case role
           when "admin"
             nil
           when "org_owner"
-            { organizations: {
-              id__in: Array(Hash(custom_scopes).fetch(:org))
+            { projects: {
+              organization_id__in: Array(Hash(custom_scopes).fetch(:org))
             }}
           when "user"
             raise "todo"
@@ -45,12 +45,12 @@ module Sync
               klass = context_classes[Hash(context).fetch(:klass)]
               Verse::logger.debug {{klass:}}
               Verse::logger.debug {{
-                args: auth_context_filters,
+                args: auth_context_args,
                 context: Hash(context)[:context],
                 opts: Hash(context)[:opts]
               }}
               klass.new(
-                auth_context_filters,
+                auth_context_args,
                 Hash(context)[:context],
                 Hash(context)[:opts]
               ) if klass

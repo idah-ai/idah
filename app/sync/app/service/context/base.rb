@@ -1,6 +1,6 @@
 module Context
   class Base < SimpleDelegator
-    attr_reader :args, :context_filters, :opts
+    attr_reader :args, :context_args, :opts
     def self.name
       self.to_s.split("::").last
         .gsub(/(?<=[a-z])(?=[A-Z])/, '_')
@@ -9,160 +9,199 @@ module Context
     end
 
     def name
-      self.class.name
+      if __getobj__.respond_to?(:name)
+        __getobj__.name
+      else
+        self.class.name
+      end
     end
 
-    def self.builder(context)
-      context
+    def self.builder(obj)
+      obj
     end
 
-    def builder(context)
-      self.class.builder(context)
+    def builder(obj)
+      self.class.builder(obj)
     end
 
     def initialize(
-      context_api = nil,
+      delegated_obj = nil,
       args = nil,
-      context_filters = nil,
+      context_args = nil,
       opts = nil,
       &context_builder
     )
       @args = args
-      @context_filters = context_filters
+      @context_args = context_args
       @opts = opts
       @context_builder = context_builder
-      super(context_api)
+      super(delegated_obj)
     end
 
+    # Class method: builds filters for a single API
+    # Precedence: passed_filters < passed_context_args < passed_args
     def self.build_filters(
       passed_filters = nil,
-      context_api_name = nil,
-      passed_context_filters = nil,
-      passed_args = nil
+      delegated_obj_name = nil,
+      passed_args = nil,
+      passed_context_args = nil
     )
-      # passed_filters is already scoped - use directly
       filters_hash = Hash(passed_filters)
-
-      # These still need context scoping
-      passed_context_filters = Hash(passed_context_filters)
       passed_args = Hash(passed_args)
-      context_filters_hash = Hash(passed_context_filters.dig(context_api_name))
-      args_hash = Hash(passed_args.dig(context_api_name))
+      passed_context_args = Hash(passed_context_args)
 
-      # Merge with proper precedence: filters < context_filters < args
-      h = filters_hash.merge(context_filters_hash).merge(args_hash)
-      h if h && !h.empty?
+      # Extract data for the specific API
+      args_hash = Hash(passed_args.dig(delegated_obj_name) || {})
+      context_args_hash = Hash(passed_context_args.dig(delegated_obj_name) || {})
+
+      # Merge with proper precedence: filters < context_args < args
+      filters = filters_hash.merge(context_args_hash).merge(args_hash)
+
+      filters.empty? ? nil : filters
     end
 
+
+    # Instance method: builds filters using instance variables
+    # Precedence: passed_filters < passed_context_args < @context_args < passed_args < @args
     def build_filters(
       passed_filters = nil,
-      context_api_name = nil,
-      passed_context_filters = nil,
+      delegated_obj_name = nil,
+      passed_context_args = nil,
       passed_args = nil
     )
-      context_api_name ||= name if self.respond_to?(:name)
+      # Don't merge passed_args with @args yet - they have different precedence
+      # Get each source separately
+      instance_args_hash = Hash(@args || {}).dig(delegated_obj_name || name) || {}
+      instance_context_args_hash = Hash(@context_args || {}).dig(delegated_obj_name || name) || {}
+      passed_args_hash = Hash(passed_args || {}).dig(delegated_obj_name || name) || {}
+      passed_context_args_hash = Hash(passed_context_args || {}).dig(delegated_obj_name || name) || {}
 
-      combined_context_filters = merge_with_instance_var(
-        context_api_name, @context_filters, passed_context_filters
-      )
-      combined_args = merge_with_instance_var(
-        context_api_name, @args, passed_args
-      )
+      # Apply precedence: passed_filters < passed_context_args < instance_context_args < passed_args < instance_args
+      filters = {}
+      filters = filters.merge(Hash(passed_filters || {}))
+      filters = filters.merge(passed_context_args_hash) { |key, old_val, new_val| new_val }
+      filters = filters.merge(instance_context_args_hash) { |key, old_val, new_val| new_val }
+      filters = filters.merge(passed_args_hash) { |key, old_val, new_val| new_val }
+      filters = filters.merge(instance_args_hash) { |key, old_val, new_val| new_val }
 
-      self.class.build_filters(
-        passed_filters,
-        context_api_name,
-        combined_context_filters,
-        combined_args
-      )
+      filters.empty? ? nil : filters
     end
 
-    def self.build_context_filters_from(
-      passed_context_filters = nil,
-      passed_args = nil
+    # Class method: aggregates filters for all APIs
+    # Returns: { api1: {filters}, api2: {filters}, ... }
+    def self.build_context_args_from(
+      passed_args = nil,
+      passed_context_args = nil
     )
       all_api_names = (
         Hash(passed_args).keys +
-        Hash(passed_context_filters).keys
+        Hash(passed_context_args).keys
       ).uniq
 
-      all_api_names.each_with_object({}) do |api_name, result|
-        result[api_name] = build_filters(
+      args_context = all_api_names.each_with_object({}) do |api_name, result|
+        filters = build_filters(
           nil,
           api_name,
-          passed_context_filters,
-          passed_args
+          passed_args,
+          passed_context_args
         )
+        result[api_name] = filters if filters
       end
+
+      args_context.empty? ? nil : args_context
     end
 
-    def build_context_filters_from(
-      passed_context_filters = nil,
-      passed_args = nil
-    )
-      # Combine all API names from all sources
+    # Instance method: aggregates filters using instance variables
+    # Precedence: passed_context_args < @context_args < @args
+    def build_context_args_from(passed_context_args = nil)
+      # Collect all API names from all three sources
       all_api_names = (
-        Hash(passed_context_filters).keys +
-        Hash(@context_filters).keys +
-        Hash(passed_args).keys +
-        Hash(@args).keys
+        Hash(passed_context_args || {}).keys +
+        Hash(@context_args || {}).keys +
+        Hash(@args || {}).keys
       ).uniq
 
-      all_api_names.each_with_object({}) do |api_name, result|
-        result[api_name] = build_filters(
-          nil,
-          api_name,
-          passed_context_filters,
-          passed_args
-        )
+      # For each API, merge the three sources with correct precedence
+      result = all_api_names.each_with_object({}) do |api_name, hash|
+        passed = Hash(passed_context_args || {}).dig(api_name) || {}
+        context = Hash(@context_args || {}).dig(api_name) || {}
+        args = Hash(@args || {}).dig(api_name) || {}
+
+        # Merge with precedence: passed < context < args
+        merged = passed.merge(context).merge(args)
+        hash[api_name] = merged unless merged.empty?
       end
+
+      result.empty? ? nil : result
     end
 
+    # Class method: builds opts for a single API
+    # Precedence: opts < passed_opts
     def self.build_opts(
-      context_api_name = nil,
+      delegated_obj_name = nil,
       opts = nil,
       passed_opts = nil
     )
-      # opts is already scoped - use directly
       opts_hash = Hash(opts)
-
-      # passed_opts needs context scoping
       passed_opts = Hash(passed_opts)
-      context_opts_hash = Hash(passed_opts.dig(context_api_name))
+
+      # Extract data for the specific API
+      context_opts_hash = Hash(passed_opts.dig(delegated_obj_name) || {})
 
       # Merge with proper precedence: opts < context_opts
-      h = opts_hash.merge(context_opts_hash)
-      h if h && !h.empty?
+      opts_context = opts_hash.merge(context_opts_hash)
+
+      opts_context.empty? ? nil : opts_context
     end
 
+    # Instance method: builds opts using instance variable
+    # Precedence: opts < passed_opts < @opts
     def build_opts(
       opts = nil,
-      context_api_name = nil,
+      delegated_obj_name = nil,
       passed_opts = nil
     )
-      context_api_name ||= name if self.respond_to?(:name)
+      # Get each source separately
+      instance_opts_hash = Hash(@opts || {}).dig(delegated_obj_name || name) || {}
+      passed_opts_hash = Hash(passed_opts || {}).dig(delegated_obj_name || name) || {}
+      non_context_opts = Hash(opts || {})
 
-      combined_opts = merge_with_instance_var(
-        context_api_name, @opts, passed_opts
-      )
+      # Apply precedence: opts < passed_opts < instance_opts
+      result = {}
+      result = result.merge(non_context_opts)
+      result = result.merge(passed_opts_hash) { |key, old_val, new_val| new_val }
+      result = result.merge(instance_opts_hash) { |key, old_val, new_val| new_val }
 
-      self.class.build_opts(
-        context_api_name,
-        opts,
-        combined_opts
-      )
+      result.empty? ? nil : result
     end
 
-    private
+    # Class method: aggregates opts for all APIs
+    # Returns: { api1: {opts}, api2: {opts}, ... }
+    def self.build_context_opts(
+      opts = nil,
+      passed_opts = nil
+    )
+      all_api_names = (
+        Hash(opts).keys +
+        Hash(passed_opts).keys
+      ).uniq
 
-    # Merges instance variable hash with passed hash for a specific API context
-    # Instance var values take precedence over passed values
-    def merge_with_instance_var(api_name, instance_var, passed_hash)
-      return nil unless api_name
+      opts_context = all_api_names.each_with_object({}) do |api_name, result|
+        api_opts = build_opts(
+          api_name,
+          Hash(opts).dig(api_name),
+          passed_opts
+        )
+        result[api_name] = api_opts if api_opts
+      end
 
-      h = Hash(passed_hash&.dig(api_name))
-      h = h.merge(instance_var[api_name]) if instance_var&.dig(api_name)
-      { api_name => h } unless h.empty?
+      opts_context.empty? ? nil : opts_context
+    end
+
+    # Instance method: aggregates opts using instance variable
+    # @opts has higher precedence than passed opts
+    def build_context_opts(opts = nil)
+      self.class.build_context_opts(opts, @opts)
     end
   end
 end

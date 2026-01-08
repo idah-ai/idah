@@ -24,8 +24,8 @@ module Sync
             UniversalPortableDataset: {
               klass: "Export::UniversalPortableDataset",
               context: {
-                idah: {
-                  klass: "Context::Idah",
+                api: {
+                  klass: "Context::ContextApi",
                   context: filters,
                 },
                 io: {
@@ -39,8 +39,8 @@ module Sync
             Cvat:  {
               klass: "Export::Cvat",
               context: {
-                idah: {
-                  klass: "Context::Idah",
+                api: {
+                  klass: "Context::ContextApi",
                   context: filters,
                 },
                 io: {

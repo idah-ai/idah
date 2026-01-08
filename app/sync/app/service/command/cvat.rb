@@ -8,7 +8,6 @@ module Command
         "export.cvat.bundle", Time.now.to_i
       ].join(".")
       FileUtils.mkdir_p filename
-      puts({cvat_filename: filename})
       super(filename)
     end
 
