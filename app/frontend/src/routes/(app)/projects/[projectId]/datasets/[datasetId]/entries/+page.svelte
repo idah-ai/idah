@@ -108,6 +108,8 @@
     filters: {
       dataset_id: datasetId,
     },
+    included: ["assigned_to", "submitted_by", "reviewed_by"],
+    fields: { "dataset:project_members": ["name", "email", "picture_url"] },
     sort: ["priority"],
     count: true,
     pagination: {

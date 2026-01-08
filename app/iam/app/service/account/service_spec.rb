@@ -155,23 +155,18 @@ RSpec.describe Account::Service, database: true do
         @account_id = account_repo.create(attributes)
       end
 
-      it "deletes an account" do
-        allow(Api[:idah].dataset.entries).to receive(:index).and_return(
-          Verse::JsonApi::Struct.new([])
-        )
-
+      it "deletes an account that has not joined" do
         subject.delete(@account_id)
+
         expect { account_repo.find!(@account_id) }.to raise_error(Verse::Error::NotFound)
       end
 
-      it "doesn't allow account deletion if it's participated in any work" do
-        allow(Api[:idah].dataset.entries).to receive(:index).and_return(
-          Verse::JsonApi::Struct.new(Verse::JsonApi::Struct.new({ id: "mocked_entry_id" }))
-        )
+      it "cannot delete an account that has already joined" do
+        account_repo.update!(@account_id, { joined_at: Time.now })
 
         expect { subject.delete(@account_id) }.to raise_error(
-          Verse::Error::ValidationFailed,
-          "Unable to delete account participated in project(s), consider disable it instead"
+          Verse::Error::Unauthorized,
+          "Cannot delete an account that has already joined"
         )
       end
     end

@@ -6,7 +6,7 @@ class EntriesExpo < BaseExpo
   use_service Entry::Service
 
   json_api Entry::Record do
-    allowed_included "dataset", "dataset.project"
+    allowed_included "dataset", "dataset.project", "assigned_to", "submitted_by", "reviewed_by"
     show
     index do
       allowed_filters :status__in,
