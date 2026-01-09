@@ -101,12 +101,10 @@ module Project
       with_metadata do
         project = find!(id)
 
-        if project
-          add_event_metadata(
-            organization_id: attributes[:organization_id] || project.organization_id,
-            project_id: id
-          )
-        end
+        add_event_metadata(
+          organization_id: attributes[:organization_id] || project.organization_id,
+          project_id: id
+        )
 
         super(id, attributes, scope:)
       end
@@ -116,12 +114,10 @@ module Project
       with_metadata do
         project = find!(id)
 
-        if project
-          add_event_metadata(
-            organization_id: project.organization_id,
-            project_id: id
-          )
-        end
+        add_event_metadata(
+          organization_id: project.organization_id,
+          project_id: id
+        )
 
         super(id)
       end

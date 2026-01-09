@@ -101,9 +101,9 @@ module Account
 
     def delete!(id)
       with_metadata do
-        account = find!(id)
+        find!(id)
 
-        add_event_metadata if account
+        add_event_metadata
 
         super(id)
       end

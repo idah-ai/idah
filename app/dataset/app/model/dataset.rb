@@ -179,12 +179,10 @@ module Dataset
       with_metadata do
         dataset = find!(id)
 
-        if dataset
-          add_event_metadata(
-            project_id: attributes[:project_id] || dataset.project_id,
-            dataset_id: id
-          )
-        end
+        add_event_metadata(
+          project_id: attributes[:project_id] || dataset.project_id,
+          dataset_id: id
+        )
 
         super(id, attributes, scope:)
       end
@@ -194,12 +192,10 @@ module Dataset
       with_metadata do
         dataset = find!(id)
 
-        if dataset
-          add_event_metadata(
-            project_id: dataset.project_id,
-            dataset_id: id
-          )
-        end
+        add_event_metadata(
+          project_id: dataset.project_id,
+          dataset_id: id
+        )
 
         super(id)
       end

@@ -47,9 +47,9 @@ module Organization
 
     def delete!(id)
       with_metadata do
-        organization = find!(id)
+        find!(id)
 
-        add_event_metadata(organization_id: id) if organization
+        add_event_metadata(organization_id: id)
 
         super(id)
       end
