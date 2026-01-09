@@ -14,7 +14,7 @@
   async function fetchEntries(): Promise<void> {
     const filters = { assigned_to_id: accountId };
 
-    if (projectId !== null) {
+    if (projectId) {
       Object.assign(filters, { project_id: projectId });
     }
 
