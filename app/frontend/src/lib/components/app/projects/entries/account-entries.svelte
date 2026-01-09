@@ -5,15 +5,22 @@
 
   interface Props {
     accountId: number | string;
+    projectId?: number | string;
   }
 
   let entries: EntryRecord[] = $state([]);
-  let { accountId }: Props = $props();
+  let { accountId, projectId }: Props = $props();
 
   async function fetchEntries(): Promise<void> {
+    const filters = { assigned_to_id: accountId };
+
+    if (projectId !== null) {
+      Object.assign(filters, { project_id: projectId });
+    }
+
     entries = (
       await entriesBackendDataSource.list({
-        filters: { assigned_to_id: accountId },
+        filters: filters,
         fields: { "dataset:entries": ["resource"] },
       })
     ).data;
@@ -27,7 +34,7 @@
 {#if entries.length > 0}
   <div class="text-muted-foreground text-sm">
     <div>Following entries({entries.length}) will be unassigned from this account.</div>
-    <ul class="mt-2 ml-5 max-h-40 overflow-y-auto">
+    <ul class="ml-5 mt-2 max-h-40 overflow-y-auto">
       {#each entries as entry (entry.id)}
         <li>
           <Link href={`/projects/${entry.project_id}/datasets/${entry.dataset_id}/entries`} target="_blank">
