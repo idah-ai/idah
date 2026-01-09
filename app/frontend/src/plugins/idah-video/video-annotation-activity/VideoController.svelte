@@ -2,6 +2,8 @@
   import {
     ChevronLeftIcon,
     ChevronRightIcon,
+    ChevronsLeftIcon,
+    ChevronsRightIcon,
     FastForwardIcon,
     PauseIcon,
     PlayIcon,
@@ -25,6 +27,8 @@
   } from "@/components/ui/dropdown-menu";
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
   import Slider from "@/components/ui/slider/slider.svelte";
+
+  import { IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP } from "../type";
   import Video from "./video.svelte";
 
   // Props
@@ -37,7 +41,6 @@
     zoom: number;
     onZoomChange: (zoom: number) => void;
   }
-
   let { video = $bindable(), isPlaying, volume, zoom, currentFrame, totalFrames, onZoomChange }: Props = $props();
 
   // Variables
@@ -77,8 +80,6 @@
     onZoomChange(zoom);
   }
 
-  // Slider needs reversed value for displa
-
   function zoomIn(): void {
     zoom = zoom - 5;
     onZoomChange(Math.min(max, zoom + 1));
@@ -89,11 +90,31 @@
 
     onZoomChange(Math.max(min, zoom - 1));
   }
+
+  function gotoFrameStep(direction: "prev" | "next") {
+    let frameStep = Number(localStorage.getItem(IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP) || 10);
+
+    switch (direction) {
+      case "prev": {
+        video.previousFrame(frameStep);
+        break;
+      }
+      case "next": {
+        video.nextFrame(frameStep);
+        break;
+      }
+    }
+  }
 </script>
 
 <div id="video-controller" class="flex w-full items-center justify-between gap-4">
   <!-- CONTAINER::LEFT -->
   <div class="flex items-center gap-2">
+    <!-- VIDEO::PREVIOUS FRAME STEP -->
+    <Button variant="outline" size="icon-sm" onclick={() => gotoFrameStep("prev")}>
+      <ChevronsLeftIcon />
+    </Button>
+
     <!-- VIDEO::PREVIOUS FRAME -->
     <Button variant="outline" size="icon-sm" onclick={() => video.previousFrame()}>
       <ChevronLeftIcon />
@@ -117,6 +138,11 @@
     <!-- VIDEO::NEXT FRAME -->
     <Button variant="outline" size="icon-sm" onclick={() => video.nextFrame()}>
       <ChevronRightIcon />
+    </Button>
+
+    <!-- VIDEO::NEXT FRAME STEP -->
+    <Button variant="outline" size="icon-sm" onclick={() => gotoFrameStep("next")}>
+      <ChevronsRightIcon />
     </Button>
 
     <!-- VIDEO::VOLUME -->

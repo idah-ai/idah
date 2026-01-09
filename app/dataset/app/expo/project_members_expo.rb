@@ -47,9 +47,11 @@ class ProjectMembersExpo < BaseExpo
   expose on_resource_event(Resource::Iam::Accounts, "updated")
   def on_account_updated
     account_id = message.content[:resource_id]
+    enabled = message.content.dig(:args, 0, :enabled)
 
     # Only disable project members if the account is being disabled
-    return if message.content.dig(:args, 0, :enabled)
+    # Ensure enabled param is not nil and is false
+    return if enabled.nil? || enabled
 
     service.disable_account_members(account_id)
   end
