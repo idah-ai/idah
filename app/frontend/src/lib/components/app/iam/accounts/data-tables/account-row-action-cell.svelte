@@ -14,6 +14,9 @@
 
   import type { DataTableCellBaseProps } from "@/components/app/datasource-table/types";
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
+  import { clearCache } from "@/data/Cache";
+  import { resourcePath } from "@/data/BackendDataSource";
+  import { projectMembersBasePath } from "@/data/model/dataset/projects/members/record";
 
   // Props
   let { record: account }: DataTableCellBaseProps<AccountRecord> = $props();
@@ -21,7 +24,7 @@
   // Variables
   let currentAccount = $authStatus.authContext;
   let canUpdateAccount = $state(false);
-  let canDeleteAccount = $state(false);
+  let canCancelInvitation = $state(false);
   let menus: IDropdownMenus = $derived({
     actions: {
       items: [
@@ -32,7 +35,6 @@
           action: async () => {
             const accountRes = await fetchAccount();
             accountRecord = accountRes.data;
-            console.log(accountRecord);
 
             openEditAccountFormModal = true;
           },
@@ -40,9 +42,9 @@
         {
           label: "Cancel Invitation",
           icon: UserXIcon,
-          hidden: !canDeleteAccount || account.joined_at,
+          hidden: canCancelInvitation,
           action: () => {
-            openConfirmDeleteAccountModal = true;
+            openConfirmCancelInvitationModal = true;
           },
         },
       ],
@@ -50,12 +52,12 @@
   });
   let accountRecord: AccountRecord | undefined = $state(undefined);
   let openEditAccountFormModal: boolean = $state(false);
-  let openConfirmDeleteAccountModal: boolean = $state(false);
+  let openConfirmCancelInvitationModal: boolean = $state(false);
 
   // Lifecycle
   onMount(async () => {
     canUpdateAccount = (await currentAccount?.can("update", "iam:accounts", ["as_org_owner"])) || false;
-    canDeleteAccount = (await currentAccount?.can("delete", "iam:accounts", ["as_org_owner"])) || false;
+    canCancelInvitation = account.joined_at !== null;
   });
 
   // Functions
@@ -72,10 +74,13 @@
     try {
       await accountsBackendDataSource.delete(account.id, { showErrorToast: false });
 
-      openConfirmDeleteAccountModal = false;
+      // Delete project member cache to force refetch
+      clearCache(resourcePath(projectMembersBasePath, null, undefined));
+
+      openConfirmCancelInvitationModal = false;
       $refetches.accounts.list = new Date();
-      toast.success("Account deleted", {
-        description: `The account of "${account.email}" has been deleted.`,
+      toast.success("Invitation cancelled", {
+        description: `The account invitation for "${account.email}" has been cancelled.`,
       });
     } catch (error) {
       showActionFailedToast(error);
@@ -83,15 +88,15 @@
   }
 </script>
 
-{#if canUpdateAccount || canDeleteAccount}
+{#if canUpdateAccount || canCancelInvitation}
   <DropdownMenus {menus} align="center" />
 
   <AccountFormModal title="Account" action="update" {accountRecord} bind:open={openEditAccountFormModal} />
 
   <ConfirmModal
-    title="Delete account"
-    description="Are you sure you want to remove this account?"
+    title="Cancel Invitation"
+    description={`Are you sure you want to cancel invitation for "${account.email}"?`}
     onConfirm={removeAccount}
-    bind:open={openConfirmDeleteAccountModal}
+    bind:open={openConfirmCancelInvitationModal}
   />
 {/if}
