@@ -227,7 +227,8 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
   describe "#on_project_member_disabled" do
     it "unassigns entries when a project member is disabled" do
       account_id = 1
-      expect(service).to(receive(:unassign_account_entries).with(account_id))
+      project_id = 2
+      expect(service).to(receive(:unassign_account_entries).with(account_id, project_id))
 
       Verse.publish_resource_event(
         resource_type: Resource::Dataset::ProjectMembers,
@@ -235,13 +236,17 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
         event: "updated",
         payload: {
           args: [{ disabled_at: Time.now }],
-          metadata: { project_member_account_id: account_id }
+          metadata: {
+            project_member_account_id: account_id,
+            project_member_project_id: project_id
+          }
         }
       )
     end
 
     it "does not unassign entries if project member disabled_at param is nil or not present" do
       account_id = 1
+      project_id = 2
       expect(service).not_to(receive(:unassign_account_entries))
 
       Verse.publish_resource_event(
@@ -250,7 +255,10 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
         event: "updated",
         payload: {
           args: [],
-          metadata: { project_member_account_id: account_id }
+          metadata: {
+            project_member_account_id: account_id,
+            project_member_project_id: project_id
+          }
         }
       )
     end

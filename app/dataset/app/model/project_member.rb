@@ -122,6 +122,7 @@ module ProjectMember
         if member
           add_metadata(
             project_member_account_id: member.account_id,
+            project_member_project_id: member.project_id,
           )
         end
 
