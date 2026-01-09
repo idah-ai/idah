@@ -25,7 +25,6 @@ export class ProjectMemberRecord extends Record {
 
 RecordFactory.registerTypes(ProjectMemberRecord);
 
-
 export const projectMembersBasePath: string = `${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/project_members`;
 
 export const projectMembersBackendDataSource = createBackendDataSource(ProjectMemberRecord, projectMembersBasePath);
