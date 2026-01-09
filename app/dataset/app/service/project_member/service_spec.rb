@@ -191,7 +191,9 @@ RSpec.describe ProjectMember::Service, database: true do
         project_member_id = project_member_repo.create(attributes)
 
         subject.delete(project_member_id)
-        expect { project_member_repo.find!(project_member_id) }.to raise_error(Verse::Error::NotFound)
+
+        member = project_member_repo.find(project_member_id)
+        expect(member.disabled_at).not_to be_nil
       end
 
       context "notifications" do
@@ -219,7 +221,144 @@ RSpec.describe ProjectMember::Service, database: true do
       end
     end
 
-    describe "#remove_nonparticipant_member" do
+    describe "#delete_account_members" do
+      let(:account_id) { 123 }
+      let(:another_account_id) { 456 }
+
+      before do
+        # Create another project
+        @another_project_id = project_repo.create(
+          name: "Another Project",
+          description: "Another test project",
+          created_by_email: "user@example.com",
+          organization_id: 1
+        )
+
+        # Create project members for account 123
+        @member1_id = project_member_repo.create(
+          attributes.merge(account_id: account_id, email: "member1@email.com")
+        )
+        @member2_id = project_member_repo.create(
+          attributes.merge(
+            account_id: account_id,
+            email: "member2@email.com",
+            project_id: @another_project_id
+          )
+        )
+
+        # Create project member for different account
+        @other_account_member_id = project_member_repo.create(
+          attributes.merge(account_id: another_account_id, email: "other@email.com")
+        )
+      end
+
+      it "hard deletes all project members for the given account_id" do
+        subject.delete_account_members(account_id)
+
+        # Members for the specified account should be deleted
+        expect { project_member_repo.find!(@member1_id) }.to raise_error(Verse::Error::NotFound)
+        expect { project_member_repo.find!(@member2_id) }.to raise_error(Verse::Error::NotFound)
+
+        # Members for other accounts should still exist
+        expect(project_member_repo.find!(@other_account_member_id)).not_to be_nil
+      end
+
+      it "handles accounts with no project members" do
+        expect { subject.delete_account_members(99_999) }.not_to raise_error
+      end
+
+      it "deletes members from multiple projects" do
+        subject.delete_account_members(account_id)
+
+        # Verify both members from different projects are deleted
+        all_members = project_member_repo.index({})
+        remaining_member_ids = all_members.map{ |m| m.id.to_s }
+
+        expect(remaining_member_ids).not_to include(@member1_id)
+        expect(remaining_member_ids).not_to include(@member2_id)
+        expect(remaining_member_ids).to include(@other_account_member_id)
+      end
+    end
+
+    describe "#disable_account_members" do
+      let(:account_id) { 123 }
+      let(:another_account_id) { 456 }
+
+      before do
+        @expected_time = Time.utc(2026, 1, 1, 0, 0, 0)
+
+        # freeze the time
+        allow(Time).to receive(:now).and_return(@expected_time)
+
+        # Create another project
+        @another_project_id = project_repo.create(
+          name: "Another Project",
+          description: "Another test project",
+          created_by_email: "user@example.com",
+          organization_id: 1
+        )
+
+        # Create project members for account 123
+        @member1_id = project_member_repo.create(
+          attributes.merge(account_id: account_id, email: "member1@email.com")
+        )
+        @member2_id = project_member_repo.create(
+          attributes.merge(
+            account_id: account_id,
+            email: "member2@email.com",
+            project_id: @another_project_id
+          )
+        )
+
+        # Create project member for different account
+        @other_account_member_id = project_member_repo.create(
+          attributes.merge(account_id: another_account_id, email: "other@email.com")
+        )
+      end
+
+      it "soft deletes all project members for the given account_id" do
+        subject.disable_account_members(account_id)
+
+        # Members for the specified account should be disabled
+        member1 = project_member_repo.find!(@member1_id)
+        member2 = project_member_repo.find!(@member2_id)
+
+        expect(member1.disabled_at).to eq(@expected_time)
+        expect(member2.disabled_at).to eq(@expected_time)
+
+        # Members for other accounts should not be disabled
+        other_member = project_member_repo.find!(@other_account_member_id)
+        expect(other_member.disabled_at).to be_nil
+      end
+
+      it "handles accounts with no project members" do
+        expect { subject.disable_account_members(99_999) }.not_to raise_error
+      end
+
+      it "disables members from multiple projects" do
+        subject.disable_account_members(account_id)
+
+        # Verify both members from different projects are disabled
+        all_members = project_member_repo.index({})
+        account_members = all_members.select { |m| m.account_id == account_id }
+        other_members = all_members.reject { |m| m.account_id == account_id }
+
+        expect(account_members.all? { |m| m.disabled_at == @expected_time }).to be true
+        expect(other_members.all? { |m| m.disabled_at.nil? }).to be true
+      end
+
+      it "sets the same timestamp for all disabled members" do
+        subject.disable_account_members(account_id)
+
+        member1 = project_member_repo.find!(@member1_id)
+        member2 = project_member_repo.find!(@member2_id)
+
+        expect(member1.disabled_at).to eq(@expected_time)
+        expect(member2.disabled_at).to eq(@expected_time)
+      end
+    end
+
+    describe "#delete_account_members" do
       before do
         another_project_id = project_repo.create(
           name: "Another Project",
@@ -267,7 +406,7 @@ RSpec.describe ProjectMember::Service, database: true do
       end
 
       it "deletes a nonparticipant project member if after the account is deleted" do
-        subject.remove_nonparticipant_member(1)
+        subject.delete_account_members(1)
 
         expect { project_member_repo.find!(@project_member.id) }.to raise_error(Verse::Error::NotFound)
         expect { project_member_repo.find!(@another_project_member.id) }.to raise_error(Verse::Error::NotFound)

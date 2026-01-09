@@ -43,6 +43,7 @@
       listOptions={{
         filters: {
           project_id: projectId,
+          enabled: true,
           role__in: wfStep === "review" ? ["reviewer", "project_owner"] : ["annotator", "project_owner"],
         },
       }}
