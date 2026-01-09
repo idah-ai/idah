@@ -89,7 +89,7 @@ class EntriesExpo < BaseExpo
   end
 
   expose on_resource_event(Resource::Media::Jobs, "completed")
-  def on_job_updated
+  def on_job_completed
     job_id = message.content[:resource_id]
 
     service.mark_entries_status_as(job_id, "ready")
@@ -100,5 +100,15 @@ class EntriesExpo < BaseExpo
     job_id = message.content[:resource_id]
 
     service.mark_entries_status_as(job_id, "processing_error")
+  end
+
+  expose on_resource_event(Resource::Dataset::ProjectMembers, "updated")
+  def on_project_member_disabled
+    account_id = message.content.dig(:metadata, :project_member_account_id)
+
+    # Only unassign entries if the project member is being disabled
+    return if message.content.dig(:args, 0, :disabled_at).nil?
+
+    service.unassign_account_entries(account_id)
   end
 end
