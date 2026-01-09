@@ -35,7 +35,6 @@
           action: async () => {
             const accountRes = await fetchAccount();
             accountRecord = accountRes.data;
-            console.log(accountRecord);
 
             openEditAccountFormModal = true;
           },

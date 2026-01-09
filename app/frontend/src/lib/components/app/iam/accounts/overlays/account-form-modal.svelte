@@ -16,6 +16,7 @@
   import { resourcePath } from "@/data/BackendDataSource";
   import { clearCache } from "@/data/Cache";
   import { projectMembersBasePath } from "@/data/model/dataset/projects/members/record";
+  import { entriesBasePath } from "@/data/model/dataset/entries/record";
 
   // Props
   interface Props extends FormModalBaseProps {
@@ -113,6 +114,8 @@
 
     // Delete project member cache to force refetch
     clearCache(resourcePath(projectMembersBasePath, null, undefined));
+    // Delete entries cache
+    clearCache(resourcePath(entriesBasePath, null, undefined));
 
     $refetches.accounts.list = new Date();
     toast.success("Account updated", {
