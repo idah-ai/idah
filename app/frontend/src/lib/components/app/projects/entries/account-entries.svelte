@@ -34,7 +34,7 @@
 {#if entries.length > 0}
   <div class="text-muted-foreground text-sm">
     <div>Following entries({entries.length}) will be unassigned from this account.</div>
-    <ul class="ml-5 mt-2 max-h-40 overflow-y-auto">
+    <ul class="mt-2 ml-5 max-h-40 overflow-y-auto">
       {#each entries as entry (entry.id)}
         <li>
           <Link href={`/projects/${entry.project_id}/datasets/${entry.dataset_id}/entries`} target="_blank">
