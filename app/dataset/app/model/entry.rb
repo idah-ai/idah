@@ -171,13 +171,11 @@ module Entry
       with_metadata do
         entry = find!(id)
 
-        if entry
-          add_event_metadata(
-            project_id: attributes[:project_id] || entry.project_id,
-            dataset_id: attributes[:dataset_id] || entry.dataset_id,
-            entry_id: id
-          )
-        end
+        add_event_metadata(
+          project_id: attributes[:project_id] || entry.project_id,
+          dataset_id: attributes[:dataset_id] || entry.dataset_id,
+          entry_id: id
+        )
 
         super(id, attributes, scope:)
       end
@@ -187,13 +185,11 @@ module Entry
       with_metadata do
         entry = find!(id)
 
-        if entry
-          add_event_metadata(
-            project_id: entry.project_id,
-            dataset_id: entry.dataset_id,
-            entry_id: id
-          )
-        end
+        add_event_metadata(
+          project_id: entry.project_id,
+          dataset_id: entry.dataset_id,
+          entry_id: id
+        )
 
         super(id)
       end
@@ -213,8 +209,6 @@ module Entry
     def assign(id, attributes)
       entry = find!(id)
 
-      return unless entry
-
       add_event_metadata(
         project_id: attributes[:project_id] || entry.project_id,
         dataset_id: attributes[:dataset_id] || entry.dataset_id,
@@ -231,8 +225,6 @@ module Entry
     event(name: "submitted")
     def submit(id, attributes)
       entry = find!(id)
-
-      return unless entry
 
       add_event_metadata(
         project_id: attributes[:project_id] || entry.project_id,

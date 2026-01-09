@@ -59,7 +59,7 @@ module Medias
       with_metadata do
         media = find!(id)
 
-        add_event_metadata(project_id: media.project_id) if media
+        add_event_metadata(project_id: media.project_id)
 
         super(id, attributes, scope:)
       end
@@ -69,7 +69,7 @@ module Medias
       with_metadata do
         media = find!(id)
 
-        add_event_metadata(project_id: media.project_id) if media
+        add_event_metadata(project_id: media.project_id)
 
         super(id)
       end
