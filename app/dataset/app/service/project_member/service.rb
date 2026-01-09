@@ -150,33 +150,5 @@ module ProjectMember
         end
       end
     end
-
-    private
-
-    def authorize_creation(creating_role, project_id, access)
-      case access
-      when :as_org_owner
-        begin
-          projects.find!(project_id)
-        rescue Verse::Error::RecordNotFound # if it can't be found then we assume it's not in org_owner's scope
-          raise Verse::Error::Unauthorized,
-                "You do not have permission to create a project member for this project"
-        end
-      when :as_user
-        if creating_role == "project_owner"
-          raise Verse::Error::Unauthorized,
-                "You do not have permission to create a project owner member for this project"
-        end
-
-        if ScopedQuery::Service.without_project_access?(
-          auth_context.metadata[:id],
-          project_id,
-          ["project_owner"]
-        )
-          raise Verse::Error::Unauthorized,
-                "You do not have permission to create project member on this project"
-        end
-      end
-    end
   end
 end
