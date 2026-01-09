@@ -138,14 +138,14 @@ module ProjectMember
 
     def delete_account_members(account_id)
       system_project_members.chunked_index({ account_id: account_id }).each do |member|
-        project_members.delete!(member.id)
+        system_project_members.delete!(member.id)
       end
     end
 
     def disable_account_members(account_id)
       now = Time.now
       system_project_members.chunked_index({ account_id: account_id }).each do |member|
-        project_members.update!(member.id, { disabled_at: now })
+        system_project_members.update!(member.id, { disabled_at: now })
       end
     end
   end
