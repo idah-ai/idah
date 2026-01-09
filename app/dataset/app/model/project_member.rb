@@ -114,5 +114,19 @@ module ProjectMember
               "Permission denied for \"#{action}\" action on #{self.class.resource}"
       end
     end
+
+    def update!(id, attributes, scope: scoped(:update))
+      with_metadata do
+        member = find!(id)
+
+        if member
+          add_metadata(
+            project_member_account_id: member.account_id,
+          )
+        end
+
+        super(id, attributes, scope:)
+      end
+    end
   end
 end
