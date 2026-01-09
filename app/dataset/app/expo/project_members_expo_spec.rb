@@ -99,4 +99,50 @@ RSpec.describe ProjectMembersExpo, type: :exposition, as: :system do
 
     expect(last_response.status).to eq 204
   end
+
+  describe "#on_account_deleted" do
+    it "deletes all project members for the deleted account" do
+      resource_id = 42
+      expect(service).to(receive(:delete_account_members).with(resource_id))
+
+      Verse.publish_resource_event(
+        resource_type: Resource::Iam::Accounts,
+        resource_id:,
+        event: "deleted",
+        payload: { resource_id: }
+      )
+    end
+  end
+
+  describe "#on_account_updated" do
+    it "disables all project members for the disabled account" do
+      resource_id = 42
+      expect(service).to(receive(:disable_account_members).with(resource_id))
+
+      Verse.publish_resource_event(
+        resource_type: Resource::Iam::Accounts,
+        resource_id:,
+        event: "updated",
+        payload: {
+          resource_id:,
+          args: [{ enabled: false }]
+        }
+      )
+    end
+
+    it "does not disable project members if the account is still enabled" do
+      resource_id = 42
+      expect(service).not_to(receive(:disable_account_members))
+
+      Verse.publish_resource_event(
+        resource_type: Resource::Iam::Accounts,
+        resource_id:,
+        event: "updated",
+        payload: {
+          resource_id:,
+          args: [{ enabled: true }]
+        }
+      )
+    end
+  end
 end

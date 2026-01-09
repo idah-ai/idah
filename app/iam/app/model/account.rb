@@ -127,7 +127,7 @@ module Account
       membership_account_ids =
         if org_ids.any?
           Api[:idah].dataset.project_members.index(
-            filter: { organization_id__in: org_ids }
+            filter: { organization_id__in: org_ids, enabled: true }
           ).data.map(&:account_id).uniq
         else
           []

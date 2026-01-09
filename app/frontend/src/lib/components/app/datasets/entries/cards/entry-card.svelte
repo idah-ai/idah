@@ -341,7 +341,7 @@
         {#if wf_step !== "done"}
           <DataDisplay label="Assigned to">
             {#snippet slotValue()}
-              <ProjectMemberAvatar memberAccountId={assigned_to_id} />
+              <ProjectMemberAvatar member={entry.assigned_to} />
             {/snippet}
           </DataDisplay>
         {/if}
@@ -349,7 +349,7 @@
         {#if submitted_by_id}
           <DataDisplay label="Submitted by">
             {#snippet slotValue()}
-              <ProjectMemberAvatar memberAccountId={submitted_by_id} />
+              <ProjectMemberAvatar member={entry.submitted_by} />
             {/snippet}
           </DataDisplay>
         {/if}
@@ -357,7 +357,7 @@
         {#if reviewed_by_id}
           <DataDisplay label="Reviewed by">
             {#snippet slotValue()}
-              <ProjectMemberAvatar memberAccountId={reviewed_by_id} />
+              <ProjectMemberAvatar member={entry.reviewed_by} />
             {/snippet}
           </DataDisplay>
         {/if}
