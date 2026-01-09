@@ -144,5 +144,20 @@ RSpec.describe ProjectMembersExpo, type: :exposition, as: :system do
         }
       )
     end
+
+    it "does not disable project members if the enabled param is nil" do
+      resource_id = 42
+      expect(service).not_to(receive(:disable_account_members))
+
+      Verse.publish_resource_event(
+        resource_type: Resource::Iam::Accounts,
+        resource_id:,
+        event: "updated",
+        payload: {
+          resource_id:,
+          args: []
+        }
+      )
+    end
   end
 end
