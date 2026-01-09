@@ -126,11 +126,15 @@
 
 <div id="annotation-header-bar-actions" class="flex h-full items-center justify-end gap-2">
   <div id="annotation-header-bar-actions-menu" class="flex items-center gap-1">
-    <DropdownMenu open={openSettingsPopover}>
+    <DropdownMenu bind:open={openSettingsPopover}>
       <DropdownMenuTrigger>
         <Tooltips align="center" delayDuration={100}>
           {#snippet trigger()}
-            <Button variant="ghost" size="icon-sm" onclick={() => (openSettingsPopover = true)}>
+            <Button
+              variant={openSettingsPopover ? "default" : "ghost"}
+              size="icon-sm"
+              onclick={() => (openSettingsPopover = true)}
+            >
               <Settings2Icon />
             </Button>
           {/snippet}
