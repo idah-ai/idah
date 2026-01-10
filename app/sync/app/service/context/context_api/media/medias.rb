@@ -12,13 +12,12 @@ module Context
         end
 
         def resource_info(filters = nil, opts = nil)
-          merged = build_filters(filters)
-
-          unless merged[:resource]
+          resource = Hash(build_filters(filters))[:resource]
+          unless resource
             raise Context::Error::InvalidData, "resource parameter is required"
           end
 
-          media_response = super(resource: merged[:resource])
+          media_response = __getobj__.resource_info(resource:)
           raise Context::Error::QueryFailed, media_response.errors if media_response.errors
 
           media_response.data
@@ -31,7 +30,7 @@ module Context
             raise Context::Error::InvalidData, "resource parameter is required"
           end
 
-          super(resource: merged[:resource])
+          __getobj__.files(resource: merged[:resource])
         end
       end
     end

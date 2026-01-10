@@ -9,8 +9,7 @@ module Context
               raise Context::Error::InvalidData, "Annotation missing id"
             end
 
-            filters = build_context_args_from({annotations: {id:}})
-            Context::Base.new(annotation, @args, filters, @opts)
+            annotation
           end
         end
 

@@ -34,9 +34,8 @@ module Context
                     else
                       Dataset::Datasets.new(args, context, opts)
                     end
-
       # Ensure the root API is only Dataset::Datasets
-      unless delegated_obj.is_a?(Dataset::Datasets)
+      unless delegated_obj.is_a?(Dataset::Datasets) || delegated_obj.name == :datasets
         raise Context::Error::InvalidContext, "Expected Dataset::Datasets, got #{delegated_obj.class}"
       end
 

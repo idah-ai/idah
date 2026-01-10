@@ -1,6 +1,6 @@
 module Context
   module ContextApi
-    class Base < CrudIterator
+    class Base < EnumerableCrud
       WHITELIST = [
         Api::Exposition,
         Base,
@@ -8,15 +8,22 @@ module Context
     ]
 
       def builder(unit)
-        if __getobj__.class == Api::Exposition
+        result = if [ProceduralEnumerableCrud, Enumerable].any?{|unit_class|unit.is_a? unit_class }
+          unit.lazy.map do |data|
+            super(data)
+          end
+        elsif unit.is_a?(Verse::JsonApi::Struct)
           raise Error::QueryFailed, unit.errors if unit.errors
 
-          unit.data.map(&:data).map do |data|
+          unit.data.lazy.map(&:data).lazy.map do |data|
             super(data)
           end unless unit.data.empty?
+        elsif unit.is_a? Unit
+          unit
         else
           super(unit)
         end
+        result
       end
 
       def initialize(
