@@ -1,5 +1,5 @@
 module Context
-  class Delegate < Base
+  class Delegated < Crud
     def name
       @name || super
     end

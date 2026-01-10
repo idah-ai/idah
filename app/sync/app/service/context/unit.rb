@@ -1,9 +1,9 @@
 module Context
   class Unit < Crud
     def initialize(unit, context = nil, args = nil, filters = nil, opts = nil)
-      context = Context.new(context) if context
+      context = Context.new(context) if context && !context.respond_to?(:name)
 
-      if context.respond_to? :each
+      if context.respond_to?(:each) && !context.is_a?(Crud)
         context
       else
         Array(context)
@@ -14,7 +14,7 @@ module Context
       super(unit, args, filters, opts)
     end
 
-    def index(filters = nil, opts = nil)
+    def index(**opts)
       [__getobj__]
     end
   end

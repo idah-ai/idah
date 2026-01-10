@@ -31,5 +31,20 @@ module Context
         super("Invalid context class: #{context_class}")
       end
     end
+
+    class NoDelegatedMethodError < Base
+      def initialize(error, obj, delegated_obj, method)
+        super([
+          "undefined method `#{
+            method
+          }` for an instance of #{
+            obj
+          } delegator for #{
+            delegated_obj
+          })"#,
+          # error.backtrace.join("\n")
+      ].join("\n"))
+      end
+    end
   end
 end

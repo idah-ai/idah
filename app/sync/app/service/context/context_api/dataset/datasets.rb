@@ -3,7 +3,8 @@ module Context
     module Dataset
       class Datasets < Base
         def builder(datasets)
-          super(datasets)&.map do |dataset|
+          super_datasets = super(datasets)
+          super_datasets&.map do |dataset|
             id = dataset.dig(:id)
             unless id
               raise Context::Error::InvalidData, "Dataset missing id"
@@ -21,10 +22,8 @@ module Context
             })
 
             Unit.new(
-              dataset, [
-                Entries.new(@args, filters, @opts),
-                Projects.new(@args, filters, @opts)
-              ], @args, filters, @opts
+              dataset,
+                [Entries.new(@args, filters, @opts)], @args, filters, @opts
             )
           end
         end
@@ -50,20 +49,23 @@ module Context
           built_context_args = projects.build_context_args_from(filters)
           built_opts = projects.build_opts(opts)
 
-          new(
-            built_args, built_context_args, built_opts,
-            ProceduralCrud.new(
-              :datasets, proc do |filter = nil, opts = nil|
-                Enumerator.new do |yielder|
-                  projects.each do |project|
-                    project.datasets.each do |dataset|
-                      yielder << dataset
-                    end
+          project_id__in_enum = projects.each_slice(
+            DEFAULT_BATCH_SIZE
+          ).lazy.map do |project|
+            project[:id]
+          end
+
+          ProceduralEnumerableCrud.new(
+            :datasets, proc do |**opts|
+              Enumerator.new do |yielder|
+                projects.each do |project|
+                  project.datasets.index(**opts).each do |dataset|
+                    yielder << dataset
                   end
                 end
-              end,
-              built_args, built_context_args, built_opts
-            )
+              end
+            end,
+            built_args, built_context_args, built_opts
           )
         end
 

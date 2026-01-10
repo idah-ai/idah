@@ -14,7 +14,7 @@ RSpec.describe Context::Base do
       expect(instance.__getobj__).to eq(delegated_obj)
       expect(instance.instance_variable_get(:@args)).to eq(args)
       expect(instance.instance_variable_get(:@context_args)).to eq(context_args)
-      expect(instance.instance_variable_get(:@opts)).to eq(opts)
+      expect(instance.instance_variable_get(:@context_opts)).to eq(opts)
     end
 
     it "works with minimal parameters" do

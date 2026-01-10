@@ -11,34 +11,33 @@ module Context
       raise NotImplementedError
     end
 
-    def index(filters = nil, opts = nil)
-      result = if __getobj__.class == Api::Exposition # todo uniformize
-        super(**opts.merge(filter: Hash(build_filters(filters))))
+    def index(**opts)
+      built_opts = Hash(build_opts(opts.except(:filter)))
+      built_filters = Hash(build_filters(opts.slice(:filter)))
+      crud_opts = built_opts.merge(built_filters)
+      if __getobj__.class == Api::Exposition
+        index_result = __getobj__.index(**crud_opts)
       else
-        super(
-          build_filters(filters),
-          opts
-        )
+        index_result = super(**crud_opts)
       end
-      result = builder(result)
-      @context_builder&.call(result) || result
+      built_result = builder(index_result)
+      result = @context_builder&.call(built_result) || built_result
+      result
     end
 
     def show(id = nil)
-      filters = build_filters(id ? { id: } : nil)
+      filter = build_filters(id ? { id: } : nil)
       # Validate that an ID is present after filter merging
-      unless filters[:id]
+      unless filter && filter[:id]
         raise Context::Error::NotFound, "No ID available after applying context filters"
       end
 
       # Security check: if user provided an ID but context changed it
-      if id && filters[:id] != id
+      if id && filter[:id] != id
         raise Context::Error::Forbidden, "Context does not permit access to resource #{id}"
       end
 
-      index(
-        filters:, page: { number: 1, size: 1 }
-      ).first
+      index(filter:, page: { number: 1, size: 1 }).first
     end
 
     def update(attributes, id = nil)

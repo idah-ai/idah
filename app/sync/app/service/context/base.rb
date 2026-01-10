@@ -9,8 +9,40 @@ module Context
     end
   end
 
-  class Base < SimpleDelegator
-    attr_reader :args, :context_args, :opts
+
+  class Base #< SimpleDelegator
+    attr_reader :args, :context_args, :context_opts, :__getobj__
+
+    def initialize(
+      delegated_obj = nil,
+      args = nil,
+      context_args = nil,
+      context_opts = nil,
+      &context_builder
+    )
+      @__getobj__ = delegated_obj
+      @args = args
+      @context_args = context_args
+      @context_opts = context_opts
+      @context_builder = context_builder
+      # super(delegated_obj)
+    end
+
+    def method_missing(s, *args, &block)
+      # begin
+        __getobj__.send(s, *args, &block)
+      # rescue Exception => e
+      #   Verse::logger.error {caller.join("\n")}
+      #   raise e
+      #   # raise e, e, self, __getobj__, s
+      # end
+    end
+
+    def respond_to_missing?(s, include_private = false)
+      __getobj__.respond_to?(s) || super
+    end
+
+
     def self.name
       self.to_s.split("::").last
         .gsub(/(?<=[a-z])(?=[A-Z])/, '_')
@@ -32,20 +64,6 @@ module Context
 
     def builder(obj)
       self.class.builder(obj)
-    end
-
-    def initialize(
-      delegated_obj = nil,
-      args = nil,
-      context_args = nil,
-      opts = nil,
-      &context_builder
-    )
-      @args = args
-      @context_args = context_args
-      @opts = opts
-      @context_builder = context_builder
-      super(delegated_obj)
     end
 
     # Class method: builds filters for a single API
@@ -172,7 +190,7 @@ module Context
       passed_opts = nil
     )
       # Get each source separately
-      instance_opts_hash = Hash(@opts || {}).dig(delegated_obj_name || name) || {}
+      instance_opts_hash = Hash(@context_opts || {}).dig(delegated_obj_name || name) || {}
       passed_opts_hash = Hash(passed_opts || {}).dig(delegated_obj_name || name) || {}
       non_context_opts = Hash(opts || {})
 
@@ -211,7 +229,7 @@ module Context
     # Instance method: aggregates opts using instance variable
     # @opts has higher precedence than passed opts
     def build_context_opts(opts = nil)
-      self.class.build_context_opts(opts, @opts)
+      self.class.build_context_opts(opts, @context_opts)
     end
   end
 end

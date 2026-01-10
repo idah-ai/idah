@@ -3,7 +3,8 @@ module Context
     module Iam
       class Organizations < Base
         def builder(organizations)
-          super(organizations)&.map do |organization|
+          super_organizations = super(organizations)
+          super_organizations&.map do |organization|
             id = organization.dig(:id)
             unless id
               raise Context::Error::InvalidData, "Organization missing id"
@@ -39,15 +40,11 @@ module Context
 
         def self.root_api(args = nil, context = nil, opts = nil)
           organizations = ContextApi::Iam::Organizations.new(args, context, opts)
-          puts(class: organizations.class)
           projects = ContextApi::Dataset::Projects.from_organizations(
             organizations,
             organizations.build_context_args_from(args),
             organizations.build_context_args_from(context),
             opts
-          )
-          puts(
-            class: projects.map(&:class)
           )
           datasets = ContextApi::Dataset::Datasets.from_projects(
             projects,
@@ -56,7 +53,7 @@ module Context
             opts
           )
 
-          super([datasets], args, context, opts)
+          datasets
         end
       end
     end
