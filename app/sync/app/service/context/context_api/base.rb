@@ -8,7 +8,7 @@ module Context
     ]
 
       def builder(unit)
-        result = if [ProceduralEnumerableCrud, Enumerable].any?{|unit_class|unit.is_a? unit_class }
+        if unit.is_a? ProceduralCrud
           unit.lazy.map do |data|
             super(data)
           end
@@ -23,7 +23,6 @@ module Context
         else
           super(unit)
         end
-        result
       end
 
       def initialize(

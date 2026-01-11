@@ -53,7 +53,7 @@ module Context
           built_context_args = organizations.build_context_args_from(context_args)
           built_opts = organizations.build_opts(opts)
 
-          ProceduralEnumerableCrud.new(
+          ProceduralCrud.new(
             :projects, proc do |**opts|
               Enumerator.new do |yielder|
                 organizations.map do |organization|

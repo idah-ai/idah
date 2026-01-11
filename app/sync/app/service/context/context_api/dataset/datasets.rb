@@ -55,7 +55,7 @@ module Context
             project[:id]
           end
 
-          ProceduralEnumerableCrud.new(
+          ProceduralCrud.new(
             :datasets, proc do |**opts|
               Enumerator.new do |yielder|
                 projects.map do |project|
