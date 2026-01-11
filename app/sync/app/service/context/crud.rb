@@ -15,6 +15,11 @@ module Context
       built_opts = build_opts(opts.except(:filter))
       built_filters = build_filters(opts.dig(:filter))
       crud_opts = Hash(built_opts).merge(filter: built_filters)
+      # TODO: why ? fix method_missing ? Delegator ?
+      # /wrong number of arguments (given 1, expected 0)
+      # /common/lib/api/__map__/dataset.rb:43:in 'block in <top (required)>'
+      # /app/app/service/context/base.rb:37:in 'Context::Base#method_missing'
+      # /app/app/service/context/crud.rb:26:in 'Context::Crud#index'
       if __getobj__.class == Api::Exposition
         index_result = __getobj__.index(**crud_opts)
       else

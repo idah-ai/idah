@@ -28,6 +28,10 @@ module Context
       # super(delegated_obj)
     end
 
+    def to_s
+      "#{super}(#{__getobj__})"
+    end
+
     def method_missing(s, *args, &block)
       begin
         __getobj__.send(s, *args, &block)
@@ -37,7 +41,7 @@ module Context
     end
 
     def respond_to_missing?(s, include_private = false)
-      __getobj__.respond_to?(s) || super
+      __getobj__.respond_to?(s, include_private)
     end
 
 
