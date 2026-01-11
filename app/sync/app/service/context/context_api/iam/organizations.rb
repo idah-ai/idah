@@ -3,8 +3,7 @@ module Context
     module Iam
       class Organizations < Base
         def builder(organizations)
-          super_organizations = super(organizations)
-          super_organizations&.map do |organization|
+          super(organizations)&.map do |organization|
             id = organization.dig(:id)
             unless id
               raise Context::Error::InvalidData, "Organization missing id"

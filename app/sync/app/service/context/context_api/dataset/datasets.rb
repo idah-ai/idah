@@ -3,8 +3,7 @@ module Context
     module Dataset
       class Datasets < Base
         def builder(datasets)
-          super_datasets = super(datasets)
-          super_datasets&.map do |dataset|
+          super(datasets)&.map do |dataset|
             id = dataset.dig(:id)
             unless id
               raise Context::Error::InvalidData, "Dataset missing id"
@@ -55,7 +54,7 @@ module Context
             project[:id]
           end
 
-          ProceduralCrud.new(
+          CrudProcedural.new(
             :datasets, proc do |**opts|
               Enumerator.new do |yielder|
                 projects.lazy.map do |project|

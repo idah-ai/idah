@@ -3,8 +3,7 @@ module Context
     module Dataset
       class Projects < Base
         def builder(projects)
-          super_projects = super(projects)
-          super_projects&.map do |project|
+          super(projects)&.map do |project|
             id = project.dig(:id)
             unless id
               raise Context::Error::InvalidData, "Project missing id"
@@ -53,7 +52,7 @@ module Context
           built_context_args = organizations.build_context_args_from(context_args)
           built_opts = organizations.build_opts(opts)
 
-          ProceduralCrud.new(
+          CrudProcedural.new(
             :projects, proc do |**opts|
               Enumerator.new do |yielder|
                 organizations.lazy.map do |organization|

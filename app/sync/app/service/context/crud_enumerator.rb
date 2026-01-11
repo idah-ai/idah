@@ -1,5 +1,5 @@
 module Context
-  class EnumerableCrud < Crud
+  class CrudEnumerator < Crud
     DEFAULT_BATCH_SIZE = 50
     def index(**opts)
       filter = build_filters(opts[:filter])

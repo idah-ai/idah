@@ -1,14 +1,14 @@
 module Context
   module ContextApi
-    class Base < EnumerableCrud
+    class Base < CrudEnumerator
       WHITELIST = [
         Api::Exposition,
         Base,
-        ProceduralCrud,
-    ]
+        CrudProcedural,
+      ]
 
       def builder(unit)
-        if unit.is_a? ProceduralCrud
+        if unit.is_a? CrudProcedural
           unit.lazy.map do |data|
             super(data)
           end
