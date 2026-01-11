@@ -58,8 +58,14 @@ module Context
           ProceduralEnumerableCrud.new(
             :datasets, proc do |**opts|
               Enumerator.new do |yielder|
-                projects.each do |project|
-                  project.datasets.index(**opts).each do |dataset|
+                projects.map do |project|
+                  [project[:id]]
+                end.each_slice(DEFAULT_BATCH_SIZE) do |project_id__in|
+                  datasets = new(
+                    @args,
+                    build_context_args_from({datasets: { project_id__in: }}),
+                    @context_opts
+                  ).index(**opts).each do |dataset|
                     yielder << dataset
                   end
                 end

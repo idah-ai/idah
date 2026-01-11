@@ -1,6 +1,6 @@
 module Context
   class EnumerableCrud < Crud
-    DEFAULT_BATCH_SIZE = 100
+    DEFAULT_BATCH_SIZE = 50
     def index(**opts)
       # Verse::Util::Enumerator.chunked_enumerator(1) do |number|
       # might be more align to ruby Enumerator.new
