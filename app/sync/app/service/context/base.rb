@@ -11,7 +11,7 @@ module Context
 
 
   class Base #< SimpleDelegator
-    attr_reader :args, :context_args, :context_opts, :__getobj__
+    protected attr_reader :args, :context_args, :context_opts, :__getobj__
 
     def initialize(
       delegated_obj = nil,
@@ -29,13 +29,11 @@ module Context
     end
 
     def method_missing(s, *args, &block)
-      # begin
+      begin
         __getobj__.send(s, *args, &block)
-      # rescue Exception => e
-      #   Verse::logger.error {caller.join("\n")}
-      #   raise e
-      #   # raise e, e, self, __getobj__, s
-      # end
+      rescue NoMethodError => e
+        raise e, "undefined method `#{s}` for #{self}"
+      end
     end
 
     def respond_to_missing?(s, include_private = false)

@@ -12,9 +12,9 @@ module Context
     end
 
     def index(**opts)
-      built_opts = Hash(build_opts(opts.except(:filter)))
-      built_filters = Hash(build_filters(opts.slice(:filter)))
-      crud_opts = built_opts.merge(built_filters)
+      built_opts = build_opts(opts.except(:filter))
+      built_filters = build_filters(opts.dig(:filter))
+      crud_opts = Hash(built_opts).merge(filter: built_filters)
       if __getobj__.class == Api::Exposition
         index_result = __getobj__.index(**crud_opts)
       else
