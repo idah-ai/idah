@@ -66,6 +66,10 @@ module Context
 
     # Class method: builds filters for a single API
     # Precedence: passed_filters < passed_context_args < passed_args
+    # Todo value:
+    # - context_args(**__in:['val1', val2])
+    # - filters(**__in:['val1'])
+    # - expectation(**__in:['val1']) # to be sliced of context_args instead of overriden
     def self.build_filters(
       passed_filters = nil,
       delegated_obj_name = nil,
