@@ -58,10 +58,10 @@ module Context
           ProceduralCrud.new(
             :datasets, proc do |**opts|
               Enumerator.new do |yielder|
-                projects.map do |project|
-                  [project[:id]]
+                projects.lazy.map do |project|
+                  project[:id]
                 end.each_slice(DEFAULT_BATCH_SIZE) do |project_id__in|
-                  datasets = new(
+                  new(
                     @args,
                     build_context_args_from({datasets: { project_id__in: }}),
                     @context_opts

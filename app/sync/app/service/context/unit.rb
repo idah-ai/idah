@@ -14,8 +14,12 @@ module Context
       super(unit, args, filters, opts)
     end
 
-    def index(**opts)
+    def index(**_opts)
       [__getobj__]
+    end
+
+    def show
+      __getobj__
     end
   end
 end

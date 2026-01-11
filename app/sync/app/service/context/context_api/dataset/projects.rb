@@ -56,10 +56,10 @@ module Context
           ProceduralCrud.new(
             :projects, proc do |**opts|
               Enumerator.new do |yielder|
-                organizations.map do |organization|
+                organizations.lazy.map do |organization|
                   organization[:id]
                 end.each_slice(DEFAULT_BATCH_SIZE) do |organization_id__in|
-                  projects = new(
+                  new(
                     @args,
                     build_context_args_from({projects: { organization_id__in: }}),
                     @context_opts
