@@ -11,9 +11,10 @@ module ProjectMember
     field :name, type: [String, NilClass]
     field :email, type: String
 
-    field :role, type: String, readonly: true
+    field :role, type: String
 
     field :invited_by_id, type: Integer, readonly: true
+    field :disabled_at, type: [Time, NilClass]
 
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
@@ -36,6 +37,16 @@ module ProjectMember
       SQL
 
       collection.where(Sequel.lit(where_fragment, value.map(&:to_i)))
+    end
+
+    custom_filter :enabled do |collection, value|
+      enabled = value.to_s.downcase == "true"
+
+      if enabled
+        collection.where(disabled_at: nil)
+      else
+        collection.where(Sequel.~(disabled_at: nil))
+      end
     end
 
     def scoped(action)
@@ -76,6 +87,7 @@ module ProjectMember
           FROM project_members pm
           WHERE pm.account_id = :account_id
             AND pm.project_id = project_members.project_id
+            AND pm.disabled_at IS NULL
             AND pm.role IN :roles
         )
       SQL
@@ -100,6 +112,21 @@ module ProjectMember
       else
         raise Verse::Error::Unauthorized,
               "Permission denied for \"#{action}\" action on #{self.class.resource}"
+      end
+    end
+
+    def update!(id, attributes, scope: scoped(:update))
+      with_metadata do
+        member = find!(id)
+
+        if member
+          add_metadata(
+            project_member_account_id: member.account_id,
+            project_member_project_id: member.project_id,
+          )
+        end
+
+        super(id, attributes, scope:)
       end
     end
   end

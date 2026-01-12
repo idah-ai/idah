@@ -27,9 +27,12 @@
 
     try {
       const resolvedNoteFeedRes = await noteFeedsBackendDataSource.markAsResolved(id);
+
       onNoteResolved?.(resolvedNoteFeedRes.data);
-      toast.success("Note feed marked as resolved successfully.");
       $refetches.noteFeeds.list = new Date();
+      toast.success("Note resolved", {
+        description: "The note has been resolved.",
+      });
     } catch (error) {
       console.error(error);
       toast.error("You are not authorized to do this action.");

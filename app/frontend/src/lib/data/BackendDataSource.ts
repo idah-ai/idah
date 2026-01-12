@@ -1,14 +1,16 @@
 import { clearCache, getCache, setCache } from "@/data/Cache";
-import type { CacheValue } from "@/data/Cache.types";
+
 import { filtersToHash } from "@/data/filtering";
+import { parseCollectionReturn, parseSingleElementError, parseSingleElementReturn } from "@/data/model/json_api";
 import { showErrorToast } from "@/utils/error/error.toasts";
 import { generateHash } from "@/utils/string";
 import { identity, type Hash } from "@/utils/types";
 import { encodeUri } from "@/utils/uri";
-import type { DataParams, DataSource, GetOptions, ListOptions } from "./DataSource";
-import { parseCollectionReturn, parseSingleElementError, parseSingleElementReturn } from "./model/json_api";
-import type { Record, RecordClass } from "./model/Record";
-import type { CollectionResponse, JsonApiErrorResponse, RecordResponse } from "./model/types";
+
+import type { CacheValue } from "@/data/Cache.types";
+import type { DataParams, DataSource, DataSourceOptions, GetOptions, ListOptions } from "@/data/DataSource";
+import type { Record, RecordClass } from "@/data/model/Record";
+import type { CollectionResponse, JsonApiErrorResponse, RecordResponse } from "@/data/model/types";
 
 export function encodeModel<T extends Record>(model: RecordClass<T>, data: DataParams<T>): string {
   const attributes: Hash = {};
@@ -60,7 +62,7 @@ export function createBackendDataSource<T extends Record, CustomMethods>(
     recordClass: recordClass,
     basePath: basePath,
 
-    async create(data: DataParams<T>): Promise<RecordResponse<T> | JsonApiErrorResponse> {
+    async create(data: DataParams<T>, options?: DataSourceOptions): Promise<RecordResponse<T> | JsonApiErrorResponse> {
       const out = await fetch(this.basePath, {
         method: "POST",
         body: encodeModel(this.recordClass, data),
@@ -74,7 +76,7 @@ export function createBackendDataSource<T extends Record, CustomMethods>(
       clearCache(cacheIndexKey);
 
       if (body && body.errors) {
-        if (body.errors.length > 0) {
+        if (body.errors.length > 0 && options?.showErrorToast !== false) {
           body.errors.forEach((err: Hash<string>) => {
             showErrorToast({ title: err.title, message: err.detail, error: err });
           });
@@ -204,7 +206,11 @@ export function createBackendDataSource<T extends Record, CustomMethods>(
       throw "No body returned";
     },
 
-    async update(id: string, data: DataParams<T>): Promise<RecordResponse<T> | JsonApiErrorResponse> {
+    async update(
+      id: string,
+      data: DataParams<T>,
+      options?: DataSourceOptions,
+    ): Promise<RecordResponse<T> | JsonApiErrorResponse> {
       // Cache Management
       const cacheIndexKey = resourcePath(this.basePath, null, undefined);
       const cacheIdKey = resourcePath(this.basePath, id, undefined);
@@ -220,7 +226,7 @@ export function createBackendDataSource<T extends Record, CustomMethods>(
       const body = await out.json();
 
       if (body && body.errors) {
-        if (body.errors.length > 0) {
+        if (body.errors.length > 0 && options?.showErrorToast !== false) {
           body.errors.forEach((err: Hash<string>) => {
             showErrorToast({ title: err.title, message: err.detail, error: err });
           });
@@ -234,14 +240,14 @@ export function createBackendDataSource<T extends Record, CustomMethods>(
       throw "No body returned";
     },
 
-    async delete(id: string): Promise<boolean> {
+    async delete(id: string, options?: DataSourceOptions): Promise<boolean> {
       const response = await fetch(resourcePath(this.basePath, id), { method: "DELETE" });
 
       if (!response.ok) {
         const body = await response.json();
 
         if (body && body.errors) {
-          if (body.errors.length > 0) {
+          if (body.errors.length > 0 && options?.showErrorToast !== false) {
             body.errors.forEach((err: Hash<string>) => {
               showErrorToast({ title: err.title, message: err.detail, error: err });
             });

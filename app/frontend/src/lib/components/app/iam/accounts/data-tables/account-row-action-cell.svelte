@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { SquarePenIcon, Trash2Icon } from "@lucide/svelte";
+  import { SquarePenIcon, UserXIcon } from "@lucide/svelte";
   import { onMount } from "svelte";
   import { toast } from "svelte-sonner";
 
@@ -9,10 +9,14 @@
 
   import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
   import { authStatus } from "@/security/AuthContext";
+  import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
 
   import type { DataTableCellBaseProps } from "@/components/app/datasource-table/types";
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
+  import { clearCache } from "@/data/Cache";
+  import { resourcePath } from "@/data/BackendDataSource";
+  import { projectMembersBasePath } from "@/data/model/dataset/projects/members/record";
 
   // Props
   let { record: account }: DataTableCellBaseProps<AccountRecord> = $props();
@@ -20,7 +24,7 @@
   // Variables
   let currentAccount = $authStatus.authContext;
   let canUpdateAccount = $state(false);
-  let canDeleteAccount = $state(false);
+  let canCancelInvitation = $state(false);
   let menus: IDropdownMenus = $derived({
     actions: {
       items: [
@@ -31,15 +35,16 @@
           action: async () => {
             const accountRes = await fetchAccount();
             accountRecord = accountRes.data;
+
             openEditAccountFormModal = true;
           },
         },
         {
-          label: "Delete",
-          icon: Trash2Icon,
-          hidden: !canDeleteAccount,
+          label: "Cancel Invitation",
+          icon: UserXIcon,
+          hidden: canCancelInvitation,
           action: () => {
-            openConfirmDeleteAccountModal = true;
+            openConfirmCancelInvitationModal = true;
           },
         },
       ],
@@ -47,12 +52,12 @@
   });
   let accountRecord: AccountRecord | undefined = $state(undefined);
   let openEditAccountFormModal: boolean = $state(false);
-  let openConfirmDeleteAccountModal: boolean = $state(false);
+  let openConfirmCancelInvitationModal: boolean = $state(false);
 
   // Lifecycle
   onMount(async () => {
     canUpdateAccount = (await currentAccount?.can("update", "iam:accounts", ["as_org_owner"])) || false;
-    canDeleteAccount = (await currentAccount?.can("delete", "iam:accounts", ["as_org_owner"])) || false;
+    canCancelInvitation = account.joined_at !== null;
   });
 
   // Functions
@@ -66,22 +71,32 @@
   }
 
   async function removeAccount(): Promise<void> {
-    await accountsBackendDataSource.delete(account.id);
-    $refetches.accounts.list = new Date();
-    openConfirmDeleteAccountModal = false;
-    toast.success(`${account.email} is removed!`);
+    try {
+      await accountsBackendDataSource.delete(account.id, { showErrorToast: false });
+
+      // Delete project member cache to force refetch
+      clearCache(resourcePath(projectMembersBasePath, null, undefined));
+
+      openConfirmCancelInvitationModal = false;
+      $refetches.accounts.list = new Date();
+      toast.success("Invitation cancelled", {
+        description: `The account invitation for "${account.email}" has been cancelled.`,
+      });
+    } catch (error) {
+      showActionFailedToast(error);
+    }
   }
 </script>
 
-{#if canUpdateAccount || canDeleteAccount}
+{#if canUpdateAccount || canCancelInvitation}
   <DropdownMenus {menus} align="center" />
 
   <AccountFormModal title="Account" action="update" {accountRecord} bind:open={openEditAccountFormModal} />
 
   <ConfirmModal
-    title="Delete account"
-    description="Are you sure you want to remove this account?"
+    title="Cancel Invitation"
+    description={`Are you sure you want to cancel invitation for "${account.email}"?`}
     onConfirm={removeAccount}
-    bind:open={openConfirmDeleteAccountModal}
+    bind:open={openConfirmCancelInvitationModal}
   />
 {/if}

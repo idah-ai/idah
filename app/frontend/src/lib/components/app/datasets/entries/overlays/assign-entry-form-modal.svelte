@@ -7,6 +7,8 @@
   import DialogTitle from "@/components/ui/dialog/dialog-title.svelte";
 
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
+  import { ProjectMemberRecord, projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
+  import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
 
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
@@ -22,24 +24,40 @@
   // Variables
   let submitting: boolean = $state(false);
   let fieldErrors: Hash = $state({});
-  let selectedMember: number | null = $state(entryRecord?.assigned_to_id ?? null);
+  let selectedMemberAccountId: number | null = $state(entryRecord?.assigned_to_id ?? null);
   let selectedEntryCount: number = $derived(entryIds.length);
 
   // Functions
   function setValue(value: Hash): void {
-    selectedMember = value.assigned_to_id;
+    selectedMemberAccountId = value.assigned_to_id;
   }
 
   async function assignMember(): Promise<void> {
-    if (entryIds.length === 0 || !selectedMember) return;
+    if (entryIds.length === 0 || !selectedMemberAccountId) return;
+
+    let projectMemberRecord: ProjectMemberRecord | undefined = $state(undefined);
 
     for (const entryId of entryIds) {
-      await entriesBackendDataSource.assign({ id: entryId, memberAccountId: selectedMember });
+      await entriesBackendDataSource.assign({ id: entryId, memberAccountId: selectedMemberAccountId });
+
+      /** Get the email of selected member */
+      const projectMemberRes = await projectMembersBackendDataSource.list({
+        fields: {
+          [ProjectMemberRecord.type]: ["email"],
+        },
+        filters: {
+          account_id: selectedMemberAccountId,
+        },
+      });
+
+      projectMemberRecord = projectMemberRes.data.at(0);
     }
 
-    toast.success("Member assigned successfully");
-    $refetches.entries.list = new Date();
     open = false;
+    $refetches.entries.list = new Date();
+    toast.success("Entry assigned", {
+      description: `The entry "${entryRecord?.resource}" has been assigned to "${projectMemberRecord?.email}".`,
+    });
   }
 
   async function submit(): Promise<void> {
@@ -48,8 +66,8 @@
     try {
       await assignMember();
     } catch (error) {
-      console.error(error);
       submitting = false;
+      showActionFailedToast(error);
     }
   }
 </script>
@@ -67,9 +85,11 @@
     <DialogTitle>{title}</DialogTitle>
   {/snippet}
 
-  <AssignEntryForm {selectedMember} {entryRecord} {fieldErrors} onValueChange={setValue} />
+  <AssignEntryForm {selectedMemberAccountId} {entryRecord} {fieldErrors} onValueChange={setValue} />
 
   {#snippet confirm()}
-    <Button loading={submitting} loadingLabel="Assigning" disabled={!selectedMember} onclick={submit}>Assign</Button>
+    <Button loading={submitting} loadingLabel="Assigning" disabled={!selectedMemberAccountId} onclick={submit}>
+      Assign
+    </Button>
   {/snippet}
 </FormModal>
