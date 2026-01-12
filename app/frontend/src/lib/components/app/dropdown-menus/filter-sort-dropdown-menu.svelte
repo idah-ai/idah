@@ -360,7 +360,7 @@
         {#if filterable}
           {#if isFiltering}
             <FunnelIcon />
-            <div class="absolute left-[1.4rem] top-2 size-2 animate-pulse rounded-full bg-amber-500"></div>
+            <div class="absolute top-2 left-[1.4rem] size-2 animate-pulse rounded-full bg-amber-500"></div>
           {:else}
             <FunnelIcon />
           {/if}
