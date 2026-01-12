@@ -21,7 +21,7 @@
     entries = (
       await entriesBackendDataSource.list({
         filters: filters,
-        fields: { "dataset:entries": ["resource"] },
+        fields: { "dataset:entries": ["resource", "project_id", "dataset_id"] },
       })
     ).data;
   }
