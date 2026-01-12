@@ -329,7 +329,7 @@
       },
     });
 
-    const newURL = page.url;
+    const newURL = new URL(page.url.href);
     const searchParams = newURL.searchParams;
 
     // Optionally remove URL search params if any
@@ -338,9 +338,12 @@
     if (searchParams.get(filterKeyLte)) searchParams.delete(filterKeyLte);
     if (searchParams.get(filterKeyWithOperation)) searchParams.delete(filterKeyWithOperation);
 
-    goto(resolve(newURL.toString() as "/projects/[projectId]/datasets/[datasetId]/entries"), {
-      replaceState: true,
-    });
+    // If any search params were removed, update the URL
+    if (newURL.href !== page.url.href) {
+      goto(resolve((newURL.pathname + newURL.search) as "/projects/[projectId]/datasets/[datasetId]/entries"), {
+        replaceState: true,
+      });
+    }
   }
 </script>
 
