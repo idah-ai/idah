@@ -9,17 +9,17 @@ module Export
     end
 
     def run
-      begin
-        process
-      rescue Exception => e
-        Verse::logger::error{
-          [
-            "#{self} Error processing #{@context.io.filename} #{e}",
-            [e, "#{e.backtrace.join("\n")}"].join("\n")
-          ].join("\n")
-        }
-        raise e
+      start
+      @context.datasets.each do |dataset|
+        on_dataset dataset
+        dataset.entries.each do |entry|
+          on_entry entry
+          entry.annotations.each do |annotation|
+            on_annotation annotation
+          end
+        end
       end
+      done
     end
 
     private
@@ -35,20 +35,6 @@ module Export
 
     def done
       Verse::logger::debug{"#{self} #{@context.io.filename} Process complete"}
-    end
-
-    def process
-      start
-      @context.datasets.each do |dataset|
-        on_dataset dataset
-        dataset.entries.each do |entry|
-          on_entry entry
-          entry.annotations.each do |annotation|
-            on_annotation annotation
-          end
-        end
-      end
-      done
     end
 
     def on_dataset(dataset)
