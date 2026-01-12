@@ -48,12 +48,6 @@ module Context
           built_context_args = projects.build_context_args_from(filters)
           built_opts = projects.build_opts(opts)
 
-          project_id__in_enum = projects.each_slice(
-            DEFAULT_BATCH_SIZE
-          ).lazy.map do |project|
-            project[:id]
-          end
-
           CrudProcedural.new(
             :datasets, proc do |**opts|
               Enumerator.new do |yielder|
