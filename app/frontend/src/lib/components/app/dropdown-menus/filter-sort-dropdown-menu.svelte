@@ -37,6 +37,7 @@
   import type { Hash } from "@/utils/types";
   import { page } from "$app/state";
   import { goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
 
   // Props
   interface Props<T extends Record> {
@@ -337,7 +338,9 @@
     if (searchParams.get(filterKeyLte)) searchParams.delete(filterKeyLte);
     if (searchParams.get(filterKeyWithOperation)) searchParams.delete(filterKeyWithOperation);
 
-    goto(newURL.toString(), { replaceState: true });
+    goto(resolve(newURL.toString() as "/projects/[projectId]/datasets/[datasetId]/entries"), {
+      replaceState: true,
+    });
   }
 </script>
 
