@@ -29,7 +29,7 @@
   const filterKeyWithOperation: string = `${filterKey}__${filterOperation}`;
 
   // Functions
-  function handleFilter(value: string | number): void {
+  function handleFilter(value: string | number | null): void {
     onFilter({
       filters: {
         [filterKeyWithOperation]: value,
@@ -46,6 +46,7 @@
       project_id: projectId,
     },
   }}
+  valueKey="account_id"
   displayKey="email"
   searchable
   searchKeyWithOperation="email__match"
