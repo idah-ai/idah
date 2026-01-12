@@ -43,7 +43,7 @@ class AccountsExpo < BaseExpo
     account
   end
 
-  expose on_http(:post, "/:id/resend_invitation", auth: nil) do
+  expose on_http(:post, "/:id/resend_invitation") do
     desc "Resend account invitation email"
     input do
       field :id, String

@@ -12,7 +12,7 @@
   import { accountColumns } from "@/components/app/iam/accounts/data-tables/account-columns";
   import { accountBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
-  import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
+  import { accountsBackendDataSource } from "@/data/model/iam/accounts/record";
   import { authStatus } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
 
@@ -67,9 +67,6 @@
       {columns}
       dataSource={accountsBackendDataSource}
       listOptions={{
-        fields: {
-          [AccountRecord.type]: ["name", "email", "enabled", "role_name", "joined_at", "created_at", "updated_at"],
-        },
         filters: {
           role_name__nin: ["system"],
         },

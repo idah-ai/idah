@@ -64,4 +64,33 @@ export const accountsBackendDataSource = createBackendDataSource(AccountRecord, 
 
     throw "No data returned";
   },
+
+  resend_invitation: async (params: { id: string }) => {
+    const { id: accountId } = params;
+
+    const res = await fetch(`${accountBasePath}/${accountId}/resend_invitation`, {
+      method: "POST",
+      body: JSON.stringify({ id: accountId }),
+      headers: { "Content-Type": "application/vnd.api+json" },
+    });
+
+    const body = await res.json();
+
+    if (body && body.errors) {
+      if (body.errors.length > 0) {
+        body.errors.forEach((err: Hash) => {
+          console.error(`Error resending invitation: ${err.title} - ${err.detail}`, err);
+        });
+      }
+
+      return Promise.reject(parseSingleElementError({ status: res.status, errors: body.errors }));
+    }
+
+    if (body) {
+      clearCache(resourcePath(accountBasePath, null, undefined));
+      return Promise.resolve(body);
+    }
+
+    throw "No data returned";
+  },
 });
