@@ -24,6 +24,7 @@
   // Variables
   let currentAccount = $authStatus.authContext;
   let canUpdateAccount = $state(false);
+  let canResentInvitation = $state(false);
   let canCancelInvitation = $state(false);
   let menus: IDropdownMenus = $derived({
     actions: {
@@ -42,6 +43,7 @@
         {
           label: "Resent Invitation",
           icon: RotateCcwIcon,
+          hidden: !canResentInvitation,
           action: resendInvitation,
         },
         {
@@ -62,7 +64,10 @@
   // Lifecycle
   onMount(async () => {
     canUpdateAccount = (await currentAccount?.can("update", "iam:accounts", ["as_org_owner"])) || false;
-    canCancelInvitation = account.joined_at !== null;
+
+    const alreadyJoined = account.joined_at !== null;
+    canResentInvitation = !alreadyJoined;
+    canCancelInvitation = alreadyJoined;
   });
 
   // Functions
