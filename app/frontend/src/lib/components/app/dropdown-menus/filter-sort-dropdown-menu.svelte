@@ -35,6 +35,8 @@
   import type { Sort } from "@/data/DataSource";
   import type { Filters } from "@/data/filtering";
   import type { Hash } from "@/utils/types";
+  import { page } from "$app/state";
+  import { goto } from "$app/navigation";
 
   // Props
   interface Props<T extends Record> {
@@ -313,16 +315,29 @@
 
   function clearFilter(): void {
     const filterKey = `${filterOptions?.filterKey || columnKey}`;
+    const filterKeyGte = `${filterKey}__gte`;
+    const filterKeyLte = `${filterKey}__lte`;
     const filterKeyWithOperation = `${filterKey}__${filterOptions?.filterOperation || "in"}`;
 
     onFilter({
       filters: {
         [filterKey]: undefined,
-        [`${filterKey}__gte`]: undefined,
-        [`${filterKey}__lte`]: undefined,
+        [filterKeyGte]: undefined,
+        [filterKeyLte]: undefined,
         [filterKeyWithOperation]: undefined,
       },
     });
+
+    const newURL = page.url;
+    const searchParams = newURL.searchParams;
+
+    // Optionally remove URL search params if any
+    if (searchParams.get(filterKey)) searchParams.delete(filterKey);
+    if (searchParams.get(filterKeyGte)) searchParams.delete(filterKeyGte);
+    if (searchParams.get(filterKeyLte)) searchParams.delete(filterKeyLte);
+    if (searchParams.get(filterKeyWithOperation)) searchParams.delete(filterKeyWithOperation);
+
+    goto(newURL.toString(), { replaceState: true });
   }
 </script>
 
@@ -342,7 +357,7 @@
         {#if filterable}
           {#if isFiltering}
             <FunnelIcon />
-            <div class="absolute top-2 left-[1.4rem] size-2 animate-pulse rounded-full bg-amber-500"></div>
+            <div class="absolute left-[1.4rem] top-2 size-2 animate-pulse rounded-full bg-amber-500"></div>
           {:else}
             <FunnelIcon />
           {/if}
