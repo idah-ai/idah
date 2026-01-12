@@ -66,32 +66,6 @@ module ProjectMember
       end
     end
 
-    private def authorize_creation(creating_role, project_id, access)
-      case access
-      when :as_org_owner
-        begin
-          projects.find!(project_id)
-        rescue Verse::Error::RecordNotFound # if it can't be found then we assume it's not in org_owner's scope
-          raise Verse::Error::Unauthorized,
-                "You do not have permission to create a project member for this project"
-        end
-      when :as_user
-        if creating_role == "project_owner"
-          raise Verse::Error::Unauthorized,
-                "You do not have permission to create a project owner member for this project"
-        end
-
-        if ScopedQuery::Service.without_project_access?(
-          auth_context.metadata[:id],
-          project_id,
-          ["project_owner"]
-        )
-          raise Verse::Error::Unauthorized,
-                "You do not have permission to create project member on this project"
-        end
-      end
-    end
-
     def update(record)
       access = auth_context.can?(:update, project_members.class.resource)
       # "project_owner" can only be added by an org_owner of the project
@@ -138,14 +112,42 @@ module ProjectMember
 
     def delete_account_members(account_id)
       system_project_members.chunked_index({ account_id: account_id }).each do |member|
-        project_members.delete!(member.id)
+        system_project_members.delete!(member.id)
       end
     end
 
     def disable_account_members(account_id)
       now = Time.now
       system_project_members.chunked_index({ account_id: account_id }).each do |member|
-        project_members.update!(member.id, { disabled_at: now })
+        system_project_members.update!(member.id, { disabled_at: now })
+      end
+    end
+
+    private
+
+    def authorize_creation(creating_role, project_id, access)
+      case access
+      when :as_org_owner
+        begin
+          projects.find!(project_id)
+        rescue Verse::Error::RecordNotFound # if it can't be found then we assume it's not in org_owner's scope
+          raise Verse::Error::Unauthorized,
+                "You do not have permission to create a project member for this project"
+        end
+      when :as_user
+        if creating_role == "project_owner"
+          raise Verse::Error::Unauthorized,
+                "You do not have permission to create a project owner member for this project"
+        end
+
+        if ScopedQuery::Service.without_project_access?(
+          auth_context.metadata[:id],
+          project_id,
+          ["project_owner"]
+        )
+          raise Verse::Error::Unauthorized,
+                "You do not have permission to create project member on this project"
+        end
       end
     end
   end
