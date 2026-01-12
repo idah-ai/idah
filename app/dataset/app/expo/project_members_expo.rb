@@ -25,7 +25,8 @@ class ProjectMembersExpo < BaseExpo
                       :role__in,
                       :created_at__gte,
                       :created_at__lte,
-                      :organization_id__in
+                      :organization_id__in,
+                      :enabled
     end
 
     show
@@ -40,6 +41,18 @@ class ProjectMembersExpo < BaseExpo
   def on_account_deleted
     account_id = message.content[:resource_id]
 
-    service.remove_nonparticipant_member(account_id)
+    service.delete_account_members(account_id)
+  end
+
+  expose on_resource_event(Resource::Iam::Accounts, "updated")
+  def on_account_updated
+    account_id = message.content[:resource_id]
+    enabled = message.content.dig(:args, 0, :enabled)
+
+    # Only disable project members if the account is being disabled
+    # Ensure enabled param is not nil and is false
+    return if enabled.nil? || enabled
+
+    service.disable_account_members(account_id)
   end
 end

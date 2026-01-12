@@ -366,6 +366,21 @@ RSpec.describe Annotation::Service, database: true do
       end
     end
 
+    describe "with assigned project and disabled project member" do
+      before do
+        project_member_repo.delete(project_owner_member_id) # soft delete
+      end
+
+      it "cannot index" do
+        # Setup: create note feed to test visibility
+        first_annotation_id # assigned
+
+        result = subject.index({})
+
+        expect(result.count).to eq 0
+      end
+    end
+
     describe "with not assigned project" do
       it "cannot index" do
         # Setup: Create annotations as "Project Owner" can see all annotations in assigned project
@@ -459,6 +474,21 @@ RSpec.describe Annotation::Service, database: true do
         expect {
           subject.show(first_annotation_id)
         }.to raise_error(Verse::Error::RecordNotFound)
+      end
+    end
+
+    describe "with assigned project and disabled project member" do
+      before do
+        project_member_repo.delete(annotator_member_id) # soft delete
+      end
+
+      it "cannot index" do
+        # Setup: create note feed to test visibility
+        first_annotation_id # assigned
+
+        result = subject.index({})
+
+        expect(result.count).to eq 0
       end
     end
 
@@ -613,6 +643,21 @@ RSpec.describe Annotation::Service, database: true do
         expect {
           subject.show(second_annotation_id)
         }.to raise_error(Verse::Error::RecordNotFound)
+      end
+    end
+
+    describe "with assigned project and disabled project member" do
+      before do
+        project_member_repo.delete(reviewer_member_id) # soft delete
+      end
+
+      it "cannot index" do
+        # Setup: create note feed to test visibility
+        second_annotation_id # assigned
+
+        result = subject.index({})
+
+        expect(result.count).to eq 0
       end
     end
 
