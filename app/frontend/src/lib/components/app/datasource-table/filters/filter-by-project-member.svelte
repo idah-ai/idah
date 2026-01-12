@@ -46,6 +46,7 @@
       project_id: projectId,
     },
   }}
+  valueKey="account_id"
   displayKey="email"
   searchable
   searchKeyWithOperation="email__match"
