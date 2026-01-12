@@ -13,6 +13,10 @@
 
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
   import type { Hash } from "@/utils/types";
+  import { resourcePath } from "@/data/BackendDataSource";
+  import { clearCache } from "@/data/Cache";
+  import { projectMembersBasePath } from "@/data/model/dataset/projects/members/record";
+  import { entriesBasePath } from "@/data/model/dataset/entries/record";
 
   // Props
   interface Props extends FormModalBaseProps {
@@ -107,6 +111,12 @@
     );
 
     closeThisModal();
+
+    // Delete project member cache to force refetch
+    clearCache(resourcePath(projectMembersBasePath, null, undefined));
+    // Delete entries cache
+    clearCache(resourcePath(entriesBasePath, null, undefined));
+
     $refetches.accounts.list = new Date();
     toast.success("Account updated", {
       description: `The account of "${account.email}" has been updated.`,
