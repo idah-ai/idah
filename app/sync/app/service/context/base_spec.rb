@@ -11,7 +11,7 @@ RSpec.describe Context::Base do
 
       instance = described_class.new(delegated_obj, args, context_args, opts)
 
-      expect(instance.__getobj__).to eq(delegated_obj)
+      expect(instance.send("__getobj__")).to eq(delegated_obj)
       expect(instance.instance_variable_get(:@args)).to eq(args)
       expect(instance.instance_variable_get(:@context_args)).to eq(context_args)
       expect(instance.instance_variable_get(:@context_opts)).to eq(opts)
@@ -20,7 +20,7 @@ RSpec.describe Context::Base do
     it "works with minimal parameters" do
       instance = described_class.new(delegated_obj)
 
-      expect(instance.__getobj__).to eq(delegated_obj)
+      expect(instance.send("__getobj__")).to eq(delegated_obj)
       expect(instance.instance_variable_get(:@args)).to be_nil
       expect(instance.instance_variable_get(:@context_args)).to be_nil
       expect(instance.instance_variable_get(:@opts)).to be_nil

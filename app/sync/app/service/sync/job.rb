@@ -52,7 +52,7 @@ module Sync
               klass.new(
                 auth_context_args,
                 Hash(context)[:context],
-                Hash(context)[:opts]
+                **Hash(context)[:opts]
               ) if klass
             end
           ]
@@ -62,7 +62,17 @@ module Sync
           [context, process_class.new(context)]
         end.map do |context, process|
           Verse::logger.debug {{running: process.class.name}}
-          [context, process.class.name, process.run]
+          begin
+            [context, process.class.name, process.run]
+          rescue Exception => e
+            Verse::logger::error{
+              [
+                "#{self} Error while processing #{process}",
+                [e, "#{e.backtrace.join("\n")}"].join("\n")
+              ].join("\n")
+            }
+            raise e
+          end
         end.each do |context, process_name, success|
           Verse::logger.debug {{process_name:, success:}}
           context.each do |plugin_context|

@@ -37,6 +37,7 @@ module Context
         raise Context::Error::NotFound, "No ID available after applying context filters"
       end
 
+      # part of context/base.rb#L73 concern
       # Security check: if user provided an ID but context changed it
       if id && filter[:id] != id
         raise Context::Error::Forbidden, "Context does not permit access to resource #{id}"
