@@ -539,7 +539,7 @@ RSpec.describe Entry::Service, database: true do
         project_id: @another_project_id
       )
 
-      # Create entries assigned to account 123
+      # Create entries assigned to account 123 in project 1
       @entry1_id = repo.create(
         project_id:,
         dataset_id:,
@@ -558,6 +558,7 @@ RSpec.describe Entry::Service, database: true do
         assigned_to_id: account_id
       )
 
+      # Create entry assigned to account 123 in another project
       @entry3_id = repo.create(
         project_id: @another_project_id,
         dataset_id: @another_dataset_id,
@@ -567,7 +568,7 @@ RSpec.describe Entry::Service, database: true do
         assigned_to_id: account_id
       )
 
-      # Create entry assigned to different account
+      # Create entry assigned to different account in project 1
       @other_account_entry_id = repo.create(
         project_id:,
         dataset_id:,
@@ -577,7 +578,7 @@ RSpec.describe Entry::Service, database: true do
         assigned_to_id: another_account_id
       )
 
-      # Create entry with no assignment
+      # Create entry with no assignment in project 1
       @unassigned_entry_id = repo.create(
         project_id:,
         dataset_id:,
@@ -588,17 +589,19 @@ RSpec.describe Entry::Service, database: true do
       )
     end
 
-    it "unassigns all entries for the given account_id" do
-      subject.unassign_account_entries(account_id)
+    it "unassigns entries for the given account_id within the specified project_id only" do
+      subject.unassign_account_entries(account_id, project_id)
 
-      # Entries for the specified account should be unassigned
+      # Entries for the specified account in the specified project should be unassigned
       entry1 = repo.find!(@entry1_id)
       entry2 = repo.find!(@entry2_id)
-      entry3 = repo.find!(@entry3_id)
 
       expect(entry1.assigned_to_id).to be_nil
       expect(entry2.assigned_to_id).to be_nil
-      expect(entry3.assigned_to_id).to be_nil
+
+      # Entry for same account in different project should remain assigned
+      entry3 = repo.find!(@entry3_id)
+      expect(entry3.assigned_to_id).to eq(account_id)
 
       # Entries for other accounts should remain assigned
       other_entry = repo.find!(@other_account_entry_id)
@@ -609,34 +612,56 @@ RSpec.describe Entry::Service, database: true do
       expect(unassigned_entry.assigned_to_id).to be_nil
     end
 
-    it "handles accounts with no entries" do
-      expect { subject.unassign_account_entries(99_999) }.not_to raise_error
+    it "handles accounts with no entries in the specified project" do
+      expect { subject.unassign_account_entries(99_999, project_id) }.not_to raise_error
     end
 
-    it "unassigns entries from multiple datasets and projects" do
-      subject.unassign_account_entries(account_id)
+    it "unassigns entries from multiple datasets within the same project" do
+      # Create another dataset in the same project
+      another_dataset_in_same_project = dataset_repo.create(
+        modality: "image",
+        labels: ["bird", "fish"],
+        labeling_configuration: { "width" => 300, "height" => 300 },
+        workflow_configuration: {},
+        project_id: project_id
+      )
 
-      # Verify entries from different datasets are unassigned
-      all_entries = repo.index({})
-      account_entries = all_entries.select { |e|
-        [e.id].include?(@entry1_id) || [e.id].include?(@entry2_id) || [e.id].include?(@entry3_id)
-      }
+      entry4_id = repo.create(
+        project_id:,
+        dataset_id: another_dataset_in_same_project,
+        resource: "http://example.com/image2.jpg",
+        status: "ready",
+        wf_step: "start",
+        assigned_to_id: account_id
+      )
 
-      expect(account_entries.all? { |e| e.assigned_to_id.nil? }).to be true
+      subject.unassign_account_entries(account_id, project_id)
+
+      # Verify all entries from different datasets in same project are unassigned
+      entry1 = repo.find!(@entry1_id)
+      entry2 = repo.find!(@entry2_id)
+      entry4 = repo.find!(entry4_id)
+
+      expect(entry1.assigned_to_id).to be_nil
+      expect(entry2.assigned_to_id).to be_nil
+      expect(entry4.assigned_to_id).to be_nil
     end
 
-    it "only affects entries assigned to the specified account" do
-      subject.unassign_account_entries(account_id)
+    it "only affects entries in the specified project" do
+      subject.unassign_account_entries(account_id, project_id)
 
       # Count entries that were changed
       all_entries = repo.index({})
-      unassigned_count = all_entries.select { |e| e.assigned_to_id.nil? }.count
-      assigned_to_others_count = all_entries.select { |e| e.assigned_to_id == another_account_id }.count
+      project1_entries = all_entries.select { |e| e.project_id == project_id }
+      project2_entries = all_entries.select { |e| e.project_id == @another_project_id }
 
-      # Should have 4 unassigned entries (3 from account_id + 1 originally unassigned)
-      expect(unassigned_count).to eq(4)
-      # Should still have 1 entry assigned to another_account_id
-      expect(assigned_to_others_count).to eq(1)
+      # In project 1: should have 3 unassigned entries (2 from account_id + 1 originally unassigned)
+      project1_unassigned = project1_entries.select { |e| e.assigned_to_id.nil? }
+      expect(project1_unassigned.count).to eq(3)
+
+      # In project 2: entry should still be assigned to account_id
+      project2_assigned = project2_entries.select { |e| e.assigned_to_id == account_id }
+      expect(project2_assigned.count).to eq(1)
     end
   end
 end

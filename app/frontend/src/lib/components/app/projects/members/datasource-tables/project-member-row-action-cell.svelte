@@ -70,6 +70,6 @@
     onConfirm={removeProjectMember}
     bind:open={openConfirmRemoveMemberModal}
   >
-    <AccountEntries accountId={projectMember.account_id} />
+    <AccountEntries accountId={projectMember.account_id} {projectId} />
   </ConfirmModal>
 </Can>

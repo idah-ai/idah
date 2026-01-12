@@ -5,16 +5,23 @@
 
   interface Props {
     accountId: number | string;
+    projectId?: number | string;
   }
 
   let entries: EntryRecord[] = $state([]);
-  let { accountId }: Props = $props();
+  let { accountId, projectId }: Props = $props();
 
   async function fetchEntries(): Promise<void> {
+    const filters = { assigned_to_id: accountId };
+
+    if (projectId) {
+      Object.assign(filters, { project_id: projectId });
+    }
+
     entries = (
       await entriesBackendDataSource.list({
-        filters: { assigned_to_id: accountId },
-        fields: { "dataset:entries": ["resource"] },
+        filters: filters,
+        fields: { "dataset:entries": ["resource", "project_id", "dataset_id"] },
       })
     ).data;
   }

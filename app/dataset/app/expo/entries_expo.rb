@@ -105,10 +105,11 @@ class EntriesExpo < BaseExpo
   expose on_resource_event(Resource::Dataset::ProjectMembers, "updated")
   def on_project_member_disabled
     account_id = message.content.dig(:metadata, :project_member_account_id)
+    project_id = message.content.dig(:metadata, :project_member_project_id)
 
     # Only unassign entries if the project member is being disabled
     return if message.content.dig(:args, 0, :disabled_at).nil?
 
-    service.unassign_account_entries(account_id)
+    service.unassign_account_entries(account_id, project_id)
   end
 end
