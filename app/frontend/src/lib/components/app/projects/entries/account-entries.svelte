@@ -59,7 +59,7 @@
   <div class="text-muted-foreground text-sm">
     <div>Entries on these datasets will be unassigned from this account.</div>
     <ul class="ml-5 mt-2 max-h-40 overflow-y-auto">
-      {#each Object.entries(countEntriesByDataset) as [datasetId, count]}
+      {#each Object.entries(countEntriesByDataset) as [datasetId, count] (datasetId)}
         <li>
           <Link
             href={`/projects/${projectId}/datasets/${datasetId}/entries?assigned_to_id=${accountId}`}
