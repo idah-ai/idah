@@ -129,7 +129,6 @@ module ProjectMember
 
         add_event_metadata(
           project_id: attributes[:project_id] || membership.project_id,
-          project_member_project_id: attributes[:project_id] || membership.project_id,
           project_member_account_id: attributes[:account_id] || membership.account_id,
         )
 
