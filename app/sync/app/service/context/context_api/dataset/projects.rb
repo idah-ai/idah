@@ -62,8 +62,8 @@ module Context
                     @args,
                     build_context_args_from({projects: { organization_id__in: }}),
                     @context_opts
-                  ).index(**opts).each do |dataset|
-                    yielder << dataset
+                  ).index(**opts).each do |project|
+                    yielder << project
                   end
                 end
               end
