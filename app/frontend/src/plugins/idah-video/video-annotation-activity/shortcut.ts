@@ -32,6 +32,7 @@ const CommonInjecter = (context: KeyMapContext) => {
   };
 
   const enterMode = (mode: string, replace: boolean = false) => {
+    // check and return if already in mode ?
     return () => {
       ShortcutManager.enterMode(mode, replace);
       context.switch_mode(mode);
@@ -58,10 +59,23 @@ const createBoundingBoxModeKeyMap = (context: KeyMapContext) => {
     context.switch_mode(ShortcutManager.getCurrentMode());
   };
 
+  // TODO: implement deleteSelected
+  // const deleteSelected = () => {
+  //   const selectedId = context.selectedAnnotationId();
+  //   if (!selectedId) {
+  //     console.log("No item selected to delete");
+  //     return;
+  //   }
+
+  //   console.log(`Delete a selected item with id: ${selectedId}`);
+  //   context.context.commands.run("annotation.delete", { selectedId });
+  // };
+
   return KeyMapBuilder((b) => {
     CommonInjecter(context)(b);
 
     b.on(null, "Backspace", backAction, "back", "back action");
+    // b.on(null, "Delete", deleteSelected, "Delete", "Delete selected item");
   });
 };
 
@@ -121,13 +135,9 @@ const createVisualModeKeyMap = (context: KeyMapContext) => {
   return keyMap;
 };
 
-// need note mode ?
-// open/close note sidebar on mode enter/leave ?
 const createNoteModeKeyMap = (context: KeyMapContext) => {
   return KeyMapBuilder((b) => {
     CommonInjecter(context)(b);
-
-    // shift+enter to submit current editing note ?
   });
 };
 
@@ -150,3 +160,17 @@ export function registerVisualModeShortcuts(context: KeyMapContext) {
 
   return visualModeKeyMap;
 }
+
+// TODO: implement dynamic register onselect here
+
+// const createOnSelectBoundingBoxModeKeyMap = (context: KeyMapContext) => {
+//   const onSelectDelete {
+
+//   }
+// }
+
+// export function registerOnSelectBoxMode(context: KeyMapContext) {
+//   ShortcutManager.registerKeyMap(IDAH_VIDEO_BOUNDING_BOX, createOnSelectBoundingBoxModeKeyMap(context))
+//   ShortcutManager.enterMode(IDAH_VIDEO_BOUNDING_BOX)
+
+// }

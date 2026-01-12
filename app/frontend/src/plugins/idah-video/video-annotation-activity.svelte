@@ -770,6 +770,7 @@
       return;
     } else if (annotation?.shape.type && ["review", "annotate"].includes(context.workflowStep)) {
       mode = annotation.shape.type;
+      // TODO: call dynamic register onselect here
     } else {
       mode = DEFAULT_MODE;
     }
