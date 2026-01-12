@@ -127,7 +127,11 @@ module ProjectMember
       with_metadata do
         membership = find!(id)
 
-        add_event_metadata(project_id: attributes[:project_id] || membership.project_id)
+        add_event_metadata(
+          project_id: attributes[:project_id] || membership.project_id,
+          project_member_project_id: attributes[:project_id] || membership.project_id,
+          project_member_account_id: attributes[:account_id] || membership.account_id,
+        )
 
         super(id, attributes, scope:)
       end
