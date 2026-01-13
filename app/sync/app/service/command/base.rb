@@ -11,9 +11,9 @@ module Command
   class Base
     attr_reader :filename, :opts
     attr_accessor :i, :o, :e, :wait_thr
-    def initialize(i = nil, o = nil, e = nil, wait_thr = nil, **opts)
-      @filename = opts.dig(:filename)
-      @opts = opts.except(:filename)
+    def initialize(i = nil, o = nil, e = nil, wait_thr = nil, filename:, **opts)
+      @filename = filename || [self.name, Time.now.to_i].join(".")
+      @opts = opts
       @i = Command.valid_io!(i, :i)
       @o = Command.valid_io!(o, :o)
       @e = Command.valid_io!(e, :e)

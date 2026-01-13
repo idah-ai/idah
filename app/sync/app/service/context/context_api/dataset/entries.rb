@@ -14,7 +14,7 @@ module Context
               raise Context::Error::InvalidData, "Entry missing resource in attributes"
             end
 
-            filters = build_context_args_from({
+            filters = build_context_args({
               entries: {id:, resource:},
               medias: {resource:},
               annotations: { entry_id: id }

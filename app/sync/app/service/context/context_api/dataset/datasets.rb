@@ -14,9 +14,9 @@ module Context
               raise Context::Error::InvalidData, "Dataset missing project_id in attributes"
             end
 
-            filters = build_context_args_from({
-              projects: { id: project_id },
+            filters = build_context_args({
               datasets: { id: },
+              projects: { id: project_id },
               entries: { dataset_id: id }
             })
 
@@ -44,8 +44,8 @@ module Context
         end
 
         def self.from_projects(projects, args = nil, filters = nil, opts = nil)
-          built_args = projects.build_context_args_from(args)
-          built_context_args = projects.build_context_args_from(filters)
+          built_args = projects.build_context_args(args)
+          built_context_args = projects.build_context_args(filters)
           built_opts = projects.build_opts(opts)
 
           CrudProcedural.new(
@@ -56,7 +56,7 @@ module Context
                 end.each_slice(DEFAULT_BATCH_SIZE) do |project_id__in|
                   new(
                     @args,
-                    build_context_args_from({datasets: { project_id__in: }}),
+                    build_context_args({datasets: { project_id__in: }}),
                     @context_opts
                   ).index(**opts).each do |dataset|
                     yielder << dataset

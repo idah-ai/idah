@@ -14,7 +14,7 @@ module Context
               raise Context::Error::InvalidData, "Project missing organization_id in attributes"
             end
 
-            filters = build_context_args_from({
+            filters = build_context_args({
               projects: {id:},
               project_members: { project_id: id },
               datasets: { project_id: id },
@@ -48,8 +48,8 @@ module Context
         end
 
         def self.from_organizations(organizations, args = nil, context_args = nil, opts = nil)
-          built_args = organizations.build_context_args_from(args)
-          built_context_args = organizations.build_context_args_from(context_args)
+          built_args = organizations.build_context_args(args)
+          built_context_args = organizations.build_context_args(context_args)
           built_opts = organizations.build_opts(opts)
 
           CrudProcedural.new(
@@ -60,7 +60,7 @@ module Context
                 end.each_slice(DEFAULT_BATCH_SIZE) do |organization_id__in|
                   new(
                     @args,
-                    build_context_args_from({projects: { organization_id__in: }}),
+                    build_context_args({projects: { organization_id__in: }}),
                     @context_opts
                   ).index(**opts).each do |project|
                     yielder << project

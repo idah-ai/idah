@@ -1,13 +1,17 @@
 module Command
   class UniversalPortableDataset < Base
-    def initialize(**opts)
-      filename = [Hash(opts).dig(:filename) || ["export.UniversalPortableDataset", Time.now.to_i], :upd].join(".")
+    def initialize(name: nil, **opts)
+      filename = [
+        name || "export.#{Time.now.to_i}",
+        :upd
+      ].join(".")
+
       stdin, stdout, stderr, wait_thr = Open3.popen3(
         "bin/datset-static",
         "-i", filename,
         "append"
       )
-      super(stdin, stdout, stderr, wait_thr, **opts)
+      super(stdin, stdout, stderr, wait_thr, **opts.merge(filename:))
     end
 
     def append(s, expected_lines = 1, feedback = proc{|line|line})

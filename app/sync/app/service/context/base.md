@@ -53,7 +53,7 @@ def self.build_filters(
 
 ```ruby
 # Aggregates filters across all APIs
-def self.build_context_args_from(
+def self.build_context_args(
   passed_args = nil,         # Contextualized
   passed_context_args = nil  # Contextualized
 ) # Returns: { api1: {filters}, api2: {filters}, ... }
@@ -90,7 +90,7 @@ def build_filters(
 
 ```ruby
 # Aggregates using @args, @context_args, and passed parameter
-def build_context_args_from(passed_context_args = nil)
+def build_context_args(passed_context_args = nil)
 ```
 
 ```ruby
@@ -126,7 +126,7 @@ filters = Context::Base.build_filters(
 
 ```ruby
 # Class method - multiple APIs
-context_args = Context::Base.build_context_args_from(
+context_args = Context::Base.build_context_args(
   { api1: { key1: 'args' }, api2: { key3: 'args' } },
   { api1: { key2: 'context' } }
 )
@@ -149,7 +149,7 @@ filters = instance.build_filters({ id: '456' }, :test_api)
 # => { id: '123', filter: 'active' }  # @args['id'] wins
 
 # Aggregate all context
-context = instance.build_context_args_from
+context = instance.build_context_args
 # => { test_api: { id: '123', filter: 'active' } }
 
 # Build opts with precedence
@@ -167,7 +167,7 @@ org_instance = Context::Base.new(
 )
 
 # Get aggregated context
-context = org_instance.build_context_args_from
+context = org_instance.build_context_args
 # => { organizations: { id: 'org-123' } }
 
 # Pass to related API
@@ -186,7 +186,7 @@ filters = project_instance.build_filters({}, :projects)
 
 ### Deep Merging at Key Level
 
-The instance `build_context_args_from` method performs deep merging within each API:
+The instance `build_context_args` method performs deep merging within each API:
 
 ```ruby
 # For each API, merge all three sources

@@ -11,6 +11,7 @@ class DatasetsExpo < BaseExpo
     show
     index do
       allowed_filters :id__in,
+                      :project_id__in,
                       :name__match,
                       :status__in,
                       :progress__gte,
