@@ -19,6 +19,19 @@ plugins:
     config:
       url: <%= ENV.fetch("REDIS_STREAM_URL") %>
       max_connections: 10
+  - name: shrine
+    config:
+      storages:
+        - name: default
+          adapter: s3
+          config:
+            bucket: <%= ENV.fetch("SYNC_FILES_BUCKET") %>
+            access_key_id: <%= ENV.fetch("SYNC_FILES_ACCESS_KEY_ID") %>
+            secret_access_key: <%= ENV.fetch("SYNC_FILES_SECRET_ACCESS_KEY") %>
+            public: false
+            region: <%= ENV.fetch("SYNC_FILES_REGION") %>
+            prefix: files
+            endpoint: <%= ENV.fetch("SYNC_FILES_ENDPOINT") %> # https://storage.googleapis.com
 
 kv_store:
   adapter: Verse::Redis::KVStore
