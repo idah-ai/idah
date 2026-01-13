@@ -4,9 +4,12 @@ module Sync
     def run_impl
       begin
         ios = []
-        authcontext = arguments.fetch(:auth_context)
-        role = authcontext.fetch(:role)
-        custom_scopes = authcontext.fetch(:custom_scopes)
+        auth_context = arguments.fetch(:auth_context)
+        export_service = Exports::Service.new(
+          Verse::Auth::Context[:system]
+        )
+        role = auth_context.fetch(:role)
+        custom_scopes = auth_context.fetch(:custom_scopes)
 
         auth_context_args = \
           case role
@@ -19,7 +22,7 @@ module Sync
           when "user"
             raise "todo"
           else
-            raise "unexpected auth_context: #{authcontext}"
+            raise "unexpected auth_context: #{auth_context}"
           end
 
         context_classes = Hash(arguments.fetch(:processors)).flat_map do |processor, opts|
@@ -76,7 +79,7 @@ module Sync
             }
             raise e
           end
-        end.each do |context, process_name, success|
+        end.map do |context, process_name, success|
           Verse::logger.debug {{process_name:, success:}}
           context.each do |plugin_context|
             if plugin_context.respond_to? :close
@@ -85,6 +88,18 @@ module Sync
               }
             end
           end
+          [process_name, context]
+        end.each do |process_name, context|
+          # assume exports for now
+          file = File.open(context.io.filename)
+          export_service.create(
+            job_id,
+            context.io.filename,
+            file,
+            auth_context.fetch(:metadata)
+          )
+          file.close
+          FileUtils.rm_rf(context.io.filename)
         end
       end
     end

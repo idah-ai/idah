@@ -30,6 +30,24 @@ Sequel.migration do
 
       Migration::Timestamps.timestamps(self)
     end
+
+    create_table(:exports) do
+      column :id, String, primary_key: true
+      column :job_id, String, null: false, index: true
+
+      column :filename, String, null: false
+
+      column :size, Integer, null: false
+      column :mime_type, String, null: false
+
+      column :created_by, Integer, null: false, index: true
+      column :created_role, String
+
+      column :meta, :jsonb, null: false, default: "{}"
+
+      Migration::Timestamps.timestamps(self, updated_at: false)
+    end
+
     Migration::Timestamps.trg_updated_at(self, :jobs)
   end
 end

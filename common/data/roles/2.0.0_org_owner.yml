@@ -36,3 +36,4 @@ org_owner:
     # Sync Service
     - "sync:jobs.export.as_org_owner"
     - "sync:jobs.read.as_org_owner"
+    - "sync:exports.read.as_org_owner"
