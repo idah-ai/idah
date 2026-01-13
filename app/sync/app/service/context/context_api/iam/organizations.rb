@@ -9,7 +9,7 @@ module Context
               raise Context::Error::InvalidData, "Organization missing id"
             end
 
-            filters = build_context_args_from({
+            filters = build_context_args({
               organizations: {id:}, projects: {organization_id: id}
             })
 
@@ -41,14 +41,14 @@ module Context
           organizations = ContextApi::Iam::Organizations.new(args, context, opts)
           projects = ContextApi::Dataset::Projects.from_organizations(
             organizations,
-            organizations.build_context_args_from(args),
-            organizations.build_context_args_from(context),
+            organizations.build_context_args(args),
+            organizations.build_context_args(context),
             opts
           )
           datasets = ContextApi::Dataset::Datasets.from_projects(
             projects,
-            projects.build_context_args_from(args),
-            projects.build_context_args_from(context),
+            projects.build_context_args(args),
+            projects.build_context_args(context),
             opts
           )
 

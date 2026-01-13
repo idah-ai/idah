@@ -36,28 +36,31 @@ module Sync
           [processor_class, Verse::Util::Reflection.constantize(processor_class)]
         end.to_h
 
-        Hash(arguments.fetch(:processors)).lazy.map do |process_name, process|
-          Verse::logger.debug {{process_name:, process:}}
+        Hash(arguments.fetch(:processors)).lazy.map do |process_name, process_config|
+          Verse::logger.debug {{process_name:, process_config:}}
+          process_config = Hash(process_config)
           [
-            processor_classes.fetch(process.fetch(:klass)),
-            Hash(process).fetch(:context).map do |context_name, context|
-              Verse::logger.debug {{context_name:, context:}}
-              klass = context_classes[Hash(context).fetch(:klass)]
-              Verse::logger.debug {{klass:}}
+            processor_classes.fetch(process_config.fetch(:klass)),
+            process_config.fetch(:context).map do |context_name, context_config|
+              Verse::logger.debug {{context_name:, context_config:}}
+              context_config = Hash(context_config)
+              klass = context_classes[context_config.fetch(:klass)]
               Verse::logger.debug {{
-                args: auth_context_args,
-                context: Hash(context)[:context],
-                opts: Hash(context)[:opts]
+                klass:,
+                args: Context::Base.build_context_args(
+                  auth_context_args,
+                  context_config[:context]
+                ),
+                opts: context_config[:opts]
               }}
               klass.new(
                 auth_context_args,
-                Hash(context)[:context],
-                **Hash(context)[:opts]
+                **context_config[:opts]
               ) if klass
             end
           ]
         end.map do |process_class, contexts| # temp
-          [process_class, Context.new(contexts)]
+          [process_class, Context::Root.new(contexts)]
         end.map do |process_class, context|
           [context, process_class.new(context)]
         end.map do |context, process|

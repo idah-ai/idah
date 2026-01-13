@@ -11,12 +11,22 @@ module Export
     def run
       start
       @context.datasets.each do |dataset|
+        dataset_directory = "dataset.#{dataset[:id]}"
+        # @context.io.mkdir dataset_directory
         dataset.entries.each do |entry|
-          @context.io.xml( # CVAT export seems to have tasks/entries as root
-            entry[:attributes][:resource]
-          ) do |xml|
+          task_directory = File.join(
+            dataset_directory,
+            "task.#{entry[:attributes][:resource]}"
+          )
+          @context.io.mkdir task_directory
+          file = File.join(task_directory, "annotations.xml")
+          @context.io.xml(file) do |xml|
             on_task dataset, entry, xml
           end
+          @context.io.mkdir File.join(task_directory, "images")
+          # media / store images by frames
+          @context.io.zip("**/**", task_directory)
+          # @context.io.rmdir(task_directory)
         end
       end
       done
@@ -24,7 +34,11 @@ module Export
 
     private
     def start
-      Verse::logger::debug{"#{self} Start processing #{@context.io.filename}"}
+    end
+
+    def done
+      @context.io.zip("**/*.zip")
+      # @context.io.rmdir
     end
 
     def error(e, record)
@@ -34,13 +48,7 @@ module Export
       raise e
     end
 
-    def done
-      @context.io.zip
-      Verse::logger::debug{"#{self} #{@context.io.filename} Process complete"}
-    end
-
     def on_task(dataset, entry, xml)
-      # media / store images by frames
       begin
         xml.annotations do |annotations|
           annotations.version 1.1

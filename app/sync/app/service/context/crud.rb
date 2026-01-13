@@ -14,6 +14,7 @@ module Context
     def index(**opts)
       built_opts = build_opts(opts.except(:filter))
       built_filters = build_filters(opts.dig(:filter))
+      built_filters ||= {} if __getobj__.class == Api::Exposition
       crud_opts = Hash(built_opts).merge(filter: built_filters)
       # TODO: why ? fix method_missing ? Delegator ?
       # /wrong number of arguments (given 1, expected 0)

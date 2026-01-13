@@ -188,7 +188,7 @@ RSpec.describe Context::Base do
     end
   end
 
-  describe ".build_context_args_from" do
+  describe ".build_context_args" do
     context "aggregating filters across multiple APIs" do
       let(:passed_args) { {
         api1: { key1: 'args1', key2: 'args1' },
@@ -200,7 +200,7 @@ RSpec.describe Context::Base do
       } }
 
       it "creates filter hash for each API with correct precedence" do
-        result = described_class.build_context_args_from(
+        result = described_class.build_context_args(
           passed_args,
           passed_context_args
         )
@@ -213,19 +213,19 @@ RSpec.describe Context::Base do
       end
 
       it "returns nil when no APIs have any data" do
-        result = described_class.build_context_args_from(nil, nil)
+        result = described_class.build_context_args(nil, nil)
         expect(result).to be_nil
       end
 
       it "returns nil for empty hashes" do
-        result = described_class.build_context_args_from({}, {})
+        result = described_class.build_context_args({}, {})
         expect(result).to be_nil
       end
     end
 
     context "with overlapping API names" do
       it "merges data correctly when APIs appear in both inputs" do
-        result = described_class.build_context_args_from(
+        result = described_class.build_context_args(
           { shared: { key1: 'args', key2: 'args' } },
           { shared: { key2: 'context', key3: 'context' } }
         )
@@ -237,13 +237,13 @@ RSpec.describe Context::Base do
     end
   end
 
-  describe "#build_context_args_from" do
+  describe "#build_context_args" do
     let(:instance_args) { { api1: { key1: 'instance_args' } } }
     let(:instance_context_args) { { api2: { key2: 'instance_context' } } }
     let(:instance) { described_class.new(delegated_obj, instance_args, instance_context_args) }
 
     it "aggregates from instance variables only" do
-      result = instance.build_context_args_from
+      result = instance.build_context_args
 
       expect(result).to eq(
         api1: { key1: 'instance_args' },
@@ -252,7 +252,7 @@ RSpec.describe Context::Base do
     end
 
     it "merges instance vars with passed parameters" do
-      result = instance.build_context_args_from(
+      result = instance.build_context_args(
         { api1: { key3: 'passed' }, api3: { key5: 'passed' } }
       )
 
@@ -265,7 +265,7 @@ RSpec.describe Context::Base do
 
     it "returns nil when instance has no data and nothing passed" do
       empty_instance = described_class.new(delegated_obj)
-      result = empty_instance.build_context_args_from
+      result = empty_instance.build_context_args
 
       expect(result).to be_nil
     end
@@ -453,7 +453,7 @@ RSpec.describe Context::Base do
       expect(filters).to include(only_args: 'args', only_context: 'context')
 
       # Test context args
-      context_args = instance.build_context_args_from
+      context_args = instance.build_context_args
       expect(context_args[:test_api]).to include(
         shared: 'args',
         only_args: 'args',
@@ -472,7 +472,7 @@ RSpec.describe Context::Base do
         { organizations: { id: '123' } }
       )
 
-      context_args = org_instance.build_context_args_from
+      context_args = org_instance.build_context_args
 
       project_instance = described_class.new(
         double(name: :projects),

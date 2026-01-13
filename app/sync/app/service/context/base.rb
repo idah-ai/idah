@@ -123,7 +123,7 @@ module Context
 
     # Class method: aggregates filters for all APIs
     # Returns: { api1: {filters}, api2: {filters}, ... }
-    def self.build_context_args_from(
+    def self.build_context_args(
       passed_args = nil,
       passed_context_args = nil
     )
@@ -147,7 +147,7 @@ module Context
 
     # Instance method: aggregates filters using instance variables
     # Precedence: passed_context_args < @context_args < @args
-    def build_context_args_from(passed_context_args = nil)
+    def build_context_args(passed_context_args = nil)
       # Collect all API names from all three sources
       all_api_names = (
         Hash(passed_context_args || {}).keys +

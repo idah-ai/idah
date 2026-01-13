@@ -14,7 +14,7 @@ module Context
               raise Context::Error::InvalidData, "ProjectMember missing project_id in attributes"
             end
 
-            filters = build_context_args_from({
+            filters = build_context_args({
               project_members: { id: }, projects: {id: project_id}
             })
 

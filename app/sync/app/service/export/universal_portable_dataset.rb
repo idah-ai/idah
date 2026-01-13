@@ -24,17 +24,16 @@ module Export
 
     private
     def start
-      Verse::logger::debug{"#{self} Start processing #{@context.io.filename}"}
       @context.io.append({command: 'init', args: {}}.to_json)
+    end
+    def done
     end
 
     def error(e, record)
-      Verse::logger::error { "#{self} failed to process #{record}" }
+      Verse::logger::error {
+        "#{self} failed to process #{[record[:type], record[:id]].join(":")}"
+      }
       raise e
-    end
-
-    def done
-      Verse::logger::debug{"#{self} #{@context.io.filename} Process complete"}
     end
 
     def on_dataset(dataset)
