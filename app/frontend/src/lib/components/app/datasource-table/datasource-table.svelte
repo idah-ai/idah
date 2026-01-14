@@ -112,7 +112,7 @@
       const mergedFilters = { ...listOptions?.filters, ...tablePreferences.filters };
 
       /** Merged sort from tablePreferences and listOptions */
-      const mergedSort = [...(listOptions?.sort || []), ...(tablePreferences.sort || [])];
+      const mergedSort = Array.from(new Set([...(listOptions?.sort || []), ...(tablePreferences.sort || [])]));
 
       /** Merged pagination from tablePreferences and listOptions */
       const mergedPagination = { ...listOptions?.pagination, ...tablePreferences.pagination };
