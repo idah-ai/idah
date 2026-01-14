@@ -54,6 +54,7 @@ export function getLogResourceDetails(
       break;
     }
     case "account_sessions": {
+      resource.name = resource_id;
       resource.displayUrl = `/accounts/${resource_id}`;
       resource.resourceUrl = "/accounts";
       break;
