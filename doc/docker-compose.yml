@@ -1,0 +1,44 @@
+volumes:
+  idah_doc_bundle:
+
+services:
+  idah-doc:
+    container_name: idah-doc
+    image: idah-doc
+    build:
+      context: ../
+      dockerfile: ./doc/Dockerfile.dev
+    environment:
+      - COMMON_PATH=../../common
+    stdin_open: true
+    tty: true
+    volumes:
+      - ../app:/idah/app:cached
+      - ../common:/idah/common:cached
+      - ../bin/all_services:/idah/bin/all_services
+      - ./bin/generate_openapi:/idah/bin/generate_openapi
+      - ./openapi:/openapi:cached
+      - idah_doc_bundle:/vendor/bundle
+    command: >
+      sh -c "
+        ./bin/all_services bundle install &&
+        ./bin/generate_openapi &&
+        bash
+      "
+    extra_hosts:
+      - localhost:host-gateway
+    ports:
+      - "4001:4001"
+
+  swagger-ui:
+    image: swaggerapi/swagger-ui:latest
+    container_name: swagger-ui
+    ports:
+      - "4002:8080"
+    depends_on:
+      - idah-doc
+    volumes:
+      # Mount the local 'swagger' directory to the container's '/app' directory
+      - ./openapi:/usr/share/nginx/html/openapi
+    environment:
+      CONFIG_URL: /openapi/swagger.json
