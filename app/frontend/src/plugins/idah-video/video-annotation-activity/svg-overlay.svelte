@@ -180,6 +180,7 @@
       zoomableElement.mouseDown(e);
       return;
     }
+    console.log("atoooooo5", { mode });
 
     toolSelection?.startSelection(cursor_downscaled);
 
@@ -248,7 +249,7 @@
     return mode != DEFAULT_MODE
       ? mode == IDAH_NOTE
         ? "cursor-note"
-        : points.length < (cursorConstraints.get(mode) || 0)
+        : points.length < (cursorConstraints.get(mode) || 0) || toolSelection?.isEditing()
           ? "cursor-crosshair"
           : "cursor-grab"
       : "cursor-grab";
@@ -313,7 +314,7 @@
                 }
               }}
             />
-          {:else if annotation.shape.type == IDAH_POLYGON}
+          {:else if annotation.shape.type == IDAH_POLYGON && !annotation.hidden}
             <Polygon
               {mode}
               {pointer}
@@ -365,7 +366,7 @@
                 }
               }}
             />
-          {:else if annotation.shape.type == IDAH_POLYGON}
+          {:else if annotation.shape.type == IDAH_POLYGON && !annotation.hidden}
             <Polygon
               {mode}
               {pointer}
@@ -394,51 +395,54 @@
       {/each}
     {/await}
 
-    {#if (shape?.type == IDAH_VIDEO_BOUNDING_BOX || mode == IDAH_VIDEO_BOUNDING_BOX) && selected ? !selected.hidden : true}
-      <BoundingBox
-        {pointer}
-        bind:this={toolSelection}
-        {mode}
-        {points}
-        ratio={target_size}
-        offset={zoomInfo.offset}
-        cursor={cursor_downscaled}
-        editable={(shape?.type == IDAH_VIDEO_BOUNDING_BOX || mode == IDAH_VIDEO_BOUNDING_BOX) &&
-          !selected?.locked &&
-          ["annotate", "review"].includes(context.workflowStep)}
-        color={selected?.synced
-          ? Object.entries(context.config)
-              .find(([k, _]) => k == mode)?.[1]
-              .values.find((c) => c.id == selected?.value?.category)?.color || "grey"
-          : "grey"}
-        onChange={(bb) => {
-          onSelection(IDAH_VIDEO_BOUNDING_BOX, frame, bb, selected?.metadata.id);
-          points = bb;
-        }}
-      />
-    {/if}
+    {#if selected && !selected.hidden}
+      {#if shape?.type == IDAH_VIDEO_BOUNDING_BOX || mode == IDAH_VIDEO_BOUNDING_BOX}
+        <BoundingBox
+          {pointer}
+          bind:this={toolSelection}
+          {mode}
+          {points}
+          ratio={target_size}
+          offset={zoomInfo.offset}
+          cursor={cursor_downscaled}
+          editable={(shape?.type == IDAH_VIDEO_BOUNDING_BOX || mode == IDAH_VIDEO_BOUNDING_BOX) &&
+            !selected?.locked &&
+            ["annotate", "review"].includes(context.workflowStep)}
+          color={selected?.synced
+            ? Object.entries(context.config)
+                .find(([k, _]) => k == mode)?.[1]
+                .values.find((c) => c.id == selected?.value?.category)?.color || "grey"
+            : "grey"}
+          onChange={(bb) => {
+            onSelection(IDAH_VIDEO_BOUNDING_BOX, frame, bb, selected?.metadata.id);
+            points = bb;
+          }}
+        />
+      {/if}
 
-    {#if shape?.type == IDAH_POLYGON || mode == IDAH_POLYGON}
-      <Polygon
-        {pointer}
-        bind:this={toolSelection}
-        {mode}
-        {points}
-        ratio={target_size}
-        offset={zoomInfo.offset}
-        cursor={cursor_downscaled}
-        editable={(shape?.type == IDAH_POLYGON || mode == IDAH_POLYGON) &&
-          ["annotate", "review"].includes(context.workflowStep)}
-        color={selected?.synced
-          ? Object.entries(context.config)
-              .find(([k, _]) => k == mode)?.[1]
-              .values.find((c) => c.id == selected?.value?.category)?.color || "grey"
-          : "grey"}
-        onChange={(polygon_points) => {
-          onSelection(IDAH_POLYGON, frame, polygon_points, selected?.metadata.id);
-          points = polygon_points;
-        }}
-      />
+      {#if shape?.type == IDAH_POLYGON || mode == IDAH_POLYGON}
+        <Polygon
+          {pointer}
+          bind:this={toolSelection}
+          {mode}
+          {points}
+          ratio={target_size}
+          offset={zoomInfo.offset}
+          cursor={cursor_downscaled}
+          editable={(shape?.type == IDAH_POLYGON || mode == IDAH_POLYGON) &&
+            !selected?.locked &&
+            ["annotate", "review"].includes(context.workflowStep)}
+          color={selected?.synced
+            ? Object.entries(context.config)
+                .find(([k, _]) => k == mode)?.[1]
+                .values.find((c) => c.id == selected?.value?.category)?.color || "grey"
+            : "grey"}
+          onChange={(polygon_points) => {
+            onSelection(IDAH_POLYGON, frame, polygon_points, selected?.metadata.id);
+            points = polygon_points;
+          }}
+        />
+      {/if}
     {/if}
   </svg>
 </div>
