@@ -29,13 +29,6 @@ module Organization
       end
     end
 
-    private def organizations_from_project_member_scoped
-      account_id = auth_context.metadata[:id]
-      memberships = Api[:idah].dataset.project_members.index(filter: { account_id: }, included: ["project"]).data
-
-      table.where(id: memberships.map { |pm| pm.project.organization_id }.uniq)
-    end
-
     def create(attributes)
       with_metadata do
         add_event_metadata
@@ -54,15 +47,24 @@ module Organization
 
     def delete!(id)
       with_metadata do
-        organization = find!(id)
+        find!(id)
 
-        add_event_metadata(organization_id: id) if organization
+        add_event_metadata(organization_id: id)
 
         super(id)
       end
     end
 
-    private def add_event_metadata(**opts)
+    private
+
+    def organizations_from_project_member_scoped
+      account_id = auth_context.metadata[:id]
+      memberships = Api[:idah].dataset.project_members.index(filter: { account_id: }, included: ["project"]).data
+
+      table.where(id: memberships.map { |pm| pm.project.organization_id }.uniq)
+    end
+
+    def add_event_metadata(**opts)
       add_metadata(
         actor_account_id: auth_context.metadata[:id],
         actor_account_email: auth_context.metadata[:email],

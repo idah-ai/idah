@@ -47,20 +47,6 @@ module Medias
       end
     end
 
-    private def project_from_orgs_scoped
-      org_ids = auth_context.custom_scopes[:org]
-      projects = Api[:idah].dataset.projects.index(organization_id: org_ids).data
-
-      table.where(project_id: projects.map(&:id).uniq)
-    end
-
-    private def project_from_memberships_scoped
-      account_id = auth_context.metadata[:id]
-      memberships = Api[:idah].dataset.project_members.index(filter: { account_id: }).data
-
-      table.where(project_id: memberships.map(&:project_id).uniq)
-    end
-
     def create(attributes)
       with_metadata do
         add_event_metadata(project_id: attributes[:project_id])
@@ -73,7 +59,7 @@ module Medias
       with_metadata do
         media = find!(id)
 
-        add_event_metadata(project_id: media.project_id) if media
+        add_event_metadata(project_id: media.project_id)
 
         super(id, attributes, scope:)
       end
@@ -83,13 +69,29 @@ module Medias
       with_metadata do
         media = find!(id)
 
-        add_event_metadata(project_id: media.project_id) if media
+        add_event_metadata(project_id: media.project_id)
 
         super(id)
       end
     end
 
-    private def add_event_metadata(**opts)
+    private
+
+    def project_from_orgs_scoped
+      org_ids = auth_context.custom_scopes[:org]
+      projects = Api[:idah].dataset.projects.index(organization_id: org_ids).data
+
+      table.where(project_id: projects.map(&:id).uniq)
+    end
+
+    def project_from_memberships_scoped
+      account_id = auth_context.metadata[:id]
+      memberships = Api[:idah].dataset.project_members.index(filter: { account_id: }).data
+
+      table.where(project_id: memberships.map(&:project_id).uniq)
+    end
+
+    def add_event_metadata(**opts)
       add_metadata(
         actor_account_id: auth_context.metadata[:id],
         actor_account_email: auth_context.metadata[:email],

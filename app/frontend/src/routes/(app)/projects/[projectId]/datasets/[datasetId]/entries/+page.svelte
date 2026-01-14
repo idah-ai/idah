@@ -69,6 +69,13 @@
   // Variables
   let projectId: string = page.params.projectId as string;
   let datasetId = page.params.datasetId as string;
+
+  // Optional URL Params
+  let assignedToId = page.url.searchParams.get("assigned_to_id");
+
+  let filters: { dataset_id: string; assigned_to_id?: string } = { dataset_id: datasetId };
+  if (assignedToId) filters.assigned_to_id = assignedToId;
+
   let canUpdateEntry = $state(false);
   let canDeleteEntry = $state(false);
   let currentPage: number = $state(1);
@@ -105,9 +112,9 @@
   ]);
 
   let listOptions: ListOptions = $state({
-    filters: {
-      dataset_id: datasetId,
-    },
+    filters: filters,
+    included: ["assigned_to", "submitted_by", "reviewed_by"],
+    fields: { "dataset:project_members": ["name", "email", "picture_url"] },
     sort: ["priority"],
     count: true,
     pagination: {

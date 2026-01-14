@@ -3,6 +3,7 @@
   import { resolve } from "$app/paths";
   import { SquarePenIcon, Trash2Icon } from "@lucide/svelte";
   import { onMount } from "svelte";
+  import { toast } from "svelte-sonner";
 
   import DatasetFormModal from "@/components/app/datasets/overlays/dataset-form-modal.svelte";
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
@@ -10,6 +11,7 @@
 
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { authStatus } from "@/security/AuthContext";
+  import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
 
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
@@ -57,7 +59,10 @@
 
   // Lifecycle
   onMount(async () => {
-    await checkRights();
+    await Promise.all([checkRights()]);
+
+    const datasetRes = await fetchDataset();
+    datasetRecord = datasetRes.data;
   });
 
   // Functions
@@ -85,10 +90,17 @@
   }
 
   async function deleteDataset(): Promise<void> {
-    await datasetsBackendDataSource.delete(datasetId);
-    goto(resolve(`/projects/${projectId}/datasets`));
-    $refetches.datasets.list = new Date();
-    openConfirmDeleteDatasetModal = false;
+    try {
+      await datasetsBackendDataSource.delete(datasetId, { showErrorToast: false });
+      openConfirmDeleteDatasetModal = false;
+      $refetches.datasets.list = new Date();
+      goto(resolve(`/projects/${projectId}/datasets`));
+      toast.success("Dataset deleted", {
+        description: `The dataset "${datasetRecord?.name}" has been deleted.`,
+      });
+    } catch (error) {
+      showActionFailedToast(error);
+    }
   }
 </script>
 

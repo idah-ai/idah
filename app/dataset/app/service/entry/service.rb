@@ -157,5 +157,11 @@ module Entry
         entries.find!(entry.id, included: [:dataset])
       end
     end
+
+    def unassign_account_entries(account_id, project_id)
+      system_entries_repo.chunked_index({ assigned_to_id: account_id, project_id: }).each do |entry|
+        system_entries_repo.update!(entry.id, { assigned_to_id: nil })
+      end
+    end
   end
 end
