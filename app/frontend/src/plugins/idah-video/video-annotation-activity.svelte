@@ -151,18 +151,18 @@
         handleClick: () => context.commands.run("tools.bounding_box"),
       },
       {
-        label: "Notes",
-        type: IDAH_NOTE,
-        iconName: "message-circle",
-        disabled: !["annotate", "review", "done"].includes(context.workflowStep), // Note: Only allow to create note when workflow steps are "annotate" and "review"
-        handleClick: () => context.commands.run("tools.note"),
-      },
-      {
         label: "Polygon",
         type: IDAH_POLYGON,
         iconName: "polygon",
         disabled: !["annotate", "review"].includes(context.workflowStep),
         handleClick: () => context.commands.run("tools.polygon"),
+      },
+      {
+        label: "Notes",
+        type: IDAH_NOTE,
+        iconName: "message-circle",
+        disabled: !["annotate", "review", "done"].includes(context.workflowStep), // Note: Only allow to create note when workflow steps are "annotate" and "review"
+        handleClick: () => context.commands.run("tools.note"),
       },
     ];
 

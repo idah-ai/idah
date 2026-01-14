@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { is } from "zod/locales";
   import { IDAH_NOTE } from "../type";
   import { X, Y, type Point } from "./VideoAnnotationContext";
 
@@ -45,6 +44,8 @@
   let editingVertexIndex: number | undefined = $state(); // which vertex is being dragged
   let isPolygonComplete: boolean = $state(false);
   let previousPointsLength: number = $state(0);
+  let isHoveringOverEdge: boolean = $state(false); // track if cursor is near polygon edge
+  let isAltKeyPressed: boolean = $state(false); // track if ALT key is pressed
 
   // Automatically set polygon as complete when loading with existing points (3 or more)
   // Only trigger when points length jumps by more than 1 (indicating a load, not incremental creation)
@@ -105,25 +106,153 @@
     return distance < threshold;
   }
 
+  // Check if a point is near a line segment
+  function isNearLineSegment(point: Point, lineStart: Point, lineEnd: Point, threshold: number = 0.001): boolean {
+    const x = point[X];
+    const y = point[Y];
+    const x1 = lineStart[X];
+    const y1 = lineStart[Y];
+    const x2 = lineEnd[X];
+    const y2 = lineEnd[Y];
+
+    // Calculate distance from point to line segment
+    const A = x - x1;
+    const B = y - y1;
+    const C = x2 - x1;
+    const D = y2 - y1;
+
+    const dot = A * C + B * D;
+    const lenSq = C * C + D * D;
+    let param = -1;
+
+    if (lenSq !== 0) {
+      param = dot / lenSq;
+    }
+
+    let xx, yy;
+
+    if (param < 0) {
+      xx = x1;
+      yy = y1;
+    } else if (param > 1) {
+      xx = x2;
+      yy = y2;
+    } else {
+      xx = x1 + param * C;
+      yy = y1 + param * D;
+    }
+
+    const dx = x - xx;
+    const dy = y - yy;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    return distance < threshold;
+  }
+
+  // Check if cursor is near any edge of the polygon
+  function checkIfNearEdge(cursorPoint: Point | undefined): boolean {
+    if (!cursorPoint || !isPolygonComplete || points.length < 3) {
+      return false;
+    }
+
+    for (let i = 0; i < points.length; i++) {
+      const start = points[i];
+      const end = points[(i + 1) % points.length];
+      if (isNearLineSegment(cursorPoint, start, end, 0.002)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  // Find which edge segment the point is near, returns edge index or -1
+  function findNearestEdge(point: Point): number {
+    if (!isPolygonComplete || points.length < 3) {
+      return -1;
+    }
+
+    for (let i = 0; i < points.length; i++) {
+      const start = points[i];
+      const end = points[(i + 1) % points.length];
+      if (isNearLineSegment(point, start, end, 0.001)) {
+        return i;
+      }
+    }
+
+    return -1;
+  }
+
+  // Insert a new point into the polygon after the specified vertex index
+  function insertPointAfterVertex(clickPoint: Point, afterIndex: number): Point[] {
+    const newPoints = [...points];
+    newPoints.splice(afterIndex + 1, 0, clickPoint);
+    return newPoints;
+  }
+
+  // Remove a vertex from the polygon at the specified index
+  function removeVertex(vertexIndex: number): Point[] {
+    // Don't allow removing if it would result in less than 3 points (minimum for a polygon)
+    if (points.length <= 3) {
+      return points;
+    }
+    const newPoints = [...points];
+    newPoints.splice(vertexIndex, 1);
+    return newPoints;
+  }
+
+  // Update hover state when cursor moves
+  $effect(() => {
+    if (editable && cursor && isPolygonComplete && !isEditing()) {
+      isHoveringOverEdge = checkIfNearEdge(cursor);
+    } else {
+      isHoveringOverEdge = false;
+    }
+  });
+
+  // Track ALT key presses
+  $effect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.altKey) {
+        isAltKeyPressed = true;
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (!e.altKey) {
+        isAltKeyPressed = false;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  });
+
   export function startSelection(start: Point) {
+
     if (!isPolygonComplete) {
       // Adding new vertex
-
-      if (points.length > 0 && isNearPoint(points[0], start)) {
-        // Close polygon by clicking near the first point
-        // isPolygonComplete = true;
-        onChange?.(points);
-      }
+      // if (points.length > 0 && isNearPoint(points[0], start)) {
+      //   Close polygon by clicking near the first point
+      //   isPolygonComplete = true;
+      //   onChange?.(points);
+      // }
       // Points are added in endSelection for single click
     } else {
       // Check if clicking on a vertex to edit
-      const vertexIndex = points.findIndex((p) => isNearPoint(p, start, 0.03));
+      const vertexIndex = points.findIndex((p) => isNearPoint(p, start, 0.001));
       if (vertexIndex !== -1) {
         editingVertexIndex = vertexIndex;
-      } else {
-        // Start panning the entire polygon
-        panStart = cursor;
       }
+      // else {
+      //   // Start panning the entire polygon
+      //   panStart = cursor;
+      // }
     }
   }
 
@@ -134,6 +263,8 @@
         points = [...points, end];
 
         if (points.length >= 3 && isNearPoint(points[0], end)) {
+          console.log("Polygon completed");
+          points = points.slice(0, -1); // Remove last point to avoid duplication
           isPolygonComplete = true;
           onChange?.(points);
         }
@@ -144,7 +275,17 @@
         onChange?.(polygon_points);
         editingVertexIndex = undefined;
       } else if (panStart) {
-        onChange?.(polygon_points);
+        // Check if clicking near an edge to add a new point
+        const edgeIndex = findNearestEdge(end);
+        if (edgeIndex !== -1 && editable) {
+          // Insert new point on the edge
+          const newPoints = insertPointAfterVertex(end, edgeIndex);
+          points = newPoints;
+          // Set the newly inserted point as being edited
+          editingVertexIndex = edgeIndex + 1;
+        } else {
+          onChange?.(polygon_points);
+        }
         panStart = undefined;
       }
     }
@@ -156,6 +297,8 @@
         return "cursor-move";
       }
       return "cursor-crosshair";
+    } else if (isHoveringOverEdge && editable && isPolygonComplete) {
+      return "cursor-pen-plus";
     } else if (mode === IDAH_NOTE) {
       return "cursor-note";
     } else {
@@ -164,20 +307,31 @@
   }
 </script>
 
-{#snippet PolygonVertices(points: Point[])}
-  {#each points as point, index (index)}
+{#snippet PolygonVertices(vertexPoints: Point[])}
+  {#each vertexPoints as point, index (index)}
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <circle
       onmousedown={(e) => {
         e.stopPropagation();
-        editingVertexIndex = index;
+        // Check if ALT key is pressed to remove vertex
+        if (e.altKey) {
+          const newPoints = removeVertex(index);
+          if (newPoints.length !== points.length) {
+            points = newPoints;
+            onChange?.(newPoints);
+          }
+        } else {
+          // Normal behavior: set vertex for editing
+          editingVertexIndex = index;
+        }
       }}
       cx={point[X] * ratio[X]}
       cy={point[Y] * ratio[Y]}
       r={5}
       style:transform-origin="top left"
       style:transform={`translate(${offset[X]}px, ${offset[Y]}px)`}
-      style:cursor="move"
+      class={isAltKeyPressed && points.length > 3 ? "cursor-pen-remove" : ""}
+      style:cursor={isAltKeyPressed && points.length > 3 ? "" : "move"}
       vector-effect="non-scaling-stroke"
       style:stroke={color}
       style:stroke-width={1}
@@ -250,7 +404,7 @@
 {/if}
 
 <!-- Edit handles for completed polygon -->
-{#if editable}
+{#if editable && !isEditing()}
   {@render PolygonVertices(polygon_points)}
 {/if}
 
@@ -261,5 +415,17 @@
 
   .cursor-move {
     cursor: move;
+  }
+
+  .cursor-pen-plus {
+    cursor: url("/app/frontend/src/plugins/assets/icons/pen-tool-add.svg"), auto;
+  }
+
+  .cursor-pen-plus:hover {
+    cursor: url("/app/frontend/src/plugins/assets/icons/pen-tool-add.svg"), auto;
+  }
+
+  .cursor-pen-remove {
+    cursor: url("/app/frontend/src/plugins/assets/icons/pen-tool-remove.svg"), auto;
   }
 </style>
