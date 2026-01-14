@@ -35,6 +35,9 @@
   import type { Sort } from "@/data/DataSource";
   import type { Filters } from "@/data/filtering";
   import type { Hash } from "@/utils/types";
+  import { page } from "$app/state";
+  import { goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
 
   // Props
   interface Props<T extends Record> {
@@ -313,16 +316,34 @@
 
   function clearFilter(): void {
     const filterKey = `${filterOptions?.filterKey || columnKey}`;
+    const filterKeyGte = `${filterKey}__gte`;
+    const filterKeyLte = `${filterKey}__lte`;
     const filterKeyWithOperation = `${filterKey}__${filterOptions?.filterOperation || "in"}`;
 
     onFilter({
       filters: {
         [filterKey]: undefined,
-        [`${filterKey}__gte`]: undefined,
-        [`${filterKey}__lte`]: undefined,
+        [filterKeyGte]: undefined,
+        [filterKeyLte]: undefined,
         [filterKeyWithOperation]: undefined,
       },
     });
+
+    const newURL = new URL(page.url.href);
+    const searchParams = newURL.searchParams;
+
+    // Optionally remove URL search params if any
+    if (searchParams.get(filterKey)) searchParams.delete(filterKey);
+    if (searchParams.get(filterKeyGte)) searchParams.delete(filterKeyGte);
+    if (searchParams.get(filterKeyLte)) searchParams.delete(filterKeyLte);
+    if (searchParams.get(filterKeyWithOperation)) searchParams.delete(filterKeyWithOperation);
+
+    // If any search params were removed, update the URL
+    if (newURL.href !== page.url.href) {
+      goto(resolve((newURL.pathname + newURL.search) as "/projects/[projectId]/datasets/[datasetId]/entries"), {
+        replaceState: true,
+      });
+    }
   }
 </script>
 

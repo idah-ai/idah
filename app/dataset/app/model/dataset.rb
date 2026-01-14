@@ -79,6 +79,7 @@ module Dataset
             FROM project_members pm
             WHERE pm.account_id = :account_id
               AND pm.project_id = datasets.project_id
+              AND pm.disabled_at IS NULL
               AND (
                 -- All with roles
                 pm.role IN :with_roles OR
@@ -125,6 +126,7 @@ module Dataset
             FROM project_members pm
             WHERE pm.account_id = :account_id
               AND pm.project_id = datasets.project_id
+              AND pm.disabled_at IS NULL
               AND pm.role IN :roles
           )
         SQL
@@ -177,12 +179,10 @@ module Dataset
       with_metadata do
         dataset = find!(id)
 
-        if dataset
-          add_event_metadata(
-            project_id: attributes[:project_id] || dataset.project_id,
-            dataset_id: id
-          )
-        end
+        add_event_metadata(
+          project_id: attributes[:project_id] || dataset.project_id,
+          dataset_id: id
+        )
 
         super(id, attributes, scope:)
       end
@@ -192,24 +192,13 @@ module Dataset
       with_metadata do
         dataset = find!(id)
 
-        if dataset
-          add_event_metadata(
-            project_id: dataset.project_id,
-            dataset_id: id
-          )
-        end
+        add_event_metadata(
+          project_id: dataset.project_id,
+          dataset_id: id
+        )
 
         super(id)
       end
-    end
-
-    private def add_event_metadata(**opts)
-      add_metadata(
-        actor_account_id: auth_context.metadata[:id],
-        actor_account_email: auth_context.metadata[:email],
-        actor_account_role_name: auth_context.metadata[:role],
-        **opts
-      )
     end
 
     event(name: "completed")
@@ -224,6 +213,17 @@ module Dataset
       no_event do
         update!(dataset_id, { progress: progress, status: "in_progress" })
       end
+    end
+
+    private
+
+    def add_event_metadata(**opts)
+      add_metadata(
+        actor_account_id: auth_context.metadata[:id],
+        actor_account_email: auth_context.metadata[:email],
+        actor_account_role_name: auth_context.metadata[:role],
+        **opts
+      )
     end
   end
 end

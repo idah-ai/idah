@@ -20,8 +20,8 @@ end
 
 # Helper method to generate token
 def generate_token
-  # Check if token is still valid
-  if @service_token && @service_token_expires_at && (@service_token_expires_at - Time.now.to_i) <= 60
+  # Check if token is still valid with 1 minute buffer before expiry
+  if @service_token && @service_token_expires_at && (@service_token_expires_at - Time.now.to_i) >= 60
     return @service_token
   end
 

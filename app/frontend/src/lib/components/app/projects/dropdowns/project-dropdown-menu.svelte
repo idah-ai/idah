@@ -3,6 +3,7 @@
   import { resolve } from "$app/paths";
   import { SquarePenIcon, Trash2Icon } from "@lucide/svelte";
   import { onMount } from "svelte";
+  import { toast } from "svelte-sonner";
 
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
@@ -10,6 +11,7 @@
 
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { authStatus } from "@/security/AuthContext";
+  import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
 
   import type { DropdownMenuContentAlignment, IDropdownMenus } from "@/components/app/dropdown-menus/types";
@@ -58,6 +60,8 @@
   // Lifecycle
   onMount(async () => {
     await Promise.all([checkRights()]);
+    const projectRes = await fetchProject();
+    projectRecord = projectRes.data;
   });
 
   // Functions
@@ -84,10 +88,18 @@
   }
 
   async function deleteProject(): Promise<void> {
-    await projectsBackendDataSource.delete(projectId);
-    goto(resolve("/projects"));
-    $refetches.projects.list = new Date();
-    openConfirmDeleteProjectModal = false;
+    try {
+      await projectsBackendDataSource.delete(projectId, { showErrorToast: false });
+
+      openConfirmDeleteProjectModal = false;
+      $refetches.projects.list = new Date();
+      goto(resolve("/projects"));
+      toast.success("Project deleted", {
+        description: `The project "${projectRecord?.name}" has been deleted.`,
+      });
+    } catch (error) {
+      showActionFailedToast(error);
+    }
   }
 </script>
 

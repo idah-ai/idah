@@ -83,24 +83,6 @@ module Account
       valid ? account : nil
     end
 
-    private def accounts_from_project_member_scoped
-      account_id = auth_context.metadata[:id]
-      org_ids = auth_context[:org] || []
-
-      membership_account_ids =
-        if org_ids.any?
-          Api[:idah].dataset.project_members.index(
-            filter: { organization_id__in: org_ids }
-          ).data.map(&:account_id).uniq
-        else
-          []
-        end
-
-      account_ids = [account_id] + membership_account_ids
-
-      table.where(id: account_ids)
-    end
-
     def create(attributes)
       with_metadata do
         add_event_metadata
@@ -119,21 +101,41 @@ module Account
 
     def delete!(id)
       with_metadata do
-        account = find!(id)
+        find!(id)
 
-        add_event_metadata if account
+        add_event_metadata
 
         super(id)
       end
     end
 
-    private def add_event_metadata(**opts)
+    private
+
+    def add_event_metadata(**opts)
       add_metadata(
         actor_account_id: auth_context.metadata[:id],
         actor_account_email: auth_context.metadata[:email],
         actor_account_role_name: auth_context.metadata[:role],
         **opts
       )
+    end
+
+    def accounts_from_project_member_scoped
+      account_id = auth_context.metadata[:id]
+      org_ids = auth_context[:org] || []
+
+      membership_account_ids =
+        if org_ids.any?
+          Api[:idah].dataset.project_members.index(
+            filter: { organization_id__in: org_ids, enabled: true }
+          ).data.map(&:account_id).uniq
+        else
+          []
+        end
+
+      account_ids = [account_id] + membership_account_ids
+
+      table.where(id: account_ids)
     end
   end
 end

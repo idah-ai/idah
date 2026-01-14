@@ -11,9 +11,10 @@ module ProjectMember
     field :name, type: [String, NilClass]
     field :email, type: String
 
-    field :role, type: String, readonly: true
+    field :role, type: String
 
     field :invited_by_id, type: Integer, readonly: true
+    field :disabled_at, type: [Time, NilClass]
 
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
@@ -36,6 +37,16 @@ module ProjectMember
       SQL
 
       collection.where(Sequel.lit(where_fragment, value.map(&:to_i)))
+    end
+
+    custom_filter :enabled do |collection, value|
+      enabled = value.to_s.downcase == "true"
+
+      if enabled
+        collection.where(disabled_at: nil)
+      else
+        collection.where(Sequel.~(disabled_at: nil))
+      end
     end
 
     def scoped(action)
@@ -76,6 +87,7 @@ module ProjectMember
           FROM project_members pm
           WHERE pm.account_id = :account_id
             AND pm.project_id = project_members.project_id
+            AND pm.disabled_at IS NULL
             AND pm.role IN :roles
         )
       SQL
@@ -115,7 +127,10 @@ module ProjectMember
       with_metadata do
         membership = find!(id)
 
-        add_event_metadata(project_id: attributes[:project_id] || membership.project_id) if membership
+        add_event_metadata(
+          project_id: attributes[:project_id] || membership.project_id,
+          project_member_account_id: attributes[:account_id] || membership.account_id,
+        )
 
         super(id, attributes, scope:)
       end
@@ -125,13 +140,15 @@ module ProjectMember
       with_metadata do
         membership = find!(id)
 
-        add_event_metadata(project_id: membership.project_id) if membership
+        add_event_metadata(project_id: membership.project_id)
 
         super(id)
       end
     end
 
-    private def add_event_metadata(**opts)
+    private
+
+    def add_event_metadata(**opts)
       add_metadata(
         actor_account_id: auth_context.metadata[:id],
         actor_account_email: auth_context.metadata[:email],

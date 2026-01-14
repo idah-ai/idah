@@ -12,6 +12,7 @@
 
   import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
   import { mediaBackendDataSource } from "@/data/model/media/medias/medias-record";
+  import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
 
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
@@ -85,29 +86,36 @@
           throw new Error("Media upload failed");
         }
 
-        await entriesBackendDataSource.create({
-          attributes: {
-            resource: createdMedia.data.resource,
-            status: "pending",
-          },
-          relationships: {
-            dataset: {
-              data: {
-                type: "datasets:datasets",
-                id: datasetId,
+        await entriesBackendDataSource.create(
+          {
+            attributes: {
+              resource: createdMedia.data.resource,
+              status: "pending",
+            },
+            relationships: {
+              dataset: {
+                data: {
+                  type: "datasets:datasets",
+                  id: datasetId,
+                },
               },
             },
           },
-        });
+          {
+            showErrorToast: false,
+          },
+        );
 
         media.status = "success";
       } catch (error) {
-        console.error(error);
         media.status = "error";
+        throw error;
       }
     }
 
-    toast.success("Entries successfully uploaded!");
+    toast.success("Entry uploaded", {
+      description: "The entries has been uploaded successfully.",
+    });
     $refetches.entries.list = new Date();
   }
 
@@ -117,7 +125,7 @@
     try {
       await uploadMedia();
     } catch (error) {
-      console.error(error);
+      showActionFailedToast(error);
     } finally {
       uploading = false;
     }

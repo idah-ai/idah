@@ -15,6 +15,7 @@ export class ProjectMemberRecord extends Record {
   @field() public role!: ProjectMemberRole;
 
   @field() public invited_by_id!: number;
+  @field() public disabled_at!: Date | null;
 
   @field({ transformer: Transformers.Time }) public created_at!: Date;
   @field({ transformer: Transformers.Time }) public updated_at!: Date;
@@ -24,10 +25,9 @@ export class ProjectMemberRecord extends Record {
 
 RecordFactory.registerTypes(ProjectMemberRecord);
 
-export const projectMembersBackendDataSource = createBackendDataSource(
-  ProjectMemberRecord,
-  `${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/project_members`,
-);
+export const projectMembersBasePath: string = `${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/project_members`;
+
+export const projectMembersBackendDataSource = createBackendDataSource(ProjectMemberRecord, projectMembersBasePath);
 
 export const projectMemberRoles = [
   { label: "Project Owner", value: "project_owner" },

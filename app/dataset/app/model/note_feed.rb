@@ -91,6 +91,7 @@ module NoteFeed
             FROM project_members pm
             WHERE pm.account_id = :account_id
               AND pm.project_id = note_feeds.project_id
+              AND pm.disabled_at IS NULL
               AND (
                 pm.role IN :with_roles OR
                 (
@@ -122,6 +123,7 @@ module NoteFeed
             FROM project_members pm
             WHERE pm.account_id = :account_id
               AND pm.project_id = note_feeds.project_id
+              AND pm.disabled_at IS NULL
               AND (
                 pm.role IN :with_roles OR
                 (

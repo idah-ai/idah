@@ -8,9 +8,14 @@
   import Can from "@/security/can.svelte";
 
   import { ProjectMemberRecord, projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
+  import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
 
   import type { DataTableCellBaseProps } from "@/components/app/datasource-table/types";
+  import AccountEntries from "../../entries/account-entries.svelte";
+  import { clearCache } from "@/data/Cache";
+  import { resourcePath } from "@/data/BackendDataSource";
+  import { entriesBasePath } from "@/data/model/dataset/entries/record";
 
   // Props
   interface Props extends DataTableCellBaseProps<ProjectMemberRecord> {
@@ -24,10 +29,21 @@
 
   // Functions
   async function removeProjectMember(): Promise<void> {
-    await projectMembersBackendDataSource.delete(projectMember.id);
-    $refetches.projectMembers.list = new Date();
-    openConfirmRemoveMemberModal = false;
-    toast.success(`${projectMember.email} is removed!`);
+    try {
+      await projectMembersBackendDataSource.delete(projectMember.id, { showErrorToast: false });
+
+      openConfirmRemoveMemberModal = false;
+
+      // Delete entries cache
+      clearCache(resourcePath(entriesBasePath, null, undefined));
+
+      $refetches.projectMembers.list = new Date();
+      toast.success("Project member removed", {
+        description: `"${projectMember.email}" has been removed from the project.`,
+      });
+    } catch (error) {
+      showActionFailedToast(error);
+    }
   }
 </script>
 
@@ -50,8 +66,10 @@
 
   <ConfirmModal
     title="Remove member"
-    description="Are you sure you want to remove this member from the project?"
+    description={`Are you sure you want to remove "${projectMember.email}" from this project?`}
     onConfirm={removeProjectMember}
     bind:open={openConfirmRemoveMemberModal}
-  />
+  >
+    <AccountEntries accountId={projectMember.account_id} {projectId} />
+  </ConfirmModal>
 </Can>

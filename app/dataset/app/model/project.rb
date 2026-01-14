@@ -61,6 +61,7 @@ module Project
           FROM project_members pm
           WHERE pm.account_id = :account_id
             AND pm.project_id = projects.id
+            AND pm.disabled_at IS NULL
             AND pm.role IN :roles
         )
       SQL
@@ -100,12 +101,10 @@ module Project
       with_metadata do
         project = find!(id)
 
-        if project
-          add_event_metadata(
-            organization_id: attributes[:organization_id] || project.organization_id,
-            project_id: id
-          )
-        end
+        add_event_metadata(
+          organization_id: attributes[:organization_id] || project.organization_id,
+          project_id: id
+        )
 
         super(id, attributes, scope:)
       end
@@ -115,18 +114,18 @@ module Project
       with_metadata do
         project = find!(id)
 
-        if project
-          add_event_metadata(
-            organization_id: project.organization_id,
-            project_id: id
-          )
-        end
+        add_event_metadata(
+          organization_id: project.organization_id,
+          project_id: id
+        )
 
         super(id)
       end
     end
 
-    private def add_event_metadata(**opts)
+    private
+
+    def add_event_metadata(**opts)
       add_metadata(
         actor_account_id: auth_context.metadata[:id],
         actor_account_email: auth_context.metadata[:email],
