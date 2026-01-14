@@ -10,6 +10,7 @@
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
   import { ProjectMemberRecord, projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
+  import { AccountSessionRecord, accountSessionsBackendDataSource } from "@/data/model/iam/account-sessions/record";
   import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
   import { OrganizationRecord, organizationsBackendDataSource } from "@/data/model/iam/organizations/record";
   import { MediaRecord } from "@/data/model/media/medias/medias-record";
@@ -100,6 +101,7 @@
       }
     });
 
+    const accountSessions: AccountSessionRecord[] = [];
     const organizations: OrganizationRecord[] = [];
     const projects: ProjectRecord[] = [];
     const projectMembers: ProjectMemberRecord[] = [];
@@ -125,6 +127,16 @@
             break;
           }
           case "account_sessions": {
+            const accountSessionsRes = await accountSessionsBackendDataSource.list({
+              fields: {
+                [AccountSessionRecord.type]: ["id", "account_id"],
+              },
+              filters: {
+                id: Array.from(new Set(_ids)),
+              },
+              included: ["account"],
+            });
+            accountSessions.push(...accountSessionsRes.data);
             break;
           }
           case "organizations": {

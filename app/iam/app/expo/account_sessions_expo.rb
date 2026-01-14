@@ -5,7 +5,9 @@ class AccountSessionsExpo < BaseExpo
 
   use_service AccountSession::Service
 
-  json_api AccountSession::Record, http_opts: { auth: nil } do
+  json_api AccountSession::Record do
+    allowed_included "account"
+    
     index do
       allowed_filters :account_id
     end

@@ -12,7 +12,8 @@ import type { Hash } from "@/utils/types";
 
 interface LogResourceDetail {
   ids: Array<string | number>;
-  url: string;
+  displayUrl: string;
+  resourceUrl: string;
   name: string | undefined;
 }
 
@@ -28,14 +29,15 @@ export function getLogResourceDetails(
     medias: MediaRecord[];
   },
 ) {
-  const { action, resource_type, resource_id, project_id, entry_id } = logRecord;
+  const { action, resource_type, resource_id, project_id, dataset_id, entry_id } = logRecord;
   const { accounts, organizations, projects, projectMembers, datasets, entries, medias } = opts;
 
   /** 1. Construct resource hash */
   const resourceHash = logResourceTypes.reduce((acc, resourceType) => {
     acc[resourceType.value] = {
       ids: [],
-      url: `/${resourceType.value}`,
+      displayUrl: `/${resourceType.value}`,
+      resourceUrl: `/${resourceType.value}`,
       name: undefined,
     };
     return acc;
@@ -46,46 +48,80 @@ export function getLogResourceDetails(
   switch (resource_type) {
     case "accounts": {
       resource.name = accounts.find((account) => account.id === resource_id)?.email;
-
-      if (action === "logged_in") {
-        resource.url = "/login";
-      } else {
-        resource.url = `/accounts/${resource_id}`;
-      }
+      resource.displayUrl = `/accounts/${resource_id}`;
+      resource.resourceUrl = "/accounts";
 
       break;
     }
     case "account_sessions": {
-      resource.url = "/logout";
+      resource.displayUrl = `/accounts/${resource_id}`;
+      resource.resourceUrl = "/accounts";
       break;
     }
     case "organizations": {
-      resource.url = `/organizations/${resource_id}`;
+      switch (action) {
+        case "deleted": {
+          resource.displayUrl = `/organizations`;
+          break;
+        }
+        default: {
+          resource.displayUrl = `/organizations/${resource_id}`;
+          break;
+        }
+      }
+
       resource.name = organizations.find((organization) => organization.id == String(resource_id))?.name;
       break;
     }
     case "projects": {
-      resource.url = `/projects/${resource_id}`;
+      switch (action) {
+        case "deleted": {
+          resource.displayUrl = "/projects";
+          resource.resourceUrl = "/projects";
+          break;
+        }
+        default: {
+          resource.displayUrl = `/projects/${resource_id}`;
+          resource.resourceUrl = `/projects/${resource_id}/datasets`;
+          break;
+        }
+      }
+
       resource.name = projects.find((project) => project.id == String(resource_id))?.name;
       break;
     }
     case "project_members": {
-      resource.url = `/projects/${project_id}/members`;
+      resource.displayUrl = `/projects/${project_id}/members`;
+      resource.resourceUrl = `/projects/${project_id}/members`;
       resource.name = projectMembers.find((projectMember) => projectMember.id == String(resource_id))?.email;
       break;
     }
     case "datasets": {
-      resource.url = `/projects/${project_id}/datasets/${resource_id}`;
+      switch (action) {
+        case "deleted": {
+          resource.displayUrl = `/projects/${project_id}/datasets`;
+          resource.resourceUrl = `/projects/${project_id}/datasets`;
+          break;
+        }
+        default: {
+          resource.displayUrl = `/projects/${project_id}/datasets/${resource_id}`;
+          resource.resourceUrl = `/projects/${project_id}/datasets/${resource_id}/entries`;
+          break;
+        }
+      }
+
       resource.name = datasets.find((dataset) => dataset.id == String(resource_id))?.name;
       break;
     }
     case "entries": {
-      resource.url = `/entries/${entry_id}`;
+      resource.displayUrl = `/projects/${project_id}/datasets/${dataset_id}/entries/${entry_id}`;
+      resource.resourceUrl = `/projects/${project_id}/datasets/${dataset_id}/entries`;
       resource.name = entries.find((entry) => entry.id == String(resource_id))?.resource;
       break;
     }
     case "medias": {
-      resource.url = `/medias/${resource_id}`;
+      resource.displayUrl = `/medias/${resource_id}`;
+      resource.resourceUrl = `/medias`;
       resource.name = medias.find((media) => media.id == String(resource_id))?.filename;
       break;
     }
