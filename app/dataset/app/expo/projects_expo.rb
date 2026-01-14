@@ -8,7 +8,8 @@ class ProjectsExpo < BaseExpo
   json_api Project::Record do
     show
     index do
-      allowed_filters :created_by_email__match,
+      allowed_filters :id__in,
+                      :created_by_email__match,
                       :created_at__gte,
                       :created_at__lte,
                       :organization_id,
