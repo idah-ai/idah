@@ -134,7 +134,7 @@ RSpec.describe Auth::SimpleExpo, type: :exposition, as: :system do
 
   describe "GET /auth/logout" do
     before do
-      allow(auth_service).to receive(:delete_session)
+      allow(auth_service).to receive(:logout)
     end
 
     it "logs out the user and returns no content" do
@@ -144,7 +144,7 @@ RSpec.describe Auth::SimpleExpo, type: :exposition, as: :system do
     end
 
     it "deletes the session" do
-      expect(auth_service).to receive(:delete_session)
+      expect(auth_service).to receive(:logout)
       get "/auth/logout"
     end
   end
