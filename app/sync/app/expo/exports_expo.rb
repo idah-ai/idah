@@ -29,6 +29,7 @@ class ExportsExpo < BaseExpo
     export = service.show(params[:id])
 
     renderer.content_type = export.mime_type
+    server.response.headers["Content-Disposition"] = "attachment;filename=#{export.filename}"
     server.response.headers["Content-Length"] = export.size
 
     export.open
