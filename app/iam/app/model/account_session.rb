@@ -26,7 +26,12 @@ module AccountSession
 
       return unless session
 
-      add_metadata(actor_account_id: session.account_id)
+      account = Account::Repository.new(auth_context).find(session.account_id)
+      add_metadata(
+        actor_account_id: account.id,
+        actor_account_email: account.email,
+        actor_account_role_name: account.role_name
+      )
 
       no_event do
         delete(session_id)
