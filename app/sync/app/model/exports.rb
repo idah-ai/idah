@@ -34,15 +34,10 @@ module Exports
     def scoped(action)
       auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }
-        scope.as_org_owner? { table.owned }
-        scope.as_user? { table.owned }
+        # for now
+        scope.as_org_owner? { table.where(created_by: auth_context.metadata[:id]) }
+        scope.as_user? { table.where(created_by: auth_context.metadata[:id]) }
       end
-    end
-
-    private
-
-    def owned
-      table.where(created_by: auth_context.metadata[:id])
     end
   end
 end
