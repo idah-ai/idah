@@ -25,13 +25,14 @@ module Log
       metadata = content[:metadata]
 
       logs.transaction do
+        # TODO: this should be able to be properly refactored ?
         id = logs.create(
           {
             # usually included in message
             action: action,
             resource_service: service,
             resource_type: type,
-            resource_id: resource_id,
+            resource_id: type == "account_sessions" ? metadata[:actor_account_email] : resource_id,
             event_timestamp: metadata[:at],
             # added metadata
             actor_account_id: metadata[:actor_account_id],
