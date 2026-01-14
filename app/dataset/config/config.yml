@@ -1,4 +1,4 @@
-service_name: project
+service_name: dataset
 description: Project, batches and annotation management service
 em:
   adapter: redis
