@@ -30,10 +30,10 @@ module Project
       auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }
 
-        scope.as_org_owner? {
+        scope.as_org_owner? do
           org_ids = auth_context.custom_scopes[:org]
           table.where(organization_id: org_ids)
-        }
+        end
 
         scope.as_user? { user_project_scoped_query(action) }
       end
@@ -87,6 +87,51 @@ module Project
         raise Verse::Error::Unauthorized,
               "Permission denied for \"#{action}\" action on #{self.class.resource}"
       end
+    end
+
+    def create(attributes)
+      with_metadata do
+        add_event_metadata(organization_id: attributes[:organization_id])
+
+        super(attributes)
+      end
+    end
+
+    def update!(id, attributes, scope: scoped(:update))
+      with_metadata do
+        project = find!(id)
+
+        add_event_metadata(
+          organization_id: attributes[:organization_id] || project.organization_id,
+          project_id: id
+        )
+
+        super(id, attributes, scope:)
+      end
+    end
+
+    def delete!(id)
+      with_metadata do
+        project = find!(id)
+
+        add_event_metadata(
+          organization_id: project.organization_id,
+          project_id: id
+        )
+
+        super(id)
+      end
+    end
+
+    private
+
+    def add_event_metadata(**opts)
+      add_metadata(
+        actor_account_id: auth_context.metadata[:id],
+        actor_account_email: auth_context.metadata[:email],
+        actor_account_role_name: auth_context.metadata[:role],
+        **opts
+      )
     end
   end
 end
