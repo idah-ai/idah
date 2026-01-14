@@ -174,13 +174,15 @@ RSpec.describe Account::Service, database: true do
     describe "#mark_as_joined" do
       context "when invitation has not expired" do
         it "marks an account as joined" do
+          invitation_token = "token123"
           attributes.merge!(
+            invitation_token:,
             invitation_expired_at: Time.now + 3 * 24 * 60 * 60
           )
 
           account_id = account_repo.create(attributes)
 
-          subject.mark_as_joined(account_id)
+          subject.mark_as_joined(invitation_token)
 
           updated_account = account_repo.find!(account_id)
           expect(updated_account.joined_at).to eq(Time.now)
@@ -189,15 +191,33 @@ RSpec.describe Account::Service, database: true do
 
       context "when invitation has expired" do
         it "raises ValidationFailed error" do
+          invitation_token = "token123"
           attributes.merge!(
+            invitation_token:,
             invitation_expired_at: Time.now - 1
           )
 
-          account_id = account_repo.create(attributes)
+          account_repo.create(attributes)
 
           expect {
-            subject.mark_as_joined(account_id)
+            subject.mark_as_joined(invitation_token)
           }.to raise_error(Verse::Error::ValidationFailed, "Invitation has expired")
+        end
+      end
+
+      context "when invitation token is nil" do
+        it "raises ValidationFailed error" do
+          invalid_token = "token123"
+          attributes.merge!(
+            invitation_token: nil, # Set to nil
+            invitation_expired_at: Time.now - 1
+          )
+
+          account_repo.create(attributes)
+
+          expect {
+            subject.mark_as_joined(invalid_token)
+          }.to raise_error(Verse::Error::RecordNotFound)
         end
       end
     end
