@@ -3,7 +3,10 @@ module Context
     module Dataset
       class Entries < Base
         def builder(entries)
-          super(entries)&.map do |entry|
+          super_entries = super(entries)
+          return unless super_entries
+
+          super_entries.lazy.map do |entry|
             id = entry.dig(:id)
             unless id
               raise Context::Error::InvalidData, "Entry missing id"
@@ -21,9 +24,9 @@ module Context
             })
             Unit.new(
               entry, [
-                ContextApi::Media::Medias.new(@args, filters, @opts),
-                Annotations.new(@args, filters, @opts)
-              ], @args, filters, @opts
+                ContextApi::Media::Medias.new(@args, filters, **@opts),
+                Annotations.new(@args, filters, **@opts)
+              ], @args, filters, **@opts
             )
           end
         end
@@ -31,15 +34,15 @@ module Context
         def initialize(
           args = nil,
           context_args = nil,
-          opts = nil,
           delegated_obj = nil,
+          **opts,
           &context_builder
         )
           super(
             delegated_obj || Api[:idah].dataset.entries,
             args,
             context_args,
-            opts,
+            **opts,
             &context_builder
           )
         end

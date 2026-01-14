@@ -3,7 +3,10 @@ module Context
     module Dataset
       class Annotations < Base
         def builder(annotations)
-          super(annotations)&.map do |annotation|
+          super_annotations = super(annotations)
+          return unless super_annotations
+
+          super_annotations.lazy.map do |annotation|
             id = annotation.dig(:id)
             unless id
               raise Context::Error::InvalidData, "Annotation missing id"
@@ -16,15 +19,15 @@ module Context
         def initialize(
           args = nil,
           context_args = nil,
-          opts = nil,
           delegated_obj = nil,
+          **opts,
           &context_builder
         )
           super(
             delegated_obj || Api[:idah].dataset.annotations,
             args,
             context_args,
-            opts,
+            **opts,
             &context_builder
           )
         end

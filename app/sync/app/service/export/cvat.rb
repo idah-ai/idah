@@ -9,10 +9,8 @@ module Export
     end
 
     def run
-      start
       @context.datasets.each do |dataset|
         dataset_directory = "dataset.#{dataset[:id]}"
-        # @context.io.mkdir dataset_directory
         dataset.entries.each do |entry|
           task_directory = File.join(
             dataset_directory,
@@ -24,23 +22,15 @@ module Export
             on_task dataset, entry, xml
           end
           @context.io.mkdir File.join(task_directory, "images")
-          # media / store images by frames
+          # TODO: media / store images by frames
+          # create cvat zip task export (images folder + annotations.xml)
           @context.io.zip("**/**", task_directory)
-          # @context.io.rmdir(task_directory)
         end
       end
-      done
+      @context.io.zip("**/*.zip") # bundle all zipped tasks as export
     end
 
     private
-    def start
-    end
-
-    def done
-      @context.io.zip("**/*.zip")
-      # @context.io.rmdir
-    end
-
     def error(e, record)
       Verse::logger::error {
         "#{self} failed to process #{[record[:type], record[:id]].join(":")}"
@@ -56,7 +46,7 @@ module Export
             meta.task do |task|
               task.id entry[:id] #!!! -> Number: id of the task
               task.name entry[:attributes][:resource] # String: some task name
-              task.size 0 # Number: count of frames/images in the task
+              task.size 0 # TODO: Number: count of frames/images in the task
               task.mode "interpolation" # String: interpolation or annotation
               task.overlap 0 # Number: number of overlapped frames between segments
               task.bugtracker "" # String: URL on an page which describe the task
@@ -120,12 +110,12 @@ module Export
               task.segments do |segment|
               end
               task.owner do |owner|
-                owner.username "" # String: the author of the task
-                owner.email "" # String: email of the author
+                owner.username "" # TODO: String: the author of the task
+                owner.email "" # TODO: String: email of the author
               end
               task.original_size do |original_size|
-                original_size.width 0 # Number: frame width
-                original_size.height 0 # Number: frame height
+                original_size.width 0 # TODO: Number: frame width
+                original_size.height 0 # TODO: Number: frame height
               end
             end
             meta.dumped "" # String: date when the annotation was dumped

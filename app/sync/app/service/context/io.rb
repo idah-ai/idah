@@ -11,9 +11,9 @@ module Context
         raise Context::Error::InvalidContext, [:invalid_io_class, klass].join(":")
       end
 
-      instance = klass.new(**opts)
+      instance = klass.new(**opts.slice(:name))
       io_opts = build_context_opts({io: opts})
-      super(instance, args, context, io_opts)
+      super(instance, args, context, **io_opts)
     end
   end
 end

@@ -2,12 +2,12 @@ module Context
   module ContextApi
     module Media
       class Medias < Base
-        def initialize(args = nil, context_args = nil, opts = nil, delegated_obj = nil)
+        def initialize(args = nil, context_args = nil, delegated_obj = nil, **opts)
           super(
             delegated_obj || Api[:idah].media.medias,
             args,
             context_args,
-            opts
+            **opts
           )
         end
 

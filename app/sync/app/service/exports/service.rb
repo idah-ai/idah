@@ -31,7 +31,6 @@ module Exports
         output = storage.upload(file)
         # metadata = auth_context.metadata
         id = output.id
-        puts({auth_context:, metadata:})
         exports.create(
           {
             id:,

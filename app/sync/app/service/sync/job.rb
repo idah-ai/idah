@@ -1,16 +1,28 @@
 # frozen_string_literal: true
 module Sync
   class Job < Jobs::Base
+    # registry prep wip
+    EXPORTS = [
+      Export::UniversalPortableDataset,
+      Export::Cvat
+    ]
+    IMPORTS = []
+    PROCESSORS = (IMPORTS | EXPORTS).map {|p| [p.to_s, p]}.to_h
+    CONTEXTS = [
+      Context::ContextApi,
+      Context::Io
+    ].map {|p| [p.to_s, p]}.to_h
+    COMMANDS = [
+      Command::UniversalPortableDataset,
+      Command::Cvat
+    ].map {|p| [p.to_s, p]}.to_h
+
     def run_impl
       begin
-        ios = []
         auth_context = arguments.fetch(:auth_context)
-        export_service = Exports::Service.new(
-          Verse::Auth::Context[:system]
-        )
+        export_service = Exports::Service.new(Verse::Auth::Context[:system])
         role = auth_context.fetch(:role)
         custom_scopes = auth_context.fetch(:custom_scopes)
-
         auth_context_args = \
           case role
           when "admin"
@@ -25,41 +37,22 @@ module Sync
             raise "unexpected auth_context: #{auth_context}"
           end
 
-        context_classes = Hash(arguments.fetch(:processors)).flat_map do |processor, opts|
-          Hash(Hash(opts).fetch(:context)).map do |context_name, context_opts|
-            context_opts.fetch(:klass)
-          end
-        end.uniq.compact.map do |context_class|
-          [context_class, Verse::Util::Reflection.constantize(context_class)]
-        end.to_h
-
-        processor_classes = Hash(arguments.fetch(:processors)).map do |processor, opts|
-          Hash(opts).fetch(:klass)
-        end.uniq.compact.map do |processor_class|
-          [processor_class, Verse::Util::Reflection.constantize(processor_class)]
-        end.to_h
-
         Hash(arguments.fetch(:processors)).lazy.map do |process_name, process_config|
-          Verse::logger.debug {{process_name:, process_config:}}
           process_config = Hash(process_config)
+          process_class = PROCESSORS[process_config.fetch(:klass)]
+          raise "#{process_name} is missing klass" unless process_class
           [
-            processor_classes.fetch(process_config.fetch(:klass)),
+            process_class,
             process_config.fetch(:context).map do |context_name, context_config|
-              Verse::logger.debug {{context_name:, context_config:}}
               context_config = Hash(context_config)
-              klass = context_classes[context_config.fetch(:klass)]
-              Verse::logger.debug {{
-                klass:,
-                args: Context::Base.build_context_args(
-                  auth_context_args,
-                  context_config[:context]
-                ),
-                opts: context_config[:opts]
-              }}
-              klass.new(
+              context_class = CONTEXTS[context_config.fetch(:klass)]
+              raise "#{context_name} is missing klass" unless context_class
+
+              built_args = Context::Base.build_context_args(
                 auth_context_args,
-                **context_config[:opts]
-              ) if klass
+                context_config[:context]
+              )
+              context_class.new(built_args, **context_config[:opts])
             end
           ]
         end.map do |process_class, contexts| # temp
@@ -67,7 +60,6 @@ module Sync
         end.map do |process_class, context|
           [context, process_class.new(context)]
         end.map do |context, process|
-          Verse::logger.debug {{running: process.class.name}}
           begin
             [context, process.class.name, process.run]
           rescue Exception => e
@@ -80,13 +72,8 @@ module Sync
             raise e
           end
         end.map do |context, process_name, success|
-          Verse::logger.debug {{process_name:, success:}}
           context.each do |plugin_context|
-            if plugin_context.respond_to? :close
-              Verse::logger.debug {
-                "closing: #{plugin_context} #{plugin_context.close}"
-              }
-            end
+            plugin_context.close if plugin_context.respond_to? :close
           end
           [process_name, context]
         end.each do |process_name, context|
@@ -96,7 +83,7 @@ module Sync
             job_id,
             context.io.filename,
             file,
-            auth_context.fetch(:metadata)
+            auth_context.fetch(:metadata) # TODO: check service init !?
           )
           file.close
           FileUtils.rm_rf(context.io.filename)
