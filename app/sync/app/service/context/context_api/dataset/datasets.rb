@@ -3,7 +3,9 @@ module Context
     module Dataset
       class Datasets < Base
         def builder(datasets)
-          super(datasets)&.map do |dataset|
+          superdatasets = super(datasets)
+          return unless superdatasets
+          superdatasets.lazy.map do |dataset|
             id = dataset.dig(:id)
             unless id
               raise Context::Error::InvalidData, "Dataset missing id"
@@ -22,7 +24,7 @@ module Context
 
             Unit.new(
               dataset,
-                [Entries.new(@args, filters, @opts)], @args, filters, @opts
+                [Entries.new(@args, filters, @opts)], @args, filters, **@opts
             )
           end
         end
@@ -30,46 +32,50 @@ module Context
         def initialize(
           args = nil,
           context_args = nil,
-          opts = nil,
           delegated_obj = nil,
+          **opts,
           &context_builder
         )
           super(
             delegated_obj || Api[:idah].dataset.datasets,
             args,
             context_args,
-            opts,
+            **opts,
             &context_builder
           )
         end
 
-        def self.from_projects(projects, args = nil, filters = nil, opts = nil)
+        def self.from_projects(projects, args = nil, filters = nil, **opts)
           built_args = projects.build_context_args(args)
           built_context_args = projects.build_context_args(filters)
           built_opts = projects.build_opts(opts)
 
-          CrudProcedural.new(
-            :datasets, proc do |**opts|
-              Enumerator.new do |yielder|
-                projects.lazy.map do |project|
+          new(
+            built_args, built_context_args,
+            CrudProcedural.new(
+              :datasets, proc do |**opts|
+                project_ids = projects.lazy.map do |project|
                   project[:id]
-                end.each_slice(DEFAULT_BATCH_SIZE) do |project_id__in|
-                  new(
-                    @args,
-                    build_context_args({datasets: { project_id__in: }}),
-                    @context_opts
-                  ).index(**opts).each do |dataset|
-                    yielder << dataset
+                end.each_slice(DEFAULT_BATCH_SIZE)
+                Verse::Util::Iterator.chunk_iterator do |_|
+                  begin
+                    project_id__in = project_ids.next
+                    new(
+                      @args,
+                      build_context_args({datasets: { project_id__in: }}),
+                      **@context_opts
+                    ).index(**opts)
+                  rescue StopIteration => _
+                    nil
                   end
                 end
-              end
-            end,
-            built_args, built_context_args, built_opts
+              end, built_args, built_context_args, **built_opts
+            ), **built_opts
           )
         end
 
-        def self.root_api(args = nil, context = nil, opts = nil)
-          Datasets.new(args, context, opts)
+        def self.root_api(args = nil, context = nil, **opts)
+          Datasets.new(args, context, **opts)
         end
       end
     end

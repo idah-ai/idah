@@ -5,7 +5,7 @@ module Context
       delegated_obj = nil,
       args = nil,
       context_args = nil,
-      opts = nil,
+      **opts,
       &context_builder
     )
       raise Context::Error::InvalidContext, self if !delegated_obj.respond_to?(:each)
@@ -15,7 +15,7 @@ module Context
           raise Context::Error::InvalidContext, [self, c.class].join("#")
         end
       end
-      super(delegated_obj, args, context_args, opts, &context_builder)
+      super(delegated_obj, args, context_args, **opts, &context_builder)
     end
 
     def method_missing(s, *args, &block)

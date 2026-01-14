@@ -10,7 +10,7 @@ module Context
       # Dataset::Annotations
     ].freeze
 
-    def self.new(args = nil, context = nil, opts = nil)
+    def self.new(args = nil, context = nil, **opts)
       filters = (Hash(args).keys + Hash(context).keys).uniq
       # Validate that all APIS are valid Context classes
       APIS.each do |api_class|
@@ -24,9 +24,9 @@ module Context
         filters.include?(idah_context.name)
       end
       delegated_obj = if matched_api
-                      matched_api.root_api(args, context, opts)
+                      matched_api.root_api(args, context, **opts)
                     else
-                      Dataset::Datasets.new(args, context, opts)
+                      Dataset::Datasets.new(args, context, **opts)
                     end
       # Ensure the root API is only Dataset::Datasets
       unless delegated_obj.is_a?(Dataset::Datasets) || delegated_obj.name == :datasets

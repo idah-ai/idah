@@ -1,11 +1,11 @@
 module Context
-  def self.new(context = nil)
+  def self.new(context = nil, args = nil, context_args = nil, **opts)
     if context&.is_a?(Base)
       context
     elsif context&.respond_to?(:each)
-      EnumerableContext.new(context)
+      EnumerableContext.new(context, args, context_args, **opts)
     else
-      Base.new(context)
+      Base.new(context, args, context_args, **opts)
     end
   end
 
@@ -17,13 +17,13 @@ module Context
       delegated_obj = nil,
       args = nil,
       context_args = nil,
-      context_opts = nil,
+      **context_opts,
       &context_builder
     )
       @__getobj__ = delegated_obj
       @args = args
       @context_args = context_args
-      @context_opts = context_opts
+      @context_opts = context_opts.empty? ? nil : context_opts
       @context_builder = context_builder
       # super(delegated_obj)
     end

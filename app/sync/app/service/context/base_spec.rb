@@ -9,7 +9,7 @@ RSpec.describe Context::Base do
       context_args = { test_api: { other: 'data' } }
       opts = { test_api: { option: 'setting' } }
 
-      instance = described_class.new(delegated_obj, args, context_args, opts)
+      instance = described_class.new(delegated_obj, args, context_args, **opts)
 
       expect(instance.send("__getobj__")).to eq(delegated_obj)
       expect(instance.instance_variable_get(:@args)).to eq(args)

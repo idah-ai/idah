@@ -4,10 +4,10 @@ module Context
       @name || super
     end
 
-    def initialize(delegate, _name = nil, args = nil, context_args = nil, opts = nil)
+    def initialize(delegate, _name = nil, args = nil, context_args = nil, **opts)
       @name = _name || (delegate.respond_to?(:name) ? delegate.name : nil)
 
-      super(delegate, args, context_args, opts)
+      super(delegate, args, context_args, **opts)
     end
   end
 end

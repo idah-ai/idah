@@ -3,7 +3,10 @@ module Context
     module Dataset
       class Projects < Base
         def builder(projects)
-          super(projects)&.map do |project|
+          super_projects = super(projects)
+          return unless super_projects
+
+          super_projects.lazy.map do |project|
             id = project.dig(:id)
             unless id
               raise Context::Error::InvalidData, "Project missing id"
@@ -23,10 +26,10 @@ module Context
 
             Unit.new(
               project, [
-                ProjectMembers.new(@args, filters, @opts),
-                Datasets.new(@args, filters, @opts),
-                ContextApi::Iam::Organizations.new(@args, filters, @opts)
-              ], @args, filters, @opts
+                ProjectMembers.new(@args, filters, **@opts),
+                Datasets.new(@args, filters, **@opts),
+                ContextApi::Iam::Organizations.new(@args, filters, **@opts)
+              ], @args, filters, **@opts
             )
           end
         end
@@ -34,48 +37,52 @@ module Context
         def initialize(
           args = nil,
           context_args = nil,
-          opts = nil,
           delegated_obj = nil,
+          **opts,
           &context_builder
         )
           super(
             delegated_obj || Api[:idah].dataset.projects,
             args,
             context_args,
-            opts,
+            **opts,
             &context_builder
           )
         end
 
-        def self.from_organizations(organizations, args = nil, context_args = nil, opts = nil)
+        def self.from_organizations(organizations, args = nil, context_args = nil, **opts)
           built_args = organizations.build_context_args(args)
           built_context_args = organizations.build_context_args(context_args)
           built_opts = organizations.build_opts(opts)
 
-          CrudProcedural.new(
-            :projects, proc do |**opts|
-              Enumerator.new do |yielder|
-                organizations.lazy.map do |organization|
+          new(
+            built_args, built_context_args,
+            CrudProcedural.new(
+              :projects, proc do |**opts|
+                organization_ids = organizations.lazy.map do |organization|
                   organization[:id]
-                end.each_slice(DEFAULT_BATCH_SIZE) do |organization_id__in|
-                  new(
-                    @args,
-                    build_context_args({projects: { organization_id__in: }}),
-                    @context_opts
-                  ).index(**opts).each do |project|
-                    yielder << project
+                end.each_slice(DEFAULT_BATCH_SIZE)
+                Verse::Util::Iterator.chunk_iterator do |_|
+                  begin
+                    organization_id__in = organization_ids.next
+                    new(
+                      @args,
+                      build_context_args({projects: { organization_id__in: }}),
+                      **@context_opts
+                    ).index(**opts)
+                  rescue StopIteration => _
+                    nil
                   end
                 end
-              end
-            end,
-            built_args, built_context_args, built_opts
+              end, built_args, built_context_args, **built_opts
+            ), **built_opts
           )
         end
 
-        def self.root_api(args = nil, context = nil, opts = nil)
-          projects = Projects.new(args, context, opts)
+        def self.root_api(args = nil, context = nil, **opts)
+          projects = Projects.new(args, context, **opts)
 
-          Datasets.from_projects(projects, args, context, opts)
+          Datasets.from_projects(projects, args, context, **opts)
         end
       end
     end

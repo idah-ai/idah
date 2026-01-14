@@ -3,7 +3,10 @@ module Context
     module Dataset
       class ProjectMembers < Base
         def builder(project_members)
-          super(project_members)&.map do |project_member|
+          super_project_members = super(project_members)
+          return unless super_project_members
+
+          super_project_members.lazy.map do |project_member|
             id = project_member.dig(:id)
             unless id
               raise Context::Error::InvalidData, "ProjectMember missing id"
@@ -20,8 +23,8 @@ module Context
 
             Unit.new(
               super(project_member), [
-                Projects.new(@args, filters, @opts),
-              ], @args, filters, @opts
+                Projects.new(@args, filters, **@opts),
+              ], @args, filters, **@opts
             )
           end
         end
@@ -29,15 +32,15 @@ module Context
         def initialize(
           args = nil,
           context_args = nil,
-          opts = nil,
           delegated_obj = nil,
+          **opts,
           &context_builder
         )
           super(
             delegated_obj || Api[:idah].dataset.project_members,
             args,
             context_args,
-            opts,
+            **opts,
             &context_builder
           )
         end

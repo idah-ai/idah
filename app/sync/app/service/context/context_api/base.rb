@@ -29,17 +29,17 @@ module Context
         api = Api[:idah],
         args = nil,
         context_args = nil,
-        opts = nil,
+        **opts,
         &context_builder
       )
         unless WHITELIST.any? {|whitelist| api.is_a? whitelist}
           raise Error::InvalidContext, self
         end
 
-        super(api, args, context_args, opts)
+        super(api, args, context_args, **opts, &context_builder)
       end
 
-      def self.root_api(api, args = nil, context = nil, opts = nil)
+      def self.root_api(api, args = nil, context_args = nil, **opts)
         raise NotImplementedError
       end
     end

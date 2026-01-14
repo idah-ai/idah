@@ -18,11 +18,9 @@ module Command
       @o = Command.valid_io!(o, :o)
       @e = Command.valid_io!(e, :e)
       @wait_thr = wait_thr
-      Verse::logger.debug(self)
     end
 
     def close
-      Verse::logger.debug(self)
       i.close if i && !i.closed?
       if (e && !e.closed? && wait_thr)
         remaining_stderr = []
@@ -34,7 +32,7 @@ module Command
       end
       o.close if o && !o.closed?
       e.close if e && !e.closed?
-      Verse::logger.debug(self)
+      Verse::logger.debug {"closed #{self}"}
     end
   end
 end

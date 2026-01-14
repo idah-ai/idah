@@ -8,26 +8,29 @@ module Command
         name || "export.#{Time.now.to_i}.cvat.tasks",
         :zip
       ].join(".")
-      @build_dir = File.basename(filename, File.extname(filename))
       super(**opts.merge(filename:))
     end
 
+    def build_dir
+      File.basename(filename, File.extname(filename))
+    end
+
     def mkdir(path)
-      FileUtils.mkdir_p(File.join(@build_dir, path))
+      FileUtils.mkdir_p(File.join(build_dir, path))
     end
 
     def rmdir(path = nil)
       # maybe not rm_rf :sweat_smile # or should be contained
       if path
-        FileUtils.rm_rf(File.join(@build_dir, path))
+        FileUtils.rm_rf(File.join(build_dir, path))
       else
-        FileUtils.rm_rf(@build_dir)
+        FileUtils.rm_rf(build_dir)
       end
     end
 
     def xml(name, &block)
       builder = Builder::XmlMarkup.new(
-        :target => File.new(File.join(@build_dir, name), 'w'),
+        :target => File.new(File.join(build_dir, name), 'w'),
         :indent => 2
       )
       builder.instruct! :xml, :version=>"1.0", :encoding=>"UTF-8"
@@ -37,14 +40,14 @@ module Command
     def zip(match = nil, path = nil)
       match ||= ["**", "**"]
       output = if path
-        File.join(@build_dir, path) + ".zip"
+        File.join(build_dir, path) + ".zip"
       else
         filename
       end
       ignored_path = if path
-        File.join(@build_dir, path)
+        File.join(build_dir, path)
       else
-        @build_dir
+        build_dir
       end
 
       Zip::File.open(output, create: true) do |zip|
@@ -62,7 +65,7 @@ module Command
     end
 
     def close
-      rmdir # remove any mkdir base directory
+      rmdir # remove any mkdir based directory
     end
   end
 end
