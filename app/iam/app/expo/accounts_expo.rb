@@ -7,8 +7,7 @@ class AccountsExpo < BaseExpo
 
   json_api Account::Record do
     index do
-      allowed_filters :id__in,
-                      :name__match,
+      allowed_filters :name__match,
                       :email,
                       :email__match,
                       :enabled,
