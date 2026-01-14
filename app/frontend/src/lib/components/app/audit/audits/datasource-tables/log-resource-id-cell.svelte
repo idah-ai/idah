@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Link from "@/components/ui/text/Link.svelte";
   import Text from "@/components/ui/text/Text.svelte";
 
   import { LogRecord } from "@/data/model/audit/logs/record";
@@ -54,5 +55,12 @@
 
 <div class="flex flex-col gap-1">
   <Text size="sm">{resourceDetails[resource_type].name || resource_id}</Text>
-  <Text size="xs" class="text-muted-foreground">{resourceDetails[resource_type].url}</Text>
+
+  {#if ["media"].includes(logRecord.resource_service)}
+    <Text size="sm" class="text-muted-foreground">{resourceDetails[resource_type].displayUrl}</Text>
+  {:else}
+    <Link href={resourceDetails[resource_type].resourceUrl} target="_blank">
+      {resourceDetails[resource_type].displayUrl}
+    </Link>
+  {/if}
 </div>
