@@ -1,0 +1,25 @@
+#!/bin/sh
+
+mkdir -p /openapi/definitions &&
+
+bin/all_services OUTPUT_FILE=/openapi/definitions bundle exec rake http:generate_swagger &&
+
+# Initialize URLS string
+URLS="["
+
+# Loop through each JSON file in the directory
+for file in "/openapi/definitions"/*.json; do
+  # Extract the base name without the extension
+  name=$(basename "$file" .json)
+
+  # Add the entry to the URLS string
+  URLS="${URLS}{ \"url\": \"./openapi/definitions/$name.json\", \"name\": \"$name\" },"
+done
+
+# Remove the trailing comma and close the array
+URLS="${URLS%,} ]"
+
+# Create swagger json file
+echo "{ \"urls\": $URLS }" > /openapi/swagger.json
+echo "Generated /openapi/swagger.json with contents:"
+cat /openapi/swagger.json
