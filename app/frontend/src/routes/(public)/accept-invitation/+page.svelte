@@ -9,7 +9,7 @@
   async function acceptInvitation(): Promise<void> {
     try {
       const accountResponse = await accountsBackendDataSource.join({
-        id: page.url.searchParams.get("accountId") as string,
+        token: page.url.searchParams.get("token") as string,
       });
       const passwordResetToken = accountResponse.meta.password_reset_token || "";
 
