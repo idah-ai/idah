@@ -48,14 +48,24 @@ export function getLogResourceDetails(
   switch (resource_type) {
     case "accounts": {
       resource.name = accounts.find((account) => account.id === resource_id)?.email;
-      resource.displayUrl = `/accounts/${resource_id}`;
       resource.resourceUrl = "/accounts";
+
+      switch (action) {
+        case "logged_in": {
+          resource.displayUrl = "/accounts";
+          break;
+        }
+        default: {
+          resource.displayUrl = `/accounts/${resource_id}`;
+          break;
+        }
+      }
 
       break;
     }
     case "account_sessions": {
       resource.name = resource_id;
-      resource.displayUrl = `/accounts/${resource_id}`;
+      resource.displayUrl = "/accounts";
       resource.resourceUrl = "/accounts";
       break;
     }
