@@ -118,7 +118,7 @@
                 [AccountRecord.type]: ["id", "email"],
               },
               filters: {
-                id__in: _ids,
+                id: Array.from(new Set(_ids)),
               },
             });
             accounts.push(...accountsRes.data);
@@ -133,7 +133,7 @@
                 [OrganizationRecord.type]: ["id", "name"],
               },
               filters: {
-                id__in: _ids,
+                id: Array.from(new Set(_ids)),
               },
             });
             organizations.push(...organizationsRes.data);
@@ -145,7 +145,7 @@
                 [ProjectRecord.type]: ["id", "name"],
               },
               filters: {
-                id__in: _ids,
+                id: Array.from(new Set(_ids)),
               },
             });
             projects.push(...projectsRes.data);
@@ -157,7 +157,7 @@
                 [ProjectMemberRecord.type]: ["id", "email"],
               },
               filters: {
-                id__in: _ids,
+                id: Array.from(new Set(_ids)),
               },
             });
             projectMembers.push(...projectMembersRes.data);
@@ -169,7 +169,7 @@
                 [DatasetRecord.type]: ["id", "name"],
               },
               filters: {
-                id__in: _ids,
+                id: Array.from(new Set(_ids)),
               },
             });
             datasets.push(...datasetsRes.data);
@@ -181,7 +181,7 @@
                 [EntryRecord.type]: ["id", "resource"],
               },
               filters: {
-                id__in: _ids,
+                id: Array.from(new Set(_ids)),
               },
             });
             entries.push(...entriesRes.data);
