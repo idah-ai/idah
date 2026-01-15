@@ -85,7 +85,8 @@
     canDeleteDataset =
       (await $authStatus.authContext?.can("delete", "dataset:datasets", ["as_org_owner", as_project_owner])) || false;
     canExport =
-      (await $authStatus.authContext?.can("export", "sync:jobs", ["as_org_owner", as_project_owner])) || false;
+      (await $authStatus.authContext?.can("request_export", "sync:exports", ["as_org_owner", as_project_owner])) ||
+      false;
   }
 
   async function fetchDataset() {

@@ -8,6 +8,11 @@ module Jobs
     field :job_class, type: String
 
     field :arguments, type: Hash
+    field :created_by, type: String
+    field :created_by_role, type: String
+    field :created_by_organization, type: String
+    field :created_by_custom_scopes, type: Hash
+    field :created_by_metadata, type: Hash
 
     field :priority, type: Integer
     field :status, type: String
@@ -28,6 +33,8 @@ module Jobs
     self.resource = Resource::Sync::Jobs
 
     encoder :arguments, Verse::Sequel::JsonEncoder
+    encoder :created_by_custom_scopes, Verse::Sequel::JsonEncoder
+    encoder :created_by_metadata, Verse::Sequel::JsonEncoder
 
     # Lock available jobs for processing, up to {count} jobs.
     # The jobs are locked for update and their status is set to "running".
@@ -109,6 +116,14 @@ module Jobs
       ).where(
         status: "pending"
       ).first[:min]
+    end
+
+    def scoped(action)
+      auth_context.can!(action, self.class.resource) do |scope|
+        scope.all? { table }
+        scope.as_org_owner? { table.where(created_by_organization: auth_context.custom_scopes[:org]) }
+        scope.as_user? { table.where(created_by: auth_context.metadata[:id]) }
+      end
     end
   end
 end

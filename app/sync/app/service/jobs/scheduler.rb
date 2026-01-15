@@ -92,7 +92,7 @@ module Jobs
           Verse.logger&.info {
             "Processing job #{klass.name}:#{job.id} with arguments #{job.arguments.inspect[0..100]}"
           }
-          klass.new(job.id, job.arguments).run do |command, **opts|
+          klass.new(job).run do |command, **opts|
             case command
             when :update_progress
               jobs.update_progress(job.id, opts[:value])

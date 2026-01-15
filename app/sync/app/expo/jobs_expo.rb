@@ -3,6 +3,8 @@
 class JobsExpo < Verse::Exposition::Base
   http_path "/jobs"
 
+  use_service Jobs::Service
+
   desc <<-MD
     # Jobs Expo
 
@@ -11,9 +13,7 @@ class JobsExpo < Verse::Exposition::Base
     You can also filter jobs by various attributes such as status, priority, and scheduled time.
   MD
 
-  use_service Jobs::Service
-
-  json_api Jobs::Record, http_opts: { auth: nil } do
+  json_api Jobs::Record do
     # allowed_included "..."
     show
     delete

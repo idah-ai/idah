@@ -34,6 +34,6 @@ org_owner:
     - "setting:account_settings.*.own"
 
     # Sync Service
-    - "sync:jobs.export.as_org_owner"
     - "sync:jobs.read.as_org_owner"
+    - "sync:exports.request_export.as_org_owner"
     - "sync:exports.read.as_org_owner"

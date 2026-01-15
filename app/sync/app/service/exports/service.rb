@@ -27,7 +27,7 @@ module Exports
     end
 
     # system only!
-    def create(job_id, filename, file, metadata)
+    def create(job_id, filename, file, organization, metadata, custom_scopes)
       Verse::Plugin[:shrine].with_storage do |storage|
         output = storage.upload(file)
         # metadata = auth_context.metadata
@@ -39,8 +39,12 @@ module Exports
             filename:,
             size: output.size,
             mime_type: output.mime_type || "application/octet-stream", # for now
-            created_by: metadata[:id] || auth_context[:id],
-            created_role: metadata[:role] || auth_context[:role],
+            created_by: metadata[:id],
+            created_by_role: metadata[:role],
+            created_by_organization: organization,
+            created_by_metadata: metadata,
+            created_by_custom_scopes: custom_scopes
+
           }
         )
         exports.find!(id)
@@ -50,18 +54,30 @@ module Exports
     def export(filters)
     # "UniversalPortableDataset::Export"
     # infer api/setting/registry...
-      auth_context.can!(:export, Jobs::Repository.resource) do |scope|
+
+      auth_context.can!(:request_export, exports.class.resource) do |scope|
         scope.all? {system_jobs}
         scope.as_org_owner? {system_jobs}
         scope.as_user? {system_jobs}
       end.create(
         "Jobs::Export",
+        created_by: {
+          id: auth_context.metadata[:id],
+          role: auth_context.role,
+          organization: case auth_context.role
+                                    when "admin"
+                                      nil
+                                    when "org_owner"
+                                      auth_context.custom_scopes.fetch(:org)
+                                    when "user"
+                                      raise "todo"
+                                    else
+                                      raise "unexpected created_by_auth_context: #{created_by_auth_context}"
+                                    end,
+          custom_scopes: auth_context.custom_scopes,
+          metadata: auth_context.metadata,
+        },
         arguments: {
-          auth_context:{
-            role: auth_context.role,
-            metadata: auth_context.metadata,
-            custom_scopes: auth_context.custom_scopes
-          },
           processors: {
             UniversalPortableDataset: {
               klass: "Exports::UniversalPortableDataset",

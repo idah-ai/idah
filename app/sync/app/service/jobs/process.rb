@@ -23,24 +23,19 @@ module Jobs
 
     def run_impl
       begin
-        auth_context = arguments.fetch(:auth_context)
-        role = auth_context.fetch(:role)
-        custom_scopes = auth_context.fetch(:custom_scopes)
-        auth_context_args = \
-          case role
+        auth_context_args =
+          case created_by_role
           when "admin"
             nil
           when "org_owner"
-            { projects: {
-              organization_id__in: Array(Hash(custom_scopes).fetch(:org))
-            }}
+            { projects: { organization_id__in: [created_by_organization] }}
           when "user"
             raise "todo"
           else
-            raise "unexpected auth_context: #{auth_context}"
+            raise "unexpected auth_context #{self}"
           end
 
-        Hash(arguments.fetch(:processors)).lazy.map do |process_name, process_config|
+          Hash(arguments.fetch(:processors)).lazy.map do |process_name, process_config|
           process_config = Hash(process_config)
           process_class = PROCESSORS[process_config.fetch(:klass)]
           raise "#{process_name} is missing klass" unless process_class

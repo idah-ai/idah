@@ -10,7 +10,9 @@ module Jobs
           job_id,
           context.io.filename,
           file,
-          arguments.dig(:auth_context, :metadata)
+          created_by_organization,
+          created_by_metadata,
+          created_by_custom_scopes,
         )
       end
       FileUtils.rm_rf(context.io.filename)
