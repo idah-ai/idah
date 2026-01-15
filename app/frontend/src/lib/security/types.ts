@@ -9,6 +9,8 @@ export const actions = [
   "read",
   "update",
   "delete",
+  //
+  "export", // ?
 ] as const;
 
 export type Action = (typeof actions)[number];
@@ -30,6 +32,10 @@ export const resources = [
 
   /** SETTINGS */
   "setting:account_settings",
+
+  /** SYNC */
+  "sync:jobs",
+  "sync:exports",
 ] as const;
 
 export type Resource = (typeof resources)[number];

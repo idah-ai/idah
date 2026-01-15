@@ -325,7 +325,7 @@ RSpec.describe Context::Base do
 
   describe "#build_opts" do
     let(:instance_opts) { { test_api: { key1: 'instance_opts', key2: 'instance_opts' } } }
-    let(:instance) { described_class.new(delegated_obj, nil, nil, instance_opts) }
+    let(:instance) { described_class.new(delegated_obj, nil, nil, **instance_opts) }
 
     context "with precedence including instance variable" do
       # Precedence: opts < passed_opts < @opts
@@ -344,7 +344,7 @@ RSpec.describe Context::Base do
       end
 
       it "allows passed_opts when @opts is nil" do
-        minimal_instance = described_class.new(delegated_obj, nil, nil, nil)
+        minimal_instance = described_class.new(delegated_obj, nil, nil, **nil)
 
         result = minimal_instance.build_opts(opts, :test_api, passed_opts)
 
@@ -409,7 +409,7 @@ RSpec.describe Context::Base do
 
   describe "#build_context_opts" do
     let(:instance_opts) { { api1: { key1: 'instance_opts' } } }
-    let(:instance) { described_class.new(delegated_obj, nil, nil, instance_opts) }
+    let(:instance) { described_class.new(delegated_obj, nil, nil, **instance_opts) }
 
     it "aggregates from instance variable only" do
       result = instance.build_context_opts
@@ -444,7 +444,7 @@ RSpec.describe Context::Base do
         delegated_obj,
         { test_api: { shared: 'args', only_args: 'args' } },
         { test_api: { shared: 'context', only_context: 'context' } },
-        { test_api: { shared: 'opts', only_opts: 'opts' } }
+        test_api: { shared: 'opts', only_opts: 'opts' }
       )
 
       # Test filters

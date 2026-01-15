@@ -25,6 +25,7 @@
   let projectId: string = page.params.projectId as string;
   let canUpdateDataset = $state(false);
   let canDeleteDataset = $state(false);
+  let canExport = $state(false);
   let columns = $state(projectDatasetColumns);
 
   pageBreadcrumbsStore.set([
@@ -47,7 +48,8 @@
       (await currentAccount?.can("update", "dataset:datasets", ["as_org_owner", as_project_owner])) || false;
     canDeleteDataset =
       (await currentAccount?.can("delete", "dataset:datasets", ["as_org_owner", as_project_owner])) || false;
-    columns.action.visible = canUpdateDataset || canDeleteDataset;
+    canExport = (await currentAccount?.can("export", "sync:jobs", ["as_org_owner", as_project_owner])) || false;
+    columns.action.visible = canUpdateDataset || canDeleteDataset || canExport;
   });
 </script>
 

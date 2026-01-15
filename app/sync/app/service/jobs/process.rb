@@ -1,10 +1,10 @@
 # frozen_string_literal: true
-module Sync
-  class Job < Jobs::Base
+module Jobs
+  class Process < Base
     # registry prep wip
     EXPORTS = [
-      Export::UniversalPortableDataset,
-      Export::Cvat
+      Exports::UniversalPortableDataset,
+      Exports::Cvat
     ]
     IMPORTS = []
     PROCESSORS = (IMPORTS | EXPORTS).map {|p| [p.to_s, p]}.to_h
@@ -17,10 +17,13 @@ module Sync
       Command::Cvat
     ].map {|p| [p.to_s, p]}.to_h
 
+    def on_process_complete(process, context)
+      raise NotImplementedError
+    end
+
     def run_impl
       begin
         auth_context = arguments.fetch(:auth_context)
-        export_service = Exports::Service.new(Verse::Auth::Context[:system])
         role = auth_context.fetch(:role)
         custom_scopes = auth_context.fetch(:custom_scopes)
         auth_context_args = \
@@ -61,7 +64,7 @@ module Sync
           [context, process_class.new(context)]
         end.map do |context, process|
           begin
-            [context, process.class.name, process.run]
+            [context, process, process.run]
           rescue Exception => e
             Verse::logger::error{
               [
@@ -71,22 +74,13 @@ module Sync
             }
             raise e
           end
-        end.map do |context, process_name, success|
+        end.map do |context, process, success|
           context.each do |plugin_context|
             plugin_context.close if plugin_context.respond_to? :close
           end
-          [process_name, context]
-        end.each do |process_name, context|
-          # assume exports for now
-          file = File.open(context.io.filename)
-          export_service.create(
-            job_id,
-            context.io.filename,
-            file,
-            auth_context.fetch(:metadata) # TODO: check service init !?
-          )
-          file.close
-          FileUtils.rm_rf(context.io.filename)
+          [process, context]
+        end.each do |process, context|
+          on_process_complete(process, context)
         end
       end
     end

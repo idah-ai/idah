@@ -1,4 +1,4 @@
-module Export
+module Exports
   class Cvat
     def self.name
       "Cvat"

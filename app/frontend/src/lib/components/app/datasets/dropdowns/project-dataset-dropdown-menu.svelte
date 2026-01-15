@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
-  import { SquarePenIcon, Trash2Icon } from "@lucide/svelte";
+  import { DownloadIcon, SquarePenIcon, Trash2Icon } from "@lucide/svelte";
   import { onMount } from "svelte";
 
   import DatasetFormModal from "@/components/app/datasets/overlays/dataset-form-modal.svelte";
@@ -14,6 +14,7 @@
 
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
   import type { ProjectMemberScope } from "@/security/types";
+  import { ExportsBackendDataSource } from "@/data/model/sync/exports/record";
 
   // Props
   interface Props {
@@ -25,6 +26,7 @@
   // Variables
   let canUpdateDataset = $state(false);
   let canDeleteDataset = $state(false);
+  let canExport = $state(false);
   let menus: IDropdownMenus = $derived({
     actions: {
       items: [
@@ -37,6 +39,14 @@
 
             datasetRecord = datasetRes.data;
             openEditDatasetFormModal = true;
+          },
+        },
+        {
+          label: "Export",
+          icon: DownloadIcon,
+          hidden: !canExport,
+          action: () => {
+            openConfirmExportModal = true;
           },
         },
         {
@@ -54,6 +64,7 @@
   let datasetRecord: DatasetRecord | undefined = $state(undefined);
   let openEditDatasetFormModal: boolean = $state(false);
   let openConfirmDeleteDatasetModal: boolean = $state(false);
+  let openConfirmExportModal: boolean = $state(false);
 
   // Lifecycle
   onMount(async () => {
@@ -73,6 +84,8 @@
       (await $authStatus.authContext?.can("update", "dataset:datasets", ["as_org_owner", as_project_owner])) || false;
     canDeleteDataset =
       (await $authStatus.authContext?.can("delete", "dataset:datasets", ["as_org_owner", as_project_owner])) || false;
+    canExport =
+      (await $authStatus.authContext?.can("export", "sync:jobs", ["as_org_owner", as_project_owner])) || false;
   }
 
   async function fetchDataset() {
@@ -90,12 +103,25 @@
     $refetches.datasets.list = new Date();
     openConfirmDeleteDatasetModal = false;
   }
+
+  async function exportDataset(): Promise<void> {
+    await ExportsBackendDataSource.export({ datasets: { id: datasetId } });
+    // goto(resolve(`/projects/${projectId}/datasets`));
+    openConfirmExportModal = false;
+  }
 </script>
 
 {#if canUpdateDataset || canDeleteDataset}
   <DropdownMenus {menus} align="end" />
 
   <DatasetFormModal title="Dataset" action="update" {datasetRecord} bind:open={openEditDatasetFormModal} />
+
+  <ConfirmModal
+    title="Export Dataset"
+    description="Are you sure you want to export this dataset?"
+    onConfirm={exportDataset}
+    bind:open={openConfirmExportModal}
+  />
 
   <ConfirmModal
     title="Delete Dataset"
