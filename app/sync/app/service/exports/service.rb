@@ -3,6 +3,7 @@
 module Exports
   class Service < Verse::Service::Base
     use exports: Exports::Repository
+    use_system system_jobs: Jobs::Service
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       exports.index(
@@ -46,5 +47,55 @@ module Exports
       end
     end
 
+    def export(filters)
+    # "UniversalPortableDataset::Export"
+    # infer api/setting/registry...
+      auth_context.can!(:export, Jobs::Repository.resource) do |scope|
+        scope.all? {system_jobs}
+        scope.as_org_owner? {system_jobs}
+        scope.as_user? {system_jobs}
+      end.create(
+        "Jobs::Export",
+        arguments: {
+          auth_context:{
+            role: auth_context.role,
+            metadata: auth_context.metadata,
+            custom_scopes: auth_context.custom_scopes
+          },
+          processors: {
+            UniversalPortableDataset: {
+              klass: "Exports::UniversalPortableDataset",
+              context: {
+                api: {
+                  klass: "Context::ContextApi",
+                  context: filters,
+                },
+                io: {
+                  klass: "Context::Io",
+                  opts: {
+                    klass: "Command::UniversalPortableDataset"
+                  }
+                }
+              }
+            },
+            Cvat:  {
+              klass: "Exports::Cvat",
+              context: {
+                api: {
+                  klass: "Context::ContextApi",
+                  context: filters,
+                },
+                io: {
+                  klass: "Context::Io",
+                  opts: {
+                    klass: "Command::Cvat"
+                  }
+                }
+              }
+            }
+          }
+        }
+      )
+    end
   end
 end

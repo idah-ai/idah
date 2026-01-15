@@ -1,4 +1,4 @@
-module Export
+module Exports
   class UniversalPortableDataset
     def self.name
       "UniversalPortableDataset"

@@ -3,7 +3,6 @@
 Verse.on_boot do
   [
     HealthcheckExpo,
-    SyncExpo,
     ExportsExpo,
     JobsExpo
   ].each(&:register)
