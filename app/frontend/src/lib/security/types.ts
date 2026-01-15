@@ -10,7 +10,7 @@ export const actions = [
   "update",
   "delete",
   //
-  "export", // ?
+  "request_export", // ?
 ] as const;
 
 export type Action = (typeof actions)[number];

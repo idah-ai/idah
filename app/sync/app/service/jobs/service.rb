@@ -25,6 +25,7 @@ module Jobs
 
     def create(
       job_class,
+      created_by:,
       arguments: {},
       priority: 0,
       scheduled_at: Time.now,
@@ -33,10 +34,15 @@ module Jobs
       repo.transaction do
         record = {
           job_class: job_class,
-          arguments: arguments,
-          priority: priority,
+          created_by: created_by[:id],
+          created_by_role: created_by[:role],
+          created_by_organization: created_by[:organization],
+          created_by_custom_scopes: created_by[:custom_scopes],
+          created_by_metadata: created_by[:metadata],
+          arguments:,
+          priority:,
           status: "pending",
-          scheduled_at: scheduled_at,
+          scheduled_at:,
           unicity:,
           retry_count: 0,
           progress: 0.0

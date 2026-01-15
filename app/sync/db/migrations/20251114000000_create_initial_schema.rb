@@ -12,6 +12,12 @@ Sequel.migration do
       column :job_class, String, null: false, index: true
       column :arguments, :jsonb, text: true, null: false
 
+      column :created_by, Integer, null: false, index: true
+      column :created_by_role, String, null: false, index: true
+      column :created_by_organization, Integer, null: true, index: true
+      column :created_by_custom_scopes, :jsonb, text: true, null: false
+      column :created_by_metadata, :jsonb, text: true, null: false
+
       column :priority, Integer, null: false, default: 0, index: true
 
       column :status, String, null: false, index: true, default: "pending"
@@ -41,7 +47,10 @@ Sequel.migration do
       column :mime_type, String, null: false
 
       column :created_by, Integer, null: false, index: true
-      column :created_role, String
+      column :created_by_role, String, null: false, index: true
+      column :created_by_organization, Integer, null: true, index: true
+      column :created_by_custom_scopes, :jsonb, text: true, null: false
+      column :created_by_metadata, :jsonb, text: true, null: false
 
       column :meta, :jsonb, null: false, default: "{}"
 
