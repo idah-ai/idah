@@ -642,7 +642,14 @@
       name: "bounding box tool",
       apply: () => {
         mode = IDAH_VIDEO_BOUNDING_BOX;
-        selectedAnnotation = undefined;
+        selectedAnnotation = {
+          shape: { type: IDAH_VIDEO_BOUNDING_BOX },
+          value: {},
+          metadata: { id: "", createdAt: new Date(), updatedAt: new Date() },
+          synced: false,
+          locked: false,
+          hidden: false,
+        };
         annotationValue = {};
       },
       undo: () => {},
@@ -670,7 +677,14 @@
       name: "polygon tool",
       apply: () => {
         mode = IDAH_POLYGON;
-        selectedAnnotation = undefined;
+        selectedAnnotation = {
+          shape: { type: IDAH_POLYGON },
+          value: {},
+          metadata: { id: "", createdAt: new Date(), updatedAt: new Date() },
+          synced: false,
+          locked: false,
+          hidden: false,
+        };
         annotationValue = {};
       },
       undo: () => {},
@@ -700,6 +714,7 @@
 
   async function addSelection(id: string, selection: VideoFrameSelection) {
     if (!["review", "annotate"].includes(context.workflowStep)) return;
+    console.log("testeeeeee");
 
     context.commands.run("keyframe.add", { id, selection });
   }
