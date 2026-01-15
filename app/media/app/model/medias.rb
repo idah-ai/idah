@@ -47,9 +47,14 @@ module Medias
       end
     end
 
+    # TODO: background processors also trigger this event and causing error logs on audit as there's no actor id
+    # might need to review or suppress on that
     def create(attributes)
       with_metadata do
-        add_event_metadata(project_id: attributes[:project_id])
+        add_event_metadata(
+          project_id: attributes[:project_id],
+          media_resource: attributes[:resource]
+        )
 
         super(attributes)
       end
@@ -59,7 +64,10 @@ module Medias
       with_metadata do
         media = find!(id)
 
-        add_event_metadata(project_id: media.project_id)
+        add_event_metadata(
+          project_id: media.project_id,
+          media_resource: media.resource
+        )
 
         super(id, attributes, scope:)
       end
@@ -69,7 +77,10 @@ module Medias
       with_metadata do
         media = find!(id)
 
-        add_event_metadata(project_id: media.project_id)
+        add_event_metadata(
+          project_id: media.project_id,
+          media_resource: media.resource
+        )
 
         super(id)
       end

@@ -32,7 +32,13 @@ module Log
             action: action,
             resource_service: service,
             resource_type: type,
-            resource_id: type == "account_sessions" ? metadata[:actor_account_email] : resource_id,
+            resource_id: if type == "account_sessions"
+                           metadata[:actor_account_email]
+                         elsif type == "medias"
+                           metadata[:media_resource]
+                         else
+                           resource_id
+                         end,
             event_timestamp: metadata[:at],
             # added metadata
             actor_account_id: metadata[:actor_account_id],
