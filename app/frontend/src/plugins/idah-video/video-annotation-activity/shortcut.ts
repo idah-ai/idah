@@ -59,23 +59,10 @@ const createBoundingBoxModeKeyMap = (context: KeyMapContext) => {
     context.switch_mode(ShortcutManager.getCurrentMode());
   };
 
-  // TODO: implement deleteSelected
-  // const deleteSelected = () => {
-  //   const selectedId = context.selectedAnnotationId();
-  //   if (!selectedId) {
-  //     console.log("No item selected to delete");
-  //     return;
-  //   }
-
-  //   console.log(`Delete a selected item with id: ${selectedId}`);
-  //   context.context.commands.run("annotation.delete", { selectedId });
-  // };
-
   return KeyMapBuilder((b) => {
     CommonInjecter(context)(b);
 
     b.on(null, "Backspace", backAction, "back", "back action");
-    // b.on(null, "Delete", deleteSelected, "Delete", "Delete selected item");
   });
 };
 
@@ -161,16 +148,69 @@ export function registerVisualModeShortcuts(context: KeyMapContext) {
   return visualModeKeyMap;
 }
 
-// TODO: implement dynamic register onselect here
+// Selection-specific shortcuts context
+type SelectionKeyMapContext = {
+  context: IActivityContext;
+  selectedId: string;
+};
 
-// const createOnSelectBoundingBoxModeKeyMap = (context: KeyMapContext) => {
-//   const onSelectDelete {
+const createOnSelectBoundingBoxModeKeyMap = (context: SelectionKeyMapContext) => {
+  const deleteSelected = () => {
+    if (!context.selectedId) {
+      console.log("No item selected to delete");
+      return;
+    }
 
-//   }
-// }
+    console.log(`Delete selected item with id: ${context.selectedId}`);
+    context.context.commands.run("annotation.delete", { id: context.selectedId });
+  };
 
-// export function registerOnSelectBoxMode(context: KeyMapContext) {
-//   ShortcutManager.registerKeyMap(IDAH_VIDEO_BOUNDING_BOX, createOnSelectBoundingBoxModeKeyMap(context))
-//   ShortcutManager.enterMode(IDAH_VIDEO_BOUNDING_BOX)
+  const toggleHidden = () => {
+    if (!context.selectedId) {
+      console.log("No item selected to toggle visibility");
+      return;
+    }
 
-// }
+    console.log(`Toggle hidden for item with id: ${context.selectedId}`);
+    context.context.commands.run("annotation.toggleHidden", { id: context.selectedId });
+  };
+
+  const toggleLocked = () => {
+    if (!context.selectedId) {
+      console.log("No item selected to toggle lock");
+      return;
+    }
+
+    console.log(`Toggle locked for item with id: ${context.selectedId}`);
+    context.context.commands.run("annotation.toggleLocked", { id: context.selectedId });
+  };
+
+  return KeyMapBuilder((b) => {
+    b.on(null, "Delete", deleteSelected, "Delete", "Delete selected annotation");
+    b.on(null, "H", toggleHidden, "Toggle Hidden", "Hide/Show selected annotation");
+    b.on(null, "L", toggleLocked, "Toggle Locked", "Lock/Unlock selected annotation");
+  });
+};
+
+/**
+ * Register selection-specific shortcuts as extension layer.
+ * Call this when an annotation is selected.
+ */
+export function registerOnSelectBoxModeShortcuts(context: IActivityContext, selectedId: string) {
+  // Clear any existing extensions first
+  ShortcutManager.clearAllKeyMapExtensions();
+
+  // Create and register new extension for the current mode
+  const selectionKeyMap = createOnSelectBoundingBoxModeKeyMap({ context, selectedId });
+  ShortcutManager.setKeyMapExtension(IDAH_VIDEO_BOUNDING_BOX, selectionKeyMap);
+  ShortcutManager.enterMode(IDAH_VIDEO_BOUNDING_BOX);
+}
+
+/**
+ * Unregister all selection-specific shortcuts.
+ * Call this when annotation is deselected.
+ */
+export function unregisterSelectionShortcuts() {
+  ShortcutManager.clearAllKeyMapExtensions();
+  console.log("Selection shortcuts unregistered");
+}
