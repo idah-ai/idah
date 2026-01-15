@@ -39,7 +39,11 @@
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import PropertiesSidebar from "./layout/sidebar/properties-sidebar.svelte";
   import CategoryProperties from "./video-annotation-activity/categoryProperties/categoryProperties.svelte";
-  import { registerVisualModeShortcuts } from "./video-annotation-activity/shortcut";
+  import {
+    registerVisualModeShortcuts,
+    registerOnSelectBoxModeShortcuts,
+    unregisterSelectionShortcuts,
+  } from "./video-annotation-activity/shortcut";
   import type { Point, VideoFrameSelection, VideoShape } from "./video-annotation-activity/VideoAnnotationContext";
   import VideoController from "./video-annotation-activity/VideoController.svelte";
 
@@ -95,9 +99,9 @@
     if (isTyping) return;
 
     const current_mode = ShortcutManager.getCurrentMode();
-    const keymap = ShortcutManager.keyMap[current_mode];
+    const keymap = ShortcutManager.getEffectiveKeyMap(current_mode);
 
-    if (!keymap) return console.error("no keymap found for", { current_mode });
+    if (!keymap || Object.keys(keymap).length === 0) return console.error("no keymap found for", { current_mode });
 
     const modifier_keys = [
       e.altKey && "Alt",
@@ -614,6 +618,38 @@
     },
   );
 
+  context.commands.on("annotation.toggleHidden", async (props: { id: string }) => {
+    const annotation = await annotationsIDB?.get("annotations", props.id);
+
+    if (!annotation) return toast.error("cannot toggle hidden, annotation not found");
+
+    const wasHidden = annotation.hidden;
+
+    return {
+      name: "toggle hidden",
+      apply: () => onVisibility(!wasHidden, annotation),
+      undo: () => onVisibility(wasHidden, annotation),
+      isCombinable: () => true,
+      combine: (c) => c,
+    };
+  });
+
+  context.commands.on("annotation.toggleLocked", async (props: { id: string }) => {
+    const annotation = await annotationsIDB?.get("annotations", props.id);
+
+    if (!annotation) return toast.error("cannot toggle locked, annotation not found");
+
+    const wasLocked = annotation.locked;
+
+    return {
+      name: "toggle locked",
+      apply: () => onLock(!wasLocked, annotation),
+      undo: () => onLock(wasLocked, annotation),
+      isCombinable: () => true,
+      combine: (c) => c,
+    };
+  });
+
   context.commands.on("tools.visual", () => {
     return {
       name: "visual tool",
@@ -763,6 +799,10 @@
 
   function selectAnnotation(annotation?: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) {
     selectedAnnotation = annotation;
+
+    // Clear existing selection shortcuts first
+    unregisterSelectionShortcuts();
+
     /**
      * Set mode to the annotation shape type when selecting an annotation
      */
@@ -770,7 +810,8 @@
       return;
     } else if (annotation?.shape.type && ["review", "annotate"].includes(context.workflowStep)) {
       mode = annotation.shape.type;
-      // TODO: call dynamic register onselect here
+      // Register selection-specific shortcuts for the current mode
+      registerOnSelectBoxModeShortcuts(context, annotation.metadata.id);
     } else {
       mode = DEFAULT_MODE;
     }
@@ -854,13 +895,13 @@
 </script>
 
 <div class="relative flex h-full w-full flex-col">
-  {#key [ShortcutManager, ShortcutManager.currentMode, ShortcutManager.getCurrentMode()]}
+  {#key [ShortcutManager, ShortcutManager.currentMode, ShortcutManager.getCurrentMode(), selectedAnnotation]}
     <CommandDialog bind:open={commandOpen} accesskey={ShortcutManager.getCurrentMode()}>
       <CommandInput placeholder="Type a command or search..." />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
         <CommandGroup heading={`MODE: ${ShortcutManager.getCurrentMode()}`}>
-          {#each Object.entries(ShortcutManager.keyMap[ShortcutManager.getCurrentMode()] || []) as [key, value] (key)}
+          {#each Object.entries(ShortcutManager.getEffectiveKeyMap(ShortcutManager.getCurrentMode()) || {}) as [key, value] (key)}
             <CommandItem onclick={() => value.action()}>
               <span>{value.name} ({value.description})</span>
               <CommandShortcut>{key}</CommandShortcut>
