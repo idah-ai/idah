@@ -56,11 +56,7 @@
 <div class="flex flex-col gap-1">
   <Text size="sm">{resourceDetails[resource_type].name || resource_id}</Text>
 
-  {#if ["media"].includes(logRecord.resource_service)}
-    <Text size="sm" class="text-muted-foreground">{resourceDetails[resource_type].displayUrl}</Text>
-  {:else}
-    <Link href={resourceDetails[resource_type].resourceUrl} target="_blank">
-      {resourceDetails[resource_type].displayUrl}
-    </Link>
-  {/if}
+  <Link href={resourceDetails[resource_type].resourceUrl} target="_blank">
+    {resourceDetails[resource_type].displayUrl}
+  </Link>
 </div>
