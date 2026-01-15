@@ -6,7 +6,7 @@ import { ProjectMemberRecord } from "@/data/model/dataset/projects/members/recor
 import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
 import { AccountRecord } from "@/data/model/iam/accounts/record";
 import { OrganizationRecord } from "@/data/model/iam/organizations/record";
-import { MediaRecord } from "@/data/model/media/medias/medias-record";
+import { mediaBasePath, MediaRecord } from "@/data/model/media/medias/medias-record";
 
 import type { Hash } from "@/utils/types";
 
@@ -132,7 +132,7 @@ export function getLogResourceDetails(
     }
     case "medias": {
       resource.displayUrl = `/medias/${resource_id}`;
-      resource.resourceUrl = `/medias`;
+      resource.resourceUrl = `${mediaBasePath}/files/${resource_id}`;
       resource.name = medias.find((media) => media.id == String(resource_id))?.filename;
       break;
     }

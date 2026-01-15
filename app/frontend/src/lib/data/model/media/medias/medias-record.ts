@@ -1,11 +1,11 @@
 import { createBackendDataSource, resourcePath } from "@/data/BackendDataSource";
 import { clearCache } from "@/data/Cache";
+import { parseSingleElementError, parseSingleElementReturn } from "@/data/model/json_api";
 import { field, Record, RecordFactory, type } from "@/data/model/Record";
 import { showErrorToast } from "@/utils/error/error.toasts";
-import { parseSingleElementError, parseSingleElementReturn } from "@/data/model/json_api";
 
-import type { Hash } from "@/utils/types";
 import type { JsonApiErrorResponse, RecordResponse } from "@/data/model/types";
+import type { Hash } from "@/utils/types";
 
 @type("media:medias")
 export class MediaRecord extends Record {
@@ -24,7 +24,7 @@ export class MediaRecord extends Record {
 
 RecordFactory.registerTypes(MediaRecord);
 
-const mediaBasePath = `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias`;
+export const mediaBasePath = `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias`;
 
 export const mediaBackendDataSource = createBackendDataSource(MediaRecord, mediaBasePath, {
   // getInfo: async() => {},
