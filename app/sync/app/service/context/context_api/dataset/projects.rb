@@ -66,9 +66,11 @@ module Context
                   begin
                     organization_id__in = organization_ids.next
                     new(
-                      @args,
-                      build_context_args({projects: { organization_id__in: }}),
-                      **@context_opts
+                      built_args,
+                      self.build_context_args(
+                        built_context_args,
+                        {projects: { organization_id__in: }}
+                      ), **built_opts
                     ).index(**opts)
                   rescue StopIteration => _
                     nil

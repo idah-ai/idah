@@ -61,9 +61,11 @@ module Context
                   begin
                     project_id__in = project_ids.next
                     new(
-                      @args,
-                      build_context_args({datasets: { project_id__in: }}),
-                      **@context_opts
+                      built_args,
+                      self.build_context_args(
+                        built_context_args,
+                        {datasets: { project_id__in: }}
+                      ), **built_opts
                     ).index(**opts)
                   rescue StopIteration => _
                     nil
