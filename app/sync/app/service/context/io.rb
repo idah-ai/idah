@@ -1,19 +1,13 @@
 module Context
   class Io < Base
-    def initialize(args = nil, context = nil, **opts)
-      classname = opts.dig(:klass)
-      unless classname
-        raise Context::Error::InvalidContext, :missing_io_klass
+    def initialize(io_class, args = nil, context = nil, **opts)
+      unless io_class < Command::Base
+        raise Context::Error::InvalidContext, [:invalid_io_delegate, io_class].join(":")
       end
 
-      klass = Verse::Util::Reflection.constantize(classname)
-      unless klass && klass < Command::Base
-        raise Context::Error::InvalidContext, [:invalid_io_class, klass].join(":")
-      end
-
-      instance = klass.new(**opts.slice(:name))
+      io_instance = io_class.new(**opts.slice(:name))
       io_opts = build_context_opts({io: opts})
-      super(instance, args, context, **io_opts)
+      super(io_instance, args, context, **io_opts)
     end
   end
 end

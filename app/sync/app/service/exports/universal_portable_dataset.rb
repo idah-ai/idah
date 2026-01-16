@@ -4,6 +4,10 @@ module Exports
       "UniversalPortableDataset"
     end
 
+    def self.io
+      Command::UniversalPortableDataset
+    end
+
     def initialize(context)
       @context = context
     end

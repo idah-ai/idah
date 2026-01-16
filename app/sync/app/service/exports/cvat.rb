@@ -4,6 +4,10 @@ module Exports
       "Cvat"
     end
 
+    def self.io
+      Command::Cvat
+    end
+
     def initialize(context)
       @context = context
     end
