@@ -1,0 +1,23 @@
+---
+import ModeSwitcher from "@components/app/switchers/ModeSwitcher.astro";
+---
+
+<footer
+  id="footer"
+  class="border-border mt-auto w-full border-t px-4 py-3 dark:border-slate-700 md:px-8">
+  <div class="mx-auto block max-w-7xl items-center justify-between sm:flex">
+    <div class="flex items-center pb-3 sm:pb-0">
+      <ModeSwitcher />
+    </div>
+
+    <div class="flex items-center gap-2 md:gap-4">
+      <p class="text-sm text-muted-foreground">© 2025 IDAH Data Annotation. All rights reserved.</p>
+    </div>
+  </div>
+</footer>
+
+<style>
+  #footer {
+    font-family: Inter, Roboto, "Helvetica Neue", "Arial Nova", "Nimbus Sans", Arial, sans-serif;
+  }
+</style>
