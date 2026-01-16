@@ -78,36 +78,14 @@ module Exports
           metadata: auth_context.metadata,
         },
         arguments: {
-          processors: {
-            UniversalPortableDataset: {
-              klass: "Exports::UniversalPortableDataset",
-              context: {
-                api: {
-                  klass: "Context::ContextApi",
-                  context: filters,
-                },
-                io: {
-                  klass: "Context::Io",
-                  opts: {
-                    klass: "Command::UniversalPortableDataset"
-                  }
-                }
-              }
+          filters:,
+          # opts: nil,
+          formats: {
+            "UniversalPortableDataset":{
+              # **opts
             },
-            Cvat:  {
-              klass: "Exports::Cvat",
-              context: {
-                api: {
-                  klass: "Context::ContextApi",
-                  context: filters,
-                },
-                io: {
-                  klass: "Context::Io",
-                  opts: {
-                    klass: "Command::Cvat"
-                  }
-                }
-              }
+            "Cvat":{
+              # **opts
             }
           }
         }

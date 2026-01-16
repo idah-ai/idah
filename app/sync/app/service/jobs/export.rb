@@ -1,6 +1,10 @@
 # frozen_string_literal: true
 module Jobs
   class Export < Process
+    def process_type
+      :export
+    end
+
     def on_process_complete(process, context)
       File.open(context.io.filename) do |file|
         Exports::Service.new(
