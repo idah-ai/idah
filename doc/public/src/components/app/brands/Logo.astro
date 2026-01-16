@@ -1,0 +1,38 @@
+---
+import idahLogoLight from "~/assets/idah-logo-light.svg";
+import idahLogoDark from "~/assets/idah-logo-dark.svg";
+
+export interface Props {
+  id: string;
+}
+const { id } = Astro.props;
+---
+
+<img id={id} class="w-20 md:w-24 lg:w-28" src={idahLogoLight.src} alt="IDAH Logo" />
+
+<script define:vars={{ idahLogoLight, idahLogoDark, id }}>
+  function updateLogo() {
+    const logo = document.getElementById(id);
+    const isDark = document.documentElement.classList.contains("dark");
+    if (logo) {
+      logo.src = isDark ? idahLogoDark.src : idahLogoLight.src;
+    }
+  }
+
+  // Update logo on page load
+  updateLogo();
+
+  // Listen for theme changes
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.attributeName === "class") {
+        updateLogo();
+      }
+    });
+  });
+
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["class"],
+  });
+</script>

@@ -1,0 +1,78 @@
+---
+export interface Props {
+  href?: string;
+  variant?: "default" | "outline" | "ghost" | "link";
+  size?: "default" | "xs" | "sm" | "lg" | "icon" | "icon-sm" | "icon-lg";
+  disabled?: boolean;
+  className?: string | null;
+}
+
+/* Variants config */
+export const buttonVariants = {
+  base: "focus-visible:border-ring relative focus-visible:ring-ring/50 inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium outline-none transition-all focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 cursor-pointer",
+  variants: {
+    variant: {
+      default: "bg-button text-white shadow-xs hover:bg-[#226adc] hover:dark:bg-[#1e59ab]",
+      outline:
+        "border border-button bg-transparent dark:border-button text-button hover:ring-2 hover:ring-[#226adc] hover:text-[#226adc] hover:dark:ring-[#78b0ff] hover:dark:text-[#78b0ff]",
+      ghost: "hover:bg-button/10",
+      link: "text-default underline-offset-4 hover:underline dark:text-white",
+    },
+    size: {
+      default: "h-9 px-4 py-2 has-[>svg]:px-3",
+      xs: "h-6 rounded-sm px-2 has-[>svg]:px-1.5 text-xs",
+      sm: "h-7 gap-1.5 rounded-md px-3 has-[>svg]:px-2.5 [&_svg:not([class*='size-'])]:size-3.5 text-xs",
+      lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
+      icon: "h-9 w-9",
+      "icon-sm": "h-7 w-7 [&_svg:not([class*='size-'])]:size-3.5",
+      "icon-lg": "h-10 w-10 [&_svg:not([class*='size-'])]:size-5",
+    },
+  },
+  defaultVariants: {
+    variant: "default",
+    size: "default",
+  },
+};
+
+const {
+  href,
+  variant = buttonVariants.defaultVariants.variant,
+  size = buttonVariants.defaultVariants.size,
+  disabled = false,
+  className = "hover:cursor-pointer",
+  ...restProps
+} = Astro.props;
+
+/* build class string */
+const classes = [
+  buttonVariants.base,
+  buttonVariants.variants.variant[variant as keyof typeof buttonVariants.variants.variant],
+  buttonVariants.variants.size[size as keyof typeof buttonVariants.variants.size],
+  className,
+]
+  .filter(Boolean)
+  .join(" ");
+---
+
+{
+  href ? (
+    <a
+      data-slot="button"
+      class={classes}
+      href={disabled ? undefined : href}
+      aria-disabled={disabled}
+      role={disabled ? "link" : undefined}
+      tabindex={disabled ? -1 : undefined}
+      {...restProps}>
+      <slot />
+    </a>
+  ) : (
+    <button
+      data-slot="button"
+      class={classes}
+      disabled={disabled}
+      {...restProps}>
+      <slot />
+    </button>
+  )
+}
