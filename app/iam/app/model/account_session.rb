@@ -22,15 +22,14 @@ module AccountSession
 
     event(name: "logged_out")
     def logout(session_id)
-      session = find!(session_id)
+      session = find!(session_id, included: ["account"])
 
       return unless session
 
-      account = Account::Repository.new(auth_context).find(session.account_id)
       add_metadata(
-        actor_account_id: account.id,
-        actor_account_email: account.email,
-        actor_account_role_name: account.role_name
+        actor_account_id: session.account.id,
+        actor_account_email: session.account.email,
+        actor_account_role_name: session.account.role_name
       )
 
       no_event do
