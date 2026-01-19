@@ -16,7 +16,7 @@ module Exports
       )
     end
 
-    def show(id)
+    def show(id, included: [])
       exports.find!(id)
     end
 
