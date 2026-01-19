@@ -6,10 +6,12 @@ import { type Point, type InterpolatedVertex, type VideoFrameSelection } from ".
 
 function polygonBarycenter(points: Point[]): Point {
   const pts = [...points, points[0]];
-  const x = pts.map(p => p[0]);
-  const y = pts.map(p => p[1]);
+  const x = pts.map((p) => p[0]);
+  const y = pts.map((p) => p[1]);
 
-  let crossSum = 0, cxSum = 0, cySum = 0;
+  let crossSum = 0,
+    cxSum = 0,
+    cySum = 0;
 
   for (let i = 0; i < x.length - 1; i++) {
     const cross = x[i] * y[i + 1] - x[i + 1] * y[i];
@@ -38,7 +40,10 @@ function reorderByAngle(points: Point[], center: Point): [Point[], [number, numb
 
   const startIdx = polarSorted.reduce((bestIdx, curr, idx) => {
     const angleDiff = Math.atan2(Math.sin(curr[1] - target), Math.cos(curr[1] - target));
-    return Math.abs(angleDiff) < Math.abs(Math.atan2(Math.sin(polarSorted[bestIdx][1] - target), Math.cos(polarSorted[bestIdx][1] - target))) ? idx : bestIdx;
+    return Math.abs(angleDiff) <
+      Math.abs(Math.atan2(Math.sin(polarSorted[bestIdx][1] - target), Math.cos(polarSorted[bestIdx][1] - target)))
+      ? idx
+      : bestIdx;
   }, 0);
 
   const polarRotated = polarSorted.slice(startIdx).concat(polarSorted.slice(0, startIdx));
@@ -74,7 +79,11 @@ function matchVerticesByBarycenter(polyMin: Point[], polyMax: Point[]): [Point[]
   return [polyMinRe, polyMaxRe, matches];
 }
 
-function expandPolygonUsingMatches(polyMin: Point[], polyMax: Point[], matches: Record<number, number>): InterpolatedVertex[] {
+function expandPolygonUsingMatches(
+  polyMin: Point[],
+  polyMax: Point[],
+  matches: Record<number, number>,
+): InterpolatedVertex[] {
   const nMax = polyMax.length;
   const expanded: (InterpolatedVertex | null)[] = Array(nMax).fill(null);
 
@@ -82,7 +91,7 @@ function expandPolygonUsingMatches(polyMin: Point[], polyMax: Point[], matches: 
     const maxIdx = matches[minIdx];
     expanded[maxIdx] = {
       point: polyMin[parseInt(minIdx)],
-      matched: true
+      matched: true,
     };
   }
 
@@ -104,11 +113,8 @@ function expandPolygonUsingMatches(polyMin: Point[], polyMax: Point[], matches: 
       const t = total > 0 ? cur / total : 0;
 
       expanded[i] = {
-        point: [
-          (1 - t) * pPrev.point[0] + t * pNext.point[0],
-          (1 - t) * pPrev.point[1] + t * pNext.point[1]
-        ],
-        matched: false
+        point: [(1 - t) * pPrev.point[0] + t * pNext.point[0], (1 - t) * pPrev.point[1] + t * pNext.point[1]],
+        matched: false,
       };
     }
   }
@@ -116,34 +122,27 @@ function expandPolygonUsingMatches(polyMin: Point[], polyMax: Point[], matches: 
   return expanded as InterpolatedVertex[];
 }
 
-function lerpVertices(
-  A: InterpolatedVertex[],
-  B: Point[],
-  t: number
-): InterpolatedVertex[] {
+function lerpVertices(A: InterpolatedVertex[], B: Point[], t: number): InterpolatedVertex[] {
   return A.map((a, i) => ({
-    point: [
-      (1 - t) * a.point[0] + t * B[i][0],
-      (1 - t) * a.point[1] + t * B[i][1],
-    ],
-    matched: a.matched
+    point: [(1 - t) * a.point[0] + t * B[i][0], (1 - t) * a.point[1] + t * B[i][1]],
+    matched: a.matched,
   }));
 }
 
 export function interpolatePolygonAtFrame(
   frameStart: VideoFrameSelection,
   frameEnd: VideoFrameSelection,
-  current_frame: number
+  current_frame: number,
 ): InterpolatedVertex[] {
-  let maxFrame
-  let minFrame
+  let maxFrame;
+  let minFrame;
 
   if (frameStart.points.length < frameEnd.points.length) {
-    minFrame = frameStart
-    maxFrame = frameEnd
+    minFrame = frameStart;
+    maxFrame = frameEnd;
   } else {
-    minFrame = frameEnd
-    maxFrame = frameStart
+    minFrame = frameEnd;
+    maxFrame = frameStart;
   }
 
   // match vertices and expand
