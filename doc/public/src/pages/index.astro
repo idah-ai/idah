@@ -5,9 +5,13 @@ import IDAHDocumentation from "@components/app/IDAHDocumentation.astro";
 ---
 
 <Layout>
-  <Sidebar />
-  
-  <slot class="flex-1 min-w-0">
-    <IDAHDocumentation />
-  </slot>
+ <div class="flex min-h-screen">
+    <Sidebar />
+
+    <main class="flex-1 min-w-0">
+      <slot>
+        <IDAHDocumentation />
+      </slot>
+    </main>
+  </div>
 </Layout>
