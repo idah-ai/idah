@@ -36,11 +36,12 @@ module Exports
 
     encoder :created_by_custom_scopes, Verse::Sequel::JsonEncoder
     encoder :created_by_metadata, Verse::Sequel::JsonEncoder
+    encoder :created_by_organization, Verse::Sequel::PgArrayEncoder
 
     def scoped(action)
       auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }
-        scope.as_org_owner? { table.where(created_by: auth_context.metadata[:id]) }
+        scope.as_org_owner? { table.where(Sequel.lit("created_by_organization <@ ARRAY[?]", Verse::Sequel::PgArrayEncoder.encode(auth_context.custom_scopes[:org]))) }
         scope.as_user? { table.where(created_by: auth_context.metadata[:id]) }
       end
     end
