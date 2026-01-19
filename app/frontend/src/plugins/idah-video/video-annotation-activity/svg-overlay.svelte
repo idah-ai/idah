@@ -90,7 +90,6 @@
   let points: Point[] = $derived.by(() => {
     return shape ? currentShape(shape, frame) || [] : [];
   });
-  let isNoteMode: boolean = $derived(mode === IDAH_NOTE);
 
   function updatedSize(): Point {
     videoResizedAt; // eslint-disable-line @typescript-eslint/no-unused-expressions
