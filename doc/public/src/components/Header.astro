@@ -2,7 +2,7 @@
 import Logo from "@components/app/brands/Logo.astro";
 import Button from "@components/ui/Button/Button.astro";
 import Input from "@components/ui/Input/Input.astro";
-import { SearchIcon, TextAlignJustifyIcon } from "@lucide/astro";
+import { SearchIcon, TextAlignJustifyIcon, X, XIcon } from "@lucide/astro";
 ---
 
 <header id="header" class="sticky top-0 z-50 w-full border-b border-border bg-background px-4 py-3 shadow-sm md:px-8">
@@ -17,20 +17,33 @@ import { SearchIcon, TextAlignJustifyIcon } from "@lucide/astro";
 
     <Input placeholder="Search..." className="hidden flex-1 xl:block xl:max-w-2xl" />
 
-    <div class="flex items-center gap-4 aling-right ml-auto">
+    <div class="aling-right ml-auto flex items-center gap-4">
       <Button href="#changelog" variant="link" className="hidden xl:flex"> Changelog </Button>
 
       <Button href="#support" variant="link" className="hidden xl:flex"> Support </Button>
 
       <Button href="#install" className="hidden xl:flex"> Install IDAH </Button>
 
-      <Button variant="link" size="icon" className="xl:hidden">
+      <button
+        id="mobile-search"
+        class="hover:text-accent-foreground inline-flex size-10 items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 xl:hidden"
+      >
         <SearchIcon class="size-4" />
-      </Button>
+      </button>
 
-      <Button variant="link" size="icon" className="xl:hidden">
+      <button
+        id="sidebar-toggle"
+        class="hover:text-accent-foreground inline-flex size-10 items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 xl:hidden"
+      >
         <TextAlignJustifyIcon class="size-4" />
-      </Button>
+      </button>
+
+      <button
+        id="sidebar-close-header"
+        class="hover:text-accent-foreground hidden size-10 items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 xl:hidden"
+      >
+        <XIcon class="size-4" />
+      </button>
     </div>
   </div>
 </header>
@@ -40,3 +53,47 @@ import { SearchIcon, TextAlignJustifyIcon } from "@lucide/astro";
     font-family: Inter, Roboto, "Helvetica Neue", "Arial Nova", "Nimbus Sans", Arial, sans-serif;
   }
 </style>
+
+<script>
+  function toggleSidebar() {
+   const openButton = document.getElementById("sidebar-toggle");
+    const closeButton = document.getElementById("sidebar-close-header");
+    const sidebar = document.getElementById("sidebar");
+    const overlay = document.getElementById("sidebar-overlay");
+
+    if (!sidebar || !overlay || !openButton || !closeButton) return;
+    let isOpen = false;
+
+    function updateUI() {
+      // Sidebar
+      sidebar?.classList.toggle("-translate-x-full", !isOpen);
+
+      // Overlay
+      overlay?.classList.toggle("hidden", !isOpen);
+      overlay?.setAttribute("data-sidebar-open", String(isOpen));
+
+      // Buttons
+      openButton?.classList.toggle("hidden", isOpen);
+      closeButton?.classList.toggle("hidden", !isOpen);
+    }
+
+    function openSidebar() {
+      isOpen = true;
+      updateUI();
+    }
+
+    function closeSidebar() {
+      isOpen = false;
+      updateUI();
+    }
+
+    openButton.addEventListener("click", openSidebar);
+    closeButton.addEventListener("click", closeSidebar);
+    overlay.addEventListener("click", closeSidebar);
+  }
+
+  // Initialize on page load
+  toggleSidebar();
+
+  document.addEventListener("astro:after-swap", toggleSidebar);
+</script>
