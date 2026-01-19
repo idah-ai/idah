@@ -25,7 +25,7 @@ SimpleCov.start do
   add_filter "config"
   add_filter "common/lib"
 
-  add_filter /_spec.rb$/
+  add_filter(/_spec.rb$/)
 end
 
 require_relative "../config/boot"
@@ -60,7 +60,7 @@ RSpec.configure do |config|
   config.include WebMock::API
 
   Verse::Spec.add_user(:system, "system")
-  Verse::Spec.add_user(:anonymous, "anonymous")
+  Verse::Spec.add_user(:admin, "admin", user_data: { id: 1, email: "admin@example.com", name: "Admin User" })
 
   config.example_status_persistence_file_path = ".rspec_status"
 

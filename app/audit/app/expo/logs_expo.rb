@@ -18,7 +18,7 @@ class LogsExpo < BaseExpo
   end
 
   def create_audit_log
-    service.create(message.event, message.content)
+    service.create_from_event(message.event, message.content)
   end
 
   # resources we want to include in Audit Logs
@@ -41,10 +41,16 @@ class LogsExpo < BaseExpo
     end
   end
 
-  %w[login logout].each do |event|
+  %w[logged_in].each do |event|
     attach_exposition(
       :create_audit_log,
       build_expose(on_resource_event("iam:accounts", event))
+    )
+  end
+  %w[logged_out].each do |event|
+    attach_exposition(
+      :create_audit_log,
+      build_expose(on_resource_event("iam:account_sessions", event))
     )
   end
 
