@@ -167,7 +167,7 @@
     for (let i = 0; i < rawPoints.length; i++) {
       const start = rawPoints[i];
       const end = rawPoints[(i + 1) % rawPoints.length];
-      if (isNearLineSegment(cursorPoint, start, end, 0.002)) {
+      if (isNearLineSegment(cursorPoint, start, end, 0.005)) {
         return true;
       }
     }
@@ -184,7 +184,7 @@
     for (let i = 0; i < rawPoints.length; i++) {
       const start = rawPoints[i];
       const end = rawPoints[(i + 1) % rawPoints.length];
-      if (isNearLineSegment(point, start, end, 0.001)) {
+      if (isNearLineSegment(point, start, end, 0.005)) {
         return i;
       }
     }
