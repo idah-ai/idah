@@ -12,6 +12,7 @@ export const encodeUri = (obj: Hash, parentKey: string | null = null): string =>
   const queryArray = [];
 
   for (const key in obj) {
+    /** eslint-disable-next-line no-prototype-builtins */
     if (obj.hasOwnProperty(key)) {
       const value = obj[key];
       const encodedKey = parentKey ? `${parentKey}[${key}]` : key;
