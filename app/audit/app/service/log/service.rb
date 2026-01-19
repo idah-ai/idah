@@ -4,6 +4,13 @@ module Log
   class Service < Verse::Service::Base
     use logs: Log::Repository
 
+    SERVICE_RESOURCE_ID_MAPPINGS = {
+      "organizations" => :organization_id,
+      "projects" => :project_id,
+      "datasets" => :dataset_id,
+      "entries" => :entry_id
+    }.freeze
+
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       logs.index(
         filter,
@@ -20,31 +27,47 @@ module Log
     end
 
     def create_from_event(event, content)
-      service, type, action = event.split(":")
+      resource_service, resource_type, action = event.split(":")
       resource_id = content[:resource_id]
       metadata = content[:metadata]
 
+      attributes = general_log_attributes(resource_service:, resource_type:, action:, resource_id:, metadata:)
+                   .merge(service_resource_ids(resource_type:, resource_id:, metadata:))
+
       logs.transaction do
-        id = logs.create(
-          {
-            # usually included in message
-            action: action,
-            resource_service: service,
-            resource_type: type,
-            resource_id: resource_id,
-            event_timestamp: metadata[:at],
-            # added metadata
-            actor_account_id: metadata[:actor_account_id],
-            actor_account_email: metadata&.[](:actor_account_email),
-            actor_account_role_name: metadata&.[](:actor_account_role_name),
-            organization_id: type == "organizations" ? resource_id : metadata&.[](:organization_id),
-            project_id: type == "projects" ? resource_id : metadata&.[](:project_id),
-            dataset_id: type == "datasets" ? resource_id : metadata&.[](:dataset_id),
-            entry_id: type == "entries" ? resource_id : metadata&.[](:entry_id)
-          }
-        )
+        id = logs.create(attributes)
         logs.find!(id)
       end
+    end
+
+    private
+
+    # general info for all audit logs regardless of resources
+    def general_log_attributes(resource_service:, resource_type:, action:, resource_id:, metadata:)
+      {
+        resource_service:,
+        resource_type:,
+        action:,
+        resource_id:,
+        event_timestamp: metadata[:at],
+        actor_account_id: metadata[:actor_account_id],
+        actor_account_email: metadata[:actor_account_email],
+        actor_account_role_name: metadata[:actor_account_role_name]
+      }
+    end
+
+    # use resource_id for the current based event resource, e.g. if it's a project event,
+    # - project_id can be found in resource_id,
+    # - then it can be found in metadata[:project_id] otherwise
+    def service_resource_ids(resource_type:, resource_id:, metadata:)
+      service_resource_ids = {}
+
+      SERVICE_RESOURCE_ID_MAPPINGS.each_value do |id_field|
+        service_resource_ids[id_field] =
+          id_field == SERVICE_RESOURCE_ID_MAPPINGS[resource_type] ? resource_id : metadata[id_field]
+      end
+
+      service_resource_ids
     end
   end
 end

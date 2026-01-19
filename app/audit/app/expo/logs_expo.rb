@@ -17,47 +17,34 @@ class LogsExpo < BaseExpo
     end
   end
 
+  DEFAULT_EVENTS = %w[created updated deleted].freeze
+
+  # resource events configuration
+  AUDIT_LOG_EVENTS = {
+    "iam:accounts" => { extra: %w[logged_in] },
+    "iam:organizations" => {},
+    "dataset:projects" => {},
+    "dataset:project_members" => {},
+    "dataset:datasets" => {},
+    "dataset:entries" => { extra: %w[assigned unassigned submitted] },
+    "media:medias" => {},
+
+    # use 'only:' to skip default events and register a certain list of event
+    "iam:account_sessions" => { only: %w[logged_out] }
+  }.freeze
+
   def create_audit_log
     service.create_from_event(message.event, message.content)
   end
 
-  # resources we want to include in Audit Logs
-  # TODO: complete this list and refactor/regex somehow ?
-  %w[
-    iam:accounts
-    iam:organizations
-    dataset:projects
-    dataset:project_members
-    dataset:datasets
-    dataset:entries
-    media:medias
-  ].each do |resource|
-    # events/actions we want to include in Audit Logs
-    %w[created updated deleted].each do |event|
+  AUDIT_LOG_EVENTS.each do |resource, config|
+    events = config[:only] || (DEFAULT_EVENTS + config.fetch(:extra, []))
+
+    events.each do |event|
       attach_exposition(
         :create_audit_log,
         build_expose(on_resource_event(resource, event))
       )
     end
-  end
-
-  %w[logged_in].each do |event|
-    attach_exposition(
-      :create_audit_log,
-      build_expose(on_resource_event("iam:accounts", event))
-    )
-  end
-  %w[logged_out].each do |event|
-    attach_exposition(
-      :create_audit_log,
-      build_expose(on_resource_event("iam:account_sessions", event))
-    )
-  end
-
-  %w[assigned unassigned submitted].each do |event|
-    attach_exposition(
-      :create_audit_log,
-      build_expose(on_resource_event("dataset:entries", event))
-    )
   end
 end
