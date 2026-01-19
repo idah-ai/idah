@@ -138,8 +138,6 @@ export class JsonRpcDatasource {
               if (JsonRpcMethod_res.error) {
                 failed.push(methodPromise);
                 methodPromise.onReject?.(JsonRpcMethod_res.error);
-              } else if (JsonRpcMethod_res.result || JsonRpcMethod_res.result === null) {
-                methodPromise.onResolve?.(JsonRpcMethod_res.result);
               } else {
                 methodPromise.onResolve?.(JsonRpcMethod_res.result);
               }
