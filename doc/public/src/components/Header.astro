@@ -6,16 +6,21 @@ import { SearchIcon, TextAlignJustifyIcon, X, XIcon } from "@lucide/astro";
 ---
 
 <header id="header" class="sticky top-0 z-50 w-full border-b border-border bg-background px-4 py-3 shadow-sm md:px-8">
-  <div class="mx-auto flex items-center justify-between">
+  <div class="relative mx-auto flex items-center">
+
     <div class="flex items-center gap-4">
       <a href="/">
         <Logo id="header-logo" />
       </a>
       <div class="h-6 w-px border-l border-border"></div>
-      <Button href="#docs" variant="link" className="hidden xl:flex"> Docs </Button>
+      <Button href="#docs" variant="link" className="hidden xl:flex">
+        Docs
+      </Button>
     </div>
 
-    <Input placeholder="Search..." className="hidden flex-1 xl:block xl:max-w-2xl" />
+    <div class="absolute left-1/2 hidden w-full max-w-xl -translate-x-1/2 xl:block">
+      <Input placeholder="Search..." className="w-full" />
+    </div>
 
     <div class="aling-right ml-auto flex items-center gap-4">
       <Button href="#changelog" variant="link" className="hidden xl:flex"> Changelog </Button>
