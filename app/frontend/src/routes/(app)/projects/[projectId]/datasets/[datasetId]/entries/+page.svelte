@@ -31,6 +31,7 @@
     ArrowDownZAIcon,
     ArrowUpDownIcon,
     ChevronsUpDownIcon,
+    DownloadIcon,
     FunnelIcon,
     LayoutListIcon,
     PlusIcon,
@@ -55,6 +56,7 @@
   import type { ListOptions } from "@/data/DataSource";
   import type { CollectionResponse } from "@/data/model/types";
   import type { ProjectMemberScope } from "@/security/types";
+  import { ExportsBackendDataSource } from "@/data/model/sync/exports/record";
 
   // Contexts
   const project: ProjectRecord = getContext("project");
@@ -71,6 +73,7 @@
   let datasetId = page.params.datasetId as string;
   let canUpdateEntry = $state(false);
   let canDeleteEntry = $state(false);
+  let canExport = $state(false);
   let currentPage: number = $state(1);
   let itemsPerPage: number = $state(10);
   let selectedRows: string[] = $state([]);
@@ -79,6 +82,7 @@
   let openAssignEntryFormModal: boolean = $state(false);
   let openSetPriorityModal: boolean = $state(false);
   let openConfirmDeleteEntriesModal: boolean = $state(false);
+  let openExportModal: boolean = $state(false);
 
   const as_project_owner: { as_user: ProjectMemberScope } = {
     as_user: {
@@ -94,6 +98,8 @@
       (await currentAccount?.can("update", "dataset:entries", ["as_org_owner", as_project_owner])) || false;
     canDeleteEntry =
       (await currentAccount?.can("delete", "dataset:entries", ["as_org_owner", as_project_owner])) || false;
+    canExport =
+      (await currentAccount?.can("request_export", "sync:exports", ["as_org_owner", as_project_owner])) || false;
   });
 
   pageBreadcrumbsStore.set([
@@ -130,11 +136,17 @@
     onDelete: () => {
       openConfirmDeleteEntriesModal = true;
     },
+    onExport: () => {
+      openExportModal = true;
+    },
   });
 
   // Functions
   function openNewEntryFormModal(): void {
     openNewEntryModal = true;
+  }
+  function openExportFormModal(): void {
+    openExportModal = true;
   }
 
   async function fetchEntries(): Promise<void> {
@@ -249,6 +261,15 @@
     selectedRows = [];
     $refetches.entries.list = new Date();
     openConfirmDeleteEntriesModal = false;
+  }
+
+  async function exportEntries(): Promise<void> {
+    await ExportsBackendDataSource.export({
+      datasets: { id: datasetId },
+      entries: { id__in: [selectedRows] },
+    });
+    selectedRows = [];
+    openExportModal = false;
   }
 
   function toggleSelectAll(checked: boolean): void {
@@ -409,4 +430,11 @@
   description="Are you sure you want to delete {selectedRowsCount} entries(s)? This action cannot be undone."
   onConfirm={deleteEntries}
   bind:open={openConfirmDeleteEntriesModal}
+/>
+
+<ConfirmModal
+  title="Export {selectedRowsCount} entries(s)"
+  description="Are you sure you want to export {selectedRowsCount} entries(s)?"
+  onConfirm={exportEntries}
+  bind:open={openExportModal}
 />
