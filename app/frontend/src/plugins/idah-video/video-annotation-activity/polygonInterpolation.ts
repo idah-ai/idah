@@ -116,13 +116,6 @@ function expandPolygonUsingMatches(polyMin: Point[], polyMax: Point[], matches: 
   return expanded as InterpolatedVertex[];
 }
 
-function lerpPolygons(P1: Point[], P2: Point[], alpha: number): Point[] {
-  return P1.map((p, i) => [
-    (1 - alpha) * p[0] + alpha * P2[i][0],
-    (1 - alpha) * p[1] + alpha * P2[i][1]
-  ]);
-}
-
 function lerpVertices(
   A: InterpolatedVertex[],
   B: Point[],
