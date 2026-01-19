@@ -6,7 +6,16 @@
   import { boundingBoxes } from "./idb_store.svelte";
 
   import { DEFAULT_MODE, ENTRY_ROOT, IDAH_NOTE, IDAH_VIDEO_BOUNDING_BOX, IDAH_POLYGON, type EntryRoot } from "../type";
-  import { HEIGHT, ORIGIN, WIDTH, X, Y, type Point, type VideoFrameSelection } from "./VideoAnnotationContext";
+  import {
+    HEIGHT,
+    ORIGIN,
+    WIDTH,
+    X,
+    Y,
+    type InterpolatedVertex,
+    type Point,
+    type VideoFrameSelection,
+  } from "./VideoAnnotationContext";
   import Zoomable from "./zoomable.svelte";
 
   import type {
@@ -89,7 +98,7 @@
             }
         : undefined,
   );
-  let points: Point[] = $derived.by(() => {
+  let points: Point[] | InterpolatedVertex[] = $derived.by(() => {
     return shape ? currentShape(shape, frame) || [] : [];
   });
   let isNoteMode: boolean = $derived(mode === IDAH_NOTE);
@@ -144,13 +153,19 @@
     shape: AnnotationShape,
     current_frame: number,
     interpolate: boolean = true,
-  ): Point[] | undefined {
+  ): Point[] | InterpolatedVertex[] | undefined {
     if (!shape.frames || shape.frames.length === 0) return; // no render (eg. entry:root)
 
     if (shape.start > current_frame || shape.end < current_frame) return; // out of scope
 
     const current_points = shape.frames.find((v: VideoFrameSelection) => v.frame == current_frame)?.points;
-    if (current_points || !interpolate) return current_points; // exists!
+    if (current_points || !interpolate) {
+      // For polygon, wrap points in InterpolatedVertex with matched: true
+      if (shape.type == IDAH_POLYGON && current_points) {
+        return current_points.map((point: Point) => ({ point, matched: true }));
+      }
+      return current_points;
+    }
 
     // find surrounding frames
     const frame_start: VideoFrameSelection = shape.frames.reduce(
@@ -177,7 +192,7 @@
         frame_start.points[i][Y] + (point[Y] - frame_start.points[i][Y]) * ratio,
       ]);
     } else if (shape.type == IDAH_POLYGON) {
-      // interpolate from within bounds
+      // interpolate from within bounds - returns InterpolatedVertex[]
       return interpolatePolygonAtFrame(frame_start, frame_end, current_frame);
     }
   }
@@ -303,7 +318,7 @@
             <BoundingBox
               {mode}
               {pointer}
-              points={currentShape(annotation.shape, frame) || []}
+              points={(currentShape(annotation.shape, frame) || []) as Point[]}
               ratio={target_size}
               offset={zoomInfo.offset}
               color={Object.entries(context.config)
@@ -325,7 +340,7 @@
             <Polygon
               {mode}
               {pointer}
-              points={currentShape(annotation.shape, frame) || []}
+              points={(currentShape(annotation.shape, frame) || []) as InterpolatedVertex[]}
               ratio={target_size}
               offset={zoomInfo.offset}
               color={Object.entries(context.config)
@@ -353,7 +368,7 @@
             <BoundingBox
               {mode}
               {pointer}
-              points={currentShape(annotation.shape, frame) || []}
+              points={(currentShape(annotation.shape, frame) || []) as Point[]}
               ratio={target_size}
               offset={zoomInfo.offset}
               color={annotation?.synced
@@ -377,7 +392,7 @@
             <Polygon
               {mode}
               {pointer}
-              points={currentShape(annotation.shape, frame) || []}
+              points={(currentShape(annotation.shape, frame) || []) as InterpolatedVertex[]}
               ratio={target_size}
               offset={zoomInfo.offset}
               color={annotation?.synced
@@ -408,7 +423,7 @@
           {pointer}
           bind:this={toolSelection}
           {mode}
-          {points}
+          points={points as Point[]}
           ratio={target_size}
           offset={zoomInfo.offset}
           cursor={cursor_downscaled}
@@ -432,7 +447,7 @@
           {pointer}
           bind:this={toolSelection}
           {mode}
-          {points}
+          points={points as Point[] | InterpolatedVertex[]}
           ratio={target_size}
           offset={zoomInfo.offset}
           cursor={cursor_downscaled}

@@ -8,6 +8,11 @@ import type { DefaultMode, IdahVideoBoundingBox } from "../type";
 
 export type Point = [number, number];
 
+export type InterpolatedVertex = {
+  point: Point;
+  matched: boolean;
+};
+
 export type VideoShapeType = IdahVideoBoundingBox;
 export type VideoMode = DefaultMode | VideoShapeType;
 

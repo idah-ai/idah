@@ -1,6 +1,7 @@
 <script lang="ts">
+  import { is } from "zod/locales";
   import { IDAH_NOTE } from "../type";
-  import { X, Y, type Point } from "./VideoAnnotationContext";
+  import { X, Y, type InterpolatedVertex, type Point } from "./VideoAnnotationContext";
 
   let {
     ratio = [1, 1],
@@ -16,7 +17,7 @@
   }: {
     ratio: Point;
     offset: Point;
-    points: Point[];
+    points: Point[] | InterpolatedVertex[];
     editable?: boolean;
     cursor?: Point;
     color: string;
@@ -65,13 +66,21 @@
     previousPointsLength = currentLength;
   });
 
+  // Convert InterpolatedVertex[] to Point[] for internal operations
+  let rawPoints: Point[] = $derived.by(() => {
+    if (Array.isArray(points) && points.length > 0 && typeof points[0] === "object" && "point" in points[0]) {
+      return (points as InterpolatedVertex[]).map((v) => v.point);
+    }
+    return points as Point[];
+  });
+
   let polygon_points: Point[] = $derived.by(() => {
     if (panStart && cursor) {
-      return pan(points, panStart, cursor);
+      return pan(rawPoints, panStart, cursor);
     } else if (editingVertexIndex !== undefined && cursor) {
-      return moveVertex(points, editingVertexIndex, cursor);
+      return moveVertex(rawPoints, editingVertexIndex, cursor);
     }
-    return points;
+    return rawPoints;
   });
 
   function draw_cmd(path: Point[]) {
@@ -151,13 +160,13 @@
 
   // Check if cursor is near any edge of the polygon
   function checkIfNearEdge(cursorPoint: Point | undefined): boolean {
-    if (!cursorPoint || !isPolygonComplete || points.length < 3) {
+    if (!cursorPoint || !isPolygonComplete || rawPoints.length < 3) {
       return false;
     }
 
-    for (let i = 0; i < points.length; i++) {
-      const start = points[i];
-      const end = points[(i + 1) % points.length];
+    for (let i = 0; i < rawPoints.length; i++) {
+      const start = rawPoints[i];
+      const end = rawPoints[(i + 1) % rawPoints.length];
       if (isNearLineSegment(cursorPoint, start, end, 0.002)) {
         return true;
       }
@@ -168,13 +177,13 @@
 
   // Find which edge segment the point is near, returns edge index or -1
   function findNearestEdge(point: Point): number {
-    if (!isPolygonComplete || points.length < 3) {
+    if (!isPolygonComplete || rawPoints.length < 3) {
       return -1;
     }
 
-    for (let i = 0; i < points.length; i++) {
-      const start = points[i];
-      const end = points[(i + 1) % points.length];
+    for (let i = 0; i < rawPoints.length; i++) {
+      const start = rawPoints[i];
+      const end = rawPoints[(i + 1) % rawPoints.length];
       if (isNearLineSegment(point, start, end, 0.001)) {
         return i;
       }
@@ -185,7 +194,7 @@
 
   // Insert a new point into the polygon after the specified vertex index
   function insertPointAfterVertex(clickPoint: Point, afterIndex: number): Point[] {
-    const newPoints = [...points];
+    const newPoints = [...rawPoints];
     newPoints.splice(afterIndex + 1, 0, clickPoint);
     return newPoints;
   }
@@ -193,10 +202,10 @@
   // Remove a vertex from the polygon at the specified index
   function removeVertex(vertexIndex: number): Point[] {
     // Don't allow removing if it would result in less than 3 points (minimum for a polygon)
-    if (points.length <= 3) {
-      return points;
+    if (rawPoints.length <= 3) {
+      return rawPoints;
     }
-    const newPoints = [...points];
+    const newPoints = [...rawPoints];
     newPoints.splice(vertexIndex, 1);
     return newPoints;
   }
@@ -234,39 +243,25 @@
   });
 
   export function startSelection(start: Point) {
-
-    if (!isPolygonComplete) {
-      // Adding new vertex
-      // if (points.length > 0 && isNearPoint(points[0], start)) {
-      //   Close polygon by clicking near the first point
-      //   isPolygonComplete = true;
-      //   onChange?.(points);
-      // }
-      // Points are added in endSelection for single click
-    } else {
+    if (isPolygonComplete) {
       // Check if clicking on a vertex to edit
-      const vertexIndex = points.findIndex((p) => isNearPoint(p, start, 0.001));
+      const vertexIndex = rawPoints.findIndex((p) => isNearPoint(p, start, 0.001));
       if (vertexIndex !== -1) {
         editingVertexIndex = vertexIndex;
       }
-      // else {
-      //   // Start panning the entire polygon
-      //   panStart = cursor;
-      // }
     }
   }
 
   export function endSelection(end: Point) {
     if (!isPolygonComplete) {
       // Adding new vertex
-      if (points.length === 0 || !isNearPoint(points[points.length - 1], end)) {
-        points = [...points, end];
-
-        if (points.length >= 3 && isNearPoint(points[0], end)) {
+      if (rawPoints.length === 0 || !isNearPoint(rawPoints[rawPoints.length - 1], end)) {
+        rawPoints = [...rawPoints, end];
+        if (rawPoints.length >= 3 && isNearPoint(rawPoints[0], end)) {
           console.log("Polygon completed");
-          points = points.slice(0, -1); // Remove last point to avoid duplication
+          rawPoints = rawPoints.slice(0, -1); // Remove last point to avoid duplication
           isPolygonComplete = true;
-          onChange?.(points);
+          onChange?.(rawPoints);
         }
       }
     } else {
@@ -280,7 +275,7 @@
         if (edgeIndex !== -1 && editable) {
           // Insert new point on the edge
           const newPoints = insertPointAfterVertex(end, edgeIndex);
-          points = newPoints;
+          onChange?.(newPoints);
           // Set the newly inserted point as being edited
           editingVertexIndex = edgeIndex + 1;
         } else {
@@ -307,8 +302,10 @@
   }
 </script>
 
-{#snippet PolygonVertices(vertexPoints: Point[])}
-  {#each vertexPoints as point, index (index)}
+{#snippet PolygonVertices(vertexPoints: Point[] | InterpolatedVertex[])}
+  {#each vertexPoints as vertexData, index (index)}
+    {@const point = typeof vertexData === "object" && "point" in vertexData ? vertexData.point : vertexData}
+    {@const isMatched = typeof vertexData === "object" && "matched" in vertexData ? vertexData.matched : true}
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <circle
       onmousedown={(e) => {
@@ -316,8 +313,7 @@
         // Check if ALT key is pressed to remove vertex
         if (e.altKey) {
           const newPoints = removeVertex(index);
-          if (newPoints.length !== points.length) {
-            points = newPoints;
+          if (newPoints.length !== rawPoints.length) {
             onChange?.(newPoints);
           }
         } else {
@@ -330,12 +326,13 @@
       r={5}
       style:transform-origin="top left"
       style:transform={`translate(${offset[X]}px, ${offset[Y]}px)`}
-      class={isAltKeyPressed && points.length > 3 ? "cursor-pen-remove" : ""}
-      style:cursor={isAltKeyPressed && points.length > 3 ? "" : "move"}
+      class={isAltKeyPressed && rawPoints.length > 3 ? "cursor-pen-remove" : ""}
+      style:cursor={isAltKeyPressed && rawPoints.length > 3 ? "" : "move"}
       vector-effect="non-scaling-stroke"
-      style:stroke={color}
-      style:stroke-width={1}
-      style:fill={color}
+      style:stroke={isMatched ? color : "orange"}
+      style:stroke-width={isMatched ? 1 : 3}
+      style:stroke-dasharray={isMatched ? "none" : "3,3"}
+      style:fill={isMatched ? color : "none"}
       fill-opacity={1}
     />
   {/each}
@@ -405,7 +402,7 @@
 
 <!-- Edit handles for completed polygon -->
 {#if editable && !isEditing()}
-  {@render PolygonVertices(polygon_points)}
+  {@render PolygonVertices(points)}
 {/if}
 
 <style>
