@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { is } from "zod/locales";
   import { IDAH_NOTE } from "../type";
   import { X, Y, type InterpolatedVertex, type Point } from "./VideoAnnotationContext";
 
