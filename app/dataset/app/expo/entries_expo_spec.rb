@@ -238,7 +238,7 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
           args: [{ disabled_at: Time.now }],
           metadata: {
             project_member_account_id: account_id,
-            project_member_project_id: project_id
+            project_id: project_id
           }
         }
       )
