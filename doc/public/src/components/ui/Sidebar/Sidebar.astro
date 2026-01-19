@@ -1,3 +1,6 @@
+---
+import { sidebars } from "@components/ui/Sidebar/Sidebar.data.ts";
+---
 <div id="sidebar-overlay" class="fixed inset-0 z-10 hidden bg-black/50 xl:hidden" data-sidebar-open="false"></div>
 
 <!-- Sidebar -->
@@ -6,9 +9,61 @@
   class="fixed left-0 top-0 z-20 flex h-auto w-64 -translate-x-full transform gap-2 border-r border-border bg-background transition-transform duration-300 xl:relative xl:translate-x-0"
 >
   <aside class="bg-surface/50 flex h-full w-64 flex-col p-4">
-    <nav class="flex flex-1 flex-col gap-2 overflow-y-auto">
-      <slot />
+  {sidebars.map((sidebar) => (
+  <div class="mb-6 last:mb-0">
+    {/* Sidebar section title */}
+    {sidebar.url ? (
+      <a
+        href={sidebar.url}
+        class="mb-2 block px-2 text-sm text-muted-foreground hover:underline"
+      >
+        {sidebar.title}
+      </a>
+    ) : (
+      <div class="mb-2 px-2 text-sm font-medium text-primary-foreground">
+        {sidebar.title}
+      </div>
+    )}
+
+    <nav class="flex flex-col gap-2">
+      {sidebar.children.map((item) => (
+        <div class="text-sm text-muted-foreground">
+          {item.url ? (
+            <a
+              href={item.url}
+              class="block rounded-md px-2 py-1.5 hover:bg-accent"
+            >
+              {item.title}
+            </a>
+          ) : (
+            <div class="px-2 py-1.5 font-medium text-foreground">
+              {item.title}
+            </div>
+          )}
+
+          {item.children?.length > 0 && (
+            <div class="ml-4 mt-1 flex flex-col gap-1">
+              {item.children.map((child) =>
+                child.url ? (
+                  <a
+                    href={child.url}
+                    class="block rounded-md px-2 py-1 hover:bg-accent"
+                  >
+                    {child.title}
+                  </a>
+                ) : (
+                  <div class="px-2 py-1 font-medium text-foreground">
+                    {child.title}
+                  </div>
+                )
+              )}
+            </div>
+          )}
+        </div>
+      ))}
     </nav>
+  </div>
+))}
   </aside>
 </div>
 
