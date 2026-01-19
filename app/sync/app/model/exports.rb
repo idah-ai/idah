@@ -12,7 +12,7 @@ module Exports
 
     field :created_by, type: Integer, readonly: true
     field :created_by_role, type: String, readonly: true
-    field :created_by_organization, type: String
+    field :created_by_organization, type: Array
     field :created_by_custom_scopes, type: Hash
     field :created_by_metadata, type: Hash
 
