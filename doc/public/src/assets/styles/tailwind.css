@@ -51,4 +51,8 @@
   h3 {
     @apply text-xl font-semibold lg:text-2xl;
   }
+
+  textDescription {
+    @apply text-sm text-muted-foreground lg:text-base;
+  }
 }
