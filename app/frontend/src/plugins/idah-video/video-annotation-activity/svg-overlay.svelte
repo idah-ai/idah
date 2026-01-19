@@ -280,7 +280,7 @@
     onwheel={(e) => zoomableElement.onWheel(e)}
     {...restProps}
   >
-    {#if width && height && !isNoteMode && (pointer == "crosshair" || toolSelection?.isEditing())}
+    {#if width && height && ![IDAH_NOTE, DEFAULT_MODE].includes(mode) && (pointer == "crosshair" || toolSelection?.isEditing())}
       <!-- prevent display issue on load for now -->
       <line x1={0} y1={target_line[Y]} x2={width} y2={target_line[Y]} stroke="#2b7fff" />
       <line x1={target_line[X]} y1={0} x2={target_line[X]} y2={height} stroke="#2b7fff" />
