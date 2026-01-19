@@ -1,0 +1,22 @@
+---
+import BlockImg from "@assets/block-img.svg";
+
+export interface ImgCardProps {
+  value: {
+    title: string;
+    description: string;
+    src?: string;
+  };
+}
+
+const { value } = Astro.props as ImgCardProps;
+---
+
+<div class="flex flex-col gap-1 rounded-md border border-border">
+  <img src={value.src ?? BlockImg.src} />
+
+  <div class="flex flex-col gap-2 p-4">
+    <h2 class="text-lg font-semibold">{value.title}</h2>
+    <p class="text-sm text-muted-foreground">{value.description}</p>
+  </div>
+</div>

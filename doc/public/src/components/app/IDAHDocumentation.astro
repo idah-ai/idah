@@ -1,0 +1,38 @@
+---
+import BlockImg from "@assets/block-img.svg";
+import ImgCard, { type ImgCardProps } from "@components/app/Card/ImgCard.astro";
+
+const datasets: ImgCardProps["value"][] = [
+  {
+    title: "Dataset 1",
+    description: "Ac semper tristique commodo iaculis id venenatis sem tincidunt.",
+    src: BlockImg.src,
+  },
+  {
+    title: "Dataset 2",
+    description: "Ac semper tristique commodo iaculis id venenatis sem tincidunt.",
+    src: BlockImg.src,
+  },
+  {
+    title: "Dataset 3",
+    description: "Ac semper tristique commodo iaculis id venenatis sem tincidunt.",
+    src: BlockImg.src,
+  },
+];
+---
+
+<div class="mx-auto flex max-w-7xl flex-col justify-start gap-6 p-8">
+  <h1>IDAH Documentation</h1>
+  <textDescription>Find the resources you need to build your computer vision application</textDescription>
+
+  <div class="grid grid-cols-3 gap-4">
+    {datasets.map((dataset) => <ImgCard value={dataset} />)}
+  </div>
+
+  <h3>Support</h3>
+  <textDescription>Lorem ipsum dolor sit amet consectetur. Ac semper tristique commodo iaculis id venenatis sem tincidunt. Urna vel enim ullamcorper fermentum. Ipsum quis fermentum risus sapien id pretium volutpat facilisis egestas. Sagittis a nunc amet amet. Ac mattis dignissim enim faucibus commodo et sed faucibusur.</textDescription>
+
+   <div class="grid grid-cols-3 gap-4">
+    {datasets.map((dataset) => <ImgCard value={dataset} />)}
+  </div>
+</div>

@@ -1,8 +1,14 @@
 ---
 import Layout from "@layouts/PageLayout.astro";
 import Sidebar from "@components/ui/Sidebar/Sidebar.astro";
+import IDAHDocumentation from "@components/app/IDAHDocumentation.astro";
 ---
 
 <Layout>
+    <div class="flex">
     <Sidebar />
+
+    <slot>
+        <IDAHDocumentation />
+    </slot>
 </Layout>
