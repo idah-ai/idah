@@ -72,6 +72,7 @@ class ExportsExpo < BaseExpo
         end
         field? :datasets do
           field? :id, String
+          field? :id__in, Array, of: String
           # field? :project_id, String
           # field? :modality, String
           # field? :status, String
@@ -83,6 +84,7 @@ class ExportsExpo < BaseExpo
         end
         field? :entries do
           field? :id, String
+          field? :id__in, Array, of: String
           # field? :wf_step, String
           # field? :status, String
           # field? :resource, String

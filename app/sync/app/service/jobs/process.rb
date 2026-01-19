@@ -25,7 +25,10 @@ module Jobs
         when "admin"
           nil
         when "org_owner"
-          { projects: { organization_id__in: [created_by_organization] }}
+          {
+            projects: { organization_id__in: [created_by_organization] }
+            # organizations: { id: created_by_organization } # if filtering > projects
+          }
         when "user"
           raise NotImplementedError
         else
@@ -37,12 +40,12 @@ module Jobs
     def run_impl
       opts = arguments.dig(:opts)
       arguments.fetch(:formats).each do |format, format_opts|
-        process_registry = REGISTRY.fetch(format)
-        process_class = process_registry.fetch(process_type)
-        context = Context::Root.new([
-          Context::Io.new(process_class.io), # opts
-          Context::ContextApi.new(scoped(arguments.fetch(:filters)))
-        ])
+        format_registry = REGISTRY.fetch(format)
+        process_class = format_registry.fetch(process_type)
+        # opts
+        contexts = [Context::ContextApi.new(scoped(arguments.fetch(:filters)))]
+        contexts << Context::Io.new(process_class.io) if process_class.respond_to? :io
+        context = Context::Root.new(contexts)
         process = process_class.new(context)
         begin
           process.run
