@@ -1,0 +1,35 @@
+---
+import { SearchIcon } from "@lucide/astro";
+
+export interface Props {
+  value?: string;
+  placeholder?: string;
+  className?: string | null;
+}
+
+const {
+ value = "",
+ placeholder = "Enter text...",
+ className = null,
+  ...restProps
+} = Astro.props;
+
+---
+<div class={`relative w-full ${className ?? ""}`} {...restProps}>
+  <div class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-muted-foreground">
+    <slot name="icon">
+      <SearchIcon class="size-4" />
+      </slot>
+  </div>
+
+  <input
+    type="text"
+    {value}
+    {placeholder}
+    class="w-full rounded-md border border-input bg-transparent py-2 pl-10 pr-3 text-sm shadow-sm
+      placeholder:text-muted-foreground
+      focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary
+      disabled:cursor-not-allowed disabled:opacity-50"
+
+  />
+</div>

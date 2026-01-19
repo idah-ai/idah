@@ -1,6 +1,7 @@
 ---
 import Logo from "@components/app/brands/Logo.astro";
 import Button from "@components/ui/Button/Button.astro";
+import Input from "@components/ui/Input/Input.astro";
 ---
 
 <header id="header" class="sticky top-0 z-50 w-full border-b border-border bg-background px-4 py-3 shadow-sm md:px-8">
@@ -12,6 +13,11 @@ import Button from "@components/ui/Button/Button.astro";
       <div class="h-6 w-px border-l border-border"></div>
       <Button href="#docs" variant="link" className="hidden sm:flex"> Docs </Button>
     </div>
+
+    <Input
+      placeholder="Search..."
+      className="max-w-sm flex-1 md:max-w-md"
+    />
 
     <div class="flex items-center gap-4">
       <Button href="#changelog" variant="link" className="hidden sm:flex"> Changelog </Button>
