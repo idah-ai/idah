@@ -1,6 +1,7 @@
 ---
 import BlockImg from "@assets/block-img.svg";
 import ImgCard, { type ImgCardProps } from "@components/app/Card/ImgCard.astro";
+import PageNavigation from "@components/ui/PageNavigation/PageNavigation.astro";
 
 const datasets: ImgCardProps["value"][] = [
   {
@@ -43,4 +44,6 @@ const datasets: ImgCardProps["value"][] = [
       {datasets.map((dataset) => <ImgCard value={dataset} />)}
     </div>
   </div>
+  
+  <PageNavigation />
 </div>
