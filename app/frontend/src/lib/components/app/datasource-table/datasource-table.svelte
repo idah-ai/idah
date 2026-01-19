@@ -1,4 +1,7 @@
 <script lang="ts" generics="T extends Record">
+  import { goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
+  import { page } from "$app/state";
   import { onDestroy, onMount, setContext } from "svelte";
 
   import DataTableBody from "@/components/app/datasource-table/datasource-table-body.svelte";
@@ -20,6 +23,7 @@
   import { getTableState } from "@/components/app/datasource-table/datasource-table.stores.svelte";
   import { Record } from "@/data/model/Record";
   import { cn } from "@/utils";
+  import { convertSearchParamsToHash } from "@/utils/uri";
 
   import type {
     DataTableBaseProps,
@@ -108,8 +112,10 @@
     try {
       let listOpts: ListOptions = { ...listOptions };
 
-      /** Merge filters from tablePreferences and listOptions */
-      const mergedFilters = { ...listOptions?.filters, ...tablePreferences.filters };
+      const searchParams = $derived(page.url.searchParams);
+      const urlSearchParamsFilters = convertSearchParamsToHash(searchParams);
+
+      const mergedFilters = { ...listOptions?.filters, ...tablePreferences.filters, ...urlSearchParamsFilters };
 
       /** Merged sort from tablePreferences and listOptions */
       const mergedSort = Array.from(new Set([...(listOptions?.sort || []), ...(tablePreferences.sort || [])]));
@@ -154,20 +160,57 @@
 
   async function filterDataSource(params: FilterDataSourceParams): Promise<void> {
     const { filters } = params;
+    const url = new URL(page.url);
+    const urlSearchParamsFilters = convertSearchParamsToHash(url.searchParams);
 
     tableState.tablePreferences.update((prefs) => {
       const updatedFilters = { ...prefs.filters };
 
       for (const [key, value] of Object.entries(filters)) {
+        /** Manage filters in URL */
+        if (key in urlSearchParamsFilters) {
+          /** Remove filters[key] from URL */
+          url.searchParams.delete(`filters[${key}]`);
+        }
+
         if (value === undefined) {
           delete updatedFilters[key];
         } else {
           updatedFilters[key] = value;
+
+          /** Manage filters in URL */
+          // switch (true) {
+          //   case Array.isArray(value): {
+          //     const values = value;
+          //     values.forEach((val) => {
+          //       const isAlreadyAdded = updatedFilters[key] === val;
+          //       if (isAlreadyAdded) {
+          //         url.searchParams.delete(`filters[${key}]`);
+          //       } else {
+          //         url.searchParams.append(`filters[${key}]`, val);
+          //       }
+          //     });
+          //     break;
+          //   }
+          //   case value === "": {
+          //     url.searchParams.delete(`filters[${key}]`);
+          //     break;
+          //   }
+          //   case value === true: {
+          //     url.searchParams.set(`filters[${key}]`, "true");
+          //     break;
+          //   }
+          //   case value === false: {
+          //     url.searchParams.set(`filters[${key}]`, "false");
+          //     break;
+          //   }
+          //   default: {
+          //     url.searchParams.set(`filters[${key}]`, value);
+          //     break;
+          //   }
+          // }
         }
       }
-
-      /** Reset to first page when filters are applied */
-      resetToFirstPage();
 
       return {
         ...prefs,
@@ -175,6 +218,18 @@
         pagination: { ...prefs.pagination, page: currentPage },
       };
     });
+
+    /** Reset to first page when filters are applied */
+    resetToFirstPage();
+
+    /**
+     * Update URL
+     * NOTE: The goto function will trigger a page reload,
+     * which will loss user behavior like input focusing while filtering.
+     * When we want to implement a set & append searchParams,
+     * please beaware of this.
+     */
+    await goto(resolve(url.href), { replaceState: true });
 
     await fetchData();
   }
