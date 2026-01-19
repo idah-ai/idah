@@ -8,7 +8,7 @@ export const snakeCase = (text: string): string => {
     .join("_");
 };
 
-export const encodeUri = (obj: Hash, parentKey: string|null = null): string => {
+export const encodeUri = (obj: Hash, parentKey: string | null = null): string => {
   const queryArray = [];
 
   for (const key in obj) {
@@ -20,7 +20,7 @@ export const encodeUri = (obj: Hash, parentKey: string|null = null): string => {
         for (let i = 0; i < value.length; i++) {
           const arrayKey = `${encodedKey}[]`;
           const arrayValue = value[i];
-          if (typeof arrayValue === 'object' && arrayValue !== null) {
+          if (typeof arrayValue === "object" && arrayValue !== null) {
             // Recursively encode nested objects in arrays
             queryArray.push(encodeUri(arrayValue, arrayKey));
           } else {
@@ -36,27 +36,60 @@ export const encodeUri = (obj: Hash, parentKey: string|null = null): string => {
     }
   }
 
-  return queryArray.join('&');
-}
+  return queryArray.join("&");
+};
 
-export const filtersToHash = (filters : Filters) : Hash => {
-  let out : Hash = {}
+export const filtersToHash = (filters: Filters): Hash => {
+  let out: Hash = {};
 
-  for(let key in filters) {
-    let value = filters[key]
+  for (let key in filters) {
+    let value = filters[key];
 
-    if(value.op != "eq") {
-      key = `${key}__${value.op}`
+    if (value.op != "eq") {
+      key = `${key}__${value.op}`;
     }
 
-    if(out[key]) {
-      if(!(out[key] instanceof Array)) {
-        out[key].push(value.value)
+    if (out[key]) {
+      if (!(out[key] instanceof Array)) {
+        out[key].push(value.value);
       } else {
-        out[key] = [out[key], value.value]
+        out[key] = [out[key], value.value];
       }
     }
   }
 
-  return out
-}
+  return out;
+};
+
+export const convertSearchParamsToHash = (searchParams: URLSearchParams): Hash => {
+  /**
+   * Regex to extract column key and operator from URL filter
+   *
+   * Example:
+   * - key: "filters[name__match]"
+   * - value: "John"
+   * - match: ["filters[name__match]", "filters", "name__match"]
+   * - listOptionsKey: "filters" (can be: filters, included, pagination, fields, sort, all, noCache, count)
+   * - columnKeyWithOperator: "name__match"
+   */
+  const urlFilterRegex: RegExp = /^([^[]+)\[([^\]]+)\]$/;
+  const hash: Hash = {};
+
+  Object.entries(Object.fromEntries(searchParams.entries())).forEach(([key, value]) => {
+    const match = key.match(urlFilterRegex);
+    if (match) {
+      const [, _listOptionsKey, columnKeyWithOperator] = match;
+      if (hash[columnKeyWithOperator]) {
+        /** If the key already exists, it means it's an array */
+        if (!(hash[columnKeyWithOperator] instanceof Array)) {
+          hash[columnKeyWithOperator] = [hash[columnKeyWithOperator]];
+        }
+        hash[columnKeyWithOperator].push(value);
+      } else {
+        hash[columnKeyWithOperator] = value;
+      }
+    }
+  });
+
+  return hash;
+};
