@@ -35,6 +35,7 @@ module Jobs
     encoder :arguments, Verse::Sequel::JsonEncoder
     encoder :created_by_custom_scopes, Verse::Sequel::JsonEncoder
     encoder :created_by_metadata, Verse::Sequel::JsonEncoder
+    encoder :created_by_organization, Verse::Sequel::PgArrayEncoder
 
     # Lock available jobs for processing, up to {count} jobs.
     # The jobs are locked for update and their status is set to "running".
@@ -121,7 +122,7 @@ module Jobs
     def scoped(action)
       auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }
-        scope.as_org_owner? { table.where(created_by_organization: auth_context.custom_scopes[:org]) }
+        scope.as_org_owner? { table.where(Sequel.lit("created_by_organization <@ ARRAY[?]", Verse::Sequel::PgArrayEncoder.encode(auth_context.custom_scopes[:org]))) }
         scope.as_user? { table.where(created_by: auth_context.metadata[:id]) }
       end
     end

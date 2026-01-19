@@ -14,7 +14,7 @@ Sequel.migration do
 
       column :created_by, Integer, null: false, index: true
       column :created_by_role, String, null: false, index: true
-      column :created_by_organization, Integer, null: true, index: true
+      column :created_by_organization, 'text[]', null: true, index: true
       column :created_by_custom_scopes, :jsonb, text: true, null: false
       column :created_by_metadata, :jsonb, text: true, null: false
 
@@ -48,7 +48,7 @@ Sequel.migration do
 
       column :created_by, Integer, null: false, index: true
       column :created_by_role, String, null: false, index: true
-      column :created_by_organization, Integer, null: true, index: true
+      column :created_by_organization, 'text[]', null: true, index: true
       column :created_by_custom_scopes, :jsonb, text: true, null: false
       column :created_by_metadata, :jsonb, text: true, null: false
 
