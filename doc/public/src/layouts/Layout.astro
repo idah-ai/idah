@@ -8,24 +8,14 @@ import CustomStyles from "@components/CustomStyles.astro";
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width"
-    />
-    <link
-      rel="icon"
-      type="image/svg+xml"
-      href="/idah-logo-favicon.svg"
-    />
-    <meta
-      name="generator"
-      content={Astro.generator}
-    />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="icon" type="image/svg+xml" href="/idah-logo-favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
     <title>IDAH Data Annotation</title>
     <CustomStyles />
   </head>
 
-  <body class="flex min-h-screen w-full flex-col bg-background text-foreground">
+  <body class="flex min-h-screen w-full flex-col overflow-x-hidden bg-background text-foreground">
     <slot />
   </body>
 </html>

@@ -25,14 +25,22 @@ const datasets: ImgCardProps["value"][] = [
   <h1>IDAH Documentation</h1>
   <textDescription>Find the resources you need to build your computer vision application</textDescription>
 
-  <div class="grid grid-cols-3 gap-4">
-    {datasets.map((dataset) => <ImgCard value={dataset} />)}
+  <div class="overflow-x-auto">
+    <div class="grid auto-cols-[80%] grid-flow-col gap-4 sm:auto-cols-auto md:grid-flow-row md:grid-cols-3">
+      {datasets.map((dataset) => <ImgCard value={dataset} />)}
+    </div>
   </div>
 
   <h3>Support</h3>
-  <textDescription>Lorem ipsum dolor sit amet consectetur. Ac semper tristique commodo iaculis id venenatis sem tincidunt. Urna vel enim ullamcorper fermentum. Ipsum quis fermentum risus sapien id pretium volutpat facilisis egestas. Sagittis a nunc amet amet. Ac mattis dignissim enim faucibus commodo et sed faucibusur.</textDescription>
+  <textDescription
+    >Lorem ipsum dolor sit amet consectetur. Ac semper tristique commodo iaculis id venenatis sem tincidunt. Urna vel
+    enim ullamcorper fermentum. Ipsum quis fermentum risus sapien id pretium volutpat facilisis egestas. Sagittis a nunc
+    amet amet. Ac mattis dignissim enim faucibus commodo et sed faucibusur.
+  </textDescription>
 
-   <div class="grid grid-cols-3 gap-4">
-    {datasets.map((dataset) => <ImgCard value={dataset} />)}
+  <div class="overflow-x-auto">
+    <div class="grid auto-cols-[80%] grid-flow-col gap-4 sm:auto-cols-auto md:grid-flow-row md:grid-cols-3">
+      {datasets.map((dataset) => <ImgCard value={dataset} />)}
+    </div>
   </div>
 </div>
