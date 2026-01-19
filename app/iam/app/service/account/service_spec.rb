@@ -155,23 +155,18 @@ RSpec.describe Account::Service, database: true do
         @account_id = account_repo.create(attributes)
       end
 
-      it "deletes an account" do
-        allow(Api[:idah].dataset.entries).to receive(:index).and_return(
-          Verse::JsonApi::Struct.new([])
-        )
-
+      it "deletes an account that has not joined" do
         subject.delete(@account_id)
+
         expect { account_repo.find!(@account_id) }.to raise_error(Verse::Error::NotFound)
       end
 
-      it "doesn't allow account deletion if it's participated in any work" do
-        allow(Api[:idah].dataset.entries).to receive(:index).and_return(
-          Verse::JsonApi::Struct.new(Verse::JsonApi::Struct.new({ id: "mocked_entry_id" }))
-        )
+      it "cannot delete an account that has already joined" do
+        account_repo.update!(@account_id, { joined_at: Time.now })
 
         expect { subject.delete(@account_id) }.to raise_error(
-          Verse::Error::ValidationFailed,
-          "Unable to delete account participated in project(s), consider disable it instead"
+          Verse::Error::Unauthorized,
+          "Cannot delete an account that has already joined"
         )
       end
     end
@@ -179,13 +174,15 @@ RSpec.describe Account::Service, database: true do
     describe "#mark_as_joined" do
       context "when invitation has not expired" do
         it "marks an account as joined" do
+          invitation_token = "token123"
           attributes.merge!(
+            invitation_token:,
             invitation_expired_at: Time.now + 3 * 24 * 60 * 60
           )
 
           account_id = account_repo.create(attributes)
 
-          subject.mark_as_joined(account_id)
+          subject.mark_as_joined(invitation_token)
 
           updated_account = account_repo.find!(account_id)
           expect(updated_account.joined_at).to eq(Time.now)
@@ -194,15 +191,33 @@ RSpec.describe Account::Service, database: true do
 
       context "when invitation has expired" do
         it "raises ValidationFailed error" do
+          invitation_token = "token123"
           attributes.merge!(
+            invitation_token:,
             invitation_expired_at: Time.now - 1
           )
 
-          account_id = account_repo.create(attributes)
+          account_repo.create(attributes)
 
           expect {
-            subject.mark_as_joined(account_id)
+            subject.mark_as_joined(invitation_token)
           }.to raise_error(Verse::Error::ValidationFailed, "Invitation has expired")
+        end
+      end
+
+      context "when invitation token is nil" do
+        it "raises ValidationFailed error" do
+          invalid_token = "token123"
+          attributes.merge!(
+            invitation_token: nil, # Set to nil
+            invitation_expired_at: Time.now - 1
+          )
+
+          account_repo.create(attributes)
+
+          expect {
+            subject.mark_as_joined(invalid_token)
+          }.to raise_error(Verse::Error::RecordNotFound)
         end
       end
     end

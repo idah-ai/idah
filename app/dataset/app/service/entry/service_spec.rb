@@ -517,4 +517,151 @@ RSpec.describe Entry::Service, database: true do
       end
     end
   end
+
+  describe "#unassign_account_entries" do
+    let(:account_id) { 123 }
+    let(:another_account_id) { 456 }
+
+    before do
+      # Create another dataset and project for testing multiple datasets
+      @another_project_id = project_repo.create(
+        name: "Another Project",
+        description: "Another test project",
+        created_by_email: "user2@example.com",
+        organization_id: 1
+      )
+
+      @another_dataset_id = dataset_repo.create(
+        modality: "image",
+        labels: ["cat", "dog"],
+        labeling_configuration: { "width" => 200, "height" => 200 },
+        workflow_configuration: {},
+        project_id: @another_project_id
+      )
+
+      # Create entries assigned to account 123 in project 1
+      @entry1_id = repo.create(
+        project_id:,
+        dataset_id:,
+        resource: "http://example.com/video1.mp4",
+        status: "ready",
+        wf_step: "start",
+        assigned_to_id: account_id
+      )
+
+      @entry2_id = repo.create(
+        project_id:,
+        dataset_id:,
+        resource: "http://example.com/video2.mp4",
+        status: "in_progress",
+        wf_step: "annotate",
+        assigned_to_id: account_id
+      )
+
+      # Create entry assigned to account 123 in another project
+      @entry3_id = repo.create(
+        project_id: @another_project_id,
+        dataset_id: @another_dataset_id,
+        resource: "http://example.com/image1.jpg",
+        status: "ready",
+        wf_step: "start",
+        assigned_to_id: account_id
+      )
+
+      # Create entry assigned to different account in project 1
+      @other_account_entry_id = repo.create(
+        project_id:,
+        dataset_id:,
+        resource: "http://example.com/video3.mp4",
+        status: "ready",
+        wf_step: "start",
+        assigned_to_id: another_account_id
+      )
+
+      # Create entry with no assignment in project 1
+      @unassigned_entry_id = repo.create(
+        project_id:,
+        dataset_id:,
+        resource: "http://example.com/video4.mp4",
+        status: "ready",
+        wf_step: "start",
+        assigned_to_id: nil
+      )
+    end
+
+    it "unassigns entries for the given account_id within the specified project_id only" do
+      subject.unassign_account_entries(account_id, project_id)
+
+      # Entries for the specified account in the specified project should be unassigned
+      entry1 = repo.find!(@entry1_id)
+      entry2 = repo.find!(@entry2_id)
+
+      expect(entry1.assigned_to_id).to be_nil
+      expect(entry2.assigned_to_id).to be_nil
+
+      # Entry for same account in different project should remain assigned
+      entry3 = repo.find!(@entry3_id)
+      expect(entry3.assigned_to_id).to eq(account_id)
+
+      # Entries for other accounts should remain assigned
+      other_entry = repo.find!(@other_account_entry_id)
+      expect(other_entry.assigned_to_id).to eq(another_account_id)
+
+      # Already unassigned entries should remain unassigned
+      unassigned_entry = repo.find!(@unassigned_entry_id)
+      expect(unassigned_entry.assigned_to_id).to be_nil
+    end
+
+    it "handles accounts with no entries in the specified project" do
+      expect { subject.unassign_account_entries(99_999, project_id) }.not_to raise_error
+    end
+
+    it "unassigns entries from multiple datasets within the same project" do
+      # Create another dataset in the same project
+      another_dataset_in_same_project = dataset_repo.create(
+        modality: "image",
+        labels: ["bird", "fish"],
+        labeling_configuration: { "width" => 300, "height" => 300 },
+        workflow_configuration: {},
+        project_id: project_id
+      )
+
+      entry4_id = repo.create(
+        project_id:,
+        dataset_id: another_dataset_in_same_project,
+        resource: "http://example.com/image2.jpg",
+        status: "ready",
+        wf_step: "start",
+        assigned_to_id: account_id
+      )
+
+      subject.unassign_account_entries(account_id, project_id)
+
+      # Verify all entries from different datasets in same project are unassigned
+      entry1 = repo.find!(@entry1_id)
+      entry2 = repo.find!(@entry2_id)
+      entry4 = repo.find!(entry4_id)
+
+      expect(entry1.assigned_to_id).to be_nil
+      expect(entry2.assigned_to_id).to be_nil
+      expect(entry4.assigned_to_id).to be_nil
+    end
+
+    it "only affects entries in the specified project" do
+      subject.unassign_account_entries(account_id, project_id)
+
+      # Count entries that were changed
+      all_entries = repo.index({})
+      project1_entries = all_entries.select { |e| e.project_id == project_id }
+      project2_entries = all_entries.select { |e| e.project_id == @another_project_id }
+
+      # In project 1: should have 3 unassigned entries (2 from account_id + 1 originally unassigned)
+      project1_unassigned = project1_entries.select { |e| e.assigned_to_id.nil? }
+      expect(project1_unassigned.count).to eq(3)
+
+      # In project 2: entry should still be assigned to account_id
+      project2_assigned = project2_entries.select { |e| e.assigned_to_id == account_id }
+      expect(project2_assigned.count).to eq(1)
+    end
+  end
 end

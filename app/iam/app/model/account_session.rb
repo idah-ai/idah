@@ -20,6 +20,23 @@ module AccountSession
     self.table = "account_sessions"
     self.resource = Resource::Iam::AccountSessions
 
+    event(name: "logged_out")
+    def logout(session_id)
+      session = find!(session_id, included: ["account"])
+
+      return unless session
+
+      add_metadata(
+        actor_account_id: session.account.id,
+        actor_account_email: session.account.email,
+        actor_account_role_name: session.account.role_name
+      )
+
+      no_event do
+        delete(session_id)
+      end
+    end
+
     def check_seq(account_id, session_id, nonce, sequence)
       with_db_mode :rw do |_db|
         new_sequence = sequence + 30

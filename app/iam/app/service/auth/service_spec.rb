@@ -116,7 +116,7 @@ RSpec.describe Auth::Service, database: true do
     end
   end
 
-  describe "#delete_session" do
+  describe "#logout" do
     let(:refresh_token) { "some_refresh_token" }
     let(:session_id) {
       account_session_repo.create(
@@ -133,9 +133,9 @@ RSpec.describe Auth::Service, database: true do
       allow(RefreshToken).to receive(:validate).with(refresh_token).and_return([account_id, session_id, nonce])
     end
 
-    it "deletes the session" do
+    it "logout, deleting the session" do
       expect(account_session_repo.index({}).size).to eq(1)
-      subject.delete_session(refresh_token)
+      subject.logout(refresh_token)
       expect(account_session_repo.index({}).size).to eq(0)
     end
   end

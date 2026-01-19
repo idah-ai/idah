@@ -66,7 +66,66 @@ module ProjectMember
       end
     end
 
-    private def authorize_creation(creating_role, project_id, access)
+    def update(record)
+      access = auth_context.can?(:update, project_members.class.resource)
+      # "project_owner" can only be added by an org_owner of the project
+      if record.attributes[:role] == "project_owner"
+        unless [:as_org_owner, :all].include?(access)
+          raise Verse::Error::Unauthorized,
+                "You do not have permission to update a member for this project"
+        end
+
+        member = project_members.find!(record.id)
+        project = projects.find!(member.project_id) # this can raise Verse::Error::RecordNotFound if not in org scope
+
+        # Check if org_owner has access to the project's organization
+        if access != :all && !auth_context.custom_scopes[:org]&.include?(project.organization_id.to_s)
+          raise Verse::Error::Unauthorized,
+                "You do not have permission to update a member to a project owner for this project"
+        end
+      end
+
+      project_members.update!(record.id, record.attributes)
+      project_members.find!(record.id)
+    end
+
+    def delete(id)
+      project_members.transaction do
+        member = project_members.find!(id, included: [:project])
+
+        # Soft delete project member
+        project_members.update!(member.id, { disabled_at: Time.now })
+        project_members.after_commit do
+          ::Service::Notification.email(
+            to: member.email,
+            title: "You have been removed from the project '#{member.project.name}'",
+            category: "project_member_removed",
+            type: "notification:project:activities",
+            project_id: member.project_id,
+            project_name: member.project.name,
+            remover_email: auth_context.metadata[:email],
+            remover_name: auth_context.metadata[:name],
+          )
+        end
+      end
+    end
+
+    def delete_account_members(account_id)
+      system_project_members.chunked_index({ account_id: account_id }).each do |member|
+        system_project_members.delete!(member.id)
+      end
+    end
+
+    def disable_account_members(account_id)
+      now = Time.now
+      system_project_members.chunked_index({ account_id: account_id }).each do |member|
+        system_project_members.update!(member.id, { disabled_at: now })
+      end
+    end
+
+    private
+
+    def authorize_creation(creating_role, project_id, access)
       case access
       when :as_org_owner
         begin
@@ -89,55 +148,6 @@ module ProjectMember
           raise Verse::Error::Unauthorized,
                 "You do not have permission to create project member on this project"
         end
-      end
-    end
-
-    def update(record)
-      access = auth_context.can?(:update, project_members.class.resource)
-      # "project_owner" can only be added by an org_owner of the project
-      if record.attributes[:role] == "project_owner"
-        unless access == :as_org_owner
-          raise Verse::Error::Unauthorized,
-                "You do not have permission to update a member for this project"
-        end
-
-        project = projects.find!(record.project.id) # this can raise Verse::Error::RecordNotFound if not in org scope
-        unless auth_context.custom_scopes[:org]&.include?(project.organization_id.to_s)
-          raise Verse::Error::Unauthorized,
-                "You do not have permission to update a member to a project owner for this project"
-        end
-      end
-
-      project_members.update!(record.id, record.attributes)
-      project_members.find!(record.id)
-    end
-
-    def delete(id)
-      project_members.transaction do
-        member = project_members.find!(id, included: [:project])
-        project_members.delete!(id)
-
-        project_members.after_commit do
-          ::Service::Notification.email(
-            to: member.email,
-            title: "You have been removed from the project '#{member.project.name}'",
-            category: "project_member_removed",
-            type: "notification:project:activities",
-            project_id: member.project_id,
-            project_name: member.project.name,
-            remover_email: auth_context.metadata[:email],
-            remover_name: auth_context.metadata[:name],
-          )
-        end
-      end
-    end
-
-    def remove_nonparticipant_member(account_id)
-      project_member_ids = system_project_members.index({ account_id: account_id }).map(&:id).uniq
-
-      project_member_ids.each do |project_member_id|
-        # directly delete, no need use service delete to send a notification as the account is already deleted
-        project_members.delete!(project_member_id)
       end
     end
   end

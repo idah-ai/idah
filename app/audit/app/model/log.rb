@@ -7,18 +7,19 @@ module Log
     field :id, type: Integer, primary: true
 
     field :actor_account_id, type: Integer, readonly: true
-    # field :actor_name, type: [String, NilClass], readonly: true
-    # field :actor_email, type: String, readonly: true
+    field :actor_account_email, type: [String, NilClass], readonly: true
+    field :actor_account_role_name, type: [String, NilClass], readonly: true
 
     field :action, type: String, readonly: true
+
     field :resource_service, type: String, readonly: true
     field :resource_type, type: String, readonly: true
     field :resource_id, type: String, readonly: true
 
-    # field :event_data, type: Hash, readonly: true
-
     field :organization_id, type: [Integer, NilClass], readonly: true
-    # project_id ?, also subsequent resources' ids ?
+    field :project_id, type: [String, NilClass], readonly: true
+    field :dataset_id, type: [String, NilClass], readonly: true
+    field :entry_id, type: [String, NilClass], readonly: true
 
     field :event_timestamp, type: Time, readonly: true
 
@@ -28,5 +29,9 @@ module Log
   class Repository < Verse::Sequel::Repository
     self.table = "logs"
     self.resource = "audit:logs"
+
+    custom_filter :actor_account_role_name__nin do |collection, value|
+      collection.where(Sequel.lit("actor_account_role_name NOT IN ?  OR actor_account_role_name IS NULL", value))
+    end
   end
 end

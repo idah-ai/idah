@@ -630,7 +630,6 @@
       apply: () => {
         mode = DEFAULT_MODE;
         selectedAnnotation = undefined;
-        annotationValue = {};
       },
       undo: () => {},
       isCombinable: () => true,
@@ -663,7 +662,6 @@
       apply: () => {
         mode = IDAH_NOTE;
         selectedAnnotation = undefined;
-        annotationValue = {};
       },
       undo: () => {},
       isCombinable: () => true,
@@ -761,7 +759,7 @@
   }
 
   function onShapeSelection(type: string, frame: number, _points: Point[] = [], selectedId?: string) {
-    if (!["review", "annotate"].includes(context.workflowStep)) return;
+    if (!["review", "annotate"].includes(context.workflowStep) || mode === "note") return;
 
     let points = $state.snapshot(_points) as Point[];
     if (!selectedId) {
@@ -808,14 +806,13 @@
 
   function selectAnnotation(annotation?: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) {
     selectedAnnotation = annotation;
-
     /**
      * Set mode to the annotation shape type when selecting an annotation
      */
-    if (annotation?.shape.type && ["review", "annotate"].includes(context.workflowStep)) {
+    if (mode === "note") {
+      return;
+    } else if (annotation?.shape.type && ["review", "annotate"].includes(context.workflowStep)) {
       mode = annotation.shape.type;
-    } else if (mode === "note") {
-      mode = "note";
     } else {
       mode = DEFAULT_MODE;
     }

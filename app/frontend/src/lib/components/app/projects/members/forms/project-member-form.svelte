@@ -46,6 +46,7 @@
       },
       filters: {
         project_id: projectId,
+        enabled: true,
       },
     });
     projectMemberEmails = projectMembersRes.data.map((member) => member.email);

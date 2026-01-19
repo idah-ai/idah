@@ -313,13 +313,15 @@
 
   function clearFilter(): void {
     const filterKey = `${filterOptions?.filterKey || columnKey}`;
+    const filterKeyGte = `${filterKey}__gte`;
+    const filterKeyLte = `${filterKey}__lte`;
     const filterKeyWithOperation = `${filterKey}__${filterOptions?.filterOperation || "in"}`;
 
     onFilter({
       filters: {
         [filterKey]: undefined,
-        [`${filterKey}__gte`]: undefined,
-        [`${filterKey}__lte`]: undefined,
+        [filterKeyGte]: undefined,
+        [filterKeyLte]: undefined,
         [filterKeyWithOperation]: undefined,
       },
     });

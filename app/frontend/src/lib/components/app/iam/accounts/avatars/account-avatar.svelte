@@ -1,9 +1,11 @@
 <script lang="ts">
   import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
   import { Badge } from "@/components/ui/badge";
+  import Link from "@/components/ui/text/Link.svelte";
+
   import { cn } from "@/utils";
 
-  import { getAvatarFallback, humanize } from "@/utils/string";
+  import { getAvatarFallback, humanize, truncateEmail } from "@/utils/string";
   import { CheckIcon } from "@lucide/svelte";
 
   // Props
@@ -18,6 +20,7 @@
     showName?: boolean;
     showEmail?: boolean;
     showRole?: boolean;
+    emailIsClickable?: boolean;
   }
   let {
     align = "center",
@@ -30,6 +33,7 @@
     showName = false,
     showEmail = false,
     showRole = false,
+    emailIsClickable = false,
   }: Props = $props();
 
   // Variables
@@ -61,7 +65,11 @@
     {/if}
 
     {#if showEmail}
-      <span class="truncate text-xs">{email}</span>
+      {#if emailIsClickable}
+        <Link class="text-xs" href="/accounts?filters[email__match]={email}">{truncateEmail(email || "")}</Link>
+      {:else}
+        <span class="text-xs">{truncateEmail(email || "")}</span>
+      {/if}
     {/if}
 
     {#if showRole}

@@ -6,6 +6,20 @@ import type { ColumnsSettings } from "@/components/app/datasource-table/types";
 import type { EntryRecord } from "@/data/model/dataset/entries/record";
 
 export const entryColumns: ColumnsSettings<EntryRecord> = {
+  resource: {
+    label: "Name",
+    dataType: "string",
+    clickable: false,
+    sortable: true,
+    filterable: true,
+    filterOptions: {
+      filterKey: "resource",
+      filterBy: "string",
+      filterOperation: "match",
+    },
+    visible: true,
+    hidable: false,
+  },
   status: {
     label: "Status",
     dataType: "enum",
