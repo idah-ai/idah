@@ -40,10 +40,10 @@ export const encodeUri = (obj: Hash, parentKey: string | null = null): string =>
 };
 
 export const filtersToHash = (filters: Filters): Hash => {
-  let out: Hash = {};
+  const out: Hash = {};
 
   for (let key in filters) {
-    let value = filters[key];
+    const value = filters[key];
 
     if (value.op != "eq") {
       key = `${key}__${value.op}`;
