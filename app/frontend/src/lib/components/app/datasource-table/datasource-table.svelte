@@ -228,7 +228,9 @@
      * When we want to implement a set & append searchParams,
      * please beaware of this.
      */
+    /* eslint-disable svelte/no-navigation-without-resolve */
     await goto(url.href, { replaceState: true });
+    /* eslint-enable svelte/no-navigation-without-resolve */
 
     await fetchData();
   }

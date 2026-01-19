@@ -194,7 +194,9 @@
           /** 1. Remove filters[key] from URL */
           newUrl.searchParams.delete(`filters[${key}]`);
           /** 2. Update URL */
+          /* eslint-disable svelte/no-navigation-without-resolve */
           goto(newUrl.href, { replaceState: true });
+          /* eslint-enable svelte/no-navigation-without-resolve */
           /** 3. Update urlFilters, to force the re-render of filters */
           urlFilters = Object.fromEntries(newUrl.searchParams.entries());
         }
