@@ -35,9 +35,6 @@
   import type { Sort } from "@/data/DataSource";
   import type { Filters } from "@/data/filtering";
   import type { Hash } from "@/utils/types";
-  import { page } from "$app/state";
-  import { goto } from "$app/navigation";
-  import { resolve } from "$app/paths";
 
   // Props
   interface Props<T extends Record> {
