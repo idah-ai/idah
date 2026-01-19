@@ -28,7 +28,7 @@ export function getLogResourceDetails(
     medias: MediaRecord[];
   },
 ) {
-  const { action, resource_type, resource_id, project_id, dataset_id, entry_id } = logRecord;
+  const { action, resource_type, resource_id, project_id, dataset_id } = logRecord;
   const { accounts, organizations, projects, projectMembers, datasets, entries, medias } = opts;
 
   /** 1. Construct resource hash */

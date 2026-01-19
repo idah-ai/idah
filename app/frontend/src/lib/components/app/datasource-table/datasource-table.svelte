@@ -1,5 +1,6 @@
 <script lang="ts" generics="T extends Record">
   import { goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import { onDestroy, onMount, setContext } from "svelte";
 
@@ -228,7 +229,7 @@
      * When we want to implement a set & append searchParams,
      * please beaware of this.
      */
-    await goto(url.href, { replaceState: true });
+    await goto(resolve(url.href), { replaceState: true });
 
     await fetchData();
   }
