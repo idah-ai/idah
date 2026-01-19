@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import { getContext, onMount } from "svelte";
@@ -55,6 +56,7 @@
   import type { ListOptions } from "@/data/DataSource";
   import type { CollectionResponse } from "@/data/model/types";
   import type { ProjectMemberScope } from "@/security/types";
+  import type { Hash } from "@/utils/types";
 
   // Contexts
   const project: ProjectRecord = getContext("project");
@@ -71,10 +73,36 @@
   let datasetId = page.params.datasetId as string;
 
   // Optional URL Params
-  let assignedToId = page.url.searchParams.get("assigned_to_id");
+  let urlFiltersHash = $derived(Object.fromEntries(page.url.searchParams.entries()));
+  let urlFilters: Hash<string> = $derived.by(() => {
+    /**
+     * Regex to extract column key and operator from URL filter
+     *
+     * Example:
+     * - key: "filters[name__match]"
+     * - value: "John"
+     * - match: ["filters[name__match]", "filters", "name__match"]
+     * - listOptionsKey: "filters" (can be: filters, included, pagination, fields, sort, all, noCache, count)
+     * - columnKeyWithOperator: "name__match"
+     */
+    const urlFilterRegex: RegExp = /^([^[]+)\[([^\]]+)\]$/;
+    const out: Hash<string> = {};
 
-  let filters: { dataset_id: string; assigned_to_id?: string } = { dataset_id: datasetId };
-  if (assignedToId) filters.assigned_to_id = assignedToId;
+    Object.entries(urlFiltersHash).forEach(([key, value]) => {
+      const match = key.match(urlFilterRegex);
+      if (match) {
+        const [, _listOptionsKey, columnKeyWithOperator] = match;
+        out[columnKeyWithOperator] = value;
+      }
+    });
+
+    return out;
+  });
+
+  let filters: Hash = $derived({
+    dataset_id: datasetId,
+    ...urlFilters,
+  });
 
   let canUpdateEntry = $state(false);
   let canDeleteEntry = $state(false);
@@ -154,11 +182,22 @@
 
   async function filterEntries(params: FilterDataSourceParams): Promise<void> {
     const { filters } = params;
+    const newUrl = new URL(page.url);
 
     for (const [key, value] of Object.entries(filters)) {
       if (value === undefined) {
         /** Remove filter */
         delete listOptions.filters?.[key];
+
+        /** Manage filters[key] from URL if exists */
+        if (key in urlFilters) {
+          /** 1. Remove filters[key] from URL */
+          newUrl.searchParams.delete(`filters[${key}]`);
+          /** 2. Update URL */
+          goto(newUrl.toString(), { replaceState: true });
+          /** 3. Update urlFilters, to force the re-render of filters */
+          urlFilters = Object.fromEntries(newUrl.searchParams.entries());
+        }
       } else {
         /** Add or update filter */
         listOptions = {
@@ -280,7 +319,7 @@
   {#snippet slotTitle()}
     <div class="flex w-full gap-4">
       <div class="flex w-full flex-col items-center justify-between gap-4 md:flex-row">
-        <div class="flex flex-1 items-center gap-4">
+        <div class="flex w-4/5 items-center gap-4">
           <!-- SELECT ALL -->
           {#if canUpdateEntry || canDeleteEntry}
             <div class="pl-6">
@@ -288,7 +327,7 @@
             </div>
           {/if}
 
-          <div class="">
+          <div>
             {#each Object.entries(entryColumns) as [columnKey, columnSetting] (columnKey)}
               <FilterSortDropdownMenu
                 contexts={{
@@ -306,7 +345,7 @@
                   <Button
                     variant={isFiltering || isSorting ? "default" : "outline"}
                     class={cn(
-                      "data-[state=open]:bg-primary data-[state=open]:text-primary-foreground hover:bg-primary hover:text-primary-foreground my-2 w-full min-w-60 gap-2 font-normal",
+                      "data-[state=open]:bg-primary data-[state=open]:text-primary-foreground hover:bg-primary hover:text-primary-foreground my-2 w-full min-w-52 gap-2 font-normal",
                       isFiltering || isSorting ? "text-primary-foreground" : "text-muted-foreground",
                     )}
                   >
@@ -332,7 +371,7 @@
           </div>
         </div>
 
-        <div class="flex items-center gap-2">
+        <div class="flex w-1/5 items-center justify-end gap-2">
           <!-- BULK ACTIONS -->
           {#if isRowSelected}
             <DropdownMenu>
