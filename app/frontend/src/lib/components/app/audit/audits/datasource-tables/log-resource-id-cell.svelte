@@ -56,7 +56,5 @@
 <div class="flex flex-col gap-1">
   <Text size="sm">{resourceDetails[resource_type].name || resource_id}</Text>
 
-  <Link href={resourceDetails[resource_type].resourceUrl} target="_blank">
-    {resourceDetails[resource_type].displayUrl}
-  </Link>
+  <Link href={resourceDetails[resource_type].url} target="_blank" showIcon>View resource</Link>
 </div>

@@ -12,8 +12,7 @@ import type { Hash } from "@/utils/types";
 
 interface LogResourceDetail {
   ids: Array<string | number>;
-  displayUrl: string;
-  resourceUrl: string;
+  url: string;
   name: string | undefined;
 }
 
@@ -29,15 +28,14 @@ export function getLogResourceDetails(
     medias: MediaRecord[];
   },
 ) {
-  const { action, resource_type, resource_id, project_id, dataset_id, entry_id } = logRecord;
+  const { action, resource_type, resource_id, project_id, dataset_id } = logRecord;
   const { accounts, organizations, projects, projectMembers, datasets, entries, medias } = opts;
 
   /** 1. Construct resource hash */
   const resourceHash = logResourceTypes.reduce((acc, resourceType) => {
     acc[resourceType.value] = {
       ids: [],
-      displayUrl: `/${resourceType.value}`,
-      resourceUrl: `/${resourceType.value}`,
+      url: `/${resourceType.value}`,
       name: undefined,
     };
     return acc;
@@ -47,16 +45,20 @@ export function getLogResourceDetails(
   const resource = resourceHash[resource_type];
   switch (resource_type) {
     case "accounts": {
+      /**
+       * For all actions on accounts,
+       * the `resource_id` is the email of the account
+       */
       resource.name = accounts.find((account) => account.id === resource_id)?.email;
-      resource.resourceUrl = "/accounts";
 
       switch (action) {
         case "logged_in": {
-          resource.displayUrl = "/accounts";
+          resource.url = `/accounts?filters[email__match]=${resource_id}`;
           break;
         }
         default: {
-          resource.displayUrl = `/accounts/${resource_id}`;
+          const foundAccount = accounts.find((account) => account.id == String(resource_id));
+          resource.url = foundAccount ? `/accounts?filters[email__match]=${foundAccount.email}` : "/accounts";
           break;
         }
       }
@@ -64,19 +66,22 @@ export function getLogResourceDetails(
       break;
     }
     case "account_sessions": {
+      /**
+       * For resource_type = account_sessions (Logged out action)
+       * the `resource_id` is the email of the account
+       */
       resource.name = resource_id;
-      resource.displayUrl = "/accounts";
-      resource.resourceUrl = "/accounts";
+      resource.url = `/accounts?filters[email__match]=${resource_id}`;
       break;
     }
     case "organizations": {
       switch (action) {
         case "deleted": {
-          resource.displayUrl = `/organizations`;
+          resource.url = `/organizations`;
           break;
         }
         default: {
-          resource.displayUrl = `/organizations/${resource_id}`;
+          resource.url = `/organizations/${resource_id}`;
           break;
         }
       }
@@ -87,13 +92,11 @@ export function getLogResourceDetails(
     case "projects": {
       switch (action) {
         case "deleted": {
-          resource.displayUrl = "/projects";
-          resource.resourceUrl = "/projects";
+          resource.url = "/projects";
           break;
         }
         default: {
-          resource.displayUrl = `/projects/${resource_id}`;
-          resource.resourceUrl = `/projects/${resource_id}/datasets`;
+          resource.url = `/projects/${resource_id}/datasets`;
           break;
         }
       }
@@ -102,21 +105,21 @@ export function getLogResourceDetails(
       break;
     }
     case "project_members": {
-      resource.displayUrl = `/projects/${project_id}/members`;
-      resource.resourceUrl = `/projects/${project_id}/members`;
-      resource.name = projectMembers.find((projectMember) => projectMember.id == String(resource_id))?.email;
+      const foundProjectMember = projectMembers.find((projectMember) => projectMember.id == String(resource_id));
+      resource.url = foundProjectMember
+        ? `/projects/${project_id}/members?filters[email__match]=${foundProjectMember.email}`
+        : `/projects/${project_id}/members`;
+      resource.name = foundProjectMember?.email || String(resource_id);
       break;
     }
     case "datasets": {
       switch (action) {
         case "deleted": {
-          resource.displayUrl = `/projects/${project_id}/datasets`;
-          resource.resourceUrl = `/projects/${project_id}/datasets`;
+          resource.url = `/projects/${project_id}/datasets`;
           break;
         }
         default: {
-          resource.displayUrl = `/projects/${project_id}/datasets/${resource_id}`;
-          resource.resourceUrl = `/projects/${project_id}/datasets/${resource_id}/entries`;
+          resource.url = `/projects/${project_id}/datasets/${resource_id}/entries`;
           break;
         }
       }
@@ -125,14 +128,17 @@ export function getLogResourceDetails(
       break;
     }
     case "entries": {
-      resource.displayUrl = `/projects/${project_id}/datasets/${dataset_id}/entries/${entry_id}`;
-      resource.resourceUrl = `/projects/${project_id}/datasets/${dataset_id}/entries`;
-      resource.name = entries.find((entry) => entry.id == String(resource_id))?.resource;
+      const foundEntry = entries.find((entry) => entry.id == String(resource_id));
+      resource.url = `/projects/${project_id}/datasets/${dataset_id}/entries?filters[resource__match]=${foundEntry?.resource}`;
+      resource.name = foundEntry?.resource;
       break;
     }
     case "medias": {
-      resource.displayUrl = `/medias/${resource_id}`;
-      resource.resourceUrl = `${mediaBasePath}/files/${resource_id}`;
+      /**
+       * As we don't have the pages for medias,
+       * we will use the api endpoint to show the files of medias instead.
+       */
+      resource.url = `${mediaBasePath}/files/${resource_id}`;
       resource.name = medias.find((media) => media.id == String(resource_id))?.filename;
       break;
     }
