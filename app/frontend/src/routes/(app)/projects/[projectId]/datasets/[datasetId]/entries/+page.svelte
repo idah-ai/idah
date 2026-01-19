@@ -194,7 +194,7 @@
           /** 1. Remove filters[key] from URL */
           newUrl.searchParams.delete(`filters[${key}]`);
           /** 2. Update URL */
-          goto(resolve(newUrl.href), { replaceState: true });
+          goto(newUrl.href, { replaceState: true });
           /** 3. Update urlFilters, to force the re-render of filters */
           urlFilters = Object.fromEntries(newUrl.searchParams.entries());
         }
