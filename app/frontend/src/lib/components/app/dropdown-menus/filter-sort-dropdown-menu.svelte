@@ -328,22 +328,6 @@
         [filterKeyWithOperation]: undefined,
       },
     });
-
-    const newURL = new URL(page.url.href);
-    const searchParams = newURL.searchParams;
-
-    // Optionally remove URL search params if any
-    if (searchParams.get(filterKey)) searchParams.delete(filterKey);
-    if (searchParams.get(filterKeyGte)) searchParams.delete(filterKeyGte);
-    if (searchParams.get(filterKeyLte)) searchParams.delete(filterKeyLte);
-    if (searchParams.get(filterKeyWithOperation)) searchParams.delete(filterKeyWithOperation);
-
-    // If any search params were removed, update the URL
-    if (newURL.href !== page.url.href) {
-      goto(resolve((newURL.pathname + newURL.search) as "/projects/[projectId]/datasets/[datasetId]/entries"), {
-        replaceState: true,
-      });
-    }
   }
 </script>
 
@@ -363,7 +347,7 @@
         {#if filterable}
           {#if isFiltering}
             <FunnelIcon />
-            <div class="absolute top-2 left-[1.4rem] size-2 animate-pulse rounded-full bg-amber-500"></div>
+            <div class="absolute left-[1.4rem] top-2 size-2 animate-pulse rounded-full bg-amber-500"></div>
           {:else}
             <FunnelIcon />
           {/if}
