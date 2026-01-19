@@ -3,21 +3,20 @@ import Logo from "@components/app/brands/Logo.astro";
 import Button from "@components/ui/Button/Button.astro";
 ---
 
-<header
-  id="header"
-  class="sticky top-0 z-50 w-full bg-background px-4 py-3 md:px-8 border-b border-border shadow-sm">
-  <div class="mx-auto flex max-w-7xl items-center justify-between">
-    <a href="/">
-      <Logo id="header-logo" />
-    </a>
+<header id="header" class="sticky top-0 z-50 w-full border-b border-border bg-background px-4 py-3 shadow-sm md:px-8">
+  <div class="mx-auto flex items-center justify-between">
+    <div class="flex items-center gap-4">
+      <a href="/">
+        <Logo id="header-logo" />
+      </a>
+      <div class="h-6 w-px border-l border-border"></div>
+      <Button href="#docs" variant="link" className="hidden sm:flex"> Docs </Button>
+    </div>
 
     <div class="flex items-center gap-4">
-      <Button
-        href="#documentation"
-        variant="link"
-        className="hidden sm:flex">
-        Documentation
-      </Button>
+      <Button href="#changelog" variant="link" className="hidden sm:flex"> Changelog </Button>
+
+      <Button href="#support" variant="link" className="hidden sm:flex"> Support </Button>
 
       <Button href="#install"> Install IDAH </Button>
     </div>
