@@ -59,6 +59,7 @@ module Account
       end
     end
 
+    event(name: "logged_in")
     def login(email, password)
       account = scoped(:login).where(email:).first
 
@@ -67,6 +68,13 @@ module Account
         account = decode(account)
         account = self.class.model_class.new(account)
         valid = account.password_match?(password)
+
+        add_event_metadata(
+          actor_account_id: account.id,
+          actor_account_email: account.email,
+          actor_account_role_name: account.role_name,
+          validation: valid ? "success" : "failed"
+        )
       else
         sleep(rand(0.3..0.5))
         valid = false
@@ -75,7 +83,42 @@ module Account
       valid ? account : nil
     end
 
+    def create(attributes)
+      with_metadata do
+        add_event_metadata
+
+        super(attributes)
+      end
+    end
+
+    def update!(id, attributes, scope: scoped(:update))
+      with_metadata do
+        add_event_metadata
+
+        super(id, attributes, scope:)
+      end
+    end
+
+    def delete!(id)
+      with_metadata do
+        find!(id)
+
+        add_event_metadata
+
+        super(id)
+      end
+    end
+
     private
+
+    def add_event_metadata(**opts)
+      add_metadata(
+        actor_account_id: auth_context.metadata[:id],
+        actor_account_email: auth_context.metadata[:email],
+        actor_account_role_name: auth_context.metadata[:role],
+        **opts
+      )
+    end
 
     def accounts_from_project_member_scoped
       account_id = auth_context.metadata[:id]
@@ -84,7 +127,7 @@ module Account
       membership_account_ids =
         if org_ids.any?
           Api[:idah].dataset.project_members.index(
-            filter: { organization_id__in: org_ids }
+            filter: { organization_id__in: org_ids, enabled: true }
           ).data.map(&:account_id).uniq
         else
           []

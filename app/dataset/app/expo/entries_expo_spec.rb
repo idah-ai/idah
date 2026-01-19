@@ -182,7 +182,7 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
     end
   end
 
-  describe "on_resource_event media:jobs completed" do
+  describe "#on_job_completed" do
     it "marks entries as ready when job is completed" do
       job_id = "123"
 
@@ -203,7 +203,7 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
     end
   end
 
-  describe "on_resource_event media:jobs errored" do
+  describe "#on_job_errored" do
     it "marks entries as errored when job fails" do
       job_id = "789"
 
@@ -219,6 +219,46 @@ RSpec.describe EntriesExpo, type: :exposition, as: :system do
         event: "errored",
         payload: {
           resource_id: job_id
+        }
+      )
+    end
+  end
+
+  describe "#on_project_member_disabled" do
+    it "unassigns entries when a project member is disabled" do
+      account_id = 1
+      project_id = 2
+      expect(service).to(receive(:unassign_account_entries).with(account_id, project_id))
+
+      Verse.publish_resource_event(
+        resource_type: Resource::Dataset::ProjectMembers,
+        resource_id: 1,
+        event: "updated",
+        payload: {
+          args: [{ disabled_at: Time.now }],
+          metadata: {
+            project_member_account_id: account_id,
+            project_id: project_id
+          }
+        }
+      )
+    end
+
+    it "does not unassign entries if project member disabled_at param is nil or not present" do
+      account_id = 1
+      project_id = 2
+      expect(service).not_to(receive(:unassign_account_entries))
+
+      Verse.publish_resource_event(
+        resource_type: Resource::Dataset::ProjectMembers,
+        resource_id: 1,
+        event: "updated",
+        payload: {
+          args: [],
+          metadata: {
+            project_member_account_id: account_id,
+            project_member_project_id: project_id
+          }
         }
       )
     end

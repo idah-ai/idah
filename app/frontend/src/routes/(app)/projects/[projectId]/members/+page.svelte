@@ -55,6 +55,7 @@
     listOptions={{
       filters: {
         project_id: projectId,
+        enabled: true,
       },
     }}
   >

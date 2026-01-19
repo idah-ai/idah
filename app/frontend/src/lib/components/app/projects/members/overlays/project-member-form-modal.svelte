@@ -58,40 +58,64 @@
         account = createdAccount.data;
 
         /** Check if member is already in the project */
-        const existingProjectMember = await projectMembersBackendDataSource.list({
-          filters: {
-            project_id: projectId,
-            account_id: account.id,
-          },
-        });
-
-        if (existingProjectMember.data.length) {
-          await accountsBackendDataSource.join({ id: account.id });
-        }
-
-        await projectMembersBackendDataSource.create(
-          {
-            attributes: {
-              project_id: projectId!,
-              account_id: Number(account.id),
-              name: account.name,
-              email,
-              role: role || "annotator",
-              invited_by_id: Number(currentAccount?.id),
+        const existingProjectMember = (
+          await projectMembersBackendDataSource.list({
+            filters: {
+              project_id: projectId,
+              account_id: account.id,
             },
-            relationships: {
-              project: {
-                data: {
-                  type: "dataset:projects",
-                  id: projectId,
+          })
+        ).data[0];
+
+        if (existingProjectMember) {
+          // Re-enable the existing project member
+          await projectMembersBackendDataSource.update(
+            existingProjectMember.id,
+            {
+              attributes: {
+                disabled_at: null,
+                role,
+              },
+            },
+            {
+              showErrorToast: false,
+            },
+          );
+        } else {
+          // Create new project member
+          await projectMembersBackendDataSource.create(
+            {
+              attributes: {
+                project_id: projectId!,
+                account_id: Number(account.id),
+                name: account.name,
+                email,
+                role,
+                invited_by_id: Number(currentAccount?.id),
+              },
+              relationships: {
+                project: {
+                  data: {
+                    type: "dataset:projects",
+                    id: projectId,
+                  },
                 },
               },
             },
-          },
-          {
-            showErrorToast: false,
-          },
-        );
+            {
+              showErrorToast: false,
+            },
+          );
+        }
+
+        // If account is disabled we enable after adding to project
+        if (!account.enabled) {
+          await accountsBackendDataSource.update(account.id, {
+            attributes: {
+              enabled: true,
+            },
+          });
+        }
 
         toast.success("Project member added", {
           description: `An invitation will be sent to "${email}" if the account is not yet existed.`,
