@@ -1,7 +1,31 @@
-<div class="hidden h-screen gap-2 w-64 border-r border-border xl:flex">
-  <aside class="flex h-full w-64 flex-col bg-surface/50 p-4">
+<div id="sidebar-overlay" class="fixed inset-0 z-10 hidden bg-black/50 xl:hidden" data-sidebar-open="false"></div>
+
+<!-- Sidebar -->
+<div
+  id="sidebar"
+  class="fixed left-0 top-0 z-20 flex h-screen w-64 -translate-x-full transform gap-2 border-r border-border bg-background transition-transform duration-300 xl:relative xl:translate-x-0"
+>
+  <aside class="bg-surface/50 flex h-full w-64 flex-col p-4">
     <nav class="flex flex-1 flex-col gap-2 overflow-y-auto">
       <slot />
     </nav>
   </aside>
 </div>
+
+<script>
+  function toggleSidebar() {
+    const sidebar = document.getElementById("sidebar");
+    const overlay = document.getElementById("sidebar-overlay");
+
+    // Close sidebar when clicking overlay
+    overlay?.addEventListener("click", () => {
+      sidebar?.classList.add("-translate-x-full");
+      overlay?.classList.add("hidden");
+      overlay?.setAttribute("data-sidebar-open", "false");
+    });
+  }
+
+  // Initialize on page load
+  toggleSidebar();
+  document.addEventListener("astro:after-swap", toggleSidebar);
+</script>
