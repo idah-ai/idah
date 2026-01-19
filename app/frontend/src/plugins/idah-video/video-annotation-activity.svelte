@@ -714,7 +714,6 @@
 
   async function addSelection(id: string, selection: VideoFrameSelection) {
     if (!["review", "annotate"].includes(context.workflowStep)) return;
-    console.log("testeeeeee");
 
     context.commands.run("keyframe.add", { id, selection });
   }

@@ -1,4 +1,4 @@
-import { type Point, type VideoFrameSelection } from "./VideoAnnotationContext";
+import { type Point, type InterpolatedVertex, type VideoFrameSelection } from "./VideoAnnotationContext";
 
 // -----------------
 // Polygon helper functions
@@ -74,13 +74,16 @@ function matchVerticesByBarycenter(polyMin: Point[], polyMax: Point[]): [Point[]
   return [polyMinRe, polyMaxRe, matches];
 }
 
-function expandPolygonUsingMatches(polyMin: Point[], polyMax: Point[], matches: Record<number, number>): Point[] {
+function expandPolygonUsingMatches(polyMin: Point[], polyMax: Point[], matches: Record<number, number>): InterpolatedVertex[] {
   const nMax = polyMax.length;
-  const expanded: (Point | null)[] = Array(nMax).fill(null);
+  const expanded: (InterpolatedVertex | null)[] = Array(nMax).fill(null);
 
   for (const minIdx in matches) {
     const maxIdx = matches[minIdx];
-    expanded[maxIdx] = polyMin[parseInt(minIdx)];
+    expanded[maxIdx] = {
+      point: polyMin[parseInt(minIdx)],
+      matched: true
+    };
   }
 
   const circDist = (a: number, b: number, n: number) => (b - a + n) % n;
@@ -95,18 +98,22 @@ function expandPolygonUsingMatches(polyMin: Point[], polyMax: Point[], matches: 
 
       const pPrev = expanded[prevI]!;
       const pNext = expanded[nextI]!;
+
       const total = circDist(prevI, nextI, nMax);
       const cur = circDist(prevI, i, nMax);
       const t = total > 0 ? cur / total : 0;
 
-      expanded[i] = [
-        (1 - t) * pPrev[0] + t * pNext[0],
-        (1 - t) * pPrev[1] + t * pNext[1]
-      ];
+      expanded[i] = {
+        point: [
+          (1 - t) * pPrev.point[0] + t * pNext.point[0],
+          (1 - t) * pPrev.point[1] + t * pNext.point[1]
+        ],
+        matched: false
+      };
     }
   }
 
-  return expanded as Point[];
+  return expanded as InterpolatedVertex[];
 }
 
 function lerpPolygons(P1: Point[], P2: Point[], alpha: number): Point[] {
@@ -116,17 +123,28 @@ function lerpPolygons(P1: Point[], P2: Point[], alpha: number): Point[] {
   ]);
 }
 
-// -----------------
-// Main currentShape-style function
-// -----------------
+function lerpVertices(
+  A: InterpolatedVertex[],
+  B: Point[],
+  t: number
+): InterpolatedVertex[] {
+  return A.map((a, i) => ({
+    point: [
+      (1 - t) * a.point[0] + t * B[i][0],
+      (1 - t) * a.point[1] + t * B[i][1],
+    ],
+    matched: a.matched
+  }));
+}
 
 export function interpolatePolygonAtFrame(
   frameStart: VideoFrameSelection,
   frameEnd: VideoFrameSelection,
   current_frame: number
-): Point[] {
+): InterpolatedVertex[] {
   let maxFrame
   let minFrame
+
   if (frameStart.points.length < frameEnd.points.length) {
     minFrame = frameStart
     maxFrame = frameEnd
@@ -144,5 +162,5 @@ export function interpolatePolygonAtFrame(
 
   const t = Math.min(Math.max(alpha, 0), 1);
 
-  return lerpPolygons(P1, frameEndRe, t);
+  return lerpVertices(P1, frameEndRe, t);
 }
