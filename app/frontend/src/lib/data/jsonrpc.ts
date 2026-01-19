@@ -13,7 +13,7 @@ type JsonRpcError = {
   message: string;
   data?: object;
 };
-type JsonRpcResult = object; // let see
+type JsonRpcResult = object | undefined; // let see
 
 type JsonRpcResponse = {
   jsonrpc: string;
@@ -138,11 +138,8 @@ export class JsonRpcDatasource {
               if (JsonRpcMethod_res.error) {
                 failed.push(methodPromise);
                 methodPromise.onReject?.(JsonRpcMethod_res.error);
-              } else if (JsonRpcMethod_res.result) {
-                methodPromise.onResolve?.(JsonRpcMethod_res.result);
               } else {
-                failed.push(methodPromise);
-                methodPromise.onReject?.({ code: 42, message: "?" });
+                methodPromise.onResolve?.(JsonRpcMethod_res.result);
               }
             });
 
