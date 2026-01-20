@@ -42,6 +42,14 @@
 }
 
 @layer base {
+    * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
   h1 {
     @apply text-4xl font-extrabold lg:text-5xl;
   }
@@ -56,5 +64,9 @@
 
   textDescription {
     @apply text-sm text-muted-foreground lg:text-base;
+  }
+
+  p {
+    @apply text-sm font-normal;
   }
 }
