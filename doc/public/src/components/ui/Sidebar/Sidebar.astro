@@ -6,7 +6,7 @@ import { sidebars } from "@components/ui/Sidebar/Sidebar.data.ts";
 <!-- Sidebar -->
 <div
   id="sidebar"
-  class="fixed left-0 top-0 z-20 flex h-auto w-64 -translate-x-full transform gap-2 border-r bg-background transition-transform duration-300 xl:relative xl:translate-x-0"
+  class="fixed left-0 top-[56px] z-20 flex h-auto min-h-[calc(100vh-60px)] w-64 -translate-x-full transform gap-2 border-r bg-background transition-transform duration-300 xl:relative xl:top-0 xl:min-h-screen xl:translate-x-0 text-sm"
 >
   <aside class="bg-surface/50 flex h-full w-64 flex-col p-4">
   {sidebars.map((sidebar) => (
@@ -15,12 +15,12 @@ import { sidebars } from "@components/ui/Sidebar/Sidebar.data.ts";
     {sidebar.url ? (
       <a
         href={sidebar.url}
-        class="mb-2 block px-2 text-sm text-muted-foreground hover:underline"
+        class="mb-2 block px-2 text-muted-foreground hover:underline"
       >
         {sidebar.title}
       </a>
     ) : (
-      <div class="mb-2 px-2 text-sm font-medium text-primary-foreground">
+      <div class="mb-2 px-2 font-medium text-primary-foreground">
         {sidebar.title}
       </div>
     )}
