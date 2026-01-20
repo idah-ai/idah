@@ -98,7 +98,7 @@ module ProjectMember
           Sequel.lit(
             scoped_fragment,
             account_id:,
-            roles: %w[project_owner reviewer annotator],
+            roles: %w[project_owner reviewer annotator]
           )
         )
       when :update, :delete
@@ -106,7 +106,7 @@ module ProjectMember
           Sequel.lit(
             scoped_fragment,
             account_id:,
-            roles: %w[project_owner],
+            roles: %w[project_owner]
           )
         )
       else
@@ -115,19 +115,46 @@ module ProjectMember
       end
     end
 
+    def create(attributes)
+      with_metadata do
+        add_event_metadata(project_id: attributes[:project_id])
+
+        super(attributes)
+      end
+    end
+
     def update!(id, attributes, scope: scoped(:update))
       with_metadata do
-        member = find!(id)
+        membership = find!(id)
 
-        if member
-          add_metadata(
-            project_member_account_id: member.account_id,
-            project_member_project_id: member.project_id,
-          )
-        end
+        add_event_metadata(
+          project_id: attributes[:project_id] || membership.project_id,
+          project_member_account_id: attributes[:account_id] || membership.account_id,
+        )
 
         super(id, attributes, scope:)
       end
+    end
+
+    def delete!(id)
+      with_metadata do
+        membership = find!(id)
+
+        add_event_metadata(project_id: membership.project_id)
+
+        super(id)
+      end
+    end
+
+    private
+
+    def add_event_metadata(**opts)
+      add_metadata(
+        actor_account_id: auth_context.metadata[:id],
+        actor_account_email: auth_context.metadata[:email],
+        actor_account_role_name: auth_context.metadata[:role],
+        **opts
+      )
     end
   end
 end

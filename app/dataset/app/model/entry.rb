@@ -156,6 +156,45 @@ module Entry
       end
     end
 
+    def create(attributes)
+      with_metadata do
+        add_event_metadata(
+          project_id: attributes[:project_id],
+          dataset_id: attributes[:dataset_id]
+        )
+
+        super(attributes)
+      end
+    end
+
+    def update!(id, attributes, scope: scoped(:update))
+      with_metadata do
+        entry = find!(id)
+
+        add_event_metadata(
+          project_id: attributes[:project_id] || entry.project_id,
+          dataset_id: attributes[:dataset_id] || entry.dataset_id,
+          entry_id: id
+        )
+
+        super(id, attributes, scope:)
+      end
+    end
+
+    def delete!(id)
+      with_metadata do
+        entry = find!(id)
+
+        add_event_metadata(
+          project_id: entry.project_id,
+          dataset_id: entry.dataset_id,
+          entry_id: id
+        )
+
+        super(id)
+      end
+    end
+
     event(name: "selected")
     def select(id)
       no_event do
@@ -168,6 +207,14 @@ module Entry
 
     event(name: "assigned")
     def assign(id, attributes)
+      entry = find!(id)
+
+      add_event_metadata(
+        project_id: attributes[:project_id] || entry.project_id,
+        dataset_id: attributes[:dataset_id] || entry.dataset_id,
+        entry_id: id
+      )
+
       no_event do
         transaction do
           update!(id, attributes)
@@ -177,6 +224,14 @@ module Entry
 
     event(name: "submitted")
     def submit(id, attributes)
+      entry = find!(id)
+
+      add_event_metadata(
+        project_id: attributes[:project_id] || entry.project_id,
+        dataset_id: attributes[:dataset_id] || entry.dataset_id,
+        entry_id: id
+      )
+
       no_event do
         transaction do
           # Use read scope when updating as anyone with read access can submit
@@ -191,6 +246,17 @@ module Entry
       transaction do
         update!(entry.id, { status: status })
       end
+    end
+
+    private
+
+    def add_event_metadata(**opts)
+      add_metadata(
+        actor_account_id: auth_context.metadata[:id],
+        actor_account_email: auth_context.metadata[:email],
+        actor_account_role_name: auth_context.metadata[:role],
+        **opts
+      )
     end
   end
 end
