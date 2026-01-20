@@ -33,8 +33,8 @@ RecordFactory.registerTypes(AccountRecord);
 const accountBasePath: string = `${import.meta.env.VITE_IDAH_HOST}/api/v1/iam/accounts`;
 
 export const accountsBackendDataSource = createBackendDataSource(AccountRecord, accountBasePath, {
-  join: async (params: { id: string }): Promise<RecordResponse<AccountRecord> | { data: null }> => {
-    const res = await fetch(`${accountBasePath}/${params.id}/join`, {
+  join: async (params: { token: string }): Promise<RecordResponse<AccountRecord> | { data: null }> => {
+    const res = await fetch(`${accountBasePath}/${params.token}/join`, {
       method: "PATCH",
       body: encodeModel(AccountRecord, { attributes: { joined_at: new Date() } }),
       headers: { "Content-Type": "application/vnd.api+json" },
@@ -59,6 +59,35 @@ export const accountsBackendDataSource = createBackendDataSource(AccountRecord, 
     if (body) {
       if (body.data) return Promise.resolve(parseSingleElementReturn<AccountRecord>(body));
 
+      return Promise.resolve(body);
+    }
+
+    throw "No data returned";
+  },
+
+  resend_invitation: async (params: { id: string }) => {
+    const { id: accountId } = params;
+
+    const res = await fetch(`${accountBasePath}/${accountId}/resend_invitation`, {
+      method: "POST",
+      body: JSON.stringify({ id: accountId }),
+      headers: { "Content-Type": "application/vnd.api+json" },
+    });
+
+    const body = await res.json();
+
+    if (body && body.errors) {
+      if (body.errors.length > 0) {
+        body.errors.forEach((err: Hash) => {
+          console.error(`Error resending invitation: ${err.title} - ${err.detail}`, err);
+        });
+      }
+
+      return Promise.reject(parseSingleElementError({ status: res.status, errors: body.errors }));
+    }
+
+    if (body) {
+      clearCache(resourcePath(accountBasePath, null, undefined));
       return Promise.resolve(body);
     }
 

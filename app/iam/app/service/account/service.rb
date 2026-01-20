@@ -45,9 +45,14 @@ module Account
         # Set a default random password for the account if none is provided
         password = attr.delete(:password) || SecureRandom.hex(16)
 
+        # Generate invitation token and set invitation expiry date
+        invitation_token = SecureRandom.hex(32)
+        invitation_expired_at = Time.now + 3 * 24 * 60 * 60 # 3 days from now
+
         attr.merge!(
           hashed_password: BCrypt::Password.create(password),
-          invitation_expired_at: Time.now + 3 * 24 * 60 * 60
+          invitation_token:,
+          invitation_expired_at:
         )
 
         id = accounts.create(attr)
@@ -61,7 +66,8 @@ module Account
           to: created_account.email,
           title: "Account Created",
           category: "account_created",
-          recipient_id: created_account.id
+          recipient_id: created_account.id,
+          invitation_token:
         )
 
         created_account
@@ -100,19 +106,23 @@ module Account
       accounts.delete(id)
     end
 
-    def mark_as_joined(id)
+    def mark_as_joined(token)
       accounts.transaction do
-        account = accounts.find!(id, scope: accounts.scoped(:join))
+        account = accounts.find_by!({ invitation_token: token }, scope: accounts.scoped(:join))
 
         # account invitation expires in 3 days
         if account.invitation_expired_at.nil? || account.invitation_expired_at < Time.now
           raise Verse::Error::ValidationFailed, "Invitation has expired"
         end
 
-        accounts.update!(id, { joined_at: Time.now, invitation_expired_at: nil }, scope: accounts.scoped(:join))
+        accounts.update!(
+          account.id,
+          { joined_at: Time.now, invitation_token: nil, invitation_expired_at: nil },
+          scope: accounts.scoped(:join)
+        )
 
         [
-          accounts.find!(id, scope: accounts.scoped(:join)),
+          accounts.find!(account.id, scope: accounts.scoped(:join)),
           update_password_reset_token(account)
         ]
       end
@@ -125,16 +135,21 @@ module Account
         raise Verse::Error::NotFound, "Account with email #{account.email} already joined"
       end
 
+      # Generate new invitation token and extend invitation expiry date
+      invitation_token = SecureRandom.hex(32) # To invalidate previous token
+      invitation_expired_at = Time.now + 3 * 24 * 60 * 60 # refresh token 3 days from now
+
       accounts.update!(
         id,
-        { invitation_expired_at: Time.now + 3 * 24 * 60 * 60 }
+        { invitation_token:, invitation_expired_at: }
       )
 
       ::Service::Notification.email(
         to: account.email,
         title: "Reminder: Please join your account",
         category: "account_created",
-        recipient_id: account.id
+        recipient_id: account.id,
+        invitation_token:
       )
     end
 

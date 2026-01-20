@@ -19,18 +19,28 @@ module Log
       logs.find!(id, included: included)
     end
 
-    def create(event, content)
+    def create_from_event(event, content)
       service, type, action = event.split(":")
+      resource_id = content[:resource_id]
+      metadata = content[:metadata]
 
       logs.transaction do
         id = logs.create(
           {
-            actor_account_id: content[:metadata][:account_id],
+            # usually included in message
             action: action,
             resource_service: service,
             resource_type: type,
-            resource_id: content[:resource_id],
-            event_timestamp: content[:metadata][:at],
+            resource_id: resource_id,
+            event_timestamp: metadata[:at],
+            # added metadata
+            actor_account_id: metadata[:actor_account_id],
+            actor_account_email: metadata&.[](:actor_account_email),
+            actor_account_role_name: metadata&.[](:actor_account_role_name),
+            organization_id: type == "organizations" ? resource_id : metadata&.[](:organization_id),
+            project_id: type == "projects" ? resource_id : metadata&.[](:project_id),
+            dataset_id: type == "datasets" ? resource_id : metadata&.[](:dataset_id),
+            entry_id: type == "entries" ? resource_id : metadata&.[](:entry_id)
           }
         )
         logs.find!(id)
