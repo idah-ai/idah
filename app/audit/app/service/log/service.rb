@@ -4,13 +4,6 @@ module Log
   class Service < Verse::Service::Base
     use logs: Log::Repository
 
-    SERVICE_RESOURCE_ID_MAPPINGS = {
-      "organizations" => :organization_id,
-      "projects" => :project_id,
-      "datasets" => :dataset_id,
-      "entries" => :entry_id
-    }.freeze
-
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       logs.index(
         filter,
@@ -48,13 +41,35 @@ module Log
         resource_service:,
         resource_type:,
         action:,
-        resource_id:,
+        resource_id: resolve_resource_id(resource_type:, resource_id:, metadata:),
         event_timestamp: metadata[:at],
         actor_account_id: metadata[:actor_account_id],
         actor_account_email: metadata[:actor_account_email],
         actor_account_role_name: metadata[:actor_account_role_name]
       }
     end
+
+    # custom cases to override resource_id field with other information
+    RESOURCE_ID_OVERRIDES = {
+      "account_sessions" => :actor_account_email,
+      "medias" => :media_resource
+    }.freeze
+
+    def resolve_resource_id(resource_type:, resource_id:, metadata:)
+      if override_field = RESOURCE_ID_OVERRIDES[resource_type]
+        metadata[override_field]
+      else
+        resource_id
+      end
+    end
+
+    # resource types - id field mappings
+    SERVICE_RESOURCE_ID_MAPPINGS = {
+      "organizations" => :organization_id,
+      "projects" => :project_id,
+      "datasets" => :dataset_id,
+      "entries" => :entry_id
+    }.freeze
 
     # use resource_id for the current based event resource, e.g. if it's a project event,
     # - project_id can be found in resource_id,
