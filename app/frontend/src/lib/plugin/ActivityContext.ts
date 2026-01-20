@@ -97,7 +97,15 @@ export function activityContextForEntry(entry: EntryRecord): IActivityContext {
           .submit(entry.id, opts)
           .then(async () => {
             try {
-              const datasetsRes = await datasetsBackendDataSource.list();
+              /**
+               * After submission successfully,
+               * We need to check if there are more entries to do or not
+               * by fetching the datasets without cache
+               *
+               * If there are more entries, redirect to the entries list page
+               * If there are no more entries, redirect to the datasets list page
+               */
+              const datasetsRes = await datasetsBackendDataSource.list({ noCache: true });
               if (datasetsRes.data.length) {
                 goto(resolve(`/projects/${entry.dataset.project.id}/datasets/${entry.dataset.id}/entries`));
               } else {
