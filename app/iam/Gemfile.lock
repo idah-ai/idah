@@ -186,7 +186,7 @@ GEM
     unicode-display_width (3.1.4)
       unicode-emoji (~> 4.0, >= 4.0.4)
     unicode-emoji (4.0.4)
-    verse-schema (1.2.1)
+    verse-schema (1.2.3)
       attr_chainable (~> 1.0)
     webmock (3.25.1)
       addressable (>= 2.8.0)
@@ -218,7 +218,7 @@ DEPENDENCIES
   verse-jsonrpc!
   verse-periodic!
   verse-redis!
-  verse-schema (~> 1.2.1)
+  verse-schema (~> 1.2.3)
   verse-sequel!
   webmock
   zeitwerk
