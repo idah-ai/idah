@@ -1,64 +1,56 @@
 ---
+import { Separator } from "$lib/components/ui/separator";
 import Logo from "@components/app/brands/Logo.astro";
-import Button from "@components/ui/Button/Button.astro";
-import Input from "@components/ui/Input/Input.astro";
 import { SearchIcon, TextAlignJustifyIcon, XIcon } from "@lucide/astro";
+import { Button } from "$lib/components/ui/button";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "$lib/components/ui/input-group";
 ---
 
-<header id="header" class="sticky top-0 z-50 w-full border-b bg-background px-4 py-3 shadow-sm md:px-8">
+<header id="header" class="bg-background sticky top-0 z-50 w-full border-b px-4 py-3 shadow-sm md:px-8">
   <div class="relative mx-auto flex items-center">
-
     <div class="flex items-center gap-4">
       <a href="/">
         <Logo id="header-logo" />
       </a>
-      <div class="h-6 w-px border-l "></div>
-      <Button href="#docs" variant="link" className="hidden xl:flex">
-        Docs
-      </Button>
+      <Separator orientation="vertical" class="h-6" />
+
+      <Button href="#docs" variant="link" class="text-foreground hidden xl:flex"> Docs </Button>
     </div>
 
     <div class="absolute left-1/2 hidden w-full max-w-xl -translate-x-1/2 xl:block">
-      <Input placeholder="Search..." className="w-full" />
+      <InputGroup>
+        <InputGroupInput placeholder="Search..." class="w-full" />
+        <InputGroupAddon class="pointer-events-none">
+          <SearchIcon class="text-muted-foreground size-4" />
+        </InputGroupAddon>
+      </InputGroup>
     </div>
 
     <div class="aling-right ml-auto flex items-center gap-1">
-      <Button href="#changelog" variant="link" className="hidden xl:flex"> Changelog </Button>
+      
+      <Button href="#changelog" variant="link" class="text-foreground hidden xl:flex"> Changelog </Button>
 
-      <Button href="#support" variant="link" className="hidden xl:flex"> Support </Button>
+      <Button href="#support" variant="link" class="text-foreground hidden xl:flex"> Support </Button>
 
-      <Button href="#install" className="hidden xl:flex"> Install IDAH </Button>
+      <Button href="#install" class="hidden xl:flex dark:text-white"> Install IDAH </Button>
 
-      <button
-        id="mobile-search"
-        class="hover:text-accent-foreground inline-flex size-10 items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 xl:hidden"
-      >
-        <SearchIcon class="size-4" />
-      </button>
+      <Button id="mobile-search" variant="ghost" size="icon" class="xl:hidden">
+        <SearchIcon class="size-5" />
+      </Button>
 
-      <button
-        id="sidebar-toggle"
-        class="hover:text-accent-foreground inline-flex size-10 items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 xl:hidden"
-      >
-        <TextAlignJustifyIcon class="size-4" />
-      </button>
+      <Button id="sidebar-toggle" variant="ghost" size="icon" class="xl:hidden">
+        <TextAlignJustifyIcon class="size-5" />
+      </Button>
 
-      <button
-        id="sidebar-close-header"
-        class="hover:text-accent-foreground hidden size-10 items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 xl:hidden"
-      >
-        <XIcon class="size-4" />
-      </button>
+      <Button id="sidebar-close-header" variant="ghost" size="icon" class="hidden xl:hidden">
+        <XIcon class="size-5" />
+      </Button>
+    
     </div>
   </div>
 </header>
 
-<style>
-  #header {
-    font-family: Inter, Roboto, "Helvetica Neue", "Arial Nova", "Nimbus Sans", Arial, sans-serif;
-  }
-</style>
-
+<!-- 
 <script>
   function toggleSidebar() {
    const openButton = document.getElementById("sidebar-toggle");
@@ -101,4 +93,4 @@ import { SearchIcon, TextAlignJustifyIcon, XIcon } from "@lucide/astro";
   toggleSidebar();
 
   document.addEventListener("astro:after-swap", toggleSidebar);
-</script>
+</script> -->
