@@ -41,7 +41,7 @@
           },
         },
         {
-          label: "Resend Invitation",
+          label: "Resent Invitation",
           icon: RotateCcwIcon,
           hidden: !canResentInvitation,
           action: resendInvitation,

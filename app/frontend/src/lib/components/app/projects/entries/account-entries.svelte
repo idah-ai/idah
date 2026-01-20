@@ -62,7 +62,7 @@
       {#each Object.entries(countEntriesByDataset) as [datasetId, count] (datasetId)}
         <li>
           <Link
-            href={`/projects/${projectId}/datasets/${datasetId}/entries?filters[assigned_to_id]=${accountId}`}
+            href={`/projects/${projectId}/datasets/${datasetId}/entries?assigned_to_id=${accountId}`}
             target="_blank"
           >
             {nameDatasetMap[datasetId]}
