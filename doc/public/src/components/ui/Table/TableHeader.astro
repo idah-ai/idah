@@ -6,6 +6,6 @@ interface Props {
 const { class: className } = Astro.props;
 ---
 
-<th class={`px-4 py-2 ${className ?? ""}`}>
+<thead class={`${className ?? ""}`}>
   <slot />
-</th>
+</thead>
