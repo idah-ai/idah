@@ -1,0 +1,65 @@
+---
+import Table from "@components/ui/Table/Table.astro";
+import TableBody from "@components/ui/Table/TableBody.astro";
+import TableCell from "@components/ui/Table/TableCell.astro";
+import TableHead from "@components/ui/Table/TableHead.astro";
+import TableRow from "@components/ui/Table/TableRow.astro";
+
+export const verseErrors = [
+  {
+    code: 400,
+    title: 'Verse::Error::BadRequest',
+    meaning: 'The request is malformed or invalid.',
+  },
+  {
+    code: 401,
+    title: 'Verse::Error::Authorization',
+    meaning: 'The request requires authentication.',
+  },
+  {
+    code: 403,
+    title: 'Verse::Error::Unauthorized',
+    meaning: 'The request is understood but not allowed.',
+  },
+  {
+    code: 404,
+    title: 'Verse::Error::NotFound',
+    meaning: 'The requested resource or path does not exist.',
+  },
+  {
+    code: 404,
+    title: 'Verse::Error::RecordNotFound',
+    meaning: 'The requested path exists, but the resource itself does not exist.',
+  },
+  {
+    code: 422,
+    title: 'Verse::Error::ValidationFailed',
+    meaning: 'The request data failed validation.',
+  },
+  {
+    code: 422,
+    title: 'Verse::Error::CannotCreateRecord',
+    meaning: 'The request data failed validation.',
+  },
+];
+
+---
+<Table class="text-sm">
+  <TableHead class="text-muted-foreground">
+    <TableRow>
+      <TableCell>Code</TableCell>
+      <TableCell>Title</TableCell>
+      <TableCell>Meaning</TableCell>
+    </TableRow>
+  </TableHead>
+
+  <TableBody class="text-primary-foreground">
+  {verseErrors.map((error) => (
+    <TableRow>
+      <TableCell>{error.code}</TableCell>
+      <TableCell>{error.title}</TableCell>
+      <TableCell>{error.meaning}</TableCell>
+    </TableRow>
+  ))}
+  </TableBody>
+ </Table>

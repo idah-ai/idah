@@ -1,0 +1,9 @@
+---
+interface Props {
+  class?: string | null;
+}
+
+const { class: className } = Astro.props;
+---
+
+<th class={`p-2 ${className ?? ""}`}><slot /></th>

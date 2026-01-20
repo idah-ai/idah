@@ -3,6 +3,8 @@ import BlockImg from "@assets/block-img.svg";
 import ImgCard, { type ImgCardProps } from "@components/app/Card/ImgCard.astro";
 import PageNavigation from "@components/ui/PageNavigation/PageNavigation.astro";
 
+import CommonErrorTable from "@components/app/Table/CommonErrorTable.astro";
+
 const datasets: ImgCardProps["value"][] = [
   {
     title: "Dataset 1",
@@ -44,6 +46,6 @@ const datasets: ImgCardProps["value"][] = [
       {datasets.map((dataset) => <ImgCard value={dataset} />)}
     </div>
   </div>
-  
+ <CommonErrorTable />
   <PageNavigation />
 </div>
