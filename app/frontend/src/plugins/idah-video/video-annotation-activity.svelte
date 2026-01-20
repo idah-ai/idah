@@ -670,7 +670,6 @@
   });
 
   context.commands.on("tools.polygon", () => {
-    console.log("you clicked polygon tool");
     return {
       name: "polygon tool",
       apply: () => {
