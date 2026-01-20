@@ -1,15 +1,8 @@
 ---
-import Layout from "@layouts/PageLayout.astro";
-
+import Sidebar from "@components/app/Sidebar/Sidebar.astro"
+import PageLayout from "@layouts/PageLayout.astro"
 ---
 
-<Layout>
- <div class="flex min-h-screen">
-
-    <main class="flex-1 min-w-0">
-      <slot>
-      
-      </slot>
-    </main>
-  </div>
-</Layout>
+<PageLayout>
+  <Sidebar class="size-8 inline-block mr-2 w-1/4 min-h-screen bg-muted" />
+</PageLayout>
