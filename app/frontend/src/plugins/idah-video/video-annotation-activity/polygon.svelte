@@ -257,7 +257,6 @@
       if (rawPoints.length === 0 || !isNearPoint(rawPoints[rawPoints.length - 1], end)) {
         rawPoints = [...rawPoints, end];
         if (rawPoints.length >= 3 && isNearPoint(rawPoints[0], end)) {
-          console.log("Polygon completed");
           rawPoints = rawPoints.slice(0, -1); // Remove last point to avoid duplication
           isPolygonComplete = true;
           onChange?.(rawPoints);
