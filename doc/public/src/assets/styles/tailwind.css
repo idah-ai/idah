@@ -43,7 +43,7 @@
 
 @layer base {
     * {
-    @apply border-border;
+    @apply border-border font-normal text-sm lg:text-base;
   }
 
   body {
