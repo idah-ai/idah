@@ -108,7 +108,7 @@
     return points.map((p, i) => (i === vertexIndex ? newPosition : p));
   }
 
-  function isNearPoint(point: Point, target: Point, threshold: number = 0.02): boolean {
+  function isNearPoint(point: Point, target: Point, threshold: number = 0.002): boolean {
     const distance = Math.sqrt(Math.pow(point[X] - target[X], 2) + Math.pow(point[Y] - target[Y], 2));
 
     return distance < threshold;
