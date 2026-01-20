@@ -1,0 +1,31 @@
+---
+import Button from "@components/ui/Button/Button.astro";
+import { CopyIcon } from "@lucide/astro";
+
+interface Props {
+  class?: string | null;
+  showCopyButton?: boolean;
+}
+const { class: className = null, showCopyButton = false } = Astro.props;
+---
+
+<div class={`border rounded-lg bg-muted p-2 h-auto ${className ?? ""}`}>
+  {
+    showCopyButton && (
+      <div class="align-right flex justify-end p-2">
+        <slot name="copy-button">
+          <Button size="sm">
+            <CopyIcon />
+            Copy
+          </Button>
+        </slot>
+      </div>
+    )
+  }
+
+  <pre class="overflow-x-auto">
+    <code>
+<slot />
+    </code>
+  </pre>
+</div>
