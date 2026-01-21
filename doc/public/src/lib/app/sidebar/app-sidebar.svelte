@@ -32,8 +32,8 @@
   </SidebarMenuItem>
 {/snippet}
 
-<Sidebar class="min-h-screen">
-  <SidebarContent class="h-full overflow-y-auto pt-2 text-muted-foreground">
+<Sidebar class="min-h-screen pt-16 overflow-y-auto">
+  <SidebarContent class="h-full pt-2 text-muted-foreground">
     {#each sidebars as sidebar}
       <SidebarGroup>
         {#if sidebar.href}
