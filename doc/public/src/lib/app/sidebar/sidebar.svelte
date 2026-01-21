@@ -3,7 +3,7 @@
   import { SidebarProvider } from "$lib/components/ui/sidebar";
 </script>
 
-<aside class="hidden lg:block w-64 shrink-0 border-r">
+<aside class="hidden lg:block w-64 shrink-0">
   <SidebarProvider>
     <AppSidebar />
   </SidebarProvider>
