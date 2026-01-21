@@ -1,32 +1,68 @@
 <script lang="ts">
-  import { sidebars } from "$lib/app/sidebar/sidebar.data";
+  import { sidebars, type SidebarProps } from "$lib/app/sidebar/sidebar.data";
   import {
-    Sidebar,
-    SidebarContent,
-    SidebarGroup,
-    SidebarGroupContent,
-    SidebarGroupLabel,
-    SidebarMenu,
-    SidebarMenuButton,
-    SidebarMenuItem,
+      Sidebar,
+      SidebarContent,
+      SidebarGroup,
+      SidebarGroupContent,
+      SidebarGroupLabel,
+      SidebarMenu,
+      SidebarMenuButton,
+      SidebarMenuItem
   } from "$lib/components/ui/sidebar";
+  import SidebarMenuSub from "$lib/components/ui/sidebar/sidebar-menu-sub.svelte";
 </script>
 
-<Sidebar>
-  <SidebarContent>
-    <SidebarGroup>
-      <SidebarGroupLabel>Application</SidebarGroupLabel>
-      <SidebarGroupContent>
-        <SidebarMenu>
-          {#each sidebars as sidebar}
-            <SidebarMenuItem key={sidebar.label}>
-              <SidebarMenuButton>
-                <a href={sidebar.href}>{sidebar.label}</a>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+{#snippet renderItem(item: SidebarProps)}
+    <SidebarMenuItem>
+      {#if item.href}
+        <SidebarMenuButton class="hover:text-primary"><a href={item.href}>{item.label}</a></SidebarMenuButton>
+        {:else}
+        <SidebarGroupLabel class="text-sm text-muted-foreground font-normal">
+            {item.label}
+          </SidebarGroupLabel>
+
+      {/if}
+      {#if item.children?.length}
+        <SidebarMenuSub class="border-none">
+          {#each item.children as child (child.label)}
+            {@render renderItem(child)}
           {/each}
-        </SidebarMenu>
-      </SidebarGroupContent>
-    </SidebarGroup>
+        </SidebarMenuSub>
+      {/if}
+    </SidebarMenuItem>
+{/snippet}
+
+<Sidebar class="top-16">
+  <SidebarContent class="text-muted-foreground pt-2 ">
+    {#each sidebars as sidebar}
+      <SidebarGroup>
+        {#if sidebar.href}
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton class="hover:text-primary">
+                  <a href={sidebar.href}>{sidebar.label}</a>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        {:else}
+          <SidebarGroupLabel class="text-xs font-semibold uppercase tracking-wider text-foreground">
+            {sidebar.label}
+          </SidebarGroupLabel>
+        {/if}
+
+        {#if sidebar.children?.length}
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {#each sidebar.children as item (item.label)}
+                {@render renderItem(item)}
+              {/each}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        {/if}
+      </SidebarGroup>
+    {/each}
   </SidebarContent>
 </Sidebar>

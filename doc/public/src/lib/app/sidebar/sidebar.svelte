@@ -3,7 +3,7 @@
   import { SidebarProvider, SidebarTrigger } from "$lib/components/ui/sidebar";
 </script>
 
-<SidebarProvider>
+<SidebarProvider class="hidden lg:block w-64 shrink-0 h-[calc(100vh-64px)]">
   <AppSidebar>
     <SidebarTrigger />
   </AppSidebar>
