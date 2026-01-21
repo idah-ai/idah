@@ -45,6 +45,7 @@
     // DataSource
     filters: Filters;
     sort: Sort;
+    disabledActiveFilterSortKeys?: Array<string>;
 
     // Functions
     onFilter: (params: FilterDataSourceParams) => Promise<void>;
@@ -74,6 +75,7 @@
     // DataSource
     filters,
     sort,
+    disabledActiveFilterSortKeys,
 
     // Functions
     onFilter,
@@ -102,8 +104,26 @@
     return "start";
   });
 
-  let isFiltering = $derived(Object.keys(filters).some((key) => key.startsWith(filterKey)));
-  let isSorting = $derived(sort.some((s) => s.endsWith(columnKey)));
+  // let isFiltering = $derived(Object.keys(filters).some((key) => key.startsWith(filterKey)));
+  // let isSorting = $derived(sort.some((s) => s.endsWith(columnKey)));
+  let hideFilterSortKeys = $derived(Array.from(new Set(disabledActiveFilterSortKeys ?? [])));
+  let isFiltering = $derived.by(() => {
+    const filterKeys = Array.from(new Set(Object.keys(filters)));
+    const symmetricDifferenceFilterKeys = [
+      ...filterKeys.filter((item) => !hideFilterSortKeys.includes(item)),
+      ...hideFilterSortKeys.filter((item) => !filterKeys.includes(item)),
+    ];
+    return symmetricDifferenceFilterKeys.some((key) => key.startsWith(filterKey));
+  });
+
+  let isSorting = $derived.by(() => {
+    const sortKeys = Array.from(new Set(sort));
+    const symmetricDifferenceSortKeys = [
+      ...sortKeys.filter((item) => !hideFilterSortKeys.includes(item)),
+      ...hideFilterSortKeys.filter((item) => !sortKeys.includes(item)),
+    ];
+    return symmetricDifferenceSortKeys.some((key) => key.endsWith(columnKey));
+  });
   let isSortingAsc = $derived(sort.includes(columnKey));
   let isSortingDesc = $derived(sort.includes(`-${columnKey}`));
   let isFilteringOrSorting = $derived(isFiltering || isSorting);
@@ -344,7 +364,7 @@
         {#if filterable}
           {#if isFiltering}
             <FunnelIcon />
-            <div class="absolute top-2 left-[1.4rem] size-2 animate-pulse rounded-full bg-amber-500"></div>
+            <div class="absolute left-[1.4rem] top-2 size-2 animate-pulse rounded-full bg-amber-500"></div>
           {:else}
             <FunnelIcon />
           {/if}

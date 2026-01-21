@@ -1,4 +1,6 @@
 <script lang="ts" generics="T extends Record">
+  import { getContext } from "svelte";
+
   import FilterSortDropdownMenu from "@/components/app/dropdown-menus/filter-sort-dropdown-menu.svelte";
 
   import type {
@@ -31,6 +33,9 @@
     onSort,
     onHide,
   }: Props = $props();
+
+  // Contexts
+  const disabledActiveFilterSortKeys = getContext<Array<string>>("disabledActiveFilterSortKeys");
 </script>
 
 <FilterSortDropdownMenu
@@ -42,4 +47,5 @@
   {onFilter}
   {onSort}
   {onHide}
+  {disabledActiveFilterSortKeys}
 ></FilterSortDropdownMenu>

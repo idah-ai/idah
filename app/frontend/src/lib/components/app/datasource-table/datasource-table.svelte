@@ -45,6 +45,7 @@
     listOptions,
     columns: _columns,
     hidePagination,
+    disabledActiveFilterSortKeys,
     onLoadSetContexts = async () => ({}),
     actions,
     addNewRecordButton,
@@ -60,6 +61,7 @@
   setContext("addNewRecordButton", addNewRecordButton);
   setContext("emptyState", emptyState);
   setContext("filteredState", filteredState);
+  setContext("disabledActiveFilterSortKeys", disabledActiveFilterSortKeys);
 
   // Variables
   let tableState: TableState<T> = getTableState(id);
