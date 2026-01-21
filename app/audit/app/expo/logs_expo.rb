@@ -34,7 +34,7 @@ class LogsExpo < BaseExpo
       service.create(
         log_attributes(
           message:,
-          resource_id: message.content[:metadata][:actor_account_email] 
+          resource_id: message.content[:metadata][:actor_account_email]
         )
       )
     end
@@ -47,14 +47,14 @@ class LogsExpo < BaseExpo
       service.create(
         log_attributes(
           message:,
-          organization_id: message.content[:resource_id] 
+          organization_id: message.content[:resource_id]
         )
       )
     end
   end
 
-  # Project events
   %w[created updated deleted].each do |event|
+    # Project events
     expose on_resource_event(Resource::Dataset::Projects, event)
     def on_project_event
       service.create(
@@ -65,10 +65,8 @@ class LogsExpo < BaseExpo
         )
       )
     end
-  end
 
-  # Project Member events
-  %w[created updated deleted].each do |event|
+    # Project Member events
     expose on_resource_event(Resource::Dataset::ProjectMembers, event)
     def on_project_member_event
       service.create(
@@ -78,10 +76,8 @@ class LogsExpo < BaseExpo
         )
       )
     end
-  end 
 
-  # Dataset events
-  %w[created updated deleted].each do |event|
+    # Dataset events
     expose on_resource_event(Resource::Dataset::Datasets, event)
     def on_dataset_event
       service.create(
@@ -90,6 +86,16 @@ class LogsExpo < BaseExpo
           organization_id: message.content[:metadata][:organization_id],
           project_id: message.content[:metadata][:project_id],
           dataset_id: message.content[:resource_id]
+        )
+      )
+    end
+
+    # Media events
+    expose on_resource_event(Resource::Media::Medias, event)
+    def on_media_event
+      service.create(
+        log_attributes(
+          message:,resource_id: message.content[:metadata][:media_resource]
         )
       )
     end
@@ -106,18 +112,6 @@ class LogsExpo < BaseExpo
           project_id: message.content[:metadata][:project_id],
           dataset_id: message.content[:metadata][:dataset_id],
           entry_id: message.content[:resource_id]
-        )
-      )
-    end
-  end
-
-  # Media events
-  %w[created updated deleted].each do |event|
-    expose on_resource_event(Resource::Media::Medias, event)
-    def on_media_event
-      service.create(
-        log_attributes(
-          message:,resource_id: message.content[:metadata][:media_resource]
         )
       )
     end
