@@ -7,7 +7,7 @@
   import Button from "@/components/ui/button/button.svelte";
   import { DialogTitle } from "@/components/ui/dialog";
 
-  import { accountsBackendDataSource } from "@/data/model/iam/accounts/record";
+  import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
 
@@ -39,6 +39,9 @@
     for (const accountId of owners) {
       /** Get latest account data */
       const { data: account } = await accountsBackendDataSource.get(accountId, {
+        fields: {
+          [AccountRecord.type]: ["id", "role_name", "role_scope"],
+        },
         noCache: true,
       });
 

@@ -24,6 +24,9 @@
   async function removeOrgOwner() {
     try {
       const { data: account } = await accountsBackendDataSource.get(accountId, {
+        fields: {
+          [AccountRecord.type]: ["id", "role_name", "role_scope"],
+        },
         noCache: true,
       });
 

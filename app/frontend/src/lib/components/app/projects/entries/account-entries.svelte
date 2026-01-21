@@ -1,18 +1,24 @@
 <script lang="ts">
-  import Link from "@/components/ui/text/Link.svelte";
-  import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
   import { onMount } from "svelte";
 
+  import Link from "@/components/ui/text/Link.svelte";
+
+  import { DatasetRecord } from "@/data/model/dataset/dataset-record";
+  import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
+
+  // Props
   interface Props {
     accountId: number | string;
     projectId?: number | string;
   }
 
+  // Variables
   let entries: EntryRecord[] = $state([]);
   let countEntriesByDataset: Record<string, number> = $state({});
   let nameDatasetMap: Record<string, string> = $state({});
   let { accountId, projectId }: Props = $props();
 
+  // Functions
   async function fetchEntries(): Promise<void> {
     const filters = { assigned_to_id: accountId };
 
@@ -24,8 +30,8 @@
       await entriesBackendDataSource.list({
         filters: filters,
         fields: {
-          "dataset:datasets": ["name"],
-          "dataset:entries": ["resource", "project_id", "dataset_id", "assigned_to_id"],
+          [DatasetRecord.type]: ["name"],
+          [EntryRecord.type]: ["resource", "project_id", "dataset_id", "assigned_to_id"],
         },
         included: ["dataset"],
       })
@@ -50,6 +56,7 @@
     );
   }
 
+  // Lifecycle
   onMount(async () => {
     await fetchEntries();
   });
@@ -58,7 +65,7 @@
 {#if entries.length > 0}
   <div class="text-muted-foreground text-sm">
     <div>Entries on these datasets will be unassigned from this account.</div>
-    <ul class="mt-2 ml-5 max-h-40 overflow-y-auto">
+    <ul class="ml-5 mt-2 max-h-40 overflow-y-auto">
       {#each Object.entries(countEntriesByDataset) as [datasetId, count] (datasetId)}
         <li>
           <Link
