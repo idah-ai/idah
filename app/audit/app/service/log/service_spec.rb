@@ -11,44 +11,7 @@ RSpec.describe Log::Service, database: true do
   let(:actor_account_id) { 1 }
   let(:actor_account_email) { "admin@example.com" }
   let(:actor_account_role_name) { "admin" }
-
-  # let(:event) { "dataset:datasets:created" }
-  # let(:content) do
-  #   {
-  #     args: [],
-  #     resource_id: UUIDv7.generate,
-  #     metadata: {
-  #       expo: "DatasetsExpo",
-  #       service: "Dataset::Service",
-  #       at: Time.now,
-  #       account_id: 1,
-  #       actor_account_id:,
-  #       actor_account_email:
-  #     }
-  #   }
-  # end
-
   let(:action) { "created" }
-  # let(:resource_service) { "dataset" }
-  # let(:resource_type) { "datasets" }
-  # let(:resource_id) { UUIDv7.generate }
-
-  # let(:attributes) do
-  #   {
-  #     action:,
-  #     resource_service:,
-  #     resource_type:,
-  #     resource_id: resource_id,
-  #     event_timestamp: Time.now,
-  #     actor_account_id:,
-  #     actor_account_email:,
-  #     actor_account_role_name:,
-  #     organization_id: 1,
-  #     project_id: UUIDv7.generate,
-  #     dataset_id: resource_id,
-  #   }
-  # end
-  # 
   let(:attributes) do
     {
       action: action,
@@ -72,22 +35,6 @@ RSpec.describe Log::Service, database: true do
         resource_id:,
         organization_id:,
       )
-      # event = "iam:organizations:created"
-      # content = {
-      #   args: [],
-      #   resource_id: organization_id,
-      #   metadata: {
-      #     # usually included in the message
-      #     expo: "OrganizationsExpo",
-      #     service: "Organization::Service",
-      #     at: Time.now,
-      #     account_id: actor_account_id,
-      #     # added metadata
-      #     actor_account_id:,
-      #     actor_account_email:
-      #   }
-      # }
-      # expect(content[:metadata]&.[](:organization_id)).to be_nil # should be extracted from resource_id
 
       log = subject.create(attributes)
 
@@ -117,25 +64,6 @@ RSpec.describe Log::Service, database: true do
         organization_id:,
         project_id:,
       )
-
-      # project_id = UUIDv7.generate
-      # event = "dataset:projects:created"
-      # content = {
-      #   args: [],
-      #   resource_id: project_id,
-      #   metadata: {
-      #     # usually included in the message
-      #     expo: "ProjectsExpo",
-      #     service: "Project::Service",
-      #     at: Time.now,
-      #     account_id: actor_account_id,
-      #     # added metadata
-      #     actor_account_id:,
-      #     actor_account_email:,
-      #     organization_id: 1
-      #   }
-      # }
-      # expect(content[:metadata]&.[](:project_id)).to be_nil # should be extracted from resource_id
 
       log = subject.create(attributes)
 
@@ -168,28 +96,7 @@ RSpec.describe Log::Service, database: true do
         dataset_id:,
       )
 
-      # dataset_id = UUIDv7.generate
-      # event = "dataset:datasets:created"
-      # content = {
-      #   args: [],
-      #   resource_id: dataset_id,
-      #   metadata: {
-      #     # usually included in the message
-      #     expo: "DatasetsExpo",
-      #     service: "Dataset::Service",
-      #     at: Time.now,
-      #     account_id: actor_account_id,
-      #     # added metadata
-      #     actor_account_id:,
-      #     actor_account_email:,
-      #     organization_id: 1,
-      #     project_id: UUIDv7.generate
-      #   }
-      # }
-      # expect(content[:metadata]&.[](:dataset_id)).to be_nil # should be extracted from resource_id
-
       log = subject.create(attributes)
-
 
       expect(log.action).to eq action
       expect(log.actor_account_id).to eq actor_account_id
@@ -221,27 +128,6 @@ RSpec.describe Log::Service, database: true do
         dataset_id:,
         entry_id:,
       )
-
-      # entry_id = UUIDv7.generate
-      # event = "dataset:entries:created"
-      # content = {
-      #   args: [],
-      #   resource_id: entry_id,
-      #   metadata: {
-      #     # usually included in the message
-      #     expo: "EntriesExpo",
-      #     service: "Entry::Service",
-      #     at: Time.now,
-      #     account_id: actor_account_id,
-      #     # added metadata
-      #     actor_account_id:,
-      #     actor_account_email:,
-      #     organization_id: 1,
-      #     project_id: UUIDv7.generate,
-      #     dataset_id: UUIDv7.generate
-      #   }
-      # }
-      # expect(content[:metadata]&.[](:entry_id)).to be_nil # should be extracted from resource_id
 
       log = subject.create(attributes)
 
