@@ -28,7 +28,10 @@ module Exports
 
     private
     def start
-      @context.io.append({command: 'init', args: {}}.to_json)
+      @context.io.append(
+        {command: 'init', args: {}}.to_json,
+        0 # TODO: Fix cli log
+      )
     end
     def done
     end

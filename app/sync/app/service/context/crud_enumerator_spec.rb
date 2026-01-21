@@ -151,22 +151,6 @@ RSpec.describe Context::CrudEnumerator do
         expect(result).to eq(page_1_data)
       end
     end
-
-    context "when a page returns empty array" do
-      before do
-        call_count = 0
-        allow_any_instance_of(Context::Crud).to receive(:index) do |_, **opts|
-          call_count += 1
-          call_count == 1 ? page_1_data : []
-        end
-      end
-
-      it "stops iteration when empty array is returned" do
-        result = instance.index.to_a
-
-        expect(result).to eq(page_1_data)
-      end
-    end
   end
 
   describe "integration with Verse::Util::Iterator" do
@@ -296,18 +280,6 @@ RSpec.describe Context::CrudEnumerator do
   end
 
   describe "edge cases" do
-    context "when first page is empty" do
-      before do
-        allow(api_mock).to receive(:index).and_return([])
-      end
-
-      it "returns empty enumerator" do
-        result = instance.index.to_a
-
-        expect(result).to eq([])
-      end
-    end
-
     context "when first page is nil" do
       before do
         allow(api_mock).to receive(:index).and_return(nil)

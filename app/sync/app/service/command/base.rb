@@ -23,11 +23,10 @@ module Command
     def close
       i.close if i && !i.closed?
       if (e && !e.closed? && wait_thr)
-        remaining_stderr = []
-        remaining_stderr << line while (line = e.gets)
+        remaining_stderr = e.read
         value = wait_thr.value
         if value.exitstatus != 0
-          raise ["#{self}(#{value}):", remaining_stderr.join("\n")].join
+          raise ["#{self}(#{value}):", remaining_stderr].join
         end
       end
       o.close if o && !o.closed?

@@ -14,7 +14,8 @@ class JobsExpo < Verse::Exposition::Base
   MD
 
   json_api Jobs::Record do
-    # allowed_included "..."
+    allowed_included "exports"
+
     show
     delete
     index do

@@ -8,8 +8,7 @@ module Context
       # Verse::Util::Enumerator.chunked_enumerator(1) do |number|
       # might be more align to ruby Enumerator.new
       Verse::Util::Iterator.chunk_iterator(1) do |number|
-        result = super(**built_opts.merge(page:{number:, size:}))
-        result unless result&.empty?
+        super(**built_opts.merge(page:{number:, size:}))
       end
     end
   end
