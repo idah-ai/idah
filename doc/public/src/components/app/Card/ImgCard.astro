@@ -1,22 +1,29 @@
 ---
+import { Card, CardDescription, CardHeader, CardTitle } from "$lib/components/ui/card";
 import BlockImg from "@assets/block-img.svg";
 
 export interface ImgCardProps {
   value: {
     title: string;
     description: string;
-    src?: string;
+    src?: string | null;
   };
 }
 
 const { value } = Astro.props as ImgCardProps;
 ---
 
-<div class="flex flex-col gap-1 rounded-md border">
-  <img class="rounded-t-md" src={value.src ?? BlockImg.src} />
+<Card class="relative mx-auto w-full max-w-sm pt-0">
+  <img
+    src={value.src ?? BlockImg.src}
+    alt="img card"
+    class="relative z-20 w-full rounded-t-md object-cover brightness-60 dark:brightness-40"
+  />
 
-  <div class="flex flex-col gap-2 p-4">
-    <h2 class="text-lg font-semibold">{value.title}</h2>
-    <textDescription>{value.description}</textDescription>
-  </div>
-</div>
+  <CardHeader>
+    <CardTitle>{value.title}</CardTitle>
+    <CardDescription>
+      {value.description}
+    </CardDescription>
+  </CardHeader>
+</Card>
