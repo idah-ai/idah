@@ -27,11 +27,10 @@ const datasets: ImgCardProps["value"][] = [
     </h1>
   <p>Find the resources you need to build your computer vision application</p>
 
-  <div class="overflow-x-auto">
-    <div class="grid auto-cols-[80%] grid-flow-col gap-4 sm:auto-cols-auto md:grid-flow-row md:grid-cols-3">
-      {datasets.map((dataset) => <ImgCard value={dataset} />)}
-    </div>
-  </div>
+<div class="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+  {datasets.map((dataset) => <ImgCard value={dataset} />)}
+</div>
+
 
   <h3>Support</h3>
   <p
@@ -40,10 +39,8 @@ const datasets: ImgCardProps["value"][] = [
     amet amet. Ac mattis dignissim enim faucibus commodo et sed faucibusur.
   </p>
 
-  <div class="overflow-x-auto">
-    <div class="grid auto-cols-[80%] grid-flow-col gap-4 sm:auto-cols-auto md:grid-flow-row md:grid-cols-3">
-      {datasets.map((dataset) => <ImgCard value={dataset} />)}
-    </div>
-  </div>
+<div class="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+  {datasets.map((dataset) => <ImgCard value={dataset} />)}
+</div>
 
 </div>

@@ -1,4 +1,4 @@
-type SidebarProps = {
+export type SidebarProps = {
   label: string;
   href?: string;
   children: SidebarProps[];
@@ -13,13 +13,16 @@ export const sidebars: SidebarProps[] = [
   {
     label: "PROJECTS",
     children: [
-      { label: "Projcts, and Organisation", href: "/projects/organisation", children: [] },
-      { label: "Create a project", href: "/projects/create", children: [] },
-      { label: "Rename a Project", href: "/projects/rename", children: [] },
-      { label: "Delete a Project", href: "/projects/delete", children: [] },
+      {
+        label: "Projcts, and Organisation",
+        children: [
+          { label: "Create a project", href: "/projects/create", children: [] },
+          { label: "Rename a Project", href: "/projects/rename", children: [] },
+        { label: "Delete a Project", href: "/projects/delete", children: [] },
+        ]
+      },
       {
         label: "Project Members",
-        href: "/projects/members",
         children: [
           { label: "Adding new Member", href: "/projects/members/add", children: [] },
           { label: "Edit Member", href: "/projects/members/edit", children: [] },

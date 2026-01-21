@@ -5,11 +5,12 @@ import Sidebar from "$lib/app/sidebar/sidebar.svelte";
 ---
 
 <PageLayout>
-  <div class="mr-2 grid min-h-screen w-1/4 w-full grid-cols-4">
-    <Sidebar /> 
+  <div class="flex min-h-screen">
+    <Sidebar />
 
-    <div class="col-span-3">
+    <main class="w-full">
       <IDAHDocumentation />
-    </div>
+    </main>
   </div>
 </PageLayout>
+
