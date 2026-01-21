@@ -19,7 +19,6 @@ class LogsExpo < BaseExpo
     end
   end
 
-
   # rubocop:disable Style/CombinableLoops
 
   # Account events
@@ -120,7 +119,8 @@ class LogsExpo < BaseExpo
     def on_media_event
       service.create(
         log_attributes(
-          message:,resource_id: message.content[:metadata][:media_resource]
+          message:,
+          resource_id: message.content[:metadata][:media_resource]
         )
       )
     end
