@@ -19,22 +19,31 @@
   }
 </script>
 
-<Card class="relative mx-auto w-full max-w-sm p-0">
+<Card class="relative mx-auto w-full p-0">
   <CardContent class="relative p-0">
     <!-- Copy button -->
-    <Button size="sm" class="absolute right-2 top-2 z-10 hover:cursor-pointer" disabled={copied} onclick={copy}>
+    <Button
+      size="sm"
+      class="absolute right-2 top-2 sm:right-3 sm:top-3 z-10 flex items-center gap-1"
+      disabled={copied}
+      onclick={copy}
+    >
       {#if copied}
-        <CheckIcon />
-        Copied
+        <CheckIcon class="size-3 sm:size-4" />
+        <span class="hidden sm:inline">Copied</span>
       {:else}
-        <CopyIcon />
-        Copy
+        <CopyIcon class="size-3 sm:size-4" />
+        <span class="hidden sm:inline">Copy</span>
       {/if}
     </Button>
 
     <!-- Code block -->
-    <pre class="overflow-x-auto rounded-xl bg-background px-6 py-6 pt-16 text-sm leading-relaxed">
-      <code class="block whitespace-pre font-mono text-foreground">{code}</code>
+    <pre
+      class="overflow-x-auto rounded-xl bg-background px-3 py-3 pt-12 sm:px-4 sm:py-4 sm:pt-14 lg:px-6 lg:py-6 lg:pt-16
+      ">
+      <code class="block whitespace-pre font-mono text-foreground">
+        {code}
+      </code>
     </pre>
   </CardContent>
 </Card>
