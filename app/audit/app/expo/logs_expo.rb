@@ -19,6 +19,9 @@ class LogsExpo < BaseExpo
     end
   end
 
+
+  # rubocop:disable Style/CombinableLoops
+
   # Account events
   %w[created updated deleted logged_in].each do |event|
     expose on_resource_event(Resource::Iam::Accounts, event)
@@ -53,8 +56,8 @@ class LogsExpo < BaseExpo
     end
   end
 
+  # Project events
   %w[created updated deleted].each do |event|
-    # Project events
     expose on_resource_event(Resource::Dataset::Projects, event)
     def on_project_event
       service.create(
@@ -65,8 +68,10 @@ class LogsExpo < BaseExpo
         )
       )
     end
+  end
 
-    # Project Member events
+  # Project Member events
+  %w[created updated deleted].each do |event|
     expose on_resource_event(Resource::Dataset::ProjectMembers, event)
     def on_project_member_event
       service.create(
@@ -76,8 +81,10 @@ class LogsExpo < BaseExpo
         )
       )
     end
+  end
 
-    # Dataset events
+  # Dataset events
+  %w[created updated deleted].each do |event|
     expose on_resource_event(Resource::Dataset::Datasets, event)
     def on_dataset_event
       service.create(
@@ -86,16 +93,6 @@ class LogsExpo < BaseExpo
           organization_id: message.content[:metadata][:organization_id],
           project_id: message.content[:metadata][:project_id],
           dataset_id: message.content[:resource_id]
-        )
-      )
-    end
-
-    # Media events
-    expose on_resource_event(Resource::Media::Medias, event)
-    def on_media_event
-      service.create(
-        log_attributes(
-          message:,resource_id: message.content[:metadata][:media_resource]
         )
       )
     end
@@ -116,6 +113,20 @@ class LogsExpo < BaseExpo
       )
     end
   end
+
+  # Media events
+  %w[created updated deleted].each do |event|
+    expose on_resource_event(Resource::Media::Medias, event)
+    def on_media_event
+      service.create(
+        log_attributes(
+          message:,resource_id: message.content[:metadata][:media_resource]
+        )
+      )
+    end
+  end
+
+  # rubocop:enable Style/CombinableLoops
 
   private
 
