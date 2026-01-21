@@ -34,7 +34,7 @@ class LogsExpo < BaseExpo
       service.create(
         log_attributes(
           message:,
-          override: { resource_id: message.content[:metadata][:actor_account_email] }
+          resource_id: message.content[:metadata][:actor_account_email] 
         )
       )
     end
@@ -47,7 +47,7 @@ class LogsExpo < BaseExpo
       service.create(
         log_attributes(
           message:,
-          override: { organization_id: message.content[:resource_id] }
+          organization_id: message.content[:resource_id] 
         )
       )
     end
@@ -60,10 +60,8 @@ class LogsExpo < BaseExpo
       service.create(
         log_attributes(
           message:,
-          override: {
-            organization_id: message.content[:metadata][:organization_id],
-            project_id: message.content[:resource_id]
-          }
+          organization_id: message.content[:metadata][:organization_id],
+          project_id: message.content[:resource_id]
         )
       )
     end
@@ -76,10 +74,7 @@ class LogsExpo < BaseExpo
       service.create(
         log_attributes(
           message:,
-          override: {
-            organization_id: message.content[:metadata][:organization_id],
-            project_id: message.content[:metadata][:project_id]
-          }
+          project_id: message.content[:metadata][:project_id]
         )
       )
     end
@@ -92,11 +87,9 @@ class LogsExpo < BaseExpo
       service.create(
         log_attributes(
           message:,
-          override: {
-            organization_id: message.content[:metadata][:organization_id],
-            project_id: message.content[:metadata][:project_id],
-            dataset_id: message.content[:resource_id]
-          }
+          organization_id: message.content[:metadata][:organization_id],
+          project_id: message.content[:metadata][:project_id],
+          dataset_id: message.content[:resource_id]
         )
       )
     end
@@ -109,12 +102,10 @@ class LogsExpo < BaseExpo
       service.create(
         log_attributes(
           message:,
-          override: {
-            organization_id: message.content[:metadata][:organization_id],
-            project_id: message.content[:metadata][:project_id],
-            dataset_id: message.content[:metadata][:dataset_id],
-            entry_id: message.content[:resource_id]
-          }
+          organization_id: message.content[:metadata][:organization_id],
+          project_id: message.content[:metadata][:project_id],
+          dataset_id: message.content[:metadata][:dataset_id],
+          entry_id: message.content[:resource_id]
         )
       )
     end
@@ -126,8 +117,7 @@ class LogsExpo < BaseExpo
     def on_media_event
       service.create(
         log_attributes(
-          message:,
-          override: { resource_id: message.content[:metadata][:media_resource] }
+          message:,resource_id: message.content[:metadata][:media_resource]
         )
       )
     end
@@ -135,7 +125,7 @@ class LogsExpo < BaseExpo
 
   private
 
-  def log_attributes(message:, override: nil)
+  def log_attributes(message:, **additional_attributes)
     service, type, action = message.event.split(":")
     resource_id = message.content[:resource_id]
     metadata = message.content[:metadata]
@@ -151,6 +141,6 @@ class LogsExpo < BaseExpo
       actor_account_role_name: metadata&.[](:actor_account_role_name),
     }
 
-    override ? attributes.merge(override) : attributes
+    attributes.merge(additional_attributes)
   end
 end
