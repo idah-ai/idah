@@ -1,16 +1,13 @@
 ---
 import PageLayout from "@layouts/PageLayout.astro";
 import IDAHDocumentation from "@components/app/IDAHDocumentation.astro";
-import Sidebar from "$lib/app/sidebar/sidebar.svelte";
 ---
 
 <PageLayout>
-  <div class="flex min-h-screen">
-    <Sidebar />
-
     <main class="w-full">
-      <IDAHDocumentation />
+      <slot>
+        <IDAHDocumentation />
+      </slot>
     </main>
-  </div>
 </PageLayout>
 

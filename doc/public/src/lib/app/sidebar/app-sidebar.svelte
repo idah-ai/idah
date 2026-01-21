@@ -1,40 +1,39 @@
 <script lang="ts">
   import { sidebars, type SidebarProps } from "$lib/app/sidebar/sidebar.data";
   import {
-      Sidebar,
-      SidebarContent,
-      SidebarGroup,
-      SidebarGroupContent,
-      SidebarGroupLabel,
-      SidebarMenu,
-      SidebarMenuButton,
-      SidebarMenuItem
+    Sidebar,
+    SidebarContent,
+    SidebarGroup,
+    SidebarGroupContent,
+    SidebarGroupLabel,
+    SidebarMenu,
+    SidebarMenuButton,
+    SidebarMenuItem,
   } from "$lib/components/ui/sidebar";
   import SidebarMenuSub from "$lib/components/ui/sidebar/sidebar-menu-sub.svelte";
 </script>
 
 {#snippet renderItem(item: SidebarProps)}
-    <SidebarMenuItem>
-      {#if item.href}
-        <SidebarMenuButton class="hover:text-primary"><a href={item.href}>{item.label}</a></SidebarMenuButton>
-        {:else}
-        <SidebarGroupLabel class="text-sm text-muted-foreground font-normal">
-            {item.label}
-          </SidebarGroupLabel>
-
-      {/if}
-      {#if item.children?.length}
-        <SidebarMenuSub class="border-none">
-          {#each item.children as child (child.label)}
-            {@render renderItem(child)}
-          {/each}
-        </SidebarMenuSub>
-      {/if}
-    </SidebarMenuItem>
+  <SidebarMenuItem>
+    {#if item.href}
+      <SidebarMenuButton class="hover:text-primary"><a href={item.href}>{item.label}</a></SidebarMenuButton>
+    {:else}
+      <SidebarGroupLabel class="text-sm text-muted-foreground font-normal">
+        {item.label}
+      </SidebarGroupLabel>
+    {/if}
+    {#if item.children?.length}
+      <SidebarMenuSub class="border-none">
+        {#each item.children as child (child.label)}
+          {@render renderItem(child)}
+        {/each}
+      </SidebarMenuSub>
+    {/if}
+  </SidebarMenuItem>
 {/snippet}
 
-<Sidebar class="top-16">
-  <SidebarContent class="text-muted-foreground pt-2 ">
+<Sidebar class="min-h-screen">
+  <SidebarContent class="h-full overflow-y-auto pt-2 text-muted-foreground">
     {#each sidebars as sidebar}
       <SidebarGroup>
         {#if sidebar.href}
