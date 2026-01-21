@@ -266,7 +266,7 @@
   async function exportEntries(): Promise<void> {
     await ExportsBackendDataSource.export({
       datasets: { id: datasetId },
-      entries: { id__in: [selectedRows] },
+      entries: { id__in: selectedRows },
     });
     selectedRows = [];
     openExportModal = false;

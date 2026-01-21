@@ -26,6 +26,8 @@ module Jobs
 
     field :created_at, type: Time
     field :updated_at, type: Time
+
+    has_many :exports, repository: "Exports::Repository", foreign_key: :job_id
   end
 
   class Repository < Verse::Sequel::Repository

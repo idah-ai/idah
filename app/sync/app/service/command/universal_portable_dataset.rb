@@ -20,7 +20,7 @@ module Command
       readers = [o, e]
       lines_read, stderr_output = 0, []
       while lines_read < expected_lines && !readers.empty?
-        ready = IO.select(readers, nil, nil, 0.1)
+        ready = IO.select(readers, nil, nil)
         ready[0].each do |fd|
           line = fd.gets
           if line

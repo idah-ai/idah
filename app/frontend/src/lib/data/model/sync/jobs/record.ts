@@ -1,11 +1,13 @@
 import { createBackendDataSource } from "@/data/BackendDataSource";
-import { field, Record, RecordFactory, type } from "@/data/model/Record";
+import { field, Record, RecordFactory, relationship, type } from "@/data/model/Record";
+import type { ExportRecord } from "../exports/record";
 
 @type("sync:jobs")
 export class SyncJobRecord extends Record {
   @field() public status!: string;
   @field() public progress!: number;
-  // @relationship() public entry!: EntryRecord;
+  @field() public arguments!: object;
+  @relationship() public exports!: ExportRecord[];
 }
 
 RecordFactory.registerTypes(SyncJobRecord);
