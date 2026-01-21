@@ -1,10 +1,15 @@
 ---
 import Sidebar from "@components/app/Sidebar/Sidebar.astro"
 import PageLayout from "@layouts/PageLayout.astro"
+import IDAHDocumentation from "@components/app/IDAHDocumentation.astro"
 ---
 
 <PageLayout>
-  <div class="flex mr-2 w-1/4 min-h-screen bg-muted">
+  <div class="grid grid-cols-4 mr-2 w-1/4 min-h-screen w-full">
     <Sidebar />
+
+    <div class="col-span-3">
+    <IDAHDocumentation />
+    </div>
   </div>
 </PageLayout>
