@@ -1,12 +1,15 @@
 <script lang="ts">
+  import { CheckIcon } from "@lucide/svelte";
+
   import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-  import { Badge } from "@/components/ui/badge";
+  import Badge from "@/components/ui/badge/badge.svelte";
   import Link from "@/components/ui/text/Link.svelte";
 
+  import { roles } from "@/data/model/iam/accounts/constants";
   import { cn } from "@/utils";
-
   import { getAvatarFallback, humanize, truncateEmail } from "@/utils/string";
-  import { CheckIcon } from "@lucide/svelte";
+
+  import { type Role } from "@/data/model/iam/accounts/auth/constants";
 
   // Props
   interface Props {
@@ -16,7 +19,7 @@
     name?: string | null;
     email?: string | null;
     pictureUrl?: string | null;
-    roleName?: string | null;
+    roleName?: Role | null;
     showName?: boolean;
     showEmail?: boolean;
     showRole?: boolean;
@@ -73,7 +76,10 @@
     {/if}
 
     {#if showRole}
-      <Badge variant="outline" class="mt-1">{humanize(roleName || "")}</Badge>
+      <Badge variant="outline" rounded="full" class="mt-1">
+        {@const foundRole = roles.find((role) => role.value === roleName)}
+        {foundRole ? foundRole.label : humanize(roleName || "")}
+      </Badge>
     {/if}
   </div>
 </div>
