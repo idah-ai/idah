@@ -1,7 +1,7 @@
 module Context
   class Io < Base
     def initialize(io_class, args = nil, context = nil, **opts)
-      unless io_class < Command::Base
+      unless io_class < Command::Base || io_class == Command::Base
         raise Context::Error::InvalidContext, [:invalid_io_delegate, io_class].join(":")
       end
 

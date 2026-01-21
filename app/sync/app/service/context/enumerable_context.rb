@@ -8,11 +8,10 @@ module Context
       **opts,
       &context_builder
     )
-      raise Context::Error::InvalidContext, self if !delegated_obj.respond_to?(:each)
-
+      raise Context::Error::InvalidContext, delegated_obj unless delegated_obj.kind_of?(Enumerable)
       delegated_obj.each do |c|
         unless c.respond_to?(:name)
-          raise Context::Error::InvalidContext, [self, c.class].join("#")
+          raise Context::Error::InvalidContext, self
         end
       end
       super(delegated_obj, args, context_args, **opts, &context_builder)

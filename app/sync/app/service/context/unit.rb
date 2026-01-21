@@ -6,7 +6,7 @@ module Context
       if context.respond_to?(:each) && !context.is_a?(Crud)
         context
       else
-        Array(context)
+        context ? [context]:[]
       end.each do |c|
         instance_variable_set("@#{c.name}", c)
         self.class.send(:attr_reader, c.name)
