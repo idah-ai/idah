@@ -71,6 +71,7 @@
           role_name__nin: ["system"],
         },
       }}
+      disabledActiveFilterSortKeys={["role_name__nin"]}
     >
       {#snippet addNewRecordButton()}
         {@render AddNewAccountButton()}

@@ -84,6 +84,20 @@ export interface DataTableBaseProps<T extends Record> {
   columns: ColumnsSettings<T>;
   hidePagination?: boolean;
 
+  /**
+   * Keys of filters and sorts that should be disabled from the active state of the filter-sort dropdown menu.
+   * For example: if the listOptions.filters is set like
+   * {
+   *   filters: {
+   *     role_name__nin: ["system"]
+   *   }
+   * }
+   * then the disabledActiveFilterSortKeys should be ["role_name__nin"]
+   *
+   * So the FilterSortDropdownMenu component will not showing the active state for the "role_name__nin" filter.
+   */
+  disabledActiveFilterSortKeys?: Array<string>;
+
   // Functions
   onLoadSetContexts?: (response: CollectionResponse<T>) => Promise<Hash>;
 
