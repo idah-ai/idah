@@ -19,37 +19,9 @@ module Log
       logs.find!(id, included: included)
     end
 
-    def create_from_event(event, content)
-      service, type, action = event.split(":")
-      resource_id = content[:resource_id]
-      metadata = content[:metadata]
-
+    def create(attributes)
       logs.transaction do
-        # TODO: this should be able to be properly refactored ?
-        id = logs.create(
-          {
-            # usually included in message
-            action: action,
-            resource_service: service,
-            resource_type: type,
-            resource_id: if type == "account_sessions"
-                           metadata[:actor_account_email]
-                         elsif type == "medias"
-                           metadata[:media_resource]
-                         else
-                           resource_id
-                         end,
-            event_timestamp: metadata[:at],
-            # added metadata
-            actor_account_id: metadata[:actor_account_id],
-            actor_account_email: metadata&.[](:actor_account_email),
-            actor_account_role_name: metadata&.[](:actor_account_role_name),
-            organization_id: type == "organizations" ? resource_id : metadata&.[](:organization_id),
-            project_id: type == "projects" ? resource_id : metadata&.[](:project_id),
-            dataset_id: type == "datasets" ? resource_id : metadata&.[](:dataset_id),
-            entry_id: type == "entries" ? resource_id : metadata&.[](:entry_id)
-          }
-        )
+        id = logs.create(attributes)
         logs.find!(id)
       end
     end
