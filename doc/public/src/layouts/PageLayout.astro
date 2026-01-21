@@ -10,9 +10,9 @@ import Layout from "@layouts/Layout.astro";
     <Header />
   </slot>
 
-   <div class="flex flex-1 pt-16">
+  <div class="flex min-h-0 flex-1">
     <!-- Sidebar -->
-     <slot name="sidebar">
+    <slot name="sidebar">
       <Sidebar />
     </slot>
 
@@ -25,4 +25,3 @@ import Layout from "@layouts/Layout.astro";
     <Footer />
   </slot>
 </Layout>
-
