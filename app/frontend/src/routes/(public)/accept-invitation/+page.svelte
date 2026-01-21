@@ -11,9 +11,9 @@
       const accountResponse = await accountsBackendDataSource.join({
         token: page.url.searchParams.get("token") as string,
       });
-      const passwordResetToken = accountResponse.meta.password_reset_token || "";
+      const passwordResetToken = accountResponse.meta?.password_reset_token || "";
 
-      goto(resolve(`/reset-password?token=${passwordResetToken}`));
+      goto(`/reset-password?token=${passwordResetToken}`);
     } catch (error) {
       console.error("Error accepting invitation", error);
       goto(resolve("/error"));

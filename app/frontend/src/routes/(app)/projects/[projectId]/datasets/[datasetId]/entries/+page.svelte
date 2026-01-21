@@ -43,6 +43,7 @@
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
   import { DatasetRecord } from "@/data/model/dataset/dataset-record";
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
+  import { ProjectMemberRecord } from "@/data/model/dataset/projects/members/record";
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
   import { authStatus } from "@/security/AuthContext";
   import { cn } from "@/utils";
@@ -142,7 +143,7 @@
   let listOptions: ListOptions = $state({
     filters: filters,
     included: ["assigned_to", "submitted_by", "reviewed_by"],
-    fields: { "dataset:project_members": ["name", "email", "picture_url"] },
+    fields: { [ProjectMemberRecord.type]: ["name", "email", "picture_url"] },
     sort: ["priority"],
     count: true,
     pagination: {
