@@ -238,7 +238,8 @@ RSpec.describe LogsExpo, type: :exposition, as: :system do
           organization_id: 1,
           project_id: UUIDv7.generate,
           dataset_id: UUIDv7.generate,
-          entry_id: @resource_id
+          entry_id: @resource_id,
+          submission_type: "submitted"
         }
       }
     end
