@@ -459,10 +459,10 @@ RSpec.describe Account::Service, database: true do
               data: {
                 type: Resource::Iam::Accounts,
                 attributes: {
-                  name: "Org Owner 1",
-                  email: "org_owner@test.com",
+                  name: "Testing Org Owner 1",
+                  email: "org_owner1@test.com",
                   role_name: "org_owner",
-                  role_scope: ({ org: [999] }).to_json,
+                  role_scope: { org: ["999"] }.to_json,
                   enabled: true,
                 },
               }
@@ -475,10 +475,10 @@ RSpec.describe Account::Service, database: true do
               data: {
                 type: Resource::Iam::Accounts,
                 attributes: {
-                  name: "Org Owner 2",
-                  email: "org_owner@test.com",
+                  name: "Testing Org Owner 2",
+                  email: "org_owner2@test.com",
                   role_name: "org_owner",
-                  role_scope: ({ org: [999, 111] }).to_json,
+                  role_scope: { org: ["999", "111"] }.to_json,
                   enabled: true,
                 },
               }
@@ -488,9 +488,6 @@ RSpec.describe Account::Service, database: true do
       end
 
       it "removes the organization from the account role scope" do
-        binding.pry
-        expect_any_instance_of(Organization::Repository).to receive(:chunked_index).and_return([@org_owner_account1, @org_owner_account2])
-
         subject.remove_org_from_account_role_scope("999")
 
         expect(subject.show(@org_owner_account1.id).role_scope.to_json).to eq ({ "org": [] }).to_json
