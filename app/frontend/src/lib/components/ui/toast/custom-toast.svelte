@@ -22,7 +22,7 @@
 
     <!-- DESCRIPTION -->
     {#if description}
-      <p class="font-normal">{description}</p>
+      <p class="text-xs font-normal">{description}</p>
     {/if}
   </div>
 

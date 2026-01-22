@@ -1,10 +1,10 @@
 <script lang="ts">
   import { onMount, type Snippet } from "svelte";
-  import { toast } from "svelte-sonner";
 
   import ApplicationLoading from "@/components/app/application/application-loading.svelte";
   import Redirect from "@/components/app/misc/redirect.svelte";
 
+  import { showToast } from "@/components/ui/toast/index.svelte";
   import { accountAuthService } from "@/data/model/iam/accounts/auth/records";
   import { AuthContext, authStatus } from "@/security/AuthContext";
 
@@ -30,7 +30,7 @@
       await AuthContext.refresh();
     } catch (error) {
       if (error instanceof Error) {
-        toast.error(`Authentication error: ${error.message}`);
+        showToast.error({ title: `Authentication error: ${error.message}` });
       } else {
         // handleVerseError(error)
       }
