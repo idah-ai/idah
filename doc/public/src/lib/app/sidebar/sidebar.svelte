@@ -6,18 +6,20 @@
   let { pathname }: { pathname: string } = $props();
 </script>
 
-<!-- Overlay (mobile) -->
 {#if $sidebarOpen}
   <div class="fixed inset-0 z-20 bg-black/40 lg:hidden" on:click={() => sidebarOpen.set(false)} />
 {/if}
 
+<!-- Sidebar -->
 <SidebarProvider
   class="
-    z-30 w-64
+    fixed left-0 z-30 w-64
     bg-background
     transition-transform duration-300 ease-out
+    -translate-x-full
+    {$sidebarOpen ? 'translate-x-0' : ''}
+
     lg:static lg:translate-x-0
-    {$sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
   "
 >
   <AppSidebar {pathname} />
