@@ -1,10 +1,12 @@
 ---
+import { XIcon } from "@lucide/astro";
+
 import { Separator } from "$lib/components/ui/separator";
 import Logo from "@components/app/brands/Logo.astro";
-import { SearchIcon, XIcon } from "@lucide/astro";
 import { Button } from "$lib/components/ui/button";
-import { InputGroup, InputGroupAddon, InputGroupInput } from "$lib/components/ui/input-group";
-import SidebarToggle from "$lib/app/sidebar/sidebar-toggle.svelte";
+import SearchInput from "$lib/app/input/search-input.svelte";
+import SidebarToggle from "$lib/app/button/sidebar-toggle.svelte";
+import SearchButton from "$lib/app/button/search-button.svelte";
 ---
 
 <header id="header" class="bg-background sticky top-0 z-50 w-full border-b px-4 py-3 shadow-sm md:px-8">
@@ -18,14 +20,7 @@ import SidebarToggle from "$lib/app/sidebar/sidebar-toggle.svelte";
       <Button href="#docs" variant="link" class="text-foreground hidden xl:flex"> Docs </Button>
     </div>
 
-    <div class="absolute left-1/2 hidden w-full max-w-xl -translate-x-1/2 xl:block">
-      <InputGroup>
-        <InputGroupInput placeholder="Search..." class="w-full" />
-        <InputGroupAddon class="pointer-events-none">
-          <SearchIcon class="text-muted-foreground size-4" />
-        </InputGroupAddon>
-      </InputGroup>
-    </div>
+    <SearchInput />
 
     <div class="aling-right ml-auto flex items-center gap-1">
       
@@ -35,10 +30,7 @@ import SidebarToggle from "$lib/app/sidebar/sidebar-toggle.svelte";
 
       <Button href="#install" class="hidden xl:flex dark:text-white"> Install IDAH </Button>
 
-      <Button id="mobile-search" variant="ghost" size="icon" class="xl:hidden">
-        <SearchIcon class="size-5" />
-      </Button>
-
+      <SearchButton />
       <SidebarToggle client:load />
 
 
