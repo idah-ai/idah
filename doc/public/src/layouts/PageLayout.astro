@@ -6,7 +6,6 @@ import Layout from "@layouts/Layout.astro";
 
 const pathname = Astro.url.pathname;
 ---
-
 <Layout>
   <slot name="header">
     <Header />
@@ -17,12 +16,14 @@ const pathname = Astro.url.pathname;
       <Sidebar client:load {pathname} />
     </slot>
 
-    <main class="flex-1 overflow-y-auto">
-      <slot />
+    <div class="flex flex-1 flex-col">
+      <main class="flex-1 overflow-y-auto">
+        <slot />
+      </main>
 
       <slot name="footer">
         <Footer />
       </slot>
-    </main>
+    </div>
   </div>
 </Layout>

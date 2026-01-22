@@ -1,9 +1,20 @@
 ---
 import PaginationNextButton from "$lib/app/button/pagination-next-button.svelte";
 import PaginationPreviousButton from "$lib/app/button/pagination-previous-button.svelte";
+import { findSidebarItem } from "$lib/app/sidebar/sidebar.utils";
+import { sidebars } from "$lib/app/sidebar/sidebar.data";
+
+const pathname = Astro.url.pathname;
+
+const flat = findSidebarItem(sidebars);
+
+const currentIndex = flat.findIndex((item) => item.href === pathname);
+
+const previous = currentIndex > 0 ? flat[currentIndex - 1] : null;
+const next = currentIndex < flat.length - 1 ? flat[currentIndex + 1] : null;
 ---
 
-<nav class="flex w-full flex-col items-center gap-2 p-2 md:flex-row ">
-  <PaginationPreviousButton />
-  <PaginationNextButton />
+<nav class="flex w-full flex-col items-center gap-2 px-8 py-4 md:flex-row">
+  {previous && <PaginationPreviousButton value={previous} />}
+  {next && <PaginationNextButton value={next} />}
 </nav>

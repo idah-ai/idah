@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { sidebars, type SidebarProps } from "$lib/app/sidebar/sidebar.data";
+  import { sidebars, type SidebarType } from "$lib/app/sidebar/sidebar.data";
   import {
     Sidebar,
     SidebarContent,
@@ -9,13 +9,13 @@
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
+    SidebarMenuSub,
   } from "$lib/components/ui/sidebar";
-  import SidebarMenuSub from "$lib/components/ui/sidebar/sidebar-menu-sub.svelte";
 
   let { pathname }: { pathname: string } = $props();
 </script>
 
-{#snippet renderItem(item: SidebarProps)}
+{#snippet renderItem(item: SidebarType)}
   <SidebarMenuItem>
     {#if item.href}
       <SidebarMenuButton class="hover:text-primary data-[active=true]:text-primary" isActive={item.href === pathname}
