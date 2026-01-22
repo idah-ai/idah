@@ -230,11 +230,12 @@ module Entry
         project_id: attributes[:project_id] || entry.project_id,
         dataset_id: attributes[:dataset_id] || entry.dataset_id,
         entry_id: id,
-        submission_type: if from_state == :start
+        submission_type: case from_state
+                          when :start
                             nil
-                          elsif from_state == :annotate
+                          when :annotate
                             "submitted"
-                          elsif from_state == :review
+                          when :review
                             "reviewed"
                           end
       )
