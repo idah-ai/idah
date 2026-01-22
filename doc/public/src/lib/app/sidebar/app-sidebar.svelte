@@ -37,7 +37,6 @@
             "
           >
             {item.label}
-
             <ChevronRightIcon
               class="
                 size-5 lg:size-4
@@ -81,7 +80,7 @@
     </SidebarMenuItem>
   {:else}
     <SidebarMenuItem>
-      <SidebarGroupLabel class="px-3 py-2 text-sm font-normal text-muted-foreground">
+      <SidebarGroupLabel class="p-2 text-sm font-normal text-muted-foreground">
         {item.label}
       </SidebarGroupLabel>
     </SidebarMenuItem>
