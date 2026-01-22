@@ -11,12 +11,16 @@
     SidebarMenuItem,
   } from "$lib/components/ui/sidebar";
   import SidebarMenuSub from "$lib/components/ui/sidebar/sidebar-menu-sub.svelte";
+
+  let { pathname }: { pathname: string } = $props();
 </script>
 
 {#snippet renderItem(item: SidebarProps)}
   <SidebarMenuItem>
     {#if item.href}
-      <SidebarMenuButton class="hover:text-primary"><a href={item.href}>{item.label}</a></SidebarMenuButton>
+      <SidebarMenuButton class="hover:text-primary data-[active=true]:text-primary" isActive={item.href === pathname}
+        ><a href={item.href}>{item.label}</a></SidebarMenuButton
+      >
     {:else}
       <SidebarGroupLabel class="text-sm text-muted-foreground font-normal">
         {item.label}
@@ -40,7 +44,10 @@
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton class="hover:text-primary">
+                <SidebarMenuButton
+                  class="hover:text-primary data-[active=true]:text-primary"
+                  isActive={sidebar.href === pathname}
+                >
                   <a href={sidebar.href}>{sidebar.label}</a>
                 </SidebarMenuButton>
               </SidebarMenuItem>
