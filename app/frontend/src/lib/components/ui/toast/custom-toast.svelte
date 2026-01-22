@@ -28,7 +28,7 @@
 
   {#if dismissable}
     <button
-      class={cn("absolute -right-2 -top-2 flex size-5 cursor-pointer items-center justify-center rounded-full border", {
+      class={cn("absolute -top-2 -right-2 flex size-5 cursor-pointer items-center justify-center rounded-full border", {
         "bg-background": type === "default",
         "bg-[#EFF8FE]": type === "info",
         "bg-[#EDFDF3]": type === "success",
