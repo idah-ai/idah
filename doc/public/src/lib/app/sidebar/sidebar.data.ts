@@ -1,8 +1,8 @@
-export type SidebarType = {
+export interface SidebarType {
   label: string;
   href?: string;
   children: SidebarType[];
-};
+}
 
 export const sidebars: SidebarType[] = [
   {
