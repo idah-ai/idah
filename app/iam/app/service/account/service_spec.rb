@@ -450,5 +450,52 @@ RSpec.describe Account::Service, database: true do
         subject.update(updating_record)
       end
     end
+
+    describe "#remove_org_from_account_role_scope" do
+      before do
+        @org_owner_account1 = subject.create(
+          deserialize(
+            {
+              data: {
+                type: Resource::Iam::Accounts,
+                attributes: {
+                  name: "Org Owner 1",
+                  email: "org_owner@test.com",
+                  role_name: "org_owner",
+                  role_scope: ({ org: [999] }).to_json,
+                  enabled: true,
+                },
+              }
+            }
+          )
+        )
+        @org_owner_account2 = subject.create(
+          deserialize(
+            {
+              data: {
+                type: Resource::Iam::Accounts,
+                attributes: {
+                  name: "Org Owner 2",
+                  email: "org_owner@test.com",
+                  role_name: "org_owner",
+                  role_scope: ({ org: [999, 111] }).to_json,
+                  enabled: true,
+                },
+              }
+            }
+          )
+        )
+      end
+
+      it "removes the organization from the account role scope" do
+        binding.pry
+        expect_any_instance_of(Organization::Repository).to receive(:chunked_index).and_return([@org_owner_account1, @org_owner_account2])
+
+        subject.remove_org_from_account_role_scope("999")
+
+        expect(subject.show(@org_owner_account1.id).role_scope.to_json).to eq ({ "org": [] }).to_json
+        expect(subject.show(@org_owner_account2.id).role_scope.to_json).to eq ({ "org": ["111"] }).to_json
+      end
+    end
   end
 end
