@@ -53,7 +53,10 @@ function reorderByAngle(points: Point[], center: Point): [Point[], [number, numb
   return [reorderedPoints, polarReindexed];
 }
 
-function matchVerticesByBarycenter(polyMin: Point[], polyMax: Point[]): [Point[], Point[], Record<number, number>] {
+function matchVerticesByBarycenter(
+  polyMin: Point[],
+  polyMax: Point[]
+): [Point[], Point[], Record<number, number>, [number, number, number][], [number, number, number][]] {
   const cMin = polygonBarycenter(polyMin);
   const cMax = polygonBarycenter(polyMax);
 
@@ -73,17 +76,39 @@ function matchVerticesByBarycenter(polyMin: Point[], polyMax: Point[]): [Point[]
         bestJ = iMax;
       }
     }
-    if (bestJ !== null) matches[iMin] = bestJ;
+    if (bestJ !== null) {
+      // check if bestJ is already matched
+      const alreadyMatched = Object.values(matches).includes(bestJ);
+      // if already matched, check who is closer
+      if (alreadyMatched) {
+        const currentMatch = Object.entries(matches).find(([_, v]) => v === bestJ);
+        if (currentMatch) {
+          const [currentIminStr, _] = currentMatch;
+          const currentImin = parseInt(currentIminStr);
+          const angCurrent = polarMin.find(([i]) => i === currentImin)![1];
+          const distCurrent = Math.abs(Math.atan2(Math.sin(angCurrent - polarMax[bestJ][1]), Math.cos(angCurrent - polarMax[bestJ][1])));
+          if (bestDist < distCurrent) {
+            // replace match
+            delete matches[currentImin];
+            matches[iMin] = bestJ;
+          }
+        }
+      } else  {
+        matches[iMin] = bestJ;
+      }
+    }
   }
 
-  return [polyMinRe, polyMaxRe, matches];
+  return [polyMinRe, polyMaxRe, matches, polarMin, polarMax];
 }
 
 function expandPolygonUsingMatches(
   polyMin: Point[],
   polyMax: Point[],
   matches: Record<number, number>,
-): InterpolatedVertex[] {
+  polarMin: [number, number, number][],
+  polarMax: [number, number, number][],
+): [ InterpolatedVertex[], Point[] ] {
   const nMax = polyMax.length;
   const expanded: (InterpolatedVertex | null)[] = Array(nMax).fill(null);
 
@@ -93,6 +118,15 @@ function expandPolygonUsingMatches(
       point: polyMin[parseInt(minIdx)],
       matched: true,
     };
+  }
+
+  // Find unmatched vertices from polyMin
+  const matchedMinIndices = new Set(Object.keys(matches).map(k => parseInt(k)));
+  const unmatchedMinIndices: number[] = [];
+  for (let i = 0; i < polyMin.length; i++) {
+    if (!matchedMinIndices.has(i)) {
+      unmatchedMinIndices.push(i);
+    }
   }
 
   const circDist = (a: number, b: number, n: number) => (b - a + n) % n;
@@ -119,14 +153,124 @@ function expandPolygonUsingMatches(
     }
   }
 
-  return expanded as InterpolatedVertex[];
+  function midpoint(a: Point, b: Point): Point {
+    return [
+      (a[0] + b[0]) / 2,
+      (a[1] + b[1]) / 2,
+    ];
+  }
+
+  function dot(a: Point, b: Point): number {
+    return a[0] * b[0] + a[1] * b[1];
+  }
+
+  function sub(a: Point, b: Point): Point {
+    return [a[0] - b[0], a[1] - b[1]];
+  }
+
+  function add(a: Point, b: Point): Point {
+    return [a[0] + b[0], a[1] + b[1]];
+  }
+
+  function scale(v: Point, s: number): Point {
+    return [v[0] * s, v[1] * s];
+  }
+
+  function distance(a: Point, b: Point): number {
+    return Math.hypot(b[0] - a[0], b[1] - a[1]);
+  }
+
+  function projectPointOnSegment(
+    p: Point,
+    a: Point,
+    b: Point
+  ): { point: Point; t: number } {
+    const ab = sub(b, a);
+    const ap = sub(p, a);
+
+    const abLenSq = dot(ab, ab);
+
+    // degenerate segment
+    if (abLenSq === 0) {
+      return { point: a, t: 0 };
+    }
+
+    let t = dot(ap, ab) / abLenSq;
+    t = Math.max(0, Math.min(1, t)); // clamp to segment
+
+    const projection = add(a, scale(ab, t));
+
+    return { point: projection, t };
+  }
+  const generatePolyMax = [...polyMax];
+
+  for (const insertIdx of unmatchedMinIndices) {
+    const target = polyMin[insertIdx];
+
+    let bestSegIdx = -1;
+    let bestDist = Infinity;
+
+    const n = expanded.length;
+
+    // find closest segment (including last -> first)
+    for (let i = 0; i < n; i++) {
+      if (expanded[i] === null || expanded[(i + 1) % n] === null) continue;
+      const a = expanded[i]!.point;
+      const b = expanded[(i + 1) % n]!.point;
+
+      const { point: proj } = projectPointOnSegment(target, a, b);
+      const d = distance(target, proj);
+
+      if (d < bestDist) {
+        bestDist = d;
+        bestSegIdx = i;
+      }
+    }
+
+    if (bestSegIdx === -1) continue;
+
+    const insertAt = bestSegIdx + 1;
+
+    // last -> first segment
+    if (insertAt === expanded.length) {
+      expanded.push({
+        point: polyMin[insertIdx],
+        matched: false,
+      });
+
+      // add point to polyMax but in middle of last and first
+      generatePolyMax.push(midpoint(generatePolyMax[0], generatePolyMax[generatePolyMax.length - 1]));
+
+    } else {
+      expanded.splice(insertAt, 0, {
+        point: polyMin[insertIdx],
+        matched: false,
+      });
+
+      // add point to generatePolyMax but in middle of neighbors
+      generatePolyMax.splice(insertAt, 0, midpoint(generatePolyMax[insertAt - 1], generatePolyMax[insertAt]));
+    }
+  }
+
+  return [ expanded as InterpolatedVertex[], generatePolyMax as Point[] ];
 }
 
-function lerpVertices(A: InterpolatedVertex[], B: Point[], t: number): InterpolatedVertex[] {
-  return A.map((a, i) => ({
-    point: [(1 - t) * a.point[0] + t * B[i][0], (1 - t) * a.point[1] + t * B[i][1]],
-    matched: a.matched,
-  }));
+function toPoint(v: InterpolatedVertex | Point): Point {
+  return 'point' in v ? v.point : v;
+}
+
+function lerpVertices(A: InterpolatedVertex[], B: InterpolatedVertex[] | Point[], t: number): InterpolatedVertex[] {
+  return A.map((a, i) => {
+    const [bx, by] = toPoint(B[i]);
+
+    return {
+      point: [
+        (1 - t) * a.point[0] + t * bx,
+        (1 - t) * a.point[1] + t * by,
+      ],
+      matched: a.matched,
+    };
+  });
 }
 
 export function interpolatePolygonAtFrame(
@@ -145,14 +289,33 @@ export function interpolatePolygonAtFrame(
     maxFrame = frameStart;
   }
 
-  // match vertices and expand
-  const [frameStartRe, frameEndRe, matches] = matchVerticesByBarycenter(minFrame.points, maxFrame.points);
-  const P1 = expandPolygonUsingMatches(frameStartRe, frameEndRe, matches);
+  const [frameStartRe, frameEndRe, matches, polarStart, polarEnd] = matchVerticesByBarycenter(minFrame.points, maxFrame.points);
+
+  // Expand both polygons using matches
+  const [P1, generatePolyMax] = expandPolygonUsingMatches(frameStartRe, frameEndRe, matches, polarStart, polarEnd);
 
   // linear interpolation
   const alpha = (current_frame - minFrame.frame) / (maxFrame.frame - minFrame.frame);
 
   const t = Math.min(Math.max(alpha, 0), 1);
 
-  return lerpVertices(P1, frameEndRe, t);
+  const interpolazed = lerpVertices(P1, generatePolyMax, t);
+
+  const cInterp = polygonBarycenter(interpolazed.map(v => v.point));
+  const P1_old_index = interpolazed.map((v, i) => [i, v.point] as [number, Point]);
+  const [P1Reordered, _] = reorderByAngle(interpolazed.map(v => v.point), cInterp);
+
+  const P1_final: InterpolatedVertex[] = P1_old_index.sort((a, b) => {
+    const idxA = P1Reordered.findIndex(p => p[0] === a[1][0] && p[1] === a[1][1]);
+    const idxB = P1Reordered.findIndex(p => p[0] === b[1][0] && p[1] === b[1][1]);
+    return idxA - idxB;
+  }).map(([_, point]) => {
+    const originalVertex = interpolazed.find(v => v.point[0] === point[0] && v.point[1] === point[1])!;
+    return {
+      point: originalVertex.point,
+      matched: originalVertex.matched,
+    };
+  });
+
+  return P1_final;
 }
