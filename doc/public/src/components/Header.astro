@@ -1,6 +1,4 @@
 ---
-import { XIcon } from "@lucide/astro";
-
 import { Separator } from "$lib/components/ui/separator";
 import Logo from "@components/app/brands/Logo.astro";
 import { Button } from "$lib/components/ui/button";
@@ -16,23 +14,23 @@ import SearchBar from "$lib/app/bar/search-bar.svelte";
       </a>
       <Separator orientation="vertical" class="h-6" />
 
-      <Button href="#docs" variant="link" class="text-foreground hidden xl:flex"> Docs </Button>
+      <Button href="#docs" variant="link" class="text-foreground hidden lg:flex"> Docs </Button>
     </div>
 
     <SearchBar client:load />
 
     <div class="aling-right ml-auto flex items-center gap-1">
-      <Button href="#changelog" variant="link" class="text-foreground hidden xl:flex"> Changelog </Button>
+      <Button href="#changelog" variant="link" class="text-foreground hidden lg:flex"> Changelog </Button>
 
-      <Button href="#support" variant="link" class="text-foreground hidden xl:flex"> Support </Button>
+      <Button href="#support" variant="link" class="text-foreground hidden lg:flex"> Support </Button>
 
-      <Button href="#install" class="hidden xl:flex dark:text-white"> Install IDAH </Button>
+      <Button href="#install" class="hidden lg:flex dark:text-white"> Install IDAH </Button>
 
       <SidebarToggle client:load />
 
-      <Button id="sidebar-close-header" variant="ghost" size="icon" class="hidden xl:hidden">
+      <!-- <Button id="sidebar-close-header" variant="ghost" size="icon" class="hidden xl:hidden">
         <XIcon class="size-5" />
-      </Button>
+      </Button> -->
     </div>
   </div>
 </header>
