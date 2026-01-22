@@ -230,7 +230,7 @@ module Entry
         project_id: attributes[:project_id] || entry.project_id,
         dataset_id: attributes[:dataset_id] || entry.dataset_id,
         entry_id: id,
-        submission_type: case from_state
+        submission_type:  case from_state
                           when :start
                             nil
                           when :annotate
