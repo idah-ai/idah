@@ -50,7 +50,7 @@
     <SidebarMenuItem>
       <SidebarMenuButton
         isActive={item.href === pathname}
-        class="hover:text-primary dark:hover:text-secondary-foreground data-[active=true]:text-primary dark:data-[active=true]:text-secondary-foreground"
+        class="hover:text-primary hover:dark:text-secondary-foreground data-[active=true]:text-primary dark:data-[active=true]:text-secondary-foreground"
       >
         <a href={item.href}>{item.label}</a>
       </SidebarMenuButton>
