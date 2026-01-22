@@ -28,17 +28,34 @@
   {#if item.children?.length}
     <Collapsible open={hasActiveChild(item, pathname)} class="group/collapsible w-full">
       <SidebarMenuItem>
-        <!-- Trigger -->
-        <CollapsibleTrigger class="w-full">
-          <SidebarMenuButton class="flex justify-between hover:cursor-pointer">
+        <CollapsibleTrigger asChild class="w-full">
+          <SidebarMenuButton
+            class="
+              flex w-full items-center justify-between
+              transition-colors duration-200
+              hover:cursor-pointer
+            "
+          >
             {item.label}
-            <ChevronRightIcon class="size-4 transition-transform group-data-[state=open]/collapsible:rotate-90" />
+
+            <ChevronRightIcon
+              class="
+                size-5 lg:size-4
+                transition-transform duration-300 ease-out
+                group-data-[state=open]/collapsible:rotate-90
+              "
+            />
           </SidebarMenuButton>
         </CollapsibleTrigger>
 
-        <!-- Content -->
-        <CollapsibleContent>
-          <SidebarMenuSub class="border-none pl-2">
+        <CollapsibleContent
+          class="
+            overflow-hidden
+            data-[state=closed]:animate-collapsible-up
+            data-[state=open]:animate-collapsible-down
+          "
+        >
+          <SidebarMenuSub class="border-none pl-4">
             {#each item.children as child (child.label)}
               {@render renderItem(child)}
             {/each}
@@ -50,21 +67,28 @@
     <SidebarMenuItem>
       <SidebarMenuButton
         isActive={item.href === pathname}
-        class="hover:text-primary hover:dark:text-secondary-foreground data-[active=true]:text-primary dark:data-[active=true]:text-secondary-foreground"
+        class="
+          transition-colors duration-200
+          hover:text-primary hover:dark:text-secondary-foreground
+          data-[active=true]:text-primary
+          dark:data-[active=true]:text-secondary-foreground
+        "
       >
-        <a href={item.href}>{item.label}</a>
+        <a href={item.href} class="block w-full">
+          {item.label}
+        </a>
       </SidebarMenuButton>
     </SidebarMenuItem>
   {:else}
     <SidebarMenuItem>
-      <SidebarGroupLabel class="text-sm font-normal text-muted-foreground">
+      <SidebarGroupLabel class="px-3 py-2 text-sm font-normal text-muted-foreground">
         {item.label}
       </SidebarGroupLabel>
     </SidebarMenuItem>
   {/if}
 {/snippet}
 
-<Sidebar class="h-full pt-16 overflow-y-auto border-none">
+<Sidebar class="h-full overflow-y-auto border-none transition-transform duration-300 ease-in-out">
   <SidebarContent class="h-full pt-2 text-muted-foreground border-r bg-background">
     {#each sidebars as sidebar}
       <SidebarGroup>
@@ -73,16 +97,26 @@
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  class="hover:text-primary data-[active=true]:text-primary"
                   isActive={sidebar.href === pathname}
+                  class="
+                    transition-colors duration-200
+                    hover:text-primary data-[active=true]:text-primary
+                  "
                 >
-                  <a href={sidebar.href}>{sidebar.label}</a>
+                  <a href={sidebar.href} class="block w-full">
+                    {sidebar.label}
+                  </a>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         {:else}
-          <SidebarGroupLabel class="text-xs font-semibold uppercase tracking-wider text-foreground">
+          <SidebarGroupLabel
+            class="
+              text-xs font-semibold uppercase tracking-wider
+              text-foreground
+            "
+          >
             {sidebar.label}
           </SidebarGroupLabel>
         {/if}
