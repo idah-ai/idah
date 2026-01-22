@@ -10,18 +10,17 @@ import Layout from "@layouts/Layout.astro";
     <Header />
   </slot>
 
-  <div class="flex min-h-0 flex-1">
-    <!-- Sidebar -->
+  <div class="flex flex-1 overflow-hidden">
     <slot name="sidebar">
       <Sidebar />
     </slot>
 
     <main class="flex-1 overflow-y-auto">
       <slot />
+
+      <slot name="footer">
+        <Footer />
+      </slot>
     </main>
   </div>
-
-  <slot name="footer">
-    <Footer />
-  </slot>
 </Layout>
