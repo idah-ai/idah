@@ -106,19 +106,18 @@ class LogsExpo < BaseExpo
   %w[created updated deleted assigned unassigned submitted].each do |event|
     expose on_resource_event(Resource::Dataset::Entries, event)
     def on_entry_event
-      # process only actual submission from annotation/review
-      if message.content[:metadata][:submission_type]
-        service.create(
-          log_attributes(
-            message:,
-            action: message.content[:metadata][:submission_type],
-            organization_id: message.content[:metadata][:organization_id],
-            project_id: message.content[:metadata][:project_id],
-            dataset_id: message.content[:metadata][:dataset_id],
-            entry_id: message.content[:resource_id]
-          )
+      return unless message.content[:metadata][:submission_type] # process only actual submission from annotation/review
+
+      service.create(
+        log_attributes(
+          message:,
+          action: message.content[:metadata][:submission_type],
+          organization_id: message.content[:metadata][:organization_id],
+          project_id: message.content[:metadata][:project_id],
+          dataset_id: message.content[:metadata][:dataset_id],
+          entry_id: message.content[:resource_id]
         )
-      end
+      )
     end
   end
 
@@ -126,15 +125,14 @@ class LogsExpo < BaseExpo
   %w[created updated deleted].each do |event|
     expose on_resource_event(Resource::Media::Medias, event)
     def on_media_event
-      # excluding medias created from background worker
-      if message.content[:metadata][:actor_account_id]
-        service.create(
-          log_attributes(
-            message:,
-            resource_id: message.content[:metadata][:media_resource]
-          )
+      return unless message.content[:metadata][:actor_account_id] # excluding medias created from background worker
+
+      service.create(
+        log_attributes(
+          message:,
+          resource_id: message.content[:metadata][:media_resource]
         )
-      end
+      )
     end
   end
 
