@@ -4,6 +4,6 @@
   import { TextAlignJustifyIcon } from "@lucide/svelte";
 </script>
 
-<Button id="sidebar-toggle" variant="ghost" size="icon" class="lg:hidden" onclick={toggleSidebar}>
+<Button variant="ghost" size="icon" class="lg:hidden" onclick={toggleSidebar}>
   <TextAlignJustifyIcon class="size-5" />
 </Button>
