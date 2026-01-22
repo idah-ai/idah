@@ -3,12 +3,12 @@
   import { resolve } from "$app/paths";
   import { SquarePenIcon, Trash2Icon } from "@lucide/svelte";
   import { onMount } from "svelte";
-  import { toast } from "svelte-sonner";
 
   import DatasetFormModal from "@/components/app/datasets/overlays/dataset-form-modal.svelte";
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
 
+  import { showToast } from "@/components/ui/toast/index.svelte";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { authStatus } from "@/security/AuthContext";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
@@ -95,7 +95,8 @@
       openConfirmDeleteDatasetModal = false;
       $refetches.datasets.list = new Date();
       goto(resolve(`/projects/${projectId}/datasets`));
-      toast.success("Dataset deleted", {
+      showToast.success({
+        title: "Dataset deleted",
         description: `The dataset "${datasetRecord?.name}" has been deleted.`,
       });
     } catch (error) {

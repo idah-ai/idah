@@ -1,11 +1,11 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
-  import { toast } from "svelte-sonner";
 
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
   import ProjectForm from "@/components/app/projects/forms/project-form.svelte";
 
+  import { showToast } from "@/components/ui/toast/index.svelte";
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { createProjectSchema, updateProjectSchema } from "@/data/model/dataset/projects/schema";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
@@ -76,7 +76,8 @@
     open = false;
     $refetches.projects.list = new Date();
     goto(resolve(`/projects/${createdProjectRes.data.id}/datasets`));
-    toast.success("Project created", {
+    showToast.success({
+      title: "Project created",
       description: `The project "${project.name}" has been created.`,
     });
   }
@@ -99,7 +100,8 @@
     open = false;
     $refetches.projects.list = new Date();
     $refetches.projects.get = new Date();
-    toast.success("Project updated", {
+    showToast.success({
+      title: "Project updated",
       description: `The project "${project.name}" has been updated.`,
     });
   }
