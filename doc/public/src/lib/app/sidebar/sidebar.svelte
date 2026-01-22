@@ -1,10 +1,12 @@
 <script lang="ts">
   import AppSidebar from "$lib/app/sidebar/app-sidebar.svelte";
   import { SidebarProvider } from "$lib/components/ui/sidebar";
+
+  let { pathname }: { pathname: string } = $props();
 </script>
 
 <aside class="hidden lg:block w-64 shrink-0">
   <SidebarProvider>
-    <AppSidebar />
+    <AppSidebar {pathname} />
   </SidebarProvider>
 </aside>

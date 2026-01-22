@@ -3,6 +3,9 @@ import Sidebar from "$lib/app/sidebar/sidebar.svelte";
 import Footer from "@components/Footer.astro";
 import Header from "@components/Header.astro";
 import Layout from "@layouts/Layout.astro";
+
+const pathname = Astro.url.pathname;
+
 ---
 
 <Layout>
@@ -12,7 +15,7 @@ import Layout from "@layouts/Layout.astro";
 
   <div class="flex flex-1 overflow-hidden">
     <slot name="sidebar">
-      <Sidebar />
+      <Sidebar client:load {pathname} />
     </slot>
 
     <main class="flex-1 overflow-y-auto">
