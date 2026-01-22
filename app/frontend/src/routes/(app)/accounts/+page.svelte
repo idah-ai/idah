@@ -74,6 +74,7 @@
             "email",
             "enabled",
             "role_name",
+            "role_scope",
             "picture_url",
             "joined_at",
             "invitation_expired_at",
