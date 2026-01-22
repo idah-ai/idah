@@ -223,13 +223,20 @@ module Entry
     end
 
     event(name: "submitted")
-    def submit(id, attributes)
+    def submit(id, attributes, from_state)
       entry = find!(id)
 
       add_event_metadata(
         project_id: attributes[:project_id] || entry.project_id,
         dataset_id: attributes[:dataset_id] || entry.dataset_id,
-        entry_id: id
+        entry_id: id,
+        submission_type: if from_state == :start
+                            nil
+                          elsif from_state == :annotate
+                            "submitted"
+                          elsif from_state == :review
+                            "reviewed"
+                          end
       )
 
       no_event do

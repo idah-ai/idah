@@ -83,7 +83,8 @@ module Workflow
           assigned_to_id:,
           submitted_by_id:,
           reviewed_by_id:,
-        }
+        },
+        from_state
       )
     end
   end

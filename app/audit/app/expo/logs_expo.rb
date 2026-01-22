@@ -25,7 +25,12 @@ class LogsExpo < BaseExpo
   %w[created updated deleted logged_in].each do |event|
     expose on_resource_event(Resource::Iam::Accounts, event)
     def on_account_event
-      service.create(log_attributes(message:))
+      service.create(
+        log_attributes(
+          message:,
+          **{ action: message.content[:metadata][:validation] ? nil : "failed_log_in_attempt" }.compact
+        )
+      )
     end
   end
 
@@ -104,12 +109,13 @@ class LogsExpo < BaseExpo
       service.create(
         log_attributes(
           message:,
+          action: message.content[:metadata][:submission_type],
           organization_id: message.content[:metadata][:organization_id],
           project_id: message.content[:metadata][:project_id],
           dataset_id: message.content[:metadata][:dataset_id],
           entry_id: message.content[:resource_id]
         )
-      )
+      ) if message.content[:metadata][:submission_type] # process only actual submission from annotation/review
     end
   end
 
@@ -122,7 +128,7 @@ class LogsExpo < BaseExpo
           message:,
           resource_id: message.content[:metadata][:media_resource]
         )
-      )
+      ) if message.content[:metadata][:actor_account_id] # excluding medias created from background worker
     end
   end
 
