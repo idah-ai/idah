@@ -114,7 +114,7 @@
       {@render RoleBadge()}
     </HoverCardTrigger>
 
-    <HoverCardContent class="w-auto min-w-40 max-w-64 p-2" align="center" sideOffset={8}>
+    <HoverCardContent class="w-auto max-w-64 min-w-40 p-2" align="center" sideOffset={8}>
       <div class="flex flex-col gap-1">
         {#if role_name === "org_owner"}
           {@render HoverCardTitle("Organizations")}
