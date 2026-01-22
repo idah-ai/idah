@@ -53,7 +53,7 @@ class AccountsExpo < BaseExpo
     service.resend_pending_invitations(params[:id])
   end
 
-  expose on_resource_event(Resource::Iam::Organizations, "deleted") 
+  expose on_resource_event(Resource::Iam::Organizations, "deleted")
   def on_organization_deleted
     organization_id = message.content[:resource_id]
     service.remove_org_from_account_role_scope(organization_id)
