@@ -156,7 +156,7 @@ module Account
     def remove_org_from_account_role_scope(organization_id)
       accounts.transaction do
         accounts_system.chunked_index({ with_role_scope: { org: [organization_id.to_s] } }).each do |account|
-          account.role_scope["org"] = account.role_scope["org"] - [organization_id]
+          account.role_scope["org"] = account.role_scope["org"] - [organization_id.to_s]
           accounts.update!(account.id, { role_scope: account.role_scope })
         end
       end
