@@ -3,6 +3,6 @@
   import { SearchIcon } from "@lucide/svelte";
 </script>
 
-<Button id="mobile-search" variant="ghost" size="icon" class="xl:hidden">
+<Button id="mobile-search" variant="ghost" size="icon" class="lg:hidden">
   <SearchIcon class="size-5" />
 </Button>
