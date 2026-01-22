@@ -36,7 +36,7 @@
   </SidebarMenuItem>
 {/snippet}
 
-<Sidebar class="h-full overflow-y-auto">
+<Sidebar class="h-full pt-16 overflow-y-auto border-none">
   <SidebarContent class="h-full pt-2 text-muted-foreground border-r">
     {#each sidebars as sidebar}
       <SidebarGroup>
