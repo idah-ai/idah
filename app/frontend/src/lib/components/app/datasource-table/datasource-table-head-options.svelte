@@ -35,7 +35,7 @@
   }: Props = $props();
 
   // Contexts
-  const disabledActiveFilterSortKeys = getContext<Array<string>>("disabledActiveFilterSortKeys");
+  const disabledActiveStateFilterSortKeys = getContext<Array<string>>("disabledActiveStateFilterSortKeys");
 </script>
 
 <FilterSortDropdownMenu
@@ -47,5 +47,5 @@
   {onFilter}
   {onSort}
   {onHide}
-  {disabledActiveFilterSortKeys}
+  {disabledActiveStateFilterSortKeys}
 ></FilterSortDropdownMenu>

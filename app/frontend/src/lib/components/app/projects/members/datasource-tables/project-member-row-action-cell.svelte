@@ -4,6 +4,8 @@
   import { toast } from "svelte-sonner";
 
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
+  import AccountEntries from "@/components/app/projects/entries/account-entries.svelte";
+  import Tooltips from "@/components/app/tooltips/tooltips.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import Can from "@/security/can.svelte";
 
@@ -11,11 +13,11 @@
   import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
 
-  import type { DataTableCellBaseProps } from "@/components/app/datasource-table/types";
-  import AccountEntries from "../../entries/account-entries.svelte";
-  import { clearCache } from "@/data/Cache";
   import { resourcePath } from "@/data/BackendDataSource";
+  import { clearCache } from "@/data/Cache";
   import { entriesBasePath } from "@/data/model/dataset/entries/record";
+
+  import type { DataTableCellBaseProps } from "@/components/app/datasource-table/types";
 
   // Props
   interface Props extends DataTableCellBaseProps<ProjectMemberRecord> {
@@ -60,9 +62,17 @@
     },
   ]}
 >
-  <Button variant="ghost" size="icon-sm" onclick={() => (openConfirmRemoveMemberModal = true)}>
-    <UserRoundXIcon />
-  </Button>
+  <Tooltips align="center">
+    {#snippet trigger()}
+      <Button variant="ghost" size="icon-sm" onclick={() => (openConfirmRemoveMemberModal = true)}>
+        <UserRoundXIcon />
+      </Button>
+    {/snippet}
+
+    {#snippet content()}
+      Remove "{projectMember.email}" <br /> from project membership
+    {/snippet}
+  </Tooltips>
 
   <ConfirmModal
     title="Remove member"

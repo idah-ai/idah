@@ -45,7 +45,7 @@
     // DataSource
     filters: Filters;
     sort: Sort;
-    disabledActiveFilterSortKeys?: Array<string>;
+    disabledActiveStateFilterSortKeys?: Array<string>;
 
     // Functions
     onFilter: (params: FilterDataSourceParams) => Promise<void>;
@@ -75,7 +75,7 @@
     // DataSource
     filters,
     sort,
-    disabledActiveFilterSortKeys,
+    disabledActiveStateFilterSortKeys,
 
     // Functions
     onFilter,
@@ -106,7 +106,7 @@
 
   // let isFiltering = $derived(Object.keys(filters).some((key) => key.startsWith(filterKey)));
   // let isSorting = $derived(sort.some((s) => s.endsWith(columnKey)));
-  let hideFilterSortKeys = $derived(Array.from(new Set(disabledActiveFilterSortKeys ?? [])));
+  let hideFilterSortKeys = $derived(Array.from(new Set(disabledActiveStateFilterSortKeys ?? [])));
   let isFiltering = $derived.by(() => {
     const filterKeys = Array.from(new Set(Object.keys(filters)));
     const symmetricDifferenceFilterKeys = [
@@ -392,7 +392,9 @@
         <CommandGroup heading="Filter">
           {#if filterComponent}
             {@const FilterComponent = filterComponent}
-            <FilterComponent {columnSetting} {filters} {contexts} {onFilter}></FilterComponent>
+            <div class="pb-2">
+              <FilterComponent {columnSetting} {filters} {contexts} {onFilter}></FilterComponent>
+            </div>
           {:else if filterOptions?.filterBy === "string"}
             {@const filterKey = `${columnKey}__${filterOptions.filterOperation || "match"}`}
             <div class="pb-2">
