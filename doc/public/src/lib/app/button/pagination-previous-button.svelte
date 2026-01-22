@@ -5,9 +5,6 @@
   import type { PaginationButtonProps } from "$lib/app/button/button.types";
 
   let { value }: PaginationButtonProps = $props();
-  $effect(() => {
-    console.log(value);
-  });
 </script>
 
 <Button
