@@ -1,4 +1,10 @@
 import { type Point, type InterpolatedVertex, type VideoFrameSelection } from "./VideoAnnotationContext";
+import {
+  distance,
+  midpoint,
+  projectPointOnSegment,
+  circularDistance,
+} from "./geometryUtils";
 
 // -----------------
 // Polygon helper functions
@@ -129,8 +135,6 @@ function expandPolygonUsingMatches(
     }
   }
 
-  const circDist = (a: number, b: number, n: number) => (b - a + n) % n;
-
   for (let i = 0; i < nMax; i++) {
     if (expanded[i] === null) {
       let prevI = (i - 1 + nMax) % nMax;
@@ -142,8 +146,8 @@ function expandPolygonUsingMatches(
       const pPrev = expanded[prevI]!;
       const pNext = expanded[nextI]!;
 
-      const total = circDist(prevI, nextI, nMax);
-      const cur = circDist(prevI, i, nMax);
+      const total = circularDistance(prevI, nextI, nMax);
+      const cur = circularDistance(prevI, i, nMax);
       const t = total > 0 ? cur / total : 0;
 
       expanded[i] = {
@@ -153,55 +157,6 @@ function expandPolygonUsingMatches(
     }
   }
 
-  function midpoint(a: Point, b: Point): Point {
-    return [
-      (a[0] + b[0]) / 2,
-      (a[1] + b[1]) / 2,
-    ];
-  }
-
-  function dot(a: Point, b: Point): number {
-    return a[0] * b[0] + a[1] * b[1];
-  }
-
-  function sub(a: Point, b: Point): Point {
-    return [a[0] - b[0], a[1] - b[1]];
-  }
-
-  function add(a: Point, b: Point): Point {
-    return [a[0] + b[0], a[1] + b[1]];
-  }
-
-  function scale(v: Point, s: number): Point {
-    return [v[0] * s, v[1] * s];
-  }
-
-  function distance(a: Point, b: Point): number {
-    return Math.hypot(b[0] - a[0], b[1] - a[1]);
-  }
-
-  function projectPointOnSegment(
-    p: Point,
-    a: Point,
-    b: Point
-  ): { point: Point; t: number } {
-    const ab = sub(b, a);
-    const ap = sub(p, a);
-
-    const abLenSq = dot(ab, ab);
-
-    // degenerate segment
-    if (abLenSq === 0) {
-      return { point: a, t: 0 };
-    }
-
-    let t = dot(ap, ab) / abLenSq;
-    t = Math.max(0, Math.min(1, t)); // clamp to segment
-
-    const projection = add(a, scale(ab, t));
-
-    return { point: projection, t };
-  }
   const generatePolyMax = [...polyMax];
 
   for (const insertIdx of unmatchedMinIndices) {
