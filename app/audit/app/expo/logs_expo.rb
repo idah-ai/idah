@@ -22,16 +22,21 @@ class LogsExpo < BaseExpo
   # rubocop:disable Style/CombinableLoops
 
   # Account events
-  %w[created updated deleted logged_in].each do |event|
+  %w[created updated deleted].each do |event|
     expose on_resource_event(Resource::Iam::Accounts, event)
     def on_account_event
-      service.create(
-        log_attributes(
-          message:,
-          **{ action: message.content[:metadata][:validation] ? nil : "failed_log_in_attempt" }.compact
-        )
-      )
+      service.create(log_attributes(message:))
     end
+  end
+
+  expose on_resource_event(Resource::Iam::Accounts, "logged_in")
+  def on_account_logged_in
+    service.create(
+      log_attributes(
+        message:,
+        action: message.content[:metadata][:validation] ? "logged_in" : "failed_log_in_attempt"
+      )
+    )
   end
 
   # Account Session events
@@ -103,15 +108,12 @@ class LogsExpo < BaseExpo
   end
 
   # Entry events
-  %w[created updated deleted assigned unassigned submitted].each do |event|
+  %w[created updated deleted assigned unassigned].each do |event|
     expose on_resource_event(Resource::Dataset::Entries, event)
     def on_entry_event
-      return unless message.content[:metadata][:submission_type] # process only actual submission from annotation/review
-
       service.create(
         log_attributes(
           message:,
-          action: message.content[:metadata][:submission_type],
           organization_id: message.content[:metadata][:organization_id],
           project_id: message.content[:metadata][:project_id],
           dataset_id: message.content[:metadata][:dataset_id],
@@ -119,6 +121,22 @@ class LogsExpo < BaseExpo
         )
       )
     end
+  end
+
+  expose on_resource_event(Resource::Dataset::Entries, "submitted")
+  def on_entry_submitted
+    return unless message.content[:metadata][:submission_type] # process only actual submission from annotation/review
+
+    service.create(
+      log_attributes(
+        message:,
+        action: message.content[:metadata][:submission_type],
+        organization_id: message.content[:metadata][:organization_id],
+        project_id: message.content[:metadata][:project_id],
+        dataset_id: message.content[:metadata][:dataset_id],
+        entry_id: message.content[:resource_id]
+      )
+    )
   end
 
   # Media events
