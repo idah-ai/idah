@@ -92,11 +92,11 @@ export interface DataTableBaseProps<T extends Record> {
    *     role_name__nin: ["system"]
    *   }
    * }
-   * then the disabledActiveFilterSortKeys should be ["role_name__nin"]
+   * then the disabledActiveStateFilterSortKeys should be ["role_name__nin"]
    *
    * So the FilterSortDropdownMenu component will not showing the active state for the "role_name__nin" filter.
    */
-  disabledActiveFilterSortKeys?: Array<string>;
+  disabledActiveStateFilterSortKeys?: Array<string>;
 
   // Functions
   onLoadSetContexts?: (response: CollectionResponse<T>) => Promise<Hash>;

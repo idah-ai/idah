@@ -28,11 +28,11 @@
 
     entries = (
       await entriesBackendDataSource.list({
-        filters: filters,
         fields: {
           [DatasetRecord.type]: ["name"],
           [EntryRecord.type]: ["resource", "project_id", "dataset_id", "assigned_to_id"],
         },
+        filters: filters,
         included: ["dataset"],
       })
     ).data;

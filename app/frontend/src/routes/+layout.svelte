@@ -18,6 +18,6 @@
 
 <main class="bg-background relative flex min-h-screen flex-col">
   <ModeWatcher />
-  <Toaster position="bottom-right" richColors />
+  <Toaster position="bottom-center" richColors closeButton />
   {@render children?.()}
 </main>

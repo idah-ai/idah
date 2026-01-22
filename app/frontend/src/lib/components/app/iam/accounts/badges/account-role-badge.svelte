@@ -119,7 +119,7 @@
         {#if role_name === "org_owner"}
           {@render HoverCardTitle("Organizations")}
 
-          {#each belongsToOrganization as organizationRecord}
+          {#each belongsToOrganization as organizationRecord (organizationRecord.id)}
             {@render Content(organizationRecord.name)}
           {:else}
             {@render NoContent("Not an owner of any organization yet")}
@@ -127,7 +127,7 @@
         {:else if role_name === "user"}
           {@render HoverCardTitle("Projects")}
 
-          {#each belongsToProjectMembers as projectMemberRecord}
+          {#each belongsToProjectMembers as projectMemberRecord (projectMemberRecord.id)}
             <div class="flex w-full items-center justify-between gap-4">
               {@render Content(projectMemberRecord.project.name)}
               <ProjectMemberRoleBadge {projectMemberRecord} />

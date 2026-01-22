@@ -8,7 +8,7 @@
   interface Props {
     projectMemberRecord: ProjectMemberRecord;
   }
-  let { projectMemberRecord } = $props();
+  let { projectMemberRecord }: Props = $props();
 
   // Variables
   let foundRole = $derived(projectMemberRoles.find((role) => role.value === projectMemberRecord.role));

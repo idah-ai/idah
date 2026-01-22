@@ -322,7 +322,7 @@
   {#snippet slotTitle()}
     <div class="flex w-full gap-4">
       <div class="flex w-full flex-col items-center justify-between gap-4 md:flex-row">
-        <div class="flex w-4/5 items-center gap-4">
+        <div class="flex flex-1 items-center gap-4">
           <!-- SELECT ALL -->
           {#if canUpdateEntry || canDeleteEntry}
             <div class="pl-6">
@@ -330,7 +330,7 @@
             </div>
           {/if}
 
-          <div>
+          <div class="flex gap-2">
             {#each Object.entries(entryColumns) as [columnKey, columnSetting] (columnKey)}
               <FilterSortDropdownMenu
                 contexts={{
@@ -348,12 +348,12 @@
                   <Button
                     variant={isFiltering || isSorting ? "default" : "outline"}
                     class={cn(
-                      "data-[state=open]:bg-primary data-[state=open]:text-primary-foreground hover:bg-primary hover:text-primary-foreground my-2 w-full min-w-52 gap-2 font-normal",
+                      "data-[state=open]:bg-primary data-[state=open]:text-primary-foreground hover:bg-primary hover:text-primary-foreground my-2 w-full min-w-40 gap-2 font-normal",
                       isFiltering || isSorting ? "text-primary-foreground" : "text-muted-foreground",
                     )}
                   >
                     {#if isFiltering}
-                      <FunnelIcon class="size-4"></FunnelIcon>
+                      <FunnelIcon class="size-4" />
                     {/if}
 
                     <span class="mr-auto">{label}</span>
@@ -374,7 +374,7 @@
           </div>
         </div>
 
-        <div class="flex w-1/5 items-center justify-end gap-2">
+        <div class="flex items-center justify-end gap-2">
           <!-- BULK ACTIONS -->
           {#if isRowSelected}
             <DropdownMenu>
