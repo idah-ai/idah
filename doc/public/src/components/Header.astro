@@ -1,9 +1,10 @@
 ---
 import { Separator } from "$lib/components/ui/separator";
 import Logo from "@components/app/brands/Logo.astro";
-import { SearchIcon, TextAlignJustifyIcon, XIcon } from "@lucide/astro";
+import { SearchIcon, XIcon } from "@lucide/astro";
 import { Button } from "$lib/components/ui/button";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "$lib/components/ui/input-group";
+import SidebarToggle from "$lib/app/sidebar/sidebar-toggle.svelte";
 ---
 
 <header id="header" class="bg-background sticky top-0 z-50 w-full border-b px-4 py-3 shadow-sm md:px-8">
@@ -38,9 +39,8 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from "$lib/components/ui
         <SearchIcon class="size-5" />
       </Button>
 
-      <Button id="sidebar-toggle" variant="ghost" size="icon" class="xl:hidden">
-        <TextAlignJustifyIcon class="size-5" />
-      </Button>
+      <SidebarToggle client:load />
+
 
       <Button id="sidebar-close-header" variant="ghost" size="icon" class="hidden xl:hidden">
         <XIcon class="size-5" />

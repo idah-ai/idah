@@ -1,9 +1,9 @@
 import type { SidebarType } from "$lib/app/sidebar/sidebar.data";
 
-export type SidebarItem = {
+export interface SidebarItem {
   label: string;
   href: string;
-};
+}
 
 export function findSidebarItem(items: SidebarType[], result: SidebarItem[] = []): SidebarItem[] {
   for (const item of items) {
