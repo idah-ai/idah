@@ -13,6 +13,7 @@
     onChange,
     onmousedown,
     pointer,
+    hidden = false,
   }: {
     ratio: Point;
     offset: Point;
@@ -24,6 +25,7 @@
     onmousedown?: (e: MouseEvent) => void;
     onChange?: (bb: BoundingBox) => void;
     pointer: string;
+    hidden?: boolean;
   } = $props();
 
   export function isEditing(): boolean {
@@ -244,10 +246,12 @@
   {/if}
 {/snippet}
 
-{@render bb(draw_cmd(boundingBox(bounding_box, cursor)))}
+{#if !hidden}
+  {@render bb(draw_cmd(boundingBox(bounding_box, cursor)))}
 
-{#if editable && !isEditing()}
-  {@render BoundingBoxHandle(boundingBox(bounding_box, cursor))}
+  {#if editable && !isEditing()}
+    {@render BoundingBoxHandle(boundingBox(bounding_box, cursor))}
+  {/if}
 {/if}
 
 <style>

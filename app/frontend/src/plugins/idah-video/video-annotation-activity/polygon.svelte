@@ -13,6 +13,7 @@
     onChange,
     onmousedown,
     pointer,
+    hidden = false,
   }: {
     ratio: Point;
     offset: Point;
@@ -24,6 +25,7 @@
     onmousedown?: (e: MouseEvent) => void;
     onChange?: (points: Point[]) => void;
     pointer: string;
+    hidden?: boolean;
   } = $props();
 
   export function isEditing(): boolean {
@@ -363,44 +365,46 @@
 {/snippet}
 
 <!-- Draw the polygon -->
-{#if isPolygonComplete}
-  {@render polygonShape(draw_cmd(polygon_points))}
-{:else if polygon_points.length > 0 && cursor}
-  <!-- Preview mode while drawing -->
-  <path
-    d={draw_preview_cmd(polygon_points, cursor)}
-    style:transform-origin="top left"
-    style:transform={`translate(${offset[X]}px, ${offset[Y]}px) scale(${ratio[X]}, ${ratio[Y]})`}
-    vector-effect="non-scaling-stroke"
-    class={getCursor()}
-    fill-opacity="0.2"
-    style:fill={color}
-    style:stroke={color}
-    style:stroke-opacity="1"
-    style:stroke-width="2"
-    style:stroke-dasharray="5,5"
-  />
-
-  <!-- Draw existing vertices while creating -->
-  {#each polygon_points as point, index (index)}
-    <circle
-      cx={point[X] * ratio[X]}
-      cy={point[Y] * ratio[Y]}
-      r={5}
+{#if !hidden}
+  {#if isPolygonComplete}
+    {@render polygonShape(draw_cmd(polygon_points))}
+  {:else if polygon_points.length > 0 && cursor}
+    <!-- Preview mode while drawing -->
+    <path
+      d={draw_preview_cmd(polygon_points, cursor)}
       style:transform-origin="top left"
-      style:transform={`translate(${offset[X]}px, ${offset[Y]}px)`}
+      style:transform={`translate(${offset[X]}px, ${offset[Y]}px) scale(${ratio[X]}, ${ratio[Y]})`}
       vector-effect="non-scaling-stroke"
-      style:stroke={color}
-      style:stroke-width={1}
+      class={getCursor()}
+      fill-opacity="0.2"
       style:fill={color}
-      fill-opacity={1}
+      style:stroke={color}
+      style:stroke-opacity="1"
+      style:stroke-width="2"
+      style:stroke-dasharray="5,5"
     />
-  {/each}
-{/if}
 
-<!-- Edit handles for completed polygon -->
-{#if editable && !isEditing()}
-  {@render PolygonVertices(points)}
+    <!-- Draw existing vertices while creating -->
+    {#each polygon_points as point, index (index)}
+      <circle
+        cx={point[X] * ratio[X]}
+        cy={point[Y] * ratio[Y]}
+        r={5}
+        style:transform-origin="top left"
+        style:transform={`translate(${offset[X]}px, ${offset[Y]}px)`}
+        vector-effect="non-scaling-stroke"
+        style:stroke={color}
+        style:stroke-width={1}
+        style:fill={color}
+        fill-opacity={1}
+      />
+    {/each}
+  {/if}
+
+  <!-- Edit handles for completed polygon -->
+  {#if editable && !isEditing()}
+    {@render PolygonVertices(points)}
+  {/if}
 {/if}
 
 <style>
