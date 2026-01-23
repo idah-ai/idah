@@ -2,7 +2,6 @@
   import { page } from "$app/state";
   import { XIcon } from "@lucide/svelte";
   import { onMount } from "svelte";
-  import { toast } from "svelte-sonner";
   import { SvelteURL } from "svelte/reactivity";
 
   import Button from "@/components/ui/button/button.svelte";
@@ -17,6 +16,7 @@
   import NoteInputField from "@/plugin/layout/sidebar/notes/inputs/note-input-field.svelte";
   import NoteDialogContent from "@/plugin/layout/sidebar/notes/overlays/note-dialog-content.svelte";
 
+  import { showToast } from "@/components/ui/toast/index.svelte";
   import { NoteCommentRecord, noteCommentsBackendDataSource } from "@/data/model/dataset/notes/comments/record";
   import { NoteFeedRecord, noteFeedsBackendDataSource } from "@/data/model/dataset/notes/feeds/record";
   import { deleteNoteFeed } from "@/plugin/layout/sidebar/notes/utils/note-feed.svelte";
@@ -142,7 +142,7 @@
       },
     });
 
-    toast.success("Note added successfully.");
+    showToast.success({ title: "Note added successfully." });
     $refetches.noteFeeds.list = new Date();
 
     context.notes.gotoFeed(createdNoteFeedRes.data.id);
@@ -173,7 +173,7 @@
     });
     await loadNoteFeed(selectedNoteFeed.id);
     $refetches.noteFeeds.list = new Date();
-    toast.success("Note added successfully.");
+    showToast.success({ title: "Note added successfully." });
 
     // Reset
     contentMd = "";

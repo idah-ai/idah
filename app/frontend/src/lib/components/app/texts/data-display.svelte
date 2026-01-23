@@ -18,7 +18,7 @@
 
 <div
   id="data-display-container"
-  class={cn("flex", {
+  class={cn("flex min-h-6", {
     "flex-row items-center gap-1": direction === "horizontal",
     "flex-col gap-1": direction === "vertical",
   })}

@@ -60,7 +60,7 @@
     dataSource={datasetsBackendDataSource}
     listOptions={{
       fields: {
-        [DatasetRecord.type]: ["name", "status", "modality", "progress", "created_at", "updated_at"],
+        [DatasetRecord.type]: ["id", "name", "status", "modality", "progress", "created_at", "updated_at"],
         [ProjectRecord.type]: ["name"],
         [EntryRecord.type]: ["status"],
       },
