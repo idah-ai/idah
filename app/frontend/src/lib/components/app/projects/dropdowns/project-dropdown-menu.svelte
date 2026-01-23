@@ -3,12 +3,12 @@
   import { resolve } from "$app/paths";
   import { SquarePenIcon, Trash2Icon } from "@lucide/svelte";
   import { onMount } from "svelte";
-  import { toast } from "svelte-sonner";
 
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
   import ProjectFormModal from "@/components/app/projects/overlays/project-form-modal.svelte";
 
+  import { showToast } from "@/components/ui/toast/index.svelte";
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { authStatus } from "@/security/AuthContext";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
@@ -81,7 +81,7 @@
   async function fetchProject() {
     return await projectsBackendDataSource.get(projectId, {
       fields: {
-        "datasets:projects": ["name", "description", "organization_id"],
+        [ProjectRecord.type]: ["name", "description", "organization_id"],
       },
       noCache: true,
     });
@@ -94,7 +94,8 @@
       openConfirmDeleteProjectModal = false;
       $refetches.projects.list = new Date();
       goto(resolve("/projects"));
-      toast.success("Project deleted", {
+      showToast.success({
+        title: "Project deleted",
         description: `The project "${projectRecord?.name}" has been deleted.`,
       });
     } catch (error) {

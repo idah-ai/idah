@@ -3,7 +3,7 @@ import { resolve } from "$app/paths";
 import { writable, type Writable } from "svelte/store";
 
 import { clearAllCache } from "@/data/Cache";
-import { projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
+import { ProjectMemberRecord, projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
 import { AccountAuthRecord, type AuthService } from "@/data/model/iam/accounts/auth/records";
 import { ActionMap } from "@/security/ActionMap";
 
@@ -153,6 +153,9 @@ export class AuthContext {
           const { projectId, projectMemberRoles } = scope["as_user"];
 
           const projectMemberRes = await projectMembersBackendDataSource.list({
+            fields: {
+              [ProjectMemberRecord.type]: ["id", "role"],
+            },
             filters: {
               project_id: projectId,
               account_id: this.id,
