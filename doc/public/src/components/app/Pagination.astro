@@ -2,11 +2,11 @@
 import PaginationNextButton from "$lib/app/button/pagination-next-button.svelte";
 import PaginationPreviousButton from "$lib/app/button/pagination-previous-button.svelte";
 import { findSidebarItem } from "$lib/app/sidebar/sidebar.utils";
-import { sidebars } from "$lib/app/sidebar/sidebar.data";
+import { mobileSidebarItems } from "$lib/app/sidebar/sidebar.data";
 
 const pathname = Astro.url.pathname;
 
-const flat = findSidebarItem(sidebars);
+const flat = findSidebarItem(mobileSidebarItems);
 
 const currentIndex = flat.findIndex((item) => item.href === pathname);
 
