@@ -3,7 +3,7 @@ import Logo from "@components/app/brands/Logo.astro";
 
 import { Separator } from "$lib/components/ui/separator";
 import { Button } from "$lib/components/ui/button";
-import SidebarToggle from "$lib/app/button/sidebar-toggle.svelte";
+import SidebarToggleButton from "$lib/app/button/sidebar-toggle-button.svelte";
 import SearchBar from "$lib/app/bar/search-bar.svelte";
 ---
 <header
@@ -31,7 +31,7 @@ import SearchBar from "$lib/app/bar/search-bar.svelte";
 
       <Button href="#install" class="hidden lg:flex dark:text-white"> Install IDAH </Button>
       
-      <SidebarToggle client:load />
+      <SidebarToggleButton client:load />
     </div>
   </div>
 </header>
