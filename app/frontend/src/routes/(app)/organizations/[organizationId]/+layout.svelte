@@ -44,7 +44,7 @@
   async function fetchOrganization() {
     const organizationRes = await organizationsBackendDataSource.get(organizationId, {
       fields: {
-        "iam/organizations": ["name"],
+        [OrganizationRecord.type]: ["name"],
       },
     });
     organization = organizationRes.data;

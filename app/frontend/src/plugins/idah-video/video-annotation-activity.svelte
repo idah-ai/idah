@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount, setContext } from "svelte";
-  import { toast } from "svelte-sonner";
   import { uuidv7 } from "uuidv7";
 
   import {
@@ -35,11 +34,16 @@
 
   import PopoverTrigger from "@/components/ui/popover/popover-trigger.svelte";
   import { SidebarProvider } from "@/components/ui/sidebar";
+  import { showToast } from "@/components/ui/toast/index.svelte";
   import type { AnnotationShape, AnnotationValue } from "@/context/AnnotationContext";
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import PropertiesSidebar from "./layout/sidebar/properties-sidebar.svelte";
   import CategoryProperties from "./video-annotation-activity/categoryProperties/categoryProperties.svelte";
-  import { registerVisualModeShortcuts } from "./video-annotation-activity/shortcut";
+  import {
+    registerOnSelectBoxModeShortcuts,
+    registerVisualModeShortcuts,
+    unregisterSelectionShortcuts,
+  } from "./video-annotation-activity/shortcut";
   import type { Point, VideoFrameSelection, VideoShape } from "./video-annotation-activity/VideoAnnotationContext";
   import VideoController from "./video-annotation-activity/VideoController.svelte";
 
@@ -95,9 +99,9 @@
     if (isTyping) return;
 
     const current_mode = ShortcutManager.getCurrentMode();
-    const keymap = ShortcutManager.keyMap[current_mode];
+    const keymap = ShortcutManager.getEffectiveKeyMap(current_mode);
 
-    if (!keymap) return console.error("no keymap found for", { current_mode });
+    if (!keymap || Object.keys(keymap).length === 0) return console.error("no keymap found for", { current_mode });
 
     const modifier_keys = [
       e.altKey && "Alt",
@@ -293,7 +297,7 @@
   context.commands.on("annotation.delete", async (props: { id: string }) => {
     const annotation = await annotationsIDB?.get("annotations", props.id);
 
-    if (!annotation) return toast.error("cannot remove not found annotation");
+    if (!annotation) return showToast.error({ title: "cannot remove not found annotation" });
 
     return {
       name: "remove annotation",
@@ -361,7 +365,7 @@
       async apply() {
         const v = await annotationsIDB?.get("annotations", props.id);
 
-        if (!v) return toast.error("bounding box not found");
+        if (!v) return showToast.error({ title: "Bounding box not found" });
 
         const updatedAt = new Date();
         v.shape = {
@@ -399,7 +403,7 @@
       async undo() {
         const v = await annotationsIDB?.get("annotations", props.id);
 
-        if (!v) return toast.error("bounding box not found");
+        if (!v) return showToast.error({ title: "Bounding box not found" });
 
         const updatedAt = new Date();
         v.shape = {
@@ -443,10 +447,10 @@
   context.commands.on("keyframe.delete", async (props: { annotationId: string; frame: number }) => {
     const annotation = await annotationsIDB?.get("annotations", props.annotationId);
 
-    if (!annotation) return toast.error("cannot remove selection, annotation not found");
+    if (!annotation) return showToast.error({ title: "cannot remove selection, annotation not found" });
 
     let index = annotation.shape.frames.findIndex((v: VideoFrameSelection) => v.frame == props.frame);
-    if (index == -1) return toast.warning("No frame to remove");
+    if (index == -1) return showToast.warning({ title: "No frame to remove" });
 
     let selection = annotation.shape.frames[index];
 
@@ -456,10 +460,10 @@
         const updatedAt = new Date();
         const annotation = await annotationsIDB?.get("annotations", props.annotationId);
 
-        if (!annotation) return toast.error("cannot remove keyframe, annotation not found");
+        if (!annotation) return showToast.error({ title: "cannot remove keyframe, annotation not found" });
 
         let index = annotation.shape.frames.findIndex((v: VideoFrameSelection) => v.frame == props.frame);
-        if (index == -1) return toast.warning("No frame to remove");
+        if (index == -1) return showToast.warning({ title: "No frame to remove" });
 
         let newframes = annotation.shape.frames.filter((v: VideoFrameSelection) => v.frame != props.frame);
         annotation.shape = {
@@ -500,7 +504,7 @@
         const updatedAt = new Date();
         let annotation = await annotationsIDB?.get("annotations", props.annotationId);
 
-        if (!annotation) return toast.error("cannot undo remove selection, annotation not found");
+        if (!annotation) return showToast.error({ title: "cannot undo remove selection, annotation not found" });
 
         let newframes = [...annotation.shape.frames.filter((v) => v.frame != props.frame), selection];
         annotation.shape = {
@@ -613,6 +617,38 @@
       };
     },
   );
+
+  context.commands.on("annotation.toggleHidden", async (props: { id: string }) => {
+    const annotation = await annotationsIDB?.get("annotations", props.id);
+
+    if (!annotation) return showToast.error({ title: "cannot toggle hidden, annotation not found" });
+
+    const wasHidden = annotation.hidden;
+
+    return {
+      name: "toggle hidden",
+      apply: () => onVisibility(!wasHidden, annotation),
+      undo: () => onVisibility(wasHidden, annotation),
+      isCombinable: () => true,
+      combine: (c) => c,
+    };
+  });
+
+  context.commands.on("annotation.toggleLocked", async (props: { id: string }) => {
+    const annotation = await annotationsIDB?.get("annotations", props.id);
+
+    if (!annotation) return showToast.error({ title: "cannot toggle locked, annotation not found" });
+
+    const wasLocked = annotation.locked;
+
+    return {
+      name: "toggle locked",
+      apply: () => onLock(!wasLocked, annotation),
+      undo: () => onLock(wasLocked, annotation),
+      isCombinable: () => true,
+      combine: (c) => c,
+    };
+  });
 
   context.commands.on("tools.visual", () => {
     return {
@@ -763,6 +799,10 @@
 
   function selectAnnotation(annotation?: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) {
     selectedAnnotation = annotation;
+
+    // Clear existing selection shortcuts first
+    unregisterSelectionShortcuts();
+
     /**
      * Set mode to the annotation shape type when selecting an annotation
      */
@@ -770,6 +810,8 @@
       return;
     } else if (annotation?.shape.type && ["review", "annotate"].includes(context.workflowStep)) {
       mode = annotation.shape.type;
+      // Register selection-specific shortcuts for the current mode
+      registerOnSelectBoxModeShortcuts(context, annotation.metadata.id);
     } else {
       mode = DEFAULT_MODE;
     }
@@ -853,13 +895,13 @@
 </script>
 
 <div class="relative flex h-full w-full flex-col">
-  {#key [ShortcutManager, ShortcutManager.currentMode, ShortcutManager.getCurrentMode()]}
+  {#key [ShortcutManager, ShortcutManager.currentMode, ShortcutManager.getCurrentMode(), selectedAnnotation]}
     <CommandDialog bind:open={commandOpen} accesskey={ShortcutManager.getCurrentMode()}>
       <CommandInput placeholder="Type a command or search..." />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
         <CommandGroup heading={`MODE: ${ShortcutManager.getCurrentMode()}`}>
-          {#each Object.entries(ShortcutManager.keyMap[ShortcutManager.getCurrentMode()] || []) as [key, value] (key)}
+          {#each Object.entries(ShortcutManager.getEffectiveKeyMap(ShortcutManager.getCurrentMode()) || {}) as [key, value] (key)}
             <CommandItem onclick={() => value.action()}>
               <span>{value.name} ({value.description})</span>
               <CommandShortcut>{key}</CommandShortcut>
