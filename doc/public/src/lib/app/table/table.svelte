@@ -9,38 +9,45 @@
   interface DataTable {
     [key: string]: string;
   }
+  interface ColumnTable {
+    key: string;
+    label: string;
+  }
 
   interface TableProps {
     dataTable: DataTable[];
+    columns: ColumnTable[];
   }
 
-  let { dataTable }: TableProps = $props();
+  let { dataTable, columns }: TableProps = $props();
 </script>
 
-<div class="w-full">
-  <div class="overflow-hidden rounded-md border">
-    <Table>
-      {#each dataTable as data}
-        <TableHeader>
-          <TableRow class="*:border-border [&>:not(:last-child)]:border-r">
-            {#each Object.entries(data) as [key]}
-              <TableHead class="capitalize">
-                {key}
-              </TableHead>
-            {/each}
-          </TableRow>
-        </TableHeader>
+<div class="w-full overflow-x-auto">
+  <div class="rounded-md border">
+    <Table class="min-w-[800px]">
+      <!-- HEADER -->
+      <TableHeader>
+        <TableRow class="*:border-border [&>:not(:last-child)]:border-r">
+          {#each columns as col}
+            <TableHead class="whitespace-nowrap">
+              {col.label}
+            </TableHead>
+          {/each}
+        </TableRow>
+      </TableHeader>
 
-        <TableBody>
+      <!-- BODY -->
+      <TableBody>
+        {#each dataTable as row}
           <TableRow class="*:border-border [&>:not(:last-child)]:border-r">
-            {#each Object.entries(data) as [key, value]}
-              <TableCell>
-                {value}
+            {#each columns as col}
+              <TableCell class="whitespace-nowrap">
+                {row[col.key]}
               </TableCell>
             {/each}
           </TableRow>
-        </TableBody>
-      {/each}
+        {/each}
+      </TableBody>
     </Table>
   </div>
 </div>

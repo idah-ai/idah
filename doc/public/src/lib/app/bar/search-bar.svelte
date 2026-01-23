@@ -29,7 +29,7 @@
   </div>
 
   {#if $searchOpen}
-    <div class="w-full max-w-xl lg:hidden">
+    <div class="fixed w-auto w-full max-w-xl left-1/2 -translate-x-1/2 lg:hidden">
       {@render searchInput()}
     </div>
   {/if}

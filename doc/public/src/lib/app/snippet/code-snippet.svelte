@@ -6,9 +6,10 @@
 
   interface SnippetProps {
     code: string;
+    showCopyButton?: boolean;
   }
 
-  let { code }: SnippetProps = $props();
+  let { code, showCopyButton = true }: SnippetProps = $props();
 
   let copied = $state(false);
 
@@ -22,20 +23,22 @@
 <Card class="relative mx-auto w-full p-0">
   <CardContent class="relative p-0">
     <!-- Copy button -->
-    <Button
-      size="sm"
-      class="absolute right-2 top-2 sm:right-3 sm:top-3 z-10 flex items-center gap-1"
-      disabled={copied}
-      onclick={copy}
-    >
-      {#if copied}
-        <CheckIcon class="size-3 sm:size-4" />
-        <span class="hidden sm:inline">Copied</span>
-      {:else}
-        <CopyIcon class="size-3 sm:size-4" />
-        <span class="hidden sm:inline">Copy</span>
-      {/if}
-    </Button>
+    {#if showCopyButton}
+      <Button
+        size="sm"
+        class="absolute right-2 top-2 sm:right-3 sm:top-3 z-10 flex items-center gap-1"
+        disabled={copied}
+        onclick={copy}
+      >
+        {#if copied}
+          <CheckIcon class="size-3 sm:size-4" />
+          <span class="hidden sm:inline">Copied</span>
+        {:else}
+          <CopyIcon class="size-3 sm:size-4" />
+          <span class="hidden sm:inline">Copy</span>
+        {/if}
+      </Button>
+    {/if}
 
     <!-- Code block -->
     <pre
