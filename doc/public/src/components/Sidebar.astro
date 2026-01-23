@@ -1,0 +1,12 @@
+---
+import SidebarToggle from "$lib/app/button/sidebar-toggle.svelte";
+import { SidebarProvider } from "$lib/components/ui/sidebar";
+
+const pathname = Astro.url.pathname;
+---
+
+<aside>
+<SidebarProvider>
+</SidebarProvider>
+</aside>
+<SidebarToggle client:load />
