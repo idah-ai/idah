@@ -111,6 +111,8 @@ class LogsExpo < BaseExpo
   %w[created updated deleted assigned unassigned].each do |event|
     expose on_resource_event(Resource::Dataset::Entries, event)
     def on_entry_event
+      return unless message.content[:metadata][:actor_account_id] # excluding entries updated by background worker
+
       service.create(
         log_attributes(
           message:,

@@ -223,21 +223,18 @@ module Entry
     end
 
     event(name: "submitted")
-    def submit(id, attributes, from_state)
+    def submit(id, attributes)
       entry = find!(id)
 
       add_event_metadata(
         project_id: attributes[:project_id] || entry.project_id,
         dataset_id: attributes[:dataset_id] || entry.dataset_id,
         entry_id: id,
-        submission_type: case from_state
-                         when :start
-                           "started"
-                         when :annotate
-                           "submitted"
-                         when :review
-                           "reviewed"
-                         end
+        submission_type: {
+          "start" => "started",
+          "annotate" => "submitted",
+          "review" => "reviewed"
+        }[entry.wf_step]
       )
 
       no_event do
