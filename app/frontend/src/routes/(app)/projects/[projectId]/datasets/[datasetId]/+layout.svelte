@@ -4,6 +4,7 @@
   import { page } from "$app/state";
   import { onMount, setContext, type Snippet } from "svelte";
 
+  import ProjectDatasetDropdownMenu from "@/components/app/datasets/dropdowns/project-dataset-dropdown-menu.svelte";
   import PageHeader from "@/components/app/page/page-header.svelte";
   import PageLoading from "@/components/app/page/page-loading.svelte";
   import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -72,7 +73,11 @@
   <PageLoading />
 {:then datasetRecord}
   <div class="space-y-6">
-    <PageHeader title={datasetRecord.name} />
+    <PageHeader title={datasetRecord.name}>
+      {#snippet actions()}
+        <ProjectDatasetDropdownMenu {datasetId} {projectId} />
+      {/snippet}
+    </PageHeader>
 
     <Tabs bind:value={activeTab}>
       <TabsList>
