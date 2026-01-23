@@ -117,4 +117,19 @@ RSpec.describe AccountsExpo, type: :exposition, as: :system do
 
     expect(last_response.status).to eq 200
   end
+
+  describe "on organization deleted" do
+    it "removes the organization from the account role scope" do
+      expect(service).to receive(:remove_org_from_account_role_scope).with("1")
+
+      Verse.publish_resource_event(
+        resource_type: "iam:organizations",
+        resource_id: "1",
+        event: "deleted",
+        payload: {
+          resource_id: "1",
+        }
+      )
+    end
+  end
 end

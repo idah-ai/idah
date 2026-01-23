@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { toast } from "svelte-sonner";
-
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import Form from "@/components/app/forms/form.svelte";
   import AuthenticationAlert from "@/components/app/iam/auth/alert/authentication-alert.svelte";
@@ -8,6 +6,7 @@
   import Button from "@/components/ui/button/button.svelte";
   import Link from "@/components/ui/text/Link.svelte";
 
+  import { showToast } from "@/components/ui/toast/index.svelte";
   import { accountPasswordsBackendDataSource } from "@/data/model/iam/account-passwords/record";
   import { sendResetPasswordLinkSchema } from "@/data/model/iam/accounts/auth-schema";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
@@ -33,7 +32,10 @@
 
       sendingPasswordResetLink = false;
       email = "";
-      toast.info("Reset link sent!", { description: "Please check your email for the password reset link." });
+      showToast.info({
+        title: "Reset link sent!",
+        description: "Please check your email for the password reset link.",
+      });
     } catch (error) {
       sendingPasswordResetLink = false;
       showErrorAlert = true;
