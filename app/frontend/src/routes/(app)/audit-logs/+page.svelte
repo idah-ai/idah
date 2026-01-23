@@ -48,7 +48,8 @@
 
     /** Dynamically fetch name, email or resource name based on the logRecord.resource_type */
     const ids: Hash = {
-      accounts: [],
+      account_ids: [],
+      account_emails: [],
       account_sessions: [],
       organizations: [],
       projects: [],
@@ -62,7 +63,16 @@
         case "accounts": {
           if (["logged_in", "logged_out"].includes(log.action)) break;
 
-          ids["accounts"].push(log.resource_id);
+          switch (log.action) {
+            case "failed_log_in_attempt":
+              ids["account_emails"].push(log.resource_id);
+              break;
+            default:
+              ids["account_ids"].push(log.resource_id);
+              break;
+          }
+
+          ids["account_ids"].push(log.resource_id);
           break;
         }
         case "account_sessions":
@@ -112,13 +122,25 @@
         if (_ids.length === 0) return;
 
         switch (resource) {
-          case "accounts": {
+          case "accounts_ids": {
             const accountsRes = await accountsBackendDataSource.list({
               fields: {
                 [AccountRecord.type]: ["id", "email"],
               },
               filters: {
                 id: Array.from(new Set(_ids)),
+              },
+            });
+            accounts.push(...accountsRes.data);
+            break;
+          }
+          case "account_emails": {
+            const accountsRes = await accountsBackendDataSource.list({
+              fields: {
+                [AccountRecord.type]: ["id", "email"],
+              },
+              filters: {
+                email__in: Array.from(new Set(_ids)),
               },
             });
             accounts.push(...accountsRes.data);
