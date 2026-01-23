@@ -3,7 +3,6 @@
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import { getContext, onMount } from "svelte";
-  import { toast } from "svelte-sonner";
 
   import ResponseBlock from "@/components/app/blocks/response-block.svelte";
   import EntryCard from "@/components/app/datasets/entries/cards/entry-card.svelte";
@@ -41,6 +40,7 @@
   import { getEntryDropdownMenuActions } from "@/components/app/datasets/entries/dropdown-menus/entry-dropdown-menu";
   import { projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
+  import { showToast } from "@/components/ui/toast/index.svelte";
   import { DatasetRecord } from "@/data/model/dataset/dataset-record";
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
   import { ProjectMemberRecord } from "@/data/model/dataset/projects/members/record";
@@ -293,7 +293,7 @@
       await entriesBackendDataSource.delete(entryId);
     }
 
-    toast.success(`${selectedRowsCount} Entry(s) successfully deleted.`);
+    showToast.success({ title: `${selectedRowsCount} Entry(s) successfully deleted.` });
 
     selectedRows = [];
     $refetches.entries.list = new Date();

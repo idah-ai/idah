@@ -1,13 +1,13 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
-  import { toast } from "svelte-sonner";
 
   import OrganizationForm from "@/components/app/organizations/forms/organization-form.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
 
   import { refetches } from "@/utils/refetch";
 
+  import { showToast } from "@/components/ui/toast/index.svelte";
   import { OrganizationRecord, organizationsBackendDataSource } from "@/data/model/iam/organizations/record";
   import { createOrganizationSchema, updateOrganizationSchema } from "@/data/model/iam/organizations/schema";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
@@ -72,7 +72,8 @@
     closeThisModal();
     $refetches.organizations.list = new Date();
     goto(resolve(`/organizations/${createdOrganizationRes.data.id}/projects`));
-    toast.success("Organization created", {
+    showToast.success({
+      title: "Organization created",
       description: `The organization "${organization.name}" has been created.`,
     });
   }
@@ -92,7 +93,8 @@
 
     closeThisModal();
     $refetches.organizations.list = new Date();
-    toast.success("Organization updated", {
+    showToast.success({
+      title: "Organization updated",
       description: `The organization "${organization.name}" has been updated.`,
     });
   }

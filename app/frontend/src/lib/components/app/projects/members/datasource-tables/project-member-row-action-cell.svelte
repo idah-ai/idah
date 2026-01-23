@@ -1,7 +1,6 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { UserRoundXIcon } from "@lucide/svelte";
-  import { toast } from "svelte-sonner";
 
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
   import AccountEntries from "@/components/app/projects/entries/account-entries.svelte";
@@ -13,6 +12,7 @@
   import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
 
+  import { showToast } from "@/components/ui/toast/index.svelte";
   import { resourcePath } from "@/data/BackendDataSource";
   import { clearCache } from "@/data/Cache";
   import { entriesBasePath } from "@/data/model/dataset/entries/record";
@@ -40,7 +40,8 @@
       clearCache(resourcePath(entriesBasePath, null, undefined));
 
       $refetches.projectMembers.list = new Date();
-      toast.success("Project member removed", {
+      showToast.success({
+        title: "Project member removed",
         description: `"${projectMember.email}" has been removed from the project.`,
       });
     } catch (error) {

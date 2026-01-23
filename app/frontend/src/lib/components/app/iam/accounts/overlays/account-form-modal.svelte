@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { toast } from "svelte-sonner";
-
   import AccountForm from "@/components/app/iam/accounts/forms/account-form.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
 
@@ -11,12 +9,14 @@
   import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { getFieldErrors, validateData, type ZodSchema } from "@/utils/validate";
 
-  import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
-  import type { Hash } from "@/utils/types";
+  import { showToast } from "@/components/ui/toast/index.svelte";
   import { resourcePath } from "@/data/BackendDataSource";
   import { clearCache } from "@/data/Cache";
-  import { projectMembersBasePath } from "@/data/model/dataset/projects/members/record";
   import { entriesBasePath } from "@/data/model/dataset/entries/record";
+  import { projectMembersBasePath } from "@/data/model/dataset/projects/members/record";
+
+  import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
+  import type { Hash } from "@/utils/types";
 
   // Props
   interface Props extends FormModalBaseProps {
@@ -88,7 +88,8 @@
 
     closeThisModal();
     $refetches.accounts.list = new Date();
-    toast.success("Account created", {
+    showToast.success({
+      title: "Account created",
       description: `The account has been created and an invitation email has been sent to "${account.email}".`,
     });
   }
@@ -118,7 +119,8 @@
     clearCache(resourcePath(entriesBasePath, null, undefined));
 
     $refetches.accounts.list = new Date();
-    toast.success("Account updated", {
+    showToast.success({
+      title: "Account updated",
       description: `The account of "${account.email}" has been updated.`,
     });
   }

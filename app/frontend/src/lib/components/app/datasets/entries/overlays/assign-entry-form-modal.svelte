@@ -1,11 +1,10 @@
 <script lang="ts">
-  import { toast } from "svelte-sonner";
-
   import AssignEntryForm from "@/components/app/datasets/entries/forms/assign-entry-form.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import DialogTitle from "@/components/ui/dialog/dialog-title.svelte";
 
+  import { showToast } from "@/components/ui/toast/index.svelte";
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
   import { ProjectMemberRecord, projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
@@ -55,7 +54,8 @@
 
     open = false;
     $refetches.entries.list = new Date();
-    toast.success("Entry assigned", {
+    showToast.success({
+      title: "Entry assigned",
       description: `The entry "${entryRecord?.resource}" has been assigned to "${projectMemberRecord?.email}".`,
     });
   }

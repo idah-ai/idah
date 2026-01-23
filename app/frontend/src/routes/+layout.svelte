@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { CircleAlertIcon, CircleCheckIcon, InfoIcon, LoaderCircleIcon, TriangleAlertIcon } from "@lucide/svelte";
   import { ModeWatcher } from "mode-watcher";
 
   import favicon from "@/components/app/brand/idah-logo-favicon.svg";
@@ -18,6 +19,24 @@
 
 <main class="bg-background relative flex min-h-screen flex-col">
   <ModeWatcher />
-  <Toaster position="bottom-center" richColors closeButton />
+
+  <Toaster position="bottom-center" richColors>
+    {#snippet loadingIcon()}
+      <LoaderCircleIcon class="size-4 animate-spin" />
+    {/snippet}
+    {#snippet successIcon()}
+      <CircleCheckIcon class="size-4" />
+    {/snippet}
+    {#snippet errorIcon()}
+      <CircleAlertIcon class="size-4" />
+    {/snippet}
+    {#snippet infoIcon()}
+      <InfoIcon class="size-4" />
+    {/snippet}
+    {#snippet warningIcon()}
+      <TriangleAlertIcon class="size-4" />
+    {/snippet}
+  </Toaster>
+
   {@render children?.()}
 </main>
