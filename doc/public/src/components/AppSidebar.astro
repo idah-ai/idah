@@ -13,7 +13,7 @@ const pathname = Astro.url.pathname;
 
 <!-- Mobile sidebar -->
 <aside id="mobile-sidebar" class="bg-background fixed inset-y-0 left-0 z-40 w-full -translate-x-full pt-16 lg:hidden">
- <MobileApplicationSidebar client:load />
+ <MobileApplicationSidebar client:load {pathname} />
 </aside>
 
 <script>
