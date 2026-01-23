@@ -4,7 +4,6 @@
   import { page } from "$app/state";
   import { ExternalLinkIcon } from "@lucide/svelte";
   import { onDestroy, onMount } from "svelte";
-  import { toast } from "svelte-sonner";
   import { writable } from "svelte/store";
 
   import EntryPriority from "@/components/app/datasets/entries/badges/entry-priority.svelte";
@@ -20,6 +19,7 @@
   import Progress from "@/components/ui/progress/progress.svelte";
   import Text from "@/components/ui/text/Text.svelte";
 
+  import { showToast } from "@/components/ui/toast/index.svelte";
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
   import { JobRecord, jobsBackendDataSource } from "@/data/model/media/jobs/record";
   import { mediaBackendDataSource } from "@/data/model/media/medias/medias-record";
@@ -111,7 +111,9 @@
       }
     } catch (error) {
       console.error(error);
-      toast.error("Failed to assign entry to you");
+      showToast.error({
+        title: "Failed to assign entry to you",
+      });
     } finally {
       goto(resolve(`/entries/${entryId}/plugin`));
     }

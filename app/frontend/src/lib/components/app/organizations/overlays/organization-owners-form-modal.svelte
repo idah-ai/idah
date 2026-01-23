@@ -1,12 +1,12 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { toast } from "svelte-sonner";
 
   import OrganizationOwnersForm from "@/components/app/organizations/forms/organization-owners-form.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import { DialogTitle } from "@/components/ui/dialog";
 
+  import { showToast } from "@/components/ui/toast/index.svelte";
   import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
@@ -68,7 +68,8 @@
 
     closeThisModal();
     $refetches.accounts.list = new Date();
-    toast.success("Organization owner(s) added", {
+    showToast.success({
+      title: "Organization owner(s) added",
       description: "The organization owner(s) has been added.",
     });
   }
