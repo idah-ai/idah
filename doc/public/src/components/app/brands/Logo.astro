@@ -8,7 +8,7 @@ export interface Props {
 const { id } = Astro.props;
 ---
 
-<img id={id} class="w-20 md:w-24 lg:w-28" src={idahLogoLight.src} alt="IDAH Logo" />
+<img id={id} class="max-w-none h-auto" src={idahLogoLight.src} alt="IDAH Logo" />
 
 <script define:vars={{ idahLogoLight, idahLogoDark, id }}>
   function updateLogo() {
