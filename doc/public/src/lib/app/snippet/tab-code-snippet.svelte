@@ -4,6 +4,7 @@
   import TabsList from "$lib/components/ui/tabs/tabs-list.svelte";
   import TabsTrigger from "$lib/components/ui/tabs/tabs-trigger.svelte";
   import Tabs from "$lib/components/ui/tabs/tabs.svelte";
+  import { humanize } from "$lib/utils/string";
 
   interface TabCodeSnippetProps {
     value: string;
@@ -22,7 +23,7 @@
   <TabsList class="rounded-lg bg-muted p-1">
     {#each items as item}
       <TabsTrigger value={item.value} class="rounded-md px-3 text-sm hover:cursor-pointer">
-        {item.value}
+        {humanize(item.value)}
       </TabsTrigger>
     {/each}
   </TabsList>

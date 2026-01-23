@@ -1,5 +1,5 @@
 ---
-import Sidebar from "@components/AppSidebar.astro";
+import AppSidebar from "@components/AppSidebar.astro";
 import Footer from "@components/Footer.astro";
 import Header from "@components/Header.astro";
 import Layout from "@layouts/Layout.astro";
@@ -10,19 +10,21 @@ import Layout from "@layouts/Layout.astro";
     <Header />
   </slot>
 
-  <div class="flex min-h-screen">
-    <slot name="sidebar">
-      <Sidebar />
-    </slot>
+    <div class="flex min-h-screen">
+       <slot name="sidebar">
+      <AppSidebar />
+      </slot>
 
-    <main class="flex-1 px-8 py-8">
-      <div class="mx-auto max-w-7xl pt-16">
-        <slot />
-      </div>
-    </main>
+    <div class="flex flex-1 flex-col">
+      <main class="flex-1 px-8 py-8">
+        <div class="mx-auto max-w-7xl pt-16">
+          <slot />
+        </div>
+      </main>
+
+      <slot name="footer">
+        <Footer />
+      </slot>
+    </div>
   </div>
-
-  <slot name="footer">
-    <Footer />
-  </slot>
 </Layout>

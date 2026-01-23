@@ -20,8 +20,6 @@
   let { pathname }: { pathname: string } = $props();
 
   function hasActiveChild(item: SidebarType, pathname: string): boolean {
-    console.log(item, pathname);
-
     if (!item.children) return false;
     return item.children.some((child) => child.href === pathname || hasActiveChild(child, pathname));
   }

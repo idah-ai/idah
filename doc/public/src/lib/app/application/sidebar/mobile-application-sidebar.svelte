@@ -1,16 +1,22 @@
 <script lang="ts">
   import { mobileSidebarItems, type SidebarType } from "$lib/app/sidebar/sidebar.data";
   import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "$lib/components/ui/collapsible";
+  import { cn } from "$lib/utils";
   import { ChevronRightIcon } from "@lucide/svelte";
 
-  let open = $state(true);
+  let { pathname }: { pathname: string } = $props();
+
+  function hasActiveChild(item: SidebarType, pathname: string): boolean {
+    if (!item.children) return false;
+    return item.children.some((child) => child.href === pathname || hasActiveChild(child, pathname));
+  }
 </script>
 
 {#snippet getMobileApplicationSidebarItem(item: SidebarType)}
   {@const hasChildren = item.children?.length > 0}
 
   {#if hasChildren}
-    <Collapsible class="group/collapsible w-full" {open}>
+    <Collapsible class="group/collapsible w-full" open={hasActiveChild(item, pathname)}>
       <CollapsibleTrigger asChild class="w-full cursor-pointer justify-between">
         <button
           type="button"
@@ -42,15 +48,12 @@
   {:else if item.href}
     <a
       href={item.href}
-      class="
-    block w-full
-    px-2 py-1.5
-    rounded-md
-    transition-colors
-    hover:bg-muted
-    hover:text-primary
-    cursor-pointer
-  "
+      class={cn(
+        "block w-full px-2 py-1.5 rounded-md transition-colors hover:bg-muted hover:text-primary cursor-pointer",
+        {
+          "text-primary bg-muted font-semibold": item.href === pathname,
+        },
+      )}
     >
       {item.label}
     </a>
@@ -67,15 +70,12 @@
       {#if sidebar.href}
         <a
           href={sidebar.href}
-          class="
-    block w-full
-    px-2 py-1.5
-    rounded-md
-    transition-colors
-    hover:bg-muted
-    hover:text-primary
-    cursor-pointer
-  "
+          class={cn(
+            "block w-full px-2 py-1.5 rounded-md transition-colors hover:bg-muted hover:text-primary cursor-pointer",
+            {
+              "text-primary bg-muted font-semibold": sidebar.href === pathname,
+            },
+          )}
         >
           {sidebar.label}
         </a>
