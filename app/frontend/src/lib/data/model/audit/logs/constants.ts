@@ -24,7 +24,9 @@ export type LogAction =
   | "logged_out"
   | "assigned"
   | "unassigned"
-  | "submitted";
+  | "submitted"
+  | "failed_log_in_attempt";
+
 export const logActions: LabelValue<LogAction>[] = [
   { label: "Created", value: "created" },
   { label: "Updated", value: "updated" },
@@ -37,4 +39,6 @@ export const logActions: LabelValue<LogAction>[] = [
   { label: "Unassigned", value: "unassigned" },
 
   { label: "Submitted", value: "submitted" },
+
+  { label: "Failed Login Attempt", value: "failed_log_in_attempt" },
 ];
