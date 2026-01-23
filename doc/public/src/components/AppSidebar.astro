@@ -1,7 +1,7 @@
 ---
-import { Sidebar, SidebarContent, SidebarProvider } from "$lib/components/ui/sidebar";
-import ApplicationContent from "$lib/app/application/content/application-content.svelte";
 import ApplicationSidebar from "$lib/app/application/sidebar/application-sidebar.svelte";
+import MobileApplicationSidebar from "$lib/app/application/sidebar/mobile-application-sidebar.svelte";
+import { mobileSidebarItems } from "$lib/app/sidebar/sidebar.data";
 
 const pathname = Astro.url.pathname;
 ---
@@ -13,11 +13,7 @@ const pathname = Astro.url.pathname;
 
 <!-- Mobile sidebar -->
 <aside id="mobile-sidebar" class="bg-background fixed inset-y-0 left-0 z-40 w-full -translate-x-full pt-16 lg:hidden">
-  <div class="h-full overflow-y-auto">
-    <SidebarProvider>
-      <ApplicationContent> Mobile Sidebar </ApplicationContent>
-    </SidebarProvider>
-  </div>
+ <MobileApplicationSidebar client:load />
 </aside>
 
 <script>
