@@ -6,11 +6,14 @@
 
 <!-- LOGO GOES HERE -->
 
+[![Zed](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/zed-industries/zed/main/assets/badge/v0.json)](https://zed.dev)
 ![GitHub stars](https://img.shields.io/github/stars/ingedata-ph/idah)
 ![License](https://img.shields.io/github/license/ingedata-ph/idah)
 ![Build Status](https://img.shields.io/github/actions/workflow/status/ingedata-ph/idah/ci.yml)
 
 _A short description of the project._
+
+---
 
 <!-- 3. Table of Contents (TOC) -->
 
@@ -23,24 +26,30 @@ _A short description of the project._
 - [Contributing](#contributing)
 - [License](#license)
 
+---
+
 <!-- 4. About -->
 
-## About
+## **About**
 
 _Detailed explanation of the project, its purpose, and key highlights._
 
+---
+
 <!-- 5. Features -->
 
-## Features
+## **Features**
 
 - _Feature 1_
 - _Feature 2_
 - _Feature 3_
 
+---
+
 <!-- TODO: TO BE REVIEWED -->
 <!-- 6. Installation -->
 
-## Installation
+## **Installation**
 
 ### Prerequisites
 
@@ -69,14 +78,18 @@ By default, IDAH will start to run on the port `8443`
 
 You can access the webpage at `https://idah.localhost:8443`
 
+---
+
 <!-- TODO: TO BE REVIEWED -->
 <!-- 7. Usage -->
 
-## **7. Usage**
+## **Usage**
+
+---
 
 <!-- 8. Contributing -->
 
-## **8. Contributing**
+## **Contributing**
 
 1. Fork the repository.
 2. Create a feature branch (`git checkout -b feature/foo`).
@@ -109,15 +122,19 @@ You can access the webpage at `https://idah.localhost:8443`
     └── other-plugins
 ```
 
+---
+
 <!-- 9. License -->
 
-## **9. License**
+## **License**
 
 This project is licensed under the [MIT License](LICENSE).
 
+---
+
 <!-- 10. Additional Sections -->
 
-## 10. Additional Sections (Optional)
+## **Additional Sections (Optional)**
 
 FAQ: Frequently asked questions.
 
@@ -126,3 +143,13 @@ Roadmap: Future plans.
 Acknowledgments: Credits to contributors/libraries.
 
 Example README.md
+
+<!-- TODO: improvements as parts of docs-->
+<!--
+  1. setup method ? apart from docker
+  2. setting up with/without databases
+  3. revise setup/dev-setup script
+  4. revise environment variables
+  5. support external data sources/destinations (for medias, etc.)
+
+-->
