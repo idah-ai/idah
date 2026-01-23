@@ -1,7 +1,7 @@
 import { goto } from "$app/navigation";
 import { resolve } from "$app/paths";
 
-import { datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
+import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
 import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
 
 import type { Command } from "@/command/Command";
@@ -105,7 +105,12 @@ export function activityContextForEntry(entry: EntryRecord): IActivityContext {
                * If there are more entries, redirect to the entries list page
                * If there are no more entries, redirect to the datasets list page
                */
-              const datasetsRes = await datasetsBackendDataSource.list({ noCache: true });
+              const datasetsRes = await datasetsBackendDataSource.list({
+                fields: {
+                  [DatasetRecord.type]: ["id"],
+                },
+                noCache: true,
+              });
               if (datasetsRes.data.length) {
                 goto(resolve(`/projects/${entry.dataset.project.id}/datasets/${entry.dataset.id}/entries`));
               } else {

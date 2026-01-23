@@ -228,6 +228,21 @@
       columns={logColumns}
       dataSource={logsBackendDataSource}
       listOptions={{
+        fields: {
+          [LogRecord.type]: [
+            "id",
+            "actor_account_id",
+            "actor_account_email",
+            "action",
+            "resource_type",
+            "resource_id",
+            "organization_id",
+            "project_id",
+            "dataset_id",
+            "entry_id",
+            "event_timestamp",
+          ],
+        },
         filters: {
           actor_account_role_name__nin: ["system"],
         },

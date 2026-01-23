@@ -1,6 +1,5 @@
-import { toast } from "svelte-sonner";
-
 import { errorClasses } from "$lib/utils/error/error.classes";
+import { showToast } from "@/components/ui/toast/index.svelte";
 
 import type { JsonApiErrorResponse } from "$lib/data/model/types";
 import type { ErrorClassDetail } from "$lib/utils/error/error.classes.types";
@@ -23,9 +22,9 @@ export function showErrorToast(errorToastOptions: ErrorToastOptions) {
   const errorClassTitle: string = errorClass ? errorClass.title : fallbackTitle;
   const errorClassMessage: string = message ? message : errorClass?.fallbackMessage || fallbackMessage;
 
-  toast.error(errorClassTitle, {
+  showToast.error({
+    title: errorClassTitle,
     description: errorClassMessage,
-    richColors: true,
   });
 }
 
@@ -47,9 +46,9 @@ export function showUnexpectedErrorToast(params: ShowUnexpectedErrorToastParams)
 export function showActionFailedToast(error: unknown) {
   console.error(error);
 
-  toast.error("Action failed", {
+  showToast.error({
+    title: "Action failed",
     description:
       "The action could not be completed, please try again later. If the problem continues, please contact support.",
-    richColors: true,
   });
 }

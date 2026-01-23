@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount, setContext } from "svelte";
-  import { toast } from "svelte-sonner";
   import { uuidv7 } from "uuidv7";
 
   import {
@@ -35,13 +34,14 @@
 
   import PopoverTrigger from "@/components/ui/popover/popover-trigger.svelte";
   import { SidebarProvider } from "@/components/ui/sidebar";
+  import { showToast } from "@/components/ui/toast/index.svelte";
   import type { AnnotationShape, AnnotationValue } from "@/context/AnnotationContext";
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import PropertiesSidebar from "./layout/sidebar/properties-sidebar.svelte";
   import CategoryProperties from "./video-annotation-activity/categoryProperties/categoryProperties.svelte";
   import {
-    registerVisualModeShortcuts,
     registerOnSelectBoxModeShortcuts,
+    registerVisualModeShortcuts,
     unregisterSelectionShortcuts,
   } from "./video-annotation-activity/shortcut";
   import type { Point, VideoFrameSelection, VideoShape } from "./video-annotation-activity/VideoAnnotationContext";
@@ -297,7 +297,7 @@
   context.commands.on("annotation.delete", async (props: { id: string }) => {
     const annotation = await annotationsIDB?.get("annotations", props.id);
 
-    if (!annotation) return toast.error("cannot remove not found annotation");
+    if (!annotation) return showToast.error({ title: "cannot remove not found annotation" });
 
     return {
       name: "remove annotation",
@@ -365,7 +365,7 @@
       async apply() {
         const v = await annotationsIDB?.get("annotations", props.id);
 
-        if (!v) return toast.error("bounding box not found");
+        if (!v) return showToast.error({ title: "Bounding box not found" });
 
         const updatedAt = new Date();
         v.shape = {
@@ -403,7 +403,7 @@
       async undo() {
         const v = await annotationsIDB?.get("annotations", props.id);
 
-        if (!v) return toast.error("bounding box not found");
+        if (!v) return showToast.error({ title: "Bounding box not found" });
 
         const updatedAt = new Date();
         v.shape = {
@@ -447,10 +447,10 @@
   context.commands.on("keyframe.delete", async (props: { annotationId: string; frame: number }) => {
     const annotation = await annotationsIDB?.get("annotations", props.annotationId);
 
-    if (!annotation) return toast.error("cannot remove selection, annotation not found");
+    if (!annotation) return showToast.error({ title: "cannot remove selection, annotation not found" });
 
     let index = annotation.shape.frames.findIndex((v: VideoFrameSelection) => v.frame == props.frame);
-    if (index == -1) return toast.warning("No frame to remove");
+    if (index == -1) return showToast.warning({ title: "No frame to remove" });
 
     let selection = annotation.shape.frames[index];
 
@@ -460,10 +460,10 @@
         const updatedAt = new Date();
         const annotation = await annotationsIDB?.get("annotations", props.annotationId);
 
-        if (!annotation) return toast.error("cannot remove keyframe, annotation not found");
+        if (!annotation) return showToast.error({ title: "cannot remove keyframe, annotation not found" });
 
         let index = annotation.shape.frames.findIndex((v: VideoFrameSelection) => v.frame == props.frame);
-        if (index == -1) return toast.warning("No frame to remove");
+        if (index == -1) return showToast.warning({ title: "No frame to remove" });
 
         let newframes = annotation.shape.frames.filter((v: VideoFrameSelection) => v.frame != props.frame);
         annotation.shape = {
@@ -504,7 +504,7 @@
         const updatedAt = new Date();
         let annotation = await annotationsIDB?.get("annotations", props.annotationId);
 
-        if (!annotation) return toast.error("cannot undo remove selection, annotation not found");
+        if (!annotation) return showToast.error({ title: "cannot undo remove selection, annotation not found" });
 
         let newframes = [...annotation.shape.frames.filter((v) => v.frame != props.frame), selection];
         annotation.shape = {
@@ -621,7 +621,7 @@
   context.commands.on("annotation.toggleHidden", async (props: { id: string }) => {
     const annotation = await annotationsIDB?.get("annotations", props.id);
 
-    if (!annotation) return toast.error("cannot toggle hidden, annotation not found");
+    if (!annotation) return showToast.error({ title: "cannot toggle hidden, annotation not found" });
 
     const wasHidden = annotation.hidden;
 
@@ -637,7 +637,7 @@
   context.commands.on("annotation.toggleLocked", async (props: { id: string }) => {
     const annotation = await annotationsIDB?.get("annotations", props.id);
 
-    if (!annotation) return toast.error("cannot toggle locked, annotation not found");
+    if (!annotation) return showToast.error({ title: "cannot toggle locked, annotation not found" });
 
     const wasLocked = annotation.locked;
 
