@@ -62,7 +62,7 @@ function reorderByAngle(points: Point[], center: Point): [Point[], [number, numb
 function matchVerticesByBarycenter(
   polyMin: Point[],
   polyMax: Point[]
-): [Point[], Point[], Record<number, number>, [number, number, number][], [number, number, number][]] {
+): [Point[], Point[], Record<number, number>] {
   const cMin = polygonBarycenter(polyMin);
   const cMax = polygonBarycenter(polyMax);
 
@@ -105,7 +105,7 @@ function matchVerticesByBarycenter(
     }
   }
 
-  return [polyMinRe, polyMaxRe, matches, polarMin, polarMax];
+  return [polyMinRe, polyMaxRe, matches];
 }
 
 function expandPolygonUsingMatches(
@@ -242,7 +242,7 @@ export function interpolatePolygonAtFrame(
     maxFrame = frameStart;
   }
 
-  const [frameStartRe, frameEndRe, matches, polarStart, polarEnd] = matchVerticesByBarycenter(minFrame.points, maxFrame.points);
+  const [frameStartRe, frameEndRe, matches] = matchVerticesByBarycenter(minFrame.points, maxFrame.points);
 
   // Expand both polygons using matches
   const [P1, generatePolyMax] = expandPolygonUsingMatches(frameStartRe, frameEndRe, matches);
