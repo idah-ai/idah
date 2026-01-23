@@ -2,13 +2,13 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { onMount } from "svelte";
-  import { toast } from "svelte-sonner";
 
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import OrganizationFormModal from "@/components/app/organizations/overlays/organization-form-modal.svelte";
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
   import { SquarePenIcon, Trash2Icon } from "@lucide/svelte";
 
+  import { showToast } from "@/components/ui/toast/index.svelte";
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { OrganizationRecord, organizationsBackendDataSource } from "@/data/model/iam/organizations/record";
   import { authStatus } from "@/security/AuthContext";
@@ -83,6 +83,9 @@
 
   async function loadRelatedProjects() {
     const projectsRes = await projectsBackendDataSource.list({
+      fields: {
+        [ProjectRecord.type]: ["id"],
+      },
       filters: {
         organization_id: organizationId,
       },
@@ -97,7 +100,8 @@
       openConfirmDeleteOrganizationModal = false;
       $refetches.organizations.list = new Date();
       goto(resolve("/organizations"));
-      toast.success("Organization deleted", {
+      showToast.success({
+        title: "Organization deleted",
         description: organizationRecord
           ? `The organization "${organizationRecord?.name}" has been deleted.`
           : "The organization has been deleted.",
