@@ -232,7 +232,7 @@ module Entry
         entry_id: id,
         submission_type: case from_state
                          when :start
-                           nil
+                           "started"
                          when :annotate
                            "submitted"
                          when :review
