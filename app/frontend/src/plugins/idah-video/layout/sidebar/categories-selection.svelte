@@ -16,7 +16,6 @@
   import Button from "@/components/ui/button/button.svelte";
   import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
   import { SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
-  import Text from "@/components/ui/text/Text.svelte";
 
   import { cn } from "@/utils";
   import { humanize } from "@/utils/string";
@@ -151,18 +150,18 @@
 </script>
 
 {#snippet CategoryName(name: string)}
-  <span class="truncate whitespace-nowrap">{name}</span>
+  <div class="truncate whitespace-nowrap">{name}</div>
 {/snippet}
 
 {#snippet annotationSelection(annotation: VideoAnnotation, name: string)}
   <SidebarMenuItem class="list-none">
     <SidebarMenuButton
-      class={cn("group w-full pl-5 pr-0.5 hover:cursor-pointer")}
+      class={cn("group w-full gap-0 pl-8 hover:cursor-pointer")}
       onclick={() => onSelectAnnotation(annotation)}
     >
-      <div class="flex w-full gap-1 text-xs group-hover:w-2/4">
+      <div class="flex items-center gap-1 text-xs">
         <!-- VECTOR SQUARE ICON -->
-        <div class="flex-1">
+        <div class="shrink-0">
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
             <!-- prettier-ignore -->
             <path
@@ -178,14 +177,14 @@
         {@render CategoryName(name)}
       </div>
 
-      <div class="ml-auto flex items-center">
-        <!-- BUTTON::HIDE & SHOW ANNOTATION -->
+      <!-- BUTTON::HIDE & SHOW ANNOTATION -->
+      <div class="ml-auto flex items-center gap-0">
         <Button
           variant="ghost"
           size="icon-sm"
-          class={cn("text-muted-foreground", {
-            "hidden group-hover:inline-flex": !annotation.hidden, // show when mouse hover
-            "inline-flex": annotation.hidden, // show when annotation is hidden
+          class={cn("text-muted-foreground shrink-0", {
+            "opacity-0 group-hover:opacity-100": !annotation.hidden, // show when mouse hover
+            "opacity-100": annotation.hidden, // show when annotation is hidden
           })}
           onclick={(e) => {
             e.stopPropagation();
@@ -203,9 +202,9 @@
         <Button
           variant="ghost"
           size="icon-sm"
-          class={cn("text-muted-foreground", {
-            "hidden group-hover:inline-flex": !annotation.locked, // show when mouse hover
-            "inline-flex": annotation.locked, // show when annotation is locked
+          class={cn("text-muted-foreground shrink-0", {
+            "opacity-0 group-hover:opacity-100": !annotation.locked, // show when mouse hover
+            "opacity-100": annotation.locked, // show when annotation is locked
           })}
           onclick={(e) => {
             e.stopPropagation();
@@ -234,7 +233,7 @@
               {...props}
               variant={isOpen ? "secondary" : "ghost"}
               size="icon-sm"
-              class={cn("text-muted-foreground opacity-0 group-hover:opacity-100", {
+              class={cn("text-muted-foreground shrink-0 opacity-0 group-hover:opacity-100", {
                 "opacity-100": isOpen,
               })}
               onclick={(e) => {
@@ -375,7 +374,7 @@
       {/await}
     {/key}
 
-    <CollapsibleContent class="ml-5" hidden={!openStates[category.id]}>
+    <CollapsibleContent class="ml-4" hidden={!openStates[category.id]}>
       {#key $idb_updated_at}
         {#if !toolMode && db && category}
           {#await db.getAllIndex("category", category.id) then anns}
@@ -408,35 +407,7 @@
 {/snippet}
 
 <div class="flex-col overflow-x-hidden">
-  <Collapsible open={true}>
-    <CollapsibleTrigger>
-      <Text class="text-secondary-foreground" weight="semibold" size="xs">
-        {((s: string) => [s.slice(0, 1).toUpperCase(), s.slice(1)].join(""))(
-          type.split(":").reverse()[0].split(new RegExp(/-|_/)).join(" "),
-        )}
-      </Text>
-    </CollapsibleTrigger>
-    <CollapsibleContent>
-      <div class="flex items-center gap-2 py-2">
-        <Text class="text-secondary-foreground" size="xs" weight="semibold">Categories</Text>
-        {#key $idb_updated_at}
-          {#await db?.getAllIndex("category") then anns}
-            {@const filteredCount =
-              anns?.filter(
-                (annotation) =>
-                  currentFrame >= annotation.shape.start &&
-                  currentFrame <= annotation.shape.end &&
-                  annotation.shape.type == type,
-              ).length || 0}
-            <Badge variant="gray" rounded="full" class="text-[0.625rem]">
-              {filteredCount}
-            </Badge>
-          {/await}
-        {/key}
-      </div>
-      {#each categoriesTree as category (category.id)}
-        {@render categorySelection(category, category.nestedCategories, onSelect, selected_category)}
-      {/each}
-    </CollapsibleContent>
-  </Collapsible>
+  {#each categoriesTree as category (category.id)}
+    {@render categorySelection(category, category.nestedCategories, onSelect, selected_category)}
+  {/each}
 </div>
