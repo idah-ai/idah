@@ -20,6 +20,8 @@
   let { pathname }: { pathname: string } = $props();
 
   function hasActiveChild(item: SidebarType, pathname: string): boolean {
+    console.log(item, pathname);
+
     if (!item.children) return false;
     return item.children.some((child) => child.href === pathname || hasActiveChild(child, pathname));
   }
@@ -89,7 +91,7 @@
 {/snippet}
 
 <SidebarProvider>
-  <Sidebar class="h-full overflow-y-auto border-none transition-transform duration-300 ease-in-out">
+  <Sidebar class="pt-16 overflow-y-auto border-none">
     <SidebarContent class="h-full pt-2 text-muted-foreground border-r bg-background">
       {#each destopSidebarItems as sidebar}
         <SidebarGroup>
