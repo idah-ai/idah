@@ -83,6 +83,9 @@
 
   async function loadRelatedProjects() {
     const projectsRes = await projectsBackendDataSource.list({
+      fields: {
+        [ProjectRecord.type]: ["id"],
+      },
       filters: {
         organization_id: organizationId,
       },

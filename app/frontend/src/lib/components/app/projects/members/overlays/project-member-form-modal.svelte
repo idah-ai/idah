@@ -8,6 +8,7 @@
   import DialogTitle from "@/components/ui/dialog/dialog-title.svelte";
 
   import {
+    ProjectMemberRecord,
     projectMembersBackendDataSource,
     type ProjectMemberRole,
   } from "@/data/model/dataset/projects/members/record";
@@ -60,10 +61,14 @@
         /** Check if member is already in the project */
         const existingProjectMember = (
           await projectMembersBackendDataSource.list({
+            fields: {
+              [ProjectMemberRecord.type]: ["id"],
+            },
             filters: {
               project_id: projectId,
               account_id: account.id,
             },
+            noCache: true,
           })
         ).data[0];
 
@@ -74,7 +79,7 @@
             {
               attributes: {
                 disabled_at: null,
-                role,
+                role: role || undefined,
               },
             },
             {

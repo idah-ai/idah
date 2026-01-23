@@ -9,7 +9,7 @@
   import { projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
   import { projectColumns } from "@/components/app/projects/datasource-tables/project-columns";
-  import { datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
+  import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { OrganizationRecord, organizationsBackendDataSource } from "@/data/model/iam/organizations/record";
   import { authStatus } from "@/security/AuthContext";
@@ -44,8 +44,8 @@
     const projectIds = Array.from(new Set(response.data.map((project) => project.id)));
     const datasetsRes = await datasetsBackendDataSource.list({
       fields: {
-        "dataset:datasets": ["labels"],
-        "dataset:projects": [],
+        [DatasetRecord.type]: ["labels"],
+        [ProjectRecord.type]: ["id"],
       },
       filters: {
         project_id__in: projectIds,

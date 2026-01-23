@@ -83,7 +83,7 @@
   async function fetchDataset() {
     return await datasetsBackendDataSource.get(datasetId, {
       fields: {
-        "datasets:datasets": ["name", "modality"],
+        [DatasetRecord.type]: ["name", "modality"],
       },
       noCache: true,
     });

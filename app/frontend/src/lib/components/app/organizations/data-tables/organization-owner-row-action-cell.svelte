@@ -4,6 +4,7 @@
   import { toast } from "svelte-sonner";
 
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
+  import Tooltips from "@/components/app/tooltips/tooltips.svelte";
   import Button from "@/components/ui/button/button.svelte";
 
   import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
@@ -24,6 +25,9 @@
   async function removeOrgOwner() {
     try {
       const { data: account } = await accountsBackendDataSource.get(accountId, {
+        fields: {
+          [AccountRecord.type]: ["id", "role_name", "role_scope"],
+        },
         noCache: true,
       });
 
@@ -62,9 +66,18 @@
 </script>
 
 <Can action="delete" resource="iam:organizations" scopes={["as_org_owner"]}>
-  <Button variant="ghost" size="icon-sm" onclick={() => (openConfirmRemoveOrgOwnerModal = true)}>
-    <UserRoundXIcon />
-  </Button>
+  <Tooltips align="center">
+    {#snippet trigger()}
+      <Button variant="ghost" size="icon-sm" onclick={() => (openConfirmRemoveOrgOwnerModal = true)}>
+        <UserRoundXIcon />
+      </Button>
+    {/snippet}
+
+    {#snippet content()}
+      Remove "{accountRecord.email}" <br />
+      from organization owner
+    {/snippet}
+  </Tooltips>
 
   <ConfirmModal
     title="Remove Organization Owner"
