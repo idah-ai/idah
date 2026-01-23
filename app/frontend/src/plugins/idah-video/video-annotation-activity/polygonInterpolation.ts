@@ -112,8 +112,6 @@ function expandPolygonUsingMatches(
   polyMin: Point[],
   polyMax: Point[],
   matches: Record<number, number>,
-  polarMin: [number, number, number][],
-  polarMax: [number, number, number][],
 ): [ InterpolatedVertex[], Point[] ] {
   const nMax = polyMax.length;
   const expanded: (InterpolatedVertex | null)[] = Array(nMax).fill(null);
@@ -247,7 +245,7 @@ export function interpolatePolygonAtFrame(
   const [frameStartRe, frameEndRe, matches, polarStart, polarEnd] = matchVerticesByBarycenter(minFrame.points, maxFrame.points);
 
   // Expand both polygons using matches
-  const [P1, generatePolyMax] = expandPolygonUsingMatches(frameStartRe, frameEndRe, matches, polarStart, polarEnd);
+  const [P1, generatePolyMax] = expandPolygonUsingMatches(frameStartRe, frameEndRe, matches);
 
   // linear interpolation
   const alpha = (current_frame - minFrame.frame) / (maxFrame.frame - minFrame.frame);
