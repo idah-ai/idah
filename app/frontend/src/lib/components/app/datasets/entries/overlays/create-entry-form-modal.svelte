@@ -1,6 +1,5 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { toast } from "svelte-sonner";
 
   import FileUpload from "@/components/app/forms/fields/upload/file-upload.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
@@ -10,6 +9,7 @@
   import Spinner from "@/components/ui/spinner/spinner.svelte";
   import Text from "@/components/ui/text/Text.svelte";
 
+  import { showToast } from "@/components/ui/toast/index.svelte";
   import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
   import { mediaBackendDataSource } from "@/data/model/media/medias/medias-record";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
@@ -64,7 +64,7 @@
 
   async function uploadMedia(): Promise<void> {
     if (!selectedMedias || selectedMedias.length === 0) {
-      toast.error("No media selected for upload.");
+      showToast.error({ title: "No media selected for upload." });
       return;
     }
 
@@ -113,7 +113,8 @@
       }
     }
 
-    toast.success("Entry uploaded", {
+    showToast.success({
+      title: "Entry uploaded",
       description: "The entries has been uploaded successfully.",
     });
     $refetches.entries.list = new Date();

@@ -68,12 +68,24 @@
       dataSource={accountsBackendDataSource}
       listOptions={{
         fields: {
-          [AccountRecord.type]: ["name", "email", "enabled", "role_name", "joined_at", "created_at", "updated_at"],
+          [AccountRecord.type]: [
+            "id",
+            "name",
+            "email",
+            "enabled",
+            "role_name",
+            "role_scope",
+            "picture_url",
+            "joined_at",
+            "invitation_expired_at",
+            "created_at",
+          ],
         },
         filters: {
           role_name__nin: ["system"],
         },
       }}
+      disabledActiveStateFilterSortKeys={["role_name__nin"]}
     >
       {#snippet addNewRecordButton()}
         {@render AddNewAccountButton()}

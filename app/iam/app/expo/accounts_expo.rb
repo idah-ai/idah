@@ -28,14 +28,14 @@ class AccountsExpo < BaseExpo
     delete
   end
 
-  expose on_http(:patch, "/:id/join", auth: nil) do
+  expose on_http(:patch, "/:token/join", auth: nil) do
     desc "Mark account as joined when user accepts invitation"
     input do
-      field :id, String
+      field :token, String
     end
   end
   def join
-    account, password_reset_token = service.mark_as_joined(params[:id])
+    account, password_reset_token = service.mark_as_joined(params[:token])
     renderer.meta = {
       password_reset_token: password_reset_token
     }
@@ -43,7 +43,7 @@ class AccountsExpo < BaseExpo
     account
   end
 
-  expose on_http(:post, "/:id/resend_invitation", auth: nil) do
+  expose on_http(:post, "/:id/resend_invitation") do
     desc "Resend account invitation email"
     input do
       field :id, String
@@ -51,5 +51,11 @@ class AccountsExpo < BaseExpo
   end
   def resend_invitation
     service.resend_pending_invitations(params[:id])
+  end
+
+  expose on_resource_event(Resource::Iam::Organizations, "deleted")
+  def on_organization_deleted
+    organization_id = message.content[:resource_id]
+    service.remove_org_from_account_role_scope(organization_id)
   end
 end

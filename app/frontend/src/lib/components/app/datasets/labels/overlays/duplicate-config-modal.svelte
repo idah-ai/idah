@@ -1,6 +1,5 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { toast } from "svelte-sonner";
 
   import MultipleSelectDatasourceField from "@/components/app/forms/fields/select/multiple/multiple-select-datasource-field.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
@@ -10,6 +9,7 @@
   import Label from "@/components/ui/label/label.svelte";
   import Switch from "@/components/ui/switch/switch.svelte";
 
+  import { showToast } from "@/components/ui/toast/index.svelte";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
 
@@ -75,7 +75,8 @@
       });
 
       closeThisModal();
-      toast.success("Label configurations duplicated", {
+      showToast.success({
+        title: "Label configurations duplicated",
         description: `The label configurations has been duplicated.`,
       });
     } catch (error) {

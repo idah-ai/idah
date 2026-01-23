@@ -16,7 +16,14 @@
 </script>
 
 {#if account}
-  <AccountAvatar name={account.name} email={account.email} pictureUrl={account.picture_url} showName showEmail />
+  <AccountAvatar
+    name={account.name}
+    email={account.email}
+    pictureUrl={account.picture_url}
+    showName
+    showEmail
+    emailIsClickable
+  />
 {:else}
   <Text size="sm" class="text-muted-foreground">
     Unknown Account (ID: {logRecord.actor_account_id})

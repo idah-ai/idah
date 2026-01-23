@@ -4,7 +4,6 @@
   import { page } from "$app/state";
   import { ExternalLinkIcon } from "@lucide/svelte";
   import { onDestroy, onMount } from "svelte";
-  import { toast } from "svelte-sonner";
   import { writable } from "svelte/store";
 
   import EntryPriority from "@/components/app/datasets/entries/badges/entry-priority.svelte";
@@ -20,6 +19,7 @@
   import Progress from "@/components/ui/progress/progress.svelte";
   import Text from "@/components/ui/text/Text.svelte";
 
+  import { showToast } from "@/components/ui/toast/index.svelte";
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
   import { JobRecord, jobsBackendDataSource } from "@/data/model/media/jobs/record";
   import { mediaBackendDataSource } from "@/data/model/media/medias/medias-record";
@@ -111,7 +111,9 @@
       }
     } catch (error) {
       console.error(error);
-      toast.error("Failed to assign entry to you");
+      showToast.error({
+        title: "Failed to assign entry to you",
+      });
     } finally {
       goto(resolve(`/entries/${entryId}/plugin`));
     }
@@ -236,9 +238,9 @@
 </script>
 
 <Card class="hover:bg-primary/5 hover:shadow-primary/10 group transition-shadow hover:shadow-md">
-  <CardContent class="grid grid-cols-2">
+  <CardContent class="flex">
     <!-- SECTION::LEFT -->
-    <section class="flex flex-row gap-4">
+    <section class="flex flex-1 flex-row gap-4">
       <!-- CHECKBOX -->
       {#if canUpdateEntry || canDeleteEntry}
         <div class="my-auto">
@@ -298,71 +300,76 @@
           </Text>
         {/if}
 
-        <div class="flex flex-col items-start">
-          <DataDisplay label="Created at">
-            {#snippet slotValue()}
-              <DateText
-                datetime={entry.created_at}
-                datetimeFormat="MMM dd, yyyy"
-                size="sm"
-                weight="light"
-                showTooltip
-              />
-            {/snippet}
-          </DataDisplay>
+        <!-- INFO -->
+        <div class="grid grid-cols-2 gap-4">
+          <div class="flex flex-col gap-2">
+            <!-- CREATED AT -->
+            <DataDisplay label="Created at">
+              {#snippet slotValue()}
+                <DateText
+                  datetime={entry.created_at}
+                  datetimeFormat="MMM dd, yyyy"
+                  size="sm"
+                  weight="light"
+                  showTooltip
+                />
+              {/snippet}
+            </DataDisplay>
 
-          <DataDisplay label="Updated at">
-            {#snippet slotValue()}
-              <DateText
-                datetime={entry.updated_at}
-                datetimeFormat="MMM dd, yyyy"
-                size="sm"
-                weight="light"
-                showTooltip
-              />
-            {/snippet}
-          </DataDisplay>
-        </div>
+            <!-- UPDATED AT -->
+            <DataDisplay label="Updated at">
+              {#snippet slotValue()}
+                <DateText
+                  datetime={entry.updated_at}
+                  datetimeFormat="MMM dd, yyyy"
+                  size="sm"
+                  weight="light"
+                  showTooltip
+                />
+              {/snippet}
+            </DataDisplay>
 
-        <!-- PRIORITY AT -->
-        <div>
-          <EntryPriority {entry} updatable />
+            <!-- PRIORITY AT -->
+            <div>
+              <EntryPriority {entry} updatable />
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <!-- STAGE & ASSIGNED TO -->
+            <DataDisplay label="Stage" value={humanize(wf_step)} />
+
+            <!-- NOTE: Only show assigned to if wf_step is not "done" -->
+            {#if wf_step !== "done"}
+              <DataDisplay label="Assigned to">
+                {#snippet slotValue()}
+                  <ProjectMemberAvatar member={entry.assigned_to} />
+                {/snippet}
+              </DataDisplay>
+            {/if}
+
+            {#if submitted_by_id}
+              <DataDisplay label="Submitted by">
+                {#snippet slotValue()}
+                  <ProjectMemberAvatar member={entry.submitted_by} />
+                {/snippet}
+              </DataDisplay>
+            {/if}
+
+            {#if reviewed_by_id}
+              <DataDisplay label="Reviewed by">
+                {#snippet slotValue()}
+                  <ProjectMemberAvatar member={entry.reviewed_by} />
+                {/snippet}
+              </DataDisplay>
+            {/if}
+          </div>
         </div>
       </div>
     </section>
 
     <!-- SECTION::RIGHT -->
     <section class="flex flex-row gap-4">
-      <!-- STAGE & ASSIGNED TO -->
-      <div class="my-auto flex flex-1 flex-col gap-2">
-        <DataDisplay label="Stage" value={humanize(wf_step)} />
-
-        <!-- NOTE: Only show assigned to if wf_step is not "done" -->
-        {#if wf_step !== "done"}
-          <DataDisplay label="Assigned to">
-            {#snippet slotValue()}
-              <ProjectMemberAvatar member={entry.assigned_to} />
-            {/snippet}
-          </DataDisplay>
-        {/if}
-
-        {#if submitted_by_id}
-          <DataDisplay label="Submitted by">
-            {#snippet slotValue()}
-              <ProjectMemberAvatar member={entry.submitted_by} />
-            {/snippet}
-          </DataDisplay>
-        {/if}
-
-        {#if reviewed_by_id}
-          <DataDisplay label="Reviewed by">
-            {#snippet slotValue()}
-              <ProjectMemberAvatar member={entry.reviewed_by} />
-            {/snippet}
-          </DataDisplay>
-        {/if}
-      </div>
-
       <!-- STATUS & ACTIONS -->
       <div>
         <div class="flex items-center gap-2">

@@ -17,6 +17,10 @@ module Dataset
     field :status, type: String, readonly: true
     field :progress, type: Float, readonly: true
 
+    field :entries_total_count, type: Integer, readonly: true
+    field :entries_completed_count, type: Integer, readonly: true
+    field :entries_in_progress_count, type: Integer, readonly: true
+
     field :created_at, type: Time, readonly: true
     field :updated_at, type: Time, readonly: true
 
@@ -165,6 +169,42 @@ module Dataset
       end
     end
 
+    def create(attributes)
+      with_metadata do
+        add_event_metadata(
+          project_id: attributes[:project_id]
+        )
+
+        super(attributes)
+      end
+    end
+
+    def update!(id, attributes, scope: scoped(:update))
+      with_metadata do
+        dataset = find!(id)
+
+        add_event_metadata(
+          project_id: attributes[:project_id] || dataset.project_id,
+          dataset_id: id
+        )
+
+        super(id, attributes, scope:)
+      end
+    end
+
+    def delete!(id)
+      with_metadata do
+        dataset = find!(id)
+
+        add_event_metadata(
+          project_id: dataset.project_id,
+          dataset_id: id
+        )
+
+        super(id)
+      end
+    end
+
     event(name: "completed")
     def completed!(dataset_id, progress)
       no_event do
@@ -177,6 +217,17 @@ module Dataset
       no_event do
         update!(dataset_id, { progress: progress, status: "in_progress" })
       end
+    end
+
+    private
+
+    def add_event_metadata(**opts)
+      add_metadata(
+        actor_account_id: auth_context.metadata[:id],
+        actor_account_email: auth_context.metadata[:email],
+        actor_account_role_name: auth_context.metadata[:role],
+        **opts
+      )
     end
   end
 end
