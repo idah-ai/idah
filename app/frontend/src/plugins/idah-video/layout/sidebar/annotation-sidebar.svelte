@@ -10,6 +10,7 @@
   import Sidebar from "@/components/ui/sidebar/sidebar.svelte";
 
   import CategoriesSelection from "./categories-selection.svelte";
+  import CategorySidebar from "./category-sidebar.svelte";
 
   import type {
     AnnotationMetadata,
@@ -27,7 +28,7 @@
 
   // Props
   let {
-    sidebarWidthRem = 15,
+    sidebarWidthRem = 18,
     annotationValue,
     onEditValue,
     onSelectAnnotation,
@@ -133,6 +134,19 @@
   <SidebarContent>
     {#each filteredTools as [tool, categories] (tool)}
       {#if !filteredTools.has(mode) || (filteredTools.has(mode) && tool == mode) || mode == ENTRY_ROOT}
+        <CategorySidebar
+          {db}
+          {currentFrame}
+          currentMode={mode}
+          modalityShape={tool}
+          {categories}
+          onSelectCategory={(selected) => categorySelection(tool, selected)}
+          selectedCategory={tool == ENTRY_ROOT && !(tool == mode)
+            ? $entryRoot?.value.category
+            : annotationValue.category}
+          selectedAnnotationId={selected_id}
+        ></CategorySidebar>
+
         <SidebarGroup>
           <SidebarGroupContent>
             <CategoriesSelection
