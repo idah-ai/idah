@@ -8,7 +8,7 @@ const pathname = Astro.url.pathname;
 
 <!-- Desktop sidebar -->
 <aside class="bg-background hidden w-64 shrink-0 lg:flex">
-  <ApplicationSidebar {pathname} />
+  <ApplicationSidebar client:load {pathname} />
 </aside>
 
 <!-- Mobile sidebar -->
