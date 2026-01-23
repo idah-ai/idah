@@ -3,7 +3,6 @@
   import { page } from "$app/state";
   import { SaveIcon } from "@lucide/svelte";
   import { getContext } from "svelte";
-  import { toast } from "svelte-sonner";
 
   import LabelConfigEditor from "@/components/app/datasets/labels/label-config-editor.svelte";
   import PageHeader from "@/components/app/page/page-header.svelte";
@@ -21,6 +20,7 @@
   import { pluginsBackendDataSource } from "@/data/model/setting/plugin/record";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
 
+  import { showToast } from "@/components/ui/toast/index.svelte";
   import type { ModalityShapes } from "@/data/model/setting/plugin/types";
   import type { IConfig, IConfigProperty, IConfigValue } from "@/plugin/interface/Activity";
   import type { ProjectMemberScope } from "@/security/types";
@@ -100,7 +100,8 @@
 
       initialLabelConfig = JSON.parse(JSON.stringify(updatedDatasetRes.data.labeling_configuration));
       labelConfig = updatedDatasetRes.data.labeling_configuration;
-      toast.success("Label configurations updated", {
+      showToast.success({
+        title: "Label configurations updated",
         description: "The changes has been saved.",
       });
     } catch (error) {

@@ -174,13 +174,15 @@ RSpec.describe Account::Service, database: true do
     describe "#mark_as_joined" do
       context "when invitation has not expired" do
         it "marks an account as joined" do
+          invitation_token = "token123"
           attributes.merge!(
+            invitation_token:,
             invitation_expired_at: Time.now + 3 * 24 * 60 * 60
           )
 
           account_id = account_repo.create(attributes)
 
-          subject.mark_as_joined(account_id)
+          subject.mark_as_joined(invitation_token)
 
           updated_account = account_repo.find!(account_id)
           expect(updated_account.joined_at).to eq(Time.now)
@@ -189,15 +191,33 @@ RSpec.describe Account::Service, database: true do
 
       context "when invitation has expired" do
         it "raises ValidationFailed error" do
+          invitation_token = "token123"
           attributes.merge!(
+            invitation_token:,
             invitation_expired_at: Time.now - 1
           )
 
-          account_id = account_repo.create(attributes)
+          account_repo.create(attributes)
 
           expect {
-            subject.mark_as_joined(account_id)
+            subject.mark_as_joined(invitation_token)
           }.to raise_error(Verse::Error::ValidationFailed, "Invitation has expired")
+        end
+      end
+
+      context "when invitation token is nil" do
+        it "raises ValidationFailed error" do
+          invalid_token = "token123"
+          attributes.merge!(
+            invitation_token: nil, # Set to nil
+            invitation_expired_at: Time.now - 1
+          )
+
+          account_repo.create(attributes)
+
+          expect {
+            subject.mark_as_joined(invalid_token)
+          }.to raise_error(Verse::Error::RecordNotFound)
         end
       end
     end
@@ -428,6 +448,50 @@ RSpec.describe Account::Service, database: true do
           }
         )
         subject.update(updating_record)
+      end
+    end
+
+    describe "#remove_org_from_account_role_scope" do
+      before do
+        @org_owner_account1 = subject.create(
+          deserialize(
+            {
+              data: {
+                type: Resource::Iam::Accounts,
+                attributes: {
+                  name: "Testing Org Owner 1",
+                  email: "org_owner1@test.com",
+                  role_name: "org_owner",
+                  role_scope: { org: ["999"] }.to_json,
+                  enabled: true,
+                },
+              }
+            }
+          )
+        )
+        @org_owner_account2 = subject.create(
+          deserialize(
+            {
+              data: {
+                type: Resource::Iam::Accounts,
+                attributes: {
+                  name: "Testing Org Owner 2",
+                  email: "org_owner2@test.com",
+                  role_name: "org_owner",
+                  role_scope: { org: ["999", "111"] }.to_json,
+                  enabled: true,
+                },
+              }
+            }
+          )
+        )
+      end
+
+      it "removes the organization from the account role scope" do
+        subject.remove_org_from_account_role_scope("999")
+
+        expect(subject.show(@org_owner_account1.id).role_scope.to_json).to eq ({ "org": [] }).to_json
+        expect(subject.show(@org_owner_account2.id).role_scope.to_json).to eq ({ "org": ["111"] }).to_json
       end
     end
   end

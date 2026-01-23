@@ -1,12 +1,15 @@
 <script lang="ts">
-  import { SquarePenIcon, UserXIcon } from "@lucide/svelte";
+  import { RotateCcwIcon, SquarePenIcon, UserXIcon } from "@lucide/svelte";
   import { onMount } from "svelte";
-  import { toast } from "svelte-sonner";
 
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import AccountFormModal from "@/components/app/iam/accounts/overlays/account-form-modal.svelte";
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
 
+  import { showToast } from "@/components/ui/toast/index.svelte";
+  import { resourcePath } from "@/data/BackendDataSource";
+  import { clearCache } from "@/data/Cache";
+  import { projectMembersBasePath } from "@/data/model/dataset/projects/members/record";
   import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
   import { authStatus } from "@/security/AuthContext";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
@@ -14,9 +17,6 @@
 
   import type { DataTableCellBaseProps } from "@/components/app/datasource-table/types";
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
-  import { clearCache } from "@/data/Cache";
-  import { resourcePath } from "@/data/BackendDataSource";
-  import { projectMembersBasePath } from "@/data/model/dataset/projects/members/record";
 
   // Props
   let { record: account }: DataTableCellBaseProps<AccountRecord> = $props();
@@ -24,6 +24,7 @@
   // Variables
   let currentAccount = $authStatus.authContext;
   let canUpdateAccount = $state(false);
+  let canResentInvitation = $state(false);
   let canCancelInvitation = $state(false);
   let menus: IDropdownMenus = $derived({
     actions: {
@@ -38,6 +39,12 @@
 
             openEditAccountFormModal = true;
           },
+        },
+        {
+          label: "Resend Invitation",
+          icon: RotateCcwIcon,
+          hidden: !canResentInvitation,
+          action: resendInvitation,
         },
         {
           label: "Cancel Invitation",
@@ -57,17 +64,33 @@
   // Lifecycle
   onMount(async () => {
     canUpdateAccount = (await currentAccount?.can("update", "iam:accounts", ["as_org_owner"])) || false;
-    canCancelInvitation = account.joined_at !== null;
+
+    const alreadyJoined = account.joined_at !== null;
+    canResentInvitation = !alreadyJoined;
+    canCancelInvitation = alreadyJoined;
   });
 
   // Functions
   async function fetchAccount() {
     return await accountsBackendDataSource.get(account.id, {
       fields: {
-        "iam:accounts": ["name", "email", "enabled", "role_name", "sso_channel"],
+        [AccountRecord.type]: ["name", "email", "enabled", "role_name", "sso_channel"],
       },
       noCache: true,
     });
+  }
+
+  async function resendInvitation() {
+    try {
+      await accountsBackendDataSource.resend_invitation({ id: account.id });
+      $refetches.accounts.list = new Date();
+      showToast.success({
+        title: "Invitation resent",
+        description: `The account invitation for "${account.email}" has been resent.`,
+      });
+    } catch (error) {
+      showActionFailedToast(error);
+    }
   }
 
   async function removeAccount(): Promise<void> {
@@ -79,7 +102,8 @@
 
       openConfirmCancelInvitationModal = false;
       $refetches.accounts.list = new Date();
-      toast.success("Invitation cancelled", {
+      showToast.success({
+        title: "Invitation cancelled",
         description: `The account invitation for "${account.email}" has been cancelled.`,
       });
     } catch (error) {
