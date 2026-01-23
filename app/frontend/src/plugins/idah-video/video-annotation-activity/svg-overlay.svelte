@@ -416,7 +416,7 @@
       {/each}
     {/await}
 
-    {#if selected && !selected.hidden}
+    {#if selected || mode != DEFAULT_MODE}
       {#if shape?.type == IDAH_VIDEO_BOUNDING_BOX || mode == IDAH_VIDEO_BOUNDING_BOX}
         <BoundingBox
           {pointer}
@@ -426,6 +426,7 @@
           ratio={target_size}
           offset={zoomInfo.offset}
           cursor={cursor_downscaled}
+          hidden={selected?.hidden}
           editable={(shape?.type == IDAH_VIDEO_BOUNDING_BOX || mode == IDAH_VIDEO_BOUNDING_BOX) &&
             !selected?.locked &&
             ["annotate", "review"].includes(context.workflowStep)}
@@ -450,6 +451,7 @@
           ratio={target_size}
           offset={zoomInfo.offset}
           cursor={cursor_downscaled}
+          hidden={selected?.hidden}
           editable={(shape?.type == IDAH_POLYGON || mode == IDAH_POLYGON) &&
             !selected?.locked &&
             ["annotate", "review"].includes(context.workflowStep)}
