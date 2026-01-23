@@ -25,6 +25,9 @@ export type LogAction =
   | "assigned"
   | "unassigned"
   | "submitted"
+  | "start"
+  | "annotate"
+  | "review"
   | "failed_log_in_attempt";
 
 export const logActions: LabelValue<LogAction>[] = [
@@ -39,6 +42,9 @@ export const logActions: LabelValue<LogAction>[] = [
   { label: "Unassigned", value: "unassigned" },
 
   { label: "Submitted", value: "submitted" },
+  { label: "Start", value: "start" },
+  { label: "Annotate", value: "annotate" },
+  { label: "Review", value: "review" },
 
   { label: "Failed Login Attempt", value: "failed_log_in_attempt" },
 ];
