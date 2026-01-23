@@ -4,7 +4,7 @@ export interface SidebarType {
   children: SidebarType[];
 }
 
-export const sidebars: SidebarType[] = [
+export const destopSidebarItems: SidebarType[] = [
   {
     label: "IDAH Documentation",
     href: "/",
@@ -40,4 +40,11 @@ export const sidebars: SidebarType[] = [
       { label: "Test a Workflow", href: "/workflows/test", children: [] },
     ],
   },
+];
+
+export const mobileSidebarItems: SidebarType[] = [
+  { label: "Changing log", href: "/changelog", children: [] },
+  { label: "Support", href: "/support", children: [] },
+  { label: "Install IDAH", href: "/install", children: [] },
+  ...destopSidebarItems,
 ];
