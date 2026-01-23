@@ -230,11 +230,7 @@ module Entry
         project_id: attributes[:project_id] || entry.project_id,
         dataset_id: attributes[:dataset_id] || entry.dataset_id,
         entry_id: id,
-        submission_type: {
-          "start" => "started",
-          "annotate" => "submitted",
-          "review" => "reviewed"
-        }[entry.wf_step]
+        submission_type: entry.wf_step
       )
 
       no_event do
