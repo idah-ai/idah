@@ -4,12 +4,9 @@
 
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import SidebarContent from "@/components/ui/sidebar/sidebar-content.svelte";
-  import SidebarGroupContent from "@/components/ui/sidebar/sidebar-group-content.svelte";
-  import SidebarGroup from "@/components/ui/sidebar/sidebar-group.svelte";
   import SidebarHeader from "@/components/ui/sidebar/sidebar-header.svelte";
   import Sidebar from "@/components/ui/sidebar/sidebar.svelte";
 
-  import CategoriesSelection from "./categories-selection.svelte";
   import CategorySidebar from "./category-sidebar.svelte";
 
   import type {
@@ -20,11 +17,12 @@
   } from "$lib/context/AnnotationContext";
   import type { IActivityContext, IConfigValue } from "@/plugin/interface/Activity";
 
+  import { ENTRY_ROOT } from "../../type";
+  import { entryRoot } from "../../video-annotation-activity/idb_store.svelte";
+
   import type { AnnotationsIndexedDB } from "../../video-annotation-activity/indexedDB";
 
-  import { ENTRY_ROOT } from "../../type";
-  import type { VideoAnnotation } from "../../video-annotation-activity/VideoAnnotationContext";
-  import { entryRoot } from "../../video-annotation-activity/idb_store.svelte";
+  type TAnnotationObj = AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
 
   // Props
   let {
@@ -45,13 +43,10 @@
     currentFrame: number;
     annotationValue: AnnotationValue;
     onEditValue: (annotationValue: AnnotationValue, mode: string) => void;
-    onSelectAnnotation: (annotation: VideoAnnotation) => void;
-    onDeleteAnnotation: (annotation: VideoAnnotation) => void;
-    onLock: (locked: boolean, annotation?: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) => void;
-    onVisibility: (
-      hidden: boolean,
-      annotation?: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>,
-    ) => void;
+    onSelectAnnotation: (annotation?: TAnnotationObj) => void;
+    onDeleteAnnotation: (annotation: TAnnotationObj) => void;
+    onLock: (locked: boolean, annotation?: TAnnotationObj) => void;
+    onVisibility: (hidden: boolean, annotation?: TAnnotationObj) => void;
     context: IActivityContext;
     mode: string;
     db?: AnnotationsIndexedDB;
@@ -115,7 +110,7 @@
     <SidebarHeader>
       <InputField
         name="input/plugin/search"
-        placeholder="search"
+        placeholder="Search"
         value={searchValue}
         oninput={(e) => searchCategory(e)}
       >
@@ -140,33 +135,16 @@
           currentMode={mode}
           modalityShape={tool}
           {categories}
-          onSelectCategory={(selected) => categorySelection(tool, selected)}
           selectedCategory={tool == ENTRY_ROOT && !(tool == mode)
             ? $entryRoot?.value.category
             : annotationValue.category}
+          onSelectCategory={(selected) => categorySelection(tool, selected)}
           selectedAnnotationId={selected_id}
+          {onSelectAnnotation}
+          {onDeleteAnnotation}
+          {onLock}
+          {onVisibility}
         ></CategorySidebar>
-
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <CategoriesSelection
-              {db}
-              toolMode={tool == mode}
-              type={tool}
-              {currentFrame}
-              {categories}
-              selected_category={tool == ENTRY_ROOT && !(tool == mode)
-                ? $entryRoot?.value.category
-                : annotationValue.category}
-              {selected_id}
-              {onSelectAnnotation}
-              {onDeleteAnnotation}
-              {onLock}
-              {onVisibility}
-              onSelect={(s) => categorySelection(tool, s)}
-            />
-          </SidebarGroupContent>
-        </SidebarGroup>
       {/if}
     {/each}
   </SidebarContent>
