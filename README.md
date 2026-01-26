@@ -39,9 +39,13 @@ _Detailed explanation of the project, its purpose, and key highlights._
 
 ## **Features**
 
-- _Feature 1_
-- _Feature 2_
-- _Feature 3_
+- _Media Annotation_
+- _Multiple Users Collboration and Review_
+- _Pre-installed annotation plugins for medias like image and videos_
+- _Support third-party plugins for annotation editor_
+- _Project & Dataset Management_
+- _User Management_
+- _Logs for tracking and auditing_
 
 ---
 
@@ -98,14 +102,7 @@ password: P@ssword01
 
 ---
 
-<!-- TODO: TO BE REVIEWED -->
-<!-- 7. Usage -->
-
-## **Usage**
-
----
-
-<!-- 8. Contributing -->
+<!-- 7. Contributing -->
 
 ## **Contributing**
 
@@ -136,25 +133,13 @@ password: P@ssword01
 
 ---
 
-<!-- 9. License -->
+<!-- 8. License -->
 
 ## **License**
 
-This project is licensed under the [MIT License](LICENSE).
+_This project is licensed under the [License](LICENSE)._
 
 ---
-
-<!-- 10. Additional Sections -->
-
-## **Additional Sections (Optional)**
-
-FAQ: Frequently asked questions.
-
-Roadmap: Future plans.
-
-Acknowledgments: Credits to contributors/libraries.
-
-Example README.md
 
 <!-- TODO: improvements as parts of docs-->
 <!--
@@ -163,5 +148,6 @@ Example README.md
   3. revise setup/dev-setup script
   4. revise environment variables
   5. support external data sources/destinations (for medias, etc.)
-
+  6. usage guides ?
+  7. dev guides
 -->
