@@ -56,6 +56,11 @@ export function getLogResourceDetails(
           resource.url = `/accounts?filters[email__match]=${resource_id}`;
           break;
         }
+        case "failed_log_in_attempt": {
+          const foundAccount = accounts.find((account) => account.email == String(resource_id));
+          resource.url = foundAccount ? `/accounts?filters[email__match]=${foundAccount.email}` : "/accounts";
+          break;
+        }
         default: {
           const foundAccount = accounts.find((account) => account.id == String(resource_id));
           resource.url = foundAccount ? `/accounts?filters[email__match]=${foundAccount.email}` : "/accounts";
