@@ -19,7 +19,7 @@ GIT
 
 GIT
   remote: https://github.com/verse-rb/verse-jsonapi
-  revision: 6f2e0d384dc090d1b584fae2d6d2f6f043a9bcae
+  revision: 6d0e5d643b10061a781e1cca28cbe2025880cac9
   branch: master
   specs:
     verse-jsonapi (0.1.0)
@@ -196,7 +196,7 @@ GEM
     unicode-display_width (3.1.4)
       unicode-emoji (~> 4.0, >= 4.0.4)
     unicode-emoji (4.0.4)
-    verse-schema (1.2.3)
+    verse-schema (1.2.4)
       attr_chainable (~> 1.0)
     webmock (3.25.1)
       addressable (>= 2.8.0)
@@ -227,7 +227,7 @@ DEPENDENCIES
   verse-http!
   verse-jsonapi!
   verse-redis!
-  verse-schema (~> 1.2.3)
+  verse-schema (~> 1.2.4)
   verse-sequel!
   verse-shrine!
   webmock
