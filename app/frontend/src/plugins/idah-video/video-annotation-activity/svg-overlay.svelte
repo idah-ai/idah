@@ -29,7 +29,7 @@
     frame: number;
     selected: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata> | undefined;
     mode: string;
-    target_container: () => HTMLDivElement; // ..
+    target_container: () => HTMLDivElement | undefined; // ..
     annotations_promise: Promise<AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]>;
     children: Snippet;
     onSelectAnnotation: (annotation?: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) => void;

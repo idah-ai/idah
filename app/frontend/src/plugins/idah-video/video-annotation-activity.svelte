@@ -936,7 +936,6 @@
         />
       {:else}
         <AnnotationSidebar
-          sidebarWidthRem={annotationSidebarWidthRem}
           db={annotationsIDB}
           {annotationValue}
           {currentFrame}
@@ -947,7 +946,7 @@
           {onVisibility}
           {context}
           {mode}
-          selected_id={selectedAnnotation?.metadata.id}
+          selectedAnnotationId={selectedAnnotation?.metadata.id}
         />
       {/if}
       <div class="mt-4 flex justify-end gap-2">
