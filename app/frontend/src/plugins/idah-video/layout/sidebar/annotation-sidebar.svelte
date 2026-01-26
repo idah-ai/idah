@@ -7,6 +7,8 @@
   import SidebarHeader from "@/components/ui/sidebar/sidebar-header.svelte";
   import Sidebar from "@/components/ui/sidebar/sidebar.svelte";
 
+  import { cn } from "@/utils";
+
   import CategorySidebar from "./category-sidebar.svelte";
 
   import type {
@@ -37,6 +39,7 @@
     currentFrame,
     db,
     selectedAnnotationId,
+    class: className,
   }: {
     currentFrame: number;
     annotationValue: AnnotationValue;
@@ -49,6 +52,7 @@
     mode: string;
     db?: AnnotationsIndexedDB;
     selectedAnnotationId?: string;
+    class?: string | null;
   } = $props();
 
   let tools = new Map<string, IConfigValue[]>(
@@ -107,7 +111,7 @@
   }
 </script>
 
-<Sidebar variant="inset" collapsible="none">
+<Sidebar variant="inset" collapsible="none" class={cn(className)}>
   {#if !tools.has(mode)}
     <SidebarHeader>
       <InputField
@@ -125,7 +129,7 @@
     </SidebarHeader>
   {/if}
 
-  <SidebarContent class="border-t">
+  <SidebarContent>
     {#each filteredTools as [tool, categories] (tool)}
       {#if !filteredTools.has(mode) || (filteredTools.has(mode) && tool == mode) || mode == ENTRY_ROOT}
         <CategorySidebar
