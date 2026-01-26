@@ -43,21 +43,14 @@ export function distance(a: Point, b: Point): number {
  * Calculate the midpoint between two points
  */
 export function midpoint(a: Point, b: Point): Point {
-  return [
-    (a[0] + b[0]) / 2,
-    (a[1] + b[1]) / 2,
-  ];
+  return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
 }
 
 /**
  * Project a point onto a line segment defined by points a and b
  * @returns An object containing the projected point and the parameter t (0 to 1)
  */
-export function projectPointOnSegment(
-  p: Point,
-  a: Point,
-  b: Point
-): { point: Point; t: number } {
+export function projectPointOnSegment(p: Point, a: Point, b: Point): { point: Point; t: number } {
   const ab = sub(b, a);
   const ap = sub(p, a);
 
