@@ -77,7 +77,6 @@ class MediasExpo < BaseExpo
     )
   end
   def upload
-    binding.pry
     service.upload(
       params[:file],
       resource: params[:resource],
