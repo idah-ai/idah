@@ -5,6 +5,11 @@ class AnnotationsExpo < BaseExpo
 
   use_service Annotation::Service
 
+  desc <<~MD
+    Annotations capture labeled data or markups on entries,
+    supporting both JSON:API and JSON-RPC interfaces for flexible batch operations.
+  MD
+
   json_api Annotation::Record do
     show
     index

@@ -6,8 +6,13 @@ module Account
 
     use_service AccountPassword::Service
 
+    desc <<~MD
+      Manage account passwords, including requesting password resets,
+      resetting passwords using tokens, and changing passwords for authenticated users.
+    MD
+
     expose on_http(:post, "request_reset", auth: nil) do
-      desc <<-MD
+      desc <<~MD
         Request a password reset for an account.
 
         This endpoint will send an email with a reset token to the provided email address
@@ -23,7 +28,7 @@ module Account
     end
 
     expose on_http(:post, "reset", auth: nil) do
-      desc <<-MD
+      desc <<~MD
         Reset a password using a reset token.
 
         This endpoint will change the password for the account associated with the provided
@@ -63,7 +68,7 @@ module Account
     end
 
     expose on_http(:get, "token_valid", auth: nil) do
-      desc <<-MD
+      desc <<~MD
         Check if a password reset token is valid.
 
         This endpoint will verify if the provided token exists and has not expired.
@@ -81,7 +86,7 @@ module Account
     end
 
     expose on_http(:post, "change") do
-      desc <<-MD
+      desc <<~MD
         Change the password for the authenticated account.
 
         This endpoint allows an authenticated user to change their password by providing
