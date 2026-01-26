@@ -236,17 +236,23 @@
         >
           <div class="flex w-full items-center" style:margin-left="{level - 1}rem">
             <SidebarMenuItem class="flex h-8 w-full flex-row items-center gap-1">
-              {@const hasChildren = !!category.nestedCategories || hasAnnoations || false}
-
-              <!-- Only display the button if there are children or annotations -->
+              {@const hasChildren = !!category.nestedCategories || hasAnnoations}
 
               <Button
                 variant="ghost"
                 size="icon-sm"
-                class={cn("", {
+                disabled={currentModeIsSameAsShape}
+                class={cn("p-0", {
                   "opacity-0": !hasChildren || selectedAnnotationId,
                   hidden: currentModeIsSameAsShape && selectedAnnotationId,
                 })}
+                onclick={(e) => {
+                  e.stopPropagation();
+                  if (category.nestedCategories || hasChildren) {
+                    // Toggle the category open state manually
+                    manualToggleStates[category.id] = !openStates[category.id];
+                  }
+                }}
               >
                 {@const isSelected = selectedCategory == category.id}
 
@@ -257,8 +263,8 @@
                 {:else}
                   {@const parentOpen = category.nestedCategories && currentModeIsSameAsShape}
                   <ChevronRightIcon
-                    class={cn("", {
-                      "opacity-0": !hasChildren,
+                    class={cn({
+                      "opacity-0": !hasChildren || category.nestedCategories?.length === 0,
                       "rotate-90": openStates[category.id] || parentOpen,
                       "stroke-blue-300": isSelected,
                       "stroke-gray-500": !isSelected,
