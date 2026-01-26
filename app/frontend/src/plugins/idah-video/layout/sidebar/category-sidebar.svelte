@@ -228,7 +228,7 @@
       {#await haveAnnotationsInCategory(category.id) then hasAnnoations}
         <CollapsibleTrigger
           class={cn("text-secondary-foreground flex w-full rounded-md text-xs", {
-            "bg-secondary border-1 border-primary": selectedCategory == category.id,
+            "bg-secondary border-primary border-1": selectedCategory == category.id,
             "hover:bg-primary-foreground hover:dark:bg-accent cursor-pointer": !category.requiredNested,
             "hover:bg-accent cursor-pointer": !currentModeIsSameAsShape,
           })}
