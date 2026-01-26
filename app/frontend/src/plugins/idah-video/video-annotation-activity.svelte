@@ -650,6 +650,19 @@
     };
   });
 
+  context.commands.on("annotation.split", async (props: { id: string; at: number }) => {
+    const annotation = await annotationsIDB?.get("annotations", props.id);
+
+    if (!annotation) return showToast.error({ title: "cannot split annotation, annotation not found" });
+
+    // update a primary annotation's end frame to props.at
+    // create a new annotation with start frame props.at and end frame annotation.end
+    await annotationsIDB?.addAnnotations([
+      { ...annotation, end: props.at },
+      { ...annotation, start: props.at, end: annotation.end },
+    ]);
+  });
+
   context.commands.on("tools.visual", () => {
     return {
       name: "visual tool",
