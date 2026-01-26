@@ -6,7 +6,6 @@
 
 <!-- LOGO GOES HERE -->
 
-[![Zed](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/zed-industries/zed/main/assets/badge/v0.json)](https://zed.dev)
 ![GitHub stars](https://img.shields.io/github/stars/ingedata-ph/idah)
 ![License](https://img.shields.io/github/license/ingedata-ph/idah)
 ![Build Status](https://img.shields.io/github/actions/workflow/status/ingedata-ph/idah/ci.yml)
@@ -54,7 +53,7 @@ _Detailed explanation of the project, its purpose, and key highlights._
 ### Prerequisites
 
 - _node_
-- _pnpm (node package manager; npm, pnpm, bun)_
+- _pnpm (any node package manager; npm, pnpm, bun)_
 - _Ruby (version ...)_
 
 ### Clone the repo
@@ -74,9 +73,9 @@ docker compose up -d
 
 <!-- TODO: run setup  script in dockerfile ? -->
 
-By default, IDAH will start to run on the port `8443`
+By default, IDAH will start to run on the port `8443` by default.
 
-You can access the webpage at `https://idah.localhost:8443`
+IDAH webpage can be accessed at `https://idah.localhost:8443` or with the port configured.
 
 ---
 
@@ -90,12 +89,6 @@ You can access the webpage at `https://idah.localhost:8443`
 <!-- 8. Contributing -->
 
 ## **Contributing**
-
-1. Fork the repository.
-2. Create a feature branch (`git checkout -b feature/foo`).
-3. Commit changes (`git commit -am "Add foo"`).
-4. Push to the branch (`git push origin feature/foo`).
-5. Open a Pull Request.
 
 ### Project Structure
 
