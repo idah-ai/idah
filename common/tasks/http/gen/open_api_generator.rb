@@ -16,7 +16,7 @@ module Http
         return { parameters:, request_body_schema: nil } if input_schema.nil?
 
         if %w[post put patch].include?(http_method.to_s.downcase)
-          request_body_schema = generate_schema(input_schema, in_path_param_names)
+          request_body_schema = Verse::Schema::Json.from(input_schema)
           { parameters:, request_body_schema: }
         else
           query_parameters = []
@@ -26,133 +26,96 @@ module Http
         end
       end
 
-      # Recursively traverse the input schema and build the parameters array or request body schema
-      def generate_schema(schema, in_path_param_names = [])
-        result = { "type" => "object", "properties" => {}, "required" => [] }
-
-        schema.fields.each do |field|
-          name = field.name
-          next if in_path_param_names.include?(name)
-
-          field_schema = map_field_to_schema(field)
-          result["properties"][name] = field_schema
-          result["required"] << name if field.required?
-        end
-
-        result["required"].sort! if result["required"].any?
-
-        result
-      end
-
-      def map_literal(klass, of: nil)
-        out = {}
-        case klass.to_s
-        when "String", "Symbol", "Date", "Time"
-          out["type"] = "string"
-        when "Integer"
-          out["type"] = "integer"
-          out["format"] = "int64"
-        when "Float"
-          out["type"] = "number"
-          out["format"] = "double"
-        when "TrueClass", "FalseClass"
-          out["type"] = "boolean"
-        when "Array"
-          out["type"] = "array"
-          out["items"] = {
-            "type": (of ? map_literal(of)["type"] : "object")
-          }
-        else
-          out["type"] = "object"
-        end
-
-        out
-      end
-
-      def map_field_to_schema(field)
-        type = field.type
-        meta = field.opts[:meta] || {}
-        schema = {}
-
-        case type.to_s
-        when "String"
-          schema["type"] = "string"
-        when "Integer"
-          schema["type"] = "integer"
-          schema["format"] = "int64"
-        when "Float"
-          schema["type"] = "number"
-          schema["format"] = "double"
-        when "TrueClass", "FalseClass"
-          schema["type"] = "boolean"
-        when "Date"
-          schema["type"] = "string"
-          schema["format"] = "date"
-        when "DateTime", "Time"
-          schema["type"] = "string"
-          schema["format"] = "date-time"
-        when "Array"
-          schema["type"] = "array"
-          schema["items"] =
-            if field.opts[:of] && field.opts[:of].respond_to?(:fields)
-              field.opts[:of].fields.map{ |f| map_field_to_schema(f) }
-            else
-              map_literal(field.opts[:of])
-            end
-        when "Symbol"
-          schema["type"] = "string"
-        when "Hash"
-          if field.opts[:schema]
-            schema = generate_schema(field.opts[:schema])
-          elsif field.opts[:of]
-            schema["type"] = "object"
-            schema["additionalProperties"] =
-              if field.opts[:of].respond_to?(:fields)
-                field.opts[:of].fields.map{ |f| map_field_to_schema(f) }
-              else
-                map_literal(field.opts[:of])
-              end
-          else
-            schema["type"] = "object"
-          end
-        else
-          schema["type"] = "object"
-        end
-
-        schema["description"] = meta[:description] if meta[:description]
-
-        schema
-      end
-
       def generate_parameters_from_schema(schema, parameters, in_path_param_names, prefix = "")
         schema.fields.each do |field|
-          name = field.name
+          name = field.name.to_s
+
           next if in_path_param_names.include?(name)
 
           full_name = prefix.empty? ? name : "#{prefix}[#{name}]"
           meta = field.opts[:meta] || {}
-          sub_schema = field.opts[:schema]
+          description = meta[:description] || meta[:desc]
+          with_sub_schema = field.type.respond_to?(:field)
 
-          if sub_schema
+          if with_sub_schema
             # Nested object
-            generate_parameters_from_schema(sub_schema, parameters, [], full_name)
+            generate_parameters_from_schema(field.type, parameters, [], full_name)
           else
             parameter = {
               "name" => (field.type == Array ? "#{full_name}[]" : full_name),
               "in" => "query",
               "required" => field.required?,
-              "schema" => map_literal(field.type, of: field.opts[:of])
+              "schema" => Verse::Schema::Json.from(field.type)
             }
 
-            if parameter["schema"]["type"] == "object"
-              parameter["schema"]["type"] = "string" # we are in query string...
+            if parameter["schema"][:type] == "object"
+              parameter["schema"][:type] = "string" # we are in query string...
             end
 
-            parameter["description"] = meta[:description] if meta[:description]
+            parameter["description"] = description if description
 
             parameters << parameter
           end
         end
+      end
+
+      # Process schema to inline all $defs/definitions directly
+      def process_schema(schema)
+        return schema unless schema.is_a?(Hash)
+
+        schema = JSON.parse(JSON.generate(schema)) # Deep clone
+
+        # Extract and inline definitions
+        defs = schema.delete("$defs") || schema.delete("definitions") || {}
+
+        # Inline all $ref references
+        inline_all_refs(schema, defs)
+      end
+
+      # Recursively inline all $ref references
+      def inline_all_refs(obj, defs)
+        case obj
+        when Hash
+          # If this object has a $ref, replace it with the referenced content
+          if obj["$ref"]&.start_with?("#/$defs/")
+            ref_name = obj["$ref"].sub("#/$defs/", "")
+            if defs[ref_name]
+              # Return the inlined schema, recursively processing it
+              return inline_all_refs(defs[ref_name], defs)
+            end
+          end
+
+          # Process all key-value pairs
+          obj.transform_values { |value| inline_all_refs(value, defs) }
+        when Array
+          obj.map { |item| inline_all_refs(item, defs) }
+        else
+          obj
+        end
+      end
+
+      # Check if schema contains any IO properties (for multipart/form-data detection)
+      def contains_io_property?(schema)
+        case schema
+        when Hash
+          # Check if this object has instanceof: "IO"
+          return true if schema["instanceof"] == "IO"
+
+          # Check all properties recursively
+          schema.values.any? { |value| contains_io_property?(value) }
+        when Array
+          schema.any? { |item| contains_io_property?(item) }
+        else
+          false
+        end
+      end
+
+      # Converts "My::ClassName" to "MyClassName"
+      # Converts "my_method_name" to "MyMethodName"
+      def camel_cased_name(name)
+        name.to_s.split(/::|_/)
+            .reject { |v| v.nil? || v.empty? }
+            .map { |str| str[0].capitalize + str[1..] }.join
       end
 
       def generate
@@ -171,6 +134,7 @@ module Http
             }
           ],
           "paths" => {},
+          "tags" => [],
           "components" => {
             "securitySchemes" => {
               "bearerAuth" => {
@@ -183,8 +147,12 @@ module Http
         }
 
         nil_auth_strategy = Verse::Http::Auth.get(nil)
+        tags_seen = {}
 
         Verse::Exposition::Base.all_expositions.each do |expo|
+          resource_name = expo.name.gsub(/Expo$/, "")
+          resource_description = expo.desc || ""
+
           expo.exposed_endpoints.each do |method_name, data|
             hook = data[:type]
             next unless hook.is_a?(Verse::Http::Exposition::Hook)
@@ -201,8 +169,20 @@ module Http
             # Extract path parameter names
             in_path_param_names = hook.path.scan(/:(\w+)/).flatten
 
+            # Track tags
+            tag = camel_cased_name(resource_name)
+            unless tags_seen[tag]
+              tags_seen[tag] = true
+              openapi["tags"] << { "name" => tag, description: resource_description }
+            end
+
             # Fetch parameters from input schema
-            input_params = prepare_input_parameters(hook.http_method, in_path_param_names, hook.metablock.input_schema)
+            input_params = prepare_input_parameters(
+              http_method,
+              in_path_param_names,
+              hook.metablock.input_schema
+            )
+
             parameters = input_params[:parameters]
             request_body_schema = input_params[:request_body_schema]
 
@@ -218,25 +198,36 @@ module Http
               end
 
             # Responses
-            responses = {
-              "200" => {
-                "description" => "Successful response",
-                "content" => {
-                  content_type => {
-                    "schema" => {
-                      "type" => "object"
+            output_schema = hook.metablock.output_schema
+            responses =
+              if output_schema
+                {
+                  "200" => {
+                    "description" => "Successful response",
+                    "content" => {
+                      content_type => {
+                        "schema" => process_schema(
+                          Verse::Schema::Json.from(output_schema)
+                        )
+                      }
                     }
                   }
                 }
-              }
-            }
+              else
+                {
+                  "204" => {
+                    "description" => "No content"
+                  }
+                }
+              end
 
             # Operation object
             operation = {
               "summary" => method_name.to_s,
               "description" => description,
               "parameters" => parameters,
-              "responses" => responses
+              "responses" => responses,
+              "tags" => [tag]
             }
 
             # Add security if authentication is required
@@ -248,10 +239,25 @@ module Http
 
             # Add requestBody for methods that support it
             if %w[post put patch].include?(http_method)
+              processed_schema =
+                if request_body_schema
+                  process_schema(request_body_schema)
+                else
+                  { "type" => "object" }
+                end
+
+              # Use multipart/form-data if schema contains IO properties
+              request_content_type =
+                if processed_schema && contains_io_property?(processed_schema)
+                  "multipart/form-data"
+                else
+                  content_type
+                end
+
               operation["requestBody"] = {
                 "content" => {
-                  content_type => {
-                    "schema" => request_body_schema || { "type" => "object" }
+                  request_content_type => {
+                    "schema" => processed_schema
                   }
                 }
               }
