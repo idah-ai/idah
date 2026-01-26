@@ -67,6 +67,15 @@ git clone https://github.com/ingedata-ph/idah.git
 cd idah
 ```
 
+<!--TODO: this should be changed so the frontend container works by its own ?-->
+### Install dependencies
+
+```bash
+cd app/frontend/
+pnpm i
+cd ../..
+```
+
 ### Starting with Docker containers
 
 #### **Databases**
