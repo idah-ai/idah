@@ -13,12 +13,22 @@
   import type { IConfigValue } from "@/plugin/interface/Activity";
 
   import AnnotationCountBadge from "./annotation-count-badge.svelte";
+  import AnnotationNode from "./category/annotation-node.svelte";
+  import CategoryName from "./category/category-name.svelte";
+  import VectorSqaureIcon from "./category/vector-sqaure-icon.svelte";
 
   import { idb_updated_at } from "../../video-annotation-activity/idb_store.svelte";
 
+  import type {
+    AnnotationMetadata,
+    AnnotationObj,
+    AnnotationShape,
+    AnnotationValue,
+  } from "@/context/AnnotationContext";
   import type { AnnotationsIndexedDB } from "../../video-annotation-activity/indexedDB";
 
   // Props
+  type TAnnotationObj = AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
   interface Props {
     db?: AnnotationsIndexedDB;
 
@@ -32,6 +42,10 @@
     selectedCategory: string | undefined;
 
     selectedAnnotationId: string | undefined;
+    onSelectAnnotation: (annotation: TAnnotationObj) => void;
+    onDeleteAnnotation: (annotation: TAnnotationObj) => void;
+    onLock: (locked: boolean, annotation?: TAnnotationObj) => void;
+    onVisibility: (hidden: boolean, annotation?: TAnnotationObj) => void;
   }
   let {
     db,
@@ -42,8 +56,11 @@
     onSelectCategory,
     selectedCategory,
     selectedAnnotationId,
+    onSelectAnnotation,
+    onDeleteAnnotation,
+    onLock,
+    onVisibility,
   }: Props = $props();
-  $inspect({ categories });
 
   // Variables
   let forceRender = $state(0);
@@ -98,7 +115,7 @@
           ...(i < ids.length - 1 ? { nestedCategories: [] } : {}),
           data:
             i < ids.length - 1
-              ? ({ id: fullPath, label: humanize(ids[i]), color: "#ffff", description: "" } as IConfigValue)
+              ? ({ id: fullPath, label: humanize(ids[i]), color: "#ffff" } as IConfigValue)
               : configuration, // leaf gets real configuration
         };
 
@@ -152,6 +169,23 @@
     // Force re-render of annotation counts
     forceRender++;
   }
+
+  function getFilteredAnnotations(annotations: Array<TAnnotationObj>): {
+    annotations: Array<TAnnotationObj>;
+    count: number;
+  } {
+    const filteredAnnotations = annotations.filter(
+      (annotation) =>
+        currentFrame >= annotation.shape.start &&
+        currentFrame <= annotation.shape.end &&
+        annotation.shape.type == modalityShape,
+    );
+
+    return {
+      annotations: filteredAnnotations,
+      count: filteredAnnotations.length,
+    };
+  }
 </script>
 
 <SidebarGroup>
@@ -200,93 +234,108 @@
   onSelectCategory: (category?: string) => void,
   selectedCategory: string | undefined,
   parent: string[] = [],
+  level: number = 1,
 )}
   <Collapsible open={currentModeIsSameAsShape ? !!category : openStates[category.id] || false}>
     {#key `${forceRender}-${$idb_updated_at}-${modalityShape}`}
       {#await haveAnnotationsInCategory(category.id) then hasAnnoations}
         <CollapsibleTrigger
-          class={cn("text-secondary-foreground flex w-full items-center rounded-md text-xs", {
+          class={cn("text-secondary-foreground flex w-full rounded-md text-xs", {
             "bg-secondary border-1 border-primary": selectedCategory == category.id,
             "hover:bg-primary-foreground hover:dark:bg-accent cursor-pointer": !category.requiredNested,
             "hover:bg-accent cursor-pointer": !currentModeIsSameAsShape,
           })}
           onclick={(e) => toggleCategory(e, category)}
         >
-          <SidebarMenuItem class="flex w-full flex-row items-center">
-            {@const hasChildren = !!category.nestedCategories || hasAnnoations || false}
-            <!-- ICON:: CHEVRON, PLUS, VECTOR SQUARE -->
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              class={cn("", {
-                "opacity-0": !hasChildren || selectedAnnotationId,
-                hidden: currentModeIsSameAsShape && selectedAnnotationId,
-              })}
-            >
-              {@const isSelected = selectedCategory == category.id}
+          <div class="flex w-full items-center" style:margin-left="{level - 1}rem">
+            <SidebarMenuItem class="flex h-8 w-full flex-row items-center gap-1">
+              {@const hasChildren = !!category.nestedCategories || hasAnnoations || false}
 
-              {#if isSelected && currentModeIsSameAsShape && !selectedAnnotationId}
-                <PlusIcon class="text-primary" strokeWidth={4} />
-              {:else if !category.nestedCategories && currentModeIsSameAsShape && !selectedAnnotationId}
-                <CircleSmallIcon class="fill-gray-400 stroke-gray-400" />
-              {:else}
-                {@const parentOpen = category.nestedCategories && currentModeIsSameAsShape}
-                <ChevronRightIcon
-                  class={cn("", {
-                    "opacity-0": !hasChildren,
-                    "rotate-90": open || parentOpen,
-                    "stroke-blue-300": isSelected,
-                    "stroke-gray-500": !isSelected,
-                  })}
-                />
-              {/if}
-            </Button>
+              <!-- Only display the button if there are children or annotations -->
 
-            <!-- ??? -->
-            <svg
-              class={cn("", {
-                hidden: category.requiredNested,
-              })}
-              width="20"
-              height="20"
-              viewBox="0 0 20 20"
-              fill="none"
-            >
-              <path
-                d="M6.66667 4.58333H13.3333M6.66667 4.58333C6.66667 5.73393 5.73393 6.66667 4.58333 6.66667M6.66667 4.58333C6.66667 3.43274 5.73393 2.5 4.58333 2.5C3.43274 2.5 2.5 3.43274 2.5 4.58333C2.5 5.73393 3.43274 6.66667 4.58333 6.66667M13.3333 4.58333C13.3333 5.73393 14.2661 6.66667 15.4167 6.66667M13.3333 4.58333C13.3333 3.43274 14.2661 2.5 15.4167 2.5C16.5673 2.5 17.5 3.43274 17.5 4.58333C17.5 5.73393 16.5673 6.66667 15.4167 6.66667M15.4167 6.66667V13.3333M15.4167 13.3333C14.2661 13.3333 13.3333 14.2661 13.3333 15.4167M15.4167 13.3333C16.5673 13.3333 17.5 14.2661 17.5 15.4167C17.5 16.5673 16.5673 17.5 15.4167 17.5C14.2661 17.5 13.3333 16.5673 13.3333 15.4167M13.3333 15.4167H6.66667M6.66667 15.4167C6.66667 16.5673 5.73393 17.5 4.58333 17.5C3.43274 17.5 2.5 16.5673 2.5 15.4167C2.5 14.2661 3.43274 13.3333 4.58333 13.3333M6.66667 15.4167C6.66667 14.2661 5.73393 13.3333 4.58333 13.3333M4.58333 13.3333V6.66667"
-                stroke={category.data.color || "var(--color-gray-500)"}
-                stroke-width="1.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                class={cn("", {
+                  "opacity-0": !hasChildren || selectedAnnotationId,
+                  hidden: currentModeIsSameAsShape && selectedAnnotationId,
+                })}
+              >
+                {@const isSelected = selectedCategory == category.id}
+
+                {#if isSelected && currentModeIsSameAsShape && !selectedAnnotationId}
+                  <PlusIcon class="text-primary" strokeWidth={4} />
+                {:else if !category.nestedCategories && currentModeIsSameAsShape && !selectedAnnotationId}
+                  <CircleSmallIcon class="fill-gray-400 stroke-gray-400" />
+                {:else}
+                  {@const parentOpen = category.nestedCategories && currentModeIsSameAsShape}
+                  <ChevronRightIcon
+                    class={cn("", {
+                      "opacity-0": !hasChildren,
+                      "rotate-90": openStates[category.id] || parentOpen,
+                      "stroke-blue-300": isSelected,
+                      "stroke-gray-500": !isSelected,
+                    })}
+                  />
+                {/if}
+              </Button>
+
+              <VectorSqaureIcon
+                color={category.data.color}
+                class={cn({
+                  hidden: category.requiredNested,
+                })}
               />
-            </svg>
 
-            {@render CategoryName(category.name)}
+              <CategoryName>{category.name}</CategoryName>
 
-            <!-- BADGE::ANNOTATION COUNT -->
-            {#if db && category}
-              {#key $idb_updated_at}
-                {#await db.getAllStartingWith("category", category.id) then anns}
-                  {@const filteredAnnotationsCount = anns.filter(
-                    (annotation) =>
-                      currentFrame >= annotation.shape.start &&
-                      currentFrame <= annotation.shape.end &&
-                      annotation.shape.type == modalityShape,
-                  ).length}
-
-                  <AnnotationCountBadge>{filteredAnnotationsCount}</AnnotationCountBadge>
-                {/await}
-              {/key}
-            {/if}
-          </SidebarMenuItem>
+              {#if db && category}
+                {#key $idb_updated_at}
+                  {#await db.getAllStartingWith("category", category.id) then annotations}
+                    {@const { count } = getFilteredAnnotations(annotations)}
+                    <AnnotationCountBadge>{count}</AnnotationCountBadge>
+                  {/await}
+                {/key}
+              {/if}
+            </SidebarMenuItem>
+          </div>
         </CollapsibleTrigger>
       {/await}
     {/key}
 
-    <CollapsibleContent></CollapsibleContent>
-  </Collapsible>
-{/snippet}
+    <CollapsibleContent hidden={!openStates[category.id]}>
+      {#key $idb_updated_at}
+        {#if !currentModeIsSameAsShape && db && category}
+          {#await db.getAllIndex("category", category.id) then annotations}
+            {@const { annotations: filteredAnnotations } = getFilteredAnnotations(annotations)}
 
-{#snippet CategoryName(name: string)}
-  <div class="truncate whitespace-nowrap">{name}</div>
+            {#each filteredAnnotations as annotation, annotationIndex (annotation.metadata.id)}
+              <AnnotationNode
+                name="{category.name}_{annotationIndex}"
+                {annotation}
+                level={level + 1}
+                {onSelectAnnotation}
+                {onVisibility}
+                {onLock}
+                {onDeleteAnnotation}
+              />
+            {/each}
+          {/await}
+        {/if}
+      {/key}
+
+      {#if subCategories}
+        {#each subCategories as subCategory (subCategory.id)}
+          {@render CategoryNode(
+            subCategory,
+            subCategory.nestedCategories,
+            onSelectCategory,
+            selectedCategory,
+            [...parent, category.id.split("/").slice(parent.length)[0]],
+            level + 1,
+          )}
+        {/each}
+      {/if}
+    </CollapsibleContent>
+  </Collapsible>
 {/snippet}
