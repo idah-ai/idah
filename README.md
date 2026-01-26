@@ -93,7 +93,7 @@ The created Admin User account will be created for your first time login with th
 
 ```bash
 email: admin@idah.ai
-password = P@ssword01
+password: P@ssword01
 ```
 
 ---
