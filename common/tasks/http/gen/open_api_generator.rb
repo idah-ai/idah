@@ -59,39 +59,54 @@ module Http
         end
       end
 
-      # Process schema to extract definitions and update references
-      def process_schema(method_group, schema, components_schemas)
+      # Process schema to inline all $defs/definitions directly
+      def process_schema(schema)
         return schema unless schema.is_a?(Hash)
 
         schema = JSON.parse(JSON.generate(schema)) # Deep clone
 
-        # Extract definitions (from $defs or definitions)
-        defs = schema.delete("$defs") || schema.delete("definitions")
-        defs&.each do |name, definition|
-          components_schemas["#{method_group}#{name}"] = update_refs(definition, method_group)
-        end
+        # Extract and inline definitions
+        defs = schema.delete("$defs") || schema.delete("definitions") || {}
 
-        update_refs(schema, method_group)
+        # Inline all $ref references
+        inline_all_refs(schema, defs)
       end
 
-      # Update $ref paths to point to components/schemas
-      def update_refs(obj, method_group)
+      # Recursively inline all $ref references
+      def inline_all_refs(obj, defs)
         case obj
         when Hash
-          obj.transform_values do |v|
-            if v.is_a?(String) && v.start_with?("#/$defs/")
-              v.sub(
-                "#/$defs/",
-                "#/components/schemas/#{method_group}"
-              )
-            else
-              update_refs(v, method_group)
+          # If this object has a $ref, replace it with the referenced content
+          if obj["$ref"]&.start_with?("#/$defs/")
+            ref_name = obj["$ref"].sub("#/$defs/", "")
+            if defs[ref_name]
+              # Return the inlined schema, recursively processing it
+              return inline_all_refs(defs[ref_name], defs)
             end
           end
+
+          # Process all key-value pairs
+          obj.transform_values { |value| inline_all_refs(value, defs) }
         when Array
-          obj.map { |item| update_refs(item, method_group) }
+          obj.map { |item| inline_all_refs(item, defs) }
         else
           obj
+        end
+      end
+
+      # Check if schema contains any IO properties (for multipart/form-data detection)
+      def contains_io_property?(schema)
+        case schema
+        when Hash
+          # Check if this object has instanceof: "IO"
+          return true if schema["instanceof"] == "IO"
+
+          # Check all properties recursively
+          schema.values.any? { |value| contains_io_property?(value) }
+        when Array
+          schema.any? { |item| contains_io_property?(item) }
+        else
+          false
         end
       end
 
@@ -127,8 +142,7 @@ module Http
                 "scheme": "bearer",
                 "bearerFormat": "JWT"
               }
-            },
-            "schemas" => {}
+            }
           }
         }
 
@@ -163,7 +177,6 @@ module Http
             end
 
             # Fetch parameters from input schema
-            schema_method_name = camel_cased_name(method_name)
             input_params = prepare_input_parameters(
               http_method,
               in_path_param_names,
@@ -194,9 +207,7 @@ module Http
                     "content" => {
                       content_type => {
                         "schema" => process_schema(
-                          "#{resource_name}#{schema_method_name}",
-                          output_schema ? Verse::Schema::Json.from(output_schema) : { "type" => "object" },
-                          openapi["components"]["schemas"]
+                          Verse::Schema::Json.from(output_schema)
                         )
                       }
                     }
@@ -230,18 +241,22 @@ module Http
             if %w[post put patch].include?(http_method)
               processed_schema =
                 if request_body_schema
-                  process_schema(
-                    "#{resource_name}#{schema_method_name}",
-                    request_body_schema,
-                    openapi["components"]["schemas"]
-                  )
+                  process_schema(request_body_schema)
                 else
                   { "type" => "object" }
                 end
 
+              # Use multipart/form-data if schema contains IO properties
+              request_content_type =
+                if processed_schema && contains_io_property?(processed_schema)
+                  "multipart/form-data"
+                else
+                  content_type
+                end
+
               operation["requestBody"] = {
                 "content" => {
-                  content_type => {
+                  request_content_type => {
                     "schema" => processed_schema
                   }
                 }
