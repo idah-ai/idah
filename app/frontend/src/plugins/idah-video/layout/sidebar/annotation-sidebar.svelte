@@ -101,6 +101,10 @@
       searchValue = value;
     }, 200);
   }
+
+  function clearSearch() {
+    searchValue = "";
+  }
 </script>
 
 <Sidebar variant="inset" collapsible="none">
@@ -113,18 +117,15 @@
         oninput={(e) => searchCategory(e)}
       >
         {#snippet suffixIcon()}
-          <CircleXIcon
-            class="hover:cursor-pointer"
-            onclick={() => {
-              searchValue = "";
-            }}
-          />
+          {#if searchValue}
+            <CircleXIcon class="hover:cursor-pointer" onclick={clearSearch} />
+          {/if}
         {/snippet}
       </InputField>
     </SidebarHeader>
   {/if}
 
-  <SidebarContent>
+  <SidebarContent class="border-t">
     {#each filteredTools as [tool, categories] (tool)}
       {#if !filteredTools.has(mode) || (filteredTools.has(mode) && tool == mode) || mode == ENTRY_ROOT}
         <CategorySidebar

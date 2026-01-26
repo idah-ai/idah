@@ -1,18 +1,25 @@
 <script lang="ts">
-  import type { Snippet } from "svelte";
-
-  import Badge from "@/components/ui/badge/badge.svelte";
-
   import { cn } from "@/utils";
 
   // Props
   interface Props {
     class?: string | null;
-    children: Snippet;
+    count: number;
   }
-  let { class: className, children }: Props = $props();
+  let { class: className, count }: Props = $props();
+
+  // Variables
+  let displayCount = $derived.by(() => {
+    if (count > 99) return "99+";
+    return count;
+  });
 </script>
 
-<Badge variant="gray" rounded="full" class={cn("ml-auto text-[0.625rem]", className)}>
-  {@render children()}
-</Badge>
+<div
+  class={cn(
+    "text-secondary-foreground [a&]:hover:bg-secondary/90 ml-auto rounded-full border-transparent bg-gray-200 px-1.5 py-0.5 text-[0.625rem] dark:bg-gray-600",
+    className,
+  )}
+>
+  {displayCount}
+</div>

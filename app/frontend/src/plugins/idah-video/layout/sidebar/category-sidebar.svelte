@@ -4,7 +4,6 @@
   import { Button } from "@/components/ui/button";
   import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
   import { SidebarGroup, SidebarGroupContent, SidebarMenuItem } from "@/components/ui/sidebar";
-  import Text from "@/components/ui/text/Text.svelte";
 
   import { cn } from "@/utils";
   import { humanize } from "@/utils/string";
@@ -63,6 +62,7 @@
   }: Props = $props();
 
   // Variables
+  let openCategory = $state(true);
   let forceRender = $state(0);
   let currentModeIsSameAsShape = $derived(currentMode == modalityShape);
 
@@ -190,35 +190,22 @@
 
 <SidebarGroup>
   <SidebarGroupContent>
-    {@const openCategoryByDefault = true}
-    <Collapsible open={openCategoryByDefault}>
+    <Collapsible bind:open={openCategory}>
       <CollapsibleTrigger>
-        <!-- SHAPE NAME -->
-        <Text size="sm" weight="semibold" class="text-secondary-foreground cursor-pointer">
-          {formatShapeName(modalityShape)}
-        </Text>
+        {#snippet child({ props })}
+          <Button variant="ghost" class="w-full justify-between" {...props}>
+            {formatShapeName(modalityShape)}
+
+            <ChevronRightIcon
+              class={cn("transition-transform", {
+                "rotate-90": openCategory,
+              })}
+            />
+          </Button>
+        {/snippet}
       </CollapsibleTrigger>
 
-      <CollapsibleContent class="pt-2">
-        <div class="flex items-center gap-2">
-          <Text size="xs" weight="semibold" class="text-muted-foreground">Categories</Text>
-
-          {#key $idb_updated_at}
-            {#await db?.getAllIndex("category") then annotations}
-              <!-- Filter annotations that are within the current frame and have the same shape type -->
-              {@const filteredAnnotationsCount =
-                annotations?.filter(
-                  (annotation) =>
-                    currentFrame >= annotation.shape.start &&
-                    currentFrame <= annotation.shape.end &&
-                    annotation.shape.type == modalityShape,
-                ).length || 0}
-
-              <AnnotationCountBadge>{filteredAnnotationsCount}</AnnotationCountBadge>
-            {/await}
-          {/key}
-        </div>
-
+      <CollapsibleContent>
         <!-- CATEGORY TREE -->
         {#each categoriesTree as category (category.id)}
           {@render CategoryNode(category, category.nestedCategories, onSelectCategory, selectedCategory)}
@@ -293,7 +280,7 @@
                 {#key $idb_updated_at}
                   {#await db.getAllStartingWith("category", category.id) then annotations}
                     {@const { count } = getFilteredAnnotations(annotations)}
-                    <AnnotationCountBadge>{count}</AnnotationCountBadge>
+                    <AnnotationCountBadge class="mr-2" {count} />
                   {/await}
                 {/key}
               {/if}
