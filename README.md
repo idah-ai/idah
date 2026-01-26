@@ -106,6 +106,8 @@ password: P@ssword01
 
 ## **Contributing**
 
+_Contribution guides, and PR templates/steps/guidelines_
+
 ### Project Structure
 
 ```text
