@@ -10,6 +10,12 @@ class PluginsExpo < BaseExpo
 
   use_service Plugins::Service
 
+  desc <<~MD
+    Manage and serve plugins within the system, including
+    listing available modalities, retrieving modality details,
+    and serving plugin assets and files.
+  MD
+
   expose on_http(
     :get,
     "modalities",
