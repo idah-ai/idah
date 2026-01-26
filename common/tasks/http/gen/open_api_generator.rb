@@ -8,7 +8,7 @@ module Http
     module OpenApiGenerator
       module_function
 
-      def prepare_input_parameters(schema_name, http_method, in_path_param_names, input_schema)
+      def prepare_input_parameters(http_method, in_path_param_names, input_schema)
         parameters = in_path_param_names.map do |name|
           { "name" => name, "in" => "path", "required" => true, "schema" => { "type" => "string" } }
         end
@@ -26,31 +26,6 @@ module Http
         end
       end
 
-      def map_literal(klass, of: nil)
-        out = {}
-        case klass.to_s
-        when "String", "Symbol", "Date", "Time"
-          out["type"] = "string"
-        when "Integer"
-          out["type"] = "integer"
-          out["format"] = "int64"
-        when "Float"
-          out["type"] = "number"
-          out["format"] = "double"
-        when "TrueClass", "FalseClass"
-          out["type"] = "boolean"
-        when "Array"
-          out["type"] = "array"
-          out["items"] = {
-            "type": (of ? map_literal(of)["type"] : "object")
-          }
-        else
-          out["type"] = "object"
-        end
-
-        out
-      end
-
       def generate_parameters_from_schema(schema, parameters, in_path_param_names, prefix = "")
         schema.fields.each do |field|
           name = field.name.to_s
@@ -59,24 +34,25 @@ module Http
 
           full_name = prefix.empty? ? name : "#{prefix}[#{name}]"
           meta = field.opts[:meta] || {}
-          sub_schema = field.opts[:schema]
+          description = meta[:description] || meta[:desc]
+          with_sub_schema = field.type.respond_to?(:field)
 
-          if sub_schema
+          if with_sub_schema
             # Nested object
-            generate_parameters_from_schema(sub_schema, parameters, [], full_name)
+            generate_parameters_from_schema(field.type, parameters, [], full_name)
           else
             parameter = {
               "name" => (field.type == Array ? "#{full_name}[]" : full_name),
               "in" => "query",
               "required" => field.required?,
-              "schema" => map_literal(field.type, of: field.opts[:of])
+              "schema" => Verse::Schema::Json.from(field.type)
             }
 
-            if parameter["schema"]["type"] == "object"
-              parameter["schema"]["type"] = "string" # we are in query string...
+            if parameter["schema"][:type] == "object"
+              parameter["schema"][:type] = "string" # we are in query string...
             end
 
-            parameter["description"] = meta[:description] if meta[:description]
+            parameter["description"] = description if description
 
             parameters << parameter
           end
@@ -122,7 +98,6 @@ module Http
       # Converts "My::ClassName" to "MyClassName"
       # Converts "my_method_name" to "MyMethodName"
       def camel_cased_name(name)
-        # binding.pry
         name.to_s.split(/::|_/)
             .reject { |v| v.nil? || v.empty? }
             .map { |str| str[0].capitalize + str[1..] }.join
@@ -160,7 +135,7 @@ module Http
         nil_auth_strategy = Verse::Http::Auth.get(nil)
         tags_seen = {}
 
-        Verse::Exposition::Base.all_expositions.sort_by(&:name).each do |expo|
+        Verse::Exposition::Base.all_expositions.each do |expo|
           resource_name = expo.name.gsub(/Expo$/, "")
           resource_description = expo.desc || ""
 
@@ -190,11 +165,11 @@ module Http
             # Fetch parameters from input schema
             schema_method_name = camel_cased_name(method_name)
             input_params = prepare_input_parameters(
-              "#{resource_name}#{schema_method_name}",
               http_method,
               in_path_param_names,
               hook.metablock.input_schema
             )
+
             parameters = input_params[:parameters]
             request_body_schema = input_params[:request_body_schema]
 
@@ -211,21 +186,29 @@ module Http
 
             # Responses
             output_schema = hook.metablock.output_schema
-            # binding.pry if tag == "Accounts" && method_name == :index
-            responses = {
-              "200" => {
-                "description" => "Successful response",
-                "content" => {
-                  content_type => {
-                    "schema" => process_schema(
-                      "#{resource_name}#{schema_method_name}",
-                      output_schema ? Verse::Schema::Json.from(output_schema) : { "type" => "object" },
-                      openapi["components"]["schemas"]
-                    )
+            responses =
+              if output_schema
+                {
+                  "200" => {
+                    "description" => "Successful response",
+                    "content" => {
+                      content_type => {
+                        "schema" => process_schema(
+                          "#{resource_name}#{schema_method_name}",
+                          output_schema ? Verse::Schema::Json.from(output_schema) : { "type" => "object" },
+                          openapi["components"]["schemas"]
+                        )
+                      }
+                    }
                   }
                 }
-              }
-            }
+              else
+                {
+                  "204" => {
+                    "description" => "No content"
+                  }
+                }
+              end
 
             # Operation object
             operation = {

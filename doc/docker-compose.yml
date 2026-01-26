@@ -21,9 +21,6 @@ services:
       - idah_doc_bundle:/vendor/bundle
     command: >
       sh -c "
-        cd /idah/app/dataset && bundle config set local.verse-jsonapi /idah/common/gems/verse-jsonapi &&
-        cd /idah/app/iam && bundle config set local.verse-schema /idah/common/gems/verse-schema &&
-        cd /idah &&
         ./bin/all_services bundle install &&
         ./bin/generate_openapi &&
         bash
