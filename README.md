@@ -90,6 +90,7 @@ docker compose exec iam bundle exec rake dev:setup
 ```
 
 The created Admin User account will be created for your first time login with the default credentials
+
 ```bash
 email: admin@idah.ai
 password = P@ssword01
