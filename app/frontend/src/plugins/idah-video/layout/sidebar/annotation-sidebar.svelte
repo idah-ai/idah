@@ -26,7 +26,6 @@
 
   // Props
   let {
-    sidebarWidthRem = 18,
     annotationValue,
     onEditValue,
     onSelectAnnotation,
@@ -37,9 +36,8 @@
     mode,
     currentFrame,
     db,
-    selected_id,
+    selectedAnnotationId,
   }: {
-    sidebarWidthRem?: number;
     currentFrame: number;
     annotationValue: AnnotationValue;
     onEditValue: (annotationValue: AnnotationValue, mode: string) => void;
@@ -50,7 +48,7 @@
     context: IActivityContext;
     mode: string;
     db?: AnnotationsIndexedDB;
-    selected_id?: string;
+    selectedAnnotationId?: string;
   } = $props();
 
   let tools = new Map<string, IConfigValue[]>(
@@ -105,7 +103,7 @@
   }
 </script>
 
-<Sidebar variant="inset" collapsible="none" style="width: {sidebarWidthRem}rem;">
+<Sidebar variant="inset" collapsible="none">
   {#if !tools.has(mode)}
     <SidebarHeader>
       <InputField
@@ -139,7 +137,7 @@
             ? $entryRoot?.value.category
             : annotationValue.category}
           onSelectCategory={(selected) => categorySelection(tool, selected)}
-          selectedAnnotationId={selected_id}
+          {selectedAnnotationId}
           {onSelectAnnotation}
           {onDeleteAnnotation}
           {onLock}
