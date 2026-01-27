@@ -28,6 +28,7 @@
 
   // Props
   let {
+    sidebarWidthRem,
     annotationValue,
     onEditValue,
     onSelectAnnotation,
@@ -41,6 +42,7 @@
     selectedAnnotationId,
     class: className,
   }: {
+    sidebarWidthRem: number;
     currentFrame: number;
     annotationValue: AnnotationValue;
     onEditValue: (annotationValue: AnnotationValue, mode: string) => void;
@@ -111,7 +113,7 @@
   }
 </script>
 
-<Sidebar variant="inset" collapsible="none" class={cn(className)}>
+<Sidebar variant="inset" collapsible="none" class={cn(className)} style="width: ${sidebarWidthRem}rem">
   {#if !tools.has(mode)}
     <SidebarHeader>
       <InputField
