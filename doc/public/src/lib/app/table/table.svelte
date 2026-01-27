@@ -23,23 +23,22 @@
   let { dataTable, columns }: TableProps = $props();
 </script>
 
-<!-- OUTER CONTAINER -->
 <div class="w-full">
-  <!-- SCROLL AREA -->
   <div
     class="
       overflow-x-auto
-      max-w-screen-sm
-      sm:max-w-full
+      md:max-w-full
+      md:overflow-x-auto
+      lg:overflow-x-visible
     "
   >
     <div class="rounded-md border">
-      <Table class="min-w-max table-auto">
+      <Table class="table-auto min-w-max lg:w-full">
         <!-- HEADER -->
         <TableHeader>
           <TableRow class="*:border-border [&>:not(:last-child)]:border-r">
             {#each columns as col}
-              <TableHead class="whitespace-nowrap min-w-[160px]">
+              <TableHead class="whitespace-nowrap px-4">
                 {col.label}
               </TableHead>
             {/each}
@@ -51,7 +50,7 @@
           {#each dataTable as row}
             <TableRow class="*:border-border [&>:not(:last-child)]:border-r">
               {#each columns as col}
-                <TableCell class="whitespace-nowrap min-w-[160px]">
+                <TableCell class="whitespace-nowrap px-4">
                   {row[col.key]}
                 </TableCell>
               {/each}
