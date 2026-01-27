@@ -5,6 +5,11 @@ class ProjectMembersExpo < BaseExpo
 
   use_service ProjectMember::Service
 
+  desc <<~MD
+    Members are user accounts assigned to projects
+    with specific roles for annotation and review work.
+  MD
+
   extend Expo::Util::DuplicateFieldHelper
 
   duplicate "iam:accounts",

@@ -5,6 +5,11 @@ class ProjectsExpo < BaseExpo
 
   use_service Project::Service
 
+  desc <<~MD
+    Projects organize datasets and team members
+    for collaborative data annotation work.
+  MD
+
   json_api Project::Record do
     show
     index do
