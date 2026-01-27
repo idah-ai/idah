@@ -13,6 +13,7 @@
       `
       flex-1
       min-w-[240px]
+      max-w-lg
       items-center
       `,
       {
