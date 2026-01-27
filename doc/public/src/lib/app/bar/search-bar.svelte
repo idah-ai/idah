@@ -7,57 +7,48 @@
   import { SearchIcon, XIcon } from "@lucide/svelte";
 </script>
 
-{#snippet searchInput()}
-  <InputGroup class="relative">
-    <InputGroupAddon class="pointer-events-none">
-      <SearchIcon />
-    </InputGroupAddon>
+<div class="relative flex w-full items-center justify-center">
+  <!-- SEARCH INPUT -->
+  <div
+    class={cn(
+      `
+      flex-1
+      min-w-[240px]
+      max-w-xl
+      items-center
+      `,
+      {
+        "hidden lg:block": !$searchOpen,
+        block: $searchOpen,
+      },
+    )}
+  >
+    <InputGroup class="w-full">
+      <InputGroupAddon class="pointer-events-none">
+        <SearchIcon class="h-4 w-4" />
+      </InputGroupAddon>
 
-    <InputGroupInput placeholder="Search..." class="w-full" />
+      <InputGroupInput placeholder="Search..." class="w-full" />
 
-    <InputGroupAddon class="lg:hidden" align="inline-end">
-      <Button variant="ghost" size="icon">
-        <XIcon />
-      </Button>
-    </InputGroupAddon>
-  </InputGroup>
-{/snippet}
-
-<div class="flex gap-1 w-full items-center justify-center">
-  <div class="w-full max-w-xl hidden items-center lg:block">
-    {@render searchInput()}
+      <InputGroupAddon class="lg:hidden" align="inline-end">
+        <Button variant="ghost" size="icon" onclick={closeSearch}>
+          <XIcon class="h-4 w-4" />
+        </Button>
+      </InputGroupAddon>
+    </InputGroup>
   </div>
 
-  {#if $searchOpen}
-    <div class="fixed w-auto w-full max-w-xl left-1/2 -translate-x-1/2 lg:hidden">
-      {@render searchInput()}
-    </div>
-  {/if}
-
+  <!-- MOBILE ACTION BUTTONS -->
   <div
-    class={cn("ml-auto flex items-center gap-1 lg:hidden", {
+    class={cn("flex items-center gap-1 lg:hidden shrink-0", {
       hidden: $sidebarOpen,
     })}
   >
-    <Button
-      class={cn("", {
-        hidden: !$searchOpen,
-      })}
-      variant="ghost"
-      size="icon"
-      onclick={closeSearch}
-    >
+    <Button class={cn({ hidden: !$searchOpen })} variant="ghost" size="icon" onclick={closeSearch}>
       <XIcon />
     </Button>
 
-    <Button
-      class={cn("", {
-        hidden: $searchOpen,
-      })}
-      variant="ghost"
-      size="icon"
-      onclick={openSearch}
-    >
+    <Button class={cn({ hidden: $searchOpen })} variant="ghost" size="icon" onclick={openSearch}>
       <SearchIcon />
     </Button>
   </div>
