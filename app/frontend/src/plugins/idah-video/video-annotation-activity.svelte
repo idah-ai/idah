@@ -68,7 +68,8 @@
   let totalFrames = $state(0);
 
   let mode: string = $state("visual");
-  let annotationSidebarWidthRem = $state<number>(15);
+  let annotationSidebarResizablePercentage = $state<number>(16);
+  let annotationSidebarWidthRem = $derived<number>(annotationSidebarResizablePercentage + 3);
 
   let selectedAnnotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata> | undefined = $state();
   let annotationValue: AnnotationValue = $derived(selectedAnnotation?.value || {});
@@ -987,8 +988,9 @@
     <ResizablePaneGroup direction="vertical">
       <ResizablePane defaultSize={60} minSize={15}>
         <ResizablePaneGroup direction="horizontal">
-          <ResizablePane minSize={15} defaultSize={16} maxSize={20}>
+          <ResizablePane minSize={14} defaultSize={annotationSidebarResizablePercentage} maxSize={20}>
             <AnnotationSidebar
+              sidebarWidthRem={annotationSidebarWidthRem}
               db={annotationsIDB}
               {annotationValue}
               {currentFrame}
@@ -1003,7 +1005,11 @@
             />
           </ResizablePane>
 
-          <ResizableHandle withHandle />
+          <!-- 
+            NOTE: Can not resize annotation sidebar,
+            as it will affect the note overlay and svg overlay
+            <ResizableHandle withHandle />
+          -->
 
           <ResizablePane defaultSize={75}>
             <section id="video-section" class="flex h-full w-full flex-1">
