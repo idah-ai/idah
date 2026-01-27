@@ -23,41 +23,32 @@
   let { dataTable, columns }: TableProps = $props();
 </script>
 
-<div class="w-full">
-  <div
-    class="
-      overflow-x-auto
-      md:max-w-full
-      md:overflow-x-auto
-      lg:overflow-x-visible
-    "
-  >
-    <div class="rounded-md border">
-      <Table class="table-auto min-w-max lg:w-full">
-        <!-- HEADER -->
-        <TableHeader>
+<div class="w-full overflow-x-auto">
+  <div class="rounded-md border">
+    <Table class="min-w-max table-auto">
+      <!-- HEADER -->
+      <TableHeader>
+        <TableRow class="*:border-border [&>:not(:last-child)]:border-r">
+          {#each columns as col}
+            <TableHead class="whitespace-nowrap px-4">
+              {col.label}
+            </TableHead>
+          {/each}
+        </TableRow>
+      </TableHeader>
+
+      <!-- BODY -->
+      <TableBody>
+        {#each dataTable as row}
           <TableRow class="*:border-border [&>:not(:last-child)]:border-r">
             {#each columns as col}
-              <TableHead class="whitespace-nowrap px-4">
-                {col.label}
-              </TableHead>
+              <TableCell class="whitespace-nowrap px-4">
+                {row[col.key]}
+              </TableCell>
             {/each}
           </TableRow>
-        </TableHeader>
-
-        <!-- BODY -->
-        <TableBody>
-          {#each dataTable as row}
-            <TableRow class="*:border-border [&>:not(:last-child)]:border-r">
-              {#each columns as col}
-                <TableCell class="whitespace-nowrap px-4">
-                  {row[col.key]}
-                </TableCell>
-              {/each}
-            </TableRow>
-          {/each}
-        </TableBody>
-      </Table>
-    </div>
+        {/each}
+      </TableBody>
+    </Table>
   </div>
 </div>
