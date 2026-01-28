@@ -1,6 +1,6 @@
 import { writable } from "svelte/store";
 
-export const searchOpen = writable(true);
+export const searchOpen = writable(false);
 
 export function openSearch(): void {
   searchOpen.set(true);

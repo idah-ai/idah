@@ -1,64 +1,39 @@
 <script lang="ts">
-  import { closeSearch, openSearch, searchOpen } from "$lib/app/bar/search-bar.store";
-  import { sidebarOpen } from "$lib/app/sidebar/sidebar.store";
+  import { closeSearch, searchOpen } from "$lib/app/bar/search-bar.store";
   import Button from "$lib/components/ui/button/button.svelte";
   import { InputGroup, InputGroupAddon, InputGroupInput } from "$lib/components/ui/input-group";
   import { cn } from "$lib/utils";
-  import { SearchIcon, XIcon } from "@lucide/svelte";
+  import { SearchIcon, XCircleIcon } from "@lucide/svelte";
 </script>
 
-{#snippet searchInput()}
-  <InputGroup class="relative">
-    <InputGroupAddon class="pointer-events-none">
-      <SearchIcon />
-    </InputGroupAddon>
-
-    <InputGroupInput placeholder="Search..." class="w-full" />
-
-    <InputGroupAddon class="lg:hidden" align="inline-end">
-      <Button variant="ghost" size="icon">
-        <XIcon />
-      </Button>
-    </InputGroupAddon>
-  </InputGroup>
-{/snippet}
-
-<div class="flex gap-1 w-full items-center justify-center">
-  <div class="w-full max-w-xl hidden items-center lg:block">
-    {@render searchInput()}
-  </div>
-
-  {#if $searchOpen}
-    <div class="fixed w-auto w-full max-w-xl left-1/2 -translate-x-1/2 lg:hidden">
-      {@render searchInput()}
-    </div>
-  {/if}
-
+<div class="relative flex w-full items-center justify-center">
+  <!-- SEARCH INPUT -->
   <div
-    class={cn("ml-auto flex items-center gap-1 lg:hidden", {
-      hidden: $sidebarOpen,
-    })}
+    class={cn(
+      `
+      flex-1
+      min-w-[240px]
+      max-w-lg
+      items-center
+      `,
+      {
+        "hidden lg:block": !$searchOpen,
+        block: $searchOpen,
+      },
+    )}
   >
-    <Button
-      class={cn("", {
-        hidden: !$searchOpen,
-      })}
-      variant="ghost"
-      size="icon"
-      onclick={closeSearch}
-    >
-      <XIcon />
-    </Button>
+    <InputGroup class="w-full">
+      <InputGroupAddon class="pointer-events-none">
+        <SearchIcon class="h-4 w-4" />
+      </InputGroupAddon>
 
-    <Button
-      class={cn("", {
-        hidden: $searchOpen,
-      })}
-      variant="ghost"
-      size="icon"
-      onclick={openSearch}
-    >
-      <SearchIcon />
-    </Button>
+      <InputGroupInput placeholder="Search..." class="w-full" />
+
+      <InputGroupAddon class="lg:hidden" align="inline-end">
+        <Button variant="ghost" size="icon" onclick={closeSearch}>
+          <XCircleIcon class="h-4 w-4" />
+        </Button>
+      </InputGroupAddon>
+    </InputGroup>
   </div>
 </div>
