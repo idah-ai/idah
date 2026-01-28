@@ -583,7 +583,8 @@
           y1={rotatedHandleY}
           x2={rotatedHandleX - buttonSpacing + buttonRadius}
           y2={rotatedHandleY}
-          stroke={"white"}
+          filter={"invert(100%)"}
+          stroke={color}
           stroke-width="2"
         />
         <!-- Degree angle display -->
@@ -619,7 +620,8 @@
           y1={rotatedHandleY}
           x2={rotatedHandleX + buttonSpacing + buttonRadius}
           y2={rotatedHandleY}
-          stroke={"white"}
+          filter={"invert(100%)"}
+          stroke={color}
           stroke-width="2"
         />
         <line
@@ -627,7 +629,8 @@
           y1={rotatedHandleY - buttonRadius}
           x2={rotatedHandleX + buttonSpacing}
           y2={rotatedHandleY + buttonRadius}
-          stroke={"white"}
+          filter={"invert(100%)"}
+          stroke={color}
           stroke-width="2"
         />
       {/if}
