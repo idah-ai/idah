@@ -571,6 +571,7 @@
           cy={rotatedHandleY}
           r={buttonRadius}
           style:fill={color}
+          fill-opacity="10%"
           style:cursor="pointer"
           onmousedown={(e) => {
             e.stopPropagation();
@@ -583,7 +584,7 @@
           y1={rotatedHandleY}
           x2={rotatedHandleX - buttonSpacing + buttonRadius}
           y2={rotatedHandleY}
-          filter={"brightness(200%)"}
+          filter={"brightness(100%)"}
           stroke={color}
           stroke-width="2"
         />
@@ -608,6 +609,7 @@
           cy={rotatedHandleY}
           r={buttonRadius}
           style:fill={color}
+          fill-opacity="1%"
           style:cursor="pointer"
           onmousedown={(e) => {
             e.stopPropagation();
@@ -620,7 +622,7 @@
           y1={rotatedHandleY}
           x2={rotatedHandleX + buttonSpacing + buttonRadius}
           y2={rotatedHandleY}
-          filter={"brightness(200%)"}
+          filter={"brightness(100%)"}
           stroke={color}
           stroke-width="2"
         />
@@ -629,7 +631,7 @@
           y1={rotatedHandleY - buttonRadius}
           x2={rotatedHandleX + buttonSpacing}
           y2={rotatedHandleY + buttonRadius}
-          filter={"brightness(200%)"}
+          filter={"brightness(100%)"}
           stroke={color}
           stroke-width="2"
         />
