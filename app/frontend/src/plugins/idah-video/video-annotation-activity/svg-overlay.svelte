@@ -254,12 +254,13 @@
   const cursorConstraints = new Map([[IDAH_VIDEO_BOUNDING_BOX, 4]]);
 
   let isEditing = $state(false);
+  let editionCursor: string | undefined = $state(undefined);
 
   let pointer = $derived.by(() => {
     return mode != DEFAULT_MODE
       ? mode == IDAH_NOTE
         ? "cursor-note"
-        : isEditing
+        : !!editionCursor
           ? "cursor-none"
           : points.length < (cursorConstraints.get(mode) || 0)
             ? "cursor-crosshair"
@@ -382,6 +383,7 @@
           onEditingChange={(editing) => {
             isEditing = editing;
           }}
+          onPointerChange={(c) => (editionCursor = c)}
           ratio={target_size}
           offset={zoomInfo.offset}
           cursor={cursor_downscaled}
