@@ -927,9 +927,14 @@
           type={mode}
           selectedCategory={annotationValue.category}
           {annotationValue}
-          onSelectCategory={(s) => {
-            if (s != mode) selectAnnotation();
-            onEditValue({ category: annotationValue.category }, mode);
+          onSelectCategory={(categoryId) => {
+            // categoryId is the new category ID selected by the user
+            // Create a new value object with the updated category
+            const newValue = {
+              category: categoryId,
+              attributes: annotationValue.attributes || {},
+            };
+            onEditValue(newValue, mode);
           }}
           onEditValue={(value) => value && onEditValue(value, mode)}
           disabled={false}

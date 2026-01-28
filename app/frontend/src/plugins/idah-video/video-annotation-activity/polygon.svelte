@@ -48,6 +48,7 @@
   let previousPointsLength: number = $state(0);
   let isHoveringOverEdge: boolean = $state(false); // track if cursor is near polygon edge
   let isAltKeyPressed: boolean = $state(false); // track if ALT key is pressed
+  let isHoveringOverFirstPoint: boolean = $state(false); // track if cursor is near first point during creation
 
   // Automatically set polygon as complete when loading with existing points (3 or more)
   // Only trigger when points length jumps by more than 1 (indicating a load, not incremental creation)
@@ -111,13 +112,25 @@
   }
 
   function isNearPoint(point: Point, target: Point, threshold: number = 0.002): boolean {
-    const distance = Math.sqrt(Math.pow(point[X] - target[X], 2) + Math.pow(point[Y] - target[Y], 2));
+    const distance = Math.sqrt((point[X] - target[X]) ** 2 + (point[Y] - target[Y]) ** 2);
 
     return distance < threshold;
   }
 
-  // Check if a point is near a line segment
-  function isNearLineSegment(point: Point, lineStart: Point, lineEnd: Point, threshold: number = 0.001): boolean {
+  // Check if a point is on a line segment ONLY between [A, B]
+  // NOT on the infinite line extending beyond the start and end points
+  // thresholdPixels: threshold in actual pixels (will be converted to normalized coordinates)
+  function isOnLineSegment(
+    point: Point,
+    lineStart: Point,
+    lineEnd: Point,
+    thresholdPixels: number = 10
+  ): boolean {
+    // Convert pixel threshold to normalized coordinates
+    // Use average of X and Y ratios for threshold conversion
+    const avgRatio = (ratio[X] + ratio[Y]) / 2;
+    const threshold = thresholdPixels / avgRatio;
+
     const x = point[X];
     const y = point[Y];
     const x1 = lineStart[X];
@@ -125,41 +138,41 @@
     const x2 = lineEnd[X];
     const y2 = lineEnd[Y];
 
-    // Calculate distance from point to line segment
     const A = x - x1;
     const B = y - y1;
-    const C = x2 - x1;
     const D = y2 - y1;
+    const C = x2 - x1;
+
+    const lenSq = C * C + D * D;
+
+    // Handle zero-length segment
+    if (lenSq === 0) {
+      const dx = x - x1;
+      const dy = y - y1;
+      return Math.hypot(dx, dy) <= threshold;
+    }
 
     const dot = A * C + B * D;
-    const lenSq = C * C + D * D;
-    let param = -1;
+    const param = dot / lenSq;
 
-    if (lenSq !== 0) {
-      param = dot / lenSq;
+    // Check if point is outside segment bounds
+    // param < 0 means point is before the start of the segment
+    // param > 1 means point is after the end of the segment
+    if (param < 0 || param > 1) {
+      return false;
     }
 
-    let xx, yy;
-
-    if (param < 0) {
-      xx = x1;
-      yy = y1;
-    } else if (param > 1) {
-      xx = x2;
-      yy = y2;
-    } else {
-      xx = x1 + param * C;
-      yy = y1 + param * D;
-    }
+    // Point is within segment bounds, check perpendicular distance to line
+    const xx = x1 + param * C;
+    const yy = y1 + param * D;
 
     const dx = x - xx;
     const dy = y - yy;
-    const distance = Math.sqrt(dx * dx + dy * dy);
 
-    return distance < threshold;
+    return Math.hypot(dx, dy) <= threshold;
   }
 
-  // Check if cursor is near any edge of the polygon
+  // Check if cursor is on any edge of the polygon
   function checkIfNearEdge(cursorPoint: Point | undefined): boolean {
     if (!cursorPoint || !isPolygonComplete || rawPoints.length < 3) {
       return false;
@@ -168,7 +181,8 @@
     for (let i = 0; i < rawPoints.length; i++) {
       const start = rawPoints[i];
       const end = rawPoints[(i + 1) % rawPoints.length];
-      if (isNearLineSegment(cursorPoint, start, end, 0.005)) {
+
+      if (isOnLineSegment(cursorPoint, start, end, 3)) {
         return true;
       }
     }
@@ -176,16 +190,17 @@
     return false;
   }
 
-  // Find which edge segment the point is near, returns edge index or -1
+  // Find which edge segment the point is on, returns edge index or -1
   function findNearestEdge(point: Point): number {
     if (!isPolygonComplete || rawPoints.length < 3) {
       return -1;
     }
 
+
     for (let i = 0; i < rawPoints.length; i++) {
       const start = rawPoints[i];
       const end = rawPoints[(i + 1) % rawPoints.length];
-      if (isNearLineSegment(point, start, end, 0.005)) {
+      if (isOnLineSegment(point, start, end, 3)) {
         return i;
       }
     }
@@ -217,6 +232,15 @@
       isHoveringOverEdge = checkIfNearEdge(cursor);
     } else {
       isHoveringOverEdge = false;
+    }
+  });
+
+  // Check if cursor is hovering over first point during polygon creation
+  $effect(() => {
+    if (!isPolygonComplete && cursor && rawPoints.length >= 3) {
+      isHoveringOverFirstPoint = isNearPoint(cursor, rawPoints[0], 0.005);
+    } else {
+      isHoveringOverFirstPoint = false;
     }
   });
 
@@ -258,7 +282,7 @@
       // Adding new vertex
       if (rawPoints.length === 0 || !isNearPoint(rawPoints[rawPoints.length - 1], end)) {
         rawPoints = [...rawPoints, end];
-        if (rawPoints.length >= 3 && isNearPoint(rawPoints[0], end)) {
+        if (rawPoints.length >= 3 && isNearPoint(rawPoints[0], end, 0.005)) {
           rawPoints = rawPoints.slice(0, -1); // Remove last point to avoid duplication
           isPolygonComplete = true;
           onChange?.(rawPoints);
@@ -287,13 +311,18 @@
   }
 
   function getCursor() {
+    if (isHoveringOverFirstPoint && !isPolygonComplete) {
+      // Show pointer cursor when hovering over first point during creation (to close polygon)
+      return "cursor-pointer";
+    }
+
     if (isEditing()) {
       if (editingVertexIndex !== undefined) {
         return "cursor-move";
       }
       return "cursor-crosshair";
     } else if (isHoveringOverEdge && editable && isPolygonComplete) {
-      return "cursor-pen-plus";
+      return "cursor-crosshair";
     } else if (mode === IDAH_NOTE) {
       return "cursor-note";
     } else {
@@ -392,6 +421,7 @@
         r={5}
         style:transform-origin="top left"
         style:transform={`translate(${offset[X]}px, ${offset[Y]}px)`}
+        style:cursor={index === 0 && polygon_points.length >= 3 ? "pointer" : "default"}
         vector-effect="non-scaling-stroke"
         style:stroke={color}
         style:stroke-width={1}
@@ -417,14 +447,18 @@
   }
 
   .cursor-pen-plus {
-    cursor: url("/app/frontend/src/plugins/assets/icons/pen-tool-add.svg"), auto;
+    cursor: url("/app/frontend/src/plugins/assets/icons/pen-tool-add-2.svg"), auto;
   }
 
   .cursor-pen-plus:hover {
-    cursor: url("/app/frontend/src/plugins/assets/icons/pen-tool-add.svg"), auto;
+    cursor: url("/app/frontend/src/plugins/assets/icons/pen-tool-add-2.svg"), auto;
   }
 
   .cursor-pen-remove {
     cursor: url("/app/frontend/src/plugins/assets/icons/pen-tool-remove.svg"), auto;
+  }
+
+  .cursor-pointer {
+    cursor: pointer;
   }
 </style>

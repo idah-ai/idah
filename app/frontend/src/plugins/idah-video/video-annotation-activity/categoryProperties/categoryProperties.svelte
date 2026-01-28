@@ -28,9 +28,9 @@
 
   // Contexts
   const context: IActivityContext = getContext("context");
-  const typeConfig = context.config[type];
-  const category = typeConfig?.values.find((c) => c.id == selectedCategory);
-  const properties = typeConfig?.properties.filter((p) => visibilityFullfilled(annotationValue, p));
+  const typeConfig = $derived(context.config[type]);
+  const category = $derived(typeConfig?.values.find((c) => c.id == selectedCategory));
+  const properties = $derived(typeConfig?.properties.filter((p) => visibilityFullfilled(annotationValue, p)));
 
   const propertyComponents: {
     type: string;
