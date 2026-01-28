@@ -17,7 +17,22 @@
   import SidebarProvider from "$lib/components/ui/sidebar/sidebar-provider.svelte";
   import { ChevronRightIcon } from "@lucide/svelte";
 
-  let { pathname }: { pathname: string } = $props();
+  let { pathname, apiUrls }: { pathname: string, apiUrls: { url: stirng, name: string }[] } = $props();
+
+  const mergedSidebarItems: SidebarType[] = [
+    ...destopSidebarItems,
+    {
+      label: "API References",
+      children: apiUrls.map(api => ({
+        label: api.title,
+        href: "/api_references?app=" + api.name,
+        children: api.tags?.map(tag => ({
+          label: tag,
+          href: "/api_references?app=" + api.name + "&tag=" + tag,
+        })) || [],
+      })),
+    },
+  ];
 
   function hasActiveChild(item: SidebarType, pathname: string): boolean {
     if (!item.children) return false;
@@ -91,7 +106,7 @@
 <SidebarProvider>
   <Sidebar class="pt-16 overflow-y-auto border-none">
     <SidebarContent class="h-full pt-2 text-muted-foreground border-r bg-background">
-      {#each destopSidebarItems as sidebar}
+      {#each mergedSidebarItems as sidebar}
         <SidebarGroup>
           {#if sidebar.href}
             <SidebarGroupContent>

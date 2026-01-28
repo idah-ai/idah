@@ -153,9 +153,13 @@ module Http
           resource_name = expo.name.gsub(/Expo$/, "")
           resource_description = expo.desc || ""
 
-          expo.exposed_endpoints.each do |method_name, data|
+          allowed_endpoints = expo.exposed_endpoints.select do |_, data|
+            data[:type].is_a?(Verse::Http::Exposition::Hook) &&
+              !data[:meta].meta&.fetch(:nodoc, false)
+          end
+
+          allowed_endpoints.each do |method_name, data|
             hook = data[:type]
-            next unless hook.is_a?(Verse::Http::Exposition::Hook)
 
             # Convert path parameters to OpenAPI format
             path = hook.path.gsub(/:(\w+)/, '{\1}')
@@ -268,6 +272,12 @@ module Http
             openapi["paths"][path][http_method] = operation
           end
         end
+
+        # Return nothing if no paths were added
+        return if openapi["paths"].empty?
+
+        # Sort tags alphabetically
+        openapi["tags"].sort_by! { |tag| tag["name"] }
 
         # Generate and return the OpenAPI JSON
         JSON.pretty_generate(openapi)
