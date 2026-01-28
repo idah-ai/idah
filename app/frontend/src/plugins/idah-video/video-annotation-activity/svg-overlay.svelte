@@ -192,7 +192,7 @@
 
     toolSelection?.startSelection(cursor_downscaled);
 
-    if (!toolSelection?.isEditing()) {
+    if (!isEditing) {
       if (!toolSelection)
         console.error("no tool for mode:", mode, "deselecting annotation (and reverting to mode", DEFAULT_MODE, ")");
       onSelectAnnotation();
@@ -253,13 +253,17 @@
 
   const cursorConstraints = new Map([[IDAH_VIDEO_BOUNDING_BOX, 4]]);
 
+  let isEditing = $state(false);
+
   let pointer = $derived.by(() => {
     return mode != DEFAULT_MODE
       ? mode == IDAH_NOTE
         ? "cursor-note"
-        : points.length < (cursorConstraints.get(mode) || 0) || toolSelection?.isEditing()
-          ? "cursor-crosshair"
-          : "cursor-grab"
+        : isEditing
+          ? "cursor-none"
+          : points.length < (cursorConstraints.get(mode) || 0)
+            ? "cursor-crosshair"
+            : "cursor-grab"
       : "cursor-grab";
   });
 </script>
@@ -290,7 +294,7 @@
     onwheel={(e) => zoomableElement.onWheel(e)}
     {...restProps}
   >
-    {#if width && height && ![IDAH_NOTE, DEFAULT_MODE].includes(mode) && (pointer == "crosshair" || toolSelection?.isEditing())}
+    {#if width && height && ![IDAH_NOTE, DEFAULT_MODE].includes(mode) && (pointer == "crosshair" || isEditing)}
       <!-- prevent display issue on load for now -->
       <line x1={0} y1={target_line[Y]} x2={width} y2={target_line[Y]} stroke="#2b7fff" />
       <line x1={target_line[X]} y1={0} x2={target_line[X]} y2={height} stroke="#2b7fff" />
@@ -375,6 +379,9 @@
           {mode}
           {points}
           {angle}
+          onEditingChange={(editing) => {
+            isEditing = editing;
+          }}
           ratio={target_size}
           offset={zoomInfo.offset}
           cursor={cursor_downscaled}

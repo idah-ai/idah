@@ -14,6 +14,7 @@
     onChange,
     onmousedown,
     pointer,
+    onEditingChange,
   }: {
     ratio: Point;
     offset: Point;
@@ -26,12 +27,12 @@
     onmousedown?: (e: MouseEvent) => void;
     onChange?: (bb: Point[], angle: number) => void;
     pointer: string;
+    onEditingChange?: (isEditing: boolean) => void;
   } = $props();
 
   export interface ToolSelection {
     startSelection: (start: Point) => void;
     endSelection: (end: Point) => void;
-    isEditing: () => boolean;
   }
 
   let points: Point[] = $state(initialPoints);
@@ -40,6 +41,7 @@
   let rotateStart: Point | undefined = $state();
   let rotateStartAngle: number | undefined = $state();
   let resizeHandleIndex: number | undefined = $state();
+  let activeCursor: string | undefined = $state();
 
   // Revolution counter - derived from the stored angle
   let revolutionCount = $derived(Math.round(angle / (2 * Math.PI)));
@@ -75,10 +77,13 @@
     return [0, 0];
   });
 
-  let isEditingBool = $derived(points.length < 4 || !!panStart || !!rotateStart || resizeHandleIndex !== undefined);
-  export function isEditing(): boolean {
-    return isEditingBool;
-  }
+  let isEditing = $derived.by(() => {
+    return editable && (!!panStart || !!rotateStart || resizeHandleIndex !== undefined || points.length < 4);
+  });
+
+  $effect(() => {
+    onEditingChange?.(isEditing);
+  });
 
   // Update points based on cursor movement (pan)
   let updatedPoints = $derived.by(() => {
@@ -203,10 +208,12 @@
         rotateStart = undefined;
         rotateStartAngle = undefined;
         rotateStartRevolutions = undefined;
+        activeCursor = undefined;
       }
       if (resizeHandleIndex !== undefined) {
         onChange?.(points, angle);
         resizeHandleIndex = undefined;
+        activeCursor = undefined;
       }
     }
   }
@@ -221,6 +228,7 @@
     onChange?.(points, newAngle);
   }
 
+  // Get cursor type based on handle index
   function getHandleCursor(handle_index: number): string {
     const cursors = [
       "nwse-resize",
@@ -235,8 +243,52 @@
     return cursors[handle_index] || "grab";
   }
 
+  // Generate SVG cursor for a specific resize handle that rotates with the bounding box
+  function getRotatedCursorSVG(handle_index: number): string {
+    const currentAngle = get_angle();
+    const cursorType = getHandleCursor(handle_index);
+    const angleDeg = (currentAngle * 180) / Math.PI;
+
+    // Map cursor types to their base SVG paths
+    const cursorSVGs: Record<string, string> = {
+      "nwse-resize": `
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <g transform="rotate(${angleDeg} 12 12)">
+            <path d="M8 8L4 4M4 4H8M4 4V8" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M16 16L20 20M20 20H16M20 20V16" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </g>
+        </svg>
+      `,
+      "nesw-resize": `
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <g transform="rotate(${angleDeg} 12 12)">
+            <path d="M16 8L20 4M20 4H16M20 4V8" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M8 16L4 20M4 20H8M4 20V16" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </g>
+        </svg>
+      `,
+      "ns-resize": `
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <g transform="rotate(${angleDeg} 12 12)">
+            <path d="M12 4V20M12 4L9 7M12 4L15 7M12 20L9 17M12 20L15 17" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </g>
+        </svg>
+      `,
+      "ew-resize": `
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <g transform="rotate(${angleDeg} 12 12)">
+            <path d="M4 12H20M4 12L7 9M4 12L7 15M20 12L17 9M20 12L17 15" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </g>
+        </svg>
+      `,
+    };
+
+    const svgString = cursorSVGs[cursorType] || cursorSVGs["nwse-resize"];
+    return `data:image/svg+xml;base64,${btoa(svgString)}`;
+  }
+
   function getCursor() {
-    if (isEditing()) return "cursor-crosshair";
+    if (isEditing) return "none";
     if (mode === IDAH_NOTE) return "cursor-note";
     return pointer;
   }
@@ -446,6 +498,19 @@
 
     points = newUnrotatedPoints;
   }
+
+  // Create SVG cursor for rotation handle with curved arrows
+  function getRotateCursorSVG(): string {
+    return `data:image/svg+xml;base64,${btoa(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C14.3456 3 16.4922 3.93392 18.1243 5.43938" 
+              stroke="${color}" stroke-width="2" stroke-linecap="round"/>
+        <path d="M17 3L18.1243 5.43938L15.5 6.5" 
+              stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="${color}"/>
+        <circle cx="12" cy="12" r="2" fill="${color}"/>
+      </svg>
+    `)}`;
+  }
 </script>
 
 <g transform={`translate(${offset[X]}, ${offset[Y]})`}>
@@ -453,7 +518,6 @@
   {#if displayPoints.length > 0}
     <path
       d={draw_cmd(displayPoints)}
-      style:cursor={pointer}
       style:transform-origin={`${displayCentroid[X] * ratio[X]}px ${displayCentroid[Y] * ratio[Y]}px`}
       style:transform={`rotate(${get_angle()}rad)`}
       vector-effect="non-scaling-stroke"
@@ -491,7 +555,6 @@
           r={4}
           style:transform-origin={`${displayCentroid[X] * ratio[X]}px ${displayCentroid[Y] * ratio[Y]}px`}
           style:transform={`rotate(${get_angle()}rad)`}
-          style:cursor={"all-scroll"}
           vector-effect="non-scaling-stroke"
           style:stroke={color}
           style:fill={color}
@@ -524,12 +587,15 @@
           style:transform={`rotate(${get_angle()}rad)`}
           pointer-events="none"
         />
+
+        <!-- Rotation handle circle with custom cursor -->
         <circle
           onmousedown={(e) => {
             if (!panStart && !rotateStart && resizeHandleIndex === undefined) {
               e.stopPropagation();
               rotateStart = centroid;
               rotateStartRevolutions = revolutionCount;
+              activeCursor = getRotateCursorSVG();
 
               // Calculate angle in pixel space
               const centroidPixel: Point = [displayCentroid[X] * ratio[X], displayCentroid[Y] * ratio[Y]];
@@ -543,7 +609,7 @@
           r={6}
           style:transform-origin={`${displayCentroid[X] * ratio[X]}px ${displayCentroid[Y] * ratio[Y]}px`}
           style:transform={`rotate(${get_angle()}rad)`}
-          style:cursor={"all-scroll"}
+          style:cursor={isEditing ? "none" : `url('${getRotateCursorSVG()}') 12 12, grab`}
           style:fill={color}
         />
 
@@ -637,13 +703,14 @@
         />
       {/if}
 
-      <!-- Resize handles -->
+      <!-- Resize handles with rotated cursors -->
       {#each boundingBoxHandle(updatedPoints) as point, handle (handle)}
         <circle
           onmousedown={(e) => {
             e.stopPropagation();
             if (!panStart && !rotateStart && resizeHandleIndex === undefined) {
               resizeHandleIndex = handle;
+              activeCursor = getRotatedCursorSVG(handle);
             }
             onmousedown?.(e);
           }}
@@ -652,12 +719,19 @@
           r={5}
           style:transform-origin={`${displayCentroid[X] * ratio[X]}px ${displayCentroid[Y] * ratio[Y]}px`}
           style:transform={`rotate(${get_angle()}rad)`}
-          style:cursor={getHandleCursor(handle)}
+          style:cursor={isEditing ? "none" : `url('${getRotatedCursorSVG(handle)}') 12 12, ${getHandleCursor(handle)}`}
           vector-effect="non-scaling-stroke"
           style:stroke={color}
           style:fill={color}
         />
       {/each}
     {/if}
+  {/if}
+
+  <!-- Active cursor overlay that persists during drag operations/need -->
+  {#if activeCursor && cursor_pixel}
+    <g style="pointer-events: none;">
+      <image href={activeCursor} x={cursor_pixel[X] - 21} y={cursor_pixel[Y] - 21} width="42" height="42" />
+    </g>
   {/if}
 </g>
