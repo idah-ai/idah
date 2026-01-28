@@ -3,7 +3,7 @@
   import Button from "$lib/components/ui/button/button.svelte";
   import { InputGroup, InputGroupAddon, InputGroupInput } from "$lib/components/ui/input-group";
   import { cn } from "$lib/utils";
-  import { SearchIcon, XIcon } from "@lucide/svelte";
+  import { SearchIcon, XCircleIcon } from "@lucide/svelte";
 </script>
 
 <div class="relative flex w-full items-center justify-center">
@@ -31,7 +31,7 @@
 
       <InputGroupAddon class="lg:hidden" align="inline-end">
         <Button variant="ghost" size="icon" onclick={closeSearch}>
-          <XIcon class="h-4 w-4" />
+          <XCircleIcon class="h-4 w-4" />
         </Button>
       </InputGroupAddon>
     </InputGroup>
