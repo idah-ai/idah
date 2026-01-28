@@ -14,7 +14,7 @@ const previous = currentIndex > 0 ? flat[currentIndex - 1] : null;
 const next = currentIndex < flat.length - 1 ? flat[currentIndex + 1] : null;
 ---
 
-<nav class="flex w-full flex-col items-center gap-2 px-8 py-4 md:flex-row">
+<nav class="mx-auto flex w-full flex-col items-center gap-2 px-8 py-4 md:flex-row max-w-7xl">
   {previous && <PaginationPreviousButton value={previous} />}
   {next && <PaginationNextButton value={next} />}
 </nav>
