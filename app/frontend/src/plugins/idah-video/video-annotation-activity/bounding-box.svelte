@@ -15,6 +15,7 @@
     onmousedown,
     pointer,
     onEditingChange,
+    onPointerChange,
   }: {
     ratio: Point;
     offset: Point;
@@ -28,6 +29,7 @@
     onChange?: (bb: Point[], angle: number) => void;
     pointer: string;
     onEditingChange?: (isEditing: boolean) => void;
+    onPointerChange?: (pointer: string | undefined) => void;
   } = $props();
 
   export interface ToolSelection {
@@ -83,6 +85,9 @@
 
   $effect(() => {
     onEditingChange?.(isEditing);
+  });
+  $effect(() => {
+    onPointerChange?.(edition_cursor);
   });
 
   // Update points based on cursor movement (pan)
@@ -287,11 +292,11 @@
     return `data:image/svg+xml;base64,${btoa(svgString)}`;
   }
 
-  function getCursor() {
+  let edition_cursor = $derived.by(() => {
     if (isEditing) return "none";
     if (mode === IDAH_NOTE) return "cursor-note";
-    return pointer;
-  }
+    if (over) return editable ? "cursor-crosshair" : "cursor-pointer";
+  });
 
   function boundingBoxHandle(p: Point[]): Point[] {
     if (p.length !== 4) return [];
@@ -511,6 +516,7 @@
       </svg>
     `)}`;
   }
+  let over = $state(false);
 </script>
 
 <g transform={`translate(${offset[X]}, ${offset[Y]})`}>
@@ -518,10 +524,12 @@
   {#if displayPoints.length > 0}
     <path
       d={draw_cmd(displayPoints)}
+      onmouseenter={() => (over = true)}
+      onmouseleave={() => (over = false)}
       style:transform-origin={`${displayCentroid[X] * ratio[X]}px ${displayCentroid[Y] * ratio[Y]}px`}
       style:transform={`rotate(${get_angle()}rad)`}
       vector-effect="non-scaling-stroke"
-      class={getCursor()}
+      class={isEditing ? edition_cursor : edition_cursor}
       fill-opacity="0.4"
       style:fill={color}
       style:stroke={color}
