@@ -9,6 +9,7 @@
   interface DataTable {
     [key: string]: string;
   }
+
   interface ColumnTable {
     key: string;
     label: string;
@@ -22,32 +23,30 @@
   let { dataTable, columns }: TableProps = $props();
 </script>
 
-<div class="w-full overflow-x-auto">
-  <div class="rounded-md border">
-    <Table class="min-w-[800px]">
-      <!-- HEADER -->
-      <TableHeader>
+<div class="w-full mx-auto">
+  <Table class="rounded-md border">
+    <!-- HEADER -->
+    <TableHeader>
+      <TableRow class="*:border-border [&>:not(:last-child)]:border-r">
+        {#each columns as col}
+          <TableHead class="whitespace-nowrap px-4">
+            {col.label}
+          </TableHead>
+        {/each}
+      </TableRow>
+    </TableHeader>
+
+    <!-- BODY -->
+    <TableBody>
+      {#each dataTable as row}
         <TableRow class="*:border-border [&>:not(:last-child)]:border-r">
           {#each columns as col}
-            <TableHead class="whitespace-nowrap">
-              {col.label}
-            </TableHead>
+            <TableCell class="whitespace-nowrap px-4">
+              {row[col.key]}
+            </TableCell>
           {/each}
         </TableRow>
-      </TableHeader>
-
-      <!-- BODY -->
-      <TableBody>
-        {#each dataTable as row}
-          <TableRow class="*:border-border [&>:not(:last-child)]:border-r">
-            {#each columns as col}
-              <TableCell class="whitespace-nowrap">
-                {row[col.key]}
-              </TableCell>
-            {/each}
-          </TableRow>
-        {/each}
-      </TableBody>
-    </Table>
-  </div>
+      {/each}
+    </TableBody>
+  </Table>
 </div>
