@@ -578,20 +578,14 @@
             onmousedown?.(e);
           }}
         />
-        <text
-          x={rotatedHandleX - buttonSpacing}
-          y={rotatedHandleY}
-          text-anchor="middle"
-          dominant-baseline="central"
-          style:font-size="12px"
-          style:font-weight="bold"
-          style:fill="white"
-          style:pointer-events="none"
-          style:user-select="none"
-        >
-          -
-        </text>
-
+        <line
+          x1={rotatedHandleX - buttonSpacing - buttonRadius}
+          y1={rotatedHandleY}
+          x2={rotatedHandleX - buttonSpacing + buttonRadius}
+          y2={rotatedHandleY}
+          stroke={"white"}
+          stroke-width="2"
+        />
         <!-- Degree angle display -->
         <text
           x={rotatedHandleX}
@@ -620,17 +614,22 @@
             onmousedown?.(e);
           }}
         />
-        <text
-          x={rotatedHandleX + buttonSpacing}
-          y={rotatedHandleY}
-          text-anchor="middle"
-          dominant-baseline="central"
-          style:font-size="12px"
-          style:font-weight="bold"
-          style:fill="white"
-          style:pointer-events="none"
-          style:user-select="none">+</text
-        >
+        <line
+          x1={rotatedHandleX + buttonSpacing - buttonRadius}
+          y1={rotatedHandleY}
+          x2={rotatedHandleX + buttonSpacing + buttonRadius}
+          y2={rotatedHandleY}
+          stroke={"white"}
+          stroke-width="2"
+        />
+        <line
+          x1={rotatedHandleX + buttonSpacing}
+          y1={rotatedHandleY - buttonRadius}
+          x2={rotatedHandleX + buttonSpacing}
+          y2={rotatedHandleY + buttonRadius}
+          stroke={"white"}
+          stroke-width="2"
+        />
       {/if}
 
       <!-- Resize handles -->
