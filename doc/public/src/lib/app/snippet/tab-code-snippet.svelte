@@ -19,7 +19,7 @@
   let { value, items }: TabCodeSnippetsProps = $props();
 </script>
 
-<Tabs {value} class="w-full">
+<Tabs {value} class="w-full max-w-screen">
   <TabsList class="rounded-lg bg-muted p-1">
     {#each items as item}
       <TabsTrigger value={item.value} class="rounded-md px-3 text-sm hover:cursor-pointer">

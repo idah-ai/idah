@@ -20,7 +20,7 @@
   }
 </script>
 
-<Card class="relative mx-auto w-full p-0">
+<Card class="mx-auto w-full p-0 max-w-screen">
   <CardContent class="relative p-0">
     <!-- Copy button -->
     {#if showCopyButton}

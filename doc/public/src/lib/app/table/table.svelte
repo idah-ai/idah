@@ -23,28 +23,30 @@
   let { dataTable, columns }: TableProps = $props();
 </script>
 
-<Table class="rounded-md border table-auto w-auto">
-  <!-- HEADER -->
-  <TableHeader>
-    <TableRow class="*:border-border [&>:not(:last-child)]:border-r">
-      {#each columns as col}
-        <TableHead class="whitespace-nowrap px-4">
-          {col.label}
-        </TableHead>
-      {/each}
-    </TableRow>
-  </TableHeader>
-
-  <!-- BODY -->
-  <TableBody>
-    {#each dataTable as row}
+<div class="inline-flex w-full max-w-screen">
+  <Table class="rounded-md border table-auto w-auto">
+    <!-- HEADER -->
+    <TableHeader>
       <TableRow class="*:border-border [&>:not(:last-child)]:border-r">
         {#each columns as col}
-          <TableCell class="whitespace-nowrap px-4">
-            {row[col.key]}
-          </TableCell>
+          <TableHead class="whitespace-nowrap px-4">
+            {col.label}
+          </TableHead>
         {/each}
       </TableRow>
-    {/each}
-  </TableBody>
-</Table>
+    </TableHeader>
+
+    <!-- BODY -->
+    <TableBody>
+      {#each dataTable as row}
+        <TableRow class="*:border-border [&>:not(:last-child)]:border-r">
+          {#each columns as col}
+            <TableCell class="whitespace-nowrap px-4">
+              {row[col.key]}
+            </TableCell>
+          {/each}
+        </TableRow>
+      {/each}
+    </TableBody>
+  </Table>
+</div>
