@@ -23,7 +23,7 @@
   let { dataTable, columns }: TableProps = $props();
 </script>
 
-<div class="w-full max-w-screen mx-auto">
+<div class="w-full mx-auto">
   <Table class="rounded-md border">
     <!-- HEADER -->
     <TableHeader>
