@@ -198,7 +198,8 @@
         initialPanPoints = [];
       }
       if (rotateStart) {
-        onChange?.(points, get_angle());
+        angle = get_angle();
+        onChange?.(points, angle);
         rotateStart = undefined;
         rotateStartAngle = undefined;
         rotateStartRevolutions = undefined;
