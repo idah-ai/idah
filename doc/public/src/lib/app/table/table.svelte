@@ -23,8 +23,8 @@
   let { dataTable, columns }: TableProps = $props();
 </script>
 
-<div class="inline-flex w-full max-w-screen">
-  <Table class="rounded-md border table-auto w-auto">
+<div class="w-full max-w-screen mx-auto">
+  <Table class="rounded-md border">
     <!-- HEADER -->
     <TableHeader>
       <TableRow class="*:border-border [&>:not(:last-child)]:border-r">
