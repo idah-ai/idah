@@ -583,7 +583,7 @@
           y1={rotatedHandleY}
           x2={rotatedHandleX - buttonSpacing + buttonRadius}
           y2={rotatedHandleY}
-          filter={"invert(100%)"}
+          filter={"brightness(200%)"}
           stroke={color}
           stroke-width="2"
         />
@@ -620,7 +620,7 @@
           y1={rotatedHandleY}
           x2={rotatedHandleX + buttonSpacing + buttonRadius}
           y2={rotatedHandleY}
-          filter={"invert(100%)"}
+          filter={"brightness(200%)"}
           stroke={color}
           stroke-width="2"
         />
@@ -629,7 +629,7 @@
           y1={rotatedHandleY - buttonRadius}
           x2={rotatedHandleX + buttonSpacing}
           y2={rotatedHandleY + buttonRadius}
-          filter={"invert(100%)"}
+          filter={"brightness(200%)"}
           stroke={color}
           stroke-width="2"
         />
