@@ -4,7 +4,22 @@
   import { cn } from "$lib/utils";
   import { ChevronRightIcon } from "@lucide/svelte";
 
-  let { pathname }: { pathname: string } = $props();
+  let { pathname, apiUrls }: { pathname: string, apiUrls: { url: stirng, name: string }[] } = $props();
+
+  const mergedSidebarItems: SidebarType[] = [
+    ...mobileSidebarItems,
+    {
+      label: "API References",
+      children: apiUrls.map(api => ({
+        label: api.title,
+        href: "/api_references?app=" + api.name,
+        children: api.tags?.map(tag => ({
+          label: tag,
+          href: "/api_references?app=" + api.name + "&tag=" + tag,
+        })) || [],
+      })),
+    },
+  ];
 
   function hasActiveChild(item: SidebarType, pathname: string): boolean {
     if (!item.children) return false;
@@ -65,7 +80,7 @@
 {/snippet}
 
 <div class="h-full overflow-y-auto p-4 text-sm text-muted-foreground">
-  {#each mobileSidebarItems as sidebar (sidebar.label)}
+  {#each mergedSidebarItems as sidebar (sidebar.label)}
     <div class="mb-2 last:mb-0">
       {#if sidebar.href}
         <a
