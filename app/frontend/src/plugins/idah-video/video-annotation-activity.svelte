@@ -12,40 +12,40 @@
     CommandSeparator,
     CommandShortcut,
   } from "$lib/components/ui/command";
-  import Button from "@/components/ui/button/button.svelte";
-  import { Popover, PopoverContent } from "@/components/ui/popover";
-  import SidebarInset from "@/components/ui/sidebar/sidebar-inset.svelte";
-
+  import { Button } from "@/components/ui/button";
+  import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
   import { ResizableHandle, ResizablePane, ResizablePaneGroup } from "@/components/ui/resizable";
   import { ScrollArea } from "@/components/ui/scroll-area";
-  import type { AnnotationMetadata, AnnotationObj } from "@/context/AnnotationContext";
+
+  import { showToast } from "@/components/ui/toast/index.svelte";
   import { AnnotationRecord } from "@/data/model/dataset/annotations/record";
   import { ShortcutManager } from "@/shortcut/ShortcutManager";
-  import AnnotationFooter from "./layout/footer/AnnotationFooter.svelte";
-  import AnnotationFooterToolbar from "./layout/footer/AnnotationFooterToolbar.svelte";
-  import AnnotationSidebar from "./layout/sidebar/annotation-sidebar.svelte";
+
+  import type { AnnotationMetadata, AnnotationObj } from "@/context/AnnotationContext";
+
   import { DEFAULT_MODE, ENTRY_ROOT, IDAH_NOTE, IDAH_VIDEO_BOUNDING_BOX } from "./type";
   import { requiredFullfilled } from "./video-annotation-activity/categoryProperties";
   import { boundingBoxes, entryRoot, idb_updated_at } from "./video-annotation-activity/idb_store.svelte";
   import { annotationsIndexedDB, AnnotationsIndexedDB } from "./video-annotation-activity/indexedDB";
-  import SvgOverlay, { type OnAddNewNoteParams } from "./video-annotation-activity/svg-overlay.svelte";
-  import TimelineTable from "./video-annotation-activity/timeline-table/timeline-table.svelte";
-  import Video from "./video-annotation-activity/video.svelte";
-
-  import PopoverTrigger from "@/components/ui/popover/popover-trigger.svelte";
-  import { SidebarProvider } from "@/components/ui/sidebar";
-  import { showToast } from "@/components/ui/toast/index.svelte";
-  import type { AnnotationShape, AnnotationValue } from "@/context/AnnotationContext";
-  import type { IActivityContext } from "@/plugin/interface/Activity";
-  import PropertiesSidebar from "./layout/sidebar/properties-sidebar.svelte";
-  import CategoryProperties from "./video-annotation-activity/categoryProperties/categoryProperties.svelte";
   import {
     registerOnSelectBoxModeShortcuts,
     registerVisualModeShortcuts,
     unregisterSelectionShortcuts,
   } from "./video-annotation-activity/shortcut";
-  import type { Point, VideoFrameSelection, VideoShape } from "./video-annotation-activity/VideoAnnotationContext";
+
+  import AnnotationFooter from "./layout/footer/AnnotationFooter.svelte";
+  import AnnotationFooterToolbar from "./layout/footer/AnnotationFooterToolbar.svelte";
+  import AnnotationSidebar from "./layout/sidebar/annotation-sidebar.svelte";
+  import PropertiesSidebar from "./layout/sidebar/properties-sidebar.svelte";
+  import CategoryProperties from "./video-annotation-activity/categoryProperties/categoryProperties.svelte";
+  import SvgOverlay, { type OnAddNewNoteParams } from "./video-annotation-activity/svg-overlay.svelte";
+  import TimelineTable from "./video-annotation-activity/timeline-table/timeline-table.svelte";
+  import Video from "./video-annotation-activity/video.svelte";
   import VideoController from "./video-annotation-activity/VideoController.svelte";
+
+  import type { AnnotationShape, AnnotationValue } from "@/context/AnnotationContext";
+  import type { IActivityContext } from "@/plugin/interface/Activity";
+  import type { Point, VideoFrameSelection, VideoShape } from "./video-annotation-activity/VideoAnnotationContext";
 
   // Props
   interface Props {
@@ -68,7 +68,8 @@
   let totalFrames = $state(0);
 
   let mode: string = $state("visual");
-  let annotationSidebarWidthRem = $state<number>(15);
+  let annotationSidebarResizablePercentage = $state<number>(16);
+  let annotationSidebarWidthRem = $derived<number>(annotationSidebarResizablePercentage + 3);
 
   let selectedAnnotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata> | undefined = $state();
   let annotationValue: AnnotationValue = $derived(selectedAnnotation?.value || {});
@@ -894,7 +895,7 @@
   let allLocked: boolean = $state(false);
 </script>
 
-<div class="relative flex h-full w-full flex-col">
+<div class="relative flex w-full flex-col" style="height: calc(100% - 30px)">
   {#key [ShortcutManager, ShortcutManager.currentMode, ShortcutManager.getCurrentMode(), selectedAnnotation]}
     <CommandDialog bind:open={commandOpen} accesskey={ShortcutManager.getCurrentMode()}>
       <CommandInput placeholder="Type a command or search..." />
@@ -921,22 +922,24 @@
   >
     <PopoverTrigger></PopoverTrigger>
 
-    <PopoverContent class="w-max">
+    <PopoverContent class="w-auto min-w-64 p-0">
       {#if annotationValue.category}
-        <CategoryProperties
-          type={mode}
-          selectedCategory={annotationValue.category}
-          {annotationValue}
-          onSelectCategory={(s) => {
-            if (s != mode) selectAnnotation();
-            onEditValue({ category: annotationValue.category }, mode);
-          }}
-          onEditValue={(value) => value && onEditValue(value, mode)}
-          disabled={false}
-        />
+        <div class="p-2">
+          <CategoryProperties
+            type={mode}
+            selectedCategory={annotationValue.category}
+            {annotationValue}
+            onSelectCategory={(s) => {
+              if (s != mode) selectAnnotation();
+              onEditValue({ category: annotationValue.category }, mode);
+            }}
+            onEditValue={(value) => value && onEditValue(value, mode)}
+            disabled={false}
+          />
+        </div>
       {:else}
         <AnnotationSidebar
-          sidebarWidthRem={annotationSidebarWidthRem}
+          class="rounded-t-lg"
           db={annotationsIDB}
           {annotationValue}
           {currentFrame}
@@ -947,10 +950,10 @@
           {onVisibility}
           {context}
           {mode}
-          selected_id={selectedAnnotation?.metadata.id}
+          selectedAnnotationId={selectedAnnotation?.metadata.id}
         />
       {/if}
-      <div class="mt-4 flex justify-end gap-2">
+      <div class=" flex justify-end gap-2 p-2">
         <Button
           size="sm"
           variant="outline"
@@ -981,60 +984,81 @@
     </PopoverContent>
   </Popover>
 
-  <SidebarProvider class="min-h-0 w-full" style="height: calc(100% - 30px)">
+  <div id="plugin::idah-video" class="flex flex-1">
     <ResizablePaneGroup direction="vertical">
-      <ResizablePane class="flex h-full" defaultSize={60} minSize={15}>
-        <AnnotationSidebar
-          db={annotationsIDB}
-          {annotationValue}
-          {currentFrame}
-          {onEditValue}
-          onSelectAnnotation={selectAnnotation}
-          {onDeleteAnnotation}
-          {onLock}
-          {onVisibility}
-          {context}
-          {mode}
-          selected_id={selectedAnnotation?.metadata.id}
-        />
-        <SidebarInset class="flex-1">
-          <SvgOverlay
-            bind:this={overlay}
-            {annotations_promise}
-            selected={selectedAnnotation}
-            {mode}
-            frame={currentFrame}
-            onSelectAnnotation={selectAnnotation}
-            onSelection={onShapeSelection}
-            onAddNewNote={showNewNotePopup}
-            onChangeFrame={seekToFrame}
-            target_container={() => player_container}
-            {videoResizedAt}
-          >
-            <!-- container context ?-->
-            <Video
-              bind:this={player}
-              bind:element={player_container}
-              onResize={() => {
-                videoResizedAt = new Date();
-              }}
-              onFramesChange={(current, total, playing) => {
-                currentFrame = current;
-                totalFrames = total;
-                isPlaying = playing;
-                isPlaying = playing;
-                // console.debug({onFramesChange: {current, total, playing}})
-              }}
-              onVolumeChange={(level, muted) => (volume = { level, muted })}
+      <ResizablePane defaultSize={60} minSize={15}>
+        <ResizablePaneGroup direction="horizontal">
+          <ResizablePane minSize={14} defaultSize={annotationSidebarResizablePercentage} maxSize={20}>
+            <AnnotationSidebar
+              sidebarWidthRem={annotationSidebarWidthRem}
+              db={annotationsIDB}
+              {annotationValue}
+              {currentFrame}
+              {onEditValue}
+              onSelectAnnotation={selectAnnotation}
+              {onDeleteAnnotation}
+              {onLock}
+              {onVisibility}
+              {context}
+              {mode}
+              selectedAnnotationId={selectedAnnotation?.metadata.id}
             />
-          </SvgOverlay>
-        </SidebarInset>
-        <PropertiesSidebar {annotationValue} {onEditValue} {context} {mode} disabled={!!selectedAnnotation?.locked} />
+          </ResizablePane>
+
+          <!-- 
+            NOTE: Can not resize annotation sidebar,
+            as it will affect the note overlay and svg overlay
+            <ResizableHandle withHandle />
+          -->
+
+          <ResizablePane defaultSize={75}>
+            <section id="video-section" class="flex h-full w-full flex-1">
+              <SvgOverlay
+                bind:this={overlay}
+                {annotations_promise}
+                selected={selectedAnnotation}
+                {mode}
+                frame={currentFrame}
+                onSelectAnnotation={selectAnnotation}
+                onSelection={onShapeSelection}
+                onAddNewNote={showNewNotePopup}
+                onChangeFrame={seekToFrame}
+                target_container={() => player_container}
+                {videoResizedAt}
+              >
+                <!-- container context ?-->
+                <Video
+                  bind:this={player}
+                  bind:element={player_container}
+                  onResize={() => {
+                    videoResizedAt = new Date();
+                  }}
+                  onFramesChange={(current, total, playing) => {
+                    currentFrame = current;
+                    totalFrames = total;
+                    isPlaying = playing;
+                    isPlaying = playing;
+                    // console.debug({onFramesChange: {current, total, playing}})
+                  }}
+                  onVolumeChange={(level, muted) => (volume = { level, muted })}
+                />
+              </SvgOverlay>
+
+              <PropertiesSidebar
+                {annotationValue}
+                {onEditValue}
+                {context}
+                {mode}
+                disabled={!!selectedAnnotation?.locked}
+              />
+            </section>
+          </ResizablePane>
+        </ResizablePaneGroup>
       </ResizablePane>
 
-      <ResizableHandle withHandle></ResizableHandle>
+      <ResizableHandle withHandle />
 
-      <ResizablePane defaultSize={25} minSize={10}>
+      <ResizablePane defaultSize={20} minSize={15}>
         <AnnotationFooter>
           <AnnotationFooterToolbar>
             <VideoController
@@ -1049,7 +1073,7 @@
             />
           </AnnotationFooterToolbar>
 
-          <ScrollArea class="h-[calc(100%-3.4em)]">
+          <ScrollArea>
             <TimelineTable
               bind:this={timelineTable}
               {annotations_promise}
@@ -1078,5 +1102,5 @@
         </AnnotationFooter>
       </ResizablePane>
     </ResizablePaneGroup>
-  </SidebarProvider>
+  </div>
 </div>
