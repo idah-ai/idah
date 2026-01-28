@@ -562,23 +562,10 @@
         {@const rotatedHandleX = centroidPixelX + dx * cos - dy * sin}
         {@const rotatedHandleY = centroidPixelY + dx * sin + dy * cos}
 
-        {@const buttonRadius = 6}
+        {@const buttonRadius = 7}
         {@const buttonSpacing = 20}
 
         <!-- Decrement button (left) -->
-        <circle
-          cx={rotatedHandleX - buttonSpacing}
-          cy={rotatedHandleY}
-          r={buttonRadius}
-          style:fill={color}
-          fill-opacity="10%"
-          style:cursor="pointer"
-          onmousedown={(e) => {
-            e.stopPropagation();
-            decrementRevolution();
-            onmousedown?.(e);
-          }}
-        />
         <line
           x1={rotatedHandleX - buttonSpacing - buttonRadius}
           y1={rotatedHandleY}
@@ -587,6 +574,19 @@
           filter={"brightness(100%)"}
           stroke={color}
           stroke-width="2"
+        />
+        <circle
+          cx={rotatedHandleX - buttonSpacing}
+          cy={rotatedHandleY}
+          r={buttonRadius}
+          style:fill={color}
+          fill-opacity="1%"
+          style:cursor="pointer"
+          onmousedown={(e) => {
+            e.stopPropagation();
+            decrementRevolution();
+            onmousedown?.(e);
+          }}
         />
         <!-- Degree angle display -->
         <text
@@ -604,19 +604,6 @@
         </text>
 
         <!-- Increment button (right) -->
-        <circle
-          cx={rotatedHandleX + buttonSpacing}
-          cy={rotatedHandleY}
-          r={buttonRadius}
-          style:fill={color}
-          fill-opacity="1%"
-          style:cursor="pointer"
-          onmousedown={(e) => {
-            e.stopPropagation();
-            incrementRevolution();
-            onmousedown?.(e);
-          }}
-        />
         <line
           x1={rotatedHandleX + buttonSpacing - buttonRadius}
           y1={rotatedHandleY}
@@ -634,6 +621,19 @@
           filter={"brightness(100%)"}
           stroke={color}
           stroke-width="2"
+        />
+        <circle
+          cx={rotatedHandleX + buttonSpacing}
+          cy={rotatedHandleY}
+          r={buttonRadius}
+          style:fill={color}
+          fill-opacity="1%"
+          style:cursor="pointer"
+          onmousedown={(e) => {
+            e.stopPropagation();
+            incrementRevolution();
+            onmousedown?.(e);
+          }}
         />
       {/if}
 
