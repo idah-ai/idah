@@ -666,7 +666,7 @@
           style:pointer-events="none"
           style:user-select="none"
         >
-          {(get_angle() * (180 / Math.PI)).toFixed(1)}
+          {(get_angle() * (180 / Math.PI)).toFixed(1)}°
         </text>
 
         <!-- Increment button (right) -->
