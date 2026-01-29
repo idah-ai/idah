@@ -50,15 +50,10 @@
   let isAltKeyPressed: boolean = $state(false); // track if ALT key is pressed
   let isHoveringOverFirstPoint: boolean = $state(false); // track if cursor is near first point during creation
 
-  // Automatically set polygon as complete when loading with existing points (3 or more)
-  // Only trigger when points length jumps by more than 1 (indicating a load, not incremental creation)
   $effect(() => {
     const currentLength = points.length;
     const lengthDiff = currentLength - previousPointsLength;
 
-    // If points jumped by more than 1 (e.g., 0->3, 0->4, etc.), it's loading an existing annotation
-    // If points increased by exactly 1, it's incremental creation - don't auto-complete
-    // Also reset completion state if points go back to 0
     if (currentLength === 0) {
       isPolygonComplete = false;
     } else if (currentLength >= 3 && !isPolygonComplete && lengthDiff > 1) {
@@ -111,14 +106,20 @@
     return points.map((p, i) => (i === vertexIndex ? newPosition : p));
   }
 
-  function isNearPoint(point: Point, target: Point, threshold: number = 0.002): boolean {
+  // Check if point is near target point
+  // thresholdPixels: threshold in actual pixels (will be converted to normalized coordinates)
+  function isNearPoint(point: Point, target: Point, thresholdPixels: number = 10): boolean {
+    // Convert pixel threshold to normalized coordinates
+    // Use average of X and Y ratios for threshold conversion
+    const avgRatio = (ratio[X] + ratio[Y]) / 2;
+    const threshold = thresholdPixels / avgRatio;
+
     const distance = Math.sqrt((point[X] - target[X]) ** 2 + (point[Y] - target[Y]) ** 2);
 
     return distance < threshold;
   }
 
-  // Check if a point is on a line segment ONLY between [A, B]
-  // NOT on the infinite line extending beyond the start and end points
+  // Check if a point is on a line segment
   // thresholdPixels: threshold in actual pixels (will be converted to normalized coordinates)
   function isOnLineSegment(
     point: Point,
@@ -238,7 +239,7 @@
   // Check if cursor is hovering over first point during polygon creation
   $effect(() => {
     if (!isPolygonComplete && cursor && rawPoints.length >= 3) {
-      isHoveringOverFirstPoint = isNearPoint(cursor, rawPoints[0], 0.005);
+      isHoveringOverFirstPoint = isNearPoint(cursor, rawPoints[0], 15);
     } else {
       isHoveringOverFirstPoint = false;
     }
@@ -270,7 +271,7 @@
   export function startSelection(start: Point) {
     if (isPolygonComplete) {
       // Check if clicking on a vertex to edit
-      const vertexIndex = rawPoints.findIndex((p) => isNearPoint(p, start, 0.001));
+      const vertexIndex = rawPoints.findIndex((p) => isNearPoint(p, start, 10));
       if (vertexIndex !== -1) {
         editingVertexIndex = vertexIndex;
       }
@@ -280,9 +281,9 @@
   export function endSelection(end: Point) {
     if (!isPolygonComplete) {
       // Adding new vertex
-      if (rawPoints.length === 0 || !isNearPoint(rawPoints[rawPoints.length - 1], end)) {
+      if (rawPoints.length === 0 || !isNearPoint(rawPoints[rawPoints.length - 1], end, 10)) {
         rawPoints = [...rawPoints, end];
-        if (rawPoints.length >= 3 && isNearPoint(rawPoints[0], end, 0.005)) {
+        if (rawPoints.length >= 3 && isNearPoint(rawPoints[0], end, 15)) {
           rawPoints = rawPoints.slice(0, -1); // Remove last point to avoid duplication
           isPolygonComplete = true;
           onChange?.(rawPoints);
