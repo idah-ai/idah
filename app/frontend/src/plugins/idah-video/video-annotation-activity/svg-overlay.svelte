@@ -251,8 +251,6 @@
     });
   });
 
-  const cursorConstraints = new Map([[IDAH_VIDEO_BOUNDING_BOX, 4]]);
-
   let isEditing = $state(false);
   let editionCursor: string | undefined = $state(undefined);
 
