@@ -255,7 +255,7 @@
   let editionCursor: string | undefined = $state(undefined);
 
   let pointer = $derived.by(() => {
-    if (mode == IDAH_NOTE) "cursor-note";
+    if (mode == IDAH_NOTE) return "cursor-note";
     if (editionCursor) return editionCursor;
     if (selected) return "cursor-pointer";
     return "cursor-grab";
