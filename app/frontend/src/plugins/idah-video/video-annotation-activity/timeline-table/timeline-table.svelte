@@ -257,7 +257,7 @@
           {#await getCategoryName(annotation.value.category, annotation)}
             <Spinner size="sm"></Spinner>
           {:then title}
-            <Text size="xs" weight={isSelected ? "semibold" : "normal"} class="text-foreground">
+            <Text size="xs" weight={isSelected ? "semibold" : "normal"} class="text-foreground truncate">
               {humanize(title)}
             </Text>
           {/await}

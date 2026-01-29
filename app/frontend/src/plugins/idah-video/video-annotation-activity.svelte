@@ -895,7 +895,7 @@
   let allLocked: boolean = $state(false);
 </script>
 
-<div class="relative flex w-full flex-col" style="height: calc(100% - 30px)">
+<div class="relative flex h-full w-full flex-col">
   {#key [ShortcutManager, ShortcutManager.currentMode, ShortcutManager.getCurrentMode(), selectedAnnotation]}
     <CommandDialog bind:open={commandOpen} accesskey={ShortcutManager.getCurrentMode()}>
       <CommandInput placeholder="Type a command or search..." />
@@ -939,6 +939,7 @@
         </div>
       {:else}
         <AnnotationSidebar
+          sidebarWidthRem={annotationSidebarWidthRem}
           class="rounded-t-lg"
           db={annotationsIDB}
           {annotationValue}
@@ -984,7 +985,7 @@
     </PopoverContent>
   </Popover>
 
-  <div id="plugin::idah-video" class="flex flex-1">
+  <div id="plugin::idah-video" class="flex min-h-0 w-full flex-1">
     <ResizablePaneGroup direction="vertical">
       <ResizablePane defaultSize={60} minSize={15}>
         <ResizablePaneGroup direction="horizontal">
@@ -1058,7 +1059,7 @@
 
       <ResizableHandle withHandle />
 
-      <ResizablePane defaultSize={20} minSize={15}>
+      <ResizablePane defaultSize={25} minSize={15}>
         <AnnotationFooter>
           <AnnotationFooterToolbar>
             <VideoController
@@ -1073,7 +1074,7 @@
             />
           </AnnotationFooterToolbar>
 
-          <ScrollArea>
+          <ScrollArea class="h-[calc(100%-3rem)]">
             <TimelineTable
               bind:this={timelineTable}
               {annotations_promise}
