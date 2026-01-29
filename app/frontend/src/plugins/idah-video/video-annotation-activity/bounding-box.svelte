@@ -551,6 +551,15 @@
 
         <!-- Rotation handle circle with custom cursor -->
         <circle
+          cx={topEdgeMidpoint[X] * ratio[X]}
+          cy={(topEdgeMidpoint[Y] - handleOffset) * ratio[Y]}
+          r={2}
+          style:transform-origin={`${displayCentroid[X] * ratio[X]}px ${displayCentroid[Y] * ratio[Y]}px`}
+          style:transform={`rotate(${get_angle()}rad)`}
+          style:cursor={isEditing ? "none" : `url('${getRotateCursorSVG()}') 18 18, grab`}
+          style:fill={color}
+        />
+        <circle
           role="slider"
           tabindex="0"
           style:outline="none"
@@ -575,6 +584,7 @@
           style:transform={`rotate(${get_angle()}rad)`}
           style:cursor={isEditing ? "none" : `url('${getRotateCursorSVG()}') 18 18, grab`}
           style:fill={color}
+          style:opacity="50%"
         />
 
         <!-- Revolution counter (not rotated, always horizontal) -->
@@ -671,6 +681,17 @@
       <!-- Resize handles with rotated cursors -->
       {#each boundingBoxHandle(updatedPoints) as point, handle (handle)}
         <circle
+          cx={point[X] * ratio[X]}
+          cy={point[Y] * ratio[Y]}
+          r={2}
+          style:transform-origin={`${displayCentroid[X] * ratio[X]}px ${displayCentroid[Y] * ratio[Y]}px`}
+          style:transform={`rotate(${get_angle()}rad)`}
+          style:cursor={isEditing ? "none" : `url('${getRotatedCursorSVG(handle)}') 18 18, ${getHandleCursor(handle)}`}
+          vector-effect="non-scaling-stroke"
+          style:stroke={color}
+          style:fill={color}
+        />
+        <circle
           role="grid"
           tabindex="-1"
           style:outline="none"
@@ -691,6 +712,7 @@
           vector-effect="non-scaling-stroke"
           style:stroke={color}
           style:fill={color}
+          style:opacity="50%"
         />
       {/each}
     {/if}
