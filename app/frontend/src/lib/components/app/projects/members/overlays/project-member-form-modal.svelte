@@ -1,13 +1,14 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { toast } from "svelte-sonner";
 
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
   import ProjectMemberForm from "@/components/app/projects/members/forms/project-member-form.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import DialogTitle from "@/components/ui/dialog/dialog-title.svelte";
 
+  import { showToast } from "@/components/ui/toast/index.svelte";
   import {
+    ProjectMemberRecord,
     projectMembersBackendDataSource,
     type ProjectMemberRole,
   } from "@/data/model/dataset/projects/members/record";
@@ -60,10 +61,14 @@
         /** Check if member is already in the project */
         const existingProjectMember = (
           await projectMembersBackendDataSource.list({
+            fields: {
+              [ProjectMemberRecord.type]: ["id"],
+            },
             filters: {
               project_id: projectId,
               account_id: account.id,
             },
+            noCache: true,
           })
         ).data[0];
 
@@ -74,7 +79,7 @@
             {
               attributes: {
                 disabled_at: null,
-                role,
+                role: role || undefined,
               },
             },
             {
@@ -117,7 +122,8 @@
           });
         }
 
-        toast.success("Project member added", {
+        showToast.success({
+          title: "Project member added",
           description: `An invitation will be sent to "${email}" if the account is not yet existed.`,
         });
       }

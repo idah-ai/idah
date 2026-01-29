@@ -1,18 +1,24 @@
 <script lang="ts">
-  import Link from "@/components/ui/text/Link.svelte";
-  import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
   import { onMount } from "svelte";
 
+  import Link from "@/components/ui/text/Link.svelte";
+
+  import { DatasetRecord } from "@/data/model/dataset/dataset-record";
+  import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
+
+  // Props
   interface Props {
     accountId: number | string;
     projectId?: number | string;
   }
 
+  // Variables
   let entries: EntryRecord[] = $state([]);
   let countEntriesByDataset: Record<string, number> = $state({});
   let nameDatasetMap: Record<string, string> = $state({});
   let { accountId, projectId }: Props = $props();
 
+  // Functions
   async function fetchEntries(): Promise<void> {
     const filters = { assigned_to_id: accountId };
 
@@ -22,11 +28,11 @@
 
     entries = (
       await entriesBackendDataSource.list({
-        filters: filters,
         fields: {
-          "dataset:datasets": ["name"],
-          "dataset:entries": ["resource", "project_id", "dataset_id", "assigned_to_id"],
+          [DatasetRecord.type]: ["name"],
+          [EntryRecord.type]: ["resource", "project_id", "dataset_id", "assigned_to_id"],
         },
+        filters: filters,
         included: ["dataset"],
       })
     ).data;
@@ -50,6 +56,7 @@
     );
   }
 
+  // Lifecycle
   onMount(async () => {
     await fetchEntries();
   });
@@ -62,7 +69,7 @@
       {#each Object.entries(countEntriesByDataset) as [datasetId, count] (datasetId)}
         <li>
           <Link
-            href={`/projects/${projectId}/datasets/${datasetId}/entries?assigned_to_id=${accountId}`}
+            href={`/projects/${projectId}/datasets/${datasetId}/entries?filters[assigned_to_id]=${accountId}`}
             target="_blank"
           >
             {nameDatasetMap[datasetId]}

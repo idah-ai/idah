@@ -73,7 +73,7 @@ module Account
           actor_account_id: account.id,
           actor_account_email: account.email,
           actor_account_role_name: account.role_name,
-          validation: valid ? "success" : "failed"
+          validation: valid
         )
       else
         sleep(rand(0.3..0.5))

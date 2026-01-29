@@ -35,7 +35,7 @@ module Organization
       projects = Api[:idah].dataset.projects.index(filter: { organization_id: id }).data
       raise Verse::Error::Unauthorized, "Unable to delete organization that still has project(s)" unless projects.empty?
 
-      organizations.delete(id)
+      organizations.delete!(id)
     end
   end
 end
