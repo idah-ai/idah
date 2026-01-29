@@ -68,11 +68,13 @@ cd idah
 ```
 
 <!--TODO: this should be changed so the frontend container works by its own ?-->
+
 ### Install dependencies
 
 ```bash
 cd app/frontend/
 pnpm i
+pnpm build:parser
 cd ../..
 ```
 
@@ -81,9 +83,11 @@ cd ../..
 #### **Databases**
 
 IDAH can be used with databases of your choice, but by default, we provide a simple database containers setup which can be started by running
+
 ```bash
 docker compose -f docker-compose-db.yml up -d
 ```
+
 This should start a `postgres` and a `redis` container
 
 #### **IDAH containers**
