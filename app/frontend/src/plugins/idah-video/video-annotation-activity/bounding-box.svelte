@@ -13,7 +13,6 @@
     mode,
     onChange,
     onmousedown,
-    pointer,
     onEditingChange,
     onPointerChange,
   }: {
@@ -27,7 +26,6 @@
     mode: string;
     onmousedown?: (e: MouseEvent) => void;
     onChange?: (bb: Point[], angle: number) => void;
-    pointer: string;
     onEditingChange?: (isEditing: boolean) => void;
     onPointerChange?: (pointer: string | undefined) => void;
   } = $props();
@@ -39,7 +37,6 @@
 
   let points: Point[] = $state(initialPoints);
   let panStart: Point | undefined = $state();
-  let initialPanPoints: Point[] = $state([]);
   let rotateStart: Point | undefined = $state();
   let rotateStartAngle: number | undefined = $state();
   let resizeHandleIndex: number | undefined = $state();
@@ -206,7 +203,6 @@
         onChange?.(updatedPoints, angle);
         points = updatedPoints;
         panStart = undefined;
-        initialPanPoints = [];
       }
       if (rotateStart) {
         angle = get_angle();
@@ -478,8 +474,8 @@
   <!-- Bounding Box -->
   {#if displayPoints.length > 0}
     <path
-      role={"grid"}
-      aria-valuetext={displayPoints.toString()}
+      role="grid"
+      tabindex="-1"
       d={draw_cmd(displayPoints)}
       onmouseenter={() => (over = true)}
       onmouseleave={() => (over = false)}
@@ -496,7 +492,6 @@
         if (editable && points.length === 4 && !panStart && !rotateStart && resizeHandleIndex === undefined) {
           e.stopPropagation();
           panStart = cursor_pixel;
-          initialPanPoints = [...points];
         }
       }}
     />
