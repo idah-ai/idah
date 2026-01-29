@@ -229,7 +229,8 @@ module Entry
       add_event_metadata(
         project_id: attributes[:project_id] || entry.project_id,
         dataset_id: attributes[:dataset_id] || entry.dataset_id,
-        entry_id: id
+        entry_id: id,
+        submission_type: entry.wf_step
       )
 
       no_event do
