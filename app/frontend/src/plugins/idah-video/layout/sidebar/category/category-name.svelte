@@ -8,6 +8,6 @@
   let { children }: Props = $props();
 </script>
 
-<div class="truncate whitespace-nowrap">
+<div class="truncate">
   {@render children()}
 </div>
