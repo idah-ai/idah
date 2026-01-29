@@ -121,12 +121,7 @@
 
   // Check if a point is on a line segment
   // thresholdPixels: threshold in actual pixels (will be converted to normalized coordinates)
-  function isOnLineSegment(
-    point: Point,
-    lineStart: Point,
-    lineEnd: Point,
-    thresholdPixels: number = 10
-  ): boolean {
+  function isOnLineSegment(point: Point, lineStart: Point, lineEnd: Point, thresholdPixels: number = 10): boolean {
     // Convert pixel threshold to normalized coordinates
     // Use average of X and Y ratios for threshold conversion
     const avgRatio = (ratio[X] + ratio[Y]) / 2;
@@ -196,7 +191,6 @@
     if (!isPolygonComplete || rawPoints.length < 3) {
       return -1;
     }
-
 
     for (let i = 0; i < rawPoints.length; i++) {
       const start = rawPoints[i];
