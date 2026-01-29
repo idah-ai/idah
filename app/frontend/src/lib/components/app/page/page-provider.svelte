@@ -1,7 +1,6 @@
 <script lang="ts">
   import ApplicationHeader from "@/components/app/application/application-header.svelte";
   import Redirect from "@/components/app/misc/redirect.svelte";
-  // import ShowToast from "@/components/app/misc/show-toast.svelte";
 
   import { authStatus } from "@/security/AuthContext";
 
@@ -46,7 +45,6 @@
       {@render children?.()}
     </section>
   {:else}
-    <!-- <ShowToast type="error" title="Access Denied" description="You do not have access to this page." /> -->
     <Redirect to={redirectTo} />
   {/if}
 {/await}

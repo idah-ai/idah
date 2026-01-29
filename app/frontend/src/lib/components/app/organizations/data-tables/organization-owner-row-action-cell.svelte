@@ -1,16 +1,17 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { UserRoundXIcon } from "@lucide/svelte";
-  import { toast } from "svelte-sonner";
 
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
+  import Tooltips from "@/components/app/tooltips/tooltips.svelte";
   import Button from "@/components/ui/button/button.svelte";
+  import Can from "@/security/can.svelte";
 
+  import { showToast } from "@/components/ui/toast/index.svelte";
   import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
   import { refetches } from "@/utils/refetch";
 
   import type { DataTableCellBaseProps } from "@/components/app/datasource-table/types";
-  import Can from "@/security/can.svelte";
 
   // Props
   let { record: accountRecord }: DataTableCellBaseProps<AccountRecord> = $props();
@@ -24,6 +25,9 @@
   async function removeOrgOwner() {
     try {
       const { data: account } = await accountsBackendDataSource.get(accountId, {
+        fields: {
+          [AccountRecord.type]: ["id", "role_name", "role_scope"],
+        },
         noCache: true,
       });
 
@@ -51,20 +55,30 @@
       });
 
       $refetches.accounts.list = new Date();
-      toast.success("Organization owner removed", {
+      showToast.success({
+        title: "Organization owner removed",
         description: "The organization owner has been removed.",
       });
     } catch (error) {
       console.error(error);
-      toast.error("Failed to remove organization owner.");
+      showToast.error({ title: "Failed to remove organization owner." });
     }
   }
 </script>
 
 <Can action="delete" resource="iam:organizations" scopes={["as_org_owner"]}>
-  <Button variant="ghost" size="icon-sm" onclick={() => (openConfirmRemoveOrgOwnerModal = true)}>
-    <UserRoundXIcon />
-  </Button>
+  <Tooltips align="center">
+    {#snippet trigger()}
+      <Button variant="ghost" size="icon-sm" onclick={() => (openConfirmRemoveOrgOwnerModal = true)}>
+        <UserRoundXIcon />
+      </Button>
+    {/snippet}
+
+    {#snippet content()}
+      Remove "{accountRecord.email}" <br />
+      from organization owner
+    {/snippet}
+  </Tooltips>
 
   <ConfirmModal
     title="Remove Organization Owner"
