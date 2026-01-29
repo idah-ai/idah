@@ -165,7 +165,7 @@
     return rotatePointNormalized(point, center, -angle, ratio);
   }
 
-  function get_angle(): number {
+  function getAngle(): number {
     if (rotateStart && cursor_pixel && rotateStartAngle !== undefined && rotateStartRevolutions !== undefined) {
       // Calculate angle directly in PIXEL space (not normalized)
       // This matches the visual rotation which happens in screen/pixel space
@@ -205,7 +205,7 @@
         panStart = undefined;
       }
       if (rotateStart) {
-        angle = get_angle();
+        angle = getAngle();
         onChange?.(points, angle);
         rotateStart = undefined;
         rotateStartAngle = undefined;
@@ -270,7 +270,7 @@
 
   // Generate SVG cursor for a specific resize handle that rotates with the bounding box
   function getRotatedCursorSVG(handle_index: number): string {
-    const currentAngle = get_angle();
+    const currentAngle = getAngle();
     const cursorType = getHandleCursor(handle_index);
     const angleDeg = (currentAngle * 180) / Math.PI;
 
@@ -332,7 +332,7 @@
   function handleResize(handleIndex: number, cursorPos: Point) {
     if (points.length !== 4 || resizeInitialPoints.length !== 4) return;
 
-    const currentAngle = get_angle();
+    const currentAngle = getAngle();
     const cursorNormalized: Point = [cursorPos[X] / ratio[X], cursorPos[Y] / ratio[Y]];
 
     // IMPORTANT: Points are stored in UNROTATED space
@@ -480,7 +480,7 @@
       onmouseenter={() => (over = true)}
       onmouseleave={() => (over = false)}
       style:transform-origin={`${displayCentroid[X] * ratio[X]}px ${displayCentroid[Y] * ratio[Y]}px`}
-      style:transform={`rotate(${get_angle()}rad)`}
+      style:transform={`rotate(${getAngle()}rad)`}
       vector-effect="non-scaling-stroke"
       class={isEditing ? "cursor-none" : edition_cursor}
       fill-opacity="0.4"
@@ -514,7 +514,7 @@
           cy={displayCentroid[Y] * ratio[Y]}
           r={4}
           style:transform-origin={`${displayCentroid[X] * ratio[X]}px ${displayCentroid[Y] * ratio[Y]}px`}
-          style:transform={`rotate(${get_angle()}rad)`}
+          style:transform={`rotate(${getAngle()}rad)`}
           vector-effect="non-scaling-stroke"
           style:stroke={color}
           style:fill={color}
@@ -540,7 +540,7 @@
           stroke={color}
           stroke-width="2"
           style:transform-origin={`${displayCentroid[X] * ratio[X]}px ${displayCentroid[Y] * ratio[Y]}px`}
-          style:transform={`rotate(${get_angle()}rad)`}
+          style:transform={`rotate(${getAngle()}rad)`}
           pointer-events="none"
         />
 
@@ -550,7 +550,7 @@
           cy={(topEdgeMidpoint[Y] - handleOffset) * ratio[Y]}
           r={2}
           style:transform-origin={`${displayCentroid[X] * ratio[X]}px ${displayCentroid[Y] * ratio[Y]}px`}
-          style:transform={`rotate(${get_angle()}rad)`}
+          style:transform={`rotate(${getAngle()}rad)`}
           style:cursor={isEditing ? "none" : `url('${getRotateCursorSVG()}') 18 18, grab`}
           style:fill={color}
         />
@@ -558,7 +558,7 @@
           role="slider"
           tabindex="0"
           style:outline="none"
-          aria-valuenow={get_angle() * (180 / Math.PI)}
+          aria-valuenow={getAngle() * (180 / Math.PI)}
           onmousedown={(e) => {
             if (!panStart && !rotateStart && resizeHandleIndex === undefined) {
               e.stopPropagation();
@@ -576,7 +576,7 @@
           cy={(topEdgeMidpoint[Y] - handleOffset) * ratio[Y]}
           r={6}
           style:transform-origin={`${displayCentroid[X] * ratio[X]}px ${displayCentroid[Y] * ratio[Y]}px`}
-          style:transform={`rotate(${get_angle()}rad)`}
+          style:transform={`rotate(${getAngle()}rad)`}
           style:cursor={isEditing ? "none" : `url('${getRotateCursorSVG()}') 18 18, grab`}
           style:fill={color}
           style:opacity="50%"
@@ -587,7 +587,7 @@
         {@const handleY = (topEdgeMidpoint[Y] - handleOffset) * ratio[Y]}
         {@const centroidPixelX = displayCentroid[X] * ratio[X]}
         {@const centroidPixelY = displayCentroid[Y] * ratio[Y]}
-        {@const currentAngle = get_angle()}
+        {@const currentAngle = getAngle()}
         {@const dx = handleX - centroidPixelX}
         {@const dy = handleY - centroidPixelY}
         {@const cos = Math.cos(currentAngle)}
@@ -635,7 +635,7 @@
           style:pointer-events="none"
           style:user-select="none"
         >
-          {(get_angle() * (180 / Math.PI)).toFixed(1)}°
+          {(getAngle() * (180 / Math.PI)).toFixed(1)}°
         </text>
 
         <!-- Increment button (right) -->
@@ -680,7 +680,7 @@
           cy={point[Y] * ratio[Y]}
           r={2}
           style:transform-origin={`${displayCentroid[X] * ratio[X]}px ${displayCentroid[Y] * ratio[Y]}px`}
-          style:transform={`rotate(${get_angle()}rad)`}
+          style:transform={`rotate(${getAngle()}rad)`}
           style:cursor={isEditing ? "none" : `url('${getRotatedCursorSVG(handle)}') 18 18, ${getHandleCursor(handle)}`}
           vector-effect="non-scaling-stroke"
           style:stroke={color}
@@ -702,7 +702,7 @@
           cy={point[Y] * ratio[Y]}
           r={5}
           style:transform-origin={`${displayCentroid[X] * ratio[X]}px ${displayCentroid[Y] * ratio[Y]}px`}
-          style:transform={`rotate(${get_angle()}rad)`}
+          style:transform={`rotate(${getAngle()}rad)`}
           style:cursor={isEditing ? "none" : `url('${getRotatedCursorSVG(handle)}') 18 18, ${getHandleCursor(handle)}`}
           vector-effect="non-scaling-stroke"
           style:stroke={color}
