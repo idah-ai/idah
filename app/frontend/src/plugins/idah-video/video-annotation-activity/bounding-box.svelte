@@ -283,30 +283,30 @@
       "nwse-resize": `
         <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none">
           <g transform="rotate(${angleDeg} 12 12)">
-            <path d="M8 8L4 4M4 4H8M4 4V8" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M16 16L20 20M20 20H16M20 20V16" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M8 8L4 4M4 4H8M4 4V8" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M16 16L20 20M20 20H16M20 20V16" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
           </g>
         </svg>
       `,
       "nesw-resize": `
         <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none">
           <g transform="rotate(${angleDeg} 12 12)">
-            <path d="M16 8L20 4M20 4H16M20 4V8" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M8 16L4 20M4 20H8M4 20V16" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M16 8L20 4M20 4H16M20 4V8" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M8 16L4 20M4 20H8M4 20V16" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
           </g>
         </svg>
       `,
       "ns-resize": `
         <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none">
           <g transform="rotate(${angleDeg} 12 12)">
-            <path d="M12 4V20M12 4L9 7M12 4L15 7M12 20L9 17M12 20L15 17" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M12 4V20M12 4L9 7M12 4L15 7M12 20L9 17M12 20L15 17" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
           </g>
         </svg>
       `,
       "ew-resize": `
         <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none">
           <g transform="rotate(${angleDeg} 12 12)">
-            <path d="M4 12H20M4 12L7 9M4 12L7 15M20 12L17 9M20 12L17 15" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M4 12H20M4 12L7 9M4 12L7 15M20 12L17 9M20 12L17 15" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
           </g>
         </svg>
       `,
@@ -459,12 +459,14 @@
   // Create SVG cursor for rotation handle with curved arrows
   function getRotateCursorSVG(): string {
     return `data:image/svg+xml;base64,${btoa(`
-      <svg xmlns="http://www.w3.org/2000/svg" translate="36" width="36" height="36" viewBox="0 0 24 24" fill="none">
-        <path d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C14.3456 3 16.4922 3.93392 18.1243 5.43938" 
-              stroke="${color}" stroke-width="2" stroke-linecap="round"/>
-        <path d="M17 3L18.1243 5.43938L15.5 6.5" 
-              stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="${color}"/>
-        <circle cx="12" cy="12" r="2" fill="${color}"/>
+      <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none">
+        <g transform="scale(0.75) translate(3, 3)">
+          <path d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C14.3456 3 16.4922 3.93392 18.1243 5.43938" 
+                stroke="${color}" stroke-width="2" stroke-linecap="round"/>
+          <path d="M17 3L18.1243 5.43938L15.5 6.5"
+                stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="${color}"/>
+          <circle cx="12" cy="12" r="2" fill="${color}"/>
+        </g>
       </svg>
     `)}`;
   }
