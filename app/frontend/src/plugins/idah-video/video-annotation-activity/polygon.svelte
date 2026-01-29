@@ -239,7 +239,7 @@
   // Check if cursor is hovering over first point during polygon creation
   $effect(() => {
     if (!isPolygonComplete && cursor && rawPoints.length >= 3) {
-      isHoveringOverFirstPoint = isNearPoint(cursor, rawPoints[0], 15);
+      isHoveringOverFirstPoint = isNearPoint(cursor, rawPoints[0], 10);
     } else {
       isHoveringOverFirstPoint = false;
     }
@@ -283,7 +283,7 @@
       // Adding new vertex
       if (rawPoints.length === 0 || !isNearPoint(rawPoints[rawPoints.length - 1], end, 10)) {
         rawPoints = [...rawPoints, end];
-        if (rawPoints.length >= 3 && isNearPoint(rawPoints[0], end, 15)) {
+        if (rawPoints.length >= 3 && isNearPoint(rawPoints[0], end, 10)) {
           rawPoints = rawPoints.slice(0, -1); // Remove last point to avoid duplication
           isPolygonComplete = true;
           onChange?.(rawPoints);
