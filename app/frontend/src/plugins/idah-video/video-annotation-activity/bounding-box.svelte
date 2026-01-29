@@ -257,7 +257,7 @@
     // Map cursor types to their base SVG paths
     const cursorSVGs: Record<string, string> = {
       "nwse-resize": `
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none">
           <g transform="rotate(${angleDeg} 12 12)">
             <path d="M8 8L4 4M4 4H8M4 4V8" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             <path d="M16 16L20 20M20 20H16M20 20V16" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -265,7 +265,7 @@
         </svg>
       `,
       "nesw-resize": `
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none">
           <g transform="rotate(${angleDeg} 12 12)">
             <path d="M16 8L20 4M20 4H16M20 4V8" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             <path d="M8 16L4 20M4 20H8M4 20V16" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -273,14 +273,14 @@
         </svg>
       `,
       "ns-resize": `
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none">
           <g transform="rotate(${angleDeg} 12 12)">
             <path d="M12 4V20M12 4L9 7M12 4L15 7M12 20L9 17M12 20L15 17" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </g>
         </svg>
       `,
       "ew-resize": `
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none">
           <g transform="rotate(${angleDeg} 12 12)">
             <path d="M4 12H20M4 12L7 9M4 12L7 15M20 12L17 9M20 12L17 15" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </g>
@@ -507,7 +507,7 @@
   // Create SVG cursor for rotation handle with curved arrows
   function getRotateCursorSVG(): string {
     return `data:image/svg+xml;base64,${btoa(`
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <svg xmlns="http://www.w3.org/2000/svg" translate="36" width="36" height="36" viewBox="0 0 24 24" fill="none">
         <path d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C14.3456 3 16.4922 3.93392 18.1243 5.43938" 
               stroke="${color}" stroke-width="2" stroke-linecap="round"/>
         <path d="M17 3L18.1243 5.43938L15.5 6.5" 
@@ -523,6 +523,8 @@
   <!-- Bounding Box -->
   {#if displayPoints.length > 0}
     <path
+      role={"grid"}
+      aria-valuetext={displayPoints.toString()}
       d={draw_cmd(displayPoints)}
       onmouseenter={() => (over = true)}
       onmouseleave={() => (over = false)}
@@ -598,6 +600,11 @@
 
         <!-- Rotation handle circle with custom cursor -->
         <circle
+          role="slider"
+          tabindex="0"
+          style:outline={// not recommended but fix visual impact for chrome
+          "none"}
+          aria-valuenow={get_angle() * (180 / Math.PI)}
           onmousedown={(e) => {
             if (!panStart && !rotateStart && resizeHandleIndex === undefined) {
               e.stopPropagation();
@@ -617,7 +624,7 @@
           r={6}
           style:transform-origin={`${displayCentroid[X] * ratio[X]}px ${displayCentroid[Y] * ratio[Y]}px`}
           style:transform={`rotate(${get_angle()}rad)`}
-          style:cursor={isEditing ? "none" : `url('${getRotateCursorSVG()}') 12 12, grab`}
+          style:cursor={isEditing ? "none" : `url('${getRotateCursorSVG()}') 18 18, grab`}
           style:fill={color}
         />
 
@@ -650,12 +657,20 @@
           stroke-width="2"
         />
         <circle
+          role="button"
+          tabindex="-1"
+          style:outline={// not recommended but fix visual impact for chrome
+          "none"}
           cx={rotatedHandleX - buttonSpacing}
           cy={rotatedHandleY}
           r={buttonRadius}
           style:fill={color}
           fill-opacity="1%"
           style:cursor="pointer"
+          onkeypress={(e) => {
+            decrementRevolution();
+          }}
+          style:border="none"
           onmousedown={(e) => {
             e.stopPropagation();
             decrementRevolution();
@@ -697,12 +712,19 @@
           stroke-width="2"
         />
         <circle
+          role="button"
+          tabindex="-1"
+          style:outline={// not recommended but fix visual impact for chrome
+          "none"}
           cx={rotatedHandleX + buttonSpacing}
           cy={rotatedHandleY}
           r={buttonRadius}
           style:fill={color}
           fill-opacity="1%"
           style:cursor="pointer"
+          onkeypress={(e) => {
+            incrementRevolution();
+          }}
           onmousedown={(e) => {
             e.stopPropagation();
             incrementRevolution();
@@ -714,20 +736,23 @@
       <!-- Resize handles with rotated cursors -->
       {#each boundingBoxHandle(updatedPoints) as point, handle (handle)}
         <circle
+          role="grid"
+          tabindex="-1"
+          style:outline={// not recommended but fix visual impact for chrome
+          "none"}
           onmousedown={(e) => {
             e.stopPropagation();
             if (!panStart && !rotateStart && resizeHandleIndex === undefined) {
               resizeHandleIndex = handle;
               activeCursor = getRotatedCursorSVG(handle);
             }
-            onmousedown?.(e);
           }}
           cx={point[X] * ratio[X]}
           cy={point[Y] * ratio[Y]}
           r={5}
           style:transform-origin={`${displayCentroid[X] * ratio[X]}px ${displayCentroid[Y] * ratio[Y]}px`}
           style:transform={`rotate(${get_angle()}rad)`}
-          style:cursor={isEditing ? "none" : `url('${getRotatedCursorSVG(handle)}') 12 12, ${getHandleCursor(handle)}`}
+          style:cursor={isEditing ? "none" : `url('${getRotatedCursorSVG(handle)}') 18 18, ${getHandleCursor(handle)}`}
           vector-effect="non-scaling-stroke"
           style:stroke={color}
           style:fill={color}
@@ -739,7 +764,7 @@
   <!-- Active cursor overlay that persists during drag operations/need -->
   {#if activeCursor && cursor_pixel}
     <g style="pointer-events: none;">
-      <image href={activeCursor} x={cursor_pixel[X] - 21} y={cursor_pixel[Y] - 21} width="42" height="42" />
+      <image href={activeCursor} x={cursor_pixel[X] - 18} y={cursor_pixel[Y] - 18} width="36" height="36" />
     </g>
   {/if}
 </g>
