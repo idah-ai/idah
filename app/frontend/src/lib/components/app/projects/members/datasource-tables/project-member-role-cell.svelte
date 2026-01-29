@@ -1,15 +1,12 @@
 <script lang="ts">
-  import { Badge } from "@/components/ui/badge";
+  import ProjectMemberRoleBadge from "@/components/app/projects/members/badges/project-member-role-badge.svelte";
 
-  import { ProjectMemberRecord, projectMemberRoles } from "@/data/model/dataset/projects/members/record";
-  import { humanize } from "@/utils/string";
+  import { ProjectMemberRecord } from "@/data/model/dataset/projects/members/record";
 
   import type { DataTableCellBaseProps } from "@/components/app/datasource-table/types";
 
   // Props
-  let { record: projectMember }: DataTableCellBaseProps<ProjectMemberRecord> = $props();
+  let { record: projectMemberRecord }: DataTableCellBaseProps<ProjectMemberRecord> = $props();
 </script>
 
-<Badge variant="outline">
-  {projectMemberRoles.find((role) => role.value === projectMember.role)?.label || humanize(projectMember.role)}
-</Badge>
+<ProjectMemberRoleBadge {projectMemberRecord} />

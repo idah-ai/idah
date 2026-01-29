@@ -76,7 +76,7 @@
   </div>
   {#key $idb_updated_at}
     <Select type="single" onValueChange={onSelectCategory} {disabled}>
-      <SelectTrigger class="data-[placeholder]:text-secondary-foreground bg-secondary w-full text-xs">
+      <SelectTrigger class="data-[placeholder]:text-secondary-foreground bg-secondary w-full truncate text-xs">
         {category?.label || "Select category"}
       </SelectTrigger>
 
