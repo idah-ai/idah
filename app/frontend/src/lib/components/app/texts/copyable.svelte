@@ -5,7 +5,7 @@
   import Text from "@/components/ui/text/Text.svelte";
   import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
-  import { truncate } from "@/utils/string";
+  import { truncateEmail } from "@/utils/string";
 
   // Props
   interface Props {
@@ -36,7 +36,7 @@
   {#if slotValue}
     {@render slotValue()}
   {:else}
-    <Text size="sm">{truncate(value)}</Text>
+    <Text size="sm">{truncateEmail(value)}</Text>
   {/if}
 
   <TooltipProvider disableCloseOnTriggerClick>
