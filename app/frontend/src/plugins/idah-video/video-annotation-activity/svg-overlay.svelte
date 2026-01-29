@@ -326,7 +326,6 @@
             {@const current_annotation_angle = current_annotation_shape?.angle || 0}
             <BoundingBox
               {mode}
-              {pointer}
               points={current_annotation_points}
               angle={current_annotation_angle}
               ratio={target_size}
@@ -359,7 +358,6 @@
               {@const current_annotation_angle = current_annotation_shape?.angle || 0}
               <BoundingBox
                 {mode}
-                {pointer}
                 points={current_annotation_points}
                 angle={current_annotation_angle}
                 ratio={target_size}
@@ -390,7 +388,6 @@
     {#if (shape?.type == IDAH_VIDEO_BOUNDING_BOX || mode == IDAH_VIDEO_BOUNDING_BOX) && selected ? !selected.hidden : true}
       {#key [shape, frame]}
         <BoundingBox
-          {pointer}
           bind:this={toolSelection}
           {mode}
           {points}
