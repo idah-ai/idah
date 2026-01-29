@@ -297,8 +297,28 @@
   >
     {#if width && height && ![IDAH_NOTE, DEFAULT_MODE].includes(mode) && (pointer == "crosshair" || isEditing)}
       <!-- prevent display issue on load for now -->
-      <line x1={0} y1={target_line[Y]} x2={width} y2={target_line[Y]} stroke="#2b7fff" />
-      <line x1={target_line[X]} y1={0} x2={target_line[X]} y2={height} stroke="#2b7fff" />
+      <line
+        x1={0}
+        y1={target_line[Y]}
+        x2={width}
+        y2={target_line[Y]}
+        stroke={selected?.synced
+          ? Object.entries(context.config)
+              .find(([k, _]) => k == mode)?.[1]
+              .values.find((c) => c.id == selected?.value?.category)?.color || "grey"
+          : "grey"}
+      />
+      <line
+        x1={target_line[X]}
+        y1={0}
+        x2={target_line[X]}
+        y2={height}
+        stroke={selected?.synced
+          ? Object.entries(context.config)
+              .find(([k, _]) => k == mode)?.[1]
+              .values.find((c) => c.id == selected?.value?.category)?.color || "grey"
+          : "grey"}
+      />
     {/if}
 
     <!-- draw annotation context -->
