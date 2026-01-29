@@ -257,15 +257,10 @@
   let editionCursor: string | undefined = $state(undefined);
 
   let pointer = $derived.by(() => {
-    return mode != DEFAULT_MODE
-      ? mode == IDAH_NOTE
-        ? "cursor-note"
-        : !!editionCursor
-          ? "cursor-none"
-          : points.length < (cursorConstraints.get(mode) || 0)
-            ? "cursor-crosshair"
-            : "cursor-grab"
-      : "cursor-grab";
+    if (mode == IDAH_NOTE) "cursor-note";
+    if (editionCursor) return editionCursor;
+    if (selected) return "cursor-pointer";
+    return "cursor-grab";
   });
 </script>
 

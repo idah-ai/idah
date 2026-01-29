@@ -319,7 +319,7 @@
   let edition_cursor = $derived.by(() => {
     if (isEditing) return "none";
     if (mode === IDAH_NOTE) return "cursor-note";
-    if (over) return editable ? "cursor-crosshair" : "cursor-pointer";
+    if (over) return editable ? "cursor-grab" : "cursor-pointer";
   });
 
   function boundingBoxHandle(p: Point[]): Point[] {
@@ -484,7 +484,7 @@
       style:transform-origin={`${displayCentroid[X] * ratio[X]}px ${displayCentroid[Y] * ratio[Y]}px`}
       style:transform={`rotate(${get_angle()}rad)`}
       vector-effect="non-scaling-stroke"
-      class={isEditing ? edition_cursor : edition_cursor}
+      class={isEditing ? "cursor-none" : edition_cursor}
       fill-opacity="0.4"
       style:fill={color}
       style:stroke={color}
