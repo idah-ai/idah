@@ -1,25 +1,37 @@
 <script lang="ts">
+  import {
+    ChevronRight,
+    CircleSmallIcon,
+    EllipsisVerticalIcon,
+    EyeIcon,
+    EyeOffIcon,
+    LockIcon,
+    LockOpenIcon,
+    PlusIcon,
+    Trash2Icon,
+  } from "@lucide/svelte";
+
+  import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import Badge from "@/components/ui/badge/badge.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
   import { SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
-  import Text from "@/components/ui/text/Text.svelte";
+
   import { cn } from "@/utils";
   import { humanize } from "@/utils/string";
-  import { ChevronRight, CircleSmallIcon, Eye, EyeOff, Lock, LockOpen, PlusIcon, Trash2Icon } from "@lucide/svelte";
 
   import type { CategoryDefinition } from "@/context/ActivityContext";
   import type { IConfigValue } from "@/plugin/interface/Activity";
 
-  import { idb_updated_at } from "../../video-annotation-activity/idb_store.svelte";
-  import type { AnnotationsIndexedDB } from "../../video-annotation-activity/indexedDB";
-  import type { VideoAnnotation } from "../../video-annotation-activity/VideoAnnotationContext";
   import type {
     AnnotationMetadata,
     AnnotationObj,
     AnnotationShape,
     AnnotationValue,
   } from "@/context/AnnotationContext";
+  import { idb_updated_at } from "../../video-annotation-activity/idb_store.svelte";
+  import type { AnnotationsIndexedDB } from "../../video-annotation-activity/indexedDB";
+  import type { VideoAnnotation } from "../../video-annotation-activity/VideoAnnotationContext";
 
   // Props
   let {
@@ -137,80 +149,116 @@
   }
 </script>
 
+{#snippet CategoryName(name: string)}
+  <div class="truncate whitespace-nowrap">{name}</div>
+{/snippet}
+
 {#snippet annotationSelection(annotation: VideoAnnotation, name: string)}
   <SidebarMenuItem class="list-none">
     <SidebarMenuButton
-      class={cn("group ml-5 w-full justify-between pr-3 hover:cursor-pointer")}
+      class={cn("group w-full gap-0 pl-8 hover:cursor-pointer")}
       onclick={() => onSelectAnnotation(annotation)}
     >
-      <div class="flex gap-1 text-xs">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-          <!-- prettier-ignore -->
-          <path
+      <div class="flex items-center gap-1 text-xs">
+        <!-- VECTOR SQUARE ICON -->
+        <div class="shrink-0">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <!-- prettier-ignore -->
+            <path
             d="M6.66667 4.58333H13.3333M6.66667 4.58333C6.66667 5.73393 5.73393 6.66667 4.58333 6.66667M6.66667 4.58333C6.66667 3.43274 5.73393 2.5 4.58333 2.5C3.43274 2.5 2.5 3.43274 2.5 4.58333C2.5 5.73393 3.43274 6.66667 4.58333 6.66667M13.3333 4.58333C13.3333 5.73393 14.2661 6.66667 15.4167 6.66667M13.3333 4.58333C13.3333 3.43274 14.2661 2.5 15.4167 2.5C16.5673 2.5 17.5 3.43274 17.5 4.58333C17.5 5.73393 16.5673 6.66667 15.4167 6.66667M15.4167 6.66667V13.3333M15.4167 13.3333C14.2661 13.3333 13.3333 14.2661 13.3333 15.4167M15.4167 13.3333C16.5673 13.3333 17.5 14.2661 17.5 15.4167C17.5 16.5673 16.5673 17.5 15.4167 17.5C14.2661 17.5 13.3333 16.5673 13.3333 15.4167M13.3333 15.4167H6.66667M6.66667 15.4167C6.66667 16.5673 5.73393 17.5 4.58333 17.5C3.43274 17.5 2.5 16.5673 2.5 15.4167C2.5 14.2661 3.43274 13.3333 4.58333 13.3333M6.66667 15.4167C6.66667 14.2661 5.73393 13.3333 4.58333 13.3333M4.58333 13.3333V6.66667"
             stroke="var(--color-gray-500)"
             stroke-width="1.5"
             stroke-linecap="round"
             stroke-linejoin="round"
           />
-        </svg>
-        {name}
+          </svg>
+        </div>
+
+        {@render CategoryName(name)}
       </div>
-      <Button
-        variant="ghost"
-        size="icon"
-        class="hidden group-hover:inline-flex"
-        onclick={(e) => {
-          e.stopPropagation();
-          onVisibility(!annotation.hidden, annotation);
-        }}
-      >
-        {#if annotation.hidden}
-          <EyeOff class="size-3" color="var(--color-gray-500)" />
-        {:else}
-          <Eye class="size-3" color="var(--color-gray-500)" />
-        {/if}
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon"
-        class="hidden group-hover:inline-flex"
-        onclick={(e) => {
-          e.stopPropagation();
-          onLock(!annotation.locked, annotation);
-        }}
-      >
-        {#if annotation.locked}
-          <Lock class="size-3" color="var(--color-gray-500)" />
-        {:else}
-          <LockOpen class="size-3" color="var(--color-gray-500)" />
-        {/if}
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon"
-        class="hidden group-hover:inline-flex"
-        onclick={(e) => {
-          e.stopPropagation();
-          onDeleteAnnotation(annotation);
-        }}
-        disabled={annotation.locked}
-      >
-        <Trash2Icon color="var(--color-gray-500)" />
-      </Button>
+
+      <!-- BUTTON::HIDE & SHOW ANNOTATION -->
+      <div class="ml-auto flex items-center gap-0">
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          class={cn("text-muted-foreground shrink-0", {
+            "opacity-0 group-hover:opacity-100": !annotation.hidden, // show when mouse hover
+            "opacity-100": annotation.hidden, // show when annotation is hidden
+          })}
+          onclick={(e) => {
+            e.stopPropagation();
+            onVisibility(!annotation.hidden, annotation);
+          }}
+        >
+          {#if annotation.hidden}
+            <EyeOffIcon />
+          {:else}
+            <EyeIcon />
+          {/if}
+        </Button>
+
+        <!-- BUTTON::LOCK & UNLOCK ANNOTATION -->
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          class={cn("text-muted-foreground shrink-0", {
+            "opacity-0 group-hover:opacity-100": !annotation.locked, // show when mouse hover
+            "opacity-100": annotation.locked, // show when annotation is locked
+          })}
+          onclick={(e) => {
+            e.stopPropagation();
+            onLock(!annotation.locked, annotation);
+          }}
+        >
+          {#if annotation.locked}
+            <LockIcon />
+          {:else}
+            <LockOpenIcon />
+          {/if}
+        </Button>
+
+        <!-- DROPDOWN MENU ACTIONS:: Add more actions here -->
+        <DropdownMenus
+          align="end"
+          menus={{
+            actions: {
+              items: [{ label: "Delete", icon: Trash2Icon, action: () => onDeleteAnnotation(annotation) }],
+            },
+          }}
+        >
+          {#snippet trigger({ props })}
+            {@const isOpen = props["data-state"] === "open"}
+            <Button
+              {...props}
+              variant={isOpen ? "secondary" : "ghost"}
+              size="icon-sm"
+              class={cn("text-muted-foreground shrink-0 opacity-0 group-hover:opacity-100", {
+                "opacity-100": isOpen,
+              })}
+              onclick={(e) => {
+                e.stopPropagation();
+              }}
+            >
+              <EllipsisVerticalIcon />
+            </Button>
+          {/snippet}
+        </DropdownMenus>
+      </div>
     </SidebarMenuButton>
   </SidebarMenuItem>
 {/snippet}
 
 {#snippet showCategoryTitle(category: CategoryDefinition, haveChildren: boolean = false, open: boolean = false)}
   <div
-    class={cn("flex items-center gap-1 text-xs", {
+    class={cn("flex w-full items-center gap-1 text-xs group-hover:w-2/4", {
       "p-2": toolMode && selected_id,
     })}
   >
     <Button
       variant="ghost"
-      class={cn("p-0 hover:cursor-pointer", {
+      size="icon-sm"
+      class={cn("p-0", {
         "opacity-0": !haveChildren || selected_id,
         hidden: toolMode && selected_id,
       })}
@@ -225,19 +273,19 @@
     >
       {@const selected = selected_category == category.id}
       {#if selected && toolMode && !selected_id}
-        <PlusIcon class="text-primary size-4 " strokeWidth={4}></PlusIcon>
+        <PlusIcon class="text-primary" strokeWidth={4} />
       {:else if !category.nestedCategories && toolMode && !selected_id}
-        <CircleSmallIcon class="fill-gray-400 stroke-gray-400"></CircleSmallIcon>
+        <CircleSmallIcon class="fill-gray-400 stroke-gray-400" />
       {:else}
         {@const parentOpen = category.nestedCategories && toolMode}
         <ChevronRight
-          class={cn("size-4", {
+          class={cn("", {
             "opacity-0": !haveChildren || category.nestedCategories?.length === 0,
             "rotate-90": open || parentOpen,
             "stroke-blue-300": selected,
             "stroke-gray-500": !selected,
           })}
-        ></ChevronRight>
+        />
       {/if}
     </Button>
 
@@ -259,7 +307,7 @@
         stroke-linejoin="round"
       />
     </svg>
-    {category.name}
+    {@render CategoryName(category.name)}
   </div>
 {/snippet}
 
@@ -274,12 +322,15 @@
     {#key `${forceRender}-${$idb_updated_at}-${type}`}
       {#await haveAnnotationsInCategory(category.id) then hasAnnotations}
         <CollapsibleTrigger
-          class={cn("text-secondary-foreground flex w-full items-center justify-between pr-1 text-xs", {
-            "bg-secondary border-ring text-secondary-foreground rounded-sm border-1": selected == category.id,
-            "hover:bg-primary-foreground hover:dark:bg-accent hover:cursor-pointer hover:rounded-sm":
-              !category.requiredNested,
-            "hover:bg-accent hover:cursor-pointer hover:rounded-sm": !toolMode,
-          })}
+          class={cn(
+            "text-secondary-foreground flex w-full items-center justify-between pr-1 text-xs group-hover:w-2/4",
+            {
+              "bg-secondary border-ring text-secondary-foreground rounded-sm border-1": selected == category.id,
+              "hover:bg-primary-foreground hover:dark:bg-accent hover:cursor-pointer hover:rounded-sm":
+                !category.requiredNested,
+              "hover:bg-accent hover:cursor-pointer hover:rounded-sm": !toolMode,
+            },
+          )}
           onclick={(e) => {
             // Prevent default toggle behavior
             e.preventDefault();
@@ -313,7 +364,7 @@
                     currentFrame <= annotation.shape.end &&
                     annotation.shape.type == type,
                 ).length}
-                <Badge variant="gray" class="text-xs">
+                <Badge variant="gray" rounded="full" class="text-[0.625rem]">
                   {filteredCount}
                 </Badge>
               {/await}
@@ -323,7 +374,7 @@
       {/await}
     {/key}
 
-    <CollapsibleContent class="ml-5" hidden={!openStates[category.id]}>
+    <CollapsibleContent class="ml-4" hidden={!openStates[category.id]}>
       {#key $idb_updated_at}
         {#if !toolMode && db && category}
           {#await db.getAllIndex("category", category.id) then anns}
@@ -356,35 +407,7 @@
 {/snippet}
 
 <div class="flex-col overflow-x-hidden">
-  <Collapsible open={true}>
-    <CollapsibleTrigger>
-      <Text class="text-secondary-foreground" weight="semibold" size="xs">
-        {((s: string) => [s.slice(0, 1).toUpperCase(), s.slice(1)].join(""))(
-          type.split(":").reverse()[0].split(new RegExp(/-|_/)).join(" "),
-        )}
-      </Text>
-    </CollapsibleTrigger>
-    <CollapsibleContent>
-      <div class="flex items-center gap-2 py-2">
-        <Text class="text-secondary-foreground" size="xs" weight="semibold">Categories</Text>
-        {#key $idb_updated_at}
-          {#await db?.getAllIndex("category") then anns}
-            {@const filteredCount =
-              anns?.filter(
-                (annotation) =>
-                  currentFrame >= annotation.shape.start &&
-                  currentFrame <= annotation.shape.end &&
-                  annotation.shape.type == type,
-              ).length || 0}
-            <Badge variant="gray" class="text-xs">
-              {filteredCount}
-            </Badge>
-          {/await}
-        {/key}
-      </div>
-      {#each categoriesTree as category (category.id)}
-        {@render categorySelection(category, category.nestedCategories, onSelect, selected_category)}
-      {/each}
-    </CollapsibleContent>
-  </Collapsible>
+  {#each categoriesTree as category (category.id)}
+    {@render categorySelection(category, category.nestedCategories, onSelect, selected_category)}
+  {/each}
 </div>

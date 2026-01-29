@@ -1,11 +1,12 @@
 <script lang="ts">
   import { EllipsisVerticalIcon, LinkIcon, PenSquareIcon, Trash2Icon } from "@lucide/svelte";
-  import { toast } from "svelte-sonner";
   import { SvelteURL } from "svelte/reactivity";
 
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
   import Button from "@/components/ui/button/button.svelte";
+
+  import { showToast } from "@/components/ui/toast/index.svelte";
 
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
 
@@ -51,7 +52,7 @@
 
             navigator.clipboard.writeText(url.toString());
 
-            toast.info("Link copied to clipboard.");
+            showToast.info({ title: "Link copied to clipboard." });
           },
         },
         {
