@@ -22,6 +22,75 @@ function highlightPathParams(path: string): string {
   return path.replace(/\{([^}]+)\}/g, '<b>{$1}</b>');
 }
 
+// Helper to convert JSON Schema to example JSON
+function schemaToExampleJSON(schema: any): any {
+  if (!schema || typeof schema !== 'object') return null;
+
+  const type = schema.type;
+
+  // Return example or default if provided
+  if (schema.example !== undefined) return schema.example;
+  if (schema.default !== undefined) return schema.default;
+
+  // Handle enum
+  if (schema.enum && schema.enum.length > 0) return schema.enum[0];
+
+  // Handle different types
+  switch (type) {
+    case 'object':
+      const obj: any = {};
+      if (schema.properties) {
+        for (const [key, propSchema] of Object.entries(schema.properties)) {
+          obj[key] = schemaToExampleJSON(propSchema as any);
+        }
+      }
+      return obj;
+
+    case 'array':
+      if (schema.items) {
+        return [schemaToExampleJSON(schema.items)];
+      }
+      return [];
+
+    case 'string':
+      // Check for format-specific examples
+      if (schema.format === 'date-time') {
+        return new Date().toISOString();
+      }
+      if (schema.format === 'date') {
+        return new Date().toISOString().split('T')[0];
+      }
+      if (schema.format === 'email') {
+        return 'user@example.com';
+      }
+      if (schema.format === 'uuid') {
+        return '123e4567-e89b-12d3-a456-426614174000';
+      }
+      return 'string';
+
+    case 'number':
+    case 'integer':
+      return 0;
+
+    case 'boolean':
+      return false;
+
+    case 'null':
+      return null;
+
+    default:
+      // If no type specified but has properties, treat as object
+      if (schema.properties) {
+        const obj: any = {};
+        for (const [key, propSchema] of Object.entries(schema.properties)) {
+          obj[key] = schemaToExampleJSON(propSchema as any);
+        }
+        return obj;
+      }
+      return {};
+  }
+}
+
 const app = Astro.url.searchParams.get("app") ?? "dataset";
 const tag = Astro.url.searchParams.get("tag");
 const res = await fetch(new URL("/data/definitions/" + app + ".json", Astro.url));
@@ -80,6 +149,11 @@ for (const [tag, paths] of pathsByTag) {
         operation.requestBody.content["application/json"].schema,
         "RequestBody"
       );
+    } else if (operation.requestBody?.content?.["multipart/form-data"]?.schema) {
+      schemas.input = await convertSchemaToTypescript(
+        operation.requestBody.content["multipart/form-data"].schema,
+        "RequestBody"
+      );
     }
 
     const responses = operation.responses || {};
@@ -92,6 +166,11 @@ for (const [tag, paths] of pathsByTag) {
     } else if (successResponse?.content?.["application/json"]?.schema) {
       schemas.output = await convertSchemaToTypescript(
         successResponse.content["application/json"].schema,
+        "Response"
+      );
+    } else if (successResponse?.content?.["multipart/form-data"]?.schema) {
+      schemas.output = await convertSchemaToTypescript(
+        successResponse.content["multipart/form-data"].schema,
         "Response"
       );
     }
@@ -225,8 +304,11 @@ for (const [tag, paths] of pathsByTag) {
                                   <div
                                     class="json-tree-container"
                                     data-json={JSON.stringify(
-                                      requestBody.content?.["application/vnd.api+json"]?.schema ||
-                                      requestBody.content?.["application/json"]?.schema || {}
+                                      schemaToExampleJSON(
+                                        requestBody.content?.["application/vnd.api+json"]?.schema ||
+                                        requestBody.content?.["application/json"]?.schema ||
+                                        requestBody.content?.["multipart/form-data"]?.schema || {}
+                                      )
                                     )}
                                   ></div>
                                 </div>
@@ -285,8 +367,11 @@ for (const [tag, paths] of pathsByTag) {
                                         <div
                                           class="json-tree-container"
                                           data-json={JSON.stringify(
-                                            response.content?.["application/vnd.api+json"]?.schema ||
-                                            response.content?.["application/json"]?.schema || {}
+                                            schemaToExampleJSON(
+                                              response.content?.["application/vnd.api+json"]?.schema ||
+                                              response.content?.["application/json"]?.schema ||
+                                              response.content?.["multipart/form-data"]?.schema || {}
+                                            )
                                           )}
                                         ></div>
                                       </div>
