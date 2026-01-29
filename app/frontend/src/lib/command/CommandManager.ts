@@ -18,7 +18,9 @@ const CommandManager = {
     return this.commands[this.currentIndex];
   },
 
-  add(command: Command) {
+  add(command: Command | undefined) {
+    if (!command) return;
+
     const now = new Date().getTime();
 
     if (this.currentIndex < this.commands.length - 1) {
