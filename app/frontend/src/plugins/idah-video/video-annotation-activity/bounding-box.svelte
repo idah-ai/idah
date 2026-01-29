@@ -313,7 +313,7 @@
   }
 
   let edition_cursor = $derived.by(() => {
-    if (isEditing) return "none";
+    if (isEditing) return "cursor-none";
     if (mode === IDAH_NOTE) return "cursor-note";
     if (over) return editable ? "cursor-grab" : "cursor-pointer";
   });
