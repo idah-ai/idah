@@ -43,6 +43,7 @@
   let rotateStart: Point | undefined = $state();
   let rotateStartAngle: number | undefined = $state();
   let resizeHandleIndex: number | undefined = $state();
+  let resizeInitialPoints: Point[] = $state([]);
   let activeCursor: string | undefined = $state();
 
   // Revolution counter - derived from the stored angle
@@ -216,8 +217,12 @@
         activeCursor = undefined;
       }
       if (resizeHandleIndex !== undefined) {
-        onChange?.(points, angle);
+        // Normalize points before saving to ensure consistent interpolation
+        const normalizedPoints = normalizePoints(points);
+        onChange?.(normalizedPoints, angle);
+        points = normalizedPoints;
         resizeHandleIndex = undefined;
+        resizeInitialPoints = [];
         activeCursor = undefined;
       }
     }
@@ -231,6 +236,25 @@
   function decrementRevolution() {
     const newAngle = angle - 2 * Math.PI;
     onChange?.(points, newAngle);
+  }
+
+  // Normalize points to canonical order for consistent interpolation
+  function normalizePoints(pts: Point[]): Point[] {
+    if (pts.length !== 4) return pts;
+
+    // Find min/max coordinates
+    const minX = Math.min(pts[0][X], pts[1][X], pts[2][X], pts[3][X]);
+    const maxX = Math.max(pts[0][X], pts[1][X], pts[2][X], pts[3][X]);
+    const minY = Math.min(pts[0][Y], pts[1][Y], pts[2][Y], pts[3][Y]);
+    const maxY = Math.max(pts[0][Y], pts[1][Y], pts[2][Y], pts[3][Y]);
+
+    // Return in canonical order: top-left, top-right, bottom-right, bottom-left
+    return [
+      [minX, minY],
+      [maxX, minY],
+      [maxX, maxY],
+      [minX, maxY],
+    ];
   }
 
   // Get cursor type based on handle index
@@ -310,198 +334,126 @@
   }
 
   function handleResize(handleIndex: number, cursorPos: Point) {
-    if (points.length !== 4) return;
+    if (points.length !== 4 || resizeInitialPoints.length !== 4) return;
 
     const currentAngle = get_angle();
     const cursorNormalized: Point = [cursorPos[X] / ratio[X], cursorPos[Y] / ratio[Y]];
 
-    // Capture the current centroid and points before any changes
-    const oldCentroid = $state.snapshot(centroid) as Point;
-    const oldPoints = [...points];
+    // IMPORTANT: Points are stored in UNROTATED space
+    // The visual rotation is applied via CSS transform
+    // So we work entirely in unrotated space here
 
-    // Transform cursor to unrotated normalized space
-    const unrotatedCursor = inverseRotatePointNormalized(cursorNormalized, oldCentroid, currentAngle, ratio);
+    // Get the centroid of the INITIAL points (when resize started)
+    const initialCentroid = getCentroid(resizeInitialPoints);
 
-    // These will be our new bounds (can flip)
-    let pt0X: number, pt0Y: number; // top-left
-    let pt1X: number, pt1Y: number; // top-right
-    let pt2X: number, pt2Y: number; // bottom-right
-    let pt3X: number, pt3Y: number; // bottom-left
+    // Transform cursor from screen space to unrotated space
+    const unrotatedCursor = inverseRotatePointNormalized(cursorNormalized, initialCentroid, currentAngle, ratio);
 
-    // Determine which corner/edge should stay fixed IN SCREEN SPACE
-    let fixedPoint: Point;
+    // Initial points are already in unrotated space (that's how they're stored)
+    const initialTopLeft = resizeInitialPoints[0];
+    const initialTopRight = resizeInitialPoints[1];
+    const initialBottomRight = resizeInitialPoints[2];
+    const initialBottomLeft = resizeInitialPoints[3];
+
+    // Define new bounds starting from initial
+    let newTopLeftX = initialTopLeft[X];
+    let newTopLeftY = initialTopLeft[Y];
+    let newBottomRightX = initialBottomRight[X];
+    let newBottomRightY = initialBottomRight[Y];
+
+    // Determine which point/edge to keep fixed (in unrotated space)
+    let fixedPointUnrotated: Point;
 
     // Handle corner resizing (even indices)
     if (handleIndex % 2 === 0) {
       const cornerIndex = handleIndex / 2;
-      const fixedPointIndex = (cornerIndex + 2) % 4; // opposite corner in current configuration
 
-      // Get the fixed point BEFORE any flipping
-      fixedPoint = oldPoints[fixedPointIndex];
-
-      // Build the rectangle by setting cursor and fixed points directly
-      // This allows natural flipping
       switch (cornerIndex) {
-        case 0: // dragging top-left (fix bottom-right)
-          pt0X = unrotatedCursor[X];
-          pt0Y = unrotatedCursor[Y]; // dragged corner
-          pt1X = fixedPoint[X];
-          pt1Y = unrotatedCursor[Y]; // top-right
-          pt2X = fixedPoint[X];
-          pt2Y = fixedPoint[Y]; // fixed corner
-          pt3X = unrotatedCursor[X];
-          pt3Y = fixedPoint[Y]; // bottom-left
+        case 0: // top-left corner
+          newTopLeftX = unrotatedCursor[X];
+          newTopLeftY = unrotatedCursor[Y];
+          fixedPointUnrotated = initialBottomRight;
           break;
-        case 1: // dragging top-right (fix bottom-left)
-          pt0X = fixedPoint[X];
-          pt0Y = unrotatedCursor[Y]; // top-left
-          pt1X = unrotatedCursor[X];
-          pt1Y = unrotatedCursor[Y]; // dragged corner
-          pt2X = unrotatedCursor[X];
-          pt2Y = fixedPoint[Y]; // bottom-right
-          pt3X = fixedPoint[X];
-          pt3Y = fixedPoint[Y]; // fixed corner
+        case 1: // top-right corner
+          newBottomRightX = unrotatedCursor[X];
+          newTopLeftY = unrotatedCursor[Y];
+          fixedPointUnrotated = initialBottomLeft;
           break;
-        case 2: // dragging bottom-right (fix top-left)
-          pt0X = fixedPoint[X];
-          pt0Y = fixedPoint[Y]; // fixed corner
-          pt1X = unrotatedCursor[X];
-          pt1Y = fixedPoint[Y]; // top-right
-          pt2X = unrotatedCursor[X];
-          pt2Y = unrotatedCursor[Y]; // dragged corner
-          pt3X = fixedPoint[X];
-          pt3Y = unrotatedCursor[Y]; // bottom-left
+        case 2: // bottom-right corner
+          newBottomRightX = unrotatedCursor[X];
+          newBottomRightY = unrotatedCursor[Y];
+          fixedPointUnrotated = initialTopLeft;
           break;
-        case 3: // dragging bottom-left (fix top-right)
-          pt0X = unrotatedCursor[X];
-          pt0Y = fixedPoint[Y]; // top-left
-          pt1X = fixedPoint[X];
-          pt1Y = fixedPoint[Y]; // fixed corner
-          pt2X = fixedPoint[X];
-          pt2Y = unrotatedCursor[Y]; // bottom-right
-          pt3X = unrotatedCursor[X];
-          pt3Y = unrotatedCursor[Y]; // dragged corner
+        case 3: // bottom-left corner
+          newTopLeftX = unrotatedCursor[X];
+          newBottomRightY = unrotatedCursor[Y];
+          fixedPointUnrotated = initialTopRight;
           break;
       }
     }
-    // Handle edge resizing (odd indices) - FIXED VERSION WITH CROSSING
+    // Handle edge resizing (odd indices)
     else {
       const edgeIndex = Math.floor(handleIndex / 2);
 
-      // Calculate current geometric bounds from old points
-      const geoMinX = Math.min(oldPoints[0][X], oldPoints[1][X], oldPoints[2][X], oldPoints[3][X]);
-      const geoMaxX = Math.max(oldPoints[0][X], oldPoints[1][X], oldPoints[2][X], oldPoints[3][X]);
-      const geoMinY = Math.min(oldPoints[0][Y], oldPoints[1][Y], oldPoints[2][Y], oldPoints[3][Y]);
-      const geoMaxY = Math.max(oldPoints[0][Y], oldPoints[1][Y], oldPoints[2][Y], oldPoints[3][Y]);
-
       switch (edgeIndex) {
-        case 0: {
-          // Started dragging top edge
-          const oppositeY = geoMaxY; // bottom edge Y
-
-          pt0X = geoMinX;
-          pt0Y = unrotatedCursor[Y];
-          pt1X = geoMaxX;
-          pt1Y = unrotatedCursor[Y];
-          pt2X = geoMaxX;
-          pt2Y = oppositeY;
-          pt3X = geoMinX;
-          pt3Y = oppositeY;
-
-          // Fixed point is the opposite edge center
-          fixedPoint = [(geoMinX + geoMaxX) / 2, oppositeY];
+        case 0: // top edge
+          newTopLeftY = unrotatedCursor[Y];
+          fixedPointUnrotated = [(initialTopLeft[X] + initialBottomRight[X]) / 2, initialBottomRight[Y]];
           break;
-        }
-
-        case 1: {
-          // Started dragging right edge
-          const oppositeX = geoMinX; // left edge X
-
-          pt0X = oppositeX;
-          pt0Y = geoMinY;
-          pt1X = unrotatedCursor[X];
-          pt1Y = geoMinY;
-          pt2X = unrotatedCursor[X];
-          pt2Y = geoMaxY;
-          pt3X = oppositeX;
-          pt3Y = geoMaxY;
-
-          fixedPoint = [oppositeX, (geoMinY + geoMaxY) / 2];
+        case 1: // right edge
+          newBottomRightX = unrotatedCursor[X];
+          fixedPointUnrotated = [initialTopLeft[X], (initialTopLeft[Y] + initialBottomRight[Y]) / 2];
           break;
-        }
-
-        case 2: {
-          // Started dragging bottom edge
-          const oppositeY = geoMinY; // top edge Y
-
-          pt0X = geoMinX;
-          pt0Y = oppositeY;
-          pt1X = geoMaxX;
-          pt1Y = oppositeY;
-          pt2X = geoMaxX;
-          pt2Y = unrotatedCursor[Y];
-          pt3X = geoMinX;
-          pt3Y = unrotatedCursor[Y];
-
-          fixedPoint = [(geoMinX + geoMaxX) / 2, oppositeY];
+        case 2: // bottom edge
+          newBottomRightY = unrotatedCursor[Y];
+          fixedPointUnrotated = [(initialTopLeft[X] + initialBottomRight[X]) / 2, initialTopLeft[Y]];
           break;
-        }
-
-        case 3: {
-          // Started dragging left edge
-          const oppositeX = geoMaxX; // right edge X
-
-          pt0X = unrotatedCursor[X];
-          pt0Y = geoMinY;
-          pt1X = oppositeX;
-          pt1Y = geoMinY;
-          pt2X = oppositeX;
-          pt2Y = geoMaxY;
-          pt3X = unrotatedCursor[X];
-          pt3Y = geoMaxY;
-
-          fixedPoint = [oppositeX, (geoMinY + geoMaxY) / 2];
+        case 3: // left edge
+          newTopLeftX = unrotatedCursor[X];
+          fixedPointUnrotated = [initialBottomRight[X], (initialTopLeft[Y] + initialBottomRight[Y]) / 2];
           break;
-        }
       }
     }
 
-    // Create new rectangular box - keep raw coordinates to allow flipping
-    let newUnrotatedPoints: Point[] = [
-      [pt0X, pt0Y], // top-left
-      [pt1X, pt1Y], // top-right
-      [pt2X, pt2Y], // bottom-right
-      [pt3X, pt3Y], // bottom-left
+    // Build new rectangle in unrotated space
+    // Keep the raw coordinates to allow visual crossing during drag
+    const newUnrotatedPoints: Point[] = [
+      [newTopLeftX, newTopLeftY],
+      [newBottomRightX, newTopLeftY],
+      [newBottomRightX, newBottomRightY],
+      [newTopLeftX, newBottomRightY],
     ];
 
-    // Calculate new centroid
-    const newCentroid = getCentroid(newUnrotatedPoints);
+    // Now we need to position the new rectangle so the fixed point stays in the same screen location
+    // 1. Where was the fixed point in screen space?
+    const fixedPointScreen = rotatePointNormalized(fixedPointUnrotated, initialCentroid, currentAngle, ratio);
 
-    // Calculate where the fixed point would be in screen space after rotation
-    const oldFixedRotated = rotatePointNormalized(fixedPoint, oldCentroid, currentAngle, ratio);
-
-    // For edge resizing, calculate where the fixed point is in the new geometry
-    let newFixedPoint: Point;
+    // 2. In the new rectangle, where is the fixed point?
+    let newFixedPointUnrotated: Point;
     if (handleIndex % 2 === 0) {
-      // Corner resize: the fixed point stays at its original coordinates
-      newFixedPoint = fixedPoint;
+      const cornerIndex = handleIndex / 2;
+      const oppositeCorner = (cornerIndex + 2) % 4;
+      newFixedPointUnrotated = newUnrotatedPoints[oppositeCorner];
     } else {
-      // Edge resize: the fixed point stays at the same position (opposite edge center)
-      newFixedPoint = fixedPoint;
+      const edgeIndex = Math.floor(handleIndex / 2);
+      const oppositeEdge = (edgeIndex + 2) % 4;
+      const nextCorner = (oppositeEdge + 1) % 4;
+      newFixedPointUnrotated = [
+        (newUnrotatedPoints[oppositeEdge][X] + newUnrotatedPoints[nextCorner][X]) / 2,
+        (newUnrotatedPoints[oppositeEdge][Y] + newUnrotatedPoints[nextCorner][Y]) / 2,
+      ];
     }
 
-    const newFixedRotated = rotatePointNormalized(newFixedPoint, newCentroid, currentAngle, ratio);
+    // 3. If we rotate the new rectangle around its current centroid, where would the fixed point be?
+    const newCentroid = getCentroid(newUnrotatedPoints);
+    const newFixedPointScreen = rotatePointNormalized(newFixedPointUnrotated, newCentroid, currentAngle, ratio);
 
-    // Calculate the shift needed to keep fixed point stationary
-    const fixedPointShift: Point = [oldFixedRotated[X] - newFixedRotated[X], oldFixedRotated[Y] - newFixedRotated[Y]];
+    // 4. Calculate the difference
+    const shiftX = fixedPointScreen[X] - newFixedPointScreen[X];
+    const shiftY = fixedPointScreen[Y] - newFixedPointScreen[Y];
 
-    // Apply shift to all points
-    newUnrotatedPoints = newUnrotatedPoints.map((p) => [
-      p[X] + fixedPointShift[X],
-      p[Y] + fixedPointShift[Y],
-    ]) as Point[];
-
-    points = newUnrotatedPoints;
+    // 5. Shift all points (in unrotated space) to compensate
+    points = newUnrotatedPoints.map((p) => [p[X] + shiftX, p[Y] + shiftY]) as Point[];
   }
 
   // Create SVG cursor for rotation handle with curved arrows
@@ -516,6 +468,7 @@
       </svg>
     `)}`;
   }
+
   let over = $state(false);
 </script>
 
@@ -575,16 +528,12 @@
       <!-- Rotation handle (above top edge) -->
       {#if editable && points.length === 4}
         {@const minY = Math.min(updatedPoints[0][Y], updatedPoints[1][Y], updatedPoints[2][Y], updatedPoints[3][Y])}
-        {@const maxY = Math.max(updatedPoints[0][Y], updatedPoints[1][Y], updatedPoints[2][Y], updatedPoints[3][Y])}
         {@const minX = Math.min(updatedPoints[0][X], updatedPoints[1][X], updatedPoints[2][X], updatedPoints[3][X])}
         {@const maxX = Math.max(updatedPoints[0][X], updatedPoints[1][X], updatedPoints[2][X], updatedPoints[3][X])}
 
-        <!-- Top edge is the edge with minY (smallest Y = topmost in unrotated space) -->
         {@const topEdgeMidpoint = [(minX + maxX) / 2, minY]}
         {@const handleDistance = 60}
-        <!-- pixels above the top edge -->
         {@const handleOffset = handleDistance / Math.max(ratio[X], ratio[Y])}
-        <!-- convert to normalized space -->
 
         <line
           x1={topEdgeMidpoint[X] * ratio[X]}
@@ -602,8 +551,7 @@
         <circle
           role="slider"
           tabindex="0"
-          style:outline={// not recommended but fix visual impact for chrome
-          "none"}
+          style:outline="none"
           aria-valuenow={get_angle() * (180 / Math.PI)}
           onmousedown={(e) => {
             if (!panStart && !rotateStart && resizeHandleIndex === undefined) {
@@ -612,7 +560,6 @@
               rotateStartRevolutions = revolutionCount;
               activeCursor = getRotateCursorSVG();
 
-              // Calculate angle in pixel space
               const centroidPixel: Point = [displayCentroid[X] * ratio[X], displayCentroid[Y] * ratio[Y]];
               const rel: Point = [cursor_pixel[X] - centroidPixel[X], cursor_pixel[Y] - centroidPixel[Y]];
               rotateStartAngle = Math.atan2(rel[X], -rel[Y]);
@@ -631,8 +578,6 @@
         <!-- Revolution counter (not rotated, always horizontal) -->
         {@const handleX = topEdgeMidpoint[X] * ratio[X]}
         {@const handleY = (topEdgeMidpoint[Y] - handleOffset) * ratio[Y]}
-
-        <!-- Calculate rotated position of handle in screen space -->
         {@const centroidPixelX = displayCentroid[X] * ratio[X]}
         {@const centroidPixelY = displayCentroid[Y] * ratio[Y]}
         {@const currentAngle = get_angle()}
@@ -642,7 +587,6 @@
         {@const sin = Math.sin(currentAngle)}
         {@const rotatedHandleX = centroidPixelX + dx * cos - dy * sin}
         {@const rotatedHandleY = centroidPixelY + dx * sin + dy * cos}
-
         {@const buttonRadius = 7}
         {@const buttonSpacing = 20}
 
@@ -652,31 +596,26 @@
           y1={rotatedHandleY}
           x2={rotatedHandleX - buttonSpacing + buttonRadius}
           y2={rotatedHandleY}
-          filter={"brightness(100%)"}
           stroke={color}
           stroke-width="2"
         />
         <circle
           role="button"
           tabindex="-1"
-          style:outline={// not recommended but fix visual impact for chrome
-          "none"}
+          style:outline="none"
           cx={rotatedHandleX - buttonSpacing}
           cy={rotatedHandleY}
           r={buttonRadius}
           style:fill={color}
           fill-opacity="1%"
           style:cursor="pointer"
-          onkeypress={(e) => {
-            decrementRevolution();
-          }}
-          style:border="none"
           onmousedown={(e) => {
             e.stopPropagation();
             decrementRevolution();
             onmousedown?.(e);
           }}
         />
+
         <!-- Degree angle display -->
         <text
           x={rotatedHandleX}
@@ -698,7 +637,6 @@
           y1={rotatedHandleY}
           x2={rotatedHandleX + buttonSpacing + buttonRadius}
           y2={rotatedHandleY}
-          filter={"brightness(100%)"}
           stroke={color}
           stroke-width="2"
         />
@@ -707,24 +645,19 @@
           y1={rotatedHandleY - buttonRadius}
           x2={rotatedHandleX + buttonSpacing}
           y2={rotatedHandleY + buttonRadius}
-          filter={"brightness(100%)"}
           stroke={color}
           stroke-width="2"
         />
         <circle
           role="button"
           tabindex="-1"
-          style:outline={// not recommended but fix visual impact for chrome
-          "none"}
+          style:outline="none"
           cx={rotatedHandleX + buttonSpacing}
           cy={rotatedHandleY}
           r={buttonRadius}
           style:fill={color}
           fill-opacity="1%"
           style:cursor="pointer"
-          onkeypress={(e) => {
-            incrementRevolution();
-          }}
           onmousedown={(e) => {
             e.stopPropagation();
             incrementRevolution();
@@ -738,12 +671,12 @@
         <circle
           role="grid"
           tabindex="-1"
-          style:outline={// not recommended but fix visual impact for chrome
-          "none"}
+          style:outline="none"
           onmousedown={(e) => {
             e.stopPropagation();
             if (!panStart && !rotateStart && resizeHandleIndex === undefined) {
               resizeHandleIndex = handle;
+              resizeInitialPoints = [...points];
               activeCursor = getRotatedCursorSVG(handle);
             }
           }}
@@ -761,7 +694,7 @@
     {/if}
   {/if}
 
-  <!-- Active cursor overlay that persists during drag operations/need -->
+  <!-- Active cursor overlay that persists during drag operations -->
   {#if activeCursor && cursor_pixel}
     <g style="pointer-events: none;">
       <image href={activeCursor} x={cursor_pixel[X] - 18} y={cursor_pixel[Y] - 18} width="36" height="36" />
