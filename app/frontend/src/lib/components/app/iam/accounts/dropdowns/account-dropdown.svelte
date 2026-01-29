@@ -13,6 +13,7 @@
   import { AuthContext, authStatus } from "@/security/AuthContext";
 
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
+  import type { Role } from "@/data/model/iam/accounts/auth/constants";
 
   // Variables
   AuthContext.backend ||= accountAuthService();
@@ -23,7 +24,7 @@
       name: "",
       email: "",
       pictureUrl: "",
-      roleName: "user",
+      roleName: "user" as Role,
     },
   );
 

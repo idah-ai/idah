@@ -10,7 +10,7 @@
   import { organizationProjectColumns } from "@/components/app/organizations/data-tables/organization-project-columns";
   import { organizationBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
-  import { projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
+  import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { OrganizationRecord } from "@/data/model/iam/organizations/record";
   import { refetches } from "@/utils/refetch";
 
@@ -35,6 +35,9 @@
     columns={organizationProjectColumns}
     dataSource={projectsBackendDataSource}
     listOptions={{
+      fields: {
+        [ProjectRecord.type]: ["id", "name", "organization_id", "created_at"],
+      },
       filters: {
         organization_id: organizationId,
       },

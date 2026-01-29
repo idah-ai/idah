@@ -35,9 +35,6 @@
   import type { Sort } from "@/data/DataSource";
   import type { Filters } from "@/data/filtering";
   import type { Hash } from "@/utils/types";
-  import { page } from "$app/state";
-  import { goto } from "$app/navigation";
-  import { resolve } from "$app/paths";
 
   // Props
   interface Props<T extends Record> {
@@ -48,6 +45,7 @@
     // DataSource
     filters: Filters;
     sort: Sort;
+    disabledActiveStateFilterSortKeys?: Array<string>;
 
     // Functions
     onFilter: (params: FilterDataSourceParams) => Promise<void>;
@@ -77,6 +75,7 @@
     // DataSource
     filters,
     sort,
+    disabledActiveStateFilterSortKeys,
 
     // Functions
     onFilter,
@@ -105,8 +104,26 @@
     return "start";
   });
 
-  let isFiltering = $derived(Object.keys(filters).some((key) => key.startsWith(filterKey)));
-  let isSorting = $derived(sort.some((s) => s.endsWith(columnKey)));
+  // let isFiltering = $derived(Object.keys(filters).some((key) => key.startsWith(filterKey)));
+  // let isSorting = $derived(sort.some((s) => s.endsWith(columnKey)));
+  let hideFilterSortKeys = $derived(Array.from(new Set(disabledActiveStateFilterSortKeys ?? [])));
+  let isFiltering = $derived.by(() => {
+    const filterKeys = Array.from(new Set(Object.keys(filters)));
+    const symmetricDifferenceFilterKeys = [
+      ...filterKeys.filter((item) => !hideFilterSortKeys.includes(item)),
+      ...hideFilterSortKeys.filter((item) => !filterKeys.includes(item)),
+    ];
+    return symmetricDifferenceFilterKeys.some((key) => key.startsWith(filterKey));
+  });
+
+  let isSorting = $derived.by(() => {
+    const sortKeys = Array.from(new Set(sort));
+    const symmetricDifferenceSortKeys = [
+      ...sortKeys.filter((item) => !hideFilterSortKeys.includes(item)),
+      ...hideFilterSortKeys.filter((item) => !sortKeys.includes(item)),
+    ];
+    return symmetricDifferenceSortKeys.some((key) => key.endsWith(columnKey));
+  });
   let isSortingAsc = $derived(sort.includes(columnKey));
   let isSortingDesc = $derived(sort.includes(`-${columnKey}`));
   let isFilteringOrSorting = $derived(isFiltering || isSorting);
@@ -328,22 +345,6 @@
         [filterKeyWithOperation]: undefined,
       },
     });
-
-    const newURL = new URL(page.url.href);
-    const searchParams = newURL.searchParams;
-
-    // Optionally remove URL search params if any
-    if (searchParams.get(filterKey)) searchParams.delete(filterKey);
-    if (searchParams.get(filterKeyGte)) searchParams.delete(filterKeyGte);
-    if (searchParams.get(filterKeyLte)) searchParams.delete(filterKeyLte);
-    if (searchParams.get(filterKeyWithOperation)) searchParams.delete(filterKeyWithOperation);
-
-    // If any search params were removed, update the URL
-    if (newURL.href !== page.url.href) {
-      goto(resolve((newURL.pathname + newURL.search) as "/projects/[projectId]/datasets/[datasetId]/entries"), {
-        replaceState: true,
-      });
-    }
   }
 </script>
 
@@ -391,7 +392,9 @@
         <CommandGroup heading="Filter">
           {#if filterComponent}
             {@const FilterComponent = filterComponent}
-            <FilterComponent {columnSetting} {filters} {contexts} {onFilter}></FilterComponent>
+            <div class="pb-2">
+              <FilterComponent {columnSetting} {filters} {contexts} {onFilter}></FilterComponent>
+            </div>
           {:else if filterOptions?.filterBy === "string"}
             {@const filterKey = `${columnKey}__${filterOptions.filterOperation || "match"}`}
             <div class="pb-2">

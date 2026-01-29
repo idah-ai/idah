@@ -1,12 +1,12 @@
 <script lang="ts">
   import { RotateCcwIcon, SquarePenIcon, UserXIcon } from "@lucide/svelte";
   import { onMount } from "svelte";
-  import { toast } from "svelte-sonner";
 
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import AccountFormModal from "@/components/app/iam/accounts/overlays/account-form-modal.svelte";
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
 
+  import { showToast } from "@/components/ui/toast/index.svelte";
   import { resourcePath } from "@/data/BackendDataSource";
   import { clearCache } from "@/data/Cache";
   import { projectMembersBasePath } from "@/data/model/dataset/projects/members/record";
@@ -41,7 +41,7 @@
           },
         },
         {
-          label: "Resent Invitation",
+          label: "Resend Invitation",
           icon: RotateCcwIcon,
           hidden: !canResentInvitation,
           action: resendInvitation,
@@ -74,7 +74,7 @@
   async function fetchAccount() {
     return await accountsBackendDataSource.get(account.id, {
       fields: {
-        "iam:accounts": ["name", "email", "enabled", "role_name", "sso_channel"],
+        [AccountRecord.type]: ["name", "email", "enabled", "role_name", "sso_channel"],
       },
       noCache: true,
     });
@@ -84,7 +84,8 @@
     try {
       await accountsBackendDataSource.resend_invitation({ id: account.id });
       $refetches.accounts.list = new Date();
-      toast.success("Invitation resent", {
+      showToast.success({
+        title: "Invitation resent",
         description: `The account invitation for "${account.email}" has been resent.`,
       });
     } catch (error) {
@@ -101,7 +102,8 @@
 
       openConfirmCancelInvitationModal = false;
       $refetches.accounts.list = new Date();
-      toast.success("Invitation cancelled", {
+      showToast.success({
+        title: "Invitation cancelled",
         description: `The account invitation for "${account.email}" has been cancelled.`,
       });
     } catch (error) {

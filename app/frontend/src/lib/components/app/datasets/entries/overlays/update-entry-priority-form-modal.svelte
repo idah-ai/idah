@@ -1,12 +1,11 @@
 <script lang="ts">
-  import { toast } from "svelte-sonner";
-
   import SingleSelectField from "@/components/app/forms/fields/select/single/single-select-field.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import DialogTitle from "@/components/ui/dialog/dialog-title.svelte";
   import { FieldGroup, FieldSet } from "@/components/ui/field";
 
+  import { showToast } from "@/components/ui/toast/index.svelte";
   import { entryPriorities } from "@/data/model/dataset/entries/constants";
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
   import { refetches } from "@/utils/refetch";
@@ -40,7 +39,9 @@
       });
     }
 
-    toast.success(`${selectedEntryCount} entries has been set priority successfully!`);
+    showToast.success({
+      title: `${selectedEntryCount} entries has been set priority successfully!`,
+    });
     $refetches.entries.list = new Date();
     open = false;
   }

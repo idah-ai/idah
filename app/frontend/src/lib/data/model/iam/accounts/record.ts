@@ -33,7 +33,7 @@ RecordFactory.registerTypes(AccountRecord);
 const accountBasePath: string = `${import.meta.env.VITE_IDAH_HOST}/api/v1/iam/accounts`;
 
 export const accountsBackendDataSource = createBackendDataSource(AccountRecord, accountBasePath, {
-  join: async (params: { token: string }): Promise<RecordResponse<AccountRecord> | { data: null }> => {
+  join: async (params: { token: string }): Promise<RecordResponse<AccountRecord> | { data: null; meta?: Hash }> => {
     const res = await fetch(`${accountBasePath}/${params.token}/join`, {
       method: "PATCH",
       body: encodeModel(AccountRecord, { attributes: { joined_at: new Date() } }),
