@@ -35,6 +35,12 @@ function schemaToExampleJSON(schema: any): any {
   // Handle enum
   if (schema.enum && schema.enum.length > 0) return schema.enum[0];
 
+  // Any of type
+  if (schema.anyOf && Array.isArray(schema.anyOf)) {
+    // Just use the first option for example
+    return schemaToExampleJSON(schema.anyOf[0]);
+  }
+
   // Handle different types
   switch (type) {
     case 'object':
@@ -92,7 +98,6 @@ function schemaToExampleJSON(schema: any): any {
 }
 
 const app = Astro.url.searchParams.get("app") ?? "dataset";
-const tag = Astro.url.searchParams.get("tag");
 const res = await fetch(new URL("/data/definitions/" + app + ".json", Astro.url));
 
 if (!res.ok) {
@@ -187,10 +192,10 @@ for (const [tag, paths] of pathsByTag) {
 
     {data.tags.length > 0 ? (
       <div class="space-y-8">
-        {data.tags.map((tag: any) => {
+        {data.tags.map((tag: any, index: number) => {
           const tagPaths = pathsByTag.get(tag.name) || [];
           return (
-            <div id={`tag-${tag.name}`} class="tag-group rounded-lg border border-gray-200 bg-white shadow-sm">
+            <div id={`tag-${tag.name}`} data-index={index} class="tag-group rounded-lg border border-gray-200 bg-white shadow-sm">
               <div class="border-b border-gray-200 bg-gray-50 px-6 py-4">
                 <h2 class="text-2xl font-semibold text-gray-900">{tag.name}</h2>
                 {tag.description && (
@@ -278,7 +283,7 @@ for (const [tag, paths] of pathsByTag) {
                         {/* Request Body Section */}
                         {requestBody && (
                           <div class="mb-6">
-                            <h4 class="mb-3 font-semibold text-gray-900">Input Schema</h4>
+                            <h4 class="mb-3 font-semibold text-gray-900">Request Body</h4>
                             <div class="rounded-lg border border-gray-200 bg-white">
                               <div class="flex border-b border-gray-200">
                                 <button
@@ -286,7 +291,7 @@ for (const [tag, paths] of pathsByTag) {
                                   data-target={`input-json-${key}`}
                                   onclick={`switchTab(event, 'input-json-${key}')`}
                                 >
-                                  Input Schema
+                                  Example Value
                                 </button>
                                 {tsSchemas.input && (
                                   <button
@@ -326,7 +331,7 @@ for (const [tag, paths] of pathsByTag) {
                         {/* Response Section */}
                         {Object.keys(responses).length > 0 && (
                           <div class="mb-6">
-                            <h4 class="mb-3 font-semibold text-gray-900">Output Schema</h4>
+                            <h4 class="mb-3 font-semibold text-gray-900">Response</h4>
 
                             {Object.entries(responses).map(([statusCode, response]: [string, any]) => (
                               <div class="mb-4 rounded-lg border border-gray-200 bg-white">
@@ -349,7 +354,7 @@ for (const [tag, paths] of pathsByTag) {
                                         data-target={`output-json-${key}-${statusCode}`}
                                         onclick={`switchTab(event, 'output-json-${key}-${statusCode}')`}
                                       >
-                                        Output Schema
+                                        Example Value
                                       </button>
                                       {tsSchemas.output && statusCode === "200" && (
                                         <button
@@ -956,7 +961,8 @@ for (const [tag, paths] of pathsByTag) {
 
     if (tagParam) {
       const tagElement = document.getElementById(`tag-${tagParam}`);
-      if (tagElement) {
+
+      if (tagElement && tagElement.dataset.index > 0) {
         setTimeout(() => {
           const elementPosition = tagElement.getBoundingClientRect().top + window.pageYOffset;
           const offsetPosition = elementPosition - 80; // 80px offset from top
