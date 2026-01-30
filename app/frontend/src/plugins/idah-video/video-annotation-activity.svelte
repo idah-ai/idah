@@ -45,13 +45,6 @@
 
   import type { AnnotationShape, AnnotationValue } from "@/context/AnnotationContext";
   import type { IActivityContext } from "@/plugin/interface/Activity";
-  import PropertiesSidebar from "./layout/sidebar/properties-sidebar.svelte";
-  import CategoryProperties from "./video-annotation-activity/categoryProperties/categoryProperties.svelte";
-  import {
-    registerOnSelectBoxModeShortcuts,
-    registerVisualModeShortcuts,
-    unregisterSelectionShortcuts,
-  } from "./video-annotation-activity/shortcut";
   import {
     X,
     Y,
@@ -59,7 +52,6 @@
     type VideoFrameSelection,
     type VideoShape,
   } from "./video-annotation-activity/VideoAnnotationContext";
-  import VideoController from "./video-annotation-activity/VideoController.svelte";
 
   // Props
   interface Props {
