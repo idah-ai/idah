@@ -317,7 +317,7 @@
       }
       return "cursor-crosshair";
     } else if (isHoveringOverEdge && editable && isPolygonComplete) {
-      return "cursor-crosshair";
+      return "cursor-pen-plus";
     } else if (mode === IDAH_NOTE) {
       return "cursor-note";
     } else {
@@ -350,7 +350,7 @@
       r={5}
       style:transform-origin="top left"
       style:transform={`translate(${offset[X]}px, ${offset[Y]}px)`}
-      class={isAltKeyPressed && rawPoints.length > 3 ? "cursor-pen-remove" : ""}
+      class={isAltKeyPressed && rawPoints.length > 3 ? "cursor-minus-icon" : ""}
       style:cursor={isAltKeyPressed && rawPoints.length > 3 ? "" : "move"}
       vector-effect="non-scaling-stroke"
       style:stroke={isMatched ? color : "orange"}
@@ -434,7 +434,7 @@
 
 <style>
   .cursor-note {
-    cursor: url("/app/frontend/src/plugins/assets/icons/message-circle.svg"), auto;
+    cursor: url("../../assets/icons/message-circle.svg"), auto;
   }
 
   .cursor-move {
@@ -442,15 +442,15 @@
   }
 
   .cursor-pen-plus {
-    cursor: url("/app/frontend/src/plugins/assets/icons/pen-tool-add-2.svg"), auto;
+    cursor: url("../../assets/icons/pen-tool-add-2-24x24.svg"), auto;
   }
 
   .cursor-pen-plus:hover {
-    cursor: url("/app/frontend/src/plugins/assets/icons/pen-tool-add-2.svg"), auto;
+    cursor: url("../../assets/icons/pen-tool-add-2-24x24.svg"), auto;
   }
 
-  .cursor-pen-remove {
-    cursor: url("/app/frontend/src/plugins/assets/icons/pen-tool-remove.svg"), auto;
+  .cursor-minus-icon {
+    cursor: url("../../assets/icons/pen-tool-remove-2-24x24.svg"), auto;
   }
 
   .cursor-pointer {
