@@ -117,24 +117,6 @@
             {/each}
           </ContextMenuContent>
         </ContextMenu>
-      {:else if ["review", "annotate"].includes(context.workflowStep)}
-        <ContextMenu>
-          <ContextMenuTrigger class="absolute top-[3px] h-full w-full pt-0">
-            <div
-              class="m-auto h-3/4 w-3/4 rounded"
-              style:background-color={categoryColor ? categoryColor : "#FF0000"}
-            ></div>
-          </ContextMenuTrigger>
-          <ContextMenuContent>
-            <ContextMenuItem
-              onclick={() => context.commands.run("annotation.split", { id: annotation.metadata.id, at: frame })}
-              disabled={annotation.locked}
-            >
-              <SquareSplitHorizontalIcon class="size-4"></SquareSplitHorizontalIcon>
-              Split at frame {frame}
-            </ContextMenuItem>
-          </ContextMenuContent>
-        </ContextMenu>
       {/if}
     </div>
   {/if}
