@@ -85,39 +85,39 @@
       })}
       style:background-color={categoryColor ? categoryColor + "30" : "#FEF9C2"}
     >
-      {#if keyframes.length}
-        <ContextMenu>
-          <ContextMenuTrigger class="absolute top-[3px] h-full w-full pt-0">
+      <ContextMenu>
+        <ContextMenuTrigger class="absolute top-[3px] h-full w-full pt-0">
+          {#if keyframes.length}
             <div
               class="m-auto h-3/4 w-3/4 rounded"
               style:background-color={categoryColor ? categoryColor : "#FF0000"}
             ></div>
-          </ContextMenuTrigger>
+          {/if}
+        </ContextMenuTrigger>
 
-          <ContextMenuContent>
-            <ContextMenuItem
-              onclick={() => context.commands.run("annotation.split", { id: annotation.metadata.id, at: frame })}
-              disabled={annotation.locked}
-            >
-              <SquareSplitHorizontalIcon class="size-4"></SquareSplitHorizontalIcon>
-              Split at frame {frame}
+        <ContextMenuContent>
+          <ContextMenuItem
+            onclick={() => context.commands.run("annotation.split", { id: annotation.metadata.id, at: frame })}
+            disabled={annotation.locked}
+          >
+            <SquareSplitHorizontalIcon class="size-4"></SquareSplitHorizontalIcon>
+            Split at frame {frame}
+          </ContextMenuItem>
+          {#each keyframes as keyframe, index (index)}
+            <ContextMenuItem onclick={() => onSeekFrame?.(keyframe)}>
+              <ArrowLeftRightIcon class="size-4"></ArrowLeftRightIcon>
+              Seek frame {keyframe}
             </ContextMenuItem>
-            {#each keyframes as keyframe, index (index)}
-              <ContextMenuItem onclick={() => onSeekFrame?.(keyframe)}>
-                <ArrowLeftRightIcon class="size-4"></ArrowLeftRightIcon>
-                Seek frame {keyframe}
-              </ContextMenuItem>
 
-              {#if ["review", "annotate"].includes(context.workflowStep)}
-                <ContextMenuItem onclick={() => onDeleteFrame?.(keyframe)} disabled={annotation.locked}>
-                  <Trash2Icon class="size-4"></Trash2Icon>
-                  Delete frame {keyframe}
-                </ContextMenuItem>
-              {/if}
-            {/each}
-          </ContextMenuContent>
-        </ContextMenu>
-      {/if}
+            {#if ["review", "annotate"].includes(context.workflowStep)}
+              <ContextMenuItem onclick={() => onDeleteFrame?.(keyframe)} disabled={annotation.locked}>
+                <Trash2Icon class="size-4"></Trash2Icon>
+                Delete frame {keyframe}
+              </ContextMenuItem>
+            {/if}
+          {/each}
+        </ContextMenuContent>
+      </ContextMenu>
     </div>
   {/if}
 </div>
