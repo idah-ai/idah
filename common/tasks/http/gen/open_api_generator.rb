@@ -8,9 +8,13 @@ module Http
     module OpenApiGenerator
       module_function
 
-      def prepare_input_parameters(http_method, in_path_param_names, input_schema)
+      def prepare_input_parameters(http_method, in_path_param_names, in_path_optional_param_names, input_schema)
         parameters = in_path_param_names.map do |name|
-          { "name" => name, "in" => "path", "required" => true, "schema" => { "type" => "string" } }
+          {
+            "name" => name, "in" => "path",
+            "required" => !in_path_optional_param_names.include?(name),
+            "schema" => { "type" => "string" }
+          }
         end
 
         return { parameters:, request_body_schema: nil } if input_schema.nil?
@@ -110,12 +114,11 @@ module Http
         end
       end
 
-      # Converts "My::ClassName" to "MyClassName"
-      # Converts "my_method_name" to "MyMethodName"
-      def camel_cased_name(name)
-        name.to_s.split(/::|_/)
+      # Humanize resource name for tags
+      def humanize_name(name)
+        name.to_s.split(/::|(?=[A-Z])|_/)
             .reject { |v| v.nil? || v.empty? }
-            .map { |str| str[0].capitalize + str[1..] }.join
+            .map { |str| str[0].upcase + str[1..] }.join(" ")
       end
 
       def generate
@@ -153,9 +156,13 @@ module Http
           resource_name = expo.name.gsub(/Expo$/, "")
           resource_description = expo.desc || ""
 
-          expo.exposed_endpoints.each do |method_name, data|
+          allowed_endpoints = expo.exposed_endpoints.select do |_, data|
+            data[:type].is_a?(Verse::Http::Exposition::Hook) &&
+              !data[:meta].meta&.fetch(:nodoc, false)
+          end
+
+          allowed_endpoints.each do |method_name, data|
             hook = data[:type]
-            next unless hook.is_a?(Verse::Http::Exposition::Hook)
 
             # Convert path parameters to OpenAPI format
             path = hook.path.gsub(/:(\w+)/, '{\1}')
@@ -167,19 +174,22 @@ module Http
             description = (hook.metablock.desc || "").strip
 
             # Extract path parameter names
+            # "/medias/files/:resource(/:key)?"
             in_path_param_names = hook.path.scan(/:(\w+)/).flatten
+            in_path_optional_param_names = hook.path.scan(%r{\(/:([a-zA-Z_]+)\)\?}).flatten
 
             # Track tags
-            tag = camel_cased_name(resource_name)
+            tag = humanize_name(resource_name)
             unless tags_seen[tag]
               tags_seen[tag] = true
-              openapi["tags"] << { "name" => tag, description: resource_description }
+              openapi["tags"] << { name: tag, description: resource_description }
             end
 
             # Fetch parameters from input schema
             input_params = prepare_input_parameters(
               http_method,
               in_path_param_names,
+              in_path_optional_param_names,
               hook.metablock.input_schema
             )
 
@@ -268,6 +278,12 @@ module Http
             openapi["paths"][path][http_method] = operation
           end
         end
+
+        # Return nothing if no paths were added
+        return if openapi["paths"].empty?
+
+        # Sort tags alphabetically
+        openapi["tags"].sort_by! { |tag| tag[:name] }
 
         # Generate and return the OpenAPI JSON
         JSON.pretty_generate(openapi)

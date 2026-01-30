@@ -19,6 +19,12 @@ namespace :http do
   desc "Generate swagger JSON files (OpenAPI)"
   task generate_swagger: :environment do
     output = Http::Gen::OpenApiGenerator.generate
+
+    if output.nil?
+      puts "No API endpoints found to document."
+      exit 0
+    end
+
     domain = Verse.service_name
 
     output_file_path = ENV["OUTPUT_FILE"] || "."

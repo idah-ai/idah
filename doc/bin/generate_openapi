@@ -1,6 +1,10 @@
 #!/bin/sh
 
+# Create definitions directory if it doesn't exist
 mkdir -p /openapi/definitions &&
+
+# Empty the definitions directory
+rm -rf /openapi/definitions/* &&
 
 bin/all_services OUTPUT_FILE=/openapi/definitions bundle exec rake http:generate_swagger &&
 
@@ -12,8 +16,14 @@ for file in "/openapi/definitions"/*.json; do
   # Extract the base name without the extension
   name=$(basename "$file" .json)
 
-  # Add the entry to the URLS string
-  URLS="${URLS}{ \"url\": \"./openapi/definitions/$name.json\", \"name\": \"$name\" },"
+  title=$(jq -r '.info.title' "$file")
+
+  # Parse the JSON and retrieve the tags to be used as a string
+  tags=$(jq -r '[.paths[] | to_entries[] | .value.tags[]] | unique | map("\"" + . + "\"") | join(", ")' "$file")
+
+
+  # Add the name and tags to the URLS string
+  URLS="${URLS}{ \"url\": \"./openapi/definitions/$name.json\", \"name\": \"$name\", \"title\": \"$title\", \"tags\": ["${tags}"] },"
 done
 
 # Remove the trailing comma and close the array
