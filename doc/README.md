@@ -4,14 +4,14 @@ The IDAH Documentation Platform is a comprehensive system for generating, viewin
 
 ## 📋 Table of Contents
 
-- [Overview](#overview)
-- [Prerequisites](#prerequisites)
-- [Project Structure](#project-structure)
-- [Getting Started](#getting-started)
-- [Development](#development)
-- [Architecture](#architecture)
-- [Available Commands](#available-commands)
-- [Troubleshooting](#troubleshooting)
+- [Overview](#-overview)
+- [Prerequisites](#-prerequisites)
+- [Project Structure](#-project-structure)
+- [Getting Started](#-getting-started)
+- [Development](#-development)
+- [Architecture](#-architecture)
+- [Available Commands](#-available-commands)
+- [Troubleshooting](#-troubleshooting)
 
 ## 🎯 Overview
 
