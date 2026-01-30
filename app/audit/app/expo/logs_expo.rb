@@ -11,7 +11,9 @@ class LogsExpo < BaseExpo
   MD
 
   json_api Log::Record do
-    show
+    show do
+      meta nodoc: true
+    end
     index do
       allowed_filters :action__in,
                       :actor_account_id__eq,
@@ -21,6 +23,7 @@ class LogsExpo < BaseExpo
                       :resource_type__in,
                       :resource_id__match,
                       :actor_account_role_name__nin
+      meta nodoc: true
     end
   end
 

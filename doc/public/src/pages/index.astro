@@ -1,12 +1,10 @@
 ---
-import CapabilitiesFeatureSection from "@components/app/sections/CapabilitiesFeatureSection.astro";
-import ContentSection from "@components/app/sections/ContentSection.astro";
-import FeatureSection from "@components/app/sections/FeatureSection.astro";
-import HeroSection from "@components/app/sections/HeroSection.astro";
-import TargetUserSection from "@components/app/sections/TargetUserSection.astro";
-import Layout from "@layouts/PageLayout.astro";
+import PageLayout from "@layouts/PageLayout.astro";
+import IDAHDocumentation from "@components/app/IDAHDocumentation.astro";
+import Pagination from "@components/app/Pagination.astro";
 ---
 
-<Layout>
-  Content
-</Layout>
+<PageLayout>
+  <IDAHDocumentation />
+  <Pagination client:load />
+</PageLayout>
