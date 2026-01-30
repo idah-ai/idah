@@ -1,0 +1,20 @@
+FROM node:24-alpine
+
+# Enable pnpm
+RUN corepack enable && corepack prepare pnpm@9 --activate
+
+WORKDIR /app
+
+# Copy only lock + manifest first (better caching)
+COPY ./public/package.json ./public/pnpm-lock.yaml ./
+
+RUN pnpm install
+
+# Copy the rest of the source
+COPY ./public .
+
+# Expose port 4001, the default for Astro's dev server
+EXPOSE 4001
+
+# Command to start the Astro development server and listen on all network interfaces
+CMD ["npm", "run", "dev", "--", "--host"]
