@@ -187,14 +187,14 @@ const createOnSelectBoundingBoxModeKeyMap = (context: SelectionKeyMapContext) =>
   };
 
   const splitAnnotation = () => {
-      if (!context.selectedId) {
-          console.log("No item selected to split");
-          return;
-      }
-      const currentFrame = context.getCurrentFrame();
-      console.log(`Split item with id: ${context.selectedId} at frame ${currentFrame}`);
-      context.context.commands.run("annotation.split", { id: context.selectedId, at: currentFrame});
-  }
+    if (!context.selectedId) {
+      console.log("No item selected to split");
+      return;
+    }
+    const currentFrame = context.getCurrentFrame();
+    console.log(`Split item with id: ${context.selectedId} at frame ${currentFrame}`);
+    context.context.commands.run("annotation.split", { id: context.selectedId, at: currentFrame });
+  };
 
   return KeyMapBuilder((b) => {
     b.on(null, "Delete", deleteSelected, "Delete", "Delete selected annotation");
@@ -209,9 +209,9 @@ const createOnSelectBoundingBoxModeKeyMap = (context: SelectionKeyMapContext) =>
  * Call this when an annotation is selected.
  */
 export function registerOnSelectBoxModeShortcuts(
-    context: IActivityContext,
-    selectedId: string,
-    getCurrentFrame: () => number
+  context: IActivityContext,
+  selectedId: string,
+  getCurrentFrame: () => number,
 ) {
   // Clear any existing extensions first
   ShortcutManager.clearAllKeyMapExtensions();
