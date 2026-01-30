@@ -664,13 +664,8 @@
 
     const splitAt = props.at;
 
-    if (annotation.shape.start > splitAt) return console.log("cannot split before start frame");
+    if (annotation.shape.start >= splitAt) return console.log("cannot split before/at start frame");
     if (annotation.shape.end < splitAt) return console.log("cannot split after end frame");
-
-    // - update a primary annotation's end frame to props.at
-    // - create a new annotation with start frame props.at + 1 and end frame annotation.end
-    // - distribute keyframes
-    // - if split at end frame, create a new annotation with start frame props.at + 1 and end frame props.at + 1
 
     const newId = uuidv7();
     const createdAt = new Date();
@@ -680,20 +675,21 @@
     const originalFrames = annotation.shape.frames;
     const originalUpdatedAt = annotation.metadata.updatedAt;
 
-    // part 1: original annotation, to be updated (0 to splitAt)
-    const part1Frames = annotation.shape.frames.filter((f: VideoFrameSelection) => f.frame <= splitAt);
+    // part 1: original annotation, to be updated (0 to splitAt - 1)
+    const part1End = splitAt - 1;
+    const part1Frames = annotation.shape.frames.filter((f: VideoFrameSelection) => f.frame <= part1End);
 
-    // ensure Part 1 has an ending keyframe at the splitAt frame point if it doesn't already
-    if (!part1Frames.find((f: VideoFrameSelection) => f.frame === splitAt)) {
-      const p = getInterpolatedShape(annotation.shape.frames, splitAt);
-      if (p) part1Frames.push({ frame: splitAt, points: p });
+    // ensure Part 1 has an ending keyframe at the splitAt - 1 frame point if it doesn't already
+    if (!part1Frames.find((f: VideoFrameSelection) => f.frame === part1End)) {
+      const p = getInterpolatedShape(annotation.shape.frames, part1End);
+      if (p) part1Frames.push({ frame: part1End, points: p });
       part1Frames.sort((a, b) => a.frame - b.frame);
     }
 
-    // part 2: new annotation, to be created (splitAt + 1 to end)
-    const part2Start = splitAt + 1;
+    // part 2: new annotation, to be created (splitAt to end)
+    const part2Start = splitAt;
     const part2End = splitAt === annotation.shape.end ? part2Start : originalEnd;
-    const part2Frames = annotation.shape.frames.filter((f: VideoFrameSelection) => f.frame > splitAt);
+    const part2Frames = annotation.shape.frames.filter((f: VideoFrameSelection) => f.frame >= part2Start);
 
     // ensure Part 2 has a starting keyframe at part2Start frame point if it doesn't already
     if (!part2Frames.find((f: VideoFrameSelection) => f.frame === part2Start)) {
@@ -708,7 +704,7 @@
         // Update Part 1
         const a1 = await annotationsIDB?.get("annotations", props.id);
         if (a1) {
-          a1.shape.end = splitAt;
+          a1.shape.end = part1End;
           a1.shape.frames = part1Frames;
           a1.metadata.updatedAt = createdAt;
           a1.synced = false;
@@ -1251,6 +1247,7 @@
               {totalFrames}
               {volume}
               bind:video={player}
+              {selectedAnnotation}
               onZoomChange={(z) => timelineTable.setZoom(z)}
             />
           </AnnotationFooterToolbar>
