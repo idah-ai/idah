@@ -685,21 +685,21 @@
 
     // ensure Part 1 has an ending keyframe at the splitAt frame point if it doesn't already
     if (!part1Frames.find((f: VideoFrameSelection) => f.frame === splitAt)) {
-         const p = getInterpolatedShape(annotation.shape.frames, splitAt);
-         if (p) part1Frames.push({ frame: splitAt, points: p });
-         part1Frames.sort((a, b) => a.frame - b.frame);
+      const p = getInterpolatedShape(annotation.shape.frames, splitAt);
+      if (p) part1Frames.push({ frame: splitAt, points: p });
+      part1Frames.sort((a, b) => a.frame - b.frame);
     }
 
     // part 2: new annotation, to be created (splitAt + 1 to end)
     const part2Start = splitAt + 1;
-    const part2End = (splitAt === annotation.shape.end) ? part2Start : originalEnd;
+    const part2End = splitAt === annotation.shape.end ? part2Start : originalEnd;
     const part2Frames = annotation.shape.frames.filter((f: VideoFrameSelection) => f.frame > splitAt);
 
     // ensure Part 2 has a starting keyframe at part2Start frame point if it doesn't already
     if (!part2Frames.find((f: VideoFrameSelection) => f.frame === part2Start)) {
-         const p = getInterpolatedShape(annotation.shape.frames, part2Start);
-         if (p) part2Frames.push({ frame: part2Start, points: p });
-         part2Frames.sort((a, b) => a.frame - b.frame);
+      const p = getInterpolatedShape(annotation.shape.frames, part2Start);
+      if (p) part2Frames.push({ frame: part2Start, points: p });
+      part2Frames.sort((a, b) => a.frame - b.frame);
     }
 
     return {
@@ -721,13 +721,13 @@
           });
 
           p.then(async () => {
-             const annotation = await annotationsIDB?.get("annotations", props.id);
-             if (annotation && annotation.metadata.updatedAt.valueOf() == createdAt.valueOf()) {
-               annotation.synced = true;
-               if ($entryRoot?.metadata.id == annotation.metadata.id) $entryRoot = annotation;
-               await annotationsIDB?.addAnnotations([annotation]);
-               $idb_updated_at = new Date();
-             }
+            const annotation = await annotationsIDB?.get("annotations", props.id);
+            if (annotation && annotation.metadata.updatedAt.valueOf() == createdAt.valueOf()) {
+              annotation.synced = true;
+              if ($entryRoot?.metadata.id == annotation.metadata.id) $entryRoot = annotation;
+              await annotationsIDB?.addAnnotations([annotation]);
+              $idb_updated_at = new Date();
+            }
           });
         }
 
@@ -759,13 +759,13 @@
 
         let p2 = context.annotations.create(newId, a2.shape, a2.value);
         p2.then(async () => {
-             const annotation = await annotationsIDB?.get("annotations", newId);
-             if (annotation && annotation.metadata.updatedAt.valueOf() == createdAt.valueOf()) {
-               annotation.synced = true;
-               if ($entryRoot?.metadata.id == annotation.metadata.id) $entryRoot = annotation;
-               await annotationsIDB?.addAnnotations([annotation]);
-               $idb_updated_at = new Date();
-             }
+          const annotation = await annotationsIDB?.get("annotations", newId);
+          if (annotation && annotation.metadata.updatedAt.valueOf() == createdAt.valueOf()) {
+            annotation.synced = true;
+            if ($entryRoot?.metadata.id == annotation.metadata.id) $entryRoot = annotation;
+            await annotationsIDB?.addAnnotations([annotation]);
+            $idb_updated_at = new Date();
+          }
         });
       },
       async undo() {
@@ -777,22 +777,22 @@
           a1.metadata.updatedAt = originalUpdatedAt;
           a1.synced = false;
           await annotationsIDB?.addAnnotations([a1]);
-          
+
           let p = context.annotations.update({
-             id: a1.metadata.id,
-             dimensions: a1.shape,
-             annotation: a1.value,
+            id: a1.metadata.id,
+            dimensions: a1.shape,
+            annotation: a1.value,
           });
 
           p.then(async () => {
-             const annotation = await annotationsIDB?.get("annotations", props.id);
-             // verify using originalUpdatedAt
-             if (annotation && annotation.metadata.updatedAt.valueOf() == originalUpdatedAt.valueOf()) {
-               annotation.synced = true;
-               if ($entryRoot?.metadata.id == annotation.metadata.id) $entryRoot = annotation;
-               await annotationsIDB?.addAnnotations([annotation]);
-               $idb_updated_at = new Date();
-             }
+            const annotation = await annotationsIDB?.get("annotations", props.id);
+            // verify using originalUpdatedAt
+            if (annotation && annotation.metadata.updatedAt.valueOf() == originalUpdatedAt.valueOf()) {
+              annotation.synced = true;
+              if ($entryRoot?.metadata.id == annotation.metadata.id) $entryRoot = annotation;
+              await annotationsIDB?.addAnnotations([annotation]);
+              $idb_updated_at = new Date();
+            }
           });
         }
 
@@ -809,27 +809,27 @@
   });
 
   function getInterpolatedShape(frames: VideoFrameSelection[], frame: number): Point[] | null {
-     // sort just in case
-     const sorted = [...frames].sort((a, b) => a.frame - b.frame);
+    // sort just in case
+    const sorted = [...frames].sort((a, b) => a.frame - b.frame);
 
-     // find surrounding keyframes
-     const prev = [...sorted].reverse().find((f) => f.frame <= frame);
-     const next = sorted.find((f) => f.frame >= frame);
+    // find surrounding keyframes
+    const prev = [...sorted].reverse().find((f) => f.frame <= frame);
+    const next = sorted.find((f) => f.frame >= frame);
 
-     if (!prev && !next) return null; // no keyframes exist at all
-     if (!prev) return next!.points; // only next keyframes exist, use them
-     if (!next) return prev!.points; // only previous keyframes exist, use them
-     if (prev.frame === next.frame) return prev.points; // previous and next keyframes exist and are the same, use them
+    if (!prev && !next) return null; // no keyframes exist at all
+    if (!prev) return next!.points; // only next keyframes exist, use them
+    if (!next) return prev!.points; // only previous keyframes exist, use them
+    if (prev.frame === next.frame) return prev.points; // previous and next keyframes exist and are the same, use them
 
-     // linear interpolation for each point
-     const progress = (frame - prev.frame) / (next.frame - prev.frame);
-     return prev.points.map((prevPoint, i) => {
-         const nextPoint = next.points[i];
-         return [
-          prevPoint[X] + (nextPoint[X] - prevPoint[X]) * progress,
-          prevPoint[Y] + (nextPoint[Y] - prevPoint[Y]) * progress
-        ];
-     });
+    // linear interpolation for each point
+    const progress = (frame - prev.frame) / (next.frame - prev.frame);
+    return prev.points.map((prevPoint, i) => {
+      const nextPoint = next.points[i];
+      return [
+        prevPoint[X] + (nextPoint[X] - prevPoint[X]) * progress,
+        prevPoint[Y] + (nextPoint[Y] - prevPoint[Y]) * progress,
+      ];
+    });
   }
 
   context.commands.on("tools.visual", () => {
