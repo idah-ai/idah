@@ -14,7 +14,9 @@
   import AnnotationCountBadge from "./annotation-count-badge.svelte";
   import AnnotationNode from "./category/annotation-node.svelte";
   import CategoryName from "./category/category-name.svelte";
-  import VectorSqaureIcon from "./category/vector-sqaure-icon.svelte";
+  import { IDAH_POLYGON, IDAH_VIDEO_BOUNDING_BOX } from "../../type";
+  import VectorSquareIcon from "./category/vector-square-icon.svelte";
+  import PolygonCircleIcon from "./category/polygon-circle-icon.svelte";
 
   import { idb_updated_at } from "../../video-annotation-activity/idb_store.svelte";
 
@@ -273,12 +275,21 @@
                 {/if}
               </Button>
 
-              <VectorSqaureIcon
-                color={category.data.color}
-                class={cn({
-                  hidden: category.requiredNested,
-                })}
-              />
+              {#if modalityShape === IDAH_VIDEO_BOUNDING_BOX}
+                <VectorSquareIcon
+                  color={category.data.color}
+                  class={cn({
+                    hidden: category.requiredNested,
+                  })}
+                />
+              {:else if modalityShape === IDAH_POLYGON}
+                <PolygonCircleIcon
+                  color={category.data.color}
+                  class={cn({
+                    hidden: category.requiredNested,
+                  })}
+                />
+              {/if}
 
               <CategoryName>{category.name}</CategoryName>
 

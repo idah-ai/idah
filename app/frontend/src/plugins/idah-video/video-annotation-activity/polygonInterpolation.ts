@@ -34,20 +34,21 @@ function verticesToPolar(points: Point[], center: Point): [number, number, numbe
   });
 }
 
-function reorderByAngle(points: Point[], center: Point): [Point[], [number, number, number][]] {
+function rotateVerticesByStartAngle(points: Point[], center: Point): [Point[], [number, number, number][]] {
   const polar = verticesToPolar(points, center);
-  const polarSorted = [...polar].sort((a, b) => b[1] - a[1]);
   const target = Math.PI / 2;
 
-  const startIdx = polarSorted.reduce((bestIdx, curr, idx) => {
-    const angleDiff = Math.atan2(Math.sin(curr[1] - target), Math.cos(curr[1] - target));
-    return Math.abs(angleDiff) <
-      Math.abs(Math.atan2(Math.sin(polarSorted[bestIdx][1] - target), Math.cos(polarSorted[bestIdx][1] - target)))
-      ? idx
-      : bestIdx;
+  const angleDistance = (a: number, b: number) =>
+    Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
+
+  // Find the point closest to PI/2 in the original order
+  const startIdx = polar.reduce((bestIdx, curr, idx) => {
+    const angleDiff = angleDistance(curr[1], target);
+    return angleDiff < angleDistance(polar[bestIdx][1], target) ? idx : bestIdx;
   }, 0);
 
-  const polarRotated = polarSorted.slice(startIdx).concat(polarSorted.slice(0, startIdx));
+  // Rotate the array to start from that point, keeping the original order
+  const polarRotated = polar.slice(startIdx).concat(polar.slice(0, startIdx));
   const reorderedPoints = polarRotated.map(([oldIdx]) => points[oldIdx]);
   const polarReindexed = polarRotated.map(([_, angle, radius], i) => [i, angle, radius] as [number, number, number]);
 
@@ -58,8 +59,8 @@ function matchVerticesByBarycenter(polyMin: Point[], polyMax: Point[]): [Point[]
   const cMin = polygonBarycenter(polyMin);
   const cMax = polygonBarycenter(polyMax);
 
-  const [polyMinRe, polarMin] = reorderByAngle(polyMin, cMin);
-  const [polyMaxRe, polarMax] = reorderByAngle(polyMax, cMax);
+  const [polyMinRe, polarMin] = rotateVerticesByStartAngle(polyMin, cMin);
+  const [polyMaxRe, polarMax] = rotateVerticesByStartAngle(polyMax, cMax);
 
   const matches: Record<number, number> = {};
 
@@ -246,7 +247,7 @@ export function interpolatePolygonAtFrame(
 
   const cInterp = polygonBarycenter(interpolazed.map((v) => v.point));
   const P1_old_index = interpolazed.map((v, i) => [i, v.point] as [number, Point]);
-  const [P1Reordered, _] = reorderByAngle(
+  const [P1Reordered, _] = rotateVerticesByStartAngle(
     interpolazed.map((v) => v.point),
     cInterp,
   );
