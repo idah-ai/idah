@@ -1,6 +1,8 @@
 module Export
   # Registry of export formats plugged in IDAH.
   module Registry
+    extend self
+
     # For a given list of modalities, register the class as Export Class
     # @param modalities String|Regexp|Array(String|Regexp)
     # modalities matching this pattern are managed by the export class
@@ -17,9 +19,19 @@ module Export
         end
 
         # Register modality:
-        registry[modality] ||= []
+        registry[modality] ||= Set.new
         registry[modality] << klass
       end
+    end
+
+    def is_valid_export_class?(klass)
+      @registry ||= {}
+
+      @registry.each do |_, v|
+        return true if v.map(&:to_s).include?(klass)
+      end
+
+      return false
     end
 
     # Return the list of available export
