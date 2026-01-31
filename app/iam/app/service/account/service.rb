@@ -3,10 +3,10 @@
 module Account
   class Service < Verse::Service::Base
     use accounts: Account::Repository,
-        organization_service: Organization::Service
+        organization_service: Organization::Service,
+        role_change_notification: Account::RoleChangeNotification
 
-    use_system accounts_system: Account::Repository,
-               organization_repo_system: Organization::Repository
+    use_system accounts_system: Account::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       accounts.index(
@@ -45,9 +45,14 @@ module Account
         # Set a default random password for the account if none is provided
         password = attr.delete(:password) || SecureRandom.hex(16)
 
+        # Generate invitation token and set invitation expiry date
+        invitation_token = SecureRandom.hex(32)
+        invitation_expired_at = Time.now + 3 * 24 * 60 * 60 # 3 days from now
+
         attr.merge!(
           hashed_password: BCrypt::Password.create(password),
-          invitation_expired_at: Time.now + 3 * 24 * 60 * 60
+          invitation_token:,
+          invitation_expired_at:
         )
 
         id = accounts.create(attr)
@@ -61,7 +66,8 @@ module Account
           to: created_account.email,
           title: "Account Created",
           category: "account_created",
-          recipient_id: created_account.id
+          recipient_id: created_account.id,
+          invitation_token:
         )
 
         created_account
@@ -79,32 +85,44 @@ module Account
         record.attributes[:role_scope] = role_scope.to_json if role_scope&.any?
 
         accounts.update!(record.id, record.attributes)
+        updated_account = accounts.find!(record.id)
 
         accounts.after_commit do
-          notify_role_change(previous_account, record)
+          role_change_notification.deliver!(previous_account:, updated_account:)
         end
 
-        accounts.find!(record.id)
+        updated_account
       end
     end
 
     def delete(id)
+      account = accounts.find!(id)
+
+      if account.joined_at
+        raise Verse::Error::Unauthorized,
+              "Cannot delete an account that has already joined"
+      end
+
       accounts.delete(id)
     end
 
-    def mark_as_joined(id)
+    def mark_as_joined(token)
       accounts.transaction do
-        account = accounts.find!(id, scope: accounts.scoped(:join))
+        account = accounts.find_by!({ invitation_token: token }, scope: accounts.scoped(:join))
 
         # account invitation expires in 3 days
         if account.invitation_expired_at.nil? || account.invitation_expired_at < Time.now
           raise Verse::Error::ValidationFailed, "Invitation has expired"
         end
 
-        accounts.update!(id, { joined_at: Time.now, invitation_expired_at: nil }, scope: accounts.scoped(:join))
+        accounts.update!(
+          account.id,
+          { joined_at: Time.now, invitation_token: nil, invitation_expired_at: nil },
+          scope: accounts.scoped(:join)
+        )
 
         [
-          accounts.find!(id, scope: accounts.scoped(:join)),
+          accounts.find!(account.id, scope: accounts.scoped(:join)),
           update_password_reset_token(account)
         ]
       end
@@ -117,17 +135,31 @@ module Account
         raise Verse::Error::NotFound, "Account with email #{account.email} already joined"
       end
 
+      # Generate new invitation token and extend invitation expiry date
+      invitation_token = SecureRandom.hex(32) # To invalidate previous token
+      invitation_expired_at = Time.now + 3 * 24 * 60 * 60 # refresh token 3 days from now
+
       accounts.update!(
         id,
-        { invitation_expired_at: Time.now + 3 * 24 * 60 * 60 }
+        { invitation_token:, invitation_expired_at: }
       )
 
       ::Service::Notification.email(
         to: account.email,
         title: "Reminder: Please join your account",
         category: "account_created",
-        recipient_id: account.id
+        recipient_id: account.id,
+        invitation_token:
       )
+    end
+
+    def remove_org_from_account_role_scope(organization_id)
+      accounts.transaction do
+        accounts_system.chunked_index({ with_role_scope: { org: [organization_id.to_s] } }).each do |account|
+          account.role_scope["org"] = account.role_scope["org"] - [organization_id.to_s]
+          accounts.update!(account.id, { role_scope: account.role_scope })
+        end
+      end
     end
 
     private
@@ -147,43 +179,6 @@ module Account
       end
 
       password_reset_token
-    end
-
-    def notify_role_change(previous_account, record)
-      old_role = previous_account.role_name
-      new_role = record.attributes[:role_name]
-      return if old_role == new_role
-
-      email_params = build_email_params(previous_account, record, old_role, new_role)
-
-      RoleChangeNotification.new(
-        from_role: old_role,
-        to_role: new_role,
-        recipient_email: previous_account.email,
-        recipient_id: previous_account.id,
-        email_params: email_params
-      ).deliver!
-    end
-
-    def build_email_params(previous_account, record, old_role, new_role)
-      base_params = { recipient_name: previous_account.name }
-
-      # Include organization info if relevant
-      if old_role == "org_owner" || new_role == "org_owner"
-        org_id = previous_account.role_scope["org"]&.first || JSON.parse(record.attributes[:role_scope])["org"]&.first
-
-        raise Verse::Error::ValidationFailed, "Organization ID not found in role scope" unless org_id
-
-        organization = organization_repo_system.find!(org_id)
-        base_params[:organization_name] = organization.name
-        base_params[:organization_id] = organization.id
-      end
-
-      # Include admin name
-      admin_name = accounts_system.find!(auth_context.metadata[:id]).name
-      base_params[:admin_name] = admin_name
-
-      base_params
     end
   end
 end

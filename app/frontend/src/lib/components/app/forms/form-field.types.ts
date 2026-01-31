@@ -71,7 +71,7 @@ export interface SelectFieldBaseProps extends FormFieldBaseProps {
 }
 
 export interface SingleSelectFieldBaseProps extends SelectFieldBaseProps {
-  onSelected?: (value: string | number) => Promise<void> | void;
+  onSelected?: (value: string | number | null) => Promise<void> | void;
   slotTrigger?: Snippet<
     [
       {
@@ -106,6 +106,14 @@ export interface MultipleSelectFieldBaseProps extends SelectFieldBaseProps {
     [
       {
         selectedChoices: LabelValue<string | number>[];
+      },
+    ]
+  >;
+  slotSelectAll?: Snippet<
+    [
+      {
+        selectAll: (allSelected: boolean) => Promise<void> | void;
+        allChoicesSelected: boolean;
       },
     ]
   >;

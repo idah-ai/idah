@@ -27,12 +27,35 @@ module Entry
     belongs_to :dataset, repository: "Dataset::Repository", foreign_key: :dataset_id
     belongs_to :project, repository: "Project::Repository", foreign_key: :project_id
 
+    belongs_to :assigned_to,
+               repository: "ProjectMember::Repository",
+               primary_key: :account_id,
+               foreign_key: :assigned_to_id
+    belongs_to :submitted_by,
+               repository: "ProjectMember::Repository",
+               primary_key: :account_id,
+               foreign_key: :submitted_by_id
+    belongs_to :reviewed_by,
+               repository: "ProjectMember::Repository",
+               primary_key: :account_id,
+               foreign_key: :reviewed_by_id
+
     has_many :annotations, repository: "Annotation::Repository", foreign_key: :entry_id
   end
 
   class Repository < Verse::Sequel::Repository
     self.table = "entries"
     self.resource = Resource::Dataset::Entries
+
+    custom_filter :participated do |collection, value|
+      where_fragment = <<-SQL
+        assigned_to_id = :account_id
+        OR submitted_by_id = :account_id
+        OR reviewed_by_id = :account_id
+      SQL
+
+      collection.where(Sequel.lit(where_fragment, account_id: value))
+    end
 
     def scoped(action)
       auth_context.can!(action, self.class.resource) do |scope|
@@ -74,6 +97,7 @@ module Entry
             FROM project_members pm
             WHERE pm.account_id = :account_id
               AND pm.project_id = entries.project_id
+              AND pm.disabled_at IS NULL
               AND (
                 -- All with roles
                 pm.role IN :with_roles OR
@@ -114,6 +138,7 @@ module Entry
             FROM project_members pm
             WHERE pm.account_id = :account_id
               AND pm.project_id = entries.project_id
+              AND pm.disabled_at IS NULL
               AND pm.role IN :roles
           )
         SQL
@@ -131,6 +156,45 @@ module Entry
       end
     end
 
+    def create(attributes)
+      with_metadata do
+        add_event_metadata(
+          project_id: attributes[:project_id],
+          dataset_id: attributes[:dataset_id]
+        )
+
+        super(attributes)
+      end
+    end
+
+    def update!(id, attributes, scope: scoped(:update))
+      with_metadata do
+        entry = find!(id)
+
+        add_event_metadata(
+          project_id: attributes[:project_id] || entry.project_id,
+          dataset_id: attributes[:dataset_id] || entry.dataset_id,
+          entry_id: id
+        )
+
+        super(id, attributes, scope:)
+      end
+    end
+
+    def delete!(id)
+      with_metadata do
+        entry = find!(id)
+
+        add_event_metadata(
+          project_id: entry.project_id,
+          dataset_id: entry.dataset_id,
+          entry_id: id
+        )
+
+        super(id)
+      end
+    end
+
     event(name: "selected")
     def select(id)
       no_event do
@@ -143,6 +207,14 @@ module Entry
 
     event(name: "assigned")
     def assign(id, attributes)
+      entry = find!(id)
+
+      add_event_metadata(
+        project_id: attributes[:project_id] || entry.project_id,
+        dataset_id: attributes[:dataset_id] || entry.dataset_id,
+        entry_id: id
+      )
+
       no_event do
         transaction do
           update!(id, attributes)
@@ -152,6 +224,15 @@ module Entry
 
     event(name: "submitted")
     def submit(id, attributes)
+      entry = find!(id)
+
+      add_event_metadata(
+        project_id: attributes[:project_id] || entry.project_id,
+        dataset_id: attributes[:dataset_id] || entry.dataset_id,
+        entry_id: id,
+        submission_type: entry.wf_step
+      )
+
       no_event do
         transaction do
           # Use read scope when updating as anyone with read access can submit
@@ -166,6 +247,17 @@ module Entry
       transaction do
         update!(entry.id, { status: status })
       end
+    end
+
+    private
+
+    def add_event_metadata(**opts)
+      add_metadata(
+        actor_account_id: auth_context.metadata[:id],
+        actor_account_email: auth_context.metadata[:email],
+        actor_account_role_name: auth_context.metadata[:role],
+        **opts
+      )
     end
   end
 end

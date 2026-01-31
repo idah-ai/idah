@@ -4,45 +4,57 @@
 
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import SidebarContent from "@/components/ui/sidebar/sidebar-content.svelte";
-  import SidebarGroupContent from "@/components/ui/sidebar/sidebar-group-content.svelte";
-  import SidebarGroup from "@/components/ui/sidebar/sidebar-group.svelte";
   import SidebarHeader from "@/components/ui/sidebar/sidebar-header.svelte";
   import Sidebar from "@/components/ui/sidebar/sidebar.svelte";
 
-  import CategoriesSelection from "./categories-selection.svelte";
+  import { cn } from "@/utils";
 
-  import type { AnnotationValue } from "$lib/context/AnnotationContext";
+  import CategorySidebar from "./category-sidebar.svelte";
+
+  import type {
+    AnnotationMetadata,
+    AnnotationObj,
+    AnnotationShape,
+    AnnotationValue,
+  } from "$lib/context/AnnotationContext";
   import type { IActivityContext, IConfigValue } from "@/plugin/interface/Activity";
+
+  import { ENTRY_ROOT } from "../../type";
+  import { entryRoot } from "../../video-annotation-activity/idb_store.svelte";
 
   import type { AnnotationsIndexedDB } from "../../video-annotation-activity/indexedDB";
 
-  import { ENTRY_ROOT } from "../../type";
-  import type { VideoAnnotation } from "../../video-annotation-activity/VideoAnnotationContext";
-  import { entryRoot } from "../../video-annotation-activity/idb_store.svelte";
+  type TAnnotationObj = AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
 
   // Props
   let {
-    sidebarWidthRem = 15,
+    sidebarWidthRem,
     annotationValue,
     onEditValue,
     onSelectAnnotation,
     onDeleteAnnotation,
+    onVisibility,
+    onLock,
     context,
     mode,
     currentFrame,
     db,
-    selected_id,
+    selectedAnnotationId,
+    class: className,
   }: {
-    sidebarWidthRem?: number;
+    sidebarWidthRem: number;
     currentFrame: number;
     annotationValue: AnnotationValue;
     onEditValue: (annotationValue: AnnotationValue, mode: string) => void;
-    onSelectAnnotation: (annotation: VideoAnnotation) => void;
-    onDeleteAnnotation: (annotation: VideoAnnotation) => void;
+    onSelectAnnotation: (annotation?: TAnnotationObj) => void;
+    onDeleteAnnotation: (annotation: TAnnotationObj) => void;
+    onLock: (locked: boolean, annotation?: TAnnotationObj) => void;
+    onVisibility: (hidden: boolean, annotation?: TAnnotationObj) => void;
     context: IActivityContext;
     mode: string;
     db?: AnnotationsIndexedDB;
-    selected_id?: string;
+    selectedAnnotationId?: string;
+    class?: string | null;
   } = $props();
 
   let tools = new Map<string, IConfigValue[]>(
@@ -95,24 +107,25 @@
       searchValue = value;
     }, 200);
   }
+
+  function clearSearch() {
+    searchValue = "";
+  }
 </script>
 
-<Sidebar variant="inset" collapsible="none" style="width: {sidebarWidthRem}rem;">
+<Sidebar variant="inset" collapsible="none" class={cn(className)} style="width: ${sidebarWidthRem}rem">
   {#if !tools.has(mode)}
     <SidebarHeader>
       <InputField
         name="input/plugin/search"
-        placeholder="search"
+        placeholder="Search"
         value={searchValue}
         oninput={(e) => searchCategory(e)}
       >
         {#snippet suffixIcon()}
-          <CircleXIcon
-            class="hover:cursor-pointer"
-            onclick={() => {
-              searchValue = "";
-            }}
-          />
+          {#if searchValue}
+            <CircleXIcon class="hover:cursor-pointer" onclick={clearSearch} />
+          {/if}
         {/snippet}
       </InputField>
     </SidebarHeader>
@@ -121,24 +134,22 @@
   <SidebarContent>
     {#each filteredTools as [tool, categories] (tool)}
       {#if !filteredTools.has(mode) || (filteredTools.has(mode) && tool == mode) || mode == ENTRY_ROOT}
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <CategoriesSelection
-              {db}
-              toolMode={tool == mode}
-              type={tool}
-              {currentFrame}
-              {categories}
-              selected_category={tool == ENTRY_ROOT && !(tool == mode)
-                ? $entryRoot?.value.category
-                : annotationValue.category}
-              {selected_id}
-              {onSelectAnnotation}
-              {onDeleteAnnotation}
-              onSelect={(s) => categorySelection(tool, s)}
-            />
-          </SidebarGroupContent>
-        </SidebarGroup>
+        <CategorySidebar
+          {db}
+          {currentFrame}
+          currentMode={mode}
+          modalityShape={tool}
+          {categories}
+          selectedCategory={tool == ENTRY_ROOT && !(tool == mode)
+            ? $entryRoot?.value.category
+            : annotationValue.category}
+          onSelectCategory={(selected) => categorySelection(tool, selected)}
+          {selectedAnnotationId}
+          {onSelectAnnotation}
+          {onDeleteAnnotation}
+          {onLock}
+          {onVisibility}
+        ></CategorySidebar>
       {/if}
     {/each}
   </SidebarContent>

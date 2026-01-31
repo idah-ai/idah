@@ -6,12 +6,15 @@
   import DatasetForm from "@/components/app/datasets/forms/dataset-form.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
 
+  import { showToast } from "@/components/ui/toast/index.svelte";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { createDatasetSchema, updateDatasetSchema } from "@/data/model/dataset/datasets/schema";
+  import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
   import { getFieldErrors, validateData, type ZodSchema } from "@/utils/validate";
 
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
+  import type { IConfig } from "@/plugin/interface/Activity";
   import type { Hash } from "@/utils/types";
 
   // Props
@@ -25,6 +28,7 @@
   let newRecord: boolean = $derived(action === "create");
   let fieldErrors: Hash = $state({});
   let submitting: boolean = $state(false);
+  let selectedDatasetId = $state<string | null>(null);
 
   let dataset: DatasetRecord = $derived(
     datasetRecord
@@ -53,42 +57,83 @@
   function setValue(value: Hash): void {
     dataset.name = value.name;
     dataset.modality = value.modality;
+    selectedDatasetId = value.selectedDatasetId;
+  }
+
+  async function getLabelConfig() {
+    let labelConfig: IConfig = {};
+
+    /** Get label config, if selected dataset */
+    if (selectedDatasetId) {
+      const datasetRes = await datasetsBackendDataSource.get(selectedDatasetId, {
+        fields: {
+          [DatasetRecord.type]: ["labeling_configuration"],
+        },
+        noCache: true,
+      });
+      labelConfig = datasetRes.data.labeling_configuration;
+    }
+
+    return labelConfig;
   }
 
   async function createDataset() {
-    const createdDatasetRes = await datasetsBackendDataSource.create({
-      attributes: {
-        name: dataset.name,
-        modality: dataset.modality,
-        labeling_configuration: {},
-        workflow_configuration: {},
-      },
-      relationships: {
-        project: {
-          data: {
-            type: "datasets:projects",
-            id: projectId!,
+    const labelConfig = await getLabelConfig();
+
+    const createdDatasetRes = await datasetsBackendDataSource.create(
+      {
+        attributes: {
+          name: dataset.name,
+          modality: dataset.modality,
+          labeling_configuration: labelConfig,
+          workflow_configuration: {},
+        },
+        relationships: {
+          project: {
+            data: {
+              type: "datasets:projects",
+              id: projectId!,
+            },
           },
         },
       },
-    });
+      {
+        showErrorToast: false,
+      },
+    );
 
-    goto(resolve(`/projects/${projectId}/datasets/${createdDatasetRes.data.id}/entries`));
-
-    $refetches.datasets.list = new Date();
     open = false;
+    $refetches.datasets.list = new Date();
+    goto(resolve(`/projects/${projectId}/datasets/${createdDatasetRes.data.id}/entries`));
+    showToast.success({
+      title: "Dataset created",
+      description: `The dataset "${dataset.name}" has been created.`,
+    });
   }
 
   async function updateDataset() {
-    await datasetsBackendDataSource.update(dataset.id, {
-      attributes: {
-        name: dataset.name,
-        modality: dataset.modality,
-      },
-    });
+    const labelConfig = await getLabelConfig();
 
-    $refetches.datasets.list = new Date();
+    await datasetsBackendDataSource.update(
+      dataset.id,
+      {
+        attributes: {
+          name: dataset.name,
+          modality: dataset.modality,
+          labeling_configuration: labelConfig,
+        },
+      },
+      {
+        showErrorToast: false,
+      },
+    );
+
     open = false;
+    $refetches.datasets.list = new Date();
+    showToast.success({
+      title: "Dataset updated",
+      description: `The dataset "${dataset.name}" has been updated.`,
+    });
   }
 
   async function submit(): Promise<void> {
@@ -114,8 +159,8 @@
         await updateDataset();
       }
     } catch (error) {
-      console.error(error);
       submitting = false;
+      showActionFailedToast(error);
     }
   }
 </script>

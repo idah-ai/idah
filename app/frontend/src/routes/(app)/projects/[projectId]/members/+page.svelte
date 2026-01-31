@@ -9,7 +9,7 @@
   import { projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
   import { projectMemberColumns } from "@/components/app/projects/members/datasource-tables/project-member-columns";
-  import { projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
+  import { ProjectMemberRecord, projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
   import { authStatus } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
@@ -53,8 +53,12 @@
     {columns}
     dataSource={projectMembersBackendDataSource}
     listOptions={{
+      fields: {
+        [ProjectMemberRecord.type]: ["id", "account_id", "email", "role", "invited_by_id", "created_at"],
+      },
       filters: {
         project_id: projectId,
+        enabled: true,
       },
     }}
   >

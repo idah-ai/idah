@@ -6,9 +6,10 @@
   import Button from "@/components/ui/button/button.svelte";
   import Link from "@/components/ui/text/Link.svelte";
 
-  import { toast } from "svelte-sonner";
+  import { showToast } from "@/components/ui/toast/index.svelte";
   import { accountPasswordsBackendDataSource } from "@/data/model/iam/account-passwords/record";
   import { sendResetPasswordLinkSchema } from "@/data/model/iam/accounts/auth-schema";
+  import { showActionFailedToast } from "@/utils/error/error.toasts";
 
   // Variables
   let resource: string = "iam:account";
@@ -31,11 +32,14 @@
 
       sendingPasswordResetLink = false;
       email = "";
-      toast.info("Reset link sent!", { description: "Please check your email for the password reset link." });
+      showToast.info({
+        title: "Reset link sent!",
+        description: "Please check your email for the password reset link.",
+      });
     } catch (error) {
       sendingPasswordResetLink = false;
-      console.error(error);
       showErrorAlert = true;
+      showActionFailedToast(error);
     }
   }
 </script>

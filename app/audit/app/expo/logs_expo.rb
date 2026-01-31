@@ -13,45 +13,169 @@ class LogsExpo < BaseExpo
                       :actor_account_id__in,
                       :event_timestamp__gte,
                       :event_timestamp__lte,
-                      :resource_type__in
+                      :resource_type__in,
+                      :resource_id__match,
+                      :actor_account_role_name__nin
     end
   end
 
-  def create_audit_log
-    service.create(message.event, message.content)
+  # rubocop:disable Style/CombinableLoops
+
+  # Account events
+  %w[created updated deleted].each do |event|
+    expose on_resource_event(Resource::Iam::Accounts, event)
+    def on_account_event
+      service.create(log_attributes(message:))
+    end
   end
 
-  # resources we want to include in Audit Logs
-  # TODO: complete this list and refactor/regex somehow ?
-  %w[
-    iam:accounts
-    iam:organizations
-    dataset:projects
-    dataset:project_members
-    dataset:datasets
-    dataset:entries
-    media:medias
-  ].each do |resource|
-    # events/actions we want to include in Audit Logs
-    %w[created updated deleted].each do |event|
-      attach_exposition(
-        :create_audit_log,
-        build_expose(on_resource_event(resource, event))
+  expose on_resource_event(Resource::Iam::Accounts, "logged_in")
+  def on_account_logged_in
+    service.create(
+      log_attributes(
+        message:,
+        action: message.content[:metadata][:validation] ? "logged_in" : "failed_log_in_attempt"
+      )
+    )
+  end
+
+  # Account Session events
+  %w[logged_out].each do |event|
+    expose on_resource_event(Resource::Iam::AccountSessions, event)
+    def on_account_session_event
+      service.create(
+        log_attributes(
+          message:,
+          resource_id: message.content[:metadata][:actor_account_email]
+        )
       )
     end
   end
 
-  %w[login logout].each do |event|
-    attach_exposition(
-      :create_audit_log,
-      build_expose(on_resource_event("iam:accounts", event))
+  # Organization events
+  %w[created updated deleted].each do |event|
+    expose on_resource_event(Resource::Iam::Organizations, event)
+    def on_organization_event
+      service.create(
+        log_attributes(
+          message:,
+          organization_id: message.content[:resource_id]
+        )
+      )
+    end
+  end
+
+  # Project events
+  %w[created updated deleted].each do |event|
+    expose on_resource_event(Resource::Dataset::Projects, event)
+    def on_project_event
+      service.create(
+        log_attributes(
+          message:,
+          organization_id: message.content[:metadata][:organization_id],
+          project_id: message.content[:resource_id]
+        )
+      )
+    end
+  end
+
+  # Project Member events
+  %w[created updated deleted].each do |event|
+    expose on_resource_event(Resource::Dataset::ProjectMembers, event)
+    def on_project_member_event
+      service.create(
+        log_attributes(
+          message:,
+          project_id: message.content[:metadata][:project_id]
+        )
+      )
+    end
+  end
+
+  # Dataset events
+  %w[created updated deleted].each do |event|
+    expose on_resource_event(Resource::Dataset::Datasets, event)
+    def on_dataset_event
+      service.create(
+        log_attributes(
+          message:,
+          organization_id: message.content[:metadata][:organization_id],
+          project_id: message.content[:metadata][:project_id],
+          dataset_id: message.content[:resource_id]
+        )
+      )
+    end
+  end
+
+  # Entry events
+  %w[created updated deleted assigned unassigned].each do |event|
+    expose on_resource_event(Resource::Dataset::Entries, event)
+    def on_entry_event
+      return unless message.content[:metadata][:actor_account_id] # excluding entries updated by background worker
+
+      service.create(
+        log_attributes(
+          message:,
+          organization_id: message.content[:metadata][:organization_id],
+          project_id: message.content[:metadata][:project_id],
+          dataset_id: message.content[:metadata][:dataset_id],
+          entry_id: message.content[:resource_id]
+        )
+      )
+    end
+  end
+
+  expose on_resource_event(Resource::Dataset::Entries, "submitted")
+  def on_entry_submitted
+    return unless message.content[:metadata][:submission_type] # process only actual submission from annotation/review
+
+    service.create(
+      log_attributes(
+        message:,
+        action: message.content[:metadata][:submission_type],
+        organization_id: message.content[:metadata][:organization_id],
+        project_id: message.content[:metadata][:project_id],
+        dataset_id: message.content[:metadata][:dataset_id],
+        entry_id: message.content[:resource_id]
+      )
     )
   end
 
-  %w[assigned unassigned submitted].each do |event|
-    attach_exposition(
-      :create_audit_log,
-      build_expose(on_resource_event("dataset:entries", event))
-    )
+  # Media events
+  %w[created updated deleted].each do |event|
+    expose on_resource_event(Resource::Media::Medias, event)
+    def on_media_event
+      return unless message.content[:metadata][:actor_account_id] # excluding medias created from background worker
+
+      service.create(
+        log_attributes(
+          message:,
+          resource_id: message.content[:metadata][:media_resource]
+        )
+      )
+    end
+  end
+
+  # rubocop:enable Style/CombinableLoops
+
+  private
+
+  def log_attributes(message:, **additional_attributes)
+    service, type, action = message.event.split(":")
+    resource_id = message.content[:resource_id]
+    metadata = message.content[:metadata]
+
+    attributes = {
+      action: action,
+      resource_service: service,
+      resource_type: type,
+      resource_id:,
+      event_timestamp: metadata[:at],
+      actor_account_id: metadata[:actor_account_id],
+      actor_account_email: metadata&.[](:actor_account_email),
+      actor_account_role_name: metadata&.[](:actor_account_role_name),
+    }
+
+    attributes.merge(additional_attributes)
   end
 end

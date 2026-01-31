@@ -2,15 +2,16 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { RectangleEllipsisIcon } from "@lucide/svelte";
-  import { toast } from "svelte-sonner";
 
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import { Button } from "@/components/ui/button";
   import { Item, ItemActions, ItemContent, ItemDescription, ItemMedia, ItemTitle } from "@/components/ui/item";
 
+  import { showToast } from "@/components/ui/toast/index.svelte";
   import { accountPasswordsBackendDataSource } from "@/data/model/iam/account-passwords/record";
   import { updateAccountPasswordSchema } from "@/data/model/iam/account-passwords/schema";
   import { AccountSettingRecord } from "@/data/model/setting/account_setting/record";
+  import { showActionFailedToast } from "@/utils/error/error.toasts";
 
   // Variables
   const accountSettingsResource = AccountSettingRecord.type;
@@ -43,13 +44,17 @@
 
     try {
       await accountPasswordsBackendDataSource.change_password({ oldPassword, newPassword });
+
       oldPassword = "";
       newPassword = "";
       confirmPassword = "";
-      toast.success("Password updated successfully.");
-      updatingPassword = false;
+      showToast.success({
+        title: "Password changed",
+        description: "Your password has been updated successfully.",
+      });
     } catch (error) {
-      console.error(error);
+      showActionFailedToast(error);
+    } finally {
       updatingPassword = false;
     }
   }

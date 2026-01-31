@@ -65,7 +65,7 @@
       dataSource={organizationsBackendDataSource}
       listOptions={{
         fields: {
-          [OrganizationRecord.type]: ["name", "created_at"],
+          [OrganizationRecord.type]: ["id", "name", "created_at"],
         },
       }}
     >

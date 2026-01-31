@@ -3,6 +3,7 @@
 module Project
   class Service < Verse::Service::Base
     use projects: Project::Repository
+    use_system system_datasets: Dataset::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       projects.index(
@@ -49,6 +50,13 @@ module Project
     end
 
     def delete(id)
+      # Check if atleast 1 dataset is in-progress or completed
+      dataset = system_datasets.find_by({ project_id: id, status: %w[in_progress completed] })
+      if dataset
+        raise Verse::Error::Unauthorized,
+              "Unable to delete project with in progress or completed datasets"
+      end
+
       projects.delete!(id)
     end
   end

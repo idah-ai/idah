@@ -14,6 +14,7 @@ import { parseSingleElementError, parseSingleElementReturn } from "@/data/model/
 
 import type { JsonApiErrorResponse, RecordResponse } from "@/data/model/types";
 import type { Hash } from "@/utils/types";
+import type { ProjectMemberRecord } from "@/data/model/dataset/projects/members/record";
 
 @type("dataset:entries")
 export class EntryRecord extends Record {
@@ -37,6 +38,9 @@ export class EntryRecord extends Record {
   @field() public updated_at!: Date;
 
   @relationship() public dataset!: DatasetRecord;
+  @relationship() public assigned_to!: ProjectMemberRecord;
+  @relationship() public reviewed_by!: ProjectMemberRecord;
+  @relationship() public submitted_by!: ProjectMemberRecord;
 
   public get priorityBadge(): EntryPriorityBadgeProps {
     const defaultBadgeProps: EntryPriorityBadgeProps = {
@@ -64,20 +68,20 @@ export class EntryRecord extends Record {
   }
 }
 
-const entryBasePath: string = `${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/entries`;
+export const entriesBasePath: string = `${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/entries`;
 
 RecordFactory.registerTypes(EntryRecord);
 
-export const entriesBackendDataSource = createBackendDataSource(EntryRecord, entryBasePath, {
+export const entriesBackendDataSource = createBackendDataSource(EntryRecord, entriesBasePath, {
   select: async (params: { id: string }): Promise<RecordResponse<EntryRecord> | JsonApiErrorResponse> => {
-    const res = await fetch(`${entryBasePath}/${params.id}/select`, {
+    const res = await fetch(`${entriesBasePath}/${params.id}/select`, {
       method: "GET",
     });
 
     const body = await res.json();
 
     // Cache Management
-    const cacheIndexKey = resourcePath(entryBasePath, null, undefined);
+    const cacheIndexKey = resourcePath(entriesBasePath, null, undefined);
     clearCache(cacheIndexKey);
 
     if (body && body.errors) {
@@ -100,7 +104,7 @@ export const entriesBackendDataSource = createBackendDataSource(EntryRecord, ent
     id: string;
     memberAccountId: number;
   }): Promise<RecordResponse<EntryRecord> | JsonApiErrorResponse> => {
-    const res = await fetch(`${entryBasePath}/${params.id}/assign`, {
+    const res = await fetch(`${entriesBasePath}/${params.id}/assign`, {
       method: "PATCH",
       body: encodeModel(EntryRecord, { attributes: { assigned_to_id: params.memberAccountId } }),
       headers: { "Content-Type": "application/vnd.api+json" },
@@ -109,7 +113,7 @@ export const entriesBackendDataSource = createBackendDataSource(EntryRecord, ent
     const body = await res.json();
 
     // Cache Management
-    const cacheIndexKey = resourcePath(entryBasePath, null, undefined);
+    const cacheIndexKey = resourcePath(entriesBasePath, null, undefined);
     clearCache(cacheIndexKey);
 
     if (body && body.errors) {
@@ -129,7 +133,7 @@ export const entriesBackendDataSource = createBackendDataSource(EntryRecord, ent
     throw "No data returned";
   },
   submit: async (entryId: string, opts?: { approved: boolean }) => {
-    const res = await fetch(`${entryBasePath}/${entryId}/submit`, {
+    const res = await fetch(`${entriesBasePath}/${entryId}/submit`, {
       method: "POST",
       body: JSON.stringify({
         data: {
@@ -144,7 +148,7 @@ export const entriesBackendDataSource = createBackendDataSource(EntryRecord, ent
     const body = await res.json();
 
     // Cache Management
-    const cacheIndexKey = resourcePath(entryBasePath, null, undefined);
+    const cacheIndexKey = resourcePath(entriesBasePath, null, undefined);
     // Note: Clear dataset cache as well to update progress at DataTable
     const cacheDatasetIndexKey = resourcePath(datasetBasePath, null, undefined);
     clearCache(cacheIndexKey);

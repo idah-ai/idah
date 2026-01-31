@@ -1,12 +1,12 @@
 <script lang="ts">
   import { CheckIcon } from "@lucide/svelte";
-  import { toast } from "svelte-sonner";
 
   import Tooltips from "@/components/app/tooltips/tooltips.svelte";
   import Button from "@/components/ui/button/button.svelte";
 
   import { NoteFeedRecord, noteFeedsBackendDataSource } from "@/data/model/dataset/notes/feeds/record";
 
+  import { showToast } from "@/components/ui/toast/index.svelte";
   import { cn } from "@/utils";
   import { refetches } from "@/utils/refetch";
 
@@ -27,12 +27,16 @@
 
     try {
       const resolvedNoteFeedRes = await noteFeedsBackendDataSource.markAsResolved(id);
+
       onNoteResolved?.(resolvedNoteFeedRes.data);
-      toast.success("Note feed marked as resolved successfully.");
       $refetches.noteFeeds.list = new Date();
+      showToast.success({
+        title: "Note resolved",
+        description: "The note has been resolved.",
+      });
     } catch (error) {
       console.error(error);
-      toast.error("You are not authorized to do this action.");
+      showToast.error({ title: "You are not authorized to do this action." });
     }
   }
 </script>

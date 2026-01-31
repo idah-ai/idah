@@ -10,6 +10,6 @@
 <p style="font-size: 14px;line-height: 20px;">Hi <%= notification.recipient_name || notification.recipient_account_email %>,</p>
 
   <p style="text-align: center;font-size: 14px;line-height: 20px;margin: 0 100px;">
-You have been removed as organization owner of "<%= notification.organization_name %>" organization by <%= notification.admin_name %>.
+You have been removed as organization owner of "<%= notification.organization_name %>" organization by <%= notification.changed_by_name %>.
   </p>
 </div>

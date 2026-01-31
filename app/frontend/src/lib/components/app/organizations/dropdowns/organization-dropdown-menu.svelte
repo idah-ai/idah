@@ -8,9 +8,11 @@
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
   import { SquarePenIcon, Trash2Icon } from "@lucide/svelte";
 
+  import { showToast } from "@/components/ui/toast/index.svelte";
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { OrganizationRecord, organizationsBackendDataSource } from "@/data/model/iam/organizations/record";
   import { authStatus } from "@/security/AuthContext";
+  import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
 
   import type { DropdownMenuContentAlignment, IDropdownMenus } from "@/components/app/dropdown-menus/types";
@@ -81,6 +83,9 @@
 
   async function loadRelatedProjects() {
     const projectsRes = await projectsBackendDataSource.list({
+      fields: {
+        [ProjectRecord.type]: ["id"],
+      },
       filters: {
         organization_id: organizationId,
       },
@@ -90,10 +95,20 @@
   }
 
   async function deleteOrganization() {
-    await organizationsBackendDataSource.delete(organizationId);
-    openConfirmDeleteOrganizationModal = false;
-    $refetches.organizations.list = new Date();
-    goto(resolve("/organizations"));
+    try {
+      await organizationsBackendDataSource.delete(organizationId, { showErrorToast: false });
+      openConfirmDeleteOrganizationModal = false;
+      $refetches.organizations.list = new Date();
+      goto(resolve("/organizations"));
+      showToast.success({
+        title: "Organization deleted",
+        description: organizationRecord
+          ? `The organization "${organizationRecord?.name}" has been deleted.`
+          : "The organization has been deleted.",
+      });
+    } catch (error) {
+      showActionFailedToast(error);
+    }
   }
 </script>
 

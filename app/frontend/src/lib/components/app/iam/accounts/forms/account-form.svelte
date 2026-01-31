@@ -8,6 +8,7 @@
   import { AccountRecord } from "@/data/model/iam/accounts/record";
 
   import type { FormBaseProps } from "@/components/app/forms/form.types";
+  import AccountEntries from "@/components/app/projects/entries/account-entries.svelte";
 
   // Props
   interface Props extends FormBaseProps {
@@ -80,5 +81,9 @@
       errors={fieldErrors["enabled"]}
       bind:checked={enabled}
     ></CheckboxField>
+
+    {#if !newRecord && !enabled}
+      <AccountEntries accountId={account.id} />
+    {/if}
   </FieldGroup>
 </FieldSet>

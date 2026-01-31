@@ -5,6 +5,9 @@ module ProjectMember
     use project_members: ProjectMember::Repository,
         projects: Project::Repository
 
+    use_system system_project_members: ProjectMember::Repository,
+               system_entries: Entry::Repository
+
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       project_members.index(
         filter,
@@ -43,7 +46,6 @@ module ProjectMember
 
         project_members.after_commit do
           member_account = Api[:idah].iam.accounts.show(id: member.account_id)
-          inviter = Api[:idah].iam.accounts.show(id: member.invited_by_id)
 
           # only send notification email if the account has joined already
           unless member_account.joined_at.nil?
@@ -54,8 +56,8 @@ module ProjectMember
               type: "notification:project:activities",
               project_id: member.project_id,
               project_name: member.project.name,
-              inviter_email: inviter.email,
-              inviter_name: inviter.name
+              inviter_email: auth_context.metadata[:email],
+              inviter_name: auth_context.metadata[:name],
             )
           end
         end
@@ -64,7 +66,66 @@ module ProjectMember
       end
     end
 
-    private def authorize_creation(creating_role, project_id, access)
+    def update(record)
+      access = auth_context.can?(:update, project_members.class.resource)
+      # "project_owner" can only be added by an org_owner of the project
+      if record.attributes[:role] == "project_owner"
+        unless [:as_org_owner, :all].include?(access)
+          raise Verse::Error::Unauthorized,
+                "You do not have permission to update a member for this project"
+        end
+
+        member = project_members.find!(record.id)
+        project = projects.find!(member.project_id) # this can raise Verse::Error::RecordNotFound if not in org scope
+
+        # Check if org_owner has access to the project's organization
+        if access != :all && !auth_context.custom_scopes[:org]&.include?(project.organization_id.to_s)
+          raise Verse::Error::Unauthorized,
+                "You do not have permission to update a member to a project owner for this project"
+        end
+      end
+
+      project_members.update!(record.id, record.attributes)
+      project_members.find!(record.id)
+    end
+
+    def delete(id)
+      project_members.transaction do
+        member = project_members.find!(id, included: [:project])
+
+        # Soft delete project member
+        project_members.update!(member.id, { disabled_at: Time.now })
+        project_members.after_commit do
+          ::Service::Notification.email(
+            to: member.email,
+            title: "You have been removed from the project '#{member.project.name}'",
+            category: "project_member_removed",
+            type: "notification:project:activities",
+            project_id: member.project_id,
+            project_name: member.project.name,
+            remover_email: auth_context.metadata[:email],
+            remover_name: auth_context.metadata[:name],
+          )
+        end
+      end
+    end
+
+    def delete_account_members(account_id)
+      system_project_members.chunked_index({ account_id: account_id }).each do |member|
+        system_project_members.delete!(member.id)
+      end
+    end
+
+    def disable_account_members(account_id)
+      now = Time.now
+      system_project_members.chunked_index({ account_id: account_id }).each do |member|
+        system_project_members.update!(member.id, { disabled_at: now })
+      end
+    end
+
+    private
+
+    def authorize_creation(creating_role, project_id, access)
       case access
       when :as_org_owner
         begin
@@ -86,48 +147,6 @@ module ProjectMember
         )
           raise Verse::Error::Unauthorized,
                 "You do not have permission to create project member on this project"
-        end
-      end
-    end
-
-    def update(record)
-      access = auth_context.can?(:update, project_members.class.resource)
-      # "project_owner" can only be added by an org_owner of the project
-      if record.attributes[:role] == "project_owner"
-        unless access == :as_org_owner
-          raise Verse::Error::Unauthorized,
-                "You do not have permission to update a member for this project"
-        end
-
-        project = projects.find!(record.project.id) # this can raise Verse::Error::RecordNotFound if not in org scope
-        unless auth_context.custom_scopes[:org]&.include?(project.organization_id.to_s)
-          raise Verse::Error::Unauthorized,
-                "You do not have permission to update a member to a project owner for this project"
-        end
-      end
-
-      project_members.update!(record.id, record.attributes)
-      project_members.find!(record.id)
-    end
-
-    def delete(id)
-      project_members.transaction do
-        member = project_members.find!(id, included: [:project])
-        project_members.delete!(id)
-
-        remover = Api[:idah].iam.accounts.show(id: auth_context.metadata[:id])
-
-        project_members.after_commit do
-          ::Service::Notification.email(
-            to: member.email,
-            title: "You have been removed from the project '#{member.project.name}'",
-            category: "project_member_removed",
-            type: "notification:project:activities",
-            project_id: member.project_id,
-            project_name: member.project.name,
-            remover_email: remover.email,
-            remover_name: remover.name,
-          )
         end
       end
     end

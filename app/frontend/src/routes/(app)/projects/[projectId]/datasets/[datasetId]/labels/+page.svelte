@@ -3,10 +3,8 @@
   import { page } from "$app/state";
   import { SaveIcon } from "@lucide/svelte";
   import { getContext } from "svelte";
-  import { toast } from "svelte-sonner";
 
   import LabelConfigEditor from "@/components/app/datasets/labels/label-config-editor.svelte";
-
   import PageHeader from "@/components/app/page/page-header.svelte";
   import PageLoading from "@/components/app/page/page-loading.svelte";
   import Button from "@/components/ui/button/button.svelte";
@@ -20,7 +18,9 @@
 
   import { labelColors } from "@/data/model/dataset/labels";
   import { pluginsBackendDataSource } from "@/data/model/setting/plugin/record";
+  import { showActionFailedToast } from "@/utils/error/error.toasts";
 
+  import { showToast } from "@/components/ui/toast/index.svelte";
   import type { ModalityShapes } from "@/data/model/setting/plugin/types";
   import type { IConfig, IConfigProperty, IConfigValue } from "@/plugin/interface/Activity";
   import type { ProjectMemberScope } from "@/security/types";
@@ -33,12 +33,12 @@
   let projectId: string = page.params.projectId as string;
   let datasetId: string = page.params.datasetId as string;
 
-  let saving: boolean = $state(false);
-  let modality: string = $state("");
+  let saving = $state(false);
+  let modality = $state("");
   let shapes = $state<ModalityShapes>({});
   let labelConfig: IConfig = $state({});
   let initialLabelConfig: IConfig | undefined = $state(undefined);
-  let isLabelConfigChanged: boolean = $derived.by(() => {
+  let isLabelConfigChanged = $derived.by(() => {
     return JSON.stringify(labelConfig) !== JSON.stringify(initialLabelConfig);
   });
 
@@ -86,17 +86,26 @@
     });
 
     try {
-      const updatedDatasetRes = await datasetsBackendDataSource.update(datasetId, {
-        attributes: {
-          labeling_configuration: cleanedLabelConfig,
+      const updatedDatasetRes = await datasetsBackendDataSource.update(
+        datasetId,
+        {
+          attributes: {
+            labeling_configuration: cleanedLabelConfig,
+          },
         },
-      });
+        {
+          showErrorToast: false,
+        },
+      );
+
       initialLabelConfig = JSON.parse(JSON.stringify(updatedDatasetRes.data.labeling_configuration));
       labelConfig = updatedDatasetRes.data.labeling_configuration;
-      toast.success("Labeling configuration changes saved successfully.");
+      showToast.success({
+        title: "Label configurations updated",
+        description: "The changes has been saved.",
+      });
     } catch (error) {
-      console.error(error);
-      toast.error("Failed to save labeling configuration changes.");
+      showActionFailedToast(error);
     } finally {
       saving = false;
     }
@@ -328,10 +337,10 @@
     {#snippet slotTitle()}
       <Can action="update" resource="dataset:datasets" scopes={["as_org_owner", as_project_owner]}>
         <Button
+          class="ml-auto"
           loading={saving}
           loadingLabel="Saving"
           disabled={!isLabelConfigChanged}
-          class="ml-auto"
           onclick={saveLabelConfigChanges}
         >
           <SaveIcon />

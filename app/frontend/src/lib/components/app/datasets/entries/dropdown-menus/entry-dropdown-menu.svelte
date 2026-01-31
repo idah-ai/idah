@@ -2,7 +2,6 @@
   import { page } from "$app/state";
   import { EllipsisVerticalIcon } from "@lucide/svelte";
   import { onMount } from "svelte";
-  import { toast } from "svelte-sonner";
 
   import AssignEntryFormModal from "@/components/app/datasets/entries/overlays/assign-entry-form-modal.svelte";
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
@@ -16,8 +15,10 @@
   } from "@/components/ui/dropdown-menu";
 
   import { getEntryDropdownMenuActions } from "@/components/app/datasets/entries/dropdown-menus/entry-dropdown-menu";
+  import { showToast } from "@/components/ui/toast/index.svelte";
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
   import { authStatus } from "@/security/AuthContext";
+  import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
 
   import type { ProjectMemberScope } from "@/security/types";
@@ -81,10 +82,18 @@
   }
 
   async function deleteEntry() {
-    await entriesBackendDataSource.delete(entry.id);
-    toast.success("Entry successfully deleted!");
-    $refetches.entries.list = new Date();
-    openConfirmDeleteEntryModal = false;
+    try {
+      await entriesBackendDataSource.delete(entry.id, { showErrorToast: false });
+
+      openConfirmDeleteEntryModal = false;
+      $refetches.entries.list = new Date();
+      showToast.success({
+        title: "Entry deleted",
+        description: `The entry "${entry.resource}" has been deleted.`,
+      });
+    } catch (error) {
+      showActionFailedToast(error);
+    }
   }
 
   async function exportEntry() {

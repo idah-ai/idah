@@ -1,6 +1,5 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { toast } from "svelte-sonner";
 
   import FileUpload from "@/components/app/forms/fields/upload/file-upload.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
@@ -10,8 +9,10 @@
   import Spinner from "@/components/ui/spinner/spinner.svelte";
   import Text from "@/components/ui/text/Text.svelte";
 
+  import { showToast } from "@/components/ui/toast/index.svelte";
   import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
   import { mediaBackendDataSource } from "@/data/model/media/medias/medias-record";
+  import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
 
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
@@ -63,7 +64,7 @@
 
   async function uploadMedia(): Promise<void> {
     if (!selectedMedias || selectedMedias.length === 0) {
-      toast.error("No media selected for upload.");
+      showToast.error({ title: "No media selected for upload." });
       return;
     }
 
@@ -85,29 +86,37 @@
           throw new Error("Media upload failed");
         }
 
-        await entriesBackendDataSource.create({
-          attributes: {
-            resource: createdMedia.data.resource,
-            status: "pending",
-          },
-          relationships: {
-            dataset: {
-              data: {
-                type: "datasets:datasets",
-                id: datasetId,
+        await entriesBackendDataSource.create(
+          {
+            attributes: {
+              resource: createdMedia.data.resource,
+              status: "pending",
+            },
+            relationships: {
+              dataset: {
+                data: {
+                  type: "datasets:datasets",
+                  id: datasetId,
+                },
               },
             },
           },
-        });
+          {
+            showErrorToast: false,
+          },
+        );
 
         media.status = "success";
       } catch (error) {
-        console.error(error);
         media.status = "error";
+        throw error;
       }
     }
 
-    toast.success("Entries successfully uploaded!");
+    showToast.success({
+      title: "Entry uploaded",
+      description: "The entries has been uploaded successfully.",
+    });
     $refetches.entries.list = new Date();
   }
 
@@ -117,7 +126,7 @@
     try {
       await uploadMedia();
     } catch (error) {
-      console.error(error);
+      showActionFailedToast(error);
     } finally {
       uploading = false;
     }

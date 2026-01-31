@@ -1,19 +1,21 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { toast } from "svelte-sonner";
 
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
   import ProjectMemberForm from "@/components/app/projects/members/forms/project-member-form.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import DialogTitle from "@/components/ui/dialog/dialog-title.svelte";
 
+  import { showToast } from "@/components/ui/toast/index.svelte";
   import {
+    ProjectMemberRecord,
     projectMembersBackendDataSource,
     type ProjectMemberRole,
   } from "@/data/model/dataset/projects/members/record";
   import { createMultipleProjectMembersSchema } from "@/data/model/dataset/projects/members/schema";
   import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
   import { authStatus } from "@/security/AuthContext";
+  import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
 
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
@@ -57,45 +59,80 @@
         account = createdAccount.data;
 
         /** Check if member is already in the project */
-        const existingProjectMember = await projectMembersBackendDataSource.list({
-          filters: {
-            project_id: projectId,
-            account_id: account.id,
-          },
-        });
+        const existingProjectMember = (
+          await projectMembersBackendDataSource.list({
+            fields: {
+              [ProjectMemberRecord.type]: ["id"],
+            },
+            filters: {
+              project_id: projectId,
+              account_id: account.id,
+            },
+            noCache: true,
+          })
+        ).data[0];
 
-        if (existingProjectMember.data.length) {
-          await accountsBackendDataSource.join({ id: account.id });
-        }
-
-        await projectMembersBackendDataSource.create({
-          attributes: {
-            project_id: projectId!,
-            account_id: Number(account.id),
-            name: account.name,
-            email,
-            role,
-            invited_by_id: Number(currentAccount?.id),
-          },
-          relationships: {
-            project: {
-              data: {
-                type: "dataset:projects",
-                id: projectId,
+        if (existingProjectMember) {
+          // Re-enable the existing project member
+          await projectMembersBackendDataSource.update(
+            existingProjectMember.id,
+            {
+              attributes: {
+                disabled_at: null,
+                role: role || undefined,
               },
             },
-          },
+            {
+              showErrorToast: false,
+            },
+          );
+        } else {
+          // Create new project member
+          await projectMembersBackendDataSource.create(
+            {
+              attributes: {
+                project_id: projectId!,
+                account_id: Number(account.id),
+                name: account.name,
+                email,
+                role,
+                invited_by_id: Number(currentAccount?.id),
+              },
+              relationships: {
+                project: {
+                  data: {
+                    type: "dataset:projects",
+                    id: projectId,
+                  },
+                },
+              },
+            },
+            {
+              showErrorToast: false,
+            },
+          );
+        }
+
+        // If account is disabled we enable after adding to project
+        if (!account.enabled) {
+          await accountsBackendDataSource.update(account.id, {
+            attributes: {
+              enabled: true,
+            },
+          });
+        }
+
+        showToast.success({
+          title: "Project member added",
+          description: `An invitation will be sent to "${email}" if the account is not yet existed.`,
         });
       }
 
-      $refetches.projectMembers.list = new Date();
       closeThisModal();
-      toast.success(`${members.length} member(s) invite sent!`);
+      $refetches.projectMembers.list = new Date();
     } catch (error) {
-      console.error(error);
-      toast.error("Failed to send invite. Please try again.");
-
       submitting = false;
+      throw error;
     }
   }
 
@@ -112,8 +149,8 @@
 
       await createProjectMember();
     } catch (error) {
-      console.error(error);
       submitting = false;
+      showActionFailedToast(error);
     }
   }
 </script>

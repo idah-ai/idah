@@ -19,20 +19,9 @@ module Log
       logs.find!(id, included: included)
     end
 
-    def create(event, content)
-      service, type, action = event.split(":")
-
+    def create(attributes)
       logs.transaction do
-        id = logs.create(
-          {
-            actor_account_id: content[:metadata][:account_id],
-            action: action,
-            resource_service: service,
-            resource_type: type,
-            resource_id: content[:resource_id],
-            event_timestamp: content[:metadata][:at],
-          }
-        )
+        id = logs.create(attributes)
         logs.find!(id)
       end
     end

@@ -1,10 +1,13 @@
 <script lang="ts">
+  import { page } from "$app/state";
   import { BoltIcon, CopyIcon, EllipsisVerticalIcon, PlusIcon, Trash2Icon, WorkflowIcon } from "@lucide/svelte";
 
   import ResponseBlock from "@/components/app/blocks/response-block.svelte";
   import PropertyCard from "@/components/app/datasets/labels/cards/property-card.svelte";
   import CategoryTree from "@/components/app/datasets/labels/categories/category-tree.svelte";
+  import DuplicateConfigModal from "@/components/app/datasets/labels/overlays/duplicate-config-modal.svelte";
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
+  import Tooltips from "@/components/app/tooltips/tooltips.svelte";
   import { Button } from "@/components/ui/button";
   import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
   import Can from "@/security/can.svelte";
@@ -15,6 +18,7 @@
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
   import type { ModalityShape, ModalityShapes } from "@/data/model/setting/plugin/types";
   import type { IConfig, IConfigProperty, IConfigValue } from "@/plugin/interface/Activity";
+  import type { ProjectMemberScope } from "@/security/types";
 
   // Props
   interface Props {
@@ -49,6 +53,9 @@
   }: Props = $props();
 
   // Variables
+  let projectId: string = page.params.projectId as string;
+  let duplicating = $state(false);
+  let openDuplicateConfigModal = $state(false);
   let selectedConfigKey: string = $derived(Object.keys(labelConfig)[0]);
   let selectedLabelConfig = $derived(labelConfig[selectedConfigKey]);
   let labelConfigIsEmpty: boolean = $derived(Object.keys(labelConfig).length === 0);
@@ -83,6 +90,13 @@
       ],
     },
   });
+
+  const as_project_owner: { as_user: ProjectMemberScope } = {
+    as_user: {
+      projectId,
+      projectMemberRoles: ["project_owner"],
+    },
+  };
 
   function getLabelConfigActionMenus(labelConfigKey: string): IDropdownMenus {
     return {
@@ -203,8 +217,26 @@
         <CardTitle>Configurations</CardTitle>
         <CardDescription class="text-xs">Select a label configuration to manage</CardDescription>
 
-        <Can action="update" resource="dataset:datasets">
+        <Can action="update" resource="dataset:datasets" scopes={["as_org_owner", as_project_owner]}>
           <CardAction>
+            <Tooltips align="center">
+              {#snippet trigger()}
+                <Button
+                  variant="secondary"
+                  size="icon-sm"
+                  loading={duplicating}
+                  loadingLabel="Duplicating"
+                  onclick={() => (openDuplicateConfigModal = true)}
+                >
+                  <CopyIcon />
+                </Button>
+              {/snippet}
+
+              {#snippet content()}
+                Duplicate configurations to other datasets
+              {/snippet}
+            </Tooltips>
+
             <DropdownMenus menus={labelConfigMenus} align="end">
               {#snippet trigger({ props })}
                 <Button {...props} variant="secondary" size="icon-sm">
@@ -347,3 +379,5 @@
     New Property
   </Button>
 {/snippet}
+
+<DuplicateConfigModal action="create" {labelConfig} bind:open={openDuplicateConfigModal} />
