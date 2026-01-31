@@ -9,7 +9,13 @@
     property,
     value,
     onValueChange,
-  }: { property: IConfigProperty; value: number; onValueChange: (v: number) => void } = $props();
+    disabled,
+  }: {
+    property: IConfigProperty;
+    value: number;
+    onValueChange: (v: number) => void;
+    disabled: boolean;
+  } = $props();
 
   const invalid = $derived(!propertyFullfilled(value, property));
   const format = $derived(invalid ? formatConformity(value, property) : []);
@@ -38,6 +44,7 @@
     step={property.format?.step || "1"}
     {value}
     onchange={(e) => onValueChange(Number.parseInt(e.target?.value || ""))}
+    {disabled}
   />
   {#if invalid}
     <ul class="text-xs">

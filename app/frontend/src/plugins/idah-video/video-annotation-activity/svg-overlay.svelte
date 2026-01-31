@@ -29,7 +29,7 @@
     frame: number;
     selected: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata> | undefined;
     mode: string;
-    target_container: () => HTMLDivElement; // ..
+    target_container: () => HTMLDivElement | undefined; // ..
     annotations_promise: Promise<AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]>;
     children: Snippet;
     onSelectAnnotation: (annotation?: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) => void;
@@ -90,7 +90,6 @@
   let points: Point[] = $derived.by(() => {
     return shape ? currentShape(shape, frame) || [] : [];
   });
-  let isNoteMode: boolean = $derived(mode === IDAH_NOTE);
 
   function updatedSize(): Point {
     videoResizedAt; // eslint-disable-line @typescript-eslint/no-unused-expressions
@@ -280,7 +279,7 @@
     onwheel={(e) => zoomableElement.onWheel(e)}
     {...restProps}
   >
-    {#if width && height && !isNoteMode && (pointer == "crosshair" || toolSelection?.isEditing())}
+    {#if width && height && ![IDAH_NOTE, DEFAULT_MODE].includes(mode) && (pointer == "crosshair" || toolSelection?.isEditing())}
       <!-- prevent display issue on load for now -->
       <line x1={0} y1={target_line[Y]} x2={width} y2={target_line[Y]} stroke="#2b7fff" />
       <line x1={target_line[X]} y1={0} x2={target_line[X]} y2={height} stroke="#2b7fff" />
@@ -290,7 +289,7 @@
     {#await annotations_promise}
       {#each $boundingBoxes as annotation (annotation.metadata.id)}
         {#if annotation.metadata.id != selected?.metadata.id}
-          {#if annotation.shape.type == IDAH_VIDEO_BOUNDING_BOX}
+          {#if annotation.shape.type == IDAH_VIDEO_BOUNDING_BOX && !annotation.hidden}
             <BoundingBox
               {mode}
               {pointer}
@@ -318,7 +317,7 @@
     {:then annotations}
       {#each annotations as annotation (annotation.metadata.id)}
         {#if annotation.metadata.id != selected?.metadata.id}
-          {#if annotation.shape.type == IDAH_VIDEO_BOUNDING_BOX}
+          {#if annotation.shape.type == IDAH_VIDEO_BOUNDING_BOX && !annotation.hidden}
             <BoundingBox
               {mode}
               {pointer}
@@ -347,7 +346,7 @@
       {/each}
     {/await}
 
-    {#if shape?.type == IDAH_VIDEO_BOUNDING_BOX || mode == IDAH_VIDEO_BOUNDING_BOX}
+    {#if (shape?.type == IDAH_VIDEO_BOUNDING_BOX || mode == IDAH_VIDEO_BOUNDING_BOX) && selected ? !selected.hidden : true}
       <BoundingBox
         {pointer}
         bind:this={toolSelection}
@@ -356,7 +355,9 @@
         ratio={target_size}
         offset={zoomInfo.offset}
         cursor={cursor_downscaled}
-        editable={shape?.type == IDAH_VIDEO_BOUNDING_BOX || mode == IDAH_VIDEO_BOUNDING_BOX}
+        editable={(shape?.type == IDAH_VIDEO_BOUNDING_BOX || mode == IDAH_VIDEO_BOUNDING_BOX) &&
+          !selected?.locked &&
+          ["annotate", "review"].includes(context.workflowStep)}
         color={selected?.synced
           ? Object.entries(context.config)
               .find(([k, _]) => k == mode)?.[1]

@@ -2,10 +2,10 @@
 
 Api[:idah].register(
   :dataset, :annotations, :index
-) do |**opts|
+) do |params = {}|
   output = get(
     "dataset/annotations",
-    params: { **opts },
+    params:,
     options: { auth: :bearer },
   )
 
@@ -14,11 +14,11 @@ end
 
 Api[:idah].register(
   :dataset, :entries, :index
-) do |**opts|
+) do |params = {}|
   output = get(
     "dataset/entries",
-    params: { **opts },
-    options: { auth: :bearer },
+    params:,
+    options: { auth: :bearer }  # Enable authentication
   )
 
   deserialize output.body

@@ -59,11 +59,12 @@ export const noteFeedsBackendDataSource = createBackendDataSource(NoteFeedRecord
     clearCache(cacheIndexKey);
 
     if (body && body.errors) {
-      if (body.errors.length > 0) {
-        body.errors.forEach((err: Hash) => {
-          console.error(`[NoteFeed][markAsResolved] ${err.status} - ${err.title}`);
-        });
-      }
+      /** Not showing errors toast for now, only show "You are not authorized to do this action." */
+      // if (body.errors.length > 0) {
+      //   body.errors.forEach((err: Hash) => {
+      //     console.error(`[NoteFeed][markAsResolved] ${err.status} - ${err.title}`);
+      //   });
+      // }
 
       return Promise.reject(parseSingleElementError({ status: res.status, errors: body.errors }));
     }

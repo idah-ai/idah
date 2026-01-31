@@ -47,6 +47,45 @@ module Medias
       end
     end
 
+    # TODO: background processors also trigger this event and causing error logs on audit as there's no actor id
+    # might need to review or suppress on that
+    def create(attributes)
+      with_metadata do
+        add_event_metadata(
+          project_id: attributes[:project_id],
+          media_resource: attributes[:resource]
+        )
+
+        super(attributes)
+      end
+    end
+
+    def update!(id, attributes, scope: scoped(:update))
+      with_metadata do
+        media = find!(id)
+
+        add_event_metadata(
+          project_id: media.project_id,
+          media_resource: media.resource
+        )
+
+        super(id, attributes, scope:)
+      end
+    end
+
+    def delete!(id)
+      with_metadata do
+        media = find!(id)
+
+        add_event_metadata(
+          project_id: media.project_id,
+          media_resource: media.resource
+        )
+
+        super(id)
+      end
+    end
+
     private
 
     def project_from_orgs_scoped
@@ -61,6 +100,15 @@ module Medias
       memberships = Api[:idah].dataset.project_members.index(filter: { account_id: }).data
 
       table.where(project_id: memberships.map(&:project_id).uniq)
+    end
+
+    def add_event_metadata(**opts)
+      add_metadata(
+        actor_account_id: auth_context.metadata[:id],
+        actor_account_email: auth_context.metadata[:email],
+        actor_account_role_name: auth_context.metadata[:role],
+        **opts
+      )
     end
   end
 end

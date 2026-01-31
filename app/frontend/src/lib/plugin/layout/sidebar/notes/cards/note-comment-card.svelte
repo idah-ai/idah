@@ -1,8 +1,7 @@
 <script lang="ts">
-  import { toast } from "svelte-sonner";
-
   import NoteCard from "@/plugin/layout/sidebar/notes/cards/note-card.svelte";
 
+  import { showToast } from "@/components/ui/toast/index.svelte";
   import { noteCommentsBackendDataSource, type NoteCommentRecord } from "@/data/model/dataset/notes/comments/record";
   import { refetches } from "@/utils/refetch";
 
@@ -19,24 +18,43 @@
   // Functions
   async function updateNoteCommentMd(newContentMd: string) {
     try {
-      const updatedNoteCommentRes = await noteCommentsBackendDataSource.update(id, {
-        attributes: {
-          content_md: newContentMd,
+      const updatedNoteCommentRes = await noteCommentsBackendDataSource.update(
+        id,
+        {
+          attributes: {
+            content_md: newContentMd,
+          },
         },
-      });
+        {
+          showErrorToast: false,
+        },
+      );
       noteCommentRecord = updatedNoteCommentRes.data;
-      toast.success("Note comment updated successfully.");
+
       $refetches.noteComments.list = new Date();
+      showToast.success({
+        title: "Comment updated",
+        description: "The note comment has been updated.",
+      });
     } catch (error) {
       console.error(error);
-      toast.error("You are not authorized to do this action.");
+      showToast.error({ title: "You are not authorized to do this action." });
     }
   }
 
   async function deleteNoteComment() {
-    await noteCommentsBackendDataSource.delete(id);
-    toast.success("Note comment deleted successfully.");
-    $refetches.noteComments.list = new Date();
+    try {
+      await noteCommentsBackendDataSource.delete(id, { showErrorToast: false });
+
+      $refetches.noteComments.list = new Date();
+      showToast.success({
+        title: "Comment deleted",
+        description: "The note comment has been deleted.",
+      });
+    } catch (error) {
+      console.log(error);
+      showToast.error({ title: "You are not authorized to do this action." });
+    }
   }
 </script>
 

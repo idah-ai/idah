@@ -1,5 +1,5 @@
 import type { AnnotationMetadata, AnnotationObj, AnnotationShape, AnnotationValue } from "@/context/AnnotationContext";
-import { type Point, X, Y, type VideoFrameSelection } from "./VideoAnnotationContext";
+import { X, Y, type Point, type VideoFrameSelection } from "./VideoAnnotationContext";
 
 //test
 const s = {
@@ -205,6 +205,72 @@ export class AnnotationsIndexedDB {
       };
       request.onerror = () => {
         reject(request.error);
+      };
+    });
+  }
+
+  updateAllVisibility(hidden: boolean) {
+    const transaction = this.db.transaction(["annotations"], "readwrite");
+    const objectStore = transaction.objectStore("annotations");
+
+    return new Promise<void>((resolve, reject) => {
+      objectStore.openCursor().onsuccess = (event) => {
+        const cursor = event.target?.result;
+
+        if (cursor) {
+          try {
+            const updateData = cursor.value;
+            updateData.hidden = hidden;
+            cursor.update(updateData);
+          } catch (error) {
+            reject(error);
+            return;
+          }
+          cursor.continue();
+        }
+      };
+
+      transaction.oncomplete = () => {
+        resolve();
+      };
+      transaction.onerror = (event) => {
+        reject(event.target?.error);
+      };
+      transaction.onabort = (event) => {
+        reject(event.target?.error);
+      };
+    });
+  }
+
+  updateAllLock(locked: boolean) {
+    const transaction = this.db.transaction(["annotations"], "readwrite");
+    const objectStore = transaction.objectStore("annotations");
+
+    return new Promise<void>((resolve, reject) => {
+      objectStore.openCursor().onsuccess = (event) => {
+        const cursor = event.target?.result;
+
+        if (cursor) {
+          try {
+            const updateData = cursor.value;
+            updateData.locked = locked;
+            cursor.update(updateData);
+          } catch (error) {
+            reject(error);
+            return;
+          }
+          cursor.continue();
+        }
+      };
+
+      transaction.oncomplete = () => {
+        resolve();
+      };
+      transaction.onerror = (event) => {
+        reject(event.target?.error);
+      };
+      transaction.onabort = (event) => {
+        reject(event.target?.error);
       };
     });
   }

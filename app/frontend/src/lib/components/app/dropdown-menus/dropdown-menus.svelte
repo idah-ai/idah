@@ -2,7 +2,7 @@
   import { EllipsisVerticalIcon } from "@lucide/svelte";
   import type { Snippet } from "svelte";
 
-  import { Button } from "@/components/ui/button";
+  import { Button, type ButtonSize } from "@/components/ui/button";
   import {
     DropdownMenu,
     DropdownMenuContent,
@@ -30,10 +30,11 @@
     class?: string | null;
     align?: DropdownMenuContentAlignment;
     side?: DropdownMenuContentSide;
+    triggerSize?: ButtonSize;
     menus: IDropdownMenus;
     trigger?: Snippet<[{ props: Record<string, unknown> }]>;
   }
-  let { class: className, align = "start", side = "bottom", menus, trigger }: Props = $props();
+  let { class: className, align = "start", side = "bottom", triggerSize = "icon", menus, trigger }: Props = $props();
 </script>
 
 {#snippet DropdownMenusItem(item: IDropdownMenuItem)}
@@ -63,8 +64,8 @@
         <Button
           {...props}
           variant={isOpen ? "secondary" : "ghost"}
-          size="icon"
-          class={cn({
+          size={triggerSize}
+          class={cn("shrink-0", {
             "opacity-100": isOpen,
           })}
         >

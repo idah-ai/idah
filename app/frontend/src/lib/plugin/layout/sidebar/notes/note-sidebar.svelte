@@ -9,7 +9,6 @@
     XIcon,
   } from "@lucide/svelte";
   import { onMount } from "svelte";
-  import { toast } from "svelte-sonner";
   import { SvelteURL } from "svelte/reactivity";
   import { slide } from "svelte/transition";
 
@@ -24,6 +23,7 @@
   import NoteDropdownMenus from "@/plugin/layout/sidebar/notes/dropdown-menus/note-dropdown-menus.svelte";
   import NoteInputField from "@/plugin/layout/sidebar/notes/inputs/note-input-field.svelte";
 
+  import { showToast } from "@/components/ui/toast/index.svelte";
   import { noteCommentsBackendDataSource } from "@/data/model/dataset/notes/comments/record";
   import { NoteFeedRecord, noteFeedsBackendDataSource } from "@/data/model/dataset/notes/feeds/record";
   import { deleteNoteFeed } from "@/plugin/layout/sidebar/notes/utils/note-feed.svelte";
@@ -164,7 +164,10 @@
           content_md: contentMd,
         },
       });
-      toast.success("General note added successfully.");
+      showToast.success({
+        title: "Note added",
+        description: "The note has been added.",
+      });
       $refetches.noteFeeds.list = new Date();
     }
 
@@ -184,7 +187,10 @@
           },
         },
       });
-      toast.success("Reply added successfully.");
+      showToast.success({
+        title: "Comment added",
+        description: "The note comment has been added.",
+      });
       $refetches.noteComments.list = new Date();
     }
 

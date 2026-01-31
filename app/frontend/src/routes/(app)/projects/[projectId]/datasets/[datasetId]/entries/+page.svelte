@@ -1,8 +1,8 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import { getContext, onMount } from "svelte";
-  import { toast } from "svelte-sonner";
 
   import ResponseBlock from "@/components/app/blocks/response-block.svelte";
   import EntryCard from "@/components/app/datasets/entries/cards/entry-card.svelte";
@@ -41,8 +41,10 @@
   import { getEntryDropdownMenuActions } from "@/components/app/datasets/entries/dropdown-menus/entry-dropdown-menu";
   import { projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
+  import { showToast } from "@/components/ui/toast/index.svelte";
   import { DatasetRecord } from "@/data/model/dataset/dataset-record";
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
+  import { ProjectMemberRecord } from "@/data/model/dataset/projects/members/record";
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
   import { authStatus } from "@/security/AuthContext";
   import { cn } from "@/utils";
@@ -57,6 +59,7 @@
   import type { CollectionResponse } from "@/data/model/types";
   import type { ProjectMemberScope } from "@/security/types";
   import { ExportsBackendDataSource } from "@/data/model/sync/exports/record";
+  import type { Hash } from "@/utils/types";
 
   // Contexts
   const project: ProjectRecord = getContext("project");
@@ -71,6 +74,39 @@
   // Variables
   let projectId: string = page.params.projectId as string;
   let datasetId = page.params.datasetId as string;
+
+  // Optional URL Params
+  let urlFiltersHash = $derived(Object.fromEntries(page.url.searchParams.entries()));
+  let urlFilters: Hash<string> = $derived.by(() => {
+    /**
+     * Regex to extract column key and operator from URL filter
+     *
+     * Example:
+     * - key: "filters[name__match]"
+     * - value: "John"
+     * - match: ["filters[name__match]", "filters", "name__match"]
+     * - listOptionsKey: "filters" (can be: filters, included, pagination, fields, sort, all, noCache, count)
+     * - columnKeyWithOperator: "name__match"
+     */
+    const urlFilterRegex: RegExp = /^([^[]+)\[([^\]]+)\]$/;
+    const out: Hash<string> = {};
+
+    Object.entries(urlFiltersHash).forEach(([key, value]) => {
+      const match = key.match(urlFilterRegex);
+      if (match) {
+        const [, _listOptionsKey, columnKeyWithOperator] = match;
+        out[columnKeyWithOperator] = value;
+      }
+    });
+
+    return out;
+  });
+
+  let filters: Hash = $derived({
+    dataset_id: datasetId,
+    ...urlFilters,
+  });
+
   let canUpdateEntry = $state(false);
   let canDeleteEntry = $state(false);
   let canExport = $state(false);
@@ -111,9 +147,9 @@
   ]);
 
   let listOptions: ListOptions = $state({
-    filters: {
-      dataset_id: datasetId,
-    },
+    filters: filters,
+    included: ["assigned_to", "submitted_by", "reviewed_by"],
+    fields: { [ProjectMemberRecord.type]: ["name", "email", "picture_url"] },
     sort: ["priority"],
     count: true,
     pagination: {
@@ -159,11 +195,24 @@
 
   async function filterEntries(params: FilterDataSourceParams): Promise<void> {
     const { filters } = params;
+    const newUrl = new URL(page.url);
 
     for (const [key, value] of Object.entries(filters)) {
       if (value === undefined) {
         /** Remove filter */
         delete listOptions.filters?.[key];
+
+        /** Manage filters[key] from URL if exists */
+        if (key in urlFilters) {
+          /** 1. Remove filters[key] from URL */
+          newUrl.searchParams.delete(`filters[${key}]`);
+          /** 2. Update URL */
+          /* eslint-disable svelte/no-navigation-without-resolve */
+          goto(newUrl.href, { replaceState: true });
+          /* eslint-enable svelte/no-navigation-without-resolve */
+          /** 3. Update urlFilters, to force the re-render of filters */
+          urlFilters = Object.fromEntries(newUrl.searchParams.entries());
+        }
       } else {
         /** Add or update filter */
         listOptions = {
@@ -256,7 +305,7 @@
       await entriesBackendDataSource.delete(entryId);
     }
 
-    toast.success(`${selectedRowsCount} Entry(s) successfully deleted.`);
+    showToast.success({ title: `${selectedRowsCount} Entry(s) successfully deleted.` });
 
     selectedRows = [];
     $refetches.entries.list = new Date();
@@ -302,7 +351,7 @@
             </div>
           {/if}
 
-          <div class="">
+          <div class="flex gap-2">
             {#each Object.entries(entryColumns) as [columnKey, columnSetting] (columnKey)}
               <FilterSortDropdownMenu
                 contexts={{
@@ -320,12 +369,12 @@
                   <Button
                     variant={isFiltering || isSorting ? "default" : "outline"}
                     class={cn(
-                      "data-[state=open]:bg-primary data-[state=open]:text-primary-foreground hover:bg-primary hover:text-primary-foreground my-2 w-full min-w-60 gap-2 font-normal",
+                      "data-[state=open]:bg-primary data-[state=open]:text-primary-foreground hover:bg-primary hover:text-primary-foreground my-2 w-full min-w-40 gap-2 font-normal",
                       isFiltering || isSorting ? "text-primary-foreground" : "text-muted-foreground",
                     )}
                   >
                     {#if isFiltering}
-                      <FunnelIcon class="size-4"></FunnelIcon>
+                      <FunnelIcon class="size-4" />
                     {/if}
 
                     <span class="mr-auto">{label}</span>
@@ -346,7 +395,7 @@
           </div>
         </div>
 
-        <div class="flex items-center gap-2">
+        <div class="flex items-center justify-end gap-2">
           <!-- BULK ACTIONS -->
           {#if isRowSelected}
             <DropdownMenu>

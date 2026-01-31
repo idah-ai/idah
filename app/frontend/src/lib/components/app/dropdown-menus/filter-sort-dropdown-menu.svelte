@@ -45,6 +45,7 @@
     // DataSource
     filters: Filters;
     sort: Sort;
+    disabledActiveStateFilterSortKeys?: Array<string>;
 
     // Functions
     onFilter: (params: FilterDataSourceParams) => Promise<void>;
@@ -74,6 +75,7 @@
     // DataSource
     filters,
     sort,
+    disabledActiveStateFilterSortKeys,
 
     // Functions
     onFilter,
@@ -102,8 +104,26 @@
     return "start";
   });
 
-  let isFiltering = $derived(Object.keys(filters).some((key) => key.startsWith(filterKey)));
-  let isSorting = $derived(sort.some((s) => s.endsWith(columnKey)));
+  // let isFiltering = $derived(Object.keys(filters).some((key) => key.startsWith(filterKey)));
+  // let isSorting = $derived(sort.some((s) => s.endsWith(columnKey)));
+  let hideFilterSortKeys = $derived(Array.from(new Set(disabledActiveStateFilterSortKeys ?? [])));
+  let isFiltering = $derived.by(() => {
+    const filterKeys = Array.from(new Set(Object.keys(filters)));
+    const symmetricDifferenceFilterKeys = [
+      ...filterKeys.filter((item) => !hideFilterSortKeys.includes(item)),
+      ...hideFilterSortKeys.filter((item) => !filterKeys.includes(item)),
+    ];
+    return symmetricDifferenceFilterKeys.some((key) => key.startsWith(filterKey));
+  });
+
+  let isSorting = $derived.by(() => {
+    const sortKeys = Array.from(new Set(sort));
+    const symmetricDifferenceSortKeys = [
+      ...sortKeys.filter((item) => !hideFilterSortKeys.includes(item)),
+      ...hideFilterSortKeys.filter((item) => !sortKeys.includes(item)),
+    ];
+    return symmetricDifferenceSortKeys.some((key) => key.endsWith(columnKey));
+  });
   let isSortingAsc = $derived(sort.includes(columnKey));
   let isSortingDesc = $derived(sort.includes(`-${columnKey}`));
   let isFilteringOrSorting = $derived(isFiltering || isSorting);
@@ -313,13 +333,15 @@
 
   function clearFilter(): void {
     const filterKey = `${filterOptions?.filterKey || columnKey}`;
+    const filterKeyGte = `${filterKey}__gte`;
+    const filterKeyLte = `${filterKey}__lte`;
     const filterKeyWithOperation = `${filterKey}__${filterOptions?.filterOperation || "in"}`;
 
     onFilter({
       filters: {
         [filterKey]: undefined,
-        [`${filterKey}__gte`]: undefined,
-        [`${filterKey}__lte`]: undefined,
+        [filterKeyGte]: undefined,
+        [filterKeyLte]: undefined,
         [filterKeyWithOperation]: undefined,
       },
     });
@@ -370,7 +392,9 @@
         <CommandGroup heading="Filter">
           {#if filterComponent}
             {@const FilterComponent = filterComponent}
-            <FilterComponent {columnSetting} {filters} {contexts} {onFilter}></FilterComponent>
+            <div class="pb-2">
+              <FilterComponent {columnSetting} {filters} {contexts} {onFilter}></FilterComponent>
+            </div>
           {:else if filterOptions?.filterBy === "string"}
             {@const filterKey = `${columnKey}__${filterOptions.filterOperation || "match"}`}
             <div class="pb-2">

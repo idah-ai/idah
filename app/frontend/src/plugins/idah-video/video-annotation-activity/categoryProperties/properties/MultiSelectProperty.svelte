@@ -9,10 +9,12 @@
     property,
     value,
     onValueChange,
+    disabled,
   }: {
     property: IConfigProperty;
     value: string[];
     onValueChange: (v: string[]) => void;
+    disabled: boolean;
   } = $props();
 
   const options = property.format.options;
@@ -34,7 +36,7 @@
     {/if}
   </Label>
 
-  <Select type="multiple" {value} {onValueChange}>
+  <Select type="multiple" {value} {onValueChange} {disabled}>
     <SelectTrigger
       class="data-[placeholder]:text-secondary-foreground bg-secondary w-full text-xs"
       aria-invalid={invalid}

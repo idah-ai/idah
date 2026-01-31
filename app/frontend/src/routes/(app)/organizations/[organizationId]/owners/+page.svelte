@@ -9,7 +9,7 @@
   import { organizationOwnerColumns } from "@/components/app/organizations/data-tables/organization-owner-column";
   import { organizationBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
-  import { accountsBackendDataSource } from "@/data/model/iam/accounts/record";
+  import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
   import { OrganizationRecord } from "@/data/model/iam/organizations/record";
   import { authStatus } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
@@ -45,6 +45,9 @@
     {columns}
     dataSource={accountsBackendDataSource}
     listOptions={{
+      fields: {
+        [AccountRecord.type]: ["id", "name", "email", "created_at"],
+      },
       filters: {
         with_role_scope: {
           org: [organizationId],

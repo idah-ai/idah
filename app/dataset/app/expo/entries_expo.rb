@@ -6,16 +6,18 @@ class EntriesExpo < BaseExpo
   use_service Entry::Service
 
   json_api Entry::Record do
-    allowed_included "dataset", "dataset.project"
+    allowed_included "dataset", "dataset.project", "assigned_to", "submitted_by", "reviewed_by"
     show
     index do
       allowed_filters :id__in,
+                      :resource__match,
                       :status__in,
                       :priority__in,
                       :assigned_to_id,
                       :assigned_to_id__eq,
                       :assigned_to_id__in,
-                      :wf_step__in
+                      :wf_step__in,
+                      :participated
     end
     create do
       authorized_relationships dataset: [:link]
@@ -89,7 +91,7 @@ class EntriesExpo < BaseExpo
   end
 
   expose on_resource_event(Resource::Media::Jobs, "completed")
-  def on_job_updated
+  def on_job_completed
     job_id = message.content[:resource_id]
 
     service.mark_entries_status_as(job_id, "ready")
@@ -100,5 +102,16 @@ class EntriesExpo < BaseExpo
     job_id = message.content[:resource_id]
 
     service.mark_entries_status_as(job_id, "processing_error")
+  end
+
+  expose on_resource_event(Resource::Dataset::ProjectMembers, "updated")
+  def on_project_member_disabled
+    account_id = message.content.dig(:metadata, :project_member_account_id)
+    project_id = message.content.dig(:metadata, :project_id)
+
+    # Only unassign entries if the project member is being disabled
+    return if message.content.dig(:args, 0, :disabled_at).nil?
+
+    service.unassign_account_entries(account_id, project_id)
   end
 end

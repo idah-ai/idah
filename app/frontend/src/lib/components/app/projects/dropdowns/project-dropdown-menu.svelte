@@ -8,9 +8,10 @@
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
   import ProjectFormModal from "@/components/app/projects/overlays/project-form-modal.svelte";
 
-  import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
+  import { showToast } from "@/components/ui/toast/index.svelte";
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { authStatus } from "@/security/AuthContext";
+  import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
 
   import type { DropdownMenuContentAlignment, IDropdownMenus } from "@/components/app/dropdown-menus/types";
@@ -27,7 +28,6 @@
   let currentAccount = $authStatus.authContext;
   let canUpdateProject = $state(false);
   let canDeleteProject = $state(false);
-  let inProgressDatasets: DatasetRecord[] = $state([]);
   let menus: IDropdownMenus = $derived({
     actions: {
       items: [
@@ -45,7 +45,6 @@
           label: "Delete",
           icon: Trash2Icon,
           hidden: !canDeleteProject,
-          disabled: inProgressDatasets.length > 0,
           action: () => {
             openConfirmDeleteProjectModal = true;
           },
@@ -60,7 +59,9 @@
 
   // Lifecycle
   onMount(async () => {
-    await Promise.all([checkRights(), loadInProgressDatasets()]);
+    await Promise.all([checkRights()]);
+    const projectRes = await fetchProject();
+    projectRecord = projectRes.data;
   });
 
   // Functions
@@ -80,29 +81,26 @@
   async function fetchProject() {
     return await projectsBackendDataSource.get(projectId, {
       fields: {
-        "datasets:projects": ["name", "description", "organization_id"],
+        [ProjectRecord.type]: ["name", "description", "organization_id"],
       },
       noCache: true,
     });
   }
 
-  async function loadInProgressDatasets() {
-    const datasetsRes = await datasetsBackendDataSource.list({
-      filters: {
-        project_id: projectId,
-        status__in: ["in_progress"],
-      },
-    });
-    inProgressDatasets = datasetsRes.data;
-
-    return datasetsRes.data;
-  }
-
   async function deleteProject(): Promise<void> {
-    await projectsBackendDataSource.delete(projectId);
-    goto(resolve("/projects"));
-    $refetches.projects.list = new Date();
-    openConfirmDeleteProjectModal = false;
+    try {
+      await projectsBackendDataSource.delete(projectId, { showErrorToast: false });
+
+      openConfirmDeleteProjectModal = false;
+      $refetches.projects.list = new Date();
+      goto(resolve("/projects"));
+      showToast.success({
+        title: "Project deleted",
+        description: `The project "${projectRecord?.name}" has been deleted.`,
+      });
+    } catch (error) {
+      showActionFailedToast(error);
+    }
   }
 </script>
 

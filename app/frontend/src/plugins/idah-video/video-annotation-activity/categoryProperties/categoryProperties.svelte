@@ -21,9 +21,10 @@
     annotationValue: AnnotationValue;
     onSelectCategory: (id?: string) => void;
     onEditValue: (value?: AnnotationValue) => void;
+    disabled: boolean;
   };
 
-  let { type, selectedCategory, annotationValue, onSelectCategory, onEditValue }: Props = $props();
+  let { type, selectedCategory, annotationValue, onSelectCategory, onEditValue, disabled }: Props = $props();
 
   // Contexts
   const context: IActivityContext = getContext("context");
@@ -74,7 +75,7 @@
     >
   </div>
   {#key $idb_updated_at}
-    <Select type="single" onValueChange={onSelectCategory}>
+    <Select type="single" onValueChange={onSelectCategory} {disabled}>
       <SelectTrigger class="data-[placeholder]:text-secondary-foreground bg-secondary w-full text-xs">
         {category?.label || "Select category"}
       </SelectTrigger>
@@ -107,6 +108,7 @@
                 property,
                 value: annotationValue.attributes?.[property.id],
                 onValueChange: (v: string | number | boolean | string[] | undefined) => onValueChange(property, v),
+                disabled,
               }}
             />
           </div>

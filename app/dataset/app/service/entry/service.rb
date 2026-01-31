@@ -82,6 +82,11 @@ module Entry
     end
 
     def delete(id)
+      entry = entries.find!(id)
+      if %w[in_progress completed].include?(entry.status)
+        raise Verse::Error::Unauthorized, "Unable to delete in progress or completed entry"
+      end
+
       entries.delete!(id)
     end
 
@@ -150,6 +155,12 @@ module Entry
         system_datasets_repo.update_progress!(entry.dataset.id)
 
         entries.find!(entry.id, included: [:dataset])
+      end
+    end
+
+    def unassign_account_entries(account_id, project_id)
+      system_entries_repo.chunked_index({ assigned_to_id: account_id, project_id: }).each do |entry|
+        system_entries_repo.update!(entry.id, { assigned_to_id: nil })
       end
     end
   end
