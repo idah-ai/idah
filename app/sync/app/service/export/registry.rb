@@ -1,0 +1,48 @@
+module Export
+  # Registry of export formats plugged in IDAH.
+  module Registry
+    # For a given list of modalities, register the class as Export Class
+    # @param modalities String|Regexp|Array(String|Regexp)
+    # modalities matching this pattern are managed by the export class
+    # @param klass Class
+    # The export class
+    def register(modalities, klass)
+      modalities = [modalities] unless modalities in Array
+
+      @registry ||= {}
+
+      modalities.each do |modality|
+        unless modality in String | Regexp
+          raise ArgumentError, "modality selector must be String or Regexp; #{modality.class} given"
+        end
+
+        # Register modality:
+        registry[modality] ||= []
+        registry[modality] << klass
+      end
+    end
+
+    # Return the list of available export
+    # format for given modalities
+    # @return Array(Class) the export classes
+    def list_export_format(modalities)
+      @registry ||= {}
+
+      formats = Set.new
+
+      modalities.uniq.each do |modality|
+        @registry.each do |key, value|
+          case key
+          when String
+            formats += value if key == modality
+          when Regexp
+            formats += value if modality =~ key
+          end
+        end
+      end
+
+      formats.uniq
+    end
+
+  end
+end
