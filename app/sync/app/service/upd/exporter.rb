@@ -1,6 +1,5 @@
-module Export
-  class UpdExporter
-
+module Upd
+  class Exporter
     def name = "Universal Portable Dataset"
 
     def description = "Export to UPD file. This format export metadata"
@@ -8,6 +7,8 @@ module Export
     def options = Verse::Schema.empty
 
     def export(context)
+      raise "TODO"
+
       context.datasets.each do |dataset|
         append_dataset(dataset)
 
