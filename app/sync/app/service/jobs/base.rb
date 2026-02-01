@@ -8,22 +8,11 @@ module Jobs
       attr_accessor :max_retries
     end
 
-    attr_reader :job_id,
-                :arguments,
-                :created_by,
-                :created_by_role,
-                :created_by_organization,
-                :created_by_custom_scopes,
-                :created_by_metadata
+    attr_reader :job_id, :arguments
 
     def initialize(job)
       @job_id = job.id
       @arguments = job.arguments
-      @created_by = job.created_by
-      @created_by_role = job.created_by_role
-      @created_by_organization = job.created_by_organization
-      @created_by_custom_scopes = job.created_by_custom_scopes
-      @created_by_metadata = job.created_by_metadata
     end
 
     def update_progress(value)

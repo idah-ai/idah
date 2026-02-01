@@ -1,4 +1,4 @@
-module Export
+module Exports
   # Registry of export formats plugged in IDAH.
   module Registry
     extend self

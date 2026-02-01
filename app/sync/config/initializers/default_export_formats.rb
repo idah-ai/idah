@@ -1,6 +1,6 @@
 # Register default UPD format for
 # every modalities
-Export::Registry.register(
+Exports::Registry.register(
   /.*/,
-  Upd::Exporter
+  Exports::Upd::Exporter
 )

@@ -1,4 +1,4 @@
-module Export
+module Exports
   class Context
     attr_reader :dataset_ids, :options
 

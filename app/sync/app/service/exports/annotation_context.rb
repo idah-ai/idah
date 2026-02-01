@@ -1,4 +1,4 @@
-module Export
+module Exports
   class AnnotationContext
     def initialize(annotation)
       @annotation = annotation
