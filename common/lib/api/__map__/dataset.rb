@@ -50,6 +50,19 @@ Api[:idah].register(
   deserialize output.body
 end
 
+Api[:idah].register(
+  :dataset, :projects, :index_all
+) do |params = {}|
+  all(params) do
+    output = get(
+      "dataset/datasets",
+      params:,
+      options: { auth: :bearer }  # Enable authentication
+    )
+    deserialize(output.body)
+  end
+end
+
 
 Api[:idah].register(
   :dataset, :datasets, :show
@@ -118,4 +131,18 @@ Api[:idah].register(
   )
 
   deserialize output.body
+end
+
+
+Api[:idah].register(
+  :dataset, :project_members, :index_all
+) do |params = {}|
+  all(params) do
+    output = get(
+      "dataset/project_members",
+      params:,
+      options: { auth: :bearer }  # Enable authentication
+    )
+    deserialize(output.body)
+  end
 end
