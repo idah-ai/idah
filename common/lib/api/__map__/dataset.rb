@@ -98,27 +98,13 @@ end
 Api[:idah].register(
   :dataset, :projects, :index_all
 ) do |params = {}|
-  params[:page] ||= {}
-  params[:page][:size] ||= 1_000
-  params[:page][:number] ||= 1
-
-  items_per_page = params[:page][:size]
-
-  break_next_page = false
-
-  Verse::Util::Iterator.chunk_iterator(params[:page][:number]) do |current_page|
-    params[:page][:number] = current_page
-
-    next nil if break_next_page
-
+  all(params) do
     output = get(
       "dataset/projects",
       params:,
       options: { auth: :bearer }  # Enable authentication
     )
-
-    break_next_page = result.count < items_per_page
-    result.count == 0 ? nil : deserialize(output.body)
+    deserialize(output.body)
   end
 end
 
