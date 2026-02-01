@@ -27,7 +27,7 @@ class Api
 
       next nil if break_next_page
 
-      output = yield(params)
+      output = block.call(params)
 
       break_next_page = output.count < items_per_page
       count == 0 ? nil : output
