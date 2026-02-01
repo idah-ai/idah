@@ -2,7 +2,7 @@
 
 module Export
   class Service < Verse::Service::Base
-    use exports: Export::Repository
+    use exports: Exports::Repository
     use_system jobs: Jobs::Service
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
