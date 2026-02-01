@@ -3,7 +3,7 @@
 class ExportsExpo < BaseExpo
   http_path "/exports"
 
-  use_service Exports::Service
+  use_service Export::Service
 
   desc <<-MD
     # Exports Expo

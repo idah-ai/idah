@@ -19,8 +19,8 @@ module Export
         end
 
         # Register modality:
-        registry[modality] ||= Set.new
-        registry[modality] << klass
+        @registry[modality] ||= Set.new
+        @registry[modality] << klass
       end
     end
 
