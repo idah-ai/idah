@@ -13,6 +13,27 @@ class Api
     @providers[provider] ||= Api.new
   end
 
+  def self.all(params = {}, &block)
+    params[:page] ||= {}
+    params[:page][:size] ||= 1_000
+    params[:page][:number] ||= 1
+
+    items_per_page = params[:page][:size]
+
+    break_next_page = false
+
+    Verse::Util::Iterator.chunk_iterator(params[:page][:number]) do |current_page|
+      params[:page][:number] = current_page
+
+      next nil if break_next_page
+
+      output = yield(params)
+
+      break_next_page = output.count < items_per_page
+      count == 0 ? nil : output
+    end
+  end
+
   def register(service, exposition, method_name, &block)
     service = register_service(service)
     service.register(exposition, method_name, &block)
