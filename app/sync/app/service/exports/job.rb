@@ -21,7 +21,9 @@ module Exports
       when :file
         raise "TODO: Upload file in S3"
       when :directory
-        raise "TODO: Zip and upload directory in S3"
+        zip_path = export_context.io.zip_directory
+        # TODO: Upload zip_path to S3
+        raise "TODO: Upload file in S3"
       end
     ensure
       export_context&.io&.cleanup
