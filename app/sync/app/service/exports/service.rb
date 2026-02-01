@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Export
+module Exports
   class Service < Verse::Service::Base
     use exports: Exports::Repository
     use_system jobs: Jobs::Service
@@ -34,7 +34,7 @@ module Export
       exports.transaction do
         job_id = jobs.create(
           {
-            job_class: "Export::Job",
+            job_class: "Exports::Job",
             arguments: {
               exporter:, # Exporter class
               dataset_ids:,

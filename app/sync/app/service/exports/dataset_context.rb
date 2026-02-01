@@ -1,4 +1,4 @@
-module Export
+module Exports
   class DatasetContext
     def initialize(id)
       @id = id

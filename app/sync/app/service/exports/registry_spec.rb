@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe Export::Registry do
+RSpec.describe Exports::Registry do
   subject { described_class }
 
   before do

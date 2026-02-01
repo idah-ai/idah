@@ -1,4 +1,4 @@
-module Export
+module Exports
   class EntryContext
     attr_reader :id
 

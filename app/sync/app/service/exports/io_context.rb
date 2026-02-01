@@ -1,7 +1,7 @@
 require "tempfile"
 require "fileutils"
 
-module Export
+module Exports
   class IoContext
     attr_reader :mode
 
