@@ -1,5 +1,6 @@
 require "tempfile"
 require "fileutils"
+require "zip"
 
 module Exports
   class IoContext
@@ -28,6 +29,19 @@ module Exports
       @directory ||= begin
         Dir.mktmpdir(PREFIX)
       end
+    end
+
+    def zip_directory
+      raise "Not in directory mode" unless @mode == :dir
+      raise "Directory not created" unless @directory
+
+      zip_path = "#{@directory}.zip"
+      Zip::File.open(zip_path, create: true) do |zipfile|
+        Dir.glob("#{@directory}/**/*").each do |file|
+          zipfile.add(file.sub("#{@directory}/", ""), file)
+        end
+      end
+      zip_path
     end
 
     def cleanup
