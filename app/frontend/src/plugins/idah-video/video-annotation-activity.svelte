@@ -51,7 +51,10 @@
     type Point,
     type VideoFrameSelection,
     type VideoShape,
+    getInterpolatedFrame,
   } from "./video-annotation-activity/VideoAnnotationContext";
+    import { derived } from "svelte/store";
+    // import { AnnotationShape } from "../../lib/context/AnnotationContext";
 
   // Props
   interface Props {
@@ -679,8 +682,14 @@
 
     // ensure Part 1 has an ending keyframe at the splitAt - 1 frame point if it doesn't already
     if (!part1Frames.find((f: VideoFrameSelection) => f.frame === part1End)) {
-      const p = getInterpolatedShape(annotation.shape.frames, part1End);
-      if (p) part1Frames.push({ frame: part1End, points: p });
+      const interpolated = getInterpolatedFrame(annotation.shape.frames, part1End);
+      if (interpolated) {
+        part1Frames.push({
+          frame: part1End,
+          points: interpolated.points!,
+          angle: interpolated.angle || 0,
+        });
+      }
       part1Frames.sort((a, b) => a.frame - b.frame);
     }
 
@@ -691,8 +700,14 @@
 
     // ensure Part 2 has a starting keyframe at part2Start frame point if it doesn't already
     if (!part2Frames.find((f: VideoFrameSelection) => f.frame === part2Start)) {
-      const p = getInterpolatedShape(annotation.shape.frames, part2Start);
-      if (p) part2Frames.push({ frame: part2Start, points: p });
+      const interpolated = getInterpolatedFrame(annotation.shape.frames, part2Start);
+      if (interpolated) {
+        part2Frames.push({
+          frame: part2Start,
+          points: interpolated.points!,
+          angle: interpolated.angle || 0,
+        });
+      }
       part2Frames.sort((a, b) => a.frame - b.frame);
     }
 
@@ -802,29 +817,6 @@
     };
   });
 
-  function getInterpolatedShape(frames: VideoFrameSelection[], frame: number): Point[] | null {
-    // sort just in case
-    const sorted = [...frames].sort((a, b) => a.frame - b.frame);
-
-    // find surrounding keyframes
-    const prev = [...sorted].reverse().find((f) => f.frame <= frame);
-    const next = sorted.find((f) => f.frame >= frame);
-
-    if (!prev && !next) return null; // no keyframes exist at all
-    if (!prev) return next!.points; // only next keyframes exist, use them
-    if (!next) return prev!.points; // only previous keyframes exist, use them
-    if (prev.frame === next.frame) return prev.points; // previous and next keyframes exist and are the same, use them
-
-    // linear interpolation for each point
-    const progress = (frame - prev.frame) / (next.frame - prev.frame);
-    return prev.points.map((prevPoint, i) => {
-      const nextPoint = next.points[i];
-      return [
-        prevPoint[X] + (nextPoint[X] - prevPoint[X]) * progress,
-        prevPoint[Y] + (nextPoint[Y] - prevPoint[Y]) * progress,
-      ];
-    });
-  }
 
   context.commands.on("tools.visual", () => {
     return {

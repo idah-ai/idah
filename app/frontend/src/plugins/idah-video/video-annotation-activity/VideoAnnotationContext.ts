@@ -66,3 +66,37 @@ export interface LabellingConfiguration {
   properties: PropertyConfiguration[];
   taggings: TaggingConfiguration[];
 }
+
+export function getInterpolatedFrame(
+  frames: VideoFrameSelection[],
+  current_frame: number,
+  interpolate: boolean = true,
+): { points: Point[] | undefined; angle: number } | undefined {
+  if (!frames) return;
+
+  const foundShape = frames.find((v: VideoFrameSelection) => v.frame == current_frame);
+  if (foundShape || !interpolate) return { points: foundShape?.points, angle: foundShape?.angle || 0 };
+
+  const frame_start: VideoFrameSelection | null = frames.reduce(
+    (acc: VideoFrameSelection | null, v: VideoFrameSelection) =>
+      (!acc || acc.frame < v.frame) && v.frame < current_frame ? v : acc,
+    null,
+  );
+
+  const frame_end: VideoFrameSelection | null = frames.reduce(
+    (acc: VideoFrameSelection | null, v: VideoFrameSelection) =>
+      (!acc || acc.frame > v.frame) && v.frame > current_frame ? v : acc,
+    null,
+  );
+
+  if (frame_start && frame_end) {
+    const ratio = (current_frame - frame_start.frame) / (frame_end.frame - frame_start.frame);
+    return {
+      points: frame_end.points.map((point, i) => [
+        frame_start.points[i][X] + (point[X] - frame_start.points[i][X]) * ratio,
+        frame_start.points[i][Y] + (point[Y] - frame_start.points[i][Y]) * ratio,
+      ]),
+      angle: ((frame_end.angle || 0) - (frame_start.angle || 0)) * ratio + (frame_start.angle || 0),
+    };
+  }
+}
