@@ -375,15 +375,13 @@
           end: v.shape.end >= selection.frame ? v.shape.end : selection.frame,
           frames: [...v.shape.frames.filter((f) => f.frame != selection.frame), selection],
         };
-        selectedAnnotation = undefined;
-        selectedAnnotation = v;
-
         v.metadata.updatedAt = updatedAt;
         v.synced = false;
 
+        selectedAnnotation = v;
+
         await annotationsIDB?.addAnnotations([v]);
         $idb_updated_at = new Date();
-        selectedAnnotation = v;
 
         let p = context.annotations.update({
           id: v.metadata.id,
@@ -729,7 +727,9 @@
     else removeAnnotation(annotation.metadata.id);
   }
 
-  let shapeSelectionArgs: [type: string, frame: number, _points: Point[], selectedId?: string] | undefined = $state();
+  let shapeSelectionArgs:
+    | [type: string, frame: number, _points: Point[], angle: number, selectedId?: string]
+    | undefined = $state();
 
   function onEditValue(value: AnnotationValue, valueMode: string) {
     if (!["annotate", "review"].includes(context.workflowStep)) return;
@@ -755,7 +755,13 @@
     }
   }
 
-  function onShapeSelection(type: string, frame: number, _points: Point[] = [], selectedId?: string) {
+  function onShapeSelection(
+    type: string,
+    frame: number,
+    _points: Point[] = [],
+    angle: number = 0,
+    selectedId?: string,
+  ) {
     if (!["review", "annotate"].includes(context.workflowStep) || mode === "note") return;
 
     let points = $state.snapshot(_points) as Point[];
@@ -768,7 +774,7 @@
         case DEFAULT_MODE:
           break;
         case IDAH_VIDEO_BOUNDING_BOX:
-          shape = { ...shape, start: frame, end: frame, frames: [{ frame, points }] };
+          shape = { ...shape, start: frame, end: frame, frames: [{ frame, angle, points }] };
           break;
         default:
           throw `unhandled type ${type}`;
@@ -781,11 +787,11 @@
         shapeSelectionArgs = undefined;
         addAnnotation(shape, annotation_value_from);
       } else {
-        shapeSelectionArgs = [type, frame, _points, selectedId];
+        shapeSelectionArgs = [type, frame, _points, angle, selectedId];
         showPopOver = true;
       }
     } else {
-      addSelection(selectedId, { frame, points });
+      addSelection(selectedId, { frame, angle, points });
     }
   }
 
