@@ -30,7 +30,6 @@
   import {
     registerOnSelectBoxModeShortcuts,
     registerVisualModeShortcuts,
-    unregisterSelectionShortcuts,
   } from "./video-annotation-activity/shortcut";
 
   import AnnotationFooter from "./layout/footer/AnnotationFooter.svelte";
@@ -100,7 +99,7 @@
     if (isTyping) return;
 
     const current_mode = ShortcutManager.getCurrentMode();
-    const keymap = ShortcutManager.getEffectiveKeyMap(current_mode);
+    const keymap = ShortcutManager.getEffectiveKeyMap();
 
     if (!keymap || Object.keys(keymap).length === 0) return console.error("no keymap found for", { current_mode });
 
@@ -807,9 +806,6 @@
   function selectAnnotation(annotation?: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) {
     selectedAnnotation = annotation;
 
-    // Clear existing selection shortcuts first
-    unregisterSelectionShortcuts();
-
     /**
      * Set mode to the annotation shape type when selecting an annotation
      */
@@ -908,7 +904,7 @@
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
         <CommandGroup heading={`MODE: ${ShortcutManager.getCurrentMode()}`}>
-          {#each Object.entries(ShortcutManager.getEffectiveKeyMap(ShortcutManager.getCurrentMode()) || {}) as [key, value] (key)}
+          {#each Object.entries(ShortcutManager.getEffectiveKeyMap() || {}) as [key, value] (key)}
             <CommandItem onclick={() => value.action()}>
               <span>{value.name} ({value.description})</span>
               <CommandShortcut>{key}</CommandShortcut>

@@ -198,19 +198,10 @@ const createOnSelectBoundingBoxModeKeyMap = (context: SelectionKeyMapContext) =>
  */
 export function registerOnSelectBoxModeShortcuts(context: IActivityContext, selectedId: string) {
   // Clear any existing extensions first
-  ShortcutManager.clearAllKeyMapExtensions();
+  ShortcutManager.clearKeyMapExtension(IDAH_VIDEO_BOUNDING_BOX);
 
   // Create and register new extension for the current mode
   const selectionKeyMap = createOnSelectBoundingBoxModeKeyMap({ context, selectedId });
   ShortcutManager.setKeyMapExtension(IDAH_VIDEO_BOUNDING_BOX, selectionKeyMap);
   ShortcutManager.enterMode(IDAH_VIDEO_BOUNDING_BOX);
-}
-
-/**
- * Unregister all selection-specific shortcuts.
- * Call this when annotation is deselected.
- */
-export function unregisterSelectionShortcuts() {
-  ShortcutManager.clearAllKeyMapExtensions();
-  console.log("Selection shortcuts unregistered");
 }

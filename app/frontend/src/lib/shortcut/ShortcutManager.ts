@@ -34,7 +34,10 @@ export const ShortcutManager = {
         this.currentMode[this.currentMode.length - 1] = mode;
       }
     } else {
-      this.currentMode.push(mode);
+      // Avoid duplicate pushes if same mode is already top
+      if (this.getCurrentMode() !== mode) {
+        this.currentMode.push(mode);
+      }
     }
   },
 
@@ -69,13 +72,22 @@ export const ShortcutManager = {
   },
 
   /**
-   * Get the effective keymap for a mode (base + extension merged).
-   * Extension shortcuts take precedence over base shortcuts for duplicate keys.
+   * Get the effective keymap by merging shortcuts from the modes
+   * If a mode is provided, it returns the keymap for that specific mode
+   * Otherwise, it merges all active modes
    */
-  getEffectiveKeyMap(mode: string): KeyMap {
-    const baseKeyMap = this.keyMap[mode] || {};
-    const extensionKeyMap = this.keyMapExtension[mode] || {};
+  getEffectiveKeyMap(mode?: string): KeyMap {
+    const modes = mode ? [mode] : this.currentMode;
+    let effectiveMap = {};
 
-    return { ...baseKeyMap, ...extensionKeyMap };
+    for (const m of modes) {
+      // Merge base shortcuts first
+      Object.assign(effectiveMap, this.keyMap[m]);
+      
+      // Then merge extensions (selection-specific)
+      Object.assign(effectiveMap, this.keyMapExtension[m]);
+    }
+
+    return effectiveMap;
   },
 };
