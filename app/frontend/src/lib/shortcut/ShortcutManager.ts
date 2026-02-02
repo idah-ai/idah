@@ -77,5 +77,5 @@ export const ShortcutManager = {
     const extensionKeyMap = this.keyMapExtension[mode] || {};
 
     return { ...baseKeyMap, ...extensionKeyMap };
-  }
+  },
 };
