@@ -125,7 +125,7 @@ module Jobs
                   error: error_message
                 )
               else
-                jobs.error(job.id, error: error_message)
+                jobs.error(job.id, error_message)
                 Verse.logger&.error{
                   "Job #{job.id} failed with error: #{error_message}. " \
                   "Max retries (#{klass.max_retries}) reached, marking as failed."
@@ -141,7 +141,7 @@ module Jobs
           Verse.logger&.debug "Job #{job.id} processed successfully"
         end
       rescue StandardError => e
-        jobs.error(job.id, error: [e.class.name, e.message].join(": "))
+        jobs.error(job.id, [e.class.name, e.message].join(": "))
         raise e
       end
     end
