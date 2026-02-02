@@ -98,10 +98,9 @@
 
     if (isTyping) return;
 
-    const current_mode = ShortcutManager.getCurrentMode();
     const keymap = ShortcutManager.getEffectiveKeyMap();
 
-    if (!keymap || Object.keys(keymap).length === 0) return console.error("no keymap found for", { current_mode });
+    if (!keymap || Object.keys(keymap).length === 0) return console.error("no keymap found");
 
     const modifier_keys = [
       e.altKey && "Alt",
