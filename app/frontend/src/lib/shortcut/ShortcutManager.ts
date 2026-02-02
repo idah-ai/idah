@@ -78,16 +78,16 @@ export const ShortcutManager = {
    */
   getEffectiveKeyMap(mode?: string): KeyMap {
     const modes = mode ? [mode] : this.currentMode;
-    let effectiveMap = {};
+    let effectiveKeyMap = {};
 
     for (const m of modes) {
       // Merge base shortcuts first
-      Object.assign(effectiveMap, this.keyMap[m]);
+      Object.assign(effectiveKeyMap, this.keyMap[m]);
       
       // Then merge extensions (selection-specific)
-      Object.assign(effectiveMap, this.keyMapExtension[m]);
+      Object.assign(effectiveKeyMap, this.keyMapExtension[m]);
     }
 
-    return effectiveMap;
+    return effectiveKeyMap;
   },
 };
