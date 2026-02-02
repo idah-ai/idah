@@ -78,7 +78,7 @@ export const ShortcutManager = {
    */
   getEffectiveKeyMap(mode?: string): KeyMap {
     const modes = mode ? [mode] : this.currentMode;
-    let effectiveKeyMap = {};
+    const effectiveKeyMap = {};
 
     for (const m of modes) {
       // Merge base shortcuts first
