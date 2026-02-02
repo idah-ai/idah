@@ -138,6 +138,9 @@
     if (url && player && url != player?.source()) {
       player?.source(url); //...
     }
+    if (isPlaying && mode !== DEFAULT_MODE) {
+      context.commands.run("tools.visual");
+    }
   });
 
   onMount(async () => {
