@@ -5,15 +5,7 @@
   import { boundingBoxes } from "./idb_store.svelte";
 
   import { DEFAULT_MODE, ENTRY_ROOT, IDAH_NOTE, IDAH_VIDEO_BOUNDING_BOX, type EntryRoot } from "../type";
-  import {
-    HEIGHT,
-    ORIGIN,
-    WIDTH,
-    X,
-    Y,
-    type Point,
-    getInterpolatedFrame,
-  } from "./VideoAnnotationContext";
+  import { HEIGHT, ORIGIN, WIDTH, X, Y, type Point, getInterpolatedFrame } from "./VideoAnnotationContext";
   import Zoomable from "./zoomable.svelte";
 
   import type {

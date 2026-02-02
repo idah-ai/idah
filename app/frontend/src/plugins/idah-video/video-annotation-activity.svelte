@@ -51,7 +51,7 @@
     type VideoShape,
     getInterpolatedFrame,
   } from "./video-annotation-activity/VideoAnnotationContext";
-    // import { AnnotationShape } from "../../lib/context/AnnotationContext";
+  // import { AnnotationShape } from "../../lib/context/AnnotationContext";
 
   // Props
   interface Props {
@@ -813,7 +813,6 @@
       combine: (c) => c,
     };
   });
-
 
   context.commands.on("tools.visual", () => {
     return {
