@@ -32,7 +32,12 @@
 
   import { IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP } from "../type";
   import Video from "./video.svelte";
-  import type { AnnotationMetadata, AnnotationObj, AnnotationShape, AnnotationValue } from "@/context/AnnotationContext";
+  import type {
+    AnnotationMetadata,
+    AnnotationObj,
+    AnnotationShape,
+    AnnotationValue,
+  } from "@/context/AnnotationContext";
   import type { IActivityContext } from "@/plugin/interface/Activity";
 
   // Props
