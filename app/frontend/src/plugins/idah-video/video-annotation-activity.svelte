@@ -46,14 +46,11 @@
   import type { AnnotationShape, AnnotationValue } from "@/context/AnnotationContext";
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import {
-    X,
-    Y,
     type Point,
     type VideoFrameSelection,
     type VideoShape,
     getInterpolatedFrame,
   } from "./video-annotation-activity/VideoAnnotationContext";
-    import { derived } from "svelte/store";
     // import { AnnotationShape } from "../../lib/context/AnnotationContext";
 
   // Props
