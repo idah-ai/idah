@@ -5,7 +5,16 @@
   import { boundingBoxes } from "./idb_store.svelte";
 
   import { DEFAULT_MODE, ENTRY_ROOT, IDAH_NOTE, IDAH_VIDEO_BOUNDING_BOX, type EntryRoot } from "../type";
-  import { HEIGHT, ORIGIN, WIDTH, X, Y, type Point, type VideoFrameSelection } from "./VideoAnnotationContext";
+  import {
+    HEIGHT,
+    ORIGIN,
+    WIDTH,
+    X,
+    Y,
+    type Point,
+    type VideoFrameSelection,
+    getInterpolatedFrame,
+  } from "./VideoAnnotationContext";
   import Zoomable from "./zoomable.svelte";
 
   import type {
@@ -149,38 +158,11 @@
     current_frame: number,
     interpolate: boolean = true,
   ): { points: Point[] | undefined; angle: number } | undefined {
-    // ): Point[] | undefined
     if (!shape.frames) return; // no render (eg. entry:root)
 
     if (shape.start > current_frame || shape.end < current_frame) return; // out of scope
 
-    const foundShape = shape.frames.find((v: VideoFrameSelection) => v.frame == current_frame);
-    if (foundShape || !interpolate) return { points: foundShape.points, angle: foundShape.angle || 0 }; // exists!
-
-    const frame_start: VideoFrameSelection = shape.frames.reduce(
-      (acc: VideoFrameSelection | null, v: VideoFrameSelection) =>
-        (!acc || acc.frame < v.frame) && v.frame < frame ? v : acc,
-      null,
-    );
-
-    const frame_end: VideoFrameSelection = shape.frames.reduce(
-      (acc: VideoFrameSelection | null, v: VideoFrameSelection) =>
-        (!acc || acc.frame > v.frame) && v.frame > frame ? v : acc,
-      null,
-    );
-
-    if (frame_start && frame_end) {
-      // interpolate from within bounds
-      const ratio = (current_frame - frame_start.frame) / (frame_end.frame - frame_start.frame);
-      return {
-        points: frame_end.points.map((point, i) => [
-          // assume
-          frame_start.points[i][X] + (point[X] - frame_start.points[i][X]) * ratio,
-          frame_start.points[i][Y] + (point[Y] - frame_start.points[i][Y]) * ratio,
-        ]),
-        angle: ((frame_end.angle || 0) - (frame_start.angle || 0)) * ratio + frame_start.angle,
-      };
-    }
+    return getInterpolatedFrame(shape.frames, current_frame, interpolate);
   }
 
   let toolSelection: ToolSelection | undefined = $state();
@@ -383,7 +365,7 @@
       {/key}
     {/await}
 
-    {#if (shape?.type == IDAH_VIDEO_BOUNDING_BOX || mode == IDAH_VIDEO_BOUNDING_BOX) && selected ? !selected.hidden : true}
+    {#if (shape?.type == IDAH_VIDEO_BOUNDING_BOX || mode == IDAH_VIDEO_BOUNDING_BOX) && (selected ? !selected.hidden : true) && shape?.start <= frame && shape?.end >= frame}
       {#key [shape, frame]}
         <BoundingBox
           bind:this={toolSelection}
