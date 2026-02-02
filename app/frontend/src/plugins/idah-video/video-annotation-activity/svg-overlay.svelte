@@ -12,7 +12,6 @@
     X,
     Y,
     type Point,
-    type VideoFrameSelection,
     getInterpolatedFrame,
   } from "./VideoAnnotationContext";
   import Zoomable from "./zoomable.svelte";
