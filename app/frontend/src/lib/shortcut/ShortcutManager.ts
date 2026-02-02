@@ -73,7 +73,7 @@ export const ShortcutManager = {
    * Extension shortcuts take precedence over base shortcuts for duplicate keys.
    */
   getEffectiveKeyMap(mode: string): KeyMap {
-    const baseKeyMap = this.keyMap[mode] || {};
+    const baseKeyMap = this.keyMap[this.defaultMode] || {};
     const extensionKeyMap = this.keyMapExtension[mode] || {};
 
     return { ...baseKeyMap, ...extensionKeyMap };
