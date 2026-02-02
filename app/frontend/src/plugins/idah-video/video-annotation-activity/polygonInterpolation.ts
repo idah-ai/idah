@@ -38,8 +38,7 @@ function rotateVerticesByStartAngle(points: Point[], center: Point): [Point[], [
   const polar = verticesToPolar(points, center);
   const target = Math.PI / 2;
 
-  const angleDistance = (a: number, b: number) =>
-    Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
+  const angleDistance = (a: number, b: number) => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
 
   // Find the point closest to PI/2 in the original order
   const startIdx = polar.reduce((bestIdx, curr, idx) => {
@@ -245,24 +244,5 @@ export function interpolatePolygonAtFrame(
 
   const interpolazed = lerpVertices(P1, generatePolyMax, t);
 
-  const cInterp = polygonBarycenter(interpolazed.map((v) => v.point));
-  const P1_old_index = interpolazed.map((v, i) => [i, v.point] as [number, Point]);
-  const [P1Reordered, _] = rotateVerticesByStartAngle(
-    interpolazed.map((v) => v.point),
-    cInterp,
-  );
-
-  const P1_final: InterpolatedVertex[] = P1_old_index.sort((a, b) => {
-    const idxA = P1Reordered.findIndex((p) => p[0] === a[1][0] && p[1] === a[1][1]);
-    const idxB = P1Reordered.findIndex((p) => p[0] === b[1][0] && p[1] === b[1][1]);
-    return idxA - idxB;
-  }).map(([_, point]) => {
-    const originalVertex = interpolazed.find((v) => v.point[0] === point[0] && v.point[1] === point[1])!;
-    return {
-      point: originalVertex.point,
-      matched: originalVertex.matched,
-    };
-  });
-
-  return P1_final;
+  return interpolazed;
 }

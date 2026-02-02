@@ -418,8 +418,8 @@
         style:transform={`translate(${offset[X]}px, ${offset[Y]}px)`}
         style:cursor={index === 0 && polygon_points.length >= 3 ? "pointer" : "default"}
         vector-effect="non-scaling-stroke"
-        style:stroke={color}
-        style:stroke-width={1}
+        style:stroke={index === 0 && isHoveringOverFirstPoint ? "#22c55e" : color}
+        style:stroke-width={index === 0 && isHoveringOverFirstPoint ? 3 : 1}
         style:fill={color}
         fill-opacity={1}
       />
