@@ -40,7 +40,7 @@
   async function fetchProject() {
     const projectRes = await projectsBackendDataSource.get(projectId, {
       fields: {
-        "datasets/projects": ["name"],
+        [ProjectRecord.type]: ["name"],
       },
     });
     project = projectRes.data;

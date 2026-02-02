@@ -12,7 +12,7 @@
   import { accountColumns } from "@/components/app/iam/accounts/data-tables/account-columns";
   import { accountBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
-  import { accountsBackendDataSource } from "@/data/model/iam/accounts/record";
+  import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
   import { authStatus } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
 
@@ -67,10 +67,25 @@
       {columns}
       dataSource={accountsBackendDataSource}
       listOptions={{
+        fields: {
+          [AccountRecord.type]: [
+            "id",
+            "name",
+            "email",
+            "enabled",
+            "role_name",
+            "role_scope",
+            "picture_url",
+            "joined_at",
+            "invitation_expired_at",
+            "created_at",
+          ],
+        },
         filters: {
           role_name__nin: ["system"],
         },
       }}
+      disabledActiveStateFilterSortKeys={["role_name__nin"]}
     >
       {#snippet addNewRecordButton()}
         {@render AddNewAccountButton()}
