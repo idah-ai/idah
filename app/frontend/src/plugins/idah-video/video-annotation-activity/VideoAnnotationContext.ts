@@ -14,6 +14,7 @@ export type VideoMode = DefaultMode | VideoShapeType;
 export type VideoAnnotation = AnnotationObj<VideoShape, AnnotationValue, AnnotationMetadata>;
 export type VideoFrameSelection = {
   frame: number;
+  angle: number;
   points: Point[];
 };
 
