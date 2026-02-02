@@ -27,10 +27,7 @@
   import { requiredFullfilled } from "./video-annotation-activity/categoryProperties";
   import { boundingBoxes, entryRoot, idb_updated_at } from "./video-annotation-activity/idb_store.svelte";
   import { annotationsIndexedDB, AnnotationsIndexedDB } from "./video-annotation-activity/indexedDB";
-  import {
-    registerOnSelectBoxModeShortcuts,
-    registerVisualModeShortcuts,
-  } from "./video-annotation-activity/shortcut";
+  import { registerOnSelectBoxModeShortcuts, registerVisualModeShortcuts } from "./video-annotation-activity/shortcut";
 
   import AnnotationFooter from "./layout/footer/AnnotationFooter.svelte";
   import AnnotationFooterToolbar from "./layout/footer/AnnotationFooterToolbar.svelte";
