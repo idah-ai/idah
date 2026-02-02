@@ -213,6 +213,8 @@ export function registerOnSelectBoxModeShortcuts(
   selectedId: string,
   getCurrentFrame: () => number,
 ) {
+  if (ShortcutManager.getCurrentMode() == IDAH_VIDEO_BOUNDING_BOX) return;
+
   // Clear any existing extensions first
   ShortcutManager.clearAllKeyMapExtensions();
 
@@ -220,13 +222,4 @@ export function registerOnSelectBoxModeShortcuts(
   const selectionKeyMap = createOnSelectBoundingBoxModeKeyMap({ context, selectedId, getCurrentFrame });
   ShortcutManager.setKeyMapExtension(IDAH_VIDEO_BOUNDING_BOX, selectionKeyMap);
   ShortcutManager.enterMode(IDAH_VIDEO_BOUNDING_BOX);
-}
-
-/**
- * Unregister all selection-specific shortcuts.
- * Call this when annotation is deselected.
- */
-export function unregisterSelectionShortcuts() {
-  ShortcutManager.clearAllKeyMapExtensions();
-  console.log("Selection shortcuts unregistered");
 }
