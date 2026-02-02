@@ -356,7 +356,7 @@
       {/key}
     {/await}
 
-    {#if (shape?.type == IDAH_VIDEO_BOUNDING_BOX || mode == IDAH_VIDEO_BOUNDING_BOX) && (selected ? !selected.hidden : true) && shape?.start <= frame && shape?.end >= frame}
+    {#if (shape?.type == IDAH_VIDEO_BOUNDING_BOX || mode == IDAH_VIDEO_BOUNDING_BOX) && (selected ? !selected.hidden : true) && (mode == IDAH_VIDEO_BOUNDING_BOX || (shape?.start <= frame && shape?.end >= frame))}
       {#key [shape, frame]}
         <BoundingBox
           bind:this={toolSelection}
