@@ -12,8 +12,10 @@
     mode,
     onChange,
     onmousedown,
-    pointer,
+    // pointer,
     hidden = false,
+    onEditingChange,
+    onPointerChange,
   }: {
     ratio: Point;
     offset: Point;
@@ -24,31 +26,11 @@
     mode: string;
     onmousedown?: (e: MouseEvent) => void;
     onChange?: (points: Point[]) => void;
-    pointer: string;
+    onEditingChange?: (isEditing: boolean) => void;
+    onPointerChange?: (pointer: string | undefined) => void;
+    // pointer: string;
     hidden?: boolean;
   } = $props();
-
-  export function isEditing(): boolean {
-    return !isPolygonComplete || panStart != undefined || editingVertexIndex !== undefined;
-  }
-
-  export function setPolygonComplete(complete: boolean = true) {
-    isPolygonComplete = complete;
-  }
-
-  export interface ToolSelection {
-    startSelection: (start: Point) => void;
-    endSelection: (end: Point) => void;
-    isEditing: () => boolean;
-  }
-
-  let panStart: Point | undefined = $state(); // polygon pan
-  let editingVertexIndex: number | undefined = $state(); // which vertex is being dragged
-  let isPolygonComplete: boolean = $state(false);
-  let previousPointsLength: number = $state(0);
-  let isHoveringOverEdge: boolean = $state(false); // track if cursor is near polygon edge
-  let isAltKeyPressed: boolean = $state(false); // track if ALT key is pressed
-  let isHoveringOverFirstPoint: boolean = $state(false); // track if cursor is near first point during creation
 
   $effect(() => {
     const currentLength = points.length;
@@ -62,6 +44,98 @@
 
     previousPointsLength = currentLength;
   });
+
+    // Update hover state when cursor moves
+  $effect(() => {
+    if (editable && cursor && isPolygonComplete && !isEditing) {
+      isHoveringOverEdge = checkIfNearEdge(cursor);
+    } else {
+      isHoveringOverEdge = false;
+    }
+  });
+
+  // Check if cursor is hovering over first point during polygon creation
+  $effect(() => {
+    if (!isPolygonComplete && cursor && rawPoints.length >= 3) {
+      isHoveringOverFirstPoint = isNearPoint(cursor, rawPoints[0], 10);
+    } else {
+      isHoveringOverFirstPoint = false;
+    }
+  });
+
+  // Track ALT key presses
+  $effect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.altKey) {
+        isAltKeyPressed = true;
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (!e.altKey) {
+        isAltKeyPressed = false;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  });
+
+
+  let  isEditing = $derived.by(() => {
+    return !isPolygonComplete || panStart != undefined || editingVertexIndex !== undefined;
+  });
+
+  let  edition_cursor = $derived.by(() => {
+    if (isHoveringOverFirstPoint && !isPolygonComplete) {
+      // Show pointer cursor when hovering over first point during creation (to close polygon)
+      return "cursor-pointer";
+    }
+
+    if (isEditing) {
+      if (editingVertexIndex !== undefined) {
+        return "cursor-move";
+      }
+      return "cursor-crosshair";
+    } else if (isHoveringOverEdge && editable && isPolygonComplete) {
+      return "cursor-pen-plus";
+    } else if (mode === IDAH_NOTE) {
+      return "cursor-note";
+    }
+  });
+
+  $effect(() => {
+    onEditingChange?.(isEditing);
+  });
+  $effect(() => {
+    onPointerChange?.(edition_cursor);
+  });
+
+
+  export function setPolygonComplete(complete: boolean = true) {
+    isPolygonComplete = complete;
+  }
+
+  export interface ToolSelection {
+    startSelection: (start: Point) => void;
+    endSelection: (end: Point) => void;
+    // isEditing: () => boolean;
+  }
+
+  let panStart: Point | undefined = $state(); // polygon pan
+  let editingVertexIndex: number | undefined = $state(); // which vertex is being dragged
+  let isPolygonComplete: boolean = $state(false);
+  let previousPointsLength: number = $state(0);
+  let isHoveringOverEdge: boolean = $state(false); // track if cursor is near polygon edge
+  let isAltKeyPressed: boolean = $state(false); // track if ALT key is pressed
+  let isHoveringOverFirstPoint: boolean = $state(false); // track if cursor is near first point during creation
+
+
 
   // Convert InterpolatedVertex[] to Point[] for internal operations
   let rawPoints: Point[] = $derived.by(() => {
@@ -221,47 +295,6 @@
     return newPoints;
   }
 
-  // Update hover state when cursor moves
-  $effect(() => {
-    if (editable && cursor && isPolygonComplete && !isEditing()) {
-      isHoveringOverEdge = checkIfNearEdge(cursor);
-    } else {
-      isHoveringOverEdge = false;
-    }
-  });
-
-  // Check if cursor is hovering over first point during polygon creation
-  $effect(() => {
-    if (!isPolygonComplete && cursor && rawPoints.length >= 3) {
-      isHoveringOverFirstPoint = isNearPoint(cursor, rawPoints[0], 10);
-    } else {
-      isHoveringOverFirstPoint = false;
-    }
-  });
-
-  // Track ALT key presses
-  $effect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.altKey) {
-        isAltKeyPressed = true;
-      }
-    };
-
-    const handleKeyUp = (e: KeyboardEvent) => {
-      if (!e.altKey) {
-        isAltKeyPressed = false;
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
-    };
-  });
-
   export function startSelection(start: Point) {
     if (isPolygonComplete) {
       // Check if clicking on a vertex to edit
@@ -273,9 +306,11 @@
   }
 
   export function endSelection(end: Point) {
+
     if (!isPolygonComplete) {
       // Adding new vertex
       if (rawPoints.length === 0 || !isNearPoint(rawPoints[rawPoints.length - 1], end, 10)) {
+
         rawPoints = [...rawPoints, end];
         if (rawPoints.length >= 3 && isNearPoint(rawPoints[0], end, 10)) {
           rawPoints = rawPoints.slice(0, -1); // Remove last point to avoid duplication
@@ -305,25 +340,6 @@
     }
   }
 
-  function getCursor() {
-    if (isHoveringOverFirstPoint && !isPolygonComplete) {
-      // Show pointer cursor when hovering over first point during creation (to close polygon)
-      return "cursor-pointer";
-    }
-
-    if (isEditing()) {
-      if (editingVertexIndex !== undefined) {
-        return "cursor-move";
-      }
-      return "cursor-crosshair";
-    } else if (isHoveringOverEdge && editable && isPolygonComplete) {
-      return "cursor-pen-plus";
-    } else if (mode === IDAH_NOTE) {
-      return "cursor-note";
-    } else {
-      return pointer;
-    }
-  }
 </script>
 
 {#snippet PolygonVertices(vertexPoints: Point[] | InterpolatedVertex[])}
@@ -367,18 +383,17 @@
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <path
       d={path}
-      style:cursor={pointer}
       style:transform-origin="top left"
       style:transform={`translate(${offset[X]}px, ${offset[Y]}px) scale(${ratio[X]}, ${ratio[Y]})`}
       vector-effect="non-scaling-stroke"
-      class={getCursor()}
+      class={isEditing ? "cursor-none" : edition_cursor}
       fill-opacity="0.4"
       style:fill={color}
       style:stroke={color}
       style:stroke-opacity="1"
       style:stroke-width="2"
       onmousedown={(e) => {
-        if (editable && !panStart && !isEditing() && isPolygonComplete) {
+        if (editable && !panStart && !isEditing && isPolygonComplete) {
           e.stopPropagation();
           panStart = cursor;
         }
@@ -399,7 +414,7 @@
       style:transform-origin="top left"
       style:transform={`translate(${offset[X]}px, ${offset[Y]}px) scale(${ratio[X]}, ${ratio[Y]})`}
       vector-effect="non-scaling-stroke"
-      class={getCursor()}
+      class={isEditing ? "cursor-none" : edition_cursor}
       fill-opacity="0.2"
       style:fill={color}
       style:stroke={color}
@@ -427,7 +442,7 @@
   {/if}
 
   <!-- Edit handles for completed polygon -->
-  {#if editable && !isEditing()}
+  {#if editable && !isEditing}
     {@render PolygonVertices(points)}
   {/if}
 {/if}
