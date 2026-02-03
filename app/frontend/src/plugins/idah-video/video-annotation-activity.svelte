@@ -677,7 +677,7 @@
 
     // ensure Part 1 has an ending keyframe at the splitAt - 1 frame point if it doesn't already
     if (!part1Frames.find((f: VideoFrameSelection) => f.frame === part1End)) {
-      const interpolated = getInterpolatedFrame(annotation.shape.frames, part1End);
+      const interpolated = getInterpolatedFrame(annotation.shape as VideoShape, part1End);
       if (interpolated) {
         part1Frames.push({
           frame: part1End,
@@ -695,7 +695,7 @@
 
     // ensure Part 2 has a starting keyframe at part2Start frame point if it doesn't already
     if (!part2Frames.find((f: VideoFrameSelection) => f.frame === part2Start)) {
-      const interpolated = getInterpolatedFrame(annotation.shape.frames, part2Start);
+      const interpolated = getInterpolatedFrame(annotation.shape as VideoShape, part2Start);
       if (interpolated) {
         part2Frames.push({
           frame: part2Start,

@@ -68,22 +68,24 @@ export interface LabellingConfiguration {
 }
 
 export function getInterpolatedFrame(
-  frames: VideoFrameSelection[],
+  shape: VideoShape,
   current_frame: number,
   interpolate: boolean = true,
 ): { points: Point[] | undefined; angle: number } | undefined {
-  if (!frames) return;
+  if (!shape.frames) return;
 
-  const foundShape = frames.find((v: VideoFrameSelection) => v.frame == current_frame);
+  if (shape.start > current_frame || shape.end < current_frame) return;
+
+  const foundShape = shape.frames.find((v: VideoFrameSelection) => v.frame == current_frame);
   if (foundShape || !interpolate) return { points: foundShape?.points, angle: foundShape?.angle || 0 };
 
-  const frame_start: VideoFrameSelection | null = frames.reduce(
+  const frame_start: VideoFrameSelection | null = shape.frames.reduce(
     (acc: VideoFrameSelection | null, v: VideoFrameSelection) =>
       (!acc || acc.frame < v.frame) && v.frame < current_frame ? v : acc,
     null,
   );
 
-  const frame_end: VideoFrameSelection | null = frames.reduce(
+  const frame_end: VideoFrameSelection | null = shape.frames.reduce(
     (acc: VideoFrameSelection | null, v: VideoFrameSelection) =>
       (!acc || acc.frame > v.frame) && v.frame > current_frame ? v : acc,
     null,
