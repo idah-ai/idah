@@ -101,7 +101,8 @@
 
     if (isTyping) return;
 
-    const keymap = ShortcutManager.getEffectiveKeyMap();
+    const current_mode = ShortcutManager.getCurrentMode();
+    const keymap = ShortcutManager.getEffectiveKeyMap(current_mode);
 
     if (!keymap || Object.keys(keymap).length === 0) return console.error("no keymap found");
 
