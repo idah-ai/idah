@@ -213,8 +213,6 @@ export function registerOnSelectBoxModeShortcuts(
   selectedId: string,
   getCurrentFrame: () => number,
 ) {
-  if (ShortcutManager.getCurrentMode() == IDAH_VIDEO_BOUNDING_BOX) return;
-
   // Clear any existing extensions first
   ShortcutManager.clearAllKeyMapExtensions();
 
