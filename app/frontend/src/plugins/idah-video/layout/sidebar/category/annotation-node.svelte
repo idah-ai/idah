@@ -48,7 +48,7 @@
         {/if}
       </div>
 
-      <CategoryName>{name}</CategoryName>
+      <CategoryName {name} />
 
       <!-- BUTTON::HIDE/SHOW, LOCK/UNLOCK, DROPDOWN ACTIONS -->
       <div class="ml-auto flex items-center gap-0">
