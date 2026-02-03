@@ -370,23 +370,21 @@
         if (c_hovered != undefined) {
           setOffset(c_hovered - c * scale);
         }
+      } else if (e.shiftKey) {
+        // Handle Shift + Scroll to slide left or right
+        const scrollDelta = e.deltaY || e.deltaX;
+        const next = Math.floor(range_span / 8);
+
+        if (scrollDelta < 0) scrollRight(next);
+        else if (scrollDelta > 0) scrollLeft(next);
       } else {
-        delta = e.shiftKey ? e.deltaY : e.deltaX;
-        setOffset(Math.floor(pos_offset + delta * scale));
+        // Normal scroll - handle both vertical wheel and horizontal touchpad
+        delta = e.deltaX || e.deltaY;
+        // Reduced scroll speed by dividing by 3 for slower scrolling
+        setOffset(Math.floor(pos_offset + (delta * scale) / 3));
         if (hoveredColumn != undefined) {
           hoveredColumn += pos_offset - from;
         }
-      }
-
-      /** Handle Shift + Scroll to slide left or right */
-      if (e.shiftKey) {
-        const isScrollUp = e.deltaX < 0;
-        const isScrollDown = e.deltaX > 0;
-
-        const next = Math.floor(range_span / 4);
-
-        if (isScrollUp) scrollRight(next);
-        else if (isScrollDown) scrollLeft(next);
       }
 
       if (e.metaKey) {
