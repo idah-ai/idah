@@ -473,9 +473,11 @@
 <g transform={`translate(${offset[X]}, ${offset[Y]})`}>
   <!-- Bounding Box -->
   {#if displayPoints.length > 0}
+    <!-- 
+      NOTE:: Don't add role & tabindex props
+      as it will have an focus ring when drag or mouse down on bounding box
+    -->
     <path
-      role="grid"
-      tabindex="-1"
       d={draw_cmd(displayPoints)}
       onmouseenter={() => (over = true)}
       onmouseleave={() => (over = false)}
