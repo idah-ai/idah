@@ -29,8 +29,9 @@ class Api
 
       output = block.call(params)
 
-      break_next_page = output.count < items_per_page
-      count == 0 ? nil : output
+      count = output.data.count
+      break_next_page = count < items_per_page
+      count == 0 ? nil : output.data
     end
   end
 
