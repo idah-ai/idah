@@ -5,7 +5,16 @@
   import { boundingBoxes } from "./idb_store.svelte";
 
   import { DEFAULT_MODE, ENTRY_ROOT, IDAH_NOTE, IDAH_VIDEO_BOUNDING_BOX, type EntryRoot } from "../type";
-  import { HEIGHT, ORIGIN, WIDTH, X, Y, type Point, type VideoShape, getInterpolatedFrame } from "./VideoAnnotationContext";
+  import {
+    HEIGHT,
+    ORIGIN,
+    WIDTH,
+    X,
+    Y,
+    type Point,
+    type VideoShape,
+    getInterpolatedFrame,
+  } from "./VideoAnnotationContext";
   import Zoomable from "./zoomable.svelte";
 
   import type {
@@ -144,8 +153,6 @@
     zoomableElement.zoomOut();
   }
 
-
-
   let toolSelection: ToolSelection | undefined = $state();
   export function selectionStart(e: MouseEvent) {
     if (!shape) {
@@ -251,7 +258,7 @@
     onwheel={(e) => zoomableElement.onWheel(e)}
     {...restProps}
   >
-    {#if width && height && ![IDAH_NOTE, DEFAULT_MODE].includes(mode) && (pointer == "crosshair" || isEditing)}
+    {#if width && height && ![IDAH_NOTE, DEFAULT_MODE].includes(mode) && (pointer == "crosshair" || isEditing) && (!selected || current_shape)}
       <!-- prevent display issue on load for now -->
       <line
         x1={0}
@@ -346,7 +353,7 @@
       {/key}
     {/await}
 
-    {#if (shape?.type == IDAH_VIDEO_BOUNDING_BOX || mode == IDAH_VIDEO_BOUNDING_BOX) && (selected ? !selected.hidden : true) && (mode == IDAH_VIDEO_BOUNDING_BOX || (shape?.start <= frame && shape?.end >= frame))}
+    {#if (shape?.type == IDAH_VIDEO_BOUNDING_BOX || mode == IDAH_VIDEO_BOUNDING_BOX) && (selected ? !selected.hidden : true) && (!selected || current_shape)}
       {#key [shape, frame]}
         <BoundingBox
           bind:this={toolSelection}
