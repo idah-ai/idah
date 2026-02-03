@@ -25,11 +25,7 @@
   import { requiredFullfilled } from "./video-annotation-activity/categoryProperties";
   import { boundingBoxes, entryRoot, idb_updated_at } from "./video-annotation-activity/idb_store.svelte";
   import { annotationsIndexedDB, AnnotationsIndexedDB } from "./video-annotation-activity/indexedDB";
-  import {
-    registerOnSelectBoxModeShortcuts,
-    registerVisualModeShortcuts,
-    unregisterSelectionShortcuts,
-  } from "./video-annotation-activity/shortcut";
+  import { registerOnSelectBoxModeShortcuts, registerVisualModeShortcuts } from "./video-annotation-activity/shortcut";
 
   import AnnotationFooter from "./layout/footer/AnnotationFooter.svelte";
   import AnnotationFooterToolbar from "./layout/footer/AnnotationFooterToolbar.svelte";
@@ -97,10 +93,9 @@
 
     if (isTyping) return;
 
-    const current_mode = ShortcutManager.getCurrentMode();
-    const keymap = ShortcutManager.getEffectiveKeyMap(current_mode);
+    const keymap = ShortcutManager.getEffectiveKeyMap();
 
-    if (!keymap || Object.keys(keymap).length === 0) return console.error("no keymap found for", { current_mode });
+    if (!keymap || Object.keys(keymap).length === 0) return console.error("no keymap found");
 
     const modifier_keys = [
       e.altKey && "Alt",
@@ -383,15 +378,13 @@
           end: v.shape.end >= selection.frame ? v.shape.end : selection.frame,
           frames: [...v.shape.frames.filter((f) => f.frame != selection.frame), selection],
         };
-        selectedAnnotation = undefined;
-        selectedAnnotation = v;
-
         v.metadata.updatedAt = updatedAt;
         v.synced = false;
 
+        selectedAnnotation = v;
+
         await annotationsIDB?.addAnnotations([v]);
         $idb_updated_at = new Date();
-        selectedAnnotation = v;
 
         let p = context.annotations.update({
           id: v.metadata.id,
@@ -766,7 +759,9 @@
     else removeAnnotation(annotation.metadata.id);
   }
 
-  let shapeSelectionArgs: [type: string, frame: number, _points: Point[], selectedId?: string] | undefined = $state();
+  let shapeSelectionArgs:
+    | [type: string, frame: number, _points: Point[], angle: number, selectedId?: string]
+    | undefined = $state();
 
   function onEditValue(value: AnnotationValue, valueMode: string) {
     if (!["annotate", "review"].includes(context.workflowStep)) return;
@@ -792,7 +787,13 @@
     }
   }
 
-  function onShapeSelection(type: string, frame: number, _points: Point[] = [], selectedId?: string) {
+  function onShapeSelection(
+    type: string,
+    frame: number,
+    _points: Point[] = [],
+    angle: number = 0,
+    selectedId?: string,
+  ) {
     if (!["review", "annotate"].includes(context.workflowStep) || mode === "note") return;
 
     let points = $state.snapshot(_points) as Point[];
@@ -805,7 +806,7 @@
         case DEFAULT_MODE:
           break;
         case IDAH_VIDEO_BOUNDING_BOX:
-          shape = { ...shape, start: frame, end: frame, frames: [{ frame, points }] };
+          shape = { ...shape, start: frame, end: frame, frames: [{ frame, angle, points }] };
           break;
         case IDAH_POLYGON:
           shape = { ...shape, start: frame, end: frame, frames: [{ frame, points }] };
@@ -821,11 +822,11 @@
         shapeSelectionArgs = undefined;
         addAnnotation(shape, annotation_value_from);
       } else {
-        shapeSelectionArgs = [type, frame, _points, selectedId];
+        shapeSelectionArgs = [type, frame, _points, angle, selectedId];
         showPopOver = true;
       }
     } else {
-      addSelection(selectedId, { frame, points });
+      addSelection(selectedId, { frame, angle, points });
     }
   }
 
@@ -840,9 +841,6 @@
 
   function selectAnnotation(annotation?: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) {
     selectedAnnotation = annotation;
-
-    // Clear existing selection shortcuts first
-    unregisterSelectionShortcuts();
 
     /**
      * Set mode to the annotation shape type when selecting an annotation
@@ -942,7 +940,7 @@
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
         <CommandGroup heading={`MODE: ${ShortcutManager.getCurrentMode()}`}>
-          {#each Object.entries(ShortcutManager.getEffectiveKeyMap(ShortcutManager.getCurrentMode()) || {}) as [key, value] (key)}
+          {#each Object.entries(ShortcutManager.getEffectiveKeyMap() || {}) as [key, value] (key)}
             <CommandItem onclick={() => value.action()}>
               <span>{value.name} ({value.description})</span>
               <CommandShortcut>{key}</CommandShortcut>

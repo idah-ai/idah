@@ -48,7 +48,7 @@
     onmousedown?: (e: MouseEvent) => void;
     onmousemove?: (e: MouseEvent) => void;
     onwheel?: (e: WheelEvent) => void;
-    onSelection: (type: string, frame: number, points?: Point[], id?: string) => void;
+    onSelection: (type: string, frame: number, points?: Point[], angle?: number, id?: string) => void;
     onAddNewNote: (params: OnAddNewNoteParams) => void;
     onChangeFrame?: (newFrame: number) => void;
     videoResizedAt: Date;
@@ -98,8 +98,21 @@
             }
         : undefined,
   );
-  let points: Point[] | InterpolatedVertex[] = $derived.by(() => {
-    return shape ? currentShape(shape, frame) || [] : [];
+
+  let current_shape = $derived.by(() => {
+    if (shape) return currentShape(shape, frame);
+  });
+  let points: Point[] | InterpolatedVertex[] | undefined = $derived.by(() => {
+    if (current_shape && "points" in current_shape) {
+
+      return current_shape.points || [];
+    }   else  {
+      return  [];
+    }
+
+  });
+  let angle: number = $derived.by(() => {
+    return current_shape?.angle || 0;
   });
 
   function updatedSize(): Point {
@@ -152,18 +165,20 @@
     shape: AnnotationShape,
     current_frame: number,
     interpolate: boolean = true,
-  ): Point[] | InterpolatedVertex[] | undefined {
+  ): { points: Point[] | undefined; angle: number } | { points: InterpolatedVertex[] | undefined; angle: number } | undefined {
     if (!shape.frames || shape.frames.length === 0) return; // no render (eg. entry:root)
 
     if (shape.start > current_frame || shape.end < current_frame) return; // out of scope
-
-    const current_points = shape.frames.find((v: VideoFrameSelection) => v.frame == current_frame)?.points;
-    if (current_points || !interpolate) {
+    const foundFrame = shape.frames.find((v: VideoFrameSelection) => v.frame == current_frame);
+    if (foundFrame || !interpolate) {
       // For polygon, wrap points in InterpolatedVertex with matched: true
-      if (shape.type == IDAH_POLYGON && current_points) {
-        return current_points.map((point: Point) => ({ point, matched: true }));
+      if (shape.type == IDAH_POLYGON && foundFrame?.points) {
+        return {
+          points: foundFrame.points.map((point: Point) => ({ point, matched: true })),
+          angle: foundFrame.angle || 0,
+        };
       }
-      return current_points;
+      return { points: foundFrame?.points, angle: foundFrame?.angle || 0 }; // exists!
     }
 
     // find surrounding frames
@@ -178,21 +193,24 @@
         (!acc || acc.frame > v.frame) && v.frame > current_frame ? v : acc,
       null,
     );
-
     if (!frame_start || !frame_end) return;
 
     if (shape.type == IDAH_VIDEO_BOUNDING_BOX) {
       // interpolate from within bounds
       const ratio = (current_frame - frame_start.frame) / (frame_end.frame - frame_start.frame);
-
-      return frame_end.points.map((point, i) => [
-        // assume
-        frame_start.points[i][X] + (point[X] - frame_start.points[i][X]) * ratio,
-        frame_start.points[i][Y] + (point[Y] - frame_start.points[i][Y]) * ratio,
-      ]);
+      return {
+        points: frame_end.points.map((point, i) => [
+          // assume
+          frame_start.points[i][X] + (point[X] - frame_start.points[i][X]) * ratio,
+          frame_start.points[i][Y] + (point[Y] - frame_start.points[i][Y]) * ratio,
+        ]),
+        angle: ((frame_end.angle || 0) - (frame_start.angle || 0)) * ratio + frame_start.angle,
+      };
     } else if (shape.type == IDAH_POLYGON) {
-      // interpolate from within bounds - returns InterpolatedVertex[]
-      return interpolatePolygonAtFrame(frame_start, frame_end, current_frame);
+      return {
+        points: interpolatePolygonAtFrame(frame_start, frame_end, current_frame),
+        angle: 0
+      };
     }
   }
 
@@ -205,7 +223,7 @@
 
     toolSelection?.startSelection(cursor_downscaled);
 
-    if (!toolSelection?.isEditing()) {
+    if (!isEditing) {
       if (!toolSelection)
         console.error("no tool for mode:", mode, "deselecting annotation (and reverting to mode", DEFAULT_MODE, ")");
       onSelectAnnotation();
@@ -264,16 +282,22 @@
     });
   });
 
-  const cursorConstraints = new Map([[IDAH_VIDEO_BOUNDING_BOX, 4]]);
+  let isEditing = $state(false);
+  let editionCursor: string | undefined = $state(undefined);
+
+  // Reset editionCursor when switching to visual mode without selection
+  $effect(() => {
+    if (mode === DEFAULT_MODE && !selected) {
+      editionCursor = undefined;
+    }
+  });
 
   let pointer = $derived.by(() => {
-    return mode != DEFAULT_MODE
-      ? mode == IDAH_NOTE
-        ? "cursor-note"
-        : points.length < (cursorConstraints.get(mode) || 0) || toolSelection?.isEditing()
-          ? "cursor-crosshair"
-          : "cursor-grab"
-      : "cursor-grab";
+    if (mode == IDAH_NOTE) return "cursor-note";
+    if (editionCursor) return editionCursor;
+    if (selected) return "cursor-pointer";
+
+    return "cursor-grab";
   });
 </script>
 
@@ -303,10 +327,30 @@
     onwheel={(e) => zoomableElement.onWheel(e)}
     {...restProps}
   >
-    {#if width && height && ![IDAH_NOTE, DEFAULT_MODE].includes(mode) && (pointer == "crosshair" || toolSelection?.isEditing())}
+    {#if width && height && ![IDAH_NOTE, DEFAULT_MODE].includes(mode) && (pointer == "crosshair" || isEditing)}
       <!-- prevent display issue on load for now -->
-      <line x1={0} y1={target_line[Y]} x2={width} y2={target_line[Y]} stroke="#2b7fff" />
-      <line x1={target_line[X]} y1={0} x2={target_line[X]} y2={height} stroke="#2b7fff" />
+      <line
+        x1={0}
+        y1={target_line[Y]}
+        x2={width}
+        y2={target_line[Y]}
+        stroke={selected?.synced
+          ? Object.entries(context.config)
+              .find(([k, _]) => k == mode)?.[1]
+              .values.find((c) => c.id == selected?.value?.category)?.color || "grey"
+          : "grey"}
+      />
+      <line
+        x1={target_line[X]}
+        y1={0}
+        x2={target_line[X]}
+        y2={height}
+        stroke={selected?.synced
+          ? Object.entries(context.config)
+              .find(([k, _]) => k == mode)?.[1]
+              .values.find((c) => c.id == selected?.value?.category)?.color || "grey"
+          : "grey"}
+      />
     {/if}
 
     <!-- draw annotation context -->
@@ -314,10 +358,13 @@
       {#each $boundingBoxes as annotation (annotation.metadata.id)}
         {#if annotation.metadata.id != selected?.metadata.id}
           {#if annotation.shape.type == IDAH_VIDEO_BOUNDING_BOX && !annotation.hidden}
+            {@const current_annotation_shape = currentShape(annotation.shape, frame)}
+            {@const current_annotation_points = current_annotation_shape?.points || []}
+            {@const current_annotation_angle = current_annotation_shape?.angle || 0}
             <BoundingBox
               {mode}
-              {pointer}
-              points={(currentShape(annotation.shape, frame) || []) as Point[]}
+              points={current_annotation_points as Point[]}
+              angle={current_annotation_angle}
               ratio={target_size}
               offset={zoomInfo.offset}
               color={Object.entries(context.config)
@@ -338,8 +385,7 @@
           {:else if annotation.shape.type == IDAH_POLYGON && !annotation.hidden}
             <Polygon
               {mode}
-              {pointer}
-              points={(currentShape(annotation.shape, frame) || []) as InterpolatedVertex[]}
+              points={(currentShape(annotation.shape, frame)?.points || []) as InterpolatedVertex[]}
               ratio={target_size}
               offset={zoomInfo.offset}
               color={Object.entries(context.config)
@@ -361,13 +407,17 @@
         {/if}
       {/each}
     {:then annotations}
+    {#key frame}
       {#each annotations as annotation (annotation.metadata.id)}
         {#if annotation.metadata.id != selected?.metadata.id}
           {#if annotation.shape.type == IDAH_VIDEO_BOUNDING_BOX && !annotation.hidden}
+            {@const current_annotation_shape = currentShape(annotation.shape, frame)}
+            {@const current_annotation_points = current_annotation_shape?.points || []}
+            {@const current_annotation_angle = current_annotation_shape?.angle || 0}
             <BoundingBox
               {mode}
-              {pointer}
-              points={(currentShape(annotation.shape, frame) || []) as Point[]}
+              points={current_annotation_points as Point[]}
+              angle={current_annotation_angle}
               ratio={target_size}
               offset={zoomInfo.offset}
               color={annotation?.synced
@@ -390,8 +440,7 @@
           {:else if annotation.shape.type == IDAH_POLYGON && !annotation.hidden}
             <Polygon
               {mode}
-              {pointer}
-              points={(currentShape(annotation.shape, frame) || []) as InterpolatedVertex[]}
+              points={(currentShape(annotation.shape, frame)?.points || []) as InterpolatedVertex[]}
               ratio={target_size}
               offset={zoomInfo.offset}
               color={annotation?.synced
@@ -414,40 +463,50 @@
           {/if}
         {/if}
       {/each}
+    {/key}
     {/await}
 
     {#if selected || mode != DEFAULT_MODE}
       {#if shape?.type == IDAH_VIDEO_BOUNDING_BOX || mode == IDAH_VIDEO_BOUNDING_BOX}
-        <BoundingBox
-          {pointer}
-          bind:this={toolSelection}
-          {mode}
-          points={points as Point[]}
-          ratio={target_size}
-          offset={zoomInfo.offset}
-          cursor={cursor_downscaled}
-          hidden={selected?.hidden}
-          editable={(shape?.type == IDAH_VIDEO_BOUNDING_BOX || mode == IDAH_VIDEO_BOUNDING_BOX) &&
-            !selected?.locked &&
-            ["annotate", "review"].includes(context.workflowStep)}
-          color={selected?.synced
-            ? Object.entries(context.config)
-                .find(([k, _]) => k == mode)?.[1]
-                .values.find((c) => c.id == selected?.value?.category)?.color || "grey"
-            : "grey"}
-          onChange={(bb) => {
-            onSelection(IDAH_VIDEO_BOUNDING_BOX, frame, bb, selected?.metadata.id);
-            points = bb;
-          }}
-        />
+        {#key [shape, frame]}
+          <BoundingBox
+            bind:this={toolSelection}
+            {mode}
+            points = {points as Point[]}
+            {angle}
+            onEditingChange={(editing: any) => {
+              isEditing = editing;
+            }}
+            onPointerChange={(c) => (editionCursor = c)}
+            ratio={target_size}
+            offset={zoomInfo.offset}
+            cursor={cursor_downscaled}
+            hidden={selected?.hidden}
+            editable={(shape?.type == IDAH_VIDEO_BOUNDING_BOX || mode == IDAH_VIDEO_BOUNDING_BOX) &&
+              !selected?.locked &&
+              ["annotate", "review"].includes(context.workflowStep)}
+            color={selected?.synced
+              ? Object.entries(context.config)
+                  .find(([k, _]) => k == mode)?.[1]
+                  .values.find((c) => c.id == selected?.value?.category)?.color || "grey"
+              : "grey"}
+            onChange={(bb, newAngle) => {
+              onSelection(IDAH_VIDEO_BOUNDING_BOX, frame, bb, newAngle, selected?.metadata.id);
+              points = bb;
+            }}
+          />
+        {/key}
       {/if}
 
       {#if shape?.type == IDAH_POLYGON || mode == IDAH_POLYGON}
         <Polygon
-          {pointer}
           bind:this={toolSelection}
           {mode}
           points={points as Point[] | InterpolatedVertex[]}
+          onEditingChange={(editing: any) => {
+              isEditing = editing;
+            }}
+          onPointerChange={(c) => (editionCursor = c)}
           ratio={target_size}
           offset={zoomInfo.offset}
           cursor={cursor_downscaled}
@@ -461,7 +520,7 @@
                 .values.find((c) => c.id == selected?.value?.category)?.color || "grey"
             : "grey"}
           onChange={(polygon_points) => {
-            onSelection(IDAH_POLYGON, frame, polygon_points, selected?.metadata.id);
+            onSelection(IDAH_POLYGON, frame, polygon_points, 0, selected?.metadata.id);
             points = polygon_points;
           }}
         />

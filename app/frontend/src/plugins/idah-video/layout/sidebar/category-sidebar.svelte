@@ -291,7 +291,7 @@
                 />
               {/if}
 
-              <CategoryName>{category.name}</CategoryName>
+              <CategoryName name={category.name} />
 
               {#if db && category}
                 {#key $idb_updated_at}
