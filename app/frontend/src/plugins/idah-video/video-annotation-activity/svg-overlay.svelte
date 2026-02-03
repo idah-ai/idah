@@ -5,7 +5,7 @@
   import { boundingBoxes } from "./idb_store.svelte";
 
   import { DEFAULT_MODE, ENTRY_ROOT, IDAH_NOTE, IDAH_VIDEO_BOUNDING_BOX, type EntryRoot } from "../type";
-  import { HEIGHT, ORIGIN, WIDTH, X, Y, type Point, getInterpolatedFrame } from "./VideoAnnotationContext";
+  import { HEIGHT, ORIGIN, WIDTH, X, Y, type Point, type VideoShape, getInterpolatedFrame } from "./VideoAnnotationContext";
   import Zoomable from "./zoomable.svelte";
 
   import type {
@@ -89,7 +89,7 @@
   );
 
   let current_shape = $derived.by(() => {
-    if (shape) return currentShape(shape, frame);
+    if (shape) return getInterpolatedFrame(shape as VideoShape, frame);
   });
   let points: Point[] = $derived.by(() => {
     return current_shape?.points || [];
@@ -144,17 +144,7 @@
     zoomableElement.zoomOut();
   }
 
-  export function currentShape(
-    shape: AnnotationShape,
-    current_frame: number,
-    interpolate: boolean = true,
-  ): { points: Point[] | undefined; angle: number } | undefined {
-    if (!shape.frames) return; // no render (eg. entry:root)
 
-    if (shape.start > current_frame || shape.end < current_frame) return; // out of scope
-
-    return getInterpolatedFrame(shape.frames, current_frame, interpolate);
-  }
 
   let toolSelection: ToolSelection | undefined = $state();
   export function selectionStart(e: MouseEvent) {
@@ -292,7 +282,7 @@
       {#each $boundingBoxes as annotation (annotation.metadata.id)}
         {#if annotation.metadata.id != selected?.metadata.id}
           {#if annotation.shape.type == IDAH_VIDEO_BOUNDING_BOX && !annotation.hidden}
-            {@const current_annotation_shape = currentShape(annotation.shape, frame)}
+            {@const current_annotation_shape = getInterpolatedFrame(annotation.shape as VideoShape, frame)}
             {@const current_annotation_points = current_annotation_shape?.points || []}
             {@const current_annotation_angle = current_annotation_shape?.angle || 0}
             <BoundingBox
@@ -324,7 +314,7 @@
         {#each annotations as annotation (annotation.metadata.id)}
           {#if annotation.metadata.id != selected?.metadata.id}
             {#if annotation.shape.type == IDAH_VIDEO_BOUNDING_BOX && !annotation.hidden}
-              {@const current_annotation_shape = currentShape(annotation.shape, frame)}
+              {@const current_annotation_shape = getInterpolatedFrame(annotation.shape as VideoShape, frame)}
               {@const current_annotation_points = current_annotation_shape?.points || []}
               {@const current_annotation_angle = current_annotation_shape?.angle || 0}
               <BoundingBox
