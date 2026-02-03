@@ -19,7 +19,8 @@ Api[:idah].register(
 end
 
 RSpec.describe Exports::DatasetContext do
-  let(:dataset_id) { "019ba0dd-4beb-757b-b5fb-de54446534e0" }
+  let(:dataset_id) { "019b4e62-ab2f-71aa-af3d-0f6e06bc1126" }
+  let(:entries_json) { File.read("app/spec_data/api_data/entries.json") }
 
   subject { described_class.new(dataset_id) }
 
@@ -48,40 +49,24 @@ RSpec.describe Exports::DatasetContext do
   describe "#entries" do
     it "returns an array of EntryContext objects" do
       stub_request(:get,
-      "http://idah.test/dataset/entries?filter[dataset_id]=019ba0dd-4beb-757b-b5fb-de54446534e0&page[number]=1&page[size]=1000").
+      "http://idah.test/dataset/entries?filter%5Bdataset_id%5D=019b4e62-ab2f-71aa-af3d-0f6e06bc1126&page%5Bnumber%5D=1&page%5Bsize%5D=1000").
         to_return(
           status: 200,
-          body: JSON.generate({
-            "data": [
-              {
-                "type": "dataset:entries",
-                "id": "019ba0e7-e8c6-77ad-8965-18a63f52582d"
-              },
-              {
-                "type": "dataset:entries",
-                "id": "019ba0e8-05e5-711d-8a3e-8f4f4a7144a2"
-              }
-            ],
-            "included": [],
-            "meta": {
-              "count": 2,
-              "more": false
-            }
-          }),
+          body: entries_json,
           headers: { 'Content-Type': 'application/json' }
         )
 
       entries = subject.entries
       expect(entries).to be_an(Array)
-      expect(entries.size).to eq(2)
+      expect(entries.size).to eq(1)
       expect(entries.first).to be_a(Exports::EntryContext)
-      expect(entries.first.id).to eq("019ba0e7-e8c6-77ad-8965-18a63f52582d")
+      expect(entries.first.id).to eq("019bc0fa-025e-7a8c-a3f4-82b276508315")
     end
   end
 
   describe "#info" do
-    it "is not implemented" do
-      expect(subject.info).to be_nil
+    pending "not implemented" do
+      raise "TODO"
     end
   end
 end
