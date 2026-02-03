@@ -1,0 +1,64 @@
+{
+  "data": [
+    {
+      "type": "dataset:entries",
+      "id": "019bc0fa-025e-7a8c-a3f4-82b276508315",
+      "attributes": {
+        "project_id": "019b457e-da22-7442-8f0a-a2e8ae77f69d",
+        "dataset_id": "019b4e62-ab2f-71aa-af3d-0f6e06bc1126",
+        "priority": 0,
+        "wf_step": "annotate",
+        "status": "in_progress",
+        "job_id": "019bc0fa-0497-7f30-8d79-5b921f8698f3",
+        "resource": "4c2052a1475842e9.mov",
+        "assigned_to_id": 13,
+        "submitted_by_id": null,
+        "reviewed_by_id": null,
+        "created_at": "2026-01-15 09:26:08 +0000",
+        "updated_at": "2026-02-02 04:55:10 +0000"
+      },
+      "relationships": {
+        "assigned_to": {
+          "data": {
+            "type": "dataset:project_members",
+            "id": "27"
+          }
+        },
+        "dataset": {
+          "data": {
+            "type": "dataset:datasets",
+            "id": "019b4e62-ab2f-71aa-af3d-0f6e06bc1126"
+          }
+        },
+        "project": {
+          "data": {
+            "type": "dataset:projects",
+            "id": "019b457e-da22-7442-8f0a-a2e8ae77f69d"
+          }
+        }
+      }
+    }
+  ],
+  "included": [
+    {
+      "type": "dataset:project_members",
+      "id": "42",
+      "attributes": {
+        "name": "Brother Lee",
+        "email": "brother.lee@ingedata.ai"
+      },
+      "relationships": {
+        "project": {
+          "data": {
+            "type": "dataset:projects",
+            "id": "019b457e-da22-7442-8f0a-a2e8ae77f69d"
+          }
+        }
+      }
+    }
+  ],
+  "meta": {
+    "count": 1,
+    "more": false
+  }
+}
