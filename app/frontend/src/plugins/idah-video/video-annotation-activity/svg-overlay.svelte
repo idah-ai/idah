@@ -492,7 +492,7 @@
               : "grey"}
             onChange={(bb, newAngle) => {
               onSelection(IDAH_VIDEO_BOUNDING_BOX, frame, bb, newAngle, selected?.metadata.id);
-              points = bb;
+              // points = bb;
             }}
           />
         {/key}
@@ -521,7 +521,7 @@
             : "grey"}
           onChange={(polygon_points) => {
             onSelection(IDAH_POLYGON, frame, polygon_points, 0, selected?.metadata.id);
-            points = polygon_points;
+            // points = polygon_points;
           }}
         />
       {/if}
