@@ -92,9 +92,6 @@
     onEditingChange?.(isEditing);
   });
   $effect(() => {
-    console.log(cursor);
-    console.log(edition_cursor);
-
     onPointerChange?.(edition_cursor);
   });
 
@@ -113,7 +110,7 @@
       const topLeft: Point = [Math.min(points[0][X], cursor[X]), Math.min(points[0][Y], cursor[Y])];
       const bottomRight: Point = [Math.max(points[0][X], cursor[X]), Math.max(points[0][Y], cursor[Y])];
 
-      return [topLeft, [bottomRight[X], topLeft[Y]], bottomRight, [topLeft[X], bottomRight[Y]]];
+      return [topLeft, [bottomRight[X], topLeft[Y]], bottomRight, [topLeft[X], bottomRight[Y]]] as Point[];
     }
     // Use updatedPoints (which handles pan) for display
     return updatedPoints;
