@@ -2,10 +2,10 @@
   import TimelineCell from "./timeline-cell.svelte";
 
   import type {
-      AnnotationMetadata,
-      AnnotationObj,
-      AnnotationShape,
-      AnnotationValue,
+    AnnotationMetadata,
+    AnnotationObj,
+    AnnotationShape,
+    AnnotationValue,
   } from "@/context/AnnotationContext";
   import { ENTRY_ROOT } from "../../type";
 
