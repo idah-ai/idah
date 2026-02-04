@@ -1,13 +1,13 @@
 <script lang="ts">
   import TimelineCell from "./timeline-cell.svelte";
 
-  import { ENTRY_ROOT } from "../../type";
   import type {
-    AnnotationMetadata,
-    AnnotationObj,
-    AnnotationShape,
-    AnnotationValue,
+      AnnotationMetadata,
+      AnnotationObj,
+      AnnotationShape,
+      AnnotationValue,
   } from "@/context/AnnotationContext";
+  import { ENTRY_ROOT } from "../../type";
 
   let {
     annotation,
@@ -74,6 +74,7 @@
         onmouseover={() => setHoveredColumn(currentFrameInCell)}
         onmouseenter={() => setHoveredColumn(currentFrameInCell)}
         onmouseleave={() => setHoveredColumn(undefined)}
+        onmousedown={() => setHoveredColumn(currentFrameInCell)}
         {...restProps}
       />
     {/each}

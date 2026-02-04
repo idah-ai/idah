@@ -13,10 +13,10 @@
   import { boundingBoxes } from "../idb_store.svelte";
 
   import type {
-    AnnotationMetadata,
-    AnnotationObj,
-    AnnotationShape,
-    AnnotationValue,
+      AnnotationMetadata,
+      AnnotationObj,
+      AnnotationShape,
+      AnnotationValue,
   } from "@/context/AnnotationContext";
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import type { AnnotationsIndexedDB } from "../indexedDB";
@@ -381,7 +381,7 @@
         // Normal scroll - handle both vertical wheel and horizontal touchpad
         delta = e.deltaX || e.deltaY;
         // Reduced scroll speed by dividing by 3 for slower scrolling
-        setOffset(Math.floor(pos_offset + (delta * scale) / 3));
+        setOffset(Math.floor(pos_offset + (delta * scale) / 6));
         if (hoveredColumn != undefined) {
           hoveredColumn += pos_offset - from;
         }
