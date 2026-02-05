@@ -134,8 +134,19 @@ export function getLogResourceDetails(
     }
     case "entries": {
       const foundEntry = entries.find((entry) => entry.id == String(resource_id));
-      resource.url = `/projects/${project_id}/datasets/${dataset_id}/entries?filters[resource__match]=${foundEntry?.resource}`;
+      resource.url = `/projects/${project_id}/datasets/${dataset_id}/entries`;
       resource.name = foundEntry?.resource;
+
+      switch (action) {
+        case "deleted": {
+          // Do not add filter for deleted entries
+          break;
+        }
+        default: {
+          resource.url += `?filters[resource__match]=${foundEntry?.resource}`;
+          break;
+        }
+      }
       break;
     }
     case "medias": {
