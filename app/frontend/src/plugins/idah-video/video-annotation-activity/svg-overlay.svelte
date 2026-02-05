@@ -15,6 +15,8 @@
     type InterpolatedVertex,
     type Point,
     type VideoFrameSelection,
+    type VideoShape,
+    getInterpolatedFrame,
   } from "./VideoAnnotationContext";
   import Zoomable from "./zoomable.svelte";
 
@@ -100,7 +102,7 @@
   );
 
   let current_shape = $derived.by(() => {
-    if (shape) return currentShape(shape, frame);
+    if (shape) return getInterpolatedFrame(shape as VideoShape, frame);
   });
   let points: Point[] | InterpolatedVertex[] | undefined = $derived.by(() => {
     if (current_shape && "points" in current_shape) {
@@ -161,58 +163,58 @@
     zoomableElement.zoomOut();
   }
 
-  export function currentShape(
-    shape: AnnotationShape,
-    current_frame: number,
-    interpolate: boolean = true,
-  ): { points: Point[] | undefined; angle: number } | { points: InterpolatedVertex[] | undefined; angle: number } | undefined {
-    if (!shape.frames || shape.frames.length === 0) return; // no render (eg. entry:root)
+  // export function currentShape(
+  //   shape: AnnotationShape,
+  //   current_frame: number,
+  //   interpolate: boolean = true,
+  // ): { points: Point[] | undefined; angle: number } | { points: InterpolatedVertex[] | undefined; angle: number } | undefined {
+  //   if (!shape.frames || shape.frames.length === 0) return; // no render (eg. entry:root)
 
-    if (shape.start > current_frame || shape.end < current_frame) return; // out of scope
-    const foundFrame = shape.frames.find((v: VideoFrameSelection) => v.frame == current_frame);
-    if (foundFrame || !interpolate) {
-      // For polygon, wrap points in InterpolatedVertex with matched: true
-      if (shape.type == IDAH_POLYGON && foundFrame?.points) {
-        return {
-          points: foundFrame.points.map((point: Point) => ({ point, matched: true })),
-          angle: foundFrame.angle || 0,
-        };
-      }
-      return { points: foundFrame?.points, angle: foundFrame?.angle || 0 }; // exists!
-    }
+  //   if (shape.start > current_frame || shape.end < current_frame) return; // out of scope
+  //   const foundFrame = shape.frames.find((v: VideoFrameSelection) => v.frame == current_frame);
+  //   if (foundFrame || !interpolate) {
+  //     // For polygon, wrap points in InterpolatedVertex with matched: true
+  //     if (shape.type == IDAH_POLYGON && foundFrame?.points) {
+  //       return {
+  //         points: foundFrame.points.map((point: Point) => ({ point, matched: true })),
+  //         angle: foundFrame.angle || 0,
+  //       };
+  //     }
+  //     return { points: foundFrame?.points, angle: foundFrame?.angle || 0 }; // exists!
+  //   }
 
-    // find surrounding frames
-    const frame_start: VideoFrameSelection = shape.frames.reduce(
-      (acc: VideoFrameSelection | null, v: VideoFrameSelection) =>
-        (!acc || acc.frame < v.frame) && v.frame < current_frame ? v : acc,
-      null,
-    );
+  //   // find surrounding frames
+  //   const frame_start: VideoFrameSelection = shape.frames.reduce(
+  //     (acc: VideoFrameSelection | null, v: VideoFrameSelection) =>
+  //       (!acc || acc.frame < v.frame) && v.frame < current_frame ? v : acc,
+  //     null,
+  //   );
 
-    const frame_end: VideoFrameSelection = shape.frames.reduce(
-      (acc: VideoFrameSelection | null, v: VideoFrameSelection) =>
-        (!acc || acc.frame > v.frame) && v.frame > current_frame ? v : acc,
-      null,
-    );
-    if (!frame_start || !frame_end) return;
+  //   const frame_end: VideoFrameSelection = shape.frames.reduce(
+  //     (acc: VideoFrameSelection | null, v: VideoFrameSelection) =>
+  //       (!acc || acc.frame > v.frame) && v.frame > current_frame ? v : acc,
+  //     null,
+  //   );
+  //   if (!frame_start || !frame_end) return;
 
-    if (shape.type == IDAH_VIDEO_BOUNDING_BOX) {
-      // interpolate from within bounds
-      const ratio = (current_frame - frame_start.frame) / (frame_end.frame - frame_start.frame);
-      return {
-        points: frame_end.points.map((point, i) => [
-          // assume
-          frame_start.points[i][X] + (point[X] - frame_start.points[i][X]) * ratio,
-          frame_start.points[i][Y] + (point[Y] - frame_start.points[i][Y]) * ratio,
-        ]),
-        angle: ((frame_end.angle || 0) - (frame_start.angle || 0)) * ratio + frame_start.angle,
-      };
-    } else if (shape.type == IDAH_POLYGON) {
-      return {
-        points: interpolatePolygonAtFrame(frame_start, frame_end, current_frame),
-        angle: 0
-      };
-    }
-  }
+  //   if (shape.type == IDAH_VIDEO_BOUNDING_BOX) {
+  //     // interpolate from within bounds
+  //     const ratio = (current_frame - frame_start.frame) / (frame_end.frame - frame_start.frame);
+  //     return {
+  //       points: frame_end.points.map((point, i) => [
+  //         // assume
+  //         frame_start.points[i][X] + (point[X] - frame_start.points[i][X]) * ratio,
+  //         frame_start.points[i][Y] + (point[Y] - frame_start.points[i][Y]) * ratio,
+  //       ]),
+  //       angle: ((frame_end.angle || 0) - (frame_start.angle || 0)) * ratio + frame_start.angle,
+  //     };
+  //   } else if (shape.type == IDAH_POLYGON) {
+  //     return {
+  //       points: interpolatePolygonAtFrame(frame_start, frame_end, current_frame),
+  //       angle: 0
+  //     };
+  //   }
+  // }
 
   let toolSelection: ToolSelection | undefined = $state();
   export function selectionStart(e: MouseEvent) {
@@ -358,7 +360,7 @@
       {#each $boundingBoxes as annotation (annotation.metadata.id)}
         {#if annotation.metadata.id != selected?.metadata.id}
           {#if annotation.shape.type == IDAH_VIDEO_BOUNDING_BOX && !annotation.hidden}
-            {@const current_annotation_shape = currentShape(annotation.shape, frame)}
+            {@const current_annotation_shape = getInterpolatedFrame(annotation.shape as VideoShape, frame)}
             {@const current_annotation_points = current_annotation_shape?.points || []}
             {@const current_annotation_angle = current_annotation_shape?.angle || 0}
             <BoundingBox
@@ -407,63 +409,63 @@
         {/if}
       {/each}
     {:then annotations}
-    {#key frame}
-      {#each annotations as annotation (annotation.metadata.id)}
-        {#if annotation.metadata.id != selected?.metadata.id}
-          {#if annotation.shape.type == IDAH_VIDEO_BOUNDING_BOX && !annotation.hidden}
-            {@const current_annotation_shape = currentShape(annotation.shape, frame)}
-            {@const current_annotation_points = current_annotation_shape?.points || []}
-            {@const current_annotation_angle = current_annotation_shape?.angle || 0}
-            <BoundingBox
-              {mode}
-              points={current_annotation_points as Point[]}
-              angle={current_annotation_angle}
-              ratio={target_size}
-              offset={zoomInfo.offset}
-              color={annotation?.synced
-                ? Object.entries(context.config)
-                    .find(([k, _]) => k == IDAH_VIDEO_BOUNDING_BOX)?.[1]
-                    .values.find((c) => c.id == annotation?.value?.category)?.color || "grey"
-                : "grey"}
-              onmousedown={(e) => {
-                e.stopPropagation();
+      {#key frame}
+        {#each annotations as annotation (annotation.metadata.id)}
+          {#if annotation.metadata.id != selected?.metadata.id}
+            {#if annotation.shape.type == IDAH_VIDEO_BOUNDING_BOX && !annotation.hidden}
+              {@const current_annotation_shape = getInterpolatedFrame(annotation.shape as VideoShape, frame)}
+              {@const current_annotation_points = current_annotation_shape?.points || []}
+              {@const current_annotation_angle = current_annotation_shape?.angle || 0}
+              <BoundingBox
+                {mode}
+                points={current_annotation_points as Point[]}
+                angle={current_annotation_angle}
+                ratio={target_size}
+                offset={zoomInfo.offset}
+                color={annotation?.synced
+                  ? Object.entries(context.config)
+                      .find(([k, _]) => k == IDAH_VIDEO_BOUNDING_BOX)?.[1]
+                      .values.find((c) => c.id == annotation?.value?.category)?.color || "grey"
+                  : "grey"}
+                onmousedown={(e) => {
+                  e.stopPropagation();
 
-                if (mode == DEFAULT_MODE || selected) {
-                  onSelectAnnotation(annotation);
-                }
+                  if (mode == DEFAULT_MODE || selected) {
+                    onSelectAnnotation(annotation);
+                  }
 
-                if (mode === IDAH_NOTE) {
-                  showNewNoteFeedPopup(annotation);
-                }
-              }}
-            />
-          {:else if annotation.shape.type == IDAH_POLYGON && !annotation.hidden}
-            <Polygon
-              {mode}
-              points={(currentShape(annotation.shape, frame)?.points || []) as InterpolatedVertex[]}
-              ratio={target_size}
-              offset={zoomInfo.offset}
-              color={annotation?.synced
-                ? Object.entries(context.config)
-                    .find(([k, _]) => k == IDAH_POLYGON)?.[1]
-                    .values.find((c) => c.id == annotation?.value?.category)?.color || "grey"
-                : "grey"}
-              onmousedown={(e) => {
-                e.stopPropagation();
+                  if (mode === IDAH_NOTE) {
+                    showNewNoteFeedPopup(annotation);
+                  }
+                }}
+              />
+            {:else if annotation.shape.type == IDAH_POLYGON && !annotation.hidden}
+              <Polygon
+                {mode}
+                points={(getInterpolatedFrame(annotation.shape as VideoShape, frame)?.points || []) as InterpolatedVertex[]}
+                ratio={target_size}
+                offset={zoomInfo.offset}
+                color={annotation?.synced
+                  ? Object.entries(context.config)
+                      .find(([k, _]) => k == IDAH_POLYGON)?.[1]
+                      .values.find((c) => c.id == annotation?.value?.category)?.color || "grey"
+                  : "grey"}
+                onmousedown={(e) => {
+                  e.stopPropagation();
 
-                if (mode == DEFAULT_MODE || selected) {
-                  onSelectAnnotation(annotation);
-                }
+                  if (mode == DEFAULT_MODE || selected) {
+                    onSelectAnnotation(annotation);
+                  }
 
-                if (mode === IDAH_NOTE) {
-                  showNewNoteFeedPopup(annotation);
-                }
-              }}
-            />
+                  if (mode === IDAH_NOTE) {
+                    showNewNoteFeedPopup(annotation);
+                  }
+                }}
+              />
+            {/if}
           {/if}
-        {/if}
-      {/each}
-    {/key}
+        {/each}
+      {/key}
     {/await}
 
     {#if selected || mode != DEFAULT_MODE}
