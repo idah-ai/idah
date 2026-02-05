@@ -13,10 +13,10 @@
   import { boundingBoxes } from "../idb_store.svelte";
 
   import type {
-      AnnotationMetadata,
-      AnnotationObj,
-      AnnotationShape,
-      AnnotationValue,
+    AnnotationMetadata,
+    AnnotationObj,
+    AnnotationShape,
+    AnnotationValue,
   } from "@/context/AnnotationContext";
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import type { AnnotationsIndexedDB } from "../indexedDB";
@@ -71,9 +71,7 @@
   // Contexts
   let context: IActivityContext = getContext("context");
 
-  // Variables
-  let isResizing: boolean = $state(false);
-
+  // Functions
   function toggleVisibility() {
     onVisibility(!allHidden);
   }
@@ -197,21 +195,19 @@
 
       if (isScrollToTheRight) {
         const next = Math.floor(range_span / 10);
-        scrollRight(next);
+        scrollLeft(next);
       } else if (isScrollToTheLeft) {
         const next = Math.floor(range_span / 10);
-        scrollLeft(next);
+        scrollRight(next);
       }
     }
   }
 
   function handlePointerDown(e: PointerEvent) {
-    isResizing = true;
     (e.target as HTMLElement)?.setPointerCapture(e.pointerId);
   }
 
   function handlePointerUp(e: PointerEvent) {
-    isResizing = false;
     (e.target as HTMLElement)?.releasePointerCapture(e.pointerId);
   }
 
@@ -439,7 +435,6 @@
           tabindex="0"
           class="text-muted-foreground group relative h-7 touch-none select-none"
           onpointerdown={handlePointerDown}
-          onpointermove={scrollHorizontal}
           onpointerup={handlePointerUp}
           onpointercancel={handlePointerUp}
         >
@@ -467,7 +462,7 @@
                 style:left="{startLeftPosition}%"
                 onclick={() => seekToFrame(thisFrame)}
               >
-                <div class="bg-primary absolute top-0 left-1/2 z-50 w-0.5 -translate-x-1/2 min-h-150"></div>
+                <div class="bg-primary absolute top-0 left-1/2 z-50 min-h-150 w-0.5 -translate-x-1/2"></div>
                 {@render tooltipFrame(thisFrame, "bg-primary", "text-primary-foreground")}
               </button>
             {:else if !isOutOfRange && isDefault}
@@ -483,7 +478,9 @@
                 onmouseleave={() => (hoveredColumn = undefined)}
               >
                 {#if isHovered}
-                  <div class="bg-secondary-foreground absolute top-0 left-1/2 z-50 w-0.5 -translate-x-1/2 min-h-150 dark:bg-gray-700"></div>
+                  <div
+                    class="bg-secondary-foreground absolute top-0 left-1/2 z-50 min-h-150 w-0.5 -translate-x-1/2 dark:bg-gray-700"
+                  ></div>
                   {@render tooltipFrame(
                     thisFrame,
                     "bg-secondary-foreground dark:bg-gray-700",
@@ -508,7 +505,9 @@
                 onmouseleave={() => (hoveredColumn = undefined)}
               >
                 {#if isHovered}
-                  <div class="bg-secondary-foreground absolute top-0 left-1/2 z-50 w-0.5 -translate-x-1/2 min-h-150 dark:bg-gray-700"></div>
+                  <div
+                    class="bg-secondary-foreground absolute top-0 left-1/2 z-50 min-h-150 w-0.5 -translate-x-1/2 dark:bg-gray-700"
+                  ></div>
                   {@render tooltipFrame(
                     thisFrame,
                     "bg-secondary-foreground dark:bg-gray-700",
