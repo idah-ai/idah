@@ -188,20 +188,20 @@
     setZoom(zoom - next);
   }
 
-  function scrollHorizontal(e: PointerEvent) {
-    if (isResizing) {
-      const isScrollToTheRight = e.movementX > 0;
-      const isScrollToTheLeft = e.movementX < 0;
+  // function scrollHorizontal(e: PointerEvent) {
+  //   if (isResizing) {
+  //     const isScrollToTheRight = e.movementX > 0;
+  //     const isScrollToTheLeft = e.movementX < 0;
 
-      if (isScrollToTheRight) {
-        const next = Math.floor(range_span / 10);
-        scrollLeft(next);
-      } else if (isScrollToTheLeft) {
-        const next = Math.floor(range_span / 10);
-        scrollRight(next);
-      }
-    }
-  }
+  //     if (isScrollToTheRight) {
+  //       const next = Math.floor(range_span / 10);
+  //       scrollLeft(next);
+  //     } else if (isScrollToTheLeft) {
+  //       const next = Math.floor(range_span / 10);
+  //       scrollRight(next);
+  //     }
+  //   }
+  // }
 
   function handlePointerDown(e: PointerEvent) {
     (e.target as HTMLElement)?.setPointerCapture(e.pointerId);
@@ -462,7 +462,7 @@
                 style:left="{startLeftPosition}%"
                 onclick={() => seekToFrame(thisFrame)}
               >
-                <div class="bg-primary absolute top-0 left-1/2 z-50 min-h-150 w-0.5 -translate-x-1/2"></div>
+                <div class="bg-primary absolute top-0 left-1/2 z-50 min-h-screen w-0.5 -translate-x-1/2"></div>
                 {@render tooltipFrame(thisFrame, "bg-primary", "text-primary-foreground")}
               </button>
             {:else if !isOutOfRange && isDefault}
@@ -479,7 +479,7 @@
               >
                 {#if isHovered}
                   <div
-                    class="bg-secondary-foreground absolute top-0 left-1/2 z-50 min-h-150 w-0.5 -translate-x-1/2 dark:bg-gray-700"
+                    class="bg-secondary-foreground absolute top-0 left-1/2 z-50 min-h-screen w-0.5 -translate-x-1/2 dark:bg-gray-700"
                   ></div>
                   {@render tooltipFrame(
                     thisFrame,
@@ -506,7 +506,7 @@
               >
                 {#if isHovered}
                   <div
-                    class="bg-secondary-foreground absolute top-0 left-1/2 z-50 min-h-150 w-0.5 -translate-x-1/2 dark:bg-gray-700"
+                    class="bg-secondary-foreground absolute top-0 left-1/2 z-50 min-h-screen w-0.5 -translate-x-1/2 dark:bg-gray-700"
                   ></div>
                   {@render tooltipFrame(
                     thisFrame,
