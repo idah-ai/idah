@@ -152,6 +152,7 @@ export function registerVisualModeShortcuts(context: KeyMapContext) {
 type SelectionKeyMapContext = {
   context: IActivityContext;
   selectedId: string;
+  getCurrentFrame: () => number;
 };
 
 const createOnSelectBoundingBoxModeKeyMap = (context: SelectionKeyMapContext) => {
@@ -185,10 +186,21 @@ const createOnSelectBoundingBoxModeKeyMap = (context: SelectionKeyMapContext) =>
     context.context.commands.run("annotation.toggleLocked", { id: context.selectedId });
   };
 
+  const splitAnnotation = () => {
+    if (!context.selectedId) {
+      console.log("No item selected to split");
+      return;
+    }
+    const currentFrame = context.getCurrentFrame();
+    console.log(`Split item with id: ${context.selectedId} at frame ${currentFrame}`);
+    context.context.commands.run("annotation.split", { id: context.selectedId, at: currentFrame });
+  };
+
   return KeyMapBuilder((b) => {
     b.on(null, "Delete", deleteSelected, "Delete", "Delete selected annotation");
     b.on(null, "H", toggleHidden, "Toggle Hidden", "Hide/Show selected annotation");
     b.on(null, "L", toggleLocked, "Toggle Locked", "Lock/Unlock selected annotation");
+    b.on(null, "S", splitAnnotation, "Split", "Split selected annotation at selected frame");
   });
 };
 
@@ -196,14 +208,16 @@ const createOnSelectBoundingBoxModeKeyMap = (context: SelectionKeyMapContext) =>
  * Register selection-specific shortcuts as extension layer.
  * Call this when an annotation is selected.
  */
-export function registerOnSelectBoxModeShortcuts(context: IActivityContext, selectedId: string) {
-  if (ShortcutManager.getCurrentMode() == IDAH_VIDEO_BOUNDING_BOX) return;
-
+export function registerOnSelectBoxModeShortcuts(
+  context: IActivityContext,
+  selectedId: string,
+  getCurrentFrame: () => number,
+) {
   // Clear any existing extensions first
   ShortcutManager.clearAllKeyMapExtensions();
 
   // Create and register new extension for the current mode
-  const selectionKeyMap = createOnSelectBoundingBoxModeKeyMap({ context, selectedId });
+  const selectionKeyMap = createOnSelectBoundingBoxModeKeyMap({ context, selectedId, getCurrentFrame });
   ShortcutManager.setKeyMapExtension(IDAH_VIDEO_BOUNDING_BOX, selectionKeyMap);
   ShortcutManager.enterMode(IDAH_VIDEO_BOUNDING_BOX);
 }
