@@ -97,6 +97,7 @@ export interface IConfigValue {
   label: string;
   color: string | null;
   text_color: string | null;
+  description: string | undefined;
 }
 
 export interface IConfigProperty {
