@@ -108,11 +108,11 @@ function expandPolygonUsingMatches(
   matches: Record<number, number>,
 ): [InterpolatedVertex[], Point[]] {
   const nMax = polyMax.length;
-  const expanded: (InterpolatedVertex | null)[] = Array(nMax).fill(null);
+  const expandedPolyMin: (InterpolatedVertex | null)[] = Array(nMax).fill(null);
 
   for (const minIdx in matches) {
     const maxIdx = matches[minIdx];
-    expanded[maxIdx] = {
+    expandedPolyMin[maxIdx] = {
       point: polyMin[parseInt(minIdx)],
       matched: true,
     };
@@ -127,43 +127,44 @@ function expandPolygonUsingMatches(
     }
   }
 
+  // interpolate remaining nulls
   for (let i = 0; i < nMax; i++) {
-    if (expanded[i] === null) {
+    if (expandedPolyMin[i] === null) {
       let prevI = (i - 1 + nMax) % nMax;
-      while (expanded[prevI] === null) prevI = (prevI - 1 + nMax) % nMax;
+      while (expandedPolyMin[prevI] === null) prevI = (prevI - 1 + nMax) % nMax;
 
       let nextI = (i + 1) % nMax;
-      while (expanded[nextI] === null) nextI = (nextI + 1) % nMax;
+      while (expandedPolyMin[nextI] === null) nextI = (nextI + 1) % nMax;
 
-      const pPrev = expanded[prevI]!;
-      const pNext = expanded[nextI]!;
+      const pPrev = expandedPolyMin[prevI]!;
+      const pNext = expandedPolyMin[nextI]!;
 
       const total = circularDistance(prevI, nextI, nMax);
       const cur = circularDistance(prevI, i, nMax);
       const t = total > 0 ? cur / total : 0;
 
-      expanded[i] = {
+      expandedPolyMin[i] = {
         point: [(1 - t) * pPrev.point[0] + t * pNext.point[0], (1 - t) * pPrev.point[1] + t * pNext.point[1]],
         matched: false,
       };
     }
   }
 
-  const generatePolyMax = [...polyMax];
-
+  // Insert unmatched vertices from polyMin into polyMax (and expandedPolyMin) at closest segment
+  const expandedPolyMax = [...polyMax];
   for (const insertIdx of unmatchedMinIndices) {
     const target = polyMin[insertIdx];
 
     let bestSegIdx = -1;
     let bestDist = Infinity;
 
-    const n = expanded.length;
+    const n = expandedPolyMin.length;
 
     // find closest segment (including last -> first)
     for (let i = 0; i < n; i++) {
-      if (expanded[i] === null || expanded[(i + 1) % n] === null) continue;
-      const a = expanded[i]!.point;
-      const b = expanded[(i + 1) % n]!.point;
+      if (expandedPolyMin[i] === null || expandedPolyMin[(i + 1) % n] === null) continue;
+      const a = expandedPolyMin[i]!.point;
+      const b = expandedPolyMin[(i + 1) % n]!.point;
 
       const { point: proj } = projectPointOnSegment(target, a, b);
       const d = distance(target, proj);
@@ -177,28 +178,51 @@ function expandPolygonUsingMatches(
     if (bestSegIdx === -1) continue;
 
     const insertAt = bestSegIdx + 1;
-
     // last -> first segment
-    if (insertAt === expanded.length) {
-      expanded.push({
+    if (insertAt === expandedPolyMin.length) {
+      expandedPolyMin.push({
         point: polyMin[insertIdx],
-        matched: false,
+        matched: true,
       });
 
       // add point to polyMax but in middle of last and first
-      generatePolyMax.push(midpoint(generatePolyMax[0], generatePolyMax[generatePolyMax.length - 1]));
+      expandedPolyMax.push(midpoint(expandedPolyMax[0], expandedPolyMax[expandedPolyMax.length - 1]));
     } else {
-      expanded.splice(insertAt, 0, {
+      expandedPolyMin.splice(insertAt, 0, {
         point: polyMin[insertIdx],
-        matched: false,
+        matched: true,
       });
 
-      // add point to generatePolyMax but in middle of neighbors
-      generatePolyMax.splice(insertAt, 0, midpoint(generatePolyMax[insertAt - 1], generatePolyMax[insertAt]));
+      // add point to expandedPolyMax but in middle of neighbors
+      expandedPolyMax.splice(insertAt, 0, midpoint(expandedPolyMax[insertAt - 1], expandedPolyMax[insertAt]));
     }
   }
 
-  return [expanded as InterpolatedVertex[], generatePolyMax as Point[]];
+  // replace remaining nulls in expandedPolyMin with linear interpolation of neighbors
+  let newMax = expandedPolyMin.length;
+  expandedPolyMin.forEach((item, index) => {
+    if (item?.matched === false) {
+      let prevI = (index - 1 + newMax) % newMax;
+      while (expandedPolyMin[prevI] === null) prevI = (prevI - 1 + newMax) % newMax;
+
+      let nextI = (index + 1) % newMax;
+      while (expandedPolyMin[nextI] === null) nextI = (nextI + 1) % newMax;
+
+      const pPrev = expandedPolyMin[prevI]!;
+      const pNext = expandedPolyMin[nextI]!;
+
+      const total = circularDistance(prevI, nextI, newMax);
+      const cur = circularDistance(prevI, index, newMax);
+      const t = total > 0 ? cur / total : 0;
+
+      expandedPolyMin[index] = {
+        point: [(1 - t) * pPrev.point[0] + t * pNext.point[0], (1 - t) * pPrev.point[1] + t * pNext.point[1]],
+        matched: false,
+      };
+    }
+  });
+
+  return [expandedPolyMin as InterpolatedVertex[], expandedPolyMax as Point[]];
 }
 
 function toPoint(v: InterpolatedVertex | Point): Point {
@@ -217,32 +241,32 @@ function lerpVertices(A: InterpolatedVertex[], B: InterpolatedVertex[] | Point[]
 }
 
 export function interpolatePolygonAtFrame(
-  frameStart: VideoFrameSelection,
-  frameEnd: VideoFrameSelection,
+  frameStartPoly: VideoFrameSelection,
+  frameEndPoly: VideoFrameSelection,
   current_frame: number,
 ): InterpolatedVertex[] {
   let maxFrame;
   let minFrame;
 
-  if (frameStart.points.length < frameEnd.points.length) {
-    minFrame = frameStart;
-    maxFrame = frameEnd;
+  if (frameStartPoly.points.length < frameEndPoly.points.length) {
+    minFrame = frameStartPoly;
+    maxFrame = frameEndPoly;
   } else {
-    minFrame = frameEnd;
-    maxFrame = frameStart;
+    minFrame = frameEndPoly;
+    maxFrame = frameStartPoly;
   }
 
-  const [frameStartRe, frameEndRe, matches] = matchVerticesByBarycenter(minFrame.points, maxFrame.points);
+  const [frameStartReordered, frameEndReordered, matches] = matchVerticesByBarycenter(minFrame.points, maxFrame.points);
 
   // Expand both polygons using matches
-  const [P1, generatePolyMax] = expandPolygonUsingMatches(frameStartRe, frameEndRe, matches);
+  const [expandedPolyMin, expandedPolyMax] = expandPolygonUsingMatches(frameStartReordered, frameEndReordered, matches);
 
   // linear interpolation
   const alpha = (current_frame - minFrame.frame) / (maxFrame.frame - minFrame.frame);
 
   const t = Math.min(Math.max(alpha, 0), 1);
 
-  const interpolazed = lerpVertices(P1, generatePolyMax, t);
+  const interpolated = lerpVertices(expandedPolyMin, expandedPolyMax, t);
 
-  return interpolazed;
+  return interpolated;
 }
