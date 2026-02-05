@@ -13,10 +13,10 @@
   import { boundingBoxes } from "../idb_store.svelte";
 
   import type {
-    AnnotationMetadata,
-    AnnotationObj,
-    AnnotationShape,
-    AnnotationValue,
+      AnnotationMetadata,
+      AnnotationObj,
+      AnnotationShape,
+      AnnotationValue,
   } from "@/context/AnnotationContext";
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import type { AnnotationsIndexedDB } from "../indexedDB";
@@ -467,10 +467,7 @@
                 style:left="{startLeftPosition}%"
                 onclick={() => seekToFrame(thisFrame)}
               >
-                <div
-                  class="bg-primary absolute top-0 left-1/2 z-50 w-0.5 -translate-x-1/2"
-                  style="min-height: 24vh;"
-                ></div>
+                <div class="bg-primary absolute top-0 left-1/2 z-50 w-0.5 -translate-x-1/2 min-h-150"></div>
                 {@render tooltipFrame(thisFrame, "bg-primary", "text-primary-foreground")}
               </button>
             {:else if !isOutOfRange && isDefault}
@@ -486,10 +483,7 @@
                 onmouseleave={() => (hoveredColumn = undefined)}
               >
                 {#if isHovered}
-                  <div
-                    class="bg-secondary-foreground absolute top-0 left-1/2 z-50 w-0.5 -translate-x-1/2 dark:bg-gray-700"
-                    style="min-height: 24vh;"
-                  ></div>
+                  <div class="bg-secondary-foreground absolute top-0 left-1/2 z-50 w-0.5 -translate-x-1/2 min-h-150 dark:bg-gray-700"></div>
                   {@render tooltipFrame(
                     thisFrame,
                     "bg-secondary-foreground dark:bg-gray-700",
@@ -514,10 +508,7 @@
                 onmouseleave={() => (hoveredColumn = undefined)}
               >
                 {#if isHovered}
-                  <div
-                    class="bg-secondary-foreground absolute top-0 left-1/2 z-50 w-0.5 -translate-x-1/2 dark:bg-gray-700"
-                    style="min-height: 24vh;"
-                  ></div>
+                  <div class="bg-secondary-foreground absolute top-0 left-1/2 z-50 w-0.5 -translate-x-1/2 min-h-150 dark:bg-gray-700"></div>
                   {@render tooltipFrame(
                     thisFrame,
                     "bg-secondary-foreground dark:bg-gray-700",
