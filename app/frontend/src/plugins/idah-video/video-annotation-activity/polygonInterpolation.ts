@@ -199,7 +199,7 @@ function expandPolygonUsingMatches(
   }
 
   // replace remaining nulls in expandedPolyMin with linear interpolation of neighbors
-  let newMax = expandedPolyMin.length;
+  const newMax = expandedPolyMin.length;
   expandedPolyMin.forEach((item, index) => {
     if (item?.matched === false) {
       let prevI = (index - 1 + newMax) % newMax;

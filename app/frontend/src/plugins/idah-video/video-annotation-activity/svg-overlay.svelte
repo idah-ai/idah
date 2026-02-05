@@ -421,7 +421,7 @@
             {mode}
             points = {points as Point[]}
             {angle}
-            onEditingChange={(editing: any) => {
+            onEditingChange={(editing) => {
               isEditing = editing;
             }}
             onPointerChange={(c) => (editionCursor = c)}
@@ -450,7 +450,7 @@
           bind:this={toolSelection}
           {mode}
           points={points as Point[] | InterpolatedVertex[]}
-          onEditingChange={(editing: any) => {
+          onEditingChange={(editing) => {
               isEditing = editing;
             }}
           onPointerChange={(c) => (editionCursor = c)}
