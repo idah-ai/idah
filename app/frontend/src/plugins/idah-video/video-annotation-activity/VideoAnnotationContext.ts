@@ -84,7 +84,6 @@ export function getInterpolatedFrame(
 
   if (shape.start > current_frame || shape.end < current_frame) return;
 
-  const foundShape = shape.frames.find((v: VideoFrameSelection) => v.frame == current_frame);
   const foundFrame = shape.frames.find((v: VideoFrameSelection) => v.frame == current_frame);
   if (foundFrame || !interpolate) {
     // For polygon, wrap points in InterpolatedVertex with matched: true
@@ -110,22 +109,12 @@ export function getInterpolatedFrame(
   );
 
   if (!frame_start || !frame_end) return;
-  // if (frame_start && frame_end) {
-  //   const ratio = (current_frame - frame_start.frame) / (frame_end.frame - frame_start.frame);
-  //   return {
-  //     points: frame_end.points.map((point, i) => [
-  //       frame_start.points[i][X] + (point[X] - frame_start.points[i][X]) * ratio,
-  //       frame_start.points[i][Y] + (point[Y] - frame_start.points[i][Y]) * ratio,
-  //     ]),
-  //     angle: ((frame_end.angle || 0) - (frame_start.angle || 0)) * ratio + (frame_start.angle || 0),
-  //   };
-  // }
+
   if (shape.type == IDAH_VIDEO_BOUNDING_BOX) {
     // interpolate from within bounds
     const ratio = (current_frame - frame_start.frame) / (frame_end.frame - frame_start.frame);
     return {
       points: frame_end.points.map((point, i) => [
-        // assume
         frame_start.points[i][X] + (point[X] - frame_start.points[i][X]) * ratio,
         frame_start.points[i][Y] + (point[Y] - frame_start.points[i][Y]) * ratio,
       ]),
