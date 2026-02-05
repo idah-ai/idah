@@ -13,10 +13,10 @@
   import { boundingBoxes } from "../idb_store.svelte";
 
   import type {
-    AnnotationMetadata,
-    AnnotationObj,
-    AnnotationShape,
-    AnnotationValue,
+      AnnotationMetadata,
+      AnnotationObj,
+      AnnotationShape,
+      AnnotationValue,
   } from "@/context/AnnotationContext";
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import type { AnnotationsIndexedDB } from "../indexedDB";
@@ -190,7 +190,7 @@
     setZoom(zoom - next);
   }
 
-  function scrollHorizontal(e: MouseEvent) {
+  function scrollHorizontal(e: PointerEvent) {
     if (isResizing) {
       const isScrollToTheRight = e.movementX > 0;
       const isScrollToTheLeft = e.movementX < 0;
@@ -203,6 +203,16 @@
         scrollLeft(next);
       }
     }
+  }
+
+  function handlePointerDown(e: PointerEvent) {
+    isResizing = true;
+    (e.target as HTMLElement)?.setPointerCapture(e.pointerId);
+  }
+
+  function handlePointerUp(e: PointerEvent) {
+    isResizing = false;
+    (e.target as HTMLElement)?.releasePointerCapture(e.pointerId);
   }
 
   function handleRowClick(annotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) {
@@ -427,14 +437,11 @@
           aria-controls="timeline-table"
           aria-valuenow={pos_offset}
           tabindex="0"
-          class="text-muted-foreground group relative h-7"
-          onmousedowncapture={() => {
-            isResizing = true;
-          }}
-          onmousemove={scrollHorizontal}
-          onmouseupcapture={() => {
-            isResizing = false;
-          }}
+          class="text-muted-foreground group relative h-7 touch-none select-none"
+          onpointerdown={handlePointerDown}
+          onpointermove={scrollHorizontal}
+          onpointerup={handlePointerUp}
+          onpointercancel={handlePointerUp}
         >
           {#each Array.from({ length: (() => {
                 const span = range[1] - range[0]; // actual range span
