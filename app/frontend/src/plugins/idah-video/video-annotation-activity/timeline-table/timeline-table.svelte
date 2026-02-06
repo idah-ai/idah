@@ -172,13 +172,13 @@
     ) as number;
   }
 
-  function scrollRight(next: number) {
-    setOffset(range[0] - next);
-  }
+  // function scrollRight(next: number) {
+  //   setOffset(range[0] - next);
+  // }
 
-  function scrollLeft(next: number) {
-    setOffset(range[0] + next);
-  }
+  // function scrollLeft(next: number) {
+  //   setOffset(range[0] + next);
+  // }
 
   function zoomIn(next: number) {
     setZoom(zoom + next);
