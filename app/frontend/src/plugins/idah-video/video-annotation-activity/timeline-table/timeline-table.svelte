@@ -13,10 +13,10 @@
   import { boundingBoxes } from "../idb_store.svelte";
 
   import type {
-      AnnotationMetadata,
-      AnnotationObj,
-      AnnotationShape,
-      AnnotationValue,
+    AnnotationMetadata,
+    AnnotationObj,
+    AnnotationShape,
+    AnnotationValue,
   } from "@/context/AnnotationContext";
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import type { AnnotationsIndexedDB } from "../indexedDB";
@@ -172,13 +172,13 @@
     ) as number;
   }
 
-  function scrollRight(next: number) {
-    setOffset(range[0] - next);
-  }
+  // function scrollRight(next: number) {
+  //   setOffset(range[0] - next);
+  // }
 
-  function scrollLeft(next: number) {
-    setOffset(range[0] + next);
-  }
+  // function scrollLeft(next: number) {
+  //   setOffset(range[0] + next);
+  // }
 
   function zoomIn(next: number) {
     setZoom(zoom + next);
@@ -241,101 +241,53 @@
   }
 
   function handleTimelineWheel(e: WheelEvent) {
-    // const absX = Math.abs(e.deltaX);
-    // const absY = Math.abs(e.deltaY);
+    const absX = Math.abs(e.deltaX);
+    const absY = Math.abs(e.deltaY);
 
-    // const isVertical = absY > absX;
-    // const isHorizontal = absX > absY;
+    const isVertical = absY > absX;
+    const isHorizontal = absX > absY;
 
-    // if (isVertical && !e.ctrlKey && !e.shiftKey && !e.metaKey) {
-    //   return;
-    // }
-
-    // const from = $state.snapshot(pos_offset) as number;
-
-    // if (wheelthrottling) return;
-    // wheelthrottling = true;
-    // setTimeout(() => (wheelthrottling = false), 50);
-
-    // if (e.ctrlKey && e.shiftKey) {
-    //   setZoom(zoom - e.deltaY);
-    //   e.preventDefault();
-    //   return;
-    // }
-
-    // if (e.ctrlKey) {
-    //   setZoom(zoom - e.deltaY);
-    //   e.preventDefault();
-    //   return;
-    // }
-
-    // if (isHorizontal || e.shiftKey) {
-    //   const delta = isHorizontal ? e.deltaX : e.deltaY;
-
-    //   const nextOffset = pos_offset + delta * scale;
-    //   setOffset(nextOffset);
-
-    //   if (hoveredColumn != undefined) {
-    //     hoveredColumn += pos_offset - from;
-    //   }
-
-    //   e.preventDefault();
-    //   return;
-    // }
-
-    // if (e.metaKey) {
-    //   const to = scale * (zoom / 10);
-    //   e.deltaY < 0 ? zoomIn(to) : zoomOut(to);
-    //   e.preventDefault();
-    // }
-
-    let from = $state.snapshot(pos_offset) as number;
-    let delta = 0;
-    if (!wheelthrottling) {
-      wheelthrottling = true;
-      setTimeout(() => (wheelthrottling = false), 10);
-
-      if (e.ctrlKey && e.shiftKey) {
-        setZoom(zoom - e.deltaY);
-      } else if (e.ctrlKey) {
-        delta = e.deltaY ? (e.deltaY > 0 ? 1 : -1) : 0; // for now
-        let c_hovered = $state.snapshot(hoveredColumn);
-        let c = c_hovered != undefined ? Math.ceil((c_hovered - pos_offset) / scale) : 0;
-
-        if (c_hovered != undefined) {
-          setOffset(c_hovered - c * scale);
-        }
-      } else {
-        delta = e.shiftKey ? e.deltaY : e.deltaX;
-        setOffset(Math.floor(pos_offset + delta * scale));
-        if (hoveredColumn != undefined) {
-          hoveredColumn += pos_offset - from;
-        }
-      }
-
-      /** Handle Shift + Scroll to slide left or right */
-      if (e.shiftKey) {
-        const isScrollUp = e.deltaX < 0;
-        const isScrollDown = e.deltaX > 0;
-
-        const next = Math.floor(range_span / 8);
-
-        if (isScrollUp) scrollRight(next);
-        else if (isScrollDown) scrollLeft(next);
-      }
-
-      if (e.metaKey) {
-        const isScrollUp = e.deltaY < 0;
-        const isScrollDown = e.deltaY > 0;
-
-        const to = scale * (zoom / 10);
-
-        if (isScrollUp) zoomIn(to);
-        else if (isScrollDown) zoomOut(to);
-      }
+    if (isVertical && !e.ctrlKey && !e.shiftKey && !e.metaKey) {
+      return;
     }
-    if (delta || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) e.preventDefault();
-  
+
+    const from = $state.snapshot(pos_offset) as number;
+
+    if (wheelthrottling) return;
+    wheelthrottling = true;
+    setTimeout(() => (wheelthrottling = false), 50);
+
+    if (e.ctrlKey && e.shiftKey) {
+      setZoom(zoom - e.deltaY);
+      e.preventDefault();
+      return;
+    }
+
+    if (e.ctrlKey) {
+      setZoom(zoom - e.deltaY);
+      e.preventDefault();
+      return;
+    }
+
+    if (isHorizontal || e.shiftKey) {
+      const delta = isHorizontal ? e.deltaX : e.deltaY;
+
+      const nextOffset = pos_offset + delta * scale;
+      setOffset(nextOffset);
+
+      if (hoveredColumn != undefined) {
+        hoveredColumn += pos_offset - from;
+      }
+
+      e.preventDefault();
+      return;
+    }
+
+    if (e.metaKey) {
+      const to = scale * (zoom / 10);
+      e.deltaY < 0 ? zoomIn(to) : zoomOut(to);
+      e.preventDefault();
+    }
   }
 </script>
 
