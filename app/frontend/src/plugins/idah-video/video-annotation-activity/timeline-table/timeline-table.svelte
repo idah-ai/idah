@@ -13,10 +13,10 @@
   import { boundingBoxes } from "../idb_store.svelte";
 
   import type {
-      AnnotationMetadata,
-      AnnotationObj,
-      AnnotationShape,
-      AnnotationValue,
+    AnnotationMetadata,
+    AnnotationObj,
+    AnnotationShape,
+    AnnotationValue,
   } from "@/context/AnnotationContext";
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import type { AnnotationsIndexedDB } from "../indexedDB";
@@ -285,7 +285,11 @@
 
     if (e.metaKey) {
       const to = scale * (zoom / 10);
-      e.deltaY < 0 ? zoomIn(to) : zoomOut(to);
+      if (e.deltaY < 0) {
+        zoomIn(to);
+      } else {
+        zoomOut(to);
+      }
       e.preventDefault();
     }
   }
