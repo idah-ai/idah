@@ -13,10 +13,10 @@
   import { boundingBoxes } from "../idb_store.svelte";
 
   import type {
-    AnnotationMetadata,
-    AnnotationObj,
-    AnnotationShape,
-    AnnotationValue,
+      AnnotationMetadata,
+      AnnotationObj,
+      AnnotationShape,
+      AnnotationValue,
   } from "@/context/AnnotationContext";
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import type { AnnotationsIndexedDB } from "../indexedDB";
@@ -239,6 +239,61 @@
       },
     };
   }
+
+  function handleTimelineWheel(e: WheelEvent) {
+  const absX = Math.abs(e.deltaX);
+  const absY = Math.abs(e.deltaY);
+
+  const isVertical = absY > absX;
+  const isHorizontal = absX > absY;
+
+  if (
+    isVertical &&
+    !e.ctrlKey &&
+    !e.shiftKey &&
+    !e.metaKey
+  ) {
+    return;
+  }
+
+  let from = $state.snapshot(pos_offset) as number;
+
+  if (wheelthrottling) return;
+  wheelthrottling = true;
+  setTimeout(() => (wheelthrottling = false), 10);
+
+
+  if (e.ctrlKey && e.shiftKey) {
+    setZoom(zoom - e.deltaY);
+    e.preventDefault();
+    return;
+  }
+
+  if (e.ctrlKey) {
+    setZoom(zoom - e.deltaY);
+    e.preventDefault();
+    return;
+  }
+
+  if (isHorizontal || e.shiftKey) {
+    const delta = absX > 0 ? e.deltaX : e.deltaY;
+    setOffset(Math.floor(pos_offset + delta * scale));
+
+    if (hoveredColumn != undefined) {
+      hoveredColumn += pos_offset - from;
+    }
+
+    e.preventDefault();
+    return;
+  }
+
+  if (e.metaKey) {
+    const to = scale * (zoom / 10);
+    e.deltaY < 0 ? zoomIn(to) : zoomOut(to);
+    e.preventDefault();
+  }
+}
+
 </script>
 
 {#snippet row(annotations: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[])}
@@ -359,53 +414,7 @@
 {/snippet}
 
 <Table
-  onwheel={(e: WheelEvent) => {
-    let from = $state.snapshot(pos_offset) as number;
-    let delta = 0;
-    if (!wheelthrottling) {
-      wheelthrottling = true;
-      setTimeout(() => (wheelthrottling = false), 10);
-
-      if (e.ctrlKey && e.shiftKey) {
-        setZoom(zoom - e.deltaY);
-      } else if (e.ctrlKey) {
-        delta = e.deltaY ? (e.deltaY > 0 ? 1 : -1) : 0; // for now
-        let c_hovered = $state.snapshot(hoveredColumn);
-        let c = c_hovered != undefined ? Math.ceil((c_hovered - pos_offset) / scale) : 0;
-
-        if (c_hovered != undefined) {
-          setOffset(c_hovered - c * scale);
-        }
-      } else if (e.shiftKey) {
-        // Handle Shift + Scroll to slide left or right
-        const scrollDelta = e.deltaY || e.deltaX;
-        const next = Math.floor(range_span / 8);
-
-        if (scrollDelta < 0) scrollRight(next);
-        else if (scrollDelta > 0) scrollLeft(next);
-      } else {
-        // Normal scroll - handle both vertical wheel and horizontal touchpad
-        delta = e.deltaX || e.deltaY;
-        // Reduced scroll speed by dividing by 3 for slower scrolling
-        setOffset(Math.floor(pos_offset + (delta * scale) / 6));
-        if (hoveredColumn != undefined) {
-          hoveredColumn += pos_offset - from;
-        }
-      }
-
-      if (e.metaKey) {
-        const isScrollUp = e.deltaY < 0;
-        const isScrollDown = e.deltaY > 0;
-
-        const to = scale * (zoom / 10);
-
-        if (isScrollUp) zoomIn(to);
-        else if (isScrollDown) zoomOut(to);
-      }
-    }
-    if (delta || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) e.preventDefault();
-  }}
->
+  onwheel={handleTimelineWheel}>
   <TableHeader class="bg-background sticky z-40" style="inset-block-start: 0">
     <TableRow>
       <!-- HEADER::ANNOTATIONS -->
@@ -456,7 +465,7 @@
 
             {#if !isOutOfRange && isSelected}
               <button
-                class="border-border text-primary bg-background absolute top-0 z-40 h-full border-l"
+                class="border-border text-primary bg-background absolute top-0 z-40 h-full cursor-col-resize border-l"
                 style:width="{width}%"
                 style:padding-left="0.125rem"
                 style:left="{startLeftPosition}%"
