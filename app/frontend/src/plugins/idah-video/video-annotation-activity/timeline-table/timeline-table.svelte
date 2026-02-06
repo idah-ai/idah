@@ -251,11 +251,11 @@
       return;
     }
 
-    let from = $state.snapshot(pos_offset) as number;
+    const from = $state.snapshot(pos_offset) as number;
 
     if (wheelthrottling) return;
     wheelthrottling = true;
-    setTimeout(() => (wheelthrottling = false), 100);
+    setTimeout(() => (wheelthrottling = false), 50);
 
     if (e.ctrlKey && e.shiftKey) {
       setZoom(zoom - e.deltaY);
@@ -270,8 +270,10 @@
     }
 
     if (isHorizontal || e.shiftKey) {
-      const delta = absX > 0 ? e.deltaX : e.deltaY;
-      setOffset(Math.floor(pos_offset + delta * scale));
+      const delta = isHorizontal ? e.deltaX : e.deltaY;
+
+      const nextOffset = pos_offset + delta * scale;
+      setOffset(nextOffset);
 
       if (hoveredColumn != undefined) {
         hoveredColumn += pos_offset - from;
