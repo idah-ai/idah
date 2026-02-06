@@ -241,59 +241,52 @@
   }
 
   function handleTimelineWheel(e: WheelEvent) {
-  const absX = Math.abs(e.deltaX);
-  const absY = Math.abs(e.deltaY);
+    const absX = Math.abs(e.deltaX);
+    const absY = Math.abs(e.deltaY);
 
-  const isVertical = absY > absX;
-  const isHorizontal = absX > absY;
+    const isVertical = absY > absX;
+    const isHorizontal = absX > absY;
 
-  if (
-    isVertical &&
-    !e.ctrlKey &&
-    !e.shiftKey &&
-    !e.metaKey
-  ) {
-    return;
-  }
-
-  let from = $state.snapshot(pos_offset) as number;
-
-  if (wheelthrottling) return;
-  wheelthrottling = true;
-  setTimeout(() => (wheelthrottling = false), 10);
-
-
-  if (e.ctrlKey && e.shiftKey) {
-    setZoom(zoom - e.deltaY);
-    e.preventDefault();
-    return;
-  }
-
-  if (e.ctrlKey) {
-    setZoom(zoom - e.deltaY);
-    e.preventDefault();
-    return;
-  }
-
-  if (isHorizontal || e.shiftKey) {
-    const delta = absX > 0 ? e.deltaX : e.deltaY;
-    setOffset(Math.floor(pos_offset + delta * scale));
-
-    if (hoveredColumn != undefined) {
-      hoveredColumn += pos_offset - from;
+    if (isVertical && !e.ctrlKey && !e.shiftKey && !e.metaKey) {
+      return;
     }
 
-    e.preventDefault();
-    return;
-  }
+    let from = $state.snapshot(pos_offset) as number;
 
-  if (e.metaKey) {
-    const to = scale * (zoom / 10);
-    e.deltaY < 0 ? zoomIn(to) : zoomOut(to);
-    e.preventDefault();
-  }
-}
+    if (wheelthrottling) return;
+    wheelthrottling = true;
+    setTimeout(() => (wheelthrottling = false), 100);
 
+    if (e.ctrlKey && e.shiftKey) {
+      setZoom(zoom - e.deltaY);
+      e.preventDefault();
+      return;
+    }
+
+    if (e.ctrlKey) {
+      setZoom(zoom - e.deltaY);
+      e.preventDefault();
+      return;
+    }
+
+    if (isHorizontal || e.shiftKey) {
+      const delta = absX > 0 ? e.deltaX : e.deltaY;
+      setOffset(Math.floor(pos_offset + delta * scale));
+
+      if (hoveredColumn != undefined) {
+        hoveredColumn += pos_offset - from;
+      }
+
+      e.preventDefault();
+      return;
+    }
+
+    if (e.metaKey) {
+      const to = scale * (zoom / 10);
+      e.deltaY < 0 ? zoomIn(to) : zoomOut(to);
+      e.preventDefault();
+    }
+  }
 </script>
 
 {#snippet row(annotations: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[])}
@@ -413,8 +406,7 @@
   </span>
 {/snippet}
 
-<Table
-  onwheel={handleTimelineWheel}>
+<Table onwheel={handleTimelineWheel}>
   <TableHeader class="bg-background sticky z-40" style="inset-block-start: 0">
     <TableRow>
       <!-- HEADER::ANNOTATIONS -->
@@ -465,7 +457,7 @@
 
             {#if !isOutOfRange && isSelected}
               <button
-                class="border-border text-primary bg-background absolute top-0 z-40 h-full cursor-col-resize border-l"
+                class="border-border text-primary bg-background absolute top-0 z-40 h-full border-l"
                 style:width="{width}%"
                 style:padding-left="0.125rem"
                 style:left="{startLeftPosition}%"
