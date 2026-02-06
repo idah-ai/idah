@@ -13,10 +13,10 @@
   import { boundingBoxes } from "../idb_store.svelte";
 
   import type {
-    AnnotationMetadata,
-    AnnotationObj,
-    AnnotationShape,
-    AnnotationValue,
+      AnnotationMetadata,
+      AnnotationObj,
+      AnnotationShape,
+      AnnotationValue,
   } from "@/context/AnnotationContext";
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import type { AnnotationsIndexedDB } from "../indexedDB";
@@ -255,7 +255,7 @@
 
     if (wheelthrottling) return;
     wheelthrottling = true;
-    setTimeout(() => (wheelthrottling = false), 50);
+    setTimeout(() => (wheelthrottling = false), 30);
 
     if (e.ctrlKey && e.shiftKey) {
       setZoom(zoom - e.deltaY);
