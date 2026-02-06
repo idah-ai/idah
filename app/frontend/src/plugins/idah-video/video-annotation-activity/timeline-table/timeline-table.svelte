@@ -255,7 +255,7 @@
 
     if (wheelthrottling) return;
     wheelthrottling = true;
-    setTimeout(() => (wheelthrottling = false), 30);
+    // setTimeout(() => (wheelthrottling = false), 30);
 
     if (e.ctrlKey && e.shiftKey) {
       setZoom(zoom - e.deltaY);
