@@ -74,7 +74,6 @@
         onmouseover={() => setHoveredColumn(currentFrameInCell)}
         onmouseenter={() => setHoveredColumn(currentFrameInCell)}
         onmouseleave={() => setHoveredColumn(undefined)}
-        onmousedown={() => setHoveredColumn(currentFrameInCell)}
         {...restProps}
       />
     {/each}
