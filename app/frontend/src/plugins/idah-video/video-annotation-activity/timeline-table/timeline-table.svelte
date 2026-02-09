@@ -13,10 +13,10 @@
   import { boundingBoxes } from "../idb_store.svelte";
 
   import type {
-      AnnotationMetadata,
-      AnnotationObj,
-      AnnotationShape,
-      AnnotationValue,
+    AnnotationMetadata,
+    AnnotationObj,
+    AnnotationShape,
+    AnnotationValue,
   } from "@/context/AnnotationContext";
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import type { AnnotationsIndexedDB } from "../indexedDB";
@@ -233,7 +233,7 @@
   }
 
   function handleTimelineWheel(e: WheelEvent) {
-let from = $state.snapshot(pos_offset) as number;
+    let from = $state.snapshot(pos_offset) as number;
     let delta = 0;
     if (!wheelthrottling) {
       wheelthrottling = true;
@@ -279,7 +279,6 @@ let from = $state.snapshot(pos_offset) as number;
       }
     }
     if (delta || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) e.preventDefault();
-  
   }
 </script>
 
@@ -400,9 +399,7 @@ let from = $state.snapshot(pos_offset) as number;
   </span>
 {/snippet}
 
-<Table
-  onwheel={(e) => handleTimelineWheel(e)}
->
+<Table onwheel={(e) => handleTimelineWheel(e)}>
   <TableHeader class="bg-background sticky z-40" style="inset-block-start: 0">
     <TableRow>
       <!-- HEADER::ANNOTATIONS -->
