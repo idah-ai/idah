@@ -188,20 +188,20 @@
     setZoom(zoom - next);
   }
 
-  // function scrollHorizontal(e: MouseEvent) {
-  //   if (isResizing) {
-  //     const isScrollToTheRight = e.movementX > 0;
-  //     const isScrollToTheLeft = e.movementX < 0;
+  function scrollHorizontal(e: MouseEvent) {
+    // if (isResizing) {
+    //   const isScrollToTheRight = e.movementX > 0;
+    //   const isScrollToTheLeft = e.movementX < 0;
 
-  //     if (isScrollToTheRight) {
-  //       const next = Math.floor(range_span / 10);
-  //       scrollRight(next);
-  //     } else if (isScrollToTheLeft) {
-  //       const next = Math.floor(range_span / 10);
-  //       scrollLeft(next);
-  //     }
-  //   }
-  // }
+    if (isScrollToTheRight) {
+      const next = Math.floor(range_span / 10);
+      scrollRight(next);
+    } else if (isScrollToTheLeft) {
+      const next = Math.floor(range_span / 10);
+      scrollLeft(next);
+    }
+    // }
+  }
 
   function handleRowClick(annotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) {
     onSelectAnnotation(annotation);
@@ -428,6 +428,7 @@
           aria-valuenow={pos_offset}
           tabindex="0"
           class="text-muted-foreground group relative h-7"
+          onmousemove={scrollHorizontal}
         >
           {#each Array.from({ length: (() => {
                 const span = range[1] - range[0]; // actual range span
