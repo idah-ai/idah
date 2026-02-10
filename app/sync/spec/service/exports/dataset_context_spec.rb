@@ -63,10 +63,4 @@ RSpec.describe Exports::DatasetContext do
       expect(entries.first.id).to eq("019bc0fa-025e-7a8c-a3f4-82b276508315")
     end
   end
-
-  describe "#info" do
-    pending "not implemented" do
-      raise "TODO"
-    end
-  end
 end

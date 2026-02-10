@@ -44,7 +44,7 @@ module Spec
 
     self.max_retries = 2
 
-    def initialize(job_id, arguments)
+    def initialize(job, arguments)
       super
       self.class.run_count ||= 0
     end
@@ -216,7 +216,7 @@ RSpec.describe Jobs::Scheduler do
       it "sets the job as errored" do
         expect(job_repository).to receive(:lock_available).and_return([error_job])
         allow(job_repository).to receive(:next_scheduled_time).and_return(nil)
-        expect(job_repository).to receive(:error).with(4, error: "Something went wrong")
+        expect(job_repository).to receive(:error).with(4, "Something went wrong")
         # The job should not complete, so no update_progress to 1.0
         expect(job_repository).not_to receive(:update_progress).with(4, 1.0)
 
