@@ -106,6 +106,13 @@
   let wheelthrottling = $state(false);
   let hoveredColumn: number | undefined = $state();
 
+  let annotationTableHeader: HTMLElement | null = $state(null);
+  let timelineElementWidth = $derived(window.innerWidth - (annotationTableHeader?.clientWidth || 0));
+  let isScrollingHorizontal: boolean = $state(false);
+  let horizontalScrollBarWidth: number = $derived((range_span / totalFrames) * 100);
+  let rangeStart = $derived(range[0]);
+  let horizontalScrollBarOffset = $derived(Math.floor((rangeStart / totalFrames) * 100));
+
   export function setOffset(offset: number) {
     pos_offset = Math.max(1, Math.min(totalFrames - range_span, offset || 0));
   }
@@ -175,11 +182,11 @@
   }
 
   function scrollRight(next: number) {
-    setOffset(range[0] - next);
+    setOffset(rangeStart - next);
   }
 
   function scrollLeft(next: number) {
-    setOffset(range[0] + next);
+    setOffset(rangeStart + next);
   }
 
   function zoomIn(next: number) {
@@ -201,6 +208,21 @@
       } else if (isScrollToTheLeft) {
         const next = Math.floor(range_span / 10);
         scrollLeft(next);
+      }
+    }
+  }
+
+  function scrollHorizontal2(e: MouseEvent) {
+    if (isScrollingHorizontal) {
+      const isScrollToTheRight = e.movementX > 0;
+      const isScrollToTheLeft = e.movementX < 0;
+
+      if (isScrollToTheRight) {
+        const next = Math.floor(range_span / 10);
+        scrollLeft(next);
+      } else if (isScrollToTheLeft) {
+        const next = Math.floor(range_span / 10);
+        scrollRight(next);
       }
     }
   }
@@ -405,7 +427,7 @@
   <TableHeader class="bg-background sticky z-40" style="inset-block-start: 0">
     <TableRow>
       <!-- HEADER::ANNOTATIONS -->
-      <TableHead class="h-7 w-60 text-right">
+      <TableHead bind:ref={annotationTableHeader} class="h-7 w-60 text-right">
         <Button variant="ghost" size="icon" class={cn("ml-2 size-6")} onclick={toggleVisibility}>
           {#if allHidden}
             <EyeOff class="size-3" />
@@ -439,19 +461,19 @@
           }}
         >
           {#each Array.from({ length: (() => {
-                const span = range[1] - range[0]; // actual range span
+                const span = range[1] - rangeStart; // actual range span
                 const padding = (scale - (span % scale)) % scale; // align to scale
                 // clamp to range length
-                return Math.min(span + padding + 1, range[1] - range[0] + 1);
+                return Math.min(span + padding + 1, range[1] - rangeStart + 1);
               })() }, (_, i) => i) as i (i)}
-            {@const thisFrame = i + range[0]}
-            {@const width = (1 / ((range[1] - range[0] + (scale - (range_span % scale))) / 100)) * scale}
+            {@const thisFrame = i + rangeStart}
+            {@const width = (1 / ((range[1] - rangeStart + (scale - (range_span % scale))) / 100)) * scale}
             {@const isSelected = Math.floor(thisFrame) == currentFrame}
             {@const isHovered = thisFrame == hoveredColumn}
             {@const cellIndex = Math.floor(i / scale)}
             {@const isDefault = cellIndex % Math.floor(zoom / Math.min(zoom, 20)) == 0 && i % scale == 0}
             {@const isTick = i % scale == 0}
-            {@const startLeftPosition = (i / (range[1] - range[0] + (scale - (range_span % scale)))) * 100}
+            {@const startLeftPosition = (i / (range[1] - rangeStart + (scale - (range_span % scale)))) * 100}
             {@const isOutOfRange = thisFrame > totalFrames}
 
             {#if !isOutOfRange && isSelected}
@@ -536,3 +558,36 @@
     {/await}
   </TableBody>
 </Table>
+
+{#if horizontalScrollBarWidth < 100}
+  {@const annotationTableHeaderWidth = annotationTableHeader?.clientWidth || 0}
+
+  <div class="absolute bottom-0 z-50 w-full bg-transparent p-0.25">
+    <div class="flex h-3 w-full items-center">
+      <div class="bg-background" style:width="{annotationTableHeaderWidth}px">x</div>
+
+      <div
+        id="scrollbar-container"
+        role="button"
+        tabindex="-1"
+        class="bg-background border-t"
+        style:width="{window.innerWidth - annotationTableHeaderWidth}px"
+        onmousedowncapture={() => {
+          isScrollingHorizontal = true;
+        }}
+        onmousemove={scrollHorizontal2}
+        onmouseupcapture={() => {
+          isScrollingHorizontal = false;
+        }}
+      >
+        <!-- TODO: on the width or margin left need to be calculated based on the position of the mouse coordinates -->
+        <div
+          id="scrollbar-handle"
+          class="bg-foreground/20 h-3 cursor-pointer rounded-lg"
+          style:width="{horizontalScrollBarWidth}%"
+          style:margin-left="{horizontalScrollBarOffset}rem"
+        ></div>
+      </div>
+    </div>
+  </div>
+{/if}
