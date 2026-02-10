@@ -10,9 +10,9 @@ module Jobs
 
     attr_reader :job_id, :arguments
 
-    def initialize(job)
-      @job_id = job.id
-      @arguments = job.arguments
+    def initialize(job_id, arguments)
+      @job_id = job_id
+      @arguments = arguments
     end
 
     def update_progress(value)
