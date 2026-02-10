@@ -54,6 +54,73 @@ function rotateVerticesByStartAngle(points: Point[], center: Point): [Point[], [
   return [reorderedPoints, polarReindexed];
 }
 
+
+// Longest Increasing Subsequence (LIS) algorithm
+function lisIndices(arr: number[]) {
+  const n = arr.length;
+  const dp = Array(n).fill(1);
+  const prev = Array(n).fill(-1);
+
+  let maxLen = 1;
+  let end = 0;
+
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < i; j++) {
+      if (arr[j] < arr[i] && dp[j] + 1 > dp[i]) {
+        dp[i] = dp[j] + 1;
+        prev[i] = j;
+      }
+    }
+    if (dp[i] > maxLen) {
+      maxLen = dp[i];
+      end = i;
+    }
+  }
+
+  const indices = [];
+  while (end !== -1) {
+    indices.push(end);
+    end = prev[end];
+  }
+
+  return indices.reverse();
+}
+
+function longestCircularIncreasingSubsequence(arr : number[]) {
+  const n = arr.length;
+  const doubled = arr.concat(arr);
+
+  let best: number[] = [];
+
+  for (let start = 0; start < n; start++) {
+    const window = doubled.slice(start, start + n);
+    const lis = lisIndices(window);
+
+    if (lis.length > best.length) {
+      best = lis.map(i => (start + i) % n);
+    }
+  }
+
+  return best;
+}
+
+function deleteMinimumForCircularSort(arr: number[]) {
+  const keepIndices = new Set(longestCircularIncreasingSubsequence(arr));
+
+    const corrected: number[] = [];
+    const deleted: number[] = [];
+
+    arr.forEach((val, idx) => {
+      if (keepIndices.has(idx)) {
+        corrected.push(val);
+      } else {
+        deleted.push(val);
+      }
+    });
+
+  return { corrected, deleted };
+}
+
 function matchVerticesByBarycenter(polyMin: Point[], polyMax: Point[]): [Point[], Point[], Record<number, number>] {
   const cMin = polygonBarycenter(polyMin);
   const cMax = polygonBarycenter(polyMax);
@@ -75,7 +142,7 @@ function matchVerticesByBarycenter(polyMin: Point[], polyMax: Point[]): [Point[]
       }
     }
     if (bestJ !== null) {
-      // check if bestJ is already matched
+    //   // check if bestJ is already matched
       const alreadyMatched = Object.values(matches).includes(bestJ);
       // if already matched, check who is closer
       if (alreadyMatched) {
@@ -96,6 +163,15 @@ function matchVerticesByBarycenter(polyMin: Point[], polyMax: Point[]): [Point[]
       } else {
         matches[iMin] = bestJ;
       }
+    }
+  }
+
+  // remove indices that do not make a circularly sorted order in matches
+  let matchesValues = Object.values(matches);
+  matchesValues = deleteMinimumForCircularSort(matchesValues).corrected;
+  for (const key in matches) {
+    if (!matchesValues.includes(matches[key])) {
+      delete matches[key];
     }
   }
 
@@ -154,6 +230,8 @@ function expandPolygonUsingMatches(
   const expandedPolyMax = [...polyMax];
   for (const insertIdx of unmatchedMinIndices) {
     const target = polyMin[insertIdx];
+    const beforeTarget = polyMin[(insertIdx -1 + polyMin.length) % polyMin.length];
+    const afterTarget = polyMin[(insertIdx + 1) % polyMin.length];
 
     let bestSegIdx = -1;
     let bestDist = Infinity;
@@ -170,19 +248,51 @@ function expandPolygonUsingMatches(
       const d = distance(target, proj);
 
       if (d < bestDist) {
-        bestDist = d;
-        bestSegIdx = i;
+        // now i need to find the previous and next point on the expandedPolyMin that matched true
+        // and compare if there is equal to beforeTarget and afterTarget, if so, then this is the correct segment to insert into
+
+        let prevPoint: Point | null = null;
+        let nextPoint: Point | null = null;
+
+        for (let j = 0; j < n; j++) {
+          const idx = (i - j + n) % n;
+          if (expandedPolyMin[idx] && expandedPolyMin[idx]!.matched) {
+            prevPoint = expandedPolyMin[idx]!.point;
+
+            break;
+          }
+        }
+
+        for (let j = 1; j < n; j++) {
+          const idx = (i + j) % n;
+          if (expandedPolyMin[idx] && expandedPolyMin[idx]!.matched) {
+            nextPoint = expandedPolyMin[idx]!.point;
+
+            break;
+          }
+        }
+
+        if (
+          prevPoint &&
+          nextPoint &&
+          distance(prevPoint, beforeTarget) < 1e-2 &&
+          distance(nextPoint, afterTarget) < 1e-2
+        ) {
+          bestDist = d;
+          bestSegIdx = i;
+        }
       }
     }
 
     if (bestSegIdx === -1) continue;
 
     const insertAt = bestSegIdx + 1;
+
     // last -> first segment
     if (insertAt === expandedPolyMin.length) {
       expandedPolyMin.push({
         point: polyMin[insertIdx],
-        matched: true,
+        matched: null,
       });
 
       // add point to polyMax but in middle of last and first
@@ -190,7 +300,7 @@ function expandPolygonUsingMatches(
     } else {
       expandedPolyMin.splice(insertAt, 0, {
         point: polyMin[insertIdx],
-        matched: true,
+        matched: null,
       });
 
       // add point to expandedPolyMax but in middle of neighbors
@@ -217,6 +327,11 @@ function expandPolygonUsingMatches(
 
       expandedPolyMin[index] = {
         point: [(1 - t) * pPrev.point[0] + t * pNext.point[0], (1 - t) * pPrev.point[1] + t * pNext.point[1]],
+        matched: false,
+      };
+    } else if (item?.matched === null) {
+      expandedPolyMin[index] = {
+        point: item.point,
         matched: false,
       };
     }
