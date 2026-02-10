@@ -372,7 +372,7 @@
       style:stroke={isMatched ? color : "orange"}
       style:stroke-width={isMatched ? 1 : 3}
       style:stroke-dasharray={isMatched ? "none" : "3,3"}
-      style:fill={isMatched ? color : "none"}
+      style:fill={isMatched ? color : "orange"}
       fill-opacity={1}
     />
   {/each}
