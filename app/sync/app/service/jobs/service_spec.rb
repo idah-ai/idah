@@ -2,17 +2,7 @@
 
 RSpec.describe Jobs::Service do
   let(:auth_context) do
-    Verse::Auth::Context.new(
-      nil,
-      custom_scopes: [],
-      metadata: {
-        email: "test@example.com",
-        id: 1,
-        organization: "default",
-        role: "user"
-      },
-      type: :user
-    )
+    Verse::Auth::Context[:system]
   end
 
   let(:service) { described_class.new(auth_context) }
@@ -23,14 +13,14 @@ RSpec.describe Jobs::Service do
       expect(repo).to receive(:transaction).and_yield
       expect(repo).to receive(:create).with(
         hash_including(
+          arguments: {"a" => 1},
           job_class: "MyJob",
-          arguments: { "a" => 1 },
           priority: 10,
-          status: "pending",
-          retry_count: 0,
           progress: 0.0,
-          created_by: 1,
-          created_by_role: "user"
+          retry_count: 0,
+          scheduled_at: kind_of(Time),
+          status: "pending",
+          unicity: nil
         )
       ).and_return(1)
       expect(repo).to receive(:find!).with(1)
