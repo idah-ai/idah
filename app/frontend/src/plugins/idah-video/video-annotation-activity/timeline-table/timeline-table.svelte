@@ -13,10 +13,10 @@
   import { boundingBoxes } from "../idb_store.svelte";
 
   import type {
-    AnnotationMetadata,
-    AnnotationObj,
-    AnnotationShape,
-    AnnotationValue,
+      AnnotationMetadata,
+      AnnotationObj,
+      AnnotationShape,
+      AnnotationValue,
   } from "@/context/AnnotationContext";
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import type { AnnotationsIndexedDB } from "../indexedDB";
@@ -73,15 +73,6 @@
 
   // Variables
   let isResizing: boolean = $state(false);
-
-  function toggleVisibility() {
-    onVisibility(!allHidden);
-  }
-
-  function toggleLocked() {
-    onLock(!allLocked);
-  }
-
   let range_span = $derived(Math.min(scale * zoom, totalFrames));
   let manual_offset = 1;
 
@@ -105,6 +96,14 @@
   let range: [number, number] = $derived([pos_offset, Math.min(pos_offset + range_span, totalFrames)]);
   let wheelthrottling = $state(false);
   let hoveredColumn: number | undefined = $state();
+
+   function toggleVisibility() {
+    onVisibility(!allHidden);
+  }
+
+  function toggleLocked() {
+    onLock(!allLocked);
+  }
 
   export function setOffset(offset: number) {
     pos_offset = Math.max(1, Math.min(totalFrames - range_span, offset || 0));
@@ -233,12 +232,51 @@
       },
     };
   }
+
+  function sortAnnotationsByParent(annotations: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]): AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[] {
+  const childrenMap = new Map<string, T[]>();
+  const roots: T[] = [];
+
+  for (const annotation of annotations) {
+    const parentId = annotation.metadata.parent_id;
+
+    if (parentId) {
+      if (!childrenMap.has(parentId)) {
+        childrenMap.set(parentId, []);
+      }
+      childrenMap.get(parentId)!.push(annotation);
+    } else {
+      roots.push(annotation);
+    }
+  }
+
+  const result: T[] = [];
+
+  function append(parent: T) {
+    result.push(parent);
+
+    const children = childrenMap.get(parent.metadata.id);
+    if (children) {
+      for (const child of children) {
+        append(child);
+      }
+    }
+  }
+
+  for (const root of roots) {
+    append(root);
+  }
+
+  return result;
+}
+
 </script>
 
 {#snippet row(annotations: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[])}
-  {#each annotations as annotation, index (annotation.metadata.id)}
+    {@const sortedAnnotations = sortAnnotationsByParent(annotations)}
+  {#each sortedAnnotations as annotation, index (annotation.metadata.id)}
     {@const isSelected = selectedAnnotation?.metadata.id == annotation.metadata.id}
-    {@const isLastIndex = index == annotations.length - 1}
+    {@const isLastIndex = index == sortedAnnotations.length - 1}
     <TableRow
       class={cn("border-b-0", {
         "bg-primary/20": isSelected,
