@@ -32,17 +32,12 @@ module Jobs
       unicity: nil
     )
       repo.transaction do
-        record = {
+       record = {
           job_class: job_class,
-          created_by: created_by[:id],
-          created_by_role: created_by[:role],
-          created_by_organization: created_by[:organization],
-          created_by_custom_scopes: created_by[:custom_scopes],
-          created_by_metadata: created_by[:metadata],
-          arguments:,
-          priority:,
+          arguments: arguments,
+          priority: priority,
           status: "pending",
-          scheduled_at:,
+          scheduled_at: scheduled_at,
           unicity:,
           retry_count: 0,
           progress: 0.0
