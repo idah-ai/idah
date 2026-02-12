@@ -20,6 +20,13 @@ export const fieldTypes: FieldType[] = [
   { label: "Multiple Select", value: "multi-select", icon: SquareCheckBigIcon },
 ];
 
+export interface BorderType extends LabelValue<string> {}
+export const borderTypes: BorderType[] = [
+  { label: "Solid", value: "solid" },
+  { label: "Dashed", value: "dashed" },
+  { label: "Dotted", value: "dotted" },
+];
+
 interface LabelColor {
   label: string;
   color: string;
