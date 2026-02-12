@@ -482,19 +482,15 @@
     let opacity = defaultBackgroundOpacity;
 
     /** OPACITY */
-    switch (styles?.opacity) {
-      case undefined: {
-        opacity = defaultBackgroundOpacity;
-        break;
-      }
-      case null: {
-        opacity = defaultBackgroundOpacity;
-        break;
-      }
-      default: {
-        opacity = (styles?.opacity ?? 100 / 100) * defaultBackgroundOpacity;
-        break;
-      }
+    /** NOTE:: Can't use switch statement as it will not work with null value  */
+    if (styles?.opacity === undefined) {
+      opacity = defaultBackgroundOpacity;
+    } else if (styles?.opacity === null) {
+      opacity = defaultBackgroundOpacity;
+    } else if (styles.opacity === 0) {
+      opacity = 0;
+    } else {
+      opacity = (styles?.opacity / 100) * defaultBackgroundOpacity;
     }
 
     switch (border) {
