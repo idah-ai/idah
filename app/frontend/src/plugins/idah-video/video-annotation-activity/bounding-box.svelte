@@ -691,7 +691,9 @@
             r={2}
             style:transform-origin={`${displayCentroid[X] * ratio[X]}px ${displayCentroid[Y] * ratio[Y]}px`}
             style:transform={`rotate(${getAngle()}rad)`}
-            style:cursor={isEditing ? "none" : `url('${getRotatedCursorSVG(handle)}') 18 18, ${getHandleCursor(handle)}`}
+            style:cursor={isEditing
+              ? "none"
+              : `url('${getRotatedCursorSVG(handle)}') 18 18, ${getHandleCursor(handle)}`}
             vector-effect="non-scaling-stroke"
             style:stroke={color}
             style:fill={color}
@@ -713,7 +715,9 @@
             r={5}
             style:transform-origin={`${displayCentroid[X] * ratio[X]}px ${displayCentroid[Y] * ratio[Y]}px`}
             style:transform={`rotate(${getAngle()}rad)`}
-            style:cursor={isEditing ? "none" : `url('${getRotatedCursorSVG(handle)}') 18 18, ${getHandleCursor(handle)}`}
+            style:cursor={isEditing
+              ? "none"
+              : `url('${getRotatedCursorSVG(handle)}') 18 18, ${getHandleCursor(handle)}`}
             vector-effect="non-scaling-stroke"
             style:stroke={color}
             style:fill={color}

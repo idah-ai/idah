@@ -104,12 +104,10 @@
   });
   let points: Point[] | InterpolatedVertex[] | undefined = $derived.by(() => {
     if (current_shape && "points" in current_shape) {
-
       return current_shape.points || [];
-    }   else  {
-      return  [];
+    } else {
+      return [];
     }
-
   });
   let angle: number = $derived.by(() => {
     return current_shape?.angle || 0;
@@ -332,7 +330,8 @@
           {:else if annotation.shape.type == IDAH_POLYGON && !annotation.hidden}
             <Polygon
               {mode}
-              points={(getInterpolatedFrame(annotation.shape as VideoShape, frame)?.points || []) as InterpolatedVertex[]}
+              points={(getInterpolatedFrame(annotation.shape as VideoShape, frame)?.points ||
+                []) as InterpolatedVertex[]}
               ratio={target_size}
               offset={zoomInfo.offset}
               color={Object.entries(context.config)
@@ -387,7 +386,8 @@
             {:else if annotation.shape.type == IDAH_POLYGON && !annotation.hidden}
               <Polygon
                 {mode}
-                points={(getInterpolatedFrame(annotation.shape as VideoShape, frame)?.points || []) as InterpolatedVertex[]}
+                points={(getInterpolatedFrame(annotation.shape as VideoShape, frame)?.points ||
+                  []) as InterpolatedVertex[]}
                 ratio={target_size}
                 offset={zoomInfo.offset}
                 color={annotation?.synced
@@ -419,7 +419,7 @@
           <BoundingBox
             bind:this={toolSelection}
             {mode}
-            points = {points as Point[]}
+            points={points as Point[]}
             {angle}
             onEditingChange={(editing) => {
               isEditing = editing;
@@ -451,8 +451,8 @@
           {mode}
           points={points as Point[] | InterpolatedVertex[]}
           onEditingChange={(editing) => {
-              isEditing = editing;
-            }}
+            isEditing = editing;
+          }}
           onPointerChange={(c) => (editionCursor = c)}
           ratio={target_size}
           offset={zoomInfo.offset}
