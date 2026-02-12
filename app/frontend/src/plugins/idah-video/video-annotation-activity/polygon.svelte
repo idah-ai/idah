@@ -45,7 +45,7 @@
     previousPointsLength = currentLength;
   });
 
-    // Update hover state when cursor moves
+  // Update hover state when cursor moves
   $effect(() => {
     if (editable && cursor && isPolygonComplete && !isEditing) {
       isHoveringOverEdge = checkIfNearEdge(cursor);
@@ -86,12 +86,11 @@
     };
   });
 
-
-  let  isEditing = $derived.by(() => {
+  let isEditing = $derived.by(() => {
     return !isPolygonComplete || panStart != undefined || editingVertexIndex !== undefined;
   });
 
-  let  edition_cursor = $derived.by(() => {
+  let edition_cursor = $derived.by(() => {
     if (isHoveringOverFirstPoint && !isPolygonComplete) {
       // Show pointer cursor when hovering over first point during creation (to close polygon)
       return "cursor-pointer";
@@ -116,7 +115,6 @@
     onPointerChange?.(edition_cursor);
   });
 
-
   export function setPolygonComplete(complete: boolean = true) {
     isPolygonComplete = complete;
   }
@@ -134,8 +132,6 @@
   let isHoveringOverEdge: boolean = $state(false); // track if cursor is near polygon edge
   let isAltKeyPressed: boolean = $state(false); // track if ALT key is pressed
   let isHoveringOverFirstPoint: boolean = $state(false); // track if cursor is near first point during creation
-
-
 
   // Convert InterpolatedVertex[] to Point[] for internal operations
   let rawPoints: Point[] = $derived.by(() => {
@@ -306,11 +302,9 @@
   }
 
   export function endSelection(end: Point) {
-
     if (!isPolygonComplete) {
       // Adding new vertex
       if (rawPoints.length === 0 || !isNearPoint(rawPoints[rawPoints.length - 1], end, 10)) {
-
         rawPoints = [...rawPoints, end];
         if (rawPoints.length >= 3 && isNearPoint(rawPoints[0], end, 10)) {
           rawPoints = rawPoints.slice(0, -1); // Remove last point to avoid duplication
@@ -339,7 +333,6 @@
       }
     }
   }
-
 </script>
 
 {#snippet PolygonVertices(vertexPoints: Point[] | InterpolatedVertex[])}

@@ -79,7 +79,10 @@ export function getInterpolatedFrame(
   shape: VideoShape,
   current_frame: number,
   interpolate: boolean = true,
-): { points: Point[] | undefined; angle: number } | { points: InterpolatedVertex[] | undefined; angle: number } | undefined {
+):
+  | { points: Point[] | undefined; angle: number }
+  | { points: InterpolatedVertex[] | undefined; angle: number }
+  | undefined {
   if (!shape.frames || shape.frames.length === 0) return; // no render (eg. entry:root)
 
   if (shape.start > current_frame || shape.end < current_frame) return;
@@ -123,7 +126,7 @@ export function getInterpolatedFrame(
   } else if (shape.type == IDAH_POLYGON) {
     return {
       points: interpolatePolygonAtFrame(frame_start, frame_end, current_frame),
-      angle: 0
+      angle: 0,
     };
   }
 }

@@ -54,7 +54,6 @@ function rotateVerticesByStartAngle(points: Point[], center: Point): [Point[], [
   return [reorderedPoints, polarReindexed];
 }
 
-
 // Longest Increasing Subsequence (LIS) algorithm
 function lisIndices(arr: number[]) {
   const n = arr.length;
@@ -86,7 +85,7 @@ function lisIndices(arr: number[]) {
   return indices.reverse();
 }
 
-function longestCircularIncreasingSubsequence(arr : number[]) {
+function longestCircularIncreasingSubsequence(arr: number[]) {
   const n = arr.length;
   const doubled = arr.concat(arr);
 
@@ -97,7 +96,7 @@ function longestCircularIncreasingSubsequence(arr : number[]) {
     const lis = lisIndices(window);
 
     if (lis.length > best.length) {
-      best = lis.map(i => (start + i) % n);
+      best = lis.map((i) => (start + i) % n);
     }
   }
 
@@ -107,16 +106,16 @@ function longestCircularIncreasingSubsequence(arr : number[]) {
 function deleteMinimumForCircularSort(arr: number[]) {
   const keepIndices = new Set(longestCircularIncreasingSubsequence(arr));
 
-    const corrected: number[] = [];
-    const deleted: number[] = [];
+  const corrected: number[] = [];
+  const deleted: number[] = [];
 
-    arr.forEach((val, idx) => {
-      if (keepIndices.has(idx)) {
-        corrected.push(val);
-      } else {
-        deleted.push(val);
-      }
-    });
+  arr.forEach((val, idx) => {
+    if (keepIndices.has(idx)) {
+      corrected.push(val);
+    } else {
+      deleted.push(val);
+    }
+  });
 
   return { corrected, deleted };
 }
@@ -142,7 +141,7 @@ function matchVerticesByBarycenter(polyMin: Point[], polyMax: Point[]): [Point[]
       }
     }
     if (bestJ !== null) {
-    //   // check if bestJ is already matched
+      //   // check if bestJ is already matched
       const alreadyMatched = Object.values(matches).includes(bestJ);
       // if already matched, check who is closer
       if (alreadyMatched) {
@@ -230,7 +229,7 @@ function expandPolygonUsingMatches(
   const expandedPolyMax = [...polyMax];
   for (const insertIdx of unmatchedMinIndices) {
     const target = polyMin[insertIdx];
-    const beforeTarget = polyMin[(insertIdx -1 + polyMin.length) % polyMin.length];
+    const beforeTarget = polyMin[(insertIdx - 1 + polyMin.length) % polyMin.length];
     const afterTarget = polyMin[(insertIdx + 1) % polyMin.length];
 
     let bestSegIdx = -1;
