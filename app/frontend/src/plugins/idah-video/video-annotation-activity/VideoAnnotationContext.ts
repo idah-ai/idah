@@ -13,7 +13,7 @@ export type Point = [number, number];
 
 export type InterpolatedVertex = {
   point: Point;
-  matched: boolean;
+  matched: boolean | null;
 };
 
 export type VideoShapeType = IdahVideoBoundingBox | IdahPolygon;

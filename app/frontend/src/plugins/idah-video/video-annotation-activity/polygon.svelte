@@ -373,7 +373,7 @@
       style:stroke-width={isMatched ? 1 : 3}
       style:stroke-dasharray={isMatched ? "none" : "3,3"}
       style:fill={isMatched ? color : "orange"}
-      fill-opacity={1}
+      fill-opacity={isMatched ? 1 : 0}
     />
   {/each}
 {/snippet}
