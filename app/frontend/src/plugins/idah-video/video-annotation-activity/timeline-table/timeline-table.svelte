@@ -13,10 +13,10 @@
   import { boundingBoxes } from "../idb_store.svelte";
 
   import type {
-      AnnotationMetadata,
-      AnnotationObj,
-      AnnotationShape,
-      AnnotationValue,
+    AnnotationMetadata,
+    AnnotationObj,
+    AnnotationShape,
+    AnnotationValue,
   } from "@/context/AnnotationContext";
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import type { AnnotationsIndexedDB } from "../indexedDB";
@@ -97,7 +97,7 @@
   let wheelthrottling = $state(false);
   let hoveredColumn: number | undefined = $state();
 
-   function toggleVisibility() {
+  function toggleVisibility() {
     onVisibility(!allHidden);
   }
 
@@ -233,47 +233,48 @@
     };
   }
 
-  function sortAnnotationsByParent(annotations: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]): AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[] {
-  const childrenMap = new Map<string, T[]>();
-  const roots: T[] = [];
+  function sortAnnotationsByParent(
+    annotations: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[],
+  ): AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[] {
+    const childrenMap = new Map<string, AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]>();
+    const roots: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[] = [];
 
-  for (const annotation of annotations) {
-    const parentId = annotation.metadata.parent_id;
+    for (const annotation of annotations) {
+      const parentId = annotation.metadata.parent_id;
 
-    if (parentId) {
-      if (!childrenMap.has(parentId)) {
-        childrenMap.set(parentId, []);
-      }
-      childrenMap.get(parentId)!.push(annotation);
-    } else {
-      roots.push(annotation);
-    }
-  }
-
-  const result: T[] = [];
-
-  function append(parent: T) {
-    result.push(parent);
-
-    const children = childrenMap.get(parent.metadata.id);
-    if (children) {
-      for (const child of children) {
-        append(child);
+      if (parentId) {
+        if (!childrenMap.has(parentId)) {
+          childrenMap.set(parentId, []);
+        }
+        childrenMap.get(parentId)!.push(annotation);
+      } else {
+        roots.push(annotation);
       }
     }
+
+    const result: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[] = [];
+
+    function append(parent: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) {
+      result.push(parent);
+
+      const children = childrenMap.get(parent.metadata.id);
+      if (children) {
+        for (const child of children) {
+          append(child);
+        }
+      }
+    }
+
+    for (const root of roots) {
+      append(root);
+    }
+
+    return result;
   }
-
-  for (const root of roots) {
-    append(root);
-  }
-
-  return result;
-}
-
 </script>
 
 {#snippet row(annotations: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[])}
-    {@const sortedAnnotations = sortAnnotationsByParent(annotations)}
+  {@const sortedAnnotations = sortAnnotationsByParent(annotations)}
   {#each sortedAnnotations as annotation, index (annotation.metadata.id)}
     {@const isSelected = selectedAnnotation?.metadata.id == annotation.metadata.id}
     {@const isLastIndex = index == sortedAnnotations.length - 1}
