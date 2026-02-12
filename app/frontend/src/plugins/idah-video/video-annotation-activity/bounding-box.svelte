@@ -482,7 +482,20 @@
     let opacity = defaultBackgroundOpacity;
 
     /** OPACITY */
-    if (styles?.opacity !== undefined) opacity = (styles.opacity / 100) * defaultBackgroundOpacity;
+    switch (styles?.opacity) {
+      case undefined: {
+        opacity = defaultBackgroundOpacity;
+        break;
+      }
+      case null: {
+        opacity = defaultBackgroundOpacity;
+        break;
+      }
+      default: {
+        opacity = (styles?.opacity ?? 100 / 100) * defaultBackgroundOpacity;
+        break;
+      }
+    }
 
     switch (border) {
       case "dashed": {

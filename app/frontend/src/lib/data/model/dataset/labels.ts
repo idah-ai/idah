@@ -4,6 +4,8 @@ import {
   CircleCheckBigIcon,
   HashIcon,
   SquareCheckBigIcon,
+  SquareDashedIcon,
+  SquareIcon,
   ToggleRightIcon,
   TypeIcon,
   type Icon as IconType,
@@ -20,11 +22,13 @@ export const fieldTypes: FieldType[] = [
   { label: "Multiple Select", value: "multi-select", icon: SquareCheckBigIcon },
 ];
 
-export interface BorderType extends LabelValue<string> {}
+export interface BorderType extends LabelValue<string> {
+  icon?: typeof IconType;
+}
 export const borderTypes: BorderType[] = [
-  { label: "Solid", value: "solid" },
-  { label: "Dashed", value: "dashed" },
-  { label: "Dotted", value: "dotted" },
+  { label: "Solid", value: "solid", icon: SquareDashedIcon },
+  { label: "Dashed", value: "dashed", icon: SquareDashedIcon },
+  { label: "Dotted", value: "dotted", icon: SquareIcon },
 ];
 
 interface LabelColor {
