@@ -1,5 +1,6 @@
 <script lang="ts">
   import { getContext } from "svelte";
+  import { SvelteMap } from "svelte/reactivity";
 
   import { Button } from "@/components/ui/button";
   import Spinner from "@/components/ui/spinner/spinner.svelte";
@@ -236,7 +237,7 @@
   function sortAnnotationsByParent(
     annotations: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[],
   ): AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[] {
-    const childrenMap = new Map<string, AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]>();
+    const childrenMap = new SvelteMap<string, AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]>();
     const roots: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[] = [];
 
     for (const annotation of annotations) {
