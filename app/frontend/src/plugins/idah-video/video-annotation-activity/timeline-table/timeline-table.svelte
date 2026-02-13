@@ -240,7 +240,7 @@
     const roots: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[] = [];
 
     for (const annotation of annotations) {
-      const parentId = annotation.metadata.parent_id;
+      const parentId = annotation.metadata?.metadata?.parent_id;
 
       if (parentId) {
         if (!childrenMap.has(parentId)) {
