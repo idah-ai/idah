@@ -31,6 +31,8 @@ export type AnnotationMetadata = {
 
   userId?: string; // ID of the user who created the annotation
   comments?: string[]; // Comments or notes associated with the annotation
+  
+  metadata?: Hash; // metadata from backend db; group_id?: string, parent_id?: string
 };
 
 /**
