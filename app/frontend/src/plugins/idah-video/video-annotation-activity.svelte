@@ -198,6 +198,7 @@
                 id: a.id,
                 updatedAt: a.updated_at,
                 createdAt: a.created_at,
+                metadata: a.metadata || {},
               },
               hidden: false,
               locked: false,
@@ -792,7 +793,7 @@
           a1.shape.end = originalEnd;
           a1.shape.frames = originalFrames;
           a1.metadata.updatedAt = originalUpdatedAt;
-          
+
           if (originalGroupId === undefined) {
             delete a1.metadata.metadata?.group_id;
           } else {

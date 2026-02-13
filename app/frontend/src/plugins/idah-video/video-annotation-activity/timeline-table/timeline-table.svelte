@@ -275,10 +275,9 @@
 </script>
 
 {#snippet row(annotations: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[])}
-  {@const sortedAnnotations = sortAnnotationsByParent(annotations)}
-  {#each sortedAnnotations as annotation, index (annotation.metadata.id)}
+  {#each annotations as annotation, index (annotation.metadata.id)}
     {@const isSelected = selectedAnnotation?.metadata.id == annotation.metadata.id}
-    {@const isLastIndex = index == sortedAnnotations.length - 1}
+    {@const isLastIndex = index == annotations.length - 1}
     <TableRow
       class={cn("border-b-0", {
         "bg-primary/20": isSelected,
@@ -572,7 +571,8 @@
     {#await annotations_promise}
       {@render row($boundingBoxes)}
     {:then annotations}
-      {@render row(annotations)}
+      {@const sortedAnnotations = sortAnnotationsByParent(annotations)}
+      {@render row(sortedAnnotations)}
     {/await}
   </TableBody>
 </Table>
