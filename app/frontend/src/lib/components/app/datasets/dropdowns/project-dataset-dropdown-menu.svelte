@@ -117,12 +117,6 @@
       showActionFailedToast(error);
     }
   }
-
-  async function exportDataset(): Promise<void> {
-    await ExportsBackendDataSource.export({ datasets: { id: datasetId } });
-    // goto(resolve(`/projects/${projectId}/datasets`));
-    openConfirmExportModal = false;
-  }
 </script>
 
 {#if canUpdateDataset || canDeleteDataset}

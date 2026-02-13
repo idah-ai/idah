@@ -1,13 +1,21 @@
 <script lang="ts">
-  import type { Snippet } from "svelte";
+  import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
   // Props
   interface Props {
-    children: Snippet;
+    name: string;
   }
-  let { children }: Props = $props();
+  let { name }: Props = $props();
+
+  // Variables
 </script>
 
-<div class="truncate whitespace-nowrap">
-  {@render children()}
-</div>
+<TooltipProvider ignoreNonKeyboardFocus>
+  <Tooltip>
+    <TooltipTrigger class="truncate">
+      {name}
+    </TooltipTrigger>
+
+    <TooltipContent>{name}</TooltipContent>
+  </Tooltip>
+</TooltipProvider>

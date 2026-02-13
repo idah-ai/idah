@@ -95,14 +95,6 @@
       showActionFailedToast(error);
     }
   }
-
-  async function exportEntry() {
-    await ExportsBackendDataSource.export({
-      datasets: { id: entry.dataset_id },
-      entries: { id: entry.id },
-    });
-    openConfirmDeleteEntryModal = false;
-  }
 </script>
 
 {#if canUpdateEntry || canDeleteEntry}

@@ -234,7 +234,7 @@
           })}
           onclick={(e) => toggleCategory(e, category)}
         >
-          <div class="flex w-full items-center" style:margin-left="{level - 1}rem">
+          <div class="flex w-full items-center" style:padding-left="{level - 1}rem">
             <SidebarMenuItem class="flex h-8 w-full flex-row items-center gap-1">
               {@const hasChildren = !!category.nestedCategories || hasAnnoations}
 
@@ -280,7 +280,7 @@
                 })}
               />
 
-              <CategoryName>{category.name}</CategoryName>
+              <CategoryName name={category.name} />
 
               {#if db && category}
                 {#key $idb_updated_at}

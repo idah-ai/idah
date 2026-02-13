@@ -5,7 +5,16 @@
   import { boundingBoxes } from "./idb_store.svelte";
 
   import { DEFAULT_MODE, ENTRY_ROOT, IDAH_NOTE, IDAH_VIDEO_BOUNDING_BOX, type EntryRoot } from "../type";
-  import { HEIGHT, ORIGIN, WIDTH, X, Y, type Point, type VideoFrameSelection } from "./VideoAnnotationContext";
+  import {
+    HEIGHT,
+    ORIGIN,
+    WIDTH,
+    X,
+    Y,
+    type Point,
+    type VideoShape,
+    getInterpolatedFrame,
+  } from "./VideoAnnotationContext";
   import Zoomable from "./zoomable.svelte";
 
   import type {
@@ -37,7 +46,7 @@
     onmousedown?: (e: MouseEvent) => void;
     onmousemove?: (e: MouseEvent) => void;
     onwheel?: (e: WheelEvent) => void;
-    onSelection: (type: string, frame: number, points?: Point[], id?: string) => void;
+    onSelection: (type: string, frame: number, points?: Point[], angle?: number, id?: string) => void;
     onAddNewNote: (params: OnAddNewNoteParams) => void;
     onChangeFrame?: (newFrame: number) => void;
     videoResizedAt: Date;
@@ -87,8 +96,15 @@
             }
         : undefined,
   );
+
+  let current_shape = $derived.by(() => {
+    if (shape) return getInterpolatedFrame(shape as VideoShape, frame);
+  });
   let points: Point[] = $derived.by(() => {
-    return shape ? currentShape(shape, frame) || [] : [];
+    return current_shape?.points || [];
+  });
+  let angle: number = $derived.by(() => {
+    return current_shape?.angle || 0;
   });
 
   function updatedSize(): Point {
@@ -137,41 +153,6 @@
     zoomableElement.zoomOut();
   }
 
-  export function currentShape(
-    shape: AnnotationShape,
-    current_frame: number,
-    interpolate: boolean = true,
-  ): Point[] | undefined {
-    if (!shape.frames) return; // no render (eg. entry:root)
-
-    if (shape.start > current_frame || shape.end < current_frame) return; // out of scope
-
-    const current_points = shape.frames.find((v: VideoFrameSelection) => v.frame == current_frame)?.points;
-    if (current_points || !interpolate) return current_points; // exists!
-
-    const frame_start: VideoFrameSelection = shape.frames.reduce(
-      (acc: VideoFrameSelection | null, v: VideoFrameSelection) =>
-        (!acc || acc.frame < v.frame) && v.frame < frame ? v : acc,
-      null,
-    );
-
-    const frame_end: VideoFrameSelection = shape.frames.reduce(
-      (acc: VideoFrameSelection | null, v: VideoFrameSelection) =>
-        (!acc || acc.frame > v.frame) && v.frame > frame ? v : acc,
-      null,
-    );
-
-    if (frame_start && frame_end) {
-      // interpolate from within bounds
-      const ratio = (current_frame - frame_start.frame) / (frame_end.frame - frame_start.frame);
-      return frame_end.points.map((point, i) => [
-        // assume
-        frame_start.points[i][X] + (point[X] - frame_start.points[i][X]) * ratio,
-        frame_start.points[i][Y] + (point[Y] - frame_start.points[i][Y]) * ratio,
-      ]);
-    }
-  }
-
   let toolSelection: ToolSelection | undefined = $state();
   export function selectionStart(e: MouseEvent) {
     if (!shape) {
@@ -181,7 +162,7 @@
 
     toolSelection?.startSelection(cursor_downscaled);
 
-    if (!toolSelection?.isEditing()) {
+    if (!isEditing) {
       if (!toolSelection)
         console.error("no tool for mode:", mode, "deselecting annotation (and reverting to mode", DEFAULT_MODE, ")");
       onSelectAnnotation();
@@ -240,16 +221,14 @@
     });
   });
 
-  const cursorConstraints = new Map([[IDAH_VIDEO_BOUNDING_BOX, 4]]);
+  let isEditing = $state(false);
+  let editionCursor: string | undefined = $state(undefined);
 
   let pointer = $derived.by(() => {
-    return mode != DEFAULT_MODE
-      ? mode == IDAH_NOTE
-        ? "cursor-note"
-        : points.length < (cursorConstraints.get(mode) || 0) || toolSelection?.isEditing()
-          ? "cursor-crosshair"
-          : "cursor-grab"
-      : "cursor-grab";
+    if (mode == IDAH_NOTE) return "cursor-note";
+    if (editionCursor) return editionCursor;
+    if (selected) return "cursor-pointer";
+    return "cursor-grab";
   });
 </script>
 
@@ -279,10 +258,30 @@
     onwheel={(e) => zoomableElement.onWheel(e)}
     {...restProps}
   >
-    {#if width && height && ![IDAH_NOTE, DEFAULT_MODE].includes(mode) && (pointer == "crosshair" || toolSelection?.isEditing())}
+    {#if width && height && ![IDAH_NOTE, DEFAULT_MODE].includes(mode) && (pointer == "crosshair" || isEditing)}
       <!-- prevent display issue on load for now -->
-      <line x1={0} y1={target_line[Y]} x2={width} y2={target_line[Y]} stroke="#2b7fff" />
-      <line x1={target_line[X]} y1={0} x2={target_line[X]} y2={height} stroke="#2b7fff" />
+      <line
+        x1={0}
+        y1={target_line[Y]}
+        x2={width}
+        y2={target_line[Y]}
+        stroke={selected?.synced
+          ? Object.entries(context.config)
+              .find(([k, _]) => k == mode)?.[1]
+              .values.find((c) => c.id == selected?.value?.category)?.color || "grey"
+          : "grey"}
+      />
+      <line
+        x1={target_line[X]}
+        y1={0}
+        x2={target_line[X]}
+        y2={height}
+        stroke={selected?.synced
+          ? Object.entries(context.config)
+              .find(([k, _]) => k == mode)?.[1]
+              .values.find((c) => c.id == selected?.value?.category)?.color || "grey"
+          : "grey"}
+      />
     {/if}
 
     <!-- draw annotation context -->
@@ -290,10 +289,13 @@
       {#each $boundingBoxes as annotation (annotation.metadata.id)}
         {#if annotation.metadata.id != selected?.metadata.id}
           {#if annotation.shape.type == IDAH_VIDEO_BOUNDING_BOX && !annotation.hidden}
+            {@const current_annotation_shape = getInterpolatedFrame(annotation.shape as VideoShape, frame)}
+            {@const current_annotation_points = current_annotation_shape?.points || []}
+            {@const current_annotation_angle = current_annotation_shape?.angle || 0}
             <BoundingBox
               {mode}
-              {pointer}
-              points={currentShape(annotation.shape, frame) || []}
+              points={current_annotation_points}
+              angle={current_annotation_angle}
               ratio={target_size}
               offset={zoomInfo.offset}
               color={Object.entries(context.config)
@@ -315,59 +317,70 @@
         {/if}
       {/each}
     {:then annotations}
-      {#each annotations as annotation (annotation.metadata.id)}
-        {#if annotation.metadata.id != selected?.metadata.id}
-          {#if annotation.shape.type == IDAH_VIDEO_BOUNDING_BOX && !annotation.hidden}
-            <BoundingBox
-              {mode}
-              {pointer}
-              points={currentShape(annotation.shape, frame) || []}
-              ratio={target_size}
-              offset={zoomInfo.offset}
-              color={annotation?.synced
-                ? Object.entries(context.config)
-                    .find(([k, _]) => k == IDAH_VIDEO_BOUNDING_BOX)?.[1]
-                    .values.find((c) => c.id == annotation?.value?.category)?.color || "grey"
-                : "grey"}
-              onmousedown={(e) => {
-                e.stopPropagation();
+      {#key frame}
+        {#each annotations as annotation (annotation.metadata.id)}
+          {#if annotation.metadata.id != selected?.metadata.id}
+            {#if annotation.shape.type == IDAH_VIDEO_BOUNDING_BOX && !annotation.hidden}
+              {@const current_annotation_shape = getInterpolatedFrame(annotation.shape as VideoShape, frame)}
+              {@const current_annotation_points = current_annotation_shape?.points || []}
+              {@const current_annotation_angle = current_annotation_shape?.angle || 0}
+              <BoundingBox
+                {mode}
+                points={current_annotation_points}
+                angle={current_annotation_angle}
+                ratio={target_size}
+                offset={zoomInfo.offset}
+                color={annotation?.synced
+                  ? Object.entries(context.config)
+                      .find(([k, _]) => k == IDAH_VIDEO_BOUNDING_BOX)?.[1]
+                      .values.find((c) => c.id == annotation?.value?.category)?.color || "grey"
+                  : "grey"}
+                onmousedown={(e) => {
+                  e.stopPropagation();
 
-                if (mode == DEFAULT_MODE || selected) {
-                  onSelectAnnotation(annotation);
-                }
+                  if (mode == DEFAULT_MODE || selected) {
+                    onSelectAnnotation(annotation);
+                  }
 
-                if (mode === IDAH_NOTE) {
-                  showNewNoteFeedPopup(annotation);
-                }
-              }}
-            />
+                  if (mode === IDAH_NOTE) {
+                    showNewNoteFeedPopup(annotation);
+                  }
+                }}
+              />
+            {/if}
           {/if}
-        {/if}
-      {/each}
+        {/each}
+      {/key}
     {/await}
 
-    {#if (shape?.type == IDAH_VIDEO_BOUNDING_BOX || mode == IDAH_VIDEO_BOUNDING_BOX) && selected ? !selected.hidden : true}
-      <BoundingBox
-        {pointer}
-        bind:this={toolSelection}
-        {mode}
-        {points}
-        ratio={target_size}
-        offset={zoomInfo.offset}
-        cursor={cursor_downscaled}
-        editable={(shape?.type == IDAH_VIDEO_BOUNDING_BOX || mode == IDAH_VIDEO_BOUNDING_BOX) &&
-          !selected?.locked &&
-          ["annotate", "review"].includes(context.workflowStep)}
-        color={selected?.synced
-          ? Object.entries(context.config)
-              .find(([k, _]) => k == mode)?.[1]
-              .values.find((c) => c.id == selected?.value?.category)?.color || "grey"
-          : "grey"}
-        onChange={(bb) => {
-          onSelection(IDAH_VIDEO_BOUNDING_BOX, frame, bb, selected?.metadata.id);
-          points = bb;
-        }}
-      />
+    {#if (shape?.type == IDAH_VIDEO_BOUNDING_BOX || mode == IDAH_VIDEO_BOUNDING_BOX) && (selected ? !selected.hidden : true) && (mode == IDAH_VIDEO_BOUNDING_BOX || (shape?.start <= frame && shape?.end >= frame))}
+      {#key [shape, frame]}
+        <BoundingBox
+          bind:this={toolSelection}
+          {mode}
+          {points}
+          {angle}
+          onEditingChange={(editing) => {
+            isEditing = editing;
+          }}
+          onPointerChange={(c) => (editionCursor = c)}
+          ratio={target_size}
+          offset={zoomInfo.offset}
+          cursor={cursor_downscaled}
+          editable={(shape?.type == IDAH_VIDEO_BOUNDING_BOX || mode == IDAH_VIDEO_BOUNDING_BOX) &&
+            !selected?.locked &&
+            ["annotate", "review"].includes(context.workflowStep)}
+          color={selected?.synced
+            ? Object.entries(context.config)
+                .find(([k, _]) => k == mode)?.[1]
+                .values.find((c) => c.id == selected?.value?.category)?.color || "grey"
+            : "grey"}
+          onChange={(bb, angle) => {
+            onSelection(IDAH_VIDEO_BOUNDING_BOX, frame, bb, angle, selected?.metadata.id);
+            points = bb;
+          }}
+        />
+      {/key}
     {/if}
   </svg>
 </div>
