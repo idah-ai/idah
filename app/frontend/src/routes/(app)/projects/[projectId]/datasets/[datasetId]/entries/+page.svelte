@@ -58,7 +58,6 @@
   import type { ListOptions } from "@/data/DataSource";
   import type { CollectionResponse } from "@/data/model/types";
   import type { ProjectMemberScope } from "@/security/types";
-  import { ExportsBackendDataSource } from "@/data/model/sync/exports/record";
   import type { Hash } from "@/utils/types";
 
   // Contexts
