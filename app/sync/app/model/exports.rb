@@ -10,12 +10,6 @@ module Exports
     field :size, type: Integer
     field :mime_type, type: String
 
-    field :created_by, type: Integer, readonly: true
-    field :created_by_role, type: String, readonly: true
-    field :created_by_organization, type: Array
-    field :created_by_custom_scopes, type: Hash
-    field :created_by_metadata, type: Hash
-
     field :created_at, type: Time
     field :updated_at, type: Time
 
@@ -33,17 +27,5 @@ module Exports
   class Repository < Verse::Sequel::Repository
     self.table = "exports"
     self.resource = Resource::Sync::Exports
-
-    encoder :created_by_custom_scopes, Verse::Sequel::JsonEncoder
-    encoder :created_by_metadata, Verse::Sequel::JsonEncoder
-    encoder :created_by_organization, Verse::Sequel::PgArrayEncoder
-
-    def scoped(action)
-      auth_context.can!(action, self.class.resource) do |scope|
-        scope.all? { table }
-        scope.as_org_owner? { table.where(Sequel.lit("created_by_organization <@ ARRAY[?]", Verse::Sequel::PgArrayEncoder.encode(auth_context.custom_scopes[:org]))) }
-        scope.as_user? { table.where(created_by: auth_context.metadata[:id]) }
-      end
-    end
   end
 end
