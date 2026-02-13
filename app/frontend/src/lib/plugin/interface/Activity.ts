@@ -18,6 +18,7 @@ export interface IAnnotation<T = IDimension, U = any> {
   id: string;
   dimensions: T;
   annotation: U;
+  metadata?: any;
 }
 
 export interface INoteFeed {
@@ -53,7 +54,7 @@ export interface INoteComment {
 
 export interface IAnnotationDriver {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  create(id: string, dimension: any, annotation: any): Promise<IAnnotation>;
+  create(id: string, dimension: any, annotation: any, metadata?: any): Promise<IAnnotation>;
 
   update(ann: IAnnotation): Promise<void>;
   delete(id: string): Promise<void>;
