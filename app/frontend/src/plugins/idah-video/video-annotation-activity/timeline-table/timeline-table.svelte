@@ -572,7 +572,7 @@
       {@render row($boundingBoxes)}
     {:then annotations}
       {@const sortedAnnotations = sortAnnotationsByParent(annotations)}
-      {@render row(sortedAnnotations)}
+      {@render row([...sortedAnnotations])}
     {/await}
   </TableBody>
 </Table>
