@@ -54,8 +54,8 @@ function rotateVerticesByStartAngle(points: Point[], center: Point): [Point[], [
   return [reorderedPoints, polarReindexed];
 }
 
-// Longest Increasing Subsequence (LIS) algorithm
-function lisIndices(arr: number[]) {
+// Longest Increasing/Decreasing Subsequence (LIS) algorithm
+function lisIndices(arr: number[], increasing: boolean) {
   const n = arr.length;
   const dp = Array(n).fill(1);
   const prev = Array(n).fill(-1);
@@ -65,18 +65,21 @@ function lisIndices(arr: number[]) {
 
   for (let i = 0; i < n; i++) {
     for (let j = 0; j < i; j++) {
-      if (arr[j] < arr[i] && dp[j] + 1 > dp[i]) {
+      const valid = increasing ? arr[j] < arr[i] : arr[j] > arr[i];
+
+      if (valid && dp[j] + 1 > dp[i]) {
         dp[i] = dp[j] + 1;
         prev[i] = j;
       }
     }
+
     if (dp[i] > maxLen) {
       maxLen = dp[i];
       end = i;
     }
   }
 
-  const indices = [];
+  const indices: number[] = [];
   while (end !== -1) {
     indices.push(end);
     end = prev[end];
@@ -85,7 +88,7 @@ function lisIndices(arr: number[]) {
   return indices.reverse();
 }
 
-function longestCircularIncreasingSubsequence(arr: number[]) {
+function longestCircularMonotonicSubsequence(arr: number[]) {
   const n = arr.length;
   const doubled = arr.concat(arr);
 
@@ -93,10 +96,14 @@ function longestCircularIncreasingSubsequence(arr: number[]) {
 
   for (let start = 0; start < n; start++) {
     const window = doubled.slice(start, start + n);
-    const lis = lisIndices(window);
 
-    if (lis.length > best.length) {
-      best = lis.map((i) => (start + i) % n);
+    const inc = lisIndices(window, true);
+    const dec = lisIndices(window, false);
+
+    const candidate = inc.length >= dec.length ? inc : dec;
+
+    if (candidate.length > best.length) {
+      best = candidate.map((i) => (start + i) % n);
     }
   }
 
@@ -104,7 +111,7 @@ function longestCircularIncreasingSubsequence(arr: number[]) {
 }
 
 function deleteMinimumForCircularSort(arr: number[]) {
-  const keepIndices = new Set(longestCircularIncreasingSubsequence(arr));
+  const keepIndices = new Set(longestCircularMonotonicSubsequence(arr));
 
   const corrected: number[] = [];
   const deleted: number[] = [];
@@ -166,10 +173,12 @@ function matchVerticesByBarycenter(polyMin: Point[], polyMax: Point[]): [Point[]
   }
 
   // remove indices that do not make a circularly sorted order in matches
-  let matchesValues = Object.values(matches);
-  matchesValues = deleteMinimumForCircularSort(matchesValues).corrected;
+  const matchesValues = Object.values(matches);
+
+  const correctMatchesValues = deleteMinimumForCircularSort(matchesValues).corrected;
+
   for (const key in matches) {
-    if (!matchesValues.includes(matches[key])) {
+    if (!correctMatchesValues.includes(matches[key])) {
       delete matches[key];
     }
   }
