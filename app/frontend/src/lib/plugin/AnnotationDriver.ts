@@ -1,5 +1,5 @@
-import { annotationsBackendDataSource } from "@/data/model/dataset/annotations/record";
 import { JsonRpcDatasource } from "@/data/jsonrpc";
+import { annotationsBackendDataSource } from "@/data/model/dataset/annotations/record";
 import type { IAnnotation, IAnnotationDriver } from "./interface/Activity";
 
 const annotations_rpc = new JsonRpcDatasource(`${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/annotations/_rpc`);
@@ -23,6 +23,7 @@ export function createAnnotationDriver(entry_id: string): IAnnotationDriver {
         annotationsBackendDataSource
           .list({
             filters: { ...filter, entry_id },
+            noCache: true,
             pagination,
           })
           .then(
