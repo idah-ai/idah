@@ -18,7 +18,7 @@ export interface IAnnotation<T = IDimension, U = any> {
   id: string;
   dimensions: T;
   annotation: U;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 export interface INoteFeed {
