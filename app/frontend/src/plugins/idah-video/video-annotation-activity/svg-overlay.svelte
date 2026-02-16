@@ -476,6 +476,7 @@
                   .find(([k, _]) => k == mode)?.[1]
                   .values.find((c) => c.id == selected?.value?.category)?.color || "grey"
               : "grey"}
+            styles={propertyStyle}
             onChange={(bb, newAngle) => {
               onSelection(IDAH_VIDEO_BOUNDING_BOX, frame, bb, newAngle, selected?.metadata.id);
               // points = bb;
