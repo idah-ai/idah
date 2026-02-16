@@ -14,10 +14,10 @@
   import { boundingBoxes } from "../idb_store.svelte";
 
   import type {
-      AnnotationMetadata,
-      AnnotationObj,
-      AnnotationShape,
-      AnnotationValue,
+    AnnotationMetadata,
+    AnnotationObj,
+    AnnotationShape,
+    AnnotationValue,
   } from "@/context/AnnotationContext";
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import type { AnnotationsIndexedDB } from "../indexedDB";
@@ -242,8 +242,7 @@
     const idSet = new Set(annotations.map((a) => a.metadata.id));
 
     for (const annotation of annotations) {
-const parentId =
-  annotation.metadata?.metadata?.parent_id as string | undefined;
+      const parentId = annotation.metadata?.metadata?.parent_id as string | undefined;
       const parentExists = parentId != null && idSet.has(parentId);
 
       if (parentExists) {
