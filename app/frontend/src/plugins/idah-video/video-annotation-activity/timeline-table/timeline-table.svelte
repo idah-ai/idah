@@ -13,10 +13,10 @@
   import { boundingBoxes } from "../idb_store.svelte";
 
   import type {
-      AnnotationMetadata,
-      AnnotationObj,
-      AnnotationShape,
-      AnnotationValue,
+    AnnotationMetadata,
+    AnnotationObj,
+    AnnotationShape,
+    AnnotationValue,
   } from "@/context/AnnotationContext";
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import type { AnnotationsIndexedDB } from "../indexedDB";
@@ -279,21 +279,21 @@
   // }
 
   function sortAnnotationsByParent(
-  annotations: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[],
-): AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[] {
-  let manipulated = annotations.map((ann) => {
-    return {
-      ...ann,
-    id: ann?.metadata?.metadata?.group_id ? ann?.metadata.metadata.group_id : ann?.metadata.id
-    }
-  })
+    annotations: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[],
+  ): AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[] {
+    let manipulated = annotations.map((ann) => {
+      return {
+        ...ann,
+        id: ann?.metadata?.metadata?.group_id
+          ? `${ann?.metadata.metadata.group_id}__${ann?.metadata.id}`
+          : `${ann?.metadata.id}`,
+      };
+    });
 
-   manipulated.sort((a, b) =>
-    a.id.localeCompare(b.id, undefined, { numeric: true, sensitivity: "base" })
-  );
+    manipulated.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true, sensitivity: "base" }));
 
-  return manipulated;
-}
+    return manipulated;
+  }
 </script>
 
 {#snippet row(annotations: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[])}
