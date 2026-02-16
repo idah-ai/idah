@@ -239,11 +239,13 @@
   ): AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[] {
     const childrenMap = new SvelteMap<string, AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]>();
     const roots: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[] = [];
+    const idSet = new Set(annotations.map((a) => a.metadata.id));
 
     for (const annotation of annotations) {
       const parentId = annotation.metadata?.metadata?.parent_id;
+      const parentExists = parentId != null && idSet.has(parentId);
 
-      if (parentId) {
+      if (parentExists) {
         if (!childrenMap.has(parentId)) {
           childrenMap.set(parentId, []);
         }
@@ -254,15 +256,19 @@
     }
 
     const result: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[] = [];
+    const visited = new Set<string>();
 
-    function append(parent: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) {
-      result.push(parent);
+    function append(node: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) {
+      if (visited.has(node.metadata.id)) return;
+      visited.add(node.metadata.id);
 
-      const children = childrenMap.get(parent.metadata.id);
-      if (children) {
-        for (const child of children) {
-          append(child);
-        }
+      result.push(node);
+
+      const children = childrenMap.get(node.metadata.id);
+      if (!children) return;
+
+      for (const child of children) {
+        append(child);
       }
     }
 
