@@ -40,6 +40,7 @@
   import type { AnnotationShape, AnnotationValue } from "@/context/AnnotationContext";
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import {
+    type InterpolatedVertex,
     type Point,
     type VideoFrameSelection,
     type VideoShape,
@@ -688,11 +689,14 @@
     if (!part1Frames.find((f: VideoFrameSelection) => f.frame === part1End)) {
       const interpolated = getInterpolatedFrame(annotation.shape as VideoShape, part1End);
       if (interpolated) {
-        part1Frames.push({
-          frame: part1End,
-          points: interpolated.points!,
-          angle: interpolated.angle || 0,
-        });
+        const normalizedPoints = normalizePoints(interpolated.points);
+        if (normalizedPoints) {
+          part1Frames.push({
+            frame: part1End,
+            points: normalizedPoints,
+            angle: interpolated.angle || 0,
+          });
+        }
       }
       part1Frames.sort((a, b) => a.frame - b.frame);
     }
@@ -706,11 +710,14 @@
     if (!part2Frames.find((f: VideoFrameSelection) => f.frame === part2Start)) {
       const interpolated = getInterpolatedFrame(annotation.shape as VideoShape, part2Start);
       if (interpolated) {
-        part2Frames.push({
-          frame: part2Start,
-          points: interpolated.points!,
-          angle: interpolated.angle || 0,
-        });
+        const normalizedPoints = normalizePoints(interpolated.points);
+        if (normalizedPoints) {
+          part2Frames.push({
+            frame: part2Start,
+            points: normalizedPoints,
+            angle: interpolated.angle || 0,
+          });
+        }
       }
       part2Frames.sort((a, b) => a.frame - b.frame);
     }
@@ -1096,6 +1103,16 @@
       if (selectedAnnotation) selectedAnnotation.locked = locked;
       annotationsIDB?.updateAllLock(locked).then(() => ($idb_updated_at = new Date()));
     }
+  }
+
+  // Helper function to normalize interpolated points to Point[]
+  function normalizePoints(points: Point[] | InterpolatedVertex[] | undefined): Point[] | undefined {
+    if (!points) return undefined;
+    // Check if first element is InterpolatedVertex by checking if it has a 'point' property
+    if (points.length > 0 && typeof points[0] === 'object' && 'point' in points[0]) {
+      return (points as InterpolatedVertex[]).map(item => item.point);
+    }
+    return points as Point[];
   }
 
   let allHidden: boolean = $state(false);
