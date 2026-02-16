@@ -1112,8 +1112,8 @@
   function normalizePoints(points: Point[] | InterpolatedVertex[] | undefined): Point[] | undefined {
     if (!points) return undefined;
     // Check if first element is InterpolatedVertex by checking if it has a 'point' property
-    if (points.length > 0 && typeof points[0] === 'object' && 'point' in points[0]) {
-      return (points as InterpolatedVertex[]).map(item => item.point);
+    if (points.length > 0 && typeof points[0] === "object" && "point" in points[0]) {
+      return (points as InterpolatedVertex[]).map((item) => item.point);
     }
     return points as Point[];
   }
