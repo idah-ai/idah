@@ -7,6 +7,7 @@
 
   import { DEFAULT_MODE, ENTRY_ROOT, IDAH_NOTE, IDAH_VIDEO_BOUNDING_BOX, IDAH_POLYGON, type EntryRoot } from "../type";
   import {
+    getInterpolatedFrame,
     HEIGHT,
     ORIGIN,
     WIDTH,
@@ -15,7 +16,6 @@
     type InterpolatedVertex,
     type Point,
     type VideoShape,
-    getInterpolatedFrame,
   } from "./VideoAnnotationContext";
   import Zoomable from "./zoomable.svelte";
 
@@ -25,7 +25,7 @@
     AnnotationShape,
     AnnotationValue,
   } from "@/context/AnnotationContext";
-  import type { IActivityContext, INoteFeed } from "@/plugin/interface/Activity";
+  import type { IActivityContext, IConfigPropertyStyles, INoteFeed } from "@/plugin/interface/Activity";
   import { cn } from "@/utils";
 
   // Types
@@ -35,15 +35,17 @@
     annotationId: string | null;
   }
 
+  type TAnnotationObj = AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
+
   // Props
   type Props = {
     frame: number;
-    selected: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata> | undefined;
+    selected: TAnnotationObj | undefined;
     mode: string;
     target_container: () => HTMLDivElement | undefined; // ..
-    annotations_promise: Promise<AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]>;
+    annotations_promise: Promise<TAnnotationObj[]>;
     children: Snippet;
-    onSelectAnnotation: (annotation?: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) => void;
+    onSelectAnnotation: (annotation?: TAnnotationObj) => void;
     onmouseup?: (e: MouseEvent) => void;
     onmousedown?: (e: MouseEvent) => void;
     onmousemove?: (e: MouseEvent) => void;
@@ -184,7 +186,7 @@
     zoomableElement.mouseUp(e);
   }
 
-  function showNewNoteFeedPopup(annotation?: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) {
+  function showNewNoteFeedPopup(annotation?: TAnnotationObj) {
     /**
      * Show new note feed dialog only when there is no dragging (i.e. zoom offset did not change)
      */
@@ -244,6 +246,35 @@
 
     return "cursor-grab";
   });
+
+  function getAnnotationPropertyStyle(annotation?: TAnnotationObj): IConfigPropertyStyles {
+    const defaultStyle: IConfigPropertyStyles = { border: "solid", opacity: 100 };
+    if (!annotation) return defaultStyle;
+
+    const assignedAttributes = annotation.value.attributes || {};
+
+    const assignedAttributeProperties =
+      Object.entries(context.config)
+        .find(([k, _]) => k == IDAH_VIDEO_BOUNDING_BOX)?.[1]
+        .properties.filter((property) => property.id in assignedAttributes) || [];
+
+    const assignedAttributesStyles = Object.entries(assignedAttributes)
+      .map(([propertyKey, properyValue]) => {
+        const property = assignedAttributeProperties.find((p) => p.id === propertyKey);
+        if (property) {
+          return {
+            ...property.format.options?.find((option) => option.id === properyValue)?.styles,
+          };
+        } else {
+          return {};
+        }
+      })
+      .filter((style) => style != undefined && Object.keys(style).length > 0);
+
+    const lastAssignedAttributeStyle = assignedAttributesStyles[assignedAttributesStyles.length - 1];
+
+    return lastAssignedAttributeStyle;
+  }
 </script>
 
 <div class={cn("svg-overlay flex-1", pointer)}>
@@ -306,6 +337,7 @@
             {@const current_annotation_shape = getInterpolatedFrame(annotation.shape as VideoShape, frame)}
             {@const current_annotation_points = current_annotation_shape?.points || []}
             {@const current_annotation_angle = current_annotation_shape?.angle || 0}
+            {@const propertyStyle = getAnnotationPropertyStyle(annotation)}
             <BoundingBox
               {mode}
               points={current_annotation_points as Point[]}
@@ -315,6 +347,7 @@
               color={Object.entries(context.config)
                 .find(([k, _]) => k == IDAH_VIDEO_BOUNDING_BOX)?.[1]
                 .values.find((c) => c.id == annotation.value?.category)?.color || "grey"}
+              styles={propertyStyle}
               onmousedown={(e) => {
                 e.stopPropagation();
 
@@ -360,6 +393,8 @@
               {@const current_annotation_shape = getInterpolatedFrame(annotation.shape as VideoShape, frame)}
               {@const current_annotation_points = current_annotation_shape?.points || []}
               {@const current_annotation_angle = current_annotation_shape?.angle || 0}
+              {@const propertyStyle = getAnnotationPropertyStyle(annotation)}
+
               <BoundingBox
                 {mode}
                 points={current_annotation_points as Point[]}
@@ -371,6 +406,7 @@
                       .find(([k, _]) => k == IDAH_VIDEO_BOUNDING_BOX)?.[1]
                       .values.find((c) => c.id == annotation?.value?.category)?.color || "grey"
                   : "grey"}
+                styles={propertyStyle}
                 onmousedown={(e) => {
                   e.stopPropagation();
 
@@ -413,9 +449,12 @@
       {/key}
     {/await}
 
+    <!-- STATE:: SELECTED -->
     {#if selected || mode != DEFAULT_MODE}
       {#if shape?.type == IDAH_VIDEO_BOUNDING_BOX || mode == IDAH_VIDEO_BOUNDING_BOX}
         {#key [shape, frame]}
+          {@const propertyStyle = getAnnotationPropertyStyle(selected)}
+
           <BoundingBox
             bind:this={toolSelection}
             {mode}
