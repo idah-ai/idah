@@ -77,9 +77,15 @@ export interface INotes {
 
 export type IConfigPropertyType = "text" | "integer" | "boolean" | "single-select" | "multi-select";
 
+export type IConfigPropertyStyles = {
+  border?: "solid" | "dotted" | "dashed";
+  opacity?: number;
+};
+
 export type IConfigPropertyOption = {
   id: string;
   label: string;
+  styles?: IConfigPropertyStyles;
 };
 
 export type IConfigPropertyFormatKeys = keyof IConfigPropertyFormat;
