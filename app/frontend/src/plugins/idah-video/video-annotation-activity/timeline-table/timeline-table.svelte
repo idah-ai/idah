@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getContext } from "svelte";
-  import { SvelteMap } from "svelte/reactivity";
+  import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
   import { Button } from "@/components/ui/button";
   import Spinner from "@/components/ui/spinner/spinner.svelte";
@@ -14,10 +14,10 @@
   import { boundingBoxes } from "../idb_store.svelte";
 
   import type {
-    AnnotationMetadata,
-    AnnotationObj,
-    AnnotationShape,
-    AnnotationValue,
+      AnnotationMetadata,
+      AnnotationObj,
+      AnnotationShape,
+      AnnotationValue,
   } from "@/context/AnnotationContext";
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import type { AnnotationsIndexedDB } from "../indexedDB";
@@ -242,7 +242,8 @@
     const idSet = new Set(annotations.map((a) => a.metadata.id));
 
     for (const annotation of annotations) {
-      const parentId = annotation.metadata?.metadata?.parent_id;
+const parentId =
+  annotation.metadata?.metadata?.parent_id as string | undefined;
       const parentExists = parentId != null && idSet.has(parentId);
 
       if (parentExists) {
@@ -256,7 +257,7 @@
     }
 
     const result: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[] = [];
-    const visited = new Set<string>();
+    const visited = new SvelteSet<string>();
 
     function append(node: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) {
       if (visited.has(node.metadata.id)) return;
