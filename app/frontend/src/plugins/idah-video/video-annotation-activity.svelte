@@ -709,7 +709,7 @@
       part2Frames.sort((a, b) => a.frame - b.frame);
     }
 
-    const groupId = originalGroupId || `${annotation.metadata.id}_group`;
+    const groupId = originalGroupId || annotation.metadata.id;
 
     return {
       name: "split annotation",
