@@ -777,6 +777,9 @@
         await annotationsIDB?.addAnnotations([a2]);
         $idb_updated_at = new Date();
 
+        // Select part 2 after split
+        selectedAnnotation = a2;
+
         let p2 = context.annotations.create(newId, a2.shape, a2.value);
         p2.then(async () => {
           const annotation = await annotationsIDB?.get("annotations", newId);
