@@ -11,7 +11,7 @@ export class AnnotationRecord extends Record {
   @field() public created_by_id!: string;
   @field() public created_at!: Date;
   @field() public updated_at!: Date;
-  
+
   @field() public metadata!: { [key: string]: unknown };
 
   @relationship() public entry!: EntryRecord;
