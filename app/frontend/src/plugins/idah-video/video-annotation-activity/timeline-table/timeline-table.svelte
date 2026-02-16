@@ -1,6 +1,5 @@
 <script lang="ts">
   import { getContext } from "svelte";
-  import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
   import { Button } from "@/components/ui/button";
   import Spinner from "@/components/ui/spinner/spinner.svelte";
@@ -14,10 +13,10 @@
   import { boundingBoxes } from "../idb_store.svelte";
 
   import type {
-    AnnotationMetadata,
-    AnnotationObj,
-    AnnotationShape,
-    AnnotationValue,
+      AnnotationMetadata,
+      AnnotationObj,
+      AnnotationShape,
+      AnnotationValue,
   } from "@/context/AnnotationContext";
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import type { AnnotationsIndexedDB } from "../indexedDB";
@@ -234,50 +233,67 @@
     };
   }
 
+  // function sortAnnotationsByParent(
+  //   annotations: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[],
+  // ): AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[] {
+  //   const childrenMap = new SvelteMap<string, AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]>();
+  //   const roots: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[] = [];
+  //   const idSet = new Set(annotations.map((a) => a.metadata.id));
+
+  //   for (const annotation of annotations) {
+  //     const parentId = annotation.metadata?.metadata?.parent_id as string | undefined;
+  //     const parentExists = parentId != null && idSet.has(parentId);
+
+  //     if (parentExists) {
+  //       if (!childrenMap.has(parentId)) {
+  //         childrenMap.set(parentId, []);
+  //       }
+  //       childrenMap.get(parentId)!.push(annotation);
+  //     } else {
+  //       roots.push(annotation);
+  //     }
+  //   }
+
+  //   const result: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[] = [];
+  //   const visited = new SvelteSet<string>();
+
+  //   function append(node: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) {
+  //     if (visited.has(node.metadata.id)) return;
+  //     visited.add(node.metadata.id);
+
+  //     result.push(node);
+
+  //     const children = childrenMap.get(node.metadata.id);
+  //     if (!children) return;
+
+  //     for (const child of children) {
+  //       append(child);
+  //     }
+  //   }
+
+  //   for (const root of roots) {
+  //     append(root);
+  //   }
+
+  //   return result;
+  // }
+
   function sortAnnotationsByParent(
-    annotations: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[],
-  ): AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[] {
-    const childrenMap = new SvelteMap<string, AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]>();
-    const roots: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[] = [];
-    const idSet = new Set(annotations.map((a) => a.metadata.id));
-
-    for (const annotation of annotations) {
-      const parentId = annotation.metadata?.metadata?.parent_id as string | undefined;
-      const parentExists = parentId != null && idSet.has(parentId);
-
-      if (parentExists) {
-        if (!childrenMap.has(parentId)) {
-          childrenMap.set(parentId, []);
-        }
-        childrenMap.get(parentId)!.push(annotation);
-      } else {
-        roots.push(annotation);
-      }
+  annotations: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[],
+): AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[] {
+  let manipulated = annotations.map((ann) => {
+    return {
+      ...ann,
+    id: ann?.metadata?.metadata?.group_id ? ann?.metadata.metadata.group_id : ann?.metadata.id
     }
+  })
 
-    const result: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[] = [];
-    const visited = new SvelteSet<string>();
+   manipulated.sort((a, b) =>
+    a.id.localeCompare(b.id, undefined, { numeric: true, sensitivity: "base" })
+  );
 
-    function append(node: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) {
-      if (visited.has(node.metadata.id)) return;
-      visited.add(node.metadata.id);
-
-      result.push(node);
-
-      const children = childrenMap.get(node.metadata.id);
-      if (!children) return;
-
-      for (const child of children) {
-        append(child);
-      }
-    }
-
-    for (const root of roots) {
-      append(root);
-    }
-
-    return result;
-  }
+  return manipulated;
+}
 </script>
 
 {#snippet row(annotations: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[])}
