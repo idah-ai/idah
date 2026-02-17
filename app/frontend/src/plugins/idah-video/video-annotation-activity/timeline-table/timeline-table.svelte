@@ -71,8 +71,15 @@
   // Contexts
   let context: IActivityContext = getContext("context");
 
-  // Variables
-  let isResizing: boolean = $state(false);
+  // Functions
+  function toggleVisibility() {
+    onVisibility(!allHidden);
+  }
+
+  function toggleLocked() {
+    onLock(!allLocked);
+  }
+
   let range_span = $derived(Math.min(scale * zoom, totalFrames));
   let manual_offset = 1;
 
@@ -189,21 +196,6 @@
     setZoom(zoom - next);
   }
 
-  function scrollHorizontal(e: MouseEvent) {
-    if (isResizing) {
-      const isScrollToTheRight = e.movementX > 0;
-      const isScrollToTheLeft = e.movementX < 0;
-
-      if (isScrollToTheRight) {
-        const next = Math.floor(range_span / 10);
-        scrollRight(next);
-      } else if (isScrollToTheLeft) {
-        const next = Math.floor(range_span / 10);
-        scrollLeft(next);
-      }
-    }
-  }
-
   function handleRowClick(annotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) {
     onSelectAnnotation(annotation);
     pos_offset = annotation.shape.start || 0;
@@ -248,6 +240,55 @@
     manipulated.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true, sensitivity: "base" }));
 
     return manipulated;
+  }
+
+  function handleTimelineWheel(e: WheelEvent) {
+    let from = $state.snapshot(pos_offset) as number;
+    let delta = 0;
+    if (!wheelthrottling) {
+      wheelthrottling = true;
+      setTimeout(() => (wheelthrottling = false), 10);
+
+      if (e.ctrlKey && e.shiftKey) {
+        setZoom(zoom - e.deltaY);
+      } else if (e.ctrlKey) {
+        delta = e.deltaY ? (e.deltaY > 0 ? 1 : -1) : 0; // for now
+        let c_hovered = $state.snapshot(hoveredColumn);
+        let c = c_hovered != undefined ? Math.ceil((c_hovered - pos_offset) / scale) : 0;
+
+        if (c_hovered != undefined) {
+          setOffset(c_hovered - c * scale);
+        }
+      } else {
+        delta = e.shiftKey ? e.deltaY : e.deltaX;
+        setOffset(Math.floor(pos_offset + delta * scale));
+        if (hoveredColumn != undefined) {
+          hoveredColumn += pos_offset - from;
+        }
+      }
+
+      /** Handle Shift + Scroll to slide left or right */
+      if (e.shiftKey) {
+        const isScrollUp = e.deltaX < 0;
+        const isScrollDown = e.deltaX > 0;
+
+        const next = Math.floor(range_span / 4);
+
+        if (isScrollUp) scrollRight(next);
+        else if (isScrollDown) scrollLeft(next);
+      }
+
+      if (e.metaKey) {
+        const isScrollUp = e.deltaY < 0;
+        const isScrollDown = e.deltaY > 0;
+
+        const to = scale * (zoom / 10);
+
+        if (isScrollUp) zoomIn(to);
+        else if (isScrollDown) zoomOut(to);
+      }
+    }
+    if (delta || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) e.preventDefault();
   }
 </script>
 
@@ -368,56 +409,7 @@
   </span>
 {/snippet}
 
-<Table
-  onwheel={(e: WheelEvent) => {
-    let from = $state.snapshot(pos_offset) as number;
-    let delta = 0;
-    if (!wheelthrottling) {
-      wheelthrottling = true;
-      setTimeout(() => (wheelthrottling = false), 10);
-
-      if (e.ctrlKey && e.shiftKey) {
-        setZoom(zoom - e.deltaY);
-      } else if (e.ctrlKey) {
-        delta = e.deltaY ? (e.deltaY > 0 ? 1 : -1) : 0; // for now
-        let c_hovered = $state.snapshot(hoveredColumn);
-        let c = c_hovered != undefined ? Math.ceil((c_hovered - pos_offset) / scale) : 0;
-
-        if (c_hovered != undefined) {
-          setOffset(c_hovered - c * scale);
-        }
-      } else {
-        delta = e.shiftKey ? e.deltaY : e.deltaX;
-        setOffset(Math.floor(pos_offset + delta * scale));
-        if (hoveredColumn != undefined) {
-          hoveredColumn += pos_offset - from;
-        }
-      }
-
-      /** Handle Shift + Scroll to slide left or right */
-      if (e.shiftKey) {
-        const isScrollUp = e.deltaX < 0;
-        const isScrollDown = e.deltaX > 0;
-
-        const next = Math.floor(range_span / 4);
-
-        if (isScrollUp) scrollRight(next);
-        else if (isScrollDown) scrollLeft(next);
-      }
-
-      if (e.metaKey) {
-        const isScrollUp = e.deltaY < 0;
-        const isScrollDown = e.deltaY > 0;
-
-        const to = scale * (zoom / 10);
-
-        if (isScrollUp) zoomIn(to);
-        else if (isScrollDown) zoomOut(to);
-      }
-    }
-    if (delta || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) e.preventDefault();
-  }}
->
+<Table onwheel={(e) => handleTimelineWheel(e)}>
   <TableHeader class="bg-background sticky z-40" style="inset-block-start: 0">
     <TableRow>
       <!-- HEADER::ANNOTATIONS -->
@@ -446,13 +438,6 @@
           aria-valuenow={pos_offset}
           tabindex="0"
           class="text-muted-foreground group relative h-7"
-          onmousedowncapture={() => {
-            isResizing = true;
-          }}
-          onmousemove={scrollHorizontal}
-          onmouseupcapture={() => {
-            isResizing = false;
-          }}
         >
           {#each Array.from({ length: (() => {
                 const span = range[1] - range[0]; // actual range span
@@ -472,16 +457,13 @@
 
             {#if !isOutOfRange && isSelected}
               <button
-                class="border-border text-primary bg-background absolute top-0 z-40 h-full cursor-col-resize border-l"
+                class="border-border text-primary bg-background absolute top-0 z-40 h-full border-l"
                 style:width="{width}%"
                 style:padding-left="0.125rem"
                 style:left="{startLeftPosition}%"
                 onclick={() => seekToFrame(thisFrame)}
               >
-                <div
-                  class="bg-primary absolute top-0 left-1/2 z-50 w-0.5 -translate-x-1/2"
-                  style="min-height: 24vh;"
-                ></div>
+                <div class="bg-primary absolute top-0 left-1/2 z-50 min-h-screen w-0.5 -translate-x-1/2"></div>
                 {@render tooltipFrame(thisFrame, "bg-primary", "text-primary-foreground")}
               </button>
             {:else if !isOutOfRange && isDefault}
@@ -498,8 +480,7 @@
               >
                 {#if isHovered}
                   <div
-                    class="bg-secondary-foreground absolute top-0 left-1/2 z-50 w-0.5 -translate-x-1/2 dark:bg-gray-700"
-                    style="min-height: 24vh;"
+                    class="bg-secondary-foreground absolute top-0 left-1/2 z-50 min-h-screen w-0.5 -translate-x-1/2 dark:bg-gray-700"
                   ></div>
                   {@render tooltipFrame(
                     thisFrame,
@@ -526,8 +507,7 @@
               >
                 {#if isHovered}
                   <div
-                    class="bg-secondary-foreground absolute top-0 left-1/2 z-50 w-0.5 -translate-x-1/2 dark:bg-gray-700"
-                    style="min-height: 24vh;"
+                    class="bg-secondary-foreground absolute top-0 left-1/2 z-50 min-h-screen w-0.5 -translate-x-1/2 dark:bg-gray-700"
                   ></div>
                   {@render tooltipFrame(
                     thisFrame,
