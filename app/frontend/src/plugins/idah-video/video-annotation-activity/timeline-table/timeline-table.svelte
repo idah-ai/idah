@@ -104,6 +104,14 @@
   let wheelthrottling = $state(false);
   let hoveredColumn: number | undefined = $state();
 
+  function toggleVisibility() {
+    onVisibility(!allHidden);
+  }
+
+  function toggleLocked() {
+    onLock(!allLocked);
+  }
+
   export function setOffset(offset: number) {
     pos_offset = Math.max(1, Math.min(totalFrames - range_span, offset || 0));
   }
@@ -215,6 +223,23 @@
         delete rowElements[params.id];
       },
     };
+  }
+
+  function sortAnnotationsByParent(
+    annotations: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[],
+  ): AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[] {
+    let manipulated = annotations.map((ann) => {
+      return {
+        ...ann,
+        id: ann?.metadata?.metadata?.group_id
+          ? `${ann?.metadata.metadata.group_id}__${ann?.metadata.id}`
+          : `${ann?.metadata.id}`,
+      };
+    });
+
+    manipulated.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true, sensitivity: "base" }));
+
+    return manipulated;
   }
 
   function handleTimelineWheel(e: WheelEvent) {
@@ -503,7 +528,8 @@
     {#await annotations_promise}
       {@render row($boundingBoxes)}
     {:then annotations}
-      {@render row(annotations)}
+      {@const sortedAnnotations = sortAnnotationsByParent(annotations)}
+      {@render row([...sortedAnnotations])}
     {/await}
   </TableBody>
 </Table>
