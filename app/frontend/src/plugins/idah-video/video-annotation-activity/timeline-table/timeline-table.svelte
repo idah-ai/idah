@@ -188,20 +188,6 @@
     setZoom(zoom - next);
   }
 
-  // function scrollHorizontal() {
-  // if (isResizing) {
-  //   const isScrollToTheRight = e.movementX > 0;
-  //   const isScrollToTheLeft = e.movementX < 0;
-
-  // if (isScrollToTheRight) {
-  //   const next = Math.floor(range_span / 10);
-  //   scrollRight(next);
-  // } else if (isScrollToTheLeft) {
-  //   const next = Math.floor(range_span / 10);
-  //   scrollLeft(next);
-  // }
-  // }
-
   function handleRowClick(annotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) {
     onSelectAnnotation(annotation);
     pos_offset = annotation.shape.start || 0;
