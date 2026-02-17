@@ -104,14 +104,6 @@
   let wheelthrottling = $state(false);
   let hoveredColumn: number | undefined = $state();
 
-  function toggleVisibility() {
-    onVisibility(!allHidden);
-  }
-
-  function toggleLocked() {
-    onLock(!allLocked);
-  }
-
   export function setOffset(offset: number) {
     pos_offset = Math.max(1, Math.min(totalFrames - range_span, offset || 0));
   }
