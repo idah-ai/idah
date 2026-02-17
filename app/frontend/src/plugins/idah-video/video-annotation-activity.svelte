@@ -198,6 +198,7 @@
                 id: a.id,
                 updatedAt: a.updated_at,
                 createdAt: a.created_at,
+                metadata: a.metadata || {},
               },
               hidden: false,
               locked: false,
