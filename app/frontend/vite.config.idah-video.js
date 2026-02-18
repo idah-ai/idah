@@ -2,26 +2,23 @@ import alias from "@rollup/plugin-alias";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
-import path from "path"
-import fs from "fs"
+import path from "path";
+import fs from "fs";
 
 export default defineConfig({
   plugins: [
     {
       name: "ensure-outdir",
       buildStart() {
-        const outDir = path.resolve(
-          __dirname,
-          "build/plugins/idah-video/frontend/build"
-        )
+        const outDir = path.resolve(__dirname, "build/plugins/idah-video/frontend/build");
 
-        fs.mkdirSync(outDir, { recursive: true })
+        fs.mkdirSync(outDir, { recursive: true });
 
-        console.log("Ensured outDir:", outDir)
-      }
+        console.log("Ensured outDir:", outDir);
+      },
     },
     tailwindcss(),
-    svelte()
+    svelte(),
   ],
   build: {
     lib: {
@@ -32,10 +29,7 @@ export default defineConfig({
       fileName: (format) => `idah-video.${format}.js`,
       cssFileName: "idah-video",
     },
-    outDir: path.resolve(
-      __dirname,
-      "build/plugins/idah-video/frontend/build"
-    ),
+    outDir: path.resolve(__dirname, "build/plugins/idah-video/frontend/build"),
     emptyOutDir: true,
     rollupOptions: {
       plugins: alias({
