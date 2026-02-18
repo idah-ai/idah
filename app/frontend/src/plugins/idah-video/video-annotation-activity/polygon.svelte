@@ -90,6 +90,24 @@
     return !isPolygonComplete || panStart != undefined || editingVertexIndex !== undefined;
   });
 
+  // Generate SVG cursor with four arrows crossing (up, down, left, right)
+  function getResizeCursorSVG(): string {
+    return `data:image/svg+xml;base64,${btoa(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none">
+        <g>
+          <!-- Up arrow -->
+          <path d="M12 4V10M12 4L9 7M12 4L15 7" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- Down arrow -->
+          <path d="M12 20V14M12 20L9 17M12 20L15 17" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- Left arrow -->
+          <path d="M4 12H10M4 12L7 9M4 12L7 15" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- Right arrow -->
+          <path d="M20 12H14M20 12L17 9M20 12L17 15" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </g>
+      </svg>
+    `)}`;
+  }
+
   let edition_cursor = $derived.by(() => {
     if (isHoveringOverFirstPoint && !isPolygonComplete) {
       // Show pointer cursor when hovering over first point during creation (to close polygon)
@@ -98,7 +116,7 @@
 
     if (isEditing) {
       if (editingVertexIndex !== undefined) {
-        return "cursor-move";
+        return "cursor-none"; // Hide default cursor, we'll show custom SVG cursor
       }
       return "cursor-crosshair";
     } else if (isHoveringOverEdge && editable && isPolygonComplete) {
@@ -341,6 +359,20 @@
     {@const isMatched = typeof vertexData === "object" && "matched" in vertexData ? vertexData.matched : true}
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <circle
+      cx={point[X] * ratio[X]}
+      cy={point[Y] * ratio[Y]}
+      r={2}
+      style:transform-origin="top left"
+      style:transform={`translate(${offset[X]}px, ${offset[Y]}px)`}
+      style:cursor={isAltKeyPressed && rawPoints.length > 3 ? "" : `url('${getResizeCursorSVG()}') 18 18, nwse-resize`}
+      vector-effect="non-scaling-stroke"
+      style:stroke={color}
+      style:fill={color}
+    />
+    <circle
+      role="grid"
+      tabindex="-1"
+      style:outline="none"
       onmousedown={(e) => {
         e.stopPropagation();
         // Check if ALT key is pressed to remove vertex
@@ -360,13 +392,14 @@
       style:transform-origin="top left"
       style:transform={`translate(${offset[X]}px, ${offset[Y]}px)`}
       class={isAltKeyPressed && rawPoints.length > 3 ? "cursor-minus-icon" : ""}
-      style:cursor={isAltKeyPressed && rawPoints.length > 3 ? "" : "move"}
+      style:cursor={isAltKeyPressed && rawPoints.length > 3 ? "" : `url('${getResizeCursorSVG()}') 18 18, nwse-resize`}
       vector-effect="non-scaling-stroke"
       style:stroke={isMatched ? color : "orange"}
       style:stroke-width={isMatched ? 1 : 3}
       style:stroke-dasharray={isMatched ? "none" : "3,3"}
       style:fill={isMatched ? color : "orange"}
       fill-opacity={isMatched ? 1 : 0}
+      style:opacity={isMatched ? 0.5 : 1}
     />
   {/each}
 {/snippet}
@@ -395,6 +428,19 @@
     />
   {/if}
 {/snippet}
+
+<!-- Active cursor overlay that persists during drag operations -->
+{#if editingVertexIndex !== undefined && cursor}
+  <g style="pointer-events: none;">
+    <image
+      href={getResizeCursorSVG()}
+      x={cursor[X] * ratio[X] + offset[X] - 18}
+      y={cursor[Y] * ratio[Y] + offset[Y] - 18}
+      width="36"
+      height="36"
+    />
+  </g>
+{/if}
 
 <!-- Draw the polygon -->
 {#if !hidden}
@@ -445,8 +491,8 @@
     cursor: url("../../assets/icons/message-circle.svg"), auto;
   }
 
-  .cursor-move {
-    cursor: move;
+  .cursor-none {
+    cursor: none;
   }
 
   .cursor-pen-plus {
