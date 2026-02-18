@@ -64,7 +64,6 @@ services:
       - ./app/media:/app
       - ./app/media/common:/app/common
       - ./plugins:/app/plugins
-      - ./app/frontend/build:/app/plugins/idah-video/frontend/build
       - bundler_cache:/usr/local/bundle
     networks:
       - app-network
@@ -121,7 +120,6 @@ services:
       - ./app/setting:/app
       - ./app/setting/common:/app/common
       - ./plugins:/app/plugins
-      - ./app/frontend/build:/app/plugins/idah-video/frontend/build
       - bundler_cache:/usr/local/bundle
     networks:
       - app-network
@@ -235,7 +233,7 @@ services:
       - "5173"
     volumes:
       - ./app/frontend:/app/frontend
-      - node_modules:/app/frontend/node_modules
+      - ./plugins:/app/frontend/build/plugins
     networks:
       - app-network
     entrypoint: ./dev-entrypoint.sh
