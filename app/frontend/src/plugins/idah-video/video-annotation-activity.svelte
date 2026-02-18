@@ -777,8 +777,7 @@
         await annotationsIDB?.addAnnotations([a2]);
         $idb_updated_at = new Date();
 
-        // Select part 2 after split
-        selectedAnnotation = a2;
+
 
         let p2 = context.annotations.create(newId, a2.shape, a2.value);
         p2.then(async () => {
@@ -788,6 +787,8 @@
             if ($entryRoot?.metadata.id == annotation.metadata.id) $entryRoot = annotation;
             await annotationsIDB?.addAnnotations([annotation]);
             $idb_updated_at = new Date();
+                    // Select part 2 after split
+            selectedAnnotation = annotation;
           }
         });
       },
@@ -815,6 +816,7 @@
               if ($entryRoot?.metadata.id == annotation.metadata.id) $entryRoot = annotation;
               await annotationsIDB?.addAnnotations([annotation]);
               $idb_updated_at = new Date();
+              selectedAnnotation = annotation;
             }
           });
         }
