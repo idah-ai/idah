@@ -2,15 +2,15 @@
   import TimelineCell from "./timeline-cell.svelte";
 
   import type {
-    AnnotationMetadata,
-    AnnotationObj,
-    AnnotationShape,
-    AnnotationValue,
+      AnnotationMetadata,
+      AnnotationObj,
+      AnnotationShape,
+      AnnotationValue,
   } from "@/context/AnnotationContext";
   import { ENTRY_ROOT } from "../../type";
 
   let {
-    annotation,
+    annotations,
     currentFrame,
     range,
     scale,
@@ -23,7 +23,7 @@
     onDeleteAnnotation,
     ...restProps
   }: {
-    annotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
+    annotations: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[];
     currentFrame: number;
     range: [number, number];
     scale: number;
@@ -50,9 +50,10 @@
 
 <div class="h-8">
   {#if frameCells > 0}
-    {#each Array(frameCells) as _u, i (i)}
-      {@const currentFrameInCell = range[0] + i * scale}
-
+  {#each Array(frameCells) as _u, i (i)}
+  {@const currentFrameInCell = range[0] + i * scale}
+  
+  <!-- {#each annotations as annotation, annotationIndex (annotation.metadata.id) } -->
       <TimelineCell
         {annotation}
         frame={currentFrameInCell}
@@ -76,6 +77,8 @@
         onmouseleave={() => setHoveredColumn(undefined)}
         {...restProps}
       />
-    {/each}
-  {/if}
-</div>
+      <!-- {/each} -->
+      {/each}
+      {/if}
+    </div>
+    
