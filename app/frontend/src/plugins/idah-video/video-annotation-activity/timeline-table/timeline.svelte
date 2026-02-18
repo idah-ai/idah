@@ -10,7 +10,7 @@
   import { ENTRY_ROOT } from "../../type";
 
   let {
-    annotations,
+    annotation,
     currentFrame,
     range,
     scale,
@@ -23,7 +23,7 @@
     onDeleteAnnotation,
     ...restProps
   }: {
-    annotations: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[];
+    annotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
     currentFrame: number;
     range: [number, number];
     scale: number;
@@ -48,12 +48,12 @@
   }
 </script>
 
-<div class="h-8">
   {#if frameCells > 0}
-  {#each Array(frameCells) as _u, i (i)}
-  {@const currentFrameInCell = range[0] + i * scale}
-  
-  <!-- {#each annotations as annotation, annotationIndex (annotation.metadata.id) } -->
+    {#each Array(frameCells) as _u, i (i)}
+      {@const currentFrameInCell = range[0] + i * scale}
+      {@const cellStart = range[0] + i * scale}
+{@const cellEnd = cellStart + scale}
+
       <TimelineCell
         {annotation}
         frame={currentFrameInCell}
@@ -62,13 +62,19 @@
         {scale}
         {zoom}
         {totalFrames}
-        inSpan={annotation.shape.type == ENTRY_ROOT ||
-          (Math.floor((annotation.shape.start - range[0]) / scale) <= i &&
-            Math.floor((annotation.shape.end - range[0]) / scale) >= i)}
+        inSpan={
+    annotation.shape.type == ENTRY_ROOT ||
+    (annotation.shape.start < cellEnd &&
+     annotation.shape.end >= cellStart)
+  }
         {onSeekFrame}
         keyframes={(annotation.shape.frames || [])
-          .filter((s) => Math.floor((s.frame - range[0]) / scale) == i)
-          .map((s) => s.frame)}
+  .filter((s) => {
+    const start = range[0] + i * scale;
+    const end = start + scale;
+    return s.frame >= start && s.frame < end;
+  })
+  .map((s) => s.frame)}
         {onSelectAnnotation}
         onDeleteFrame={(frame) => onDeleteAnnotation(annotation, frame)}
         hovered={hoveredColumn == currentFrameInCell}
@@ -77,8 +83,5 @@
         onmouseleave={() => setHoveredColumn(undefined)}
         {...restProps}
       />
-      <!-- {/each} -->
-      {/each}
-      {/if}
-    </div>
-    
+    {/each}
+  {/if}

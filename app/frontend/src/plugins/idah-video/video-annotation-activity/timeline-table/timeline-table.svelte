@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { getContext } from "svelte";
-  import { SvelteMap } from "svelte/reactivity";
+	import { getContext } from "svelte";
+	import { SvelteMap } from "svelte/reactivity";
 
   import { Button } from "@/components/ui/button";
   import Spinner from "@/components/ui/spinner/spinner.svelte";
@@ -68,6 +68,11 @@
     db?: AnnotationsIndexedDB;
     isPlaying?: boolean;
   } = $props();
+
+  type GroupAnnotation = {
+    groupId: string
+    items: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]
+  }
 
   // Contexts
   let context: IActivityContext = getContext("context");
@@ -279,123 +284,56 @@
     if (delta || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) e.preventDefault();
   }
 
-  function groupAnnotations(
-  annotations: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[],
-): AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[][] {
-  const groupedAnnotations = new SvelteMap<string, AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]>();
+function groupAnnotations(
+  annotations: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]
+): 
+GroupAnnotation[] {
+
+  const map = new SvelteMap<
+    string,
+    AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]
+  >()
 
   for (const ann of annotations) {
-    const key = ann?.metadata?.metadata?.group_id ?? ann.metadata.id;
+    const gid =
+    ann?.metadata?.metadata?.group_id?
+      ann?.metadata?.metadata?.group_id:
+      ann?.metadata?.id 
 
-    if (!groupedAnnotations.has(key)) groupedAnnotations.set(key, []);
-    groupedAnnotations.get(key)!.push(ann);
+    if (!map.has(gid)) {
+      map.set(gid, [])
+    }
+
+    map.get(gid)!.push(ann)
   }
 
-  return [...groupedAnnotations.values()];
+  const groups = Array.from(map.entries()).map(([groupId, list]) => ({
+    groupId,
+    items: [...list].sort((a, b) => {
+      const diff = a.shape.start - b.shape.start
+      return diff !== 0 ? diff : a.shape.end - b.shape.end
+    })
+  }))
+
+  // sort rows by first annotation start
+  groups.sort(
+    (a, b) => a.items[0].shape.start - b.items[0].shape.start
+  )
+
+  console.log({groups});
+  
+
+  return groups
 }
 </script>
 
-<!-- {#snippet row(annotations: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[])}
-  {#each annotations as annotation, index (annotation.metadata.id)}
-    {@const isSelected = selectedAnnotation?.metadata.id == annotation.metadata.id}
-    {@const isLastIndex = index == annotations.length - 1}
-    <TableRow
-      class={cn("border-b-0", {
-        "bg-primary/20": isSelected,
-      })}
-    >
-      <td
-        use:trackRow={{ id: annotation.metadata.id, isSelected }}
-        class={cn("justify-end p-0", {
-          "border-b": isLastIndex,
-        })}
-      >
-        <div class={cn("group flex w-full items-center justify-end px-2 py-1")}>
-          {#await getCategoryName(annotation.value.category, annotation)}
-            <Spinner size="sm"></Spinner>
-          {:then title}
-            <Text size="xs" weight={isSelected ? "semibold" : "normal"} class="text-foreground truncate">
-              {humanize(title)}
-            </Text>
-          {/await}
-
-          <Button
-            variant="ghost"
-            size="icon"
-            class={cn("ml-2 size-6 opacity-0 transition-opacity duration-200 ease-in-out group-hover:opacity-100", {
-              "opacity-100": isSelected,
-            })}
-            onclick={(e) => {
-              e.stopPropagation();
-              onVisibility(!annotation.hidden, annotation);
-            }}
-          >
-            {#if annotation.hidden}
-              <EyeOff class="size-3" />
-            {:else}
-              <Eye class="size-3" />
-            {/if}
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            class={cn("ml-2 size-6 opacity-0 transition-opacity duration-200 ease-in-out group-hover:opacity-100", {
-              "opacity-100": isSelected,
-            })}
-            onclick={(e) => {
-              e.stopPropagation();
-              onLock(!annotation.locked, annotation);
-            }}
-          >
-            {#if annotation.locked}
-              <Lock class="size-3" />
-            {:else}
-              <LockOpen class="size-3" />
-            {/if}
-          </Button>
-
-          {#if ["review", "annotate"].includes(context.workflowStep)}
-            <Button
-              variant="ghost"
-              size="icon"
-              class={cn("ml-2 size-6 opacity-0 transition-opacity duration-200 ease-in-out group-hover:opacity-100", {
-                "opacity-100": isSelected,
-              })}
-              onclick={(e) => {
-                e.stopPropagation();
-                onDeleteAnnotation(annotation);
-              }}
-              disabled={annotation.locked}
-            >
-              <Trash2Icon class="size-3"></Trash2Icon>
-            </Button>
-          {/if}
-        </div>
-      </td>
-
-      <TableCell class="p-0">
-        <Timeline
-          {annotation}
-          {currentFrame}
-          {range}
-          {scale}
-          {zoom}
-          {totalFrames}
-          onCellHover={(column) => (hoveredColumn = column)}
-          {hoveredColumn}
-          {onSeekFrame}
-          {onSelectAnnotation}
-          {onDeleteAnnotation}
-        />
-      </TableCell>
-    </TableRow>
-  {/each}
-{/snippet} -->
-
-{#snippet row(groups: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[][])}
-  {#each groups as group, index (group[0].metadata.id)}
-    {@const isSelected = selectedAnnotation?.metadata.id == group[0].metadata.id}
-    {@const firstAnnotation = group[0]}
+{#snippet row(groups: GroupAnnotation[])}
+ {#each groups as group, index }
+ {@const annotations = group.items}
+    {@const isSelected = selectedAnnotation
+      ? annotations.some((ann) => ann.metadata.id === selectedAnnotation.metadata.id)
+      : false}
+    {@const firstAnnotation = annotations[0]}
     {@const isLastIndex = index == groups.length - 1}
     <TableRow
       class={cn("border-b-0", {
@@ -471,9 +409,10 @@
         </div>
       </td>
 
-      <TableCell class="p-0">
+      <TableCell class="p-0 h-8">
+{#each annotations as annotation}
         <Timeline
-          annotations={group}
+          {annotation}
           {currentFrame}
           {range}
           {scale}
@@ -485,6 +424,7 @@
           {onSelectAnnotation}
           {onDeleteAnnotation}
         />
+        {/each}
       </TableCell>
     </TableRow>
   {/each}
