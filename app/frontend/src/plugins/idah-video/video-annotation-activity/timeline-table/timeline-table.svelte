@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { getContext } from "svelte";
-	import { SvelteMap } from "svelte/reactivity";
+  import { getContext } from "svelte";
+  import { SvelteMap } from "svelte/reactivity";
 
   import { Button } from "@/components/ui/button";
   import Spinner from "@/components/ui/spinner/spinner.svelte";
@@ -14,10 +14,10 @@
   import { boundingBoxes } from "../idb_store.svelte";
 
   import type {
-      AnnotationMetadata,
-      AnnotationObj,
-      AnnotationShape,
-      AnnotationValue,
+    AnnotationMetadata,
+    AnnotationObj,
+    AnnotationShape,
+    AnnotationValue,
   } from "@/context/AnnotationContext";
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import type { AnnotationsIndexedDB } from "../indexedDB";
@@ -70,9 +70,9 @@
   } = $props();
 
   type GroupAnnotation = {
-    groupId: string
-    items: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]
-  }
+    groupId: string;
+    items: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[];
+  };
 
   // Contexts
   let context: IActivityContext = getContext("context");
@@ -97,20 +97,20 @@
     if (isOutsideRange) {
       const centerOffset = currentFrame - Math.floor(range_span / 2);
       offset = Math.max(1, Math.min(totalFrames - range_span, centerOffset));
-      
+
       if (isPlaying) {
         manual_offset = offset;
       }
     }
-    
+
     return offset;
   });
-  
+
   let range: [number, number] = $derived([pos_offset, Math.min(pos_offset + range_span, totalFrames)]);
   let wheelthrottling = $state(false);
   let hoveredColumn: number | undefined = $state();
   let rowElements: Record<string, HTMLElement> = $state({});
-  
+
   export function setOffset(offset: number) {
     pos_offset = Math.max(1, Math.min(totalFrames - range_span, offset || 0));
   }
@@ -195,7 +195,6 @@
     setZoom(zoom - next);
   }
 
-
   function trackRow(node: HTMLElement, params: { id: string; isSelected: boolean }) {
     rowElements[params.id] = node;
 
@@ -217,23 +216,23 @@
     };
   }
 
-//  function sortAnnotationsByParent(
-//     annotations: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[],
-//   ): AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[] {
+  //  function sortAnnotationsByParent(
+  //     annotations: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[],
+  //   ): AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[] {
 
-//     let manipulated = annotations.map((ann) => {
-//       return {
-//         ...ann,
-//         id: ann?.metadata?.metadata?.group_id
-//           ? `${ann?.metadata.metadata.group_id}__${ann?.metadata.id}`
-//           : `${ann?.metadata.id}`,
-//       };
-//     });
+  //     let manipulated = annotations.map((ann) => {
+  //       return {
+  //         ...ann,
+  //         id: ann?.metadata?.metadata?.group_id
+  //           ? `${ann?.metadata.metadata.group_id}__${ann?.metadata.id}`
+  //           : `${ann?.metadata.id}`,
+  //       };
+  //     });
 
-//     manipulated.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true, sensitivity: "base" }));
+  //     manipulated.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true, sensitivity: "base" }));
 
-//     return manipulated;
-//   }
+  //     return manipulated;
+  //   }
 
   function handleTimelineWheel(e: WheelEvent) {
     let from = $state.snapshot(pos_offset) as number;
@@ -284,52 +283,39 @@
     if (delta || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) e.preventDefault();
   }
 
-function groupAnnotations(
-  annotations: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]
-): 
-GroupAnnotation[] {
+  function groupAnnotations(
+    annotations: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[],
+  ): GroupAnnotation[] {
+    const map = new SvelteMap<string, AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]>();
 
-  const map = new SvelteMap<
-    string,
-    AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]
-  >()
+    for (const ann of annotations) {
+      const gid = ann?.metadata?.metadata?.group_id ? ann?.metadata?.metadata?.group_id : ann?.metadata?.id;
 
-  for (const ann of annotations) {
-    const gid =
-    ann?.metadata?.metadata?.group_id?
-      ann?.metadata?.metadata?.group_id:
-      ann?.metadata?.id 
+      if (!map.has(gid)) {
+        map.set(gid, []);
+      }
 
-    if (!map.has(gid)) {
-      map.set(gid, [])
+      map.get(gid)!.push(ann);
     }
 
-    map.get(gid)!.push(ann)
+    const groups = Array.from(map.entries()).map(([groupId, list]) => ({
+      groupId,
+      items: [...list].sort((a, b) => {
+        const diff = a.shape.start - b.shape.start;
+        return diff !== 0 ? diff : a.shape.end - b.shape.end;
+      }),
+    }));
+
+    // sort rows by first annotation start
+    groups.sort((a, b) => a.items[0].shape.start - b.items[0].shape.start);
+
+    return groups;
   }
-
-  const groups = Array.from(map.entries()).map(([groupId, list]) => ({
-    groupId,
-    items: [...list].sort((a, b) => {
-      const diff = a.shape.start - b.shape.start
-      return diff !== 0 ? diff : a.shape.end - b.shape.end
-    })
-  }))
-
-  // sort rows by first annotation start
-  groups.sort(
-    (a, b) => a.items[0].shape.start - b.items[0].shape.start
-  )
-
-  console.log({groups});
-  
-
-  return groups
-}
 </script>
 
 {#snippet row(groups: GroupAnnotation[])}
- {#each groups as group, index }
- {@const annotations = group.items}
+  {#each groups as group, index}
+    {@const annotations = group.items}
     {@const isSelected = selectedAnnotation
       ? annotations.some((ann) => ann.metadata.id === selectedAnnotation.metadata.id)
       : false}
@@ -409,10 +395,9 @@ GroupAnnotation[] {
         </div>
       </td>
 
-      <TableCell class="p-0 h-8">
-{#each annotations as annotation}
+      <TableCell class="p-0">
         <Timeline
-          {annotation}
+          {annotations}
           {currentFrame}
           {range}
           {scale}
@@ -424,7 +409,6 @@ GroupAnnotation[] {
           {onSelectAnnotation}
           {onDeleteAnnotation}
         />
-        {/each}
       </TableCell>
     </TableRow>
   {/each}
@@ -564,7 +548,8 @@ GroupAnnotation[] {
 
   <TableBody>
     {#await annotations_promise}
-      {@render row($boundingBoxes)}
+      {@const groupedBoundingBoxes = groupAnnotations($boundingBoxes)}
+      {@render row([...groupedBoundingBoxes])}
     {:then annotations}
       {@const groupedAnnotations = groupAnnotations(annotations)}
       {@render row([...groupedAnnotations])}
