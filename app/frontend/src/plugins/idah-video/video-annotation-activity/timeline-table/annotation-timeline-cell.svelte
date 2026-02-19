@@ -8,10 +8,10 @@
   import { ArrowLeftRightIcon, SquareSplitHorizontalIcon, Trash2Icon } from "@lucide/svelte";
 
   import type {
-    AnnotationMetadata,
-    AnnotationObj,
-    AnnotationShape,
-    AnnotationValue,
+      AnnotationMetadata,
+      AnnotationObj,
+      AnnotationShape,
+      AnnotationValue,
   } from "@/context/AnnotationContext";
   import type { IActivityContext } from "@/plugin/interface/Activity";
 
@@ -66,19 +66,20 @@
   }
 </script>
 
+{#if inSpan}
 <div
   class={cn("inline-block h-full border-b py-1 first:border-l", {
     "cursor-pointer": isHovered,
   })}
   style:box-sizing="border-box"
   style:width="{cellWidth}%"
+  style:padding-left="0.125rem"
   onclick={() => {
     onSeekFrame(frame);
     onSelectAnnotation(annotation);
   }}
   {...restProps}
 >
-  {#if inSpan}
     <div
       class={cn("relative z-20 h-full", {
         "bg-primary/5": isHovered || isSelected,
@@ -119,5 +120,5 @@
         </ContextMenuContent>
       </ContextMenu>
     </div>
+  </div>
   {/if}
-</div>

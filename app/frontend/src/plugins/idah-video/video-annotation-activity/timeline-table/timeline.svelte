@@ -1,13 +1,13 @@
 <script lang="ts">
-  import TimelineCell from "./timeline-cell.svelte";
 
   import type {
-    AnnotationMetadata,
-    AnnotationObj,
-    AnnotationShape,
-    AnnotationValue,
+      AnnotationMetadata,
+      AnnotationObj,
+      AnnotationShape,
+      AnnotationValue,
   } from "@/context/AnnotationContext";
   import { ENTRY_ROOT } from "../../type";
+  import AnnotationTimelineCell from "./annotation-timeline-cell.svelte";
 
   let {
     annotations,
@@ -41,6 +41,8 @@
 
   // Variables
   let frameCells = $derived(Math.ceil((range[1] - range[0]) / scale) + 1);
+ let range_span = $derived(Math.min(scale * zoom, totalFrames));
+  let cellWidth: number = $derived((1 / ((range[1] - range[0] + (scale - (range_span % scale))) / 100)) * scale);
 
   // Functions
   function setHoveredColumn(column?: number) {
@@ -50,11 +52,12 @@
 
 <div class="h-8">
   {#if frameCells > 0}
-    {#each annotations as annotation (annotation.metadata.id)}
-      {#each Array(frameCells) as _u, i (annotation.metadata.id + "-" + i)}
-        {@const currentFrameInCell = range[0] + i * scale}
-
-        <TimelineCell
+  {#each Array(frameCells) as _u, i (i)}
+  {@const currentFrameInCell = range[0] + i * scale}
+ 
+  
+  {#each annotations as annotation (annotation.metadata.id)}
+        <AnnotationTimelineCell
           {annotation}
           frame={currentFrameInCell}
           {currentFrame}

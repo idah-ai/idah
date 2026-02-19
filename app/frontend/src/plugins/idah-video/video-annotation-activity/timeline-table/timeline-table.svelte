@@ -4,7 +4,7 @@
 
   import { Button } from "@/components/ui/button";
   import Spinner from "@/components/ui/spinner/spinner.svelte";
-  import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+  import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
   import Text from "@/components/ui/text/Text.svelte";
   import Timeline from "./timeline.svelte";
 
@@ -14,10 +14,10 @@
   import { boundingBoxes } from "../idb_store.svelte";
 
   import type {
-    AnnotationMetadata,
-    AnnotationObj,
-    AnnotationShape,
-    AnnotationValue,
+      AnnotationMetadata,
+      AnnotationObj,
+      AnnotationShape,
+      AnnotationValue,
   } from "@/context/AnnotationContext";
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import type { AnnotationsIndexedDB } from "../indexedDB";
@@ -69,7 +69,7 @@
     isPlaying?: boolean;
   } = $props();
 
-  type GroupAnnotation = {
+  export type GroupAnnotation = {
     groupId: string;
     items: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[];
   };
@@ -215,24 +215,6 @@
       },
     };
   }
-
-  //  function sortAnnotationsByParent(
-  //     annotations: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[],
-  //   ): AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[] {
-
-  //     let manipulated = annotations.map((ann) => {
-  //       return {
-  //         ...ann,
-  //         id: ann?.metadata?.metadata?.group_id
-  //           ? `${ann?.metadata.metadata.group_id}__${ann?.metadata.id}`
-  //           : `${ann?.metadata.id}`,
-  //       };
-  //     });
-
-  //     manipulated.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true, sensitivity: "base" }));
-
-  //     return manipulated;
-  //   }
 
   function handleTimelineWheel(e: WheelEvent) {
     let from = $state.snapshot(pos_offset) as number;
@@ -399,7 +381,7 @@
         </div>
       </td>
 
-      <TableCell class="p-0">
+      <td class="p-0">
         <Timeline
           {annotations}
           {currentFrame}
@@ -413,7 +395,7 @@
           {onSelectAnnotation}
           {onDeleteAnnotation}
         />
-      </TableCell>
+       </td>
     </TableRow>
   {/each}
 {/snippet}
