@@ -783,6 +783,7 @@
             if ($entryRoot?.metadata.id == annotation.metadata.id) $entryRoot = annotation;
             await annotationsIDB?.addAnnotations([annotation]);
             $idb_updated_at = new Date();
+            selectedAnnotation = annotation;
           }
         });
       },
@@ -819,6 +820,7 @@
               if ($entryRoot?.metadata.id == annotation.metadata.id) $entryRoot = annotation;
               await annotationsIDB?.addAnnotations([annotation]);
               $idb_updated_at = new Date();
+              selectedAnnotation = annotation;
             }
           });
         }
