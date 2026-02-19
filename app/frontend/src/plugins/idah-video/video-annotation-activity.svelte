@@ -204,6 +204,7 @@
                 id: a.id,
                 updatedAt: a.updated_at,
                 createdAt: a.created_at,
+                metadata: a.metadata || {},
               },
               hidden: false,
               locked: false,
@@ -680,6 +681,7 @@
     const originalEnd = annotation.shape.end;
     const originalFrames = annotation.shape.frames;
     const originalUpdatedAt = annotation.metadata.updatedAt;
+    const originalGroupId = annotation.metadata.metadata?.group_id;
 
     // part 1: original annotation, to be updated (0 to splitAt - 1)
     const part1End = splitAt - 1;
@@ -722,6 +724,8 @@
       part2Frames.sort((a, b) => a.frame - b.frame);
     }
 
+    const groupId = originalGroupId || annotation.metadata.id;
+
     return {
       name: "split annotation",
       async apply() {
@@ -731,6 +735,10 @@
           a1.shape.end = part1End;
           a1.shape.frames = part1Frames;
           a1.metadata.updatedAt = createdAt;
+          a1.metadata.metadata = {
+            ...annotation.metadata.metadata,
+            group_id: groupId,
+          };
           a1.synced = false;
           await annotationsIDB?.addAnnotations([a1]);
           // context update
@@ -738,6 +746,7 @@
             id: a1.metadata.id,
             dimensions: a1.shape,
             annotation: a1.value,
+            metadata: a1.metadata.metadata,
           });
 
           p.then(async () => {
@@ -766,6 +775,10 @@
             id: newId,
             createdAt,
             updatedAt: createdAt,
+            metadata: {
+              group_id: groupId,
+              parent_id: annotation.metadata.id,
+            },
           },
           synced: false,
           locked: false,
@@ -777,9 +790,7 @@
         await annotationsIDB?.addAnnotations([a2]);
         $idb_updated_at = new Date();
 
-
-
-        let p2 = context.annotations.create(newId, a2.shape, a2.value);
+        let p2 = context.annotations.create(newId, a2.shape, a2.value, a2.metadata.metadata);
         p2.then(async () => {
           const annotation = await annotationsIDB?.get("annotations", newId);
           if (annotation && annotation.metadata.updatedAt.valueOf() == createdAt.valueOf()) {
@@ -787,7 +798,6 @@
             if ($entryRoot?.metadata.id == annotation.metadata.id) $entryRoot = annotation;
             await annotationsIDB?.addAnnotations([annotation]);
             $idb_updated_at = new Date();
-                    // Select part 2 after split
             selectedAnnotation = annotation;
           }
         });
@@ -799,6 +809,14 @@
           a1.shape.end = originalEnd;
           a1.shape.frames = originalFrames;
           a1.metadata.updatedAt = originalUpdatedAt;
+
+          if (originalGroupId === undefined) {
+            delete a1.metadata.metadata?.group_id;
+          } else {
+            if (!a1.metadata.metadata) a1.metadata.metadata = {};
+            a1.metadata.metadata.group_id = originalGroupId;
+          }
+
           a1.synced = false;
           await annotationsIDB?.addAnnotations([a1]);
 
@@ -806,6 +824,7 @@
             id: a1.metadata.id,
             dimensions: a1.shape,
             annotation: a1.value,
+            metadata: a1.metadata.metadata,
           });
 
           p.then(async () => {
