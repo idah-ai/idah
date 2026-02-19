@@ -33,6 +33,7 @@ class AnnotationsExpo < BaseExpo
     field(:entry_id, String)
     field(:dimensions, Hash) # Open Hash
     field(:annotation, Hash) # Open Hash
+    field?(:metadata, Hash) # Open Hash
   end
 
   # Add the id as a required field for the update method

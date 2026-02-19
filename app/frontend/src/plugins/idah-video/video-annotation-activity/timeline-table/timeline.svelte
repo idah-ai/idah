@@ -1,13 +1,13 @@
 <script lang="ts">
   import TimelineCell from "./timeline-cell.svelte";
 
-  import { ENTRY_ROOT } from "../../type";
   import type {
     AnnotationMetadata,
     AnnotationObj,
     AnnotationShape,
     AnnotationValue,
   } from "@/context/AnnotationContext";
+  import { ENTRY_ROOT } from "../../type";
 
   let {
     annotation,
