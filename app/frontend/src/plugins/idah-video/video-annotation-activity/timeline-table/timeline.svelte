@@ -2,15 +2,15 @@
   import TimelineCell from "./timeline-cell.svelte";
 
   import type {
-      AnnotationMetadata,
-      AnnotationObj,
-      AnnotationShape,
-      AnnotationValue,
+    AnnotationMetadata,
+    AnnotationObj,
+    AnnotationShape,
+    AnnotationValue,
   } from "@/context/AnnotationContext";
   import { ENTRY_ROOT } from "../../type";
 
   let {
-    annotation,
+    annotations,
     currentFrame,
     range,
     scale,
@@ -23,7 +23,7 @@
     onDeleteAnnotation,
     ...restProps
   }: {
-    annotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
+    annotations: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[];
     currentFrame: number;
     range: [number, number];
     scale: number;
@@ -46,42 +46,46 @@
   function setHoveredColumn(column?: number) {
     onCellHover(column);
   }
+  $effect(() => {
+    console.log({ annotations });
+  });
 </script>
 
+<div class="h-8">
   {#if frameCells > 0}
     {#each Array(frameCells) as _u, i (i)}
       {@const currentFrameInCell = range[0] + i * scale}
       {@const cellStart = range[0] + i * scale}
-{@const cellEnd = cellStart + scale}
+      {@const cellEnd = cellStart + scale}
 
-      <TimelineCell
-        {annotation}
-        frame={currentFrameInCell}
-        {currentFrame}
-        {range}
-        {scale}
-        {zoom}
-        {totalFrames}
-        inSpan={
-    annotation.shape.type == ENTRY_ROOT ||
-    (annotation.shape.start < cellEnd &&
-     annotation.shape.end >= cellStart)
-  }
-        {onSeekFrame}
-        keyframes={(annotation.shape.frames || [])
-  .filter((s) => {
-    const start = range[0] + i * scale;
-    const end = start + scale;
-    return s.frame >= start && s.frame < end;
-  })
-  .map((s) => s.frame)}
-        {onSelectAnnotation}
-        onDeleteFrame={(frame) => onDeleteAnnotation(annotation, frame)}
-        hovered={hoveredColumn == currentFrameInCell}
-        onmouseover={() => setHoveredColumn(currentFrameInCell)}
-        onmouseenter={() => setHoveredColumn(currentFrameInCell)}
-        onmouseleave={() => setHoveredColumn(undefined)}
-        {...restProps}
-      />
+      {#each annotations.filter((annotation) => annotation.shape.type == ENTRY_ROOT || (annotation.shape.start < cellEnd && annotation.shape.end >= cellStart)) as annotation (annotation.metadata.id)}
+        <TimelineCell
+          {annotation}
+          frame={currentFrameInCell}
+          {currentFrame}
+          {range}
+          {scale}
+          {zoom}
+          {totalFrames}
+          inSpan={annotation.shape.type == ENTRY_ROOT ||
+            (annotation.shape.start < cellEnd && annotation.shape.end >= cellStart)}
+          {onSeekFrame}
+          keyframes={(annotation.shape.frames || [])
+            .filter((s) => {
+              const start = range[0] + i * scale;
+              const end = start + scale;
+              return s.frame >= start && s.frame < end;
+            })
+            .map((s) => s.frame)}
+          {onSelectAnnotation}
+          onDeleteFrame={(frame) => onDeleteAnnotation(annotation, frame)}
+          hovered={hoveredColumn == currentFrameInCell}
+          onmouseover={() => setHoveredColumn(currentFrameInCell)}
+          onmouseenter={() => setHoveredColumn(currentFrameInCell)}
+          onmouseleave={() => setHoveredColumn(undefined)}
+          {...restProps}
+        />
+      {/each}
     {/each}
   {/if}
+</div>
