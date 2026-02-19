@@ -357,7 +357,7 @@
   {#each vertexPoints as vertexData, index (index)}
     {@const point = typeof vertexData === "object" && "point" in vertexData ? vertexData.point : vertexData}
     {@const isMatched = typeof vertexData === "object" && "matched" in vertexData ? vertexData.matched : true}
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
+
     <circle
       cx={point[X] * ratio[X]}
       cy={point[Y] * ratio[Y]}
