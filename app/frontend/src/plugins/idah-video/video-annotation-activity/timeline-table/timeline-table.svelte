@@ -289,24 +289,28 @@
     const map = new SvelteMap<string, AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]>();
 
     for (const ann of annotations) {
-      const gid = ann?.metadata?.metadata?.group_id ? ann?.metadata?.metadata?.group_id : ann?.metadata?.id;
+      const gid = ann.metadata?.metadata?.group_id ?? ann.metadata?.id ?? crypto.randomUUID();
 
       if (!map.has(gid)) {
         map.set(gid, []);
       }
 
-      map.get(gid)!.push(ann);
+      map.get(gid)!.push({
+        ...ann,
+        shape: { ...ann.shape },
+      });
     }
 
     const groups = Array.from(map.entries()).map(([groupId, list]) => ({
       groupId,
-      items: [...list].sort((a, b) => {
-        const diff = a.shape.start - b.shape.start;
-        return diff !== 0 ? diff : a.shape.end - b.shape.end;
-      }),
+      items: list
+        .map((a) => ({ ...a, shape: { ...a.shape } }))
+        .sort((a, b) => {
+          const diff = a.shape.start - b.shape.start;
+          return diff !== 0 ? diff : a.shape.end - b.shape.end;
+        }),
     }));
 
-    // sort rows by first annotation start
     groups.sort((a, b) => a.items[0].shape.start - b.items[0].shape.start);
 
     return groups;
