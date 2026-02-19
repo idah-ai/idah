@@ -53,12 +53,10 @@
 
 <div class="h-8">
   {#if frameCells > 0}
-    {#each Array(frameCells) as _u, i (i)}
-      {@const currentFrameInCell = range[0] + i * scale}
-      {@const cellStart = range[0] + i * scale}
-      {@const cellEnd = cellStart + scale}
+    {#each annotations as annotation (annotation.metadata.id)}
+      {#each Array(frameCells) as _u, i (annotation.metadata.id + "-" + i)}
+        {@const currentFrameInCell = range[0] + i * scale}
 
-      {#each annotations.filter((annotation) => annotation.shape.type == ENTRY_ROOT || (annotation.shape.start < cellEnd && annotation.shape.end >= cellStart)) as annotation (annotation.metadata.id)}
         <TimelineCell
           {annotation}
           frame={currentFrameInCell}
@@ -68,7 +66,7 @@
           {zoom}
           {totalFrames}
           inSpan={annotation.shape.type == ENTRY_ROOT ||
-            (annotation.shape.start < cellEnd && annotation.shape.end >= cellStart)}
+            (currentFrameInCell >= annotation.shape.start && currentFrameInCell <= annotation.shape.end)}
           {onSeekFrame}
           keyframes={(annotation.shape.frames || [])
             .filter((s) => {
