@@ -289,7 +289,7 @@
     const map = new SvelteMap<string, AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]>();
 
     for (const ann of annotations) {
-      const gid = ann.metadata?.metadata?.group_id ?? ann.metadata?.id ?? crypto.randomUUID();
+      const gid = ann.metadata?.metadata?.group_id ?? ann.metadata?.id;
 
       if (!map.has(gid)) {
         map.set(gid, []);
