@@ -46,9 +46,6 @@
   function setHoveredColumn(column?: number) {
     onCellHover(column);
   }
-  $effect(() => {
-    console.log({ annotations });
-  });
 </script>
 
 <div class="h-8">
