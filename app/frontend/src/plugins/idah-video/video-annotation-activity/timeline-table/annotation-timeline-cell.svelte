@@ -64,6 +64,10 @@
       .find(([k, _]) => k == annotation.shape.type)?.[1]
       .values.find((cat) => cat.id === categoryId);
   }
+
+  $effect(()=>{
+    console.log(getCategory(annotation.value.category)?.label, keyframes, annotation.shape.frames);
+  });
 </script>
 
 {#if inSpan}
@@ -73,7 +77,6 @@
   })}
   style:box-sizing="border-box"
   style:width="{cellWidth}%"
-  style:padding-left="0.125rem"
   onclick={() => {
     onSeekFrame(frame);
     onSelectAnnotation(annotation);
