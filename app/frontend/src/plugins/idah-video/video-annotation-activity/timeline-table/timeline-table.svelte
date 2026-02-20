@@ -65,7 +65,7 @@
     isPlaying?: boolean;
   } = $props();
 
-  export type GroupAnnotation = {
+  type TAnnotationGroup = {
     groupId: string;
     annotations: TAnnotationObj[];
   };
@@ -106,6 +106,7 @@
   let wheelthrottling = $state(false);
   let hoveredColumn: number | undefined = $state();
   let rowElements: Record<string, HTMLElement> = $state({});
+  let selectedAnnotationGroup: TAnnotationGroup | undefined = $state(undefined);
 
   export function setOffset(offset: number) {
     pos_offset = Math.max(1, Math.min(totalFrames - range_span, offset || 0));
@@ -191,13 +192,13 @@
     setZoom(zoom - next);
   }
 
-  function trackRow(node: HTMLElement, params: { id: string; isSelected: boolean }) {
+  function trackRow(node: HTMLElement, params: { id: string; isGroupSelected: boolean }) {
     rowElements[params.id] = node;
 
     return {
-      update(newParams: { id: string; isSelected: boolean }) {
-        // Scroll into view immediately when this row becomes selected
-        if (newParams.isSelected && !params.isSelected) {
+      update(newParams: { id: string; isGroupSelected: boolean }) {
+        // Scroll into view immediately when this row (group) becomes selected
+        if (newParams.isGroupSelected && !params.isGroupSelected) {
           node.scrollIntoView({
             behavior: "smooth",
             block: "center",
@@ -263,7 +264,7 @@
 
   function groupAnnotations(
     annotations: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[],
-  ): GroupAnnotation[] {
+  ): TAnnotationGroup[] {
     const map = new SvelteMap<string, AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]>();
 
     for (const ann of annotations) {
@@ -310,31 +311,37 @@
   function deleteAllAnnotations(annotations: TAnnotationObj[]) {
     annotations.forEach((annotation) => onDeleteAnnotation(annotation));
   }
+
+  function selectAnnotationGroup(annotationGroup: TAnnotationGroup) {
+    selectedAnnotationGroup = annotationGroup;
+  }
 </script>
 
-{#snippet row(groups: GroupAnnotation[])}
-  {#each groups as { groupId, annotations }, index}
-    {@const isSelected = selectedAnnotation
-      ? annotations.some((ann) => ann.metadata.id === selectedAnnotation.metadata.id)
-      : false}
+{#snippet row(groups: TAnnotationGroup[])}
+  {#each groups as group, index}
+    {@const { groupId, annotations } = group}
+    {@const isGroupSelected = selectedAnnotationGroup?.groupId == groupId}
     {@const firstAnnotation = annotations[0]}
+    {@const someAnnotationIsHidden = annotations.some((ann) => ann.hidden)}
+    {@const someAnnotationIsLocked = annotations.some((ann) => ann.locked)}
     {@const isLastIndex = index == groups.length - 1}
     <TableRow
-      class={cn("border-b-0", {
-        "bg-primary/5": isSelected,
+      class={cn("cursor-pointer border-b-0", {
+        "bg-primary/5": isGroupSelected,
       })}
+      onclick={() => selectAnnotationGroup(group)}
     >
       <td
-        use:trackRow={{ id: firstAnnotation.metadata.id, isSelected }}
+        use:trackRow={{ id: firstAnnotation.metadata.id, isGroupSelected }}
         class={cn("justify-end p-0", {
           "border-b": isLastIndex,
         })}
       >
         <div class={cn("group flex w-full items-center justify-end px-2 py-1")}>
           {#await getCategoryName(firstAnnotation.value.category, firstAnnotation)}
-            <Spinner size="sm"></Spinner>
+            <Spinner size="sm" />
           {:then title}
-            <Text size="xs" weight={isSelected ? "semibold" : "normal"} class="text-foreground truncate">
+            <Text size="xs" weight={isGroupSelected ? "semibold" : "normal"} class="text-foreground truncate">
               {humanize(title)}
             </Text>
           {/await}
@@ -344,14 +351,14 @@
             variant="ghost"
             size="icon"
             class={cn("ml-2 size-6 opacity-0 transition-opacity duration-200 ease-in-out group-hover:opacity-100", {
-              "opacity-100": isSelected,
+              "opacity-100": isGroupSelected,
             })}
             onclick={(e) => {
               e.stopPropagation();
               toggleVisibilityAllAnnotations(annotations);
             }}
           >
-            {#if firstAnnotation.hidden}
+            {#if someAnnotationIsHidden}
               <EyeOff class="size-3" />
             {:else}
               <Eye class="size-3" />
@@ -363,14 +370,14 @@
             variant="ghost"
             size="icon"
             class={cn("ml-2 size-6 opacity-0 transition-opacity duration-200 ease-in-out group-hover:opacity-100", {
-              "opacity-100": isSelected,
+              "opacity-100": isGroupSelected,
             })}
             onclick={(e) => {
               e.stopPropagation();
               toggleLockAllAnnotations(annotations);
             }}
           >
-            {#if firstAnnotation.locked}
+            {#if someAnnotationIsLocked}
               <Lock class="size-3" />
             {:else}
               <LockOpen class="size-3" />
@@ -383,13 +390,13 @@
               variant="ghost"
               size="icon"
               class={cn("ml-2 size-6 opacity-0 transition-opacity duration-200 ease-in-out group-hover:opacity-100", {
-                "opacity-100": isSelected,
+                "opacity-100": isGroupSelected,
               })}
               onclick={(e) => {
                 e.stopPropagation();
                 deleteAllAnnotations(annotations);
               }}
-              disabled={firstAnnotation.locked}
+              disabled={someAnnotationIsLocked}
             >
               <Trash2Icon class="size-3" />
             </Button>
