@@ -1,16 +1,18 @@
 <script lang="ts">
   import type {
+    AnnotationGroup,
     AnnotationMetadata,
     AnnotationObj,
     AnnotationShape,
     AnnotationValue,
   } from "@/context/AnnotationContext";
+
   import TimelineCell from "./timeline-cell.svelte";
 
   type TAnnotationObj = AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
 
   let {
-    groupId,
+    group,
     annotations,
     currentFrame,
     range,
@@ -22,8 +24,9 @@
     onSeekFrame,
     onSelectAnnotation,
     onDeleteAnnotation,
+    onSelectGroup,
   }: {
-    groupId: string;
+    group: AnnotationGroup<TAnnotationObj>;
     annotations: TAnnotationObj[];
     currentFrame: number;
     range: [number, number];
@@ -35,6 +38,7 @@
     onSeekFrame: (frame: number) => void;
     onSelectAnnotation: (annotation?: TAnnotationObj) => void;
     onDeleteAnnotation: (annotation: TAnnotationObj, frame: number) => void;
+    onSelectGroup: (annotationGroup: AnnotationGroup<TAnnotationObj>) => void;
   } = $props();
 
   // Variables
@@ -57,7 +61,7 @@
       {@const currentFrameInCell = range[0] + i * scale}
 
       <TimelineCell
-        {groupId}
+        {group}
         {annotations}
         {currentFrameInCell}
         {range}
@@ -71,6 +75,7 @@
         {onSelectAnnotation}
         onHoverAnnotation={setHoveredAnnotation}
         onHoverCell={setHoveredCell}
+        {onSelectGroup}
       ></TimelineCell>
     {/each}
   {/if}
