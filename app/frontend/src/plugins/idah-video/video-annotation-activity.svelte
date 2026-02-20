@@ -331,6 +331,10 @@
             ...annotation.metadata,
             createdAt,
             updatedAt: createdAt,
+            metadata: {
+              group_id: annotation.metadata.metadata?.group_id,
+              parent_id: annotation.metadata.metadata?.parent_id,
+            },
           },
           synced: false,
           locked: false,
@@ -341,7 +345,7 @@
         $idb_updated_at = new Date();
 
         if (annotation.shape.type == ENTRY_ROOT) $entryRoot = annotation;
-        let p = context.annotations.create(props.id, annotation.shape, annotation.value);
+        let p = context.annotations.create(props.id, annotation.shape, annotation.value, a.metadata.metadata);
 
         p.then(async () => {
           let annotation = await annotationsIDB?.get("annotations", props.id);
