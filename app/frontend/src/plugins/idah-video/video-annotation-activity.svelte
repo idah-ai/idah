@@ -1002,6 +1002,45 @@
     }
   }
 
+  function selectGroupAtFrame(annotationGroup: AnnotationGroup<TAnnotationObj>, frame?: number) {
+    selectedAnnotationGroup = annotationGroup;
+
+    if (frame == undefined) {
+      // User is clicked group header
+    } else {
+      currentFrame = frame;
+
+      const totalAnnotation = annotationGroup.annotations.length;
+      const firstAnnotation = annotationGroup.annotations[0];
+      const lastAnnotation = annotationGroup.annotations[totalAnnotation - 1];
+      if (totalAnnotation === 1) {
+        /** Only 1 annotation in a group */
+        mode = firstAnnotation.shape.type;
+        selectAnnotation(firstAnnotation);
+      } else {
+        /** More than 1 annotation in a group */
+        /** Check from the selected frame,
+         * to know is it before first annotation in a group or
+         * it is after last annotation in a group.
+         */
+        const firstFrameOfGroup = firstAnnotation.shape.start;
+        const lastFrameOfGroup = lastAnnotation.shape.end;
+        const firstDiff = Math.abs(currentFrame - firstFrameOfGroup);
+        const lastDiff = Math.abs(currentFrame - lastFrameOfGroup);
+
+        // // TODO: Check currentFrame is in range of some annotation?
+
+        if (firstDiff < lastDiff) {
+          /** The selected frame is before first annotation */
+          selectAnnotation(firstAnnotation);
+        } else {
+          /** The selected frame is after last annotation */
+          selectAnnotation(lastAnnotation);
+        }
+      }
+    }
+  }
+
   let overlay: SvgOverlay;
 
   let annotations_promise: Promise<TAnnotationObj[]> = $derived.by(() => {
@@ -1264,6 +1303,7 @@
               {currentFrame}
               {totalFrames}
               {selectedAnnotation}
+              {selectedAnnotationGroup}
               onSeekFrame={seekToFrame}
               {onDeleteAnnotation}
               {onLock}
@@ -1271,6 +1311,7 @@
               {allHidden}
               {allLocked}
               onSelectAnnotation={selectAnnotation}
+              onSelectGroupAtFrame={selectGroupAtFrame}
               {isPlaying}
               onScaleChange={(s) => {
                 scale = s;
