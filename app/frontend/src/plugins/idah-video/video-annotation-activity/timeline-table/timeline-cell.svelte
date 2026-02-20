@@ -35,7 +35,7 @@
     onSelectAnnotation: (annotation?: TAnnotationObj) => void;
     onHoverAnnotation: (annotation: TAnnotationObj | undefined) => void;
     onHoverCell: (frame?: number) => void;
-    onSelectGroup: (annotationGrop: AnnotationGroup<TAnnotationObj>) => void;
+    onSelectGroupAtFrame: (annotationGrop: AnnotationGroup<TAnnotationObj>, frame: number) => void;
   }
   let {
     group,
@@ -52,7 +52,7 @@
     onSelectAnnotation,
     onHoverAnnotation,
     onHoverCell,
-    onSelectGroup,
+    onSelectGroupAtFrame,
   }: Props = $props();
 
   // Contexts
@@ -95,15 +95,10 @@
 
   function selectFrame() {
     onSeekFrame(currentFrameInCell);
-    /**
-     * If there is an annotation, then select that annotation
-     * otherwise check the group
-     */
-    if (annotation) {
-      onSelectAnnotation(annotation);
-    } else {
-      onSelectGroup(group);
-    }
+
+    if (annotation) onSelectAnnotation(annotation);
+
+    onSelectGroupAtFrame(group, currentFrameInCell);
   }
 
   function onMouseOver() {

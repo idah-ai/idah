@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Eye, EyeOff, Lock, LockOpen, Trash2Icon } from "@lucide/svelte";
   import { getContext } from "svelte";
   import { SvelteMap } from "svelte/reactivity";
 
@@ -10,7 +11,7 @@
 
   import { cn } from "@/utils";
   import { humanize } from "@/utils/string";
-  import { Eye, EyeOff, Lock, LockOpen, Trash2Icon } from "@lucide/svelte";
+
   import { boundingBoxes } from "../idb_store.svelte";
 
   import type {
@@ -33,12 +34,14 @@
     currentFrame,
     totalFrames,
     selectedAnnotation,
+    selectedAnnotationGroup,
     annotations_promise,
     allLocked,
     allHidden,
     onSeekFrame,
     onDeleteAnnotation,
     onSelectAnnotation,
+    onSelectGroupAtFrame,
     onZoomChange,
     onScaleChange,
     onLock,
@@ -53,10 +56,12 @@
     currentFrame: number;
     totalFrames: number;
     selectedAnnotation?: TAnnotationObj;
+    selectedAnnotationGroup: AnnotationGroup<TAnnotationObj> | undefined;
     allLocked: boolean;
     allHidden: boolean;
     onSeekFrame: (frame: number) => void;
     onSelectAnnotation: (annotation?: TAnnotationObj) => void;
+    onSelectGroupAtFrame: (annotationGroup: AnnotationGroup<TAnnotationObj>, frame?: number) => void;
     onDeleteAnnotation: (annotation: TAnnotationObj, frame?: number) => void;
     onLock: (locked: boolean, annotation?: TAnnotationObj) => void;
     onVisibility: (hidden: boolean, annotation?: TAnnotationObj) => void;
@@ -102,7 +107,6 @@
   let wheelthrottling = $state(false);
   let hoveredColumn: number | undefined = $state();
   let rowElements: Record<string, HTMLElement> = $state({});
-  let selectedAnnotationGroup: AnnotationGroup<TAnnotationObj> | undefined = $state(undefined);
 
   export function setOffset(offset: number) {
     pos_offset = Math.max(1, Math.min(totalFrames - range_span, offset || 0));
@@ -302,11 +306,6 @@
   function deleteAllAnnotations(annotations: TAnnotationObj[]) {
     annotations.forEach((annotation) => onDeleteAnnotation(annotation));
   }
-
-  function selectAnnotationGroup(annotationGroup: AnnotationGroup<TAnnotationObj>) {
-    selectedAnnotationGroup = annotationGroup;
-    console.log(selectedAnnotationGroup, currentFrame);
-  }
 </script>
 
 {#snippet row(groups: AnnotationGroup<TAnnotationObj>[])}
@@ -321,7 +320,6 @@
       class={cn("cursor-pointer border-b-0", {
         "bg-primary/5": isGroupSelected,
       })}
-      onclick={() => selectAnnotationGroup(group)}
     >
       <td
         use:trackRow={{ id: firstAnnotation.metadata.id, isGroupSelected }}
@@ -329,7 +327,12 @@
           "border-b": isLastIndex,
         })}
       >
-        <div class={cn("group flex w-full items-center justify-end px-2 py-1")}>
+        <div
+          class={cn("group flex w-full items-center justify-end px-2 py-1")}
+          onclick={() => {
+            onSelectGroupAtFrame(group);
+          }}
+        >
           {#await getCategoryName(firstAnnotation.value.category, firstAnnotation)}
             <Spinner size="sm" />
           {:then title}
@@ -410,7 +413,7 @@
           {onSeekFrame}
           {onSelectAnnotation}
           {onDeleteAnnotation}
-          onSelectGroup={(annotationGroup) => selectAnnotationGroup(annotationGroup)}
+          onSelectGroupAtFrame={(annotationGroup, frame) => onSelectGroupAtFrame(annotationGroup, frame)}
         />
       </td>
     </TableRow>

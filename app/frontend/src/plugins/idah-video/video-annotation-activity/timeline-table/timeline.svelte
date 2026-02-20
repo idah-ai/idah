@@ -24,7 +24,7 @@
     onSeekFrame,
     onSelectAnnotation,
     onDeleteAnnotation,
-    onSelectGroup,
+    onSelectGroupAtFrame,
   }: {
     group: AnnotationGroup<TAnnotationObj>;
     annotations: TAnnotationObj[];
@@ -38,7 +38,7 @@
     onSeekFrame: (frame: number) => void;
     onSelectAnnotation: (annotation?: TAnnotationObj) => void;
     onDeleteAnnotation: (annotation: TAnnotationObj, frame: number) => void;
-    onSelectGroup: (annotationGroup: AnnotationGroup<TAnnotationObj>) => void;
+    onSelectGroupAtFrame: (annotationGroup: AnnotationGroup<TAnnotationObj>, frame: number) => void;
   } = $props();
 
   // Variables
@@ -75,7 +75,7 @@
         {onSelectAnnotation}
         onHoverAnnotation={setHoveredAnnotation}
         onHoverCell={setHoveredCell}
-        {onSelectGroup}
+        {onSelectGroupAtFrame}
       ></TimelineCell>
     {/each}
   {/if}
