@@ -14,13 +14,15 @@
   import { boundingBoxes } from "../idb_store.svelte";
 
   import type {
-      AnnotationMetadata,
-      AnnotationObj,
-      AnnotationShape,
-      AnnotationValue,
+    AnnotationMetadata,
+    AnnotationObj,
+    AnnotationShape,
+    AnnotationValue,
   } from "@/context/AnnotationContext";
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import type { AnnotationsIndexedDB } from "../indexedDB";
+
+  type TAnnotationObj = AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
 
   // Props
   let {
@@ -43,26 +45,20 @@
     db,
     isPlaying = false,
   }: {
-    annotations_promise: Promise<AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]>;
+    annotations_promise: Promise<TAnnotationObj[]>;
     // tracking?: boolean;
     scale: number;
     zoom: number;
     currentFrame: number;
     totalFrames: number;
-    selectedAnnotation?: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
+    selectedAnnotation?: TAnnotationObj;
     allLocked: boolean;
     allHidden: boolean;
     onSeekFrame: (frame: number) => void;
-    onSelectAnnotation: (annotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) => void;
-    onDeleteAnnotation: (
-      VideoAnnotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>,
-      frame?: number,
-    ) => void;
-    onLock: (locked: boolean, annotation?: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) => void;
-    onVisibility: (
-      hidden: boolean,
-      annotation?: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>,
-    ) => void;
+    onSelectAnnotation: (annotation?: TAnnotationObj) => void;
+    onDeleteAnnotation: (annotation: TAnnotationObj, frame?: number) => void;
+    onLock: (locked: boolean, annotation?: TAnnotationObj) => void;
+    onVisibility: (hidden: boolean, annotation?: TAnnotationObj) => void;
     onZoomChange?: (zoom: number) => void;
     onScaleChange?: (zoom: number) => void;
     db?: AnnotationsIndexedDB;
@@ -71,7 +67,7 @@
 
   export type GroupAnnotation = {
     groupId: string;
-    items: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[];
+    annotations: TAnnotationObj[];
   };
 
   // Contexts
@@ -285,7 +281,7 @@
 
     const groups = Array.from(map.entries()).map(([groupId, list]) => ({
       groupId,
-      items: list
+      annotations: list
         .map((a) => ({ ...a, shape: { ...a.shape } }))
         .sort((a, b) => {
           const diff = a.shape.start - b.shape.start;
@@ -293,15 +289,31 @@
         }),
     }));
 
-    groups.sort((a, b) => a.items[0].shape.start - b.items[0].shape.start);
+    groups.sort((a, b) => a.annotations[0].shape.start - b.annotations[0].shape.start);
+
+    // Sort groups by groupId ASC
+    groups.sort((a, b) => a.groupId.localeCompare(b.groupId));
 
     return groups;
+  }
+
+  function toggleVisibilityAllAnnotations(annotations: TAnnotationObj[]) {
+    const isAllHidden = annotations.map((annotation) => annotation.hidden).every((hidden) => hidden);
+    annotations.forEach((annotation) => onVisibility(!isAllHidden, annotation));
+  }
+
+  function toggleLockAllAnnotations(annotations: TAnnotationObj[]) {
+    const isAllLocked = annotations.map((annotation) => annotation.locked).every((locked) => locked);
+    annotations.forEach((annotation) => onLock(!isAllLocked, annotation));
+  }
+
+  function deleteAllAnnotations(annotations: TAnnotationObj[]) {
+    annotations.forEach((annotation) => onDeleteAnnotation(annotation));
   }
 </script>
 
 {#snippet row(groups: GroupAnnotation[])}
-  {#each groups as group, index}
-    {@const annotations = group.items}
+  {#each groups as { groupId, annotations }, index}
     {@const isSelected = selectedAnnotation
       ? annotations.some((ann) => ann.metadata.id === selectedAnnotation.metadata.id)
       : false}
@@ -309,7 +321,7 @@
     {@const isLastIndex = index == groups.length - 1}
     <TableRow
       class={cn("border-b-0", {
-        "bg-primary/20": isSelected,
+        "bg-primary/5": isSelected,
       })}
     >
       <td
@@ -327,6 +339,7 @@
             </Text>
           {/await}
 
+          <!-- BUTTON::SHOW / HIDE -->
           <Button
             variant="ghost"
             size="icon"
@@ -335,7 +348,7 @@
             })}
             onclick={(e) => {
               e.stopPropagation();
-              onVisibility(!firstAnnotation.hidden, firstAnnotation);
+              toggleVisibilityAllAnnotations(annotations);
             }}
           >
             {#if firstAnnotation.hidden}
@@ -344,6 +357,8 @@
               <Eye class="size-3" />
             {/if}
           </Button>
+
+          <!-- BUTTON::LOCK / UNLOCK -->
           <Button
             variant="ghost"
             size="icon"
@@ -352,7 +367,7 @@
             })}
             onclick={(e) => {
               e.stopPropagation();
-              onLock(!firstAnnotation.locked, firstAnnotation);
+              toggleLockAllAnnotations(annotations);
             }}
           >
             {#if firstAnnotation.locked}
@@ -362,6 +377,7 @@
             {/if}
           </Button>
 
+          <!-- BUTTON::DELETE -->
           {#if ["review", "annotate"].includes(context.workflowStep)}
             <Button
               variant="ghost"
@@ -371,11 +387,11 @@
               })}
               onclick={(e) => {
                 e.stopPropagation();
-                onDeleteAnnotation(firstAnnotation);
+                deleteAllAnnotations(annotations);
               }}
               disabled={firstAnnotation.locked}
             >
-              <Trash2Icon class="size-3"></Trash2Icon>
+              <Trash2Icon class="size-3" />
             </Button>
           {/if}
         </div>
@@ -383,19 +399,20 @@
 
       <td class="p-0">
         <Timeline
+          {groupId}
           {annotations}
           {currentFrame}
           {range}
           {scale}
           {zoom}
           {totalFrames}
+          {selectedAnnotation}
           onCellHover={(column) => (hoveredColumn = column)}
-          {hoveredColumn}
           {onSeekFrame}
           {onSelectAnnotation}
           {onDeleteAnnotation}
         />
-       </td>
+      </td>
     </TableRow>
   {/each}
 {/snippet}
