@@ -14,6 +14,7 @@
   import { boundingBoxes } from "../idb_store.svelte";
 
   import type {
+    AnnotationGroup,
     AnnotationMetadata,
     AnnotationObj,
     AnnotationShape,
@@ -65,11 +66,6 @@
     isPlaying?: boolean;
   } = $props();
 
-  type TAnnotationGroup = {
-    groupId: string;
-    annotations: TAnnotationObj[];
-  };
-
   // Contexts
   let context: IActivityContext = getContext("context");
 
@@ -106,7 +102,7 @@
   let wheelthrottling = $state(false);
   let hoveredColumn: number | undefined = $state();
   let rowElements: Record<string, HTMLElement> = $state({});
-  let selectedAnnotationGroup: TAnnotationGroup | undefined = $state(undefined);
+  let selectedAnnotationGroup: AnnotationGroup<TAnnotationObj> | undefined = $state(undefined);
 
   export function setOffset(offset: number) {
     pos_offset = Math.max(1, Math.min(totalFrames - range_span, offset || 0));
@@ -154,10 +150,7 @@
       .values.find((cat) => cat.id === categoryId);
   }
 
-  async function getCategoryName(
-    categoryId: string | undefined,
-    selected: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>,
-  ) {
+  async function getCategoryName(categoryId: string | undefined, selected: TAnnotationObj) {
     if (!categoryId) return "Uncategorized";
 
     const selectedCategory = getCategory(categoryId, selected.shape.type);
@@ -262,10 +255,8 @@
     if (delta || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) e.preventDefault();
   }
 
-  function groupAnnotations(
-    annotations: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[],
-  ): TAnnotationGroup[] {
-    const map = new SvelteMap<string, AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]>();
+  function groupAnnotations(annotations: TAnnotationObj[]): AnnotationGroup<TAnnotationObj>[] {
+    const map = new SvelteMap<string, TAnnotationObj[]>();
 
     for (const ann of annotations) {
       const gid = ann.metadata?.metadata?.group_id ?? ann.metadata?.id;
@@ -312,12 +303,13 @@
     annotations.forEach((annotation) => onDeleteAnnotation(annotation));
   }
 
-  function selectAnnotationGroup(annotationGroup: TAnnotationGroup) {
+  function selectAnnotationGroup(annotationGroup: AnnotationGroup<TAnnotationObj>) {
     selectedAnnotationGroup = annotationGroup;
+    console.log(selectedAnnotationGroup, currentFrame);
   }
 </script>
 
-{#snippet row(groups: TAnnotationGroup[])}
+{#snippet row(groups: AnnotationGroup<TAnnotationObj>[])}
   {#each groups as group, index}
     {@const { groupId, annotations } = group}
     {@const isGroupSelected = selectedAnnotationGroup?.groupId == groupId}
@@ -406,7 +398,7 @@
 
       <td class="p-0">
         <Timeline
-          {groupId}
+          {group}
           {annotations}
           {currentFrame}
           {range}
@@ -418,6 +410,7 @@
           {onSeekFrame}
           {onSelectAnnotation}
           {onDeleteAnnotation}
+          onSelectGroup={(annotationGroup) => selectAnnotationGroup(annotationGroup)}
         />
       </td>
     </TableRow>

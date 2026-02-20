@@ -7,6 +7,7 @@
   import { cn } from "@/utils";
 
   import type {
+    AnnotationGroup,
     AnnotationMetadata,
     AnnotationObj,
     AnnotationShape,
@@ -20,7 +21,7 @@
 
   // Props
   interface Props {
-    groupId: string;
+    group: AnnotationGroup<TAnnotationObj>;
     annotations: TAnnotationObj[];
     currentFrameInCell: number;
     range: [number, number];
@@ -34,9 +35,10 @@
     onSelectAnnotation: (annotation?: TAnnotationObj) => void;
     onHoverAnnotation: (annotation: TAnnotationObj | undefined) => void;
     onHoverCell: (frame?: number) => void;
+    onSelectGroup: (annotationGrop: AnnotationGroup<TAnnotationObj>) => void;
   }
   let {
-    groupId,
+    group,
     annotations,
     currentFrameInCell,
     range,
@@ -50,6 +52,7 @@
     onSelectAnnotation,
     onHoverAnnotation,
     onHoverCell,
+    onSelectGroup,
   }: Props = $props();
 
   // Contexts
@@ -92,7 +95,15 @@
 
   function selectFrame() {
     onSeekFrame(currentFrameInCell);
-    onSelectAnnotation(annotation);
+    /**
+     * If there is an annotation, then select that annotation
+     * otherwise check the group
+     */
+    if (annotation) {
+      onSelectAnnotation(annotation);
+    } else {
+      onSelectGroup(group);
+    }
   }
 
   function onMouseOver() {
@@ -112,7 +123,7 @@
 </script>
 
 <div
-  id="{groupId}__{currentFrameInCell}"
+  id="{group.groupId}__{currentFrameInCell}"
   class={cn("inline-block h-full border-b py-1 first:border-l", {
     "cursor-pointer": annotationIsSelectedOrHovered,
   })}
