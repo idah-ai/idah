@@ -11,6 +11,7 @@ module Annotation
 
     field :dimensions, type: Hash
     field :annotation, type: Hash
+    field :metadata, type: Hash
 
     field :created_by_email, type: String, readonly: true
     field :created_at, type: Time, readonly: true
@@ -27,6 +28,7 @@ module Annotation
 
     encoder :dimensions, Verse::Sequel::JsonEncoder
     encoder :annotation, Verse::Sequel::JsonEncoder
+    encoder :metadata, Verse::Sequel::JsonEncoder
 
     def scoped(action)
       auth_context.can!(action, self.class.resource) do |scope|
