@@ -146,6 +146,7 @@
 
   function seekToFrame(frameToGo: number) {
     onSeekFrame(frameToGo);
+    onSelectAnnotation(undefined);
   }
 
   function getCategory(categoryId: string, shape_type: string) {
@@ -309,7 +310,7 @@
 </script>
 
 {#snippet row(groups: AnnotationGroup<TAnnotationObj>[])}
-  {#each groups as group, index}
+  {#each groups as group, index (index)}
     {@const { groupId, annotations } = group}
     {@const isGroupSelected = selectedAnnotationGroup?.groupId == groupId}
     {@const firstAnnotation = annotations[0]}
@@ -329,9 +330,11 @@
       >
         <div
           class={cn("group flex w-full items-center justify-end px-2 py-1")}
-          onclick={() => {
-            onSelectGroupAtFrame(group);
-          }}
+          role="button"
+          tabindex={isGroupSelected ? 0 : -1}
+          onfocus={() => onSelectGroupAtFrame(group)}
+          onkeypress={() => onSelectGroupAtFrame(group)}
+          onclick={() => onSelectGroupAtFrame(group)}
         >
           {#await getCategoryName(firstAnnotation.value.category, firstAnnotation)}
             <Spinner size="sm" />

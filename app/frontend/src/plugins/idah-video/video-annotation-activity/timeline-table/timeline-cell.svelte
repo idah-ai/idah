@@ -122,9 +122,13 @@
   class={cn("inline-block h-full border-b py-1 first:border-l", {
     "cursor-pointer": annotationIsSelectedOrHovered,
   })}
+  role="button"
+  tabindex={annotationIsSelectedOrHovered ? 0 : -1}
   style:box-sizing="border-box"
   style:width="{cellWidth}%"
   onclick={selectFrame}
+  onfocus={selectFrame}
+  onkeypress={selectFrame}
   onmouseover={onMouseOver}
   onmouseenter={onMouseEnter}
   onmouseleave={onMouseLeave}

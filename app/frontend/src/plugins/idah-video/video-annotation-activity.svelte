@@ -1025,17 +1025,23 @@
          */
         const firstFrameOfGroup = firstAnnotation.shape.start;
         const lastFrameOfGroup = lastAnnotation.shape.end;
-        const firstDiff = Math.abs(currentFrame - firstFrameOfGroup);
-        const lastDiff = Math.abs(currentFrame - lastFrameOfGroup);
 
-        // // TODO: Check currentFrame is in range of some annotation?
+        /** Check if it is interpolation? */
+        const isInterpolation = currentFrame < firstFrameOfGroup || currentFrame > lastFrameOfGroup;
 
-        if (firstDiff < lastDiff) {
-          /** The selected frame is before first annotation */
-          selectAnnotation(firstAnnotation);
-        } else {
-          /** The selected frame is after last annotation */
-          selectAnnotation(lastAnnotation);
+        if (isInterpolation) {
+          const firstDiff = Math.abs(currentFrame - firstFrameOfGroup);
+          const lastDiff = Math.abs(currentFrame - lastFrameOfGroup);
+
+          // TODO: Check currentFrame is in range of some annotation?
+
+          if (firstDiff < lastDiff) {
+            /** The selected frame is before first annotation */
+            selectAnnotation(firstAnnotation);
+          } else {
+            /** The selected frame is after last annotation */
+            selectAnnotation(lastAnnotation);
+          }
         }
       }
     }
