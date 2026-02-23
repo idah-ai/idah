@@ -318,7 +318,7 @@
 
 {#snippet row(groups: AnnotationGroup<TAnnotationObj>[])}
   {#each groups as group, index (index)}
-    {@const { annotations } = group}
+    {@const { groupId, annotations } = group}
     {@const isGroupSelected = getIsGroupSelected(group)}
     {@const firstAnnotation = annotations[0]}
     {@const someAnnotationIsHidden = annotations.some((ann) => ann.hidden)}
@@ -330,7 +330,7 @@
       })}
     >
       <td
-        use:trackRow={{ id: firstAnnotation.metadata.id, isGroupSelected }}
+        use:trackRow={{ id: groupId, isGroupSelected }}
         class={cn("justify-end p-0", {
           "border-b": isLastIndex,
         })}
