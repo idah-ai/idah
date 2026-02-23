@@ -141,7 +141,7 @@
       "rounded-tr-sm rounded-br-sm border-r": isEndOfKeyFrameRange && !!categoryColor,
     })}
     style:background-color={categoryColor
-      ? `${categoryColor}${annotationIsSelectedOrHovered ? "50" : "30"}`
+      ? `${categoryColor}${annotationIsSelectedOrHovered ? "60" : "30"}`
       : "transparent"}
     style:border-color={categoryColor}
   >

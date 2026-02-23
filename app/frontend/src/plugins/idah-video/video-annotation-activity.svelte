@@ -1126,7 +1126,7 @@
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
         <CommandGroup heading={`MODE: ${ShortcutManager.getCurrentMode()}`}>
-          {#each Object.entries(ShortcutManager.getEffectiveKeyMap() || {}) as [key, value] (key)}
+          {#each Object.entries(ShortcutManager.getEffectiveKeyMap(mode) || {}) as [key, value] (key)}
             <CommandItem onclick={() => value.action()}>
               <span>{value.name} ({value.description})</span>
               <CommandShortcut>{key}</CommandShortcut>
