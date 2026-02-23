@@ -253,9 +253,12 @@
 
     const assignedAttributes = annotation.value.attributes || {};
 
+    // Determine which config to use based on annotation shape type
+    const configKey = annotation.shape.type;
+
     const assignedAttributeProperties =
       Object.entries(context.config)
-        .find(([k, _]) => k == IDAH_VIDEO_BOUNDING_BOX)?.[1]
+        .find(([k, _]) => k == configKey)?.[1]
         .properties.filter((property) => property.id in assignedAttributes) || [];
 
     const assignedAttributesStyles = Object.entries(assignedAttributes)
@@ -333,11 +336,11 @@
     {#await annotations_promise}
       {#each $boundingBoxes as annotation (annotation.metadata.id)}
         {#if annotation.metadata.id != selected?.metadata.id}
+          {@const propertyStyle = getAnnotationPropertyStyle(annotation)}
           {#if annotation.shape.type == IDAH_VIDEO_BOUNDING_BOX && !annotation.hidden}
             {@const current_annotation_shape = getInterpolatedFrame(annotation.shape as VideoShape, frame)}
             {@const current_annotation_points = current_annotation_shape?.points || []}
             {@const current_annotation_angle = current_annotation_shape?.angle || 0}
-            {@const propertyStyle = getAnnotationPropertyStyle(annotation)}
             <BoundingBox
               {mode}
               points={current_annotation_points as Point[]}
@@ -370,6 +373,7 @@
               color={Object.entries(context.config)
                 .find(([k, _]) => k == IDAH_POLYGON)?.[1]
                 .values.find((c) => c.id == annotation.value?.category)?.color || "grey"}
+              styles={propertyStyle}
               onmousedown={(e) => {
                 e.stopPropagation();
 
@@ -389,11 +393,11 @@
       {#key frame}
         {#each annotations as annotation (annotation.metadata.id)}
           {#if annotation.metadata.id != selected?.metadata.id}
+            {@const propertyStyle = getAnnotationPropertyStyle(annotation)}
             {#if annotation.shape.type == IDAH_VIDEO_BOUNDING_BOX && !annotation.hidden}
               {@const current_annotation_shape = getInterpolatedFrame(annotation.shape as VideoShape, frame)}
               {@const current_annotation_points = current_annotation_shape?.points || []}
               {@const current_annotation_angle = current_annotation_shape?.angle || 0}
-              {@const propertyStyle = getAnnotationPropertyStyle(annotation)}
 
               <BoundingBox
                 {mode}
@@ -431,6 +435,7 @@
                       .find(([k, _]) => k == IDAH_POLYGON)?.[1]
                       .values.find((c) => c.id == annotation?.value?.category)?.color || "grey"
                   : "grey"}
+                styles={propertyStyle}
                 onmousedown={(e) => {
                   e.stopPropagation();
 
@@ -451,10 +456,9 @@
 
     <!-- STATE:: SELECTED -->
     {#if selected || mode != DEFAULT_MODE}
+      {@const propertyStyle = getAnnotationPropertyStyle(selected)}
       {#if shape?.type == IDAH_VIDEO_BOUNDING_BOX || mode == IDAH_VIDEO_BOUNDING_BOX}
         {#key [shape, frame]}
-          {@const propertyStyle = getAnnotationPropertyStyle(selected)}
-
           <BoundingBox
             bind:this={toolSelection}
             {mode}
@@ -506,6 +510,7 @@
                 .find(([k, _]) => k == mode)?.[1]
                 .values.find((c) => c.id == selected?.value?.category)?.color || "grey"
             : "grey"}
+          styles={propertyStyle}
           onChange={(polygon_points) => {
             onSelection(IDAH_POLYGON, frame, polygon_points, 0, selected?.metadata.id);
             // points = polygon_points;
