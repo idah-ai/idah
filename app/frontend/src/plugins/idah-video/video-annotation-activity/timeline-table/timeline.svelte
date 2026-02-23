@@ -14,7 +14,6 @@
   let {
     group,
     annotations,
-    currentFrame,
     range,
     scale,
     zoom,
@@ -28,7 +27,6 @@
   }: {
     group: AnnotationGroup<TAnnotationObj>;
     annotations: TAnnotationObj[];
-    currentFrame: number;
     range: [number, number];
     scale: number;
     zoom: number;

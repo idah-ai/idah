@@ -406,7 +406,6 @@
         <Timeline
           {group}
           {annotations}
-          {currentFrame}
           {range}
           {scale}
           {zoom}
