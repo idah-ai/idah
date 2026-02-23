@@ -4,8 +4,8 @@ import type {
   AnnotationShape,
   AnnotationValue,
 } from "../../../lib/context/AnnotationContext";
-import type { DefaultMode, IdahVideoBoundingBox, IdahPolygon } from "../type";
-import { IDAH_POLYGON, IDAH_VIDEO_BOUNDING_BOX } from "../type";
+import type { DefaultMode, IdahVideoBoundingBox, IdahVideoPolygon } from "../type";
+import { IDAH_VIDEO_POLYGON, IDAH_VIDEO_BOUNDING_BOX } from "../type";
 
 import { interpolatePolygonAtFrame } from "./polygonInterpolation";
 
@@ -16,7 +16,7 @@ export type InterpolatedVertex = {
   matched: boolean | null;
 };
 
-export type VideoShapeType = IdahVideoBoundingBox | IdahPolygon;
+export type VideoShapeType = IdahVideoBoundingBox | IdahVideoPolygon;
 export type VideoMode = DefaultMode | VideoShapeType;
 
 export type VideoAnnotation = AnnotationObj<VideoShape, AnnotationValue, AnnotationMetadata>;
@@ -90,7 +90,7 @@ export function getInterpolatedFrame(
   const foundFrame = shape.frames.find((v: VideoFrameSelection) => v.frame == current_frame);
   if (foundFrame || !interpolate) {
     // For polygon, wrap points in InterpolatedVertex with matched: true
-    if (shape.type == IDAH_POLYGON && foundFrame?.points) {
+    if (shape.type == IDAH_VIDEO_POLYGON && foundFrame?.points) {
       return {
         points: foundFrame.points.map((point: Point) => ({ point, matched: true })),
         angle: foundFrame.angle || 0,
@@ -123,7 +123,7 @@ export function getInterpolatedFrame(
       ]),
       angle: ((frame_end.angle || 0) - (frame_start.angle || 0)) * ratio + frame_start.angle,
     };
-  } else if (shape.type == IDAH_POLYGON) {
+  } else if (shape.type == IDAH_VIDEO_POLYGON) {
     return {
       points: interpolatePolygonAtFrame(frame_start, frame_end, current_frame),
       angle: 0,

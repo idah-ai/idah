@@ -5,7 +5,7 @@
   import Polygon from "./polygon.svelte";
   import { boundingBoxes } from "./idb_store.svelte";
 
-  import { DEFAULT_MODE, ENTRY_ROOT, IDAH_NOTE, IDAH_VIDEO_BOUNDING_BOX, IDAH_POLYGON, type EntryRoot } from "../type";
+  import { DEFAULT_MODE, ENTRY_ROOT, IDAH_NOTE, IDAH_VIDEO_BOUNDING_BOX, IDAH_VIDEO_POLYGON, type EntryRoot } from "../type";
   import {
     getInterpolatedFrame,
     HEIGHT,
@@ -363,7 +363,7 @@
                 }
               }}
             />
-          {:else if annotation.shape.type == IDAH_POLYGON && !annotation.hidden}
+          {:else if annotation.shape.type == IDAH_VIDEO_POLYGON && !annotation.hidden}
             <Polygon
               {mode}
               points={(getInterpolatedFrame(annotation.shape as VideoShape, frame)?.points ||
@@ -371,7 +371,7 @@
               ratio={target_size}
               offset={zoomInfo.offset}
               color={Object.entries(context.config)
-                .find(([k, _]) => k == IDAH_POLYGON)?.[1]
+                .find(([k, _]) => k == IDAH_VIDEO_POLYGON)?.[1]
                 .values.find((c) => c.id == annotation.value?.category)?.color || "grey"}
               styles={propertyStyle}
               onmousedown={(e) => {
@@ -423,7 +423,7 @@
                   }
                 }}
               />
-            {:else if annotation.shape.type == IDAH_POLYGON && !annotation.hidden}
+            {:else if annotation.shape.type == IDAH_VIDEO_POLYGON && !annotation.hidden}
               <Polygon
                 {mode}
                 points={(getInterpolatedFrame(annotation.shape as VideoShape, frame)?.points ||
@@ -432,7 +432,7 @@
                 offset={zoomInfo.offset}
                 color={annotation?.synced
                   ? Object.entries(context.config)
-                      .find(([k, _]) => k == IDAH_POLYGON)?.[1]
+                      .find(([k, _]) => k == IDAH_VIDEO_POLYGON)?.[1]
                       .values.find((c) => c.id == annotation?.value?.category)?.color || "grey"
                   : "grey"}
                 styles={propertyStyle}
@@ -489,7 +489,7 @@
         {/key}
       {/if}
 
-      {#if shape?.type == IDAH_POLYGON || mode == IDAH_POLYGON}
+      {#if shape?.type == IDAH_VIDEO_POLYGON || mode == IDAH_VIDEO_POLYGON}
         <Polygon
           bind:this={toolSelection}
           {mode}
@@ -502,7 +502,7 @@
           offset={zoomInfo.offset}
           cursor={cursor_downscaled}
           hidden={selected?.hidden}
-          editable={(shape?.type == IDAH_POLYGON || mode == IDAH_POLYGON) &&
+          editable={(shape?.type == IDAH_VIDEO_POLYGON || mode == IDAH_VIDEO_POLYGON) &&
             !selected?.locked &&
             ["annotate", "review"].includes(context.workflowStep)}
           color={selected?.synced
@@ -512,7 +512,7 @@
             : "grey"}
           styles={propertyStyle}
           onChange={(polygon_points) => {
-            onSelection(IDAH_POLYGON, frame, polygon_points, 0, selected?.metadata.id);
+            onSelection(IDAH_VIDEO_POLYGON, frame, polygon_points, 0, selected?.metadata.id);
             // points = polygon_points;
           }}
         />

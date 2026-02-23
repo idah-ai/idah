@@ -20,7 +20,7 @@
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { AnnotationRecord } from "@/data/model/dataset/annotations/record";
   import { ShortcutManager } from "@/shortcut/ShortcutManager";
-  import { DEFAULT_MODE, ENTRY_ROOT, IDAH_NOTE, IDAH_VIDEO_BOUNDING_BOX, IDAH_POLYGON } from "./type";
+  import { DEFAULT_MODE, ENTRY_ROOT, IDAH_NOTE, IDAH_VIDEO_BOUNDING_BOX, IDAH_VIDEO_POLYGON } from "./type";
   import type { AnnotationMetadata, AnnotationObj } from "@/context/AnnotationContext";
   import { requiredFullfilled } from "./video-annotation-activity/categoryProperties";
   import { boundingBoxes, entryRoot, idb_updated_at } from "./video-annotation-activity/idb_store.svelte";
@@ -161,7 +161,7 @@
       },
       {
         label: "Polygon",
-        type: IDAH_POLYGON,
+        type: IDAH_VIDEO_POLYGON,
         iconName: "polygon",
         disabled: !["annotate", "review"].includes(context.workflowStep),
         handleClick: () => context.commands.run("tools.polygon"),
@@ -242,7 +242,7 @@
           case IDAH_NOTE:
             tool = "tools.note";
             break;
-          case IDAH_POLYGON:
+          case IDAH_VIDEO_POLYGON:
             tool = "tools.polygon";
             break;
           default:
@@ -901,9 +901,9 @@
     return {
       name: "polygon tool",
       apply: () => {
-        mode = IDAH_POLYGON;
+        mode = IDAH_VIDEO_POLYGON;
         selectedAnnotation = {
-          shape: { type: IDAH_POLYGON },
+          shape: { type: IDAH_VIDEO_POLYGON },
           value: {},
           metadata: { id: "", createdAt: new Date(), updatedAt: new Date() },
           synced: false,
@@ -1008,7 +1008,7 @@
         case IDAH_VIDEO_BOUNDING_BOX:
           shape = { ...shape, start: frame, end: frame, frames: [{ frame, angle, points }] };
           break;
-        case IDAH_POLYGON:
+        case IDAH_VIDEO_POLYGON:
           shape = { ...shape, start: frame, end: frame, frames: [{ frame, points }] };
           break;
         default:
