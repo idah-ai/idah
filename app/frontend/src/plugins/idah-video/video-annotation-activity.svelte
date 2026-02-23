@@ -76,7 +76,6 @@
   let annotationSidebarWidthRem = $derived<number>(annotationSidebarResizablePercentage + 3);
 
   let selectedAnnotation: TAnnotationObj | undefined = $state(undefined);
-  let selectedAnnotationGroup: AnnotationGroup<TAnnotationObj> | undefined = $state(undefined);
   let annotationValue: AnnotationValue = $derived(selectedAnnotation?.value || {});
 
   let entry_id = $state(context.id);
@@ -1003,10 +1002,9 @@
   }
 
   function selectGroupAtFrame(annotationGroup: AnnotationGroup<TAnnotationObj>, frame?: number) {
-    selectedAnnotationGroup = annotationGroup;
-
     if (frame == undefined) {
-      // User is clicked group header
+      // User is clicked row  header
+      selectAnnotation(undefined);
     } else {
       currentFrame = frame;
 
@@ -1309,7 +1307,6 @@
               {currentFrame}
               {totalFrames}
               {selectedAnnotation}
-              {selectedAnnotationGroup}
               onSeekFrame={seekToFrame}
               {onDeleteAnnotation}
               {onLock}

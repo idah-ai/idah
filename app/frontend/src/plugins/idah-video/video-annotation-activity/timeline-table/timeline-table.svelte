@@ -34,7 +34,6 @@
     currentFrame,
     totalFrames,
     selectedAnnotation,
-    selectedAnnotationGroup,
     annotations_promise,
     allLocked,
     allHidden,
@@ -56,7 +55,6 @@
     currentFrame: number;
     totalFrames: number;
     selectedAnnotation?: TAnnotationObj;
-    selectedAnnotationGroup: AnnotationGroup<TAnnotationObj> | undefined;
     allLocked: boolean;
     allHidden: boolean;
     onSeekFrame: (frame: number) => void;
@@ -107,6 +105,7 @@
   let wheelthrottling = $state(false);
   let hoveredColumn: number | undefined = $state();
   let rowElements: Record<string, HTMLElement> = $state({});
+  let selectedAnnotationGroup: AnnotationGroup<TAnnotationObj> | undefined = $state(undefined);
 
   export function setOffset(offset: number) {
     pos_offset = Math.max(1, Math.min(totalFrames - range_span, offset || 0));
@@ -296,9 +295,17 @@
 
   function getIsGroupSelected(group: AnnotationGroup<TAnnotationObj>): boolean {
     const { groupId, annotations } = group;
+    // return (
+    //   annotations.some((ann) => ann.metadata.id == selectedAnnotation?.metadata.id) ||
+    //   selectedAnnotationGroup?.groupId == groupId
+    // );
+    if (selectedAnnotation) {
+      return annotations.some((ann) => ann.metadata.id == selectedAnnotation?.metadata.id);
+    }
+
     if (selectedAnnotationGroup?.groupId == groupId) return true;
 
-    return annotations.some((ann) => ann.metadata.id == selectedAnnotation?.metadata.id);
+    return false;
   }
 
   function toggleVisibilityAllAnnotations(annotations: TAnnotationObj[]) {
@@ -314,16 +321,22 @@
   function deleteAllAnnotations(annotations: TAnnotationObj[]) {
     annotations.forEach((annotation) => onDeleteAnnotation(annotation));
   }
+
+  function selectAnnotationGroup(annotationGroup: AnnotationGroup<TAnnotationObj>, frame?: number) {
+    selectedAnnotationGroup = annotationGroup;
+    onSelectGroupAtFrame(annotationGroup, frame);
+  }
 </script>
 
 {#snippet row(groups: AnnotationGroup<TAnnotationObj>[])}
-  {#each groups as group, index (index)}
+  {#each groups as group, index (group.groupId)}
     {@const { groupId, annotations } = group}
     {@const isGroupSelected = getIsGroupSelected(group)}
     {@const firstAnnotation = annotations[0]}
     {@const someAnnotationIsHidden = annotations.some((ann) => ann.hidden)}
     {@const someAnnotationIsLocked = annotations.some((ann) => ann.locked)}
     {@const isLastIndex = index == groups.length - 1}
+
     <TableRow
       class={cn("cursor-pointer border-b-0", {
         "bg-primary/5": isGroupSelected,
@@ -339,9 +352,9 @@
           class={cn("group flex w-full items-center justify-end px-2 py-1")}
           role="button"
           tabindex={isGroupSelected ? 0 : -1}
-          onfocus={() => onSelectGroupAtFrame(group)}
-          onkeypress={() => onSelectGroupAtFrame(group)}
-          onclick={() => onSelectGroupAtFrame(group)}
+          onfocus={() => selectAnnotationGroup(group)}
+          onkeypress={() => selectAnnotationGroup(group)}
+          onclick={() => selectAnnotationGroup(group)}
         >
           {#await getCategoryName(firstAnnotation.value.category, firstAnnotation)}
             <Spinner size="sm" />
@@ -422,7 +435,7 @@
           {onSeekFrame}
           {onSelectAnnotation}
           {onDeleteAnnotation}
-          onSelectGroupAtFrame={(annotationGroup, frame) => onSelectGroupAtFrame(annotationGroup, frame)}
+          onSelectGroupAtFrame={(annotationGroup, frame) => selectAnnotationGroup(annotationGroup, frame)}
         />
       </td>
     </TableRow>
