@@ -85,3 +85,8 @@ export interface AnnotationContext {
    */
   getAnnotationInfo(id: string): Promise<Annotation>;
 }
+
+export type AnnotationGroup<T extends Annotation> = {
+  groupId: string;
+  annotations: T[];
+};

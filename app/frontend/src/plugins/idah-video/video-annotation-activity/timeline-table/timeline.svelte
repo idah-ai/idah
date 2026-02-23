@@ -1,50 +1,55 @@
 <script lang="ts">
-  import TimelineCell from "./timeline-cell.svelte";
-
   import type {
+    AnnotationGroup,
     AnnotationMetadata,
     AnnotationObj,
     AnnotationShape,
     AnnotationValue,
   } from "@/context/AnnotationContext";
-  import { ENTRY_ROOT } from "../../type";
+
+  import TimelineCell from "./timeline-cell.svelte";
+
+  type TAnnotationObj = AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
 
   let {
-    annotation,
-    currentFrame,
+    group,
+    annotations,
     range,
     scale,
     zoom,
     totalFrames,
-    hoveredColumn,
+    selectedAnnotation,
     onCellHover,
     onSeekFrame,
     onSelectAnnotation,
     onDeleteAnnotation,
-    ...restProps
+    onSelectGroupAtFrame,
   }: {
-    annotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
-    currentFrame: number;
+    group: AnnotationGroup<TAnnotationObj>;
+    annotations: TAnnotationObj[];
     range: [number, number];
     scale: number;
     zoom: number;
     totalFrames: number;
-    hoveredColumn?: number;
+    selectedAnnotation?: TAnnotationObj;
     onCellHover: (column?: number) => void;
     onSeekFrame: (frame: number) => void;
-    onSelectAnnotation: (annotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) => void;
-    onDeleteAnnotation: (
-      annotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>,
-      frame: number,
-    ) => void;
+    onSelectAnnotation: (annotation?: TAnnotationObj) => void;
+    onDeleteAnnotation: (annotation: TAnnotationObj, frame: number) => void;
+    onSelectGroupAtFrame: (annotationGroup: AnnotationGroup<TAnnotationObj>, frame: number) => void;
   } = $props();
 
   // Variables
   let frameCells = $derived(Math.ceil((range[1] - range[0]) / scale) + 1);
+  let hoveredAnnotation: TAnnotationObj | undefined = $state(undefined);
 
   // Functions
-  function setHoveredColumn(column?: number) {
-    onCellHover(column);
+  function setHoveredCell(frame?: number) {
+    onCellHover(frame);
+  }
+
+  function setHoveredAnnotation(annotation?: TAnnotationObj) {
+    hoveredAnnotation = annotation;
   }
 </script>
 
@@ -54,28 +59,22 @@
       {@const currentFrameInCell = range[0] + i * scale}
 
       <TimelineCell
-        {annotation}
-        frame={currentFrameInCell}
-        {currentFrame}
+        {group}
+        {annotations}
+        {currentFrameInCell}
         {range}
         {scale}
-        {zoom}
         {totalFrames}
-        inSpan={annotation.shape.type == ENTRY_ROOT ||
-          (Math.floor((annotation.shape.start - range[0]) / scale) <= i &&
-            Math.floor((annotation.shape.end - range[0]) / scale) >= i)}
+        {zoom}
+        {selectedAnnotation}
+        {hoveredAnnotation}
         {onSeekFrame}
-        keyframes={(annotation.shape.frames || [])
-          .filter((s) => Math.floor((s.frame - range[0]) / scale) == i)
-          .map((s) => s.frame)}
+        onDeleteFrame={onDeleteAnnotation}
         {onSelectAnnotation}
-        onDeleteFrame={(frame) => onDeleteAnnotation(annotation, frame)}
-        hovered={hoveredColumn == currentFrameInCell}
-        onmouseover={() => setHoveredColumn(currentFrameInCell)}
-        onmouseenter={() => setHoveredColumn(currentFrameInCell)}
-        onmouseleave={() => setHoveredColumn(undefined)}
-        {...restProps}
-      />
+        onHoverAnnotation={setHoveredAnnotation}
+        onHoverCell={setHoveredCell}
+        {onSelectGroupAtFrame}
+      ></TimelineCell>
     {/each}
   {/if}
 </div>
