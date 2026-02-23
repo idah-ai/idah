@@ -1,18 +1,21 @@
 <script lang="ts">
+  import { Eye, EyeOff, Lock, LockOpen, Trash2Icon } from "@lucide/svelte";
   import { getContext } from "svelte";
+  import { SvelteMap } from "svelte/reactivity";
 
   import { Button } from "@/components/ui/button";
   import Spinner from "@/components/ui/spinner/spinner.svelte";
-  import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+  import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
   import Text from "@/components/ui/text/Text.svelte";
   import Timeline from "./timeline.svelte";
 
   import { cn } from "@/utils";
   import { humanize } from "@/utils/string";
-  import { Eye, EyeOff, Lock, LockOpen, Trash2Icon } from "@lucide/svelte";
+
   import { boundingBoxes } from "../idb_store.svelte";
 
   import type {
+    AnnotationGroup,
     AnnotationMetadata,
     AnnotationObj,
     AnnotationShape,
@@ -20,6 +23,8 @@
   } from "@/context/AnnotationContext";
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import type { AnnotationsIndexedDB } from "../indexedDB";
+
+  type TAnnotationObj = AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
 
   // Props
   let {
@@ -35,6 +40,7 @@
     onSeekFrame,
     onDeleteAnnotation,
     onSelectAnnotation,
+    onSelectGroupAtFrame,
     onZoomChange,
     onScaleChange,
     onLock,
@@ -42,26 +48,21 @@
     db,
     isPlaying = false,
   }: {
-    annotations_promise: Promise<AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]>;
+    annotations_promise: Promise<TAnnotationObj[]>;
     // tracking?: boolean;
     scale: number;
     zoom: number;
     currentFrame: number;
     totalFrames: number;
-    selectedAnnotation?: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
+    selectedAnnotation?: TAnnotationObj;
     allLocked: boolean;
     allHidden: boolean;
     onSeekFrame: (frame: number) => void;
-    onSelectAnnotation: (annotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) => void;
-    onDeleteAnnotation: (
-      VideoAnnotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>,
-      frame?: number,
-    ) => void;
-    onLock: (locked: boolean, annotation?: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) => void;
-    onVisibility: (
-      hidden: boolean,
-      annotation?: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>,
-    ) => void;
+    onSelectAnnotation: (annotation?: TAnnotationObj) => void;
+    onSelectGroupAtFrame: (annotationGroup: AnnotationGroup<TAnnotationObj>, frame?: number) => void;
+    onDeleteAnnotation: (annotation: TAnnotationObj, frame?: number) => void;
+    onLock: (locked: boolean, annotation?: TAnnotationObj) => void;
+    onVisibility: (hidden: boolean, annotation?: TAnnotationObj) => void;
     onZoomChange?: (zoom: number) => void;
     onScaleChange?: (zoom: number) => void;
     db?: AnnotationsIndexedDB;
@@ -103,6 +104,8 @@
   let range: [number, number] = $derived([pos_offset, Math.min(pos_offset + range_span, totalFrames)]);
   let wheelthrottling = $state(false);
   let hoveredColumn: number | undefined = $state();
+  let rowElements: Record<string, HTMLElement> = $state({});
+  let selectedAnnotationGroup: AnnotationGroup<TAnnotationObj> | undefined = $state(undefined);
 
   export function setOffset(offset: number) {
     pos_offset = Math.max(1, Math.min(totalFrames - range_span, offset || 0));
@@ -142,6 +145,7 @@
 
   function seekToFrame(frameToGo: number) {
     onSeekFrame(frameToGo);
+    onSelectAnnotation(undefined);
   }
 
   function getCategory(categoryId: string, shape_type: string) {
@@ -150,10 +154,7 @@
       .values.find((cat) => cat.id === categoryId);
   }
 
-  async function getCategoryName(
-    categoryId: string | undefined,
-    selected: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>,
-  ) {
+  async function getCategoryName(categoryId: string | undefined, selected: TAnnotationObj) {
     if (!categoryId) return "Uncategorized";
 
     const selectedCategory = getCategory(categoryId, selected.shape.type);
@@ -188,21 +189,13 @@
     setZoom(zoom - next);
   }
 
-  function handleRowClick(annotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) {
-    onSelectAnnotation(annotation);
-    pos_offset = annotation.shape.start || 0;
-    onSeekFrame(annotation.shape.start || 0);
-  }
-
-  let rowElements: Record<string, HTMLElement> = $state({});
-
-  function trackRow(node: HTMLElement, params: { id: string; isSelected: boolean }) {
+  function trackRow(node: HTMLElement, params: { id: string; isGroupSelected: boolean }) {
     rowElements[params.id] = node;
 
     return {
-      update(newParams: { id: string; isSelected: boolean }) {
-        // Scroll into view immediately when this row becomes selected
-        if (newParams.isSelected && !params.isSelected) {
+      update(newParams: { id: string; isGroupSelected: boolean }) {
+        // Scroll into view immediately when this row (group) becomes selected
+        if (newParams.isGroupSelected && !params.isGroupSelected) {
           node.scrollIntoView({
             behavior: "smooth",
             block: "center",
@@ -215,23 +208,6 @@
         delete rowElements[params.id];
       },
     };
-  }
-
-  function sortAnnotationsByParent(
-    annotations: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[],
-  ): AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[] {
-    let manipulated = annotations.map((ann) => {
-      return {
-        ...ann,
-        id: ann?.metadata?.metadata?.group_id
-          ? `${ann?.metadata.metadata.group_id}__${ann?.metadata.id}`
-          : `${ann?.metadata.id}`,
-      };
-    });
-
-    manipulated.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true, sensitivity: "base" }));
-
-    return manipulated;
   }
 
   function handleTimelineWheel(e: WheelEvent) {
@@ -282,104 +258,186 @@
     }
     if (delta || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) e.preventDefault();
   }
+
+  function groupAnnotations(annotations: TAnnotationObj[]): AnnotationGroup<TAnnotationObj>[] {
+    const map = new SvelteMap<string, TAnnotationObj[]>();
+
+    for (const ann of annotations) {
+      const gid = ann.metadata?.metadata?.group_id ?? ann.metadata?.id;
+
+      if (!map.has(gid)) {
+        map.set(gid, []);
+      }
+
+      map.get(gid)!.push({
+        ...ann,
+        shape: { ...ann.shape },
+      });
+    }
+
+    const groups = Array.from(map.entries()).map(([groupId, list]) => ({
+      groupId,
+      annotations: list
+        .map((a) => ({ ...a, shape: { ...a.shape } }))
+        .sort((a, b) => {
+          const diff = a.shape.start - b.shape.start;
+          return diff !== 0 ? diff : a.shape.end - b.shape.end;
+        }),
+    }));
+
+    groups.sort((a, b) => a.annotations[0].shape.start - b.annotations[0].shape.start);
+
+    // Sort groups by groupId ASC
+    groups.sort((a, b) => a.groupId.localeCompare(b.groupId));
+
+    return groups;
+  }
+
+  function getIsGroupSelected(group: AnnotationGroup<TAnnotationObj>): boolean {
+    const { groupId, annotations } = group;
+    // return (
+    //   annotations.some((ann) => ann.metadata.id == selectedAnnotation?.metadata.id) ||
+    //   selectedAnnotationGroup?.groupId == groupId
+    // );
+    if (selectedAnnotation) {
+      return annotations.some((ann) => ann.metadata.id == selectedAnnotation?.metadata.id);
+    }
+
+    if (selectedAnnotationGroup?.groupId == groupId) return true;
+
+    return false;
+  }
+
+  function toggleVisibilityAllAnnotations(annotations: TAnnotationObj[]) {
+    const isAllHidden = annotations.map((annotation) => annotation.hidden).every((hidden) => hidden);
+    annotations.forEach((annotation) => onVisibility(!isAllHidden, annotation));
+  }
+
+  function toggleLockAllAnnotations(annotations: TAnnotationObj[]) {
+    const isAllLocked = annotations.map((annotation) => annotation.locked).every((locked) => locked);
+    annotations.forEach((annotation) => onLock(!isAllLocked, annotation));
+  }
+
+  function deleteAllAnnotations(annotations: TAnnotationObj[]) {
+    annotations.forEach((annotation) => onDeleteAnnotation(annotation));
+  }
+
+  function selectAnnotationGroup(annotationGroup: AnnotationGroup<TAnnotationObj>, frame?: number) {
+    selectedAnnotationGroup = annotationGroup;
+    onSelectGroupAtFrame(annotationGroup, frame);
+  }
 </script>
 
-{#snippet row(annotations: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[])}
-  {#each annotations as annotation, index (annotation.metadata.id)}
-    {@const isSelected = selectedAnnotation?.metadata.id == annotation.metadata.id}
-    {@const isLastIndex = index == annotations.length - 1}
+{#snippet row(groups: AnnotationGroup<TAnnotationObj>[])}
+  {#each groups as group, index (group.groupId)}
+    {@const { groupId, annotations } = group}
+    {@const isGroupSelected = getIsGroupSelected(group)}
+    {@const firstAnnotation = annotations[0]}
+    {@const someAnnotationIsHidden = annotations.some((ann) => ann.hidden)}
+    {@const someAnnotationIsLocked = annotations.some((ann) => ann.locked)}
+    {@const isLastIndex = index == groups.length - 1}
+
     <TableRow
-      class={cn("border-b-0", {
-        "bg-primary/20": isSelected,
+      class={cn("cursor-pointer border-b-0", {
+        "bg-primary/5": isGroupSelected,
       })}
     >
       <td
-        use:trackRow={{ id: annotation.metadata.id, isSelected }}
+        use:trackRow={{ id: groupId, isGroupSelected }}
         class={cn("justify-end p-0", {
           "border-b": isLastIndex,
         })}
-        onclick={() => {
-          handleRowClick(annotation);
-        }}
       >
-        <button class={cn("group flex w-full cursor-pointer items-center justify-end px-2 py-1")}>
-          {#await getCategoryName(annotation.value.category, annotation)}
-            <Spinner size="sm"></Spinner>
+        <div
+          class={cn("group flex w-full items-center justify-end px-2 py-1")}
+          role="button"
+          tabindex={isGroupSelected ? 0 : -1}
+          onfocus={() => selectAnnotationGroup(group)}
+          onkeypress={() => selectAnnotationGroup(group)}
+          onclick={() => selectAnnotationGroup(group)}
+        >
+          {#await getCategoryName(firstAnnotation.value.category, firstAnnotation)}
+            <Spinner size="sm" />
           {:then title}
-            <Text size="xs" weight={isSelected ? "semibold" : "normal"} class="text-foreground truncate">
+            <Text size="xs" weight={isGroupSelected ? "semibold" : "normal"} class="text-foreground truncate">
               {humanize(title)}
             </Text>
           {/await}
 
+          <!-- BUTTON::SHOW / HIDE -->
           <Button
             variant="ghost"
             size="icon"
             class={cn("ml-2 size-6 opacity-0 transition-opacity duration-200 ease-in-out group-hover:opacity-100", {
-              "opacity-100": isSelected,
+              "opacity-100": isGroupSelected,
             })}
             onclick={(e) => {
               e.stopPropagation();
-              onVisibility(!annotation.hidden, annotation);
+              toggleVisibilityAllAnnotations(annotations);
             }}
           >
-            {#if annotation.hidden}
+            {#if someAnnotationIsHidden}
               <EyeOff class="size-3" />
             {:else}
               <Eye class="size-3" />
             {/if}
           </Button>
+
+          <!-- BUTTON::LOCK / UNLOCK -->
           <Button
             variant="ghost"
             size="icon"
             class={cn("ml-2 size-6 opacity-0 transition-opacity duration-200 ease-in-out group-hover:opacity-100", {
-              "opacity-100": isSelected,
+              "opacity-100": isGroupSelected,
             })}
             onclick={(e) => {
               e.stopPropagation();
-              onLock(!annotation.locked, annotation);
+              toggleLockAllAnnotations(annotations);
             }}
           >
-            {#if annotation.locked}
+            {#if someAnnotationIsLocked}
               <Lock class="size-3" />
             {:else}
               <LockOpen class="size-3" />
             {/if}
           </Button>
 
+          <!-- BUTTON::DELETE -->
           {#if ["review", "annotate"].includes(context.workflowStep)}
             <Button
               variant="ghost"
               size="icon"
               class={cn("ml-2 size-6 opacity-0 transition-opacity duration-200 ease-in-out group-hover:opacity-100", {
-                "opacity-100": isSelected,
+                "opacity-100": isGroupSelected,
               })}
               onclick={(e) => {
                 e.stopPropagation();
-                onDeleteAnnotation(annotation);
+                deleteAllAnnotations(annotations);
               }}
-              disabled={annotation.locked}
+              disabled={someAnnotationIsLocked}
             >
-              <Trash2Icon class="size-3"></Trash2Icon>
+              <Trash2Icon class="size-3" />
             </Button>
           {/if}
-        </button>
+        </div>
       </td>
 
-      <TableCell class="p-0">
+      <td class="p-0">
         <Timeline
-          {annotation}
-          {currentFrame}
+          {group}
+          {annotations}
           {range}
           {scale}
           {zoom}
           {totalFrames}
+          {selectedAnnotation}
           onCellHover={(column) => (hoveredColumn = column)}
-          {hoveredColumn}
           {onSeekFrame}
           {onSelectAnnotation}
           {onDeleteAnnotation}
+          onSelectGroupAtFrame={(annotationGroup, frame) => selectAnnotationGroup(annotationGroup, frame)}
         />
-      </TableCell>
+      </td>
     </TableRow>
   {/each}
 {/snippet}
@@ -518,10 +576,11 @@
 
   <TableBody>
     {#await annotations_promise}
-      {@render row($boundingBoxes)}
+      {@const groupedBoundingBoxes = groupAnnotations($boundingBoxes)}
+      {@render row([...groupedBoundingBoxes])}
     {:then annotations}
-      {@const sortedAnnotations = sortAnnotationsByParent(annotations)}
-      {@render row([...sortedAnnotations])}
+      {@const groupedAnnotations = groupAnnotations(annotations)}
+      {@render row([...groupedAnnotations])}
     {/await}
   </TableBody>
 </Table>
