@@ -1,19 +1,22 @@
 # frozen_string_literal: true
 
+require "rmagick"
+
 module IdahImage
   module Processor
     ImageInfo = Data.define(
+      :filename,
       :width,
       :height,
       :format
     ) do
       def self.from_file(file_path)
-        # placeholder for basic image info extraction
-        # in the future, this could use `identify` or a library like `vips` or `rmagick`
+        img = Magick::Image.ping(file_path).first
         new(
-          width: 0,
-          height: 0,
-          format: File.extname(file_path).delete(".")
+          filename: img.filename,
+          width: img.columns,
+          height: img.rows,
+          format: img.format.downcase
         )
       end
     end
