@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "rmagick"
 require "securerandom"
 
 module IdahImage
@@ -33,13 +32,27 @@ module IdahImage
         format = context.config.processed_format
         max_size = context.config.processed_max_size
 
-        img = Magick::Image.read(file_path).first
-
-        # capping size in case of very big image, might not needed or need a different processing
-        img.resize_to_fit!(max_size, max_size) if image_info.width > max_size || image_info.height > max_size
+        width = image_info.width
+        height = image_info.height
+        scale = (width > max_size || height > max_size) ? "#{max_size}:#{max_size}" : nil
 
         tmp_path = File.join(Dir.tmpdir, "processed.#{format}")
-        img.write(tmp_path) { |i| i.quality = context.config.processed_quality }
+
+        last_progress_time = 0
+
+        Ffmpeg.convert(
+          input: file_path,
+          output: tmp_path,
+          scale: scale,
+          quality: context.config.processed_quality
+        ) do |progress|
+          now = Time.now.to_f
+          if (now - last_progress_time >= 0.2) || progress >= 1.0
+            last_progress_time = now
+            # Verse.logger.info { "[IdahImage] Processing image: #{(progress * 100).round(2)}%" }
+            context.progress = progress * 0.99
+          end
+        end
 
         File.open(tmp_path, "rb") do |file|
           context.upload_media(
@@ -50,25 +63,23 @@ module IdahImage
         end
       ensure
         File.delete(tmp_path) if tmp_path && File.exist?(tmp_path)
-        img&.destroy!
       end
 
       def generate_thumbnail(file_path)
         size = context.config.thumbnail_size
-
-        img = Magick::Image.read(file_path).first
-        thumb = img.resize_to_fit(size, size)
-
         tmp_path = File.join(Dir.tmpdir, "thumbnail.jpg")
-        thumb.write(tmp_path) { |i| i.quality = context.config.processed_quality }
+
+        Ffmpeg.convert(
+          input: file_path,
+          output: tmp_path,
+          scale: "#{size}:#{size}"
+        )
 
         File.open(tmp_path, "rb") do |file|
           context.upload_media(file, "thumbnail.jpg", "image/jpeg")
         end
       ensure
         File.delete(tmp_path) if tmp_path && File.exist?(tmp_path)
-        img&.destroy!
-        thumb&.destroy!
       end
     end
   end
