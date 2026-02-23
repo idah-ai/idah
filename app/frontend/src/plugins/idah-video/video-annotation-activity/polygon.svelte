@@ -2,6 +2,8 @@
   import { IDAH_NOTE } from "../type";
   import { X, Y, type InterpolatedVertex, type Point } from "./VideoAnnotationContext";
 
+  import type { IConfigPropertyStyles } from "@/plugin/interface/Activity";
+
   let {
     ratio = [1, 1],
     offset = [0, 0],
@@ -9,6 +11,7 @@
     editable = false,
     cursor,
     color,
+    styles,
     mode,
     onChange,
     onmousedown,
@@ -23,6 +26,7 @@
     editable?: boolean;
     cursor?: Point;
     color: string;
+    styles?: IConfigPropertyStyles;
     mode: string;
     onmousedown?: (e: MouseEvent) => void;
     onChange?: (points: Point[]) => void;
@@ -351,6 +355,47 @@
       }
     }
   }
+
+  function getPolygonStyles(styles?: IConfigPropertyStyles) {
+    const defaultBackgroundOpacity = 0.4;
+    const border = styles?.border;
+
+    let dashArray = "none";
+    let width = "2";
+    let opacity = defaultBackgroundOpacity;
+
+    /** OPACITY */
+    /** NOTE:: Can't use switch statement as it will not work with null value  */
+    if (styles?.opacity === undefined) {
+      opacity = defaultBackgroundOpacity;
+    } else if (styles?.opacity === null) {
+      opacity = defaultBackgroundOpacity;
+    } else if (styles.opacity === 0) {
+      opacity = 0;
+    } else {
+      opacity = (styles?.opacity / 100) * defaultBackgroundOpacity;
+    }
+
+    switch (border) {
+      case "dashed": {
+        dashArray = "10, 10";
+        width = "2";
+        break;
+      }
+      case "dotted": {
+        dashArray = "1, 10";
+        width = "4";
+        break;
+      }
+      default: {
+        dashArray = "none";
+        width = "2";
+        break;
+      }
+    }
+
+    return { dashArray, width, opacity, strokeColor: opacity ? color : "none" };
+  }
 </script>
 
 {#snippet PolygonVertices(vertexPoints: Point[] | InterpolatedVertex[])}
@@ -413,11 +458,12 @@
       style:transform={`translate(${offset[X]}px, ${offset[Y]}px) scale(${ratio[X]}, ${ratio[Y]})`}
       vector-effect="non-scaling-stroke"
       class={isEditing ? "cursor-none" : edition_cursor}
-      fill-opacity="0.4"
+      fill-opacity={getPolygonStyles(styles).opacity}
       style:fill={color}
-      style:stroke={color}
-      style:stroke-opacity="1"
-      style:stroke-width="2"
+      style:stroke={getPolygonStyles(styles).strokeColor}
+      style:stroke-width={getPolygonStyles(styles).width}
+      stroke-dasharray={getPolygonStyles(styles).dashArray}
+      stroke-linecap="round"
       onmousedown={(e) => {
         if (editable && !panStart && !isEditing && isPolygonComplete) {
           e.stopPropagation();
@@ -454,12 +500,12 @@
       style:transform={`translate(${offset[X]}px, ${offset[Y]}px) scale(${ratio[X]}, ${ratio[Y]})`}
       vector-effect="non-scaling-stroke"
       class={isEditing ? "cursor-none" : edition_cursor}
-      fill-opacity="0.2"
+      fill-opacity={getPolygonStyles(styles).opacity}
       style:fill={color}
-      style:stroke={color}
-      style:stroke-opacity="1"
-      style:stroke-width="2"
-      style:stroke-dasharray="5,5"
+      style:stroke={getPolygonStyles(styles).strokeColor}
+      style:stroke-width={getPolygonStyles(styles).width}
+      stroke-dasharray={getPolygonStyles(styles).dashArray}
+      stroke-linecap="round"
     />
 
     <!-- Draw existing vertices while creating -->
