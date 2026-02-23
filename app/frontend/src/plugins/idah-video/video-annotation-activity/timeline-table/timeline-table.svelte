@@ -294,6 +294,13 @@
     return groups;
   }
 
+  function getIsGroupSelected(group: AnnotationGroup<TAnnotationObj>): boolean {
+    const { groupId, annotations } = group;
+    if (selectedAnnotationGroup?.groupId == groupId) return true;
+
+    return annotations.some((ann) => ann.metadata.id == selectedAnnotation?.metadata.id);
+  }
+
   function toggleVisibilityAllAnnotations(annotations: TAnnotationObj[]) {
     const isAllHidden = annotations.map((annotation) => annotation.hidden).every((hidden) => hidden);
     annotations.forEach((annotation) => onVisibility(!isAllHidden, annotation));
@@ -311,8 +318,8 @@
 
 {#snippet row(groups: AnnotationGroup<TAnnotationObj>[])}
   {#each groups as group, index (index)}
-    {@const { groupId, annotations } = group}
-    {@const isGroupSelected = selectedAnnotationGroup?.groupId == groupId}
+    {@const { annotations } = group}
+    {@const isGroupSelected = getIsGroupSelected(group)}
     {@const firstAnnotation = annotations[0]}
     {@const someAnnotationIsHidden = annotations.some((ann) => ann.hidden)}
     {@const someAnnotationIsLocked = annotations.some((ann) => ann.locked)}
