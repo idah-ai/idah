@@ -5,7 +5,14 @@
   import Polygon from "./polygon.svelte";
   import { boundingBoxes } from "./idb_store.svelte";
 
-  import { DEFAULT_MODE, ENTRY_ROOT, IDAH_NOTE, IDAH_VIDEO_BOUNDING_BOX, IDAH_VIDEO_POLYGON, type EntryRoot } from "../type";
+  import {
+    DEFAULT_MODE,
+    ENTRY_ROOT,
+    IDAH_NOTE,
+    IDAH_VIDEO_BOUNDING_BOX,
+    IDAH_VIDEO_POLYGON,
+    type EntryRoot,
+  } from "../type";
   import {
     getInterpolatedFrame,
     HEIGHT,
