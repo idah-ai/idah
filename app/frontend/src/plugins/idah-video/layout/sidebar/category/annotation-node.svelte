@@ -14,7 +14,7 @@
 
   import CategoryAction from "./category-action.svelte";
   import CategoryName from "./category-name.svelte";
-  import { IDAH_POLYGON, IDAH_VIDEO_BOUNDING_BOX } from "../../../type";
+  import { IDAH_VIDEO_POLYGON, IDAH_VIDEO_BOUNDING_BOX } from "../../../type";
   import VectorSquareIcon from "./vector-square-icon.svelte";
   import PolygonCircleIcon from "./polygon-circle-icon.svelte";
 
@@ -42,7 +42,7 @@
         {#if annotation.shape.type === IDAH_VIDEO_BOUNDING_BOX}
           <!-- VECTOR SQUARE ICON -->
           <VectorSquareIcon />
-        {:else if annotation.shape.type === IDAH_POLYGON}
+        {:else if annotation.shape.type === IDAH_VIDEO_POLYGON}
           <!-- POLYGON CIRCLE ICON -->
           <PolygonCircleIcon />
         {/if}

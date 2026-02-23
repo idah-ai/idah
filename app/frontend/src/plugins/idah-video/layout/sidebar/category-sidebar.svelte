@@ -14,7 +14,7 @@
   import AnnotationCountBadge from "./annotation-count-badge.svelte";
   import AnnotationNode from "./category/annotation-node.svelte";
   import CategoryName from "./category/category-name.svelte";
-  import { IDAH_POLYGON, IDAH_VIDEO_BOUNDING_BOX } from "../../type";
+  import { IDAH_VIDEO_POLYGON, IDAH_VIDEO_BOUNDING_BOX } from "../../type";
   import VectorSquareIcon from "./category/vector-square-icon.svelte";
   import PolygonCircleIcon from "./category/polygon-circle-icon.svelte";
 
@@ -282,7 +282,7 @@
                     hidden: category.requiredNested,
                   })}
                 />
-              {:else if modalityShape === IDAH_POLYGON}
+              {:else if modalityShape === IDAH_VIDEO_POLYGON}
                 <PolygonCircleIcon
                   color={category.data.color}
                   class={cn({
