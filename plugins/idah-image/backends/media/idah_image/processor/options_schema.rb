@@ -7,7 +7,7 @@ module IdahImage
       field :thumbnail_size, Integer, default: 480, desc: "Max dimension for thumbnail. Default is 480."
       field :processed_format, String, default: "webp", desc: "Target format for web display. Default is webp."
       field :processed_quality, Integer, default: 85, desc: "Quality for processed image. Default is 85."
-      field :processed_max_size, Integer, default: 2048, desc: "Max dimension for optimized image. Default is 2048."
+      field :processed_max_size, Integer, default: 16348, desc: "Max dimension for optimized image. Default is 16KP."
     end
   end
 end

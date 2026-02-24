@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "rmagick"
-require "securerandom"
 
 module IdahImage
   module Processor
@@ -33,10 +32,13 @@ module IdahImage
         format = context.config.processed_format
         max_size = context.config.processed_max_size
 
-        img = Magick::Image.read(file_path).first
+        # rmagick has limited width and height to 16k pixels by default
+        if image_info.width > max_size || image_info.height > max_size
+          raise Verse::Error::ValidationFailed,
+                "Image width or height exceeded the default limit of #{max_size}"
+        end
 
-        # capping size in case of very big image, might not needed or need a different processing
-        img.resize_to_fit!(max_size, max_size) if image_info.width > max_size || image_info.height > max_size
+        img = Magick::Image.read(file_path).first
 
         tmp_path = File.join(Dir.tmpdir, "processed.#{format}")
         img.write(tmp_path) { |i| i.quality = context.config.processed_quality }
