@@ -2,7 +2,14 @@
   import { ArrowLeftRightIcon, SquareSplitHorizontalIcon, Trash2Icon } from "@lucide/svelte";
   import { getContext } from "svelte";
 
-  import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu";
+  import {
+    ContextMenu,
+    ContextMenuContent,
+    ContextMenuGroup,
+    ContextMenuItem,
+    ContextMenuSeparator,
+    ContextMenuTrigger,
+  } from "@/components/ui/context-menu";
 
   import { cn } from "@/utils";
 
@@ -157,29 +164,41 @@
       </ContextMenuTrigger>
 
       <ContextMenuContent>
-        <!-- SPLIT ANNOTATION -->
-        <ContextMenuItem
-          onclick={() =>
-            context.commands.run("annotation.split", { id: annotation?.metadata.id, at: currentFrameInCell })}
-          disabled={annotation?.locked}
-        >
-          <SquareSplitHorizontalIcon class="size-4" />
-          Split at frame {currentFrameInCell}
-        </ContextMenuItem>
-
-        {#each keyFrames as { frame }, index (index)}
-          <ContextMenuItem onclick={() => onSeekFrame?.(frame)}>
-            <ArrowLeftRightIcon class="size-4" />
-            Seek frame {frame}
+        <ContextMenuGroup>
+          <!-- SPLIT ANNOTATION -->
+          <ContextMenuItem
+            onclick={() =>
+              context.commands.run("annotation.split", { id: annotation?.metadata.id, at: currentFrameInCell })}
+            disabled={annotation?.locked}
+          >
+            <SquareSplitHorizontalIcon class="size-4" />
+            Split at frame {currentFrameInCell}
           </ContextMenuItem>
+        </ContextMenuGroup>
 
-          {#if ["review", "annotate"].includes(context.workflowStep)}
-            <ContextMenuItem onclick={() => deleteFrame(frame)} disabled={annotation?.locked}>
-              <Trash2Icon class="size-4" />
-              Delete frame {frame}
+        <ContextMenuGroup>
+          {#each keyFrames as { frame }, index (index)}
+            <ContextMenuItem onclick={() => onSeekFrame?.(frame)}>
+              <ArrowLeftRightIcon class="size-4" />
+              Seek frame {frame}
             </ContextMenuItem>
-          {/if}
-        {/each}
+
+            {#if ["review", "annotate"].includes(context.workflowStep)}
+              <ContextMenuItem onclick={() => deleteFrame(frame)} disabled={annotation?.locked}>
+                <Trash2Icon class="size-4" />
+                Delete frame {frame}
+              </ContextMenuItem>
+            {/if}
+          {/each}
+        </ContextMenuGroup>
+
+        <ContextMenuSeparator />
+        <ContextMenuGroup>
+          <ContextMenuItem onclick={() => context.commands.run("annotation.delete", { id: annotation?.metadata.id })}>
+            <Trash2Icon class="size-4" />
+            Delete annotation
+          </ContextMenuItem>
+        </ContextMenuGroup>
       </ContextMenuContent>
     </ContextMenu>
   </div>
