@@ -63,7 +63,8 @@ module Exports
 
         {
           name: exporter.name,
-          description: exporter.description
+          description: exporter.description,
+          exporter: klass.to_s
         }
       end
     end
