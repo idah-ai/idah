@@ -6,7 +6,6 @@ module Exports
     use_system jobs: Jobs::Service
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
-      binding.pry
       exports.index(
         filter,
         included:,
@@ -45,7 +44,7 @@ module Exports
           {
             job_id: job.id,
             project_id:,
-            created_by_id: 1 # auth_context.metadata[:id]
+            created_by_id: auth_context.metadata[:id]
           }
         )
 

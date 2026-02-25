@@ -64,8 +64,8 @@ Sequel.migration do
     create_table(:exports) do
       primary_key :id, :bigserial
 
-      column :job_id, String, null: false, index: true
-      column :project_id, Integer, null: false, index: true
+      column :job_id, :uuid, null: false, index: true
+      column :project_id, String, null: false, index: true
       column :created_by_id, Integer, null: false, index: true
 
       # These fields are populated when the export is ready,
