@@ -11,9 +11,11 @@
   import { authStatus } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
 
-  import type { ProjectMemberScope } from "@/security/types";
   import { exportsColumns } from "@/components/app/projects/exports/datasource-tables/export-columns";
-  import { SyncJobsBackendDataSource } from "@/data/model/sync/jobs/record";
+  import { ExportRecord, ExportsBackendDataSource } from "@/data/model/sync/exports/record";
+  import { SyncJobRecord } from "@/data/model/sync/jobs/record";
+
+  import type { ProjectMemberScope } from "@/security/types";
 
   // Contexts
   const project: ProjectRecord = getContext("project");
@@ -49,12 +51,17 @@
     name="export"
     refetchKey="exports"
     {columns}
-    dataSource={SyncJobsBackendDataSource}
+    dataSource={ExportsBackendDataSource}
+    disabledActiveStateFilterSortKeys={["project_id"]}
     listOptions={{
+      fields: {
+        [ExportRecord.type]: ["id", "job_id"],
+        [SyncJobRecord.type]: ["id", "arguments"],
+      },
       filters: {
         project_id: projectId,
       },
-      included: ["exports"],
+      included: ["job"],
     }}
   ></DatasourceTable>
 {/key}
