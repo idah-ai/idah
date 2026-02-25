@@ -38,8 +38,7 @@
         projectMemberRoles: ["project_owner"],
       },
     };
-    canExport =
-      (await currentAccount?.can("request_export", "sync:exports", ["as_org_owner", as_project_owner])) || false;
+    canExport = (await currentAccount?.can("create", "sync:exports", ["as_org_owner", as_project_owner])) || false;
     columns.action.visible = canExport;
   });
 </script>

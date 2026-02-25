@@ -9,8 +9,6 @@ export const actions = [
   "read",
   "update",
   "delete",
-  //
-  "request_export", // ?
 ] as const;
 
 export type Action = (typeof actions)[number];
