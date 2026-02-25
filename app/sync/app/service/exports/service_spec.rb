@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # frozen_string_literal:
 
 RSpec.describe Exports::Service, database: true do
