@@ -48,8 +48,7 @@
       (await currentAccount?.can("update", "dataset:datasets", ["as_org_owner", as_project_owner])) || false;
     canDeleteDataset =
       (await currentAccount?.can("delete", "dataset:datasets", ["as_org_owner", as_project_owner])) || false;
-    canExport =
-      (await currentAccount?.can("request_export", "sync:exports", ["as_org_owner", as_project_owner])) || false;
+    canExport = (await currentAccount?.can("create", "sync:exports", ["as_org_owner", as_project_owner])) || false;
     columns.action.visible = canUpdateDataset || canDeleteDataset || canExport;
   });
 </script>

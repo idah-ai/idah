@@ -38,4 +38,4 @@ user:
     # Sync Service
     - "sync:jobs.read.as_user"
     - "sync:exports.read.as_user"
-    - "sync:exports.request_export.as_user"
+    - "sync:exports.create.as_user"

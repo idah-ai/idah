@@ -67,8 +67,7 @@
       (await currentAccount?.can("update", "dataset:entries", ["as_org_owner", as_project_owner])) || false;
     canDeleteEntry =
       (await currentAccount?.can("delete", "dataset:entries", ["as_org_owner", as_project_owner])) || false;
-    canExportEntry =
-      (await currentAccount?.can("request_export", "sync:exports", ["as_org_owner", as_project_owner])) || false;
+    canExportEntry = (await currentAccount?.can("create", "sync:exports", ["as_org_owner", as_project_owner])) || false;
   });
 
   // Functions
