@@ -8,11 +8,6 @@ module Jobs
     field :job_class, type: String
 
     field :arguments, type: Hash
-    field :created_by, type: String
-    field :created_by_role, type: String
-    field :created_by_organization, type: Array
-    field :created_by_custom_scopes, type: Hash
-    field :created_by_metadata, type: Hash
 
     field :priority, type: Integer
     field :status, type: String
@@ -35,9 +30,6 @@ module Jobs
     self.resource = Resource::Sync::Jobs
 
     encoder :arguments, Verse::Sequel::JsonEncoder
-    encoder :created_by_custom_scopes, Verse::Sequel::JsonEncoder
-    encoder :created_by_metadata, Verse::Sequel::JsonEncoder
-    encoder :created_by_organization, Verse::Sequel::PgArrayEncoder
 
     # Lock available jobs for processing, up to {count} jobs.
     # The jobs are locked for update and their status is set to "running".

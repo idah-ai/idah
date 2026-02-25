@@ -1,18 +1,22 @@
+# frozen_string_literal: true
+
 module Exports
   class EntryContext
-    attr_reader :id
+    attr_reader :entry
 
-    def initialize(id)
-      @id = id
+    def initialize(entry)
+      @entry = entry
     end
 
     def annotations
       Api[:idah].dataset.annotations.index_all(
         filter: {
-          entry_id: @id
+          entry_id: @entry.id
         },
         included: ["project_members"]
-      )
+      ).map do |annotation|
+        AnnotationContext.new(annotation)
+      end
     end
   end
 end

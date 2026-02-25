@@ -1,63 +1,70 @@
-# frozen_string_literal: true
-RSpec.describe Exports::Service do
-  let(:auth_context) do
-    Verse::Auth::Context[:system]
-  end
+# frozen_string_literal:
 
+RSpec.describe Exports::Service, database: true do
+  let(:auth_context) { Verse::Auth::Context[:system] }
   let(:service) { described_class.new(auth_context) }
   let(:repo) { service.exports }
 
   describe "#create" do
+    subject {
+      auth_context.metadata[:id] = 1 # Simulate a user with ID 1
+      described_class.new(auth_context)
+    }
+
     before do
       # By default, always allow export class
-      allow(Export::Registry).to receive(:is_valid_export_class?).and_return(true)
+      allow(Exports::Registry).to receive(:valid_export_class?).and_return(true)
     end
 
     it "creates an export and a job" do
-      export = service.create([1, 2, 3], 1, "MyExporter")
-      expect(export).to be_present
-      expect(export.job_id).to be_present
+      export = subject.create(1, [1, 2, 3], "MyExporter")
+
+      expect(export).not_to be_nil
+      expect(export.job_id).not_to be_nil
 
       job = Jobs::Service.new(auth_context).show(export.job_id)
 
       expect(job.job_class).to eq "Exports::Job"
       expect(job.arguments).to eq(
         {
-          "dataset_ids" => [1, 2, 3],
-          "exporter" => "MyExporter"
+          dataset_ids: [1, 2, 3],
+          exporter: "MyExporter"
         }
       )
     end
 
     it "raises an error if invalid export class" do
-      allow(Export::Registry).to receive(:is_valid_export_class?).with("bad_class").and_return(false)
+      allow(Exports::Registry).to receive(:valid_export_class?).with("bad_class").and_return(false)
 
       expect {
-        service.create([1, 2, 3], 1, "bad_class")
+        subject.create(1, [1, 2, 3], "bad_class")
       }.to raise_error(Verse::Error::Authorization, "invalid export format: `bad_class`")
     end
   end
 
   describe "read/update/delete" do
-    let!(:export) do
-       repo.create({
-        job_id: 1,
-        created_by: 1
-      })
+    let!(:export_id) do
+      repo.create(
+        {
+          job_id: 1,
+          project_id: 1,
+          created_by_id: 1
+        }
+      )
     end
 
     describe "#delete" do
       it "deletes the export" do
-        service.delete(export.id)
+        service.delete(export_id)
 
-        expect { repo.find!(export.id) }.to raise_error(Verse::Error::RecordNotFound)
+        expect { repo.find!(export_id) }.to raise_error(Verse::Error::RecordNotFound)
       end
     end
 
     describe "#show" do
       it "shows the export" do
-        found = service.show(export.id)
-        expect(found.id).to eq(export.id)
+        found = service.show(export_id)
+        expect(found.id.to_s).to eq(export_id)
       end
     end
 

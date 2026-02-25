@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Exports
   # Registry of export formats plugged in IDAH.
   module Registry
@@ -24,14 +26,13 @@ module Exports
       end
     end
 
-    def is_valid_export_class?(klass)
+    def valid_export_class?(klass)
       @registry ||= {}
-
-      @registry.each do |_, v|
+      @registry.each_value do |v|
         return true if v.map(&:to_s).include?(klass)
       end
 
-      return false
+      false
     end
 
     # Return the list of available export
@@ -55,6 +56,5 @@ module Exports
 
       formats.uniq
     end
-
   end
 end
