@@ -10,14 +10,14 @@ RSpec.describe Exports::Registry do
 
   # Dummy classes for testing
   # rubocop:disable Lint/ConstantDefinitionInBlock
-  class self::TestExportFormatA; end
-  class self::TestExportFormatB; end
-  class self::TestExportFormatC; end
+  class TestExportFormatA; end
+  class TestExportFormatB; end
+  class TestExportFormatC; end
   # rubocop:enable Lint/ConstantDefinitionInBlock
 
-  let(:format_a) { self.class::TestExportFormatA }
-  let(:format_b) { self.class::TestExportFormatB }
-  let(:format_c) { self.class::TestExportFormatC }
+  let(:format_a) { TestExportFormatA }
+  let(:format_b) { TestExportFormatB }
+  let(:format_c) { TestExportFormatC }
 
   describe ".register" do
     it "registers a class for a single string modality" do
