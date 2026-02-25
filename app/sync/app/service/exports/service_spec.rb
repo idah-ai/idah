@@ -4,6 +4,7 @@ RSpec.describe Exports::Service, database: true do
   let(:auth_context) { Verse::Auth::Context[:system] }
   let(:service) { described_class.new(auth_context) }
   let(:repo) { service.exports }
+  let(:project_id) { "project-123" }
 
   describe "#create" do
     subject {
