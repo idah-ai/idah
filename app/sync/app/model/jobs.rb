@@ -4,7 +4,7 @@ module Jobs
   class Record < Verse::Model::Record::Base
     type Resource::Sync::Jobs
 
-    field :id, type: Integer, primary: true
+    field :id, type: String, primary: true
     field :job_class, type: String
 
     field :arguments, type: Hash
@@ -120,6 +120,7 @@ module Jobs
           org_ids = auth_context.custom_scopes[:org]
           project_ids = Api[:idah].dataset.projects.index_all(
             filter: { organization_id: org_ids },
+            fields: { "dataset:projects": ["id"] }
           ).map(&:id)
 
           frag = <<-SQL
