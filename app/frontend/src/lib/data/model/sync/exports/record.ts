@@ -1,8 +1,10 @@
 import { createBackendDataSource, resourcePath } from "@/data/BackendDataSource";
 import { clearCache } from "@/data/Cache";
-import { field, Record, RecordFactory, type } from "@/data/model/Record";
+import { field, Record, RecordFactory, relationship, type } from "@/data/model/Record";
 import { parseSingleElementError, parseSingleElementReturn } from "@/data/model/json_api";
 import { Transformers } from "@/data/model/transformers";
+
+import { SyncJobRecord } from "@/data/model/sync/jobs/record";
 
 import type { ExportFormat } from "@/data/model/sync/exports/type";
 import type { Hash } from "@/utils/types";
@@ -19,6 +21,8 @@ export class ExportRecord extends Record {
   @field() public size!: number;
 
   @field({ transformer: Transformers.Time }) public created_at!: Date;
+
+  @relationship() public job!: SyncJobRecord[];
 }
 
 RecordFactory.registerTypes(ExportRecord);

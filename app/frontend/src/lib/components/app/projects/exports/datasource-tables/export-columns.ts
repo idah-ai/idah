@@ -1,3 +1,4 @@
+import ExportDatasetNameCell from "@/components/app/projects/exports/datasource-tables/export-dataset-name-cell.svelte";
 import ExportRowActionCell from "@/components/app/projects/exports/datasource-tables/export-row-action-cell.svelte";
 
 import { ExportRecord } from "@/data/model/sync/exports/record";
@@ -6,7 +7,7 @@ import type { ColumnsSettings } from "@/components/app/datasource-table/types";
 
 export const exportsColumns: ColumnsSettings<ExportRecord> = {
   id: {
-    label: "ID",
+    label: "Datasets name",
     dataType: "string",
     clickable: false,
     sortable: true,
@@ -18,6 +19,7 @@ export const exportsColumns: ColumnsSettings<ExportRecord> = {
     },
     visible: true,
     hidable: false,
+    cellComponent: ExportDatasetNameCell,
   },
   action: {
     label: "Action",

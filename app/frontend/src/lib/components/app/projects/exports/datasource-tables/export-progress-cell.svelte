@@ -1,19 +1,22 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import type { DataTableCellBaseProps } from "@/components/app/datasource-table/types";
-  import Progress from "@/components/ui/progress/progress.svelte";
-  import { SyncJobRecord, SyncJobsBackendDataSource } from "@/data/model/sync/jobs/record";
   import { onDestroy } from "svelte";
   import { writable } from "svelte/store";
 
-  let { record: syncJob }: DataTableCellBaseProps<SyncJobRecord> = $props();
+  import Progress from "@/components/ui/progress/progress.svelte";
+  import type { ExportRecord } from "@/data/model/sync/exports/record";
+  import { SyncJobRecord, SyncJobsBackendDataSource } from "@/data/model/sync/jobs/record";
+
+  import type { DataTableCellBaseProps } from "@/components/app/datasource-table/types";
+
+  let { record: exportRecord }: DataTableCellBaseProps<ExportRecord> = $props();
 
   // Variables
   let projectId = page.params.projectId as string;
 
   let progressInterval = writable<number | undefined>(undefined); // Note: Need to use writable because it's not reactive
-  let jobProgress: number = $state(syncJob.progress);
-  let status = $state(syncJob.status);
+  let jobProgress: number = $state(exportRecord.progress);
+  let status = $state(exportRecord.status);
 
   const processingStatuses = ["running", "pending"];
 
@@ -36,7 +39,7 @@
             return;
           }
 
-          const jobRes = await SyncJobsBackendDataSource.get(syncJob.id, {
+          const jobRes = await SyncJobsBackendDataSource.get(exportRecord.id, {
             fields: {
               [SyncJobRecord.type]: ["progress", "status"],
             },
@@ -56,6 +59,7 @@
         }
       }, 2_000);
     } else {
+      //
     }
   }
 
