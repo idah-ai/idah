@@ -56,5 +56,16 @@ module Exports
 
       formats.uniq
     end
+
+    def list_export_format_details(modalities)
+      list_export_format(modalities).map do |klass|
+        exporter = klass.new
+
+        {
+          name: exporter.name,
+          description: exporter.description
+        }
+      end
+    end
   end
 end

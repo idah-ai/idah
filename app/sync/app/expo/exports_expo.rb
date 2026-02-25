@@ -46,4 +46,24 @@ class ExportsExpo < BaseExpo
   def export
     service.create(params[:project_id], params[:dataset_ids], params[:exporter])
   end
+
+  expose on_http(:get, "/formats", renderer: Verse::Http::Renderer::Json) do
+    desc <<-MD
+      ## Get Available Export Formats
+      #
+      # This endpoint retrieves the list of available export formats for the given modalities.
+    MD
+    input do
+      field :modalities, type: Array, required: true
+    end
+  end
+  def formats
+    auth_context.can!(:read, Resource::Sync::Exports) do |scope|
+      formats = Exports::Registry.list_export_format_details(params[:modalities])
+
+      scope.all? { formats }
+      scope.as_org_owner? { formats }
+      scope.as_user? { formats }
+    end
+  end
 end
