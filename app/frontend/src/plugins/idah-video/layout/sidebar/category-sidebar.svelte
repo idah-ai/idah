@@ -15,8 +15,8 @@
   import AnnotationNode from "./category/annotation-node.svelte";
   import CategoryName from "./category/category-name.svelte";
   import { IDAH_VIDEO_POLYGON, IDAH_VIDEO_BOUNDING_BOX } from "../../type";
-  import VectorSquareIcon from "./category/vector-square-icon.svelte";
-  import PolygonCircleIcon from "./category/polygon-circle-icon.svelte";
+  import VectorSquareSvg from "../../../assets/icons/vector-square.svg?raw";
+  import PolygonSvg from "../../../assets/icons/polygon.svg?raw";
 
   import { idb_updated_at } from "../../video-annotation-activity/idb_store.svelte";
 
@@ -275,21 +275,13 @@
                 {/if}
               </Button>
 
-              {#if modalityShape === IDAH_VIDEO_BOUNDING_BOX}
-                <VectorSquareIcon
-                  color={category.data.color}
-                  class={cn({
-                    hidden: category.requiredNested,
-                  })}
-                />
-              {:else if modalityShape === IDAH_VIDEO_POLYGON}
-                <PolygonCircleIcon
-                  color={category.data.color}
-                  class={cn({
-                    hidden: category.requiredNested,
-                  })}
-                />
-              {/if}
+              <div class={cn("shrink-0", { hidden: category.requiredNested })} style="color: {category.data.color || 'var(--color-gray-500)'}">
+                {#if modalityShape === IDAH_VIDEO_BOUNDING_BOX}
+                  {@html VectorSquareSvg}
+                {:else if modalityShape === IDAH_VIDEO_POLYGON}
+                  {@html PolygonSvg}
+                {/if}
+              </div>
 
               <CategoryName name={category.name} />
 

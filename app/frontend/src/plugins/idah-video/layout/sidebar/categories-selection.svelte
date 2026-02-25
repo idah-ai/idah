@@ -33,6 +33,8 @@
   import { idb_updated_at } from "../../video-annotation-activity/idb_store.svelte";
   import type { AnnotationsIndexedDB } from "../../video-annotation-activity/indexedDB";
   import type { VideoAnnotation } from "../../video-annotation-activity/VideoAnnotationContext";
+  import VectorSquareSvg from "../../../assets/icons/vector-square.svg?raw";
+  import PolygonSvg from "../../../assets/icons/polygon.svg?raw";
 
   // Props
   let {
@@ -161,30 +163,15 @@
       onclick={() => onSelectAnnotation(annotation)}
     >
       <div class="flex items-center gap-1 text-xs">
-        <!-- VECTOR SQUARE ICON -->
-        <div class="shrink-0">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <!-- prettier-ignore -->
-            {#if annotation.shape.type === IDAH_VIDEO_BOUNDING_BOX}
-            <!-- Bounding Box Icon -->
-              <path
-                d="M6.66667 4.58333H13.3333M6.66667 4.58333C6.66667 5.73393 5.73393 6.66667 4.58333 6.66667M6.66667 4.58333C6.66667 3.43274 5.73393 2.5 4.58333 2.5C3.43274 2.5 2.5 3.43274 2.5 4.58333C2.5 5.73393 3.43274 6.66667 4.58333 6.66667M13.3333 4.58333C13.3333 5.73393 14.2661 6.66667 15.4167 6.66667M13.3333 4.58333C13.3333 3.43274 14.2661 2.5 15.4167 2.5C16.5673 2.5 17.5 3.43274 17.5 4.58333C17.5 5.73393 16.5673 6.66667 15.4167 6.66667M15.4167 6.66667V13.3333M15.4167 13.3333C14.2661 13.3333 13.3333 14.2661 13.3333 15.4167M15.4167 13.3333C16.5673 13.3333 17.5 14.2661 17.5 15.4167C17.5 16.5673 16.5673 17.5 15.4167 17.5C14.2661 17.5 13.3333 16.5673 13.3333 15.4167M13.3333 15.4167H6.66667M6.66667 15.4167C6.66667 16.5673 5.73393 17.5 4.58333 17.5C3.43274 17.5 2.5 16.5673 2.5 15.4167C2.5 14.2661 3.43274 13.3333 4.58333 13.3333M6.66667 15.4167C6.66667 14.2661 5.73393 13.3333 4.58333 13.3333M4.58333 13.3333V6.66667"
-                stroke="var(--color-gray-500)"
-                stroke-width="1.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            {:else if annotation.shape.type === IDAH_VIDEO_POLYGON}
-              <!-- Polygon Icon -->
-              <path
-                d="M5.33333 4L8.66667 4.66667M10.6667 6.66667L12 10.6667M10.6667 12L7 11.3333M5 8.66667L4 5.33333M5.33333 3.66667C5.33333 4.58714 4.58714 5.33333 3.66667 5.33333C2.74619 5.33333 2 4.58714 2 3.66667C2 2.74619 2.74619 2 3.66667 2C4.58714 2 5.33333 2.74619 5.33333 3.66667ZM7.33333 10.3333C7.33333 11.2538 6.58714 12 5.66667 12C4.74619 12 4 11.2538 4 10.3333C4 9.41286 4.74619 8.66667 5.66667 8.66667C6.58714 8.66667 7.33333 9.41286 7.33333 10.3333ZM12 5C12 5.92047 11.2538 6.66667 10.3333 6.66667C9.41286 6.66667 8.66667 5.92047 8.66667 5C8.66667 4.07953 9.41286 3.33333 10.3333 3.33333C11.2538 3.33333 12 4.07953 12 5ZM14 12.3333C14 13.2538 13.2538 14 12.3333 14C11.4129 14 10.6667 13.2538 10.6667 12.3333C10.6667 11.4129 11.4129 10.6667 12.3333 10.6667C13.2538 10.6667 14 11.4129 14 12.3333Z"
-                stroke="var(--color-gray-500)"
-                stroke-width="1.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            {/if}
-          </svg>
+        <!-- ANNOTATION ICON -->
+        <div class="shrink-0" style="color: {'var(--color-gray-500)'}">
+          {#if annotation.shape.type === IDAH_VIDEO_BOUNDING_BOX}
+            <!-- VECTOR SQUARE ICON -->
+            {@html VectorSquareSvg}
+          {:else if annotation.shape.type === IDAH_VIDEO_POLYGON}
+            <!-- POLYGON CIRCLE ICON -->
+            {@html PolygonSvg}
+          {/if}
         </div>
 
         {@render CategoryName(name)}
@@ -302,35 +289,13 @@
       {/if}
     </Button>
 
-    <svg
-      class={cn("", {
-        hidden: category.requiredNested,
-      })}
-      width="20"
-      height="20"
-      viewBox="0 0 20 20"
-      fill="none"
-    >
-      {#if type === IDAH_VIDEO_BOUNDING_BOX}
-        <!-- Bounding Box Icon -->
-        <path
-          d="M6.66667 4.58333H13.3333M6.66667 4.58333C6.66667 5.73393 5.73393 6.66667 4.58333 6.66667M6.66667 4.58333C6.66667 3.43274 5.73393 2.5 4.58333 2.5C3.43274 2.5 2.5 3.43274 2.5 4.58333C2.5 5.73393 3.43274 6.66667 4.58333 6.66667M13.3333 4.58333C13.3333 5.73393 14.2661 6.66667 15.4167 6.66667M13.3333 4.58333C13.3333 3.43274 14.2661 2.5 15.4167 2.5C16.5673 2.5 17.5 3.43274 17.5 4.58333C17.5 5.73393 16.5673 6.66667 15.4167 6.66667M15.4167 6.66667V13.3333M15.4167 13.3333C14.2661 13.3333 13.3333 14.2661 13.3333 15.4167M15.4167 13.3333C16.5673 13.3333 17.5 14.2661 17.5 15.4167C17.5 16.5673 16.5673 17.5 15.4167 17.5C14.2661 17.5 13.3333 16.5673 13.3333 15.4167M13.3333 15.4167H6.66667M6.66667 15.4167C6.66667 16.5673 5.73393 17.5 4.58333 17.5C3.43274 17.5 2.5 16.5673 2.5 15.4167C2.5 14.2661 3.43274 13.3333 4.58333 13.3333M6.66667 15.4167C6.66667 14.2661 5.73393 13.3333 4.58333 13.3333M4.58333 13.3333V6.66667"
-          stroke={category.data.color || "var(--color-gray-500)"}
-          stroke-width="1.5"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      {:else if type === IDAH_VIDEO_POLYGON}
-        <!-- Polygon Icon -->
-        <path
-          d="M5.33333 4L8.66667 4.66667M10.6667 6.66667L12 10.6667M10.6667 12L7 11.3333M5 8.66667L4 5.33333M5.33333 3.66667C5.33333 4.58714 4.58714 5.33333 3.66667 5.33333C2.74619 5.33333 2 4.58714 2 3.66667C2 2.74619 2.74619 2 3.66667 2C4.58714 2 5.33333 2.74619 5.33333 3.66667ZM7.33333 10.3333C7.33333 11.2538 6.58714 12 5.66667 12C4.74619 12 4 11.2538 4 10.3333C4 9.41286 4.74619 8.66667 5.66667 8.66667C6.58714 8.66667 7.33333 9.41286 7.33333 10.3333ZM12 5C12 5.92047 11.2538 6.66667 10.3333 6.66667C9.41286 6.66667 8.66667 5.92047 8.66667 5C8.66667 4.07953 9.41286 3.33333 10.3333 3.33333C11.2538 3.33333 12 4.07953 12 5ZM14 12.3333C14 13.2538 13.2538 14 12.3333 14C11.4129 14 10.6667 13.2538 10.6667 12.3333C10.6667 11.4129 11.4129 10.6667 12.3333 10.6667C13.2538 10.6667 14 11.4129 14 12.3333Z"
-          stroke={category.data.color || "var(--color-gray-500)"}
-          stroke-width="1.5"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      {/if}
-    </svg>
+      <div class={cn("shrink-0", { hidden: category.requiredNested })} style="color: {category.data.color || 'var(--color-gray-500)'}">
+        {#if type === IDAH_VIDEO_BOUNDING_BOX}
+          {@html VectorSquareSvg}
+        {:else if type === IDAH_VIDEO_POLYGON}
+          {@html PolygonSvg}
+        {/if}
+      </div>
     {@render CategoryName(category.name)}
   </div>
 {/snippet}
