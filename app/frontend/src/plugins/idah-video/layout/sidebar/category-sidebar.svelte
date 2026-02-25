@@ -276,15 +276,9 @@
               </Button>
 
               {#if modalityShape === IDAH_VIDEO_BOUNDING_BOX}
-                <VectorSquareIcon
-                  color={category.data?.color}
-                  class={cn({ hidden: category.requiredNested })}
-                />
+                <VectorSquareIcon color={category.data?.color} class={cn({ hidden: category.requiredNested })} />
               {:else if modalityShape === IDAH_VIDEO_POLYGON}
-                <PolygonCircleIcon
-                  color={category.data?.color}
-                  class={cn({ hidden: category.requiredNested })}
-                />
+                <PolygonCircleIcon color={category.data?.color} class={cn({ hidden: category.requiredNested })} />
               {/if}
 
               <CategoryName name={category.name} />
