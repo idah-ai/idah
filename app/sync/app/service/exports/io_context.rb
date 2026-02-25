@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "tempfile"
 require "fileutils"
 require "zip"
@@ -8,7 +10,7 @@ module Exports
 
     PREFIX = "idah-export-"
 
-    def file
+    def file(format: nil)
       if @mode && @mode != :file
         raise "IoContext is already initialized with #{@mode} mode"
       end
@@ -16,7 +18,7 @@ module Exports
       @mode = :file
       # Create a tempfile
 
-      @file ||= Tempfile.create(PREFIX)
+      @file ||= Tempfile.create([PREFIX, format ? ".#{format}" : ""])
     end
 
     def directory
@@ -26,9 +28,7 @@ module Exports
 
       @mode = :dir
 
-      @directory ||= begin
-        Dir.mktmpdir(PREFIX)
-      end
+      @directory ||= Dir.mktmpdir(PREFIX)
     end
 
     def zip_directory

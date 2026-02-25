@@ -44,7 +44,7 @@ module Spec
 
     self.max_retries = 2
 
-    def initialize(job, arguments)
+    def initialize(job_id, arguments)
       super
       self.class.run_count ||= 0
     end

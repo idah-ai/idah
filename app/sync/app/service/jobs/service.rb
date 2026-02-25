@@ -25,14 +25,13 @@ module Jobs
 
     def create(
       job_class,
-      created_by:,
       arguments: {},
       priority: 0,
       scheduled_at: Time.now,
       unicity: nil
     )
       repo.transaction do
-       record = {
+        record = {
           job_class: job_class,
           arguments: arguments,
           priority: priority,

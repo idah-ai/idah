@@ -7,8 +7,8 @@ class PluginLifecycleContext
     @plugin_name = plugin_name.to_sym
   end
 
-  def register_processor(name, class_name:, options_class_name: "Schema::Empty")
-    Processor::Registry.register(
+  def register_exports(name, class_name:, options_class_name: "Schema::Empty")
+    Exports::Registry.register(
       @plugin_name,
       name,
       class_name:,
@@ -21,6 +21,6 @@ class PluginLifecycleContext
   end
 
   def unmount_plugin
-    Processor::Registry.clear(@plugin_name)
+    Exports::Registry.clear(@plugin_name)
   end
 end

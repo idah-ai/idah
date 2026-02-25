@@ -9,9 +9,11 @@ RSpec.describe Exports::Registry do
   end
 
   # Dummy classes for testing
+  # rubocop:disable Lint/ConstantDefinitionInBlock
   class self::TestExportFormatA; end
   class self::TestExportFormatB; end
   class self::TestExportFormatC; end
+  # rubocop:enable Lint/ConstantDefinitionInBlock
 
   let(:format_a) { self.class::TestExportFormatA }
   let(:format_b) { self.class::TestExportFormatB }
@@ -47,23 +49,23 @@ RSpec.describe Exports::Registry do
     end
   end
 
-  describe ".is_valid_export_class?" do
+  describe ".valid_export_class?" do
     before do
       subject.register("image", format_a)
     end
 
     it "returns true if the class name (String) is registered" do
-      expect(subject.is_valid_export_class?(format_a.to_s)).to be true
+      expect(subject.valid_export_class?(format_a.to_s)).to be true
     end
 
     it "returns false if the class name (String) is not registered" do
-      expect(subject.is_valid_export_class?("NonExistentClass")).to be false
+      expect(subject.valid_export_class?("NonExistentClass")).to be false
     end
 
     it "returns false if passed the Class object itself (due to implementation check)" do
       # Based on current implementation: v.map(&:to_s).include?(klass)
       # If klass is the Class object, it won't be found in the array of strings.
-      expect(subject.is_valid_export_class?(format_a)).to be false
+      expect(subject.valid_export_class?(format_a)).to be false
     end
   end
 
