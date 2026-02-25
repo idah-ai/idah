@@ -116,8 +116,24 @@ module Jobs
     def scoped(action)
       auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }
-        scope.as_org_owner? { table.where(Sequel.lit("created_by_organization <@ ARRAY[?]", Verse::Sequel::PgArrayEncoder.encode(auth_context.custom_scopes[:org]))) }
-        scope.as_user? { table.where(created_by: auth_context.metadata[:id]) }
+        scope.as_org_owner? {
+          org_ids = auth_context.custom_scopes[:org]
+          project_ids = Api[:idah].dataset.projects.index_all(
+            filter: { organization_id: org_ids },
+          ).map(&:id)
+
+          frag = <<-SQL
+            EXISTS (
+              SELECT 1
+              FROM exports
+              WHERE exports.job_id = jobs.id
+                AND exports.project_id IN :project_ids
+            )
+          SQL
+
+          table.where(Sequel.lit(frag, project_ids:))
+        }
+        scope.as_user? { table.where(created_by_id: auth_context.metadata[:id]) }
       end
     end
   end
