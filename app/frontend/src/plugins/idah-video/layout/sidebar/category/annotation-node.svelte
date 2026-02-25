@@ -15,8 +15,8 @@
   import CategoryAction from "./category-action.svelte";
   import CategoryName from "./category-name.svelte";
   import { IDAH_VIDEO_POLYGON, IDAH_VIDEO_BOUNDING_BOX } from "../../../type";
-  import VectorSquareSvg from "../../../../assets/icons/vector-square.svg?raw";
-  import PolygonSvg from "../../../../assets/icons/polygon.svg?raw";
+  import VectorSquareIcon from "./vector-square-icon.svelte";
+  import PolygonCircleIcon from "./polygon-circle-icon.svelte";
 
   // Props
   type TAnnotationObj = AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
@@ -38,13 +38,13 @@
     onclick={() => onSelectAnnotation(annotation)}
   >
     <div class="flex w-full items-center gap-1 text-xs" style="padding-left: {Number(level - 1) + 0.5}rem">
-      <div class="shrink-0" style="color: {'var(--color-gray-500)'}">
+      <div class="shrink-0">
         {#if annotation.shape.type === IDAH_VIDEO_BOUNDING_BOX}
           <!-- VECTOR SQUARE ICON -->
-          {@html VectorSquareSvg}
+          <VectorSquareIcon />
         {:else if annotation.shape.type === IDAH_VIDEO_POLYGON}
           <!-- POLYGON CIRCLE ICON -->
-          {@html PolygonSvg}
+          <PolygonCircleIcon />
         {/if}
       </div>
 
