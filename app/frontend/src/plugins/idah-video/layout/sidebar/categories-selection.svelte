@@ -33,8 +33,8 @@
   import { idb_updated_at } from "../../video-annotation-activity/idb_store.svelte";
   import type { AnnotationsIndexedDB } from "../../video-annotation-activity/indexedDB";
   import type { VideoAnnotation } from "../../video-annotation-activity/VideoAnnotationContext";
-  import VectorSquareSvg from "../../../assets/icons/vector-square.svg?raw";
-  import PolygonSvg from "../../../assets/icons/polygon.svg?raw";
+  import VectorSquareIcon from "./vector-square-icon.svelte";
+  import PolygonCircleIcon from "./polygon-circle-icon.svelte";
 
   // Props
   let {
@@ -164,13 +164,13 @@
     >
       <div class="flex items-center gap-1 text-xs">
         <!-- ANNOTATION ICON -->
-        <div class="shrink-0" style="color: {'var(--color-gray-500)'}">
+        <div class="shrink-0" style="color: var(--color-gray-500)">
           {#if annotation.shape.type === IDAH_VIDEO_BOUNDING_BOX}
             <!-- VECTOR SQUARE ICON -->
-            {@html VectorSquareSvg}
+            <VectorSquareIcon />
           {:else if annotation.shape.type === IDAH_VIDEO_POLYGON}
             <!-- POLYGON CIRCLE ICON -->
-            {@html PolygonSvg}
+            <PolygonCircleIcon />
           {/if}
         </div>
 
@@ -289,13 +289,17 @@
       {/if}
     </Button>
 
-      <div class={cn("shrink-0", { hidden: category.requiredNested })} style="color: {category.data.color || 'var(--color-gray-500)'}">
-        {#if type === IDAH_VIDEO_BOUNDING_BOX}
-          {@html VectorSquareSvg}
-        {:else if type === IDAH_VIDEO_POLYGON}
-          {@html PolygonSvg}
-        {/if}
-      </div>
+    {#if type === IDAH_VIDEO_BOUNDING_BOX}
+      <VectorSquareIcon
+        color={category.data?.color}
+        class={cn({ hidden: category.requiredNested })}
+      />
+    {:else if type === IDAH_VIDEO_POLYGON}>
+      <PolygonCircleIcon
+        color={category.data?.color}
+        class={cn({ hidden: category.requiredNested })}
+      />
+    {/if}
     {@render CategoryName(category.name)}
   </div>
 {/snippet}
