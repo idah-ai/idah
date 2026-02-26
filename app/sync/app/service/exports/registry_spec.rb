@@ -10,9 +10,35 @@ RSpec.describe Exports::Registry do
 
   # Dummy classes for testing
   # rubocop:disable Lint/ConstantDefinitionInBlock
-  class TestExportFormatA; end
-  class TestExportFormatB; end
-  class TestExportFormatC; end
+  class TestExportFormatA
+    def name
+      "Format A"
+    end
+
+    def description
+      "Description for Format A"
+    end
+  end
+
+  class TestExportFormatB
+    def name
+      "Format B"
+    end
+
+    def description
+      "Description for Format B"
+    end
+  end
+
+  class TestExportFormatC
+    def name
+      "Format C"
+    end
+
+    def description
+      "Description for Format C"
+    end
+  end
   # rubocop:enable Lint/ConstantDefinitionInBlock
 
   let(:format_a) { TestExportFormatA }
