@@ -22,7 +22,6 @@
   import { refetches } from "@/utils/refetch";
 
   import type { ProjectMemberScope } from "@/security/types";
-  import { ExportsBackendDataSource } from "@/data/model/sync/exports/record";
 
   // Props
   interface Props {
@@ -94,6 +93,8 @@
       showActionFailedToast(error);
     }
   }
+
+  async function exportEntry() {}
 </script>
 
 {#if canUpdateEntry || canDeleteEntry}

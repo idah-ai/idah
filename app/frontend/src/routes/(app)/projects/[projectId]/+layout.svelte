@@ -5,6 +5,7 @@
   import { setContext, type Snippet } from "svelte";
 
   import AddNewDatasetButton from "@/components/app/datasets/buttons/add-new-dataset-button.svelte";
+  import SelectedDatasetsDropdownMenu from "@/components/app/datasets/dropdowns/selected-datasets-dropdown-menu.svelte";
   import PageHeader from "@/components/app/page/page-header.svelte";
   import PageLoading from "@/components/app/page/page-loading.svelte";
   import PageProvider from "@/components/app/page/page-provider.svelte";
@@ -12,6 +13,7 @@
   import InviteMemberButton from "@/components/app/projects/members/buttons/invite-member-button.svelte";
   import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+  import { selectedDatasets } from "@/components/app/datasets/stores";
   import { projectTabs, type ProjectTab } from "@/components/app/projects/tabs/project.tabs";
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { refetches } from "@/utils/refetch";
@@ -79,7 +81,13 @@
 
             <div class="ml-auto">
               <TabsContent value="datasets">
-                <AddNewDatasetButton />
+                <div class="flex items-center gap-2">
+                  {#if $selectedDatasets.length}
+                    <SelectedDatasetsDropdownMenu />
+                  {/if}
+
+                  <AddNewDatasetButton />
+                </div>
               </TabsContent>
 
               <TabsContent value="members">
