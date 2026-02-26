@@ -6,7 +6,9 @@ RSpec.describe Exports::Service, database: true do
   let(:auth_context) { Verse::Auth::Context[:system] }
   let(:service) { described_class.new(auth_context) }
   let(:repo) { service.exports }
-  let(:project_id) { "project-123" }
+
+  let(:project_id) { "019c9428-50d4-7b1b-a8bb-68cd3a284cef" }
+  let(:job_id) { "019bba87-650e-74e8-a68a-bc49bfff2527" }
 
   describe "#create" do
     subject {
@@ -20,7 +22,7 @@ RSpec.describe Exports::Service, database: true do
     end
 
     it "creates an export and a job" do
-      export = subject.create(1, [1, 2, 3], "MyExporter")
+      export = subject.create(project_id, [1, 2, 3], "MyExporter")
 
       expect(export).not_to be_nil
       expect(export.job_id).not_to be_nil
@@ -40,7 +42,7 @@ RSpec.describe Exports::Service, database: true do
       allow(Exports::Registry).to receive(:valid_export_class?).with("bad_class").and_return(false)
 
       expect {
-        subject.create(1, [1, 2, 3], "bad_class")
+        subject.create(project_id, [1, 2, 3], "bad_class")
       }.to raise_error(Verse::Error::Authorization, "invalid export format: `bad_class`")
     end
   end
@@ -49,8 +51,8 @@ RSpec.describe Exports::Service, database: true do
     let!(:export_id) do
       repo.create(
         {
-          job_id: 1,
-          project_id: 1,
+          job_id:,
+          project_id:,
           created_by_id: 1
         }
       )
