@@ -1,28 +1,36 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import type { DataTableCellBaseProps } from "@/components/app/datasource-table/types";
-  import Spinner from "@/components/ui/spinner/spinner.svelte";
-  import Link from "@/components/ui/text/Link.svelte";
-  import { export_download_path, ExportRecord } from "@/data/model/sync/exports/record";
-  import { SyncJobRecord, SyncJobsBackendDataSource } from "@/data/model/sync/jobs/record";
+  import { DownloadIcon } from "@lucide/svelte";
   import { onDestroy } from "svelte";
   import { writable } from "svelte/store";
 
+  import Button from "@/components/ui/button/button.svelte";
+  import { Spinner } from "@/components/ui/spinner";
+
+  import { ExportRecord, exportsBasePath } from "@/data/model/sync/exports/record";
+  import { SyncJobRecord, SyncJobsBackendDataSource } from "@/data/model/sync/jobs/record";
+
+  import type { DataTableCellBaseProps } from "@/components/app/datasource-table/types";
+
+  // Props
   let { record: exportRecord }: DataTableCellBaseProps<ExportRecord> = $props();
+
+  // Variables
+  const processingStatuses = ["running", "pending"];
 
   let projectId = page.params.projectId as string;
   let progressInterval = writable<number | undefined>(undefined); // Note: Need to use writable because it's not reactive
-  let status = $state(exportRecord.status);
+  let status = $derived((exportRecord.job as unknown as SyncJobRecord).status);
   let exports = $state(exportRecord.exports);
 
-  const processingStatuses = ["running", "pending"];
-
+  // Lifecycles
   $effect(() => {
     periodicCheckJobStatus();
 
     return () => stopPeriodicCheckJobStatus();
   });
 
+  // Functions
   /**
    * Fetch jobs data every 10 seconds, to keep the status updated
    * Note: Only fetch if the syncJob is in a processing state
@@ -43,7 +51,7 @@
             },
             noCache: true,
           });
-          console.log(jobRes);
+
           status = jobRes.data.status;
           exports = jobRes.data.exports;
         } catch (error) {
@@ -66,17 +74,24 @@
   }
 
   onDestroy(cleanup);
+
+  function openFileLink(exportId: string) {
+    window.open(`${exportsBasePath}/${exportId}/download`, "_blank");
+  }
 </script>
 
-<div>
+<!-- <div>
+  
+</div> -->
+<div class="flex w-full justify-end pr-2">
   {#key status}
     {#if processingStatuses.includes(status)}
-      <Spinner />
+      <Spinner size="sm" />
     {:else}
       {#each exports as xport (xport.id)}
-        <Link href={export_download_path(xport.id)}>
-          {xport.filename}
-        </Link>
+        <Button variant="ghost" size="icon-sm" onclick={() => openFileLink(xport.id)}>
+          <DownloadIcon />
+        </Button>
       {/each}
     {/if}
   {/key}

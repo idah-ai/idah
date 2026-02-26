@@ -24,6 +24,7 @@ export const exportsColumns: ColumnsSettings<ExportRecord> = {
   action: {
     label: "Action",
     dataType: "string",
+    align: "right",
     clickable: false,
     sortable: false,
     filterable: false,
