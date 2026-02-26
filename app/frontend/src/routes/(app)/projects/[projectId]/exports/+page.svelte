@@ -77,7 +77,7 @@
     listOptions={{
       fields: {
         [ExportRecord.type]: ["id", "job_id"],
-        [SyncJobRecord.type]: ["id", "arguments"],
+        [SyncJobRecord.type]: ["id", "arguments", "status"],
       },
       filters: {
         project_id: projectId,
