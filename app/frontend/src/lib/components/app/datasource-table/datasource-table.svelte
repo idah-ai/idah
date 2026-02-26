@@ -13,6 +13,7 @@
   import DataTablePaginator from "@/components/app/datasource-table/datasource-table-paginator.svelte";
   import DataTableToggleColumns from "@/components/app/datasource-table/datasource-table-toggle-columns.svelte";
   import DataTableToolbarActions from "@/components/app/datasource-table/datasource-table-toolbar-actions.svelte";
+  import Checkbox from "@/components/ui/checkbox/checkbox.svelte";
   import TableHead from "@/components/ui/table/table-head.svelte";
   import TableHeader from "@/components/ui/table/table-header.svelte";
   import TableRow from "@/components/ui/table/table-row.svelte";
@@ -44,8 +45,10 @@
     dataSource,
     listOptions,
     columns: _columns,
+    selectable = false,
     hidePagination,
     disabledActiveStateFilterSortKeys,
+    onRowsSelected,
     onLoadSetContexts = async () => ({}),
     actions,
     addNewRecordButton,
@@ -82,6 +85,8 @@
   });
 
   let columns = $state(_columns);
+  let selectedRecords = $state<T[]>([]);
+  let selectAll: boolean = $derived(selectedRecords.length === tableData.response.data.length);
   let haveSomeHidableColumns: boolean = $derived(Object.values(columns).some((column) => column.hidable));
   let isFiltering: boolean = $derived(Object.keys(tablePreferences.filters).length > 0);
 
@@ -299,6 +304,21 @@
   function hideColumn(columnToHide: string): void {
     columns[columnToHide].visible = false;
   }
+
+  function toggleSelectAll(checked: boolean): void {
+    selectedRecords = checked ? [...tableData.response.data] : [];
+    onRowsSelected?.(selectedRecords);
+  }
+
+  function toggleRow(record: T): void {
+    if (selectedRecords.find((r) => r.id === record.id)) {
+      selectedRecords = selectedRecords.filter((r) => r.id !== record.id);
+    } else {
+      selectedRecords = [...selectedRecords, record];
+    }
+
+    onRowsSelected?.(selectedRecords);
+  }
 </script>
 
 <div id="datasource-table-container" class="flex flex-1 flex-col gap-2">
@@ -324,13 +344,20 @@
       <!-- DATA TABLE::TABLE::HEADER -->
       <TableHeader>
         <TableRow>
+          {#if selectable}
+            <TableHead class="bg-primary/10 w-16 rounded-tl-md px-6">
+              <Checkbox checked={selectAll} onCheckedChange={toggleSelectAll} />
+            </TableHead>
+          {/if}
+
           {#each Object.entries(columns) as [columnKey, columnSetting] (columnKey)}
             {@const { label, align, filterable, sortable, visible } = columnSetting}
             {#if visible}
               <TableHead
                 class={cn(
-                  "bg-primary/10 first:rounded-tl-md last:rounded-tr-md",
+                  "bg-primary/10  last:rounded-tr-md",
                   align ? `text-${align}` : "text-left",
+                  selectable ? "" : "first:rounded-tl-md",
                 )}
               >
                 {#if !filterable && !sortable}
@@ -355,7 +382,7 @@
       {#if tableData.status === "loading"}
         <DataTableLoading />
       {:else if tableData.status === "loaded"}
-        <DataTableBody {tableData} {columns} {isFiltering} />
+        <DataTableBody {tableData} {columns} {isFiltering} {selectable} {selectedRecords} onToggleRow={toggleRow} />
       {:else}
         <DataTableError />
       {/if}

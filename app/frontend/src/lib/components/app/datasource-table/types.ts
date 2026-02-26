@@ -82,6 +82,7 @@ export interface DataTableBaseProps<T extends Record> {
   dataSource: BackendDataSource<T>;
   listOptions?: ListOptions;
   columns: ColumnsSettings<T>;
+  selectable?: boolean;
   hidePagination?: boolean;
 
   /**
@@ -99,6 +100,7 @@ export interface DataTableBaseProps<T extends Record> {
   disabledActiveStateFilterSortKeys?: Array<string>;
 
   // Functions
+  onRowsSelected?: (records: T[]) => void;
   onLoadSetContexts?: (response: CollectionResponse<T>) => Promise<Hash>;
 
   // Snippets
