@@ -19,10 +19,10 @@
   import { idb_updated_at } from "../../video-annotation-activity/idb_store.svelte";
 
   import type {
-    AnnotationMetadata,
-    AnnotationObj,
-    AnnotationShape,
-    AnnotationValue,
+      AnnotationMetadata,
+      AnnotationObj,
+      AnnotationShape,
+      AnnotationValue,
   } from "@/context/AnnotationContext";
   import type { AnnotationsIndexedDB } from "../../video-annotation-activity/indexedDB";
 
@@ -153,22 +153,21 @@
   }
 
   function toggleCategory(e: MouseEvent, category: CategoryDefinition) {
-    e.preventDefault();
+  e.preventDefault();
 
-    // Allow selection if category is not requiredNested,
-    // or if it's a parent that exists in the original categories list
-    if (categories.find((c) => c.id === category.id)) {
-      onSelectCategory(category.id);
-    }
-
-    if (category.nestedCategories) {
-      // Toggle the category open state manually
-      manualToggleStates[category.id] = !openStates[category.id];
-    }
-
-    // Force re-render of annotation counts
-    forceRender++;
+  if (categories.find((c) => c.id === category.id)) {
+    onSelectCategory(category.id);
   }
+
+  if (category.nestedCategories) {
+    manualToggleStates = {
+      ...manualToggleStates,
+      [category.id]: !openStates[category.id]
+    };
+  }
+
+  forceRender++;
+}
 
   function getFilteredAnnotations(annotations: Array<TAnnotationObj>): {
     annotations: Array<TAnnotationObj>;
@@ -223,7 +222,7 @@
   parent: string[] = [],
   level: number = 1,
 )}
-  <Collapsible open={currentModeIsSameAsShape ? !!category : openStates[category.id] || false}>
+  <Collapsible open={openStates[category.id] || false}>
     {#key `${forceRender}-${$idb_updated_at}-${modalityShape}`}
       {#await haveAnnotationsInCategory(category.id) then hasAnnoations}
         <CollapsibleTrigger
@@ -247,12 +246,15 @@
                   hidden: currentModeIsSameAsShape && selectedAnnotationId,
                 })}
                 onclick={(e) => {
-                  e.stopPropagation();
-                  if (category.nestedCategories || hasChildren) {
-                    // Toggle the category open state manually
-                    manualToggleStates[category.id] = !openStates[category.id];
-                  }
-                }}
+  e.stopPropagation();
+
+  if (category.nestedCategories || hasChildren) {
+    manualToggleStates = {
+      ...manualToggleStates,
+      [category.id]: !openStates[category.id]
+    };
+  }
+}}
               >
                 {@const isSelected = selectedCategory == category.id}
 
