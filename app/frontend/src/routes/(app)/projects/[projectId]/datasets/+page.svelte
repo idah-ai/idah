@@ -8,6 +8,7 @@
   import DatasourceTable from "@/components/app/datasource-table/datasource-table.svelte";
 
   import { projectDatasetColumns } from "@/components/app/datasets/datasource-tables/project-dataset.columns";
+  import { selectedDatasets } from "@/components/app/datasets/stores";
   import { projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
@@ -33,6 +34,11 @@
     { label: project.name, href: resolve(`/projects/${projectId}/datasets`) },
     { label: "Datasets" },
   ]);
+
+  // Functions
+  function onRowsSelected(records: DatasetRecord[]) {
+    $selectedDatasets = records;
+  }
 
   // Lifecycle
   onMount(async () => {
@@ -60,6 +66,7 @@
     refetchKey="datasets"
     {columns}
     dataSource={datasetsBackendDataSource}
+    disabledActiveStateFilterSortKeys={["project_id"]}
     listOptions={{
       fields: {
         [DatasetRecord.type]: ["id", "name", "status", "modality", "progress", "created_at", "updated_at"],
@@ -72,6 +79,8 @@
       included: ["entries"],
       sort: ["-created_at"],
     }}
+    selectable
+    {onRowsSelected}
   >
     {#snippet addNewRecordButton()}
       <AddNewDatasetButton />
