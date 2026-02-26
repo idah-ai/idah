@@ -1,6 +1,5 @@
 <script lang="ts">
   import { CircleXIcon } from "@lucide/svelte";
-  import { SvelteMap } from "svelte/reactivity";
 
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import SidebarContent from "@/components/ui/sidebar/sidebar-content.svelte";
@@ -12,10 +11,10 @@
   import CategorySidebar from "./category-sidebar.svelte";
 
   import type {
-    AnnotationMetadata,
-    AnnotationObj,
-    AnnotationShape,
-    AnnotationValue,
+      AnnotationMetadata,
+      AnnotationObj,
+      AnnotationShape,
+      AnnotationValue,
   } from "$lib/context/AnnotationContext";
   import type { IActivityContext, IConfigValue } from "@/plugin/interface/Activity";
 
@@ -66,20 +65,23 @@
   let searchValue = $state("");
   let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
-  let filteredTools = $derived.by(() => {
-    if (!searchValue) return tools;
+let filteredTools = $derived.by(() => {
+  if (!searchValue) return tools;
 
-    const filtered = new SvelteMap<string, IConfigValue[]>();
-    for (const [toolType, categories] of tools) {
-      const matchingCategories = categories.filter((category) =>
-        category.label.toLowerCase().includes(searchValue.toLowerCase()),
-      );
-      if (matchingCategories.length > 0) {
-        filtered.set(toolType, matchingCategories);
-      }
+  const result: [string, IConfigValue[]][] = [];
+
+  for (const [toolType, categories] of tools) {
+    const matching = categories.filter((category) =>
+      category.label.toLowerCase().includes(searchValue.toLowerCase())
+    );
+
+    if (matching.length > 0) {
+      result.push([toolType, matching]);
     }
-    return filtered;
-  });
+  }
+
+  return result;
+});
 
   // Functions
   function categorySelection(shape_type: string, category?: string) {
