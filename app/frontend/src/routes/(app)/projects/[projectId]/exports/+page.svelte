@@ -12,9 +12,12 @@
   import { refetches } from "@/utils/refetch";
 
   import { exportsColumns } from "@/components/app/projects/exports/datasource-tables/export-columns";
+  import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { ExportRecord, ExportsBackendDataSource } from "@/data/model/sync/exports/record";
   import { SyncJobRecord } from "@/data/model/sync/jobs/record";
 
+  import type { Record } from "@/data/model/Record";
+  import type { CollectionResponse } from "@/data/model/types";
   import type { ProjectMemberScope } from "@/security/types";
 
   // Contexts
@@ -43,6 +46,24 @@
     canExport = (await currentAccount?.can("create", "sync:exports", ["as_org_owner", as_project_owner])) || false;
     columns.action.visible = canExport;
   });
+
+  async function onLoadSetContexts<T extends Record = ExportRecord>(response: CollectionResponse<T>) {
+    /** Fetch related datasets from exportRecord.job.arguments.dataset_ids */
+    const datasetIds = Array.from(
+      new Set(response.data.map((exportRecord) => exportRecord.job.arguments.dataset_ids).flat()),
+    );
+
+    const datasetsRes = await datasetsBackendDataSource.list({
+      fields: {
+        [DatasetRecord.type]: ["id", "name"],
+      },
+      filters: {
+        id: datasetIds,
+      },
+    });
+
+    return { datasets: datasetsRes.data };
+  }
 </script>
 
 {#key $refetches.projectMembers.list}
@@ -63,5 +84,6 @@
       },
       included: ["job"],
     }}
+    {onLoadSetContexts}
   ></DatasourceTable>
 {/key}
