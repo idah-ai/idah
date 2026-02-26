@@ -7,12 +7,10 @@ class PluginLifecycleContext
     @plugin_name = plugin_name.to_sym
   end
 
-  def register_exports(name, class_name:, options_class_name: "Schema::Empty")
+  def register_exports(modalities, klass)
     Exports::Registry.register(
-      @plugin_name,
-      name,
-      class_name:,
-      options_class_name:
+      modalities,
+      klass
     )
   end
 
