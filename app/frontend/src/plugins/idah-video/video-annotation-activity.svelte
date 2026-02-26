@@ -1147,9 +1147,10 @@
     <PopoverTrigger></PopoverTrigger>
 
     <PopoverContent class="w-auto min-w-64 p-0">
+
+    <div class="h-auto max-h-64 overflow-y-scroll">
       {#if annotationValue.category}
- <ResizablePaneGroup direction="vertical">
-      <ResizablePane defaultSize={60} minSize={15}>
+     
           <CategoryProperties
             type={mode}
             selectedCategory={annotationValue.category}
@@ -1161,8 +1162,6 @@
             onEditValue={(value) => value && onEditValue(value, mode)}
             disabled={false}
           />
-        </ResizablePane>
-        </ResizablePaneGroup>
       {:else}
         <AnnotationSidebar
           sidebarWidthRem={annotationSidebarWidthRem}
@@ -1179,7 +1178,9 @@
           {mode}
           selectedAnnotationId={selectedAnnotation?.metadata.id}
         />
-      {/if}
+           {/if}
+          </div>
+
       <div class=" flex justify-end gap-2 p-2">
         <Button
           size="sm"
