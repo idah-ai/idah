@@ -34,12 +34,15 @@ module Exports
             )
 
             entry.annotations.each do |annotation|
+              dimensions = annotation.annotation.dimensions
+              type = dimensions.delete(:type)
+
               system(
                 "bin/updcli-static --input #{file_path} " \
                 "annotation create --id \"#{annotation.annotation.id}\" "\
                 "--entry_id \"#{entry.entry.id}\" "\
-                "--type \"#{annotation.annotation.type}\" "\
-                "--shape '#{annotation.annotation.dimensions.to_json}' "\
+                "--type \"#{type}\" "\
+                "--shape '#{dimensions.to_json}' "\
                 "--annotation '#{annotation.annotation.annotation.to_json}'",
                 exception: true
               )
