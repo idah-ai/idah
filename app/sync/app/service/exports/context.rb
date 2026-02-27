@@ -11,7 +11,7 @@ module Exports
     end
 
     def io
-      @io_context ||= IoContext.new
+      @io ||= IoContext.new
     end
 
     def progress=(value)

@@ -10,6 +10,48 @@ RSpec.describe Exports::IoContext do
     io_context.cleanup
   end
 
+  describe "#file=" do
+    it "sets the file" do
+      test_file = Tempfile.new("test")
+      io_context.file = test_file
+      expect(io_context.instance_variable_get(:@file)).to eq(test_file)
+    end
+
+    it "sets the mode to :file" do
+      test_file = Tempfile.new("test")
+      io_context.file = test_file
+      expect(io_context.mode).to eq(:file)
+    end
+
+    it "raises an error if mode is already set to directory" do
+      test_file = Tempfile.new("test")
+      io_context.directory
+      expect { io_context.file = test_file }.to raise_error("IoContext is already initialized with dir mode")
+      test_file.close
+      test_file.unlink
+    end
+
+    it "allows setting file when mode is already :file" do
+      first_file = Tempfile.new("first")
+      second_file = Tempfile.new("second")
+
+      io_context.file = first_file
+      expect { io_context.file = second_file }.not_to raise_error
+      expect(io_context.instance_variable_get(:@file)).to eq(second_file)
+    end
+
+    it "cleans up existing file when setting a new file" do
+      first_file = Tempfile.new("first")
+      first_file_path = first_file.path
+
+      io_context.file = first_file
+      second_file = Tempfile.new("second")
+      io_context.file = second_file
+
+      expect(File.exist?(first_file_path)).to be false
+    end
+  end
+
   describe "#file" do
     it "creates a temp file" do
       file = io_context.file
