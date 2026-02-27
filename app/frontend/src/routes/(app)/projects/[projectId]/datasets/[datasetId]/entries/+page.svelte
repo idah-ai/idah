@@ -31,7 +31,6 @@
     ArrowDownZAIcon,
     ArrowUpDownIcon,
     ChevronsUpDownIcon,
-    DownloadIcon,
     FunnelIcon,
     LayoutListIcon,
     PlusIcon,
@@ -108,7 +107,6 @@
 
   let canUpdateEntry = $state(false);
   let canDeleteEntry = $state(false);
-  let canExport = $state(false);
   let currentPage: number = $state(1);
   let itemsPerPage: number = $state(10);
   let selectedRows: string[] = $state([]);
@@ -133,7 +131,6 @@
       (await currentAccount?.can("update", "dataset:entries", ["as_org_owner", as_project_owner])) || false;
     canDeleteEntry =
       (await currentAccount?.can("delete", "dataset:entries", ["as_org_owner", as_project_owner])) || false;
-    canExport = (await currentAccount?.can("create", "sync:exports", ["as_org_owner", as_project_owner])) || false;
   });
 
   pageBreadcrumbsStore.set([
@@ -178,9 +175,6 @@
   // Functions
   function openNewEntryFormModal(): void {
     openNewEntryModal = true;
-  }
-  function openExportFormModal(): void {
-    openExportModal = true;
   }
 
   async function fetchEntries(): Promise<void> {
