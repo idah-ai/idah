@@ -971,9 +971,6 @@
   function selectAnnotation(annotation?: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) {
     selectedAnnotation = annotation;
 
-    // Clear existing selection shortcuts first
-    unregisterSelectionShortcuts();
-
     /**
      * Set mode to the annotation shape type when selecting an annotation
      */
