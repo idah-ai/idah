@@ -16,6 +16,8 @@
   import { showActionFailedToast } from "@/utils/error/error.toasts";
 
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
+  import { Item, ItemContent, ItemTitle } from "@/components/ui/item";
+  import { ScrollArea } from "@/components/ui/scroll-area";
   import type { LabelValue } from "@/utils/types";
 
   // Props
@@ -86,35 +88,47 @@
     <DialogTitle>{title}</DialogTitle>
   {/snippet}
 
-  <!-- SELECT FIELD TO SELECT FORMAT -->
-  {#await loadExportFormatChoices() then choices}
-    <SingleSelectField
-      name="{resource}/exporter"
-      label="Format"
-      placeholder="Select an export format"
-      required
-      {choices}
-      value={exporter}
-      onSelected={(selectedValue) => {
-        exporter = selectedValue as string;
-      }}
-    >
-      {#snippet slotChoice({ choice, select })}
-        {@const { label, description, value } = choice}
-        <CommandItem value={String(value)} onSelect={() => select(choice)}>
-          <CheckIcon
-            class={cn("mr-2 size-4", {
-              "opacity-0": value !== exporter,
-            })}
-          />
-          <div class="flex flex-col gap-0">
-            <p>{label}</p>
-            <small class="text-muted-foreground">{description}</small>
-          </div>
-        </CommandItem>
-      {/snippet}
-    </SingleSelectField>
-  {/await}
+  <div class="flex flex-col gap-4">
+    <!-- SELECT FIELD TO SELECT FORMAT -->
+    {#await loadExportFormatChoices() then choices}
+      <SingleSelectField
+        name="{resource}/exporter"
+        label="Format"
+        placeholder="Select an export format"
+        required
+        {choices}
+        value={exporter}
+        onSelected={(selectedValue) => {
+          exporter = selectedValue as string;
+        }}
+      >
+        {#snippet slotChoice({ choice, select })}
+          {@const { label, description, value } = choice}
+          <CommandItem value={String(value)} onSelect={() => select(choice)}>
+            <CheckIcon
+              class={cn("mr-2 size-4", {
+                "opacity-0": value !== exporter,
+              })}
+            />
+            <div class="flex flex-col gap-0">
+              <p>{label}</p>
+              <small class="text-muted-foreground">{description}</small>
+            </div>
+          </CommandItem>
+        {/snippet}
+      </SingleSelectField>
+    {/await}
+
+    <ScrollArea class="h-40">
+      {#each datasetRecords as datasetRecord (datasetRecord.id)}
+        <Item class="py-2">
+          <ItemContent>
+            <ItemTitle>{datasetRecord.name}</ItemTitle>
+          </ItemContent>
+        </Item>
+      {/each}
+    </ScrollArea>
+  </div>
 
   {#snippet confirm()}
     <Button disabled={!exporter} loading={exporting} onclick={exportDataset}>Export</Button>
