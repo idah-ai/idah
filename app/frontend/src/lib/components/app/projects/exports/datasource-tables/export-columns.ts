@@ -21,6 +21,20 @@ export const exportsColumns: ColumnsSettings<ExportRecord> = {
     hidable: false,
     cellComponent: ExportDatasetNameCell,
   },
+  created_at: {
+    label: "Exported at",
+    dataType: "datetime",
+    clickable: false,
+    sortable: true,
+    filterable: true,
+    filterOptions: {
+      filterKey: "created_at",
+      filterBy: "date-range",
+      filterOperation: "gte",
+    },
+    visible: true,
+    hidable: false,
+  },
   action: {
     label: "Action",
     dataType: "string",

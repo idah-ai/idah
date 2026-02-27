@@ -76,7 +76,7 @@
     disabledActiveStateFilterSortKeys={["project_id"]}
     listOptions={{
       fields: {
-        [ExportRecord.type]: ["id", "job_id"],
+        [ExportRecord.type]: ["id", "job_id", "created_at"],
         [SyncJobRecord.type]: ["id", "arguments", "status"],
       },
       filters: {
