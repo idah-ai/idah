@@ -2,11 +2,12 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
-  import { DownloadIcon, Trash2Icon } from "@lucide/svelte";
+  import { ChevronsUpDownIcon, DownloadIcon, Trash2Icon } from "@lucide/svelte";
   import { onMount } from "svelte";
 
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
+  import ExportFormModal from "@/components/app/projects/exports/overlays/export-form-modal.svelte";
   import Button from "@/components/ui/button/button.svelte";
 
   import { selectedDatasets } from "@/components/app/datasets/stores";
@@ -17,13 +18,16 @@
   import { refetches } from "@/utils/refetch";
 
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
+  import type { ProjectMemberScope } from "@/security/types";
 
   // Variables
-  let projectId = page.params.projectId;
+  let projectId = page.params.projectId as string;
   let selectedDatasetsCount = $derived($selectedDatasets.length);
   let deleting = $state(false);
   let canExportDataset = $state(false);
   let canDeleteDataset = $state(false);
+  let openExportFormModal = $state<boolean>(false);
+  let openConfirmDeleteDatasetsModal = $state<boolean>(false);
   let menus: IDropdownMenus = $derived({
     actions: {
       items: [
@@ -31,20 +35,21 @@
           label: "Export",
           icon: DownloadIcon,
           hidden: !canExportDataset,
-          action: async () => {},
+          action: () => {
+            openExportFormModal = true;
+          },
         },
         {
           label: "Delete",
           icon: Trash2Icon,
           hidden: !canDeleteDataset,
-          action: async () => {
+          action: () => {
             openConfirmDeleteDatasetsModal = true;
           },
         },
       ],
     },
   });
-  let openConfirmDeleteDatasetsModal: boolean = $state(false);
 
   // Lifecycle
   onMount(async () => {
@@ -53,8 +58,17 @@
 
   // Functions
   async function checkRights() {
-    canDeleteDataset = (await $authStatus.authContext?.can("delete", "dataset:datasets", ["as_org_owner"])) || false;
-    canExportDataset = (await $authStatus.authContext?.can("create", "sync:exports", ["as_org_owner"])) || false;
+    const as_project_owner: { as_user: ProjectMemberScope } = {
+      as_user: {
+        projectId,
+        projectMemberRoles: ["project_owner"],
+      },
+    };
+
+    canDeleteDataset =
+      (await $authStatus.authContext?.can("delete", "dataset:datasets", ["as_org_owner", as_project_owner])) || false;
+    canExportDataset =
+      (await $authStatus.authContext?.can("create", "sync:exports", ["as_org_owner", as_project_owner])) || false;
   }
 
   async function deleteDatasets() {
@@ -83,7 +97,22 @@
 </script>
 
 {#if canExportDataset || canDeleteDataset}
-  <DropdownMenus {menus} align="end" />
+  <DropdownMenus {menus} align="end">
+    {#snippet trigger({ props })}
+      {@const isOpen = props["data-state"] === "open"}
+      <Button variant={isOpen ? "secondary" : "outline"} {...props}>
+        {$selectedDatasets.length} selected
+        <ChevronsUpDownIcon />
+      </Button>
+    {/snippet}
+  </DropdownMenus>
+
+  <ExportFormModal
+    title="Export Format"
+    action="create"
+    datasetRecords={$selectedDatasets}
+    bind:open={openExportFormModal}
+  />
 
   <ConfirmModal
     title="Delete Datasets"

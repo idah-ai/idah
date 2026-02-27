@@ -1,13 +1,12 @@
 <script lang="ts">
-  import { page } from "$app/state";
   import { DownloadIcon } from "@lucide/svelte";
   import { onDestroy } from "svelte";
   import { writable } from "svelte/store";
 
   import Button from "@/components/ui/button/button.svelte";
-  import { Spinner } from "@/components/ui/spinner";
+  import Progress from "@/components/ui/progress/progress.svelte";
 
-  import { ExportRecord, exportsBasePath } from "@/data/model/sync/exports/record";
+  import { ExportRecord, ExportsBackendDataSource, exportsBasePath } from "@/data/model/sync/exports/record";
   import { SyncJobRecord, SyncJobsBackendDataSource } from "@/data/model/sync/jobs/record";
 
   import type { DataTableCellBaseProps } from "@/components/app/datasource-table/types";
@@ -18,10 +17,9 @@
   // Variables
   const processingStatuses = ["running", "pending"];
 
-  let projectId = page.params.projectId as string;
   let progressInterval = writable<number | undefined>(undefined); // Note: Need to use writable because it's not reactive
   let status = $derived((exportRecord.job as unknown as SyncJobRecord).status);
-  let exports = $state(exportRecord.exports);
+  let jobProgress: number = $state(1);
 
   // Lifecycles
   $effect(() => {
@@ -39,21 +37,49 @@
     if (processingStatuses.includes(status)) {
       $progressInterval = setInterval(async () => {
         try {
+          let jobId = exportRecord.job_id;
+          let jobRecord: SyncJobRecord | null = null;
+
+          /**
+           * If job_id is null (should happen when the export was created and job is not yet assigned),
+           * fetch the export again to get the job_id
+           */
+          if (!jobId) {
+            const exportRes = await ExportsBackendDataSource.get(exportRecord.id, {
+              included: ["job"],
+              fields: {
+                [ExportRecord.type]: ["id", "job_id"],
+              },
+              noCache: true,
+            });
+            exportRecord = exportRes.data;
+            jobId = exportRecord.job_id;
+            jobRecord = exportRes.data.job as unknown as SyncJobRecord;
+          }
+          if (!jobId) return;
+          if (!jobRecord) return;
+
+          /** If job is ready, stop the interval */
           if (!processingStatuses.includes(status)) {
             stopPeriodicCheckJobStatus();
             return;
           }
 
-          const jobRes = await SyncJobsBackendDataSource.get(exportRecord.id, {
+          const jobRes = await SyncJobsBackendDataSource.get(jobId, {
             included: ["exports"],
             fields: {
-              [SyncJobRecord.type]: ["status", "exports.id"],
+              [SyncJobRecord.type]: ["progress", "status"],
             },
             noCache: true,
           });
 
           status = jobRes.data.status;
-          exports = jobRes.data.exports;
+          jobProgress = jobRes.data.progress;
+
+          if (jobProgress === 1) {
+            stopPeriodicCheckJobStatus();
+            return;
+          }
         } catch (error) {
           console.error("Error fetching updated export:", error);
           stopPeriodicCheckJobStatus();
@@ -80,19 +106,19 @@
   }
 </script>
 
-<!-- <div>
-  
-</div> -->
 <div class="flex w-full justify-end pr-2">
-  {#key status}
-    {#if processingStatuses.includes(status)}
-      <Spinner size="sm" />
-    {:else}
-      {#each exports as xport (xport.id)}
-        <Button variant="ghost" size="icon-sm" onclick={() => openFileLink(xport.id)}>
-          <DownloadIcon />
-        </Button>
-      {/each}
-    {/if}
-  {/key}
+  {#if jobProgress < 1}
+    <div class="flex flex-col gap-1">
+      <div class="text-muted-foreground flex items-center justify-between gap-4 text-xs font-medium">
+        <span> Processing export... </span>
+        <span>{Math.round(jobProgress * 100)}%</span>
+      </div>
+
+      <Progress value={jobProgress * 100} />
+    </div>
+  {:else}
+    <Button variant="ghost" size="icon-sm" onclick={() => openFileLink(exportRecord.id)}>
+      <DownloadIcon />
+    </Button>
+  {/if}
 </div>
