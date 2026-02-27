@@ -10,6 +10,7 @@
   import { CommandItem } from "@/components/ui/command";
   import { DialogTitle } from "@/components/ui/dialog";
 
+  import { showToast } from "@/components/ui/toast/index.svelte";
   import { DatasetRecord } from "@/data/model/dataset/dataset-record";
   import { ExportRecord, ExportsBackendDataSource } from "@/data/model/sync/exports/record";
   import { cn } from "@/utils";
@@ -60,6 +61,10 @@
         exporter,
       });
       goto(resolve(`/projects/${projectId}/exports`));
+      showToast.success({
+        title: "Dataset exported",
+        description: "The dataset(s) export is in progress.",
+      });
     } catch (error) {
       showActionFailedToast(error);
       exporting = false;
