@@ -871,14 +871,7 @@
       name: "bounding box tool",
       apply: () => {
         mode = IDAH_VIDEO_BOUNDING_BOX;
-        selectedAnnotation = {
-          shape: { type: IDAH_VIDEO_BOUNDING_BOX },
-          value: {},
-          metadata: { id: "", createdAt: new Date(), updatedAt: new Date() },
-          synced: false,
-          locked: false,
-          hidden: false,
-        };
+        selectedAnnotation = undefined;
         annotationValue = {};
       },
       undo: () => {},
@@ -904,14 +897,7 @@
       name: "polygon tool",
       apply: () => {
         mode = IDAH_VIDEO_POLYGON;
-        selectedAnnotation = {
-          shape: { type: IDAH_VIDEO_POLYGON },
-          value: {},
-          metadata: { id: "", createdAt: new Date(), updatedAt: new Date() },
-          synced: false,
-          locked: false,
-          hidden: false,
-        };
+        selectedAnnotation = undefined;
         annotationValue = {};
       },
       undo: () => {},
