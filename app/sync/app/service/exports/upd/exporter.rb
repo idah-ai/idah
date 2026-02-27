@@ -11,11 +11,11 @@ module Exports
         file_path = "/tmp/idah-export-#{Time.now.to_i}.upd"
 
         # Init UPD file
-        system("bin/datset-static --input #{file_path} init", exception: true)
+        system("bin/updcli-static --input #{file_path} init", exception: true)
 
         context.datasets.each do |dataset|
           system(
-            "bin/datset-static --input #{file_path} " \
+            "bin/updcli-static --input #{file_path} " \
             "dataset create --id \"#{dataset.dataset.id}\" "\
             "--name \"#{dataset.dataset.name}\" "\
             "--modality #{dataset.dataset.modality}",
@@ -26,7 +26,7 @@ module Exports
             entry_url = "https://idah.ingedata.ai/api/v1/media/medias/files/#{entry.entry.resource}"
 
             system(
-              "bin/datset-static --input #{file_path} " \
+              "bin/updcli-static --input #{file_path} " \
               "entry create --id \"#{entry.entry.id}\" "\
               "--dataset_id \"#{dataset.dataset.id}\" "\
               "--url \"#{entry_url}\" ",
@@ -34,15 +34,12 @@ module Exports
             )
 
             entry.annotations.each do |annotation|
-              dimensions = annotation.annotation.dimensions
-              type = dimensions.delete(:type)
-
               system(
-                "bin/datset-static --input #{file_path} " \
+                "bin/updcli-static --input #{file_path} " \
                 "annotation create --id \"#{annotation.annotation.id}\" "\
                 "--entry_id \"#{entry.entry.id}\" "\
-                "--type \"#{type}\" "\
-                "--shape '#{dimensions.to_json}' "\
+                "--type \"#{annotation.annotation.type}\" "\
+                "--shape '#{annotation.annotation.dimensions.to_json}' "\
                 "--annotation '#{annotation.annotation.annotation.to_json}'",
                 exception: true
               )

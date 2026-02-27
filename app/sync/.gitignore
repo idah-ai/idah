@@ -5,9 +5,6 @@ coverage
 
 tmp/*
 
-# contains updcli
-bin/*
-
 # ignore all files in config/keys except the dev key, for security purposes
 config/keys/*
 !config/keys/private.dev.pem
