@@ -118,6 +118,9 @@ module Jobs
         scope.all? { table }
         scope.as_org_owner? {
           org_ids = auth_context.custom_scopes[:org]
+
+          # Get project IDs for the organizations the user has access to.
+          # This ensures that org owners can access jobs for projects within their organizations.
           project_ids = Api[:idah].dataset.projects.index_all(
             filter: { organization_id: org_ids },
             fields: { "dataset:projects": ["id"] }
@@ -134,7 +137,27 @@ module Jobs
 
           table.where(Sequel.lit(frag, project_ids:))
         }
-        scope.as_user? { table.where(created_by_id: auth_context.metadata[:id]) }
+        scope.as_user? {
+          account_id = auth_context.metadata[:id]
+
+          # Get project IDs where the user is a project owner.
+          # This ensures that users can access jobs for projects they own.
+          project_ids = Api[:idah].dataset.project_members.index_all(
+            filter: { account_id:, role: "project_owner", enabled: true },
+            fields: { "dataset:project_members": ["project_id"] }
+          ).map(&:project_id).uniq
+
+          frag = <<-SQL
+            EXISTS (
+              SELECT 1
+              FROM exports
+              WHERE exports.job_id = jobs.id
+                AND exports.project_id IN :project_ids
+            )
+          SQL
+
+          table.where(Sequel.lit(frag, project_ids:))
+        }
       end
     end
   end

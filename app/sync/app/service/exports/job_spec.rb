@@ -19,8 +19,7 @@ RSpec.describe Exports::Job do
 
   let(:test_exporter_class) do
     Class.new do
-      def initialize
-      end
+      def initialize; end
 
       def export(context)
         context.io.file.write("mock data")

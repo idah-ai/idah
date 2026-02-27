@@ -10,14 +10,40 @@ RSpec.describe Exports::Registry do
 
   # Dummy classes for testing
   # rubocop:disable Lint/ConstantDefinitionInBlock
-  class self::TestExportFormatA; end
-  class self::TestExportFormatB; end
-  class self::TestExportFormatC; end
+  class TestExportFormatA
+    def name
+      "Format A"
+    end
+
+    def description
+      "Description for Format A"
+    end
+  end
+
+  class TestExportFormatB
+    def name
+      "Format B"
+    end
+
+    def description
+      "Description for Format B"
+    end
+  end
+
+  class TestExportFormatC
+    def name
+      "Format C"
+    end
+
+    def description
+      "Description for Format C"
+    end
+  end
   # rubocop:enable Lint/ConstantDefinitionInBlock
 
-  let(:format_a) { self.class::TestExportFormatA }
-  let(:format_b) { self.class::TestExportFormatB }
-  let(:format_c) { self.class::TestExportFormatC }
+  let(:format_a) { TestExportFormatA }
+  let(:format_b) { TestExportFormatB }
+  let(:format_c) { TestExportFormatC }
 
   describe ".register" do
     it "registers a class for a single string modality" do
@@ -105,6 +131,28 @@ RSpec.describe Exports::Registry do
 
     it "returns empty set if no matches found" do
       expect(subject.list_export_format(["unknown"])).to be_empty
+    end
+  end
+
+  describe ".list_export_format_details" do
+    before do
+      subject.register("detailed", format_a)
+    end
+
+    it "returns detailed information for each export format" do
+      details = subject.list_export_format_details(["detailed"])
+      expect(details).to be_an(Array)
+      expect(details.size).to eq(1)
+
+      detail = details.first
+      expect(detail[:name]).to eq("Format A")
+      expect(detail[:description]).to eq("Description for Format A")
+      expect(detail[:exporter]).to eq(format_a.to_s)
+    end
+
+    it "returns empty array if no formats match" do
+      details = subject.list_export_format_details(["nonexistent"])
+      expect(details).to be_empty
     end
   end
 end
