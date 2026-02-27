@@ -8,28 +8,49 @@ module Exports
       def options = Verse::Schema.empty
 
       def export(context)
-        # Example for now - just export all datasets + entries + annotations to a single JSON file.
-        file = context.io.file(format: "json")
+        file_path = "/tmp/idah-export-#{Time.now.to_i}.upd"
 
-        records = []
+        # Init UPD file
+        system("bin/datset-static --input #{file_path} init", exception: true)
+
         context.datasets.each do |dataset|
-          record = { dataset: dataset.dataset.data[:attributes], entries: [] }
+          system(
+            "bin/datset-static --input #{file_path} " \
+            "dataset create --id \"#{dataset.dataset.id}\" "\
+            "--name \"#{dataset.dataset.name}\" "\
+            "--modality #{dataset.dataset.modality}",
+            exception: true
+          )
 
           dataset.entries.each do |entry|
-            entry_data = entry.entry.data[:attributes]
+            entry_url = "https://idah.ingedata.ai/api/v1/media/medias/files/#{entry.entry.resource}"
 
-            entry_data[:annotations] ||= []
+            system(
+              "bin/datset-static --input #{file_path} " \
+              "entry create --id \"#{entry.entry.id}\" "\
+              "--dataset_id \"#{dataset.dataset.id}\" "\
+              "--url \"#{entry_url}\" ",
+              exception: true
+            )
+
             entry.annotations.each do |annotation|
-              entry_data[:annotations] << annotation.annotation.data[:attributes]
+              dimensions = annotation.annotation.dimensions
+              type = dimensions.delete(:type)
+
+              system(
+                "bin/datset-static --input #{file_path} " \
+                "annotation create --id \"#{annotation.annotation.id}\" "\
+                "--entry_id \"#{entry.entry.id}\" "\
+                "--type \"#{type}\" "\
+                "--shape '#{dimensions.to_json}' "\
+                "--annotation '#{annotation.annotation.annotation.to_json}'",
+                exception: true
+              )
             end
-
-            record[:entries] << entry_data
           end
-
-          records << record
         end
 
-        file.write(records.to_json)
+        context.io.file = File.open(file_path)
       end
     end
   end
