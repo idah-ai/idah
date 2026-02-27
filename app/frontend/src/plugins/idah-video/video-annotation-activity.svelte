@@ -3,14 +3,14 @@
   import { uuidv7 } from "uuidv7";
 
   import {
-      CommandDialog,
-      CommandEmpty,
-      CommandGroup,
-      CommandInput,
-      CommandItem,
-      CommandList,
-      CommandSeparator,
-      CommandShortcut,
+    CommandDialog,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+    CommandSeparator,
+    CommandShortcut,
   } from "$lib/components/ui/command";
   import { Button } from "@/components/ui/button";
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -42,10 +42,10 @@
   import type { AnnotationShape, AnnotationValue } from "@/context/AnnotationContext";
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import {
-      type Point,
-      type VideoFrameSelection,
-      type VideoShape,
-      getInterpolatedFrame,
+    type Point,
+    type VideoFrameSelection,
+    type VideoShape,
+    getInterpolatedFrame,
   } from "./video-annotation-activity/VideoAnnotationContext";
   // import { AnnotationShape } from "../../lib/context/AnnotationContext";
 
@@ -1147,10 +1147,8 @@
     <PopoverTrigger></PopoverTrigger>
 
     <PopoverContent class="w-auto min-w-64 p-0">
-
-    <div class="h-auto max-h-64 p-2 overflow-y-auto">
-      {#if annotationValue.category}
-     
+      <div class="h-auto max-h-64 overflow-y-auto p-2">
+        {#if annotationValue.category}
           <CategoryProperties
             type={mode}
             selectedCategory={annotationValue.category}
@@ -1162,24 +1160,24 @@
             onEditValue={(value) => value && onEditValue(value, mode)}
             disabled={false}
           />
-      {:else}
-        <AnnotationSidebar
-          sidebarWidthRem={annotationSidebarWidthRem}
-          class="rounded-t-lg"
-          db={annotationsIDB}
-          {annotationValue}
-          {currentFrame}
-          {onEditValue}
-          onSelectAnnotation={selectAnnotation}
-          {onDeleteAnnotation}
-          {onLock}
-          {onVisibility}
-          {context}
-          {mode}
-          selectedAnnotationId={selectedAnnotation?.metadata.id}
-        />
-           {/if}
-          </div>
+        {:else}
+          <AnnotationSidebar
+            sidebarWidthRem={annotationSidebarWidthRem}
+            class="rounded-t-lg"
+            db={annotationsIDB}
+            {annotationValue}
+            {currentFrame}
+            {onEditValue}
+            onSelectAnnotation={selectAnnotation}
+            {onDeleteAnnotation}
+            {onLock}
+            {onVisibility}
+            {context}
+            {mode}
+            selectedAnnotationId={selectedAnnotation?.metadata.id}
+          />
+        {/if}
+      </div>
 
       <div class=" flex justify-end gap-2 p-2">
         <Button
