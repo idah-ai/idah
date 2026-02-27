@@ -10,6 +10,19 @@ module Exports
 
     PREFIX = "idah-export-"
 
+    def file=(file)
+      if @mode && @mode != :file
+        raise "IoContext is already initialized with #{@mode} mode"
+      end
+
+      @mode = :file
+
+      # Cleanup existing file if it exists
+      cleanup_file if @file
+
+      @file = file
+    end
+
     def file(format: nil)
       if @mode && @mode != :file
         raise "IoContext is already initialized with #{@mode} mode"

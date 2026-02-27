@@ -33,7 +33,7 @@ RSpec.describe Exports::EntryContext do
             token: "test.eyJleHAiOjE3ODA3MzMyODB9.test"
           }
         ),
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': "application/json" }
       )
   end
 
@@ -43,7 +43,7 @@ RSpec.describe Exports::EntryContext do
         to_return(
           status: 200,
           body: annotations_json,
-          headers: { 'Content-Type': 'application/json' }
+          headers: { 'Content-Type': "application/json" }
         )
 
       annotations = subject.annotations
