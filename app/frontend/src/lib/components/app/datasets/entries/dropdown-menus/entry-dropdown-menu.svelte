@@ -22,7 +22,6 @@
   import { refetches } from "@/utils/refetch";
 
   import type { ProjectMemberScope } from "@/security/types";
-  import { ExportsBackendDataSource } from "@/data/model/sync/exports/record";
 
   // Props
   interface Props {
@@ -41,18 +40,13 @@
     onDelete: () => {
       openConfirmDeleteEntryModal = true;
     },
-    onExport: () => {
-      openConfirmExportEntryModal = true;
-    },
   }).filter((m) => m.label !== "Set Priority");
 
   let currentAccount = $authStatus.authContext;
   let canUpdateEntry = $state(false);
   let canDeleteEntry = $state(false);
-  let canExportEntry = $state(false);
   let openAssignEntryFormModal: boolean = $state(false);
   let openConfirmDeleteEntryModal: boolean = $state(false);
-  let openConfirmExportEntryModal: boolean = $state(false);
 
   // Lifecycle
   onMount(async () => {
@@ -67,7 +61,6 @@
       (await currentAccount?.can("update", "dataset:entries", ["as_org_owner", as_project_owner])) || false;
     canDeleteEntry =
       (await currentAccount?.can("delete", "dataset:entries", ["as_org_owner", as_project_owner])) || false;
-    canExportEntry = (await currentAccount?.can("create", "sync:exports", ["as_org_owner", as_project_owner])) || false;
   });
 
   // Functions
@@ -127,11 +120,5 @@
     description="Are you sure you want to delete this entry?"
     onConfirm={deleteEntry}
     bind:open={openConfirmDeleteEntryModal}
-  />
-  <ConfirmModal
-    title="Export entry"
-    description="Are you sure you want to export this entry?"
-    onConfirm={exportEntry}
-    bind:open={openConfirmExportEntryModal}
   />
 {/if}

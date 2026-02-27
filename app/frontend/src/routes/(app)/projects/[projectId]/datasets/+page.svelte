@@ -1,13 +1,13 @@
 <script lang="ts">
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
-
-  import { getContext, onMount } from "svelte";
+  import { getContext, onDestroy, onMount } from "svelte";
 
   import AddNewDatasetButton from "@/components/app/datasets/buttons/add-new-dataset-button.svelte";
   import DatasourceTable from "@/components/app/datasource-table/datasource-table.svelte";
 
   import { projectDatasetColumns } from "@/components/app/datasets/datasource-tables/project-dataset.columns";
+  import { selectedDatasets } from "@/components/app/datasets/stores";
   import { projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
@@ -34,6 +34,11 @@
     { label: "Datasets" },
   ]);
 
+  // Functions
+  function onRowsSelected(records: DatasetRecord[]) {
+    $selectedDatasets = records;
+  }
+
   // Lifecycle
   onMount(async () => {
     const currentAccount = $authStatus.authContext;
@@ -51,6 +56,10 @@
     canExport = (await currentAccount?.can("create", "sync:exports", ["as_org_owner", as_project_owner])) || false;
     columns.action.visible = canUpdateDataset || canDeleteDataset || canExport;
   });
+
+  onDestroy(() => {
+    $selectedDatasets = [];
+  });
 </script>
 
 {#key $refetches.datasets.list}
@@ -60,6 +69,7 @@
     refetchKey="datasets"
     {columns}
     dataSource={datasetsBackendDataSource}
+    disabledActiveStateFilterSortKeys={["project_id"]}
     listOptions={{
       fields: {
         [DatasetRecord.type]: ["id", "name", "status", "modality", "progress", "created_at", "updated_at"],
@@ -72,6 +82,8 @@
       included: ["entries"],
       sort: ["-created_at"],
     }}
+    selectable
+    {onRowsSelected}
   >
     {#snippet addNewRecordButton()}
       <AddNewDatasetButton />
