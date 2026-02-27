@@ -1148,7 +1148,7 @@
 
     <PopoverContent class="w-auto min-w-64 p-0">
 
-    <div class="h-auto max-h-64 overflow-y-scroll">
+    <div class="h-auto max-h-64 p-2 overflow-y-auto">
       {#if annotationValue.category}
      
           <CategoryProperties
