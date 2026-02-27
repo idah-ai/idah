@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
-  import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import { CheckIcon } from "@lucide/svelte";
 
@@ -10,6 +8,7 @@
   import { CommandItem } from "@/components/ui/command";
   import { DialogTitle } from "@/components/ui/dialog";
 
+  import { exportingExportRecords } from "@/components/app/sync/exports/store";
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { DatasetRecord } from "@/data/model/dataset/dataset-record";
   import { ExportRecord, ExportsBackendDataSource } from "@/data/model/sync/exports/record";
@@ -55,12 +54,14 @@
     try {
       if (!datasetRecords) return;
 
-      await ExportsBackendDataSource.export({
+      const createdExportRecordRes = await ExportsBackendDataSource.export({
         projectId,
         datasetIds: datasetRecords.map((record) => record.id),
         exporter,
       });
-      goto(resolve(`/projects/${projectId}/exports`));
+
+      open = false;
+      $exportingExportRecords = [createdExportRecordRes.data];
       showToast.success({
         title: "Dataset exported",
         description: "The dataset(s) export is in progress.",
