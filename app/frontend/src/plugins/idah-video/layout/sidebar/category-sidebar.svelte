@@ -138,19 +138,19 @@
     return acc;
   }
 
-  async function haveAnnotationsInCategory(categoryId: string): Promise<boolean> {
-    if (!db || !categoryId) return false;
-    const allAnnotations = await db.getAllStartingWith("category", categoryId);
-    const filterAnnotations = allAnnotations.filter((annotation) => {
-      return (
-        currentFrame >= annotation.shape.start &&
-        currentFrame <= annotation.shape.end &&
-        annotation.shape.type == modalityShape
-      );
-    });
+  // async function haveAnnotationsInCategory(categoryId: string): Promise<boolean> {
+  //   if (!db || !categoryId) return false;
+  //   const allAnnotations = await db.getAllStartingWith("category", categoryId);
+  //   const filterAnnotations = allAnnotations.filter((annotation) => {
+  //     return (
+  //       currentFrame >= annotation.shape.start &&
+  //       currentFrame <= annotation.shape.end &&
+  //       annotation.shape.type == modalityShape
+  //     );
+  //   });
 
-    return filterAnnotations.length > 0;
-  }
+  //   return filterAnnotations.length > 0;
+  // }
 
   function toggleCategory(e: MouseEvent, category: CategoryDefinition) {
     e.preventDefault();
