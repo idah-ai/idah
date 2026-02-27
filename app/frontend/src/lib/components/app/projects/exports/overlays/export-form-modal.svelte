@@ -71,6 +71,7 @@
       });
     } catch (error) {
       showActionFailedToast(error);
+    } finally {
       exporting = false;
     }
   }
