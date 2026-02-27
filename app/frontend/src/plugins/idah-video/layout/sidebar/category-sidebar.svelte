@@ -19,10 +19,10 @@
   import { idb_updated_at } from "../../video-annotation-activity/idb_store.svelte";
 
   import type {
-      AnnotationMetadata,
-      AnnotationObj,
-      AnnotationShape,
-      AnnotationValue,
+    AnnotationMetadata,
+    AnnotationObj,
+    AnnotationShape,
+    AnnotationValue,
   } from "@/context/AnnotationContext";
   import type { AnnotationsIndexedDB } from "../../video-annotation-activity/indexedDB";
 
@@ -164,7 +164,6 @@
         [category.id]: !openStates[category.id],
       };
     }
-
   }
 
   function getFilteredAnnotations(annotations: Array<TAnnotationObj>): {
@@ -264,7 +263,7 @@
                     <CircleSmallIcon class="fill-gray-400 stroke-gray-400" />
                   {:else}
                     {@const parentOpen = category.nestedCategories && currentModeIsSameAsShape}
-                    <div 
+                    <div
                       style:transform="rotate({openStates[category.id] || parentOpen ? 90 : 0}deg)"
                       class="transition-transform duration-200"
                     >
@@ -296,70 +295,70 @@
       {/key}
     {:else}
       <CollapsibleTrigger
-          class={cn("text-secondary-foreground flex w-full rounded-md text-xs", {
-            "bg-secondary border-primary border-1": selectedCategory == category.id,
-            "hover:bg-primary-foreground hover:dark:bg-accent cursor-pointer": !category.requiredNested,
-            "hover:bg-accent cursor-pointer": !currentModeIsSameAsShape,
-          })}
-          onclick={(e) => toggleCategory(e, category)}
-        >
-          <div class="flex w-full items-center" style:padding-left="{level - 1}rem">
-            <SidebarMenuItem class="flex h-8 w-full flex-row items-center gap-1">
-              {@const hasChildren = !!category.nestedCategories}
+        class={cn("text-secondary-foreground flex w-full rounded-md text-xs", {
+          "bg-secondary border-primary border-1": selectedCategory == category.id,
+          "hover:bg-primary-foreground hover:dark:bg-accent cursor-pointer": !category.requiredNested,
+          "hover:bg-accent cursor-pointer": !currentModeIsSameAsShape,
+        })}
+        onclick={(e) => toggleCategory(e, category)}
+      >
+        <div class="flex w-full items-center" style:padding-left="{level - 1}rem">
+          <SidebarMenuItem class="flex h-8 w-full flex-row items-center gap-1">
+            {@const hasChildren = !!category.nestedCategories}
 
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                disabled={currentModeIsSameAsShape}
-                class={cn("p-0", {
-                  "opacity-0": !hasChildren || selectedAnnotationId,
-                  hidden: currentModeIsSameAsShape && selectedAnnotationId,
-                })}
-                onclick={(e) => {
-                  e.stopPropagation();
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              disabled={currentModeIsSameAsShape}
+              class={cn("p-0", {
+                "opacity-0": !hasChildren || selectedAnnotationId,
+                hidden: currentModeIsSameAsShape && selectedAnnotationId,
+              })}
+              onclick={(e) => {
+                e.stopPropagation();
 
-                  if (category.nestedCategories || hasChildren) {
-                    manualToggleStates = {
-                      ...manualToggleStates,
-                      [category.id]: !openStates[category.id],
-                    };
-                  }
-                }}
-              >
-                {@const isSelected = selectedCategory == category.id}
+                if (category.nestedCategories || hasChildren) {
+                  manualToggleStates = {
+                    ...manualToggleStates,
+                    [category.id]: !openStates[category.id],
+                  };
+                }
+              }}
+            >
+              {@const isSelected = selectedCategory == category.id}
 
-                {#if isSelected && currentModeIsSameAsShape && !selectedAnnotationId}
-                  <PlusIcon class="text-primary" strokeWidth={4} />
-                {:else if !category.nestedCategories && currentModeIsSameAsShape && !selectedAnnotationId}
-                  <CircleSmallIcon class="fill-gray-400 stroke-gray-400" />
-                {:else}
-                  {@const parentOpen = category.nestedCategories && currentModeIsSameAsShape}
-                  <div 
-                    style:transform="rotate({openStates[category.id] || parentOpen ? 90 : 0}deg)"
-                    class="transition-transform duration-200"
-                  >
-                    <ChevronRightIcon
-                      class={cn({
-                        "opacity-0": !hasChildren,
-                        "stroke-blue-300": isSelected,
-                        "stroke-gray-500": !isSelected,
-                      })}
-                    />
-                  </div>
-                {/if}
-              </Button>
+              {#if isSelected && currentModeIsSameAsShape && !selectedAnnotationId}
+                <PlusIcon class="text-primary" strokeWidth={4} />
+              {:else if !category.nestedCategories && currentModeIsSameAsShape && !selectedAnnotationId}
+                <CircleSmallIcon class="fill-gray-400 stroke-gray-400" />
+              {:else}
+                {@const parentOpen = category.nestedCategories && currentModeIsSameAsShape}
+                <div
+                  style:transform="rotate({openStates[category.id] || parentOpen ? 90 : 0}deg)"
+                  class="transition-transform duration-200"
+                >
+                  <ChevronRightIcon
+                    class={cn({
+                      "opacity-0": !hasChildren,
+                      "stroke-blue-300": isSelected,
+                      "stroke-gray-500": !isSelected,
+                    })}
+                  />
+                </div>
+              {/if}
+            </Button>
 
-              <VectorSqaureIcon
-                color={category.data.color}
-                class={cn({
-                  hidden: category.requiredNested,
-                })}
-              />
+            <VectorSqaureIcon
+              color={category.data.color}
+              class={cn({
+                hidden: category.requiredNested,
+              })}
+            />
 
-              <CategoryName name={category.name} />
-            </SidebarMenuItem>
-          </div>
-        </CollapsibleTrigger>
+            <CategoryName name={category.name} />
+          </SidebarMenuItem>
+        </div>
+      </CollapsibleTrigger>
     {/if}
 
     <CollapsibleContent hidden={!openStates[category.id]}>
