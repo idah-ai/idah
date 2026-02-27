@@ -7,6 +7,9 @@
   import Button from "@/components/ui/button/button.svelte";
   import { CommandItem } from "@/components/ui/command";
   import { DialogTitle } from "@/components/ui/dialog";
+  import { Item, ItemContent, ItemDescription } from "@/components/ui/item";
+  import { ScrollArea } from "@/components/ui/scroll-area";
+  import Text from "@/components/ui/text/Text.svelte";
 
   import { exportingExportRecords } from "@/components/app/sync/exports/store";
   import { showToast } from "@/components/ui/toast/index.svelte";
@@ -16,8 +19,6 @@
   import { showActionFailedToast } from "@/utils/error/error.toasts";
 
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
-  import { Item, ItemContent, ItemTitle } from "@/components/ui/item";
-  import { ScrollArea } from "@/components/ui/scroll-area";
   import type { LabelValue } from "@/utils/types";
 
   // Props
@@ -119,15 +120,18 @@
       </SingleSelectField>
     {/await}
 
-    <ScrollArea class="h-40">
-      {#each datasetRecords as datasetRecord (datasetRecord.id)}
-        <Item class="py-2">
-          <ItemContent>
-            <ItemTitle>{datasetRecord.name}</ItemTitle>
-          </ItemContent>
-        </Item>
-      {/each}
-    </ScrollArea>
+    <div class="flex flex-col gap-1">
+      <Text size="sm" weight="medium">Dataset(s)</Text>
+      <ScrollArea class="h-40">
+        {#each datasetRecords as datasetRecord (datasetRecord.id)}
+          <Item class="py-1.5">
+            <ItemContent>
+              <ItemDescription>{datasetRecord.name}</ItemDescription>
+            </ItemContent>
+          </Item>
+        {/each}
+      </ScrollArea>
+    </div>
   </div>
 
   {#snippet confirm()}
