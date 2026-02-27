@@ -1,5 +1,5 @@
 type Call = () => Promise<void | any>;
-const calls: Call[] = [];
+let calls: Call[] = [];
 let processing = false;
 const MAX_RETRY = 3;
 let retries = 0;
@@ -13,7 +13,7 @@ function register_call(call: Call) {
 
 function process_calls() {
 	processing = true;
-	const call = calls.shift();
+	let call = calls.shift();
 
 	if (!call) {
 		processing = false;
