@@ -201,6 +201,129 @@ RSpec.describe Exports::Service, database: true do
         }.to raise_error(Verse::Error::Authorization, "You do not have access to any of the datasets provided")
       end
     end
+
+    context "as Admin User", as: :admin do
+      subject { described_class.new(current_auth_context) }
+
+      it "allows access to all datasets" do
+        export = subject.create(project_id, dataset_ids, exporter)
+
+        expect(export).not_to be_nil
+        expect(export.created_by_id).to eq(current_auth_context.metadata[:id])
+        expect(export.project_id).to eq(project_id)
+        expect(export.job_id).not_to be_nil
+      end
+    end
+
+    context "as Organization Owner", as: :org_owner do
+      subject { described_class.new(current_auth_context) }
+
+      it "allows access to datasets in projects they own" do
+        # Export Service
+        allow(Api[:idah].dataset.projects).to receive(:index_all).with(
+          filter: { id: project_id, organization_id: current_auth_context.custom_scopes[:org] },
+          fields: { "dataset:projects": ["id"] }
+        ).and_return(
+          [double(id: project_id)]
+        )
+        allow(Api[:idah].dataset.datasets).to receive(:index_all).with(
+          filter: { project_id:, id: dataset_ids },
+          fields: { "dataset:dataset": ["id"] }
+        ).and_return(
+          dataset_ids.map { |id| double(id:) }
+        )
+
+        # Export Repository
+        allow(Api[:idah].dataset.projects).to receive(:index_all).with(
+          filter: { organization_id: current_auth_context.custom_scopes[:org] },
+          fields: { "dataset:projects": ["id"] }
+        ).and_return(
+          [double(id: project_id)]
+        )
+
+        export = subject.create(project_id, dataset_ids, exporter)
+
+        expect(export).not_to be_nil
+        expect(export.created_by_id).to eq(current_auth_context.metadata[:id])
+        expect(export.project_id).to eq(project_id)
+        expect(export.job_id).not_to be_nil
+      end
+
+      it "denies access to datasets if project does not belong to their organization" do
+        allow(Api[:idah].dataset.projects).to receive(:index_all).with(
+          filter: { id: project_id, organization_id: current_auth_context.custom_scopes[:org] },
+          fields: { "dataset:projects": ["id"] }
+        ).and_return([]) # Project does not belong to org owner's organization
+
+        expect {
+          subject.create(project_id, dataset_ids, exporter)
+        }.to raise_error(Verse::Error::Authorization, "You do not have access to the project provided")
+      end
+    end
+
+    context "as Project Owner", as: :project_owner do
+      subject { described_class.new(current_auth_context) }
+
+      it "allows access to datasets in projects they own" do
+        # Export Service
+        allow(Api[:idah].dataset.project_members).to receive(:index_all).with(
+          filter: { project_id:, account_id: current_auth_context.metadata[:id], role: "project_owner", enabled: true },
+          fields: { "dataset:project_members": ["project_id"] }
+        ).and_return(
+          [double(project_id:)]
+        )
+        allow(Api[:idah].dataset.datasets).to receive(:index_all).with(
+          filter: { project_id: [project_id], id: dataset_ids },
+          fields: { "dataset:dataset": ["id"] }
+        ).and_return(
+          dataset_ids.map { |id| double(id:) }
+        )
+
+        # Export Repository
+        allow(Api[:idah].dataset.project_members).to receive(:index_all).with(
+          filter: { account_id: current_auth_context.metadata[:id], role: "project_owner", enabled: true },
+          fields: { "dataset:project_members": ["project_id"] }
+        ).and_return(
+          [double(project_id:)]
+        )
+
+        export = subject.create(project_id, dataset_ids, exporter)
+
+        expect(export).not_to be_nil
+        expect(export.created_by_id).to eq(current_auth_context.metadata[:id])
+        expect(export.project_id).to eq(project_id)
+        expect(export.job_id).not_to be_nil
+      end
+
+      it "denies access to datasets if user is not a project owner" do
+        allow(Api[:idah].dataset.project_members).to receive(:index_all).with(
+          filter: { project_id:, account_id: current_auth_context.metadata[:id], role: "project_owner", enabled: true },
+          fields: { "dataset:project_members": ["project_id"] }
+        ).and_return([]) # User is not a project owner
+
+        expect {
+          subject.create(project_id, dataset_ids, exporter)
+        }.to raise_error(Verse::Error::Authorization, "You do not have access to the project provided")
+      end
+
+      it "denies access to datasets if they do not belong to the project" do
+        allow(Api[:idah].dataset.project_members).to receive(:index_all).with(
+          filter: { project_id:, account_id: current_auth_context.metadata[:id], role: "project_owner", enabled: true },
+          fields: { "dataset:project_members": ["project_id"] }
+        ).and_return(
+          [double(project_id:)]
+        )
+
+        allow(Api[:idah].dataset.datasets).to receive(:index_all).with(
+          filter: { project_id: [project_id], id: dataset_ids },
+          fields: { "dataset:dataset": ["id"] }
+        ).and_return([]) # No datasets belong to the project
+
+        expect {
+          subject.create(project_id, dataset_ids, exporter)
+        }.to raise_error(Verse::Error::Authorization, "Dataset IDs provided do not belong to the project")
+      end
+    end
   end
 
   describe "#upload" do

@@ -99,12 +99,12 @@ RSpec.describe ExportsExpo, type: :exposition, as: :system do
 
     it "creates export job" do
       expect_any_instance_of(Exports::Service).to receive(:create)
-        .with(project_id.to_i, dataset_ids, exporter)
+        .with(project_id, dataset_ids, exporter)
         .and_return(export_without_file)
 
       post "/exports/export",
            {
-             project_id: project_id.to_i,
+             project_id:,
              dataset_ids:,
              exporter:
            }
@@ -125,7 +125,7 @@ RSpec.describe ExportsExpo, type: :exposition, as: :system do
     it "requires dataset_ids parameter" do
       post "/exports/export",
            {
-             project_id: project_id.to_i,
+             project_id:,
              exporter:
            }
 
@@ -135,7 +135,7 @@ RSpec.describe ExportsExpo, type: :exposition, as: :system do
     it "requires exporter parameter" do
       post "/exports/export",
            {
-             project_id: project_id.to_i,
+             project_id:,
              dataset_ids:
            }
 

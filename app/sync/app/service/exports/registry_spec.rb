@@ -133,4 +133,26 @@ RSpec.describe Exports::Registry do
       expect(subject.list_export_format(["unknown"])).to be_empty
     end
   end
+
+  describe ".list_export_format_details" do
+    before do
+      subject.register("detailed", format_a)
+    end
+
+    it "returns detailed information for each export format" do
+      details = subject.list_export_format_details(["detailed"])
+      expect(details).to be_an(Array)
+      expect(details.size).to eq(1)
+
+      detail = details.first
+      expect(detail[:name]).to eq("Format A")
+      expect(detail[:description]).to eq("Description for Format A")
+      expect(detail[:exporter]).to eq(format_a.to_s)
+    end
+
+    it "returns empty array if no formats match" do
+      details = subject.list_export_format_details(["nonexistent"])
+      expect(details).to be_empty
+    end
+  end
 end
