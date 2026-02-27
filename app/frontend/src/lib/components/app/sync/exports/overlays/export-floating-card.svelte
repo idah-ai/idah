@@ -48,6 +48,8 @@
   }
 
   async function periodicCheckSyncJobStatus(records: Array<ExportRecord>) {
+    isDownloadReady = false;
+
     $progressInterval = setInterval(async () => {
       try {
         const filenames = records.map((exportingExportRecord) => exportingExportRecord.filename);
@@ -109,6 +111,8 @@
           class={cn("w-96 justify-start rounded-br-none rounded-bl-none", {
             "bg-emerald-100 text-emerald-600 hover:bg-emerald-200 hover:text-emerald-700 dark:bg-emerald-900 dark:text-emerald-100 dark:hover:bg-emerald-800 dark:hover:text-emerald-200":
               isDownloadReady,
+            "bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary dark:bg-primary/10 dark:text-primary dark:hover:bg-primary/20 dark:hover:text-primary":
+              !isDownloadReady,
           })}
         >
           {#if isDownloadReady}
@@ -116,7 +120,7 @@
           {:else}
             <Spinner size="sm" />
           {/if}
-          {isDownloadReady ? "Download ready" : "Preparing export"}
+          {isDownloadReady ? "Download ready" : "Download in progress..."}
 
           <div class="ml-auto flex items-center gap-2">
             <Button variant="ghost" size="icon-sm" onclick={hideFloatingCard}>
