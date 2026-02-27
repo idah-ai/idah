@@ -111,13 +111,11 @@
   let current_shape = $derived.by(() => {
     if (shape) return getInterpolatedFrame(shape as VideoShape, frame);
   });
-  let points: Point[] | InterpolatedVertex[] | undefined = $derived.by(() => {
-    if (current_shape && "points" in current_shape) {
-      return current_shape.points || [];
-    } else {
-      return [];
-    }
-  });
+
+  let points: Point[] | InterpolatedVertex[] | undefined = $derived(
+    current_shape && "points" in current_shape ? current_shape?.points || [] : []
+  );
+
   let angle: number = $derived.by(() => {
     return current_shape?.angle || 0;
   });
