@@ -113,7 +113,7 @@
   });
 
   let points: Point[] | InterpolatedVertex[] | undefined = $derived(
-    current_shape && "points" in current_shape ? current_shape?.points || [] : []
+    current_shape && "points" in current_shape ? current_shape?.points || [] : [],
   );
 
   let angle: number = $derived.by(() => {
