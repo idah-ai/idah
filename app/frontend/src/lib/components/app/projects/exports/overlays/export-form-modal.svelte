@@ -69,9 +69,9 @@
         title: "Dataset export",
         description: "The dataset(s) export is in progress.",
       });
+      exporting = false;
     } catch (error) {
       showActionFailedToast(error);
-    } finally {
       exporting = false;
     }
   }
