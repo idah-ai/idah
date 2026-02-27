@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { page } from "$app/state";
   import { onDestroy } from "svelte";
   import { writable } from "svelte/store";
 
@@ -12,8 +11,6 @@
   let { record: exportRecord }: DataTableCellBaseProps<ExportRecord> = $props();
 
   // Variables
-  let projectId = page.params.projectId as string;
-
   let progressInterval = writable<number | undefined>(undefined); // Note: Need to use writable because it's not reactive
   let jobProgress: number = $state(exportRecord.progress);
   let status = $state(exportRecord.status);
