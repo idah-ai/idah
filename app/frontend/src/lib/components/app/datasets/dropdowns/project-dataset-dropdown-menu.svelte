@@ -16,15 +16,16 @@
   import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
 
-  import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
+  import type { DropdownMenuContentAlignment, IDropdownMenus } from "@/components/app/dropdown-menus/types";
   import type { ProjectMemberScope } from "@/security/types";
 
   // Props
   interface Props {
     datasetId: string;
     projectId: string;
+    align?: DropdownMenuContentAlignment;
   }
-  let { datasetId, projectId }: Props = $props();
+  let { datasetId, projectId, align = "end" }: Props = $props();
 
   // Variables
   let canUpdateDataset = $state(false);
@@ -125,7 +126,7 @@
 </script>
 
 {#if canUpdateDataset || canDeleteDataset || canExportDataset}
-  <DropdownMenus {menus} align="end" />
+  <DropdownMenus {menus} {align} />
 
   <DatasetFormModal title="Dataset" action="update" {datasetRecord} bind:open={openEditDatasetFormModal} />
 

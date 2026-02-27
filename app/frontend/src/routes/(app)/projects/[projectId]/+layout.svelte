@@ -12,6 +12,7 @@
   import ProjectDropdownMenu from "@/components/app/projects/dropdowns/project-dropdown-menu.svelte";
   import InviteMemberButton from "@/components/app/projects/members/buttons/invite-member-button.svelte";
   import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+  import Text from "@/components/ui/text/Text.svelte";
 
   import { selectedDatasets } from "@/components/app/datasets/stores";
   import { projectTabs, type ProjectTab } from "@/components/app/projects/tabs/project.tabs";
@@ -65,9 +66,12 @@
       resource="dataset:projects"
     >
       {#if !isDatasetPage}
-        <PageHeader title={project.name} description={project.description}>
-          {#snippet actions()}
-            <ProjectDropdownMenu {projectId} align="end" />
+        <PageHeader>
+          {#snippet slotTitle()}
+            <div class="flex items-center gap-2">
+              <Text size="h2" weight="semibold">{project.name}</Text>
+              <ProjectDropdownMenu {projectId} align="center" />
+            </div>
           {/snippet}
         </PageHeader>
 

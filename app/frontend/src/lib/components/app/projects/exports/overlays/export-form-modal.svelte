@@ -84,7 +84,7 @@
   {#await loadExportFormatChoices() then choices}
     <SingleSelectField
       name="{resource}/exporter"
-      label="Formats"
+      label="Format"
       placeholder="Select an export format"
       required
       {choices}

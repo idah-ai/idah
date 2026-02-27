@@ -1,8 +1,7 @@
 <script lang="ts">
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
-
-  import { getContext, onMount } from "svelte";
+  import { getContext, onDestroy, onMount } from "svelte";
 
   import AddNewDatasetButton from "@/components/app/datasets/buttons/add-new-dataset-button.svelte";
   import DatasourceTable from "@/components/app/datasource-table/datasource-table.svelte";
@@ -56,6 +55,10 @@
       (await currentAccount?.can("delete", "dataset:datasets", ["as_org_owner", as_project_owner])) || false;
     canExport = (await currentAccount?.can("create", "sync:exports", ["as_org_owner", as_project_owner])) || false;
     columns.action.visible = canUpdateDataset || canDeleteDataset || canExport;
+  });
+
+  onDestroy(() => {
+    $selectedDatasets = [];
   });
 </script>
 
