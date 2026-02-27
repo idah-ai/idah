@@ -19,10 +19,10 @@
   import { idb_updated_at } from "../../video-annotation-activity/idb_store.svelte";
 
   import type {
-    AnnotationMetadata,
-    AnnotationObj,
-    AnnotationShape,
-    AnnotationValue,
+      AnnotationMetadata,
+      AnnotationObj,
+      AnnotationShape,
+      AnnotationValue,
   } from "@/context/AnnotationContext";
   import type { AnnotationsIndexedDB } from "../../video-annotation-activity/indexedDB";
 
@@ -222,8 +222,8 @@
   level: number = 1,
 )}
   <Collapsible open={openStates[category.id] || false}>
-    {#key `${forceRender}-${$idb_updated_at}-${modalityShape}`}
-      {#if db && category}
+    {#if db && category}
+      {#key `${$idb_updated_at}-${modalityShape}`}
         {#await db.getAllStartingWith("category", category.id) then annotations}
           {@const { count } = getFilteredAnnotations(annotations)}
           {@const hasAnnoations = count > 0}
@@ -292,8 +292,9 @@
             </div>
           </CollapsibleTrigger>
         {/await}
-      {:else}
-        <CollapsibleTrigger
+      {/key}
+    {:else}
+      <CollapsibleTrigger
           class={cn("text-secondary-foreground flex w-full rounded-md text-xs", {
             "bg-secondary border-primary border-1": selectedCategory == category.id,
             "hover:bg-primary-foreground hover:dark:bg-accent cursor-pointer": !category.requiredNested,
@@ -354,8 +355,7 @@
             </SidebarMenuItem>
           </div>
         </CollapsibleTrigger>
-      {/if}
-    {/key}
+    {/if}
 
     <CollapsibleContent hidden={!openStates[category.id]}>
       {#key $idb_updated_at}
