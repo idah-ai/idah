@@ -63,7 +63,6 @@
 
   // Variables
   let openCategory = $state(true);
-  let forceRender = $state(0);
   let currentModeIsSameAsShape = $derived(currentMode == modalityShape);
 
   // Automatically expand all categories when categories prop changes, but allow manual toggles
@@ -166,7 +165,6 @@
       };
     }
 
-    forceRender++;
   }
 
   function getFilteredAnnotations(annotations: Array<TAnnotationObj>): {
@@ -195,10 +193,9 @@
           <Button variant="ghost" class="w-full justify-between" {...props}>
             {formatShapeName(modalityShape)}
 
-            <ChevronRightIcon
-              class="transition-transform duration-200"
-              style="transform: rotate({openCategory ? 90 : 0}deg)"
-            />
+            <div style:transform="rotate({openCategory ? 90 : 0}deg)" class="transition-transform duration-200">
+              <ChevronRightIcon />
+            </div>
           </Button>
         {/snippet}
       </CollapsibleTrigger>
@@ -267,14 +264,18 @@
                     <CircleSmallIcon class="fill-gray-400 stroke-gray-400" />
                   {:else}
                     {@const parentOpen = category.nestedCategories && currentModeIsSameAsShape}
-                    <ChevronRightIcon
-                      class={cn("transition-transform duration-200", {
-                        "opacity-0": !hasChildren,
-                        "stroke-blue-300": isSelected,
-                        "stroke-gray-500": !isSelected,
-                      })}
-                      style="transform: rotate({openStates[category.id] || parentOpen ? 90 : 0}deg)"
-                    />
+                    <div 
+                      style:transform="rotate({openStates[category.id] || parentOpen ? 90 : 0}deg)"
+                      class="transition-transform duration-200"
+                    >
+                      <ChevronRightIcon
+                        class={cn({
+                          "opacity-0": !hasChildren,
+                          "stroke-blue-300": isSelected,
+                          "stroke-gray-500": !isSelected,
+                        })}
+                      />
+                    </div>
                   {/if}
                 </Button>
 
@@ -333,14 +334,18 @@
                   <CircleSmallIcon class="fill-gray-400 stroke-gray-400" />
                 {:else}
                   {@const parentOpen = category.nestedCategories && currentModeIsSameAsShape}
-                  <ChevronRightIcon
-                    class={cn("transition-transform duration-200", {
-                      "opacity-0": !hasChildren,
-                      "stroke-blue-300": isSelected,
-                      "stroke-gray-500": !isSelected,
-                    })}
-                    style="transform: rotate({openStates[category.id] || parentOpen ? 90 : 0}deg)"
-                  />
+                  <div 
+                    style:transform="rotate({openStates[category.id] || parentOpen ? 90 : 0}deg)"
+                    class="transition-transform duration-200"
+                  >
+                    <ChevronRightIcon
+                      class={cn({
+                        "opacity-0": !hasChildren,
+                        "stroke-blue-300": isSelected,
+                        "stroke-gray-500": !isSelected,
+                      })}
+                    />
+                  </div>
                 {/if}
               </Button>
 
