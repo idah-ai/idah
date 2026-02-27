@@ -11,10 +11,10 @@
   import CategorySidebar from "./category-sidebar.svelte";
 
   import type {
-      AnnotationMetadata,
-      AnnotationObj,
-      AnnotationShape,
-      AnnotationValue,
+    AnnotationMetadata,
+    AnnotationObj,
+    AnnotationShape,
+    AnnotationValue,
   } from "$lib/context/AnnotationContext";
   import type { IActivityContext, IConfigValue } from "@/plugin/interface/Activity";
 
@@ -65,23 +65,23 @@
   let searchValue = $state("");
   let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
-let filteredTools = $derived.by(() => {
-  if (!searchValue) return tools;
+  let filteredTools = $derived.by(() => {
+    if (!searchValue) return tools;
 
-  const result: [string, IConfigValue[]][] = [];
+    const result: [string, IConfigValue[]][] = [];
 
-  for (const [toolType, categories] of tools) {
-    const matching = categories.filter((category) =>
-      category.label.toLowerCase().includes(searchValue.toLowerCase())
-    );
+    for (const [toolType, categories] of tools) {
+      const matching = categories.filter((category) =>
+        category.label.toLowerCase().includes(searchValue.toLowerCase()),
+      );
 
-    if (matching.length > 0) {
-      result.push([toolType, matching]);
+      if (matching.length > 0) {
+        result.push([toolType, matching]);
+      }
     }
-  }
 
-  return result;
-});
+    return result;
+  });
 
   // Functions
   function categorySelection(shape_type: string, category?: string) {
