@@ -196,9 +196,8 @@
             {formatShapeName(modalityShape)}
 
             <ChevronRightIcon
-              class={cn("transition-transform", {
-                "rotate-90": openCategory,
-              })}
+              class="transition-transform duration-200"
+              style="transform: rotate({openCategory ? 90 : 0}deg)"
             />
           </Button>
         {/snippet}
@@ -222,79 +221,13 @@
   parent: string[] = [],
   level: number = 1,
 )}
-  {#key openStates[category.id]}
-    <Collapsible open={openStates[category.id] || false}>
-      {#key `${forceRender}-${$idb_updated_at}-${modalityShape}`}
-        {#if db && category}
-          {#await db.getAllStartingWith("category", category.id) then annotations}
-            {@const { count } = getFilteredAnnotations(annotations)}
-            {@const hasAnnoations = count > 0}
+  <Collapsible open={openStates[category.id] || false}>
+    {#key `${forceRender}-${$idb_updated_at}-${modalityShape}`}
+      {#if db && category}
+        {#await db.getAllStartingWith("category", category.id) then annotations}
+          {@const { count } = getFilteredAnnotations(annotations)}
+          {@const hasAnnoations = count > 0}
 
-            <CollapsibleTrigger
-              class={cn("text-secondary-foreground flex w-full rounded-md text-xs", {
-                "bg-secondary border-primary border-1": selectedCategory == category.id,
-                "hover:bg-primary-foreground hover:dark:bg-accent cursor-pointer": !category.requiredNested,
-                "hover:bg-accent cursor-pointer": !currentModeIsSameAsShape,
-              })}
-              onclick={(e) => toggleCategory(e, category)}
-            >
-              <div class="flex w-full items-center" style:padding-left="{level - 1}rem">
-                <SidebarMenuItem class="flex h-8 w-full flex-row items-center gap-1">
-                  {@const hasChildren = !!category.nestedCategories || hasAnnoations}
-
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    disabled={currentModeIsSameAsShape}
-                    class={cn("p-0", {
-                      "opacity-0": !hasChildren || selectedAnnotationId,
-                      hidden: currentModeIsSameAsShape && selectedAnnotationId,
-                    })}
-                    onclick={(e) => {
-                      e.stopPropagation();
-
-                      if (category.nestedCategories || hasChildren) {
-                        manualToggleStates = {
-                          ...manualToggleStates,
-                          [category.id]: !openStates[category.id],
-                        };
-                      }
-                    }}
-                  >
-                    {@const isSelected = selectedCategory == category.id}
-
-                    {#if isSelected && currentModeIsSameAsShape && !selectedAnnotationId}
-                      <PlusIcon class="text-primary" strokeWidth={4} />
-                    {:else if !category.nestedCategories && currentModeIsSameAsShape && !selectedAnnotationId}
-                      <CircleSmallIcon class="fill-gray-400 stroke-gray-400" />
-                    {:else}
-                      {@const parentOpen = category.nestedCategories && currentModeIsSameAsShape}
-                      <ChevronRightIcon
-                        class={cn("transition-transform", {
-                          "opacity-0": !hasChildren,
-                          "rotate-90": openStates[category.id] || parentOpen,
-                          "stroke-blue-300": isSelected,
-                          "stroke-gray-500": !isSelected,
-                        })}
-                      />
-                    {/if}
-                  </Button>
-
-                  <VectorSqaureIcon
-                    color={category.data.color}
-                    class={cn({
-                      hidden: category.requiredNested,
-                    })}
-                  />
-
-                  <CategoryName name={category.name} />
-
-                  <AnnotationCountBadge class="mr-2" {count} />
-                </SidebarMenuItem>
-              </div>
-            </CollapsibleTrigger>
-          {/await}
-        {:else}
           <CollapsibleTrigger
             class={cn("text-secondary-foreground flex w-full rounded-md text-xs", {
               "bg-secondary border-primary border-1": selectedCategory == category.id,
@@ -305,7 +238,7 @@
           >
             <div class="flex w-full items-center" style:padding-left="{level - 1}rem">
               <SidebarMenuItem class="flex h-8 w-full flex-row items-center gap-1">
-                {@const hasChildren = !!category.nestedCategories}
+                {@const hasChildren = !!category.nestedCategories || hasAnnoations}
 
                 <Button
                   variant="ghost"
@@ -335,12 +268,12 @@
                   {:else}
                     {@const parentOpen = category.nestedCategories && currentModeIsSameAsShape}
                     <ChevronRightIcon
-                      class={cn("transition-transform", {
+                      class={cn("transition-transform duration-200", {
                         "opacity-0": !hasChildren,
-                        "rotate-90": openStates[category.id] || parentOpen,
                         "stroke-blue-300": isSelected,
                         "stroke-gray-500": !isSelected,
                       })}
+                      style="transform: rotate({openStates[category.id] || parentOpen ? 90 : 0}deg)"
                     />
                   {/if}
                 </Button>
@@ -353,46 +286,110 @@
                 />
 
                 <CategoryName name={category.name} />
+
+                <AnnotationCountBadge class="mr-2" {count} />
               </SidebarMenuItem>
             </div>
           </CollapsibleTrigger>
+        {/await}
+      {:else}
+        <CollapsibleTrigger
+          class={cn("text-secondary-foreground flex w-full rounded-md text-xs", {
+            "bg-secondary border-primary border-1": selectedCategory == category.id,
+            "hover:bg-primary-foreground hover:dark:bg-accent cursor-pointer": !category.requiredNested,
+            "hover:bg-accent cursor-pointer": !currentModeIsSameAsShape,
+          })}
+          onclick={(e) => toggleCategory(e, category)}
+        >
+          <div class="flex w-full items-center" style:padding-left="{level - 1}rem">
+            <SidebarMenuItem class="flex h-8 w-full flex-row items-center gap-1">
+              {@const hasChildren = !!category.nestedCategories}
+
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                disabled={currentModeIsSameAsShape}
+                class={cn("p-0", {
+                  "opacity-0": !hasChildren || selectedAnnotationId,
+                  hidden: currentModeIsSameAsShape && selectedAnnotationId,
+                })}
+                onclick={(e) => {
+                  e.stopPropagation();
+
+                  if (category.nestedCategories || hasChildren) {
+                    manualToggleStates = {
+                      ...manualToggleStates,
+                      [category.id]: !openStates[category.id],
+                    };
+                  }
+                }}
+              >
+                {@const isSelected = selectedCategory == category.id}
+
+                {#if isSelected && currentModeIsSameAsShape && !selectedAnnotationId}
+                  <PlusIcon class="text-primary" strokeWidth={4} />
+                {:else if !category.nestedCategories && currentModeIsSameAsShape && !selectedAnnotationId}
+                  <CircleSmallIcon class="fill-gray-400 stroke-gray-400" />
+                {:else}
+                  {@const parentOpen = category.nestedCategories && currentModeIsSameAsShape}
+                  <ChevronRightIcon
+                    class={cn("transition-transform duration-200", {
+                      "opacity-0": !hasChildren,
+                      "stroke-blue-300": isSelected,
+                      "stroke-gray-500": !isSelected,
+                    })}
+                    style="transform: rotate({openStates[category.id] || parentOpen ? 90 : 0}deg)"
+                  />
+                {/if}
+              </Button>
+
+              <VectorSqaureIcon
+                color={category.data.color}
+                class={cn({
+                  hidden: category.requiredNested,
+                })}
+              />
+
+              <CategoryName name={category.name} />
+            </SidebarMenuItem>
+          </div>
+        </CollapsibleTrigger>
+      {/if}
+    {/key}
+
+    <CollapsibleContent hidden={!openStates[category.id]}>
+      {#key $idb_updated_at}
+        {#if !currentModeIsSameAsShape && db && category}
+          {#await db.getAllIndex("category", category.id) then annotations}
+            {@const { annotations: filteredAnnotations } = getFilteredAnnotations(annotations)}
+
+            {#each filteredAnnotations as annotation, annotationIndex (annotation.metadata.id)}
+              <AnnotationNode
+                name="{category.name}_{annotationIndex}"
+                {annotation}
+                level={level + 1}
+                {onSelectAnnotation}
+                {onVisibility}
+                {onLock}
+                {onDeleteAnnotation}
+              />
+            {/each}
+          {/await}
         {/if}
       {/key}
 
-      <CollapsibleContent hidden={!openStates[category.id]}>
-        {#key $idb_updated_at}
-          {#if !currentModeIsSameAsShape && db && category}
-            {#await db.getAllIndex("category", category.id) then annotations}
-              {@const { annotations: filteredAnnotations } = getFilteredAnnotations(annotations)}
-
-              {#each filteredAnnotations as annotation, annotationIndex (annotation.metadata.id)}
-                <AnnotationNode
-                  name="{category.name}_{annotationIndex}"
-                  {annotation}
-                  level={level + 1}
-                  {onSelectAnnotation}
-                  {onVisibility}
-                  {onLock}
-                  {onDeleteAnnotation}
-                />
-              {/each}
-            {/await}
-          {/if}
-        {/key}
-
-        {#if subCategories}
-          {#each subCategories as subCategory (subCategory.id)}
-            {@render CategoryNode(
-              subCategory,
-              subCategory.nestedCategories,
-              onSelectCategory,
-              selectedCategory,
-              [...parent, category.id.split("/").slice(parent.length)[0]],
-              level + 1,
-            )}
-          {/each}
-        {/if}
-      </CollapsibleContent>
-    </Collapsible>
-  {/key}
+      {#if subCategories}
+        {#each subCategories as subCategory (subCategory.id)}
+          {@render CategoryNode(
+            subCategory,
+            subCategory.nestedCategories,
+            onSelectCategory,
+            selectedCategory,
+            [...parent, category.id.split("/").slice(parent.length)[0]],
+            level + 1,
+          )}
+        {/each}
+      {/if}
+    </CollapsibleContent>
+  </Collapsible>
 {/snippet}
