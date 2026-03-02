@@ -1147,8 +1147,8 @@
     <PopoverTrigger></PopoverTrigger>
 
     <PopoverContent class="w-auto min-w-64 p-0">
-      {#if annotationValue.category}
-        <div class="p-2">
+      <div class="h-auto max-h-64 overflow-y-auto p-2">
+        {#if annotationValue.category}
           <CategoryProperties
             type={mode}
             selectedCategory={annotationValue.category}
@@ -1160,24 +1160,25 @@
             onEditValue={(value) => value && onEditValue(value, mode)}
             disabled={false}
           />
-        </div>
-      {:else}
-        <AnnotationSidebar
-          sidebarWidthRem={annotationSidebarWidthRem}
-          class="rounded-t-lg"
-          db={annotationsIDB}
-          {annotationValue}
-          {currentFrame}
-          {onEditValue}
-          onSelectAnnotation={selectAnnotation}
-          {onDeleteAnnotation}
-          {onLock}
-          {onVisibility}
-          {context}
-          {mode}
-          selectedAnnotationId={selectedAnnotation?.metadata.id}
-        />
-      {/if}
+        {:else}
+          <AnnotationSidebar
+            sidebarWidthRem={annotationSidebarWidthRem}
+            class="rounded-t-lg"
+            db={annotationsIDB}
+            {annotationValue}
+            {currentFrame}
+            {onEditValue}
+            onSelectAnnotation={selectAnnotation}
+            {onDeleteAnnotation}
+            {onLock}
+            {onVisibility}
+            {context}
+            {mode}
+            selectedAnnotationId={selectedAnnotation?.metadata.id}
+          />
+        {/if}
+      </div>
+
       <div class=" flex justify-end gap-2 p-2">
         <Button
           size="sm"
