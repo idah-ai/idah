@@ -63,7 +63,6 @@
 
   // Variables
   let openCategory = $state(true);
-  let forceRender = $state(0);
   let currentModeIsSameAsShape = $derived(currentMode == modalityShape);
 
   // Automatically expand all categories when categories prop changes, but allow manual toggles
@@ -165,9 +164,6 @@
       // Toggle the category open state manually
       manualToggleStates[category.id] = !openStates[category.id];
     }
-
-    // Force re-render of annotation counts
-    forceRender++;
   }
 
   function getFilteredAnnotations(annotations: Array<TAnnotationObj>): {
@@ -196,9 +192,11 @@
           <Button variant="ghost" class="w-full justify-between" {...props}>
             {formatShapeName(modalityShape)}
 
-            <div style:transform="rotate({openCategory ? 90 : 0}deg)" class="transition-transform duration-200">
-              <ChevronRightIcon />
-            </div>
+            <ChevronRightIcon
+              class={cn("transition-transform", {
+                "rotate-90": openCategory,
+              })}
+            />
           </Button>
         {/snippet}
       </CollapsibleTrigger>
