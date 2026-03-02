@@ -918,7 +918,6 @@
 
   function onEditValue(value: AnnotationValue, valueMode: string) {
     if (!["annotate", "review"].includes(context.workflowStep)) return;
-    console.log(valueMode);
 
     let requirementFullfilled = requiredFullfilled(value, context.config[valueMode]?.properties);
     annotationValue = value;
@@ -1153,7 +1152,6 @@
             selectedCategory={annotationValue.category}
             {annotationValue}
             onSelectCategory={(s) => {
-              console.log(s != mode);
               if (s != mode) selectAnnotation();
               annotationValue = { ...annotationValue, category: s };
               onEditValue(annotationValue, mode);

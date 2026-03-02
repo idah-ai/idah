@@ -30,7 +30,6 @@
   // Contexts
   const context: IActivityContext = getContext("context");
   const typeConfig = context.config[type];
-  const category = typeConfig?.values.find((c) => c.id == selectedCategory);
   const properties = typeConfig?.properties.filter((p) => visibilityFullfilled(annotationValue, p));
   const propertyComponents: {
     type: string;
@@ -64,6 +63,9 @@
     if (visibilityDiff.length) visibilityDiff.forEach((p) => delete newValue.attributes?.[p]);
     onEditValue(newValue);
   }
+  $effect(() => {
+   console.log({selectedCategory,idb_updated_at})
+  });
 </script>
 
 <div>
@@ -74,8 +76,9 @@
       )}</Text
     >
   </div>
-  {#key $idb_updated_at}
-    <Select type="single" onValueChange={onSelectCategory} {disabled}>
+    {#key `${$idb_updated_at}-${selectedCategory}`}
+    {@const category = typeConfig?.values.find((c) => c.id == selectedCategory)}
+    <Select type="single" value={selectedCategory} onValueChange={onSelectCategory} {disabled}>
       <SelectTrigger class="data-[placeholder]:text-secondary-foreground bg-secondary w-full truncate text-xs">
         <div class="flex gap-1">
           {#if category?.label}
