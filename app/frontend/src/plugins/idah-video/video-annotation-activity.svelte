@@ -24,7 +24,7 @@
   import type { AnnotationGroup, AnnotationMetadata, AnnotationObj } from "@/context/AnnotationContext";
 
   import { DEFAULT_MODE, ENTRY_ROOT, IDAH_NOTE, IDAH_VIDEO_BOUNDING_BOX } from "./type";
-  import { requiredFullfilled } from "./video-annotation-activity/categoryProperties";
+  import { requiredFullfilled } from "./video-annotation-activity/categoryProperties/index";
   import { boundingBoxes, entryRoot, idb_updated_at } from "./video-annotation-activity/idb_store.svelte";
   import { annotationsIndexedDB, AnnotationsIndexedDB } from "./video-annotation-activity/indexedDB";
   import { registerOnSelectBoxModeShortcuts, registerVisualModeShortcuts } from "./video-annotation-activity/shortcut";
@@ -918,10 +918,11 @@
 
   function onEditValue(value: AnnotationValue, valueMode: string) {
     if (!["annotate", "review"].includes(context.workflowStep)) return;
+    console.log(valueMode);
 
     let requirementFullfilled = requiredFullfilled(value, context.config[valueMode]?.properties);
     annotationValue = value;
-    mode = valueMode;
+
     if (valueMode == ENTRY_ROOT && !selectedAnnotation && $entryRoot?.metadata.id) selectedAnnotation = $entryRoot;
     //wait for confirmation
     if (showPopOver) {
@@ -992,14 +993,12 @@
     /**
      * Set mode to the annotation shape type when selecting an annotation
      */
-    if (mode === "note") {
-      return;
-    } else if (annotation?.shape.type && ["review", "annotate"].includes(context.workflowStep)) {
+    if (annotation?.shape.type && ["review", "annotate"].includes(context.workflowStep)) {
       mode = annotation.shape.type;
       // Register selection-specific shortcuts for the current mode
       registerOnSelectBoxModeShortcuts(context, annotation.metadata.id, () => currentFrame);
     } else {
-      mode = DEFAULT_MODE;
+      return;
     }
   }
 
@@ -1154,8 +1153,10 @@
             selectedCategory={annotationValue.category}
             {annotationValue}
             onSelectCategory={(s) => {
+              console.log(s != mode);
               if (s != mode) selectAnnotation();
-              onEditValue({ category: annotationValue.category }, mode);
+              annotationValue = { ...annotationValue, category: s };
+              onEditValue(annotationValue, mode);
             }}
             onEditValue={(value) => value && onEditValue(value, mode)}
             disabled={false}
