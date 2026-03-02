@@ -12,7 +12,6 @@
   import Text from "@/components/ui/text/Text.svelte";
 
   import { exportingExportRecords } from "@/components/app/sync/exports/store";
-  import { showToast } from "@/components/ui/toast/index.svelte";
   import { DatasetRecord } from "@/data/model/dataset/dataset-record";
   import { ExportRecord, ExportsBackendDataSource } from "@/data/model/sync/exports/record";
   import { cn } from "@/utils";
