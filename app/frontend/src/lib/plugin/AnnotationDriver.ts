@@ -1,12 +1,12 @@
-import { annotationsBackendDataSource } from "@/data/model/dataset/annotations/record";
 import { JsonRpcDatasource } from "@/data/jsonrpc";
+import { annotationsBackendDataSource } from "@/data/model/dataset/annotations/record";
 import type { IAnnotation, IAnnotationDriver } from "./interface/Activity";
 
 const annotations_rpc = new JsonRpcDatasource(`${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/annotations/_rpc`);
 
 export function createAnnotationDriver(entry_id: string): IAnnotationDriver {
   return {
-    create(id, dimensions, annotation) {
+    create(id, dimensions, annotation, metadata) {
       return annotations_rpc.call({
         method: "create",
         params: {
@@ -14,6 +14,7 @@ export function createAnnotationDriver(entry_id: string): IAnnotationDriver {
           entry_id,
           dimensions,
           annotation,
+          metadata,
         },
       });
     },
@@ -22,6 +23,7 @@ export function createAnnotationDriver(entry_id: string): IAnnotationDriver {
         annotationsBackendDataSource
           .list({
             filters: { ...filter, entry_id },
+            noCache: true,
             pagination,
           })
           .then(
@@ -30,12 +32,12 @@ export function createAnnotationDriver(entry_id: string): IAnnotationDriver {
           );
       });
     },
-    update({ id, dimensions, annotation }) {
+    update({ id, dimensions, annotation, metadata }) {
       return new Promise<void>((resolve, reject) => {
         annotations_rpc
           .call({
             method: "update",
-            params: { id, entry_id, dimensions, annotation },
+            params: { id, entry_id, dimensions, annotation, metadata },
           })
           .then(
             (r) => resolve(r.data),
