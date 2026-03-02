@@ -64,7 +64,7 @@
     onEditValue(newValue);
   }
   $effect(() => {
-   console.log({selectedCategory,idb_updated_at})
+    console.log({ selectedCategory, idb_updated_at });
   });
 </script>
 
@@ -76,7 +76,7 @@
       )}</Text
     >
   </div>
-    {#key `${$idb_updated_at}-${selectedCategory}`}
+  {#key `${$idb_updated_at}-${selectedCategory}`}
     {@const category = typeConfig?.values.find((c) => c.id == selectedCategory)}
     <Select type="single" value={selectedCategory} onValueChange={onSelectCategory} {disabled}>
       <SelectTrigger class="data-[placeholder]:text-secondary-foreground bg-secondary w-full truncate text-xs">
