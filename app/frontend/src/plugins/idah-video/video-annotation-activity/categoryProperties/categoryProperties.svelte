@@ -30,7 +30,6 @@
   // Contexts
   const context: IActivityContext = getContext("context");
   const typeConfig = context.config[type];
-  const properties = typeConfig?.properties.filter((p) => visibilityFullfilled(annotationValue, p));
   const propertyComponents: {
     type: string;
     component:
@@ -78,6 +77,7 @@
   </div>
   {#key `${$idb_updated_at}-${selectedCategory}`}
     {@const category = typeConfig?.values.find((c) => c.id == selectedCategory)}
+    {@const properties = typeConfig?.properties.filter((p) => visibilityFullfilled(annotationValue, p))}
     <Select type="single" value={selectedCategory} onValueChange={onSelectCategory} {disabled}>
       <SelectTrigger class="data-[placeholder]:text-secondary-foreground bg-secondary w-full truncate text-xs">
         <div class="flex gap-1">
