@@ -19,10 +19,10 @@
   import { idb_updated_at } from "../../video-annotation-activity/idb_store.svelte";
 
   import type {
-      AnnotationMetadata,
-      AnnotationObj,
-      AnnotationShape,
-      AnnotationValue,
+    AnnotationMetadata,
+    AnnotationObj,
+    AnnotationShape,
+    AnnotationValue,
   } from "@/context/AnnotationContext";
   import type { AnnotationsIndexedDB } from "../../video-annotation-activity/indexedDB";
 
