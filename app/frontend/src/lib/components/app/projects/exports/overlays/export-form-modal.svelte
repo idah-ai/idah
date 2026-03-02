@@ -65,10 +65,6 @@
 
       open = false;
       $exportingExportRecords = [createdExportRecordRes.data];
-      showToast.info({
-        title: "Dataset export",
-        description: "The dataset(s) export is in progress.",
-      });
       exporting = false;
     } catch (error) {
       showActionFailedToast(error);

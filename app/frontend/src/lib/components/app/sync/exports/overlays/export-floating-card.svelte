@@ -108,6 +108,7 @@
       <CollapsibleTrigger>
         <Button
           variant="ghost"
+          size="lg"
           class={cn("w-96 justify-start rounded-br-none rounded-bl-none", {
             "bg-emerald-100 text-emerald-600 hover:bg-emerald-200 hover:text-emerald-700 dark:bg-emerald-900 dark:text-emerald-100 dark:hover:bg-emerald-800 dark:hover:text-emerald-200":
               isDownloadReady,
@@ -120,7 +121,7 @@
           {:else}
             <Spinner size="sm" />
           {/if}
-          {isDownloadReady ? "Download ready" : "Download in progress..."}
+          {isDownloadReady ? "Dataset export ready" : "Dataset export in progress..."}
 
           <div class="ml-auto flex items-center gap-2">
             <Button variant="ghost" size="icon-sm" onclick={hideFloatingCard}>
