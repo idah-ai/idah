@@ -44,6 +44,7 @@ module Exports
                 "--type \"#{type}\" "\
                 "--shape '#{dimensions.to_json}' "\
                 "--annotation '#{annotation.annotation.annotation.to_json}'",
+                "--metadata '#{annotation.annotation.metadata.to_json}'",
                 exception: true
               )
             end
