@@ -137,20 +137,6 @@
     return acc;
   }
 
-  // async function haveAnnotationsInCategory(categoryId: string): Promise<boolean> {
-  //   if (!db || !categoryId) return false;
-  //   const allAnnotations = await db.getAllStartingWith("category", categoryId);
-  //   const filterAnnotations = allAnnotations.filter((annotation) => {
-  //     return (
-  //       currentFrame >= annotation.shape.start &&
-  //       currentFrame <= annotation.shape.end &&
-  //       annotation.shape.type == modalityShape
-  //     );
-  //   });
-
-  //   return filterAnnotations.length > 0;
-  // }
-
   function toggleCategory(e: MouseEvent, category: CategoryDefinition) {
     e.preventDefault();
 
@@ -242,7 +228,6 @@
                   disabled={currentModeIsSameAsShape}
                   class={cn("p-0", {
                     "opacity-0": !hasChildren || selectedAnnotationId,
-                    hidden: currentModeIsSameAsShape && selectedAnnotationId,
                   })}
                   onclick={(e) => {
                     e.stopPropagation();
@@ -262,19 +247,15 @@
                   {:else if !category.nestedCategories && currentModeIsSameAsShape && !selectedAnnotationId}
                     <CircleSmallIcon class="fill-gray-400 stroke-gray-400" />
                   {:else}
-                    {@const parentOpen = category.nestedCategories && currentModeIsSameAsShape}
-                    <div
-                      style:transform="rotate({openStates[category.id] || parentOpen ? 90 : 0}deg)"
-                      class="transition-transform duration-200"
-                    >
-                      <ChevronRightIcon
-                        class={cn({
-                          "opacity-0": !hasChildren,
-                          "stroke-blue-300": isSelected,
-                          "stroke-gray-500": !isSelected,
-                        })}
-                      />
-                    </div>
+                    <ChevronRightIcon
+                      class={cn({
+                        "opacity-0": !hasChildren,
+                        hidden: selectedCategory && !category.nestedCategories,
+                        "stroke-blue-300": isSelected,
+                        "stroke-gray-500": !isSelected,
+                        "rotate-90": openStates[category.id],
+                      })}
+                    />
                   {/if}
                 </Button>
 
@@ -311,7 +292,7 @@
               size="icon-sm"
               disabled={currentModeIsSameAsShape}
               class={cn("p-0", {
-                "opacity-0": !hasChildren || selectedAnnotationId,
+                "opacity-0": !hasChildren,
                 hidden: currentModeIsSameAsShape && selectedAnnotationId,
               })}
               onclick={(e) => {
@@ -332,19 +313,14 @@
               {:else if !category.nestedCategories && currentModeIsSameAsShape && !selectedAnnotationId}
                 <CircleSmallIcon class="fill-gray-400 stroke-gray-400" />
               {:else}
-                {@const parentOpen = category.nestedCategories && currentModeIsSameAsShape}
-                <div
-                  style:transform="rotate({openStates[category.id] || parentOpen ? 90 : 0}deg)"
-                  class="transition-transform duration-200"
-                >
-                  <ChevronRightIcon
-                    class={cn({
-                      "opacity-0": !hasChildren,
-                      "stroke-blue-300": isSelected,
-                      "stroke-gray-500": !isSelected,
-                    })}
-                  />
-                </div>
+                <ChevronRightIcon
+                  class={cn({
+                    "opacity-0": !hasChildren,
+                    "stroke-blue-300": isSelected,
+                    "stroke-gray-500": !isSelected,
+                    "rotate-90": openStates[category.id],
+                  })}
+                />
               {/if}
             </Button>
 
