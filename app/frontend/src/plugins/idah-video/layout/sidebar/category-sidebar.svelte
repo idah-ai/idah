@@ -179,7 +179,7 @@
             {formatShapeName(modalityShape)}
 
             <div
-              class={cn("transition-transform duration-200", {
+              class={cn("rotate-0 transition-transform duration-200", {
                 "rotate-90": openCategory,
               })}
             >
@@ -212,6 +212,7 @@
       {#if db && category}
         {#await db.getAllStartingWith("category", category.id) then annotations}
           {@const { count } = getFilteredAnnotations(annotations)}
+          {@const hasAnnotation = count > 0}
 
           <CollapsibleTrigger
             class={cn("text-secondary-foreground flex w-full rounded-md text-xs", {
@@ -224,18 +225,19 @@
             <div class="flex w-full items-center" style:padding-left="{level - 1}rem">
               <SidebarMenuItem class="flex h-8 w-full flex-row items-center gap-1">
                 {@const hasChildren = !!category.nestedCategories}
+                {@const showChevronRightIcon = hasChildren || hasAnnotation}
 
                 <Button
                   variant="ghost"
                   size="icon-sm"
                   disabled={currentModeIsSameAsShape}
                   class={cn("p-0", {
-                    "opacity-0": !hasChildren || selectedAnnotationId,
+                    "opacity-0": !showChevronRightIcon || selectedAnnotationId,
                   })}
                   onclick={(e) => {
                     e.stopPropagation();
 
-                    if (category.nestedCategories || hasChildren) {
+                    if (category.nestedCategories || showChevronRightIcon) {
                       manualToggleStates = {
                         ...manualToggleStates,
                         [category.id]: !openStates[category.id],
@@ -247,12 +249,12 @@
 
                   {#if isSelected && currentModeIsSameAsShape && !selectedAnnotationId}
                     <PlusIcon class="text-primary" strokeWidth={4} />
-                  {:else if !hasChildren && currentModeIsSameAsShape && !selectedAnnotationId}
+                  {:else if !showChevronRightIcon && currentModeIsSameAsShape && !selectedAnnotationId}
                     <CircleSmallIcon class="fill-gray-400 stroke-gray-400" />
                   {:else}
                     <ChevronRightIcon
                       class={cn({
-                        "opacity-0": !hasChildren,
+                        "opacity-0": !showChevronRightIcon,
                         "rotate-90": openStates[category.id],
                         "stroke-blue-300": isSelected,
                         "stroke-gray-500": !isSelected,
