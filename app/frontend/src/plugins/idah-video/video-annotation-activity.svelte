@@ -41,6 +41,7 @@
 
   import type { AnnotationShape, AnnotationValue } from "@/context/AnnotationContext";
   import type { IActivityContext } from "@/plugin/interface/Activity";
+  import { selectedAnnotationGroup } from "./video-annotation-activity/store";
   import {
     type Point,
     type VideoFrameSelection,
@@ -76,6 +77,7 @@
   let annotationSidebarWidthRem = $derived<number>(annotationSidebarResizablePercentage + 3);
 
   let selectedAnnotation: TAnnotationObj | undefined = $state(undefined);
+  let annotationId = $derived<string | undefined>(selectedAnnotation ? selectedAnnotation.metadata.id : undefined);
   let annotationValue: AnnotationValue = $derived(selectedAnnotation?.value || {});
 
   let entry_id = $state(context.id);
@@ -924,7 +926,8 @@
     annotationValue = value;
     mode = valueMode;
     if (valueMode == ENTRY_ROOT && !selectedAnnotation && $entryRoot?.metadata.id) selectedAnnotation = $entryRoot;
-    //wait for confirmation
+
+    // wait for confirmation
     if (showPopOver) {
       if (selectedAnnotation) selectedAnnotation = { ...selectedAnnotation, value: annotationValue };
     } else {
@@ -1136,6 +1139,12 @@
     }
   }
 
+  async function onReSelectCategory(reselectedCategoryId: string) {
+    if (!$selectedAnnotationGroup) return;
+    const annotations = await annotationsIDB?.getGroupAnnotations($selectedAnnotationGroup.groupId);
+    console.log({ annotations });
+  }
+
   let allHidden: boolean = $state(false);
   let allLocked: boolean = $state(false);
 </script>
@@ -1171,7 +1180,7 @@
       <div class="h-auto max-h-64 overflow-y-auto p-2">
         {#if annotationValue.category}
           <CategoryProperties
-            type={mode}
+            {mode}
             selectedCategory={annotationValue.category}
             {annotationValue}
             onSelectCategory={(s) => {
@@ -1292,8 +1301,10 @@
               </SvgOverlay>
 
               <PropertiesSidebar
+                {annotationId}
                 {annotationValue}
                 {onEditValue}
+                {onReSelectCategory}
                 {context}
                 {mode}
                 disabled={!!selectedAnnotation?.locked}
