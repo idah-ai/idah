@@ -178,7 +178,11 @@
           <Button variant="ghost" class="w-full justify-between" {...props}>
             {formatShapeName(modalityShape)}
 
-            <div style:transform="rotate({openCategory ? 90 : 0}deg)" class="transition-transform duration-200">
+            <div
+              class={cn("transition-transform duration-200", {
+                "rotate-90": openCategory,
+              })}
+            >
               <ChevronRightIcon />
             </div>
           </Button>
@@ -220,7 +224,7 @@
           >
             <div class="flex w-full items-center" style:padding-left="{level - 1}rem">
               <SidebarMenuItem class="flex h-8 w-full flex-row items-center gap-1">
-                {@const hasChildren = !!category.nestedCategories || hasAnnoations}
+                {@const hasChildren = !!category.nestedCategories}
 
                 <Button
                   variant="ghost"
@@ -244,13 +248,12 @@
 
                   {#if isSelected && currentModeIsSameAsShape && !selectedAnnotationId}
                     <PlusIcon class="text-primary" strokeWidth={4} />
-                  {:else if !category.nestedCategories && currentModeIsSameAsShape && !selectedAnnotationId}
+                  {:else if !hasChildren && currentModeIsSameAsShape && !selectedAnnotationId}
                     <CircleSmallIcon class="fill-gray-400 stroke-gray-400" />
                   {:else}
                     <ChevronRightIcon
                       class={cn({
                         "opacity-0": !hasChildren,
-                        hidden: selectedCategory && !category.nestedCategories,
                         "rotate-90": openStates[category.id],
                         "stroke-blue-300": isSelected,
                         "stroke-gray-500": !isSelected,

@@ -62,9 +62,6 @@
     if (visibilityDiff.length) visibilityDiff.forEach((p) => delete newValue.attributes?.[p]);
     onEditValue(newValue);
   }
-  $effect(() => {
-    console.log({ selectedCategory, idb_updated_at });
-  });
 </script>
 
 <div>
