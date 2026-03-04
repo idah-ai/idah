@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { IActivityContext } from "./context";
   import { onMount } from "svelte";
+  import type { IActivityContext } from "./context";
 
   import "./plugin.css";
 
@@ -11,4 +11,6 @@
   });
 </script>
 
-<div>plugin idah-images</div>
+<div class="relative flex h-full w-full flex-col">
+plugin idah-images
+</div>
