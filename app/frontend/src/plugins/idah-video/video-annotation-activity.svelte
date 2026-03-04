@@ -1154,7 +1154,7 @@
             selectedCategory={annotationValue.category}
             {annotationValue}
             onSelectCategory={(selectedCategory) => {
-              if (selectedCategory != mode) selectAnnotation();
+              if (!selectedCategory) selectAnnotation();
               annotationValue = { ...annotationValue, category: selectedCategory };
               onEditValue({ category: annotationValue.category }, mode);
             }}
@@ -1264,8 +1264,6 @@
                     currentFrame = current;
                     totalFrames = total;
                     isPlaying = playing;
-                    isPlaying = playing;
-                    // console.debug({onFramesChange: {current, total, playing}})
                   }}
                   onVolumeChange={(level, muted) => (volume = { level, muted })}
                 />
