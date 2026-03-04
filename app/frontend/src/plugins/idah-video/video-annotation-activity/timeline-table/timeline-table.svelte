@@ -10,7 +10,6 @@
   import Timeline from "./timeline.svelte";
 
   import { cn } from "@/utils";
-  import { humanize } from "@/utils/string";
 
   import { boundingBoxes } from "../idb_store.svelte";
 
@@ -148,29 +147,27 @@
     onSelectAnnotation(undefined);
   }
 
-  function getCategory(categoryId: string, shape_type: string) {
+  function findCategoryName(categoryId: string, shape_type: string) {
     return Object.entries(context.config)
       .find(([k, _]) => k == shape_type)?.[1]
       .values.find((cat) => cat.id === categoryId);
   }
 
-  async function getCategoryName(categoryId: string | undefined, selected: TAnnotationObj) {
-    if (!categoryId) return "Uncategorized";
+  async function getGroupTitle(params: { group: AnnotationGroup<TAnnotationObj> }) {
+    const { group } = params;
+    const { groupId, annotations } = group;
+    const lastPartGroupId = groupId.split("-")[groupId.split("-").length - 1];
+    const fallbackGroupName = `Group-${lastPartGroupId}`;
 
-    const selectedCategory = getCategory(categoryId, selected.shape.type);
+    /** Assume that all annotations in the group have the same category */
+    const firstAnnotationInGroup = annotations[0];
+    const firstAnnotationCategory = firstAnnotationInGroup.value.category;
+    if (!firstAnnotationCategory) return fallbackGroupName;
 
-    const selectedAnnotationIndex = await getSelectedAnnotationIndex(categoryId, selected.metadata.id);
-    const selectedCategoryName = selectedCategory?.label || categoryId;
+    const foundFirstAnnotationCategory = findCategoryName(firstAnnotationCategory, firstAnnotationInGroup.shape.type);
+    if (!foundFirstAnnotationCategory) return fallbackGroupName;
 
-    return [selectedCategoryName, selectedAnnotationIndex].join("_");
-  }
-
-  async function getSelectedAnnotationIndex(categoryId: string, annotationId: string) {
-    if (!db) return 0;
-
-    return (await db.getAllIndex("category", categoryId)).findIndex(
-      (annotation) => annotation.metadata.id == annotationId,
-    ) as number;
+    return `${foundFirstAnnotationCategory.label}-${lastPartGroupId}`;
   }
 
   function scrollRight(next: number) {
@@ -332,7 +329,6 @@
   {#each groups as group, index (group.groupId)}
     {@const { groupId, annotations } = group}
     {@const isGroupSelected = getIsGroupSelected(group)}
-    {@const firstAnnotation = annotations[0]}
     {@const someAnnotationIsHidden = annotations.some((ann) => ann.hidden)}
     {@const someAnnotationIsLocked = annotations.some((ann) => ann.locked)}
     {@const isLastIndex = index == groups.length - 1}
@@ -356,11 +352,11 @@
           onkeypress={() => selectAnnotationGroup(group)}
           onclick={() => selectAnnotationGroup(group)}
         >
-          {#await getCategoryName(firstAnnotation.value.category, firstAnnotation)}
+          {#await getGroupTitle({ group })}
             <Spinner size="sm" />
-          {:then title}
+          {:then groupTitle}
             <Text size="xs" weight={isGroupSelected ? "semibold" : "normal"} class="text-foreground truncate">
-              {humanize(title)}
+              {groupTitle}
             </Text>
           {/await}
 
