@@ -18,5 +18,15 @@ module Exports
         AnnotationContext.new(annotation)
       end
     end
+
+    def medias
+      Api[:idah].media.medias.index_all(
+        filter: {
+          resource: @entry.resource
+        }
+      ).map do |media|
+        MediaContext.new(media)
+      end
+    end
   end
 end
