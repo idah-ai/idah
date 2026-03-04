@@ -102,9 +102,7 @@
   let current_shape = $derived.by(() => {
     if (shape) return getInterpolatedFrame(shape as VideoShape, frame);
   });
-  let points: Point[] = $derived.by(() => {
-    return current_shape?.points || [];
-  });
+  let points: Point[] = $derived(shape ? current_shape?.points || [] : []);
   let angle: number = $derived.by(() => {
     return current_shape?.angle || 0;
   });
