@@ -14,17 +14,19 @@ module Exports
         system("bin/updcli-static --input #{file_path} init", exception: true)
 
         context.datasets.each do |dataset|
-          metadata = dataset.dataset.data[:attributes].slice(
-            :labeling_configuration,
-            :workflow_configuration,
-            :labels,
-            :status,
-            :progress,
-            :entries_total_count,
-            :entries_completed_count,
-            :entries_in_progress_count,
-            :created_at,
-            :updated_at
+          metadata = capitalized_dashed_keys(
+            dataset.dataset.data[:attributes].slice(
+              :labeling_configuration,
+              :workflow_configuration,
+              :labels,
+              :status,
+              :progress,
+              :entries_total_count,
+              :entries_completed_count,
+              :entries_in_progress_count,
+              :created_at,
+              :updated_at
+            )
           )
 
           system(
@@ -39,20 +41,21 @@ module Exports
           dataset.entries.each do |entry|
             entry_url = URI.join(
               ENV.fetch("IDAH_URL"),
-              "api/v1/media/medias/files/",
-              entry.entry.resource
+              "api/v1/media/medias/files/#{entry.entry.resource}"
             )
 
-            metadata = entry.entry.data[:attributes].slice(
-              :priority,
-              :wf_step,
-              :status,
-              :resource,
-              :assigned_to_id,
-              :submitted_by_id,
-              :reviewed_by_id,
-              :created_at,
-              :updated_at
+            metadata = capitalized_dashed_keys(
+              entry.entry.data[:attributes].slice(
+                :priority,
+                :wf_step,
+                :status,
+                :resource,
+                :assigned_to_id,
+                :submitted_by_id,
+                :reviewed_by_id,
+                :created_at,
+                :updated_at
+              )
             )
 
             system(
@@ -65,14 +68,16 @@ module Exports
             )
 
             entry.annotations.each do |annotation|
+              attributes = annotation.annotation.data[:attributes]
               dimensions = annotation.annotation.dimensions
               type = dimensions.delete(:type)
 
-              metadata = annotation.annotation.data[:attributes].slice(
-                :created_by_email,
-                :metadata,
-                :created_at,
-                :updated_at
+              metadata = capitalized_dashed_keys(attributes[:metadata]).merge(
+                {
+                  "Created-By" => attributes[:created_by_email],
+                  "Created-At" => attributes[:created_at],
+                  "Updated-At" => attributes[:updated_at]
+                }
               )
 
               system(
@@ -86,10 +91,50 @@ module Exports
                 exception: true
               )
             end
+
+            medias =
+              case context.options[:include_medias]
+              when "original"
+                entry.medias.select { |m| m.media.key == "" }
+              when "all"
+                entry.medias
+              else
+                []
+              end
+
+            medias.each do |media|
+              filename = media.media.filename
+              extension = File.extname(filename)
+
+              base_name = File.basename(filename, extension)
+              bin_data = media.download
+
+              tempfile = Tempfile.new([base_name, extension])
+              tempfile.binmode
+              tempfile.write(bin_data)
+              tempfile.rewind
+
+              system(
+                "bin/updcli-static --input #{file_path} " \
+                "media create --id \"#{media.media.id}\" "\
+                "--file \"#{tempfile.path}\" "\
+                "--key \"#{media.media.key}\" "\
+                "--mimetype \"#{media.media.mime_type}\"",
+                exception: true
+              )
+            end
           end
         end
 
         context.io.file = File.open(file_path)
+      end
+
+      private
+
+      def capitalized_dashed_keys(hash)
+        hash.transform_keys do |key|
+          key.to_s.split("_").map(&:capitalize).join("-")
+        end
       end
     end
   end
