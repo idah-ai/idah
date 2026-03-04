@@ -67,7 +67,7 @@ const createBoundingBoxModeKeyMap = (context: KeyMapContext) => {
 };
 
 const createVisualModeKeyMap = (context: KeyMapContext) => {
-  const tooglePlay = () => {
+  const togglePlay = () => {
     context.player()?.togglePlay();
     console.log("Toggle play action executed");
   };
@@ -106,7 +106,7 @@ const createVisualModeKeyMap = (context: KeyMapContext) => {
 
   const keyMap = KeyMapBuilder((b) => {
     CommonInjecter(context)(b);
-    b.on(null, "Space", tooglePlay, "Toogle Play", "Play/Pause the video player");
+    b.on(null, "Space", togglePlay, "Toggle Play", "Play/Pause the video player");
     b.on(null, "ArrowRight", nextFrame, "Next", "go to the next frame");
     b.on(null, "ArrowLeft", previousFrame, "Previous", "go to the previous frame");
     b.on(null, "V", nextMultipleFrames, "Next 10 Frames", "Go to the next 10 frames");
@@ -198,6 +198,7 @@ const createOnSelectBoundingBoxModeKeyMap = (context: SelectionKeyMapContext) =>
 
   return KeyMapBuilder((b) => {
     b.on(null, "Delete", deleteSelected, "Delete", "Delete selected annotation");
+    b.on([b.Ctrl], "Backspace", deleteSelected, "Delete", "Delete selected annotation");
     b.on(null, "H", toggleHidden, "Toggle Hidden", "Hide/Show selected annotation");
     b.on(null, "L", toggleLocked, "Toggle Locked", "Lock/Unlock selected annotation");
     b.on(null, "S", splitAnnotation, "Split", "Split selected annotation at selected frame");
