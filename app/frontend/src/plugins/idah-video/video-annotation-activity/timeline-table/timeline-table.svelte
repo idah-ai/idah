@@ -11,6 +11,7 @@
 
   import { cn } from "@/utils";
 
+  import { openPropertySidebar } from "../../layout/sidebar/store";
   import { boundingBoxes } from "../idb_store.svelte";
   import { selectedAnnotationGroup } from "../store";
 
@@ -146,6 +147,7 @@
     onSeekFrame(frameToGo);
     onSelectAnnotation(undefined);
     $selectedAnnotationGroup = undefined;
+    $openPropertySidebar = false;
   }
 
   function findCategoryName(categoryId: string, shape_type: string) {
@@ -319,6 +321,7 @@
 
   function selectAnnotationGroup(annotationGroup: AnnotationGroup<TAnnotationObj>, frame?: number) {
     $selectedAnnotationGroup = annotationGroup;
+    $openPropertySidebar = true;
     onSelectGroupAtFrame(annotationGroup, frame);
   }
 </script>

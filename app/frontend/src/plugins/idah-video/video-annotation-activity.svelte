@@ -23,11 +23,13 @@
 
   import type { AnnotationGroup, AnnotationMetadata, AnnotationObj } from "@/context/AnnotationContext";
 
+  import { openPropertySidebar } from "./layout/sidebar/store";
   import { DEFAULT_MODE, ENTRY_ROOT, IDAH_NOTE, IDAH_VIDEO_BOUNDING_BOX } from "./type";
-  import { requiredFullfilled } from "./video-annotation-activity/categoryProperties";
+  import { requiredFullfilled, visibilityFullfilled } from "./video-annotation-activity/categoryProperties";
   import { boundingBoxes, entryRoot, idb_updated_at } from "./video-annotation-activity/idb_store.svelte";
   import { annotationsIndexedDB, AnnotationsIndexedDB } from "./video-annotation-activity/indexedDB";
   import { registerOnSelectBoxModeShortcuts, registerVisualModeShortcuts } from "./video-annotation-activity/shortcut";
+  import { selectedAnnotationGroup } from "./video-annotation-activity/store";
 
   import AnnotationFooter from "./layout/footer/AnnotationFooter.svelte";
   import AnnotationFooterToolbar from "./layout/footer/AnnotationFooterToolbar.svelte";
@@ -41,7 +43,6 @@
 
   import type { AnnotationShape, AnnotationValue } from "@/context/AnnotationContext";
   import type { IActivityContext } from "@/plugin/interface/Activity";
-  import { selectedAnnotationGroup } from "./video-annotation-activity/store";
   import {
     type Point,
     type VideoFrameSelection,
@@ -1025,6 +1026,15 @@
     } else {
       mode = DEFAULT_MODE;
     }
+
+    /** Open property sidebar if selectedAnnotation has properties */
+    if (selectedAnnotation) {
+      const properties = context.config[selectedAnnotation.shape.type]?.properties?.filter((p) =>
+        visibilityFullfilled(annotationValue, p),
+      );
+
+      $openPropertySidebar = properties.length > 0;
+    }
   }
 
   function selectGroupAtFrame(annotationGroup: AnnotationGroup<TAnnotationObj>, frame?: number) {
@@ -1142,7 +1152,16 @@
   async function onReSelectCategory(reselectedCategoryId: string) {
     if (!$selectedAnnotationGroup) return;
     const annotations = await annotationsIDB?.getGroupAnnotations($selectedAnnotationGroup.groupId);
-    console.log({ annotations });
+
+    if (!annotations) return;
+
+    await Promise.all(
+      annotations.map((annotation) => {
+        console.log(annotation.metadata.id);
+
+        return updateAnnotationValue(annotation, { category: reselectedCategoryId });
+      }),
+    );
   }
 
   let allHidden: boolean = $state(false);
