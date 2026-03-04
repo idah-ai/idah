@@ -12,6 +12,7 @@
   import { cn } from "@/utils";
 
   import { boundingBoxes } from "../idb_store.svelte";
+  import { selectedAnnotationGroup } from "../store";
 
   import type {
     AnnotationGroup,
@@ -104,7 +105,6 @@
   let wheelthrottling = $state(false);
   let hoveredColumn: number | undefined = $state();
   let rowElements: Record<string, HTMLElement> = $state({});
-  let selectedAnnotationGroup: AnnotationGroup<TAnnotationObj> | undefined = $state(undefined);
 
   export function setOffset(offset: number) {
     pos_offset = Math.max(1, Math.min(totalFrames - range_span, offset || 0));
@@ -145,6 +145,7 @@
   function seekToFrame(frameToGo: number) {
     onSeekFrame(frameToGo);
     onSelectAnnotation(undefined);
+    $selectedAnnotationGroup = undefined;
   }
 
   function findCategoryName(categoryId: string, shape_type: string) {
@@ -292,15 +293,12 @@
 
   function getIsGroupSelected(group: AnnotationGroup<TAnnotationObj>): boolean {
     const { groupId, annotations } = group;
-    // return (
-    //   annotations.some((ann) => ann.metadata.id == selectedAnnotation?.metadata.id) ||
-    //   selectedAnnotationGroup?.groupId == groupId
-    // );
+
     if (selectedAnnotation) {
       return annotations.some((ann) => ann.metadata.id == selectedAnnotation?.metadata.id);
     }
 
-    if (selectedAnnotationGroup?.groupId == groupId) return true;
+    if ($selectedAnnotationGroup?.groupId == groupId) return true;
 
     return false;
   }
@@ -320,7 +318,7 @@
   }
 
   function selectAnnotationGroup(annotationGroup: AnnotationGroup<TAnnotationObj>, frame?: number) {
-    selectedAnnotationGroup = annotationGroup;
+    $selectedAnnotationGroup = annotationGroup;
     onSelectGroupAtFrame(annotationGroup, frame);
   }
 </script>

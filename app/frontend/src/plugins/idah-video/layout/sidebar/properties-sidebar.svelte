@@ -1,9 +1,13 @@
 <script lang="ts">
-  import SidebarContent from "@/components/ui/sidebar/sidebar-content.svelte";
-  import SidebarGroupContent from "@/components/ui/sidebar/sidebar-group-content.svelte";
-  import SidebarGroup from "@/components/ui/sidebar/sidebar-group.svelte";
-  import SidebarHeader from "@/components/ui/sidebar/sidebar-header.svelte";
-  import Sidebar from "@/components/ui/sidebar/sidebar.svelte";
+  import {
+    Sidebar,
+    SidebarContent,
+    SidebarGroup,
+    SidebarGroupContent,
+    SidebarHeader,
+    SidebarSeparator,
+  } from "@/components/ui/sidebar";
+  import Text from "@/components/ui/text/Text.svelte";
 
   import type { AnnotationValue } from "$lib/context/AnnotationContext";
   import type { IActivityContext, IConfigValue } from "@/plugin/interface/Activity";
@@ -15,55 +19,66 @@
   // Props
   let {
     sidebarWidthRem = 15,
+    annotationId,
     annotationValue,
     onEditValue,
+    onReSelectCategory,
     context,
     mode,
     disabled,
   }: {
     sidebarWidthRem?: number;
+    annotationId?: string;
     annotationValue: AnnotationValue;
     onEditValue: (annotationValue: AnnotationValue, mode: string) => void;
+    onReSelectCategory?: (reselectedCategoryId: string) => void;
     context: IActivityContext;
     mode: string;
     disabled: boolean;
   } = $props();
 
+  // Variables
   let tools = new Map<string, IConfigValue[]>(
     Object.entries(context.config)
       .filter(([shapeType, _]) => shapeType != ENTRY_ROOT)
       .map(([shapeType, { values }]) => [shapeType, values]),
   );
+  let defaultMode = $derived(mode == DEFAULT_MODE || !tools.has(mode));
 
   // Functions
-  function categorySelection(shape_type: string, category?: string) {
-    if (category) onEditValue({ category }, shape_type);
+  function categorySelection(shape_type: string, categoryId?: string) {
+    if (categoryId) onEditValue({ category: categoryId }, shape_type);
   }
-
-  let default_mode = $derived(mode == DEFAULT_MODE || !tools.has(mode));
 </script>
 
 <Sidebar variant="inset" collapsible="none" style="width: {sidebarWidthRem}rem;" side="right">
-  <SidebarHeader></SidebarHeader>
+  <SidebarHeader>
+    <Text weight="semibold">Properties</Text>
+  </SidebarHeader>
+
+  <SidebarSeparator />
 
   <SidebarContent>
     <SidebarGroup>
       <SidebarGroupContent>
         {#key [annotationValue, mode, $entryRoot?.value.category]}
           <CategoryProperties
-            type={default_mode ? ENTRY_ROOT : mode}
-            selectedCategory={(default_mode
+            mode={defaultMode ? ENTRY_ROOT : mode}
+            selectedCategory={(defaultMode
               ? annotationValue.category || $entryRoot?.value.category
               : annotationValue.category) || ""}
-            annotationValue={(default_mode
+            {annotationId}
+            annotationValue={(defaultMode
               ? Object.keys(annotationValue).length
                 ? annotationValue
                 : $entryRoot?.value
               : annotationValue) || {}}
-            onSelectCategory={(s) => categorySelection(default_mode ? ENTRY_ROOT : mode, s)}
-            onEditValue={(value) => value && onEditValue(value, default_mode ? ENTRY_ROOT : mode)}
+            onSelectCategory={(selectedCategoryId) =>
+              categorySelection(defaultMode ? ENTRY_ROOT : mode, selectedCategoryId)}
+            onReSelectCategory={(reselectedCategoryId) => onReSelectCategory?.(reselectedCategoryId)}
+            onEditValue={(value) => value && onEditValue(value, defaultMode ? ENTRY_ROOT : mode)}
             disabled={disabled ||
-              (default_mode || mode == ENTRY_ROOT ? !!$entryRoot?.locked : false) ||
+              (defaultMode || mode == ENTRY_ROOT ? !!$entryRoot?.locked : false) ||
               !["annotate", "review"].includes(context.workflowStep)}
           />
         {/key}
