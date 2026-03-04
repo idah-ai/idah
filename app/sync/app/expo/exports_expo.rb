@@ -41,10 +41,16 @@ class ExportsExpo < BaseExpo
       field :project_id, type: Integer, required: true
       field :dataset_ids, type: Array, required: true
       field :exporter, type: String, required: true
+      field :options, type: Hash, required: false, default: { include_medias: "none" }
     end
   end
   def export
-    service.create(params[:project_id], params[:dataset_ids], params[:exporter])
+    service.create(
+      params[:project_id],
+      params[:dataset_ids],
+      params[:exporter],
+      params[:options]
+    )
   end
 
   expose on_http(:get, "/formats", renderer: Verse::Http::Renderer::Json) do

@@ -50,7 +50,8 @@ RSpec.describe Exports::Service, database: true do
         expect(job.arguments).to eq(
           {
             dataset_ids:,
-            exporter:
+            exporter:,
+            options: {}
           }
         )
       end

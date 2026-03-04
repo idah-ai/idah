@@ -26,7 +26,7 @@ module Exports
     end
 
     # Create an export object + setup the job with it.
-    def create(project_id, dataset_ids, exporter)
+    def create(project_id, dataset_ids, exporter, options = {})
       # Ensure that the exporter class is valid
       sanitize_export_class!(exporter)
 
@@ -44,6 +44,7 @@ module Exports
           arguments: {
             exporter:, # Exporter class
             dataset_ids:,
+            options:
           }
         )
 

@@ -1,6 +1,19 @@
 # frozen_string_literal: true
 
 Api[:idah].register(
+  :media, :medias, :index_all
+) do |params = {}|
+  Api.all(params) do
+    output = get(
+      "media/medias",
+      params:,
+      options: { auth: :bearer } # Enable authentication
+    )
+    deserialize(output.body)
+  end
+end
+
+Api[:idah].register(
   :media, :jobs, :show,
 ) do |id:|
   output = get(

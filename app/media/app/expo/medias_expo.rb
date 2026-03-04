@@ -11,6 +11,10 @@ class MediasExpo < BaseExpo
     This exposition provides access to the media records in the system.
   MD
 
+  json_api Medias::Record do
+    index
+  end
+
   expose on_http(:get, "info/:resource(/:key)?") do
     desc <<-MD
       ## Get Media Info by ID and Key
