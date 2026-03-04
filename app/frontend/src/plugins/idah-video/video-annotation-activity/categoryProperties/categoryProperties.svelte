@@ -5,6 +5,7 @@
   import { getContext } from "svelte";
 
   import { visibilityFullfilled } from ".";
+  import VectorSquareIcon from "../../layout/sidebar/category/vector-sqaure-icon.svelte";
   import { idb_updated_at } from "../idb_store.svelte";
   import BooleanProperty from "./properties/booleanProperty.svelte";
   import IntegerProperty from "./properties/integerProperty.svelte";
@@ -29,8 +30,6 @@
   // Contexts
   const context: IActivityContext = getContext("context");
   const typeConfig = $derived(context.config[type]);
-  const category = $derived(typeConfig?.values.find((c) => c.id == selectedCategory));
-  const properties = $derived(typeConfig?.properties.filter((p) => visibilityFullfilled(annotationValue, p)));
 
   const propertyComponents: {
     type: string;
@@ -74,16 +73,26 @@
       )}</Text
     >
   </div>
-  {#key $idb_updated_at}
-    <Select type="single" onValueChange={onSelectCategory} {disabled}>
+  {#key `${$idb_updated_at}-${selectedCategory}`}
+    {@const category = typeConfig?.values.find((c) => c.id == selectedCategory)}
+    {@const properties = typeConfig?.properties.filter((p) => visibilityFullfilled(annotationValue, p))}
+    <Select type="single" value={selectedCategory} onValueChange={onSelectCategory} {disabled}>
       <SelectTrigger class="data-[placeholder]:text-secondary-foreground bg-secondary w-full truncate text-xs">
-        {category?.label || "Select category"}
+        <div class="flex gap-1">
+          {#if category?.label}
+            <VectorSquareIcon color={category.color} />
+            {category.label}
+          {:else}
+            Select category
+          {/if}
+        </div>
       </SelectTrigger>
 
       <SelectContent>
         <SelectGroup>
           {#each typeConfig.values as c (c.id)}
             <SelectItem value={c.id} label={c.label} class="text-xs">
+              <VectorSquareIcon color={c.color} />
               {c.label}
             </SelectItem>
           {/each}
