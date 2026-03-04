@@ -127,7 +127,10 @@ export class AnnotationsIndexedDB {
       const index = store.index("groupIdIndex");
       const request = index.getAll(IDBKeyRange.only(groupId));
 
-      request.onsuccess = (_) => resolve(request.result);
+      request.onsuccess = (_) => {
+        const sorted = request.result.sort((a, b) => a.shape.start - b.shape.start);
+        resolve(sorted);
+      };
       request.onerror = (_) => reject(request.error);
     });
   }
