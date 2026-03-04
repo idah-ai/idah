@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getContext } from "svelte";
+  import { getContext, onMount } from "svelte";
 
   import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
   import SelectGroup from "@/components/ui/select/select-group.svelte";
@@ -13,13 +13,15 @@
   import SingleSelectProperty from "./properties/SingleSelectProperty.svelte";
   import TextProperty from "./properties/textProperty.svelte";
 
+  import { truncate } from "@/utils/string";
+
   import { visibilityFullfilled } from ".";
+  import { openPropertySidebar } from "../../layout/sidebar/store";
   import { idb_updated_at } from "../idb_store.svelte";
   import { selectedAnnotationGroup } from "../store";
 
   import type { AnnotationValue } from "@/context/AnnotationContext";
   import type { IActivityContext, IConfigProperty } from "@/plugin/interface/Activity";
-  import { truncate } from "@/utils/string";
 
   type Props = {
     mode: string;
@@ -45,6 +47,20 @@
 
   // Contexts
   const context: IActivityContext = getContext("context");
+
+  // Lifecycle
+  onMount(() => {
+    /** If annotation group is selected, show property sidebar */
+    if (configByGroup.properties.length) {
+      $openPropertySidebar = true;
+      return;
+    }
+
+    /** Close property sidebar if no properties */
+    if (!properties?.length) {
+      $openPropertySidebar = false;
+    }
+  });
 
   // Variables
   let configByMode = $derived(context.config[mode]);
@@ -108,36 +124,38 @@
 </script>
 
 {#snippet SelectCategory()}
-  <!-- SELECT::LABEL -->
-  <Text class="text-muted-foreground" weight="medium" size="xs">
-    {getModeTitle()}
-  </Text>
+  {#if configByMode}
+    <!-- SELECT::LABEL -->
+    <Text class="text-muted-foreground" weight="medium" size="xs">
+      {getModeTitle()}
+    </Text>
 
-  <Select type="single" onValueChange={onSelectCategory} disabled={disabled || !configByMode}>
-    <SelectTrigger class="data-[placeholder]:text-secondary-foreground bg-secondary w-full truncate text-xs">
-      <div class="flex gap-1">
-        {#if category?.label}
-          <VectorSquareIcon color={category.color} />
-          {truncate(category.label)}
-        {:else}
-          Select category
-        {/if}
-      </div>
-    </SelectTrigger>
+    <Select type="single" onValueChange={onSelectCategory} {disabled}>
+      <SelectTrigger class="data-[placeholder]:text-secondary-foreground bg-secondary w-full truncate text-xs">
+        <div class="flex gap-1">
+          {#if category?.label}
+            <VectorSquareIcon color={category.color} />
+            {truncate(category.label)}
+          {:else}
+            Select category
+          {/if}
+        </div>
+      </SelectTrigger>
 
-    <SelectContent>
-      <SelectGroup>
-        {#each configByMode.values as { id: value, label, color } (value)}
-          <SelectItem class="text-xs" {label} {value}>
-            <VectorSquareIcon {color} />
-            {label}
-          </SelectItem>
-        {/each}
-      </SelectGroup>
-    </SelectContent>
-  </Select>
+      <SelectContent>
+        <SelectGroup>
+          {#each configByMode.values as { id: value, label, color } (value)}
+            <SelectItem class="text-xs" {label} {value}>
+              <VectorSquareIcon {color} />
+              {label}
+            </SelectItem>
+          {/each}
+        </SelectGroup>
+      </SelectContent>
+    </Select>
 
-  <Separator />
+    <Separator />
+  {/if}
 {/snippet}
 
 {#snippet ReSelectCategory()}
