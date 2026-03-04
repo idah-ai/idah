@@ -1,9 +1,9 @@
-import { type Command } from './Command';
+import { type Command } from "./Command";
 
 type CommandEntry = {
   at: number;
   command: Command;
-}
+};
 
 const CommandManager = {
   commands: [] as CommandEntry[],
@@ -18,7 +18,9 @@ const CommandManager = {
     return this.commands[this.currentIndex];
   },
 
-  add(command: Command) {
+  add(command: Command | undefined) {
+    if (!command) return;
+
     const now = new Date().getTime();
 
     if (this.currentIndex < this.commands.length - 1) {
@@ -26,7 +28,7 @@ const CommandManager = {
     }
 
     const lastCommand = this.lastCommand();
-    if(lastCommand) {
+    if (lastCommand) {
       const diff = now - lastCommand.at;
       if (diff < 5000) {
         // Try to combine commands if they are combinable:
@@ -38,7 +40,7 @@ const CommandManager = {
 
           this.commands[this.currentIndex] = {
             at: now,
-            command: combinedCommand
+            command: combinedCommand,
           };
 
           return;
@@ -53,20 +55,24 @@ const CommandManager = {
 
     const commandEntry = {
       at: now,
-      command
-    }
+      command,
+    };
 
     command.apply();
     this.commands.push(commandEntry);
     this.currentIndex++;
   },
 
-  undo(times : number = 1) {
-    for (let i = 0; i < times; i++) { this.undoOnce(); }
+  undo(times: number = 1) {
+    for (let i = 0; i < times; i++) {
+      this.undoOnce();
+    }
   },
 
   undoOnce() {
-    if (this.currentIndex < 0) { return; }
+    if (this.currentIndex < 0) {
+      return;
+    }
 
     const entry = this.commands[this.currentIndex];
     entry.command.undo();
@@ -74,24 +80,28 @@ const CommandManager = {
     this.currentIndex--;
   },
 
-  redo(times : number = 1) {
-    for (let i = 0; i < times; i++) { this.redoOnce(); }
+  redo(times: number = 1) {
+    for (let i = 0; i < times; i++) {
+      this.redoOnce();
+    }
   },
 
   redoOnce() {
-    if (this.currentIndex + 1 > this.commands.length - 1) { return; }
+    if (this.currentIndex + 1 > this.commands.length - 1) {
+      return;
+    }
 
-    this.commands[this.currentIndex += 1].command.apply();
+    this.commands[(this.currentIndex += 1)].command.apply();
   },
 
-  size(){
+  size() {
     return this.commands.length;
   },
 
   clear() {
     this.commands = [];
     this.currentIndex = -1;
-  }
+  },
 };
 
 export default CommandManager;
