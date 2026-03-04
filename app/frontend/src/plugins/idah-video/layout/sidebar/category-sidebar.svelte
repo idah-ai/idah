@@ -212,7 +212,6 @@
       {#if db && category}
         {#await db.getAllStartingWith("category", category.id) then annotations}
           {@const { count } = getFilteredAnnotations(annotations)}
-          {@const hasAnnoations = count > 0}
 
           <CollapsibleTrigger
             class={cn("text-secondary-foreground flex w-full rounded-md text-xs", {
