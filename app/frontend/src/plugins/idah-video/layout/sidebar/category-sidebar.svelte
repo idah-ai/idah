@@ -212,7 +212,7 @@
       {#if db && category}
         {#await db.getAllStartingWith("category", category.id) then annotations}
           {@const { count } = getFilteredAnnotations(annotations)}
-          {@const hasAnnotation = count > 0}
+          {@const hasAnnotations = count > 0}
 
           <CollapsibleTrigger
             class={cn("text-secondary-foreground flex w-full rounded-md text-xs", {
@@ -225,7 +225,7 @@
             <div class="flex w-full items-center" style:padding-left="{level - 1}rem">
               <SidebarMenuItem class="flex h-8 w-full flex-row items-center gap-1">
                 {@const hasChildren = !!category.nestedCategories}
-                {@const showChevronRightIcon = hasChildren || hasAnnotation}
+                {@const showChevronRightIcon = hasChildren || hasAnnotations}
 
                 <Button
                   variant="ghost"
