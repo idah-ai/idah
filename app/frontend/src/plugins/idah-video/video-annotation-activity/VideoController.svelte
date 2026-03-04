@@ -7,11 +7,13 @@
     FastForwardIcon,
     PauseIcon,
     PlayIcon,
+    SquareSplitHorizontalIcon,
     Volume2Icon,
     VolumeXIcon,
     ZoomInIcon,
     ZoomOutIcon,
   } from "@lucide/svelte";
+  import { getContext } from "svelte";
   import type { ChangeEventHandler } from "svelte/elements";
 
   import NumberField from "@/components/app/forms/fields/input/number-field.svelte";
@@ -28,6 +30,13 @@
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
   import Slider from "@/components/ui/slider/slider.svelte";
 
+  import type {
+    AnnotationMetadata,
+    AnnotationObj,
+    AnnotationShape,
+    AnnotationValue,
+  } from "@/context/AnnotationContext";
+  import type { IActivityContext } from "@/plugin/interface/Activity";
   import { IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP } from "../type";
   import Video from "./video.svelte";
 
@@ -39,9 +48,22 @@
     currentFrame: number;
     totalFrames: number;
     zoom: number;
+    selectedAnnotation?: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
     onZoomChange: (zoom: number) => void;
   }
-  let { video = $bindable(), isPlaying, volume, zoom, currentFrame, totalFrames, onZoomChange }: Props = $props();
+  let {
+    video = $bindable(),
+    isPlaying,
+    volume,
+    zoom,
+    currentFrame,
+    totalFrames,
+    selectedAnnotation,
+    onZoomChange,
+  }: Props = $props();
+
+  // Contexts
+  const context: IActivityContext = getContext("context");
 
   // Variables
   interface VideoSpeedMenuItem {
@@ -63,6 +85,11 @@
 
   let currentSpeed: number = $state(1);
   let sliderValue: number = $derived(max - (zoom - min));
+  let disabledSplitButton = $derived.by(() => {
+    if (!selectedAnnotation) return true;
+    if (selectedAnnotation.locked) return true;
+    if (selectedAnnotation.shape.end < currentFrame) return true;
+  });
 
   const seekToFrame: ChangeEventHandler<HTMLInputElement> = (event) => {
     const target = event.target as HTMLInputElement;
@@ -203,6 +230,25 @@
         groupInputClass="h-7"
       />
     </div>
+
+    <!-- ANNOTATION::SPLIT -->
+    <Tooltips>
+      {#snippet trigger()}
+        <Button
+          variant="outline"
+          size="icon-sm"
+          disabled={disabledSplitButton}
+          onclick={() =>
+            selectedAnnotation &&
+            context.commands.run("annotation.split", { id: selectedAnnotation.metadata.id, at: currentFrame })}
+        >
+          <SquareSplitHorizontalIcon />
+        </Button>
+      {/snippet}
+      {#snippet content()}
+        Split annotation
+      {/snippet}
+    </Tooltips>
   </div>
 
   <!-- CONTAINER::CENTER -->
