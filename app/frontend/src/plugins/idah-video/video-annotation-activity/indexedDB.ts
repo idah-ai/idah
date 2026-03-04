@@ -11,6 +11,7 @@ const s = {
     { index: "category", path: "value.category", opts: { unique: false } },
     { index: "created_at", path: "metadata.updatedAt", opts: { unique: false } },
     { index: "updated_at", path: "metadata.createdAt", opts: { unique: false } },
+    { index: "groupIdIndex", path: "metadata.metadata.group_id", opts: { unique: false } },
   ],
   keyframes: [
     { index: "frame", path: "frame", opts: { unique: false } },
@@ -113,6 +114,18 @@ export class AnnotationsIndexedDB {
       const transaction = this.db.transaction(store_name, "readonly");
       const store = transaction.objectStore(store_name);
       const request = store.get(key);
+
+      request.onsuccess = (_) => resolve(request.result);
+      request.onerror = (_) => reject(request.error);
+    });
+  }
+
+  getGroupAnnotations(groupId: string): Promise<AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]> {
+    return new Promise<AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]>((resolve, reject) => {
+      const transaction = this.db.transaction("annotations", "readonly");
+      const store = transaction.objectStore("annotations");
+      const index = store.index("groupIdIndex");
+      const request = index.getAll(IDBKeyRange.only(groupId));
 
       request.onsuccess = (_) => resolve(request.result);
       request.onerror = (_) => reject(request.error);
