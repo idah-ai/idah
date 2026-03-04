@@ -1153,9 +1153,9 @@
             type={mode}
             selectedCategory={annotationValue.category}
             {annotationValue}
-            onSelectCategory={(s) => {
-              if (s != mode) selectAnnotation();
-              annotationValue = { ...annotationValue, category: s };
+            onSelectCategory={(selectedCategory) => {
+              if (selectedCategory != mode) selectAnnotation();
+              annotationValue = { ...annotationValue, category: selectedCategory };
               onEditValue({ category: annotationValue.category }, mode);
             }}
             onEditValue={(value) => value && onEditValue(value, mode)}
