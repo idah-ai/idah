@@ -497,8 +497,12 @@ RSpec.describe Exports::Upd::Exporter do
       end
 
       before do
-        allow(Api[:idah].dataset.datasets).to receive(:show).with(id: dataset_id).and_return(dataset_response)
-        allow(Api[:idah].dataset.datasets).to receive(:show).with(id: other_dataset_id).and_return(other_dataset_response)
+        allow(Api[:idah].dataset.datasets).to(
+          receive(:show).with(id: dataset_id).and_return(dataset_response)
+        )
+        allow(Api[:idah].dataset.datasets).to(
+          receive(:show).with(id: other_dataset_id).and_return(other_dataset_response)
+        )
         allow(Api[:idah].dataset.entries).to receive(:index_all).and_return([])
       end
 
