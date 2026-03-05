@@ -27,6 +27,7 @@
 
   // Props
   let {
+    view,
     sidebarWidthRem,
     annotationValue,
     onEditValue,
@@ -41,6 +42,7 @@
     selectedAnnotationId,
     class: className,
   }: {
+    view: "sidebar" | "popover";
     sidebarWidthRem: number;
     currentFrame: number;
     annotationValue: AnnotationValue;
@@ -137,6 +139,7 @@
     {#each filteredTools as [tool, categories] (tool)}
       {#if !filteredTools.has(mode) || (filteredTools.has(mode) && tool == mode) || mode == ENTRY_ROOT}
         <CategorySidebar
+          {view}
           {db}
           {currentFrame}
           currentMode={mode}
