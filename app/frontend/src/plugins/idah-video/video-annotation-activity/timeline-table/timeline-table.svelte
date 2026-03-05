@@ -22,7 +22,6 @@
     AnnotationValue,
   } from "@/context/AnnotationContext";
   import type { IActivityContext } from "@/plugin/interface/Activity";
-  import type { AnnotationsIndexedDB } from "../indexedDB";
 
   type TAnnotationObj = AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
 
@@ -45,7 +44,6 @@
     onScaleChange,
     onLock,
     onVisibility,
-    db,
     isPlaying = false,
   }: {
     annotations_promise: Promise<TAnnotationObj[]>;
@@ -65,7 +63,6 @@
     onVisibility: (hidden: boolean, annotation?: TAnnotationObj) => void;
     onZoomChange?: (zoom: number) => void;
     onScaleChange?: (zoom: number) => void;
-    db?: AnnotationsIndexedDB;
     isPlaying?: boolean;
   } = $props();
 
