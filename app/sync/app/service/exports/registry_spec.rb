@@ -45,39 +45,39 @@ RSpec.describe Exports::Registry do
   let(:format_b) { TestExportFormatB }
   let(:format_c) { TestExportFormatC }
 
-  describe ".register" do
+  describe "#register" do
     it "registers a class for a single string modality" do
-      subject.register("image", format_a)
+      subject.register("image-plugin", "image", format_a)
       expect(subject.list_export_format(["image"])).to include(format_a)
     end
 
     it "registers a class for a single regexp modality" do
-      subject.register(/video.*/, format_b)
+      subject.register("video-plugin", /video.*/, format_b)
       expect(subject.list_export_format(["video/mp4"])).to include(format_b)
     end
 
     it "registers a class for multiple modalities (array)" do
-      subject.register(["audio", /text.*/], format_c)
+      subject.register("audio-plugin", ["audio", /text.*/], format_c)
       expect(subject.list_export_format(["audio"])).to include(format_c)
       expect(subject.list_export_format(["text/plain"])).to include(format_c)
     end
 
     it "raises ArgumentError if modality is not String, Regexp or Array" do
       expect {
-        subject.register(123, format_a)
+        subject.register("invalid-plugin", 123, format_a)
       }.to raise_error(ArgumentError, /modality selector must be String or Regexp/)
     end
 
     it "raises ArgumentError if any modality in array is invalid" do
       expect {
-        subject.register(["valid", 123], format_a)
+        subject.register("invalid-plugin", ["valid", 123], format_a)
       }.to raise_error(ArgumentError, /modality selector must be String or Regexp/)
     end
   end
 
-  describe ".valid_export_class?" do
+  describe "#valid_export_class?" do
     before do
-      subject.register("image", format_a)
+      subject.register("image-plugin", "image", format_a)
     end
 
     it "returns true if the class name (String) is registered" do
@@ -95,11 +95,11 @@ RSpec.describe Exports::Registry do
     end
   end
 
-  describe ".list_export_format" do
+  describe "#list_export_format" do
     before do
-      subject.register("common", format_a)
-      subject.register(/special.*/, format_b)
-      subject.register("common", format_c) # Multiple formats for same modality
+      subject.register("common-plugin", "common", format_a)
+      subject.register("special-plugin", /special.*/, format_b)
+      subject.register("common-plugin", "common", format_c) # Multiple formats for same modality
     end
 
     it "returns all formats matching a string modality" do
@@ -122,7 +122,7 @@ RSpec.describe Exports::Registry do
     it "returns unique list of formats" do
       # format_a matches "common"
       # Let's register format_a for another matching key
-      subject.register("duplicate", format_a)
+      subject.register("duplicate-plugin", "duplicate", format_a)
 
       formats = subject.list_export_format(["common", "duplicate"])
       expect(formats).to include(format_a)
@@ -134,9 +134,9 @@ RSpec.describe Exports::Registry do
     end
   end
 
-  describe ".list_export_format_details" do
+  describe "#list_export_format_details" do
     before do
-      subject.register("detailed", format_a)
+      subject.register("detailed-plugin", "detailed", format_a)
     end
 
     it "returns detailed information for each export format" do
@@ -154,5 +154,43 @@ RSpec.describe Exports::Registry do
       details = subject.list_export_format_details(["nonexistent"])
       expect(details).to be_empty
     end
+  end
+
+  describe "#clear" do
+    before do
+      described_class.register(
+        "plugin1",
+        "image",
+        format_a
+      )
+      described_class.register(
+        "plugin2",
+        "video",
+        format_b
+      )
+    end
+
+    it "clears only the processors of a specific plugin" do
+      described_class.clear("plugin1")
+      expect(described_class.list_export_format(["image"])).to be_empty
+      expect(described_class.list_export_format(["video"])).to include(format_b)
+    end
+  end
+
+  it "#clear_all" do
+    described_class.register(
+      "plugin1",
+      "image",
+      format_a
+    )
+    described_class.register(
+      "plugin2",
+      "video",
+      format_b
+    )
+
+    described_class.clear_all
+    expect(described_class.list_export_format(["image"])).to be_empty
+    expect(described_class.list_export_format(["video"])).to be_empty
   end
 end
