@@ -141,7 +141,7 @@
     { label: "Entries" },
   ]);
 
-  let listOptions: ListOptions = $state({
+  let listOptions: ListOptions = $derived({
     filters: filters,
     included: ["assigned_to", "submitted_by", "reviewed_by"],
     fields: { [ProjectMemberRecord.type]: ["name", "email", "picture_url"] },
@@ -322,9 +322,9 @@
   }
 </script>
 
-{#snippet AddEntryButton()}
+{#snippet AddEntryButton(className?: string)}
   <Can action="create" resource="dataset:entries" scopes={["as_org_owner", as_project_owner]}>
-    <Button onclick={openNewEntryFormModal}>
+    <Button onclick={openNewEntryFormModal} class={className}>
       <PlusIcon />
       Add Entry
     </Button>
@@ -334,7 +334,7 @@
 <PageHeader title="Datasets">
   {#snippet slotTitle()}
     <div class="flex w-full gap-4">
-      <div class="flex w-full flex-col items-center justify-between gap-4 md:flex-row">
+      <div class="flex w-full flex-col items-center justify-between gap-4 lg:flex-row">
         <div class="flex flex-1 items-center gap-4">
           <!-- SELECT ALL -->
           {#if canUpdateEntry || canDeleteEntry}
@@ -343,7 +343,7 @@
             </div>
           {/if}
 
-          <div class="flex gap-2">
+          <div class="flex flex-wrap gap-2">
             {#each Object.entries(entryColumns) as [columnKey, columnSetting] (columnKey)}
               <FilterSortDropdownMenu
                 contexts={{
@@ -387,12 +387,13 @@
           </div>
         </div>
 
-        <div class="flex items-center justify-end gap-2">
+        <div class={cn("w-full gap-2 lg:w-auto", isRowSelected ? "grid grid-cols-2" : "flex justify-end")}>
           <!-- BULK ACTIONS -->
+
           {#if isRowSelected}
             <DropdownMenu>
               <DropdownMenuTrigger>
-                <Button variant="outline" class="bg-primary/10 hover:bg-primary/20">
+                <Button variant="outline" class="bg-primary/10 hover:bg-primary/20 w-full transition-opacity">
                   {selectedRowsCount} selected
                   <ChevronsUpDownIcon class="text-muted-foreground ml-2 size-4" />
                 </Button>
@@ -411,7 +412,7 @@
             </DropdownMenu>
           {/if}
 
-          {@render AddEntryButton()}
+          {@render AddEntryButton("w-full lg:w-auto")}
         </div>
       </div>
     </div>
