@@ -1103,10 +1103,7 @@
 
   // TODO: refactor with selectAnnotation ?
   function selectAnnotationGroup(annotationGroup: AnnotationGroup<TAnnotationObj>) {
-    $selectedAnnotationGroup = {
-      groupId: annotationGroup.groupId,
-      annotations: annotationGroup.annotations,
-    };
+    $selectedAnnotationGroup = annotationGroup;
 
     const base_annotation = annotationGroup.annotations[0];
     /**
@@ -1159,13 +1156,6 @@
     }
 
     return closestAnnotation;
-  }
-
-  // TODO: this should be able to refactor
-  // determine whether to select the group or an annotation
-  function selectGroupAtFrame(annotationGroup: AnnotationGroup<TAnnotationObj>, currentFrame?: number) {
-    // eslint-disable-line @typescript-eslint/no-unused-vars
-    selectAnnotationGroup(annotationGroup);
   }
 
   let overlay: SvgOverlay;
@@ -1359,7 +1349,7 @@
               {currentFrame}
               {onEditValue}
               onSelectAnnotation={selectAnnotation}
-              onSelectAnnotationGroup={selectGroupAtFrame}
+              onSelectAnnotationGroup={selectAnnotationGroup}
               {onDeleteAnnotation}
               {onLock}
               {onVisibility}
@@ -1455,7 +1445,7 @@
               {allHidden}
               {allLocked}
               onSelectAnnotation={selectAnnotation}
-              onSelectGroupAtFrame={selectGroupAtFrame}
+              onSelectGroupAtFrame={selectAnnotationGroup}
               {isPlaying}
               onScaleChange={(s) => {
                 scale = s;

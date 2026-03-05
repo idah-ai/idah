@@ -156,33 +156,21 @@
     }
   }
 
-  // function getFilteredAnnotations(annotations: Array<TAnnotationObj>): {
-  //   annotations: Array<TAnnotationObj>;
-  //   count: number;
-  // } {
-  //   const filteredAnnotations = annotations.filter(
-  //     (annotation) =>
-  //       currentFrame >= annotation.shape.start &&
-  //       currentFrame <= annotation.shape.end &&
-  //       annotation.shape.type == modalityShape,
-  //   );
-
-  //   return {
-  //     annotations: filteredAnnotations,
-  //     count: filteredAnnotations.length,
-  //   };
-  // }
-
   function groupFilteredAnnotations(annotations: Array<TAnnotationObj>): {
     groups: Array<AnnotationGroup<TAnnotationObj>>;
     count: number;
   } {
-    const groupedAnnotations = groupAnnotations(annotations);
-    // TODO Filter annotation in specific currentFrame and modalityShape
+    const filteredAnnotations = annotations.filter(
+      (annotation) =>
+        currentFrame >= annotation.shape.start &&
+        currentFrame <= annotation.shape.end &&
+        annotation.shape.type == modalityShape,
+    );
+    const filteredGroupedAnnotations = groupAnnotations(filteredAnnotations);
 
     return {
-      groups: groupedAnnotations,
-      count: groupedAnnotations.length,
+      groups: filteredGroupedAnnotations,
+      count: filteredGroupedAnnotations.length,
     };
   }
 </script>
