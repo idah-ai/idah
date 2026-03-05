@@ -29,6 +29,7 @@
   // Props
   type TAnnotationObj = AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
   interface Props {
+    view: "sidebar" | "popover";
     db?: AnnotationsIndexedDB;
 
     currentFrame: number;
@@ -47,6 +48,7 @@
     onVisibility: (hidden: boolean, annotation?: TAnnotationObj) => void;
   }
   let {
+    view,
     db,
     currentFrame,
     currentMode,
@@ -63,7 +65,6 @@
 
   // Variables
   let openCategory = $state(true);
-  let forceRender = $state(0);
   let currentModeIsSameAsShape = $derived(currentMode == modalityShape);
 
   // Automatically expand all categories when categories prop changes, but allow manual toggles
@@ -138,36 +139,19 @@
     return acc;
   }
 
-  async function haveAnnotationsInCategory(categoryId: string): Promise<boolean> {
-    if (!db || !categoryId) return false;
-    const allAnnotations = await db.getAllStartingWith("category", categoryId);
-    const filterAnnotations = allAnnotations.filter((annotation) => {
-      return (
-        currentFrame >= annotation.shape.start &&
-        currentFrame <= annotation.shape.end &&
-        annotation.shape.type == modalityShape
-      );
-    });
-
-    return filterAnnotations.length > 0;
-  }
-
   function toggleCategory(e: MouseEvent, category: CategoryDefinition) {
     e.preventDefault();
 
-    // Allow selection if category is not requiredNested,
-    // or if it's a parent that exists in the original categories list
     if (categories.find((c) => c.id === category.id)) {
       onSelectCategory(category.id);
     }
 
     if (category.nestedCategories) {
-      // Toggle the category open state manually
-      manualToggleStates[category.id] = !openStates[category.id];
+      manualToggleStates = {
+        ...manualToggleStates,
+        [category.id]: !openStates[category.id],
+      };
     }
-
-    // Force re-render of annotation counts
-    forceRender++;
   }
 
   function getFilteredAnnotations(annotations: Array<TAnnotationObj>): {
@@ -196,11 +180,13 @@
           <Button variant="ghost" class="w-full justify-between" {...props}>
             {formatShapeName(modalityShape)}
 
-            <ChevronRightIcon
-              class={cn("transition-transform", {
+            <div
+              class={cn("rotate-0 transition-transform duration-200", {
                 "rotate-90": openCategory,
               })}
-            />
+            >
+              <ChevronRightIcon />
+            </div>
           </Button>
         {/snippet}
       </CollapsibleTrigger>
@@ -223,77 +209,102 @@
   parent: string[] = [],
   level: number = 1,
 )}
-  <Collapsible open={currentModeIsSameAsShape ? !!category : openStates[category.id] || false}>
-    {#key `${forceRender}-${$idb_updated_at}-${modalityShape}`}
-      {#await haveAnnotationsInCategory(category.id) then hasAnnoations}
-        <CollapsibleTrigger
-          class={cn("text-secondary-foreground flex w-full rounded-md text-xs", {
-            "bg-secondary border-primary border-1": selectedCategory == category.id,
-            "hover:bg-primary-foreground hover:dark:bg-accent cursor-pointer": !category.requiredNested,
-            "hover:bg-accent cursor-pointer": !currentModeIsSameAsShape,
-          })}
-          onclick={(e) => toggleCategory(e, category)}
-        >
-          <div class="flex w-full items-center" style:padding-left="{level - 1}rem">
-            <SidebarMenuItem class="flex h-8 w-full flex-row items-center gap-1">
-              {@const hasChildren = !!category.nestedCategories || hasAnnoations}
+  <Collapsible open={openStates[category.id] || false}>
+    {#key `${$idb_updated_at}`}
+      {#if db && category}
+        {#await db.getAllStartingWith("category", category.id) then annotations}
+          {@const { count } = getFilteredAnnotations(annotations)}
+          {@const hasAnnotations = count > 0}
 
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                disabled={currentModeIsSameAsShape}
-                class={cn("p-0", {
-                  "opacity-0": !hasChildren || selectedAnnotationId,
-                  hidden: currentModeIsSameAsShape && selectedAnnotationId,
-                })}
-                onclick={(e) => {
-                  e.stopPropagation();
-                  if (category.nestedCategories || hasChildren) {
-                    // Toggle the category open state manually
-                    manualToggleStates[category.id] = !openStates[category.id];
-                  }
-                }}
-              >
-                {@const isSelected = selectedCategory == category.id}
+          <CollapsibleTrigger
+            class={cn("text-secondary-foreground flex w-full rounded-md text-xs", {
+              "bg-secondary border-primary border-1": selectedCategory == category.id,
+              "hover:bg-primary-foreground hover:dark:bg-accent cursor-pointer": !category.requiredNested,
+              "hover:bg-accent cursor-pointer": !currentModeIsSameAsShape,
+            })}
+            onclick={(e) => toggleCategory(e, category)}
+          >
+            <div class="flex w-full items-center" style:padding-left="{level - 1}rem">
+              <SidebarMenuItem class="flex h-8 w-full flex-row items-center gap-1">
+                {@const hasChildren = !!category.nestedCategories}
+                {@const isSelectingCategory = selectedCategory == category.id}
+                {@const showChevronRightIcon = hasChildren || hasAnnotations}
 
-                {#if isSelected && currentModeIsSameAsShape && !selectedAnnotationId}
-                  <PlusIcon class="text-primary" strokeWidth={4} />
-                {:else if !category.nestedCategories && currentModeIsSameAsShape && !selectedAnnotationId}
-                  <CircleSmallIcon class="fill-gray-400 stroke-gray-400" />
-                {:else}
-                  {@const parentOpen = category.nestedCategories && currentModeIsSameAsShape}
-                  <ChevronRightIcon
-                    class={cn({
-                      "opacity-0": !hasChildren || category.nestedCategories?.length === 0,
-                      "rotate-90": openStates[category.id] || parentOpen,
-                      "stroke-blue-300": isSelected,
-                      "stroke-gray-500": !isSelected,
-                    })}
-                  />
-                {/if}
-              </Button>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  disabled={currentModeIsSameAsShape}
+                  class={cn("p-0", {
+                    "opacity-0": !showChevronRightIcon || selectedAnnotationId,
+                  })}
+                  onclick={(e) => {
+                    e.stopPropagation();
 
-              <VectorSqaureIcon
-                color={category.data.color}
-                class={cn({
-                  hidden: category.requiredNested,
-                })}
-              />
+                    if (category.nestedCategories || showChevronRightIcon) {
+                      manualToggleStates = {
+                        ...manualToggleStates,
+                        [category.id]: !openStates[category.id],
+                      };
+                    }
+                  }}
+                >
+                  {#if view === "sidebar"}
+                    {#if currentModeIsSameAsShape}
+                      <!-- TOOLS::BOUNDING BOX / POLYGON / OTHER SHAPES -->
+                      {#if isSelectingCategory}
+                        <PlusIcon class="text-primary" strokeWidth={4} />
+                      {:else if hasChildren}
+                        <ChevronRightIcon
+                          class={cn({
+                            "rotate-90": openStates[category.id],
+                            "stroke-blue-300": isSelectingCategory,
+                            "stroke-gray-500": !isSelectingCategory,
+                          })}
+                        />
+                      {:else}
+                        <CircleSmallIcon class="fill-gray-400 stroke-gray-400" />
+                      {/if}
+                    {:else}
+                      <!-- TOOLS::VISUAL -->
+                      <ChevronRightIcon
+                        class={cn({
+                          "opacity-0": !showChevronRightIcon,
+                          "rotate-90": openStates[category.id],
+                          "stroke-blue-300": isSelectingCategory,
+                          "stroke-gray-500": !isSelectingCategory,
+                        })}
+                      />
+                    {/if}
+                  {/if}
 
-              <CategoryName name={category.name} />
+                  {#if view === "popover"}
+                    {#if hasChildren}
+                      <ChevronRightIcon
+                        class={cn({
+                          "rotate-90": openStates[category.id],
+                        })}
+                      />
+                    {:else}
+                      <CircleSmallIcon class="fill-gray-400 stroke-gray-400" />
+                    {/if}
+                  {/if}
+                </Button>
 
-              {#if db && category}
-                {#key $idb_updated_at}
-                  {#await db.getAllStartingWith("category", category.id) then annotations}
-                    {@const { count } = getFilteredAnnotations(annotations)}
-                    <AnnotationCountBadge class="mr-2" {count} />
-                  {/await}
-                {/key}
-              {/if}
-            </SidebarMenuItem>
-          </div>
-        </CollapsibleTrigger>
-      {/await}
+                <VectorSqaureIcon
+                  color={category.data.color}
+                  class={cn({
+                    hidden: category.requiredNested,
+                  })}
+                />
+
+                <CategoryName name={category.name} />
+
+                <AnnotationCountBadge class="mr-2" {count} />
+              </SidebarMenuItem>
+            </div>
+          </CollapsibleTrigger>
+        {/await}
+      {/if}
     {/key}
 
     <CollapsibleContent hidden={!openStates[category.id]}>

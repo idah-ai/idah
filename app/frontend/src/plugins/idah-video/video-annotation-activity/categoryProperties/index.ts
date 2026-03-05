@@ -7,7 +7,7 @@ export function visibilityFullfilled(value: AnnotationValue, field: IConfigPrope
   return new AstProcessor(new Map(objectVariables(value, "value"))).processAST(field.visibility);
 }
 
-export function requiredFullfilled(value: AnnotationValue, properties: IConfigProperty[]): boolean {
+export function requiredFullfilled(value: AnnotationValue, properties: IConfigProperty[] = []): boolean {
   return properties
     .filter((p) => visibilityFullfilled(value, p) && p.required)
     .every((p) => value.attributes?.[p.id] != undefined && conformToformat(value.attributes?.[p.id], p));
