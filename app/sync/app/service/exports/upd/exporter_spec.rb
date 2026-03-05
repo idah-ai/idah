@@ -35,100 +35,73 @@ RSpec.describe Exports::Upd::Exporter do
     let(:context) { Exports::Context.new(mock_job, [dataset_id], options) }
 
     let(:dataset_data) do
-      JSON.parse(File.read("app/sync/app/spec_data/api_data/datasets.json"))
+      JSON.parse(File.read("app/spec_data/api_data/datasets.json"))
     end
 
     let(:entry_data) do
-      JSON.parse(File.read("app/sync/app/spec_data/api_data/entries.json"))
+      JSON.parse(File.read("app/spec_data/api_data/entries.json"))
     end
 
     let(:annotation_data) do
-      JSON.parse(File.read("app/sync/app/spec_data/api_data/annotations.json"))
+      JSON.parse(File.read("app/spec_data/api_data/annotations.json"))
     end
 
     let(:media_data) do
-      JSON.parse(File.read("app/sync/app/spec_data/api_data/medias.json"))
+      JSON.parse(File.read("app/spec_data/api_data/medias.json"))
     end
 
     let(:dataset_response) do
+      dataset_attrs = dataset_data["data"][0]["attributes"]
       double(
         "Dataset",
         id: dataset_id,
-        name: "Test Dataset 5",
-        modality: "idah-video",
+        name: dataset_attrs["name"],
+        modality: dataset_attrs["modality"],
         data: {
-          attributes: {
-            labeling_configuration: {},
-            workflow_configuration: {},
-            labels: [],
-            status: "pending",
-            progress: 0.0,
-            entries_total_count: 2,
-            entries_completed_count: 0,
-            entries_in_progress_count: 1,
-            created_at: "2026-01-09 03:46:56 +0000",
-            updated_at: "2026-01-09 04:07:10 +0000"
-          }
+          attributes: dataset_attrs.transform_keys(&:to_sym)
         }
       )
     end
 
     let(:entry_response) do
+      entry_attrs = entry_data["data"][0]["attributes"]
       double(
         "Entry",
         id: entry_id,
-        resource: "4c2052a1475842e9.mov",
+        resource: entry_attrs["resource"],
         data: {
-          attributes: {
-            priority: 0,
-            wf_step: "annotate",
-            status: "in_progress",
-            resource: "4c2052a1475842e9.mov",
-            assigned_to_id: 13,
-            submitted_by_id: nil,
-            reviewed_by_id: nil,
-            created_at: "2026-01-15 09:26:08 +0000",
-            updated_at: "2026-02-02 04:55:10 +0000"
-          }
+          attributes: entry_attrs.transform_keys(&:to_sym)
         }
       )
     end
 
     let(:annotation_response) do
+      annotation_attrs = annotation_data["data"][0]["attributes"]
       double(
         "Annotation",
         id: annotation_id,
-        dimensions: {
-          type: "idah-video:bounding-box",
-          end: 119,
-          range: [1, 1],
-          start: 1,
-          frames: []
-        },
-        annotation: {
-          category: "vehicles/car"
-        },
+        dimensions: annotation_attrs["dimensions"].transform_keys(&:to_sym),
+        annotation: annotation_attrs["annotation"].transform_keys(&:to_sym),
         data: {
           attributes: {
-            created_by_email: "admin@idah.ai",
-            created_at: "2025-12-17 06:08:26 +0000",
-            updated_at: "2025-12-17 06:11:26 +0000",
-            metadata: {
-              custom_field: "value"
-            }
+            created_by_email: annotation_attrs["created_by_email"],
+            created_at: annotation_attrs["created_at"],
+            updated_at: annotation_attrs["updated_at"],
+            metadata: annotation_attrs["metadata"] || {}
           }
         }
       )
     end
 
     let(:media_response) do
+      media_attrs = media_data["data"][0]["attributes"]
       double(
         "Media",
-        id: media_id,
-        resource: "4c2052a1475842e9.mov",
-        key: "",
-        filename: "dc160a222abc4a6e.mov",
-        mime_type: "video/quicktime"
+        id: media_data["data"][0]["id"],
+        resource: media_attrs["resource"],
+        key: media_attrs["key"],
+        filename: media_attrs["filename"],
+        mime_type: media_attrs["mime_type"]
       )
     end
 
@@ -183,7 +156,7 @@ RSpec.describe Exports::Upd::Exporter do
           if cmd.include?("dataset create")
             dataset_created = true
             expect(cmd).to include("--id \"#{dataset_id}\"")
-            expect(cmd).to include("--name \"Test Dataset 5\"")
+            expect(cmd).to include("--name \"Dataset 1\"")
             expect(cmd).to include("--modality idah-video")
             expect(cmd).to include("--metadata")
           end

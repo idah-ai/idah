@@ -2,83 +2,99 @@
   "data": [
     {
       "type": "dataset:datasets",
-      "id": "019ba0dd-4beb-757b-b5fb-de54446534e0",
+      "id": "019bba87-7810-7935-a8ae-d2a6bacebecb",
       "attributes": {
-        "name": "Test Dataset 5",
+        "project_id": "019bba87-650e-74e8-a68a-bc49bfff2527",
+        "name": "Dataset 1",
+        "labels": [],
         "modality": "idah-video",
-        "status": "pending",
-        "progress": 0.0,
-        "created_at": "2026-01-09 03:46:56 +0000",
-        "updated_at": "2026-01-09 04:07:10 +0000"
+        "labeling_configuration": {
+          "idah-video:bounding-box": {
+            "values": [
+              {
+                "id": "vehicles/car",
+                "color": "#F6402B",
+                "label": "Car",
+                "text_color": "#FFFFFF"
+              },
+              {
+                "id": "vehicles/bus",
+                "color": "#3C4DB7",
+                "label": "Bus",
+                "parent": "vehicles",
+                "children": [],
+                "expanded": true,
+                "text_color": "#FFFFFF"
+              },
+              {
+                "id": "vehicles/van",
+                "color": "#009687",
+                "label": "Van",
+                "parent": "vehicles",
+                "children": [],
+                "expanded": true,
+                "text_color": "#000000"
+              }
+            ],
+            "properties": [
+              {
+                "id": "occlusion",
+                "type": "boolean",
+                "label": "occlusion",
+                "format": {},
+                "required": true,
+                "visibility": [
+                  "or",
+                  [
+                    [
+                      "eq",
+                      [
+                        [
+                          "get",
+                          [
+                            "value.category"
+                          ]
+                        ],
+                        "vehicles/car"
+                      ]
+                    ],
+                    [
+                      "eq",
+                      [
+                        [
+                          "get",
+                          [
+                            "value.category"
+                          ]
+                        ],
+                        "vehicles/bus"
+                      ]
+                    ]
+                  ]
+                ],
+                "description": ""
+              }
+            ]
+          }
+        },
+        "workflow_configuration": {},
+        "status": "in_progress",
+        "progress": 0,
+        "entries_total_count": 3,
+        "entries_completed_count": 0,
+        "entries_in_progress_count": 3,
+        "created_at": "2026-01-14 10:23:18 +0000",
+        "updated_at": "2026-01-20 16:04:23 +0000"
       },
       "relationships": {
-        "entries": {
-          "data": [
-            {
-              "type": "dataset:entries",
-              "id": "019ba0e7-e8c6-77ad-8965-18a63f52582d"
-            },
-            {
-              "type": "dataset:entries",
-              "id": "019ba0e8-05e5-711d-8a3e-8f4f4a7144a2"
-            }
-          ]
-        },
         "project": {
           "data": {
             "type": "dataset:projects",
-            "id": "019b2156-d537-74c7-a0d7-13413e8b8855"
+            "id": "019bba87-650e-74e8-a68a-bc49bfff2527"
           }
         }
       }
     }
   ],
-  "included": [
-    {
-      "type": "dataset:entries",
-      "id": "019ba0e7-e8c6-77ad-8965-18a63f52582d",
-      "attributes": {
-        "status": "ready"
-      },
-      "relationships": {
-        "dataset": {
-          "data": {
-            "type": "dataset:datasets",
-            "id": "019ba0dd-4beb-757b-b5fb-de54446534e0"
-          }
-        },
-        "project": {
-          "data": {
-            "type": "dataset:projects",
-            "id": "019b2156-d537-74c7-a0d7-13413e8b8855"
-          }
-        }
-      }
-    },
-    {
-      "type": "dataset:entries",
-      "id": "019ba0e8-05e5-711d-8a3e-8f4f4a7144a2",
-      "attributes": {
-        "status": "ready"
-      },
-      "relationships": {
-        "dataset": {
-          "data": {
-            "type": "dataset:datasets",
-            "id": "019ba0dd-4beb-757b-b5fb-de54446534e0"
-          }
-        },
-        "project": {
-          "data": {
-            "type": "dataset:projects",
-            "id": "019b2156-d537-74c7-a0d7-13413e8b8855"
-          }
-        }
-      }
-    }
-  ],
-  "meta": {
-    "count": 1,
-    "more": false
-  }
+  "meta": {}
 }

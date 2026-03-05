@@ -2,63 +2,118 @@
   "data": [
     {
       "type": "dataset:entries",
-      "id": "019bc0fa-025e-7a8c-a3f4-82b276508315",
+      "id": "019bba87-9818-7967-8233-35fa9807d8fa",
       "attributes": {
-        "project_id": "019b457e-da22-7442-8f0a-a2e8ae77f69d",
-        "dataset_id": "019b4e62-ab2f-71aa-af3d-0f6e06bc1126",
+        "project_id": "019bba87-650e-74e8-a68a-bc49bfff2527",
+        "dataset_id": "019bba87-7810-7935-a8ae-d2a6bacebecb",
         "priority": 0,
         "wf_step": "annotate",
         "status": "in_progress",
-        "job_id": "019bc0fa-0497-7f30-8d79-5b921f8698f3",
+        "job_id": "019bba87-9eb4-76a6-b803-ca5f30dff06d",
         "resource": "4c2052a1475842e9.mov",
-        "assigned_to_id": 13,
+        "assigned_to_id": 12,
         "submitted_by_id": null,
         "reviewed_by_id": null,
-        "created_at": "2026-01-15 09:26:08 +0000",
-        "updated_at": "2026-02-02 04:55:10 +0000"
+        "created_at": "2026-01-14 10:23:27 +0000",
+        "updated_at": "2026-01-19 10:28:46 +0000"
       },
       "relationships": {
-        "assigned_to": {
-          "data": {
-            "type": "dataset:project_members",
-            "id": "27"
-          }
-        },
         "dataset": {
           "data": {
             "type": "dataset:datasets",
-            "id": "019b4e62-ab2f-71aa-af3d-0f6e06bc1126"
+            "id": "019bba87-7810-7935-a8ae-d2a6bacebecb"
           }
         },
         "project": {
           "data": {
             "type": "dataset:projects",
-            "id": "019b457e-da22-7442-8f0a-a2e8ae77f69d"
+            "id": "019bba87-650e-74e8-a68a-bc49bfff2527"
+          }
+        },
+        "assigned_to": {
+          "data": {
+            "type": "dataset:project_members",
+            "id": "12"
           }
         }
       }
-    }
-  ],
-  "included": [
+    },
     {
-      "type": "dataset:project_members",
-      "id": "42",
+      "type": "dataset:entries",
+      "id": "019bba87-98ee-76fa-943c-c5a41b0ac3a1",
       "attributes": {
-        "name": "Brother Lee",
-        "email": "brother.lee@ingedata.ai"
+        "project_id": "019bba87-650e-74e8-a68a-bc49bfff2527",
+        "dataset_id": "019bba87-7810-7935-a8ae-d2a6bacebecb",
+        "priority": 0,
+        "wf_step": "annotate",
+        "status": "in_progress",
+        "job_id": "019bba87-9ed4-7ed3-bda8-4fae79d01084",
+        "resource": "6650747481544831.mov",
+        "assigned_to_id": 8,
+        "submitted_by_id": null,
+        "reviewed_by_id": null,
+        "created_at": "2026-01-14 10:23:27 +0000",
+        "updated_at": "2026-01-19 10:41:42 +0000"
       },
       "relationships": {
+        "dataset": {
+          "data": {
+            "type": "dataset:datasets",
+            "id": "019bba87-7810-7935-a8ae-d2a6bacebecb"
+          }
+        },
         "project": {
           "data": {
             "type": "dataset:projects",
-            "id": "019b457e-da22-7442-8f0a-a2e8ae77f69d"
+            "id": "019bba87-650e-74e8-a68a-bc49bfff2527"
+          }
+        },
+        "assigned_to": {
+          "data": {
+            "type": "dataset:project_members",
+            "id": "8"
+          }
+        }
+      }
+    },
+    {
+      "type": "dataset:entries",
+      "id": "019bd42a-dca0-71fc-b2a3-4bd4b76626b2",
+      "attributes": {
+        "project_id": "019bba87-650e-74e8-a68a-bc49bfff2527",
+        "dataset_id": "019bba87-7810-7935-a8ae-d2a6bacebecb",
+        "priority": 0,
+        "wf_step": "annotate",
+        "status": "in_progress",
+        "job_id": "019bd42a-e1d1-7fda-8065-87658f3d995d",
+        "resource": "dc160a222abc4a6e.mov",
+        "assigned_to_id": 8,
+        "submitted_by_id": null,
+        "reviewed_by_id": null,
+        "created_at": "2026-01-19 09:52:17 +0000",
+        "updated_at": "2026-01-20 16:04:23 +0000"
+      },
+      "relationships": {
+        "dataset": {
+          "data": {
+            "type": "dataset:datasets",
+            "id": "019bba87-7810-7935-a8ae-d2a6bacebecb"
+          }
+        },
+        "project": {
+          "data": {
+            "type": "dataset:projects",
+            "id": "019bba87-650e-74e8-a68a-bc49bfff2527"
+          }
+        },
+        "assigned_to": {
+          "data": {
+            "type": "dataset:project_members",
+            "id": "8"
           }
         }
       }
     }
   ],
-  "meta": {
-    "count": 1,
-    "more": false
-  }
+  "meta": {}
 }
