@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getContext, onMount } from "svelte";
+  import { getContext } from "svelte";
 
   import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
   import SelectGroup from "@/components/ui/select/select-group.svelte";
@@ -16,7 +16,6 @@
   import { truncate } from "@/utils/string";
 
   import { visibilityFullfilled } from ".";
-  import { openPropertySidebar } from "../../layout/sidebar/store";
   import { idb_updated_at } from "../idb_store.svelte";
   import { selectedAnnotationGroup } from "../store";
 
@@ -47,20 +46,6 @@
 
   // Contexts
   const context: IActivityContext = getContext("context");
-
-  // Lifecycle
-  onMount(() => {
-    /** If annotation group is selected, show property sidebar */
-    if (configByGroup.properties.length) {
-      $openPropertySidebar = true;
-      return;
-    }
-
-    /** Close property sidebar if no properties */
-    if (!properties?.length) {
-      $openPropertySidebar = false;
-    }
-  });
 
   // Variables
   let configByMode = $derived(context.config[mode]);

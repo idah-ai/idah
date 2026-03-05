@@ -23,9 +23,8 @@
 
   import type { AnnotationGroup, AnnotationMetadata, AnnotationObj } from "@/context/AnnotationContext";
 
-  import { openPropertySidebar } from "./layout/sidebar/store";
   import { DEFAULT_MODE, ENTRY_ROOT, IDAH_NOTE, IDAH_VIDEO_BOUNDING_BOX } from "./type";
-  import { requiredFullfilled, visibilityFullfilled } from "./video-annotation-activity/categoryProperties";
+  import { requiredFullfilled } from "./video-annotation-activity/categoryProperties";
   import { boundingBoxes, entryRoot, idb_updated_at } from "./video-annotation-activity/idb_store.svelte";
   import { annotationsIndexedDB, AnnotationsIndexedDB } from "./video-annotation-activity/indexedDB";
   import { registerOnSelectBoxModeShortcuts, registerVisualModeShortcuts } from "./video-annotation-activity/shortcut";
@@ -951,7 +950,6 @@
     };
   });
 
-
   function addAnnotation(shape: AnnotationShape, value: AnnotationValue = {}) {
     if (!["review", "annotate"].includes(context.workflowStep)) return;
     const annotation = {
@@ -1118,14 +1116,8 @@
     if (selectedAnnotation) {
       $selectedAnnotationGroup = {
         groupId: selectedAnnotation.metadata.metadata?.group_id || selectedAnnotation.metadata.id,
-        annotations: [selectedAnnotation]
+        annotations: [selectedAnnotation],
       };
-
-      /** Open property sidebar if selectedAnnotation has properties */
-      const properties = context.config[selectedAnnotation.shape.type]?.properties?.filter((p) =>
-        visibilityFullfilled(annotationValue, p),
-      );
-      $openPropertySidebar = properties.length > 0;
     }
   }
 
@@ -1149,21 +1141,12 @@
     } else {
       mode = DEFAULT_MODE;
     }
-
-    /** Open property sidebar if selectedAnnotation has properties */
-    if (base_annotation) {
-      const properties = context.config[base_annotation.shape.type]?.properties?.filter((p) =>
-        visibilityFullfilled(annotationValue, p),
-      );
-
-      $openPropertySidebar = properties.length > 0;
-    }
   }
 
   function selectClosestAnnotation(annotationGroup: AnnotationGroup<TAnnotationObj>, currentFrame: number) {
     let closestAnnotation = annotationGroup.annotations[0];
 
-    if (annotationGroup.annotations.length === 1){
+    if (annotationGroup.annotations.length === 1) {
       selectAnnotation(closestAnnotation);
       return closestAnnotation;
     }
@@ -1280,9 +1263,10 @@
 
     await Promise.all(
       annotations.map((annotation) => {
-        console.log(annotation.metadata.id);
+        // TODO: remove console.log
+        console.log(annotation.metadata.id, annotation);
 
-        return updateAnnotationValue(annotation, { category: reselectedCategoryId });
+        updateAnnotationValue(annotation, { category: reselectedCategoryId });
       }),
     );
   }
@@ -1343,6 +1327,7 @@
             {currentFrame}
             {onEditValue}
             onSelectAnnotation={selectAnnotation}
+            onSelectAnnotationGroup={() => {}}
             {onDeleteAnnotation}
             {onLock}
             {onVisibility}
@@ -1397,6 +1382,7 @@
               {currentFrame}
               {onEditValue}
               onSelectAnnotation={selectAnnotation}
+              onSelectAnnotationGroup={selectGroupAtFrame}
               {onDeleteAnnotation}
               {onLock}
               {onVisibility}
