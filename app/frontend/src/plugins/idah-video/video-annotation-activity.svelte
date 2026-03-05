@@ -1146,38 +1146,41 @@
   >
     <PopoverTrigger></PopoverTrigger>
 
-    <PopoverContent class="w-auto min-w-64 p-0">
-      {#if annotationValue.category}
-        <div class="p-2">
+    <PopoverContent class="min-w-80 p-0">
+      <div class="h-auto max-h-86 overflow-y-auto p-2">
+        {#if annotationValue.category}
           <CategoryProperties
             type={mode}
             selectedCategory={annotationValue.category}
             {annotationValue}
-            onSelectCategory={(s) => {
-              if (s != mode) selectAnnotation();
+            onSelectCategory={(selectedCategory) => {
+              if (!selectedCategory) selectAnnotation();
+              annotationValue = { ...annotationValue, category: selectedCategory };
               onEditValue({ category: annotationValue.category }, mode);
             }}
             onEditValue={(value) => value && onEditValue(value, mode)}
             disabled={false}
           />
-        </div>
-      {:else}
-        <AnnotationSidebar
-          sidebarWidthRem={annotationSidebarWidthRem}
-          class="rounded-t-lg"
-          db={annotationsIDB}
-          {annotationValue}
-          {currentFrame}
-          {onEditValue}
-          onSelectAnnotation={selectAnnotation}
-          {onDeleteAnnotation}
-          {onLock}
-          {onVisibility}
-          {context}
-          {mode}
-          selectedAnnotationId={selectedAnnotation?.metadata.id}
-        />
-      {/if}
+        {:else}
+          <AnnotationSidebar
+            view="popover"
+            sidebarWidthRem={annotationSidebarWidthRem}
+            class="rounded-t-lg"
+            db={annotationsIDB}
+            {annotationValue}
+            {currentFrame}
+            {onEditValue}
+            onSelectAnnotation={selectAnnotation}
+            {onDeleteAnnotation}
+            {onLock}
+            {onVisibility}
+            {context}
+            {mode}
+            selectedAnnotationId={selectedAnnotation?.metadata.id}
+          />
+        {/if}
+      </div>
+
       <div class=" flex justify-end gap-2 p-2">
         <Button
           size="sm"
@@ -1215,6 +1218,7 @@
         <ResizablePaneGroup direction="horizontal">
           <ResizablePane minSize={14} defaultSize={annotationSidebarResizablePercentage} maxSize={20}>
             <AnnotationSidebar
+              view="sidebar"
               sidebarWidthRem={annotationSidebarWidthRem}
               db={annotationsIDB}
               {annotationValue}
@@ -1262,8 +1266,6 @@
                     currentFrame = current;
                     totalFrames = total;
                     isPlaying = playing;
-                    isPlaying = playing;
-                    // console.debug({onFramesChange: {current, total, playing}})
                   }}
                   onVolumeChange={(level, muted) => (volume = { level, muted })}
                 />
