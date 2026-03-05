@@ -1070,26 +1070,6 @@
   function updateAnnotationValue(annotation: TAnnotationObj, value: AnnotationValue) {
     if (annotation?.locked || !["review", "annotate"].includes(context.workflowStep)) return;
 
-    /** Check if annotation to be update is need to update group in metdata or not? */
-    if (annotation.metadata.metadata?.group_id) {
-      const groupId = annotation.metadata.metadata.group_id;
-      const foundParentAnnotation = $boundingBoxes.find((a) => a.metadata.id == groupId);
-
-      if (foundParentAnnotation) {
-        const isValueToBeUpdateSameAsParent = foundParentAnnotation.value.category == value.category;
-
-        /**
-         * If value to be update is not same as parent,
-         * assume that user is trying to change to different category
-         * so remove group_id and parent_id from annotation metadata
-         */
-        if (!isValueToBeUpdateSameAsParent) {
-          delete annotation.metadata.metadata.group_id;
-          delete annotation.metadata.metadata.parent_id;
-        }
-      }
-    }
-
     context.commands.run("annotation.update", { annotation, value });
   }
 
@@ -1259,14 +1239,10 @@
   async function onReSelectCategory(reselectedCategoryId: string) {
     if (!$selectedAnnotationGroup) return;
     const annotations = await annotationsIDB?.getGroupAnnotations($selectedAnnotationGroup.groupId);
-
     if (!annotations) return;
 
     await Promise.all(
-      annotations.map((annotation) => {
-        // TODO: remove console.log
-        console.log(annotation.metadata.id, annotation);
-
+      annotations.map( (annotation) => {
         updateAnnotationValue(annotation, { category: reselectedCategoryId });
       }),
     );
