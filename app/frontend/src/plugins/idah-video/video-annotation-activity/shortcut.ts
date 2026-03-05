@@ -40,7 +40,6 @@ const CommonInjecter = (context: KeyMapContext) => {
   };
 
   const resetMode = () => {
-    console.log("reset pressed");
     context.context.commands.run("tools.reset");
     ShortcutManager.enterMode(ShortcutManager.defaultMode, true);
     context.switch_mode(ShortcutManager.defaultMode);
