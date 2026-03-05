@@ -536,7 +536,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: sync-code-coverage
-          path: ${{ env.MEDIA_DIR }}/coverage
+          path: ${{ env.SYNC_DIR }}/coverage
 
   media:
     name: Media Service
