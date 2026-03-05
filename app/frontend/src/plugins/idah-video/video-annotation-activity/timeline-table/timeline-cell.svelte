@@ -104,8 +104,7 @@
     onSeekFrame(currentFrameInCell);
 
     if (annotation) onSelectAnnotation(annotation);
-
-    onSelectGroupAtFrame(group, currentFrameInCell);
+    else onSelectGroupAtFrame(group, currentFrameInCell);
   }
 
   function onMouseOver() {
