@@ -27,82 +27,43 @@ RSpec.describe Exports::Upd::Exporter do
 
   describe "#export" do
     let(:mock_job) { double("Job", progress: 0, update_progress: true) }
-    let(:dataset_id) { "019ba0dd-4beb-757b-b5fb-de54446534e0" }
-    let(:entry_id) { "019bc0fa-025e-7a8c-a3f4-82b276508315" }
+    let(:dataset_id) { "019bba87-7810-7935-a8ae-d2a6bacebecb" }
+    let(:entry_id) { "019bba87-9818-7967-8233-35fa9807d8fa" }
     let(:annotation_id) { "019b2aec-94ff-7b50-bb44-8a3675e266f3" }
     let(:media_id) { "004f2b1c21bf42e0efe8b709a688afce.mov" }
     let(:options) { {} }
     let(:context) { Exports::Context.new(mock_job, [dataset_id], options) }
 
     let(:dataset_data) do
-      JSON.parse(File.read("app/spec_data/api_data/datasets.json"))
+      JSON.parse(File.read("app/spec_data/api_data/datasets.json"), symbolize_names: true)
     end
 
     let(:entry_data) do
-      JSON.parse(File.read("app/spec_data/api_data/entries.json"))
+      JSON.parse(File.read("app/spec_data/api_data/entries.json"), symbolize_names: true)
     end
 
     let(:annotation_data) do
-      JSON.parse(File.read("app/spec_data/api_data/annotations.json"))
+      JSON.parse(File.read("app/spec_data/api_data/annotations.json"), symbolize_names: true)
     end
 
     let(:media_data) do
-      JSON.parse(File.read("app/spec_data/api_data/medias.json"))
+      JSON.parse(File.read("app/spec_data/api_data/medias.json"), symbolize_names: true)
     end
 
     let(:dataset_response) do
-      dataset_attrs = dataset_data["data"][0]["attributes"]
-      double(
-        "Dataset",
-        id: dataset_id,
-        name: dataset_attrs["name"],
-        modality: dataset_attrs["modality"],
-        data: {
-          attributes: dataset_attrs.transform_keys(&:to_sym)
-        }
-      )
+      Verse::JsonApi::Struct.new dataset_data[:data][0]
     end
 
     let(:entry_response) do
-      entry_attrs = entry_data["data"][0]["attributes"]
-      double(
-        "Entry",
-        id: entry_id,
-        resource: entry_attrs["resource"],
-        data: {
-          attributes: entry_attrs.transform_keys(&:to_sym)
-        }
-      )
+      Verse::JsonApi::Struct.new entry_data[:data][0]
     end
 
     let(:annotation_response) do
-      annotation_attrs = annotation_data["data"][0]["attributes"]
-      double(
-        "Annotation",
-        id: annotation_id,
-        dimensions: annotation_attrs["dimensions"].transform_keys(&:to_sym),
-        annotation: annotation_attrs["annotation"].transform_keys(&:to_sym),
-        data: {
-          attributes: {
-            created_by_email: annotation_attrs["created_by_email"],
-            created_at: annotation_attrs["created_at"],
-            updated_at: annotation_attrs["updated_at"],
-            metadata: annotation_attrs["metadata"] || {}
-          }
-        }
-      )
+      Verse::JsonApi::Struct.new annotation_data[:data][0]
     end
 
     let(:media_response) do
-      media_attrs = media_data["data"][0]["attributes"]
-      double(
-        "Media",
-        id: media_data["data"][0]["id"],
-        resource: media_attrs["resource"],
-        key: media_attrs["key"],
-        filename: media_attrs["filename"],
-        mime_type: media_attrs["mime_type"]
-      )
+      Verse::JsonApi::Struct.new media_data[:data][0]
     end
 
     let(:media_binary_data) { "fake binary video data" }
