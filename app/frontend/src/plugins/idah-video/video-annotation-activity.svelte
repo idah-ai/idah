@@ -1146,7 +1146,7 @@
   >
     <PopoverTrigger></PopoverTrigger>
 
-    <PopoverContent class="w-auto min-w-64 p-0">
+    <PopoverContent class="min-w-80 p-0">
       <div class="h-auto max-h-86 overflow-y-auto p-2">
         {#if annotationValue.category}
           <CategoryProperties
@@ -1163,6 +1163,7 @@
           />
         {:else}
           <AnnotationSidebar
+            view="popover"
             sidebarWidthRem={annotationSidebarWidthRem}
             class="rounded-t-lg"
             db={annotationsIDB}
@@ -1217,6 +1218,7 @@
         <ResizablePaneGroup direction="horizontal">
           <ResizablePane minSize={14} defaultSize={annotationSidebarResizablePercentage} maxSize={20}>
             <AnnotationSidebar
+              view="sidebar"
               sidebarWidthRem={annotationSidebarWidthRem}
               db={annotationsIDB}
               {annotationValue}
