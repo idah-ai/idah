@@ -123,9 +123,8 @@ export class AnnotationsIndexedDB {
   getGroupAnnotations(groupId: string): Promise<AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]> {
     return new Promise<AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]>((resolve, reject) => {
       const transaction = this.db.transaction("annotations", "readonly");
-      const store = transaction.objectStore("annotations");
-      const index = store.index("groupIdIndex");
-      const request = index.getAll(IDBKeyRange.only(groupId));
+      const store = transaction.objectStore("annotations").index("groupIdIndex");
+      const request = store.getAll(IDBKeyRange.only(groupId));
 
       request.onsuccess = (_) => {
         const sorted = request.result.sort((a, b) => a.shape.start - b.shape.start);

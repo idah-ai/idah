@@ -1,7 +1,6 @@
 <script lang="ts">
   import { Eye, EyeOff, Lock, LockOpen, Trash2Icon } from "@lucide/svelte";
   import { getContext } from "svelte";
-  import { SvelteMap } from "svelte/reactivity";
 
   import { Button } from "@/components/ui/button";
   import Spinner from "@/components/ui/spinner/spinner.svelte";
@@ -11,7 +10,7 @@
 
   import { cn } from "@/utils";
 
-  import { openPropertySidebar } from "../../layout/sidebar/store";
+  import { groupAnnotations } from "../group-annotation.svelte";
   import { boundingBoxes } from "../idb_store.svelte";
   import { selectedAnnotationGroup } from "../store";
 
@@ -147,7 +146,6 @@
     onSeekFrame(frameToGo);
     onSelectAnnotation(undefined);
     $selectedAnnotationGroup = undefined;
-    $openPropertySidebar = false;
   }
 
   function findCategoryName(categoryId: string, shape_type: string) {
@@ -259,40 +257,6 @@
     if (delta || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) e.preventDefault();
   }
 
-  function groupAnnotations(annotations: TAnnotationObj[]): AnnotationGroup<TAnnotationObj>[] {
-    const map = new SvelteMap<string, TAnnotationObj[]>();
-
-    for (const ann of annotations) {
-      const gid = ann.metadata?.metadata?.group_id ?? ann.metadata?.id;
-
-      if (!map.has(gid)) {
-        map.set(gid, []);
-      }
-
-      map.get(gid)!.push({
-        ...ann,
-        shape: { ...ann.shape },
-      });
-    }
-
-    const groups = Array.from(map.entries()).map(([groupId, list]) => ({
-      groupId,
-      annotations: list
-        .map((a) => ({ ...a, shape: { ...a.shape } }))
-        .sort((a, b) => {
-          const diff = a.shape.start - b.shape.start;
-          return diff !== 0 ? diff : a.shape.end - b.shape.end;
-        }),
-    }));
-
-    groups.sort((a, b) => a.annotations[0].shape.start - b.annotations[0].shape.start);
-
-    // Sort groups by groupId ASC
-    groups.sort((a, b) => a.groupId.localeCompare(b.groupId));
-
-    return groups;
-  }
-
   function getIsGroupSelected(group: AnnotationGroup<TAnnotationObj>): boolean {
     const { groupId, annotations } = group;
 
@@ -321,7 +285,6 @@
 
   function selectAnnotationGroup(annotationGroup: AnnotationGroup<TAnnotationObj>, frame?: number) {
     $selectedAnnotationGroup = annotationGroup;
-    $openPropertySidebar = true;
     onSelectGroupAtFrame(annotationGroup, frame);
   }
 </script>
