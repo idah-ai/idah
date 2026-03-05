@@ -10,7 +10,7 @@ module Exports
     # modalities matching this pattern are managed by the export class
     # @param klass Class
     # The export class
-    def register(modalities, klass)
+    def register(plugin_name, modalities, klass)
       modalities = [modalities] unless modalities in Array
 
       @registry ||= {}
@@ -22,9 +22,24 @@ module Exports
 
         # Register modality:
         @registry[modality] ||= Set.new
+
+        # Add plugin name to klass
+        klass.define_singleton_method(:plugin) do
+          plugin_name.to_sym
+        end
+
         @registry[modality] << klass
       end
     end
+
+    def clear(plugin_name)
+      plugin_name = plugin_name.to_sym
+      @registry.each_value do |coll|
+        coll.reject! { |klass| klass.plugin == plugin_name }
+      end
+    end
+
+    def clear_all = @registry.clear
 
     def valid_export_class?(klass)
       @registry ||= {}

@@ -9,6 +9,7 @@ class PluginLifecycleContext
 
   def register_exports(modalities, klass)
     Exports::Registry.register(
+      @plugin_name,
       modalities,
       klass
     )
