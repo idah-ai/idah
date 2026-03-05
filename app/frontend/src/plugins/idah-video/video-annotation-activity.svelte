@@ -306,6 +306,7 @@
       combine: (cmd) => cmd,
     };
   });
+
   context.commands.on("annotation.delete", async (props: { id: string }) => {
     const annotation = await annotationsIDB?.get("annotations", props.id);
 
@@ -365,6 +366,64 @@
       combine: (cmd) => cmd,
     };
   });
+
+  context.commands.on("annotation.deleteGroup", async (props: { id: string }) => {
+    const annotations = await annotationsIDB?.getGroupAnnotations(props.id);
+    if (!annotations || annotations.length === 0)
+      return showToast.error({ title: "cannot remove not found annotation group" });
+
+    return {
+      name: "remove annotation group",
+      async apply() {
+        for (const annotation of annotations) {
+          const id = annotation.metadata.id;
+          if (id == selectedAnnotation?.metadata.id) selectedAnnotation = undefined;
+          if ($entryRoot?.metadata.id == id) $entryRoot = undefined;
+
+          await annotationsIDB?.deleteAnnotation(id);
+          context.annotations.delete(id);
+        }
+        $idb_updated_at = new Date();
+      },
+      async undo() {
+        const createdAt = new Date();
+        for (const annotation of annotations) {
+          const id = annotation.metadata.id;
+          let a = {
+            ...annotation,
+            metadata: {
+              ...annotation.metadata,
+              createdAt,
+              updatedAt: createdAt,
+            },
+            synced: false,
+            locked: false,
+            hidden: false,
+          };
+
+          await annotationsIDB?.addAnnotations([a]);
+
+          if (annotation.shape.type == ENTRY_ROOT) $entryRoot = annotation;
+          let p = context.annotations.create(id, annotation.shape, annotation.value, a.metadata.metadata);
+
+          p.then(async () => {
+            let restored = await annotationsIDB?.get("annotations", id);
+            if (restored?.metadata.updatedAt.valueOf() == createdAt.valueOf()) {
+              restored.synced = true;
+              if (restored?.shape.type == ENTRY_ROOT) $entryRoot = restored;
+
+              await annotationsIDB?.addAnnotations([restored]);
+              $idb_updated_at = new Date();
+            }
+          });
+        }
+        $idb_updated_at = new Date();
+      },
+      isCombinable: () => false,
+      combine: (cmd) => cmd,
+    };
+  });
+
   context.commands.on("keyframe.add", async (props: { id: string; selection: VideoFrameSelection }) => {
     const annotation = await annotationsIDB?.get("annotations", props.id);
 
@@ -878,6 +937,21 @@
     };
   });
 
+  context.commands.on("tools.reset", () => {
+    return {
+      name: "reset tool",
+      apply: () => {
+        mode = DEFAULT_MODE;
+        selectedAnnotation = undefined;
+        $selectedAnnotationGroup = undefined;
+      },
+      undo: () => {},
+      isCombinable: () => true,
+      combine: (c) => c,
+    };
+  });
+
+
   function addAnnotation(shape: AnnotationShape, value: AnnotationValue = {}) {
     if (!["review", "annotate"].includes(context.workflowStep)) return;
     const annotation = {
@@ -956,6 +1030,16 @@
 
     let points = $state.snapshot(_points) as Point[];
     if (!selectedId) {
+      /**
+       * If no selectedId, check if we have an active group selection.
+       * If yes, we try to find the closest annotation in that group to add a keyframe to.
+       */
+      if ($selectedAnnotationGroup) {
+        const closest = selectClosestAnnotation($selectedAnnotationGroup, frame);
+        addSelection(closest.metadata.id, { frame, angle, points });
+        return;
+      }
+
       let annotation_value_from = $state.snapshot(annotationValue) as AnnotationValue;
 
       // todo proper validation
@@ -1022,14 +1106,53 @@
     } else if (annotation?.shape.type && ["review", "annotate"].includes(context.workflowStep)) {
       mode = annotation.shape.type;
       // Register selection-specific shortcuts for the current mode
-      registerOnSelectBoxModeShortcuts(context, annotation.metadata.id, () => currentFrame);
+      registerOnSelectBoxModeShortcuts(
+        context,
+        annotation.metadata.id,
+        annotation.metadata.metadata?.group_id,
+        () => currentFrame,
+      );
+    } else {
+      mode = DEFAULT_MODE;
+    }
+    if (selectedAnnotation) {
+      $selectedAnnotationGroup = {
+        groupId: selectedAnnotation.metadata.metadata?.group_id || selectedAnnotation.metadata.id,
+        annotations: [selectedAnnotation]
+      };
+
+      /** Open property sidebar if selectedAnnotation has properties */
+      const properties = context.config[selectedAnnotation.shape.type]?.properties?.filter((p) =>
+        visibilityFullfilled(annotationValue, p),
+      );
+      $openPropertySidebar = properties.length > 0;
+    }
+  }
+
+  // TODO: refactor with selectAnnotation ?
+  function selectAnnotationGroup(annotationGroup: AnnotationGroup<TAnnotationObj>) {
+    $selectedAnnotationGroup = {
+      groupId: annotationGroup.groupId,
+      annotations: annotationGroup.annotations,
+    };
+
+    const base_annotation = annotationGroup.annotations[0];
+    /**
+     * Set mode to the annotation shape type when selecting an annotation
+     */
+    if (mode === "note" || mode === DEFAULT_MODE) {
+      return;
+    } else if (base_annotation.shape.type && ["review", "annotate"].includes(context.workflowStep)) {
+      mode = base_annotation.shape.type;
+      // Register selection-specific shortcuts for the current mode
+      registerOnSelectBoxModeShortcuts(context, undefined, annotationGroup.groupId, () => currentFrame);
     } else {
       mode = DEFAULT_MODE;
     }
 
     /** Open property sidebar if selectedAnnotation has properties */
-    if (selectedAnnotation) {
-      const properties = context.config[selectedAnnotation.shape.type]?.properties?.filter((p) =>
+    if (base_annotation) {
+      const properties = context.config[base_annotation.shape.type]?.properties?.filter((p) =>
         visibilityFullfilled(annotationValue, p),
       );
 
@@ -1037,48 +1160,48 @@
     }
   }
 
-  function selectGroupAtFrame(annotationGroup: AnnotationGroup<TAnnotationObj>, frame?: number) {
-    if (frame == undefined) {
-      // User is clicked row  header
-      selectAnnotation(undefined);
-    } else {
-      currentFrame = frame;
+  function selectClosestAnnotation(annotationGroup: AnnotationGroup<TAnnotationObj>, currentFrame: number) {
+    let closestAnnotation = annotationGroup.annotations[0];
 
-      const totalAnnotation = annotationGroup.annotations.length;
-      const firstAnnotation = annotationGroup.annotations[0];
-      const lastAnnotation = annotationGroup.annotations[totalAnnotation - 1];
-      if (totalAnnotation === 1) {
-        /** Only 1 annotation in a group */
-        mode = firstAnnotation.shape.type;
-        selectAnnotation(firstAnnotation);
-      } else {
-        /** More than 1 annotation in a group */
-        /** Check from the selected frame,
-         * to know is it before first annotation in a group or
-         * it is after last annotation in a group.
-         */
-        const firstFrameOfGroup = firstAnnotation.shape.start;
-        const lastFrameOfGroup = lastAnnotation.shape.end;
+    if (annotationGroup.annotations.length === 1){
+      selectAnnotation(closestAnnotation);
+      return closestAnnotation;
+    }
 
-        /** Check if it is interpolation? */
-        const isInterpolation = currentFrame < firstFrameOfGroup || currentFrame > lastFrameOfGroup;
+    let minDiff = Infinity;
 
-        if (isInterpolation) {
-          const firstDiff = Math.abs(currentFrame - firstFrameOfGroup);
-          const lastDiff = Math.abs(currentFrame - lastFrameOfGroup);
+    for (const annotation of annotationGroup.annotations) {
+      const start = annotation.shape.start;
+      const end = annotation.shape.end;
 
-          // TODO: Check currentFrame is in range of some annotation?
+      // If frame is within an annotation, that's the one
+      if (currentFrame >= start && currentFrame <= end) {
+        closestAnnotation = annotation;
+        minDiff = 0;
+        break;
+      }
 
-          if (firstDiff < lastDiff) {
-            /** The selected frame is before first annotation */
-            selectAnnotation(firstAnnotation);
-          } else {
-            /** The selected frame is after last annotation */
-            selectAnnotation(lastAnnotation);
-          }
-        }
+      // Calculate distance to nearest edge
+      const diff = Math.min(Math.abs(currentFrame - start), Math.abs(currentFrame - end));
+
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestAnnotation = annotation;
       }
     }
+
+    if (closestAnnotation) {
+      mode = closestAnnotation.shape.type;
+      selectAnnotation(closestAnnotation);
+    }
+
+    return closestAnnotation;
+  }
+
+  // TODO: this should be able to refactor
+  // determine whether to select the group or an annotation
+  function selectGroupAtFrame(annotationGroup: AnnotationGroup<TAnnotationObj>, currentFrame?: number) {
+    selectAnnotationGroup(annotationGroup);
   }
 
   let overlay: SvgOverlay;
@@ -1283,7 +1406,7 @@
             />
           </ResizablePane>
 
-          <!-- 
+          <!--
             NOTE: Can not resize annotation sidebar,
             as it will affect the note overlay and svg overlay
             <ResizableHandle withHandle />

@@ -39,6 +39,13 @@ const CommonInjecter = (context: KeyMapContext) => {
     };
   };
 
+  const resetMode = () => {
+    console.log("reset pressed");
+    context.context.commands.run("tools.reset");
+    ShortcutManager.enterMode(ShortcutManager.defaultMode, true);
+    context.switch_mode(ShortcutManager.defaultMode);
+  };
+
   return (b) => {
     b.on([b.Alt], "S", flushAction, "Flush", "flush action");
     b.on([b.Ctrl], "Space", toggleCommand, "Commands Dialog", "Toggle this commands dialog");
@@ -46,8 +53,8 @@ const CommonInjecter = (context: KeyMapContext) => {
     b.on([b.Ctrl, b.Shift], "Z", redoAction, "Redo", "Redo last undone action if any");
 
     // modes
-    b.on(null, "D", enterMode(ShortcutManager.defaultMode, true), "Default View", "Reset View");
-    b.on(null, "Escape", enterMode(ShortcutManager.defaultMode, true), "Default View", "Reset View");
+    b.on(null, "D", enterMode(ShortcutManager.defaultMode, true), "Default View", "Default View");
+    b.on(null, "Escape", resetMode, "Reset View", "Reset View");
     b.on(null, "B", enterMode(IDAH_VIDEO_BOUNDING_BOX), "Bounding box", "Enter Bouding box mode");
     b.on(null, "N", enterMode(IDAH_NOTE), "Note", "Enter Note mode");
   };
@@ -151,19 +158,23 @@ export function registerVisualModeShortcuts(context: KeyMapContext) {
 // Selection-specific shortcuts context
 type SelectionKeyMapContext = {
   context: IActivityContext;
-  selectedId: string;
+  selectedId: string | undefined;
+  selectedGroupId: string;
   getCurrentFrame: () => number;
 };
 
 const createOnSelectBoundingBoxModeKeyMap = (context: SelectionKeyMapContext) => {
   const deleteSelected = () => {
-    if (!context.selectedId) {
+    console.log("context: ", context);
+    if (context.selectedId) {
+      console.log(`Deleting selected item with id: ${context.selectedId}`);
+      context.context.commands.run("annotation.delete", { id: context.selectedId });
+    } else if (context.selectedGroupId) {
+      console.log(`Deleting selected group with group id: ${context.selectedGroupId}`);
+      context.context.commands.run("annotation.deleteGroup", { id: context.selectedGroupId });
+    } else {
       console.log("No item selected to delete");
-      return;
     }
-
-    console.log(`Delete selected item with id: ${context.selectedId}`);
-    context.context.commands.run("annotation.delete", { id: context.selectedId });
   };
 
   const toggleHidden = () => {
@@ -211,14 +222,20 @@ const createOnSelectBoundingBoxModeKeyMap = (context: SelectionKeyMapContext) =>
  */
 export function registerOnSelectBoxModeShortcuts(
   context: IActivityContext,
-  selectedId: string,
+  selectedId: string | undefined,
+  selectedGroupId: string,
   getCurrentFrame: () => number,
 ) {
   // Clear any existing extensions first
   ShortcutManager.clearAllKeyMapExtensions();
 
   // Create and register new extension for the current mode
-  const selectionKeyMap = createOnSelectBoundingBoxModeKeyMap({ context, selectedId, getCurrentFrame });
+  const selectionKeyMap = createOnSelectBoundingBoxModeKeyMap({
+    context,
+    selectedId,
+    selectedGroupId,
+    getCurrentFrame,
+  });
   ShortcutManager.setKeyMapExtension(IDAH_VIDEO_BOUNDING_BOX, selectionKeyMap);
   ShortcutManager.enterMode(IDAH_VIDEO_BOUNDING_BOX);
 }
