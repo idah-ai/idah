@@ -1200,7 +1200,7 @@
 
   // TODO: this should be able to refactor
   // determine whether to select the group or an annotation
-  function selectGroupAtFrame(annotationGroup: AnnotationGroup<TAnnotationObj>, currentFrame?: number) {
+  function selectGroupAtFrame(annotationGroup: AnnotationGroup<TAnnotationObj>, currentFrame?: number) { // eslint-disable-line @typescript-eslint/no-unused-vars
     selectAnnotationGroup(annotationGroup);
   }
 
