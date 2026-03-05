@@ -65,7 +65,7 @@
 <SidebarMenuItem class="list-none">
   <SidebarMenuButton
     class={cn("group hover:bg-primary/10 w-full gap-0 pr-0 hover:cursor-pointer", {
-      "bg-primary/10": isSelected,
+      "bg-primary/10 font-semibold": isSelected,
     })}
     onclick={selectAnnotationGroup}
   >
