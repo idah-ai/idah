@@ -125,17 +125,52 @@
 
 {#snippet SelectCategory()}
   {#if configByMode}
-    <!-- SELECT::LABEL -->
-    <Text class="text-muted-foreground" weight="medium" size="xs">
-      {getModeTitle()}
-    </Text>
+    <section class="flex flex-col gap-2">
+      <!-- SELECT::LABEL -->
+      <Text weight="semibold" size="sm">
+        {getModeTitle()}
+      </Text>
 
-    <Select type="single" onValueChange={onSelectCategory} {disabled}>
+      <Select type="single" onValueChange={onSelectCategory} {disabled}>
+        <SelectTrigger class="data-[placeholder]:text-secondary-foreground bg-secondary w-full truncate text-xs">
+          <div class="flex gap-1">
+            {#if category?.label}
+              <VectorSquareIcon color={category.color} />
+              {truncate(category.label)}
+            {:else}
+              Select category
+            {/if}
+          </div>
+        </SelectTrigger>
+
+        <SelectContent>
+          <SelectGroup>
+            {#each configByMode.values as { id: value, label, color } (value)}
+              <SelectItem class="text-xs" {label} {value}>
+                <VectorSquareIcon {color} />
+                {label}
+              </SelectItem>
+            {/each}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
+
+      <Separator />
+    </section>
+  {/if}
+{/snippet}
+
+{#snippet ReSelectCategory()}
+  <section class="flex flex-col gap-2">
+    <!-- SELECT::LABEL -->
+    <Text weight="semibold" size="sm">Category</Text>
+
+    <Select type="single" onValueChange={reselectCategory} {disabled}>
       <SelectTrigger class="data-[placeholder]:text-secondary-foreground bg-secondary w-full truncate text-xs">
         <div class="flex gap-1">
-          {#if category?.label}
-            <VectorSquareIcon color={category.color} />
-            {truncate(category.label)}
+          {#if foundAnnotationInGroupCategory?.label}
+            <VectorSquareIcon color={foundAnnotationInGroupCategory.color} />
+            {truncate(foundAnnotationInGroupCategory.label)}
           {:else}
             Select category
           {/if}
@@ -144,8 +179,8 @@
 
       <SelectContent>
         <SelectGroup>
-          {#each configByMode.values as { id: value, label, color } (value)}
-            <SelectItem class="text-xs" {label} {value}>
+          {#each configByGroup.values as { id: value, label, color } (value)}
+            <SelectItem class="text-xs" {label} {value} disabled={firstAnnotationInGroupCategory == value}>
               <VectorSquareIcon {color} />
               {label}
             </SelectItem>
@@ -155,80 +190,47 @@
     </Select>
 
     <Separator />
-  {/if}
+  </section>
 {/snippet}
 
-{#snippet ReSelectCategory()}
-  <!-- SELECT::LABEL -->
-  <Text class="text-muted-foreground" weight="medium" size="xs">Category</Text>
-
-  <Select type="single" onValueChange={reselectCategory} {disabled}>
-    <SelectTrigger class="data-[placeholder]:text-secondary-foreground bg-secondary w-full truncate text-xs">
-      <div class="flex gap-1">
-        {#if foundAnnotationInGroupCategory?.label}
-          <VectorSquareIcon color={foundAnnotationInGroupCategory.color} />
-          {truncate(foundAnnotationInGroupCategory.label)}
-        {:else}
-          Select category
-        {/if}
-      </div>
-    </SelectTrigger>
-
-    <SelectContent>
-      <SelectGroup>
-        {#each configByGroup.values as { id: value, label, color } (value)}
-          <SelectItem class="text-xs" {label} {value} disabled={firstAnnotationInGroupCategory == value}>
-            <VectorSquareIcon {color} />
-            {label}
-          </SelectItem>
-        {/each}
-      </SelectGroup>
-    </SelectContent>
-  </Select>
-
-  <Separator />
-{/snippet}
-
-<div class="flex flex-col gap-4">
-  {#key $idb_updated_at}
-    <!-- CATEGORIES -->
-    {#if annotationId}
-      <!-- 
+{#key $idb_updated_at}
+  <!-- CATEGORIES -->
+  {#if annotationId}
+    <!-- 
         If annotationId provided (annotation already created)
         - We don't allow to change the category when select annotation
         - We only allow to edit the properties
         - We only allow to edit the categories at group level
       -->
-    {:else if $selectedAnnotationGroup && !annotationId}
-      {@render ReSelectCategory()}
-    {:else}
-      {@render SelectCategory()}
-    {/if}
+  {:else if $selectedAnnotationGroup && !annotationId}
+    {@render ReSelectCategory()}
+  {:else}
+    {@render SelectCategory()}
+  {/if}
 
-    <!-- PROPERTIES -->
+  <!-- PROPERTIES -->
+  <div class="flex flex-col gap-4">
     {#if category && properties?.length > 0}
       <section class="flex flex-col gap-2">
-        <Text class="text-muted-foreground" weight="medium" size="xs">Properties</Text>
+        <Text class="mb-2" weight="semibold" size="sm">Properties</Text>
 
-        <div class="flex flex-col">
-          {#each properties as property (property.id)}
-            {@const foundPropertyComponent = propertyComponents.find((p) => p.type == property.type)}
+        {#each properties as property (property.id)}
+          {@const foundPropertyComponent = propertyComponents.find((p) => p.type == property.type)}
 
-            {#if foundPropertyComponent}
-              <div class="flex flex-col gap-0">
-                <foundPropertyComponent.component
-                  {...{
-                    property,
-                    value: annotationValue.attributes?.[property.id],
-                    onValueChange: (v: string | number | boolean | string[] | undefined) => onValueChange(property, v),
-                    disabled,
-                  }}
-                />
-              </div>
-            {/if}
-          {/each}
-        </div>
+          {#if foundPropertyComponent}
+            <div class="flex flex-col gap-1">
+              <foundPropertyComponent.component
+                {...{
+                  property,
+                  value: annotationValue.attributes?.[property.id],
+                  onValueChange: (v: string | number | boolean | string[] | undefined) => onValueChange(property, v),
+                  disabled,
+                }}
+              />
+            </div>
+          {/if}
+        {/each}
       </section>
     {/if}
-  {/key}
-</div>
+  </div>
+{/key}
