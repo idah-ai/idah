@@ -29,6 +29,7 @@
   // Props
   type TAnnotationObj = AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
   interface Props {
+    view: "sidebar" | "popover";
     db?: AnnotationsIndexedDB;
 
     currentFrame: number;
@@ -47,6 +48,7 @@
     onVisibility: (hidden: boolean, annotation?: TAnnotationObj) => void;
   }
   let {
+    view,
     db,
     currentFrame,
     currentMode,
@@ -208,7 +210,7 @@
   level: number = 1,
 )}
   <Collapsible open={openStates[category.id] || false}>
-    {#key `${$idb_updated_at}-${modalityShape}`}
+    {#key `${$idb_updated_at}`}
       {#if db && category}
         {#await db.getAllStartingWith("category", category.id) then annotations}
           {@const { count } = getFilteredAnnotations(annotations)}
@@ -225,6 +227,7 @@
             <div class="flex w-full items-center" style:padding-left="{level - 1}rem">
               <SidebarMenuItem class="flex h-8 w-full flex-row items-center gap-1">
                 {@const hasChildren = !!category.nestedCategories}
+                {@const isSelectingCategory = selectedCategory == category.id}
                 {@const showChevronRightIcon = hasChildren || hasAnnotations}
 
                 <Button
@@ -245,21 +248,45 @@
                     }
                   }}
                 >
-                  {@const isSelected = selectedCategory == category.id}
+                  {#if view === "sidebar"}
+                    {#if currentModeIsSameAsShape}
+                      <!-- TOOLS::BOUNDING BOX / POLYGON / OTHER SHAPES -->
+                      {#if isSelectingCategory}
+                        <PlusIcon class="text-primary" strokeWidth={4} />
+                      {:else if hasChildren}
+                        <ChevronRightIcon
+                          class={cn({
+                            "rotate-90": openStates[category.id],
+                            "stroke-blue-300": isSelectingCategory,
+                            "stroke-gray-500": !isSelectingCategory,
+                          })}
+                        />
+                      {:else}
+                        <CircleSmallIcon class="fill-gray-400 stroke-gray-400" />
+                      {/if}
+                    {:else}
+                      <!-- TOOLS::VISUAL -->
+                      <ChevronRightIcon
+                        class={cn({
+                          "opacity-0": !showChevronRightIcon,
+                          "rotate-90": openStates[category.id],
+                          "stroke-blue-300": isSelectingCategory,
+                          "stroke-gray-500": !isSelectingCategory,
+                        })}
+                      />
+                    {/if}
+                  {/if}
 
-                  {#if isSelected && currentModeIsSameAsShape && !selectedAnnotationId}
-                    <PlusIcon class="text-primary" strokeWidth={4} />
-                  {:else if !showChevronRightIcon && currentModeIsSameAsShape && !selectedAnnotationId}
-                    <CircleSmallIcon class="fill-gray-400 stroke-gray-400" />
-                  {:else}
-                    <ChevronRightIcon
-                      class={cn({
-                        "opacity-0": !showChevronRightIcon,
-                        "rotate-90": openStates[category.id],
-                        "stroke-blue-300": isSelected,
-                        "stroke-gray-500": !isSelected,
-                      })}
-                    />
+                  {#if view === "popover"}
+                    {#if hasChildren}
+                      <ChevronRightIcon
+                        class={cn({
+                          "rotate-90": openStates[category.id],
+                        })}
+                      />
+                    {:else}
+                      <CircleSmallIcon class="fill-gray-400 stroke-gray-400" />
+                    {/if}
                   {/if}
                 </Button>
 
