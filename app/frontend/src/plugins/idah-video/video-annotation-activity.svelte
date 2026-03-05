@@ -951,7 +951,6 @@
     };
   });
 
-
   function addAnnotation(shape: AnnotationShape, value: AnnotationValue = {}) {
     if (!["review", "annotate"].includes(context.workflowStep)) return;
     const annotation = {
@@ -1118,7 +1117,7 @@
     if (selectedAnnotation) {
       $selectedAnnotationGroup = {
         groupId: selectedAnnotation.metadata.metadata?.group_id || selectedAnnotation.metadata.id,
-        annotations: [selectedAnnotation]
+        annotations: [selectedAnnotation],
       };
 
       /** Open property sidebar if selectedAnnotation has properties */
@@ -1163,7 +1162,7 @@
   function selectClosestAnnotation(annotationGroup: AnnotationGroup<TAnnotationObj>, currentFrame: number) {
     let closestAnnotation = annotationGroup.annotations[0];
 
-    if (annotationGroup.annotations.length === 1){
+    if (annotationGroup.annotations.length === 1) {
       selectAnnotation(closestAnnotation);
       return closestAnnotation;
     }
@@ -1200,7 +1199,8 @@
 
   // TODO: this should be able to refactor
   // determine whether to select the group or an annotation
-  function selectGroupAtFrame(annotationGroup: AnnotationGroup<TAnnotationObj>, currentFrame?: number) { // eslint-disable-line @typescript-eslint/no-unused-vars
+  function selectGroupAtFrame(annotationGroup: AnnotationGroup<TAnnotationObj>, currentFrame?: number) {
+    // eslint-disable-line @typescript-eslint/no-unused-vars
     selectAnnotationGroup(annotationGroup);
   }
 
