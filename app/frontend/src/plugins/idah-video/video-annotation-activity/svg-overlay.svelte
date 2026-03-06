@@ -1,10 +1,13 @@
 <script lang="ts">
   import { getContext, onMount, type Snippet } from "svelte";
 
+  import { cn } from "@/utils";
+
   import BoundingBox, { type ToolSelection } from "./bounding-box.svelte";
   import { boundingBoxes } from "./idb_store.svelte";
 
   import { DEFAULT_MODE, ENTRY_ROOT, IDAH_NOTE, IDAH_VIDEO_BOUNDING_BOX, type EntryRoot } from "../type";
+  import { deselectAnnotationGroup } from "./store";
   import {
     getInterpolatedFrame,
     HEIGHT,
@@ -24,7 +27,6 @@
     AnnotationValue,
   } from "@/context/AnnotationContext";
   import type { IActivityContext, IConfigPropertyStyles, INoteFeed } from "@/plugin/interface/Activity";
-  import { cn } from "@/utils";
 
   // Types
   export interface OnAddNewNoteParams {
@@ -154,8 +156,10 @@
   }
 
   let toolSelection: ToolSelection | undefined = $state();
+
   export function selectionStart(e: MouseEvent) {
     if (!shape) {
+      deselectAnnotationGroup();
       zoomableElement.mouseDown(e);
       return;
     }
@@ -163,10 +167,13 @@
     toolSelection?.startSelection(cursor_downscaled);
 
     if (!isEditing) {
-      if (!toolSelection)
-        console.error("no tool for mode:", mode, "deselecting annotation (and reverting to mode", DEFAULT_MODE, ")");
-      onSelectAnnotation();
-      zoomableElement.mouseDown(e);
+      if (!toolSelection) {
+        console.error("no tool for mode:", mode, "deselecting annotation (and reverting to mode", DEFAULT_MODE);
+        onSelectAnnotation();
+        zoomableElement.mouseDown(e);
+      }
+
+      deselectAnnotationGroup();
     }
   }
 
