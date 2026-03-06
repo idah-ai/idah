@@ -1,10 +1,13 @@
 <script lang="ts">
   import { getContext, onMount, type Snippet } from "svelte";
 
+  import { cn } from "@/utils";
+
   import BoundingBox, { type ToolSelection } from "./bounding-box.svelte";
   import { boundingBoxes } from "./idb_store.svelte";
 
   import { DEFAULT_MODE, ENTRY_ROOT, IDAH_NOTE, IDAH_VIDEO_BOUNDING_BOX, type EntryRoot } from "../type";
+  import { deselectAnnotationGroup, selectedAnnotation } from "./store";
   import {
     getInterpolatedFrame,
     HEIGHT,
@@ -24,7 +27,6 @@
     AnnotationValue,
   } from "@/context/AnnotationContext";
   import type { IActivityContext, IConfigPropertyStyles, INoteFeed } from "@/plugin/interface/Activity";
-  import { cn } from "@/utils";
 
   // Types
   export interface OnAddNewNoteParams {
@@ -38,7 +40,6 @@
   // Props
   type Props = {
     frame: number;
-    selected: TAnnotationObj | undefined;
     mode: string;
     target_container: () => HTMLDivElement | undefined; // ..
     annotations_promise: Promise<TAnnotationObj[]>;
@@ -55,7 +56,6 @@
   };
   let {
     frame,
-    selected,
     mode,
     target_container,
     annotations_promise,
@@ -85,8 +85,8 @@
   let width = $state(0);
   let mouse: Point = $state([0, 0]);
   let shape: AnnotationShape | { type: EntryRoot } | undefined = $derived(
-    selected
-      ? selected.shape
+    $selectedAnnotation
+      ? $selectedAnnotation.shape
       : mode != DEFAULT_MODE
         ? mode == ENTRY_ROOT
           ? { type: ENTRY_ROOT }
@@ -154,8 +154,10 @@
   }
 
   let toolSelection: ToolSelection | undefined = $state();
+
   export function selectionStart(e: MouseEvent) {
     if (!shape) {
+      deselectAnnotationGroup();
       zoomableElement.mouseDown(e);
       return;
     }
@@ -163,10 +165,13 @@
     toolSelection?.startSelection(cursor_downscaled);
 
     if (!isEditing) {
-      if (!toolSelection)
-        console.error("no tool for mode:", mode, "deselecting annotation (and reverting to mode", DEFAULT_MODE, ")");
+      if (!toolSelection) {
+        console.error("no tool for mode:", mode, "deselecting annotation (and reverting to mode", DEFAULT_MODE);
+      }
+
       onSelectAnnotation();
       zoomableElement.mouseDown(e);
+      deselectAnnotationGroup();
     }
   }
 
@@ -227,7 +232,7 @@
   let pointer = $derived.by(() => {
     if (mode == IDAH_NOTE) return "cursor-note";
     if (editionCursor) return editionCursor;
-    if (selected) return "cursor-pointer";
+    if ($selectedAnnotation) return "cursor-pointer";
     return "cursor-grab";
   });
 
@@ -294,10 +299,10 @@
         y1={target_line[Y]}
         x2={width}
         y2={target_line[Y]}
-        stroke={selected?.synced
+        stroke={$selectedAnnotation?.synced
           ? Object.entries(context.config)
               .find(([k, _]) => k == mode)?.[1]
-              .values.find((c) => c.id == selected?.value?.category)?.color || "grey"
+              .values.find((c) => c.id == $selectedAnnotation?.value?.category)?.color || "grey"
           : "grey"}
       />
       <line
@@ -305,10 +310,10 @@
         y1={0}
         x2={target_line[X]}
         y2={height}
-        stroke={selected?.synced
+        stroke={$selectedAnnotation?.synced
           ? Object.entries(context.config)
               .find(([k, _]) => k == mode)?.[1]
-              .values.find((c) => c.id == selected?.value?.category)?.color || "grey"
+              .values.find((c) => c.id == $selectedAnnotation?.value?.category)?.color || "grey"
           : "grey"}
       />
     {/if}
@@ -316,7 +321,7 @@
     <!-- draw annotation context -->
     {#await annotations_promise}
       {#each $boundingBoxes as annotation (annotation.metadata.id)}
-        {#if annotation.metadata.id != selected?.metadata.id}
+        {#if annotation.metadata.id != $selectedAnnotation?.metadata.id}
           {#if annotation.shape.type == IDAH_VIDEO_BOUNDING_BOX && !annotation.hidden}
             {@const current_annotation_shape = getInterpolatedFrame(annotation.shape as VideoShape, frame)}
             {@const current_annotation_points = current_annotation_shape?.points || []}
@@ -335,7 +340,7 @@
               onmousedown={(e) => {
                 e.stopPropagation();
 
-                if (mode == DEFAULT_MODE || selected) {
+                if (mode == DEFAULT_MODE || $selectedAnnotation) {
                   onSelectAnnotation(annotation);
                 }
 
@@ -350,7 +355,7 @@
     {:then annotations}
       {#key frame}
         {#each annotations as annotation (annotation.metadata.id)}
-          {#if annotation.metadata.id != selected?.metadata.id}
+          {#if annotation.metadata.id != $selectedAnnotation?.metadata.id}
             {#if annotation.shape.type == IDAH_VIDEO_BOUNDING_BOX && !annotation.hidden}
               {@const current_annotation_shape = getInterpolatedFrame(annotation.shape as VideoShape, frame)}
               {@const current_annotation_points = current_annotation_shape?.points || []}
@@ -372,7 +377,7 @@
                 onmousedown={(e) => {
                   e.stopPropagation();
 
-                  if (mode == DEFAULT_MODE || selected) {
+                  if (mode == DEFAULT_MODE || $selectedAnnotation) {
                     onSelectAnnotation(annotation);
                   }
 
@@ -388,9 +393,9 @@
     {/await}
 
     <!-- STATE:: SELECTED -->
-    {#if (shape?.type == IDAH_VIDEO_BOUNDING_BOX || mode == IDAH_VIDEO_BOUNDING_BOX) && (selected ? !selected.hidden : true) && (mode == IDAH_VIDEO_BOUNDING_BOX || (shape?.start <= frame && shape?.end >= frame))}
+    {#if (shape?.type == IDAH_VIDEO_BOUNDING_BOX || mode == IDAH_VIDEO_BOUNDING_BOX) && ($selectedAnnotation ? !$selectedAnnotation.hidden : true) && (mode == IDAH_VIDEO_BOUNDING_BOX || (shape?.start <= frame && shape?.end >= frame))}
       {#key [shape, frame]}
-        {@const propertyStyle = getAnnotationPropertyStyle(selected)}
+        {@const propertyStyle = getAnnotationPropertyStyle($selectedAnnotation)}
 
         <BoundingBox
           bind:this={toolSelection}
@@ -405,16 +410,16 @@
           offset={zoomInfo.offset}
           cursor={cursor_downscaled}
           editable={(shape?.type == IDAH_VIDEO_BOUNDING_BOX || mode == IDAH_VIDEO_BOUNDING_BOX) &&
-            !selected?.locked &&
+            !$selectedAnnotation?.locked &&
             ["annotate", "review"].includes(context.workflowStep)}
-          color={selected?.synced
+          color={$selectedAnnotation?.synced
             ? Object.entries(context.config)
                 .find(([k, _]) => k == mode)?.[1]
-                .values.find((c) => c.id == selected?.value?.category)?.color || "grey"
+                .values.find((c) => c.id == $selectedAnnotation?.value?.category)?.color || "grey"
             : "grey"}
           styles={propertyStyle}
           onChange={(bb, angle) => {
-            onSelection(IDAH_VIDEO_BOUNDING_BOX, frame, bb, angle, selected?.metadata.id);
+            onSelection(IDAH_VIDEO_BOUNDING_BOX, frame, bb, angle, $selectedAnnotation?.metadata.id);
             points = bb;
           }}
         />
