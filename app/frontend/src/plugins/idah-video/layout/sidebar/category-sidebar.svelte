@@ -302,7 +302,9 @@
 
                 <CategoryName name={category.name} />
 
-                <AnnotationCountBadge class="mr-2" {count} />
+                {#if view === "sidebar"}
+                  <AnnotationCountBadge class="mr-2" {count} />
+                {/if}
               </SidebarMenuItem>
             </div>
           </CollapsibleTrigger>

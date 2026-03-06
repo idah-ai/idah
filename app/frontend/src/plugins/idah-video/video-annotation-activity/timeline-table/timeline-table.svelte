@@ -69,11 +69,6 @@
   // Contexts
   let context: IActivityContext = getContext("context");
 
-  $effect(() => {
-    console.log(selectedAnnotation);
-    console.log($selectedAnnotationGroup);
-  });
-
   // Functions
   function toggleVisibility() {
     onVisibility(!allHidden);
