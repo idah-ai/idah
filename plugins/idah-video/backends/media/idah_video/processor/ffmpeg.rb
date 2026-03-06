@@ -27,8 +27,7 @@ module IdahVideo
         variants.each do |variant|
           args += [
             "-vf", "scale=#{variant.width}:#{variant.height}",
-            "-c:v", "libx264", "-b:v", variant.bitrate.to_s,
-            "-threads", ENCODING_THREADS
+            "-c:v", "libx264", "-b:v", variant.bitrate.to_s
           ]
 
           args += if variant.audiobitrate
@@ -43,6 +42,7 @@ module IdahVideo
             "-hls_time", streaming_time_per_segment.to_s,
             "-hls_playlist_type", "vod",
             "-hls_segment_filename", "#{variant.name}_%04d.ts",
+            "-threads", ENCODING_THREADS,
             "#{variant.name}.m3u8"
           ]
         end
