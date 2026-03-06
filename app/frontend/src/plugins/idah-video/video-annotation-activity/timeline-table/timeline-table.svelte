@@ -32,7 +32,6 @@
     zoom,
     currentFrame,
     totalFrames,
-    selectedAnnotation,
     annotations_promise,
     allLocked,
     allHidden,
@@ -52,7 +51,6 @@
     zoom: number;
     currentFrame: number;
     totalFrames: number;
-    selectedAnnotation?: TAnnotationObj;
     allLocked: boolean;
     allHidden: boolean;
     onSeekFrame: (frame: number) => void;
@@ -375,7 +373,6 @@
           {scale}
           {zoom}
           {totalFrames}
-          {selectedAnnotation}
           onCellHover={(column) => (hoveredColumn = column)}
           {onSeekFrame}
           {onSelectAnnotation}

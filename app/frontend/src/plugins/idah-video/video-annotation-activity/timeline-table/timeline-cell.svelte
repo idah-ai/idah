@@ -22,6 +22,7 @@
   } from "@/context/AnnotationContext";
 
   import type { IActivityContext } from "@/plugin/interface/Activity";
+  import { selectedAnnotation } from "../store";
 
   // Type
   type TAnnotationObj = AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
@@ -35,7 +36,6 @@
     scale: number;
     totalFrames: number;
     zoom: number;
-    selectedAnnotation: TAnnotationObj | undefined;
     hoveredAnnotation: TAnnotationObj | undefined;
     onSeekFrame: (frame: number) => void;
     onDeleteFrame: (annotation: TAnnotationObj, frame: number) => void;
@@ -52,7 +52,6 @@
     scale,
     totalFrames,
     zoom,
-    selectedAnnotation,
     hoveredAnnotation,
     onSeekFrame,
     onDeleteFrame,
@@ -84,7 +83,7 @@
   );
   let isStartOfKeyFrameRange = $derived(annotation?.shape.start === currentFrameInCell);
   let isEndOfKeyFrameRange = $derived(annotation?.shape.end === currentFrameInCell);
-  let annotationIsSelected: boolean = $derived(selectedAnnotation?.metadata.id == annotation?.metadata.id);
+  let annotationIsSelected: boolean = $derived($selectedAnnotation?.metadata.id == annotation?.metadata.id);
   let annotationIsHovered: boolean = $derived(hoveredAnnotation?.metadata.id == annotation?.metadata.id);
   let annotationIsSelectedOrHovered: boolean = $derived(annotationIsSelected || annotationIsHovered);
 

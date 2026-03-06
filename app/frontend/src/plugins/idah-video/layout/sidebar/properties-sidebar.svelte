@@ -4,9 +4,11 @@
   import type { AnnotationValue } from "$lib/context/AnnotationContext";
   import type { IActivityContext, IConfigValue } from "@/plugin/interface/Activity";
 
-  import { DEFAULT_MODE, ENTRY_ROOT } from "../../type";
   import CategoryProperties from "../../video-annotation-activity/categoryProperties/categoryProperties.svelte";
+
+  import { DEFAULT_MODE, ENTRY_ROOT } from "../../type";
   import { entryRoot } from "../../video-annotation-activity/idb_store.svelte";
+  import { selectedAnnotation } from "../../video-annotation-activity/store";
 
   // Props
   let {
@@ -17,7 +19,6 @@
     onReSelectCategory,
     context,
     mode,
-    disabled,
   }: {
     sidebarWidthRem?: number;
     annotationId?: string;
@@ -26,7 +27,6 @@
     onReSelectCategory?: (reselectedCategoryId: string) => void;
     context: IActivityContext;
     mode: string;
-    disabled: boolean;
   } = $props();
 
   // Variables
@@ -63,7 +63,7 @@
               categorySelection(defaultMode ? ENTRY_ROOT : mode, selectedCategoryId)}
             onReSelectCategory={(reselectedCategoryId) => onReSelectCategory?.(reselectedCategoryId)}
             onEditValue={(value) => value && onEditValue(value, defaultMode ? ENTRY_ROOT : mode)}
-            disabled={disabled ||
+            disabled={$selectedAnnotation?.locked ||
               (defaultMode || mode == ENTRY_ROOT ? !!$entryRoot?.locked : false) ||
               !["annotate", "review"].includes(context.workflowStep)}
           />
