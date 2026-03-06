@@ -153,54 +153,57 @@
       : "transparent"}
     style:border-color={categoryColor}
   >
-    <ContextMenu>
-      <ContextMenuTrigger class="absolute top-[3px] h-full w-full pt-0">
-        <!-- If have keyframes, render a box -->
-        {#if keyFrames.length}
-          <div
-            class="m-auto h-3/4 w-3/4 rounded"
-            style:background-color={categoryColor ? categoryColor : "transparent"}
-          ></div>
-        {/if}
-      </ContextMenuTrigger>
+    <!-- Only render context menu if the cell have annotation, this will prevent over-render in empty timeline cell -->
+    {#if annotation}
+      <ContextMenu>
+        <ContextMenuTrigger class="absolute top-[3px] h-full w-full pt-0">
+          <!-- If have keyframes, render a box -->
+          {#if keyFrames.length}
+            <div
+              class="m-auto h-3/4 w-3/4 rounded"
+              style:background-color={categoryColor ? categoryColor : "transparent"}
+            ></div>
+          {/if}
+        </ContextMenuTrigger>
 
-      <ContextMenuContent>
-        <ContextMenuGroup>
-          <!-- SPLIT ANNOTATION -->
-          <ContextMenuItem
-            onclick={() =>
-              context.commands.run("annotation.split", { id: annotation?.metadata.id, at: currentFrameInCell })}
-            disabled={annotation?.locked}
-          >
-            <SquareSplitHorizontalIcon class="size-4" />
-            Split at frame {currentFrameInCell}
-          </ContextMenuItem>
-        </ContextMenuGroup>
-
-        <ContextMenuGroup>
-          {#each keyFrames as { frame }, index (index)}
-            <ContextMenuItem onclick={() => onSeekFrame?.(frame)}>
-              <ArrowLeftRightIcon class="size-4" />
-              Seek frame {frame}
+        <ContextMenuContent>
+          <ContextMenuGroup>
+            <!-- SPLIT ANNOTATION -->
+            <ContextMenuItem
+              onclick={() =>
+                context.commands.run("annotation.split", { id: annotation?.metadata.id, at: currentFrameInCell })}
+              disabled={annotation?.locked}
+            >
+              <SquareSplitHorizontalIcon class="size-4" />
+              Split at frame {currentFrameInCell}
             </ContextMenuItem>
+          </ContextMenuGroup>
 
-            {#if ["review", "annotate"].includes(context.workflowStep)}
-              <ContextMenuItem onclick={() => deleteFrame(frame)} disabled={annotation?.locked}>
-                <Trash2Icon class="size-4" />
-                Delete frame {frame}
+          <ContextMenuGroup>
+            {#each keyFrames as { frame }, index (index)}
+              <ContextMenuItem onclick={() => onSeekFrame?.(frame)}>
+                <ArrowLeftRightIcon class="size-4" />
+                Seek frame {frame}
               </ContextMenuItem>
-            {/if}
-          {/each}
-        </ContextMenuGroup>
 
-        <ContextMenuSeparator />
-        <ContextMenuGroup>
-          <ContextMenuItem onclick={() => context.commands.run("annotation.delete", { id: annotation?.metadata.id })}>
-            <Trash2Icon class="size-4" />
-            Delete annotation
-          </ContextMenuItem>
-        </ContextMenuGroup>
-      </ContextMenuContent>
-    </ContextMenu>
+              {#if ["review", "annotate"].includes(context.workflowStep)}
+                <ContextMenuItem onclick={() => deleteFrame(frame)} disabled={annotation?.locked}>
+                  <Trash2Icon class="size-4" />
+                  Delete frame {frame}
+                </ContextMenuItem>
+              {/if}
+            {/each}
+          </ContextMenuGroup>
+
+          <ContextMenuSeparator />
+          <ContextMenuGroup>
+            <ContextMenuItem onclick={() => context.commands.run("annotation.delete", { id: annotation?.metadata.id })}>
+              <Trash2Icon class="size-4" />
+              Delete annotation
+            </ContextMenuItem>
+          </ContextMenuGroup>
+        </ContextMenuContent>
+      </ContextMenu>
+    {/if}
   </div>
 </div>
