@@ -1113,8 +1113,12 @@
     if (mode === "note") {
       return;
     } else if (selectedFrame && firstAnnotation.shape.type && ["review", "annotate"].includes(context.workflowStep)) {
-      /** If user select timeline row at specific frame (selectedFrame is exists) */
+      /**
+       * If user select timeline row at specific frame (selectedFrame is exists)
+       * and workflow step is in review or annotation
+       */
       mode = firstAnnotation.shape.type;
+      selectClosestAnnotation(annotationGroup, selectedFrame);
       // Register selection-specific shortcuts for the current mode
       registerOnSelectBoxModeShortcuts(context, undefined, annotationGroup.groupId, () => currentFrame);
     } else {
@@ -1376,7 +1380,7 @@
               <SvgOverlay
                 bind:this={overlay}
                 {annotations_promise}
-                selected={selectedAnnotation || $selectedAnnotationGroup?.annotations[0]}
+                selected={selectedAnnotation}
                 {mode}
                 frame={currentFrame}
                 onSelectAnnotation={selectAnnotation}

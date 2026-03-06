@@ -169,10 +169,10 @@
     if (!isEditing) {
       if (!toolSelection) {
         console.error("no tool for mode:", mode, "deselecting annotation (and reverting to mode", DEFAULT_MODE);
-        onSelectAnnotation();
-        zoomableElement.mouseDown(e);
       }
 
+      onSelectAnnotation();
+      zoomableElement.mouseDown(e);
       deselectAnnotationGroup();
     }
   }
