@@ -1239,8 +1239,18 @@
 
   async function onReSelectCategory(reselectedCategoryId: string) {
     if (!$selectedAnnotationGroup) return;
-    const annotations = await annotationsIDB?.getGroupAnnotations($selectedAnnotationGroup.groupId);
-    if (!annotations) return;
+
+    let annotations: TAnnotationObj[] | undefined = undefined;
+    annotations = await annotationsIDB?.getGroupAnnotations($selectedAnnotationGroup.groupId);
+
+    /**
+     * If annotations is undefined or empty,
+     * if might be a new annotation without group assigned,
+     * use the selected annotation group
+     */
+    if (!annotations?.length) {
+      annotations = $selectedAnnotationGroup.annotations;
+    }
 
     /** Reset all selection */
     context.commands.run("tools.reset");
