@@ -1,7 +1,6 @@
 <script lang="ts">
   import { Eye, EyeOff, Lock, LockOpen, Trash2Icon } from "@lucide/svelte";
   import { getContext } from "svelte";
-  import { SvelteMap } from "svelte/reactivity";
 
   import { Button } from "@/components/ui/button";
   import Spinner from "@/components/ui/spinner/spinner.svelte";
@@ -10,9 +9,10 @@
   import Timeline from "./timeline.svelte";
 
   import { cn } from "@/utils";
-  import { humanize } from "@/utils/string";
 
+  import { groupAnnotations } from "../group-annotation.svelte";
   import { boundingBoxes } from "../idb_store.svelte";
+  import { deselectAnnotationGroup, selectedAnnotationGroup } from "../store";
 
   import type {
     AnnotationGroup,
@@ -22,7 +22,6 @@
     AnnotationValue,
   } from "@/context/AnnotationContext";
   import type { IActivityContext } from "@/plugin/interface/Activity";
-  import type { AnnotationsIndexedDB } from "../indexedDB";
 
   type TAnnotationObj = AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
 
@@ -33,7 +32,6 @@
     zoom,
     currentFrame,
     totalFrames,
-    selectedAnnotation,
     annotations_promise,
     allLocked,
     allHidden,
@@ -45,7 +43,6 @@
     onScaleChange,
     onLock,
     onVisibility,
-    db,
     isPlaying = false,
   }: {
     annotations_promise: Promise<TAnnotationObj[]>;
@@ -54,7 +51,6 @@
     zoom: number;
     currentFrame: number;
     totalFrames: number;
-    selectedAnnotation?: TAnnotationObj;
     allLocked: boolean;
     allHidden: boolean;
     onSeekFrame: (frame: number) => void;
@@ -65,7 +61,6 @@
     onVisibility: (hidden: boolean, annotation?: TAnnotationObj) => void;
     onZoomChange?: (zoom: number) => void;
     onScaleChange?: (zoom: number) => void;
-    db?: AnnotationsIndexedDB;
     isPlaying?: boolean;
   } = $props();
 
@@ -105,7 +100,6 @@
   let wheelthrottling = $state(false);
   let hoveredColumn: number | undefined = $state();
   let rowElements: Record<string, HTMLElement> = $state({});
-  let selectedAnnotationGroup: AnnotationGroup<TAnnotationObj> | undefined = $state(undefined);
 
   export function setOffset(offset: number) {
     pos_offset = Math.max(1, Math.min(totalFrames - range_span, offset || 0));
@@ -146,31 +140,30 @@
   function seekToFrame(frameToGo: number) {
     onSeekFrame(frameToGo);
     onSelectAnnotation(undefined);
+    deselectAnnotationGroup();
   }
 
-  function getCategory(categoryId: string, shape_type: string) {
+  function findCategoryName(categoryId: string, shape_type: string) {
     return Object.entries(context.config)
       .find(([k, _]) => k == shape_type)?.[1]
       .values.find((cat) => cat.id === categoryId);
   }
 
-  async function getCategoryName(categoryId: string | undefined, selected: TAnnotationObj) {
-    if (!categoryId) return "Uncategorized";
+  async function getGroupTitle(params: { group: AnnotationGroup<TAnnotationObj> }) {
+    const { group } = params;
+    const { groupId, annotations } = group;
+    const lastPartGroupId = groupId.split("-")[groupId.split("-").length - 1];
+    const fallbackGroupName = `Group-${lastPartGroupId}`;
 
-    const selectedCategory = getCategory(categoryId, selected.shape.type);
+    /** Assume that all annotations in the group have the same category */
+    const firstAnnotationInGroup = annotations[0];
+    const firstAnnotationCategory = firstAnnotationInGroup.value.category;
+    if (!firstAnnotationCategory) return fallbackGroupName;
 
-    const selectedAnnotationIndex = await getSelectedAnnotationIndex(categoryId, selected.metadata.id);
-    const selectedCategoryName = selectedCategory?.label || categoryId;
+    const foundFirstAnnotationCategory = findCategoryName(firstAnnotationCategory, firstAnnotationInGroup.shape.type);
+    if (!foundFirstAnnotationCategory) return fallbackGroupName;
 
-    return [selectedCategoryName, selectedAnnotationIndex].join("_");
-  }
-
-  async function getSelectedAnnotationIndex(categoryId: string, annotationId: string) {
-    if (!db) return 0;
-
-    return (await db.getAllIndex("category", categoryId)).findIndex(
-      (annotation) => annotation.metadata.id == annotationId,
-    ) as number;
+    return `${foundFirstAnnotationCategory.label}-${lastPartGroupId}`;
   }
 
   function scrollRight(next: number) {
@@ -259,55 +252,6 @@
     if (delta || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) e.preventDefault();
   }
 
-  function groupAnnotations(annotations: TAnnotationObj[]): AnnotationGroup<TAnnotationObj>[] {
-    const map = new SvelteMap<string, TAnnotationObj[]>();
-
-    for (const ann of annotations) {
-      const gid = ann.metadata?.metadata?.group_id ?? ann.metadata?.id;
-
-      if (!map.has(gid)) {
-        map.set(gid, []);
-      }
-
-      map.get(gid)!.push({
-        ...ann,
-        shape: { ...ann.shape },
-      });
-    }
-
-    const groups = Array.from(map.entries()).map(([groupId, list]) => ({
-      groupId,
-      annotations: list
-        .map((a) => ({ ...a, shape: { ...a.shape } }))
-        .sort((a, b) => {
-          const diff = a.shape.start - b.shape.start;
-          return diff !== 0 ? diff : a.shape.end - b.shape.end;
-        }),
-    }));
-
-    groups.sort((a, b) => a.annotations[0].shape.start - b.annotations[0].shape.start);
-
-    // Sort groups by groupId ASC
-    groups.sort((a, b) => a.groupId.localeCompare(b.groupId));
-
-    return groups;
-  }
-
-  function getIsGroupSelected(group: AnnotationGroup<TAnnotationObj>): boolean {
-    const { groupId, annotations } = group;
-    // return (
-    //   annotations.some((ann) => ann.metadata.id == selectedAnnotation?.metadata.id) ||
-    //   selectedAnnotationGroup?.groupId == groupId
-    // );
-    if (selectedAnnotation) {
-      return annotations.some((ann) => ann.metadata.id == selectedAnnotation?.metadata.id);
-    }
-
-    if (selectedAnnotationGroup?.groupId == groupId) return true;
-
-    return false;
-  }
-
   function toggleVisibilityAllAnnotations(annotations: TAnnotationObj[]) {
     const isAllHidden = annotations.map((annotation) => annotation.hidden).every((hidden) => hidden);
     annotations.forEach((annotation) => onVisibility(!isAllHidden, annotation));
@@ -323,7 +267,7 @@
   }
 
   function selectAnnotationGroup(annotationGroup: AnnotationGroup<TAnnotationObj>, frame?: number) {
-    selectedAnnotationGroup = annotationGroup;
+    $selectedAnnotationGroup = annotationGroup;
     onSelectGroupAtFrame(annotationGroup, frame);
   }
 </script>
@@ -331,8 +275,7 @@
 {#snippet row(groups: AnnotationGroup<TAnnotationObj>[])}
   {#each groups as group, index (group.groupId)}
     {@const { groupId, annotations } = group}
-    {@const isGroupSelected = getIsGroupSelected(group)}
-    {@const firstAnnotation = annotations[0]}
+    {@const isGroupSelected = $selectedAnnotationGroup?.groupId == groupId}
     {@const someAnnotationIsHidden = annotations.some((ann) => ann.hidden)}
     {@const someAnnotationIsLocked = annotations.some((ann) => ann.locked)}
     {@const isLastIndex = index == groups.length - 1}
@@ -356,11 +299,11 @@
           onkeypress={() => selectAnnotationGroup(group)}
           onclick={() => selectAnnotationGroup(group)}
         >
-          {#await getCategoryName(firstAnnotation.value.category, firstAnnotation)}
+          {#await getGroupTitle({ group })}
             <Spinner size="sm" />
-          {:then title}
+          {:then groupTitle}
             <Text size="xs" weight={isGroupSelected ? "semibold" : "normal"} class="text-foreground truncate">
-              {humanize(title)}
+              {groupTitle}
             </Text>
           {/await}
 
@@ -430,7 +373,6 @@
           {scale}
           {zoom}
           {totalFrames}
-          {selectedAnnotation}
           onCellHover={(column) => (hoveredColumn = column)}
           {onSeekFrame}
           {onSelectAnnotation}
