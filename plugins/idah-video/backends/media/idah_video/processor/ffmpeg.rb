@@ -11,6 +11,9 @@ module IdahVideo
         :name, :width, :height, :bitrate, :audiobitrate
       )
 
+      DECODING_THREADS = ENV.fetch("DECODING_THREADS", 1).to_s
+      ENCODING_THREADS = ENV.fetch("ENCODING_THREADS", 1).to_s
+
       def gen_stream(
         dir:,
         file:,
@@ -19,12 +22,13 @@ module IdahVideo
         &
       )
         args = []
-        args += ["-v", "quiet", "-progress", "pipe:1", "-i", file]
+        args += ["-v", "quiet", "-progress", "pipe:1", "-threads", DECODING_THREADS, "-i", file]
 
         variants.each do |variant|
           args += [
             "-vf", "scale=#{variant.width}:#{variant.height}",
-            "-c:v", "libx264", "-b:v", variant.bitrate.to_s
+            "-c:v", "libx264", "-b:v", variant.bitrate.to_s,
+            "-threads", ENCODING_THREADS
           ]
 
           args += if variant.audiobitrate
@@ -62,6 +66,8 @@ module IdahVideo
         output: "thumb_%02d.jpg"
       )
         call(
+          "-threads",
+          DECODING_THREADS,
           "-i",
           file,
           "-vf",
@@ -72,6 +78,8 @@ module IdahVideo
           images.to_s,
           "-q:v",
           "2",
+          "-threads",
+          ENCODING_THREADS,
           output,
           "-y",
           chdir:
