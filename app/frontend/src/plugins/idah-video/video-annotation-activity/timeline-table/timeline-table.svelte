@@ -12,7 +12,7 @@
 
   import { groupAnnotations } from "../group-annotation.svelte";
   import { boundingBoxes } from "../idb_store.svelte";
-  import { selectedAnnotationGroup } from "../store";
+  import { deselectAnnotationGroup, selectedAnnotationGroup } from "../store";
 
   import type {
     AnnotationGroup,
@@ -142,7 +142,7 @@
   function seekToFrame(frameToGo: number) {
     onSeekFrame(frameToGo);
     onSelectAnnotation(undefined);
-    $selectedAnnotationGroup = undefined;
+    deselectAnnotationGroup();
   }
 
   function findCategoryName(categoryId: string, shape_type: string) {

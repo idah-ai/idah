@@ -28,7 +28,7 @@
   import { boundingBoxes, entryRoot, idb_updated_at } from "./video-annotation-activity/idb_store.svelte";
   import { annotationsIndexedDB, AnnotationsIndexedDB } from "./video-annotation-activity/indexedDB";
   import { registerOnSelectBoxModeShortcuts, registerVisualModeShortcuts } from "./video-annotation-activity/shortcut";
-  import { selectedAnnotationGroup } from "./video-annotation-activity/store";
+  import { deselectAnnotationGroup, selectedAnnotationGroup } from "./video-annotation-activity/store";
 
   import AnnotationFooter from "./layout/footer/AnnotationFooter.svelte";
   import AnnotationFooterToolbar from "./layout/footer/AnnotationFooterToolbar.svelte";
@@ -916,6 +916,7 @@
       name: "bounding box tool",
       apply: () => {
         mode = IDAH_VIDEO_BOUNDING_BOX;
+        deselectAnnotationGroup();
         selectedAnnotation = undefined;
       },
       undo: () => {},
@@ -942,7 +943,7 @@
       apply: () => {
         mode = DEFAULT_MODE;
         selectedAnnotation = undefined;
-        $selectedAnnotationGroup = undefined;
+        deselectAnnotationGroup();
       },
       undo: () => {},
       isCombinable: () => true,
@@ -1081,7 +1082,7 @@
      */
     if (mode === "note") {
       return;
-    } else if (!!annotation?.shape.type && ["review", "annotate"].includes(context.workflowStep)) {
+    } else if (annotation?.shape.type && ["review", "annotate"].includes(context.workflowStep)) {
       mode = annotation.shape.type;
       // Register selection-specific shortcuts for the current mode
       registerOnSelectBoxModeShortcuts(
@@ -1102,7 +1103,7 @@
   }
 
   // TODO: refactor with selectAnnotation ?
-  function selectAnnotationGroup(annotationGroup: AnnotationGroup<TAnnotationObj>, frame?: number) {
+  function selectAnnotationGroup(annotationGroup: AnnotationGroup<TAnnotationObj>, selectedFrame?: number) {
     $selectedAnnotationGroup = annotationGroup;
 
     const firstAnnotation = annotationGroup.annotations[0];
@@ -1111,17 +1112,18 @@
      */
     if (mode === "note") {
       return;
-    } else if (!!firstAnnotation.shape.type && ["review", "annotate"].includes(context.workflowStep)) {
+    } else if (selectedFrame && firstAnnotation.shape.type && ["review", "annotate"].includes(context.workflowStep)) {
+      /** If user select timeline row at specific frame (selectedFrame is exists) */
       mode = firstAnnotation.shape.type;
-      selectClosestAnnotation(annotationGroup, frame || currentFrame);
       // Register selection-specific shortcuts for the current mode
       registerOnSelectBoxModeShortcuts(context, undefined, annotationGroup.groupId, () => currentFrame);
     } else {
+      selectAnnotation(undefined);
       mode = DEFAULT_MODE;
     }
   }
 
-  function selectClosestAnnotation(annotationGroup: AnnotationGroup<TAnnotationObj>, selectedFrame: number) {
+  function selectClosestAnnotation(annotationGroup: AnnotationGroup<TAnnotationObj>, frame: number) {
     let closestAnnotation = annotationGroup.annotations[0];
 
     if (annotationGroup.annotations.length === 1) {
@@ -1136,14 +1138,14 @@
       const end = annotation.shape.end;
 
       // If frame is within an annotation, that's the one
-      if (selectedFrame >= start && selectedFrame <= end) {
+      if (frame >= start && frame <= end) {
         closestAnnotation = annotation;
         minDiff = 0;
         break;
       }
 
       // Calculate distance to nearest edge
-      const diff = Math.min(Math.abs(selectedFrame - start), Math.abs(selectedFrame - end));
+      const diff = Math.min(Math.abs(frame - start), Math.abs(frame - end));
 
       if (diff < minDiff) {
         minDiff = diff;
@@ -1374,7 +1376,7 @@
               <SvgOverlay
                 bind:this={overlay}
                 {annotations_promise}
-                selected={selectedAnnotation}
+                selected={selectedAnnotation || $selectedAnnotationGroup?.annotations[0]}
                 {mode}
                 frame={currentFrame}
                 onSelectAnnotation={selectAnnotation}
