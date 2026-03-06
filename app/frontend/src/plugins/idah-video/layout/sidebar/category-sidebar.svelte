@@ -11,11 +11,16 @@
   import type { CategoryDefinition } from "@/context/ActivityContext";
   import type { IConfigValue } from "@/plugin/interface/Activity";
 
-  import { groupAnnotations } from "../../video-annotation-activity/group-annotation.svelte";
-  import { idb_updated_at } from "../../video-annotation-activity/idb_store.svelte";
   import AnnotationCountBadge from "./annotation-count-badge.svelte";
+  import AnnotationGroupNode from "./category/annotation-group-node.svelte";
   import CategoryName from "./category/category-name.svelte";
   import VectorSqaureIcon from "./category/vector-sqaure-icon.svelte";
+
+  import { groupAnnotations } from "../../video-annotation-activity/group-annotation.svelte";
+  import { idb_updated_at } from "../../video-annotation-activity/idb_store.svelte";
+  import { selectedAnnotation } from "../../video-annotation-activity/store";
+
+  import type { AnnotationsIndexedDB } from "../../video-annotation-activity/indexedDB";
 
   import type {
     AnnotationGroup,
@@ -24,9 +29,6 @@
     AnnotationShape,
     AnnotationValue,
   } from "@/context/AnnotationContext";
-
-  import type { AnnotationsIndexedDB } from "../../video-annotation-activity/indexedDB";
-  import AnnotationGroupNode from "./category/annotation-group-node.svelte";
 
   // Props
   type TAnnotationObj = AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
@@ -43,7 +45,6 @@
     onSelectCategory: (category?: string) => void;
     selectedCategory: string | undefined;
 
-    selectedAnnotationId: string | undefined;
     onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<TAnnotationObj>) => void;
     onDeleteAnnotation: (annotation: TAnnotationObj) => void;
     onLock: (locked: boolean, annotation?: TAnnotationObj) => void;
@@ -58,7 +59,6 @@
     categories,
     onSelectCategory,
     selectedCategory,
-    selectedAnnotationId,
     onSelectAnnotationGroup,
     onDeleteAnnotation,
     onLock,
@@ -238,7 +238,7 @@
                   size="icon-sm"
                   disabled={currentModeIsSameAsShape}
                   class={cn("p-0", {
-                    "opacity-0": !showChevronRightIcon || selectedAnnotationId,
+                    "opacity-0": !showChevronRightIcon || $selectedAnnotation?.metadata.id,
                   })}
                   onclick={(e) => {
                     e.stopPropagation();

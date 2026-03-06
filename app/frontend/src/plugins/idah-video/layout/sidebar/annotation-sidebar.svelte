@@ -41,7 +41,6 @@
     mode,
     currentFrame,
     db,
-    selectedAnnotationId,
     class: className,
   }: {
     view: "sidebar" | "popover";
@@ -57,7 +56,6 @@
     context: IActivityContext;
     mode: string;
     db?: AnnotationsIndexedDB;
-    selectedAnnotationId?: string;
     class?: string | null;
   } = $props();
 
@@ -152,7 +150,6 @@
             ? $entryRoot?.value.category
             : annotationValue.category}
           onSelectCategory={(selected) => categorySelection(tool, selected)}
-          {selectedAnnotationId}
           {onSelectAnnotationGroup}
           {onDeleteAnnotation}
           {onLock}
