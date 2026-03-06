@@ -11,8 +11,24 @@ module IdahVideo
         :name, :width, :height, :bitrate, :audiobitrate
       )
 
-      DECODING_THREADS = ENV.fetch("DECODING_THREADS", 1).to_s
-      ENCODING_THREADS = ENV.fetch("ENCODING_THREADS", 1).to_s
+      DECODING_THREADS = (
+        Verse.config.extra_fields.dig(
+          :idah,
+          :plugins,
+          :config,
+          :idah_video,
+          :decoding_threads
+        ) || 1
+      ).to_s
+      ENCODING_THREADS = (
+        Verse.config.extra_fields.dig(
+          :idah,
+          :plugins,
+          :config,
+          :idah_video,
+          :encoding_threads
+        ) || 1
+      ).to_s
 
       def gen_stream(
         dir:,
