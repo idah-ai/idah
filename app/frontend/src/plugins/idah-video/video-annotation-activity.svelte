@@ -1081,7 +1081,7 @@
      */
     if (mode === "note") {
       return;
-    } else if (annotation?.shape.type && ["review", "annotate"].includes(context.workflowStep)) {
+    } else if (!!annotation?.shape.type && ["review", "annotate"].includes(context.workflowStep)) {
       mode = annotation.shape.type;
       // Register selection-specific shortcuts for the current mode
       registerOnSelectBoxModeShortcuts(
@@ -1102,17 +1102,18 @@
   }
 
   // TODO: refactor with selectAnnotation ?
-  function selectAnnotationGroup(annotationGroup: AnnotationGroup<TAnnotationObj>) {
+  function selectAnnotationGroup(annotationGroup: AnnotationGroup<TAnnotationObj>, frame?: number) {
     $selectedAnnotationGroup = annotationGroup;
 
-    const base_annotation = annotationGroup.annotations[0];
+    const firstAnnotation = annotationGroup.annotations[0];
     /**
      * Set mode to the annotation shape type when selecting an annotation
      */
-    if (mode === "note" || mode === DEFAULT_MODE) {
+    if (mode === "note") {
       return;
-    } else if (base_annotation.shape.type && ["review", "annotate"].includes(context.workflowStep)) {
-      mode = base_annotation.shape.type;
+    } else if (!!firstAnnotation.shape.type && ["review", "annotate"].includes(context.workflowStep)) {
+      mode = firstAnnotation.shape.type;
+      selectClosestAnnotation(annotationGroup, frame || currentFrame);
       // Register selection-specific shortcuts for the current mode
       registerOnSelectBoxModeShortcuts(context, undefined, annotationGroup.groupId, () => currentFrame);
     } else {
@@ -1120,7 +1121,7 @@
     }
   }
 
-  function selectClosestAnnotation(annotationGroup: AnnotationGroup<TAnnotationObj>, currentFrame: number) {
+  function selectClosestAnnotation(annotationGroup: AnnotationGroup<TAnnotationObj>, selectedFrame: number) {
     let closestAnnotation = annotationGroup.annotations[0];
 
     if (annotationGroup.annotations.length === 1) {
@@ -1135,14 +1136,14 @@
       const end = annotation.shape.end;
 
       // If frame is within an annotation, that's the one
-      if (currentFrame >= start && currentFrame <= end) {
+      if (selectedFrame >= start && selectedFrame <= end) {
         closestAnnotation = annotation;
         minDiff = 0;
         break;
       }
 
       // Calculate distance to nearest edge
-      const diff = Math.min(Math.abs(currentFrame - start), Math.abs(currentFrame - end));
+      const diff = Math.min(Math.abs(selectedFrame - start), Math.abs(selectedFrame - end));
 
       if (diff < minDiff) {
         minDiff = diff;
