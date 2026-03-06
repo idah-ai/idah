@@ -1231,8 +1231,11 @@
     const annotations = await annotationsIDB?.getGroupAnnotations($selectedAnnotationGroup.groupId);
     if (!annotations) return;
 
+    /** Reset all selection */
+    context.commands.run("tools.reset");
+
     await Promise.all(
-      annotations.map( (annotation) => {
+      annotations.map((annotation) => {
         updateAnnotationValue(annotation, { category: reselectedCategoryId });
       }),
     );

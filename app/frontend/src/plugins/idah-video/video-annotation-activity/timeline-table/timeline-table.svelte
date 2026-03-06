@@ -69,6 +69,11 @@
   // Contexts
   let context: IActivityContext = getContext("context");
 
+  $effect(() => {
+    console.log(selectedAnnotation);
+    console.log($selectedAnnotationGroup);
+  });
+
   // Functions
   function toggleVisibility() {
     onVisibility(!allHidden);
@@ -254,18 +259,6 @@
     if (delta || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) e.preventDefault();
   }
 
-  function getIsGroupSelected(group: AnnotationGroup<TAnnotationObj>): boolean {
-    const { groupId, annotations } = group;
-
-    if (selectedAnnotation) {
-      return annotations.some((ann) => ann.metadata.id == selectedAnnotation?.metadata.id);
-    }
-
-    if ($selectedAnnotationGroup?.groupId == groupId) return true;
-
-    return false;
-  }
-
   function toggleVisibilityAllAnnotations(annotations: TAnnotationObj[]) {
     const isAllHidden = annotations.map((annotation) => annotation.hidden).every((hidden) => hidden);
     annotations.forEach((annotation) => onVisibility(!isAllHidden, annotation));
@@ -289,7 +282,7 @@
 {#snippet row(groups: AnnotationGroup<TAnnotationObj>[])}
   {#each groups as group, index (group.groupId)}
     {@const { groupId, annotations } = group}
-    {@const isGroupSelected = getIsGroupSelected(group)}
+    {@const isGroupSelected = $selectedAnnotationGroup?.groupId == groupId}
     {@const someAnnotationIsHidden = annotations.some((ann) => ann.hidden)}
     {@const someAnnotationIsLocked = annotations.some((ann) => ann.locked)}
     {@const isLastIndex = index == groups.length - 1}
