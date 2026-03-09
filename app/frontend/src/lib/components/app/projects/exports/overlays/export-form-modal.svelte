@@ -9,6 +9,7 @@
   import { DialogTitle } from "@/components/ui/dialog";
   import { Item, ItemContent, ItemDescription } from "@/components/ui/item";
   import { ScrollArea } from "@/components/ui/scroll-area";
+  import { Skeleton } from "@/components/ui/skeleton";
   import Text from "@/components/ui/text/Text.svelte";
 
   import { exportingExportRecords } from "@/components/app/sync/exports/store";
@@ -38,6 +39,7 @@
   // Functions
   function resetForm(): void {
     selectedExporter = "";
+    selectedIncludeMedias = "original";
   }
 
   async function loadExportFormatChoices(): Promise<Array<LabelValue<string | number>>> {
@@ -93,7 +95,9 @@
 
   <div class="flex flex-col gap-4 pl-1">
     <!-- SELECT FIELD TO SELECT FORMAT -->
-    {#await loadExportFormatChoices() then choices}
+    {#await loadExportFormatChoices()}
+      <Skeleton class="h-9 w-full" />
+    {:then choices}
       <SingleSelectField
         name="{resource}/exporter"
         label="Format"
