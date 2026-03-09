@@ -35,16 +35,17 @@ export type StoresDefinition = {
 export async function annotationsIndexedDB(name: string, stores: StoresDefinition = s) {
   return new Promise<AnnotationsIndexedDB>((resolve, reject) => {
     const DBOpenRequest = indexedDB.open(name, currentDBVersion);
-    const db = DBOpenRequest.result;
 
     DBOpenRequest.onerror = reject;
     DBOpenRequest.onsuccess = (_) => {
       console.info("Database initialized.");
-      resolve(new AnnotationsIndexedDB(db));
+      resolve(new AnnotationsIndexedDB(DBOpenRequest.result));
     };
 
     DBOpenRequest.onupgradeneeded = () => {
       console.info("Upgrading database...");
+
+      const db = DBOpenRequest.result;
 
       // the cleanest way to "drop and recreate" the data when an upgrade is needed
       // is to delete all existing object stores, then create them fresh.
