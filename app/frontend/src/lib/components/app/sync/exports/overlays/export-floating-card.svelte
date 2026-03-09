@@ -37,6 +37,7 @@
 
   // Functions
   function hideFloatingCard(): void {
+    isDownloadReady = false;
     $exportingExportRecords = [];
   }
 
@@ -63,9 +64,13 @@
   async function periodicCheckSyncJobStatus(records: Array<ExportRecord>) {
     $progressInterval = setInterval(async () => {
       try {
-        const filenames = records.map((exportingExportRecord) => exportingExportRecord.filename);
+        if ($exportingExportRecords.length < 1) return;
 
-        if (!filenames.includes(null)) {
+        const statuses = records.map((exportRecord) => (exportRecord.job as unknown as SyncJobRecord).status);
+        const isAllCompleted =
+          statuses.filter((status) => status === "completed").length === $exportingExportRecords.length;
+
+        if (isAllCompleted) {
           stopPeriodicCheckSyncJobStatus();
           isDownloadReady = true;
           return;
