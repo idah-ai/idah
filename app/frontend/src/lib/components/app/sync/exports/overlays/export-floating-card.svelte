@@ -1,5 +1,12 @@
 <script lang="ts">
-  import { ChevronsDownUpIcon, ChevronsUpDownIcon, CircleCheckBigIcon, DownloadIcon, XIcon } from "@lucide/svelte";
+  import {
+    ChevronsDownUpIcon,
+    ChevronsUpDownIcon,
+    CircleAlertIcon,
+    CircleCheckBigIcon,
+    DownloadIcon,
+    XIcon,
+  } from "@lucide/svelte";
   import { onDestroy } from "svelte";
   import { writable } from "svelte/store";
 
