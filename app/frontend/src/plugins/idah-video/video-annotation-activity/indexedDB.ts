@@ -1,6 +1,9 @@
 import type { AnnotationMetadata, AnnotationObj, AnnotationShape, AnnotationValue } from "@/context/AnnotationContext";
 import { X, Y, type Point, type VideoFrameSelection } from "./VideoAnnotationContext";
 
+// the current version of IndexedDB, bump incrementally if there's a change
+const currentDBVersion: number = 2;
+
 //test
 const s = {
   annotations: [
@@ -11,6 +14,7 @@ const s = {
     { index: "category", path: "value.category", opts: { unique: false } },
     { index: "created_at", path: "metadata.updatedAt", opts: { unique: false } },
     { index: "updated_at", path: "metadata.createdAt", opts: { unique: false } },
+    { index: "groupIdIndex", path: "metadata.metadata.group_id", opts: { unique: false } },
   ],
   keyframes: [
     { index: "frame", path: "frame", opts: { unique: false } },
@@ -30,7 +34,8 @@ export type StoresDefinition = {
 
 export async function annotationsIndexedDB(name: string, stores: StoresDefinition = s) {
   return new Promise<AnnotationsIndexedDB>((resolve, reject) => {
-    const DBOpenRequest = indexedDB.open(name, 1);
+    const DBOpenRequest = indexedDB.open(name, currentDBVersion);
+
     DBOpenRequest.onerror = reject;
     DBOpenRequest.onsuccess = (_) => {
       console.info("Database initialized.");
@@ -38,12 +43,23 @@ export async function annotationsIndexedDB(name: string, stores: StoresDefinitio
     };
 
     DBOpenRequest.onupgradeneeded = () => {
-      console.info("upgrade Database.");
+      console.info("Upgrading database...");
 
+      const db = DBOpenRequest.result;
+
+      // the cleanest way to "drop and recreate" the data when an upgrade is needed
+      // is to delete all existing object stores, then create them fresh.
+      Array.from(db.objectStoreNames).forEach((store) => {
+        db.deleteObjectStore(store);
+      });
+
+      // creating object stores and indexes
       Object.entries(stores).forEach(([store, indexes]) => {
-        const s = DBOpenRequest.result.createObjectStore(store);
+        const s = db.createObjectStore(store);
         indexes.forEach((i) => s.createIndex(i.index, i.path, i?.opts));
       });
+
+      console.info("Database upgraded.");
     };
   });
 }
@@ -115,6 +131,20 @@ export class AnnotationsIndexedDB {
       const request = store.get(key);
 
       request.onsuccess = (_) => resolve(request.result);
+      request.onerror = (_) => reject(request.error);
+    });
+  }
+
+  getGroupAnnotations(groupId: string): Promise<AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]> {
+    return new Promise<AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]>((resolve, reject) => {
+      const transaction = this.db.transaction("annotations", "readonly");
+      const store = transaction.objectStore("annotations").index("groupIdIndex");
+      const request = store.getAll(IDBKeyRange.only(groupId));
+
+      request.onsuccess = (_) => {
+        const sorted = request.result.sort((a, b) => a.shape.start - b.shape.start);
+        resolve(sorted);
+      };
       request.onerror = (_) => reject(request.error);
     });
   }
