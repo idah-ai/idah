@@ -29,6 +29,18 @@ class DatasetsExpo < BaseExpo
     delete
   end
 
+  # TODO: TBC; in this case, dataset is duplicating by selecting entry ids
+  expose on_http(:post, "/:id/duplicate") do
+    desc "Duplicate a dataset and its entries/medias"
+    input do
+      field :id, String
+      field :entry_ids, Array, of: String
+    end
+  end
+  def duplicate
+    service.duplicate(params[:id], params[:entry_ids])
+  end
+
   expose on_resource_event(Resource::Dataset::Datasets, "completed")
   def on_dataset_completed
     dataset_id = message.content[:resource_id]
