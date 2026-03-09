@@ -1,6 +1,9 @@
 import type { AnnotationMetadata, AnnotationObj, AnnotationShape, AnnotationValue } from "@/context/AnnotationContext";
 import { X, Y, type Point, type VideoFrameSelection } from "./VideoAnnotationContext";
 
+// the current version of IndexedDB, bump incrementally if there's a change
+const currentDBVersion: number = 2;
+
 //test
 const s = {
   annotations: [
@@ -31,20 +34,31 @@ export type StoresDefinition = {
 
 export async function annotationsIndexedDB(name: string, stores: StoresDefinition = s) {
   return new Promise<AnnotationsIndexedDB>((resolve, reject) => {
-    const DBOpenRequest = indexedDB.open(name, 1);
+    const DBOpenRequest = indexedDB.open(name, currentDBVersion);
+    const db = DBOpenRequest.result;
+
     DBOpenRequest.onerror = reject;
     DBOpenRequest.onsuccess = (_) => {
       console.info("Database initialized.");
-      resolve(new AnnotationsIndexedDB(DBOpenRequest.result));
+      resolve(new AnnotationsIndexedDB(db));
     };
 
     DBOpenRequest.onupgradeneeded = () => {
-      console.info("upgrade Database.");
+      console.info("Upgrading database...");
 
+      // the cleanest way to "drop and recreate" the data when an upgrade is needed
+      // is to delete all existing object stores, then create them fresh.
+      Array.from(db.objectStoreNames).forEach((store) => {
+        db.deleteObjectStore(store);
+      });
+
+      // creating object stores and indexes
       Object.entries(stores).forEach(([store, indexes]) => {
-        const s = DBOpenRequest.result.createObjectStore(store);
+        const s = db.createObjectStore(store);
         indexes.forEach((i) => s.createIndex(i.index, i.path, i?.opts));
       });
+
+      console.info("Database upgraded.");
     };
   });
 }
