@@ -311,7 +311,9 @@ RSpec.describe Exports::Upd::Exporter do
         let(:options) { { include_medias: "original" } }
 
         it "includes only media with empty key" do
-          allow(Api[:idah].media.medias).to receive(:index_all).and_return(
+          allow(Api[:idah].media.medias).to receive(:index_all).with(
+            filter: { resource: "res1", key: "" }
+          ).and_return(
             [
               double(
                 "Media",
@@ -320,14 +322,6 @@ RSpec.describe Exports::Upd::Exporter do
                 key: "",
                 filename: "file.mov",
                 mime_type: "video/quicktime"
-              ),
-              double(
-                "Media",
-                id: "media2",
-                resource: "res1",
-                key: "240p.m3u8",
-                filename: "240p.m3u8",
-                mime_type: "application/vnd.apple.mpegurl"
               )
             ]
           )
