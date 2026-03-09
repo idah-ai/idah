@@ -56,7 +56,7 @@ module Exports
           }
         )
 
-        exports.find!(export_id)
+        exports.find!(export_id, included: [:job])
       end
     end
 
