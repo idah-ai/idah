@@ -64,11 +64,12 @@
   async function periodicCheckSyncJobStatus(records: Array<ExportRecord>) {
     $progressInterval = setInterval(async () => {
       try {
+        isDownloadReady = false;
+
         if ($exportingExportRecords.length < 1) return;
 
         const statuses = records.map((exportRecord) => (exportRecord.job as unknown as SyncJobRecord).status);
-        const isAllCompleted =
-          statuses.filter((status) => status === "completed").length === $exportingExportRecords.length;
+        const isAllCompleted = statuses.filter((status) => status !== "completed").length === 0;
 
         if (isAllCompleted) {
           stopPeriodicCheckSyncJobStatus();
