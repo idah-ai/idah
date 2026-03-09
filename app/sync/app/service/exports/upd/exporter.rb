@@ -17,19 +17,25 @@ module Exports
           append_dataset(file_path, dataset)
 
           dataset.entries.each do |entry|
-            append_entry(file_path, dataset.dataset.id, entry)
+            include_medias = context.options[:include_medias]
+
+            append_entry(file_path, dataset.dataset.id, entry, include_medias)
 
             entry.annotations.each do |annotation|
               append_annotation(file_path, entry.entry.id, annotation)
             end
 
+            # Determine which medias to include based on the option:
+            # - "original": only include original media (key: "")
+            # - "all": include all medias (original and processed)
+            # - otherwise: do not include any media
             medias =
-              case context.options[:include_medias]
-              when "original" # Only include original media (key: "")
+              case include_medias
+              when "original"
                 entry.medias({ key: "" })
-              when "all" # Include original and processed medias
+              when "all"
                 entry.medias
-              else # Do not include any media
+              else
                 []
               end
 
@@ -77,11 +83,18 @@ module Exports
         )
       end
 
-      def append_entry(file_path, dataset_id, entry)
-        media_url = URI.join(
-          ENV.fetch("IDAH_URL"),
-          "api/v1/media/medias/files/#{entry.entry.resource}"
-        )
+      def append_entry(file_path, dataset_id, entry, include_medias)
+        # Use local file URL if original media is included,
+        # otherwise use external URL of Media service of IDAH
+        media_url =
+          if ["original", "all"].include?(include_medias)
+            "local:#{entry.entry.resource}"
+          else
+            URI.join(
+              ENV.fetch("IDAH_URL"),
+              "api/v1/media/medias/files/#{entry.entry.resource}"
+            )
+          end
 
         metadata = capitalized_dashed_keys(
           entry.entry.data[:attributes].slice(
@@ -150,7 +163,7 @@ module Exports
         # Create media in UPD
         system(
           "bin/updcli-static --input #{file_path} " \
-          "media create --id \"#{media.media.id}\" "\
+          "media create --id \"#{media.media.resource}\" "\
           "--file \"#{tempfile.path}\" "\
           "--key \"#{media.media.key}\" "\
           "--mimetype \"#{media.media.mime_type}\"",
