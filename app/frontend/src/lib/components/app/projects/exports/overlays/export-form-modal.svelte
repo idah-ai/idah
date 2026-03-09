@@ -13,6 +13,7 @@
 
   import { exportingExportRecords } from "@/components/app/sync/exports/store";
   import { DatasetRecord } from "@/data/model/dataset/dataset-record";
+  import { includeMedias } from "@/data/model/sync/exports/constant";
   import { ExportRecord, ExportsBackendDataSource } from "@/data/model/sync/exports/record";
   import { cn } from "@/utils";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
@@ -30,12 +31,13 @@
   const resource = ExportRecord.type;
 
   let projectId = page.params.projectId as string;
-  let exporter = $state<string>("");
   let exporting = $state<boolean>(false);
+  let selectedExporter = $state<string>("");
+  let selectedIncludeMedias = $state<string>("original");
 
   // Functions
   function resetForm(): void {
-    exporter = "";
+    selectedExporter = "";
   }
 
   async function loadExportFormatChoices(): Promise<Array<LabelValue<string | number>>> {
@@ -59,11 +61,15 @@
       const createdExportRecordRes = await ExportsBackendDataSource.export({
         projectId,
         datasetIds: datasetRecords.map((record) => record.id),
-        exporter,
+        exporter: selectedExporter,
+        includeMedias: selectedIncludeMedias,
+      });
+      const exportRecordRes = await ExportsBackendDataSource.get(createdExportRecordRes.data.id, {
+        included: ["job"],
       });
 
+      $exportingExportRecords = [exportRecordRes.data];
       open = false;
-      $exportingExportRecords = [createdExportRecordRes.data];
       exporting = false;
     } catch (error) {
       showActionFailedToast(error);
@@ -78,14 +84,14 @@
   description="Please select an export format for the selected datasets."
   loading={exporting}
   onCancel={resetForm}
-  onConfirm={exportDataset}
+  onConfirm={() => {}}
   bind:open
 >
   {#snippet modalTitle()}
     <DialogTitle>{title}</DialogTitle>
   {/snippet}
 
-  <div class="flex flex-col gap-4">
+  <div class="flex flex-col gap-4 pl-1">
     <!-- SELECT FIELD TO SELECT FORMAT -->
     {#await loadExportFormatChoices() then choices}
       <SingleSelectField
@@ -94,9 +100,9 @@
         placeholder="Select an export format"
         required
         {choices}
-        value={exporter}
+        value={selectedExporter}
         onSelected={(selectedValue) => {
-          exporter = selectedValue as string;
+          selectedExporter = selectedValue as string;
         }}
       >
         {#snippet slotChoice({ choice, select })}
@@ -104,7 +110,7 @@
           <CommandItem value={String(value)} onSelect={() => select(choice)}>
             <CheckIcon
               class={cn("mr-2 size-4", {
-                "opacity-0": value !== exporter,
+                "opacity-0": value !== selectedExporter,
               })}
             />
             <div class="flex flex-col gap-0">
@@ -115,6 +121,33 @@
         {/snippet}
       </SingleSelectField>
     {/await}
+
+    <SingleSelectField
+      name="{resource}/include_medias"
+      label="Include medias"
+      placeholder="Select an media to include"
+      required
+      choices={includeMedias}
+      value={selectedIncludeMedias}
+      onSelected={(selectedValue) => {
+        selectedIncludeMedias = selectedValue as string;
+      }}
+    >
+      {#snippet slotChoice({ choice, select })}
+        {@const { label, description, value } = choice}
+        <CommandItem value={String(value)} onSelect={() => select(choice)}>
+          <CheckIcon
+            class={cn("mr-2 size-4", {
+              "opacity-0": value !== selectedIncludeMedias,
+            })}
+          />
+          <div class="flex flex-col gap-0">
+            <p>{label}</p>
+            <small class="text-muted-foreground">{description}</small>
+          </div>
+        </CommandItem>
+      {/snippet}
+    </SingleSelectField>
 
     <div class="flex flex-col gap-1">
       <Text size="sm" weight="medium">Dataset(s)</Text>
@@ -131,6 +164,6 @@
   </div>
 
   {#snippet confirm()}
-    <Button disabled={!exporter} loading={exporting} onclick={exportDataset}>Export</Button>
+    <Button disabled={!selectedExporter} loading={exporting} onclick={exportDataset}>Export</Button>
   {/snippet}
 </FormModal>
