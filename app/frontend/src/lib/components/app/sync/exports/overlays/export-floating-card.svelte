@@ -61,8 +61,6 @@
   }
 
   async function periodicCheckSyncJobStatus(records: Array<ExportRecord>) {
-    isDownloadReady = false;
-
     $progressInterval = setInterval(async () => {
       try {
         const filenames = records.map((exportingExportRecord) => exportingExportRecord.filename);
@@ -144,6 +142,7 @@
           {:else}
             <Spinner size="sm" />
           {/if}
+
           {isDownloadReady ? "Dataset export ready" : "Dataset export in progress..."}
 
           <div class="ml-auto flex items-center gap-2">
