@@ -20,8 +20,8 @@ module IdahVideo
         # Default up to 1080p.
         # The reason is in most projects, 1080p should be enough;
         # it reduces memory when re-encoding allowing deployment to smaller servers.
-        default: ["360p", "480p", "720p", "1080p"],
-        desc: "List of video sizes to generate. Default is [360p, 480p, 720p, 1080p]."
+        default: ["240p", "360p", "480p", "720p", "1080p"],
+        desc: "List of video sizes to generate. Default is [240p, 360p, 480p, 720p, 1080p]."
       ).rule("must match compatible formats") do |v|
         v.all?{ |size| SCALE_FORMATS.key?(size) }
       end
