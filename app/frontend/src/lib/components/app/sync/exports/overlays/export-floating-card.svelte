@@ -4,6 +4,7 @@
   import { writable } from "svelte/store";
 
   import Tooltips from "@/components/app/tooltips/tooltips.svelte";
+  import Badge from "@/components/ui/badge/badge.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
   import { Item, ItemActions, ItemContent, ItemTitle } from "@/components/ui/item";
@@ -21,6 +22,11 @@
   let open = $state<boolean>(false);
   let progressInterval = writable<number | undefined>(undefined); // Note: Need to use writable because it's not reactive
   let isDownloadReady = $state<boolean>(false);
+  let isDownloadError = $derived<boolean>(
+    $exportingExportRecords.filter(
+      (exportRecord) => (exportRecord.job as unknown as SyncJobRecord).status === "errored",
+    ).length > 0,
+  );
 
   // Functions
   function hideFloatingCard(): void {
@@ -65,6 +71,7 @@
             const exportRes = await ExportsBackendDataSource.get(exportingExportRecord.id, {
               included: ["job"],
               fields: {
+                [SyncJobRecord.type]: ["id", "status", "progress"],
                 [ExportRecord.type]: ["id", "job_id", "filename"],
               },
               noCache: true,
@@ -73,6 +80,11 @@
             $exportingExportRecords[index] = exportRes.data;
           }),
         );
+
+        /** If there are error status on Job, stop periodic check */
+        if (isDownloadError) {
+          stopPeriodicCheckSyncJobStatus();
+        }
       } catch (error) {
         console.error("Error fetching updated export:", error);
         stopPeriodicCheckSyncJobStatus();
@@ -114,10 +126,14 @@
               isDownloadReady,
             "bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary dark:bg-primary/10 dark:text-primary dark:hover:bg-primary/20 dark:hover:text-primary":
               !isDownloadReady,
+            "bg-destructive text-primary-foreground hover:bg-destructive hover:text-primary-foreground":
+              isDownloadError,
           })}
         >
           {#if isDownloadReady}
             <CircleCheckBigIcon />
+          {:else if isDownloadError}
+            <CircleAlertIcon />
           {:else}
             <Spinner size="sm" />
           {/if}
@@ -140,7 +156,7 @@
       <CollapsibleContent>
         <div class="min-w-96 border-t">
           {#each $exportingExportRecords as exportingExportRecord (exportingExportRecord.id)}
-            {@const { id, job_id, filename } = exportingExportRecord}
+            {@const { id, job_id, job, filename } = exportingExportRecord}
             {#await getExportDatasetsName(job_id) then datasetsName}
               <Item>
                 <ItemContent>
@@ -160,6 +176,8 @@
                     <Button variant="ghost" size="icon-sm" onclick={() => openFileLink(id)}>
                       <DownloadIcon />
                     </Button>
+                  {:else if (job as unknown as SyncJobRecord).status === "errored"}
+                    <Badge variant="destructive" rounded="full">Error</Badge>
                   {:else}
                     <Spinner size="sm" />
                   {/if}

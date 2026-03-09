@@ -40,14 +40,17 @@ export const ExportsBackendDataSource = createBackendDataSource(ExportRecord, ex
 
     return body as Array<ExportFormat>;
   },
-  export: async (params: { projectId: string; datasetIds: Array<string>; exporter: string }) => {
-    const { projectId, datasetIds, exporter } = params;
+  export: async (params: { projectId: string; datasetIds: Array<string>; exporter: string; includeMedias: string }) => {
+    const { projectId, datasetIds, exporter, includeMedias } = params;
     const res = await fetch(`${exportsBasePath}/export`, {
       method: "POST",
       body: JSON.stringify({
         project_id: projectId,
         dataset_ids: datasetIds,
         exporter: exporter,
+        options: {
+          include_medias: includeMedias,
+        },
       }),
       headers: { "Content-Type": "application/vnd.api+json" },
     });
