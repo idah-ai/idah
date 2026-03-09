@@ -66,11 +66,8 @@
         exporter: selectedExporter,
         includeMedias: selectedIncludeMedias,
       });
-      const exportRecordRes = await ExportsBackendDataSource.get(createdExportRecordRes.data.id, {
-        included: ["job"],
-      });
 
-      $exportingExportRecords = [exportRecordRes.data];
+      $exportingExportRecords = [createdExportRecordRes.data];
       open = false;
       exporting = false;
     } catch (error) {
