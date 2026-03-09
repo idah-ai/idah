@@ -410,7 +410,8 @@ RSpec.describe Exports::Upd::Exporter do
           media_params_valid = false
           allow(exporter).to receive(:system) do |cmd, _options|
             if cmd.include?("media create")
-              media_params_valid = cmd.include?("--id \"#{media_id}\"") &&
+              # Changed to use media.media.resource instead of media.media.id
+              media_params_valid = cmd.include?("--id \"4c2052a1475842e9.mov\"") &&
                                    cmd.include?("--file \"/tmp/tempfile\"") &&
                                    cmd.include?("--key \"\"") &&
                                    cmd.include?("--mimetype \"video/quicktime\"")
