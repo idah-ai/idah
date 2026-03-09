@@ -1,0 +1,11 @@
+{
+  "name": "idah-plugin-cli",
+  "version": "1.0.0",
+  "type": "module",
+  "bin": {
+    "idah-plugin": "./bin/cli.js"
+  },
+  "dependencies": {
+    "prompts": "^2.4.2"
+  }
+}
