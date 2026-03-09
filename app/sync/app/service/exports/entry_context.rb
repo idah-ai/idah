@@ -8,22 +8,18 @@ module Exports
       @entry = entry
     end
 
-    def annotations
+    def annotations(filter = {})
       Api[:idah].dataset.annotations.index_all(
-        filter: {
-          entry_id: @entry.id
-        },
+        filter: filter.merge(entry_id: @entry.id),
         included: ["project_members"]
       ).map do |annotation|
         AnnotationContext.new(annotation)
       end
     end
 
-    def medias
+    def medias(filter = {})
       Api[:idah].media.medias.index_all(
-        filter: {
-          resource: @entry.resource
-        }
+        filter: filter.merge(resource: @entry.resource)
       ).map do |media|
         MediaContext.new(media)
       end

@@ -8,9 +8,9 @@ module Exports
       @dataset = Api[:idah].dataset.datasets.show(id:)
     end
 
-    def entries
+    def entries(filter = {})
       Api[:idah].dataset.entries.index_all(
-        filter: { dataset_id: @dataset.id },
+        filter: filter.merge(dataset_id: @dataset.id),
         included: []
       ).map do |entry|
         EntryContext.new(entry)
