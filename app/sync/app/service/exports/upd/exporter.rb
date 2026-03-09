@@ -69,10 +69,11 @@ module Exports
 
             entry.annotations.each do |annotation|
               attributes = annotation.annotation.data[:attributes]
+              metadata = attributes[:metadata] || {}
               dimensions = annotation.annotation.dimensions
               type = dimensions.delete(:type)
 
-              metadata = capitalized_dashed_keys(attributes[:metadata]).merge(
+              metadata = capitalized_dashed_keys(metadata).merge(
                 {
                   "Created-By" => attributes[:created_by_email],
                   "Created-At" => attributes[:created_at],
