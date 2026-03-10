@@ -743,8 +743,6 @@
         async undo() {
           const undoAt = new Date();
           for (const annotationToBeUndo of annotations) {
-            // console.log(`annotation to be undo ${undoUpdatedAt}`, annotation);
-            // console.log(`annotation value to be undo`, categoryIdToBeUpdate, beforeUpdateCategoryId);
             annotationToBeUndo.value = { category: beforeUpdateCategoryId };
             annotationToBeUndo.metadata.updatedAt = undoAt;
             annotationToBeUndo.synced = false;
@@ -770,60 +768,6 @@
             /** Refetch */
             $idb_updated_at = new Date();
           }
-          /** Undo from annotation.update */
-          //   const annotation = await annotationsIDB?.get("annotations", annotationId);
-          // if (annotation) {
-          //   const updatedAt = new Date();
-          //   annotation.value = value_from;
-          //   annotation.metadata.updatedAt = updatedAt;
-          //   annotation.synced = false;
-          //   $selectedAnnotation = annotation;
-          //   let p = context.annotations.update({
-          //     id: annotation.metadata.id,
-          //     dimensions: annotation.shape,
-          //     annotation: value_from,
-          //   });
-          //   if ($entryRoot?.metadata.id == annotation.metadata.id) $entryRoot = annotation;
-          //   p.then(async () => {
-          //     const annotation = await annotationsIDB?.get("annotations", annotationId);
-          //     if (annotation && annotation.metadata.updatedAt.valueOf() == updatedAt.valueOf()) {
-          //       annotation.synced = true;
-          //       $selectedAnnotation = annotation;
-          //       if ($entryRoot?.metadata.id == annotation.metadata.id) $entryRoot = annotation;
-          //       await annotationsIDB?.upsertAnnotations([annotation]);
-          //       $idb_updated_at = new Date();
-          //     }
-          //   });
-          // }
-          /** Undo from annotation.deleteGroup */
-          //   const createdAt = new Date();
-          // for (const annotation of annotations) {
-          //   const id = annotation.metadata.id;
-          //   let a = {
-          //     ...annotation,
-          //     metadata: {
-          //       ...annotation.metadata,
-          //       createdAt,
-          //       updatedAt: createdAt,
-          //     },
-          //     synced: false,
-          //     locked: false,
-          //     hidden: false,
-          //   };
-          //   await annotationsIDB?.upsertAnnotations([a]);
-          //   if (annotation.shape.type == ENTRY_ROOT) $entryRoot = annotation;
-          //   let p = context.annotations.create(id, annotation.shape, annotation.value, a.metadata.metadata);
-          //   p.then(async () => {
-          //     let restored = await annotationsIDB?.get("annotations", id);
-          //     if (restored?.metadata.updatedAt.valueOf() == createdAt.valueOf()) {
-          //       restored.synced = true;
-          //       if (restored?.shape.type == ENTRY_ROOT) $entryRoot = restored;
-          //       await annotationsIDB?.upsertAnnotations([restored]);
-          //       $idb_updated_at = new Date();
-          //     }
-          //   });
-          // }
-          // $idb_updated_at = new Date();
         },
         isCombinable: () => false,
         combine: (cmd) => cmd,
@@ -1394,18 +1338,11 @@
       annotations = $selectedAnnotationGroup.annotations;
     }
 
-    /** Reset all selection */
-    // context.commands.run("tools.reset");
+    /** Update annotation group category */
     context.commands.run("annotation.updateGroupCategory", {
       groupId: $selectedAnnotationGroup.groupId,
       categoryIdToBeUpdate: reselectedCategoryId,
     });
-
-    // await Promise.all(
-    //   annotations.map((annotation) => {
-    //     updateAnnotationValue(annotation, { category: reselectedCategoryId });
-    //   }),
-    // );
   }
 
   let allHidden: boolean = $state(false);
