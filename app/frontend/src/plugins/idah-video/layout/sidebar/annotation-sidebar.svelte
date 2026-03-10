@@ -11,6 +11,7 @@
   import CategorySidebar from "./category-sidebar.svelte";
 
   import type {
+    AnnotationGroup,
     AnnotationMetadata,
     AnnotationObj,
     AnnotationShape,
@@ -27,10 +28,12 @@
 
   // Props
   let {
+    view,
     sidebarWidthRem,
     annotationValue,
     onEditValue,
     onSelectAnnotation,
+    onSelectAnnotationGroup,
     onDeleteAnnotation,
     onVisibility,
     onLock,
@@ -38,21 +41,21 @@
     mode,
     currentFrame,
     db,
-    selectedAnnotationId,
     class: className,
   }: {
+    view: "sidebar" | "popover";
     sidebarWidthRem: number;
     currentFrame: number;
     annotationValue: AnnotationValue;
     onEditValue: (annotationValue: AnnotationValue, mode: string) => void;
     onSelectAnnotation: (annotation?: TAnnotationObj) => void;
+    onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<TAnnotationObj>) => void;
     onDeleteAnnotation: (annotation: TAnnotationObj) => void;
     onLock: (locked: boolean, annotation?: TAnnotationObj) => void;
     onVisibility: (hidden: boolean, annotation?: TAnnotationObj) => void;
     context: IActivityContext;
     mode: string;
     db?: AnnotationsIndexedDB;
-    selectedAnnotationId?: string;
     class?: string | null;
   } = $props();
 
@@ -137,6 +140,7 @@
     {#each filteredTools as [tool, categories] (tool)}
       {#if !filteredTools.has(mode) || (filteredTools.has(mode) && tool == mode) || mode == ENTRY_ROOT}
         <CategorySidebar
+          {view}
           {db}
           {currentFrame}
           currentMode={mode}
@@ -146,8 +150,7 @@
             ? $entryRoot?.value.category
             : annotationValue.category}
           onSelectCategory={(selected) => categorySelection(tool, selected)}
-          {selectedAnnotationId}
-          {onSelectAnnotation}
+          {onSelectAnnotationGroup}
           {onDeleteAnnotation}
           {onLock}
           {onVisibility}

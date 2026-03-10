@@ -94,9 +94,11 @@
 
   $effect(() => {
     onEditingChange?.(isEditing);
+    return () => onEditingChange?.(false);
   });
   $effect(() => {
     onPointerChange?.(edition_cursor);
+    return () => onPointerChange?.(undefined);
   });
 
   // Update points based on cursor movement (pan)
@@ -369,7 +371,7 @@
     let newBottomRightY = initialBottomRight[Y];
 
     // Determine which point/edge to keep fixed (in unrotated space)
-    let fixedPointUnrotated: Point;
+    let fixedPointUnrotated: Point = [0, 0];
 
     // Handle corner resizing (even indices)
     if (handleIndex % 2 === 0) {
