@@ -735,10 +735,11 @@
                 await annotationsIDB?.upsertAnnotations([annotation]);
               }
             });
-
-            /** Refetch */
-            $idb_updated_at = new Date();
           }
+
+          /** Refetch */
+          annotationValue = { category: categoryIdToBeUpdate };
+          $idb_updated_at = new Date();
         },
         async undo() {
           const undoAt = new Date();
@@ -766,6 +767,7 @@
             });
 
             /** Refetch */
+            annotationValue = { category: beforeUpdateCategoryId };
             $idb_updated_at = new Date();
           }
         },
