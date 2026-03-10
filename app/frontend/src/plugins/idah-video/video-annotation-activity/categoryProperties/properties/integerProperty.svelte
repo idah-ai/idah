@@ -27,8 +27,8 @@
   ]);
 </script>
 
-<div class="my-2 flex flex-col gap-1">
-  <Label for={property.id} class="mb-2 text-xs">
+<div class="flex flex-col gap-1">
+  <Label for={property.id} class="text-xs">
     {property.label}
     {#if property.required}
       <span class="text-red-500">*</span>

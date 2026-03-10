@@ -2,7 +2,14 @@
   import { ArrowLeftRightIcon, SquareSplitHorizontalIcon, Trash2Icon } from "@lucide/svelte";
   import { getContext } from "svelte";
 
-  import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu";
+  import {
+    ContextMenu,
+    ContextMenuContent,
+    ContextMenuGroup,
+    ContextMenuItem,
+    ContextMenuSeparator,
+    ContextMenuTrigger,
+  } from "@/components/ui/context-menu";
 
   import { cn } from "@/utils";
 
@@ -15,6 +22,7 @@
   } from "@/context/AnnotationContext";
 
   import type { IActivityContext } from "@/plugin/interface/Activity";
+  import { selectedAnnotation } from "../store";
 
   // Type
   type TAnnotationObj = AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
@@ -28,7 +36,6 @@
     scale: number;
     totalFrames: number;
     zoom: number;
-    selectedAnnotation: TAnnotationObj | undefined;
     hoveredAnnotation: TAnnotationObj | undefined;
     onSeekFrame: (frame: number) => void;
     onDeleteFrame: (annotation: TAnnotationObj, frame: number) => void;
@@ -45,7 +52,6 @@
     scale,
     totalFrames,
     zoom,
-    selectedAnnotation,
     hoveredAnnotation,
     onSeekFrame,
     onDeleteFrame,
@@ -77,7 +83,7 @@
   );
   let isStartOfKeyFrameRange = $derived(annotation?.shape.start === currentFrameInCell);
   let isEndOfKeyFrameRange = $derived(annotation?.shape.end === currentFrameInCell);
-  let annotationIsSelected: boolean = $derived(selectedAnnotation?.metadata.id == annotation?.metadata.id);
+  let annotationIsSelected: boolean = $derived($selectedAnnotation?.metadata.id == annotation?.metadata.id);
   let annotationIsHovered: boolean = $derived(hoveredAnnotation?.metadata.id == annotation?.metadata.id);
   let annotationIsSelectedOrHovered: boolean = $derived(annotationIsSelected || annotationIsHovered);
 
@@ -96,9 +102,11 @@
   function selectFrame() {
     onSeekFrame(currentFrameInCell);
 
-    if (annotation) onSelectAnnotation(annotation);
-
-    onSelectGroupAtFrame(group, currentFrameInCell);
+    if (annotation) {
+      onSelectAnnotation(annotation);
+    } else {
+      onSelectGroupAtFrame(group, currentFrameInCell);
+    }
   }
 
   function onMouseOver() {
@@ -145,42 +153,57 @@
       : "transparent"}
     style:border-color={categoryColor}
   >
-    <ContextMenu>
-      <ContextMenuTrigger class="absolute top-[3px] h-full w-full pt-0">
-        <!-- If have keyframes, render a box -->
-        {#if keyFrames.length}
-          <div
-            class="m-auto h-3/4 w-3/4 rounded"
-            style:background-color={categoryColor ? categoryColor : "transparent"}
-          ></div>
-        {/if}
-      </ContextMenuTrigger>
-
-      <ContextMenuContent>
-        <!-- SPLIT ANNOTATION -->
-        <ContextMenuItem
-          onclick={() =>
-            context.commands.run("annotation.split", { id: annotation?.metadata.id, at: currentFrameInCell })}
-          disabled={annotation?.locked}
-        >
-          <SquareSplitHorizontalIcon class="size-4" />
-          Split at frame {currentFrameInCell}
-        </ContextMenuItem>
-
-        {#each keyFrames as { frame }, index (index)}
-          <ContextMenuItem onclick={() => onSeekFrame?.(frame)}>
-            <ArrowLeftRightIcon class="size-4" />
-            Seek frame {frame}
-          </ContextMenuItem>
-
-          {#if ["review", "annotate"].includes(context.workflowStep)}
-            <ContextMenuItem onclick={() => deleteFrame(frame)} disabled={annotation?.locked}>
-              <Trash2Icon class="size-4" />
-              Delete frame {frame}
-            </ContextMenuItem>
+    <!-- Only render context menu if the cell have annotation, this will prevent over-render in empty timeline cell -->
+    {#if annotation}
+      <ContextMenu>
+        <ContextMenuTrigger class="absolute top-[3px] h-full w-full pt-0">
+          <!-- If have keyframes, render a box -->
+          {#if keyFrames.length}
+            <div
+              class="m-auto h-3/4 w-3/4 rounded"
+              style:background-color={categoryColor ? categoryColor : "transparent"}
+            ></div>
           {/if}
-        {/each}
-      </ContextMenuContent>
-    </ContextMenu>
+        </ContextMenuTrigger>
+
+        <ContextMenuContent>
+          <ContextMenuGroup>
+            <!-- SPLIT ANNOTATION -->
+            <ContextMenuItem
+              onclick={() =>
+                context.commands.run("annotation.split", { id: annotation?.metadata.id, at: currentFrameInCell })}
+              disabled={annotation?.locked}
+            >
+              <SquareSplitHorizontalIcon class="size-4" />
+              Split at frame {currentFrameInCell}
+            </ContextMenuItem>
+          </ContextMenuGroup>
+
+          <ContextMenuGroup>
+            {#each keyFrames as { frame }, index (index)}
+              <ContextMenuItem onclick={() => onSeekFrame?.(frame)}>
+                <ArrowLeftRightIcon class="size-4" />
+                Seek frame {frame}
+              </ContextMenuItem>
+
+              {#if ["review", "annotate"].includes(context.workflowStep)}
+                <ContextMenuItem onclick={() => deleteFrame(frame)} disabled={annotation?.locked}>
+                  <Trash2Icon class="size-4" />
+                  Delete frame {frame}
+                </ContextMenuItem>
+              {/if}
+            {/each}
+          </ContextMenuGroup>
+
+          <ContextMenuSeparator />
+          <ContextMenuGroup>
+            <ContextMenuItem onclick={() => context.commands.run("annotation.delete", { id: annotation?.metadata.id })}>
+              <Trash2Icon class="size-4" />
+              Delete annotation
+            </ContextMenuItem>
+          </ContextMenuGroup>
+        </ContextMenuContent>
+      </ContextMenu>
+    {/if}
   </div>
 </div>
