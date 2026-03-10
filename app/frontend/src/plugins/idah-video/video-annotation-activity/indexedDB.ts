@@ -71,7 +71,7 @@ export class AnnotationsIndexedDB {
     this.db = db;
   }
 
-  addAnnotations(annotations: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]): Promise<void> {
+  upsertAnnotations(annotations: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]): Promise<void> {
     const transaction = this.db.transaction(["annotations", "keyframes"], "readwrite");
     const astore = transaction.objectStore("annotations");
     const kstore = transaction.objectStore("keyframes");
