@@ -33,8 +33,8 @@
   import { idb_updated_at } from "../../video-annotation-activity/idb_store.svelte";
   import type { AnnotationsIndexedDB } from "../../video-annotation-activity/indexedDB";
   import type { VideoAnnotation } from "../../video-annotation-activity/VideoAnnotationContext";
-  import VectorSquareIcon from "./vector-square-icon.svelte";
-  import PolygonCircleIcon from "./polygon-circle-icon.svelte";
+  import VectorSquareIcon from "./category/vector-square-icon.svelte";
+  import PolygonCircleIcon from "./category/polygon-circle-icon.svelte";
 
   // Props
   let {
