@@ -136,16 +136,31 @@ export class AnnotationsIndexedDB {
   }
 
   getGroupAnnotations(groupId: string): Promise<AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]> {
-    return new Promise<AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]>((resolve, reject) => {
-      const transaction = this.db.transaction("annotations", "readonly");
-      const store = transaction.objectStore("annotations").index("groupIdIndex");
-      const request = store.getAll(IDBKeyRange.only(groupId));
+    const transaction = this.db.transaction("annotations", "readonly");
+    const store = transaction.objectStore("annotations");
 
-      request.onsuccess = (_) => {
-        const sorted = request.result.sort((a, b) => a.shape.start - b.shape.start);
-        resolve(sorted);
-      };
-      request.onerror = (_) => reject(request.error);
+    const idPromise = new Promise<AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata> | undefined>(
+      (resolve, reject) => {
+        const request = store.get(groupId);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      },
+    );
+
+    const groupPromise = new Promise<AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]>(
+      (resolve, reject) => {
+        const request = store.index("groupIdIndex").getAll(IDBKeyRange.only(groupId));
+        request.onsuccess = () => resolve(request.result || []);
+        request.onerror = () => reject(request.error);
+      },
+    );
+
+    return Promise.all([idPromise, groupPromise]).then(([idResult, groupResults]) => {
+      const allResults = [...groupResults];
+      if (idResult && !allResults.some((r) => r.metadata.id === idResult.metadata.id)) {
+        allResults.push(idResult);
+      }
+      return allResults.sort((a, b) => a.shape.start - b.shape.start);
     });
   }
 
