@@ -1,6 +1,6 @@
-# {{pluginDisplayName}} - Frontend
+# Frontend Development Guide
 
-This is the frontend component of the **{{pluginDisplayName}}** plugin for IDAH. It's built with SvelteKit and provides the user interface for your plugin.
+This guide covers frontend development for IDAH plugins using SvelteKit and Svelte 5.
 
 ## Technology Stack
 
@@ -78,8 +78,8 @@ Edit `src/lib/plugin/plugin.svelte` - this is your main plugin component:
 </script>
 
 <div class="plugin-container">
-  <h1>{{pluginDisplayName}}</h1>
-  <p>{{pluginDescription}}</p>
+  <h1>My Plugin</h1>
+  <p>Your plugin description here</p>
 
   <!-- Your plugin UI here -->
 </div>
