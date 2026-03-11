@@ -29,6 +29,7 @@ module PluginSystem
 
     def start(context_class)
       service_name = Verse.service_name
+      service_class_name = service_name.split(/[-_]+/).map(&:capitalize).join
 
       if manifest.entry_points&.backend&.path.nil?
         Verse.logger.info{ "[IDAH-PLUGIN] Plugin `#{manifest.name}` has no backend entry point, skipping load." }
@@ -59,8 +60,10 @@ module PluginSystem
       )
 
       # Load the main module:
+      # e.g., IdahVideo::Media for media service or IdahVideo::Sync for sync service.
+      # This is to allow different backend modules for different services
       Object.const_get(
-        manifest.entry_points.backend.module
+        [manifest.entry_points.backend.module, service_class_name].join("::")
       ).init(@context)
 
       self
