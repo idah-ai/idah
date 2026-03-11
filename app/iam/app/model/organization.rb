@@ -59,7 +59,9 @@ module Organization
 
     def organizations_from_project_member_scoped
       account_id = auth_context.metadata[:id]
-      memberships = Api[:idah].dataset.project_members.index(filter: { account_id: }, included: ["project"]).data
+      memberships = Api[:idah].dataset.project_members.index(
+        filter: { account_id: }, included: ["project"]
+      ).data
 
       table.where(id: memberships.map { |pm| pm.project.organization_id }.uniq)
     end

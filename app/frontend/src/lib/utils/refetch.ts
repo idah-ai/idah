@@ -21,6 +21,10 @@ export interface Refetches {
   /** SETTING */
   accountSettings: Refetch;
 
+  /** SYNC */
+  jobs: Refetch;
+  exports: Refetch;
+
   /** AUDIT */
   logs: Refetch;
 }
@@ -66,6 +70,16 @@ export const refetches = writable<Refetches>({
 
   /** SETTING */
   accountSettings: {
+    list: new Date(),
+    get: new Date(),
+  },
+
+  /** SYNC */
+  jobs: {
+    list: new Date(),
+    get: new Date(),
+  },
+  exports: {
     list: new Date(),
     get: new Date(),
   },
