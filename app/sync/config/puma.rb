@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 puma_workers = ENV.fetch("PUMA_WORKERS", 1).to_i
+ENV["PUMA_WORKERS"] = puma_workers.to_s
 
 if puma_workers <= 1
   workers 0

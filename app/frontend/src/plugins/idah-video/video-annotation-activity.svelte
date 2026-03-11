@@ -1147,14 +1147,15 @@
     <PopoverTrigger></PopoverTrigger>
 
     <PopoverContent class="w-auto min-w-64 p-0">
-      <div class="h-auto max-h-64 overflow-y-auto p-2">
+      <div class="h-auto max-h-86 overflow-y-auto p-2">
         {#if annotationValue.category}
           <CategoryProperties
             type={mode}
             selectedCategory={annotationValue.category}
             {annotationValue}
-            onSelectCategory={(s) => {
-              if (s != mode) selectAnnotation();
+            onSelectCategory={(selectedCategory) => {
+              if (!selectedCategory) selectAnnotation();
+              annotationValue = { ...annotationValue, category: selectedCategory };
               onEditValue({ category: annotationValue.category }, mode);
             }}
             onEditValue={(value) => value && onEditValue(value, mode)}
@@ -1231,7 +1232,7 @@
             />
           </ResizablePane>
 
-          <!-- 
+          <!--
             NOTE: Can not resize annotation sidebar,
             as it will affect the note overlay and svg overlay
             <ResizableHandle withHandle />
@@ -1263,8 +1264,6 @@
                     currentFrame = current;
                     totalFrames = total;
                     isPlaying = playing;
-                    isPlaying = playing;
-                    // console.debug({onFramesChange: {current, total, playing}})
                   }}
                   onVolumeChange={(level, muted) => (volume = { level, muted })}
                 />

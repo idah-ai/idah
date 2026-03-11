@@ -1,0 +1,49 @@
+import ExportDatasetNameCell from "@/components/app/projects/exports/datasource-tables/export-dataset-name-cell.svelte";
+import ExportRowActionCell from "@/components/app/projects/exports/datasource-tables/export-row-action-cell.svelte";
+
+import { ExportRecord } from "@/data/model/sync/exports/record";
+
+import type { ColumnsSettings } from "@/components/app/datasource-table/types";
+
+export const exportsColumns: ColumnsSettings<ExportRecord> = {
+  id: {
+    label: "Datasets name",
+    dataType: "string",
+    clickable: false,
+    sortable: true,
+    filterable: true,
+    filterOptions: {
+      filterKey: "id",
+      filterBy: "string",
+      filterOperation: "match",
+    },
+    visible: true,
+    hidable: false,
+    cellComponent: ExportDatasetNameCell,
+  },
+  created_at: {
+    label: "Exported at",
+    dataType: "datetime",
+    clickable: false,
+    sortable: true,
+    filterable: true,
+    filterOptions: {
+      filterKey: "created_at",
+      filterBy: "date-range",
+      filterOperation: "gte",
+    },
+    visible: true,
+    hidable: false,
+  },
+  action: {
+    label: "Action",
+    dataType: "string",
+    align: "right",
+    clickable: false,
+    sortable: false,
+    filterable: false,
+    visible: true,
+    hidable: false,
+    cellComponent: ExportRowActionCell,
+  },
+};
