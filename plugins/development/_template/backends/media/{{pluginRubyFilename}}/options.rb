@@ -1,5 +1,5 @@
 # frozen_string_literal: true
 
 module {{pluginModule}}
-  Options = Verse::Schema.empty
+  Options = Verse::Schema.define.dataclass # empty schema
 end
