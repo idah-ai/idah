@@ -1,7 +1,7 @@
 # fr
 
 require "spec_helper"
-require_relative "{{pluginRubyFilename}}"
+require_relative "media"
 
 RSpec.describe {{pluginModule}}::Media do
   describe ".init" do

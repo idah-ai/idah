@@ -2,13 +2,11 @@
 
 module {{pluginModule}}
   class Export
-    attr_reader :context
+    def name = "{{pluginDisplayName}} Export"
+    def description = "Export data in {{pluginDisplayName}} format."
+    def options = Verse::Schema.empty
 
-    def initialize(context)
-      @context = context
-    end
-
-    def run
+    def export(context)
       raise NotImplementedError, "plugin must implement the run method for exporting data"
     end
   end

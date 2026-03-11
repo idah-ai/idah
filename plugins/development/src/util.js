@@ -57,10 +57,24 @@ export function renameFiles(dir, replacements) {
     const stat = fs.statSync(oldPath)
 
     if (stat.isDirectory()) {
+      // Process directory contents first
       renameFiles(oldPath, replacements)
+
+      // Then rename the directory itself if needed
+      let newName = entry
+      for (const key in replacements) {
+        newName = newName.replaceAll(key, replacements[key])
+      }
+
+      if (newName !== entry) {
+        const newPath = path.join(dir, newName)
+        fs.renameSync(oldPath, newPath)
+      }
+
       continue
     }
 
+    // Rename file if needed
     let newName = entry
 
     for (const key in replacements) {

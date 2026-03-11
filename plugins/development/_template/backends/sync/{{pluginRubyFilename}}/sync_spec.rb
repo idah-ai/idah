@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require_relative "{{pluginRubyFilename}}"
+require_relative "sync"
 
 RSpec.describe {{pluginModule}}::Sync do
   describe ".init" do

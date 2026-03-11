@@ -11,8 +11,5 @@
   });
 </script>
 
-<!-- <video controls>
-  <source src={context.mediaUrl} type="video/mp4" />
-</video> -->
-
-<img src={context.mediaUrl} alt="Media" />
+<h1>{{pluginDisplayName}}</h1>
+<p>{{pluginDescription}}</p>

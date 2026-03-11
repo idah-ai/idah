@@ -52,7 +52,6 @@ frontend/
 │   └── app.d.ts              # TypeScript declarations
 ├── static/                   # Static files (served as-is)
 │   ├── robots.txt
-│   └── medias/               # Sample media files
 ├── package.json
 ├── vite.config.ts            # Vite configuration
 ├── svelte.config.js          # SvelteKit configuration

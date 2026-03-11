@@ -11,7 +11,12 @@
     "url": ""
   },
 
-  "modalities": [],
+  "modalities": [
+    {
+      "id": "{{pluginName}}",
+      "label": "{{pluginDisplayName}}"
+    }
+  ],
 
   "entryPoints": {
     "entryPlugin": {
