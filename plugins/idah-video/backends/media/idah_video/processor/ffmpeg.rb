@@ -11,6 +11,25 @@ module IdahVideo
         :name, :width, :height, :bitrate, :audiobitrate
       )
 
+      DECODING_THREADS = (
+        Verse.config.extra_fields.dig(
+          :idah,
+          :plugins,
+          :config,
+          :idah_video,
+          :decoding_threads
+        ) || 1
+      ).to_s
+      ENCODING_THREADS = (
+        Verse.config.extra_fields.dig(
+          :idah,
+          :plugins,
+          :config,
+          :idah_video,
+          :encoding_threads
+        ) || 1
+      ).to_s
+
       def gen_stream(
         dir:,
         file:,
@@ -19,7 +38,7 @@ module IdahVideo
         &
       )
         args = []
-        args += ["-v", "quiet", "-progress", "pipe:1", "-i", file]
+        args += ["-v", "quiet", "-progress", "pipe:1", "-threads", DECODING_THREADS, "-i", file]
 
         variants.each do |variant|
           args += [
@@ -39,6 +58,7 @@ module IdahVideo
             "-hls_time", streaming_time_per_segment.to_s,
             "-hls_playlist_type", "vod",
             "-hls_segment_filename", "#{variant.name}_%04d.ts",
+            "-threads", ENCODING_THREADS,
             "#{variant.name}.m3u8"
           ]
         end
@@ -62,6 +82,8 @@ module IdahVideo
         output: "thumb_%02d.jpg"
       )
         call(
+          "-threads",
+          DECODING_THREADS,
           "-i",
           file,
           "-vf",
@@ -72,6 +94,8 @@ module IdahVideo
           images.to_s,
           "-q:v",
           "2",
+          "-threads",
+          ENCODING_THREADS,
           output,
           "-y",
           chdir:
