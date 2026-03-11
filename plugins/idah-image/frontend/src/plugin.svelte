@@ -1,5 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  
+  import IdahImageController from "$lib/components/app/controller/idah-image-controller.svelte";
   import type { IActivityContext } from "./context";
 
   import "./plugin.css";
@@ -12,5 +14,5 @@
 </script>
 
 <div class="relative flex h-full w-full flex-col">
-plugin idah-images
+<IdahImageController {context} />
 </div>
