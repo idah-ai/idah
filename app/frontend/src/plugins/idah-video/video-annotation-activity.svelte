@@ -731,13 +731,14 @@
             promiseToUpdate.then(async () => {
               const ann = await annotationsIDB?.get("annotations", annotation.metadata.id);
               if (ann && ann.metadata.updatedAt.valueOf() == newUpdatedAt.valueOf()) {
-                annotation.synced = true;
-                await annotationsIDB?.upsertAnnotations([annotation]);
+                ann.synced = true;
+                await annotationsIDB?.upsertAnnotations([ann]);
+
+                /** Refetch */
+                annotationValue = { category: categoryIdToBeUpdate };
+                $idb_updated_at = new Date();
               }
             });
-
-            /** Refetch */
-            $idb_updated_at = new Date();
           }
         },
         async undo() {
@@ -762,11 +763,12 @@
               if (ann && ann.metadata.updatedAt.valueOf() == undoAt.valueOf()) {
                 annotationToBeUndo.synced = true;
                 await annotationsIDB?.upsertAnnotations([annotationToBeUndo]);
+
+                /** Refetch */
+                annotationValue = { category: beforeUpdateCategoryId };
+                $idb_updated_at = new Date();
               }
             });
-
-            /** Refetch */
-            $idb_updated_at = new Date();
           }
         },
         isCombinable: () => false,
@@ -1259,13 +1261,13 @@
 
   let annotations_promise: Promise<TAnnotationObj[]> = $derived.by(() => {
     $idb_updated_at; // eslint-disable-line @typescript-eslint/no-unused-expressions
+
     if (!annotationsIDB) return new Promise((_, ko) => ko("no database"));
 
     let p = annotationsIDB.getAllStore("annotations");
 
-    p.then((updated_annotations) => {
-      console.debug({ $boundingBoxes: $state.snapshot($boundingBoxes), updated_annotations });
-      $boundingBoxes = updated_annotations;
+    p.then((updatedAnnotations) => {
+      $boundingBoxes = updatedAnnotations;
     });
 
     return p;
@@ -1325,18 +1327,6 @@
 
   async function onReSelectCategory(reselectedCategoryId: string) {
     if (!$selectedAnnotationGroup) return;
-
-    let annotations: TAnnotationObj[] | undefined = undefined;
-    annotations = await annotationsIDB?.getGroupAnnotations($selectedAnnotationGroup.groupId);
-
-    /**
-     * If annotations is undefined or empty,
-     * if might be a new annotation without group assigned,
-     * use the selected annotation group
-     */
-    if (!annotations?.length) {
-      annotations = $selectedAnnotationGroup.annotations;
-    }
 
     /** Update annotation group category */
     context.commands.run("annotation.updateGroupCategory", {
