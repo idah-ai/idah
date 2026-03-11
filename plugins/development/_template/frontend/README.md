@@ -1,42 +1,65 @@
-# sv
+# {{pluginDisplayName}} - Frontend
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+This is the frontend component of the **{{pluginDisplayName}}** plugin for IDAH.
 
-## Creating a project
+**Version:** {{pluginVersion}}
+**Description:** {{pluginDescription}}
 
-If you're seeing this, you've probably already done this step. Congrats!
+## Quick Start
 
-```sh
-# create a new project
-npx sv create my-app
+```bash
+# Install dependencies
+pnpm install
+
+# Start development server
+pnpm dev
+
+# Build for production
+pnpm build
 ```
 
-To recreate this project with the same configuration:
+## Technology Stack
 
-```sh
-# recreate this project
-pnpm dlx sv@0.12.5 create --template minimal --types ts --install pnpm idah-plugin
+- **Framework:** SvelteKit with Svelte 5
+- **Language:** TypeScript
+- **Build Tool:** Vite
+- **Package Manager:** pnpm
+
+## Development
+
+### Start Development Server
+
+```bash
+pnpm dev
 ```
 
-## Developing
+Your plugin will be available at http://localhost:5173
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+### Build for Production
 
-```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+```bash
+pnpm build
 ```
 
-## Building
+Output files will be in the `build/` directory.
 
-To create a production version of your app:
+## Main Files
 
-```sh
-npm run build
-```
+- `src/lib/plugin/plugin.svelte` - Your main plugin component
+- `src/lib/context.ts` - Activity Context interface
+- `src/routes/test_context.ts` - Mock context for local testing
 
-You can preview the production build with `npm run preview`.
+## Documentation
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+For detailed documentation on plugin development, see:
+
+- **[Frontend Development Guide](../../development/docs/FRONTEND_DEVELOPMENT.md)** - Complete guide with Activity Context API, best practices, and examples
+- **[Main Generator README](../../development/README.md)** - CLI commands and plugin generator usage
+
+## Need Help?
+
+1. Check the [Frontend Development Guide](../../development/docs/FRONTEND_DEVELOPMENT.md)
+2. Review other plugin examples in the `plugins/` directory
+3. Contact the IDAH development team
+
+Happy coding! 🚀
