@@ -1,7 +1,7 @@
 {
   "type": "idah-plugin",
   "name": "{{pluginName}}",
-  "version": "1.0.0",
+  "version": "{{pluginVersion}}",
 
   "title": "{{pluginDisplayName}}",
   "description": "{{pluginDescription}}",

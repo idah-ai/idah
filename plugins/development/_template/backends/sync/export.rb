@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module {{pluginModule}}
-  class Processor
+  class Export
     attr_reader :context
 
     def initialize(context)
@@ -9,7 +9,7 @@ module {{pluginModule}}
     end
 
     def run
-      raise NotImplementedError, "plugin must implement the run method for processing media"
+      raise NotImplementedError, "plugin must implement the run method for exporting data"
     end
   end
 end

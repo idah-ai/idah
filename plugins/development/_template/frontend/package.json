@@ -3,7 +3,7 @@
   "displayName": "{{pluginDisplayName}}",
   "description": "{{pluginDescription}}",
 	"private": true,
-	"version": "0.0.1",
+	"version": "{{pluginVersion}}",
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev",
