@@ -5,7 +5,15 @@
   "bin": {
     "idah-plugin": "./bin/cli.js"
   },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
   "dependencies": {
     "prompts": "^2.4.2"
+  },
+  "devDependencies": {
+    "vitest": "^4.0.18"
   }
 }
