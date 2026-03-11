@@ -1,0 +1,313 @@
+# IDAH Plugin Generator
+
+A CLI tool to generate and manage plugins for the IDAH platform. This tool helps you quickly scaffold new plugins with frontend and optional backend components.
+
+## Installation
+
+### Local Development with npm link (Recommended)
+
+For local development and testing, use npm link to create a symlink:
+
+```bash
+npm install
+npm link
+```
+
+This creates a symlink in your global node_modules that points to your local package. You can now use the `idah-plugin` command from anywhere, and changes to the source code will be immediately available.
+
+To unlink when you're done:
+```bash
+npm unlink -g idah-plugin-cli
+```
+
+### Global Installation
+
+Install the CLI globally for permanent use:
+
+```bash
+npm install -g .
+```
+
+After installation, you can use the `idah-plugin` command from any directory within your IDAH project.
+
+### Direct Usage (Without Installation)
+
+If you prefer not to install at all, you can use it directly:
+
+```bash
+npm install
+node bin/cli.js <command>
+```
+
+## Commands
+
+### Create a New Plugin
+
+Create a new plugin from scratch:
+
+```bash
+idah-plugin create <plugin_name>
+```
+
+**Example:**
+```bash
+idah-plugin create my-awesome-plugin
+```
+
+This command will:
+1. Prompt you for a **display name** (user-friendly name shown in the UI)
+2. Prompt you for a **description** (brief description of your plugin)
+3. Prompt you for a **version** (semantic version, default: 0.0.1)
+4. Ask which **backend services** you want to include (media, sync, or none)
+5. Generate the complete plugin structure in `plugins/<plugin_name>/`
+
+**Note:** You can create frontend-only plugins by not selecting any backend services. This is useful for plugins that only need a UI component.
+
+### Add Backend Services to Existing Plugin
+
+Add one or more backend services to an existing plugin:
+
+```bash
+idah-plugin backend add <plugin_name>
+```
+
+**Example:**
+```bash
+idah-plugin backend add my-awesome-plugin
+```
+
+This command will:
+1. Check if the plugin exists
+2. Prompt you to select which backend service(s) to add
+3. Copy the backend templates and configure them for your plugin
+4. Skip any backend services that already exist
+
+### Get Help
+
+Display help information:
+
+```bash
+idah-plugin --help
+# or
+idah-plugin -h
+```
+
+## Plugin Structure
+
+When you create a plugin, the following structure is generated:
+
+```
+plugins/<plugin_name>/
+├── manifest.json           # Plugin metadata and configuration
+├── Gemfile                 # Ruby dependencies
+├── Rakefile                # Rake tasks
+├── .gitignore
+├── .rspec
+├── backends/               # Backend services (optional)
+│   ├── spec_helper.rb
+│   ├── media/             # Media service backend (if selected)
+│   │   ├── <plugin_name>.rb
+│   │   ├── <plugin_name>_spec.rb
+│   │   ├── options.rb
+│   │   ├── options_spec.rb
+│   │   ├── processor.rb
+│   │   └── processor_spec.rb
+│   └── sync/              # Sync service backend (if selected)
+│       ├── <plugin_name>.rb
+│       ├── <plugin_name>_spec.rb
+│       ├── export.rb
+│       └── export_spec.rb
+└── frontend/               # Frontend application
+    ├── package.json
+    ├── svelte.config.js
+    ├── vite.config.ts
+    ├── tsconfig.json
+    ├── pnpm-lock.yaml
+    ├── pnpm-workspace.yaml
+    ├── src/
+    │   ├── app.html
+    │   ├── app.d.ts
+    │   ├── lib/
+    │   │   ├── index.ts
+    │   │   ├── context.ts
+    │   │   ├── assets/
+    │   │   │   └── favicon.svg
+    │   │   └── plugin/
+    │   │       ├── plugin.svelte
+    │   │       └── plugin.css
+    │   └── routes/
+    │       ├── +layout.svelte
+    │       ├── +page.svelte
+    │       └── test_context.ts
+    └── static/
+        ├── robots.txt
+        └── medias/
+            ├── image.jpg
+            └── video.mp4
+```
+
+## Backend Services
+
+The generator supports two types of backend services:
+
+### Media Service
+For plugins that need to process or handle media files (images, videos, etc.). The media backend provides:
+- **Options**: Configuration options for media processing
+- **Processor**: Core logic for media file processing
+- **Specs**: Tests for your media backend
+
+### Sync Service
+For plugins that need to synchronize or export data to external systems. The sync backend provides:
+- **Export**: Logic for data export/synchronization
+- **Specs**: Tests for your sync backend
+
+## Workflow Examples
+
+### Example 1: Create a Frontend-Only Plugin
+
+```bash
+# Create a new plugin
+idah-plugin create ui-widget
+
+# When prompted:
+# - Display name: UI Widget
+# - Description: A simple UI widget plugin
+# - Version: 0.0.1 (or press Enter for default)
+# - Backend services: (press Enter without selecting any)
+
+# Your plugin is ready at plugins/ui-widget/
+cd plugins/ui-widget/frontend
+pnpm install
+pnpm dev
+```
+
+### Example 2: Create a Full-Stack Plugin
+
+```bash
+# Create a plugin with both backend services
+idah-plugin create video-converter
+
+# When prompted:
+# - Display name: Video Converter
+# - Description: Convert videos to different formats
+# - Version: 1.0.0
+# - Backend services: Select both "Media Service" and "Sync Service"
+
+# Your plugin is ready with backend and frontend
+cd plugins/video-converter
+```
+
+### Example 3: Add Backend to Existing Plugin
+
+```bash
+# First create a frontend-only plugin
+idah-plugin create image-gallery
+
+# Later, add backend services
+idah-plugin backend add image-gallery
+
+# When prompted, select "Media Service"
+# The media backend is now added to your existing plugin
+```
+
+## Development
+
+After creating your plugin:
+
+### Frontend Development
+
+```bash
+cd plugins/<plugin_name>/frontend
+pnpm install
+pnpm dev
+```
+
+### Backend Development
+
+```bash
+cd plugins/<plugin_name>
+bundle install
+bundle exec rspec  # Run tests
+```
+
+## Plugin Naming Conventions
+
+- **Plugin name** (CLI argument): Use kebab-case (e.g., `my-awesome-plugin`)
+- **Display name** (prompts): Use human-readable format (e.g., `My Awesome Plugin`)
+- **Module name** (generated): PascalCase (e.g., `MyAwesomePlugin`)
+- **Ruby filename** (generated): snake_case (e.g., `my_awesome_plugin.rb`)
+
+## Troubleshooting
+
+### Plugin already exists
+If you see an error that the plugin already exists, either:
+- Choose a different name
+- Delete the existing plugin directory first
+- Use `backend add` to add services to the existing plugin
+
+### Backend service already exists
+When using `backend add`, if a service already exists, it will be skipped automatically. You'll see an informational message.
+
+### Permission errors
+If you get permission errors during global installation:
+```bash
+sudo npm install -g .
+# or use a Node version manager like nvm
+```
+
+## Testing
+
+The generator includes a comprehensive test suite using Vitest.
+
+### Run Tests
+
+```bash
+# Run all tests once
+npm test
+
+# Run tests in watch mode (helpful during development)
+npm run test:watch
+
+# Run tests with coverage report
+npm run test:coverage
+```
+
+### Test Coverage
+
+The test suite covers:
+- **Utility functions** (`util.test.js`): String transformation functions, ignore filters
+- **Scaffold functions** (`scaffold.test.js`): Plugin creation, backend addition, error handling
+
+## Documentation
+
+This generator includes comprehensive documentation:
+
+### For Plugin Developers
+
+- **[Frontend Development Guide](docs/FRONTEND_DEVELOPMENT.md)** - Complete guide for building plugin UIs with SvelteKit, including Activity Context API reference
+- **[Backend Development Guide](docs/BACKEND_DEVELOPMENT.md)** - Complete guide for building backend services in Ruby
+
+### Generated Plugin Documentation
+
+Each generated plugin includes its own README files:
+
+- **Plugin Root README** - Overview and quick start for the specific plugin
+- **frontend/README.md** - Frontend quick start with links to detailed docs
+- **backends/README.md** - Backend quick start with links to detailed docs
+
+All documentation is automatically customized with your plugin's name, description, and version.
+
+## Template Customization
+
+The plugin templates are located in `plugins/development/_template/`. You can customize these templates to match your team's conventions and requirements.
+
+## Support
+
+For issues or questions:
+1. Check this README first
+2. Review the existing plugins in the `plugins/` directory for examples
+3. Contact the IDAH development team
+
+## License
+
+See the main IDAH project LICENSE file.
