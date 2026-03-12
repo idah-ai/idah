@@ -39,14 +39,23 @@ module Plugin
         begin
           plugin_path = Verse.config.extra_fields.dig(
             :idah, :plugins, :path
-          ) || "plugins"
+          ) || "plugins/**"
+
           if source_type == "manual"
             source_path
           else
-            File.join(
-              plugin_path,
-              "#{name}-#{version}"
-            )
+            plugin_path.split(";").each do |path|
+              Dir.glob(path).each do |dir|
+                local_plugin_name = dir.split("/").last
+                curent_plugin_name = "#{name}-#{version}"
+
+                next unless local_plugin_name == curent_plugin_name
+
+                return File.join(dir)
+              end
+            end
+
+            raise "Plugin path not found for plugin #{name}-#{version}"
           end
         end
     end

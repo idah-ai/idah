@@ -8,8 +8,7 @@ RSpec.describe Plugins::Service, type: :service, as: :system do
       allow(Verse.config).to receive(:extra_fields).and_return(
         idah: {
           plugins: {
-            manual: [plugin_name],
-            path: "app/spec_data"
+            path: "app/spec_data/**"
           }
         }
       )
@@ -29,8 +28,7 @@ RSpec.describe Plugins::Service, type: :service, as: :system do
       allow(Verse.config).to receive(:extra_fields).and_return(
         idah: {
           plugins: {
-            manual: [plugin_name],
-            path: "app/spec_data"
+            path: "app/spec_data/**"
           }
         }
       )
