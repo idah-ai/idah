@@ -33,10 +33,11 @@ function getAvailableBackendServices() {
 
 async function handleCreate() {
   const pluginName = subcommand
+  const outputPath = args[2] // Optional output path
 
   if (!pluginName) {
     console.error("Error: Plugin name is required")
-    console.log("Usage: idah-plugin create <plugin_name>")
+    console.log("Usage: idah-plugin create <plugin_name> [output_path]")
     process.exit(1)
   }
 
@@ -94,7 +95,8 @@ async function handleCreate() {
     pluginDisplayName: displayNameResponse.name,
     pluginDescription: descriptionResponse.description,
     pluginVersion: versionResponse.version,
-    pluginBackendServices: servicesResponse.services || []
+    pluginBackendServices: servicesResponse.services || [],
+    outputPath
   })
 }
 
@@ -131,20 +133,24 @@ function showHelp() {
 IDAH Plugin Generator
 
 Usage:
-  idah-plugin create <plugin_name>        Create a new plugin
-  idah-plugin backend add <plugin_name>   Add backend service(s) to an existing plugin
+  idah-plugin create <plugin_name> [output_path]    Create a new plugin
+  idah-plugin backend add <plugin_name>             Add backend service(s) to an existing plugin
 
 Examples:
-  idah-plugin create my-awesome-plugin
+  idah-plugin create my-awesome-plugin              Creates ./my-awesome-plugin
+  idah-plugin create audio-plugin ./plugins         Creates ./plugins/audio-plugin
   idah-plugin backend add my-awesome-plugin
 
 Commands:
-  create <plugin_name>      Create a new plugin with the specified name.
+  create <plugin_name> [output_path]
+                           Create a new plugin with the specified name.
+                           Optional output_path specifies where to create the plugin
+                           (default: current directory).
                            You'll be prompted for display name, description,
-                           and backend services to include (optional - you can
-                           create frontend-only plugins).
+                           version, and backend services.
 
-  backend add <plugin_name> Add one or more backend services to an existing
+  backend add <plugin_name>
+                           Add one or more backend services to an existing
                            plugin. You'll be prompted to select which
                            services to add (media, sync).
 
