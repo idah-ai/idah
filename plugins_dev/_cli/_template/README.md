@@ -45,9 +45,9 @@ See [backends/README.md](backends/README.md) for details.
 
 ## Documentation
 
-- **[Frontend Development Guide](../development/docs/FRONTEND_DEVELOPMENT.md)** - Complete frontend guide with Activity Context API
-- **[Backend Development Guide](../development/docs/BACKEND_DEVELOPMENT.md)** - Complete backend development guide
-- **[Plugin Generator README](../development/README.md)** - CLI commands and usage
+- **[Frontend Development Guide](https://github.com/ingedata-ph/idah/tree/main/plugins_dev/docs/FRONTEND_DEVELOPMENT.md)** - Complete frontend guide with Activity Context API
+- **[Backend Development Guide](https://github.com/ingedata-ph/idah/tree/main/plugins_dev/docs/BACKEND_DEVELOPMENT.md)** - Complete backend development guide
+- **[Plugin Generator README](https://github.com/ingedata-ph/idah/tree/main/plugins_dev/README.md)** - CLI commands and usage
 
 ## Installation in IDAH
 
@@ -85,4 +85,4 @@ bundle exec rspec
 
 ---
 
-Generated with [IDAH Plugin Generator](../development/)
+Generated with [IDAH Plugin Generator](https://github.com/ingedata-ph/idah/tree/main/plugins_dev)
