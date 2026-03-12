@@ -48,13 +48,39 @@ RSpec.describe Plugin::Record, type: :model do
       it "builds the path from plugin configuration" do
         allow(Verse.config.extra_fields).to receive(:dig).with(
           :idah, :plugins, :path
-        ).and_return("all_plugins")
+        ).and_return("all_plugins/**")
+
+        allow(Dir).to receive(:glob).with("all_plugins/**").and_return(
+          [
+            "all_plugins/my-plugin-1.2.3",
+            "all_plugins/other-plugin-2.0.0"
+          ]
+        )
 
         expect(record.path).to eq("all_plugins/my-plugin-1.2.3")
       end
 
       it "builds the path with default plugins directory" do
+        allow(Dir).to receive(:glob).with("plugins/**").and_return(
+          [
+            "plugins/my-plugin-1.2.3",
+            "plugins/other-plugin-2.0.0"
+          ]
+        )
+
         expect(record.path).to eq("plugins/my-plugin-1.2.3")
+      end
+
+      it "raises an error if plugin path is not found" do
+        allow(Dir).to receive(:glob).with("plugins/**").and_return(
+          [
+            "plugins/other-plugin-2.0.0"
+          ]
+        )
+
+        expect { record.path }.to raise_error(
+          "Plugin path not found for plugin my-plugin-1.2.3"
+        )
       end
     end
   end
