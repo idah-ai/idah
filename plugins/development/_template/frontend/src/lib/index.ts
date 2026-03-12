@@ -6,10 +6,10 @@ import Plugin from "$lib/plugin/plugin.svelte";
 let mounted: object;
 
 const idah_plugin: IActivityView = {
-  name: "idah-image",
-  label: "idah image",
-  description: "idah image annotation plugin",
-  version: "1.0",
+  name: "{{pluginName}}",
+  label: "{{pluginDisplayName}}",
+  description: "{{pluginDescription}}",
+  version: "{{pluginVersion}}",
   type: "image",
   init() {
     console.debug("Initializing Plugin", { this: this });
