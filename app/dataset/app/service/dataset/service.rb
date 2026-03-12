@@ -2,9 +2,11 @@
 
 module Dataset
   class Service < Verse::Service::Base
-    use datasets: Dataset::Repository, projects: Project::Repository
-    use_system project_members: ProjectMember::Repository,
-               entries: Entry::Repository
+    use datasets: Dataset::Repository,
+        projects: Project::Repository,
+        entries: Entry::Repository,
+        annotations: Annotation::Repository
+    use_system project_members: ProjectMember::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
       datasets.index(
@@ -21,29 +23,6 @@ module Dataset
       datasets.find!(id, included: included)
     end
 
-    private def authorize_creation
-      access = auth_context.can?(:create, datasets.class.resource)
-
-      if access == :as_org_owner
-        project = projects.find!(record.project.id) # this can raise Verse::Error::RecordNotFound if not in org scope
-        unless auth_context.custom_scopes[:org]&.include?(project.organization_id.to_s)
-          raise Verse::Error::Unauthorized,
-                "You do not have permission to create dataset on this project"
-        end
-      end
-
-      # With "as_user" ensure account can "create" dataset to the project
-      if access == :as_user &&
-         ScopedQuery::Service.without_project_access?(
-           auth_context.metadata[:id],
-           record.project.id,
-           ["project_owner"]
-         )
-        raise Verse::Error::Unauthorized,
-              "You do not have permission to create dataset on this project"
-      end
-    end
-
     def create(record)
       # Validate required relationships
       unless record.project
@@ -51,7 +30,7 @@ module Dataset
               "project relationship is required to create a dataset"
       end
 
-      authorize_creation # permission check
+      authorize_creation(record.project.id) # permission check
 
       # Assign attributes
       attributes = record.attributes
@@ -102,13 +81,14 @@ module Dataset
       end
     end
 
+    # TODO: add spec tests
     # TODO: TBC; in this case, dataset is duplicating by selecting entry ids
-    def duplicate(dataset_id, entry_ids)
-      authorize_creation # permission check
-
+    def duplicate(dataset_id, entry_ids, with_annotations: false)
       duping_dataset = datasets.find!(dataset_id)
 
-      # TODO: project relationship ? is cross project duplication allowed ?
+      authorize_creation(duping_dataset.project_id) # permission check
+
+      # TODO: project relationship ? is cross project duplication allowed ? override project_id if so
       datasets.transaction do
         now = Time.now
 
@@ -116,11 +96,9 @@ module Dataset
           {
             **duping_dataset.fields,
             id: UUIDv7.generate,
+            # project_id: project_id, // this might be needed for cross-project duping
             name: "#{duping_dataset.name} - duplicated",
-            # project_id: project_id // this might be needed for cross-project duping
-            # use default and to be updated by background jobs ?
             status: "pending",
-            # updated_at: Time.now
             entries_total_count: 0,
             entries_completed_count: 0,
             entries_in_progress_count: 0,
@@ -141,6 +119,7 @@ module Dataset
           attributes = {
             **entry.fields,
             id: UUIDv7.generate,
+            # project_id: project_id,
             dataset_id: dataset_id,
             job_id: nil,
             wf_step: "start",
@@ -149,22 +128,63 @@ module Dataset
             submitted_by_id: nil,
             reviewed_by_id: nil,
             created_at: now,
-            updated_at: now
+            updated_at: now,
           }
 
           if is_media_ready
             # INFO: media is already good -> skip processing job
             entries.no_event do
-              entries.create(attributes)
+              entry_id = entries.create(attributes)
             end
           else
             # media needs processing (was in processing or errored) -> trigger new job
             # the event listener will pick up the 'pending' status and start a new job
-            entries.create(attributes)
+            entry_id = entries.create(attributes)
+          end
+
+          if with_annotations
+            entry_annotations = annotations.index({entry_id: entry_id})
+
+            entry_annotations.each do |annotation|
+              attributes = {
+                **annotation.fields,
+                id: UUIDv7.generate,
+                # project_id: project_id,
+                dataset_id: dataset_id,
+                entry_id: entry_id,
+                # keep original created_at/updated_at ? skip them if so
+                # created_at: now,
+                # updated_at: now,
+              }
+              annotations.create(attributes)
+            end
           end
         end
 
         datasets.find(dataset_id)
+      end
+    end
+
+    private def authorize_creation(project_id)
+      access = auth_context.can?(:create, datasets.class.resource)
+
+      if access == :as_org_owner
+        project = projects.find!(project_id) # this can raise Verse::Error::RecordNotFound if not in org scope
+        unless auth_context.custom_scopes[:org]&.include?(project.organization_id.to_s)
+          raise Verse::Error::Unauthorized,
+                "You do not have permission to create dataset on this project"
+        end
+      end
+
+      # With "as_user" ensure account can "create" dataset to the project
+      if access == :as_user &&
+         ScopedQuery::Service.without_project_access?(
+           auth_context.metadata[:id],
+           project_id,
+           ["project_owner"]
+         )
+        raise Verse::Error::Unauthorized,
+              "You do not have permission to create dataset on this project"
       end
     end
   end
