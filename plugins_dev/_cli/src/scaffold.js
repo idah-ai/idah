@@ -12,9 +12,16 @@ import {
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-export async function createProject({ pluginName, pluginDisplayName, pluginDescription, pluginVersion, pluginBackendServices }) {
-  const targetDir = path.join(process.cwd(), pluginName)
+export async function createProject({ pluginName, pluginDisplayName, pluginDescription, pluginVersion, pluginBackendServices, outputPath }) {
+  // Determine base directory - use outputPath if provided, otherwise current directory
+  const baseDir = outputPath ? path.resolve(process.cwd(), outputPath) : process.cwd()
+  const targetDir = path.join(baseDir, pluginName)
   const templateDir = path.join(__dirname, "../_template")
+
+  // Create base directory if it doesn't exist
+  if (!fs.existsSync(baseDir)) {
+    fs.mkdirSync(baseDir, { recursive: true })
+  }
 
   // Check if plugin already exists
   if (fs.existsSync(targetDir)) {
@@ -59,8 +66,12 @@ export async function createProject({ pluginName, pluginDisplayName, pluginDescr
   renameFiles(targetDir, replacements)
   replacePlaceholders(targetDir, replacements)
 
+  // Display relative path from current directory
+  const relativePath = path.relative(process.cwd(), targetDir)
+  const displayPath = relativePath.startsWith('..') ? targetDir : relativePath
+
   console.log("\n✓ Plugin created successfully!")
-  console.log(`  Location: ./${pluginName}`)
+  console.log(`  Location: ${displayPath}`)
   console.log(`  Name: ${pluginName}`)
   console.log(`  Display Name: ${pluginDisplayName}`)
   if (pluginBackendServices.length > 0) {
@@ -69,22 +80,43 @@ export async function createProject({ pluginName, pluginDisplayName, pluginDescr
     console.log(`  Backend Services: none (frontend-only)`)
   }
   console.log("\nNext steps:")
-  console.log(`  cd ${pluginName}`)
+  console.log(`  cd ${displayPath}`)
   console.log(`  # Start developing your plugin!`)
   console.log()
 }
 
 export async function addBackendToPlugin({ pluginName, backendServices }) {
-  const pluginsDir = path.join(process.cwd(), "plugins")
-  const targetDir = path.join(pluginsDir, pluginName)
   const templateDir = path.join(__dirname, "../_template")
 
+  // Search for plugin in common locations
+  const searchPaths = [
+    path.join(process.cwd(), pluginName),                    // Current directory
+    path.join(process.cwd(), "plugins", pluginName),         // ./plugins
+    path.join(process.cwd(), "plugins_dev", "plugins", pluginName), // ./plugins_dev/plugins
+    path.join(process.cwd(), "..", "plugins", pluginName),   // ../plugins (if in subdirectory)
+  ]
+
+  let targetDir = null
+  for (const searchPath of searchPaths) {
+    if (fs.existsSync(searchPath)) {
+      targetDir = searchPath
+      break
+    }
+  }
+
   // Check if plugin exists
-  if (!fs.existsSync(targetDir)) {
-    console.error(`Error: Plugin "${pluginName}" does not exist at ${targetDir}`)
-    console.log(`\nMake sure you're in the correct directory and the plugin exists.`)
+  if (!targetDir) {
+    console.error(`Error: Plugin "${pluginName}" not found`)
+    console.log(`\nSearched in:`)
+    searchPaths.forEach(p => console.log(`  - ${path.relative(process.cwd(), p)}`))
+    console.log(`\nMake sure:`)
+    console.log(`  1. The plugin exists`)
+    console.log(`  2. You're in the correct directory`)
+    console.log(`  3. The plugin name is correct`)
     process.exit(1)
   }
+
+  console.log(`\nFound plugin at: ${path.relative(process.cwd(), targetDir)}`)
 
   // Check if backends directory exists
   const backendsDir = path.join(targetDir, "backends")
