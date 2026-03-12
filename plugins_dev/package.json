@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "bin": {
-    "idah-plugin": "./bin/cli.js"
+    "idah-plugin": "./_cli/bin/cli.js"
   },
   "scripts": {
     "test": "vitest run",

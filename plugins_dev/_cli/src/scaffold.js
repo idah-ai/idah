@@ -13,8 +13,7 @@ import {
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export async function createProject({ pluginName, pluginDisplayName, pluginDescription, pluginVersion, pluginBackendServices }) {
-  const pluginsDir = path.join(process.cwd(), "plugins")
-  const targetDir = path.join(pluginsDir, pluginName)
+  const targetDir = path.join(process.cwd(), pluginName)
   const templateDir = path.join(__dirname, "../_template")
 
   // Check if plugin already exists
@@ -61,7 +60,7 @@ export async function createProject({ pluginName, pluginDisplayName, pluginDescr
   replacePlaceholders(targetDir, replacements)
 
   console.log("\n✓ Plugin created successfully!")
-  console.log(`  Location: plugins/${pluginName}`)
+  console.log(`  Location: ./${pluginName}`)
   console.log(`  Name: ${pluginName}`)
   console.log(`  Display Name: ${pluginDisplayName}`)
   if (pluginBackendServices.length > 0) {
@@ -70,7 +69,7 @@ export async function createProject({ pluginName, pluginDisplayName, pluginDescr
     console.log(`  Backend Services: none (frontend-only)`)
   }
   console.log("\nNext steps:")
-  console.log(`  cd plugins/${pluginName}`)
+  console.log(`  cd ${pluginName}`)
   console.log(`  # Start developing your plugin!`)
   console.log()
 }
