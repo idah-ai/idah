@@ -42,8 +42,8 @@ backends/
 
 For detailed documentation on backend development, see:
 
-- **[Backend Development Guide](../../development/docs/BACKEND_DEVELOPMENT.md)** - Complete guide with examples and best practices
-- **[idah-video Plugin](../../idah-video/backends/media)** - Real-world example of a media backend implementation
+- **[Backend Development Guide](https://github.com/ingedata-ph/idah/tree/main/plugins_dev/docs/BACKEND_DEVELOPMENT.md)** - Complete guide with examples and best practices
+- **[idah-video Plugin](https://github.com/ingedata-ph/idah/tree/main/plugins/idah-video/backends/media)** - Real-world example of a media backend implementation
 
 ## Running Tests
 
@@ -63,8 +63,8 @@ Coverage reports are generated in `coverage/index.html`.
 
 ## Need Help?
 
-1. Check the [Backend Development Guide](../../development/docs/BACKEND_DEVELOPMENT.md)
-2. Review the [idah-video plugin](../../idah-video/backends/) for a complete example
+1. Check the [Backend Development Guide](https://github.com/ingedata-ph/idah/tree/main/plugins_dev/docs/BACKEND_DEVELOPMENT.md)
+2. Review the [idah-video plugin](https://github.com/ingedata-ph/idah/tree/main/plugins/idah-video/backends/) for a complete example
 3. Contact the IDAH development team
 
 Happy coding! 🚀

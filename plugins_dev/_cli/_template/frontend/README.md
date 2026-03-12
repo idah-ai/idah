@@ -53,12 +53,12 @@ Output files will be in the `build/` directory.
 
 For detailed documentation on plugin development, see:
 
-- **[Frontend Development Guide](../../development/docs/FRONTEND_DEVELOPMENT.md)** - Complete guide with Activity Context API, best practices, and examples
-- **[Main Generator README](../../development/README.md)** - CLI commands and plugin generator usage
+- **[Frontend Development Guide](https://github.com/ingedata-ph/idah/tree/main/plugins_dev/docs/FRONTEND_DEVELOPMENT.md)** - Complete guide with Activity Context API, best practices, and examples
+- **[Main Generator README](https://github.com/ingedata-ph/idah/tree/main/plugins_dev/README.md)** - CLI commands and plugin generator usage
 
 ## Need Help?
 
-1. Check the [Frontend Development Guide](../../development/docs/FRONTEND_DEVELOPMENT.md)
+1. Check the [Frontend Development Guide](https://github.com/ingedata-ph/idah/tree/main/plugins_dev/docs/FRONTEND_DEVELOPMENT.md)
 2. Review other plugin examples in the `plugins/` directory
 3. Contact the IDAH development team
 

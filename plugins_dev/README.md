@@ -39,6 +39,29 @@ npm install
 node bin/cli.js <command>
 ```
 
+## Plugin Paths
+
+IDAH supports two plugin directories for different environments:
+
+### Development Plugins
+**Path:** [`./plugins_dev/plugins`](./plugins)
+
+- **Purpose:** Development and testing
+- **Environment:** Local development only
+- **Loading:** Automatically loaded when running IDAH in development mode
+- **Not included:** These plugins are **not** loaded in production
+- **Use for:** Experimental plugins, work-in-progress features, testing
+
+### Production Plugins
+**Path:** [`./plugins`](../plugins)
+
+- **Purpose:** Production-ready plugins
+- **Environment:** Both development and production
+- **Loading:** Always loaded in all environments
+- **Use for:** Stable, production-ready plugins
+
+**Recommendation:** Start developing in `./plugins_dev/plugins`, and move to `./plugins` when ready for production.
+
 ## Commands
 
 ### Create a New Plugin
@@ -46,12 +69,22 @@ node bin/cli.js <command>
 Create a new plugin from scratch:
 
 ```bash
-idah-plugin create <plugin_name>
+idah-plugin create <plugin_name> [output_path]
 ```
 
-**Example:**
+**Examples:**
 ```bash
+# Create in current directory
 idah-plugin create my-awesome-plugin
+# Creates: ./my-awesome-plugin
+
+# Create in specific directory
+idah-plugin create audio-plugin ./plugins
+# Creates: ./plugins/audio-plugin
+
+# Create with absolute path
+idah-plugin create video-plugin /path/to/plugins
+# Creates: /path/to/plugins/video-plugin
 ```
 
 This command will:
@@ -59,7 +92,11 @@ This command will:
 2. Prompt you for a **description** (brief description of your plugin)
 3. Prompt you for a **version** (semantic version, default: 0.0.1)
 4. Ask which **backend services** you want to include (media, sync, or none)
-5. Generate the complete plugin structure in `plugins/<plugin_name>/`
+5. Generate the complete plugin structure in the specified location
+
+**Parameters:**
+- `<plugin_name>` - (Required) Name of the plugin in kebab-case
+- `[output_path]` - (Optional) Directory where the plugin should be created (default: current directory)
 
 **Note:** You can create frontend-only plugins by not selecting any backend services. This is useful for plugins that only need a UI component.
 
@@ -97,7 +134,7 @@ idah-plugin -h
 When you create a plugin, the following structure is generated:
 
 ```
-plugins/<plugin_name>/
+<plugin_name>/
 ├── manifest.json           # Plugin metadata and configuration
 ├── Gemfile                 # Ruby dependencies
 ├── Rakefile                # Rake tasks
@@ -148,7 +185,7 @@ plugins/<plugin_name>/
 
 ## Backend Services
 
-The generator supports two types of backend services:
+The generator supports two types of backend services. For complete implementation details, see the *[Backend Development Guide](docs/BACKEND_DEVELOPMENT.md)*.
 
 ### Media Service
 For plugins that need to process or handle media files (images, videos, etc.). The media backend provides:
@@ -156,18 +193,24 @@ For plugins that need to process or handle media files (images, videos, etc.). T
 - **Processor**: Core logic for media file processing
 - **Specs**: Tests for your media backend
 
+*[→ Read the Media Service Guide](docs/backends/MEDIA_SERVICE.md)* for complete implementation details.
+
 ### Sync Service
 For plugins that need to synchronize or export data to external systems. The sync backend provides:
 - **Export**: Logic for data export/synchronization
 - **Specs**: Tests for your sync backend
 
+*[→ Read the Sync Service Guide](docs/backends/SYNC_SERVICE.md)* for complete implementation details.
+
 ## Workflow Examples
+
+**Note:** It's recommended to create plugins in the `./plugins` directory, as this path is automatically loaded by the IDAH platform during development.
 
 ### Example 1: Create a Frontend-Only Plugin
 
 ```bash
-# Create a new plugin
-idah-plugin create ui-widget
+# Create a new plugin in the plugins directory (recommended)
+idah-plugin create ui-widget ./plugins
 
 # When prompted:
 # - Display name: UI Widget
@@ -175,7 +218,7 @@ idah-plugin create ui-widget
 # - Version: 0.0.1 (or press Enter for default)
 # - Backend services: (press Enter without selecting any)
 
-# Your plugin is ready at plugins/ui-widget/
+# Your plugin is ready at ./plugins/ui-widget/
 cd plugins/ui-widget/frontend
 pnpm install
 pnpm dev
@@ -184,8 +227,8 @@ pnpm dev
 ### Example 2: Create a Full-Stack Plugin
 
 ```bash
-# Create a plugin with both backend services
-idah-plugin create video-converter
+# Create a plugin with both backend services in plugins directory
+idah-plugin create video-converter ./plugins
 
 # When prompted:
 # - Display name: Video Converter
@@ -197,14 +240,25 @@ idah-plugin create video-converter
 cd plugins/video-converter
 ```
 
-### Example 3: Add Backend to Existing Plugin
+### Example 3: Create Multiple Plugins
+
+```bash
+# Create several plugins in the standard plugins directory
+idah-plugin create image-gallery ./plugins
+idah-plugin create data-exporter ./plugins
+idah-plugin create custom-dashboard ./plugins
+
+# All plugins will be in ./plugins/ and automatically loaded by IDAH
+```
+
+### Example 4: Add Backend to Existing Plugin
 
 ```bash
 # First create a frontend-only plugin
-idah-plugin create image-gallery
+idah-plugin create image-processor ./plugins
 
 # Later, add backend services
-idah-plugin backend add image-gallery
+idah-plugin backend add image-processor
 
 # When prompted, select "Media Service"
 # The media backend is now added to your existing plugin
@@ -299,7 +353,7 @@ All documentation is automatically customized with your plugin's name, descripti
 
 ## Template Customization
 
-The plugin templates are located in `plugins/development/_template/`. You can customize these templates to match your team's conventions and requirements.
+The plugin templates are located in `plugins_dev/_cli/_template/`. You can customize these templates to match your team's conventions and requirements.
 
 ## Support
 

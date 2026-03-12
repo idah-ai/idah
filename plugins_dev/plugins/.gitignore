@@ -1,0 +1,7 @@
+# Ignore all development plugins
+*
+
+# Except these files
+!.gitignore
+!.gitkeep
+!README.md
