@@ -3,21 +3,25 @@ import fs from "fs"
 import path from "path"
 import { createProject, addBackendToPlugin } from "./scaffold.js"
 
-// Test helper to clean up created test plugins
-const cleanupTestPlugin = (pluginName) => {
-  const pluginsDir = path.join(process.cwd(), "plugins")
-  const testPluginDir = path.join(pluginsDir, pluginName)
+// Use a dedicated test directory
+const TEST_DIR = path.join(process.cwd(), "_test_plugins")
 
-  if (fs.existsSync(testPluginDir)) {
-    fs.rmSync(testPluginDir, { recursive: true, force: true })
+// Test helper to clean up test directory
+const cleanupTestDir = () => {
+  if (fs.existsSync(TEST_DIR)) {
+    fs.rmSync(TEST_DIR, { recursive: true, force: true })
   }
 }
 
 describe("createProject", () => {
   const testPluginName = "test-plugin-temp"
 
+  beforeEach(() => {
+    cleanupTestDir()
+  })
+
   afterEach(() => {
-    cleanupTestPlugin(testPluginName)
+    cleanupTestDir()
   })
 
   it("should create a plugin with basic structure", async () => {
@@ -26,11 +30,11 @@ describe("createProject", () => {
       pluginDisplayName: "Test Plugin",
       pluginDescription: "A test plugin",
       pluginVersion: "0.0.1",
-      pluginBackendServices: []
+      pluginBackendServices: [],
+      outputPath: TEST_DIR
     })
 
-    const pluginsDir = path.join(process.cwd(), "plugins")
-    const pluginDir = path.join(pluginsDir, testPluginName)
+    const pluginDir = path.join(TEST_DIR, testPluginName)
 
     expect(fs.existsSync(pluginDir)).toBe(true)
     expect(fs.existsSync(path.join(pluginDir, "manifest.json"))).toBe(true)
@@ -44,11 +48,11 @@ describe("createProject", () => {
       pluginDisplayName: "Test Plugin Display",
       pluginDescription: "Amazing test description",
       pluginVersion: "1.2.3",
-      pluginBackendServices: []
+      pluginBackendServices: [],
+      outputPath: TEST_DIR
     })
 
-    const pluginsDir = path.join(process.cwd(), "plugins")
-    const manifestPath = path.join(pluginsDir, testPluginName, "manifest.json")
+    const manifestPath = path.join(TEST_DIR, testPluginName, "manifest.json")
     const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"))
 
     expect(manifest.name).toBe(testPluginName)
@@ -62,11 +66,11 @@ describe("createProject", () => {
       pluginDisplayName: "Test Plugin",
       pluginDescription: "A test plugin",
       pluginVersion: "0.0.1",
-      pluginBackendServices: ["media", "sync"]
+      pluginBackendServices: ["media", "sync"],
+      outputPath: TEST_DIR
     })
 
-    const pluginsDir = path.join(process.cwd(), "plugins")
-    const backendsDir = path.join(pluginsDir, testPluginName, "backends")
+    const backendsDir = path.join(TEST_DIR, testPluginName, "backends")
 
     expect(fs.existsSync(path.join(backendsDir, "media"))).toBe(true)
     expect(fs.existsSync(path.join(backendsDir, "sync"))).toBe(true)
@@ -79,11 +83,11 @@ describe("createProject", () => {
       pluginDisplayName: "Test Plugin",
       pluginDescription: "A test plugin",
       pluginVersion: "0.0.1",
-      pluginBackendServices: []
+      pluginBackendServices: [],
+      outputPath: TEST_DIR
     })
 
-    const pluginsDir = path.join(process.cwd(), "plugins")
-    const backendsDir = path.join(pluginsDir, testPluginName, "backends")
+    const backendsDir = path.join(TEST_DIR, testPluginName, "backends")
 
     // Backend directory might exist but should not have media/sync subdirectories
     if (fs.existsSync(backendsDir)) {
@@ -99,7 +103,8 @@ describe("createProject", () => {
       pluginDisplayName: "Test Plugin",
       pluginDescription: "A test plugin",
       pluginVersion: "0.0.1",
-      pluginBackendServices: []
+      pluginBackendServices: [],
+      outputPath: TEST_DIR
     })
 
     // Mock process.exit to prevent test from exiting
@@ -114,7 +119,8 @@ describe("createProject", () => {
         pluginDisplayName: "Test Plugin 2",
         pluginDescription: "Another test plugin",
         pluginVersion: "0.0.1",
-        pluginBackendServices: []
+        pluginBackendServices: [],
+        outputPath: TEST_DIR
       })
     }).rejects.toThrow("process.exit called")
 
@@ -126,18 +132,20 @@ describe("addBackendToPlugin", () => {
   const testPluginName = "test-plugin-backend"
 
   beforeEach(async () => {
-    // Create a test plugin without backends
+    cleanupTestDir()
+    // Create a test plugin without backends in TEST_DIR
     await createProject({
       pluginName: testPluginName,
       pluginDisplayName: "Test Plugin",
       pluginDescription: "A test plugin",
       pluginVersion: "0.0.1",
-      pluginBackendServices: []
+      pluginBackendServices: [],
+      outputPath: TEST_DIR
     })
   })
 
   afterEach(() => {
-    cleanupTestPlugin(testPluginName)
+    cleanupTestDir()
   })
 
   it("should add backend services to existing plugin", async () => {
@@ -146,8 +154,7 @@ describe("addBackendToPlugin", () => {
       backendServices: ["media"]
     })
 
-    const pluginsDir = path.join(process.cwd(), "plugins")
-    const backendsDir = path.join(pluginsDir, testPluginName, "backends")
+    const backendsDir = path.join(TEST_DIR, testPluginName, "backends")
 
     expect(fs.existsSync(path.join(backendsDir, "media"))).toBe(true)
   })
@@ -158,8 +165,7 @@ describe("addBackendToPlugin", () => {
       backendServices: ["media", "sync"]
     })
 
-    const pluginsDir = path.join(process.cwd(), "plugins")
-    const backendsDir = path.join(pluginsDir, testPluginName, "backends")
+    const backendsDir = path.join(TEST_DIR, testPluginName, "backends")
 
     expect(fs.existsSync(path.join(backendsDir, "media"))).toBe(true)
     expect(fs.existsSync(path.join(backendsDir, "sync"))).toBe(true)
@@ -178,8 +184,7 @@ describe("addBackendToPlugin", () => {
       backendServices: ["media"]
     })
 
-    const pluginsDir = path.join(process.cwd(), "plugins")
-    const backendsDir = path.join(pluginsDir, testPluginName, "backends")
+    const backendsDir = path.join(TEST_DIR, testPluginName, "backends")
 
     // Should still exist and not throw error
     expect(fs.existsSync(path.join(backendsDir, "media"))).toBe(true)

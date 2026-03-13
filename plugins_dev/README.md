@@ -4,39 +4,66 @@ A CLI tool to generate and manage plugins for the IDAH platform. This tool helps
 
 ## Installation
 
-### Local Development with npm link (Recommended)
+### Using npx (Recommended for Published Package)
 
-For local development and testing, use npm link to create a symlink:
+Once published to npm, you can use the CLI without installation:
 
 ```bash
+# Create a plugin
+npx idah-plugin create audio-plugin ./plugins
+
+# Add backend to existing plugin
+npx idah-plugin backend add audio-plugin
+
+# Get help
+npx idah-plugin --help
+```
+
+**Benefits:**
+- No installation required
+- Always uses the latest version
+- Perfect for CI/CD and automation
+
+### Local Development with npm link
+
+For local development and testing, use npm link:
+
+```bash
+cd plugins_dev
 npm install
 npm link
 ```
 
-This creates a symlink in your global node_modules that points to your local package. You can now use the `idah-plugin` command from anywhere, and changes to the source code will be immediately available.
+This creates a symlink in your global node_modules. You can now use the `idah-plugin` command from anywhere, and changes to the source code will be immediately available.
 
 To unlink when you're done:
 ```bash
-npm unlink -g idah-plugin-cli
+npm unlink -g idah-plugin
 ```
 
 ### Global Installation
 
-Install the CLI globally for permanent use:
+Install the CLI globally:
 
 ```bash
+# From npm (after publishing)
+npm install -g idah-plugin
+
+# Or from local directory
+cd plugins_dev
 npm install -g .
 ```
 
-After installation, you can use the `idah-plugin` command from any directory within your IDAH project.
+After installation, you can use the `idah-plugin` command from any directory.
 
 ### Direct Usage (Without Installation)
 
-If you prefer not to install at all, you can use it directly:
+If you prefer not to install at all:
 
 ```bash
+cd plugins_dev
 npm install
-node bin/cli.js <command>
+node _cli/bin/cli.js <command>
 ```
 
 ## Plugin Paths
@@ -303,6 +330,56 @@ Each generated plugin includes its own README files:
 - **backends/README.md** - Backend quick start with links to detailed docs
 
 All documentation is automatically customized with your plugin's name, description, and version.
+
+## Publishing to npm
+
+### Before Publishing
+
+1. **Update version** in `package.json`:
+   ```bash
+   npm version patch  # 1.0.0 -> 1.0.1
+   npm version minor  # 1.0.0 -> 1.1.0
+   npm version major  # 1.0.0 -> 2.0.0
+   ```
+
+2. **Run tests** to ensure everything works:
+   ```bash
+   npm test
+   ```
+
+3. **Test the package locally** with npm link:
+   ```bash
+   npm link
+   idah-plugin create test-plugin
+   npm unlink -g idah-plugin
+   ```
+
+### Publishing
+
+```bash
+# Login to npm (first time only)
+npm login
+
+# Publish the package
+npm publish
+
+# For first-time publish or scoped packages
+npm publish --access public
+```
+
+### After Publishing
+
+Test with npx:
+```bash
+npx idah-plugin create test-plugin ./plugins
+```
+
+### Version Management
+
+The package follows [Semantic Versioning](https://semver.org/):
+- **Patch** (1.0.x) - Bug fixes, documentation updates
+- **Minor** (1.x.0) - New features, backwards compatible
+- **Major** (x.0.0) - Breaking changes
 
 ## Template Customization
 

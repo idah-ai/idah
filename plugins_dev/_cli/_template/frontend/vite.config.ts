@@ -6,8 +6,6 @@ import path from "path";
 export default defineConfig(({ mode }) => {
   const isProduction = mode === "production";
 
-  console.debug("Vite Config", { mode, isProduction });
-
   return {
     plugins: [isProduction ? svelte() : sveltekit()],
     resolve: {

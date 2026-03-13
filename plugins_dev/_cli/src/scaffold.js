@@ -93,6 +93,7 @@ export async function addBackendToPlugin({ pluginName, backendServices }) {
     path.join(process.cwd(), pluginName),                    // Current directory
     path.join(process.cwd(), "plugins", pluginName),         // ./plugins
     path.join(process.cwd(), "plugins_dev", "plugins", pluginName), // ./plugins_dev/plugins
+    path.join(process.cwd(), "_test_plugins", pluginName),   // ./_test_plugins (for testing)
     path.join(process.cwd(), "..", "plugins", pluginName),   // ../plugins (if in subdirectory)
   ]
 
