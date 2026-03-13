@@ -83,12 +83,12 @@ module Dataset
 
     # TODO: add spec tests
     # TODO: TBC; in this case, dataset is duplicating by selecting entry ids
-    def duplicate(dataset_id, entry_ids, with_annotations: false)
+    def duplicate(dataset_id, entry_ids: nil, with_annotations: false)
       duping_dataset = datasets.find!(dataset_id)
 
       authorize_creation(duping_dataset.project_id) # permission check
 
-      # TODO: project relationship ? is cross project duplication allowed ? override project_id if so
+      # TODO: project relationship ? is cross project duplication allowed ? override and pass project_id if so
       datasets.transaction do
         now = Time.now
 
@@ -106,62 +106,14 @@ module Dataset
           }
         )
 
-        # NOTE: as we are duplicating by selecting entry ids, we do a find loop here
-        entry_ids.each do |entry_id|
-          entry = entries.find(entry_id)
+        dataset = datasets.find(dataset_id)
 
-          # check if entry is actually in the duping dataset ?
-          next if entry.dataset_id != duping_dataset.id
+        # just return if there's no entry in this duping dataset
+        return dataset if duping_dataset.entries_total_count == 0
 
-          # check if media is already successfully processed
-          is_media_ready = %w[ready in_progress completed].include?(entry.status)
-
-          attributes = {
-            **entry.fields,
-            id: UUIDv7.generate,
-            # project_id: project_id,
-            dataset_id: dataset_id,
-            job_id: nil,
-            wf_step: "start",
-            status: is_media_ready ? "ready" : "pending",
-            assigned_to_id: nil,
-            submitted_by_id: nil,
-            reviewed_by_id: nil,
-            created_at: now,
-            updated_at: now,
-          }
-
-          if is_media_ready
-            # INFO: media is already good -> skip processing job
-            entries.no_event do
-              entry_id = entries.create(attributes)
-            end
-          else
-            # media needs processing (was in processing or errored) -> trigger new job
-            # the event listener will pick up the 'pending' status and start a new job
-            entry_id = entries.create(attributes)
-          end
-
-          if with_annotations
-            entry_annotations = annotations.index({entry_id: entry_id})
-
-            entry_annotations.each do |annotation|
-              attributes = {
-                **annotation.fields,
-                id: UUIDv7.generate,
-                # project_id: project_id,
-                dataset_id: dataset_id,
-                entry_id: entry_id,
-                # keep original created_at/updated_at ? skip them if so
-                # created_at: now,
-                # updated_at: now,
-              }
-              annotations.create(attributes)
-            end
-          end
-        end
-
-        datasets.find(dataset_id)
+        # fire to dupe every entries if !entry_ids, or dupe only selected entries, before returning
+        datasets.duplicated(dataset_id, project_id: dataset.project_id, entry_ids:, with_annotations:)
+        return dataset
       end
     end
 
