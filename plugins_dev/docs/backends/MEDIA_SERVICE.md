@@ -10,12 +10,13 @@ The Media service backend registers a processor that handles media file processi
 
 ```
 backends/media/
-├── {plugin_name}.rb        # Main entry point with Media.init method
-├── {plugin_name}_spec.rb   # Tests for main module
-├── processor.rb             # Processing logic
-├── processor_spec.rb        # Processor tests
-├── options.rb               # Options schema
-└── options_spec.rb          # Options tests
+└── <plugin_name_underscore>/
+    ├── media.rb          # Media service module (registers processor)
+    ├── media_spec.rb     # Media service tests
+    ├── processor.rb      # Core processing logic
+    ├── processor_spec.rb # Processor tests
+    ├── options.rb        # Options schema and validation
+    └── options_spec.rb   # Options tests
 ```
 
 ## Module Structure
