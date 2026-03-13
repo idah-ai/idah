@@ -2,10 +2,10 @@
 
 module Exports
   class AnnotationContext
-    attr_reader :annotation
+    attr_reader :record
 
     def initialize(annotation)
-      @annotation = annotation
+      @record = annotation
     end
   end
 end

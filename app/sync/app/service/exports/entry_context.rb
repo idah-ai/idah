@@ -2,15 +2,15 @@
 
 module Exports
   class EntryContext
-    attr_reader :entry
+    attr_reader :record
 
     def initialize(entry)
-      @entry = entry
+      @record = entry
     end
 
     def annotations(filter = {})
       Api[:idah].dataset.annotations.index_all(
-        filter: filter.merge(entry_id: @entry.id),
+        filter: filter.merge(entry_id: @record.id),
         included: ["project_members"]
       ).map do |annotation|
         AnnotationContext.new(annotation)
@@ -19,7 +19,7 @@ module Exports
 
     def medias(filter = {})
       Api[:idah].media.medias.index_all(
-        filter: filter.merge(resource: @entry.resource)
+        filter: filter.merge(resource: @record.resource)
       ).map do |media|
         MediaContext.new(media)
       end
