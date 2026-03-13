@@ -85,35 +85,22 @@ export async function createProject({ pluginName, pluginDisplayName, pluginDescr
   console.log()
 }
 
-export async function addBackendToPlugin({ pluginName, backendServices }) {
+export async function addBackendToPlugin({ pluginName, backendServices, pluginPath }) {
   const templateDir = path.join(__dirname, "../_template")
 
-  // Search for plugin in common locations
-  const searchPaths = [
-    path.join(process.cwd(), pluginName),                    // Current directory
-    path.join(process.cwd(), "plugins", pluginName),         // ./plugins
-    path.join(process.cwd(), "plugins_dev", "plugins", pluginName), // ./plugins_dev/plugins
-    path.join(process.cwd(), "_test_plugins", pluginName),   // ./_test_plugins (for testing)
-    path.join(process.cwd(), "..", "plugins", pluginName),   // ../plugins (if in subdirectory)
-  ]
-
-  let targetDir = null
-  for (const searchPath of searchPaths) {
-    if (fs.existsSync(searchPath)) {
-      targetDir = searchPath
-      break
-    }
-  }
+  // Use provided path as base directory, or default to current directory
+  const baseDir = pluginPath ? path.resolve(process.cwd(), pluginPath) : process.cwd()
+  const targetDir = path.join(baseDir, pluginName)
 
   // Check if plugin exists
-  if (!targetDir) {
-    console.error(`Error: Plugin "${pluginName}" not found`)
-    console.log(`\nSearched in:`)
-    searchPaths.forEach(p => console.log(`  - ${path.relative(process.cwd(), p)}`))
+  if (!fs.existsSync(targetDir)) {
+    console.error(`Error: Plugin not found at "${targetDir}"`)
     console.log(`\nMake sure:`)
-    console.log(`  1. The plugin exists`)
-    console.log(`  2. You're in the correct directory`)
-    console.log(`  3. The plugin name is correct`)
+    console.log(`  1. The plugin exists at the specified location`)
+    console.log(`  2. You're providing the correct base directory`)
+    console.log(`\nUsage:`)
+    console.log(`  idah-plugin backend add <plugin_name>              # looks for ./<plugin_name>`)
+    console.log(`  idah-plugin backend add <plugin_name> <base_path>  # looks for <base_path>/<plugin_name>`)
     process.exit(1)
   }
 

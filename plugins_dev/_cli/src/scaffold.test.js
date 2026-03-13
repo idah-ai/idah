@@ -151,7 +151,8 @@ describe("addBackendToPlugin", () => {
   it("should add backend services to existing plugin", async () => {
     await addBackendToPlugin({
       pluginName: testPluginName,
-      backendServices: ["media"]
+      backendServices: ["media"],
+      pluginPath: TEST_DIR
     })
 
     const backendsDir = path.join(TEST_DIR, testPluginName, "backends")
@@ -162,7 +163,8 @@ describe("addBackendToPlugin", () => {
   it("should add multiple backend services", async () => {
     await addBackendToPlugin({
       pluginName: testPluginName,
-      backendServices: ["media", "sync"]
+      backendServices: ["media", "sync"],
+      pluginPath: TEST_DIR
     })
 
     const backendsDir = path.join(TEST_DIR, testPluginName, "backends")
@@ -175,13 +177,15 @@ describe("addBackendToPlugin", () => {
     // Add media backend first
     await addBackendToPlugin({
       pluginName: testPluginName,
-      backendServices: ["media"]
+      backendServices: ["media"],
+      pluginPath: TEST_DIR
     })
 
     // Try to add media again - should skip
     await addBackendToPlugin({
       pluginName: testPluginName,
-      backendServices: ["media"]
+      backendServices: ["media"],
+      pluginPath: TEST_DIR
     })
 
     const backendsDir = path.join(TEST_DIR, testPluginName, "backends")
