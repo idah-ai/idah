@@ -6,9 +6,40 @@ This guide covers backend development for IDAH plugins using Ruby.
 
 IDAH plugins can have backend services that process media files, export data, or integrate with external systems. Backend services are written in Ruby and follow a modular structure.
 
+**Technology Stack:**
+- **Language**: Ruby 3.4+
+- **Testing Framework**: RSpec
+- **Schema Validation**: Verse Schema
+- **Dependencies**: Bundler
+
+## File Structure
+
+```
+backends/
+├── README.md             # Backend quick start guide
+├── spec_helper.rb        # Shared RSpec configuration
+├── .rspec                # RSpec configuration
+├── media/                # Media service (if enabled)
+│   └── <plugin_name_underscore>/
+│       ├── media.rb          # Media service module (registers processor)
+│       ├── media_spec.rb     # Media service tests
+│       ├── processor.rb      # Core processing logic
+│       ├── processor_spec.rb # Processor tests
+│       ├── options.rb        # Options schema and validation
+│       └── options_spec.rb   # Options tests
+└── sync/                 # Sync service (if enabled)
+    └── <plugin_name_underscore>/
+        ├── sync.rb           # Sync service module (registers exporter)
+        ├── sync_spec.rb      # Sync service tests
+        ├── export.rb         # Export/sync logic
+        └── export_spec.rb    # Export tests
+```
+
+**Note:** `<plugin_name_underscore>` is your plugin name in snake_case (e.g., `my_awesome_plugin` for plugin `my-awesome-plugin`).
+
 ## Available Backend Services
 
-IDAH plugins can include one or both of these backend services:
+IDAH plugins can include **one, all, or none** of these backend services. You can create frontend-only plugins, or add backend services as needed.
 
 ### Media Service
 
@@ -80,7 +111,7 @@ def process(context)
   begin
     # Processing logic
   rescue StandardError => e
-    logger.error("Processing failed: #{e.message}")
+    Verse.logger.error("Processing failed: #{e.message}")
     raise
   end
 end
@@ -163,11 +194,12 @@ end
 
 - [Ruby Documentation](https://ruby-doc.org/)
 - [RSpec Documentation](https://rspec.info/)
-- [Verse Schema Documentation](../../common/lib/verse/schema)
+- [Verse Framework](https://github.com/verse-rb)
+- [Verse Schema](https://github.com/verse-rb/verse-schema)
 
 ## Support
 
-1. Check existing plugin examples in `plugins/` directory
+1. Check existing plugin examples in [plugins/](../../plugins) directory
 2. Review the IDAH platform documentation
 3. Contact the IDAH development team
 
