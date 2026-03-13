@@ -35,7 +35,7 @@
   }
 </script>
 
-<nav class="flex items-center gap-2 border-b p-2">
+<nav class="flex items-center gap-2 p-2">
   <Button variant="outline" size="icon-sm">
     <ChevronsLeftIcon />
   </Button>

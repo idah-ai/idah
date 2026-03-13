@@ -21,7 +21,14 @@
 
     /** Compute frame base on timelineRulerWidth, e.clientX, windowWidth */
     const frame = Math.ceil((e.clientX - timelineRowHeaderWidth) / timelineCellWidth);
-    console.log(`Click on frame: ${frame}, groupId: ${annotationGroup.groupId}`);
+
+    if (frame > 0) {
+      /** Click on annotation row which have a frame */
+      console.log(`Click on frame: ${frame}, groupId: ${annotationGroup.groupId}`);
+    } else {
+      /** Click on annotation group header */
+      console.log(`Click on group header: ${annotationGroup.groupId}`);
+    }
   }
 </script>
 

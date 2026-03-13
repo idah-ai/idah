@@ -5,9 +5,9 @@
   interface Props {
     children: Snippet;
   }
-  let { children }: Props = $props();
+  let { children, ...restProps }: Props = $props();
 </script>
 
-<div id="timeline-row" class="hover:bg-secondary last:border-b hover:cursor-pointer">
+<div id="timeline-row" class="hover:bg-secondary last:border-b hover:cursor-pointer" {...restProps}>
   {@render children()}
 </div>
