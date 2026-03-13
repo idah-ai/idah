@@ -35,7 +35,7 @@ class DatasetsExpo < BaseExpo
     input do
       field :id, String
       field? :entry_ids, Array, of: String
-      field? :with_annotations, TrueClass
+      field? :with_annotations, TrueClass, default: false
     end
   end
   def duplicate
