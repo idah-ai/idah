@@ -127,11 +127,9 @@ module Plugins
             entry_details.script
           end
         when "dataset_config.json"
-          return manifest.entry_points.dataset_config if
-            manifest.entry_points&.dataset_config
+          manifest.entry_points&.dataset_config
         when "plugin_shortcut.json"
-          return manifest.entry_points.plugin_shortcut if
-            manifest.entry_points&.plugin_shortcut
+          manifest.entry_points&.plugin_shortcut
         end
 
       return nil if file_path.nil?
