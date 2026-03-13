@@ -10,10 +10,12 @@
   interface Props {
     annotationGroup: AnnotationGroup<AnnotationObject>;
     timelineCellWidth: number;
+    onSelectFrameX: (frameX: number) => void;
+
     children: Snippet;
     class?: string | null;
   }
-  let { annotationGroup, timelineCellWidth, children, class: className }: Props = $props();
+  let { annotationGroup, timelineCellWidth, onSelectFrameX, children, class: className }: Props = $props();
 
   // Functions
   function onCellClick(e: MouseEvent) {
@@ -24,11 +26,15 @@
 
     if (frame > 0) {
       /** Click on annotation row which have a frame */
+      // TODO: Handle click on annotation at specific cell
       console.log(`Click on frame: ${frame}, groupId: ${annotationGroup.groupId}`);
     } else {
       /** Click on annotation group header */
+      // TODO: Handle click on annotation group header
       console.log(`Click on group header: ${annotationGroup.groupId}`);
     }
+
+    onSelectFrameX(e.clientX);
   }
 </script>
 

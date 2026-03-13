@@ -9,6 +9,7 @@
   import TimelineRowHeading from "./timeline-row-heading.svelte";
   import TimelineRow from "./timeline-row.svelte";
   import TimelineRuler from "./timeline-ruler.svelte";
+  import VerticalLine from "./vertical-line.svelte";
 
   import { groupAnnotations } from "../../../plugins/idah-video/video-annotation-activity/group-annotation.svelte";
   import { annotations } from "../data/annotations";
@@ -17,19 +18,24 @@
   interface Props {
     timelineHeight: number;
     timelineCellWidth: number;
+    selectedFrameX: number;
+    onSelectFrameX: (frameX: number) => void;
   }
-  let { timelineHeight, timelineCellWidth }: Props = $props();
+  let { timelineHeight, timelineCellWidth, selectedFrameX, onSelectFrameX }: Props = $props();
 
   // Variables
+  const timelineRowHeaderWidth: number = 320;
+
   let timeline: HTMLDivElement;
-  let x: number = $state(0);
-  let showLine: boolean = $state(false);
+  let clientMouseX: number = $state(0);
   let annotationGroups = groupAnnotations(annotations);
+  let showVerticalLine = $derived(clientMouseX >= timelineRowHeaderWidth);
+  let showSelectedVerticalLine = $derived(Number(selectedFrameX) >= timelineRowHeaderWidth);
 
   // Functions
   function handleMouseMove(event: MouseEvent) {
     const rect = timeline.getBoundingClientRect();
-    x = event.clientX - rect.left;
+    clientMouseX = event.clientX - rect.left;
   }
 </script>
 
@@ -39,23 +45,24 @@
   bind:this={timeline}
   class="relative w-full max-w-screen"
   onmousemove={handleMouseMove}
+  onmouseleave={() => (showVerticalLine = false)}
 >
   <TimelineHeaderRow>
-    <TimelineRowHeader>
+    <TimelineRowHeader width={timelineRowHeaderWidth}>
       <TimelineRowHeading class="font-semibold">Annotations</TimelineRowHeading>
 
       <TimelineRowActions alwaysShow />
     </TimelineRowHeader>
 
-    <TimelineRuler {timelineCellWidth}></TimelineRuler>
+    <TimelineRuler {timelineCellWidth} {onSelectFrameX} />
   </TimelineHeaderRow>
 
   <ScrollArea>
     <div style:height="{timelineHeight - 90}px">
       {#each annotationGroups as annotationGroup (annotationGroup.groupId)}
-        <TimelineRow onmouseenter={() => (showLine = true)} onmouseleave={() => (showLine = false)}>
-          <TimelineRowGroup class="border-b" {annotationGroup} {timelineCellWidth}>
-            <TimelineRowHeader>
+        <TimelineRow>
+          <TimelineRowGroup class="border-b" {annotationGroup} {timelineCellWidth} {onSelectFrameX}>
+            <TimelineRowHeader width={timelineRowHeaderWidth}>
               <TimelineRowHeading>
                 {annotationGroup.groupId}
               </TimelineRowHeading>
@@ -70,19 +77,11 @@
   </ScrollArea>
 
   <!-- Draw a vertical line when mouse move -->
-  {#if showLine}
-    <div class="cursor-line" style="transform: translateX({x}px)"></div>
+  {#if showVerticalLine}
+    <VerticalLine positionX={clientMouseX} {timelineRowHeaderWidth} {timelineCellWidth} />
+  {/if}
+
+  {#if showSelectedVerticalLine}
+    <VerticalLine color="primary" positionX={selectedFrameX} {timelineRowHeaderWidth} {timelineCellWidth} />
   {/if}
 </div>
-
-<style>
-  .cursor-line {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 1px;
-    background: black;
-    pointer-events: none;
-    z-index: 9999;
-  }
-</style>

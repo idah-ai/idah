@@ -1,5 +1,6 @@
 <script lang="ts">
   import { ResizableHandle, ResizablePane, ResizablePaneGroup } from "@/components/ui/resizable";
+
   import Timeline from "./components/timeline.svelte";
   import VideoController from "./components/video-controller.svelte";
 
@@ -7,9 +8,11 @@
   let timelineHeight: number = $state(0);
 
   // Variables::Timeline Cell
-  const timelineCellMinWidth: number = 25;
-  let timelineCellWidth: number = $state(50);
+  const timelineCellMinWidth: number = 20;
   const timelineCellMaxWidth: number = 80;
+
+  let timelineCellWidth: number = $state(50);
+  let selectedFrameX: number = $state(0);
 
   // Functions
   function onTimelineResize(resizeValue: number) {
@@ -18,7 +21,13 @@
 
   function setTimelineCellWidth(value: number) {
     timelineCellWidth = value;
-    console.log({ timelineCellWidth });
+
+    /** Deselect frame x when timeline cell width changes */
+    selectFrameX(0);
+  }
+
+  function selectFrameX(frameX: number) {
+    selectedFrameX = frameX;
   }
 </script>
 
@@ -46,7 +55,7 @@
         onZoomChange={setTimelineCellWidth}
       />
 
-      <Timeline {timelineHeight} {timelineCellWidth} />
+      <Timeline {timelineHeight} {timelineCellWidth} {selectedFrameX} onSelectFrameX={selectFrameX} />
     </ResizablePane>
   </ResizablePaneGroup>
 </main>
