@@ -4,25 +4,18 @@ A CLI tool to generate and manage plugins for the IDAH platform. This tool helps
 
 ## Installation
 
-### Using npx (Recommended for Published Package)
-
-Once published to npm, you can use the CLI without installation:
+### Quick start using npx
 
 ```bash
 # Create a plugin
 npx idah-plugin create audio-plugin ./plugins
 
-# Add backend to existing plugin
-npx idah-plugin backend add audio-plugin
+# Add backend to existing plugin in ./plugins directory
+npx idah-plugin backend add audio-plugin ./plugins
 
 # Get help
 npx idah-plugin --help
 ```
-
-**Benefits:**
-- No installation required
-- Always uses the latest version
-- Perfect for CI/CD and automation
 
 ### Local Development with npm link
 
@@ -132,19 +125,35 @@ This command will:
 Add one or more backend services to an existing plugin:
 
 ```bash
-idah-plugin backend add <plugin_name>
+idah-plugin backend add <plugin_name> [base_path]
 ```
 
-**Example:**
+**Examples:**
 ```bash
+# Add backend to plugin in current directory
 idah-plugin backend add my-awesome-plugin
+# Looks for: ./my-awesome-plugin
+
+# Add backend to plugin in specific directory
+idah-plugin backend add audio-plugin ./plugins
+# Looks for: ./plugins/audio-plugin
 ```
+
+**Parameters:**
+- `<plugin_name>` - (Required) Name of the plugin
+- `[base_path]` - (Optional) Directory containing the plugin (default: current directory)
 
 This command will:
-1. Check if the plugin exists
+1. Check if the plugin exists at the specified location
 2. Prompt you to select which backend service(s) to add
 3. Copy the backend templates and configure them for your plugin
 4. Skip any backend services that already exist
+
+**Output location:** The new backend(s) will be added to `<plugin_name>/backends/<backend_service>/`
+
+For example:
+- Adding "media" service → `<plugin_name>/backends/media/`
+- Adding "sync" service → `<plugin_name>/backends/sync/`
 
 ### Get Help
 
@@ -237,11 +246,11 @@ idah-plugin create custom-dashboard ./plugins
 # First create a frontend-only plugin
 idah-plugin create image-processor ./plugins
 
-# Later, add backend services
-idah-plugin backend add image-processor
+# Later, add backend services (specify base path where plugin is located)
+idah-plugin backend add image-processor ./plugins
 
 # When prompted, select "Media Service"
-# The media backend is now added to your existing plugin
+# The media backend is now added to your existing plugin at ./plugins/image-processor
 ```
 
 ## Development

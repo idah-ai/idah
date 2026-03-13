@@ -102,10 +102,11 @@ async function handleCreate() {
 
 async function handleBackendAdd() {
   const pluginName = args[2]
+  const pluginPath = args[3] // Optional plugin path
 
   if (!pluginName) {
     console.error("Error: Plugin name is required")
-    console.log("Usage: idah-plugin backend add <plugin_name>")
+    console.log("Usage: idah-plugin backend add <plugin_name> [plugin_path]")
     process.exit(1)
   }
 
@@ -124,7 +125,8 @@ async function handleBackendAdd() {
 
   await addBackendToPlugin({
     pluginName,
-    backendServices: servicesResponse.services
+    backendServices: servicesResponse.services,
+    pluginPath
   })
 }
 
@@ -133,13 +135,14 @@ function showHelp() {
 IDAH Plugin Generator
 
 Usage:
-  idah-plugin create <plugin_name> [output_path]    Create a new plugin
-  idah-plugin backend add <plugin_name>             Add backend service(s) to an existing plugin
+  idah-plugin create <plugin_name> [output_path]       Create a new plugin
+  idah-plugin backend add <plugin_name> [base_path]    Add backend service(s) to an existing plugin
 
 Examples:
-  idah-plugin create my-awesome-plugin              Creates ./my-awesome-plugin
-  idah-plugin create audio-plugin ./plugins         Creates ./plugins/audio-plugin
-  idah-plugin backend add my-awesome-plugin
+  idah-plugin create my-awesome-plugin                 Creates ./my-awesome-plugin
+  idah-plugin create audio-plugin ./plugins            Creates ./plugins/audio-plugin
+  idah-plugin backend add my-awesome-plugin            Looks for ./my-awesome-plugin
+  idah-plugin backend add audio-plugin ./plugins       Looks for ./plugins/audio-plugin
 
 Commands:
   create <plugin_name> [output_path]
@@ -149,10 +152,12 @@ Commands:
                            You'll be prompted for display name, description,
                            version, and backend services.
 
-  backend add <plugin_name>
+  backend add <plugin_name> [base_path]
                            Add one or more backend services to an existing
                            plugin. You'll be prompted to select which
                            services to add (media, sync).
+                           Optional base_path specifies the directory containing the plugin
+                           (default: current directory, looks for ./<plugin_name>).
 
 Options:
   -h, --help               Show this help message
