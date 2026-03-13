@@ -1,14 +1,48 @@
 {
-  "name": "idah-plugin-cli",
+  "name": "idah-plugin",
   "version": "1.0.0",
+  "description": "CLI tool to generate and manage plugins for the IDAH platform",
   "type": "module",
+  "main": "./_cli/src/index.js",
   "bin": {
     "idah-plugin": "./_cli/bin/cli.js"
   },
+  "files": [
+    "_cli/bin/",
+    "_cli/src/",
+    "_cli/_template/",
+    "docs/",
+    "README.md"
+  ],
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "prepublishOnly": "npm test"
+  },
+  "keywords": [
+    "idah",
+    "plugin",
+    "generator",
+    "cli",
+    "scaffold",
+    "svelte",
+    "sveltekit",
+    "ruby"
+  ],
+  "author": "Ingedata",
+  "license": "SEE LICENSE IN LICENSE",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ingedata-ph/idah.git",
+    "directory": "plugins_dev"
+  },
+  "bugs": {
+    "url": "https://github.com/ingedata-ph/idah/issues"
+  },
+  "homepage": "https://github.com/ingedata-ph/idah/tree/main/plugins_dev#readme",
+  "engines": {
+    "node": ">=18.0.0"
   },
   "dependencies": {
     "prompts": "^2.4.2"
