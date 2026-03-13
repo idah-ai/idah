@@ -56,7 +56,7 @@ async function handleCreate() {
   const descriptionResponse = await prompts({
     type: "text",
     name: "description",
-    message: "Plugin description"
+    message: "Plugin description (optional)"
   })
 
   if (descriptionResponse.description === undefined) {
