@@ -10,10 +10,11 @@ The Sync service backend registers an export handler that processes dataset expo
 
 ```
 backends/sync/
-├── {plugin_name}.rb        # Main entry point with Sync.init method
-├── {plugin_name}_spec.rb   # Tests for main module
-├── export.rb                # Export logic
-└── export_spec.rb           # Export tests
+└── <plugin_name_underscore>/
+    ├── sync.rb           # Sync service module (registers exporter)
+    ├── sync_spec.rb      # Sync service tests
+    ├── export.rb         # Export/sync logic
+    └── export_spec.rb    # Export tests
 ```
 
 ## Module Structure

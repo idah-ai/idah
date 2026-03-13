@@ -7,7 +7,7 @@ This guide covers frontend development for IDAH plugins using SvelteKit and Svel
 IDAH plugin frontends are built with SvelteKit and Svelte 5, providing a modern, reactive UI framework. Plugins are compiled to UMD bundles and loaded dynamically by the IDAH platform. The Activity Context API provides access to datasets, annotations, tools, and workflow management.
 
 **Technology Stack:**
-- **Framework**: [SvelteKit](https://kit.svelte.dev/) with Svelte 5
+- **Framework**: SvelteKit with Svelte 5
 - **Language**: TypeScript
 - **Build Tool**: Vite
 - **Package Manager**: pnpm (recommended) or npm
@@ -431,7 +431,7 @@ pnpm run prepare
 
 For plugin-specific questions:
 1. Check the IDAH platform documentation
-2. Review other plugin examples in the `plugins/` directory
+2. Review other plugin examples in the [plugins/](../../plugins) directory
 3. Contact the IDAH development team
 
 Happy coding! 🚀

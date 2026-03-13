@@ -21,18 +21,10 @@ backends/
 ├── .rspec                # RSpec configuration
 ├── media/                # Media service (if enabled)
 │   └── <plugin_name_underscore>/
-│       ├── media.rb          # Media service module (registers processor)
-│       ├── media_spec.rb     # Media service tests
-│       ├── processor.rb      # Core processing logic
-│       ├── processor_spec.rb # Processor tests
-│       ├── options.rb        # Options schema and validation
-│       └── options_spec.rb   # Options tests
+│       └── ...
 └── sync/                 # Sync service (if enabled)
     └── <plugin_name_underscore>/
-        ├── sync.rb           # Sync service module (registers exporter)
-        ├── sync_spec.rb      # Sync service tests
-        ├── export.rb         # Export/sync logic
-        └── export_spec.rb    # Export tests
+        └── ...
 ```
 
 **Note:** `<plugin_name_underscore>` is your plugin name in snake_case (e.g., `my_awesome_plugin` for plugin `my-awesome-plugin`).
