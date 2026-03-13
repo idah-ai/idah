@@ -87,9 +87,11 @@
 
   $effect(() => {
     onEditingChange?.(isEditing);
+    return () => onEditingChange?.(false);
   });
   $effect(() => {
     onPointerChange?.(edition_cursor);
+    return () => onPointerChange?.(undefined);
   });
 
   // Update points based on cursor movement (pan)
@@ -362,7 +364,7 @@
     let newBottomRightY = initialBottomRight[Y];
 
     // Determine which point/edge to keep fixed (in unrotated space)
-    let fixedPointUnrotated: Point;
+    let fixedPointUnrotated: Point = [0, 0];
 
     // Handle corner resizing (even indices)
     if (handleIndex % 2 === 0) {
@@ -523,7 +525,7 @@
       as it will have an focus ring when drag or mouse down on bounding box
     -->
     <path
-      d={draw_cmd(displayPoints)}
+      d={draw_cmd(displayPoints as Point[])}
       onmouseenter={() => (over = true)}
       onmouseleave={() => (over = false)}
       style:transform-origin={`${displayCentroid[X] * ratio[X]}px ${displayCentroid[Y] * ratio[Y]}px`}

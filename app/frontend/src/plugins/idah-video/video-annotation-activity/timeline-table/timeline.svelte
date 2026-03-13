@@ -18,7 +18,6 @@
     scale,
     zoom,
     totalFrames,
-    selectedAnnotation,
     onCellHover,
     onSeekFrame,
     onSelectAnnotation,
@@ -31,7 +30,6 @@
     scale: number;
     zoom: number;
     totalFrames: number;
-    selectedAnnotation?: TAnnotationObj;
     onCellHover: (column?: number) => void;
     onSeekFrame: (frame: number) => void;
     onSelectAnnotation: (annotation?: TAnnotationObj) => void;
@@ -66,7 +64,6 @@
         {scale}
         {totalFrames}
         {zoom}
-        {selectedAnnotation}
         {hoveredAnnotation}
         {onSeekFrame}
         onDeleteFrame={onDeleteAnnotation}
