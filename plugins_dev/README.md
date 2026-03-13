@@ -131,76 +131,29 @@ idah-plugin -h
 
 ## Plugin Structure
 
-When you create a plugin, the following structure is generated:
+When you create a plugin, the following high-level structure is generated:
 
 ```
 <plugin_name>/
+├── README.md               # Plugin overview and quick start
 ├── manifest.json           # Plugin metadata and configuration
-├── Gemfile                 # Ruby dependencies
-├── Rakefile                # Rake tasks
+├── Gemfile                 # Ruby dependencies (for backends)
+├── Rakefile                # Build and test tasks
 ├── .gitignore
 ├── .rspec
 ├── backends/               # Backend services (optional)
-│   ├── spec_helper.rb
-│   ├── media/             # Media service backend (if selected)
-│   │   ├── <plugin_name>.rb
-│   │   ├── <plugin_name>_spec.rb
-│   │   ├── options.rb
-│   │   ├── options_spec.rb
-│   │   ├── processor.rb
-│   │   └── processor_spec.rb
-│   └── sync/              # Sync service backend (if selected)
-│       ├── <plugin_name>.rb
-│       ├── <plugin_name>_spec.rb
-│       ├── export.rb
-│       └── export_spec.rb
-└── frontend/               # Frontend application
+│   ├── README.md          # Backend quick start guide
+│   ├── media/             # Media processing service (if selected)
+│   └── sync/              # Data export/sync service (if selected)
+└── frontend/               # Frontend SvelteKit application
+    ├── README.md          # Frontend quick start guide
     ├── package.json
-    ├── svelte.config.js
-    ├── vite.config.ts
-    ├── tsconfig.json
-    ├── pnpm-lock.yaml
-    ├── pnpm-workspace.yaml
-    ├── src/
-    │   ├── app.html
-    │   ├── app.d.ts
-    │   ├── lib/
-    │   │   ├── index.ts
-    │   │   ├── context.ts
-    │   │   ├── assets/
-    │   │   │   └── favicon.svg
-    │   │   └── plugin/
-    │   │       ├── plugin.svelte
-    │   │       └── plugin.css
-    │   └── routes/
-    │       ├── +layout.svelte
-    │       ├── +page.svelte
-    │       └── test_context.ts
-    └── static/
-        ├── robots.txt
-        └── medias/
-            ├── image.jpg
-            └── video.mp4
+    └── src/               # Source code
 ```
 
-## Backend Services
-
-The generator supports two types of backend services. For complete implementation details, see the *[Backend Development Guide](docs/BACKEND_DEVELOPMENT.md)*.
-
-### Media Service
-For plugins that need to process or handle media files (images, videos, etc.). The media backend provides:
-- **Options**: Configuration options for media processing
-- **Processor**: Core logic for media file processing
-- **Specs**: Tests for your media backend
-
-*[→ Read the Media Service Guide](docs/backends/MEDIA_SERVICE.md)* for complete implementation details.
-
-### Sync Service
-For plugins that need to synchronize or export data to external systems. The sync backend provides:
-- **Export**: Logic for data export/synchronization
-- **Specs**: Tests for your sync backend
-
-*[→ Read the Sync Service Guide](docs/backends/SYNC_SERVICE.md)* for complete implementation details.
+For detailed structure information:
+- **[Frontend Structure →](docs/FRONTEND_DEVELOPMENT.md#file-structure)** - Complete frontend directory layout
+- **[Backend Structure →](docs/BACKEND_DEVELOPMENT.md#file-structure)** - Complete backend directory layout for backend services
 
 ## Workflow Examples
 

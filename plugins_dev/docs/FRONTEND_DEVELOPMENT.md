@@ -2,12 +2,53 @@
 
 This guide covers frontend development for IDAH plugins using SvelteKit and Svelte 5.
 
-## Technology Stack
+## Overview
 
+IDAH plugin frontends are built with SvelteKit and Svelte 5, providing a modern, reactive UI framework. Plugins are compiled to UMD bundles and loaded dynamically by the IDAH platform. The Activity Context API provides access to datasets, annotations, tools, and workflow management.
+
+**Technology Stack:**
 - **Framework**: [SvelteKit](https://kit.svelte.dev/) with Svelte 5
 - **Language**: TypeScript
 - **Build Tool**: Vite
 - **Package Manager**: pnpm (recommended) or npm
+
+## File Structure
+
+```
+frontend/
+├── README.md                 # Frontend quick start guide
+├── package.json              # npm dependencies and scripts
+├── pnpm-lock.yaml            # Locked dependencies
+├── pnpm-workspace.yaml       # pnpm workspace configuration
+├── svelte.config.js          # SvelteKit configuration
+├── vite.config.ts            # Vite build configuration
+├── tsconfig.json             # TypeScript configuration
+├── .gitignore                # Git ignore rules
+├── .npmrc                    # npm configuration
+├── src/
+│   ├── app.html              # HTML template
+│   ├── app.d.ts              # TypeScript declarations
+│   ├── lib/
+│   │   ├── index.ts          # Library exports
+│   │   ├── context.ts        # Activity Context interface
+│   │   ├── assets/
+│   │   │   └── favicon.svg   # Favicon
+│   │   └── plugin/
+│   │       ├── plugin.svelte # Main plugin component (your code here!)
+│   │       └── plugin.css    # Plugin styles
+│   └── routes/
+│       ├── +layout.svelte    # Root layout
+│       ├── +page.svelte      # Main page (loads plugin)
+│       └── test_context.ts   # Mock Activity Context for development
+└── static/
+    └── robots.txt            # Robots.txt for SEO
+```
+
+**Key Files:**
+- `src/lib/plugin/plugin.svelte` - **Your main plugin component** - develop your UI here
+- `src/lib/context.ts` - Activity Context TypeScript interface
+- `src/routes/test_context.ts` - Mock context for local development
+- `vite.config.ts` - Build configuration (UMD output for IDAH)
 
 ## Getting Started
 
@@ -30,32 +71,6 @@ pnpm build
 
 # Preview production build
 pnpm preview
-```
-
-## Project Structure
-
-```
-frontend/
-├── src/
-│   ├── lib/
-│   │   ├── plugin/           # Main plugin component
-│   │   │   ├── plugin.svelte # Your plugin UI
-│   │   │   └── plugin.css    # Plugin styles
-│   │   ├── context.ts        # Plugin context/API interface
-│   │   ├── index.ts          # Library exports
-│   │   └── assets/           # Static assets (images, icons, etc.)
-│   ├── routes/
-│   │   ├── +layout.svelte    # Root layout
-│   │   ├── +page.svelte      # Main page (loads plugin)
-│   │   └── test_context.ts   # Mock context for development
-│   ├── app.html              # HTML template
-│   └── app.d.ts              # TypeScript declarations
-├── static/                   # Static files (served as-is)
-│   ├── robots.txt
-├── package.json
-├── vite.config.ts            # Vite configuration
-├── svelte.config.js          # SvelteKit configuration
-└── tsconfig.json             # TypeScript configuration
 ```
 
 ## Development Workflow
