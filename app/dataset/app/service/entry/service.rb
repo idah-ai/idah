@@ -2,7 +2,7 @@
 
 module Entry
   class Service < Verse::Service::Base
-    use entries: Entry::Repository, datasets: Dataset::Repository, projects: Project::Repository
+    use entries: Entry::Repository, datasets: Dataset::Repository, projects: Project::Repository, annotations: Annotation::Repository
     use_system system_datasets_repo: Dataset::Repository, system_entries_repo: Entry::Repository
 
     def index(filter = {}, included: [], page: 1, items_per_page: 1000, sort: nil, query_count: false)
@@ -164,11 +164,11 @@ module Entry
       end
     end
 
-    def duplicate_entries(dataset_id, project_id:, entry_ids: nil, with_annotations: false)
+    def duplicate_entries(dataset_id, project_id:, duping_dataset_id:, entry_ids: nil, with_annotations: false)
       duping_entries = if entry_ids
                          system_entries_repo.index({ id: entry_ids })
                        else
-                         system_entries_repo.index({ dataset_id: dataset_id })
+                         system_entries_repo.index({ dataset_id: duping_dataset_id })
                        end
 
       duping_entries.each do |duping_entry|
@@ -177,9 +177,11 @@ module Entry
 
         now = Time.now
 
+        entry_id = UUIDv7.generate
+
         attributes = {
           **duping_entry.fields,
-          id: UUIDv7.generate,
+          id: entry_id,
           project_id: project_id,
           dataset_id: dataset_id,
           job_id: nil,
@@ -200,7 +202,7 @@ module Entry
         else
           # media needs processing (was in processing or errored) -> trigger new job
           # the event listener will pick up the 'pending' status and start a new job
-          entry_id = entries.create(attributes)
+          entries.create(attributes)
         end
 
         next unless with_annotations

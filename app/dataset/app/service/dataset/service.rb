@@ -112,7 +112,13 @@ module Dataset
         return dataset if duping_dataset.entries_total_count == 0
 
         # fire to dupe every entries if !entry_ids, or dupe only selected entries, before returning
-        datasets.duplicated(dataset_id, project_id: dataset.project_id, entry_ids:, with_annotations:)
+        datasets.duplicated(
+          dataset_id,
+          project_id: dataset.project_id,
+          duping_dataset_id: duping_dataset.id,
+          entry_ids:,
+          with_annotations:
+        )
         return dataset
       end
     end

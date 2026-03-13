@@ -119,9 +119,10 @@ class EntriesExpo < BaseExpo
     dataset_id = params[:resource_id]
     arg = params[:args].first
     project_id = arg[:project_id]
+    duping_dataset_id = arg[:duping_dataset_id]
     entry_ids = arg[:entry_ids]
     with_annotations = arg[:with_annotations]
 
-    service.duplicate_entries(dataset_id, project_id:, entry_ids:, with_annotations:)
+    service.duplicate_entries(dataset_id, project_id:, duping_dataset_id:, entry_ids:, with_annotations:)
   end
 end
