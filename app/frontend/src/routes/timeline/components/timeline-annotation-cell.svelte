@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { cn } from "@/utils";
-
   // Props
   interface Props {
     frameRanges: number[];
@@ -9,7 +7,6 @@
   let { frameRanges, timelineCellWidth }: Props = $props();
 
   // Variables
-  let paddingX = $derived(timelineCellWidth >= 30 ? 8 : 4);
   const annotationHeight = 24;
 
   let rangeLength = $derived(frameRanges.length);
@@ -21,22 +18,18 @@
 <!-- ANNOTATION GROUP -->
 <div
   id="timeline-annotation-cell"
-  class="hover:bg-primary/30 bg-primary/10 absolute translate-x-1 -translate-y-[50%] rounded-sm"
-  style:width="{rangeWidth - paddingX}px"
+  class="hover:bg-primary/30 bg-primary/10 border-primary/50 absolute -translate-y-[50%] rounded-sm border-1"
+  style:width="{rangeWidth}px"
   style:height="{annotationHeight}px"
   style:left="{Math.abs(startOfRange - 1) * timelineCellWidth}px"
 ></div>
 
 <!-- ANNOTATION AT FRAME (INTERPOLATION) -->
-{#each frameRanges as interpolationAtFrame, index (interpolationAtFrame)}
-  {@const isLastFrameRange = frameRanges.length - 1 === index}
+{#each frameRanges as interpolationAtFrame (interpolationAtFrame)}
   <div
-    class={cn(
-      "bg-primary/50 absolute -translate-y-[50%] rounded-sm",
-      isLastFrameRange ? "translate-x-8px]" : "translate-x-[8px]",
-    )}
+    class="bg-primary/50 absolute translate-x-[10%] -translate-y-[50%] rounded-sm"
     style:height="{annotationHeight * 0.6}px"
-    style:width="{timelineCellWidth * 0.7}px"
+    style:width="{timelineCellWidth * 0.8}px"
     style:left="{(interpolationAtFrame - 1) * timelineCellWidth}px"
   ></div>
 {/each}
