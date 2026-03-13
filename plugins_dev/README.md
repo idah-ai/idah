@@ -188,8 +188,8 @@ When you create a plugin, the following high-level structure is generated:
 ```
 
 For detailed structure information:
-- **[Frontend Structure →](https://github.com/ingedata-ph/idah/blob/main/plugins_dev/docs/FRONTEND_DEVELOPMENT.md#file-structure)** - Complete frontend directory layout
-- **[Backend Structure →](https://github.com/ingedata-ph/idah/blob/main/plugins_dev/docs/BACKEND_DEVELOPMENT.md#file-structure)** - Complete backend directory layout for backend services
+- **[Frontend Structure →](docs/FRONTEND_DEVELOPMENT.md#file-structure)** - Complete frontend directory layout
+- **[Backend Structure →](docs/BACKEND_DEVELOPMENT.md#file-structure)** - Complete backend directory layout for backend services
 
 ## Workflow Examples
 
@@ -327,8 +327,8 @@ This generator includes comprehensive documentation:
 
 ### For Plugin Developers
 
-- **[Frontend Development Guide](https://github.com/ingedata-ph/idah/blob/main/plugins_dev/docs/FRONTEND_DEVELOPMENT.md)** - Complete guide for building plugin UIs with SvelteKit, including Activity Context API reference
-- **[Backend Development Guide](https://github.com/ingedata-ph/idah/blob/main/plugins_dev/docs/BACKEND_DEVELOPMENT.md)** - Complete guide for building backend services in Ruby
+- **[Frontend Development Guide](docs/FRONTEND_DEVELOPMENT.md)** - Complete guide for building plugin UIs with SvelteKit, including Activity Context API reference
+- **[Backend Development Guide](docs/BACKEND_DEVELOPMENT.md)** - Complete guide for building backend services in Ruby
 
 ### Generated Plugin Documentation
 
