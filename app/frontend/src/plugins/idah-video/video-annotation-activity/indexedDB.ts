@@ -1,11 +1,12 @@
 import type { AnnotationMetadata, AnnotationObj, AnnotationShape, AnnotationValue } from "@/context/AnnotationContext";
-import { X, Y, type Point, type VideoFrameSelection } from "./VideoAnnotationContext";
+
+import { type VideoFrameSelection } from "./VideoAnnotationContext";
 
 // the current version of IndexedDB, bump incrementally if there's a change
 const currentDBVersion: number = 2;
 
 //test
-const s = {
+const storeDefinition: StoresDefinition = {
   annotations: [
     { index: "start", path: "shape.start", opts: { unique: false } },
     { index: "end", path: "shape.end", opts: { unique: false } },
@@ -32,7 +33,7 @@ export type StoresDefinition = {
   [name: string]: StoreDefinition[];
 };
 
-export async function annotationsIndexedDB(name: string, stores: StoresDefinition = s) {
+export async function annotationsIndexedDB(name: string, stores: StoresDefinition = storeDefinition) {
   return new Promise<AnnotationsIndexedDB>((resolve, reject) => {
     const DBOpenRequest = indexedDB.open(name, currentDBVersion);
 
@@ -71,7 +72,7 @@ export class AnnotationsIndexedDB {
     this.db = db;
   }
 
-  addAnnotations(annotations: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]): Promise<void> {
+  upsertAnnotations(annotations: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]): Promise<void> {
     const transaction = this.db.transaction(["annotations", "keyframes"], "readwrite");
     const astore = transaction.objectStore("annotations");
     const kstore = transaction.objectStore("keyframes");
@@ -136,16 +137,31 @@ export class AnnotationsIndexedDB {
   }
 
   getGroupAnnotations(groupId: string): Promise<AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]> {
-    return new Promise<AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]>((resolve, reject) => {
-      const transaction = this.db.transaction("annotations", "readonly");
-      const store = transaction.objectStore("annotations").index("groupIdIndex");
-      const request = store.getAll(IDBKeyRange.only(groupId));
+    const transaction = this.db.transaction("annotations", "readonly");
+    const store = transaction.objectStore("annotations");
 
-      request.onsuccess = (_) => {
-        const sorted = request.result.sort((a, b) => a.shape.start - b.shape.start);
-        resolve(sorted);
-      };
-      request.onerror = (_) => reject(request.error);
+    const idPromise = new Promise<AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata> | undefined>(
+      (resolve, reject) => {
+        const request = store.get(groupId);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      },
+    );
+
+    const groupPromise = new Promise<AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]>(
+      (resolve, reject) => {
+        const request = store.index("groupIdIndex").getAll(IDBKeyRange.only(groupId));
+        request.onsuccess = () => resolve(request.result || []);
+        request.onerror = () => reject(request.error);
+      },
+    );
+
+    return Promise.all([idPromise, groupPromise]).then(([idResult, groupResults]) => {
+      const allResults = [...groupResults];
+      if (idResult && !allResults.some((r) => r.metadata.id === idResult.metadata.id)) {
+        allResults.push(idResult);
+      }
+      return allResults.sort((a, b) => a.shape.start - b.shape.start);
     });
   }
 
@@ -195,30 +211,6 @@ export class AnnotationsIndexedDB {
     return new Promise<void>((resolve, reject) => {
       request.onerror = (r) => reject(r);
       request.onsuccess = (r) => resolve(console.debug(r));
-    });
-  }
-
-  getBoundedAnnotations(start: number, end: number) {
-    return new Promise<AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]>((resolve, reject) => {
-      const transaction = this.db.transaction("annotations", "readonly");
-      const store = transaction.objectStore("annotations").index("end");
-      const bound = IDBKeyRange.lowerBound(start);
-      const request = store.openCursor(bound);
-
-      const result: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[] = [];
-      request.onsuccess = (_) => {
-        const cursor = request.result;
-        if (cursor) {
-          if (cursor.value.shape.start <= end) {
-            result.push(cursor.value);
-          }
-
-          cursor.continue();
-        } else resolve(result);
-      };
-      request.onerror = (_) => {
-        reject(request.error);
-      };
     });
   }
 
@@ -343,162 +335,6 @@ export class AnnotationsIndexedDB {
       };
       request.onerror = () => {
         reject(request.error);
-      };
-    });
-  }
-
-  interpolated_annotations(frame: number) {
-    return new Promise<AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]>((resolve, reject) => {
-      const transaction = this.db.transaction(["annotations", "keyframes"]);
-
-      const annotationsStore = transaction.objectStore("annotations").index("range");
-      const keyFramesStore = transaction.objectStore("keyframes");
-
-      const annotationsRange = IDBKeyRange.bound([0, frame], [frame, Infinity]);
-      const annotationsRequest = annotationsStore.openCursor(annotationsRange);
-
-      const result: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[] = [];
-      annotationsRequest.onsuccess = () => {
-        const annotationsCursor = annotationsRequest.result;
-
-        if (annotationsCursor) {
-          const annotation = annotationsCursor.value;
-          const keyFramePrevRange = IDBKeyRange.upperBound([annotation.metadata.id, frame]);
-          const keyframePrevRequest = keyFramesStore.openCursor(keyFramePrevRange, "prev");
-
-          const boundary: VideoFrameSelection[] = [];
-          keyframePrevRequest.onsuccess = () => {
-            const keyframePrevCursor = keyframePrevRequest.result;
-
-            if (keyframePrevCursor) {
-              if (keyframePrevCursor.value.annotation == annotation.metadata.id) {
-                boundary[0] = keyframePrevCursor.value;
-
-                const keyFrameNextRange = IDBKeyRange.lowerBound([annotation.metadata.id, frame]);
-                const keyframeNextRequest = keyFramesStore.openCursor(keyFrameNextRange, "next");
-
-                keyframeNextRequest.onsuccess = () => {
-                  const keyFrameNextCursor = keyframeNextRequest.result;
-
-                  if (keyFrameNextCursor) {
-                    if (keyFrameNextCursor.value.annotation == annotation.metadata.id) {
-                      boundary[1] = keyFrameNextCursor.value;
-                    }
-                  }
-
-                  if (boundary[0] && boundary[1]) {
-                    // interpolate from within bounds
-                    if (boundary[0].frame === boundary[1].frame && boundary[0].frame == frame) {
-                      result.push({
-                        ...annotation,
-                        shape: {
-                          ...annotation.shape,
-                          frames: [boundary[0]],
-                        },
-                      });
-                    } else {
-                      const ratio = (frame - boundary[0].frame) / (boundary[1].frame - boundary[0].frame);
-                      annotation.shape.frames = [
-                        {
-                          frame,
-                          points: boundary[1].points.map((point: Point, i: number) => [
-                            // assume order
-                            boundary[0].points[i][X] + (point[X] - boundary[0].points[i][X]) * ratio,
-                            boundary[0].points[i][Y] + (point[Y] - boundary[0].points[i][Y]) * ratio,
-                          ]),
-                        },
-                      ];
-                      result.push(annotation);
-                    }
-                  }
-                };
-              }
-              annotationsCursor.continue();
-            }
-          };
-        }
-      };
-
-      transaction.onerror = () => {
-        reject(transaction.error);
-      };
-      transaction.oncomplete = () => {
-        resolve(result);
-      };
-    });
-  }
-
-  bounded_frames(start: number, end: number) {
-    return new Promise<AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]>((resolve, reject) => {
-      const transaction = this.db.transaction(["annotations", "keyframes"]);
-
-      const annotationsStore = transaction.objectStore("annotations").index("range");
-      const keyFramesStore = transaction.objectStore("keyframes");
-
-      const annotationsRange = IDBKeyRange.bound([0, start], [end, Infinity]);
-      const annotationsRequest = annotationsStore.openCursor(annotationsRange);
-
-      const result: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[] = [];
-      annotationsRequest.onsuccess = () => {
-        const annotationsCursor = annotationsRequest.result;
-        if (annotationsCursor) {
-          const annotation = annotationsCursor.value;
-          const keyFramePrevRange = IDBKeyRange.upperBound([annotation.metadata.id, start]);
-          const keyframePrevRequest = keyFramesStore.openCursor(keyFramePrevRange, "prev");
-
-          const boundary: VideoFrameSelection[] = [];
-          keyframePrevRequest.onsuccess = () => {
-            const keyframePrevCursor = keyframePrevRequest.result;
-
-            if (keyframePrevCursor) {
-              if (keyframePrevCursor.value.annotation == annotation.metadata.id) {
-                boundary[0] = keyframePrevCursor.value;
-              }
-            }
-
-            const keyFrameNextRange = IDBKeyRange.lowerBound([annotation.metadata.id, end]);
-            const keyframeNextRequest = keyFramesStore.openCursor(keyFrameNextRange, "next");
-
-            keyframeNextRequest.onsuccess = () => {
-              const keyFrameNextCursor = keyframeNextRequest.result;
-
-              if (keyFrameNextCursor) {
-                if (keyFrameNextCursor.value.annotation == annotation.metadata.id) {
-                  boundary[1] = keyFrameNextCursor.value;
-                }
-              }
-
-              if (boundary.length) {
-                const range = IDBKeyRange.bound(
-                  [annotation.metadata.id, boundary[0].frame],
-                  [annotation.metadata.id, boundary[1] ? boundary[1].frame : boundary[0].frame],
-                );
-
-                const response = keyFramesStore.getAll(range);
-
-                response.onsuccess = () => {
-                  annotation.shape = {
-                    ...annotation.shape,
-                    frames: response.result,
-                  };
-                  result.push(annotation);
-                };
-
-                response.onerror = () => {
-                  reject(response.error);
-                };
-              }
-            };
-            annotationsCursor.continue();
-          };
-        }
-      };
-
-      transaction.onerror = () => {
-        reject(transaction.error);
-      };
-      transaction.oncomplete = () => {
-        resolve(result);
       };
     });
   }
