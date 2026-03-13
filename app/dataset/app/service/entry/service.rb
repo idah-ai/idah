@@ -164,9 +164,9 @@ module Entry
       end
     end
 
-    def duplicate_entries(dataset_id, project_id:, duping_dataset_id:, entry_ids: nil, with_annotations: false)
+    def duplicate_entries(dataset_id, duping_dataset_id:, entry_ids: nil, with_annotations: false)
       duping_entries = if entry_ids
-                         system_entries_repo.index({ id: entry_ids })
+                         system_entries_repo.index({ id: entry_ids, dataset_id: duping_dataset_id })
                        else
                          system_entries_repo.index({ dataset_id: duping_dataset_id })
                        end
@@ -182,7 +182,7 @@ module Entry
         attributes = {
           **duping_entry.fields,
           id: entry_id,
-          project_id: project_id,
+          project_id: duping_entry.project_id,
           dataset_id: dataset_id,
           job_id: nil,
           wf_step: "start",
@@ -213,7 +213,7 @@ module Entry
           attributes = {
             **annotation.fields,
             id: UUIDv7.generate,
-            # project_id: project_id,
+            project_id: duping_entry.project_id,
             dataset_id: dataset_id,
             entry_id: entry_id,
             # keeping original created_at/updated_at ? skip them if so
