@@ -81,14 +81,11 @@ module Dataset
       end
     end
 
-    # TODO: add spec tests
-    # TODO: TBC; in this case, dataset is duplicating by selecting entry ids
     def duplicate(dataset_id, entry_ids: nil, with_annotations: false)
       duping_dataset = datasets.find!(dataset_id)
 
       authorize_creation(duping_dataset.project_id) # permission check
 
-      # TODO: project relationship ? is cross project duplication allowed ? override and pass project_id if so
       datasets.transaction do
         now = Time.now
 
@@ -96,7 +93,7 @@ module Dataset
           {
             **duping_dataset.fields,
             id: UUIDv7.generate,
-            # project_id: project_id, // this might be needed for cross-project duping
+            # project_id: project_id, # TODO: is cross project duplication allowed ? override and pass project_id if so
             name: "#{duping_dataset.name} - duplicated",
             status: "pending",
             entries_total_count: 0,
@@ -114,7 +111,6 @@ module Dataset
         # fire to dupe every entries if !entry_ids, or dupe only selected entries, before returning
         datasets.duplicated(
           dataset_id,
-          project_id: dataset.project_id,
           duping_dataset_id: duping_dataset.id,
           entry_ids:,
           with_annotations:

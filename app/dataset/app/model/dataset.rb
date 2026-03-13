@@ -220,7 +220,7 @@ module Dataset
     end
 
     event(name: "duplicated")
-    def duplicated(dataset_id, project_id:, duping_dataset_id:, entry_ids: nil, with_annotations: false)
+    def duplicated(dataset_id, duping_dataset_id:, entry_ids: nil, with_annotations: false)
       # NOTE: just publish the event
     end
 
