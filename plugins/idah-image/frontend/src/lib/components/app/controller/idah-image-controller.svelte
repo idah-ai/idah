@@ -69,7 +69,7 @@ import { onMount } from "svelte";
   });
 </script>
 
-<div class="relative flex h-full w-full flex-col">
+<div class="relative flex h-full w-full flex-col ">
   <Popover
     open={showPopOver}
     onOpenChange={(open: boolean) => {
@@ -80,6 +80,7 @@ import { onMount } from "svelte";
 
     <PopoverContent class="min-w-80 p-0">
       <div class="h-auto max-h-86 overflow-y-auto p-2">
+      <IdahImageSidebar />
       </div>
 
       <div class=" flex justify-end gap-2 p-2">
@@ -103,7 +104,7 @@ import { onMount } from "svelte";
     </PopoverContent>
   </Popover>
 
-  <div id="plugin::idah-video" class="flex min-h-0 w-full flex-1">
+  <div id="plugin::idah-image" class="flex min-h-0 w-full flex-1">
     <ResizablePaneGroup direction="vertical">
       <ResizablePane defaultSize={60} minSize={15}>
         <ResizablePaneGroup direction="horizontal">
