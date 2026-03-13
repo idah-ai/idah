@@ -73,14 +73,14 @@ IDAH supports two plugin directories for different environments:
 - **Use for:** Experimental plugins, work-in-progress features, testing
 
 ### Production Plugins
-**Path:** [`./plugins`](../plugins)
+**Path:** [`../plugins`](../plugins)
 
 - **Purpose:** Production-ready plugins
 - **Environment:** Both development and production
 - **Loading:** Always loaded in all environments
 - **Use for:** Stable, production-ready plugins
 
-**Recommendation:** Start developing in `./plugins_dev/plugins`, and move to `./plugins` when ready for production.
+**Recommendation:** Start developing in `./plugins_dev/plugins`, and move to `../plugins` when ready for production.
 
 ## Commands
 

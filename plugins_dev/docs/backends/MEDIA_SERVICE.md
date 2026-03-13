@@ -75,7 +75,7 @@ module YourPlugin
 
     def transform_media(input_path)
       # Your processing logic here
-      # Return an IO object or file path
+      # Return an IO object (e.g., File.open or StringIO)
     end
   end
 end
@@ -109,17 +109,27 @@ input_path = context.download_original
 Uploads processed media:
 
 ```ruby
+# Upload from a file on disk
 context.upload_media(
-  File.open("output.jpg"),  # IO object or file path
+  File.open("output.jpg"),  # IO object
   "thumbnail.jpg",          # Key/identifier
   "image/jpeg"              # MIME type
+)
+
+# Upload from in-memory data
+context.upload_media(
+  StringIO.new(image_data), # StringIO for raw data
+  "thumbnail.jpg",
+  "image/jpeg"
 )
 ```
 
 **Parameters:**
-- `io` - IO object, file path, or string
+- `io` - IO object (e.g., `File.open(path)`, `StringIO.new(data)`). If a String is passed, it will be treated as raw content, not a file path.
 - `key` - Identifier for the processed media (e.g., "thumbnail.jpg", "720p.mp4")
 - `mime_type` - MIME type of the processed media
+
+**Note:** If you have a file path, you must open it first with `File.open(path)` or use `File.open(path, "rb")` for binary files.
 
 #### `progress=(value) → void`
 
@@ -297,7 +307,7 @@ See the **idah-video** plugin for a complete real-world implementation:
 
 - [Ruby Documentation](https://ruby-doc.org/)
 - [RSpec Documentation](https://rspec.info/)
-- [idah-video Example](../../../idah-video/backends/media/)
+- [idah-video Example](../../../plugins/idah-video/backends/media/)
 
 ## Back to Main Guide
 

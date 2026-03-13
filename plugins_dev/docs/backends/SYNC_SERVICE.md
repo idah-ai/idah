@@ -95,12 +95,15 @@ Iterate through datasets (automatically updates progress):
 ```ruby
 context.datasets.each do |dataset|
   # dataset is a DatasetContext object
-  # Access dataset data: dataset.dataset
+  # Access dataset data: dataset.record
   # Get entries: dataset.entries(filter)
 
-  # Progress is auto-updated: 0%, 50%, 100% for 2 datasets
+  # Progress is auto-updated after each dataset:
+  # For 2 datasets: 0.5 (50%), 1.0 (100%)
 end
 ```
+
+**Note:** Progress is automatically updated as you iterate. Manual progress updates are only needed if you don't use the `datasets` iterator.
 
 ## Data Context Objects
 
@@ -111,10 +114,10 @@ When iterating through datasets, entries, annotations, and media, you receive co
 ```ruby
 context.datasets.each do |dataset|
   # Access dataset data
-  dataset_data = dataset.dataset
-  dataset_id = dataset.dataset.id
-  dataset_name = dataset.dataset.name
-  modality = dataset.dataset.modality
+  dataset_data = dataset.record
+  dataset_id = dataset.record.id
+  dataset_name = dataset.record.name
+  modality = dataset.record.modality
 
   # Get all entries in the dataset
   entries = dataset.entries
@@ -315,8 +318,8 @@ module YourPlugin
     def export_dataset(dataset)
       # Your export logic
       {
-        id: dataset.id,
-        name: dataset.name,
+        id: dataset.record.id,
+        name: dataset.record.name,
         # ... export data
       }
     end
@@ -463,7 +466,7 @@ def export(context)
     begin
       export_dataset(dataset)
     rescue StandardError => e
-      Verse.logger.warn "Failed to export dataset #{dataset.id}: #{e.message}"
+      Verse.logger.warn "Failed to export dataset #{dataset.record.id}: #{e.message}"
       # Continue with next dataset or fail completely
     end
   end
