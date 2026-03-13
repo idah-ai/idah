@@ -163,5 +163,64 @@ module Entry
         system_entries_repo.update!(entry.id, { assigned_to_id: nil })
       end
     end
+
+    def duplicate_entries(dataset_id, project_id:, entry_ids: nil, with_annotations: false)
+      duping_entries = if entry_ids
+                         system_entries_repo.index({ id: entry_ids })
+                       else
+                         system_entries_repo.index({ dataset_id: dataset_id })
+                       end
+
+      duping_entries.each do |duping_entry|
+        # check if media is already successfully processed
+        is_media_ready = %w[ready in_progress completed].include?(duping_entry.status)
+
+        now = Time.now
+
+        attributes = {
+          **duping_entry.fields,
+          id: UUIDv7.generate,
+          project_id: project_id,
+          dataset_id: dataset_id,
+          job_id: nil,
+          wf_step: "start",
+          status: is_media_ready ? "ready" : "pending",
+          assigned_to_id: nil,
+          submitted_by_id: nil,
+          reviewed_by_id: nil,
+          created_at: now,
+          updated_at: now,
+        }
+
+        if is_media_ready
+          # INFO: media is already good -> skip processing job
+          entries.no_event do
+            entries.create(attributes)
+          end
+        else
+          # media needs processing (was in processing or errored) -> trigger new job
+          # the event listener will pick up the 'pending' status and start a new job
+          entry_id = entries.create(attributes)
+        end
+
+        next unless with_annotations
+
+        entry_annotations = annotations.index({ entry_id: duping_entry.id })
+
+        entry_annotations.each do |annotation|
+          attributes = {
+            **annotation.fields,
+            id: UUIDv7.generate,
+            # project_id: project_id,
+            dataset_id: dataset_id,
+            entry_id: entry_id,
+            # keeping original created_at/updated_at ? skip them if so
+            # created_at: now,
+            # updated_at: now,
+          }
+          annotations.create(attributes)
+        end
+      end
+    end
   end
 end

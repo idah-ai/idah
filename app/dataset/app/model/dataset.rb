@@ -219,6 +219,11 @@ module Dataset
       end
     end
 
+    event(name: "duplicated")
+    def duplicated(dataset_id, project_id:, entry_ids: nil, with_annotations: false)
+      # NOTE: just publish an event
+    end
+
     private
 
     def add_event_metadata(**opts)
