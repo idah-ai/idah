@@ -497,12 +497,18 @@ def export(context)
 end
 ```
 
+
+## Real-World Example
+
+See the **UPD Exporter** for a complete real-world implementation:
+- [View UPD Exporter on GitHub](https://github.com/ingedata-ph/idah/tree/main/app/sync/app/service/exports/upd/)
+
 ## Resources
 
 - [Ruby Documentation](https://ruby-doc.org/)
 - [RSpec Documentation](https://rspec.info/)
-- [Net::HTTP Guide](https://ruby-doc.org/stdlib/libdoc/net/http/rdoc/Net/HTTP.html)
+- [IDAH Repository](https://github.com/ingedata-ph/idah)
 
 ## Back to Main Guide
 
-[← Backend Development Guide](../BACKEND_DEVELOPMENT.md)
+[← Backend Development Guide](https://github.com/ingedata-ph/idah/blob/main/plugins_dev/docs/BACKEND_DEVELOPMENT.md)

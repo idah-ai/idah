@@ -430,8 +430,8 @@ pnpm run prepare
 ## Support
 
 For plugin-specific questions:
-1. Check the IDAH platform documentation
-2. Review other plugin examples in the [plugins/](../../plugins) directory
+1. Check the [IDAH platform documentation](https://github.com/ingedata-ph/idah)
+2. Review other plugin examples in the [plugins directory on GitHub](https://github.com/ingedata-ph/idah/tree/main/plugins)
 3. Contact the IDAH development team
 
 Happy coding! 🚀

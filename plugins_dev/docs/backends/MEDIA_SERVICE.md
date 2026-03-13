@@ -301,14 +301,14 @@ end
 ## Real-World Example
 
 See the **idah-video** plugin for a complete real-world implementation:
-- `plugins/idah-video/backends/media/`
+- [View idah-video media backend on GitHub](https://github.com/ingedata-ph/idah/tree/main/plugins/idah-video/backends/media/)
 
 ## Resources
 
 - [Ruby Documentation](https://ruby-doc.org/)
 - [RSpec Documentation](https://rspec.info/)
-- [idah-video Example](../../../plugins/idah-video/backends/media/)
+- [IDAH Repository](https://github.com/ingedata-ph/idah)
 
 ## Back to Main Guide
 
-[← Backend Development Guide](../BACKEND_DEVELOPMENT.md)
+[← Backend Development Guide](https://github.com/ingedata-ph/idah/blob/main/plugins_dev/docs/BACKEND_DEVELOPMENT.md)

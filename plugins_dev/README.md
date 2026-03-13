@@ -64,7 +64,7 @@ node _cli/bin/cli.js <command>
 IDAH supports two plugin directories for different environments:
 
 ### Development Plugins
-**Path:** [`./plugins_dev/plugins`](./plugins)
+**Path:** [`./plugins_dev/plugins`](https://github.com/ingedata-ph/idah/tree/main/plugins_dev/plugins)
 
 - **Purpose:** Development and testing
 - **Environment:** Local development only
@@ -73,7 +73,7 @@ IDAH supports two plugin directories for different environments:
 - **Use for:** Experimental plugins, work-in-progress features, testing
 
 ### Production Plugins
-**Path:** [`../plugins`](../plugins)
+**Path:** [`./plugins`](https://github.com/ingedata-ph/idah/tree/main/plugins)
 
 - **Purpose:** Production-ready plugins
 - **Environment:** Both development and production
@@ -188,8 +188,8 @@ When you create a plugin, the following high-level structure is generated:
 ```
 
 For detailed structure information:
-- **[Frontend Structure →](docs/FRONTEND_DEVELOPMENT.md#file-structure)** - Complete frontend directory layout
-- **[Backend Structure →](docs/BACKEND_DEVELOPMENT.md#file-structure)** - Complete backend directory layout for backend services
+- **[Frontend Structure →](https://github.com/ingedata-ph/idah/blob/main/plugins_dev/docs/FRONTEND_DEVELOPMENT.md#file-structure)** - Complete frontend directory layout
+- **[Backend Structure →](https://github.com/ingedata-ph/idah/blob/main/plugins_dev/docs/BACKEND_DEVELOPMENT.md#file-structure)** - Complete backend directory layout for backend services
 
 ## Workflow Examples
 
@@ -327,8 +327,8 @@ This generator includes comprehensive documentation:
 
 ### For Plugin Developers
 
-- **[Frontend Development Guide](docs/FRONTEND_DEVELOPMENT.md)** - Complete guide for building plugin UIs with SvelteKit, including Activity Context API reference
-- **[Backend Development Guide](docs/BACKEND_DEVELOPMENT.md)** - Complete guide for building backend services in Ruby
+- **[Frontend Development Guide](https://github.com/ingedata-ph/idah/blob/main/plugins_dev/docs/FRONTEND_DEVELOPMENT.md)** - Complete guide for building plugin UIs with SvelteKit, including Activity Context API reference
+- **[Backend Development Guide](https://github.com/ingedata-ph/idah/blob/main/plugins_dev/docs/BACKEND_DEVELOPMENT.md)** - Complete guide for building backend services in Ruby
 
 ### Generated Plugin Documentation
 

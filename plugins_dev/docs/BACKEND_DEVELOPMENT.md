@@ -37,13 +37,13 @@ IDAH plugins can include **one, all, or none** of these backend services. You ca
 
 Handles media file processing (images, videos, audio, etc.). Process original media files and generate thumbnails, previews, or transformations.
 
-**[→ Read the Media Service Guide](backends/MEDIA_SERVICE.md)**
+**[→ Read the Media Service Guide](https://github.com/ingedata-ph/idah/blob/main/plugins_dev/docs/backends/MEDIA_SERVICE.md)**
 
 ### Sync Service
 
 Handles data export and synchronization with external systems. Export datasets, entries, annotations, and media to various formats or external APIs.
 
-**[→ Read the Sync Service Guide](backends/SYNC_SERVICE.md)**
+**[→ Read the Sync Service Guide](https://github.com/ingedata-ph/idah/blob/main/plugins_dev/docs/backends/SYNC_SERVICE.md)**
 
 ## Testing
 
@@ -191,8 +191,8 @@ end
 
 ## Support
 
-1. Check existing plugin examples in [plugins/](../../plugins) directory
-2. Review the IDAH platform documentation
+1. Check existing plugin examples in the [plugins directory on GitHub](https://github.com/ingedata-ph/idah/tree/main/plugins)
+2. Review the [IDAH platform documentation](https://github.com/ingedata-ph/idah)
 3. Contact the IDAH development team
 
 Happy coding! 🚀
