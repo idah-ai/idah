@@ -311,4 +311,4 @@ See the **idah-video** plugin for a complete real-world implementation:
 
 ## Back to Main Guide
 
-[← Backend Development Guide](https://github.com/ingedata-ph/idah/blob/main/plugins_dev/docs/BACKEND_DEVELOPMENT.md)
+[← Backend Development Guide](../BACKEND_DEVELOPMENT.md)
