@@ -19,10 +19,10 @@ module Exports
           dataset.entries.each do |entry|
             include_medias = context.options[:include_medias]
 
-            append_entry(file_path, dataset.dataset.id, entry, include_medias)
+            append_entry(file_path, dataset.record.id, entry, include_medias)
 
             entry.annotations.each do |annotation|
-              append_annotation(file_path, entry.entry.id, annotation)
+              append_annotation(file_path, entry.record.id, annotation)
             end
 
             # Determine which medias to include based on the option:
@@ -58,7 +58,7 @@ module Exports
 
       def append_dataset(file_path, dataset)
         metadata = capitalized_dashed_keys(
-          dataset.dataset.data[:attributes].slice(
+          dataset.record.data[:attributes].slice(
             :labeling_configuration,
             :workflow_configuration,
             :labels,
@@ -75,9 +75,9 @@ module Exports
         # Create dataset in UPD
         system(
           "bin/updcli-static --input #{file_path} " \
-          "dataset create --id \"#{dataset.dataset.id}\" "\
-          "--name \"#{dataset.dataset.name}\" "\
-          "--modality #{dataset.dataset.modality} "\
+          "dataset create --id \"#{dataset.record.id}\" "\
+          "--name \"#{dataset.record.name}\" "\
+          "--modality #{dataset.record.modality} "\
           "--metadata '#{metadata.to_json}'",
           exception: true
         )
@@ -88,16 +88,16 @@ module Exports
         # otherwise use external URL of Media service of IDAH
         media_url =
           if ["original", "all"].include?(include_medias)
-            "local:#{entry.entry.resource}"
+            "local:#{entry.record.resource}"
           else
             URI.join(
               ENV.fetch("IDAH_URL"),
-              "api/v1/media/medias/files/#{entry.entry.resource}"
+              "api/v1/media/medias/files/#{entry.record.resource}"
             )
           end
 
         metadata = capitalized_dashed_keys(
-          entry.entry.data[:attributes].slice(
+          entry.record.data[:attributes].slice(
             :priority,
             :wf_step,
             :status,
@@ -113,7 +113,7 @@ module Exports
         # Create entry in UPD
         system(
           "bin/updcli-static --input #{file_path} " \
-          "entry create --id \"#{entry.entry.id}\" "\
+          "entry create --id \"#{entry.record.id}\" "\
           "--dataset_id \"#{dataset_id}\" "\
           "--url \"#{media_url}\" "\
           "--metadata '#{metadata.to_json}'",
@@ -122,9 +122,9 @@ module Exports
       end
 
       def append_annotation(file_path, entry_id, annotation)
-        attributes = annotation.annotation.data[:attributes]
+        attributes = annotation.record.data[:attributes]
         metadata = attributes[:metadata] || {}
-        dimensions = annotation.annotation.dimensions
+        dimensions = annotation.record.dimensions
         type = dimensions.delete(:type)
 
         metadata = capitalized_dashed_keys(metadata).merge(
@@ -138,18 +138,18 @@ module Exports
         # Create annotation in UPD
         system(
           "bin/updcli-static --input #{file_path} " \
-          "annotation create --id \"#{annotation.annotation.id}\" "\
+          "annotation create --id \"#{annotation.record.id}\" "\
           "--entry_id \"#{entry_id}\" "\
           "--type \"#{type}\" "\
           "--shape '#{dimensions.to_json}' "\
-          "--annotation '#{annotation.annotation.annotation.to_json}' "\
+          "--annotation '#{annotation.record.annotation.to_json}' "\
           "--metadata '#{metadata.to_json}'",
           exception: true
         )
       end
 
       def append_media(file_path, media)
-        filename = media.media.filename
+        filename = media.record.filename
         extension = File.extname(filename)
 
         base_name = File.basename(filename, extension)
@@ -163,10 +163,10 @@ module Exports
         # Create media in UPD
         system(
           "bin/updcli-static --input #{file_path} " \
-          "media create --id \"#{media.media.resource}\" "\
+          "media create --id \"#{media.record.resource}\" "\
           "--file \"#{tempfile.path}\" "\
-          "--key \"#{media.media.key}\" "\
-          "--mimetype \"#{media.media.mime_type}\"",
+          "--key \"#{media.record.key}\" "\
+          "--mimetype \"#{media.record.mime_type}\"",
           exception: true
         )
       end

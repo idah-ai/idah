@@ -2,16 +2,16 @@
 
 module Exports
   class MediaContext
-    attr_reader :media
+    attr_reader :record
 
     def initialize(media)
-      @media = media
+      @record = media
     end
 
     def download
       Api[:idah].media.medias.files(
-        resource: @media.resource,
-        key: @media.key,
+        resource: @record.resource,
+        key: @record.key,
       )
     end
   end
