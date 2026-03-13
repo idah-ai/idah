@@ -44,6 +44,7 @@ For detailed documentation on backend development, see:
 
 - **[Backend Development Guide](https://github.com/ingedata-ph/idah/tree/main/plugins_dev/docs/BACKEND_DEVELOPMENT.md)** - Complete guide with examples and best practices
 - **[idah-video Plugin](https://github.com/ingedata-ph/idah/tree/main/plugins/idah-video/backends/media)** - Real-world example of a media backend implementation
+- **[UPD Exporter](https://github.com/ingedata-ph/idah/tree/main/app/sync/app/service/exports/upd/)** - Real-world example of a sync backend exporter
 
 ## Running Tests
 
