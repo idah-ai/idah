@@ -19,7 +19,7 @@
   export let annotations:
     | AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[] = [];
 
-  export let mode: string;
+  // export let mode: string;
 
   export let onSelectAnnotation: (
     annotation?: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>
@@ -49,7 +49,7 @@
       <img
         bind:this={image}
         src={src}
-        alt="image"
+        alt=""
         on:load={handleLoad}
         class="block max-w-full select-none pointer-events-none"
       />

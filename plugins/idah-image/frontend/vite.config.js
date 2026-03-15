@@ -11,6 +11,7 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         $lib: path.resolve("./src/lib"),
+        $assets: path.resolve("./src/assets"),
       },
     },
     build: {

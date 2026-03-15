@@ -10,8 +10,8 @@ import { onMount } from "svelte";
   import ResizableHandle from "$lib/components/ui/resizable/resizable-handle.svelte";
   import ResizablePaneGroup from "$lib/components/ui/resizable/resizable-pane-group.svelte";
   
+  import test from "$assets/test.jpg";
   import { DEFAULT_MODE, IDAH_IMAGE_BOUNDING_BOX, IDAH_IMAGE_POLYGON, IDAH_NOTE } from "$lib/components/app/controller/idah-image-controller.types";
-  import test from "../../../../assets/test.jpg";
   import type { IActivityContext } from "../../../../context";
   import IdahImageOverlay from "../overlay/idah-image-overlay.svelte";
 
