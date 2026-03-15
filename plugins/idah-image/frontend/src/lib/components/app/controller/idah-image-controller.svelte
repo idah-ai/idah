@@ -10,8 +10,10 @@ import { onMount } from "svelte";
   import ResizableHandle from "$lib/components/ui/resizable/resizable-handle.svelte";
   import ResizablePaneGroup from "$lib/components/ui/resizable/resizable-pane-group.svelte";
   
-    import { DEFAULT_MODE, IDAH_IMAGE_BOUNDING_BOX, IDAH_IMAGE_POLYGON, IDAH_NOTE } from "$lib/components/app/controller/idah-image-controller.types";
-    import type { IActivityContext } from "../../../../context";
+  import { DEFAULT_MODE, IDAH_IMAGE_BOUNDING_BOX, IDAH_IMAGE_POLYGON, IDAH_NOTE } from "$lib/components/app/controller/idah-image-controller.types";
+  import test from "../../../../assets/test.jpg";
+  import type { IActivityContext } from "../../../../context";
+  import IdahImageOverlay from "../overlay/idah-image-overlay.svelte";
 
 
     // Props
@@ -118,12 +120,15 @@ import { onMount } from "svelte";
             <ResizableHandle withHandle />
           -->
 
-          <ResizablePane defaultSize={75}>
-            <section id="video-section" class="flex h-full w-full flex-1">
-                <!-- container context ?-->
+         <ResizablePane defaultSize={75}>
+  <section id="video-section" class="flex h-full w-full flex-1">
 
-            </section>
-          </ResizablePane>
+    <IdahImageOverlay
+      src={test}
+    />
+
+  </section>
+</ResizablePane>
         </ResizablePaneGroup>
       </ResizablePane>
 
