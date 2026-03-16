@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
-  import IdahImageSidebar from "$lib/components/app/sidebar/idah-image-sidebar.svelte";
+  import ImageSidebar from "$lib/components/app/sidebar/image-sidebar.svelte";
   import Button from "$lib/components/ui/button/button.svelte";
   import PopoverContent from "$lib/components/ui/popover/popover-content.svelte";
   import PopoverTrigger from "$lib/components/ui/popover/popover-trigger.svelte";
@@ -11,13 +11,13 @@
   import ResizablePaneGroup from "$lib/components/ui/resizable/resizable-pane-group.svelte";
 
   import {
-    DEFAULT_MODE,
-    IDAH_IMAGE_BOUNDING_BOX,
-    IDAH_IMAGE_POLYGON,
-    IDAH_NOTE,
-  } from "$lib/components/app/controller/idah-image-controller.types";
+      DEFAULT_MODE,
+      IMAGE_BOUNDING_BOX,
+      IMAGE_NOTE,
+      IMAGE_POLYGON,
+  } from "$lib/components/app/controller/image-controller.types";
+  import ImageOverlay from "$lib/components/app/overlay/image-overlay.svelte";
   import type { IActivityContext } from "../../../../context";
-  import IdahImageOverlay from "../overlay/idah-image-overlay.svelte";
   import test from "./test.png";
 
   // Props
@@ -48,21 +48,21 @@
       },
       {
         label: "Bounding Box",
-        type: IDAH_IMAGE_BOUNDING_BOX,
+        type: IMAGE_BOUNDING_BOX,
         iconName: "vector-square",
         disabled: !["annotate", "review"].includes(context.workflowStep),
         handleClick: () => context.commands.run("tools.bounding_box"),
       },
       {
         label: "Polygon",
-        type: IDAH_IMAGE_POLYGON,
+        type: IMAGE_POLYGON,
         iconName: "polygon",
         disabled: !["annotate", "review", "done"].includes(context.workflowStep), // Note: Only allow to create note when workflow steps are "annotate" and "review"
         handleClick: () => context.commands.run("tools.polygon"),
       },
       {
         label: "Notes",
-        type: IDAH_NOTE,
+        type: IMAGE_NOTE,
         iconName: "message-circle",
         disabled: !["annotate", "review", "done"].includes(context.workflowStep), // Note: Only allow to create note when workflow steps are "annotate" and "review"
         handleClick: () => context.commands.run("tools.note"),
@@ -118,7 +118,7 @@
 
     <PopoverContent class="min-w-80 p-0">
       <div class="h-auto max-h-86 overflow-y-auto p-2">
-        <IdahImageSidebar />
+        <ImageSidebar />
       </div>
 
       <div class="flex justify-end gap-2 p-2">
@@ -137,7 +137,7 @@
         <ResizablePaneGroup direction="horizontal">
           <!-- LEFT SIDEBAR -->
           <ResizablePane minSize={14} defaultSize={20} maxSize={20}>
-            <IdahImageSidebar />
+            <ImageSidebar />
           </ResizablePane>
 
           <ResizableHandle withHandle />
@@ -145,7 +145,7 @@
           <!-- IMAGE EDITOR -->
           <ResizablePane defaultSize={60}>
             <section id="image-section" class="flex h-full w-full">
-              <IdahImageOverlay src={test} />
+              <ImageOverlay src={test} />
             </section>
           </ResizablePane>
 
@@ -153,7 +153,7 @@
 
           <!-- RIGHT SIDEBAR -->
           <ResizablePane minSize={14} defaultSize={20} maxSize={20}>
-            <IdahImageSidebar />
+            <ImageSidebar />
           </ResizablePane>
         </ResizablePaneGroup>
       </ResizablePane>

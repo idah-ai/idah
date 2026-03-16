@@ -3,8 +3,6 @@
 
   import type { AnnotationMetadata, AnnotationObj, AnnotationShape, AnnotationValue } from "./AnnotationContext";
 
-  // import type { Point } from "./VideoAnnotationContext";
-
   export let src: string;
 
   export let selected: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata> | undefined;

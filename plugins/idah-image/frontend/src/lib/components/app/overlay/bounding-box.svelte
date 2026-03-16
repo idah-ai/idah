@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { IDAH_NOTE } from "$lib/components/app/controller/idah-image-controller.types";
-  import { X, Y, type Point } from "./VideoAnnotationContext";
+  import { IMAGE_NOTE } from "$lib/components/app/controller/image-controller.types";
+  import { X, Y, type Point } from "$lib/components/app/overlay/image-annotation-context";
 
   let {
     ratio = [1, 1],
@@ -314,7 +314,7 @@
 
   let edition_cursor = $derived.by(() => {
     if (isEditing) return "cursor-none";
-    if (mode === IDAH_NOTE) return "cursor-note";
+    if (mode === IMAGE_NOTE) return "cursor-note";
     if (over) return editable ? "cursor-grab" : "cursor-pointer";
   });
 
