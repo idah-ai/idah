@@ -2,7 +2,7 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
-  import { setContext, type Snippet } from "svelte";
+  import { onMount, setContext, type Snippet } from "svelte";
 
   import AddNewDatasetButton from "@/components/app/datasets/buttons/add-new-dataset-button.svelte";
   import SelectedDatasetsDropdownMenu from "@/components/app/datasets/dropdowns/selected-datasets-dropdown-menu.svelte";
@@ -17,7 +17,10 @@
   import { selectedDatasets } from "@/components/app/datasets/stores";
   import { projectTabs, type ProjectTab } from "@/components/app/projects/tabs/project.tabs";
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
+  import { authStatus } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
+
+  import type { ProjectMemberScope } from "@/security/types";
 
   // Props
   interface Props {
@@ -27,6 +30,7 @@
 
   // Variables
   let projectId: string = page.params.projectId as string;
+  let tabs = $state(projectTabs);
   let activeTab: ProjectTab = $derived(page.url.pathname.split("/").pop() as ProjectTab);
 
   // Reactive variables
@@ -37,6 +41,22 @@
 
   $effect(() => {
     setContext("project", project);
+  });
+
+  // Lifecycle
+  onMount(async () => {
+    const currentAccount = $authStatus.authContext;
+    const as_project_owner: { as_user: ProjectMemberScope } = {
+      as_user: {
+        projectId,
+        projectMemberRoles: ["project_owner"],
+      },
+    };
+    const canReadExport = await currentAccount?.can("read", "sync:exports", ["as_org_owner", as_project_owner]);
+
+    if (!canReadExport) {
+      tabs = projectTabs.filter((tab) => tab.value !== "exports");
+    }
   });
 
   // Functions
@@ -78,7 +98,7 @@
         <Tabs bind:value={activeTab}>
           <div class="flex items-center gap-4">
             <TabsList>
-              {#each projectTabs as { label, value } (value)}
+              {#each tabs as { label, value } (value)}
                 <TabsTrigger {value} onclick={() => handleTabChange(value)}>{label}</TabsTrigger>
               {/each}
             </TabsList>
