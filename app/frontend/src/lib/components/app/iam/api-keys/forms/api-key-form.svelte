@@ -7,6 +7,7 @@
   import { apiKeyPermissions, scopeTypes } from "@/data/model/iam/api-keys/constants";
   import { ApiKeyRecord } from "@/data/model/iam/api-keys/record";
 
+  import DatePickerField from "@/components/app/forms/fields/picker/date-picker-field.svelte";
   import type { FormBaseProps } from "@/components/app/forms/form.types";
 
   // Props
@@ -69,5 +70,13 @@
       values={permissions}
     />
     <!-- {/if} -->
+
+    <DatePickerField
+      name="{resource}/expired_at"
+      label="Expired At"
+      placeholder="Select expiration date"
+      errors={fieldErrors["expired_at"]}
+      value={apiKey.expired_at}
+    />
   </FieldGroup>
 </FieldSet>
