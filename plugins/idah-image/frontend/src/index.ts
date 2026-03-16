@@ -1,4 +1,4 @@
-import type { IActivityContext, IActivityView } from "./context";
+import type { IActivityContext, IActivityView } from "./lib/context/context";
 import { mount, unmount } from "svelte";
 import Plugin from "./plugin.svelte";
 

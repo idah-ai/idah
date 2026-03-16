@@ -1,5 +1,10 @@
 import type { DefaultMode, ImageBoundingBox } from "$lib/components/app/controller/image-controller.types";
-import type { AnnotationMetadata, AnnotationObj, AnnotationShape, AnnotationValue } from "$lib/components/app/overlay/image-annotation-context";
+import type {
+  AnnotationMetadata,
+  AnnotationObj,
+  AnnotationShape,
+  AnnotationValue,
+} from "$lib/components/app/overlay/image-annotation-context";
 
 export type Point = [number, number];
 

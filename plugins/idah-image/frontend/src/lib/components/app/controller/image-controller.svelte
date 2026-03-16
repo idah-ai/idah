@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, setContext } from "svelte";
 
+  import ImagePropertiesSidebar from "$lib/components/app/sidebar/image-properties-sidebar.svelte";
   import ImageSidebar from "$lib/components/app/sidebar/image-sidebar.svelte";
   import Button from "$lib/components/ui/button/button.svelte";
   import PopoverContent from "$lib/components/ui/popover/popover-content.svelte";
@@ -11,14 +12,15 @@
   import ResizablePaneGroup from "$lib/components/ui/resizable/resizable-pane-group.svelte";
 
   import {
-      DEFAULT_MODE,
-      IMAGE_BOUNDING_BOX,
-      IMAGE_NOTE,
-      IMAGE_POLYGON,
+    DEFAULT_MODE,
+    IMAGE_BOUNDING_BOX,
+    IMAGE_NOTE,
+    IMAGE_POLYGON,
   } from "$lib/components/app/controller/image-controller.types";
   import ImageOverlay from "$lib/components/app/overlay/image-overlay.svelte";
-  import type { IActivityContext } from "$src/context";
   import test from "./test.png";
+
+  import type { IActivityContext } from "$lib/context/context";
 
   // Props
   interface Props {
@@ -26,6 +28,9 @@
   }
 
   let { context }: Props = $props();
+
+  // Contexts
+  setContext("context", context);
 
   // Variables
   let mode: string = $state("visual");
@@ -152,8 +157,8 @@
           <ResizableHandle withHandle />
 
           <!-- RIGHT SIDEBAR -->
-          <ResizablePane minSize={14} defaultSize={20} maxSize={20}>
-            <ImageSidebar />
+          <ResizablePane minSize={16} defaultSize={16} maxSize={20}>
+            <ImagePropertiesSidebar />
           </ResizablePane>
         </ResizablePaneGroup>
       </ResizablePane>

@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   
   import ImageController from "$lib/components/app/controller/image-controller.svelte";
-  import type { IActivityContext } from "./context";
+  import type { IActivityContext } from "./lib/components/context/context";
 
   import "./plugin.css";
 
