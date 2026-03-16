@@ -15,6 +15,13 @@
   let rangeWidth = $derived((endOfRange - (startOfRange - 1)) * timelineCellWidth);
 </script>
 
+<!-- NOTE:: 
+  - This component is for rendering annotations / interpolation only
+  - If you need to add more interactive features like onclick, oncontextmenu, etc.
+  - Add it to TimelineRowGroup.svelte component instead.
+  - As clicking on row group will have all context (annotationGroup, clientX, frame, etc.)
+-->
+
 <!-- ANNOTATION GROUP -->
 <div
   id="timeline-annotation-cell"
