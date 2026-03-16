@@ -10,7 +10,6 @@ export type IdahImageBoundingBox = "idah-image:bounding-box";
 export const IDAH_IMAGE_POLYGON = "idah-image:polygon";
 export type IdahImagePolygon = "idah-image:polygon";
 
-
 export const IDAH_NOTE = "note";
 export type IdahNote = "note";
 

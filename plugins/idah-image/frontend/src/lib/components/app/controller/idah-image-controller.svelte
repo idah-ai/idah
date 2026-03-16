@@ -1,5 +1,5 @@
 <script lang="ts">
-import { onMount } from "svelte";
+  import { onMount } from "svelte";
 
   import IdahImageSidebar from "$lib/components/app/sidebar/idah-image-sidebar.svelte";
   import Button from "$lib/components/ui/button/button.svelte";
@@ -9,14 +9,18 @@ import { onMount } from "svelte";
   import { ResizablePane } from "$lib/components/ui/resizable";
   import ResizableHandle from "$lib/components/ui/resizable/resizable-handle.svelte";
   import ResizablePaneGroup from "$lib/components/ui/resizable/resizable-pane-group.svelte";
-  
-  import test from "$assets/test.jpeg";
-  import { DEFAULT_MODE, IDAH_IMAGE_BOUNDING_BOX, IDAH_IMAGE_POLYGON, IDAH_NOTE } from "$lib/components/app/controller/idah-image-controller.types";
+
+  import {
+    DEFAULT_MODE,
+    IDAH_IMAGE_BOUNDING_BOX,
+    IDAH_IMAGE_POLYGON,
+    IDAH_NOTE,
+  } from "$lib/components/app/controller/idah-image-controller.types";
   import type { IActivityContext } from "../../../../context";
   import IdahImageOverlay from "../overlay/idah-image-overlay.svelte";
+  import test from "./test.png";
 
-
-    // Props
+  // Props
   interface Props {
     context: IActivityContext;
   }
@@ -34,7 +38,7 @@ import { onMount } from "svelte";
 
   let showPopOver = $state(false);
 
-   onMount(async () => {
+  onMount(async () => {
     tools = [
       {
         label: "Visual",
@@ -49,7 +53,7 @@ import { onMount } from "svelte";
         disabled: !["annotate", "review"].includes(context.workflowStep),
         handleClick: () => context.commands.run("tools.bounding_box"),
       },
-       {
+      {
         label: "Polygon",
         type: IDAH_IMAGE_POLYGON,
         iconName: "polygon",
@@ -66,72 +70,95 @@ import { onMount } from "svelte";
     ];
 
     context.tools.setTools(tools);
-       $effect(() => context.tools.setTool(mode));
-
+    $effect(() => context.tools.setTool(mode));
   });
+
+  const annotations = $state([
+    {
+      id: "1",
+      type: "bounding_box",
+      value: {
+        x: 10,
+        y: 10,
+        width: 100,
+        height: 100,
+      },
+      metadata: {
+        created_at: new Date().toISOString(),
+        created_by: "user1",
+      },
+    },
+    {
+      id: "2",
+      type: "polygon",
+      value: {
+        points: [
+          { x: 150, y: 50 },
+          { x: 200, y: 80 },
+          { x: 180, y: 150 },
+        ],
+      },
+      metadata: {
+        created_at: new Date().toISOString(),
+        created_by: "user2",
+      },
+    },
+  ]);
 </script>
 
-<div class="relative flex h-full w-full flex-col ">
+<div class="relative flex h-full w-full flex-col">
+  <!-- POPOVER -->
   <Popover
     open={showPopOver}
     onOpenChange={(open: boolean) => {
       showPopOver = open;
     }}
   >
-    <PopoverTrigger></PopoverTrigger>
+    <PopoverTrigger />
 
     <PopoverContent class="min-w-80 p-0">
       <div class="h-auto max-h-86 overflow-y-auto p-2">
-      <IdahImageSidebar />
+        <IdahImageSidebar />
       </div>
 
-      <div class=" flex justify-end gap-2 p-2">
-        <Button
-          size="sm"
-          variant="outline"
-          onclick={() => {
-            showPopOver = false;
-          }}
-        >
-          Cancel
-        </Button>
-        <Button
-          size="sm"
-          onclick={() => {
-            showPopOver = false;
-          }}>
-          Confirm
-          </Button>
+      <div class="flex justify-end gap-2 p-2">
+        <Button size="sm" variant="outline" onclick={() => (showPopOver = false)}>Cancel</Button>
+
+        <Button size="sm" onclick={() => (showPopOver = false)}>Confirm</Button>
       </div>
     </PopoverContent>
   </Popover>
 
+  <!-- PLUGIN ROOT -->
   <div id="plugin::idah-image" class="flex min-h-0 w-full flex-1">
     <ResizablePaneGroup direction="vertical">
+      <!-- MAIN AREA -->
       <ResizablePane defaultSize={60} minSize={15}>
         <ResizablePaneGroup direction="horizontal">
-          <ResizablePane minSize={14} defaultSize={annotationSidebarResizablePercentage} maxSize={20}>
-           <IdahImageSidebar />
+          <!-- LEFT SIDEBAR -->
+          <ResizablePane minSize={14} defaultSize={20} maxSize={20}>
+            <IdahImageSidebar />
           </ResizablePane>
 
-          <!--
-            NOTE: Can not resize annotation sidebar,
-            as it will affect the note overlay and svg overlay
-            <ResizableHandle withHandle />
-          -->
+          <ResizableHandle withHandle />
 
-         <ResizablePane defaultSize={75}>
-  <section id="video-section" class="flex h-full w-full flex-1">
+          <!-- IMAGE EDITOR -->
+          <ResizablePane defaultSize={60}>
+            <section id="image-section" class="flex h-full w-full">
+              <IdahImageOverlay src={test} />
+            </section>
+          </ResizablePane>
 
-    <IdahImageOverlay
-      src={test}
-    />
+          <ResizableHandle withHandle />
 
-  </section>
-</ResizablePane>
+          <!-- RIGHT SIDEBAR -->
+          <ResizablePane minSize={14} defaultSize={20} maxSize={20}>
+            <IdahImageSidebar />
+          </ResizablePane>
         </ResizablePaneGroup>
       </ResizablePane>
 
+      <!-- BOTTOM PANEL -->
       <ResizableHandle withHandle />
     </ResizablePaneGroup>
   </div>

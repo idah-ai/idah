@@ -1,10 +1,5 @@
 import type { DefaultMode, IdahVideoBoundingBox } from "$lib/components/app/controller/idah-image-controller.types";
-import type {
-  AnnotationMetadata,
-  AnnotationObj,
-  AnnotationShape,
-  AnnotationValue,
-} from "./AnnotationContext";
+import type { AnnotationMetadata, AnnotationObj, AnnotationShape, AnnotationValue } from "./AnnotationContext";
 
 export type Point = [number, number];
 

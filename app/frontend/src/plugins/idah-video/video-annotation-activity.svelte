@@ -3,14 +3,14 @@
   import { uuidv7 } from "uuidv7";
 
   import {
-    CommandDialog,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-    CommandList,
-    CommandSeparator,
-    CommandShortcut,
+      CommandDialog,
+      CommandEmpty,
+      CommandGroup,
+      CommandInput,
+      CommandItem,
+      CommandList,
+      CommandSeparator,
+      CommandShortcut,
   } from "$lib/components/ui/command";
   import { Button } from "@/components/ui/button";
   import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -891,6 +891,10 @@
 
   let allHidden: boolean = $state(false);
   let allLocked: boolean = $state(false);
+  $effect(()=>{
+    console.log(annotationValue)
+  })
+  
 </script>
 
 <div class="relative flex h-full w-full flex-col">

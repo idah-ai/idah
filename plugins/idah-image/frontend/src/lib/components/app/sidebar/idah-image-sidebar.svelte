@@ -178,19 +178,19 @@
 <SidebarGroup>
   <SidebarGroupContent>
     <Collapsible bind:open={openCategory}>
-      <CollapsibleTrigger>
+      <CollapsibleTrigger class="w-full">
         <!-- {#snippet child({ props })} -->
-          <Button variant="ghost" class="w-full justify-between" {...props}>
-            <!-- {formatShapeName(modalityShape)} -->
-formatShapeName
-            <div
-              class={cn("rotate-0 transition-transform duration-200", {
-                "rotate-90": openCategory,
-              })}
-            >
-              <ChevronRightIcon />
-            </div>
-          </Button>
+        <Button variant="ghost" class="w-full justify-between">
+          <!-- {formatShapeName(modalityShape)} -->
+          formatShapeName
+          <div
+            class={cn("rotate-0 transition-transform duration-200", {
+              "rotate-90": openCategory,
+            })}
+          >
+            <ChevronRightIcon />
+          </div>
+        </Button>
         <!-- {/snippet} -->
       </CollapsibleTrigger>
 
