@@ -34,12 +34,20 @@ class DatasetsExpo < BaseExpo
     desc "Duplicate a dataset and its entries/medias"
     input do
       field :id, String
+      field? :dataset_name, [String, NilClass], default: nil
       field? :entry_ids, Array, of: String
+      field? :with_labels, TrueClass, default: false
       field? :with_annotations, TrueClass, default: false
     end
   end
   def duplicate
-    service.duplicate(params[:id], entry_ids: params[:entry_ids], with_annotations: params[:with_annotations])
+    service.duplicate(
+      params[:id],
+      dataset_name: params[:dataset_name],
+      entry_ids: params[:entry_ids],
+      with_labels: params[:with_labels],
+      with_annotations: params[:with_annotations]
+    )
   end
 
   expose on_resource_event(Resource::Dataset::Datasets, "completed")

@@ -81,7 +81,7 @@ module Dataset
       end
     end
 
-    def duplicate(dataset_id, entry_ids: nil, with_annotations: false)
+    def duplicate(dataset_id, dataset_name: nil, entry_ids: nil, with_labels: false, with_annotations: false)
       duping_dataset = datasets.find!(dataset_id)
 
       authorize_creation(duping_dataset.project_id) # permission check
@@ -93,9 +93,9 @@ module Dataset
           {
             **duping_dataset.fields,
             id: UUIDv7.generate,
-            # project_id: project_id, # TODO: is cross project duplication allowed ? override and pass project_id if so
-            name: "#{duping_dataset.name} - duplicated",
+            name: dataset_name || "#{duping_dataset.name} - duplicated",
             status: "pending",
+            labeling_configuration: with_labels ? duping_dataset.labeling_configuration : {},
             entries_total_count: 0,
             entries_completed_count: 0,
             entries_in_progress_count: 0,
