@@ -1,0 +1,24 @@
+api/org_rw_all:
+  title: "API - Organization Read Write"
+  mask: "9.9.9"
+  description: |
+    API role for read and write access to organization resources.
+    This scope is compoundable, meaning a role for api can be defined as "api:org_rw_all,project_ro_org".
+  assignable: false
+  rights:
+    # Organizations
+    - "iam:organizations.read.*"
+    - "iam:organizations.update.*"
+
+    # Dataset Service - Read Write
+    - "dataset:projects.*.*"
+    - "dataset:project_members.*.*"
+    - "dataset:datasets.*.*"
+    - "dataset:entries.*.*"
+    - "dataset:annotations.*.*"
+    - "dataset:note_feeds.*.*"
+    - "dataset:note_comments.*.*"
+
+    # Media Service - Read Write
+    - "media:medias.*.*"
+    - "media:jobs.read.*"

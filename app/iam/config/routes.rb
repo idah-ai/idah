@@ -7,6 +7,8 @@ Verse.on_boot do
     AccountSessionsExpo,
     Auth::SimpleExpo,
     Account::PasswordsExpo,
-    OrganizationsExpo
+    OrganizationsExpo,
+    ApiKeysExpo,
+    Auth::ApiExpo,
   ].each(&:register)
 end

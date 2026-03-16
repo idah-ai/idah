@@ -1,0 +1,10 @@
+api/account_rw_all:
+  title: "API - Account Read Write"
+  mask: "1.9.9"
+  description: |
+    API role for read and write access to account resources.
+    This scope is compoundable, meaning a role for api can be defined as "api:account_rw_all,project_ro_org".
+  assignable: false
+  rights:
+    # Accounts
+    - "iam:accounts.*.*"

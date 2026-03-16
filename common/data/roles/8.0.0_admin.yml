@@ -6,3 +6,9 @@ admin:
   assignable: true
   rights:
     - "*.*.*"
+
+    # API Keys
+    - "iam:api_keys.create.{account_ro_all, account_rw_all, org_ro_all, org_rw_all, project_ro_org, project_rw_org, org_ro_own}"
+    - "iam:api_keys.read.*"
+    - "iam:api_keys.update.*"
+    - "iam:api_keys.delete.*"
