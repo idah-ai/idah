@@ -17,7 +17,7 @@
       IMAGE_POLYGON,
   } from "$lib/components/app/controller/image-controller.types";
   import ImageOverlay from "$lib/components/app/overlay/image-overlay.svelte";
-  import type { IActivityContext } from "../../../../context";
+  import type { IActivityContext } from "$src/context";
   import test from "./test.png";
 
   // Props

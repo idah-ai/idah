@@ -1,4 +1,4 @@
-import type { Hash } from "@/utils/types";
+import type { Hash } from "$lib/utils/types";
 
 export type AnnotationShape = {
   type: string;
