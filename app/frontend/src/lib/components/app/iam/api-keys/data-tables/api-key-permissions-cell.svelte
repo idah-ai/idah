@@ -1,5 +1,5 @@
 <script lang="ts">
-  import AccountAvatar from "@/components/app/iam/accounts/avatars/account-avatar.svelte";
+  import Badge from "@/components/ui/badge/badge.svelte";
 
   import { ApiKeyRecord } from "@/data/model/iam/api-keys/record";
 
@@ -7,9 +7,8 @@
 
   // Props
   let { record: apiKeyRecord }: DataTableCellBaseProps<ApiKeyRecord> = $props();
-
-  // Variables
-  let { name, email, picture_url: pictureUrl } = $derived(apiKeyRecord);
 </script>
 
-<AccountAvatar {name} {email} {pictureUrl} size="sm" showName />
+<Badge variant={apiKeyRecord.enabled ? "default" : "destructive"}>
+  {apiKeyRecord.enabled ? "Enabled" : "Disabled"}
+</Badge>

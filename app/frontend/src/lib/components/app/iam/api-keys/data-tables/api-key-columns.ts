@@ -1,3 +1,8 @@
+import ApiKeyCell from "@/components/app/iam/api-keys/data-tables/api-key-cell.svelte";
+import ApiKeyNameCell from "@/components/app/iam/api-keys/data-tables/api-key-name-cell.svelte";
+import ApiKeyPermissionsCell from "@/components/app/iam/api-keys/data-tables/api-key-permissions-cell.svelte";
+import ApiKeyScopeTypeCell from "@/components/app/iam/api-keys/data-tables/api-key-scope-type-cell.svelte";
+
 import { ApiKeyRecord } from "@/data/model/iam/api-keys/record";
 
 import type { ColumnSettings, ColumnsSettings } from "@/components/app/datasource-table/types";
@@ -10,9 +15,10 @@ export const apiKeyNameColumn: ColumnSettings<ApiKeyRecord> = {
   filterable: false,
   visible: true,
   hidable: false,
+  cellComponent: ApiKeyNameCell,
 };
 
-export const accountCreatedAtColumn = (params: { label: string }): ColumnSettings<ApiKeyRecord> => {
+export const apiKeyCreatedAtColumn = (params: { label: string }): ColumnSettings<ApiKeyRecord> => {
   const { label = "Created At" } = params;
   return {
     label,
@@ -22,6 +28,24 @@ export const accountCreatedAtColumn = (params: { label: string }): ColumnSetting
     filterable: true,
     filterOptions: {
       filterKey: "created_at",
+      filterBy: "date-range",
+      filterOperation: "gte",
+    },
+    visible: true,
+    hidable: false,
+  };
+};
+
+export const apiKeyLastUsedColumn = (params: { label: string }): ColumnSettings<ApiKeyRecord> => {
+  const { label = "Last Used" } = params;
+  return {
+    label,
+    dataType: "datetime",
+    clickable: false,
+    sortable: true,
+    filterable: true,
+    filterOptions: {
+      filterKey: "last_used",
       filterBy: "date-range",
       filterOperation: "gte",
     },
@@ -40,6 +64,7 @@ export const apiKeyColumns: ColumnsSettings<ApiKeyRecord> = {
     filterable: false,
     visible: true,
     hidable: false,
+    cellComponent: ApiKeyCell,
   },
   scope_type: {
     label: "Scope Type",
@@ -49,6 +74,7 @@ export const apiKeyColumns: ColumnsSettings<ApiKeyRecord> = {
     filterable: false,
     visible: true,
     hidable: false,
+    cellComponent: ApiKeyScopeTypeCell,
   },
   permissions: {
     label: "Permissions",
@@ -58,9 +84,10 @@ export const apiKeyColumns: ColumnsSettings<ApiKeyRecord> = {
     filterable: false,
     visible: true,
     hidable: false,
+    cellComponent: ApiKeyPermissionsCell,
   },
-  last_used: accountCreatedAtColumn({ label: "Last Used" }),
-  created_at: accountCreatedAtColumn({ label: "Created At" }),
+  last_used: apiKeyLastUsedColumn({ label: "Last Used" }),
+  created_at: apiKeyCreatedAtColumn({ label: "Created At" }),
   expire_at: {
     label: "Expired At",
     dataType: "datetime",

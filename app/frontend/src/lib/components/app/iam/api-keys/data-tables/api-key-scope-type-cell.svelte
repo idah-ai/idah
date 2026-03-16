@@ -1,15 +1,8 @@
 <script lang="ts">
-  import AccountAvatar from "@/components/app/iam/accounts/avatars/account-avatar.svelte";
-
   import { ApiKeyRecord } from "@/data/model/iam/api-keys/record";
 
   import type { DataTableCellBaseProps } from "@/components/app/datasource-table/types";
 
   // Props
   let { record: apiKeyRecord }: DataTableCellBaseProps<ApiKeyRecord> = $props();
-
-  // Variables
-  let { name, email, picture_url: pictureUrl } = $derived(apiKeyRecord);
 </script>
-
-<AccountAvatar {name} {email} {pictureUrl} size="sm" showName />
