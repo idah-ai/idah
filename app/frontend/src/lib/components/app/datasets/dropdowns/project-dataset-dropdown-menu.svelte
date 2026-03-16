@@ -1,10 +1,11 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
-  import { SquarePenIcon, Trash2Icon } from "@lucide/svelte";
+  import { CopyIcon, SquarePenIcon, Trash2Icon } from "@lucide/svelte";
   import { onMount } from "svelte";
 
   import DatasetFormModal from "@/components/app/datasets/overlays/dataset-form-modal.svelte";
+  import DatasetDuplicateModal from "@/components/app/datasets/overlays/dataset-duplicate-modal.svelte";
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
 
@@ -16,15 +17,18 @@
 
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
   import type { ProjectMemberScope } from "@/security/types";
+  import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
 
   // Props
   interface Props {
     datasetId: string;
+    datasetName: string;
     projectId: string;
   }
-  let { datasetId, projectId }: Props = $props();
+  let { datasetId, datasetName, projectId }: Props = $props();
 
   // Variables
+  let canCreateDataset = $state(false);
   let canUpdateDataset = $state(false);
   let canDeleteDataset = $state(false);
   let menus: IDropdownMenus = $derived({
@@ -42,6 +46,16 @@
           },
         },
         {
+          label: "Duplicate",
+          icon: CopyIcon,
+          hidden: !canCreateDataset,
+          action: async () => {
+            const datasetEntriesRes = await fetchDatasetEntries();
+            datasetEntryRecords = datasetEntriesRes.data;
+            openDuplicateDatasetFormModal = true;
+          },
+        },
+        {
           label: "Delete",
           icon: Trash2Icon,
           hidden: !canDeleteDataset,
@@ -54,7 +68,9 @@
   });
 
   let datasetRecord: DatasetRecord | undefined = $state(undefined);
+  let datasetEntryRecords: EntryRecord[] = $state([]);
   let openEditDatasetFormModal: boolean = $state(false);
+  let openDuplicateDatasetFormModal: boolean = $state(false);
   let openConfirmDeleteDatasetModal: boolean = $state(false);
 
   // Lifecycle
@@ -74,6 +90,8 @@
       },
     };
 
+    canCreateDataset =
+      (await $authStatus.authContext?.can("create", "dataset:datasets", ["as_org_owner", as_project_owner])) || false;
     canUpdateDataset =
       (await $authStatus.authContext?.can("update", "dataset:datasets", ["as_org_owner", as_project_owner])) || false;
     canDeleteDataset =
@@ -103,7 +121,28 @@
       showActionFailedToast(error);
     }
   }
+
+  async function fetchDatasetEntries() {
+    return await entriesBackendDataSource.list({
+      filters: { dataset_id: datasetId },
+      fields: {
+        [EntryRecord.type]: ["id", "status", "priority", "created_at", "updated_at"],
+      },
+    });
+  }
 </script>
+
+{#if canCreateDataset}
+  <DatasetDuplicateModal
+    title="Duplicate Dataset"
+    action="create"
+    {projectId}
+    {datasetId}
+    {datasetName}
+    {datasetEntryRecords}
+    bind:open={openDuplicateDatasetFormModal}
+  />
+{/if}
 
 {#if canUpdateDataset || canDeleteDataset}
   <DropdownMenus {menus} align="end" />

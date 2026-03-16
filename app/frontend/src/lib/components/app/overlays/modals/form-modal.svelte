@@ -21,6 +21,7 @@
     title,
     description,
     loading,
+    disabled,
     onCancel,
     onConfirm,
     modalTitle,
@@ -116,7 +117,7 @@
           {#if confirm}
             {@render confirm()}
           {:else}
-            <Button {loading} loadingLabel={confirmButtonProps.loadingLabel} onclick={handleClickConfirm}>
+            <Button {loading} {disabled} loadingLabel={confirmButtonProps.loadingLabel} onclick={handleClickConfirm}>
               {confirmButtonProps.label}
             </Button>
           {/if}
