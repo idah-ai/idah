@@ -5,3 +5,7 @@ coverage
 .DS_Store
 
 tmp/*
+
+/gems/**/*
+!/gems/clone*.sh
+!/gems/update*.sh
