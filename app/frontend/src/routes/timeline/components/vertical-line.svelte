@@ -1,6 +1,8 @@
 <script lang="ts">
   import { cn } from "@/utils";
 
+  import { getFrameFromMouseX } from "./utils";
+
   // Props
   interface Props {
     positionX: number;
@@ -11,7 +13,7 @@
   let { positionX, timelineRowHeaderWidth, timelineCellWidth, color = "default" }: Props = $props();
 
   // Variables
-  let frame = $derived(Math.ceil((positionX - timelineRowHeaderWidth) / timelineCellWidth));
+  let frame = $derived(getFrameFromMouseX({ clientX: positionX, timelineRowHeaderWidth, timelineCellWidth }));
 
   let colorClass = $derived.by(() => {
     switch (color) {
