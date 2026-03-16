@@ -10,13 +10,22 @@ class PluginsExpo < BaseExpo
 
   use_service Plugins::Service
 
+  desc <<~MD
+    Manage and serve plugins within the system, including
+    listing available modalities, retrieving modality details,
+    and serving plugin assets and files.
+  MD
+
   expose on_http(
     :get,
     "modalities",
     auth: nil,
   ) do
     output do
-      field :data, Hash, of: Verse::Schema.array(String)
+      field :data, Hash do
+        field(:modalities, Hash).meta(description: "Mapping of modality IDs to their details")
+        field(:plugins, Hash).meta(description: "Mapping of modality IDs to plugin names")
+      end
     end
   end
   def modalities
@@ -30,6 +39,12 @@ class PluginsExpo < BaseExpo
   ) do
     input do
       field :modality_name, String
+    end
+
+    output do
+      field :data, Hash do
+        field(:shapes, Hash).meta(description: "Mapping of shape names to their details")
+      end
     end
   end
   def show_modality

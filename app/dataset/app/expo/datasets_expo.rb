@@ -5,10 +5,13 @@ class DatasetsExpo < BaseExpo
 
   use_service Dataset::Service
 
+  desc <<~MD
+    Datasets contain collections of entries (data items) for annotation within a project.
+  MD
+
   json_api Dataset::Record do
     allowed_included "entries", "project"
 
-    show
     index do
       allowed_filters :name__match,
                       :status__in,
@@ -22,6 +25,7 @@ class DatasetsExpo < BaseExpo
                       :updated_at__lte
     end
 
+    show
     create do
       authorized_relationships project: [:link]
     end
