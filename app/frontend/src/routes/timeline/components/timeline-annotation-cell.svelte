@@ -27,7 +27,7 @@
 <!-- ANNOTATION AT FRAME (INTERPOLATION) -->
 {#each frameRanges as interpolationAtFrame (interpolationAtFrame)}
   <div
-    class="bg-primary/50 absolute translate-x-[10%] -translate-y-[50%] rounded-sm"
+    class="bg-primary/50 absolute translate-x-[15%] -translate-y-[50%] rounded-sm"
     style:height="{annotationHeight * 0.6}px"
     style:width="{timelineCellWidth * 0.8}px"
     style:left="{(interpolationAtFrame - 1) * timelineCellWidth}px"

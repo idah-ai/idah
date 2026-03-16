@@ -8,10 +8,11 @@
   let timelineHeight: number = $state(0);
 
   // Variables::Timeline Cell
-  const timelineCellMinWidth: number = 20;
-  const timelineCellMaxWidth: number = 80;
+  const timelineRowHeaderWidth: number = 320;
+  const timelineCellMinWidth: number = 10;
+  const timelineCellMaxWidth: number = 60;
 
-  let timelineCellWidth: number = $state(50);
+  let timelineCellWidth: number = $state(25);
   let selectedFrameX: number = $state(0);
 
   // Functions
@@ -28,6 +29,36 @@
 
   function selectFrameX(frameX: number) {
     selectedFrameX = frameX;
+  }
+
+  function toggleVisibility(selectedGroupId?: string) {
+    if (selectedGroupId) {
+      /** Toggle visibility of annotations in selected group */
+      console.log(`Toggle visibility of annotations in groupId: ${selectedGroupId}`);
+    } else {
+      /** Toggle visibility of all annotations */
+      console.log(`Toggle visibility of all annotations`);
+    }
+  }
+
+  function toggleEditability(selectedGroupId?: string) {
+    if (selectedGroupId) {
+      /** Toggle editability of annotations in selected group */
+      console.log(`Toggle editability of annotations in groupId: ${selectedGroupId}`);
+    } else {
+      /** Toggle lock/unlock all annotations */
+      console.log(`Toggle lock/unlock all annotations`);
+    }
+  }
+
+  function deleteAnnotations(selectedGroupId?: string) {
+    if (selectedGroupId) {
+      /** Delete all annotations in selected group */
+      console.log(`Delete all annotations in groupId: ${selectedGroupId}`);
+    } else {
+      /** Delete all annotations */
+      console.log(`Delete all annotations`);
+    }
   }
 </script>
 
@@ -55,7 +86,16 @@
         onZoomChange={setTimelineCellWidth}
       />
 
-      <Timeline {timelineHeight} {timelineCellWidth} {selectedFrameX} onSelectFrameX={selectFrameX} />
+      <Timeline
+        {timelineHeight}
+        {timelineRowHeaderWidth}
+        {timelineCellWidth}
+        {selectedFrameX}
+        onSelectFrameX={selectFrameX}
+        onToggleVisibility={toggleVisibility}
+        onToggleEditability={toggleEditability}
+        onDeleteAnnotations={deleteAnnotations}
+      />
     </ResizablePane>
   </ResizablePaneGroup>
 </main>
