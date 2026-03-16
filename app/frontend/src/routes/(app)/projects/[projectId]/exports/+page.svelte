@@ -85,6 +85,7 @@
       filters: {
         project_id: projectId,
       },
+      sort: ["-created_at"],
       included: ["job"],
     }}
     {onLoadSetContexts}
