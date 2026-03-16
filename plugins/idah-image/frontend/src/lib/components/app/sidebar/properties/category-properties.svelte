@@ -44,8 +44,8 @@
 
 <FieldGroup>
   <Field>
+    <!-- CATEGORY -->
     <FieldLabel>Category</FieldLabel>
-
     <Select type="single" onValueChange={onSelectCategory} {disabled}>
       <SelectTrigger class="data-[placeholder]:text-secondary-foreground bg-secondary w-full truncate text-xs">
         {category?.label || "Select category"}
@@ -63,7 +63,10 @@
     </Select>
   </Field>
 
+  <!-- BORDER -->
   <hr class="my-3 border-t border-gray-200" />
+
+  <!-- PROPERTIES -->
   {#if category && properties?.length > 0}
     <FieldSet>
       <FieldLegend>Properties</FieldLegend>
