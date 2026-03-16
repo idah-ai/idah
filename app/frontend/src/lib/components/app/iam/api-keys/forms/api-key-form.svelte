@@ -8,7 +8,10 @@
   import { ApiKeyRecord } from "@/data/model/iam/api-keys/record";
 
   import DatePickerField from "@/components/app/forms/fields/picker/date-picker-field.svelte";
+  import MultipleSelectDatasourceField from "@/components/app/forms/fields/select/multiple/multiple-select-datasource-field.svelte";
   import type { FormBaseProps } from "@/components/app/forms/form.types";
+  import { projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
+  import { organizationsBackendDataSource } from "@/data/model/iam/organizations/record";
 
   // Props
   interface Props extends FormBaseProps {
@@ -21,11 +24,11 @@
   let resource: string = ApiKeyRecord.type;
 
   // Variables::Reactive
-  let { name, scope_type, permissions } = $derived(apiKey);
+  let { name, scope_type, permissions, organizations, projects } = $derived(apiKey);
 
   // Functions
   $effect(() => {
-    onValueChange({ name, scope_type, permissions });
+    onValueChange({ name, scope_type, permissions, organizations });
   });
 </script>
 
@@ -42,8 +45,7 @@
       oninput={(e) => (name = e.currentTarget.value)}
     />
 
-    <!-- APIKEY:ROLE -->
-    <!-- {#if !newRecord && account.role_name !== "org_owner"} -->
+    <!-- APIKEY:SCOPE_TYPE -->
     <SingleSelectField
       name="{resource}/scope_type"
       label="Scope Type"
@@ -56,10 +58,42 @@
         scope_type = selectedValue as string;
       }}
     />
-    <!-- {/if} -->
 
-    <!-- APIKEY:ROLE -->
-    <!-- {#if !newRecord && account.role_name !== "org_owner"} -->
+    <!-- APIKEY:ORGANIZATIONS -->
+    {#if scope_type == "organization"}
+      <MultipleSelectDatasourceField
+        name="{resource}/organization_id"
+        label="Organizations"
+        dataSource={organizationsBackendDataSource}
+        displayKey="name"
+        values={organizations}
+        placeholder="Select an organization"
+        searchKeyWithOperation="name__match"
+        clearable
+        onSelected={(selectedChoices) => {
+          organizations = selectedChoices.map((choice) => String(choice.value));
+        }}
+      />
+    {/if}
+
+    <!-- APIKEY:PROJECTS -->
+    {#if scope_type == "project"}
+      <MultipleSelectDatasourceField
+        name="{resource}/project_id"
+        label="Projects"
+        dataSource={projectsBackendDataSource}
+        displayKey="name"
+        values={projects}
+        placeholder="Select projects"
+        searchKeyWithOperation="name__match"
+        clearable
+        onSelected={(selectedChoices) => {
+          projects = selectedChoices.map((choice) => String(choice.value));
+        }}
+      />
+    {/if}
+
+    <!-- APIKEY:PERMISSIONS -->
     <MultipleSelectField
       name="{resource}/permission"
       label="Permissions"
@@ -69,7 +103,6 @@
       errors={fieldErrors["permission"]}
       values={permissions}
     />
-    <!-- {/if} -->
 
     <DatePickerField
       name="{resource}/expired_at"
