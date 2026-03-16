@@ -16,9 +16,8 @@
   // Props
   interface Props extends FormBaseProps {
     apiKey: ApiKeyRecord;
-    newRecord?: boolean;
   }
-  let { apiKey, newRecord, fieldErrors, onValueChange }: Props = $props();
+  let { apiKey, fieldErrors, onValueChange }: Props = $props();
 
   // Variables
   let resource: string = ApiKeyRecord.type;

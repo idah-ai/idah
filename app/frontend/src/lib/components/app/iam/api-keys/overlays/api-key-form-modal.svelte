@@ -148,5 +148,5 @@
 </script>
 
 <FormModal {action} {title} loading={submitting} onCancel={resetForm} onConfirm={submit} bind:open>
-  <ApiKeyForm {apiKey} {newRecord} {fieldErrors} onValueChange={setValue} />
+  <ApiKeyForm {apiKey} {fieldErrors} onValueChange={setValue} />
 </FormModal>
