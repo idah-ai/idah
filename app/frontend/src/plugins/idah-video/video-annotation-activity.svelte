@@ -23,7 +23,7 @@
 
   import type { AnnotationGroup, AnnotationMetadata, AnnotationObj } from "@/context/AnnotationContext";
 
-  import { DEFAULT_MODE, ENTRY_ROOT, IDAH_NOTE, IDAH_VIDEO_BOUNDING_BOX } from "./type";
+  import { DEFAULT_MODE, ENTRY_ROOT, IDAH_NOTE, IDAH_VIDEO_BOUNDING_BOX, IDAH_VIDEO_POLYGON } from "./type";
   import { requiredFullfilled } from "./video-annotation-activity/categoryProperties";
   import { boundingBoxes, entryRoot, idb_updated_at } from "./video-annotation-activity/idb_store.svelte";
   import { annotationsIndexedDB, AnnotationsIndexedDB } from "./video-annotation-activity/indexedDB";
@@ -49,6 +49,7 @@
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import { showErrorToast } from "@/utils/error/error.toasts";
   import {
+    type InterpolatedVertex,
     type Point,
     type VideoFrameSelection,
     type VideoShape,
@@ -170,6 +171,13 @@
         handleClick: () => context.commands.run("tools.bounding_box"),
       },
       {
+        label: "Polygon",
+        type: IDAH_VIDEO_POLYGON,
+        iconName: "polygon",
+        disabled: !["annotate", "review"].includes(context.workflowStep),
+        handleClick: () => context.commands.run("tools.polygon"),
+      },
+      {
         label: "Notes",
         type: IDAH_NOTE,
         iconName: "message-circle",
@@ -245,10 +253,13 @@
           case IDAH_NOTE:
             tool = "tools.note";
             break;
+          case IDAH_VIDEO_POLYGON:
+            tool = "tools.polygon";
+            break;
           default:
             tool = "tools.visual";
         }
-        console.log({ context, commands: context.commands, mode, tool });
+
         context.commands.run(tool);
       },
       zoom: { in: overlay.zoomIn, out: overlay.zoomOut },
@@ -836,11 +847,14 @@
     if (!part1Frames.find((f: VideoFrameSelection) => f.frame === part1End)) {
       const interpolated = getInterpolatedFrame(annotation.shape as VideoShape, part1End);
       if (interpolated) {
-        part1Frames.push({
-          frame: part1End,
-          points: interpolated.points!,
-          angle: interpolated.angle || 0,
-        });
+        const normalizedPoints = normalizePoints(interpolated.points);
+        if (normalizedPoints) {
+          part1Frames.push({
+            frame: part1End,
+            points: normalizedPoints,
+            angle: interpolated.angle || 0,
+          });
+        }
       }
       part1Frames.sort((a, b) => a.frame - b.frame);
     }
@@ -854,11 +868,14 @@
     if (!part2Frames.find((f: VideoFrameSelection) => f.frame === part2Start)) {
       const interpolated = getInterpolatedFrame(annotation.shape as VideoShape, part2Start);
       if (interpolated) {
-        part2Frames.push({
-          frame: part2Start,
-          points: interpolated.points!,
-          angle: interpolated.angle || 0,
-        });
+        const normalizedPoints = normalizePoints(interpolated.points);
+        if (normalizedPoints) {
+          part2Frames.push({
+            frame: part2Start,
+            points: normalizedPoints,
+            angle: interpolated.angle || 0,
+          });
+        }
       }
       part2Frames.sort((a, b) => a.frame - b.frame);
     }
@@ -1043,6 +1060,21 @@
     };
   });
 
+  context.commands.on("tools.polygon", () => {
+    return {
+      name: "polygon tool",
+      apply: () => {
+        mode = IDAH_VIDEO_POLYGON;
+        deselectAnnotation();
+        deselectAnnotationGroup();
+        // annotationValue = {};
+      },
+      undo: () => {},
+      isCombinable: () => true,
+      combine: (c) => c,
+    };
+  });
+
   function addAnnotation(shape: AnnotationShape, value: AnnotationValue = {}) {
     if (!["review", "annotate"].includes(context.workflowStep)) return;
     const annotation = {
@@ -1140,6 +1172,9 @@
           break;
         case IDAH_VIDEO_BOUNDING_BOX:
           shape = { ...shape, start: frame, end: frame, frames: [{ frame, angle, points }] };
+          break;
+        case IDAH_VIDEO_POLYGON:
+          shape = { ...shape, start: frame, end: frame, frames: [{ frame, points }] };
           break;
         default:
           throw `unhandled type ${type}`;
@@ -1323,6 +1358,16 @@
       if ($selectedAnnotation) $selectedAnnotation.locked = locked;
       annotationsIDB?.updateAllLock(locked).then(() => ($idb_updated_at = new Date()));
     }
+  }
+
+  // Helper function to normalize interpolated points to Point[]
+  function normalizePoints(points: Point[] | InterpolatedVertex[] | undefined): Point[] | undefined {
+    if (!points) return undefined;
+    // Check if first element is InterpolatedVertex by checking if it has a 'point' property
+    if (points.length > 0 && typeof points[0] === "object" && "point" in points[0]) {
+      return (points as InterpolatedVertex[]).map((item) => item.point);
+    }
+    return points as Point[];
   }
 
   async function onReSelectCategory(reselectedCategoryId: string) {
