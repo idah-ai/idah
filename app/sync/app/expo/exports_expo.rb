@@ -14,7 +14,7 @@ class ExportsExpo < BaseExpo
   json_api Exports::Record do
     allowed_included "job"
     show
-    
+
     index do
       allowed_filters :created_at__gte,
                       :created_at__lte
