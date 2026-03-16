@@ -1,0 +1,5 @@
+# frozen_string_literal: true
+
+Verse.on_boot do
+  PluginSystem.init(PluginLifecycleContext)
+end
