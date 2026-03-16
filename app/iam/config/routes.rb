@@ -3,10 +3,10 @@
 Verse.on_boot do
   [
     HealthcheckExpo,
+    OrganizationsExpo,
     AccountsExpo,
     AccountSessionsExpo,
     Auth::SimpleExpo,
-    Account::PasswordsExpo,
-    OrganizationsExpo
+    Account::PasswordsExpo
   ].each(&:register)
 end

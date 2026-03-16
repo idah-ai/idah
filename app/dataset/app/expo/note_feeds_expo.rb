@@ -5,6 +5,11 @@ class NoteFeedsExpo < BaseExpo
 
   use_service NoteFeed::Service
 
+  desc <<~MD
+    Note feeds enable team discussions and issue tracking
+    on entries or annotations, supporting pending and resolved statuses.
+  MD
+
   json_api NoteFeed::Record do
     allowed_included "entry", "annotation", "note_comments"
 
@@ -23,7 +28,7 @@ class NoteFeedsExpo < BaseExpo
   end
 
   expose on_http(:post, "") do
-    desc <<-MD
+    desc <<~MD
       Create a new note feed
       This endpoint creates a new note feed for an entry.
       When anchor_type is "annotation", annotation_id is required.
@@ -48,6 +53,8 @@ class NoteFeedsExpo < BaseExpo
     input do
       field :id, String
     end
+
+    output Verse::JsonApi::Util.jsonapi_record(NoteFeed::Record)
   end
   def resolve
     note_feed_id = params[:id]
