@@ -21,6 +21,12 @@
   );
 </script>
 
+<!-- NOTE:: 
+  - This component is for rendering annotations boundary only
+  - If you need to add more interactive features like onclick, oncontextmenu, etc.
+  - Add it to TimelineRowGroup.svelte component instead.
+  - As clicking on row group will have all context (annotationGroup, clientX, frame, etc.)
+-->
 <div id="timeline-cells" bind:clientWidth={timelineRulerWidth} class="relative w-full">
   {#each annotationFrameRanges as frameRanges (frameRanges)}
     <TimelineAnnotationCell {frameRanges} {timelineCellWidth} />
