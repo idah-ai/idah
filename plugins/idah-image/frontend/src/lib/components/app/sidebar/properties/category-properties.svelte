@@ -4,12 +4,13 @@
   import BooleanProperty from "$lib/components/app/sidebar/properties/boolean-property.svelte";
   import IntegerProperty from "$lib/components/app/sidebar/properties/integer-property.svelte";
   import MultiSelectProperty from "$lib/components/app/sidebar/properties/multi-select-property.svelte";
+  import { visibilityFullfilled } from "$lib/components/app/sidebar/properties/property.utils";
   import SingleSelectProperty from "$lib/components/app/sidebar/properties/single-select-property.svelte";
   import TextProperty from "$lib/components/app/sidebar/properties/text-property.svelte";
-  import { visibilityFullfilled } from "$lib/components/app/sidebar/properties/utils";
   import { Field, FieldGroup, FieldLabel, FieldLegend, FieldSet } from "$lib/components/ui/field";
   import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger } from "$lib/components/ui/select";
 
+  import type { PropertyComponent } from "$lib/components/app/sidebar/properties/property.types";
   import type { AnnotationValue } from "$lib/context/AnnotationContext";
   import type { IActivityContext } from "$lib/context/context";
 
@@ -32,15 +33,7 @@
   const properties = typeConfig?.properties.filter((p) => visibilityFullfilled(annotationValue, p));
 
   // Variables
-  const propertyComponents: {
-    type: string;
-    component:
-      | typeof TextProperty
-      | typeof IntegerProperty
-      | typeof BooleanProperty
-      | typeof SingleSelectProperty
-      | typeof MultiSelectProperty;
-  }[] = [
+  const propertyComponents: PropertyComponent[] = [
     { type: "text", component: TextProperty },
     { type: "integer", component: IntegerProperty },
     { type: "boolean", component: BooleanProperty },
