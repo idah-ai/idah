@@ -5,6 +5,11 @@ class AccountSettingsExpo < BaseExpo
 
   use_service AccountSettings::Service
 
+  desc <<~MD
+    Manage account settings for user preferences and configurations,
+    including retrieval and updating of settings.
+  MD
+
   json_api AccountSetting::Record do
     show
     index do
