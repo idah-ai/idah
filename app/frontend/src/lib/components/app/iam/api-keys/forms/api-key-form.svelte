@@ -1,10 +1,10 @@
 <script lang="ts">
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
+  import MultipleSelectField from "@/components/app/forms/fields/select/multiple/multiple-select-field.svelte";
   import SingleSelectField from "@/components/app/forms/fields/select/single/single-select-field.svelte";
   import { FieldGroup, FieldSet } from "@/components/ui/field";
-  import MultipleSelectField from "@/components/app/forms/fields/select/multiple/multiple-select-field.svelte";
 
-  import { scopeTypes } from "@/data/model/iam/api-keys/constants";
+  import { apiKeyPermissions, scopeTypes } from "@/data/model/iam/api-keys/constants";
   import { ApiKeyRecord } from "@/data/model/iam/api-keys/record";
 
   import type { FormBaseProps } from "@/components/app/forms/form.types";
@@ -64,7 +64,7 @@
       label="Permissions"
       placeholder="Select permissions"
       required
-      choices={roles}
+      choices={apiKeyPermissions}
       errors={fieldErrors["permission"]}
       values={permissions}
     />
