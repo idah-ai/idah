@@ -65,19 +65,9 @@ module ApiKey
           raise Verse::Error::ValidationFailed, "scope_value cannot be empty for scope_type '#{attr[:scope_type]}'."
         end
 
-        # service_account_id = accounts.create(
-        #   {
-        #     name: "API Service Account",
-        #     email: "api-#{SecureRandom.hex(6)}@host.to.idah.tld",
-        #     hashed_password: BCrypt::Password.create("password"),
-        #     enabled: true,
-        #     role_name: "api_service"
-        #   }
-        # )
+        service_account = accounts.find_by({ role_name: "api_service" })
+        raise Verse::Error::RecordNotFound, "Service account not found" unless service_account
 
-        service_account = accounts.find!(16) # test purpose only now
-
-        # attr[:account_id] = service_account_id.to_i
         attr[:account_id] = service_account.id
 
         # Create API key record
