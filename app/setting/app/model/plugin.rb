@@ -55,7 +55,8 @@ module Plugin
               end
             end
 
-            raise "Plugin path not found for plugin #{name}-#{version}"
+            raise Verse::Error::NotFound,
+                  "Plugin path not found for plugin #{name}-#{version}"
           end
         end
     end

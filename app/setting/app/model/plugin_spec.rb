@@ -79,7 +79,7 @@ RSpec.describe Plugin::Record, type: :model do
         )
 
         expect { record.path }.to raise_error(
-          "Plugin path not found for plugin my-plugin-1.2.3"
+          Verse::Error::NotFound, "Plugin path not found for plugin my-plugin-1.2.3"
         )
       end
     end
