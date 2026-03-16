@@ -1,0 +1,89 @@
+<script lang="ts">
+  import { PlusIcon } from "@lucide/svelte";
+  import { onMount } from "svelte";
+
+  import DatasourceTable from "@/components/app/datasource-table/datasource-table.svelte";
+  import APIKeyFormModal from "@/components/app/iam/api-keys/overlays/api-key-form-modal.svelte";
+  import PageHeader from "@/components/app/page/page-header.svelte";
+  import PageProvider from "@/components/app/page/page-provider.svelte";
+  import Button from "@/components/ui/button/button.svelte";
+  import Can from "@/security/can.svelte";
+
+  import { apiKeyColumns } from "@/components/app/iam/api-keys/data-tables/api-key-columns";
+  import { apiKeyBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
+  import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
+  import { ApiKeyRecord, apiKeysBackendDataSource } from "@/data/model/iam/api-keys/record";
+  import { authStatus } from "@/security/AuthContext";
+  import { refetches } from "@/utils/refetch";
+
+  pageBreadcrumbsStore.set([apiKeyBreadcrumb]);
+
+  // Variables
+  let canCreateApiKey = $state(false);
+  let canDeleteApiKey = $state(false);
+  let columns = $state(apiKeyColumns);
+  let openNewAPIKeyFormModal: boolean = $state(false);
+
+  // Lifecycle
+  onMount(async () => {
+    await checkRights();
+  });
+
+  // Functions
+  async function checkRights() {
+    canCreateApiKey = (await $authStatus.authContext?.can("create", "iam:accounts")) || false;
+    canDeleteApiKey = (await $authStatus.authContext?.can("delete", "iam:accounts")) || false;
+    columns.action.visible = canCreateApiKey || canDeleteApiKey;
+  }
+
+  function openNewAPIKeyModal(): void {
+    openNewAPIKeyFormModal = true;
+  }
+</script>
+
+{#snippet AddNewAPIKeyButton()}
+  <Can action="create" resource="iam:accounts" roles={["admin"]}>
+    <Button onclick={openNewAPIKeyModal}>
+      <PlusIcon />
+      New API Key
+    </Button>
+
+    <APIKeyFormModal action="create" title="API Key" bind:open={openNewAPIKeyFormModal} />
+  </Can>
+{/snippet}
+
+<PageProvider name="apiKeys" roles={["admin", "org_owner"]} action="read" resource="iam:accounts">
+  <PageHeader title="API Keys">
+    {#snippet actions()}
+      {@render AddNewAPIKeyButton()}
+    {/snippet}
+  </PageHeader>
+
+  {#key $refetches.apiKeys.list}
+    <DatasourceTable
+      id="apiKeys"
+      name="apiKey"
+      refetchKey="apiKeys"
+      {columns}
+      dataSource={apiKeysBackendDataSource}
+      listOptions={{
+        fields: {
+          [ApiKeyRecord.type]: [
+            "id",
+            "name",
+            "scope_type",
+            "permissions",
+            "last_used",
+            "created_at",
+            "expired_at",
+            "updated_at",
+          ],
+        },
+      }}
+    >
+      {#snippet addNewRecordButton()}
+        {@render AddNewAPIKeyButton()}
+      {/snippet}
+    </DatasourceTable>
+  {/key}
+</PageProvider>
