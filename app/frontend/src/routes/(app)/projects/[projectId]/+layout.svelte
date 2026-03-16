@@ -5,13 +5,16 @@
   import { setContext, type Snippet } from "svelte";
 
   import AddNewDatasetButton from "@/components/app/datasets/buttons/add-new-dataset-button.svelte";
+  import SelectedDatasetsDropdownMenu from "@/components/app/datasets/dropdowns/selected-datasets-dropdown-menu.svelte";
   import PageHeader from "@/components/app/page/page-header.svelte";
   import PageLoading from "@/components/app/page/page-loading.svelte";
   import PageProvider from "@/components/app/page/page-provider.svelte";
   import ProjectDropdownMenu from "@/components/app/projects/dropdowns/project-dropdown-menu.svelte";
   import InviteMemberButton from "@/components/app/projects/members/buttons/invite-member-button.svelte";
   import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+  import Text from "@/components/ui/text/Text.svelte";
 
+  import { selectedDatasets } from "@/components/app/datasets/stores";
   import { projectTabs, type ProjectTab } from "@/components/app/projects/tabs/project.tabs";
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { refetches } from "@/utils/refetch";
@@ -63,9 +66,12 @@
       resource="dataset:projects"
     >
       {#if !isDatasetPage}
-        <PageHeader title={project.name} description={project.description}>
-          {#snippet actions()}
-            <ProjectDropdownMenu {projectId} align="end" />
+        <PageHeader>
+          {#snippet slotTitle()}
+            <div class="flex items-center gap-2">
+              <Text size="h2" weight="semibold">{project.name}</Text>
+              <ProjectDropdownMenu {projectId} align="center" />
+            </div>
           {/snippet}
         </PageHeader>
 
@@ -79,7 +85,13 @@
 
             <div class="ml-auto">
               <TabsContent value="datasets">
-                <AddNewDatasetButton />
+                <div class="flex items-center gap-2">
+                  {#if $selectedDatasets.length}
+                    <SelectedDatasetsDropdownMenu />
+                  {/if}
+
+                  <AddNewDatasetButton />
+                </div>
               </TabsContent>
 
               <TabsContent value="members">
