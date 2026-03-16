@@ -55,14 +55,17 @@
 
     const datasetsRes = await datasetsBackendDataSource.list({
       fields: {
-        [DatasetRecord.type]: ["id", "name"],
+        [DatasetRecord.type]: ["id", "name", "modality"],
       },
       filters: {
         id: datasetIds,
       },
     });
 
-    return { datasets: datasetsRes.data };
+    const modalities = Array.from(new Set(datasetsRes.data.map((dataset) => dataset.modality)));
+    const exportFormats = await ExportsBackendDataSource.formats({ modalities });
+
+    return { datasets: datasetsRes.data, exportFormats };
   }
 </script>
 
