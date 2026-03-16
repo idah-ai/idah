@@ -82,9 +82,9 @@ Edit `src/lib/plugin/plugin.svelte` - this is your main plugin component:
 ```svelte
 <script lang="ts">
   import { onMount } from 'svelte'
-  import type { PluginContext } from '$lib/context'
+  import type { IActivityContext } from "$lib/context";
 
-  export let context: PluginContext
+  let { context }: { context: IActivityContext } = $props();
 
   onMount(() => {
     console.log('Plugin mounted!', context)
@@ -127,7 +127,7 @@ context.userRole        // User role
 ```typescript
 // Create annotation
 await context.annotations.create(
-  id,           // unique ID (use uuidv7())
+  id,           // unique ID (optional, defaults to: uuidv7())
   dimensions,   // shape/dimension data
   annotation,   // annotation values
   metadata      // optional metadata
