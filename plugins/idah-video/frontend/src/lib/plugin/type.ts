@@ -9,5 +9,7 @@ export type IdahVideoBoundingBox = "idah-video:bounding-box";
 
 export const IDAH_NOTE = "note";
 export type IdahNote = "note";
+export const IDAH_VIDEO_POLYGON = "idah-video:polygon";
+export type IdahVideoPolygon = "idah-video:polygon";
 
 export const IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP = "idah-video:settings:frame-step";
