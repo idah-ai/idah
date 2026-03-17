@@ -52,7 +52,7 @@ module Dataset
           project_id = auth_context.custom_scopes[:project]
 
           if org_ids
-          table.where(
+            table.where(
               table.db[:projects]
                 .where(organization_id: org_ids)
                 .where(id: Sequel[:datasets][:project_id])
