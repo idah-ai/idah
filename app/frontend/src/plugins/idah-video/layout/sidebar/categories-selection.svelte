@@ -29,9 +29,12 @@
     AnnotationShape,
     AnnotationValue,
   } from "@/context/AnnotationContext";
+  import { IDAH_VIDEO_POLYGON, IDAH_VIDEO_BOUNDING_BOX } from "../../type";
   import { idb_updated_at } from "../../video-annotation-activity/idb_store.svelte";
   import type { AnnotationsIndexedDB } from "../../video-annotation-activity/indexedDB";
   import type { VideoAnnotation } from "../../video-annotation-activity/VideoAnnotationContext";
+  import VectorSquareIcon from "./category/vector-square-icon.svelte";
+  import PolygonCircleIcon from "./category/polygon-circle-icon.svelte";
 
   // Props
   let {
@@ -160,18 +163,15 @@
       onclick={() => onSelectAnnotation(annotation)}
     >
       <div class="flex items-center gap-1 text-xs">
-        <!-- VECTOR SQUARE ICON -->
-        <div class="shrink-0">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <!-- prettier-ignore -->
-            <path
-            d="M6.66667 4.58333H13.3333M6.66667 4.58333C6.66667 5.73393 5.73393 6.66667 4.58333 6.66667M6.66667 4.58333C6.66667 3.43274 5.73393 2.5 4.58333 2.5C3.43274 2.5 2.5 3.43274 2.5 4.58333C2.5 5.73393 3.43274 6.66667 4.58333 6.66667M13.3333 4.58333C13.3333 5.73393 14.2661 6.66667 15.4167 6.66667M13.3333 4.58333C13.3333 3.43274 14.2661 2.5 15.4167 2.5C16.5673 2.5 17.5 3.43274 17.5 4.58333C17.5 5.73393 16.5673 6.66667 15.4167 6.66667M15.4167 6.66667V13.3333M15.4167 13.3333C14.2661 13.3333 13.3333 14.2661 13.3333 15.4167M15.4167 13.3333C16.5673 13.3333 17.5 14.2661 17.5 15.4167C17.5 16.5673 16.5673 17.5 15.4167 17.5C14.2661 17.5 13.3333 16.5673 13.3333 15.4167M13.3333 15.4167H6.66667M6.66667 15.4167C6.66667 16.5673 5.73393 17.5 4.58333 17.5C3.43274 17.5 2.5 16.5673 2.5 15.4167C2.5 14.2661 3.43274 13.3333 4.58333 13.3333M6.66667 15.4167C6.66667 14.2661 5.73393 13.3333 4.58333 13.3333M4.58333 13.3333V6.66667"
-            stroke="var(--color-gray-500)"
-            stroke-width="1.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-          </svg>
+        <!-- ANNOTATION ICON -->
+        <div class="shrink-0" style="color: var(--color-gray-500)">
+          {#if annotation.shape.type === IDAH_VIDEO_BOUNDING_BOX}
+            <!-- VECTOR SQUARE ICON -->
+            <VectorSquareIcon />
+          {:else if annotation.shape.type === IDAH_VIDEO_POLYGON}
+            <!-- POLYGON CIRCLE ICON -->
+            <PolygonCircleIcon />
+          {/if}
         </div>
 
         {@render CategoryName(name)}
@@ -289,24 +289,11 @@
       {/if}
     </Button>
 
-    <svg
-      class={cn("", {
-        hidden: category.requiredNested,
-      })}
-      width="20"
-      height="20"
-      viewBox="0 0 20 20"
-      fill="none"
-    >
-      <!-- prettier-ignore -->
-      <path
-        d="M6.66667 4.58333H13.3333M6.66667 4.58333C6.66667 5.73393 5.73393 6.66667 4.58333 6.66667M6.66667 4.58333C6.66667 3.43274 5.73393 2.5 4.58333 2.5C3.43274 2.5 2.5 3.43274 2.5 4.58333C2.5 5.73393 3.43274 6.66667 4.58333 6.66667M13.3333 4.58333C13.3333 5.73393 14.2661 6.66667 15.4167 6.66667M13.3333 4.58333C13.3333 3.43274 14.2661 2.5 15.4167 2.5C16.5673 2.5 17.5 3.43274 17.5 4.58333C17.5 5.73393 16.5673 6.66667 15.4167 6.66667M15.4167 6.66667V13.3333M15.4167 13.3333C14.2661 13.3333 13.3333 14.2661 13.3333 15.4167M15.4167 13.3333C16.5673 13.3333 17.5 14.2661 17.5 15.4167C17.5 16.5673 16.5673 17.5 15.4167 17.5C14.2661 17.5 13.3333 16.5673 13.3333 15.4167M13.3333 15.4167H6.66667M6.66667 15.4167C6.66667 16.5673 5.73393 17.5 4.58333 17.5C3.43274 17.5 2.5 16.5673 2.5 15.4167C2.5 14.2661 3.43274 13.3333 4.58333 13.3333M6.66667 15.4167C6.66667 14.2661 5.73393 13.3333 4.58333 13.3333M4.58333 13.3333V6.66667"
-        stroke={category.data.color || "var(--color-gray-500)"}
-        stroke-width="1.5"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      />
-    </svg>
+    {#if type === IDAH_VIDEO_BOUNDING_BOX}
+      <VectorSquareIcon color={category.data?.color} class={cn({ hidden: category.requiredNested })} />
+    {:else if type === IDAH_VIDEO_POLYGON}>
+      <PolygonCircleIcon color={category.data?.color} class={cn({ hidden: category.requiredNested })} />
+    {/if}
     {@render CategoryName(category.name)}
   </div>
 {/snippet}

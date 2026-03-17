@@ -5,8 +5,15 @@ class LogsExpo < BaseExpo
 
   use_service Log::Service
 
+  desc <<~MD
+    Audit logs provide a detailed record of actions and events
+    within the system, enhancing transparency and accountability.
+  MD
+
   json_api Log::Record do
-    show
+    show do
+      meta nodoc: true
+    end
     index do
       allowed_filters :action__in,
                       :actor_account_id__eq,
@@ -16,6 +23,7 @@ class LogsExpo < BaseExpo
                       :resource_type__in,
                       :resource_id__match,
                       :actor_account_role_name__nin
+      meta nodoc: true
     end
   end
 

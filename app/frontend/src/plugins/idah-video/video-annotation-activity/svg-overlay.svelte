@@ -4,9 +4,17 @@
   import { cn } from "@/utils";
 
   import BoundingBox, { type ToolSelection } from "./bounding-box.svelte";
+  import Polygon from "./polygon.svelte";
   import { boundingBoxes } from "./idb_store.svelte";
 
-  import { DEFAULT_MODE, ENTRY_ROOT, IDAH_NOTE, IDAH_VIDEO_BOUNDING_BOX, type EntryRoot } from "../type";
+  import {
+    DEFAULT_MODE,
+    ENTRY_ROOT,
+    IDAH_NOTE,
+    IDAH_VIDEO_BOUNDING_BOX,
+    IDAH_VIDEO_POLYGON,
+    type EntryRoot,
+  } from "../type";
   import { deselectAnnotationGroup, selectedAnnotation } from "./store";
   import {
     getInterpolatedFrame,
@@ -15,6 +23,7 @@
     WIDTH,
     X,
     Y,
+    type InterpolatedVertex,
     type Point,
     type VideoShape,
   } from "./VideoAnnotationContext";
@@ -102,7 +111,11 @@
   let current_shape = $derived.by(() => {
     if (shape) return getInterpolatedFrame(shape as VideoShape, frame);
   });
-  let points: Point[] = $derived(shape ? current_shape?.points || [] : []);
+
+  let points: Point[] | InterpolatedVertex[] | undefined = $derived(
+    current_shape && "points" in current_shape ? current_shape?.points || [] : [],
+  );
+
   let angle: number = $derived.by(() => {
     return current_shape?.angle || 0;
   });
@@ -229,6 +242,13 @@
   let isEditing = $state(false);
   let editionCursor: string | undefined = $state(undefined);
 
+  // Reset editionCursor when switching to visual mode without selection
+  $effect(() => {
+    if (mode === DEFAULT_MODE && !$selectedAnnotation) {
+      editionCursor = undefined;
+    }
+  });
+
   let pointer = $derived.by(() => {
     if (mode == IDAH_NOTE) return "cursor-note";
     if (editionCursor) return editionCursor;
@@ -242,9 +262,12 @@
 
     const assignedAttributes = annotation.value.attributes || {};
 
+    // Determine which config to use based on annotation shape type
+    const configKey = annotation.shape.type;
+
     const assignedAttributeProperties =
       Object.entries(context.config)
-        .find(([k, _]) => k == IDAH_VIDEO_BOUNDING_BOX)?.[1]
+        .find(([k, _]) => k == configKey)?.[1]
         .properties.filter((property) => property.id in assignedAttributes) || [];
 
     const assignedAttributesStyles = Object.entries(assignedAttributes)
@@ -322,14 +345,14 @@
     {#await annotations_promise}
       {#each $boundingBoxes as annotation (annotation.metadata.id)}
         {#if annotation.metadata.id != $selectedAnnotation?.metadata.id}
+          {@const propertyStyle = getAnnotationPropertyStyle(annotation)}
           {#if annotation.shape.type == IDAH_VIDEO_BOUNDING_BOX && !annotation.hidden}
             {@const current_annotation_shape = getInterpolatedFrame(annotation.shape as VideoShape, frame)}
             {@const current_annotation_points = current_annotation_shape?.points || []}
             {@const current_annotation_angle = current_annotation_shape?.angle || 0}
-            {@const propertyStyle = getAnnotationPropertyStyle(annotation)}
             <BoundingBox
               {mode}
-              points={current_annotation_points}
+              points={current_annotation_points as Point[]}
               angle={current_annotation_angle}
               ratio={target_size}
               offset={zoomInfo.offset}
@@ -348,7 +371,30 @@
                   showNewNoteFeedPopup(annotation);
                 }
               }}
-            />, frame
+            />
+          {:else if annotation.shape.type == IDAH_VIDEO_POLYGON && !annotation.hidden}
+            <Polygon
+              {mode}
+              points={(getInterpolatedFrame(annotation.shape as VideoShape, frame)?.points ||
+                []) as InterpolatedVertex[]}
+              ratio={target_size}
+              offset={zoomInfo.offset}
+              color={Object.entries(context.config)
+                .find(([k, _]) => k == IDAH_VIDEO_POLYGON)?.[1]
+                .values.find((c) => c.id == annotation.value?.category)?.color || "grey"}
+              styles={propertyStyle}
+              onmousedown={(e) => {
+                e.stopPropagation();
+
+                if (mode == DEFAULT_MODE || $selectedAnnotation) {
+                  onSelectAnnotation(annotation);
+                }
+
+                if (mode === IDAH_NOTE) {
+                  showNewNoteFeedPopup(annotation);
+                }
+              }}
+            />
           {/if}
         {/if}
       {/each}
@@ -356,21 +402,46 @@
       {#key frame}
         {#each annotations as annotation (annotation.metadata.id)}
           {#if annotation.metadata.id != $selectedAnnotation?.metadata.id}
+            {@const propertyStyle = getAnnotationPropertyStyle(annotation)}
             {#if annotation.shape.type == IDAH_VIDEO_BOUNDING_BOX && !annotation.hidden}
               {@const current_annotation_shape = getInterpolatedFrame(annotation.shape as VideoShape, frame)}
               {@const current_annotation_points = current_annotation_shape?.points || []}
               {@const current_annotation_angle = current_annotation_shape?.angle || 0}
-              {@const propertyStyle = getAnnotationPropertyStyle(annotation)}
 
               <BoundingBox
                 {mode}
-                points={current_annotation_points}
+                points={current_annotation_points as Point[]}
                 angle={current_annotation_angle}
                 ratio={target_size}
                 offset={zoomInfo.offset}
                 color={annotation?.synced
                   ? Object.entries(context.config)
                       .find(([k, _]) => k == IDAH_VIDEO_BOUNDING_BOX)?.[1]
+                      .values.find((c) => c.id == annotation?.value?.category)?.color || "grey"
+                  : "grey"}
+                styles={propertyStyle}
+                onmousedown={(e) => {
+                  e.stopPropagation();
+
+                  if (mode == DEFAULT_MODE || $selectedAnnotation) {
+                    onSelectAnnotation(annotation);
+                  }
+
+                  if (mode === IDAH_NOTE) {
+                    showNewNoteFeedPopup(annotation);
+                  }
+                }}
+              />
+            {:else if annotation.shape.type == IDAH_VIDEO_POLYGON && !annotation.hidden}
+              <Polygon
+                {mode}
+                points={(getInterpolatedFrame(annotation.shape as VideoShape, frame)?.points ||
+                  []) as InterpolatedVertex[]}
+                ratio={target_size}
+                offset={zoomInfo.offset}
+                color={annotation?.synced
+                  ? Object.entries(context.config)
+                      .find(([k, _]) => k == IDAH_VIDEO_POLYGON)?.[1]
                       .values.find((c) => c.id == annotation?.value?.category)?.color || "grey"
                   : "grey"}
                 styles={propertyStyle}
@@ -393,15 +464,45 @@
     {/await}
 
     <!-- STATE:: SELECTED -->
-    {#if (shape?.type == IDAH_VIDEO_BOUNDING_BOX || mode == IDAH_VIDEO_BOUNDING_BOX) && ($selectedAnnotation ? !$selectedAnnotation.hidden : true) && (mode == IDAH_VIDEO_BOUNDING_BOX || (shape?.start <= frame && shape?.end >= frame))}
-      {#key [shape, frame]}
-        {@const propertyStyle = getAnnotationPropertyStyle($selectedAnnotation)}
+    {#if $selectedAnnotation || mode != DEFAULT_MODE}
+      {@const propertyStyle = getAnnotationPropertyStyle($selectedAnnotation)}
+      {#if shape?.type == IDAH_VIDEO_BOUNDING_BOX || mode == IDAH_VIDEO_BOUNDING_BOX}
+        {#key [shape, frame]}
+          <BoundingBox
+            bind:this={toolSelection}
+            {mode}
+            points={points as Point[]}
+            {angle}
+            onEditingChange={(editing) => {
+              isEditing = editing;
+            }}
+            onPointerChange={(c) => (editionCursor = c)}
+            ratio={target_size}
+            offset={zoomInfo.offset}
+            cursor={cursor_downscaled}
+            hidden={$selectedAnnotation?.hidden}
+            editable={(shape?.type == IDAH_VIDEO_BOUNDING_BOX || mode == IDAH_VIDEO_BOUNDING_BOX) &&
+              !$selectedAnnotation?.locked &&
+              ["annotate", "review"].includes(context.workflowStep)}
+            color={$selectedAnnotation?.synced
+              ? Object.entries(context.config)
+                  .find(([k, _]) => k == mode)?.[1]
+                  .values.find((c) => c.id == $selectedAnnotation?.value?.category)?.color || "grey"
+              : "grey"}
+            styles={propertyStyle}
+            onChange={(bb, newAngle) => {
+              onSelection(IDAH_VIDEO_BOUNDING_BOX, frame, bb, newAngle, $selectedAnnotation?.metadata.id);
+              // points = bb;
+            }}
+          />
+        {/key}
+      {/if}
 
-        <BoundingBox
+      {#if shape?.type == IDAH_VIDEO_POLYGON || mode == IDAH_VIDEO_POLYGON}
+        <Polygon
           bind:this={toolSelection}
           {mode}
-          {points}
-          {angle}
+          points={points as Point[] | InterpolatedVertex[]}
           onEditingChange={(editing) => {
             isEditing = editing;
           }}
@@ -409,7 +510,8 @@
           ratio={target_size}
           offset={zoomInfo.offset}
           cursor={cursor_downscaled}
-          editable={(shape?.type == IDAH_VIDEO_BOUNDING_BOX || mode == IDAH_VIDEO_BOUNDING_BOX) &&
+          hidden={$selectedAnnotation?.hidden}
+          editable={(shape?.type == IDAH_VIDEO_POLYGON || mode == IDAH_VIDEO_POLYGON) &&
             !$selectedAnnotation?.locked &&
             ["annotate", "review"].includes(context.workflowStep)}
           color={$selectedAnnotation?.synced
@@ -418,12 +520,12 @@
                 .values.find((c) => c.id == $selectedAnnotation?.value?.category)?.color || "grey"
             : "grey"}
           styles={propertyStyle}
-          onChange={(bb, angle) => {
-            onSelection(IDAH_VIDEO_BOUNDING_BOX, frame, bb, angle, $selectedAnnotation?.metadata.id);
-            points = bb;
+          onChange={(polygon_points) => {
+            onSelection(IDAH_VIDEO_POLYGON, frame, polygon_points, 0, $selectedAnnotation?.metadata.id);
+            // points = polygon_points;
           }}
         />
-      {/key}
+      {/if}
     {/if}
   </svg>
 </div>

@@ -5,6 +5,11 @@ class AccountsExpo < BaseExpo
 
   use_service Account::Service
 
+  desc <<~MD
+    Manage user accounts within the system, including creation,
+    updating, retrieval, deletion, and handling of invitations.
+  MD
+
   json_api Account::Record do
     index do
       allowed_filters :name__match,

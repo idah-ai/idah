@@ -40,7 +40,7 @@ namespace :service_accounts do
           record = repo.find_by({ email: })
 
           if record
-            puts "update #{email}, password = #{password}"
+            puts "update #{email}"
 
             repo.update(
               record.id,
@@ -51,7 +51,7 @@ namespace :service_accounts do
               }
             )
           else
-            puts "create #{email}, password = #{password}"
+            puts "create #{email}"
 
             repo.create(
               {
