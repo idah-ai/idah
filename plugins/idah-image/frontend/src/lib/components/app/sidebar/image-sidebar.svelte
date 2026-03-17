@@ -3,7 +3,7 @@
 
   import { Button } from "$lib/components/ui/button";
   import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "$lib/components/ui/collapsible";
-  import { SidebarGroup, SidebarGroupContent } from "$lib/components/ui/sidebar";
+  import { SidebarGroup, SidebarGroupContent, SidebarMenuItem } from "$lib/components/ui/sidebar";
 
   import { cn } from "$lib/utils";
   // import { humanize } from "$lib/utils/string";
@@ -196,10 +196,47 @@
 
       <CollapsibleContent>
         <!-- CATEGORY TREE -->
-        <!-- {#each categoriesTree as category (category.id)}
-          {@render CategoryNode(category, category.nestedCategories, onSelectCategory, selectedCategory)}
-        {/each} -->
+        <!-- {#each categoriesTree as category (category.id)} -->
+        {@render CategoryNode()}
+        <!-- {/each} -->
       </CollapsibleContent>
     </Collapsible>
   </SidebarGroupContent>
 </SidebarGroup>
+
+{#snippet CategoryNode()}
+  <Collapsible>
+    <CollapsibleTrigger>
+      <SidebarMenuItem class="flex h-8 w-full flex-row items-center gap-1">
+        <Button variant="ghost" size="icon-sm">
+          <ChevronRightIcon />
+        </Button>
+        category name
+
+        <!-- <VectorSqaureIcon
+                color={category.data.color}
+                class={cn({
+                  hidden: category.requiredNested,
+                })}
+              /> -->
+
+        <!-- <AnnotationCountBadge class="mr-2" count={1} /> -->
+      </SidebarMenuItem>
+    </CollapsibleTrigger>
+
+    <CollapsibleContent>
+      <!-- {#if subCategories}
+        {#each subCategories as subCategory (subCategory.id)}
+          {@render CategoryNode(
+            subCategory,
+            subCategory.nestedCategories,
+            onSelectCategory,
+            selectedCategory,
+            [...parent, category.id.split("/").slice(parent.length)[0]],
+            level + 1,
+          )}
+        {/each}
+      {/if} -->
+    </CollapsibleContent>
+  </Collapsible>
+{/snippet}
