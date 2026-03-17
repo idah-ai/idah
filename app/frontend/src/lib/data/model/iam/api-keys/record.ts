@@ -11,7 +11,6 @@ export class ApiKeyRecord extends Record {
   @field() public organizations!: string[];
   @field() public projects!: string[];
 
-
   @field() public readonly picture_url!: string | null;
   @field() public readonly last_used!: Date | null;
 
