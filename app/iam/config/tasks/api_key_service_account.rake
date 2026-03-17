@@ -7,7 +7,6 @@ namespace :api_key_service_account do
 
     repo = Account::Repository.new(Verse::Auth::Context[:system])
 
-
     environment = ENV.fetch("APP_ENVIRONMENT")
     password ||= \
       if environment == "production"
@@ -17,7 +16,6 @@ namespace :api_key_service_account do
       else
         "password"
       end
-
 
     puts "Creating api_keys service account..."
 
