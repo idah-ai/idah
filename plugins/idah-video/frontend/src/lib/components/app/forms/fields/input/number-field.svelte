@@ -1,0 +1,131 @@
+<script lang="ts">
+  import { InfoIcon } from "@lucide/svelte";
+
+  import Tooltips from "$lib/components/app/tooltips/tooltips.svelte";
+  import {
+    Field,
+    FieldDescription,
+    FieldError,
+    FieldLabel,
+  } from "$lib/components/ui/field";
+  import {
+    InputGroup,
+    InputGroupAddon,
+    InputGroupButton,
+    InputGroupInput,
+    InputGroupText,
+  } from "$lib/components/ui/input-group";
+
+  import { cn } from "$lib/utils";
+
+  import type { NumberFieldBaseProps } from "$lib/components/app/forms/form-field.types";
+
+  // Props
+  interface Props extends NumberFieldBaseProps {
+    value: number | null | undefined;
+    groupInputClass?: string;
+  }
+  let {
+    value = $bindable(null),
+    prefix = undefined,
+    prefixIcon: PrefixIcon = undefined,
+    suffix = undefined,
+    suffixIcon: SuffixIcon = undefined,
+    oninput = undefined,
+    onblur = undefined,
+    name,
+    inputmode = "decimal",
+    min = undefined,
+    max = undefined,
+    step = 1,
+    label,
+    placeholder,
+    disabled = false,
+    required = false,
+    readonly,
+    description,
+    info,
+    errors,
+    class: className,
+    slotDescription,
+    slotErrors,
+    groupInputClass = "",
+  }: Props = $props();
+</script>
+
+<Field class={cn("", className)}>
+  <FieldLabel for={name} {required} class={cn("", { hidden: !label })}
+    >{label}</FieldLabel
+  >
+
+  <InputGroup class={cn("", groupInputClass)}>
+    {#if PrefixIcon}
+      <InputGroupAddon align="inline-start">
+        <PrefixIcon />
+      </InputGroupAddon>
+    {/if}
+
+    {#if prefix}
+      <InputGroupAddon align="inline-start">
+        <InputGroupText>{prefix}</InputGroupText>
+      </InputGroupAddon>
+    {/if}
+
+    <InputGroupInput
+      id={name}
+      aria-invalid={errors ? "true" : "false"}
+      type="number"
+      {inputmode}
+      {placeholder}
+      {disabled}
+      {required}
+      {readonly}
+      {min}
+      {max}
+      {step}
+      {value}
+      {oninput}
+      {onblur}
+    />
+
+    {#if suffix}
+      <InputGroupAddon align="inline-end">
+        <InputGroupText>{suffix}</InputGroupText>
+      </InputGroupAddon>
+    {/if}
+
+    {#if SuffixIcon}
+      <InputGroupAddon align="inline-end">
+        <SuffixIcon />
+      </InputGroupAddon>
+    {/if}
+
+    {#if info}
+      <InputGroupAddon align="inline-end">
+        <Tooltips align="center">
+          {#snippet trigger()}
+            <InputGroupButton variant="ghost" size="icon-xs">
+              <InfoIcon />
+            </InputGroupButton>
+          {/snippet}
+
+          {#snippet content()}
+            {info}
+          {/snippet}
+        </Tooltips>
+      </InputGroupAddon>
+    {/if}
+  </InputGroup>
+
+  {#if slotDescription}
+    {@render slotDescription()}
+  {:else if description}
+    <FieldDescription>{description}</FieldDescription>
+  {/if}
+
+  {#if slotErrors}
+    {@render slotErrors()}
+  {:else if errors}
+    <FieldError>{errors}</FieldError>
+  {/if}
+</Field>
