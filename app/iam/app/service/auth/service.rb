@@ -12,7 +12,8 @@ module Auth
     use_system_repo \
       system_accounts: Account::Repository,
       system_account_sessions: AccountSession::Repository,
-      system_roles: RoleRepository
+      system_roles: RoleRepository,
+      system_api_keys: ApiKey::Repository
 
     def create_refresh_token(account, nonce:, session_id: nil, ip: "", user_agent: nil)
       seq, session_id = account_sessions.bump_refresh_seq(
@@ -64,7 +65,94 @@ module Auth
       system_account_sessions.logout(session_id)
     end
 
+    def login_api(key, ip: "", token_expiration: 3600)
+      now = Time.now
+
+      # Validate key format
+      unless key.start_with?("IDAH_") && key.size == 69
+        raise Verse::Error::Authorization, "Invalid Key"
+      end
+
+      # Compute SHA digest
+      key_sha = Digest::SHA256.hexdigest(key)
+
+      # Find API key by SHA
+      api_key = system_api_keys.find_by(
+        { key_sha: },
+        included: ["service_account"]
+      )
+
+      unless api_key
+        raise Verse::Error::Authorization, "Invalid credentials"
+      end
+
+      # Check if key is valid (not revoked and not expired)
+      if api_key.revoked?
+        raise Verse::Error::Authorization, "API key has been revoked"
+      end
+
+      if api_key.expired?
+        raise Verse::Error::Authorization, "API key has expired"
+      end
+
+      # Get the service account
+      account = api_key.service_account
+
+      # Build scope based on API key's scope_type and scope_value
+      scope = api_key.build_scope
+
+      # Generate the compound role from permissions
+      role = "api:#{api_key.permissions.join(",")}"
+
+      # Calculate expiration
+      exp = now.to_i + token_expiration
+
+      # Encode the auth token with api label
+      auth_token = Verse::Http::Auth::Token.encode(
+        {
+          id: account.id,
+          email: account.email,
+          name: account.name,
+          labels: ["api"]
+        }.compact,
+        role,
+        scope,
+        exp:
+      )
+
+      # Update the API key last used timestamp
+      system_api_keys.update!(api_key.id, { last_used_at: now })
+
+      # Get role rights from API permissions
+      role_rights = api_role_rights(api_key.permissions)
+
+      AccountAuth::Record.new(
+        {
+          id: account.id,
+          email: account.email,
+          name: account.name,
+          picture_url: account.picture_url,
+          role_name: role,
+          role_scope: scope,
+          role_rights:,
+          auth_token:,
+          exp:
+        }
+      )
+    end
+
     private
+
+    def api_role_rights(permissions)
+      rights = []
+      api_roles = permissions.map { |x| "api/#{x}" }
+
+      system_roles.chunked_index({ name__in: api_roles }).each do |role|
+        rights += role.rights
+      end
+
+      rights
+    end
 
     # Build the tokens for the given account and role name
     # @return [String, String] the auth_token and refresh_token

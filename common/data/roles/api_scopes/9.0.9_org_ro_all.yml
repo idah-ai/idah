@@ -1,0 +1,23 @@
+api/org_ro_all:
+  title: "API - Organization Read Only"
+  mask: "9.0.9"
+  description: |
+    API role for read-only access to organization resources.
+    This scope is compoundable, meaning a role for api can be defined as "api:org_ro_all,project_rw_org".
+  assignable: false
+  rights:
+    # Organizations
+    - "iam:organizations.read.*"
+
+    # Dataset Service - Read Only
+    - "dataset:projects.read.*"
+    - "dataset:project_members.read.*"
+    - "dataset:datasets.read.*"
+    - "dataset:entries.read.*"
+    - "dataset:annotations.read.*"
+    - "dataset:note_feeds.read.*"
+    - "dataset:note_comments.read.*"
+
+    # Media Service - Read Only
+    - "media:medias.read.*"
+    - "media:jobs.read.*"

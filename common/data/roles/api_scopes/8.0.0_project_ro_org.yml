@@ -1,0 +1,20 @@
+api/project_ro_org:
+  title: "API - Project Read Only (Org Scope)"
+  mask: "8.0.0"
+  description: |
+    API role for read-only access to project resources within organization scope.
+    This scope is compoundable, meaning a role for api can be defined as "api:project_ro_org,org_ro_all".
+  assignable: false
+  rights:
+    # Dataset Service - Read Only (Project level)
+    - "dataset:projects.read.as_org_owner"
+    - "dataset:project_members.read.as_org_owner"
+    - "dataset:datasets.read.as_org_owner"
+    - "dataset:entries.read.as_org_owner"
+    - "dataset:annotations.read.as_org_owner"
+    - "dataset:note_feeds.read.as_org_owner"
+    - "dataset:note_comments.read.as_org_owner"
+
+    # Media Service - Read Only (Project level)
+    - "media:medias.read.as_org_owner"
+    - "media:jobs.read.as_org_owner"
