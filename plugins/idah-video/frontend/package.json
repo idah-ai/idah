@@ -1,0 +1,46 @@
+{
+  "name": "idah-video",
+  "displayName": "IDAH Video Annotation",
+  "description": "A module for annotating video.",
+	"private": true,
+	"version": "1.0.0",
+	"type": "module",
+	"scripts": {
+		"dev": "vite dev",
+		"build": "vite build",
+		"build:watch": "vite build --watch",
+		"preview": "vite preview",
+		"prepare": "svelte-kit sync || echo ''",
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
+	},
+  "dependencies": {
+    "date-fns": "^4.1.0",
+    "zod": "^4.1.5",
+    "uuidv7": "^1.0.2",
+    "bits-ui": "^2.14.2",
+    "clsx": "^2.1.1",
+    "svelte-sonner": "^1.0.5",
+    "@lucide/svelte": "^0.544.0",
+    "tailwind-merge": "^3.3.1",
+    "tailwind-variants": "^3.1.1",
+    "paneforge": "1.0.0-next.5",
+    "video.js": "^8.23.3"
+  },
+	"devDependencies": {
+		"@sveltejs/adapter-auto": "^7.0.0",
+    "@sveltejs/adapter-node": "^5.3.2",
+		"@sveltejs/kit": "^2.50.2",
+		"@sveltejs/vite-plugin-svelte": "^6.2.4",
+		"svelte": "^5.51.0",
+		"svelte-check": "^4.4.2",
+		"typescript": "^5.9.3",
+		"vite": "^7.3.1",
+    "tailwindcss": "^4.1.10",
+    "tw-animate-css": "^1.3.4",
+    "@tailwindcss/vite": "^4.1.10",
+    "@rollup/plugin-alias": "^5.1.1",
+    "@internationalized/date": "^3.8.2",
+    "vitest": "^3.2.3"
+	}
+}
