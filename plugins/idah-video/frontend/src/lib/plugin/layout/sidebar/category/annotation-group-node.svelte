@@ -25,9 +25,11 @@
   import { selectedAnnotationGroup } from "../../../video-annotation-activity/store";
   import CategoryAction from "./category-action.svelte";
   import CategoryName from "./category-name.svelte";
-  import VectorSqaureIcon from "./vector-sqaure-icon.svelte";
+  import VectorSquareIcon from "./vector-square-icon.svelte";
+  import PolygonCircleIcon from "./polygon-circle-icon.svelte";
+  import { IDAH_VIDEO_BOUNDING_BOX } from "../../../type";
 
-  import type { CategoryDefinition } from "$idah/context/CategoryContext";
+  import type { CategoryDefinition } from "$idah/context/ActivityContext";
 
   // Type
   type TAnnotationObj = AnnotationObj<
@@ -106,9 +108,14 @@
       class="flex w-full items-center gap-1 text-xs"
       style="padding-left: {Number(level - 1) + 0.5}rem"
     >
-      <!-- VECTOR SQUARE ICON -->
       <div class="shrink-0">
-        <VectorSqaureIcon />
+        <div>
+          {#if annotationGroup.annotations[0].shape.type === IDAH_VIDEO_BOUNDING_BOX}
+            <VectorSquareIcon />
+          {:else}
+            <PolygonCircleIcon />
+          {/if}
+        </div>
       </div>
 
       <CategoryName name="{category.name}-{lastPartOfGroupId}" />

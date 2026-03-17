@@ -11,7 +11,10 @@
   import { Separator } from "$lib/components/ui/separator";
   import Text from "$lib/components/ui/text/Text.svelte";
 
-  import VectorSquareIcon from "../../layout/sidebar/category/vector-sqaure-icon.svelte";
+  import VectorSquareIcon from "../../layout/sidebar/category/vector-square-icon.svelte";
+  import PolygonCircleIcon from "../../layout/sidebar/category/polygon-circle-icon.svelte";
+  import { IDAH_VIDEO_BOUNDING_BOX } from "../../type";
+
   import BooleanProperty from "./properties/booleanProperty.svelte";
   import IntegerProperty from "./properties/integerProperty.svelte";
   import MultiSelectProperty from "./properties/MultiSelectProperty.svelte";
@@ -150,7 +153,11 @@
         >
           <div class="flex gap-1">
             {#if category?.label}
-              <VectorSquareIcon color={category.color} />
+              {#if firstAnnotationInGroup?.shape.type === IDAH_VIDEO_BOUNDING_BOX}
+                <VectorSquareIcon color={category.color} />
+              {:else}
+                <PolygonCircleIcon color={category.color} />
+              {/if}
               {truncate(category.label)}
             {:else}
               Select category
@@ -162,7 +169,11 @@
           <SelectGroup>
             {#each configByMode.values as { id: value, label, color } (value)}
               <SelectItem class="text-xs" {label} {value}>
-                <VectorSquareIcon {color} />
+                {#if firstAnnotationInGroup?.shape.type === IDAH_VIDEO_BOUNDING_BOX}
+                  <VectorSquareIcon {color} />
+                {:else}
+                  <PolygonCircleIcon {color} />
+                {/if}
                 {label}
               </SelectItem>
             {/each}
@@ -186,7 +197,11 @@
       >
         <div class="flex gap-1">
           {#if foundAnnotationInGroupCategory?.label}
-            <VectorSquareIcon color={foundAnnotationInGroupCategory.color} />
+            {#if firstAnnotationInGroup?.shape.type === IDAH_VIDEO_BOUNDING_BOX}
+              <VectorSquareIcon color={foundAnnotationInGroupCategory.color} />
+            {:else}
+              <PolygonCircleIcon color={foundAnnotationInGroupCategory.color} />
+            {/if}
             {truncate(foundAnnotationInGroupCategory.label)}
           {:else}
             Select category
@@ -203,7 +218,11 @@
               {value}
               disabled={firstAnnotationInGroupCategory == value}
             >
-              <VectorSquareIcon {color} />
+              {#if firstAnnotationInGroup?.shape.type === IDAH_VIDEO_BOUNDING_BOX}
+                <VectorSquareIcon {color} />
+              {:else}
+                <PolygonCircleIcon {color} />
+              {/if}
               {label}
             </SelectItem>
           {/each}

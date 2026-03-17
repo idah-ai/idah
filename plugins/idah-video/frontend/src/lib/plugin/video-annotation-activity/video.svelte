@@ -8,21 +8,12 @@
 
   type Props = {
     element?: HTMLDivElement;
-    onFramesChange: (
-      current: number,
-      frames: number,
-      isPlaying: boolean,
-    ) => void;
+    onFramesChange: (current: number, frames: number, isPlaying: boolean) => void;
     onVolumeChange: (volume: number, muted: boolean) => void;
     onResize?: () => void;
   };
 
-  let {
-    element = $bindable(),
-    onFramesChange,
-    onResize,
-    onVolumeChange,
-  }: Props = $props();
+  let { element = $bindable(), onFramesChange, onResize, onVolumeChange }: Props = $props();
 
   let player: Player | undefined = $state();
   let options = {
@@ -42,9 +33,7 @@
   let volume = $state(0);
   let muted = $state(false);
   let mediaTime = $state(0);
-  let currentFrame = $derived(
-    Math.min(frames, Math.round(mediaTime * fps) + 1),
-  );
+  let currentFrame = $derived(Math.min(frames, Math.round(mediaTime * fps) + 1));
   let isPlaying = $state(false);
   let raf: number | undefined = $state();
 
@@ -152,8 +141,7 @@
   }
 
   function quality_check(from?: string) {
-    let qualityLevel =
-      player?.qualityLevels()[player?.qualityLevels().selectedIndex];
+    let qualityLevel = player?.qualityLevels()[player?.qualityLevels().selectedIndex];
 
     duration = player?.duration() || 0;
     fps = qualityLevel?.frameRate || DEFAULT_FPS; // ....
