@@ -143,13 +143,14 @@
         >
           {#if isDownloadReady}
             <CircleCheckBigIcon />
+            Dataset export ready
           {:else if isDownloadError}
             <CircleAlertIcon />
+            Dataset export error
           {:else}
             <Spinner size="sm" />
+            Dataset export in progress...
           {/if}
-
-          {isDownloadReady ? "Dataset export ready" : "Dataset export in progress..."}
 
           <div class="ml-auto flex items-center gap-2">
             <Button variant="ghost" size="icon-sm" onclick={hideFloatingCard}>

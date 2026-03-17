@@ -1,4 +1,6 @@
 # frozen_string_literal: true
 
-Dir.glob("common/rake/**.rake").each(&method(:load))
-Dir.glob("config/tasks/**.rake").each(&method(:load))
+COMMON_PATH = ENV["COMMON_PATH"] || File.expand_path("./common", __dir__)
+
+Dir.glob("#{COMMON_PATH}/rake/**/*.rake").each(&method(:load))
+Dir.glob("#{COMMON_PATH}/tasks/**/*.rake").each(&method(:load))
