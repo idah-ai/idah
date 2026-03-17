@@ -3,9 +3,7 @@
 class JobsExpo < Verse::Exposition::Base
   http_path "/jobs"
 
-  desc <<-MD
-    # Jobs Expo
-
+  desc <<~MD
     This exposition provides access to the job records in the system.
     It allows you to view, delete, and signal jobs.
     You can also filter jobs by various attributes such as status, priority, and scheduled time.

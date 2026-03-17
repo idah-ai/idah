@@ -39,6 +39,7 @@
     ENTRY_ROOT,
     IDAH_NOTE,
     IDAH_VIDEO_BOUNDING_BOX,
+    IDAH_VIDEO_POLYGON,
   } from "./type";
   import { requiredFullfilled } from "./video-annotation-activity/categoryProperties";
   import {
@@ -80,6 +81,7 @@
   import type { IActivityContext } from "$idah/context/ActivityContext";
   import { showErrorToast } from "$lib/utils/error/error.toasts";
   import {
+    type InterpolatedVertex,
     type Point,
     type VideoFrameSelection,
     type VideoShape,
@@ -150,58 +152,48 @@
 
   let commandOpen = $state(false);
 
-  $effect(() => {
-    if (typeof window === "undefined") return;
+  window.onkeydown = (e) => {
+    const activeElement = document.activeElement;
+    const isTyping =
+      activeElement?.tagName === "INPUT" ||
+      activeElement?.tagName === "TEXTAREA" ||
+      activeElement?.isContentEditable;
 
-    const handleKeydown = (e: KeyboardEvent) => {
-      const activeElement = document.activeElement;
-      const isTyping =
-        activeElement?.tagName === "INPUT" ||
-        activeElement?.tagName === "TEXTAREA" ||
-        activeElement?.isContentEditable;
+    if (isTyping) return;
 
-      if (isTyping) return;
+    const current_mode = ShortcutManager.getCurrentMode();
+    const keymap = ShortcutManager.getEffectiveKeyMap(current_mode);
 
-      const current_mode = ShortcutManager.getCurrentMode();
-      const keymap = ShortcutManager.getEffectiveKeyMap(current_mode);
+    if (!keymap || Object.keys(keymap).length === 0)
+      return console.error("no keymap found");
 
-      if (!keymap || Object.keys(keymap).length === 0)
-        return console.error("no keymap found");
+    const modifier_keys = [
+      e.altKey && "Alt",
+      e.ctrlKey && "Control",
+      e.metaKey && "Meta",
+      e.shiftKey && "Shift",
+    ].sort();
 
-      const modifier_keys = [
-        e.altKey && "Alt",
-        e.ctrlKey && "Control",
-        e.metaKey && "Meta",
-        e.shiftKey && "Shift",
-      ].sort();
+    const shortcut_keys = (
+      ["Control", "Alt", "Shift", "Meta"].includes(e.key)
+        ? [undefined]
+        : e.code.startsWith("Key")
+          ? [e.key.toLocaleUpperCase(), e.key.toLocaleLowerCase()]
+          : [e.code]
+    ).map((k) => [...modifier_keys, k].filter((k) => k).join("+"));
 
-      const shortcut_keys = (
-        ["Control", "Alt", "Shift", "Meta"].includes(e.key)
-          ? [undefined]
-          : e.code.startsWith("Key")
-            ? [e.key.toLocaleUpperCase(), e.key.toLocaleLowerCase()]
-            : [e.code]
-      ).map((k) => [...modifier_keys, k].filter((k) => k).join("+"));
+    for (let index = 0; index < shortcut_keys.length; index++) {
+      let shortcut_key = shortcut_keys[index];
 
-      for (let index = 0; index < shortcut_keys.length; index++) {
-        let shortcut_key = shortcut_keys[index];
+      let shortcut = keymap[shortcut_key];
 
-        let shortcut = keymap[shortcut_key];
+      if (!shortcut) continue;
 
-        if (!shortcut) continue;
-
-        e.preventDefault();
-        shortcut.action();
-        break;
-      }
-    };
-
-    window.addEventListener("keydown", handleKeydown);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeydown);
-    };
-  });
+      e.preventDefault();
+      shortcut.action();
+      break;
+    }
+  };
 
   // for now
   $effect(() => {
@@ -228,6 +220,13 @@
         iconName: "vector-square",
         disabled: !["annotate", "review"].includes(context.workflowStep),
         handleClick: () => context.commands.run("tools.bounding_box"),
+      },
+      {
+        label: "Polygon",
+        type: IDAH_VIDEO_POLYGON,
+        iconName: "polygon",
+        disabled: !["annotate", "review"].includes(context.workflowStep),
+        handleClick: () => context.commands.run("tools.polygon"),
       },
       {
         label: "Notes",
@@ -318,10 +317,13 @@
           case IDAH_NOTE:
             tool = "tools.note";
             break;
+          case IDAH_VIDEO_POLYGON:
+            tool = "tools.polygon";
+            break;
           default:
             tool = "tools.visual";
         }
-        console.log({ context, commands: context.commands, mode, tool });
+
         context.commands.run(tool);
       },
       zoom: { in: overlay.zoomIn, out: overlay.zoomOut },
@@ -352,7 +354,6 @@
             hidden: false,
           };
           $selectedAnnotation = annotation;
-
           await annotationsIDB?.upsertAnnotations([annotation]);
           $idb_updated_at = new Date();
 
@@ -1061,11 +1062,14 @@
           part1End,
         );
         if (interpolated) {
-          part1Frames.push({
-            frame: part1End,
-            points: interpolated.points!,
-            angle: interpolated.angle || 0,
-          });
+          const normalizedPoints = normalizePoints(interpolated.points);
+          if (normalizedPoints) {
+            part1Frames.push({
+              frame: part1End,
+              points: normalizedPoints,
+              angle: interpolated.angle || 0,
+            });
+          }
         }
         part1Frames.sort((a, b) => a.frame - b.frame);
       }
@@ -1087,11 +1091,14 @@
           part2Start,
         );
         if (interpolated) {
-          part2Frames.push({
-            frame: part2Start,
-            points: interpolated.points!,
-            angle: interpolated.angle || 0,
-          });
+          const normalizedPoints = normalizePoints(interpolated.points);
+          if (normalizedPoints) {
+            part2Frames.push({
+              frame: part2Start,
+              points: normalizedPoints,
+              angle: interpolated.angle || 0,
+            });
+          }
         }
         part2Frames.sort((a, b) => a.frame - b.frame);
       }
@@ -1175,7 +1182,6 @@
             a2.value,
             a2.metadata.metadata,
           );
-          console.log({ p2 });
           p2.then(async () => {
             const annotation = await annotationsIDB?.get("annotations", newId);
             if (
@@ -1295,6 +1301,21 @@
         mode = DEFAULT_MODE;
         deselectAnnotation();
         deselectAnnotationGroup();
+      },
+      undo: () => {},
+      isCombinable: () => true,
+      combine: (c) => c,
+    };
+  });
+
+  context.commands.on("tools.polygon", () => {
+    return {
+      name: "polygon tool",
+      apply: () => {
+        mode = IDAH_VIDEO_POLYGON;
+        deselectAnnotation();
+        deselectAnnotationGroup();
+        // annotationValue = {};
       },
       undo: () => {},
       isCombinable: () => true,
@@ -1439,6 +1460,14 @@
             start: frame,
             end: frame,
             frames: [{ frame, angle, points }],
+          };
+          break;
+        case IDAH_VIDEO_POLYGON:
+          shape = {
+            ...shape,
+            start: frame,
+            end: frame,
+            frames: [{ frame, points }],
           };
           break;
         default:
@@ -1665,6 +1694,22 @@
         ?.updateAllLock(locked)
         .then(() => ($idb_updated_at = new Date()));
     }
+  }
+
+  // Helper function to normalize interpolated points to Point[]
+  function normalizePoints(
+    points: Point[] | InterpolatedVertex[] | undefined,
+  ): Point[] | undefined {
+    if (!points) return undefined;
+    // Check if first element is InterpolatedVertex by checking if it has a 'point' property
+    if (
+      points.length > 0 &&
+      typeof points[0] === "object" &&
+      "point" in points[0]
+    ) {
+      return (points as InterpolatedVertex[]).map((item) => item.point);
+    }
+    return points as Point[];
   }
 
   async function onReSelectCategory(reselectedCategoryId: string) {
