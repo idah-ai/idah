@@ -3,6 +3,7 @@
 Verse.on_boot do
   [
     HealthcheckExpo,
+    OrganizationsExpo,
     AccountsExpo,
     AccountSessionsExpo,
     Auth::SimpleExpo,
