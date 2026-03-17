@@ -52,6 +52,7 @@ class RoleRepository < Verse::Model::InMemory::Repository
         create(
           {
             name:,
+            mask: attribute["mask"],
             title: attribute.fetch("title", name),
             rights: unfold_rights(attribute["rights"]),
             scopes: attribute.fetch("scopes", []),
