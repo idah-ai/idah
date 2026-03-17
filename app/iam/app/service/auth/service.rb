@@ -92,7 +92,7 @@ module Auth
       end
 
       if api_key.expired?
-        raise Verse::Error::Authorization, "API key has expired"
+        raise Verse::Error::Authorization, "API key is already expired"
       end
 
       # Get the service account
