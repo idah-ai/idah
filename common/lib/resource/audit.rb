@@ -2,6 +2,8 @@
 
 module Resource
   module Audit
-    Logs = 'audit:logs'
+    # rubocop:disable Naming/ConstantName
+    Logs = "audit:logs"
+    # rubocop:enable Naming/ConstantName
   end
 end

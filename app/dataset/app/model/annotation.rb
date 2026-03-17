@@ -39,11 +39,11 @@ module Annotation
           project_id = auth_context.custom_scopes[:project]
           if org_ids
             table.where(
-                table.db[:projects]
-                  .where(organization_id: org_ids)
-                  .where(id: Sequel[:annotations][:project_id])
-                  .select(1).exists
-              )
+              table.db[:projects]
+                .where(organization_id: org_ids)
+                .where(id: Sequel[:annotations][:project_id])
+                .select(1).exists
+            )
           elsif project_id
             table.where(project_id: project_id)
           else

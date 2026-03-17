@@ -113,10 +113,8 @@ module ApiKey
     end
 
     def projects_from_organization_scoped
-
       organization_id = auth_context.custom_scopes[:org]&.first
       return table.where(Sequel.lit("false")) unless organization_id
-
 
       projects = Api[:idah].dataset.projects.index(filter: { organization_id: }).data
 

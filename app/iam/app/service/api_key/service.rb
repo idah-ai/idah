@@ -5,7 +5,6 @@ module ApiKey
     use_repo \
       api_keys: ApiKey::Repository
 
-
     use_system_repo \
       system_roles: RoleRepository,
       accounts: Account::Repository
@@ -114,7 +113,6 @@ module ApiKey
 
     def revoke(id)
       api_keys.transaction do
-        api_key = api_keys.find!(id)
         api_keys.update!(id, { revoked_at: Time.now })
         api_keys.find!(id)
       end
