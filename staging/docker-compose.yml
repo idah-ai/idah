@@ -219,6 +219,7 @@ services:
     volumes:
       - ../app/sync:/app
       - ../app/sync/common:/app/common
+      - ../app/sync/bin/updcli-linux-amd64:/app/bin/updcli-static
       - bundler_cache:/usr/local/bundle
     extra_hosts:
       - "host.docker.internal:host-gateway"
