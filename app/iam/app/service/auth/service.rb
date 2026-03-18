@@ -65,7 +65,7 @@ module Auth
       system_account_sessions.logout(session_id)
     end
 
-    def login_api(key, ip: "", token_expiration: 3600)
+    def login_api(key, _ip: "", token_expiration: 3600)
       now = Time.now
 
       # Validate key format
@@ -92,7 +92,7 @@ module Auth
       end
 
       if api_key.expired?
-        raise Verse::Error::Authorization, "API key has expired"
+        raise Verse::Error::Authorization, "API key is already expired"
       end
 
       # Get the service account

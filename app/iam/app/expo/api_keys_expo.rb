@@ -26,4 +26,16 @@ class ApiKeysExpo < BaseExpo
   def permissions
     service.show_permissions
   end
+
+  expose on_http(:post, "/:id/revoke") do
+    desc <<-MD
+      Revoke an API key.
+    MD
+    input do
+      field :id, String
+    end
+  end
+  def revoke
+    service.revoke(params[:id])
+  end
 end

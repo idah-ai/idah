@@ -5,7 +5,6 @@ module ApiKey
     use_repo \
       api_keys: ApiKey::Repository
 
-
     use_system_repo \
       system_roles: RoleRepository,
       accounts: Account::Repository
@@ -87,8 +86,21 @@ module ApiKey
 
     def update(record)
       api_keys.transaction do
-        # Only certain fields can be updated
-        updatable_attributes = record.attributes.slice(:revoked_at, :expires_at)
+        # Only expires_at fields can be updated
+        updatable_attributes = record.attributes.slice(:expires_at)
+        api_key = api_keys.find!(record.id)
+
+        if api_key.revoked?
+          raise Verse::Error::ValidationFailed, "Cannot update a revoked API key"
+        end
+
+        if api_key.expired?
+          raise Verse::Error::ValidationFailed, "Cannot update an expired API key"
+        end
+
+        if updatable_attributes[:expires_at] && updatable_attributes[:expires_at] < Time.now
+          raise Verse::Error::ValidationFailed, "expires_at must be in the future"
+        end
 
         api_keys.update!(record.id, updatable_attributes)
         api_keys.find!(record.id)
@@ -97,6 +109,13 @@ module ApiKey
 
     def delete(id)
       api_keys.delete!(id)
+    end
+
+    def revoke(id)
+      api_keys.transaction do
+        api_keys.update!(id, { revoked_at: Time.now })
+        api_keys.find!(id)
+      end
     end
 
     def show_permissions

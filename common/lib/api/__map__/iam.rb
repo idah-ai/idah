@@ -60,7 +60,7 @@ Api[:idah].register(
   output = get(
     "iam/organizations",
     params:,
-    options: { auth: :bearer }  # Enable authentication
+    options: { auth: :bearer } # Enable authentication
   )
 
   deserialize output.body
