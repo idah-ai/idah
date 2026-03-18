@@ -16,7 +16,7 @@
 
   import { IDAH_VIDEO_BOUNDING_BOX, IDAH_VIDEO_POLYGON } from "$lib/plugin/type";
   import { groupAnnotations } from "$lib/plugin/video-annotation-activity/group-annotation.svelte";
-  import { idb_updated_at } from "$lib/plugin/video-annotation-activity/idb_store.svelte";
+  import { idb_updated_at } from "$lib/plugin/video-annotation-activity/idb-store.svelte";
   import { selectedAnnotation } from "$lib/plugin/video-annotation-activity/store";
 
   import type { IConfigValue } from "$idah/context/activity-context";

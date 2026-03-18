@@ -5,7 +5,7 @@ import type {
   AnnotationValue,
 } from "$idah/context/annotation-context";
 
-import { type VideoFrameSelection } from "./VideoAnnotationContext";
+import { type VideoFrameSelection } from "$lib/plugin/video-annotation-activity/video-annotation-context";
 
 // the current version of IndexedDB, bump incrementally if there's a change
 const currentDBVersion: number = 2;

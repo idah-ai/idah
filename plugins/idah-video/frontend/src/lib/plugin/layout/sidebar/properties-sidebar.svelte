@@ -4,7 +4,7 @@
   import CategoryProperties from "$lib/plugin/video-annotation-activity/category-properties/category-properties.svelte";
 
   import { DEFAULT_MODE, ENTRY_ROOT } from "$lib/plugin/type";
-  import { entryRoot } from "$lib/plugin/video-annotation-activity/idb_store.svelte";
+  import { entryRoot } from "$lib/plugin/video-annotation-activity/idb-store.svelte";
   import { selectedAnnotation } from "$lib/plugin/video-annotation-activity/store";
 
   import type { IActivityContext, IConfigValue } from "$idah/context/activity-context";

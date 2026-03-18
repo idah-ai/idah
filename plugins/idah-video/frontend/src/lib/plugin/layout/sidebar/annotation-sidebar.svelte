@@ -11,7 +11,7 @@
   import CategorySidebar from "$lib/plugin/layout/sidebar/category-sidebar.svelte";
 
   import { ENTRY_ROOT } from "$lib/plugin/type";
-  import { entryRoot } from "$lib/plugin/video-annotation-activity/idb_store.svelte";
+  import { entryRoot } from "$lib/plugin/video-annotation-activity/idb-store.svelte";
 
   import type { IActivityContext, IConfigValue } from "$idah/context/activity-context";
   import type {

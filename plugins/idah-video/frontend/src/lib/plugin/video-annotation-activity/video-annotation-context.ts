@@ -1,13 +1,13 @@
+import { IDAH_VIDEO_BOUNDING_BOX, IDAH_VIDEO_POLYGON } from "$lib/plugin/type";
+import { interpolatePolygonAtFrame } from "$lib/plugin/video-annotation-activity/polygon-interpolation";
+
 import type {
   AnnotationMetadata,
   AnnotationObj,
   AnnotationShape,
   AnnotationValue,
-} from "../../../lib/context/AnnotationContext";
-import type { DefaultMode, IdahVideoBoundingBox, IdahVideoPolygon } from "../type";
-import { IDAH_VIDEO_POLYGON, IDAH_VIDEO_BOUNDING_BOX } from "../type";
-
-import { interpolatePolygonAtFrame } from "./polygonInterpolation";
+} from "$idah/context/annotation-context";
+import type { DefaultMode, IdahVideoBoundingBox, IdahVideoPolygon } from "$lib/plugin/type";
 
 export type Point = [number, number];
 

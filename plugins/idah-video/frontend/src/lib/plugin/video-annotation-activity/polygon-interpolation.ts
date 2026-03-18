@@ -1,5 +1,15 @@
-import { type Point, type InterpolatedVertex, type VideoFrameSelection } from "./VideoAnnotationContext";
-import { distance, midpoint, projectPointOnSegment, circularDistance } from "./geometryUtils";
+import {
+  circularDistance,
+  distance,
+  midpoint,
+  projectPointOnSegment,
+} from "$lib/plugin/video-annotation-activity/geometry-utils";
+
+import {
+  type InterpolatedVertex,
+  type Point,
+  type VideoFrameSelection,
+} from "$lib/plugin/video-annotation-activity/video-annotation-context";
 
 // -----------------
 // Polygon helper functions

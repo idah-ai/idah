@@ -1,13 +1,13 @@
 <script lang="ts">
-  import { IDAH_NOTE } from "../type";
+  import { IDAH_NOTE } from "$lib/plugin/type";
   import {
     X,
     Y,
     type InterpolatedVertex,
     type Point,
-  } from "./VideoAnnotationContext";
+  } from "$lib/plugin/video-annotation-activity/video-annotation-context";
 
-  import type { IConfigPropertyStyles } from "$idah/context/ActivityContext";
+  import type { IConfigPropertyStyles } from "$idah/context/activity-context";
 
   let {
     ratio = [1, 1],
@@ -96,11 +96,7 @@
   });
 
   let isEditing = $derived.by(() => {
-    return (
-      !isPolygonComplete ||
-      panStart != undefined ||
-      editingVertexIndex !== undefined
-    );
+    return !isPolygonComplete || panStart != undefined || editingVertexIndex !== undefined;
   });
 
   // Generate SVG cursor with four arrows crossing (up, down, left, right)
@@ -166,12 +162,7 @@
 
   // Convert InterpolatedVertex[] to Point[] for internal operations
   let rawPoints: Point[] = $derived.by(() => {
-    if (
-      Array.isArray(points) &&
-      points.length > 0 &&
-      typeof points[0] === "object" &&
-      "point" in points[0]
-    ) {
+    if (Array.isArray(points) && points.length > 0 && typeof points[0] === "object" && "point" in points[0]) {
       return (points as InterpolatedVertex[]).map((v) => v.point);
     }
     return points as Point[];
@@ -198,10 +189,9 @@
   function draw_preview_cmd(path: Point[], cursorPoint: Point) {
     if (path.length == 0) return;
 
-    return [
-      ...path.map((p, i) => `${i == 0 ? "M" : "L"}${p[X]} ${p[Y]}`),
-      `L${cursorPoint[X]} ${cursorPoint[Y]}`,
-    ].join(" ");
+    return [...path.map((p, i) => `${i == 0 ? "M" : "L"}${p[X]} ${p[Y]}`), `L${cursorPoint[X]} ${cursorPoint[Y]}`].join(
+      " ",
+    );
   }
 
   function pan(points: Point[], from: Point, to: Point): Point[] {
@@ -209,41 +199,26 @@
     return points.map((p) => [p[X] + delta[X], p[Y] + delta[Y]]) as Point[];
   }
 
-  function moveVertex(
-    points: Point[],
-    vertexIndex: number,
-    newPosition: Point,
-  ): Point[] {
+  function moveVertex(points: Point[], vertexIndex: number, newPosition: Point): Point[] {
     return points.map((p, i) => (i === vertexIndex ? newPosition : p));
   }
 
   // Check if point is near target point
   // thresholdPixels: threshold in actual pixels (will be converted to normalized coordinates)
-  function isNearPoint(
-    point: Point,
-    target: Point,
-    thresholdPixels: number = 10,
-  ): boolean {
+  function isNearPoint(point: Point, target: Point, thresholdPixels: number = 10): boolean {
     // Convert pixel threshold to normalized coordinates
     // Use average of X and Y ratios for threshold conversion
     const avgRatio = (ratio[X] + ratio[Y]) / 2;
     const threshold = thresholdPixels / avgRatio;
 
-    const distance = Math.sqrt(
-      (point[X] - target[X]) ** 2 + (point[Y] - target[Y]) ** 2,
-    );
+    const distance = Math.sqrt((point[X] - target[X]) ** 2 + (point[Y] - target[Y]) ** 2);
 
     return distance < threshold;
   }
 
   // Check if a point is on a line segment
   // thresholdPixels: threshold in actual pixels (will be converted to normalized coordinates)
-  function isOnLineSegment(
-    point: Point,
-    lineStart: Point,
-    lineEnd: Point,
-    thresholdPixels: number = 10,
-  ): boolean {
+  function isOnLineSegment(point: Point, lineStart: Point, lineEnd: Point, thresholdPixels: number = 10): boolean {
     // Convert pixel threshold to normalized coordinates
     // Use average of X and Y ratios for threshold conversion
     const avgRatio = (ratio[X] + ratio[Y]) / 2;
@@ -326,10 +301,7 @@
   }
 
   // Insert a new point into the polygon after the specified vertex index
-  function insertPointAfterVertex(
-    clickPoint: Point,
-    afterIndex: number,
-  ): Point[] {
+  function insertPointAfterVertex(clickPoint: Point, afterIndex: number): Point[] {
     const newPoints = [...rawPoints];
     newPoints.splice(afterIndex + 1, 0, clickPoint);
     return newPoints;
@@ -359,10 +331,7 @@
   export function endSelection(end: Point) {
     if (!isPolygonComplete) {
       // Adding new vertex
-      if (
-        rawPoints.length === 0 ||
-        !isNearPoint(rawPoints[rawPoints.length - 1], end, 10)
-      ) {
+      if (rawPoints.length === 0 || !isNearPoint(rawPoints[rawPoints.length - 1], end, 10)) {
         rawPoints = [...rawPoints, end];
         if (rawPoints.length >= 3 && isNearPoint(rawPoints[0], end, 10)) {
           rawPoints = rawPoints.slice(0, -1); // Remove last point to avoid duplication
@@ -436,14 +405,8 @@
 
 {#snippet PolygonVertices(vertexPoints: Point[] | InterpolatedVertex[])}
   {#each vertexPoints as vertexData, index (index)}
-    {@const point =
-      typeof vertexData === "object" && "point" in vertexData
-        ? vertexData.point
-        : vertexData}
-    {@const isMatched =
-      typeof vertexData === "object" && "matched" in vertexData
-        ? vertexData.matched
-        : true}
+    {@const point = typeof vertexData === "object" && "point" in vertexData ? vertexData.point : vertexData}
+    {@const isMatched = typeof vertexData === "object" && "matched" in vertexData ? vertexData.matched : true}
 
     <circle
       cx={point[X] * ratio[X]}
@@ -451,9 +414,7 @@
       r={2}
       style:transform-origin="top left"
       style:transform={`translate(${offset[X]}px, ${offset[Y]}px)`}
-      style:cursor={isAltKeyPressed && rawPoints.length > 3
-        ? ""
-        : `url('${getResizeCursorSVG()}') 18 18, nwse-resize`}
+      style:cursor={isAltKeyPressed && rawPoints.length > 3 ? "" : `url('${getResizeCursorSVG()}') 18 18, nwse-resize`}
       vector-effect="non-scaling-stroke"
       style:stroke={color}
       style:fill={color}
@@ -481,9 +442,7 @@
       style:transform-origin="top left"
       style:transform={`translate(${offset[X]}px, ${offset[Y]}px)`}
       class={isAltKeyPressed && rawPoints.length > 3 ? "cursor-minus-icon" : ""}
-      style:cursor={isAltKeyPressed && rawPoints.length > 3
-        ? ""
-        : `url('${getResizeCursorSVG()}') 18 18, nwse-resize`}
+      style:cursor={isAltKeyPressed && rawPoints.length > 3 ? "" : `url('${getResizeCursorSVG()}') 18 18, nwse-resize`}
       vector-effect="non-scaling-stroke"
       style:stroke={isMatched ? color : "orange"}
       style:stroke-width={isMatched ? 1 : 3}
@@ -562,13 +521,9 @@
         r={5}
         style:transform-origin="top left"
         style:transform={`translate(${offset[X]}px, ${offset[Y]}px)`}
-        style:cursor={index === 0 && polygon_points.length >= 3
-          ? "pointer"
-          : "default"}
+        style:cursor={index === 0 && polygon_points.length >= 3 ? "pointer" : "default"}
         vector-effect="non-scaling-stroke"
-        style:stroke={index === 0 && isHoveringOverFirstPoint
-          ? "#22c55e"
-          : color}
+        style:stroke={index === 0 && isHoveringOverFirstPoint ? "#22c55e" : color}
         style:stroke-width={index === 0 && isHoveringOverFirstPoint ? 3 : 1}
         style:fill={color}
         fill-opacity={1}

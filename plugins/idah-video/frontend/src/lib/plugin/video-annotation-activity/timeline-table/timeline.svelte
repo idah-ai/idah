@@ -5,15 +5,11 @@
     AnnotationObj,
     AnnotationShape,
     AnnotationValue,
-  } from "$idah/context/AnnotationContext";
+  } from "$idah/context/annotation-context";
 
-  import TimelineCell from "./timeline-cell.svelte";
+  import TimelineCell from "$lib/plugin/video-annotation-activity/timeline-table/timeline-cell.svelte";
 
-  type TAnnotationObj = AnnotationObj<
-    AnnotationShape,
-    AnnotationValue,
-    AnnotationMetadata
-  >;
+  type TAnnotationObj = AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
 
   let {
     group,
@@ -38,10 +34,7 @@
     onSeekFrame: (frame: number) => void;
     onSelectAnnotation: (annotation?: TAnnotationObj) => void;
     onDeleteAnnotation: (annotation: TAnnotationObj, frame: number) => void;
-    onSelectGroupAtFrame: (
-      annotationGroup: AnnotationGroup<TAnnotationObj>,
-      frame: number,
-    ) => void;
+    onSelectGroupAtFrame: (annotationGroup: AnnotationGroup<TAnnotationObj>, frame: number) => void;
   } = $props();
 
   // Variables
