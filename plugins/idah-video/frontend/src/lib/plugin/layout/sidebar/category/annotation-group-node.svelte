@@ -13,10 +13,10 @@
     AnnotationValue,
   } from "$idah/context/annotation-context";
 
+  import PolygonCircleIcon from "$lib/plugin/icon/polygon-circle-icon.svelte";
+  import VectorSquareIcon from "$lib/plugin/icon/vector-square-icon.svelte";
   import CategoryAction from "$lib/plugin/layout/sidebar/category/category-action.svelte";
   import CategoryName from "$lib/plugin/layout/sidebar/category/category-name.svelte";
-  import PolygonCircleIcon from "$lib/plugin/layout/sidebar/category/polygon-circle-icon.svelte";
-  import VectorSquareIcon from "$lib/plugin/layout/sidebar/category/vector-square-icon.svelte";
 
   import { IDAH_VIDEO_BOUNDING_BOX } from "$lib/plugin/type";
   import { selectedAnnotationGroup } from "$lib/plugin/video-annotation-activity/store";

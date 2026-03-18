@@ -23,8 +23,8 @@
   import type { IConfigValue } from "$idah/context/activity-context";
   import type { CategoryDefinition } from "$idah/context/category-context";
 
-  import PolygonCircleIcon from "$lib/plugin/layout/sidebar/category/polygon-circle-icon.svelte";
-  import VectorSquareIcon from "$lib/plugin/layout/sidebar/category/vector-square-icon.svelte";
+  import PolygonCircleIcon from "$lib/plugin/icon/polygon-circle-icon.svelte";
+  import VectorSquareIcon from "$lib/plugin/icon/vector-square-icon.svelte";
 
   import { IDAH_VIDEO_BOUNDING_BOX, IDAH_VIDEO_POLYGON } from "$lib/plugin/type";
   import { idb_updated_at } from "$lib/plugin/video-annotation-activity/idb-store.svelte";

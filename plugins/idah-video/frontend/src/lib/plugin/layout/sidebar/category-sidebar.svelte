@@ -8,11 +8,11 @@
   import { cn } from "$lib/utils";
   import { humanize } from "$lib/utils/string";
 
+  import PolygonCircleIcon from "$lib/plugin/icon/polygon-circle-icon.svelte";
+  import VectorSquareIcon from "$lib/plugin/icon/vector-square-icon.svelte";
   import AnnotationCountBadge from "$lib/plugin/layout/sidebar/annotation-count-badge.svelte";
   import AnnotationGroupNode from "$lib/plugin/layout/sidebar/category/annotation-group-node.svelte";
   import CategoryName from "$lib/plugin/layout/sidebar/category/category-name.svelte";
-  import PolygonCircleIcon from "$lib/plugin/layout/sidebar/category/polygon-circle-icon.svelte";
-  import VectorSquareIcon from "$lib/plugin/layout/sidebar/category/vector-square-icon.svelte";
 
   import { IDAH_VIDEO_BOUNDING_BOX, IDAH_VIDEO_POLYGON } from "$lib/plugin/type";
   import { groupAnnotations } from "$lib/plugin/video-annotation-activity/group-annotation.svelte";

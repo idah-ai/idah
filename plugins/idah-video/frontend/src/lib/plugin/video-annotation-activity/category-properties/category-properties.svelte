@@ -6,8 +6,8 @@
   import { Separator } from "$lib/components/ui/separator";
   import Text from "$lib/components/ui/text/Text.svelte";
 
-  import PolygonCircleIcon from "$lib/plugin/layout/sidebar/category/polygon-circle-icon.svelte";
-  import VectorSquareIcon from "$lib/plugin/layout/sidebar/category/vector-square-icon.svelte";
+  import PolygonCircleIcon from "$lib/plugin/icon/polygon-circle-icon.svelte";
+  import VectorSquareIcon from "$lib/plugin/icon/vector-square-icon.svelte";
 
   import BooleanProperty from "$lib/plugin/video-annotation-activity/category-properties/properties/boolean-property.svelte";
   import IntegerProperty from "$lib/plugin/video-annotation-activity/category-properties/properties/integer-property.svelte";
