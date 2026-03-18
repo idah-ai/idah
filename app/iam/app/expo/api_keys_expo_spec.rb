@@ -108,16 +108,20 @@ RSpec.describe ApiKeysExpo, type: :exposition, as: :system do
 
   it "get available permissions" do
     permissions = [
-      ApiPermission::Record.new({
-        name: "org_ro_own",
-        title: "API - Organization Read-Only (Own)",
-        description: "Can read data for own organization"
-      }),
-      ApiPermission::Record.new({
-        name: "org_rw_all",
-        title: "API - Organization Read/Write",
-        description: "Can read and write data for all organizations"
-      })
+      ApiPermission::Record.new(
+        {
+          name: "org_ro_own",
+          title: "API - Organization Read-Only (Own)",
+          description: "Can read data for own organization"
+        }
+      ),
+      ApiPermission::Record.new(
+        {
+          name: "org_rw_all",
+          title: "API - Organization Read/Write",
+          description: "Can read and write data for all organizations"
+        }
+      )
     ]
 
     expect(service).to receive(:show_permissions).and_return(permissions)
