@@ -10,7 +10,7 @@
  * ```
  */
 
-import type { KeyMap } from "./ShortcutManager";
+import type { KeyMap } from "$idah/shortcut/shortcut-manager";
 
 type ModifierKey = string;
 type ActionKey = string;

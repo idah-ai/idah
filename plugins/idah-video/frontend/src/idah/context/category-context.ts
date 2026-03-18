@@ -1,4 +1,4 @@
-import type { IConfigValue } from "$idah/context/ActivityContext";
+import type { IConfigValue } from "$idah/context/activity-context";
 
 export interface CategoryDefinition {
   id: string;

@@ -1,4 +1,9 @@
-import type { AnnotationMetadata, AnnotationObj, AnnotationShape, AnnotationValue } from "$idah/context/AnnotationContext";
+import type {
+  AnnotationMetadata,
+  AnnotationObj,
+  AnnotationShape,
+  AnnotationValue,
+} from "$idah/context/annotation-context";
 
 import { type VideoFrameSelection } from "./VideoAnnotationContext";
 

@@ -1,8 +1,10 @@
-import { KeyMapBuilder } from "$idah/shortcut/KeyMapBuilder";
-import { ShortcutManager } from "$idah/shortcut/ShortcutManager";
+import { KeyMapBuilder } from "$idah/shortcut/key-map-builder";
+import { ShortcutManager } from "$idah/shortcut/shortcut-manager";
+
 import { DEFAULT_MODE, IDAH_NOTE, IDAH_VIDEO_BOUNDING_BOX, IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP } from "../type";
+
+import type { IActivityContext } from "$idah/context/activity-context";
 import type Video from "./video.svelte";
-import type { IActivityContext } from "$idah/context/ActivityContext";
 
 // let see what we need
 type KeyMapContext = {

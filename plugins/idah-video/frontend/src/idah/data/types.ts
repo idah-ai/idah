@@ -1,5 +1,5 @@
+import type { Record } from "$idah/data/record";
 import type { Hash } from "$idah/utils/types";
-import type { Record } from "$idah/data/Record";
 
 export type JsonApiReference = {
   type: string;

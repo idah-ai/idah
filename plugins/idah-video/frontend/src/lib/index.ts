@@ -1,11 +1,13 @@
 // place files you want to import through the `$lib` alias in this folder.
-import type { IActivityContext, IActivityView } from "$idah/context/ActivityContext";
 import { mount, unmount } from "svelte";
-import Plugin from "$lib/plugin/plugin.svelte";
+
+import IdahVideoPlugin from "$lib/plugin/idah-video-plugin.svelte";
+
+import type { IActivityContext, IActivityView } from "$idah/context/activity-context";
 
 let mounted: object;
 
-const idah_plugin: IActivityView = {
+const idahVideoPlugin: IActivityView = {
   name: "idah-video",
   label: "IDAH Video Annotation",
   description: "A module for annotating video.",
@@ -21,7 +23,7 @@ const idah_plugin: IActivityView = {
     if (!parent || !context) return console.error("Missing:", { parent, context });
 
     parent.innerHTML = "";
-    mounted = mount(Plugin, { target: parent, props: { context } });
+    mounted = mount(IdahVideoPlugin, { target: parent, props: { context } });
   },
 
   close() {
@@ -32,4 +34,4 @@ const idah_plugin: IActivityView = {
   },
 };
 
-export default idah_plugin;
+export default idahVideoPlugin;
