@@ -7,7 +7,7 @@ import type {
   AnnotationShape,
   AnnotationValue,
 } from "$idah/context/annotation-context";
-import type { VideoAnnotation } from "./VideoAnnotationContext";
+import type { VideoAnnotation } from "./video-annotation-context";
 
 export const idb_updated_at = writable<Date>(new SvelteDate());
 export const boundingBoxes = writable<AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]>([]);

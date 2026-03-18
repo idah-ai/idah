@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { ArrowLeftRightIcon, SquareSplitHorizontalIcon, Trash2Icon } from "@lucide/svelte";
   import { getContext } from "svelte";
   import type { HTMLAttributes } from "svelte/elements";
 
@@ -10,19 +11,14 @@
   } from "$lib/components/ui/context-menu";
 
   import { cn } from "$lib/utils";
-  import {
-    ArrowLeftRightIcon,
-    SquareSplitHorizontalIcon,
-    Trash2Icon,
-  } from "@lucide/svelte";
 
+  import type { IActivityContext } from "$idah/context/activity-context";
   import type {
     AnnotationMetadata,
     AnnotationObj,
     AnnotationShape,
     AnnotationValue,
-  } from "$idah/context/AnnotationContext";
-  import type { IActivityContext } from "$idah/context/ActivityContext";
+  } from "$idah/context/annotation-context";
 
   let {
     annotation,
@@ -40,11 +36,7 @@
     totalFrames,
     ...restProps
   }: HTMLAttributes<HTMLDivElement> & {
-    annotation: AnnotationObj<
-      AnnotationShape,
-      AnnotationValue,
-      AnnotationMetadata
-    >;
+    annotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
     frame: number;
     currentFrame: number;
     range: [number, number];
@@ -55,13 +47,7 @@
     zoom: number;
     totalFrames: number;
     onSeekFrame: (frame: number) => void;
-    onSelectAnnotation: (
-      annotation: AnnotationObj<
-        AnnotationShape,
-        AnnotationValue,
-        AnnotationMetadata
-      >,
-    ) => void;
+    onSelectAnnotation: (annotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) => void;
     onDeleteFrame: (frame: number) => void;
   } = $props();
 
@@ -69,22 +55,11 @@
   const context: IActivityContext = getContext("context");
 
   // Variables
-  let categoryColor: string | undefined | null = $derived(
-    getCategory(annotation.value.category)?.color,
-  ); // null....
+  let categoryColor: string | undefined | null = $derived(getCategory(annotation.value.category)?.color); // null....
   let range_span = $derived(Math.min(scale * zoom, totalFrames));
-  let cellWidth: number = $derived(
-    (1 / ((range[1] - range[0] + (scale - (range_span % scale))) / 100)) *
-      scale,
-  );
-  let isSelected: boolean = $derived(
-    currentFrame >= frame &&
-      currentFrame < frame + scale &&
-      frame <= totalFrames,
-  );
-  let isHovered: boolean = $derived(
-    hovered && !isSelected && frame <= totalFrames,
-  );
+  let cellWidth: number = $derived((1 / ((range[1] - range[0] + (scale - (range_span % scale))) / 100)) * scale);
+  let isSelected: boolean = $derived(currentFrame >= frame && currentFrame < frame + scale && frame <= totalFrames);
+  let isHovered: boolean = $derived(hovered && !isSelected && frame <= totalFrames);
 
   // Functions
   function getCategory(categoryId: string | undefined) {
@@ -134,22 +109,18 @@
               })}
             disabled={annotation.locked}
           >
-            <SquareSplitHorizontalIcon class="size-4"
-            ></SquareSplitHorizontalIcon>
+            <SquareSplitHorizontalIcon class="size-4" />
             Split at frame {frame}
           </ContextMenuItem>
           {#each keyframes as keyframe, index (index)}
             <ContextMenuItem onclick={() => onSeekFrame?.(keyframe)}>
-              <ArrowLeftRightIcon class="size-4"></ArrowLeftRightIcon>
+              <ArrowLeftRightIcon class="size-4" />
               Seek frame {keyframe}
             </ContextMenuItem>
 
             {#if ["review", "annotate"].includes(context.workflowStep)}
-              <ContextMenuItem
-                onclick={() => onDeleteFrame?.(keyframe)}
-                disabled={annotation.locked}
-              >
-                <Trash2Icon class="size-4"></Trash2Icon>
+              <ContextMenuItem onclick={() => onDeleteFrame?.(keyframe)} disabled={annotation.locked}>
+                <Trash2Icon class="size-4" />
                 Delete frame {keyframe}
               </ContextMenuItem>
             {/if}

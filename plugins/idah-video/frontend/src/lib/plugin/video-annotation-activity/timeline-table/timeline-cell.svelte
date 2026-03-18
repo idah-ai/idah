@@ -1,9 +1,5 @@
 <script lang="ts">
-  import {
-    ArrowLeftRightIcon,
-    SquareSplitHorizontalIcon,
-    Trash2Icon,
-  } from "@lucide/svelte";
+  import { ArrowLeftRightIcon, SquareSplitHorizontalIcon, Trash2Icon } from "@lucide/svelte";
   import { getContext } from "svelte";
 
   import {
@@ -15,25 +11,21 @@
     ContextMenuTrigger,
   } from "$lib/components/ui/context-menu";
 
+  import { selectedAnnotation } from "$lib/plugin/video-annotation-activity/store";
   import { cn } from "$lib/utils";
 
+  import type { IActivityContext } from "$idah/context/activity-context";
   import type {
     AnnotationGroup,
     AnnotationMetadata,
     AnnotationObj,
     AnnotationShape,
     AnnotationValue,
-  } from "$idah/context/AnnotationContext";
-
-  import type { IActivityContext } from "$idah/context/ActivityContext";
-  import { selectedAnnotation } from "../store";
+  } from "$idah/context/annotation-context";
+  import type { Hash } from "$idah/utils/types";
 
   // Type
-  type TAnnotationObj = AnnotationObj<
-    AnnotationShape,
-    AnnotationValue,
-    AnnotationMetadata
-  >;
+  type TAnnotationObj = AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
 
   // Props
   interface Props {
@@ -50,10 +42,7 @@
     onSelectAnnotation: (annotation?: TAnnotationObj) => void;
     onHoverAnnotation: (annotation: TAnnotationObj | undefined) => void;
     onHoverCell: (frame?: number) => void;
-    onSelectGroupAtFrame: (
-      annotationGrop: AnnotationGroup<TAnnotationObj>,
-      frame: number,
-    ) => void;
+    onSelectGroupAtFrame: (annotationGrop: AnnotationGroup<TAnnotationObj>, frame: number) => void;
   }
   let {
     group,
@@ -77,43 +66,26 @@
 
   // Variables
   let rangeSpan: number = $derived(Math.min(scale * zoom, totalFrames));
-  let cellWidth: number = $derived(
-    (1 / ((range[1] - range[0] + (scale - (rangeSpan % scale))) / 100)) * scale,
-  );
+  let cellWidth: number = $derived((1 / ((range[1] - range[0] + (scale - (rangeSpan % scale))) / 100)) * scale);
 
   /** IN THIS CELL */
   let annotation: TAnnotationObj | undefined = $derived(
     annotations.find(
-      (annotation) =>
-        currentFrameInCell >= annotation.shape.start &&
-        currentFrameInCell <= annotation.shape.end,
+      (annotation) => currentFrameInCell >= annotation.shape.start && currentFrameInCell <= annotation.shape.end,
     ),
   );
-  let category = $derived(
-    annotation ? getCategory(annotation.value.category) : undefined,
-  );
+  let category = $derived(annotation ? getCategory(annotation.value.category) : undefined);
   let categoryColor = $derived(category?.color);
   let keyFrames = $derived(
     (annotation?.shape.frames || []).filter(
-      (frame) =>
-        frame.frame >= currentFrameInCell && frame.frame <= currentFrameInCell,
+      (frame: Hash) => frame.frame >= currentFrameInCell && frame.frame <= currentFrameInCell,
     ),
   );
-  let isStartOfKeyFrameRange = $derived(
-    annotation?.shape.start === currentFrameInCell,
-  );
-  let isEndOfKeyFrameRange = $derived(
-    annotation?.shape.end === currentFrameInCell,
-  );
-  let annotationIsSelected: boolean = $derived(
-    $selectedAnnotation?.metadata.id == annotation?.metadata.id,
-  );
-  let annotationIsHovered: boolean = $derived(
-    hoveredAnnotation?.metadata.id == annotation?.metadata.id,
-  );
-  let annotationIsSelectedOrHovered: boolean = $derived(
-    annotationIsSelected || annotationIsHovered,
-  );
+  let isStartOfKeyFrameRange = $derived(annotation?.shape.start === currentFrameInCell);
+  let isEndOfKeyFrameRange = $derived(annotation?.shape.end === currentFrameInCell);
+  let annotationIsSelected: boolean = $derived($selectedAnnotation?.metadata.id == annotation?.metadata.id);
+  let annotationIsHovered: boolean = $derived(hoveredAnnotation?.metadata.id == annotation?.metadata.id);
+  let annotationIsSelectedOrHovered: boolean = $derived(annotationIsSelected || annotationIsHovered);
 
   // Functions
   function getCategory(categoryId: string | undefined) {
@@ -173,10 +145,8 @@
     class={cn("relative z-20 h-full", {
       "bg-primary/5": annotationIsSelectedOrHovered,
       "border-t border-b": !!categoryColor,
-      "rounded-tl-sm rounded-bl-sm border-l":
-        isStartOfKeyFrameRange && !!categoryColor,
-      "rounded-tr-sm rounded-br-sm border-r":
-        isEndOfKeyFrameRange && !!categoryColor,
+      "rounded-tl-sm rounded-bl-sm border-l": isStartOfKeyFrameRange && !!categoryColor,
+      "rounded-tr-sm rounded-br-sm border-r": isEndOfKeyFrameRange && !!categoryColor,
     })}
     style:background-color={categoryColor
       ? `${categoryColor}${annotationIsSelectedOrHovered ? "60" : "30"}`
@@ -191,9 +161,7 @@
           {#if keyFrames.length}
             <div
               class="m-auto h-3/4 w-3/4 rounded"
-              style:background-color={categoryColor
-                ? categoryColor
-                : "transparent"}
+              style:background-color={categoryColor ? categoryColor : "transparent"}
             ></div>
           {/if}
         </ContextMenuTrigger>
@@ -222,10 +190,7 @@
               </ContextMenuItem>
 
               {#if ["review", "annotate"].includes(context.workflowStep)}
-                <ContextMenuItem
-                  onclick={() => deleteFrame(frame)}
-                  disabled={annotation?.locked}
-                >
+                <ContextMenuItem onclick={() => deleteFrame(frame)} disabled={annotation?.locked}>
                   <Trash2Icon class="size-4" />
                   Delete frame {frame}
                 </ContextMenuItem>

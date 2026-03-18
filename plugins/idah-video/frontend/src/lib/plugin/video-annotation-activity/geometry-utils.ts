@@ -1,4 +1,4 @@
-import { type Point } from "./VideoAnnotationContext";
+import { type Point } from "$lib/plugin/video-annotation-activity/video-annotation-context";
 
 /**
  * Geometry and Math utility functions for polygon operations

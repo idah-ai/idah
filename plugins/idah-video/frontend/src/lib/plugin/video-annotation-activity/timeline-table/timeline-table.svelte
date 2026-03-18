@@ -4,36 +4,25 @@
 
   import { Button } from "$lib/components/ui/button";
   import Spinner from "$lib/components/ui/spinner/spinner.svelte";
-  import {
-    Table,
-    TableBody,
-    TableHead,
-    TableHeader,
-    TableRow,
-  } from "$lib/components/ui/table";
+  import { Table, TableBody, TableHead, TableHeader, TableRow } from "$lib/components/ui/table";
   import Text from "$lib/components/ui/text/Text.svelte";
-  import Timeline from "./timeline.svelte";
+  import Timeline from "$lib/plugin/video-annotation-activity/timeline-table/timeline.svelte";
 
+  import { groupAnnotations } from "$lib/plugin/video-annotation-activity/group-annotation.svelte";
+  import { boundingBoxes } from "$lib/plugin/video-annotation-activity/idb-store.svelte";
+  import { deselectAnnotationGroup, selectedAnnotationGroup } from "$lib/plugin/video-annotation-activity/store";
   import { cn } from "$lib/utils";
 
-  import { groupAnnotations } from "../group-annotation.svelte";
-  import { boundingBoxes } from "../idb_store.svelte";
-  import { deselectAnnotationGroup, selectedAnnotationGroup } from "../store";
-
+  import type { IActivityContext } from "$idah/context/activity-context";
   import type {
     AnnotationGroup,
     AnnotationMetadata,
     AnnotationObj,
     AnnotationShape,
     AnnotationValue,
-  } from "$idah/context/AnnotationContext";
-  import type { IActivityContext } from "$idah/context/ActivityContext";
+  } from "$idah/context/annotation-context";
 
-  type TAnnotationObj = AnnotationObj<
-    AnnotationShape,
-    AnnotationValue,
-    AnnotationMetadata
-  >;
+  type TAnnotationObj = AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
 
   // Props
   let {
@@ -65,10 +54,7 @@
     allHidden: boolean;
     onSeekFrame: (frame: number) => void;
     onSelectAnnotation: (annotation?: TAnnotationObj) => void;
-    onSelectGroupAtFrame: (
-      annotationGroup: AnnotationGroup<TAnnotationObj>,
-      frame?: number,
-    ) => void;
+    onSelectGroupAtFrame: (annotationGroup: AnnotationGroup<TAnnotationObj>, frame?: number) => void;
     onDeleteAnnotation: (annotation: TAnnotationObj, frame?: number) => void;
     onLock: (locked: boolean, annotation?: TAnnotationObj) => void;
     onVisibility: (hidden: boolean, annotation?: TAnnotationObj) => void;
@@ -95,8 +81,7 @@
   let pos_offset = $derived.by(() => {
     let offset = manual_offset;
 
-    const isOutsideRange =
-      currentFrame < offset || currentFrame > offset + range_span;
+    const isOutsideRange = currentFrame < offset || currentFrame > offset + range_span;
 
     if (isOutsideRange) {
       const centerOffset = currentFrame - Math.floor(range_span / 2);
@@ -110,10 +95,7 @@
     return offset;
   });
 
-  let range: [number, number] = $derived([
-    pos_offset,
-    Math.min(pos_offset + range_span, totalFrames),
-  ]);
+  let range: [number, number] = $derived([pos_offset, Math.min(pos_offset + range_span, totalFrames)]);
   let wheelthrottling = $state(false);
   let hoveredColumn: number | undefined = $state();
   let rowElements: Record<string, HTMLElement> = $state({});
@@ -166,9 +148,7 @@
       .values.find((cat) => cat.id === categoryId);
   }
 
-  async function getGroupTitle(params: {
-    group: AnnotationGroup<TAnnotationObj>;
-  }) {
+  async function getGroupTitle(params: { group: AnnotationGroup<TAnnotationObj> }) {
     const { group } = params;
     const { groupId, annotations } = group;
     const lastPartGroupId = groupId.split("-")[groupId.split("-").length - 1];
@@ -179,10 +159,7 @@
     const firstAnnotationCategory = firstAnnotationInGroup.value.category;
     if (!firstAnnotationCategory) return fallbackGroupName;
 
-    const foundFirstAnnotationCategory = findCategoryName(
-      firstAnnotationCategory,
-      firstAnnotationInGroup.shape.type,
-    );
+    const foundFirstAnnotationCategory = findCategoryName(firstAnnotationCategory, firstAnnotationInGroup.shape.type);
     if (!foundFirstAnnotationCategory) return fallbackGroupName;
 
     return `${foundFirstAnnotationCategory.label}-${lastPartGroupId}`;
@@ -204,10 +181,7 @@
     setZoom(zoom - next);
   }
 
-  function trackRow(
-    node: HTMLElement,
-    params: { id: string; isGroupSelected: boolean },
-  ) {
+  function trackRow(node: HTMLElement, params: { id: string; isGroupSelected: boolean }) {
     rowElements[params.id] = node;
 
     return {
@@ -240,10 +214,7 @@
       } else if (e.ctrlKey) {
         delta = e.deltaY ? (e.deltaY > 0 ? 1 : -1) : 0; // for now
         let c_hovered = $state.snapshot(hoveredColumn);
-        let c =
-          c_hovered != undefined
-            ? Math.ceil((c_hovered - pos_offset) / scale)
-            : 0;
+        let c = c_hovered != undefined ? Math.ceil((c_hovered - pos_offset) / scale) : 0;
 
         if (c_hovered != undefined) {
           setOffset(c_hovered - c * scale);
@@ -277,21 +248,16 @@
         else if (isScrollDown) zoomOut(to);
       }
     }
-    if (delta || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey)
-      e.preventDefault();
+    if (delta || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) e.preventDefault();
   }
 
   function toggleVisibilityAllAnnotations(annotations: TAnnotationObj[]) {
-    const isAllHidden = annotations
-      .map((annotation) => annotation.hidden)
-      .every((hidden) => hidden);
+    const isAllHidden = annotations.map((annotation) => annotation.hidden).every((hidden) => hidden);
     annotations.forEach((annotation) => onVisibility(!isAllHidden, annotation));
   }
 
   function toggleLockAllAnnotations(annotations: TAnnotationObj[]) {
-    const isAllLocked = annotations
-      .map((annotation) => annotation.locked)
-      .every((locked) => locked);
+    const isAllLocked = annotations.map((annotation) => annotation.locked).every((locked) => locked);
     annotations.forEach((annotation) => onLock(!isAllLocked, annotation));
   }
 
@@ -299,10 +265,7 @@
     annotations.forEach((annotation) => onDeleteAnnotation(annotation));
   }
 
-  function selectAnnotationGroup(
-    annotationGroup: AnnotationGroup<TAnnotationObj>,
-    frame?: number,
-  ) {
+  function selectAnnotationGroup(annotationGroup: AnnotationGroup<TAnnotationObj>, frame?: number) {
     $selectedAnnotationGroup = annotationGroup;
     onSelectGroupAtFrame(annotationGroup, frame);
   }
@@ -338,11 +301,7 @@
           {#await getGroupTitle({ group })}
             <Spinner size="sm" />
           {:then groupTitle}
-            <Text
-              size="xs"
-              weight={isGroupSelected ? "semibold" : "normal"}
-              class="text-foreground truncate"
-            >
+            <Text size="xs" weight={isGroupSelected ? "semibold" : "normal"} class="text-foreground truncate">
               {groupTitle}
             </Text>
           {/await}
@@ -351,12 +310,9 @@
           <Button
             variant="ghost"
             size="icon"
-            class={cn(
-              "ml-2 size-6 opacity-0 transition-opacity duration-200 ease-in-out group-hover:opacity-100",
-              {
-                "opacity-100": isGroupSelected,
-              },
-            )}
+            class={cn("ml-2 size-6 opacity-0 transition-opacity duration-200 ease-in-out group-hover:opacity-100", {
+              "opacity-100": isGroupSelected,
+            })}
             onclick={(e) => {
               e.stopPropagation();
               toggleVisibilityAllAnnotations(annotations);
@@ -373,12 +329,9 @@
           <Button
             variant="ghost"
             size="icon"
-            class={cn(
-              "ml-2 size-6 opacity-0 transition-opacity duration-200 ease-in-out group-hover:opacity-100",
-              {
-                "opacity-100": isGroupSelected,
-              },
-            )}
+            class={cn("ml-2 size-6 opacity-0 transition-opacity duration-200 ease-in-out group-hover:opacity-100", {
+              "opacity-100": isGroupSelected,
+            })}
             onclick={(e) => {
               e.stopPropagation();
               toggleLockAllAnnotations(annotations);
@@ -396,12 +349,9 @@
             <Button
               variant="ghost"
               size="icon"
-              class={cn(
-                "ml-2 size-6 opacity-0 transition-opacity duration-200 ease-in-out group-hover:opacity-100",
-                {
-                  "opacity-100": isGroupSelected,
-                },
-              )}
+              class={cn("ml-2 size-6 opacity-0 transition-opacity duration-200 ease-in-out group-hover:opacity-100", {
+                "opacity-100": isGroupSelected,
+              })}
               onclick={(e) => {
                 e.stopPropagation();
                 deleteAllAnnotations(annotations);
@@ -426,8 +376,7 @@
           {onSeekFrame}
           {onSelectAnnotation}
           {onDeleteAnnotation}
-          onSelectGroupAtFrame={(annotationGroup, frame) =>
-            selectAnnotationGroup(annotationGroup, frame)}
+          onSelectGroupAtFrame={(annotationGroup, frame) => selectAnnotationGroup(annotationGroup, frame)}
         />
       </td>
     </TableRow>
@@ -447,9 +396,7 @@
     )}
   >
     {thisFrame}
-    <span
-      class={`absolute top-full left-1/2 -mt-1 h-1.5 w-1.5 -translate-x-1/2 rotate-45 ${bgColor}`}
-    ></span>
+    <span class={`absolute top-full left-1/2 -mt-1 h-1.5 w-1.5 -translate-x-1/2 rotate-45 ${bgColor}`}></span>
   </span>
 {/snippet}
 
@@ -458,24 +405,14 @@
     <TableRow>
       <!-- HEADER::ANNOTATIONS -->
       <TableHead class="h-7 w-60 text-right">
-        <Button
-          variant="ghost"
-          size="icon"
-          class={cn("ml-2 size-6")}
-          onclick={toggleVisibility}
-        >
+        <Button variant="ghost" size="icon" class={cn("ml-2 size-6")} onclick={toggleVisibility}>
           {#if allHidden}
             <EyeOff class="size-3" />
           {:else}
             <Eye class="size-3" />
           {/if}
         </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          class={cn("mr-8 ml-1 size-6")}
-          onclick={toggleLocked}
-        >
+        <Button variant="ghost" size="icon" class={cn("mr-8 ml-1 size-6")} onclick={toggleLocked}>
           {#if allLocked}
             <Lock class="size-3" />
           {:else}
@@ -500,21 +437,13 @@
                 return Math.min(span + padding + 1, range[1] - range[0] + 1);
               })() }, (_, i) => i) as i (i)}
             {@const thisFrame = i + range[0]}
-            {@const width =
-              (1 /
-                ((range[1] - range[0] + (scale - (range_span % scale))) /
-                  100)) *
-              scale}
+            {@const width = (1 / ((range[1] - range[0] + (scale - (range_span % scale))) / 100)) * scale}
             {@const isSelected = Math.floor(thisFrame) == currentFrame}
             {@const isHovered = thisFrame == hoveredColumn}
             {@const cellIndex = Math.floor(i / scale)}
-            {@const isDefault =
-              cellIndex % Math.floor(zoom / Math.min(zoom, 20)) == 0 &&
-              i % scale == 0}
+            {@const isDefault = cellIndex % Math.floor(zoom / Math.min(zoom, 20)) == 0 && i % scale == 0}
             {@const isTick = i % scale == 0}
-            {@const startLeftPosition =
-              (i / (range[1] - range[0] + (scale - (range_span % scale)))) *
-              100}
+            {@const startLeftPosition = (i / (range[1] - range[0] + (scale - (range_span % scale)))) * 100}
             {@const isOutOfRange = thisFrame > totalFrames}
 
             {#if !isOutOfRange && isSelected}
@@ -525,24 +454,15 @@
                 style:left="{startLeftPosition}%"
                 onclick={() => seekToFrame(thisFrame)}
               >
-                <div
-                  class="bg-primary absolute top-0 left-1/2 z-50 min-h-screen w-0.5 -translate-x-1/2"
-                ></div>
-                {@render tooltipFrame(
-                  thisFrame,
-                  "bg-primary",
-                  "text-primary-foreground",
-                )}
+                <div class="bg-primary absolute top-0 left-1/2 z-50 min-h-screen w-0.5 -translate-x-1/2"></div>
+                {@render tooltipFrame(thisFrame, "bg-primary", "text-primary-foreground")}
               </button>
             {:else if !isOutOfRange && isDefault}
               <button
-                class={cn(
-                  "border-border text-muted-foreground/50 absolute top-0 h-full cursor-pointer border-l",
-                  {
-                    "z-40": isHovered,
-                    "z-0": !isHovered,
-                  },
-                )}
+                class={cn("border-border text-muted-foreground/50 absolute top-0 h-full cursor-pointer border-l", {
+                  "z-40": isHovered,
+                  "z-0": !isHovered,
+                })}
                 style:width="{width}%"
                 style:left="{startLeftPosition}%"
                 onclick={() => seekToFrame(thisFrame)}
@@ -565,13 +485,10 @@
             {:else if !isOutOfRange && isTick}
               <button
                 aria-label="tick"
-                class={cn(
-                  "border-border absolute bottom-0 cursor-pointer border-l",
-                  {
-                    "z-40": isHovered,
-                    "z-0": !isHovered,
-                  },
-                )}
+                class={cn("border-border absolute bottom-0 cursor-pointer border-l", {
+                  "z-40": isHovered,
+                  "z-0": !isHovered,
+                })}
                 style:height="60%"
                 style:width="{width}%"
                 style:left="{startLeftPosition}%"

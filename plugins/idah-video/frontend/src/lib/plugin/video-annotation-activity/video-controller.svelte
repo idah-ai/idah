@@ -27,17 +27,13 @@
     DropdownMenuLabel,
     DropdownMenuTrigger,
   } from "$lib/components/ui/dropdown-menu";
-  import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-  } from "$lib/components/ui/popover";
+  import { Popover, PopoverContent, PopoverTrigger } from "$lib/components/ui/popover";
   import Slider from "$lib/components/ui/slider/slider.svelte";
 
-  import type { IActivityContext } from "$idah/context/ActivityContext";
-  import { IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP } from "../type";
-  import { selectedAnnotation } from "./store";
-  import Video from "./video.svelte";
+  import type { IActivityContext } from "$idah/context/activity-context";
+  import { IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP } from "$lib/plugin/type";
+  import { selectedAnnotation } from "$lib/plugin/video-annotation-activity/store";
+  import Video from "$lib/plugin/video-annotation-activity/video.svelte";
 
   // Props
   interface Props {
@@ -49,15 +45,7 @@
     zoom: number;
     onZoomChange: (zoom: number) => void;
   }
-  let {
-    video = $bindable(),
-    isPlaying,
-    volume,
-    zoom,
-    currentFrame,
-    totalFrames,
-    onZoomChange,
-  }: Props = $props();
+  let { video = $bindable(), isPlaying, volume, zoom, currentFrame, totalFrames, onZoomChange }: Props = $props();
 
   // Contexts
   const context: IActivityContext = getContext("context");
@@ -116,9 +104,7 @@
   }
 
   function gotoFrameStep(direction: "prev" | "next") {
-    let frameStep = Number(
-      localStorage.getItem(IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP) || 10,
-    );
+    let frameStep = Number(localStorage.getItem(IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP) || 10);
 
     switch (direction) {
       case "prev": {
@@ -133,27 +119,16 @@
   }
 </script>
 
-<div
-  id="video-controller"
-  class="flex w-full items-center justify-between gap-4"
->
+<div id="video-controller" class="flex w-full items-center justify-between gap-4">
   <!-- CONTAINER::LEFT -->
   <div class="flex items-center gap-2">
     <!-- VIDEO::PREVIOUS FRAME STEP -->
-    <Button
-      variant="outline"
-      size="icon-sm"
-      onclick={() => gotoFrameStep("prev")}
-    >
+    <Button variant="outline" size="icon-sm" onclick={() => gotoFrameStep("prev")}>
       <ChevronsLeftIcon />
     </Button>
 
     <!-- VIDEO::PREVIOUS FRAME -->
-    <Button
-      variant="outline"
-      size="icon-sm"
-      onclick={() => video.previousFrame()}
-    >
+    <Button variant="outline" size="icon-sm" onclick={() => video.previousFrame()}>
       <ChevronLeftIcon />
     </Button>
 
@@ -178,11 +153,7 @@
     </Button>
 
     <!-- VIDEO::NEXT FRAME STEP -->
-    <Button
-      variant="outline"
-      size="icon-sm"
-      onclick={() => gotoFrameStep("next")}
-    >
+    <Button variant="outline" size="icon-sm" onclick={() => gotoFrameStep("next")}>
       <ChevronsRightIcon />
     </Button>
 
@@ -216,8 +187,7 @@
       <DropdownMenuTrigger>
         <Button variant="outline" size="sm">
           <FastForwardIcon />
-          {videoSpeeds.find((speed) => speed.value === currentSpeed)?.label ||
-            "Speed"}
+          {videoSpeeds.find((speed) => speed.value === currentSpeed)?.label || "Speed"}
         </Button>
       </DropdownMenuTrigger>
 
@@ -225,9 +195,7 @@
         <DropdownMenuGroup>
           <DropdownMenuLabel>Video speed</DropdownMenuLabel>
           {#each videoSpeeds as { label, value } (value)}
-            <DropdownMenuItem onclick={() => selectVideoSpeed(value)}
-              >{label}</DropdownMenuItem
-            >
+            <DropdownMenuItem onclick={() => selectVideoSpeed(value)}>{label}</DropdownMenuItem>
           {/each}
         </DropdownMenuGroup>
       </DropdownMenuContent>

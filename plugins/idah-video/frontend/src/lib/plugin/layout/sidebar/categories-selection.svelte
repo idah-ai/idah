@@ -27,7 +27,7 @@
   import VectorSquareIcon from "$lib/plugin/layout/sidebar/category/vector-square-icon.svelte";
 
   import { IDAH_VIDEO_BOUNDING_BOX, IDAH_VIDEO_POLYGON } from "$lib/plugin/type";
-  import { idb_updated_at } from "$lib/plugin/video-annotation-activity/idb_store.svelte";
+  import { idb_updated_at } from "$lib/plugin/video-annotation-activity/idb-store.svelte";
 
   import type {
     AnnotationMetadata,
@@ -36,7 +36,7 @@
     AnnotationValue,
   } from "$idah/context/annotation-context";
   import type { AnnotationsIndexedDB } from "$lib/plugin/video-annotation-activity/indexedDB";
-  import type { VideoAnnotation } from "$lib/plugin/video-annotation-activity/VideoAnnotationContext";
+  import type { VideoAnnotation } from "$lib/plugin/video-annotation-activity/video-annotation-context";
 
   // Props
   let {

@@ -22,38 +22,41 @@
 
   import type { AnnotationGroup, AnnotationMetadata, AnnotationObj } from "$idah/context/annotation-context";
 
+  import { DEFAULT_MODE, ENTRY_ROOT, IDAH_NOTE, IDAH_VIDEO_BOUNDING_BOX, IDAH_VIDEO_POLYGON } from "$lib/plugin/type";
   import { requiredFullfilled } from "$lib/plugin/video-annotation-activity/category-properties";
-  import { DEFAULT_MODE, ENTRY_ROOT, IDAH_NOTE, IDAH_VIDEO_BOUNDING_BOX, IDAH_VIDEO_POLYGON } from "./type";
-  import { boundingBoxes, entryRoot, idb_updated_at } from "./video-annotation-activity/idb_store.svelte";
-  import { annotationsIndexedDB, AnnotationsIndexedDB } from "./video-annotation-activity/indexedDB";
-  import { registerOnSelectBoxModeShortcuts, registerVisualModeShortcuts } from "./video-annotation-activity/shortcut";
+  import { boundingBoxes, entryRoot, idb_updated_at } from "$lib/plugin/video-annotation-activity/idb-store.svelte";
+  import { annotationsIndexedDB, AnnotationsIndexedDB } from "$lib/plugin/video-annotation-activity/indexedDB";
+  import {
+    registerOnSelectBoxModeShortcuts,
+    registerVisualModeShortcuts,
+  } from "$lib/plugin/video-annotation-activity/shortcut";
   import {
     deselectAnnotation,
     deselectAnnotationGroup,
     selectedAnnotation,
     selectedAnnotationGroup,
-  } from "./video-annotation-activity/store";
+  } from "$lib/plugin/video-annotation-activity/store";
 
-  import AnnotationFooterToolbar from "./layout/footer/annotation-footer-toolbar.svelte";
-  import AnnotationFooter from "./layout/footer/annotation-footer.svelte";
-  import AnnotationSidebar from "./layout/sidebar/annotation-sidebar.svelte";
-  import PropertiesSidebar from "./layout/sidebar/properties-sidebar.svelte";
-  import CategoryProperties from "./video-annotation-activity/category-properties/category-properties.svelte";
-  import SvgOverlay, { type OnAddNewNoteParams } from "./video-annotation-activity/svg-overlay.svelte";
-  import TimelineTable from "./video-annotation-activity/timeline-table/timeline-table.svelte";
-  import Video from "./video-annotation-activity/video.svelte";
-  import VideoController from "./video-annotation-activity/VideoController.svelte";
+  import AnnotationFooterToolbar from "$lib/plugin/layout/footer/annotation-footer-toolbar.svelte";
+  import AnnotationFooter from "$lib/plugin/layout/footer/annotation-footer.svelte";
+  import AnnotationSidebar from "$lib/plugin/layout/sidebar/annotation-sidebar.svelte";
+  import PropertiesSidebar from "$lib/plugin/layout/sidebar/properties-sidebar.svelte";
+  import CategoryProperties from "$lib/plugin/video-annotation-activity/category-properties/category-properties.svelte";
+  import SvgOverlay, { type OnAddNewNoteParams } from "$lib/plugin/video-annotation-activity/svg-overlay.svelte";
+  import TimelineTable from "$lib/plugin/video-annotation-activity/timeline-table/timeline-table.svelte";
+  import VideoController from "$lib/plugin/video-annotation-activity/video-controller.svelte";
+  import Video from "$lib/plugin/video-annotation-activity/video.svelte";
 
   import type { IActivityContext } from "$idah/context/activity-context";
   import type { AnnotationShape, AnnotationValue } from "$idah/context/annotation-context";
-  import { showErrorToast } from "$lib/utils/error/error.toasts";
   import {
     type InterpolatedVertex,
     type Point,
     type VideoFrameSelection,
     type VideoShape,
     getInterpolatedFrame,
-  } from "./video-annotation-activity/VideoAnnotationContext";
+  } from "$lib/plugin/video-annotation-activity/video-annotation-context";
+  import { showErrorToast } from "$lib/utils/error/error.toasts";
 
   type TAnnotationObj = AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
 
