@@ -1,6 +1,6 @@
 <script lang="ts">
   import { IDAH_NOTE } from "$lib/plugin/type";
-  import { X, Y, type Point } from "$lib/plugin/video-annotation-activity/video-annotation-context";
+  import { X, Y, type Point } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
 
   import type { IConfigPropertyStyles } from "$idah/context/activity-context";
 
@@ -46,7 +46,7 @@
     endSelection: (end: Point) => void;
   }
 
-  let points: Point[] = $state(initialPoints);
+  let points: Point[] = $derived(initialPoints);
   let panStart: Point | undefined = $state();
   let rotateStart: Point | undefined = $state();
   let rotateStartAngle: number | undefined = $state();

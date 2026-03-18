@@ -11,20 +11,12 @@
   import CategorySidebar from "$lib/plugin/layout/sidebar/category-sidebar.svelte";
 
   import { ENTRY_ROOT } from "$lib/plugin/type";
-  import { entryRoot } from "$lib/plugin/video-annotation-activity/idb-store.svelte";
+  import { entryRoot } from "$lib/plugin/video-annotation-activity/store/idb-store.svelte";
 
   import type { IActivityContext, IConfigValue } from "$idah/context/activity-context";
-  import type {
-    AnnotationGroup,
-    AnnotationMetadata,
-    AnnotationObj,
-    AnnotationShape,
-    AnnotationValue,
-  } from "$idah/context/annotation-context";
-
+  import type { AnnotationGroup, AnnotationValue } from "$idah/context/annotation-context";
+  import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
   import type { AnnotationsIndexedDB } from "$lib/plugin/video-annotation-activity/indexedDB";
-
-  type TAnnotationObj = AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
 
   // Props
   let {
@@ -48,11 +40,11 @@
     currentFrame: number;
     annotationValue: AnnotationValue;
     onEditValue: (annotationValue: AnnotationValue, mode: string) => void;
-    onSelectAnnotation: (annotation?: TAnnotationObj) => void;
-    onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<TAnnotationObj>) => void;
-    onDeleteAnnotation: (annotation: TAnnotationObj) => void;
-    onLock: (locked: boolean, annotation?: TAnnotationObj) => void;
-    onVisibility: (hidden: boolean, annotation?: TAnnotationObj) => void;
+    onSelectAnnotation: (annotation?: VideoAnnotationObject) => void;
+    onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<VideoAnnotationObject>) => void;
+    onDeleteAnnotation: (annotation: VideoAnnotationObject) => void;
+    onLock: (locked: boolean, annotation?: VideoAnnotationObject) => void;
+    onVisibility: (hidden: boolean, annotation?: VideoAnnotationObject) => void;
     context: IActivityContext;
     mode: string;
     db?: AnnotationsIndexedDB;

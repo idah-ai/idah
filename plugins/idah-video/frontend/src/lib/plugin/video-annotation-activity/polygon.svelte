@@ -5,7 +5,7 @@
     Y,
     type InterpolatedVertex,
     type Point,
-  } from "$lib/plugin/video-annotation-activity/video-annotation-context";
+  } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
 
   import type { IConfigPropertyStyles } from "$idah/context/activity-context";
 

@@ -11,38 +11,30 @@
     ContextMenuTrigger,
   } from "$lib/components/ui/context-menu";
 
-  import { selectedAnnotation } from "$lib/plugin/video-annotation-activity/store";
+  import { selectedAnnotation } from "$lib/plugin/video-annotation-activity/store/store";
   import { cn } from "$lib/utils";
 
   import type { IActivityContext } from "$idah/context/activity-context";
-  import type {
-    AnnotationGroup,
-    AnnotationMetadata,
-    AnnotationObj,
-    AnnotationShape,
-    AnnotationValue,
-  } from "$idah/context/annotation-context";
+  import type { AnnotationGroup } from "$idah/context/annotation-context";
   import type { Hash } from "$idah/utils/types";
-
-  // Type
-  type TAnnotationObj = AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
+  import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
 
   // Props
   interface Props {
-    group: AnnotationGroup<TAnnotationObj>;
-    annotations: TAnnotationObj[];
+    group: AnnotationGroup<VideoAnnotationObject>;
+    annotations: VideoAnnotationObject[];
     currentFrameInCell: number;
     range: [number, number];
     scale: number;
     totalFrames: number;
     zoom: number;
-    hoveredAnnotation: TAnnotationObj | undefined;
+    hoveredAnnotation: VideoAnnotationObject | undefined;
     onSeekFrame: (frame: number) => void;
-    onDeleteFrame: (annotation: TAnnotationObj, frame: number) => void;
-    onSelectAnnotation: (annotation?: TAnnotationObj) => void;
-    onHoverAnnotation: (annotation: TAnnotationObj | undefined) => void;
+    onDeleteFrame: (annotation: VideoAnnotationObject, frame: number) => void;
+    onSelectAnnotation: (annotation?: VideoAnnotationObject) => void;
+    onHoverAnnotation: (annotation: VideoAnnotationObject | undefined) => void;
     onHoverCell: (frame?: number) => void;
-    onSelectGroupAtFrame: (annotationGrop: AnnotationGroup<TAnnotationObj>, frame: number) => void;
+    onSelectGroupAtFrame: (annotationGrop: AnnotationGroup<VideoAnnotationObject>, frame: number) => void;
   }
   let {
     group,
@@ -69,7 +61,7 @@
   let cellWidth: number = $derived((1 / ((range[1] - range[0] + (scale - (rangeSpan % scale))) / 100)) * scale);
 
   /** IN THIS CELL */
-  let annotation: TAnnotationObj | undefined = $derived(
+  let annotation: VideoAnnotationObject | undefined = $derived(
     annotations.find(
       (annotation) => currentFrameInCell >= annotation.shape.start && currentFrameInCell <= annotation.shape.end,
     ),

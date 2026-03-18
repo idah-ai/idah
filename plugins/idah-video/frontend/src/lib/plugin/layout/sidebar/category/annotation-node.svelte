@@ -12,23 +12,17 @@
 
   import { IDAH_VIDEO_BOUNDING_BOX, IDAH_VIDEO_POLYGON } from "$lib/plugin/type";
 
-  import type {
-    AnnotationMetadata,
-    AnnotationObj,
-    AnnotationShape,
-    AnnotationValue,
-  } from "$idah/context/annotation-context";
+  import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
 
   // Props
-  type TAnnotationObj = AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
   interface Props {
     name: string;
-    annotation: TAnnotationObj;
+    annotation: VideoAnnotationObject;
     level: number;
-    onSelectAnnotation: (annotation: TAnnotationObj) => void;
-    onVisibility: (hidden: boolean, annotation?: TAnnotationObj) => void;
-    onLock: (locked: boolean, annotation?: TAnnotationObj) => void;
-    onDeleteAnnotation: (annotation: TAnnotationObj) => void;
+    onSelectAnnotation: (annotation: VideoAnnotationObject) => void;
+    onVisibility: (hidden: boolean, annotation?: VideoAnnotationObject) => void;
+    onLock: (locked: boolean, annotation?: VideoAnnotationObject) => void;
+    onDeleteAnnotation: (annotation: VideoAnnotationObject) => void;
   }
   let { name, annotation, level, onSelectAnnotation, onVisibility, onLock, onDeleteAnnotation }: Props = $props();
 </script>

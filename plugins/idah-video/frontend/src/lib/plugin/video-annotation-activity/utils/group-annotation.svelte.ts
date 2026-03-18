@@ -1,17 +1,10 @@
 import { SvelteMap } from "svelte/reactivity";
 
-import type {
-  AnnotationGroup,
-  AnnotationMetadata,
-  AnnotationObj,
-  AnnotationShape,
-  AnnotationValue,
-} from "$idah/context/annotation-context";
+import type { AnnotationGroup } from "$idah/context/annotation-context";
+import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
 
-type TAnnotationObj = AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
-
-export function groupAnnotations(annotations: TAnnotationObj[]): AnnotationGroup<TAnnotationObj>[] {
-  const map = new SvelteMap<string, TAnnotationObj[]>();
+export function groupAnnotations(annotations: VideoAnnotationObject[]): AnnotationGroup<VideoAnnotationObject>[] {
+  const map = new SvelteMap<string, VideoAnnotationObject[]>();
 
   for (const ann of annotations) {
     const gid = ann.metadata?.metadata?.group_id ?? ann.metadata?.id;

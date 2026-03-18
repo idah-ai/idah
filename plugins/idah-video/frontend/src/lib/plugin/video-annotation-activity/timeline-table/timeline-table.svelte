@@ -8,21 +8,14 @@
   import Text from "$lib/components/ui/text/Text.svelte";
   import Timeline from "$lib/plugin/video-annotation-activity/timeline-table/timeline.svelte";
 
-  import { groupAnnotations } from "$lib/plugin/video-annotation-activity/group-annotation.svelte";
-  import { boundingBoxes } from "$lib/plugin/video-annotation-activity/idb-store.svelte";
-  import { deselectAnnotationGroup, selectedAnnotationGroup } from "$lib/plugin/video-annotation-activity/store";
+  import { boundingBoxes } from "$lib/plugin/video-annotation-activity/store/idb-store.svelte";
+  import { deselectAnnotationGroup, selectedAnnotationGroup } from "$lib/plugin/video-annotation-activity/store/store";
+  import { groupAnnotations } from "$lib/plugin/video-annotation-activity/utils/group-annotation.svelte";
   import { cn } from "$lib/utils";
 
   import type { IActivityContext } from "$idah/context/activity-context";
-  import type {
-    AnnotationGroup,
-    AnnotationMetadata,
-    AnnotationObj,
-    AnnotationShape,
-    AnnotationValue,
-  } from "$idah/context/annotation-context";
-
-  type TAnnotationObj = AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
+  import type { AnnotationGroup } from "$idah/context/annotation-context";
+  import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
 
   // Props
   let {
@@ -44,7 +37,7 @@
     onVisibility,
     isPlaying = false,
   }: {
-    annotations_promise: Promise<TAnnotationObj[]>;
+    annotations_promise: Promise<VideoAnnotationObject[]>;
     // tracking?: boolean;
     scale: number;
     zoom: number;
@@ -53,11 +46,11 @@
     allLocked: boolean;
     allHidden: boolean;
     onSeekFrame: (frame: number) => void;
-    onSelectAnnotation: (annotation?: TAnnotationObj) => void;
-    onSelectGroupAtFrame: (annotationGroup: AnnotationGroup<TAnnotationObj>, frame?: number) => void;
-    onDeleteAnnotation: (annotation: TAnnotationObj, frame?: number) => void;
-    onLock: (locked: boolean, annotation?: TAnnotationObj) => void;
-    onVisibility: (hidden: boolean, annotation?: TAnnotationObj) => void;
+    onSelectAnnotation: (annotation?: VideoAnnotationObject) => void;
+    onSelectGroupAtFrame: (annotationGroup: AnnotationGroup<VideoAnnotationObject>, frame?: number) => void;
+    onDeleteAnnotation: (annotation: VideoAnnotationObject, frame?: number) => void;
+    onLock: (locked: boolean, annotation?: VideoAnnotationObject) => void;
+    onVisibility: (hidden: boolean, annotation?: VideoAnnotationObject) => void;
     onZoomChange?: (zoom: number) => void;
     onScaleChange?: (zoom: number) => void;
     isPlaying?: boolean;
@@ -148,7 +141,7 @@
       .values.find((cat) => cat.id === categoryId);
   }
 
-  async function getGroupTitle(params: { group: AnnotationGroup<TAnnotationObj> }) {
+  async function getGroupTitle(params: { group: AnnotationGroup<VideoAnnotationObject> }) {
     const { group } = params;
     const { groupId, annotations } = group;
     const lastPartGroupId = groupId.split("-")[groupId.split("-").length - 1];
@@ -251,27 +244,27 @@
     if (delta || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) e.preventDefault();
   }
 
-  function toggleVisibilityAllAnnotations(annotations: TAnnotationObj[]) {
+  function toggleVisibilityAllAnnotations(annotations: VideoAnnotationObject[]) {
     const isAllHidden = annotations.map((annotation) => annotation.hidden).every((hidden) => hidden);
     annotations.forEach((annotation) => onVisibility(!isAllHidden, annotation));
   }
 
-  function toggleLockAllAnnotations(annotations: TAnnotationObj[]) {
+  function toggleLockAllAnnotations(annotations: VideoAnnotationObject[]) {
     const isAllLocked = annotations.map((annotation) => annotation.locked).every((locked) => locked);
     annotations.forEach((annotation) => onLock(!isAllLocked, annotation));
   }
 
-  function deleteAllAnnotations(annotations: TAnnotationObj[]) {
+  function deleteAllAnnotations(annotations: VideoAnnotationObject[]) {
     annotations.forEach((annotation) => onDeleteAnnotation(annotation));
   }
 
-  function selectAnnotationGroup(annotationGroup: AnnotationGroup<TAnnotationObj>, frame?: number) {
+  function selectAnnotationGroup(annotationGroup: AnnotationGroup<VideoAnnotationObject>, frame?: number) {
     $selectedAnnotationGroup = annotationGroup;
     onSelectGroupAtFrame(annotationGroup, frame);
   }
 </script>
 
-{#snippet row(groups: AnnotationGroup<TAnnotationObj>[])}
+{#snippet row(groups: AnnotationGroup<VideoAnnotationObject>[])}
   {#each groups as group, index (group.groupId)}
     {@const { groupId, annotations } = group}
     {@const isGroupSelected = $selectedAnnotationGroup?.groupId == groupId}

@@ -5,36 +5,27 @@
 
   import { cn } from "$lib/utils";
 
-  import type {
-    AnnotationGroup,
-    AnnotationMetadata,
-    AnnotationObj,
-    AnnotationShape,
-    AnnotationValue,
-  } from "$idah/context/annotation-context";
-
   import PolygonCircleIcon from "$lib/plugin/icon/polygon-circle-icon.svelte";
   import VectorSquareIcon from "$lib/plugin/icon/vector-square-icon.svelte";
   import CategoryAction from "$lib/plugin/layout/sidebar/category/category-action.svelte";
   import CategoryName from "$lib/plugin/layout/sidebar/category/category-name.svelte";
 
   import { IDAH_VIDEO_BOUNDING_BOX } from "$lib/plugin/type";
-  import { selectedAnnotationGroup } from "$lib/plugin/video-annotation-activity/store";
+  import { selectedAnnotationGroup } from "$lib/plugin/video-annotation-activity/store/store";
 
+  import type { AnnotationGroup } from "$idah/context/annotation-context";
   import type { CategoryDefinition } from "$idah/context/category-context";
-
-  // Type
-  type TAnnotationObj = AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
+  import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
 
   // Props
   interface Props {
     category: CategoryDefinition;
-    annotationGroup: AnnotationGroup<TAnnotationObj>;
+    annotationGroup: AnnotationGroup<VideoAnnotationObject>;
     level: number;
-    onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<TAnnotationObj>) => void;
-    onVisibility: (hidden: boolean, annotation?: TAnnotationObj) => void;
-    onLock: (locked: boolean, annotation?: TAnnotationObj) => void;
-    onDeleteAnnotation: (annotation: TAnnotationObj) => void;
+    onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<VideoAnnotationObject>) => void;
+    onVisibility: (hidden: boolean, annotation?: VideoAnnotationObject) => void;
+    onLock: (locked: boolean, annotation?: VideoAnnotationObject) => void;
+    onDeleteAnnotation: (annotation: VideoAnnotationObject) => void;
   }
   let { category, annotationGroup, level, onSelectAnnotationGroup, onVisibility, onLock, onDeleteAnnotation }: Props =
     $props();

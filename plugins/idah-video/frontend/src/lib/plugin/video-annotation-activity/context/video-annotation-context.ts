@@ -19,7 +19,7 @@ export type InterpolatedVertex = {
 export type VideoShapeType = IdahVideoBoundingBox | IdahVideoPolygon;
 export type VideoMode = DefaultMode | VideoShapeType;
 
-export type VideoAnnotation = AnnotationObj<VideoShape, AnnotationValue, AnnotationMetadata>;
+export type VideoAnnotationObject = AnnotationObj<VideoShape, AnnotationValue, AnnotationMetadata>;
 export type VideoFrameSelection = {
   frame: number;
   angle: number;

@@ -1,11 +1,7 @@
-import type {
-  AnnotationMetadata,
-  AnnotationObj,
-  AnnotationShape,
-  AnnotationValue,
-} from "$idah/context/annotation-context";
-
-import { type VideoFrameSelection } from "$lib/plugin/video-annotation-activity/video-annotation-context";
+import {
+  type VideoAnnotationObject,
+  type VideoFrameSelection,
+} from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
 
 // the current version of IndexedDB, bump incrementally if there's a change
 const currentDBVersion: number = 2;
@@ -77,7 +73,7 @@ export class AnnotationsIndexedDB {
     this.db = db;
   }
 
-  upsertAnnotations(annotations: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]): Promise<void> {
+  upsertAnnotations(annotations: VideoAnnotationObject[]): Promise<void> {
     const transaction = this.db.transaction(["annotations", "keyframes"], "readwrite");
     const astore = transaction.objectStore("annotations");
     const kstore = transaction.objectStore("keyframes");
@@ -130,8 +126,8 @@ export class AnnotationsIndexedDB {
     });
   }
 
-  get(store_name: string, key: string): Promise<AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>> {
-    return new Promise<AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>>((resolve, reject) => {
+  get(store_name: string, key: string): Promise<VideoAnnotationObject> {
+    return new Promise<VideoAnnotationObject>((resolve, reject) => {
       const transaction = this.db.transaction(store_name, "readonly");
       const store = transaction.objectStore(store_name);
       const request = store.get(key);
@@ -141,25 +137,21 @@ export class AnnotationsIndexedDB {
     });
   }
 
-  getGroupAnnotations(groupId: string): Promise<AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]> {
+  getGroupAnnotations(groupId: string): Promise<VideoAnnotationObject[]> {
     const transaction = this.db.transaction("annotations", "readonly");
     const store = transaction.objectStore("annotations");
 
-    const idPromise = new Promise<AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata> | undefined>(
-      (resolve, reject) => {
-        const request = store.get(groupId);
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-      },
-    );
+    const idPromise = new Promise<VideoAnnotationObject | undefined>((resolve, reject) => {
+      const request = store.get(groupId);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
 
-    const groupPromise = new Promise<AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]>(
-      (resolve, reject) => {
-        const request = store.index("groupIdIndex").getAll(IDBKeyRange.only(groupId));
-        request.onsuccess = () => resolve(request.result || []);
-        request.onerror = () => reject(request.error);
-      },
-    );
+    const groupPromise = new Promise<VideoAnnotationObject[]>((resolve, reject) => {
+      const request = store.index("groupIdIndex").getAll(IDBKeyRange.only(groupId));
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => reject(request.error);
+    });
 
     return Promise.all([idPromise, groupPromise]).then(([idResult, groupResults]) => {
       const allResults = [...groupResults];
@@ -170,10 +162,7 @@ export class AnnotationsIndexedDB {
     });
   }
 
-  addKeyFrame(
-    annotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>,
-    keyFrame: VideoFrameSelection,
-  ) {
+  addKeyFrame(annotation: VideoAnnotationObject, keyFrame: VideoFrameSelection) {
     const transaction = this.db.transaction(["annotations", "keyframes"], "readwrite");
     const store = transaction.objectStore("keyframes");
     const Astore = transaction.objectStore("annotations");
@@ -187,7 +176,7 @@ export class AnnotationsIndexedDB {
         const Arequest = Astore.get(annotation.metadata.id);
 
         Arequest.onsuccess = () => {
-          const annotation = Arequest.result as AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
+          const annotation = Arequest.result as VideoAnnotationObject;
           const keyframesRequest = index.getAll(IDBKeyRange.only(annotation.metadata.id));
 
           keyframesRequest.onsuccess = () => {
@@ -205,10 +194,7 @@ export class AnnotationsIndexedDB {
     });
   }
 
-  deleteKeyFrame(
-    annotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>,
-    frame: number,
-  ): Promise<void> {
+  deleteKeyFrame(annotation: VideoAnnotationObject, frame: number): Promise<void> {
     const transaction = this.db.transaction("keyframes", "readwrite");
     const store = transaction.objectStore("keyframes");
     const request = store.delete([annotation.metadata.id, frame]);
@@ -220,7 +206,7 @@ export class AnnotationsIndexedDB {
   }
 
   getAllIndex(key: string, value?: string) {
-    return new Promise<AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]>((resolve, reject) => {
+    return new Promise<VideoAnnotationObject[]>((resolve, reject) => {
       const transaction = this.db.transaction("annotations", "readonly");
       const store = transaction.objectStore("annotations").index(key);
 
@@ -303,7 +289,7 @@ export class AnnotationsIndexedDB {
   }
 
   getAllStore(storename: string) {
-    return new Promise<AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]>((resolve, reject) => {
+    return new Promise<VideoAnnotationObject[]>((resolve, reject) => {
       const transaction = this.db.transaction(storename, "readonly");
       const store = transaction.objectStore(storename);
 
@@ -319,14 +305,14 @@ export class AnnotationsIndexedDB {
   }
 
   getAllStartingWith(key: string, value: string) {
-    return new Promise<AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[]>((resolve, reject) => {
+    return new Promise<VideoAnnotationObject[]>((resolve, reject) => {
       const transaction = this.db.transaction("annotations", "readonly");
       const store = transaction.objectStore("annotations").index(key);
       const keyRange = IDBKeyRange.lowerBound(value);
 
       const request = store.openCursor(keyRange);
 
-      const result: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[] = [];
+      const result: VideoAnnotationObject[] = [];
       request.onsuccess = () => {
         const cursor = request.result;
 

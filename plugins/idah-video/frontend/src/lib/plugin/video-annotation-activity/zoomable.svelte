@@ -2,7 +2,13 @@
   import { type Snippet } from "svelte";
 
   import { DEFAULT_MODE, IDAH_NOTE, IDAH_VIDEO_BOUNDING_BOX } from "$lib/plugin/type";
-  import { HEIGHT, WIDTH, X, Y, type Point } from "$lib/plugin/video-annotation-activity/video-annotation-context";
+  import {
+    HEIGHT,
+    WIDTH,
+    X,
+    Y,
+    type Point,
+  } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
 
   // Props
   interface Props {
