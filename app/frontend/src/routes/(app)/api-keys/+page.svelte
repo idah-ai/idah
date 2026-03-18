@@ -62,7 +62,7 @@
   {#key $refetches.apiKeys.list}
     <DatasourceTable
       id="apiKeys"
-      name="apiKey"
+      name="API Key"
       refetchKey="apiKeys"
       {columns}
       dataSource={apiKeysBackendDataSource}
@@ -70,10 +70,11 @@
         fields: {
           [ApiKeyRecord.type]: [
             "id",
-            "name",
+            "key_label",
+            "key_sha",
             "scope_type",
             "permissions",
-            "last_used",
+            "last_used_at",
             "created_at",
             "expired_at",
             "updated_at",

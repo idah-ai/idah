@@ -60,9 +60,10 @@
   }
 
   function setValue(value: Hash): void {
-    apiKey.name = value.name;
     apiKey.scope_type = value.scope_type;
-    apiKey.permissions = value.permissions;
+    apiKey.permissions = value.permissions
+    apiKey.expired_at = value.expired_at;
+    apiKey.key = value.key;
   }
 
   async function createApiKey(): Promise<void> {
