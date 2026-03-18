@@ -42,8 +42,8 @@
   import CategoryProperties from "$lib/plugin/video-annotation-activity/category-properties/category-properties.svelte";
   import SvgOverlay, { type OnAddNewNoteParams } from "$lib/plugin/video-annotation-activity/svg-overlay.svelte";
   import TimelineTable from "$lib/plugin/video-annotation-activity/timeline-table/timeline-table.svelte";
-  import VideoController from "$lib/plugin/video-annotation-activity/video-controller.svelte";
-  import Video from "$lib/plugin/video-annotation-activity/video.svelte";
+  import VideoController from "$lib/plugin/video-annotation-activity/video/video-controller.svelte";
+  import Video from "$lib/plugin/video-annotation-activity/video/video.svelte";
 
   import type { IActivityContext } from "$idah/context/activity-context";
   import type { AnnotationGroup, AnnotationShape, AnnotationValue } from "$idah/context/annotation-context";
