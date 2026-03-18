@@ -34,18 +34,29 @@ module NoteComment
       return table if action == :create
 
       org_ids = auth_context.custom_scopes[:org]
+      project_id = auth_context.custom_scopes[:project]
       email = auth_context.metadata[:email]
 
       case action
       when :read
-        table.where(
-          table.db[:note_feeds].where(
-            table.db[:projects]
-              .where(organization_id: org_ids)
-              .where(id: Sequel[:note_feeds][:project_id])
-              .select(1).exists
-          ).where(id: Sequel[:note_comments][:note_feed_id]).select(1).exists
-        )
+        if org_ids
+          table.where(
+            table.db[:note_feeds].where(
+              table.db[:projects]
+                .where(organization_id: org_ids)
+                .where(id: Sequel[:note_feeds][:project_id])
+                .select(1).exists
+            ).where(id: Sequel[:note_comments][:note_feed_id]).select(1).exists
+          )
+        elsif project_id
+          table.where(
+            table.db[:note_feeds].where(
+              project_id: project_id
+            ).where(id: Sequel[:note_comments][:note_feed_id]).select(1).exists
+          )
+        else
+          table.where(Sequel.lit("false"))
+        end
       when :update, :delete
         table.where(created_by_email: email)
       else

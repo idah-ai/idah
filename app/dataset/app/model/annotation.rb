@@ -36,12 +36,19 @@ module Annotation
 
         scope.as_org_owner? do
           org_ids = auth_context.custom_scopes[:org]
-          table.where(
-            table.db[:projects]
-              .where(organization_id: org_ids)
-              .where(id: Sequel[:annotations][:project_id])
-              .select(1).exists
-          )
+          project_id = auth_context.custom_scopes[:project]
+          if org_ids
+            table.where(
+              table.db[:projects]
+                .where(organization_id: org_ids)
+                .where(id: Sequel[:annotations][:project_id])
+                .select(1).exists
+            )
+          elsif project_id
+            table.where(project_id: project_id)
+          else
+            table.where(Sequel.lit("false"))
+          end
         end
 
         scope.as_user? { user_project_scoped_query(action) }
