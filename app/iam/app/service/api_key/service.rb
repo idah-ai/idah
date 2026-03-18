@@ -149,7 +149,7 @@ module ApiKey
         title = role.title
         description = role.description
 
-        Model::ApiPermission::Record.new(
+        ApiPermission::Record.new(
           {
             name:,
             title:,

@@ -32,7 +32,9 @@ module ApiKey
     belongs_to :service_account, repository: "Account::Repository", foreign_key: :account_id
 
     def expired?
-      expires_at && expires_at < Time.now
+      return false if expires_at.nil?
+
+      expires_at < Time.now
     end
 
     def revoked?
