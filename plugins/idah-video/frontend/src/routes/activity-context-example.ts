@@ -1,5 +1,6 @@
-import type { Command } from "$idah/command/Command";
-import CommandManager from "$idah/command/CommandManager";
+import type { Command } from "$idah/command/command";
+
+import CommandManager from "$idah/command/command-manager";
 import type {
   HeaderBarModeTool,
   IActivityContext,
@@ -10,7 +11,7 @@ import type {
   INotes,
   ITools,
   IWorkflowStep,
-} from "$idah/context/ActivityContext";
+} from "$idah/context/activity-context";
 
 function createCommandsInterface(): ICommands {
   const commands = new Map();
@@ -133,7 +134,7 @@ export const activityContextExample: IActivityContext = {
       create: async (id, dimension, annotation) => ({
         id,
         dimensions: dimension,
-        annotation
+        annotation,
       }),
       update: async (ann) => {},
       delete: async (id) => {},

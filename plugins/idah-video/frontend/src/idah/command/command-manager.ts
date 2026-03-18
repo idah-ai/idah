@@ -1,4 +1,4 @@
-import { type Command } from "./Command";
+import { type Command } from "$idah/command/command";
 
 type CommandEntry = {
   at: number;

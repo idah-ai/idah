@@ -1,6 +1,6 @@
 import type { SvelteComponent } from "svelte";
 
-import { Record } from "$idah/data/Record";
+import { Record } from "$idah/data/record";
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 export type Constructor<T> = new (...args: any[]) => T;

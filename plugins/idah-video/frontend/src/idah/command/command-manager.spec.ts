@@ -1,8 +1,10 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import CommandManager from './CommandManager';
-import { type Command } from './Command';
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-describe('CommandManager', () => {
+import CommandManager from "$idah/command/command-manager";
+
+import { type Command } from "$idah/command/command";
+
+describe("CommandManager", () => {
   beforeEach(() => {
     // Reset CommandManager state before each test
     CommandManager.clear();
@@ -15,20 +17,20 @@ describe('CommandManager', () => {
     vi.useRealTimers();
   });
 
-  it('should initialize with empty commands and currentIndex -1', () => {
+  it("should initialize with empty commands and currentIndex -1", () => {
     expect(CommandManager.commands).toEqual([]);
     expect(CommandManager.currentIndex).toBe(-1);
     expect(CommandManager.size()).toBe(0);
   });
 
-  it('should add a command and execute it', () => {
+  it("should add a command and execute it", () => {
     const mockApply = vi.fn();
     const mockCommand: Command = {
       apply: mockApply,
       undo: vi.fn(),
-      name: 'Test Command',
+      name: "Test Command",
       isCombinable: () => false,
-      combine: () => mockCommand
+      combine: () => mockCommand,
     };
 
     CommandManager.add(mockCommand);
@@ -38,21 +40,21 @@ describe('CommandManager', () => {
     expect(mockApply).toHaveBeenCalledTimes(1);
   });
 
-  it('should return the last command', () => {
+  it("should return the last command", () => {
     const mockCommand1: Command = {
       apply: vi.fn(),
       undo: vi.fn(),
-      name: 'Test Command 1',
+      name: "Test Command 1",
       isCombinable: () => false,
-      combine: () => mockCommand1
+      combine: () => mockCommand1,
     };
 
     const mockCommand2: Command = {
       apply: vi.fn(),
       undo: vi.fn(),
-      name: 'Test Command 2',
+      name: "Test Command 2",
       isCombinable: () => false,
-      combine: () => mockCommand2
+      combine: () => mockCommand2,
     };
 
     expect(CommandManager.lastCommand()).toBeNull();
@@ -64,14 +66,14 @@ describe('CommandManager', () => {
     expect(CommandManager.lastCommand()?.command).toBe(mockCommand2);
   });
 
-  it('should undo a command', () => {
+  it("should undo a command", () => {
     const mockUndo = vi.fn();
     const mockCommand: Command = {
       apply: vi.fn(),
       undo: mockUndo,
-      name: 'Test Command',
+      name: "Test Command",
       isCombinable: () => false,
-      combine: () => mockCommand
+      combine: () => mockCommand,
     };
 
     CommandManager.add(mockCommand);
@@ -81,7 +83,7 @@ describe('CommandManager', () => {
     expect(mockUndo).toHaveBeenCalledTimes(1);
   });
 
-  it('should undo multiple commands', () => {
+  it("should undo multiple commands", () => {
     const mockUndo1 = vi.fn();
     const mockUndo2 = vi.fn();
     const mockUndo3 = vi.fn();
@@ -89,25 +91,25 @@ describe('CommandManager', () => {
     const mockCommand1: Command = {
       apply: vi.fn(),
       undo: mockUndo1,
-      name: 'Test Command 1',
+      name: "Test Command 1",
       isCombinable: () => false,
-      combine: () => mockCommand1
+      combine: () => mockCommand1,
     };
 
     const mockCommand2: Command = {
       apply: vi.fn(),
       undo: mockUndo2,
-      name: 'Test Command 2',
+      name: "Test Command 2",
       isCombinable: () => false,
-      combine: () => mockCommand2
+      combine: () => mockCommand2,
     };
 
     const mockCommand3: Command = {
       apply: vi.fn(),
       undo: mockUndo3,
-      name: 'Test Command 3',
+      name: "Test Command 3",
       isCombinable: () => false,
-      combine: () => mockCommand3
+      combine: () => mockCommand3,
     };
 
     CommandManager.add(mockCommand1);
@@ -122,18 +124,18 @@ describe('CommandManager', () => {
     expect(mockUndo1).toHaveBeenCalledTimes(0);
   });
 
-  it('should do nothing when trying to undo with no commands', () => {
+  it("should do nothing when trying to undo with no commands", () => {
     CommandManager.undoOnce();
     expect(CommandManager.currentIndex).toBe(-1);
   });
 
-  it('should clear all commands', () => {
+  it("should clear all commands", () => {
     const mockCommand: Command = {
       apply: vi.fn(),
       undo: vi.fn(),
-      name: 'Test Command',
+      name: "Test Command",
       isCombinable: () => false,
-      combine: () => mockCommand
+      combine: () => mockCommand,
     };
 
     CommandManager.add(mockCommand);
@@ -145,7 +147,7 @@ describe('CommandManager', () => {
     expect(CommandManager.currentIndex).toBe(-1);
   });
 
-  it('should combine commands if they are combinable and added within 5 seconds', () => {
+  it("should combine commands if they are combinable and added within 5 seconds", () => {
     const mockApply1 = vi.fn();
     const mockApply2 = vi.fn();
     const mockCombinedApply = vi.fn();
@@ -153,30 +155,30 @@ describe('CommandManager', () => {
     const mockCommand1: Command = {
       apply: mockApply1,
       undo: vi.fn(),
-      name: 'Test Command 1',
+      name: "Test Command 1",
       isCombinable: () => true,
-      combine: () => mockCombinedCommand
+      combine: () => mockCombinedCommand,
     };
 
     const mockCommand2: Command = {
       apply: mockApply2,
       undo: vi.fn(),
-      name: 'Test Command 2',
+      name: "Test Command 2",
       isCombinable: () => true,
-      combine: () => mockCombinedCommand
+      combine: () => mockCombinedCommand,
     };
 
     const mockCombinedCommand: Command = {
       apply: mockCombinedApply,
       undo: vi.fn(),
-      name: 'Combined Command',
+      name: "Combined Command",
       isCombinable: () => false,
-      combine: () => mockCombinedCommand
+      combine: () => mockCombinedCommand,
     };
 
     // Set up spies for the isCombinable and combine methods
-    const isCombinable2Spy = vi.spyOn(mockCommand2, 'isCombinable');
-    const combineSpy = vi.spyOn(mockCommand2, 'combine');
+    const isCombinable2Spy = vi.spyOn(mockCommand2, "isCombinable");
+    const combineSpy = vi.spyOn(mockCommand2, "combine");
 
     // Add first command
     const now = new Date(2023, 0, 1, 12, 0, 0);
@@ -201,21 +203,21 @@ describe('CommandManager', () => {
     expect(CommandManager.lastCommand()?.command).toBe(mockCombinedCommand);
   });
 
-  it('should not combine commands if they are added more than 5 seconds apart', () => {
+  it("should not combine commands if they are added more than 5 seconds apart", () => {
     const mockCommand1: Command = {
       apply: vi.fn(),
       undo: vi.fn(),
-      name: 'Test Command 1',
+      name: "Test Command 1",
       isCombinable: () => true,
-      combine: vi.fn()
+      combine: vi.fn(),
     };
 
     const mockCommand2: Command = {
       apply: vi.fn(),
       undo: vi.fn(),
-      name: 'Test Command 2',
+      name: "Test Command 2",
       isCombinable: vi.fn(),
-      combine: vi.fn()
+      combine: vi.fn(),
     };
 
     // Add first command
@@ -234,21 +236,21 @@ describe('CommandManager', () => {
     expect(CommandManager.size()).toBe(2);
   });
 
-  it('should not combine commands if they are not combinable', () => {
+  it("should not combine commands if they are not combinable", () => {
     const mockCommand1: Command = {
       apply: vi.fn(),
       undo: vi.fn(),
-      name: 'Test Command 1',
+      name: "Test Command 1",
       isCombinable: () => false,
-      combine: vi.fn()
+      combine: vi.fn(),
     };
 
     const mockCommand2: Command = {
       apply: vi.fn(),
       undo: vi.fn(),
-      name: 'Test Command 2',
+      name: "Test Command 2",
       isCombinable: () => false,
-      combine: vi.fn()
+      combine: vi.fn(),
     };
 
     // Add first command
@@ -264,16 +266,16 @@ describe('CommandManager', () => {
     expect(CommandManager.size()).toBe(2);
   });
 
-  it('should remove oldest commands when exceeding maxCommands', () => {
+  it("should remove oldest commands when exceeding maxCommands", () => {
     const originalMaxCommands = CommandManager.maxCommands;
     CommandManager.maxCommands = 3; // Set a small limit for testing
 
     const mockCommand: Command = {
       apply: vi.fn(),
       undo: vi.fn(),
-      name: 'Test Command',
+      name: "Test Command",
       isCombinable: () => false,
-      combine: () => mockCommand
+      combine: () => mockCommand,
     };
 
     // Add more commands than the limit
@@ -289,29 +291,29 @@ describe('CommandManager', () => {
     CommandManager.maxCommands = originalMaxCommands;
   });
 
-  it('should truncate future commands when adding a new command after undoing', () => {
+  it("should truncate future commands when adding a new command after undoing", () => {
     const mockCommand1: Command = {
       apply: vi.fn(),
       undo: vi.fn(),
-      name: 'Command 1',
+      name: "Command 1",
       isCombinable: () => false,
-      combine: () => mockCommand1
+      combine: () => mockCommand1,
     };
 
     const mockCommand2: Command = {
       apply: vi.fn(),
       undo: vi.fn(),
-      name: 'Command 2',
+      name: "Command 2",
       isCombinable: () => false,
-      combine: () => mockCommand2
+      combine: () => mockCommand2,
     };
 
     const mockCommand3: Command = {
       apply: vi.fn(),
       undo: vi.fn(),
-      name: 'Command 3',
+      name: "Command 3",
       isCombinable: () => false,
-      combine: () => mockCommand3
+      combine: () => mockCommand3,
     };
 
     // Add three commands
@@ -328,9 +330,9 @@ describe('CommandManager', () => {
     const mockCommand4: Command = {
       apply: vi.fn(),
       undo: vi.fn(),
-      name: 'Command 4',
+      name: "Command 4",
       isCombinable: () => false,
-      combine: () => mockCommand4
+      combine: () => mockCommand4,
     };
 
     CommandManager.add(mockCommand4);

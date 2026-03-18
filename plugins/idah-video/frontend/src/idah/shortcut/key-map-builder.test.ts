@@ -1,8 +1,9 @@
-import { describe, it, expect, vi } from 'vitest';
-import { KeyMapBuilder } from './KeyMapBuilder';
+import { describe, expect, it, vi } from "vitest";
 
-describe('KeyMapBuilder', () => {
-  it('should create a key map with a single shortcut without modifiers', () => {
+import { KeyMapBuilder } from "$idah/shortcut/key-map-builder";
+
+describe("KeyMapBuilder", () => {
+  it("should create a key map with a single shortcut without modifiers", () => {
     const action = vi.fn();
 
     const keyMap = KeyMapBuilder((b) => {
@@ -15,7 +16,7 @@ describe('KeyMapBuilder', () => {
     expect(keyMap["A"].description).toBe("Executes A command");
   });
 
-  it('should create a key map with a single shortcut with modifiers', () => {
+  it("should create a key map with a single shortcut with modifiers", () => {
     const action = vi.fn();
 
     const keyMap = KeyMapBuilder((b) => {
@@ -29,7 +30,7 @@ describe('KeyMapBuilder', () => {
     expect(keyMap["Ctrl+Shift+A"].description).toBe("Executes Ctrl+Shift+A command");
   });
 
-  it('should create a key map with multiple shortcuts', () => {
+  it("should create a key map with multiple shortcuts", () => {
     const action1 = vi.fn();
     const action2 = vi.fn();
 
@@ -44,7 +45,7 @@ describe('KeyMapBuilder', () => {
     expect(keyMap["B"].action).toBe(action2);
   });
 
-  it('should allow custom names and descriptions', () => {
+  it("should allow custom names and descriptions", () => {
     const action = vi.fn();
 
     const keyMap = KeyMapBuilder((b) => {
@@ -56,7 +57,7 @@ describe('KeyMapBuilder', () => {
     expect(keyMap["Shift+A"].description).toBe("Custom Description");
   });
 
-  it('should handle all modifier keys', () => {
+  it("should handle all modifier keys", () => {
     const action = vi.fn();
 
     const keyMap = KeyMapBuilder((b) => {
@@ -67,13 +68,18 @@ describe('KeyMapBuilder', () => {
     expect(keyMap).toHaveProperty("Alt+Ctrl+Meta+Shift+A");
   });
 
-  it('should allow chaining of on() calls', () => {
+  it("should allow chaining of on() calls", () => {
     const action1 = vi.fn();
     const action2 = vi.fn();
 
     const keyMap = KeyMapBuilder((b) => {
-      b.on([b.Shift], "A", action1, "Shift+A Command", "Executes Shift+A command")
-       .on([b.Ctrl], "B", action2, "Ctrl+B Command", "Executes Ctrl+B command");
+      b.on([b.Shift], "A", action1, "Shift+A Command", "Executes Shift+A command").on(
+        [b.Ctrl],
+        "B",
+        action2,
+        "Ctrl+B Command",
+        "Executes Ctrl+B command",
+      );
     });
 
     expect(keyMap).toHaveProperty("Shift+A");

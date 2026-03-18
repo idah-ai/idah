@@ -2,7 +2,7 @@
   import "./plugin.css";
   import VideoAnnotationActivity from "./video-annotation-activity.svelte";
 
-  import type { IActivityContext } from "$idah/context/ActivityContext";
+  import type { IActivityContext } from "$idah/context/activity-context";
 
   // Props
   interface Props {

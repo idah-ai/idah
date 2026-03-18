@@ -1,11 +1,12 @@
+import { writable } from "svelte/store";
+
 import type {
   AnnotationGroup,
   AnnotationMetadata,
   AnnotationObj,
   AnnotationShape,
   AnnotationValue,
-} from "$idah/context/AnnotationContext";
-import { writable } from "svelte/store";
+} from "$idah/context/annotation-context";
 
 type TAnnotationObj = AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
 

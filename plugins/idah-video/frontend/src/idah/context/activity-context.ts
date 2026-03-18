@@ -1,5 +1,6 @@
 import type { Component } from "svelte";
-import type { AnnotationShape, AnnotationValue } from "$idah/context/AnnotationContext";
+
+import type { AnnotationShape, AnnotationValue } from "$idah/context/annotation-context";
 
 export type ASTValue = string | number | string[] | boolean | undefined;
 export type ASTNodeValue = ASTValue | ASTNode | [ASTValue];
@@ -133,10 +134,10 @@ export type ICommand = {
   apply: () => void;
   undo: () => void;
 
-  name : string; // A human readable name for the command, used for showing in the UI.
-  isCombinable: (previousCommand : ICommand) => boolean;
-  combine: (previousCommand : ICommand) => ICommand;
-}
+  name: string; // A human readable name for the command, used for showing in the UI.
+  isCombinable: (previousCommand: ICommand) => boolean;
+  combine: (previousCommand: ICommand) => ICommand;
+};
 
 export interface ICommands {
   on(name: string, commandBuilder: (props?: object) => ICommand, manager?: boolean): void;

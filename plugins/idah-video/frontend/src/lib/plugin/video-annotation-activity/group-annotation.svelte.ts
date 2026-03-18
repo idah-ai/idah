@@ -6,7 +6,7 @@ import type {
   AnnotationObj,
   AnnotationShape,
   AnnotationValue,
-} from "$idah/context/AnnotationContext";
+} from "$idah/context/annotation-context";
 
 type TAnnotationObj = AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
 
