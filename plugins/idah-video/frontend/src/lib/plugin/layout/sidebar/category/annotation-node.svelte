@@ -1,38 +1,26 @@
 <script lang="ts">
-  import {
-    EyeIcon,
-    EyeOffIcon,
-    LockIcon,
-    LockOpenIcon,
-    Trash2Icon,
-  } from "@lucide/svelte";
+  import { EyeIcon, EyeOffIcon, LockIcon, LockOpenIcon, Trash2Icon } from "@lucide/svelte";
 
-  import {
-    SidebarMenuButton,
-    SidebarMenuItem,
-  } from "$lib/components/ui/sidebar";
+  import { SidebarMenuButton, SidebarMenuItem } from "$lib/components/ui/sidebar";
 
   import { cn } from "$lib/utils";
+
+  import CategoryAction from "$lib/plugin/layout/sidebar/category/category-action.svelte";
+  import CategoryName from "$lib/plugin/layout/sidebar/category/category-name.svelte";
+  import PolygonCircleIcon from "$lib/plugin/layout/sidebar/category/polygon-circle-icon.svelte";
+  import VectorSquareIcon from "$lib/plugin/layout/sidebar/category/vector-square-icon.svelte";
+
+  import { IDAH_VIDEO_BOUNDING_BOX, IDAH_VIDEO_POLYGON } from "$lib/plugin/type";
 
   import type {
     AnnotationMetadata,
     AnnotationObj,
     AnnotationShape,
     AnnotationValue,
-  } from "$idah/context/AnnotationContext";
-
-  import CategoryAction from "./category-action.svelte";
-  import CategoryName from "./category-name.svelte";
-  import { IDAH_VIDEO_POLYGON, IDAH_VIDEO_BOUNDING_BOX } from "../../../type";
-  import VectorSquareIcon from "./vector-square-icon.svelte";
-  import PolygonCircleIcon from "./polygon-circle-icon.svelte";
+  } from "$idah/context/annotation-context";
 
   // Props
-  type TAnnotationObj = AnnotationObj<
-    AnnotationShape,
-    AnnotationValue,
-    AnnotationMetadata
-  >;
+  type TAnnotationObj = AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
   interface Props {
     name: string;
     annotation: TAnnotationObj;
@@ -42,15 +30,7 @@
     onLock: (locked: boolean, annotation?: TAnnotationObj) => void;
     onDeleteAnnotation: (annotation: TAnnotationObj) => void;
   }
-  let {
-    name,
-    annotation,
-    level,
-    onSelectAnnotation,
-    onVisibility,
-    onLock,
-    onDeleteAnnotation,
-  }: Props = $props();
+  let { name, annotation, level, onSelectAnnotation, onVisibility, onLock, onDeleteAnnotation }: Props = $props();
 </script>
 
 <SidebarMenuItem class="list-none">
@@ -58,10 +38,7 @@
     class={cn("group w-full gap-0 pr-0 hover:cursor-pointer")}
     onclick={() => onSelectAnnotation(annotation)}
   >
-    <div
-      class="flex w-full items-center gap-1 text-xs"
-      style="padding-left: {Number(level - 1) + 0.5}rem"
-    >
+    <div class="flex w-full items-center gap-1 text-xs" style="padding-left: {Number(level - 1) + 0.5}rem">
       <div class="shrink-0">
         {#if annotation.shape.type === IDAH_VIDEO_BOUNDING_BOX}
           <!-- VECTOR SQUARE ICON -->
@@ -83,7 +60,8 @@
           })}
           onclick={() => onVisibility(!annotation.hidden, annotation)}
         >
-          <svelte:component this={annotation.hidden ? EyeOffIcon : EyeIcon} />
+          {@const VisibilityIcon = annotation.hidden ? EyeOffIcon : EyeIcon}
+          <VisibilityIcon />
         </CategoryAction>
 
         <!-- BUTTON::LOCK & UNLOCK ANNOTATION -->
@@ -94,15 +72,11 @@
           })}
           onclick={() => onLock(!annotation.locked, annotation)}
         >
-          <svelte:component
-            this={annotation.locked ? LockIcon : LockOpenIcon}
-          />
+          {@const EditabilityIcon = annotation.locked ? LockIcon : LockOpenIcon}
+          <EditabilityIcon />
         </CategoryAction>
 
-        <CategoryAction
-          class="hidden group-hover:block"
-          onclick={() => onDeleteAnnotation(annotation)}
-        >
+        <CategoryAction class="hidden group-hover:block" onclick={() => onDeleteAnnotation(annotation)}>
           <Trash2Icon />
         </CategoryAction>
       </div>

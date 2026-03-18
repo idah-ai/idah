@@ -8,30 +8,23 @@
 
   import { cn } from "$lib/utils";
 
-  import CategorySidebar from "./category-sidebar.svelte";
+  import CategorySidebar from "$lib/plugin/layout/sidebar/category-sidebar.svelte";
 
+  import { ENTRY_ROOT } from "$lib/plugin/type";
+  import { entryRoot } from "$lib/plugin/video-annotation-activity/idb_store.svelte";
+
+  import type { IActivityContext, IConfigValue } from "$idah/context/activity-context";
   import type {
     AnnotationGroup,
     AnnotationMetadata,
     AnnotationObj,
     AnnotationShape,
     AnnotationValue,
-  } from "$idah/context/AnnotationContext";
-  import type {
-    IActivityContext,
-    IConfigValue,
-  } from "$idah/context/ActivityContext";
+  } from "$idah/context/annotation-context";
 
-  import { ENTRY_ROOT } from "../../type";
-  import { entryRoot } from "../../video-annotation-activity/idb_store.svelte";
+  import type { AnnotationsIndexedDB } from "$lib/plugin/video-annotation-activity/indexedDB";
 
-  import type { AnnotationsIndexedDB } from "../../video-annotation-activity/indexedDB";
-
-  type TAnnotationObj = AnnotationObj<
-    AnnotationShape,
-    AnnotationValue,
-    AnnotationMetadata
-  >;
+  type TAnnotationObj = AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
 
   // Props
   let {
@@ -56,9 +49,7 @@
     annotationValue: AnnotationValue;
     onEditValue: (annotationValue: AnnotationValue, mode: string) => void;
     onSelectAnnotation: (annotation?: TAnnotationObj) => void;
-    onSelectAnnotationGroup: (
-      annotationGroup: AnnotationGroup<TAnnotationObj>,
-    ) => void;
+    onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<TAnnotationObj>) => void;
     onDeleteAnnotation: (annotation: TAnnotationObj) => void;
     onLock: (locked: boolean, annotation?: TAnnotationObj) => void;
     onVisibility: (hidden: boolean, annotation?: TAnnotationObj) => void;
@@ -68,10 +59,12 @@
     class?: string | null;
   } = $props();
 
-  let tools = new Map<string, IConfigValue[]>(
-    Object.entries(context.config)
-      .filter(([shapeType, _]) => shapeType != ENTRY_ROOT)
-      .map(([shapeType, { values }]) => [shapeType, values]),
+  let tools = $derived(
+    new Map<string, IConfigValue[]>(
+      Object.entries(context.config)
+        .filter(([shapeType, _]) => shapeType != ENTRY_ROOT)
+        .map(([shapeType, { values }]) => [shapeType, values]),
+    ),
   );
 
   let searchValue = $state("");
@@ -80,7 +73,7 @@
   let filteredTools = $derived.by(() => {
     if (!searchValue) return tools;
 
-    const result: [string, IConfigValue[]][] = [];
+    const result = new Map<string, IConfigValue[]>();
 
     for (const [toolType, categories] of tools) {
       const matching = categories.filter((category) =>
@@ -88,7 +81,7 @@
       );
 
       if (matching.length > 0) {
-        result.push([toolType, matching]);
+        result.set(toolType, matching);
       }
     }
 
@@ -127,12 +120,7 @@
   }
 </script>
 
-<Sidebar
-  variant="inset"
-  collapsible="none"
-  class={cn(className)}
-  style="width: ${sidebarWidthRem}rem"
->
+<Sidebar variant="inset" collapsible="none" class={cn(className)} style="width: ${sidebarWidthRem}rem">
   {#if !tools.has(mode)}
     <SidebarHeader>
       <InputField

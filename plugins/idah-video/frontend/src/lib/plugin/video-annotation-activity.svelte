@@ -20,7 +20,7 @@
   import { ShortcutManager } from "$idah/shortcut/shortcut-manager";
   import { showToast } from "$lib/components/ui/toast/index.svelte";
 
-  import type { AnnotationGroup, AnnotationMetadata, AnnotationObj } from "$idah/context/AnnotationContext";
+  import type { AnnotationGroup, AnnotationMetadata, AnnotationObj } from "$idah/context/annotation-context";
 
   import { DEFAULT_MODE, ENTRY_ROOT, IDAH_NOTE, IDAH_VIDEO_BOUNDING_BOX, IDAH_VIDEO_POLYGON } from "./type";
   import { requiredFullfilled } from "./video-annotation-activity/categoryProperties";
@@ -34,8 +34,8 @@
     selectedAnnotationGroup,
   } from "./video-annotation-activity/store";
 
-  import AnnotationFooter from "./layout/footer/AnnotationFooter.svelte";
-  import AnnotationFooterToolbar from "./layout/footer/AnnotationFooterToolbar.svelte";
+  import AnnotationFooterToolbar from "./layout/footer/annotation-footer-toolbar.svelte";
+  import AnnotationFooter from "./layout/footer/annotation-footer.svelte";
   import AnnotationSidebar from "./layout/sidebar/annotation-sidebar.svelte";
   import PropertiesSidebar from "./layout/sidebar/properties-sidebar.svelte";
   import CategoryProperties from "./video-annotation-activity/categoryProperties/categoryProperties.svelte";

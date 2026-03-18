@@ -1,22 +1,14 @@
 <script lang="ts">
-  import {
-    Sidebar,
-    SidebarContent,
-    SidebarGroup,
-    SidebarGroupContent,
-  } from "$lib/components/ui/sidebar";
+  import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent } from "$lib/components/ui/sidebar";
 
-  import type { AnnotationValue } from "$idah/context/AnnotationContext";
-  import type {
-    IActivityContext,
-    IConfigValue,
-  } from "$idah/context/ActivityContext";
+  import CategoryProperties from "$lib/plugin/video-annotation-activity/categoryProperties/categoryProperties.svelte";
 
-  import CategoryProperties from "../../video-annotation-activity/categoryProperties/categoryProperties.svelte";
+  import { DEFAULT_MODE, ENTRY_ROOT } from "$lib/plugin/type";
+  import { entryRoot } from "$lib/plugin/video-annotation-activity/idb_store.svelte";
+  import { selectedAnnotation } from "$lib/plugin/video-annotation-activity/store";
 
-  import { DEFAULT_MODE, ENTRY_ROOT } from "../../type";
-  import { entryRoot } from "../../video-annotation-activity/idb_store.svelte";
-  import { selectedAnnotation } from "../../video-annotation-activity/store";
+  import type { IActivityContext, IConfigValue } from "$idah/context/activity-context";
+  import type { AnnotationValue } from "$idah/context/annotation-context";
 
   // Props
   let {
@@ -51,12 +43,7 @@
   }
 </script>
 
-<Sidebar
-  variant="inset"
-  collapsible="none"
-  style="width: {sidebarWidthRem}rem;"
-  side="right"
->
+<Sidebar variant="inset" collapsible="none" style="width: {sidebarWidthRem}rem;" side="right">
   <SidebarContent>
     <SidebarGroup>
       <SidebarGroupContent>
@@ -73,18 +60,11 @@
                 : $entryRoot?.value
               : annotationValue) || {}}
             onSelectCategory={(selectedCategoryId) =>
-              categorySelection(
-                defaultMode ? ENTRY_ROOT : mode,
-                selectedCategoryId,
-              )}
-            onReSelectCategory={(reselectedCategoryId) =>
-              onReSelectCategory?.(reselectedCategoryId)}
-            onEditValue={(value) =>
-              value && onEditValue(value, defaultMode ? ENTRY_ROOT : mode)}
+              categorySelection(defaultMode ? ENTRY_ROOT : mode, selectedCategoryId)}
+            onReSelectCategory={(reselectedCategoryId) => onReSelectCategory?.(reselectedCategoryId)}
+            onEditValue={(value) => value && onEditValue(value, defaultMode ? ENTRY_ROOT : mode)}
             disabled={$selectedAnnotation?.locked ||
-              (defaultMode || mode == ENTRY_ROOT
-                ? !!$entryRoot?.locked
-                : false) ||
+              (defaultMode || mode == ENTRY_ROOT ? !!$entryRoot?.locked : false) ||
               !["annotate", "review"].includes(context.workflowStep)}
           />
         {/key}
