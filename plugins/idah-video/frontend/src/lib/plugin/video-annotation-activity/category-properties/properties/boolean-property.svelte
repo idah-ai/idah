@@ -1,9 +1,10 @@
 <script lang="ts">
   import { Label } from "$lib/components/ui/label";
   import { Switch } from "$lib/components/ui/switch";
-  import { formatConformity, propertyFullfilled } from "..";
 
-  import type { IConfigProperty } from "$idah/context/ActivityContext";
+  import { formatConformity, propertyFullfilled } from "$lib/plugin/video-annotation-activity/category-properties";
+
+  import type { IConfigProperty } from "$idah/context/activity-context";
 
   let {
     property,
@@ -23,10 +24,9 @@
   // set default value to false if boolean is required
   if (value == undefined && property.required) onValueChange(false);
 
-  const formatters = new Map<
-    string,
-    ((v: boolean) => string) | ((v: number) => string)
-  >([["required", (_: boolean) => [property.label, "is required"].join(" ")]]);
+  const formatters = new Map<string, ((v: boolean) => string) | ((v: number) => string)>([
+    ["required", (_: boolean) => [property.label, "is required"].join(" ")],
+  ]);
 </script>
 
 <div class="flex flex-col gap-1">
@@ -38,13 +38,7 @@
       {/if}
     </Label>
 
-    <Switch
-      aria-invalid={invalid}
-      id={property.id}
-      checked={!!value}
-      onCheckedChange={onValueChange}
-      {disabled}
-    />
+    <Switch aria-invalid={invalid} id={property.id} checked={!!value} onCheckedChange={onValueChange} {disabled} />
   </div>
 
   {#if invalid}

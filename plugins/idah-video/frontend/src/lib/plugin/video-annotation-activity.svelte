@@ -22,8 +22,8 @@
 
   import type { AnnotationGroup, AnnotationMetadata, AnnotationObj } from "$idah/context/annotation-context";
 
+  import { requiredFullfilled } from "$lib/plugin/video-annotation-activity/category-properties";
   import { DEFAULT_MODE, ENTRY_ROOT, IDAH_NOTE, IDAH_VIDEO_BOUNDING_BOX, IDAH_VIDEO_POLYGON } from "./type";
-  import { requiredFullfilled } from "./video-annotation-activity/categoryProperties";
   import { boundingBoxes, entryRoot, idb_updated_at } from "./video-annotation-activity/idb_store.svelte";
   import { annotationsIndexedDB, AnnotationsIndexedDB } from "./video-annotation-activity/indexedDB";
   import { registerOnSelectBoxModeShortcuts, registerVisualModeShortcuts } from "./video-annotation-activity/shortcut";
@@ -38,7 +38,7 @@
   import AnnotationFooter from "./layout/footer/annotation-footer.svelte";
   import AnnotationSidebar from "./layout/sidebar/annotation-sidebar.svelte";
   import PropertiesSidebar from "./layout/sidebar/properties-sidebar.svelte";
-  import CategoryProperties from "./video-annotation-activity/categoryProperties/categoryProperties.svelte";
+  import CategoryProperties from "./video-annotation-activity/category-properties/category-properties.svelte";
   import SvgOverlay, { type OnAddNewNoteParams } from "./video-annotation-activity/svg-overlay.svelte";
   import TimelineTable from "./video-annotation-activity/timeline-table/timeline-table.svelte";
   import Video from "./video-annotation-activity/video.svelte";
@@ -54,7 +54,6 @@
     type VideoShape,
     getInterpolatedFrame,
   } from "./video-annotation-activity/VideoAnnotationContext";
-  // import { AnnotationShape } from "../../lib/context/AnnotationContext";
 
   type TAnnotationObj = AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
 

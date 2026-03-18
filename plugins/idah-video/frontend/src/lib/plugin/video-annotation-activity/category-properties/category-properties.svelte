@@ -1,37 +1,29 @@
 <script lang="ts">
   import { getContext } from "svelte";
 
-  import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-  } from "$lib/components/ui/select";
+  import { Select, SelectContent, SelectItem, SelectTrigger } from "$lib/components/ui/select";
   import SelectGroup from "$lib/components/ui/select/select-group.svelte";
   import { Separator } from "$lib/components/ui/separator";
   import Text from "$lib/components/ui/text/Text.svelte";
 
-  import VectorSquareIcon from "../../layout/sidebar/category/vector-square-icon.svelte";
-  import PolygonCircleIcon from "../../layout/sidebar/category/polygon-circle-icon.svelte";
-  import { IDAH_VIDEO_BOUNDING_BOX } from "../../type";
+  import PolygonCircleIcon from "$lib/plugin/layout/sidebar/category/polygon-circle-icon.svelte";
+  import VectorSquareIcon from "$lib/plugin/layout/sidebar/category/vector-square-icon.svelte";
 
-  import BooleanProperty from "./properties/booleanProperty.svelte";
-  import IntegerProperty from "./properties/integerProperty.svelte";
-  import MultiSelectProperty from "./properties/MultiSelectProperty.svelte";
-  import SingleSelectProperty from "./properties/SingleSelectProperty.svelte";
-  import TextProperty from "./properties/textProperty.svelte";
+  import BooleanProperty from "$lib/plugin/video-annotation-activity/category-properties/properties/boolean-property.svelte";
+  import IntegerProperty from "$lib/plugin/video-annotation-activity/category-properties/properties/integer-property.svelte";
+  import MultipleSelectProperty from "$lib/plugin/video-annotation-activity/category-properties/properties/multiple-select-property.svelte";
+  import SingleSelectProperty from "$lib/plugin/video-annotation-activity/category-properties/properties/single-select-property.svelte";
+  import TextProperty from "$lib/plugin/video-annotation-activity/category-properties/properties/text-property.svelte";
 
   import { truncate } from "$lib/utils/string";
 
-  import { visibilityFullfilled } from ".";
-  import { idb_updated_at } from "../idb_store.svelte";
-  import { selectedAnnotationGroup } from "../store";
+  import { IDAH_VIDEO_BOUNDING_BOX } from "$lib/plugin/type";
+  import { visibilityFullfilled } from "$lib/plugin/video-annotation-activity/category-properties";
+  import { idb_updated_at } from "$lib/plugin/video-annotation-activity/idb_store.svelte";
+  import { selectedAnnotationGroup } from "$lib/plugin/video-annotation-activity/store";
 
-  import type { AnnotationValue } from "$idah/context/AnnotationContext";
-  import type {
-    IActivityContext,
-    IConfigProperty,
-  } from "$idah/context/ActivityContext";
+  import type { IActivityContext, IConfigProperty } from "$idah/context/activity-context";
+  import type { AnnotationValue } from "$idah/context/annotation-context";
 
   type Props = {
     mode: string;
@@ -60,30 +52,16 @@
 
   // Variables
   let configByMode = $derived(context.config[mode]);
-  let category = $derived(
-    configByMode?.values?.find((c) => c.id == selectedCategory),
-  );
-  let properties = $derived(
-    configByMode?.properties?.filter((p) =>
-      visibilityFullfilled(annotationValue, p),
-    ),
-  );
+  let category = $derived(configByMode?.values?.find((c) => c.id == selectedCategory));
+  let properties = $derived(configByMode?.properties?.filter((p) => visibilityFullfilled(annotationValue, p)));
 
-  let firstAnnotationInGroup = $derived(
-    $selectedAnnotationGroup?.annotations[0],
-  );
+  let firstAnnotationInGroup = $derived($selectedAnnotationGroup?.annotations[0]);
   let configByGroup = $derived(
-    firstAnnotationInGroup
-      ? context.config[firstAnnotationInGroup.shape.type]
-      : { values: [], properties: [] },
+    firstAnnotationInGroup ? context.config[firstAnnotationInGroup.shape.type] : { values: [], properties: [] },
   );
-  let firstAnnotationInGroupCategory = $derived(
-    firstAnnotationInGroup?.value.category,
-  );
+  let firstAnnotationInGroupCategory = $derived(firstAnnotationInGroup?.value.category);
   let foundAnnotationInGroupCategory = $derived(
-    configByGroup.values.find(
-      (c) => c.id == firstAnnotationInGroup?.value.category,
-    ),
+    configByGroup.values.find((c) => c.id == firstAnnotationInGroup?.value.category),
   );
 
   const propertyComponents: {
@@ -93,13 +71,13 @@
       | typeof IntegerProperty
       | typeof BooleanProperty
       | typeof SingleSelectProperty
-      | typeof MultiSelectProperty;
+      | typeof MultipleSelectProperty;
   }[] = [
     { type: "text", component: TextProperty },
     { type: "integer", component: IntegerProperty },
     { type: "boolean", component: BooleanProperty },
     { type: "single-select", component: SingleSelectProperty },
-    { type: "multi-select", component: MultiSelectProperty },
+    { type: "multi-select", component: MultipleSelectProperty },
   ];
 
   function getModeTitle() {
@@ -108,10 +86,7 @@
     );
   }
 
-  function onValueChange(
-    property: IConfigProperty,
-    v: string | number | string[] | undefined | boolean,
-  ) {
+  function onValueChange(property: IConfigProperty, v: string | number | string[] | undefined | boolean) {
     const newValue = {
       ...annotationValue,
       attributes: {
@@ -122,12 +97,9 @@
     const new_visible_properties = configByMode?.properties
       .filter((p) => visibilityFullfilled(newValue, p))
       .map((p) => p.id);
-    const visibilityDiff = Object.keys(newValue.attributes).filter(
-      (k) => !new_visible_properties.includes(k),
-    );
+    const visibilityDiff = Object.keys(newValue.attributes).filter((k) => !new_visible_properties.includes(k));
     // remove visibility false properties
-    if (visibilityDiff.length)
-      visibilityDiff.forEach((p) => delete newValue.attributes?.[p]);
+    if (visibilityDiff.length) visibilityDiff.forEach((p) => delete newValue.attributes?.[p]);
     onEditValue(newValue);
   }
 
@@ -148,9 +120,7 @@
       </Text>
 
       <Select type="single" onValueChange={onSelectCategory} {disabled}>
-        <SelectTrigger
-          class="data-[placeholder]:text-secondary-foreground bg-secondary w-full truncate text-xs"
-        >
+        <SelectTrigger class="data-placeholder:text-secondary-foreground bg-secondary w-full truncate text-xs">
           <div class="flex gap-1">
             {#if category?.label}
               {#if firstAnnotationInGroup?.shape.type === IDAH_VIDEO_BOUNDING_BOX}
@@ -192,9 +162,7 @@
     <Text weight="semibold" size="sm">Category</Text>
 
     <Select type="single" onValueChange={reselectCategory} {disabled}>
-      <SelectTrigger
-        class="data-[placeholder]:text-secondary-foreground bg-secondary w-full truncate text-xs"
-      >
+      <SelectTrigger class="data-placeholder:text-secondary-foreground bg-secondary w-full truncate text-xs">
         <div class="flex gap-1">
           {#if foundAnnotationInGroupCategory?.label}
             {#if firstAnnotationInGroup?.shape.type === IDAH_VIDEO_BOUNDING_BOX}
@@ -212,12 +180,7 @@
       <SelectContent>
         <SelectGroup>
           {#each configByGroup.values as { id: value, label, color } (value)}
-            <SelectItem
-              class="text-xs"
-              {label}
-              {value}
-              disabled={firstAnnotationInGroupCategory == value}
-            >
+            <SelectItem class="text-xs" {label} {value} disabled={firstAnnotationInGroupCategory == value}>
               {#if firstAnnotationInGroup?.shape.type === IDAH_VIDEO_BOUNDING_BOX}
                 <VectorSquareIcon {color} />
               {:else}
@@ -256,9 +219,7 @@
         <Text class="mb-2" weight="semibold" size="sm">Properties</Text>
 
         {#each properties as property (property.id)}
-          {@const foundPropertyComponent = propertyComponents.find(
-            (p) => p.type == property.type,
-          )}
+          {@const foundPropertyComponent = propertyComponents.find((p) => p.type == property.type)}
 
           {#if foundPropertyComponent}
             <div class="flex flex-col gap-1">
@@ -266,9 +227,7 @@
                 {...{
                   property,
                   value: annotationValue.attributes?.[property.id],
-                  onValueChange: (
-                    v: string | number | boolean | string[] | undefined,
-                  ) => onValueChange(property, v),
+                  onValueChange: (v: string | number | boolean | string[] | undefined) => onValueChange(property, v),
                   disabled,
                 }}
               />
