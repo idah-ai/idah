@@ -8,6 +8,7 @@ module ApiKey
 
     field :account_id, type: Integer, readonly: true
 
+    field :name, type: String
     field :key_label, type: String, readonly: true
     field :key_sha, type: String, readonly: true, visible: false
 
@@ -18,6 +19,8 @@ module ApiKey
 
     field :expires_at, type: [Time, NilClass]
     field :revoked_at, type: [Time, NilClass]
+
+    field :status, type: String
 
     field :last_used_at, type: [Time, NilClass], readonly: true
 

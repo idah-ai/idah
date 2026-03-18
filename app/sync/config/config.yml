@@ -32,6 +32,7 @@ plugins:
             region: <%= ENV.fetch("SYNC_FILES_REGION") %>
             prefix: files
             endpoint: <%= ENV.fetch("SYNC_FILES_ENDPOINT") %> # https://storage.googleapis.com
+  - name: periodic
 
 kv_store:
   adapter: Verse::Redis::KVStore
