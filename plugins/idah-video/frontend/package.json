@@ -39,7 +39,6 @@
     "tailwindcss": "^4.1.10",
     "tw-animate-css": "^1.3.4",
     "@tailwindcss/vite": "^4.1.10",
-    "@rollup/plugin-alias": "^5.1.1",
     "@internationalized/date": "^3.8.2",
     "vitest": "^3.2.3"
 	}
