@@ -2,50 +2,36 @@
   import { ChevronRightIcon, CircleSmallIcon, PlusIcon } from "@lucide/svelte";
 
   import { Button } from "$lib/components/ui/button";
-  import {
-    Collapsible,
-    CollapsibleContent,
-    CollapsibleTrigger,
-  } from "$lib/components/ui/collapsible";
-  import {
-    SidebarGroup,
-    SidebarGroupContent,
-    SidebarMenuItem,
-  } from "$lib/components/ui/sidebar";
+  import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "$lib/components/ui/collapsible";
+  import { SidebarGroup, SidebarGroupContent, SidebarMenuItem } from "$lib/components/ui/sidebar";
 
   import { cn } from "$lib/utils";
   import { humanize } from "$lib/utils/string";
 
-  import type { CategoryDefinition } from "$idah/context/ActivityContext";
-  import type { IConfigValue } from "$idah/context/ActivityContext";
+  import AnnotationCountBadge from "$lib/plugin/layout/sidebar/annotation-count-badge.svelte";
+  import AnnotationGroupNode from "$lib/plugin/layout/sidebar/category/annotation-group-node.svelte";
+  import CategoryName from "$lib/plugin/layout/sidebar/category/category-name.svelte";
+  import PolygonCircleIcon from "$lib/plugin/layout/sidebar/category/polygon-circle-icon.svelte";
+  import VectorSquareIcon from "$lib/plugin/layout/sidebar/category/vector-square-icon.svelte";
 
-  import AnnotationCountBadge from "./annotation-count-badge.svelte";
-  import AnnotationGroupNode from "./category/annotation-group-node.svelte";
-  import CategoryName from "./category/category-name.svelte";
-  import { IDAH_VIDEO_POLYGON, IDAH_VIDEO_BOUNDING_BOX } from "../../type";
-  import VectorSquareIcon from "./category/vector-square-icon.svelte";
-  import PolygonCircleIcon from "./category/polygon-circle-icon.svelte";
+  import { IDAH_VIDEO_BOUNDING_BOX, IDAH_VIDEO_POLYGON } from "$lib/plugin/type";
+  import { groupAnnotations } from "$lib/plugin/video-annotation-activity/group-annotation.svelte";
+  import { idb_updated_at } from "$lib/plugin/video-annotation-activity/idb_store.svelte";
+  import { selectedAnnotation } from "$lib/plugin/video-annotation-activity/store";
 
-  import { groupAnnotations } from "../../video-annotation-activity/group-annotation.svelte";
-  import { idb_updated_at } from "../../video-annotation-activity/idb_store.svelte";
-  import { selectedAnnotation } from "../../video-annotation-activity/store";
-
-  import type { AnnotationsIndexedDB } from "../../video-annotation-activity/indexedDB";
-
+  import type { IConfigValue } from "$idah/context/activity-context";
   import type {
     AnnotationGroup,
     AnnotationMetadata,
     AnnotationObj,
     AnnotationShape,
     AnnotationValue,
-  } from "$idah/context/AnnotationContext";
+  } from "$idah/context/annotation-context";
+  import type { CategoryDefinition } from "$idah/context/category-context";
+  import type { AnnotationsIndexedDB } from "$lib/plugin/video-annotation-activity/indexedDB";
 
   // Props
-  type TAnnotationObj = AnnotationObj<
-    AnnotationShape,
-    AnnotationValue,
-    AnnotationMetadata
-  >;
+  type TAnnotationObj = AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
   interface Props {
     view: "sidebar" | "popover";
     db?: AnnotationsIndexedDB;
@@ -59,9 +45,7 @@
     onSelectCategory: (category?: string) => void;
     selectedCategory: string | undefined;
 
-    onSelectAnnotationGroup: (
-      annotationGroup: AnnotationGroup<TAnnotationObj>,
-    ) => void;
+    onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<TAnnotationObj>) => void;
     onDeleteAnnotation: (annotation: TAnnotationObj) => void;
     onLock: (locked: boolean, annotation?: TAnnotationObj) => void;
     onVisibility: (hidden: boolean, annotation?: TAnnotationObj) => void;
@@ -88,21 +72,18 @@
   // Automatically expand all categories when categories prop changes, but allow manual toggles
   let manualToggleStates = $state<Record<string, boolean>>({});
   let openStates = $derived.by(() => {
-    const autoExpanded = categories.reduce<Record<string, boolean>>(
-      (acc, category) => {
-        if (category.id.includes("/")) {
-          const parts = category.id.split("/");
-          for (let i = 0; i < parts.length - 1; i++) {
-            const parentPath = parts.slice(0, i + 1).join("/");
-            acc[parentPath] = true;
-          }
+    const autoExpanded = categories.reduce<Record<string, boolean>>((acc, category) => {
+      if (category.id.includes("/")) {
+        const parts = category.id.split("/");
+        for (let i = 0; i < parts.length - 1; i++) {
+          const parentPath = parts.slice(0, i + 1).join("/");
+          acc[parentPath] = true;
         }
-        // Always set the category itself to true
-        acc[category.id] = true;
-        return acc;
-      },
-      {},
-    );
+      }
+      // Always set the category itself to true
+      acc[category.id] = true;
+      return acc;
+    }, {});
 
     // Merge with manual toggles (manual toggles take precedence)
     return { ...autoExpanded, ...manualToggleStates };
@@ -110,26 +91,16 @@
 
   // Functions
   function formatShapeName(shape: string) {
-    return humanize(
-      shape.split(":").reverse()[0].split(new RegExp(/-|_/)).join(" "),
-    );
+    return humanize(shape.split(":").reverse()[0].split(new RegExp(/-|_/)).join(" "));
   }
 
   let categoriesTree = $derived(
     categories.reduce<CategoryDefinition[]>((acc, category_configuration) => {
-      return buildTree(
-        acc,
-        category_configuration.id.split("/"),
-        category_configuration,
-      );
+      return buildTree(acc, category_configuration.id.split("/"), category_configuration);
     }, []),
   );
 
-  function buildTree(
-    acc: CategoryDefinition[],
-    ids: string[],
-    configuration: IConfigValue,
-  ): CategoryDefinition[] {
+  function buildTree(acc: CategoryDefinition[], ids: string[], configuration: IConfigValue): CategoryDefinition[] {
     let currentLevel = acc;
     let fullPath = "";
 
@@ -137,9 +108,7 @@
       fullPath = i === 0 ? ids[i] : `${fullPath}/${ids[i]}`;
 
       // find if node exists at this level
-      let existingNode = currentLevel.find(
-        (current) => current.id === fullPath,
-      );
+      let existingNode = currentLevel.find((current) => current.id === fullPath);
       if (!existingNode) {
         existingNode = {
           id: fullPath,
@@ -232,12 +201,7 @@
       <CollapsibleContent>
         <!-- CATEGORY TREE -->
         {#each categoriesTree as category (category.id)}
-          {@render CategoryNode(
-            category,
-            category.nestedCategories,
-            onSelectCategory,
-            selectedCategory,
-          )}
+          {@render CategoryNode(category, category.nestedCategories, onSelectCategory, selectedCategory)}
         {/each}
       </CollapsibleContent>
     </Collapsible>
@@ -260,25 +224,15 @@
           {@const hasAnnotations = count > 0}
 
           <CollapsibleTrigger
-            class={cn(
-              "text-secondary-foreground flex w-full rounded-md text-xs",
-              {
-                "bg-secondary border-primary border-1":
-                  selectedCategory == category.id,
-                "hover:bg-primary-foreground hover:dark:bg-accent cursor-pointer":
-                  !category.requiredNested,
-                "hover:bg-accent cursor-pointer": !currentModeIsSameAsShape,
-              },
-            )}
+            class={cn("text-secondary-foreground flex w-full rounded-md text-xs", {
+              "bg-secondary border-primary border-1": selectedCategory == category.id,
+              "hover:bg-primary-foreground hover:dark:bg-accent cursor-pointer": !category.requiredNested,
+              "hover:bg-accent cursor-pointer": !currentModeIsSameAsShape,
+            })}
             onclick={(e) => toggleCategory(e, category)}
           >
-            <div
-              class="flex w-full items-center"
-              style:padding-left="{level - 1}rem"
-            >
-              <SidebarMenuItem
-                class="flex h-8 w-full flex-row items-center gap-1"
-              >
+            <div class="flex w-full items-center" style:padding-left="{level - 1}rem">
+              <SidebarMenuItem class="flex h-8 w-full flex-row items-center gap-1">
                 {@const hasChildren = !!category.nestedCategories}
                 {@const isSelectingCategory = selectedCategory == category.id}
                 {@const showChevronRightIcon = hasChildren || hasAnnotations}
@@ -288,8 +242,7 @@
                   size="icon-sm"
                   disabled={currentModeIsSameAsShape}
                   class={cn("p-0", {
-                    "opacity-0":
-                      !showChevronRightIcon || $selectedAnnotation?.metadata.id,
+                    "opacity-0": !showChevronRightIcon || $selectedAnnotation?.metadata.id,
                   })}
                   onclick={(e) => {
                     e.stopPropagation();
@@ -316,9 +269,7 @@
                           })}
                         />
                       {:else}
-                        <CircleSmallIcon
-                          class="fill-gray-400 stroke-gray-400"
-                        />
+                        <CircleSmallIcon class="fill-gray-400 stroke-gray-400" />
                       {/if}
                     {:else}
                       <!-- TOOLS::VISUAL -->
@@ -378,8 +329,7 @@
       {#key $idb_updated_at}
         {#if !currentModeIsSameAsShape && db && category}
           {#await db.getAllIndex("category", category.id) then annotations}
-            {@const { groups: filteredAnnotationGroups } =
-              groupFilteredAnnotations(annotations)}
+            {@const { groups: filteredAnnotationGroups } = groupFilteredAnnotations(annotations)}
             {#each filteredAnnotationGroups as annotationGroup (annotationGroup.groupId)}
               <AnnotationGroupNode
                 {category}
