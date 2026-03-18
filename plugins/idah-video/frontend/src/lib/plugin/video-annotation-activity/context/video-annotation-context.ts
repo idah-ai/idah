@@ -1,5 +1,5 @@
 import { IDAH_VIDEO_BOUNDING_BOX, IDAH_VIDEO_POLYGON } from "$lib/plugin/type";
-import { interpolatePolygonAtFrame } from "$lib/plugin/video-annotation-activity/polygon-interpolation";
+import { interpolatePolygonAtFrame } from "$lib/plugin/video-annotation-activity/shape/polygon/polygon-interpolation";
 
 import type {
   AnnotationMetadata,

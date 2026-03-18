@@ -3,8 +3,10 @@
 
   import { cn } from "$lib/utils";
 
-  import BoundingBox, { type ToolSelection } from "$lib/plugin/video-annotation-activity/bounding-box.svelte";
-  import Polygon from "$lib/plugin/video-annotation-activity/polygon.svelte";
+  import BoundingBox, {
+    type ToolSelection,
+  } from "$lib/plugin/video-annotation-activity/shape/bounding-box/bounding-box.svelte";
+  import Polygon from "$lib/plugin/video-annotation-activity/shape/polygon/polygon.svelte";
   import Zoomable from "$lib/plugin/video-annotation-activity/zoomable.svelte";
 
   import {
