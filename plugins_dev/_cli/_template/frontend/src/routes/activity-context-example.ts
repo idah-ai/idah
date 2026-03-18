@@ -6,9 +6,9 @@ import type {
   INotes,
   ITools,
   IWorkflowStep,
-} from "$lib/context";
+} from "$idah/context/activity-context";
 
-export const testContext: IActivityContext = {
+export const activityContextExample: IActivityContext = {
   get id() {
     return "test-entry-1";
   },

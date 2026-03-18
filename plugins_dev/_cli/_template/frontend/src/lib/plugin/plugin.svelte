@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { IActivityContext } from "$lib/context";
+  import type { IActivityContext } from "$idah/context/activity-context";
   import { onMount } from "svelte";
 
   import "./plugin.css";

@@ -1,5 +1,5 @@
 // place files you want to import through the `$lib` alias in this folder.
-import type { IActivityContext, IActivityView } from "$lib/context";
+import type { IActivityContext, IActivityView } from "$idah/context/activity-context";
 import { mount, unmount } from "svelte";
 import Plugin from "$lib/plugin/plugin.svelte";
 

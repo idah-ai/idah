@@ -1,4 +1,5 @@
 import { svelte } from '@sveltejs/vite-plugin-svelte'
+import tailwindcss from '@tailwindcss/vite'
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite'
 import path from "path";
@@ -7,10 +8,11 @@ export default defineConfig(({ mode }) => {
   const isProduction = mode === "production";
 
   return {
-    plugins: [isProduction ? svelte() : sveltekit()],
+    plugins: [tailwindcss(), isProduction ? svelte() : sveltekit()],
     resolve: {
       alias: {
-        $lib: path.resolve("./src/lib"),
+        "$lib": path.resolve("./src/lib"),
+        "$idah": path.resolve("./src/idah"),
       },
     },
     build: {
