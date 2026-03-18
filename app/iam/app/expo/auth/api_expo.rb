@@ -31,7 +31,6 @@ module Auth
 
       output = service.login_api(
         key,
-        ip: "",
         token_expiration: params[:token_expiration] || 3600
       )
 

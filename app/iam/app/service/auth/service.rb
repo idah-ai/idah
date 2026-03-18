@@ -65,7 +65,7 @@ module Auth
       system_account_sessions.logout(session_id)
     end
 
-    def login_api(key, _ip: "", token_expiration: 3600)
+    def login_api(key, token_expiration: 3600)
       now = Time.now
 
       # Validate key format
