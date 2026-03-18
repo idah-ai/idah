@@ -20,23 +20,16 @@
   import { cn } from "$lib/utils";
   import { humanize } from "$lib/utils/string";
 
-  import type { IConfigValue } from "$idah/context/activity-context";
-  import type { CategoryDefinition } from "$idah/context/category-context";
-
   import PolygonCircleIcon from "$lib/plugin/icon/polygon-circle-icon.svelte";
   import VectorSquareIcon from "$lib/plugin/icon/vector-square-icon.svelte";
 
   import { IDAH_VIDEO_BOUNDING_BOX, IDAH_VIDEO_POLYGON } from "$lib/plugin/type";
-  import { idb_updated_at } from "$lib/plugin/video-annotation-activity/idb-store.svelte";
+  import { idbUpdatedAt } from "$lib/plugin/video-annotation-activity/store/idb-store.svelte";
 
-  import type {
-    AnnotationMetadata,
-    AnnotationObj,
-    AnnotationShape,
-    AnnotationValue,
-  } from "$idah/context/annotation-context";
+  import type { IConfigValue } from "$idah/context/activity-context";
+  import type { CategoryDefinition } from "$idah/context/category-context";
+  import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
   import type { AnnotationsIndexedDB } from "$lib/plugin/video-annotation-activity/indexedDB";
-  import type { VideoAnnotation } from "$lib/plugin/video-annotation-activity/video-annotation-context";
 
   // Props
   let {
@@ -60,13 +53,10 @@
     selected_category: string | undefined;
     selected_id: string | undefined;
     onSelect: (category?: string) => void;
-    onSelectAnnotation: (annotation: VideoAnnotation) => void;
-    onDeleteAnnotation: (annotation: VideoAnnotation) => void;
-    onLock: (locked: boolean, annotation?: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) => void;
-    onVisibility: (
-      hidden: boolean,
-      annotation?: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>,
-    ) => void;
+    onSelectAnnotation: (annotation: VideoAnnotationObject) => void;
+    onDeleteAnnotation: (annotation: VideoAnnotationObject) => void;
+    onLock: (locked: boolean, annotation?: VideoAnnotationObject) => void;
+    onVisibility: (hidden: boolean, annotation?: VideoAnnotationObject) => void;
     db?: AnnotationsIndexedDB;
   } = $props();
 
@@ -163,7 +153,7 @@
   <div class="truncate whitespace-nowrap">{name}</div>
 {/snippet}
 
-{#snippet annotationSelection(annotation: VideoAnnotation, name: string)}
+{#snippet annotationSelection(annotation: VideoAnnotationObject, name: string)}
   <SidebarMenuItem class="list-none">
     <SidebarMenuButton
       class={cn("group w-full gap-0 pl-8 hover:cursor-pointer")}
@@ -319,13 +309,13 @@
   parent: string[] = [],
 )}
   <Collapsible open={toolMode ? !!category : openStates[category.id] || false}>
-    {#key `${forceRender}-${$idb_updated_at}-${type}`}
+    {#key `${forceRender}-${$idbUpdatedAt}-${type}`}
       {#await haveAnnotationsInCategory(category.id) then hasAnnotations}
         <CollapsibleTrigger
           class={cn(
             "text-secondary-foreground flex w-full items-center justify-between pr-1 text-xs group-hover:w-2/4",
             {
-              "bg-secondary border-ring text-secondary-foreground rounded-sm border-1": selected == category.id,
+              "bg-secondary border-ring text-secondary-foreground rounded-sm border": selected == category.id,
               "hover:bg-primary-foreground hover:dark:bg-accent hover:cursor-pointer hover:rounded-sm":
                 !category.requiredNested,
               "hover:bg-accent hover:cursor-pointer hover:rounded-sm": !toolMode,
@@ -356,7 +346,7 @@
           )}
 
           {#if db && category}
-            {#key $idb_updated_at}
+            {#key $idbUpdatedAt}
               {#await db.getAllStartingWith("category", category.id) then anns}
                 {@const filteredCount = anns.filter(
                   (annotation) =>
@@ -375,7 +365,7 @@
     {/key}
 
     <CollapsibleContent class="ml-4" hidden={!openStates[category.id]}>
-      {#key $idb_updated_at}
+      {#key $idbUpdatedAt}
         {#if !toolMode && db && category}
           {#await db.getAllIndex("category", category.id) then anns}
             {@const filteredAnns = anns.filter((annotation) => {

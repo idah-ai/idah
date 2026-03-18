@@ -20,22 +20,20 @@
   import { ShortcutManager } from "$idah/shortcut/shortcut-manager";
   import { showToast } from "$lib/components/ui/toast/index.svelte";
 
-  import type { AnnotationGroup, AnnotationMetadata, AnnotationObj } from "$idah/context/annotation-context";
-
   import { DEFAULT_MODE, ENTRY_ROOT, IDAH_NOTE, IDAH_VIDEO_BOUNDING_BOX, IDAH_VIDEO_POLYGON } from "$lib/plugin/type";
   import { requiredFullfilled } from "$lib/plugin/video-annotation-activity/category-properties";
-  import { boundingBoxes, entryRoot, idb_updated_at } from "$lib/plugin/video-annotation-activity/idb-store.svelte";
   import { annotationsIndexedDB, AnnotationsIndexedDB } from "$lib/plugin/video-annotation-activity/indexedDB";
   import {
     registerOnSelectBoxModeShortcuts,
     registerVisualModeShortcuts,
   } from "$lib/plugin/video-annotation-activity/shortcut";
+  import { boundingBoxes, entryRoot, idbUpdatedAt } from "$lib/plugin/video-annotation-activity/store/idb-store.svelte";
   import {
     deselectAnnotation,
     deselectAnnotationGroup,
     selectedAnnotation,
     selectedAnnotationGroup,
-  } from "$lib/plugin/video-annotation-activity/store";
+  } from "$lib/plugin/video-annotation-activity/store/store";
 
   import AnnotationFooterToolbar from "$lib/plugin/layout/footer/annotation-footer-toolbar.svelte";
   import AnnotationFooter from "$lib/plugin/layout/footer/annotation-footer.svelte";
@@ -48,17 +46,16 @@
   import Video from "$lib/plugin/video-annotation-activity/video.svelte";
 
   import type { IActivityContext } from "$idah/context/activity-context";
-  import type { AnnotationShape, AnnotationValue } from "$idah/context/annotation-context";
+  import type { AnnotationGroup, AnnotationShape, AnnotationValue } from "$idah/context/annotation-context";
   import {
     type InterpolatedVertex,
     type Point,
+    type VideoAnnotationObject,
     type VideoFrameSelection,
     type VideoShape,
     getInterpolatedFrame,
-  } from "$lib/plugin/video-annotation-activity/video-annotation-context";
+  } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
   import { showErrorToast } from "$lib/utils/error/error.toasts";
-
-  type TAnnotationObj = AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
 
   // Props
   interface Props {
@@ -70,7 +67,7 @@
   setContext("context", context);
 
   // Lifecycles
-  $effect(() => console.debug({ $idb_updated_at }));
+  $effect(() => console.debug({ $idbUpdatedAt }));
   $effect(() => console.debug({ $boundingBoxes }));
   $effect(() => console.debug({ $entryRoot }));
 
@@ -244,7 +241,7 @@
 
           if (d.length) {
             db.upsertAnnotations(d).then(() => {
-              $idb_updated_at = new Date();
+              $idbUpdatedAt = new Date();
               fetchAnnotations(db, page + 1).then(resolve, reject);
             });
           } else {
@@ -306,7 +303,7 @@
         };
         $selectedAnnotation = annotation;
         await annotationsIDB?.upsertAnnotations([annotation]);
-        $idb_updated_at = new Date();
+        $idbUpdatedAt = new Date();
 
         // quick fix for now as we mode id still here
         if (annotation.shape.type == ENTRY_ROOT) $entryRoot = annotation;
@@ -320,7 +317,7 @@
             a.synced = true;
             $selectedAnnotation = a;
             await annotationsIDB?.upsertAnnotations([a]);
-            $idb_updated_at = new Date();
+            $idbUpdatedAt = new Date();
           }
         }, console.error);
       },
@@ -330,7 +327,7 @@
         if ($entryRoot?.metadata.id == id) $entryRoot = undefined;
 
         await annotationsIDB?.deleteAnnotation(id);
-        $idb_updated_at = new Date();
+        $idbUpdatedAt = new Date();
 
         let _p = context.annotations.delete(id);
       },
@@ -350,13 +347,13 @@
         if (props.id == $selectedAnnotation?.metadata.id) deselectAnnotation();
 
         await annotationsIDB?.deleteAnnotation(props.id);
-        $idb_updated_at = new Date();
+        $idbUpdatedAt = new Date();
 
         if ($entryRoot?.metadata.id == props.id) $entryRoot = undefined;
 
         let p = context.annotations.delete(props.id);
 
-        p.then(() => ($idb_updated_at = new Date()));
+        p.then(() => ($idbUpdatedAt = new Date()));
       },
       async undo() {
         const createdAt = new Date();
@@ -377,7 +374,7 @@
         };
 
         await annotationsIDB?.upsertAnnotations([a]);
-        $idb_updated_at = new Date();
+        $idbUpdatedAt = new Date();
 
         if (annotation.shape.type == ENTRY_ROOT) $entryRoot = annotation;
         let p = context.annotations.create(props.id, annotation.shape, annotation.value, a.metadata.metadata);
@@ -390,7 +387,7 @@
             if (annotation?.shape.type == ENTRY_ROOT) $entryRoot = annotation;
 
             await annotationsIDB?.upsertAnnotations([annotation]);
-            $idb_updated_at = new Date();
+            $idbUpdatedAt = new Date();
           }
         });
       },
@@ -418,7 +415,7 @@
           await annotationsIDB?.deleteAnnotation(id);
           context.annotations.delete(id);
         }
-        $idb_updated_at = new Date();
+        $idbUpdatedAt = new Date();
       },
       async undo() {
         const createdAt = new Date();
@@ -448,11 +445,11 @@
               if (restored?.shape.type == ENTRY_ROOT) $entryRoot = restored;
 
               await annotationsIDB?.upsertAnnotations([restored]);
-              $idb_updated_at = new Date();
+              $idbUpdatedAt = new Date();
             }
           });
         }
-        $idb_updated_at = new Date();
+        $idbUpdatedAt = new Date();
       },
       isCombinable: () => false,
       combine: (cmd) => cmd,
@@ -490,7 +487,7 @@
         $selectedAnnotation = v;
 
         await annotationsIDB?.upsertAnnotations([v]);
-        $idb_updated_at = new Date();
+        $idbUpdatedAt = new Date();
 
         let p = context.annotations.update({
           id: v.metadata.id,
@@ -504,7 +501,7 @@
             v.synced = true;
             await annotationsIDB?.upsertAnnotations([v]);
             $selectedAnnotation = v;
-            $idb_updated_at = new Date();
+            $idbUpdatedAt = new Date();
           }
         }, console.error);
       },
@@ -529,7 +526,7 @@
         await annotationsIDB?.deleteKeyFrame(v, selection.frame);
         await annotationsIDB?.upsertAnnotations([v]);
         $selectedAnnotation = v;
-        $idb_updated_at = new Date();
+        $idbUpdatedAt = new Date();
 
         let p = context.annotations.update({
           id: v.metadata.id,
@@ -544,7 +541,7 @@
             v.synced = true;
             await annotationsIDB?.upsertAnnotations([v]);
             $selectedAnnotation = v;
-            $idb_updated_at = new Date();
+            $idbUpdatedAt = new Date();
           }
         });
       },
@@ -595,7 +592,7 @@
         };
         annotation.metadata.updatedAt = updatedAt;
         await annotationsIDB?.upsertAnnotations([annotation]);
-        $idb_updated_at = new Date();
+        $idbUpdatedAt = new Date();
 
         $selectedAnnotation = annotation;
 
@@ -611,7 +608,7 @@
             annotation.synced = true;
             await annotationsIDB?.upsertAnnotations([annotation]);
             $selectedAnnotation = annotation;
-            $idb_updated_at = new Date();
+            $idbUpdatedAt = new Date();
           }
         });
       },
@@ -636,7 +633,7 @@
         $selectedAnnotation = annotation;
 
         await annotationsIDB?.addKeyFrame(annotation, selection);
-        $idb_updated_at = new Date();
+        $idbUpdatedAt = new Date();
 
         let p = context.annotations.update({
           id: annotation.metadata.id,
@@ -650,7 +647,7 @@
             annotation.synced = true;
             await annotationsIDB?.upsertAnnotations([annotation]);
             $selectedAnnotation = annotation;
-            $idb_updated_at = new Date();
+            $idbUpdatedAt = new Date();
           }
         });
       },
@@ -659,7 +656,7 @@
     };
   });
 
-  context.commands.on("annotation.update", (props: { annotation: TAnnotationObj; value: AnnotationValue }) => {
+  context.commands.on("annotation.update", (props: { annotation: VideoAnnotationObject; value: AnnotationValue }) => {
     const annotationId = props.annotation.metadata.id;
     const value_from = props.annotation.value;
     return {
@@ -675,7 +672,7 @@
           $selectedAnnotation = annotation;
 
           await annotationsIDB?.upsertAnnotations([annotation]);
-          $idb_updated_at = new Date();
+          $idbUpdatedAt = new Date();
 
           if ($entryRoot?.metadata.id == annotation.metadata.id) $entryRoot = annotation;
 
@@ -692,7 +689,7 @@
               $selectedAnnotation = annotation;
               if ($entryRoot?.metadata.id == annotation.metadata.id) $entryRoot = annotation;
               await annotationsIDB?.upsertAnnotations([annotation]);
-              $idb_updated_at = new Date();
+              $idbUpdatedAt = new Date();
             }
           });
         }
@@ -722,7 +719,7 @@
               $selectedAnnotation = annotation;
               if ($entryRoot?.metadata.id == annotation.metadata.id) $entryRoot = annotation;
               await annotationsIDB?.upsertAnnotations([annotation]);
-              $idb_updated_at = new Date();
+              $idbUpdatedAt = new Date();
             }
           });
         }
@@ -773,7 +770,7 @@
 
                 /** Refetch */
                 annotationValue = { category: categoryIdToBeUpdate };
-                $idb_updated_at = new Date();
+                $idbUpdatedAt = new Date();
               }
             });
           }
@@ -803,7 +800,7 @@
 
                 /** Refetch */
                 annotationValue = { category: beforeUpdateCategoryId };
-                $idb_updated_at = new Date();
+                $idbUpdatedAt = new Date();
               }
             });
           }
@@ -946,7 +943,7 @@
               annotation.synced = true;
               if ($entryRoot?.metadata.id == annotation.metadata.id) $entryRoot = annotation;
               await annotationsIDB?.upsertAnnotations([annotation]);
-              $idb_updated_at = new Date();
+              $idbUpdatedAt = new Date();
             }
           });
         }
@@ -979,7 +976,7 @@
         if (a2.shape.type == ENTRY_ROOT) $entryRoot = a2;
 
         await annotationsIDB?.upsertAnnotations([a2]);
-        $idb_updated_at = new Date();
+        $idbUpdatedAt = new Date();
 
         let p2 = context.annotations.create(newId, a2.shape, a2.value, a2.metadata.metadata);
         p2.then(async () => {
@@ -988,7 +985,7 @@
             annotation.synced = true;
             if ($entryRoot?.metadata.id == annotation.metadata.id) $entryRoot = annotation;
             await annotationsIDB?.upsertAnnotations([annotation]);
-            $idb_updated_at = new Date();
+            $idbUpdatedAt = new Date();
             $selectedAnnotation = annotation;
           }
         });
@@ -1025,7 +1022,7 @@
               annotation.synced = true;
               if ($entryRoot?.metadata.id == annotation.metadata.id) $entryRoot = annotation;
               await annotationsIDB?.upsertAnnotations([annotation]);
-              $idb_updated_at = new Date();
+              $idbUpdatedAt = new Date();
               $selectedAnnotation = annotation;
             }
           });
@@ -1033,7 +1030,7 @@
 
         // delete part 2
         await annotationsIDB?.deleteAnnotation(newId);
-        $idb_updated_at = new Date();
+        $idbUpdatedAt = new Date();
         context.annotations.delete(newId);
 
         if ($entryRoot?.metadata.id == newId) $entryRoot = undefined;
@@ -1141,7 +1138,7 @@
     context.commands.run("keyframe.delete", { annotationId, frame });
   }
 
-  function onDeleteAnnotation(annotation: TAnnotationObj, frame?: number) {
+  function onDeleteAnnotation(annotation: VideoAnnotationObject, frame?: number) {
     if (!["review", "annotate"].includes(context.workflowStep)) return;
 
     if (frame != undefined) deleteSelection(annotation.metadata.id, frame);
@@ -1247,13 +1244,13 @@
     }
   }
 
-  function updateAnnotationValue(annotation: TAnnotationObj, value: AnnotationValue) {
+  function updateAnnotationValue(annotation: VideoAnnotationObject, value: AnnotationValue) {
     if (annotation?.locked || !["review", "annotate"].includes(context.workflowStep)) return;
 
     context.commands.run("annotation.update", { annotation, value });
   }
 
-  function selectAnnotation(annotation?: TAnnotationObj) {
+  function selectAnnotation(annotation?: VideoAnnotationObject) {
     $selectedAnnotation = annotation;
 
     /**
@@ -1282,7 +1279,7 @@
   }
 
   // TODO: refactor with selectAnnotation ?
-  function selectAnnotationGroup(annotationGroup: AnnotationGroup<TAnnotationObj>, selectedFrame?: number) {
+  function selectAnnotationGroup(annotationGroup: AnnotationGroup<VideoAnnotationObject>, selectedFrame?: number) {
     $selectedAnnotationGroup = annotationGroup;
 
     const firstAnnotation = annotationGroup.annotations[0];
@@ -1306,7 +1303,7 @@
     }
   }
 
-  function selectClosestAnnotation(annotationGroup: AnnotationGroup<TAnnotationObj>, frame: number) {
+  function selectClosestAnnotation(annotationGroup: AnnotationGroup<VideoAnnotationObject>, frame: number) {
     let closestAnnotation = annotationGroup.annotations[0];
 
     if (annotationGroup.annotations.length === 1) {
@@ -1346,8 +1343,8 @@
 
   let overlay: SvgOverlay;
 
-  let annotations_promise: Promise<TAnnotationObj[]> = $derived.by(() => {
-    $idb_updated_at; // eslint-disable-line @typescript-eslint/no-unused-expressions
+  let annotations_promise: Promise<VideoAnnotationObject[]> = $derived.by(() => {
+    $idbUpdatedAt; // eslint-disable-line @typescript-eslint/no-unused-expressions
 
     if (!annotationsIDB) return new Promise((_, ko) => ko("no database"));
 
@@ -1384,31 +1381,31 @@
     player?.seekToFrame(frame);
   }
 
-  function onVisibility(hidden: boolean, annotation?: TAnnotationObj) {
+  function onVisibility(hidden: boolean, annotation?: VideoAnnotationObject) {
     if (annotation) {
       annotation.hidden = hidden;
       if (annotation.metadata.id == $selectedAnnotation?.metadata.id) $selectedAnnotation.hidden = hidden;
       if (annotation.shape.type == ENTRY_ROOT) $entryRoot = annotation;
 
-      annotationsIDB?.upsertAnnotations([annotation]).then(() => ($idb_updated_at = new Date()));
+      annotationsIDB?.upsertAnnotations([annotation]).then(() => ($idbUpdatedAt = new Date()));
     } else {
       allHidden = hidden;
       if ($selectedAnnotation) $selectedAnnotation.hidden = hidden;
-      annotationsIDB?.updateAllVisibility(hidden).then(() => ($idb_updated_at = new Date()));
+      annotationsIDB?.updateAllVisibility(hidden).then(() => ($idbUpdatedAt = new Date()));
     }
   }
 
-  function onLock(locked: boolean, annotation?: TAnnotationObj) {
+  function onLock(locked: boolean, annotation?: VideoAnnotationObject) {
     if (annotation) {
       annotation.locked = locked;
       if (annotation.metadata.id == $selectedAnnotation?.metadata.id) $selectedAnnotation.locked = locked;
       if (annotation.shape.type == ENTRY_ROOT) $entryRoot = annotation;
-      annotationsIDB?.upsertAnnotations([annotation]).then(() => ($idb_updated_at = new Date()));
+      annotationsIDB?.upsertAnnotations([annotation]).then(() => ($idbUpdatedAt = new Date()));
     } else {
       allLocked = locked;
       if ($entryRoot) $entryRoot.locked = locked;
       if ($selectedAnnotation) $selectedAnnotation.locked = locked;
-      annotationsIDB?.updateAllLock(locked).then(() => ($idb_updated_at = new Date()));
+      annotationsIDB?.updateAllLock(locked).then(() => ($idbUpdatedAt = new Date()));
     }
   }
 

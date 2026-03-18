@@ -19,8 +19,8 @@
 
   import { IDAH_VIDEO_BOUNDING_BOX } from "$lib/plugin/type";
   import { visibilityFullfilled } from "$lib/plugin/video-annotation-activity/category-properties";
-  import { idb_updated_at } from "$lib/plugin/video-annotation-activity/idb-store.svelte";
-  import { selectedAnnotationGroup } from "$lib/plugin/video-annotation-activity/store";
+  import { idbUpdatedAt } from "$lib/plugin/video-annotation-activity/store/idb-store.svelte";
+  import { selectedAnnotationGroup } from "$lib/plugin/video-annotation-activity/store/store";
 
   import type { IActivityContext, IConfigProperty } from "$idah/context/activity-context";
   import type { AnnotationValue } from "$idah/context/annotation-context";
@@ -197,7 +197,7 @@
   </section>
 {/snippet}
 
-{#key $idb_updated_at}
+{#key $idbUpdatedAt}
   <!-- CATEGORIES -->
   {#if annotationId}
     <!--

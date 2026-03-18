@@ -15,23 +15,17 @@
   import CategoryName from "$lib/plugin/layout/sidebar/category/category-name.svelte";
 
   import { IDAH_VIDEO_BOUNDING_BOX, IDAH_VIDEO_POLYGON } from "$lib/plugin/type";
-  import { groupAnnotations } from "$lib/plugin/video-annotation-activity/group-annotation.svelte";
-  import { idb_updated_at } from "$lib/plugin/video-annotation-activity/idb-store.svelte";
-  import { selectedAnnotation } from "$lib/plugin/video-annotation-activity/store";
+  import { idbUpdatedAt } from "$lib/plugin/video-annotation-activity/store/idb-store.svelte";
+  import { selectedAnnotation } from "$lib/plugin/video-annotation-activity/store/store";
+  import { groupAnnotations } from "$lib/plugin/video-annotation-activity/utils/group-annotation.svelte";
 
   import type { IConfigValue } from "$idah/context/activity-context";
-  import type {
-    AnnotationGroup,
-    AnnotationMetadata,
-    AnnotationObj,
-    AnnotationShape,
-    AnnotationValue,
-  } from "$idah/context/annotation-context";
+  import type { AnnotationGroup } from "$idah/context/annotation-context";
   import type { CategoryDefinition } from "$idah/context/category-context";
+  import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
   import type { AnnotationsIndexedDB } from "$lib/plugin/video-annotation-activity/indexedDB";
 
   // Props
-  type TAnnotationObj = AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
   interface Props {
     view: "sidebar" | "popover";
     db?: AnnotationsIndexedDB;
@@ -45,10 +39,10 @@
     onSelectCategory: (category?: string) => void;
     selectedCategory: string | undefined;
 
-    onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<TAnnotationObj>) => void;
-    onDeleteAnnotation: (annotation: TAnnotationObj) => void;
-    onLock: (locked: boolean, annotation?: TAnnotationObj) => void;
-    onVisibility: (hidden: boolean, annotation?: TAnnotationObj) => void;
+    onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<VideoAnnotationObject>) => void;
+    onDeleteAnnotation: (annotation: VideoAnnotationObject) => void;
+    onLock: (locked: boolean, annotation?: VideoAnnotationObject) => void;
+    onVisibility: (hidden: boolean, annotation?: VideoAnnotationObject) => void;
   }
   let {
     view,
@@ -160,8 +154,8 @@
     }
   }
 
-  function groupFilteredAnnotations(annotations: Array<TAnnotationObj>): {
-    groups: Array<AnnotationGroup<TAnnotationObj>>;
+  function groupFilteredAnnotations(annotations: Array<VideoAnnotationObject>): {
+    groups: Array<AnnotationGroup<VideoAnnotationObject>>;
     count: number;
   } {
     const filteredAnnotations = annotations.filter(
@@ -217,7 +211,7 @@
   level: number = 1,
 )}
   <Collapsible open={openStates[category.id] || false}>
-    {#key `${$idb_updated_at}`}
+    {#key `${$idbUpdatedAt}`}
       {#if db && category}
         {#await db.getAllStartingWith("category", category.id) then annotations}
           {@const { count } = groupFilteredAnnotations(annotations)}
@@ -225,7 +219,7 @@
 
           <CollapsibleTrigger
             class={cn("text-secondary-foreground flex w-full rounded-md text-xs", {
-              "bg-secondary border-primary border-1": selectedCategory == category.id,
+              "bg-secondary border-primary border": selectedCategory == category.id,
               "hover:bg-primary-foreground hover:dark:bg-accent cursor-pointer": !category.requiredNested,
               "hover:bg-accent cursor-pointer": !currentModeIsSameAsShape,
             })}
@@ -326,7 +320,7 @@
     {/key}
 
     <CollapsibleContent hidden={!openStates[category.id]}>
-      {#key $idb_updated_at}
+      {#key $idbUpdatedAt}
         {#if !currentModeIsSameAsShape && db && category}
           {#await db.getAllIndex("category", category.id) then annotations}
             {@const { groups: filteredAnnotationGroups } = groupFilteredAnnotations(annotations)}

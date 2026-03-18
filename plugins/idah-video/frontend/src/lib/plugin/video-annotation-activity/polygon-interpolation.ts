@@ -9,7 +9,7 @@ import {
   type InterpolatedVertex,
   type Point,
   type VideoFrameSelection,
-} from "$lib/plugin/video-annotation-activity/video-annotation-context";
+} from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
 
 // -----------------
 // Polygon helper functions

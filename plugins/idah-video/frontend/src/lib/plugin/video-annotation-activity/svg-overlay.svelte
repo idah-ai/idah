@@ -4,8 +4,8 @@
   import { cn } from "$lib/utils";
 
   import BoundingBox, { type ToolSelection } from "$lib/plugin/video-annotation-activity/bounding-box.svelte";
-  import { boundingBoxes } from "$lib/plugin/video-annotation-activity/idb-store.svelte";
   import Polygon from "$lib/plugin/video-annotation-activity/polygon.svelte";
+  import Zoomable from "$lib/plugin/video-annotation-activity/zoomable.svelte";
 
   import {
     DEFAULT_MODE,
@@ -15,7 +15,6 @@
     IDAH_VIDEO_POLYGON,
     type EntryRoot,
   } from "$lib/plugin/type";
-  import { deselectAnnotationGroup, selectedAnnotation } from "$lib/plugin/video-annotation-activity/store";
   import {
     getInterpolatedFrame,
     HEIGHT,
@@ -25,17 +24,15 @@
     Y,
     type InterpolatedVertex,
     type Point,
+    type VideoAnnotationObject,
     type VideoShape,
-  } from "$lib/plugin/video-annotation-activity/video-annotation-context";
-  import Zoomable from "$lib/plugin/video-annotation-activity/zoomable.svelte";
+  } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
+
+  import { boundingBoxes } from "$lib/plugin/video-annotation-activity/store/idb-store.svelte";
+  import { deselectAnnotationGroup, selectedAnnotation } from "$lib/plugin/video-annotation-activity/store/store";
 
   import type { IActivityContext, IConfigPropertyStyles, INoteFeed } from "$idah/context/activity-context";
-  import type {
-    AnnotationMetadata,
-    AnnotationObj,
-    AnnotationShape,
-    AnnotationValue,
-  } from "$idah/context/annotation-context";
+  import type { AnnotationShape } from "$idah/context/annotation-context";
 
   // Types
   export interface OnAddNewNoteParams {
@@ -44,16 +41,14 @@
     annotationId: string | null;
   }
 
-  type TAnnotationObj = AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
-
   // Props
   type Props = {
     frame: number;
     mode: string;
     target_container: () => HTMLDivElement | undefined; // ..
-    annotations_promise: Promise<TAnnotationObj[]>;
+    annotations_promise: Promise<VideoAnnotationObject[]>;
     children: Snippet;
-    onSelectAnnotation: (annotation?: TAnnotationObj) => void;
+    onSelectAnnotation: (annotation?: VideoAnnotationObject) => void;
     onmouseup?: (e: MouseEvent) => void;
     onmousedown?: (e: MouseEvent) => void;
     onmousemove?: (e: MouseEvent) => void;
@@ -196,7 +191,7 @@
     zoomableElement.mouseUp(e);
   }
 
-  function showNewNoteFeedPopup(annotation?: TAnnotationObj) {
+  function showNewNoteFeedPopup(annotation?: VideoAnnotationObject) {
     /**
      * Show new note feed dialog only when there is no dragging (i.e. zoom offset did not change)
      */
@@ -256,7 +251,7 @@
     return "cursor-grab";
   });
 
-  function getAnnotationPropertyStyle(annotation?: TAnnotationObj): IConfigPropertyStyles {
+  function getAnnotationPropertyStyle(annotation?: VideoAnnotationObject): IConfigPropertyStyles {
     const defaultStyle: IConfigPropertyStyles = {
       border: "solid",
       opacity: 100,

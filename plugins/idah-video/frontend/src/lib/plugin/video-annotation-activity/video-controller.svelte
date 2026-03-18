@@ -29,11 +29,12 @@
   } from "$lib/components/ui/dropdown-menu";
   import { Popover, PopoverContent, PopoverTrigger } from "$lib/components/ui/popover";
   import Slider from "$lib/components/ui/slider/slider.svelte";
+  import Video from "$lib/plugin/video-annotation-activity/video.svelte";
+
+  import { IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP } from "$lib/plugin/type";
+  import { selectedAnnotation } from "$lib/plugin/video-annotation-activity/store/store";
 
   import type { IActivityContext } from "$idah/context/activity-context";
-  import { IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP } from "$lib/plugin/type";
-  import { selectedAnnotation } from "$lib/plugin/video-annotation-activity/store";
-  import Video from "$lib/plugin/video-annotation-activity/video.svelte";
 
   // Props
   interface Props {

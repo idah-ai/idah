@@ -13,12 +13,7 @@
   import { cn } from "$lib/utils";
 
   import type { IActivityContext } from "$idah/context/activity-context";
-  import type {
-    AnnotationMetadata,
-    AnnotationObj,
-    AnnotationShape,
-    AnnotationValue,
-  } from "$idah/context/annotation-context";
+  import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
 
   let {
     annotation,
@@ -36,7 +31,7 @@
     totalFrames,
     ...restProps
   }: HTMLAttributes<HTMLDivElement> & {
-    annotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
+    annotation: VideoAnnotationObject;
     frame: number;
     currentFrame: number;
     range: [number, number];
@@ -47,7 +42,7 @@
     zoom: number;
     totalFrames: number;
     onSeekFrame: (frame: number) => void;
-    onSelectAnnotation: (annotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) => void;
+    onSelectAnnotation: (annotation: VideoAnnotationObject) => void;
     onDeleteFrame: (frame: number) => void;
   } = $props();
 
