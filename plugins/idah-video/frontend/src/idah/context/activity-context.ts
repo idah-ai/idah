@@ -131,17 +131,22 @@ export interface IConfig {
 }
 
 export type ICommand = {
-  apply: () => void;
-  undo: () => void;
-
   name: string; // A human readable name for the command, used for showing in the UI.
+
+  apply: () => Promise<void> | void;
+  undo: () => Promise<void> | void;
+
   isCombinable: (previousCommand: ICommand) => boolean;
   combine: (previousCommand: ICommand) => ICommand;
 };
 
 export interface ICommands {
-  on(name: string, commandBuilder: (props?: object) => ICommand, manager?: boolean): void;
-  run(name: string, props?: object): void;
+  on<T>(
+    name: string,
+    commandBuilder: (props: T) => ICommand | void | Promise<ICommand | void>,
+    manager?: boolean,
+  ): void;
+  run<T>(name: string, props?: T): void;
   undo(times?: number): void;
   redo(times?: number): void;
 }

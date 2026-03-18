@@ -33,6 +33,7 @@
     deselectAnnotationGroup,
     selectedAnnotation,
     selectedAnnotationGroup,
+    setSelectedAnnotation,
   } from "$lib/plugin/video-annotation-activity/store/store";
 
   import AnnotationFooterToolbar from "$lib/plugin/layout/footer/annotation-footer-toolbar.svelte";
@@ -66,12 +67,8 @@
   // Contexts
   setContext("context", context);
 
-  // Lifecycles
-  $effect(() => console.debug({ $idbUpdatedAt }));
-  $effect(() => console.debug({ $boundingBoxes }));
-  $effect(() => console.debug({ $entryRoot }));
-
   // Variables
+  let { id: entryId, mediaUrl } = $derived(context);
   let player: Video | undefined = $state();
   let player_container: HTMLDivElement | undefined = $state();
   let currentFrame = $state(0);
@@ -84,13 +81,9 @@
   let annotationId = $derived<string | undefined>($selectedAnnotation ? $selectedAnnotation.metadata.id : undefined);
   let annotationValue: AnnotationValue = $derived($selectedAnnotation?.value || {});
 
-  let entry_id = $state(context.id);
-  let url = $state(context.mediaUrl);
-
   let zoom = $state(85);
   let scale = $state(1);
   let timelineTable: TimelineTable;
-  let videoController: VideoController;
 
   let annotationsIDB: AnnotationsIndexedDB | undefined = $state();
   let isPlaying = $state(false);
@@ -158,11 +151,14 @@
     };
   });
 
+  // Lifecycles
   // for now
   $effect(() => {
-    if (url && player && url != player?.source()) {
-      player?.source(url); //...
+    if (mediaUrl && player && mediaUrl != player?.source()) {
+      player?.source(mediaUrl);
     }
+
+    /** Set tool to visual mode when video is playing & mode is not visual */
     if (isPlaying && mode !== DEFAULT_MODE) {
       context.commands.run("tools.visual");
     }
@@ -204,7 +200,7 @@
 
     $effect(() => context.tools.setTool(mode));
 
-    annotationsIndexedDB(["idah-video", "entry", entry_id].join(":")).then((idb) => {
+    annotationsIndexedDB(["idah-video", "entry", entryId].join(":")).then((idb) => {
       annotationsIDB = idb;
       fetchAnnotations(idb).then(() => {
         // quick fix if unsynced data, though we dont have way to send it anyway for now if so
@@ -214,22 +210,22 @@
 
     function fetchAnnotations(db: AnnotationsIndexedDB, page = 1, itemsPerPage = 100): Promise<void> {
       return new Promise<void>((resolve, reject) => {
-        context.annotations.list({ entry_id: entry_id }, { page, itemsPerPage }).then((r) => {
-          let d = r.map((a) => {
-            const annotation = {
+        context.annotations.list({ entry_id: entryId }, { page, itemsPerPage }).then((res) => {
+          let d = res.map((ann) => {
+            const annotation: VideoAnnotationObject = {
               shape: {
-                ...(a.dimensions as VideoShape),
-                range: [a.dimensions.start, a.dimensions.end],
+                ...(ann.dimensions as VideoShape),
+                range: [ann.dimensions.start, ann.dimensions.end],
               },
               value: {
-                ...a.annotation,
-                category: a.annotation.category || "null", //........
+                ...ann.annotation,
+                category: ann.annotation.category || "null",
               },
               metadata: {
-                id: a.id,
-                updatedAt: a.updated_at,
-                createdAt: a.created_at,
-                metadata: a.metadata || {},
+                id: ann.id,
+                updatedAt: ann.updated_at || new Date(),
+                createdAt: ann.created_at || new Date(),
+                metadata: ann.metadata || {},
               },
               hidden: false,
               locked: false,
@@ -280,20 +276,48 @@
     });
   });
 
+  async function runCreateAnnotation(annotationId: string, newAnnotation: VideoAnnotationObject) {
+    setSelectedAnnotation(newAnnotation);
+    await annotationsIDB?.upsertAnnotations([newAnnotation]);
+    $entryRoot = newAnnotation.shape.type == ENTRY_ROOT ? newAnnotation : undefined;
+
+    // Create new annotation and set it synced
+    context.annotations.create(annotationId, newAnnotation.shape, newAnnotation.value).then(async () => {
+      const ann = await annotationsIDB?.get("annotations", annotationId);
+
+      if (ann && ann.metadata.updatedAt.valueOf() == newAnnotation.metadata.createdAt.valueOf()) {
+        ann.synced = true;
+        setSelectedAnnotation(ann);
+        await annotationsIDB?.upsertAnnotations([ann]);
+        $entryRoot = newAnnotation.shape.type == ENTRY_ROOT ? newAnnotation : undefined;
+      }
+    });
+  }
+
+  async function runDeleteAnnotation(annotationId: string) {
+    /** Deselect annotation if annotation is selected */
+    if ($selectedAnnotation?.metadata.id == annotationId) deselectAnnotation();
+    /** Deselect entry root annotation */
+    if ($entryRoot?.metadata.id == annotationId) $entryRoot = undefined;
+
+    await annotationsIDB?.deleteAnnotation(annotationId);
+    context.annotations.delete(annotationId);
+  }
+
   // need to store dependancy and extract thos commands definitions
-  context.commands.on("annotation.add", (props: { shape: AnnotationShape; value: AnnotationValue }) => {
-    const id = uuidv7(); // for now move to annotation driver create asap
+  context.commands.on("annotation.add", (props: { shape: VideoShape; value: AnnotationValue }) => {
+    const { shape, value } = props;
+    const uuid = uuidv7(); // for now move to annotation driver create asap
 
     return {
       name: "new annotation",
       async apply() {
         const createdAt = new Date();
-        let annotation = {
-          shape: props.shape,
-          value: props.value,
+        const newAnnotation: VideoAnnotationObject = {
+          shape: shape,
+          value: value,
           metadata: {
-            // \_o_/
-            id,
+            id: uuid,
             createdAt,
             updatedAt: createdAt,
           },
@@ -301,71 +325,41 @@
           locked: false,
           hidden: false,
         };
-        $selectedAnnotation = annotation;
-        await annotationsIDB?.upsertAnnotations([annotation]);
+
+        runCreateAnnotation(uuid, newAnnotation);
         $idbUpdatedAt = new Date();
-
-        // quick fix for now as we mode id still here
-        if (annotation.shape.type == ENTRY_ROOT) $entryRoot = annotation;
-
-        let p = context.annotations.create(id, annotation.shape, annotation.value);
-
-        p.then(async () => {
-          let a = await annotationsIDB?.get("annotations", id);
-
-          if (a && a.metadata.updatedAt.valueOf() == createdAt.valueOf()) {
-            a.synced = true;
-            $selectedAnnotation = a;
-            await annotationsIDB?.upsertAnnotations([a]);
-            $idbUpdatedAt = new Date();
-          }
-        }, console.error);
       },
       async undo() {
-        if (id == $selectedAnnotation?.metadata.id) deselectAnnotation();
-
-        if ($entryRoot?.metadata.id == id) $entryRoot = undefined;
-
-        await annotationsIDB?.deleteAnnotation(id);
+        runDeleteAnnotation(uuid);
         $idbUpdatedAt = new Date();
-
-        let _p = context.annotations.delete(id);
       },
       isCombinable: () => false,
-      combine: (cmd) => cmd,
+      combine: (prevCmd) => prevCmd,
     };
   });
 
-  context.commands.on("annotation.delete", async (props: { id: string }) => {
-    const annotation = await annotationsIDB?.get("annotations", props.id);
-
-    if (!annotation) return showToast.error({ title: "cannot remove not found annotation" });
+  context.commands.on("annotation.delete", async (props: { annotationId: string }) => {
+    const { annotationId } = props;
+    const ann = await annotationsIDB?.get("annotations", annotationId);
+    if (!ann) return showToast.error({ title: "cannot remove not found annotation" });
 
     return {
       name: "remove annotation",
       async apply() {
-        if (props.id == $selectedAnnotation?.metadata.id) deselectAnnotation();
-
-        await annotationsIDB?.deleteAnnotation(props.id);
+        runDeleteAnnotation(annotationId);
         $idbUpdatedAt = new Date();
-
-        if ($entryRoot?.metadata.id == props.id) $entryRoot = undefined;
-
-        let p = context.annotations.delete(props.id);
-
-        p.then(() => ($idbUpdatedAt = new Date()));
       },
       async undo() {
         const createdAt = new Date();
-        let a = {
-          ...annotation,
+        let newAnnotation = {
+          ...ann,
           metadata: {
-            ...annotation.metadata,
+            ...ann.metadata,
             createdAt,
             updatedAt: createdAt,
             metadata: {
-              group_id: annotation.metadata.metadata?.group_id,
-              parent_id: annotation.metadata.metadata?.parent_id,
+              group_id: ann.metadata.metadata?.group_id,
+              parent_id: ann.metadata.metadata?.parent_id,
             },
           },
           synced: false,
@@ -373,26 +367,11 @@
           hidden: false,
         };
 
-        await annotationsIDB?.upsertAnnotations([a]);
+        runCreateAnnotation(annotationId, newAnnotation);
         $idbUpdatedAt = new Date();
-
-        if (annotation.shape.type == ENTRY_ROOT) $entryRoot = annotation;
-        let p = context.annotations.create(props.id, annotation.shape, annotation.value, a.metadata.metadata);
-
-        p.then(async () => {
-          let annotation = await annotationsIDB?.get("annotations", props.id);
-
-          if (annotation?.metadata.updatedAt.valueOf() == createdAt.valueOf()) {
-            annotation.synced = true;
-            if (annotation?.shape.type == ENTRY_ROOT) $entryRoot = annotation;
-
-            await annotationsIDB?.upsertAnnotations([annotation]);
-            $idbUpdatedAt = new Date();
-          }
-        });
       },
       isCombinable: () => false,
-      combine: (cmd) => cmd,
+      combine: (prevCmd) => prevCmd,
     };
   });
 
@@ -408,20 +387,16 @@
       name: "remove annotation group",
       async apply() {
         for (const annotation of annotations) {
-          const id = annotation.metadata.id;
-          if (id == $selectedAnnotation?.metadata.id) deselectAnnotation();
-          if ($entryRoot?.metadata.id == id) $entryRoot = undefined;
-
-          await annotationsIDB?.deleteAnnotation(id);
-          context.annotations.delete(id);
+          const annotationId = annotation.metadata.id;
+          runDeleteAnnotation(annotationId);
         }
         $idbUpdatedAt = new Date();
       },
       async undo() {
         const createdAt = new Date();
         for (const annotation of annotations) {
-          const id = annotation.metadata.id;
-          let a = {
+          const annotationId = annotation.metadata.id;
+          let newAnnotation = {
             ...annotation,
             metadata: {
               ...annotation.metadata,
@@ -433,26 +408,13 @@
             hidden: false,
           };
 
-          await annotationsIDB?.upsertAnnotations([a]);
-
-          if (annotation.shape.type == ENTRY_ROOT) $entryRoot = annotation;
-          let p = context.annotations.create(id, annotation.shape, annotation.value, a.metadata.metadata);
-
-          p.then(async () => {
-            let restored = await annotationsIDB?.get("annotations", id);
-            if (restored?.metadata.updatedAt.valueOf() == createdAt.valueOf()) {
-              restored.synced = true;
-              if (restored?.shape.type == ENTRY_ROOT) $entryRoot = restored;
-
-              await annotationsIDB?.upsertAnnotations([restored]);
-              $idbUpdatedAt = new Date();
-            }
-          });
+          runCreateAnnotation(annotationId, newAnnotation);
+          $idbUpdatedAt = new Date();
         }
         $idbUpdatedAt = new Date();
       },
       isCombinable: () => false,
-      combine: (cmd) => cmd,
+      combine: (prevCmd) => prevCmd,
     };
   });
 
@@ -546,7 +508,7 @@
         });
       },
       isCombinable: () => false,
-      combine: (c) => c,
+      combine: (prevCmd) => prevCmd,
     };
   });
 
@@ -652,7 +614,7 @@
         });
       },
       isCombinable: () => false,
-      combine: (_c) => _c,
+      combine: (prevCmd) => prevCmd,
     };
   });
 
@@ -725,7 +687,7 @@
         }
       },
       isCombinable: () => false,
-      combine: (_c) => _c,
+      combine: (prevCmd) => prevCmd,
     };
   });
 
@@ -806,7 +768,7 @@
           }
         },
         isCombinable: () => false,
-        combine: (cmd) => cmd,
+        combine: (prevCmd) => prevCmd,
       };
     },
   );
@@ -826,7 +788,7 @@
       apply: () => onVisibility(!wasHidden, annotation),
       undo: () => onVisibility(wasHidden, annotation),
       isCombinable: () => true,
-      combine: (c) => c,
+      combine: (prevCmd) => prevCmd,
     };
   });
 
@@ -845,7 +807,7 @@
       apply: () => onLock(!wasLocked, annotation),
       undo: () => onLock(wasLocked, annotation),
       isCombinable: () => true,
-      combine: (c) => c,
+      combine: (prevCmd) => prevCmd,
     };
   });
 
@@ -1049,9 +1011,10 @@
       },
       undo: () => {},
       isCombinable: () => true,
-      combine: (c) => c,
+      combine: (prevCmd) => prevCmd,
     };
   });
+
   context.commands.on("tools.bounding_box", () => {
     return {
       name: "bounding box tool",
@@ -1062,9 +1025,10 @@
       },
       undo: () => {},
       isCombinable: () => true,
-      combine: (c) => c,
+      combine: (prevCmd) => prevCmd,
     };
   });
+
   context.commands.on("tools.note", () => {
     return {
       name: "note tool",
@@ -1074,7 +1038,7 @@
       },
       undo: () => {},
       isCombinable: () => true,
-      combine: (c) => c,
+      combine: (prevCmd) => prevCmd,
     };
   });
 
@@ -1088,7 +1052,7 @@
       },
       undo: () => {},
       isCombinable: () => true,
-      combine: (c) => c,
+      combine: (prevCmd) => prevCmd,
     };
   });
 
@@ -1099,17 +1063,16 @@
         mode = IDAH_VIDEO_POLYGON;
         deselectAnnotation();
         deselectAnnotationGroup();
-        // annotationValue = {};
       },
       undo: () => {},
       isCombinable: () => true,
-      combine: (c) => c,
+      combine: (prevCmd) => prevCmd,
     };
   });
 
   function addAnnotation(shape: AnnotationShape, value: AnnotationValue = {}) {
     if (!["review", "annotate"].includes(context.workflowStep)) return;
-    const annotation = {
+    const videoShape: VideoShape = {
       // filter out indexed shape index noise for now
       shape: Object.fromEntries(
         Object.entries(shape).filter(([k, _]) => ["type", "frames", "start", "end"].includes(k)),
@@ -1117,13 +1080,13 @@
       value,
     };
 
-    context.commands.run("annotation.add", annotation);
+    context.commands.run("annotation.add", videoShape);
   }
 
-  async function removeAnnotation(id: string) {
+  async function removeAnnotation(annotationId: string) {
     if (!["review", "annotate"].includes(context.workflowStep)) return;
 
-    context.commands.run("annotation.delete", { id });
+    context.commands.run("annotation.delete", { annotationId });
   }
 
   async function addSelection(id: string, selection: VideoFrameSelection) {
@@ -1599,7 +1562,6 @@
         <AnnotationFooter>
           <AnnotationFooterToolbar>
             <VideoController
-              bind:this={videoController}
               {isPlaying}
               {zoom}
               {currentFrame}
@@ -1614,7 +1576,6 @@
             <TimelineTable
               bind:this={timelineTable}
               {annotations_promise}
-              db={annotationsIDB}
               {scale}
               {zoom}
               {currentFrame}

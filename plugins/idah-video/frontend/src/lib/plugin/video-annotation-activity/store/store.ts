@@ -6,6 +6,10 @@ import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activit
 /** SELECTED ANNOTATION */
 export const selectedAnnotation = writable<VideoAnnotationObject | undefined>(undefined);
 
+export function setSelectedAnnotation(annotation: VideoAnnotationObject) {
+  selectedAnnotation.set(annotation);
+}
+
 export function deselectAnnotation() {
   selectedAnnotation.set(undefined);
 }
