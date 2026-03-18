@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent } from "$lib/components/ui/sidebar";
 
-  import CategoryProperties from "$lib/plugin/video-annotation-activity/categoryProperties/categoryProperties.svelte";
+  import CategoryProperties from "$lib/plugin/video-annotation-activity/category-properties/category-properties.svelte";
 
   import { DEFAULT_MODE, ENTRY_ROOT } from "$lib/plugin/type";
   import { entryRoot } from "$lib/plugin/video-annotation-activity/idb_store.svelte";
@@ -30,10 +30,12 @@
   } = $props();
 
   // Variables
-  let tools = new Map<string, IConfigValue[]>(
-    Object.entries(context.config)
-      .filter(([shapeType, _]) => shapeType != ENTRY_ROOT)
-      .map(([shapeType, { values }]) => [shapeType, values]),
+  let tools = $derived(
+    new Map<string, IConfigValue[]>(
+      Object.entries(context.config)
+        .filter(([shapeType, _]) => shapeType != ENTRY_ROOT)
+        .map(([shapeType, { values }]) => [shapeType, values]),
+    ),
   );
   let defaultMode = $derived(mode == DEFAULT_MODE || !tools.has(mode));
 

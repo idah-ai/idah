@@ -1,7 +1,7 @@
+import { AstProcessor, objectVariables } from "$lib/plugin/test_ast_resolution";
+
 import type { IConfigProperty, IConfigPropertyFormat, IConfigPropertyOption } from "$idah/context/activity-context";
 import type { AnnotationValue } from "$idah/context/annotation-context";
-
-import { AstProcessor, objectVariables } from "../../test_ast_resolution";
 
 export function visibilityFullfilled(value: AnnotationValue, field: IConfigProperty) {
   if (typeof field.visibility == "boolean") return field.visibility;

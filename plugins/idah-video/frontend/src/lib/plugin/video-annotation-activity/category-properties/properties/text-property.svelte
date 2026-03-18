@@ -1,8 +1,10 @@
 <script lang="ts">
   import Input from "$lib/components/ui/input/input.svelte";
   import Label from "$lib/components/ui/label/label.svelte";
-  import type { IConfigProperty } from "$idah/context/ActivityContext";
-  import { formatConformity, propertyFullfilled } from "..";
+
+  import { formatConformity, propertyFullfilled } from "$lib/plugin/video-annotation-activity/category-properties";
+
+  import type { IConfigProperty } from "$idah/context/activity-context";
 
   let {
     property,
@@ -19,30 +21,17 @@
   const invalid = $derived(!propertyFullfilled(value, property));
 
   const format = $derived(invalid ? formatConformity(value, property) : []);
-  const formatters = new Map<
-    string,
-    ((v: boolean) => string) | ((v: number) => string)
-  >([
+  const formatters = new Map<string, ((v: boolean) => string) | ((v: number) => string)>([
     ["required", (_: boolean) => [property.label, "is required"].join(" ")],
     [
       "minimum",
       (v: number) =>
-        [
-          property.label,
-          "should contains at least",
-          v,
-          ["character", v > 1 ? "s" : ""].join(""),
-        ].join(" "),
+        [property.label, "should contains at least", v, ["character", v > 1 ? "s" : ""].join("")].join(" "),
     ],
     [
       "maximum",
       (v: number) =>
-        [
-          property.label,
-          "should contains no more than",
-          v,
-          ["character", v > 1 ? "s" : ""].join(""),
-        ].join(" "),
+        [property.label, "should contains no more than", v, ["character", v > 1 ? "s" : ""].join("")].join(" "),
     ],
     ["step", (v: number) => [property.label, "required step", v].join(" ")],
   ]);
@@ -56,13 +45,7 @@
     {/if}
   </Label>
 
-  <Input
-    type="text"
-    aria-invalid={invalid}
-    {value}
-    onchange={(e) => onValueChange(e.target.value)}
-    {disabled}
-  />
+  <Input type="text" aria-invalid={invalid} {value} onchange={(e) => onValueChange(e.currentTarget.value)} {disabled} />
   {#if invalid}
     <ul class="text-xs">
       {#each format as [k, v] (k)}

@@ -1,9 +1,10 @@
 <script lang="ts">
   import Input from "$lib/components/ui/input/input.svelte";
   import Label from "$lib/components/ui/label/label.svelte";
-  import { formatConformity, propertyFullfilled } from "..";
 
-  import type { IConfigProperty } from "$idah/context/ActivityContext";
+  import { formatConformity, propertyFullfilled } from "$lib/plugin/video-annotation-activity/category-properties";
+
+  import type { IConfigProperty } from "$idah/context/activity-context";
 
   let {
     property,
@@ -19,10 +20,7 @@
 
   const invalid = $derived(!propertyFullfilled(value, property));
   const format = $derived(invalid ? formatConformity(value, property) : []);
-  const formatters = new Map<
-    string,
-    ((v: boolean) => string) | ((v: number) => string)
-  >([
+  const formatters = new Map<string, ((v: boolean) => string) | ((v: number) => string)>([
     ["required", (_: boolean) => [property.label, "is required"].join(" ")],
     ["minimum", (v: number) => [property.label, "minimum value:", v].join(" ")],
     ["maximum", (v: number) => [property.label, "maximum value:", v].join(" ")],
