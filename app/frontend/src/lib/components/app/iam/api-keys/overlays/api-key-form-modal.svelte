@@ -61,7 +61,7 @@
 
   function setValue(value: Hash): void {
     apiKey.scope_type = value.scope_type;
-    apiKey.permissions = value.permissions
+    apiKey.permissions = value.permissions;
     apiKey.expired_at = value.expired_at;
     apiKey.key = value.key;
   }
