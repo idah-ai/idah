@@ -68,7 +68,13 @@
   setContext("context", context);
 
   // Variables
-  let { id: entryId, mediaUrl } = $derived(context);
+  const editableWorkflowSteps = ["annotate", "review"];
+  const notableWorkflowSteps = ["annotate", "review", "done"];
+
+  let { id: entryId, mediaUrl, workflowStep } = $derived(context);
+  let editable = $derived<boolean>(editableWorkflowSteps.includes(workflowStep));
+  let notable = $derived<boolean>(notableWorkflowSteps.includes(workflowStep));
+
   let player: Video | undefined = $state();
   let player_container: HTMLDivElement | undefined = $state();
   let currentFrame = $state(0);
@@ -177,21 +183,21 @@
         label: "Bounding Box",
         type: IDAH_VIDEO_BOUNDING_BOX,
         iconName: "vector-square",
-        disabled: !["annotate", "review"].includes(context.workflowStep),
+        disabled: !editable,
         handleClick: () => context.commands.run("tools.bounding_box"),
       },
       {
         label: "Polygon",
         type: IDAH_VIDEO_POLYGON,
         iconName: "polygon",
-        disabled: !["annotate", "review"].includes(context.workflowStep),
+        disabled: !editable,
         handleClick: () => context.commands.run("tools.polygon"),
       },
       {
         label: "Notes",
         type: IDAH_NOTE,
         iconName: "message-circle",
-        disabled: !["annotate", "review", "done"].includes(context.workflowStep), // Note: Only allow to create note when workflow steps are "annotate" and "review"
+        disabled: !notable, // Note: Only allow to create note when workflow steps are "annotate" and "review"
         handleClick: () => context.commands.run("tools.note"),
       },
     ];
@@ -274,37 +280,8 @@
       },
       zoom: { in: overlay.zoomIn, out: overlay.zoomOut },
     });
-  });
 
-  async function runCreateAnnotation(annotationId: string, newAnnotation: VideoAnnotationObject) {
-    setSelectedAnnotation(newAnnotation);
-    await annotationsIDB?.upsertAnnotations([newAnnotation]);
-    $entryRoot = newAnnotation.shape.type == ENTRY_ROOT ? newAnnotation : undefined;
-
-    // Create new annotation and set it synced
-    context.annotations.create(annotationId, newAnnotation.shape, newAnnotation.value).then(async () => {
-      const ann = await annotationsIDB?.get("annotations", annotationId);
-
-      if (ann && ann.metadata.updatedAt.valueOf() == newAnnotation.metadata.createdAt.valueOf()) {
-        ann.synced = true;
-        setSelectedAnnotation(ann);
-        await annotationsIDB?.upsertAnnotations([ann]);
-        $entryRoot = newAnnotation.shape.type == ENTRY_ROOT ? newAnnotation : undefined;
-      }
-    });
-  }
-
-  async function runDeleteAnnotation(annotationId: string) {
-    /** Deselect annotation if annotation is selected */
-    if ($selectedAnnotation?.metadata.id == annotationId) deselectAnnotation();
-    /** Deselect entry root annotation */
-    if ($entryRoot?.metadata.id == annotationId) $entryRoot = undefined;
-
-    await annotationsIDB?.deleteAnnotation(annotationId);
-    context.annotations.delete(annotationId);
-  }
-
-  onMount(() => {
+    /** Register commands */
     // need to store dependancy and extract thos commands definitions
     context.commands.on("annotation.add", (props: { shape: VideoShape; value: AnnotationValue }) => {
       const { shape, value } = props;
@@ -941,7 +918,7 @@
           await annotationsIDB?.upsertAnnotations([a2]);
           $idbUpdatedAt = new Date();
 
-          let p2 = context.annotations.create(newId, a2.shape, a2.value, a2.metadata.metadata);
+          let p2 = context.annotations.create(newId, a2.shape, a2.value);
           p2.then(async () => {
             const annotation = await annotationsIDB?.get("annotations", newId);
             if (annotation && annotation.metadata.updatedAt.valueOf() == createdAt.valueOf()) {
@@ -1072,35 +1049,63 @@
     });
   });
 
+  async function runCreateAnnotation(annotationId: string, newAnnotation: VideoAnnotationObject) {
+    setSelectedAnnotation(newAnnotation);
+    await annotationsIDB?.upsertAnnotations([newAnnotation]);
+    $entryRoot = newAnnotation.shape.type == ENTRY_ROOT ? newAnnotation : undefined;
+
+    // Create new annotation and set it synced
+    context.annotations.create(annotationId, newAnnotation.shape, newAnnotation.value).then(async () => {
+      const ann = await annotationsIDB?.get("annotations", annotationId);
+
+      if (ann && ann.metadata.updatedAt.valueOf() == newAnnotation.metadata.createdAt.valueOf()) {
+        ann.synced = true;
+        setSelectedAnnotation(ann);
+        await annotationsIDB?.upsertAnnotations([ann]);
+        $entryRoot = newAnnotation.shape.type == ENTRY_ROOT ? newAnnotation : undefined;
+      }
+    });
+  }
+
+  async function runDeleteAnnotation(annotationId: string) {
+    /** Deselect annotation if annotation is selected */
+    if ($selectedAnnotation?.metadata.id == annotationId) deselectAnnotation();
+    /** Deselect entry root annotation */
+    if ($entryRoot?.metadata.id == annotationId) $entryRoot = undefined;
+
+    await annotationsIDB?.deleteAnnotation(annotationId);
+    context.annotations.delete(annotationId);
+  }
+
   function addAnnotation(shape: AnnotationShape, value: AnnotationValue = {}) {
-    if (!["review", "annotate"].includes(context.workflowStep)) return;
+    if (!editable) return;
 
     const { type, start, end, frames } = shape;
     const videoShape: VideoShape = { type, start, end, frames, value };
 
-    context.commands.run("annotation.add", videoShape);
+    context.commands.run("annotation.add", { shape: videoShape, value });
   }
 
   async function removeAnnotation(annotationId: string) {
-    if (!["review", "annotate"].includes(context.workflowStep)) return;
+    if (!editable) return;
 
     context.commands.run("annotation.delete", { annotationId });
   }
 
   async function addSelection(id: string, selection: VideoFrameSelection) {
-    if (!["review", "annotate"].includes(context.workflowStep)) return;
+    if (!editable) return;
 
     context.commands.run("keyframe.add", { id, selection });
   }
 
   async function deleteSelection(annotationId: string, frame: number) {
-    if (!["review", "annotate"].includes(context.workflowStep)) return;
+    if (!editable) return;
 
     context.commands.run("keyframe.delete", { annotationId, frame });
   }
 
   function onDeleteAnnotation(annotation: VideoAnnotationObject, frame?: number) {
-    if (!["review", "annotate"].includes(context.workflowStep)) return;
+    if (!editable) return;
 
     if (frame != undefined) deleteSelection(annotation.metadata.id, frame);
     else removeAnnotation(annotation.metadata.id);
@@ -1111,7 +1116,7 @@
     | undefined = $state();
 
   function onEditValue(value: AnnotationValue, valueMode: string) {
-    if (!["annotate", "review"].includes(context.workflowStep)) return;
+    if (!editable) return;
 
     let requirementFullfilled = requiredFullfilled(value, context.config[valueMode]?.properties);
     annotationValue = value;
@@ -1149,7 +1154,7 @@
     angle: number = 0,
     selectedId?: string,
   ) {
-    if (!["review", "annotate"].includes(context.workflowStep) || mode === "note") return;
+    if (!editable || mode === "note") return;
 
     let points = $state.snapshot(_points) as Point[];
     if (!selectedId) {
@@ -1206,7 +1211,7 @@
   }
 
   function updateAnnotationValue(annotation: VideoAnnotationObject, value: AnnotationValue) {
-    if (annotation?.locked || !["review", "annotate"].includes(context.workflowStep)) return;
+    if (annotation?.locked || !editable) return;
 
     context.commands.run("annotation.update", { annotation, value });
   }
@@ -1219,7 +1224,7 @@
      */
     if (mode === "note") {
       return;
-    } else if (annotation?.shape.type && ["review", "annotate"].includes(context.workflowStep)) {
+    } else if (annotation?.shape.type && editable) {
       mode = annotation.shape.type;
       // Register selection-specific shortcuts for the current mode
       registerOnSelectBoxModeShortcuts(
@@ -1249,7 +1254,7 @@
      */
     if (mode === "note") {
       return;
-    } else if (selectedFrame && firstAnnotation.shape.type && ["review", "annotate"].includes(context.workflowStep)) {
+    } else if (selectedFrame && firstAnnotation.shape.type && editable) {
       /**
        * If user select timeline row at specific frame (selectedFrame is exists)
        * and workflow step is in review or annotation
