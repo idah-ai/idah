@@ -59,6 +59,7 @@
             const datasetEntriesRes = await fetchDatasetEntries();
             datasetEntryRecords = datasetEntriesRes.data;
             openDuplicateDatasetFormModal = true;
+          },
         },
         {
           label: "Export",

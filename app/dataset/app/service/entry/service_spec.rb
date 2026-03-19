@@ -664,7 +664,7 @@ RSpec.describe Entry::Service, database: true do
       expect(project2_assigned.count).to eq(1)
     end
   end
-    
+
   describe "#duplicate_entries" do
     let(:new_dataset_id) do
       dataset_repo.create(
@@ -722,7 +722,7 @@ RSpec.describe Entry::Service, database: true do
 
     it "duplicates all entries when entry_ids is nil" do
       original_count = repo.index({ dataset_id: dataset_id }).count
-      
+
       subject.duplicate_entries(new_dataset_id, duping_dataset_id: dataset_id)
 
       duplicated_entries = repo.index({ dataset_id: new_dataset_id })
@@ -737,30 +737,39 @@ RSpec.describe Entry::Service, database: true do
           project_id: project_id,
           dataset_id: dataset_id,
           entry_id: entry_ready,
-          frame: 1,
-          shape: "box",
-          geometry: {},
-          labels: ["cat"]
+          dimensions: { x: 10, y: 20, width: 30, height: 40 },
+          annotation: { label: "cat" },
+          created_by_email: "user@example.com"
         )
       end
 
       it "duplicates annotations when with_annotations is true" do
-        subject.duplicate_entries(new_dataset_id, duping_dataset_id: dataset_id, entry_ids: [entry_ready], with_annotations: true)
+        subject.duplicate_entries(
+          new_dataset_id,
+          duping_dataset_id: dataset_id,
+          entry_ids: [entry_ready],
+          with_annotations: true
+        )
 
         duplicated_entries = repo.index({ dataset_id: new_dataset_id })
         expect(duplicated_entries.count).to eq(1)
-        
+
         duplicated_annotations = annotation_repo.index({ entry_id: duplicated_entries.first.id })
         expect(duplicated_annotations.count).to eq(1)
-        expect(duplicated_annotations.first.shape).to eq("box")
+        expect(duplicated_annotations.first.created_by_email).to eq("user@example.com")
       end
 
       it "does not duplicate annotations when with_annotations is false" do
-        subject.duplicate_entries(new_dataset_id, duping_dataset_id: dataset_id, entry_ids: [entry_ready], with_annotations: false)
+        subject.duplicate_entries(
+          new_dataset_id,
+          duping_dataset_id: dataset_id,
+          entry_ids: [entry_ready],
+          with_annotations: false
+        )
 
         duplicated_entries = repo.index({ dataset_id: new_dataset_id })
         expect(duplicated_entries.count).to eq(1)
-        
+
         duplicated_annotations = annotation_repo.index({ entry_id: duplicated_entries.first.id })
         expect(duplicated_annotations.count).to eq(0)
       end
