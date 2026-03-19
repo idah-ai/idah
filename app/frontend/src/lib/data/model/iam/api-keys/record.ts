@@ -15,11 +15,15 @@ export class ApiKeyRecord extends Record {
 
   @field() public permissions!: string[];
 
+  @field() public name!: string;
   @field() public scope_type!: string;
   @field() public scope_value!: string[];
 
   @field() public expired_at!: Date | null;
   @field() public readonly revoked_at!: Date | null;
+  
+  @field() public status!: string;
+
   @field() public readonly last_used_at!: Date | null;
 
   @field({ transformer: Transformers.Time }) public readonly created_at!: Date;
