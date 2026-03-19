@@ -126,7 +126,7 @@
     return await entriesBackendDataSource.list({
       filters: { dataset_id: datasetId },
       fields: {
-        [EntryRecord.type]: ["id", "status", "priority", "created_at", "updated_at"],
+        [EntryRecord.type]: ["id", "resource", "status", "priority", "created_at", "updated_at", "wf_step"],
       },
     });
   }
