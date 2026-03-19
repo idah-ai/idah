@@ -5,19 +5,11 @@ admin:
     who have access to all organizations and projects.
   assignable: true
   rights:
-    # Login
-    - "iam:accounts.login.*"
-    - "iam:accounts.logout.*"
-
     # Accounts
-    - "iam:accounts.create.*"
-    - "iam:accounts.update.*"
-    - "iam:accounts.read.*"
+    - "iam:accounts.*.*"
 
     # Organizations
-    - "iam:organizations.read.*"
-    - "iam:organizations.update.*"
-    - "iam:accounts.create.*"
+    - "iam:organizations.*.*"
 
     # API Keys
     - "iam:api_keys.create.{account_ro_all, account_rw_all, org_ro_all, org_rw_all, project_ro_org, project_rw_org, org_ro_own, project_ro_all, project_rw_all}"
@@ -26,9 +18,7 @@ admin:
     - "iam:api_keys.delete.*"
 
     # Dataset Service
-    - "dataset:projects.read.*"
-    - "dataset:projects.update.*"
-    - "dataset:projects.delete.*"
+    - "dataset:projects.*.*"
     - "dataset:project_members.*.*"
     - "dataset:datasets.*.*"
     - "dataset:entries.*.*"
@@ -38,7 +28,7 @@ admin:
 
     # Media Service
     - "media:medias.*.*"
-    - "media:jobs.read.*"
+    - "media:jobs.*.*"
 
     # Setting Service
     - "setting:account_settings.*.*"
