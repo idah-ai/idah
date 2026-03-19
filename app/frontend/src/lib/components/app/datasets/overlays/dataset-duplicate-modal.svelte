@@ -12,6 +12,7 @@
   import Label from "@/components/ui/label/label.svelte";
   import Switch from "@/components/ui/switch/switch.svelte";
   import Tooltips from "@/components/app/tooltips/tooltips.svelte";
+  import EntrySelectionCard from "@/components/app/datasets/entries/cards/entry-selection-card.svelte";
   import { DialogTitle } from "@/components/ui/dialog";
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
@@ -65,14 +66,16 @@
     }
   }
 
-  function handleEntryChange(entryId: string, checked: boolean) {
+  function handleEntryToggle(entryId: string, checked: boolean) {
     const currentIds = selectedEntryIds ?? [];
     if (checked) {
-      selectedEntryIds = [...currentIds, entryId];
+      if (!currentIds.includes(entryId)) {
+        selectedEntryIds = [...currentIds, entryId];
+      }
     } else {
       selectedEntryIds = currentIds.filter((id) => id !== entryId);
     }
-    selectAll = selectedEntryIds.length === datasetEntryRecords.length;
+    selectAll = (selectedEntryIds?.length ?? 0) === datasetEntryRecords.length;
   }
 
   async function submit(): Promise<void> {
@@ -114,6 +117,7 @@
   onCancel={resetForm}
   onConfirm={submit}
   bind:open
+  class="sm:max-w-4xl"
 >
   {#snippet modalTitle()}
     <DialogTitle>Duplicate Dataset</DialogTitle>
@@ -186,19 +190,13 @@
       </Tooltips>
     </div>
 
-    <div class="flex flex-col gap-2 overflow-y-auto pr-2">
+    <div class="flex flex-col gap-1 overflow-y-auto pr-2">
       {#each datasetEntryRecords as entry (entry.id)}
-        <div class="hover:bg-muted/50 flex items-center gap-3 rounded-md p-2 transition-colors">
-          <Checkbox
-            id={`entry-${entry.id}`}
-            checked={selectedEntryIds?.includes(entry.id)}
-            onCheckedChange={(checked) => handleEntryChange(entry.id, checked as boolean)}
-          />
-          <Label for={`entry-${entry.id}`} class="flex-grow cursor-pointer font-normal">
-            Entry {entry.id.substring(0, 8)}...
-            <span class="text-muted-foreground ml-2 text-xs">Status: {entry.status}</span>
-          </Label>
-        </div>
+        <EntrySelectionCard
+          {entry}
+          selected={selectedEntryIds?.includes(entry.id) ?? false}
+          onToggle={handleEntryToggle}
+        />
       {/each}
 
       {#if datasetEntryRecords.length === 0}

@@ -14,4 +14,5 @@ export interface FormModalBaseProps extends ModalBaseProps {
   confirm?: Snippet;
   onCancel?: () => Promise<void> | void;
   onConfirm?: () => Promise<void> | void;
+  class?: string;
 }

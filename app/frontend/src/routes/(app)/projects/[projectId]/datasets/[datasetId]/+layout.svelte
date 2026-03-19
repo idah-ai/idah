@@ -75,7 +75,7 @@
   <div class="space-y-6">
     <PageHeader title={datasetRecord.name}>
       {#snippet actions()}
-        <ProjectDatasetDropdownMenu {datasetId} {projectId} />
+        <ProjectDatasetDropdownMenu {datasetId} datasetName={datasetRecord.name} {projectId} />
       {/snippet}
     </PageHeader>
 
