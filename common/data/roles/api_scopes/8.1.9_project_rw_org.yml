@@ -21,3 +21,8 @@ api/project_rw_org:
     # Media Service - Read Write (Project level)
     - "media:medias.*.as_org_owner"
     - "media:jobs.read.as_org_owner"
+
+    # Sync Service - Read Write (Project level)
+    - "sync:jobs.read.as_org_owner"
+    - "sync:exports.create.as_org_owner"
+    - "sync:exports.read.as_org_owner"
