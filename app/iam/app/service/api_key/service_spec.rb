@@ -249,7 +249,7 @@ RSpec.describe ApiKey::Service, database: true do
               type: Resource::Iam::ApiKeys,
               attributes: {
                 name: "To Delete",
-                permissions: %w[org:read],
+                permissions: %w[org_rw_all],
                 scope_type: "all",
                 scope_value: []
               }
