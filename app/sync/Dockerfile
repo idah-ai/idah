@@ -40,18 +40,19 @@ RUN bundle install --jobs 20 --retry 5
 
 COPY app/sync/ .
 
-# Copy and extract updcli binary based on architecture
-COPY updcli/updcli-${UPDCLI_VERSION}.tar.gz /tmp/updcli.tar.gz
+# Copy updcli tar files
+COPY updcli/${UPDCLI_VERSION}/ /tmp/updcli-tars/
 
+# Extract updcli binary based on architecture
 RUN ARCH=${TARGETARCH} && \
     if [ "$ARCH" = "amd64" ]; then ARCH_SUFFIX="amd64"; \
     elif [ "$ARCH" = "arm64" ]; then ARCH_SUFFIX="arm64"; \
     else echo "Unsupported architecture: $ARCH" && exit 1; fi && \
-    echo "Extracting updcli for architecture: ${ARCH_SUFFIX}..." && \
-    mkdir -p /tmp/updcli && \
-    tar -xf /tmp/updcli.tar.gz -C /tmp/updcli && \
-    cp /tmp/updcli/updcli-linux-${ARCH_SUFFIX} /usr/local/bin/updcli-static && \
+    echo "Extracting updcli-linux-${ARCH_SUFFIX}.tar.gz..." && \
+    mkdir -p /usr/local/bin && \
+    tar -xf /tmp/updcli-tars/updcli-linux-${ARCH_SUFFIX}.tar.gz -C /usr/local/bin && \
+    mv /usr/local/bin/updcli-linux-${ARCH_SUFFIX} /usr/local/bin/updcli-static && \
     chmod +x /usr/local/bin/updcli-static && \
-    rm -rf /tmp/updcli.tar.gz /tmp/updcli
+    rm -rf /tmp/updcli-tars
 
 CMD ["bundle", "exec", "puma"]
