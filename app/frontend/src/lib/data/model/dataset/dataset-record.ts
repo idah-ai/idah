@@ -68,22 +68,14 @@ RecordFactory.registerTypes(DatasetRecord);
 export const datasetBasePath: string = `${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/datasets`;
 
 interface DatasetsCustomMethods {
-  duplicate(
-    id: string,
-    payload?: Hash,
-    options?: DataSourceOptions,
-  ): Promise<RecordResponse<DatasetRecord>>;
+  duplicate(id: string, payload?: Hash, options?: DataSourceOptions): Promise<RecordResponse<DatasetRecord>>;
 }
 
 export const datasetsBackendDataSource = createBackendDataSource<DatasetRecord, DatasetsCustomMethods>(
   DatasetRecord,
   datasetBasePath,
   {
-    async duplicate(
-      id: string,
-      payload?: Hash,
-      options?: DataSourceOptions,
-    ): Promise<RecordResponse<DatasetRecord>> {
+    async duplicate(id: string, payload?: Hash, options?: DataSourceOptions): Promise<RecordResponse<DatasetRecord>> {
       // Cache Management
       const cacheIndexKey = resourcePath(datasetBasePath, null, undefined);
       clearCache(cacheIndexKey);
@@ -110,7 +102,7 @@ export const datasetsBackendDataSource = createBackendDataSource<DatasetRecord, 
 
       throw "No body returned";
     },
-  }
+  },
 );
 
 export interface TreeItem {
