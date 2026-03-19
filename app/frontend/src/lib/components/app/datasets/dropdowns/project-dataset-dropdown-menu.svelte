@@ -168,6 +168,8 @@
 
 {#if canUpdateDataset || canDeleteDataset}
   <DropdownMenus {menus} align="end" />
+{/if}
+
 {#if canUpdateDataset || canDeleteDataset || canExportDataset}
   <DropdownMenus {menus} {align} />
 

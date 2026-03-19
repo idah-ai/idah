@@ -166,10 +166,10 @@ module Entry
 
     def duplicate_entries(dataset_id, duping_dataset_id:, entry_ids: nil, with_annotations: false)
       duping_entries = if entry_ids
-                          # INFO: also filter with duping_dataset_id to ensure the entries are in the duping dataset
-                          system_entries_repo.index({ id: entry_ids, dataset_id: duping_dataset_id }) 
+                         # INFO: also filter with duping_dataset_id to ensure the entries are in the duping dataset
+                         system_entries_repo.index({ id: entry_ids, dataset_id: duping_dataset_id })
                        else
-                          system_entries_repo.index({ dataset_id: duping_dataset_id })
+                         system_entries_repo.index({ dataset_id: duping_dataset_id })
                        end
 
       duping_entries.each do |duping_entry|
