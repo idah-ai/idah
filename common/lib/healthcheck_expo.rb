@@ -3,8 +3,12 @@
 class HealthcheckExpo < Verse::Exposition::Base
   http_path "/healthcheck"
 
+  desc <<~MD
+    Health check endpoints to monitor service dependencies.
+  MD
+
   expose on_http(:get, "", auth: nil, renderer: Verse::Http::Renderer::Identity) do
-    desc <<-MD
+    desc <<~MD
       ## Health check
 
       Returns the status of dependencies such as Redis and PostgreSQL.

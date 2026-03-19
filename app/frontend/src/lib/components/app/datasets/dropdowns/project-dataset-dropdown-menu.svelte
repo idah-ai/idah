@@ -1,21 +1,24 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
-  import { CopyIcon, SquarePenIcon, Trash2Icon } from "@lucide/svelte";
+
+  import { CopyIcon, DownloadIcon, SquarePenIcon, Trash2Icon } from "@lucide/svelte";
   import { onMount } from "svelte";
 
   import DatasetFormModal from "@/components/app/datasets/overlays/dataset-form-modal.svelte";
   import DatasetDuplicateModal from "@/components/app/datasets/overlays/dataset-duplicate-modal.svelte";
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
+  import ExportFormModal from "@/components/app/projects/exports/overlays/export-form-modal.svelte";
 
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
+  import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
   import { authStatus } from "@/security/AuthContext";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
 
-  import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
+  import type { DropdownMenuContentAlignment, IDropdownMenus } from "@/components/app/dropdown-menus/types";
   import type { ProjectMemberScope } from "@/security/types";
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
 
@@ -24,13 +27,16 @@
     datasetId: string;
     datasetName: string;
     projectId: string;
+    align?: DropdownMenuContentAlignment;
   }
-  let { datasetId, datasetName, projectId }: Props = $props();
+
+  let { datasetId, datasetName, projectId, align = "end" }: Props = $props();
 
   // Variables
   let canCreateDataset = $state(false);
   let canUpdateDataset = $state(false);
   let canDeleteDataset = $state(false);
+  let canExportDataset = $state(false);
   let menus: IDropdownMenus = $derived({
     actions: {
       items: [
@@ -53,6 +59,16 @@
             const datasetEntriesRes = await fetchDatasetEntries();
             datasetEntryRecords = datasetEntriesRes.data;
             openDuplicateDatasetFormModal = true;
+        },
+        {
+          label: "Export",
+          icon: DownloadIcon,
+          hidden: !canExportDataset,
+          action: async () => {
+            const datasetRes = await fetchDataset();
+
+            datasetRecord = datasetRes.data;
+            openExportFormModal = true;
           },
         },
         {
@@ -72,6 +88,7 @@
   let openEditDatasetFormModal: boolean = $state(false);
   let openDuplicateDatasetFormModal: boolean = $state(false);
   let openConfirmDeleteDatasetModal: boolean = $state(false);
+  let openExportFormModal: boolean = $state(false);
 
   // Lifecycle
   onMount(async () => {
@@ -96,13 +113,17 @@
       (await $authStatus.authContext?.can("update", "dataset:datasets", ["as_org_owner", as_project_owner])) || false;
     canDeleteDataset =
       (await $authStatus.authContext?.can("delete", "dataset:datasets", ["as_org_owner", as_project_owner])) || false;
+    canExportDataset =
+      (await $authStatus.authContext?.can("create", "sync:exports", ["as_org_owner", as_project_owner])) || false;
   }
 
   async function fetchDataset() {
     return await datasetsBackendDataSource.get(datasetId, {
       fields: {
+        [ProjectRecord.type]: ["id"],
         [DatasetRecord.type]: ["name", "modality"],
       },
+      included: ["project"],
       noCache: true,
     });
   }
@@ -146,8 +167,17 @@
 
 {#if canUpdateDataset || canDeleteDataset}
   <DropdownMenus {menus} align="end" />
+{#if canUpdateDataset || canDeleteDataset || canExportDataset}
+  <DropdownMenus {menus} {align} />
 
   <DatasetFormModal title="Dataset" action="update" {datasetRecord} bind:open={openEditDatasetFormModal} />
+
+  <ExportFormModal
+    title="Export Dataset(s)"
+    action="create"
+    datasetRecords={datasetRecord ? [datasetRecord] : []}
+    bind:open={openExportFormModal}
+  />
 
   <ConfirmModal
     title="Delete Dataset"
