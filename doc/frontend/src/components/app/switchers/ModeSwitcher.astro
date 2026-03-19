@@ -1,0 +1,66 @@
+---
+import { MoonIcon, SunIcon } from "@lucide/astro";
+
+export interface Props {
+  className?: string | null;
+}
+
+const { className } = Astro.props;
+---
+
+<button
+  id="theme-toggle"
+  type="button"
+  role="switch"
+  aria-label="Toggle theme"
+  class={`relative inline-flex h-8 w-16 items-center rounded-full p-1 transition-colors duration-300 focus:outline-none bg-gray-100 dark:bg-slate-700 ${className || ""}`}>
+  <!-- Light Mode Icon -->
+  <SunIcon class="text-background-foreground absolute left-2 size-4 transition-opacity duration-300 dark:opacity-30" />
+
+  <!-- Dark Mode Icon -->
+  <MoonIcon
+    class="text-background-foreground absolute right-2 size-4 opacity-30 transition-opacity duration-300 dark:opacity-100"
+  />
+
+  <!-- Sliding Circle Toggle -->
+  <div
+    class="relative size-6 translate-x-8 transform rounded-full bg-white dark:bg-gray-800 shadow-lg transition-transform duration-300 ease-in-out dark:translate-x-0">
+  </div>
+</button>
+
+<script>
+  function checkTheme() {
+    const selectedTheme = localStorage.getItem("theme");
+
+    if (selectedTheme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }
+
+  function initThemeToggle() {
+    const button = document.getElementById("theme-toggle");
+    if (!button) return;
+
+    button.addEventListener("click", () => {
+      const isDark = document.documentElement.classList.contains("dark");
+
+      if (isDark) {
+        document.documentElement.classList.remove("dark");
+        localStorage.setItem("theme", "light");
+      } else {
+        document.documentElement.classList.add("dark");
+        localStorage.setItem("theme", "dark");
+      }
+    });
+  }
+
+  checkTheme();
+  initThemeToggle();
+
+  document.addEventListener("astro:page-load", () => {
+    checkTheme();
+    initThemeToggle();
+  });
+</script>
