@@ -8,16 +8,3 @@ api/org_ro_own:
   rights:
     # Organizations
     - "iam:organizations.read.as_org_owner"
-
-    # Dataset Service - Read Only (Organization level)
-    - "dataset:projects.read.as_org_owner"
-    - "dataset:project_members.read.as_org_owner"
-    - "dataset:datasets.read.as_org_owner"
-    - "dataset:entries.read.as_org_owner"
-    - "dataset:annotations.read.as_org_owner"
-    - "dataset:note_feeds.read.as_org_owner"
-    - "dataset:note_comments.read.as_org_owner"
-
-    # Media Service - Read Only (Organization level)
-    - "media:medias.read.as_org_owner"
-    - "media:jobs.read.as_org_owner"
