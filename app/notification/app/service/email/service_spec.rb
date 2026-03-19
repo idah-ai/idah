@@ -176,7 +176,7 @@ RSpec.describe Email::Service, database: true do
           title: "Account created",
           category: "account_created",
           type: "notification:account:activities",
-          password_reset_token: "some_token",
+          invitation_token: "some_token",
           recipient_account_id: account.id,
         )
 

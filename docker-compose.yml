@@ -161,8 +161,8 @@ services:
 
   sync:
     build:
-      context: ./app/sync
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./app/sync/Dockerfile
       args:
         BUNDLE_WITHOUT: "" # Allow all groups for dev.
         APP_ENVIRONMENT: development
@@ -175,6 +175,7 @@ services:
     volumes:
       - ./app/sync:/app
       - ./app/sync/common:/app/common
+      - ./plugins:/app/plugins
       - ./dev/nginx/ssl/cert.pem:/etc/ssl/certs/ca-certificates.crt
       - bundler_cache:/usr/local/bundle
     extra_hosts:

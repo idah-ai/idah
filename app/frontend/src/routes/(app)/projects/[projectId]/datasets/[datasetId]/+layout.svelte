@@ -8,6 +8,7 @@
   import PageHeader from "@/components/app/page/page-header.svelte";
   import PageLoading from "@/components/app/page/page-loading.svelte";
   import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+  import Text from "@/components/ui/text/Text.svelte";
 
   import { datasetTabs, type DatasetTab } from "@/components/app/datasets/tabs/dataset.tabs";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
@@ -73,9 +74,12 @@
   <PageLoading />
 {:then datasetRecord}
   <div class="space-y-6">
-    <PageHeader title={datasetRecord.name}>
-      {#snippet actions()}
-        <ProjectDatasetDropdownMenu {datasetId} datasetName={datasetRecord.name} {projectId} />
+    <PageHeader>
+      {#snippet slotTitle()}
+        <div class="flex items-center gap-2">
+          <Text size="h2" weight="semibold">{datasetRecord.name}</Text>
+          <ProjectDatasetDropdownMenu {datasetId} datasetName={datasetRecord.name} {projectId} align="center" />
+        </div>
       {/snippet}
     </PageHeader>
 

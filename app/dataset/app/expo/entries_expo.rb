@@ -5,6 +5,11 @@ class EntriesExpo < BaseExpo
 
   use_service Entry::Service
 
+  desc <<~MD
+    Entries represent individual data items within a dataset
+    that can be assigned, annotated, and tracked through workflow stages.
+  MD
+
   json_api Entry::Record do
     allowed_included "dataset", "dataset.project", "assigned_to", "submitted_by", "reviewed_by"
     show
@@ -35,8 +40,10 @@ class EntriesExpo < BaseExpo
         end
       end
     end
+
+    output Verse::JsonApi::Util.jsonapi_record(Entry::Record)
   end
-  def assign_member
+  def assign
     id = params[:id]
     member_id = params.dig(:data, :attributes, :assigned_to_id)
 
@@ -48,6 +55,8 @@ class EntriesExpo < BaseExpo
     input do
       field :id, String
     end
+
+    output Verse::JsonApi::Util.jsonapi_record(Entry::Record)
   end
   def select
     entry_id = params[:id]
@@ -63,7 +72,10 @@ class EntriesExpo < BaseExpo
         field? :attributes, Hash
       end
     end
+
+    output Verse::JsonApi::Util.jsonapi_record(Entry::Record)
   end
+
   def submit
     entry_id = params[:id]
     opts = params.dig(:data, :attributes) || {}
@@ -81,6 +93,8 @@ class EntriesExpo < BaseExpo
         end
       end
     end
+
+    output Verse::JsonApi::Util.jsonapi_record(Entry::Record)
   end
   def error
     entry_id = params[:id]

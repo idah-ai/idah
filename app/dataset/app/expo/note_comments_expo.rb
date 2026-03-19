@@ -5,6 +5,11 @@ class NoteCommentsExpo < BaseExpo
 
   use_service NoteComment::Service
 
+  desc <<~MD
+    Comments provide threaded discussions within note feeds
+    for collaborative communication on entries and annotations.
+  MD
+
   json_api NoteComment::Record do
     allowed_included "note_feed"
 
