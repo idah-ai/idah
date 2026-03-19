@@ -294,6 +294,33 @@
     });
   }
 
+  async function runUpdateAnnotation(updateAnnotation: VideoAnnotationObject) {
+    const annotationId = updateAnnotation.metadata.id;
+
+    setSelectedAnnotation(updateAnnotation); // ?
+    await annotationsIDB?.upsertAnnotations([updateAnnotation]);
+    $entryRoot = $entryRoot?.metadata.id == annotationId ? updateAnnotation : undefined;
+
+    // Update existing annotation and set it synced
+    context.annotations
+      .update({
+        id: annotationId,
+        dimensions: updateAnnotation.shape,
+        annotation: updateAnnotation.value,
+      })
+      .then(async () => {
+        const ann = await annotationsIDB?.get("annotations", annotationId);
+
+        if (ann && ann.metadata.updatedAt.valueOf() == updateAnnotation.metadata.updatedAt.valueOf()) {
+          ann.synced = true;
+          annotationValue = updateAnnotation.value;
+          setSelectedAnnotation(ann);
+          $entryRoot = $entryRoot?.metadata.id == ann.metadata.id ? ann : undefined;
+          await annotationsIDB?.upsertAnnotations([ann]);
+        }
+      });
+  }
+
   async function runDeleteAnnotation(annotationId: string) {
     /** Deselect annotation if annotation is selected */
     if ($selectedAnnotation?.metadata.id == annotationId) deselectAnnotation();
@@ -622,40 +649,22 @@
     context.commands.on("annotation.update", (props: { annotation: VideoAnnotationObject; value: AnnotationValue }) => {
       const annotationId = props.annotation.metadata.id;
       const value_from = props.annotation.value;
+
       return {
         name: "update annotation value",
         async apply() {
           const annotation = await annotationsIDB?.get("annotations", annotationId);
+          if (!annotation) return showToast.error({ title: "cannot remove not found annotation" });
+
           const updatedAt = new Date();
-          if (annotation) {
-            annotation.value = props.value;
-            annotation.metadata.updatedAt = updatedAt;
-            annotation.metadata.metadata = props.annotation.metadata.metadata;
-            annotation.synced = false;
-            $selectedAnnotation = annotation;
 
-            await annotationsIDB?.upsertAnnotations([annotation]);
-            $idbUpdatedAt = new Date();
+          annotation.value = props.value;
+          annotation.metadata.updatedAt = updatedAt;
+          annotation.metadata.metadata = props.annotation.metadata.metadata;
+          annotation.synced = false;
 
-            if ($entryRoot?.metadata.id == annotation.metadata.id) $entryRoot = annotation;
-
-            let p = context.annotations.update({
-              id: annotation.metadata.id,
-              dimensions: annotation.shape,
-              annotation: props.value,
-            });
-
-            p.then(async () => {
-              const annotation = await annotationsIDB?.get("annotations", annotationId);
-              if (annotation && annotation.metadata.updatedAt.valueOf() == updatedAt.valueOf()) {
-                annotation.synced = true;
-                $selectedAnnotation = annotation;
-                if ($entryRoot?.metadata.id == annotation.metadata.id) $entryRoot = annotation;
-                await annotationsIDB?.upsertAnnotations([annotation]);
-                $idbUpdatedAt = new Date();
-              }
-            });
-          }
+          runUpdateAnnotation(annotation);
+          $idbUpdatedAt = new Date();
         },
         async undo() {
           const annotation = await annotationsIDB?.get("annotations", annotationId);
@@ -715,27 +724,30 @@
               annotation.metadata.updatedAt = newUpdatedAt;
               annotation.synced = false;
 
-              /** Upsert to IndexDB */
-              await annotationsIDB?.upsertAnnotations([annotation]);
+              runUpdateAnnotation(annotation);
+              $idbUpdatedAt = new Date();
 
-              /** Update to Database */
-              const promiseToUpdate = context.annotations.update({
-                id: annotation.metadata.id,
-                dimensions: annotation.shape,
-                annotation: { category: categoryIdToBeUpdate },
-              });
+              // /** Upsert to IndexDB */
+              // await annotationsIDB?.upsertAnnotations([annotation]);
 
-              promiseToUpdate.then(async () => {
-                const ann = await annotationsIDB?.get("annotations", annotation.metadata.id);
-                if (ann && ann.metadata.updatedAt.valueOf() == newUpdatedAt.valueOf()) {
-                  ann.synced = true;
-                  await annotationsIDB?.upsertAnnotations([ann]);
+              // /** Update to Database */
+              // const promiseToUpdate = context.annotations.update({
+              //   id: annotation.metadata.id,
+              //   dimensions: annotation.shape,
+              //   annotation: { category: categoryIdToBeUpdate },
+              // });
 
-                  /** Refetch */
-                  annotationValue = { category: categoryIdToBeUpdate };
-                  $idbUpdatedAt = new Date();
-                }
-              });
+              // promiseToUpdate.then(async () => {
+              //   const ann = await annotationsIDB?.get("annotations", annotation.metadata.id);
+              //   if (ann && ann.metadata.updatedAt.valueOf() == newUpdatedAt.valueOf()) {
+              //     ann.synced = true;
+              //     await annotationsIDB?.upsertAnnotations([ann]);
+
+              //     /** Refetch */
+              //     annotationValue = { category: categoryIdToBeUpdate };
+              //     $idbUpdatedAt = new Date();
+              //   }
+              // });
             }
           },
           async undo() {
