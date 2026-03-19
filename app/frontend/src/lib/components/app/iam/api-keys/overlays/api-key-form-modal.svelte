@@ -37,7 +37,9 @@
           attributes: {
             name: null,
             scope_type: null,
+            scope_value: [],
             permissions: [],
+            expired_at: null,
           },
         }),
   );
@@ -54,13 +56,17 @@
       attributes: {
         name: null,
         scope_type: null,
+        scope_value: [],
         permissions: [],
+        expired_at: null,
       },
     });
   }
 
   function setValue(value: Hash): void {
+    apiKey.name = value.name;
     apiKey.scope_type = value.scope_type;
+    apiKey.scope_value = value.scope_value;
     apiKey.permissions = value.permissions;
     apiKey.expired_at = value.expired_at;
     apiKey.key = value.key;
@@ -72,7 +78,9 @@
         attributes: {
           name: apiKey.name,
           scope_type: apiKey.scope_type,
+          scope_value: apiKey.scope_value,
           permissions: apiKey.permissions,
+          expired_at: apiKey.expired_at,
         },
       },
       {
@@ -93,9 +101,7 @@
       apiKey.id,
       {
         attributes: {
-          name: apiKey.name,
-          scope_type: apiKey.scope_type,
-          permissions: apiKey.permissions,
+          expired_at: apiKey.expired_at,
         },
       },
       {
@@ -126,7 +132,9 @@
       const validated = validateData(schema, {
         name: apiKey.name,
         scope_type: apiKey.scope_type,
+        scope_value: apiKey.scope_value,
         permissions: apiKey.permissions,
+        expired_at: apiKey.expired_at,
       });
 
       if (!validated.success) {

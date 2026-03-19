@@ -23,11 +23,11 @@
   let resource: string = ApiKeyRecord.type;
 
   // Variables::Reactive
-  let { name, scope_type, permissions, organizations, projects } = $derived(apiKey);
+  let { name, scope_type, scope_value, permissions } = $derived(apiKey);
 
   // Functions
   $effect(() => {
-    onValueChange({ name, scope_type, permissions, organizations });
+    onValueChange({ name, scope_type, scope_value, permissions });
   });
 </script>
 
@@ -61,16 +61,16 @@
     <!-- APIKEY:ORGANIZATIONS -->
     {#if scope_type == "organization"}
       <MultipleSelectDatasourceField
-        name="{resource}/organization_id"
+        name="{resource}/scope_value/organizations"
         label="Organizations"
         dataSource={organizationsBackendDataSource}
         displayKey="name"
-        values={organizations}
+        values={scope_value}
         placeholder="Select an organization"
         searchKeyWithOperation="name__match"
         clearable
         onSelected={(selectedChoices) => {
-          organizations = selectedChoices.map((choice) => String(choice.value));
+          scope_value = selectedChoices.map((choice) => String(choice.value));
         }}
       />
     {/if}
@@ -78,23 +78,23 @@
     <!-- APIKEY:PROJECTS -->
     {#if scope_type == "project"}
       <MultipleSelectDatasourceField
-        name="{resource}/project_id"
+        name="{resource}/scope_value/projects"
         label="Projects"
         dataSource={projectsBackendDataSource}
         displayKey="name"
-        values={projects}
+        values={scope_value}
         placeholder="Select projects"
         searchKeyWithOperation="name__match"
         clearable
         onSelected={(selectedChoices) => {
-          projects = selectedChoices.map((choice) => String(choice.value));
+          scope_value = selectedChoices.map((choice) => String(choice.value));
         }}
       />
     {/if}
 
     <!-- APIKEY:PERMISSIONS -->
     <MultipleSelectField
-      name="{resource}/permission"
+      name="{resource}/permissions"
       label="Permissions"
       placeholder="Select permissions"
       required
