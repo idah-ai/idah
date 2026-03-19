@@ -69,6 +69,8 @@
         placeholder="Select an organization"
         searchKeyWithOperation="name__match"
         clearable
+        required
+        errors={fieldErrors["scope_value"]}
         onSelected={(selectedChoices) => {
           scope_value = selectedChoices.map((choice) => String(choice.value));
         }}
@@ -86,6 +88,8 @@
         placeholder="Select projects"
         searchKeyWithOperation="name__match"
         clearable
+        required
+        errors={fieldErrors["scope_value"]}
         onSelected={(selectedChoices) => {
           scope_value = selectedChoices.map((choice) => String(choice.value));
         }}
