@@ -3,7 +3,6 @@
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
-  import { refetches } from "@/utils/refetch";
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
   import type { EntryRecord } from "@/data/model/dataset/entries/record";
   import Button from "@/components/ui/button/button.svelte";
@@ -91,18 +90,24 @@
         with_annotations: withAnnotations,
       });
 
-      open = false;
-      $refetches.datasets.list = new Date();
       if (createdDatasetRes?.data?.id) {
-        goto(resolve(`/projects/${projectId}/datasets/${createdDatasetRes.data.id}/entries`));
+        const newDatasetUrl = resolve(`/projects/${projectId}/datasets/${createdDatasetRes.data.id}/entries`);
+        await goto(newDatasetUrl);
       } else {
-        goto(resolve(`/projects/${projectId}/datasets`));
+        const fallbackUrl = resolve(`/projects/${projectId}/datasets`);
+        await goto(fallbackUrl);
       }
+
+      // Close modal and update state after navigation
+      open = false;
+      submitting = false;
+
       showToast.success({
         title: "Dataset duplicated",
         description: `The dataset has been duplicated successfully.`,
       });
     } catch (error) {
+      console.error("Dataset duplication failed:", error);
       submitting = false;
       showActionFailedToast(error);
     }
