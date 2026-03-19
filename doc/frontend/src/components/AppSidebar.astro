@@ -1,0 +1,27 @@
+---
+  import ApplicationSidebar from "$lib/app/application/sidebar/application-sidebar.svelte";
+  import MobileApplicationSidebar from "$lib/app/application/sidebar/mobile-application-sidebar.svelte";
+  import { getApiUrls } from "$lib/app/sidebar/api-urls";
+
+  const urls = await getApiUrls(Astro.url);
+  const pathname = Astro.url.pathname + Astro.url.search;
+---
+
+<script lang="ts">
+  const sidebar = document.getElementById("mobile-sidebar");
+  const toggle = document.querySelector("[data-sidebar-toggle]");
+
+  toggle?.addEventListener("click", () => {
+    sidebar?.classList.toggle("-translate-x-full");
+  });
+</script>
+
+<!-- Desktop sidebar -->
+<aside class="bg-background hidden w-64 shrink-0 lg:flex">
+  <ApplicationSidebar client:load {pathname} apiUrls={urls} />
+</aside>
+
+<!-- Mobile sidebar -->
+<aside id="mobile-sidebar" class="bg-background fixed inset-y-0 left-0 z-40 w-full -translate-x-full pt-16 lg:hidden">
+  <MobileApplicationSidebar client:load {pathname} apiUrls={urls} />
+</aside>
