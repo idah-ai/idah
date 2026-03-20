@@ -1,17 +1,19 @@
 <script lang="ts">
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
-  import MultipleSelectField from "@/components/app/forms/fields/select/multiple/multiple-select-field.svelte";
-  import SingleSelectField from "@/components/app/forms/fields/select/single/single-select-field.svelte";
-  import { FieldGroup, FieldSet } from "@/components/ui/field";
-
-  import { apiKeyPermissions, scopeTypes } from "@/data/model/iam/api-keys/constants";
-  import { ApiKeyRecord } from "@/data/model/iam/api-keys/record";
-
   import DatePickerField from "@/components/app/forms/fields/picker/date-picker-field.svelte";
   import MultipleSelectDatasourceField from "@/components/app/forms/fields/select/multiple/multiple-select-datasource-field.svelte";
-  import type { FormBaseProps } from "@/components/app/forms/form.types";
+  import MultipleSelectField from "@/components/app/forms/fields/select/multiple/multiple-select-field.svelte";
+  import SingleSelectField from "@/components/app/forms/fields/select/single/single-select-field.svelte";
+  import { CommandItem } from "@/components/ui/command";
+  import { FieldGroup, FieldSet } from "@/components/ui/field";
+  import { cn } from "@/utils";
+
   import { projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
+  import { scopeTypes } from "@/data/model/iam/api-keys/constants";
+  import { ApiKeyRecord } from "@/data/model/iam/api-keys/record";
   import { organizationsBackendDataSource } from "@/data/model/iam/organizations/record";
+
+  import type { FormBaseProps } from "@/components/app/forms/form.types";
 
   // Props
   interface Props extends FormBaseProps {
@@ -63,7 +65,21 @@
       onSelected={(selectedValue) => {
         scope_type = selectedValue as string;
       }}
-    />
+    >
+     {#snippet slotChoice({ choice, select })}
+    {#if choice.data}
+
+      <CommandItem
+        class={cn("group cursor-pointer", {
+        })}
+        onclick={() => select(choice)}
+      >
+        <div>{choice.label}</div>
+        <div>{choice.description}</div>
+      </CommandItem>
+    {/if}
+  {/snippet}
+    </SingleSelectField>
     {/await}
 
     <!-- APIKEY:ORGANIZATIONS -->

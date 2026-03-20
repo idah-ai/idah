@@ -35,6 +35,7 @@ export const apiKeyDateColumn = (params: { label: string, cellComponent?: Compon
     sortable: true,
     visible: true,
     hidable: false,
+    filterable: true,
     cellComponent,
   };
 };
