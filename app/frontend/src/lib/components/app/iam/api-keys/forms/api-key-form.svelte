@@ -24,8 +24,14 @@
 
   // Variables::Reactive
   let { name, scope_type, scope_value, permissions } = $derived(apiKey);
-
+  
   // Functions
+  async function loadPermissions(): Promise<void> {
+    const permissionsRes = await apiKeysBackendDataSource.permissions()
+    console.log({permissionsRes});
+    
+  }
+
   $effect(() => {
     onValueChange({ name, scope_type, scope_value, permissions });
   });
@@ -45,6 +51,7 @@
     />
 
     <!-- APIKEY:SCOPE_TYPE -->
+      {#await loadPermissions() then permissions}
     <SingleSelectField
       name="{resource}/scope_type"
       label="Scope Type"
@@ -57,6 +64,7 @@
         scope_type = selectedValue as string;
       }}
     />
+    {/await}
 
     <!-- APIKEY:ORGANIZATIONS -->
     {#if scope_type == "organization"}
@@ -102,7 +110,7 @@
       label="Permissions"
       placeholder="Select permissions"
       required
-      choices={apiKeyPermissions}
+      choices={permissionChoices}
       errors={fieldErrors["permission"]}
       values={permissions}
     />
