@@ -1,0 +1,20 @@
+api/project_ro_all:
+  title: "API - Project Read Only (All Scope)"
+  mask: "8.9.1"
+  description: |
+    API role for read-only access to project resources.
+    This scope is compoundable, meaning a role for api can be defined as "api:project_ro_all,org_rw_all".
+  assignable: false
+  rights:
+    # Dataset Service - Read Only (Project level)
+    - "dataset:projects.read.*"
+    - "dataset:project_members.read.*"
+    - "dataset:datasets.read.*"
+    - "dataset:entries.read.*"
+    - "dataset:annotations.read.*"
+    - "dataset:note_feeds.read.*"
+    - "dataset:note_comments.read.*"
+
+    # Media Service - Read Only (Project level)
+    - "media:medias.read.*"
+    - "media:jobs.read.*"

@@ -41,7 +41,15 @@ module Medias
       auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }
 
-        scope.as_org_owner? { project_from_orgs_scoped }
+        scope.as_org_owner? do
+          if auth_context.custom_scopes[:org]
+            project_from_orgs_scoped
+          elsif auth_context.custom_scopes[:project]
+            table.where(project_id: auth_context.custom_scopes[:project])
+          else
+            table.where(Sequel.lit("false"))
+          end
+        end
 
         scope.as_user? { project_from_memberships_scoped }
       end

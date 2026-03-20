@@ -7,7 +7,9 @@ class ApiKeysExpo < BaseExpo
 
   json_api ApiKey::Record do
     index do
-      allowed_filters :name__match
+      allowed_filters :name__match,
+                      :expires_at__lte,
+                      :expires_at__gte
     end
 
     show
@@ -37,5 +39,15 @@ class ApiKeysExpo < BaseExpo
   end
   def revoke
     service.revoke(params[:id])
+  end
+
+  expose on_schedule("15 0 * * *") do
+    desc <<-MD
+      Daily scheduler to check and update expired API keys status.
+      Runs every day at 00:15.
+    MD
+  end
+  def expire_api_keys
+    service.expire_api_keys
   end
 end

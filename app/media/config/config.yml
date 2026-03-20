@@ -32,6 +32,7 @@ plugins:
     config:
       url: <%= ENV.fetch("REDIS_STREAM_URL") %>
       max_connections: 10
+  - name: periodic
 
 kv_store:
   adapter: Verse::Redis::KVStore
