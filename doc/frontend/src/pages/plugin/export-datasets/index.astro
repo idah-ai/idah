@@ -3,6 +3,7 @@ import PageLayout from "@layouts/PageLayout.astro";
 import Pagination from "@components/app/page/Pagination.astro";
 import PageContainer from "@components/app/page/PageContainer.astro";
 import PageTitle from "@components/app/page/PageTitle.astro";
+import CodeBlock from "@components/app/CodeBlock.astro";
 ---
 
 <PageLayout>
@@ -10,6 +11,583 @@ import PageTitle from "@components/app/page/PageTitle.astro";
     <PageTitle>
       Export Datasets
     </PageTitle>
+
+    <div class="prose prose-lg max-w-none dark:prose-invert">
+      <p class="text-lg text-gray-700 dark:text-gray-300 mb-8 leading-relaxed">
+        Learn how to add data export and synchronization capabilities to your IDAH plugin using the Sync Service backend.
+      </p>
+
+      <h2 id="overview" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+        <a href="#overview" class="hover:underline">Overview</a>
+      </h2>
+      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+        The Sync Service backend handles data export and synchronization with external systems. Export datasets, entries, annotations, and media to various formats (JSON, CSV, XML) or external APIs.
+      </p>
+
+      <h2 id="add-sync-backend" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+        <a href="#add-sync-backend" class="hover:underline">Add Sync Backend to Your Plugin</a>
+      </h2>
+
+      <h3 id="new-plugin-with-sync" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#new-plugin-with-sync" class="hover:underline">Option 1: Create New Plugin with Sync Backend</a>
+      </h3>
+      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+        When creating a new plugin, select "Sync Service" during the setup:
+      </p>
+      <CodeBlock language="bash">npx idah-plugin create my-plugin ./plugins</CodeBlock>
+      <p class="text-gray-700 dark:text-gray-300 mb-6 leading-relaxed text-sm">
+        When prompted, select <strong class="font-semibold">Sync Service</strong> from the backend services options.
+      </p>
+
+      <h3 id="add-to-existing" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#add-to-existing" class="hover:underline">Option 2: Add Sync Backend to Existing Plugin</a>
+      </h3>
+      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+        If you have an existing plugin without a sync backend, you can add it:
+      </p>
+      <CodeBlock language="bash">npx idah-plugin backend add my-plugin ./plugins</CodeBlock>
+      <p class="text-gray-700 dark:text-gray-300 mb-6 leading-relaxed text-sm">
+        When prompted, select <strong class="font-semibold">Sync Service</strong> to add export capabilities.
+      </p>
+
+      <h2 id="generated-structure" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+        <a href="#generated-structure" class="hover:underline">Generated File Structure</a>
+      </h2>
+      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+        The sync backend generator creates the following files:
+      </p>
+      <CodeBlock language="plaintext">{`backends/sync/
+└── <plugin_name_underscore>/
+    ├── sync.rb           # Sync service module (registers exporter)
+    ├── sync_spec.rb      # Sync service tests
+    ├── export.rb         # Export/sync logic
+    └── export_spec.rb    # Export tests`}</CodeBlock>
+
+      <h2 id="implementation-steps" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+        <a href="#implementation-steps" class="hover:underline">Implementation Steps</a>
+      </h2>
+
+      <h3 id="step-1-register" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#step-1-register" class="hover:underline">Step 1: Register the Exporter</a>
+      </h3>
+      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+        The sync module registers your exporter with IDAH:
+      </p>
+      <CodeBlock language="ruby" path="backends/sync/<plugin_name_underscore>/sync.rb">{`module YourPlugin
+  class Sync
+    def self.init(context)
+      context.register_exports(
+        "your-plugin",      # Export identifier
+        YourPlugin::Export  # Export class
+      )
+    end
+  end
+end`}</CodeBlock>
+
+      <h3 id="step-2-implement-export" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#step-2-implement-export" class="hover:underline">Step 2: Implement the Export Logic</a>
+      </h3>
+      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+        Implement the core export logic in your export class:
+      </p>
+      <CodeBlock language="ruby" path="backends/sync/<plugin_name_underscore>/export.rb">{`module YourPlugin
+  class Export
+    def export(context)
+      # Get dataset IDs being exported
+      dataset_ids = context.dataset_ids
+
+      # Get export options
+      options = context.options
+
+      # Create output file
+      file = context.io.file(format: "json")
+
+      # Process datasets
+      all_data = []
+      context.datasets.each do |dataset|
+        all_data << export_dataset(dataset, options)
+      end
+
+      # Write to file
+      File.write(file.path, all_data.to_json)
+
+      # Progress is auto-updated when using datasets iterator
+    end
+
+    private
+
+    def export_dataset(dataset, options)
+      # Your export logic here
+      {
+        id: dataset.record.id,
+        name: dataset.record.name,
+        entries: export_entries(dataset)
+      }
+    end
+
+    def export_entries(dataset)
+      dataset.entries.map do |entry|
+        {
+          id: entry.record.id,
+          annotations: entry.annotations.map(&:annotation)
+        }
+      end
+    end
+  end
+end`}</CodeBlock>
+
+      <h2 id="export-context-api" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+        <a href="#export-context-api" class="hover:underline">Export Context API</a>
+      </h2>
+
+      <h3 id="context-attributes" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#context-attributes" class="hover:underline">Context Attributes</a>
+      </h3>
+      <CodeBlock language="ruby">{`context.dataset_ids   # Array of dataset IDs
+context.options       # Export options hash
+context.io            # IO context for file operations`}</CodeBlock>
+
+      <h3 id="iterate-datasets" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#iterate-datasets" class="hover:underline">Iterate Through Datasets</a>
+      </h3>
+      <CodeBlock language="ruby">{`context.datasets.each do |dataset|
+  # Access dataset data
+  dataset_data = dataset.record
+  dataset_id = dataset.record.id
+  dataset_name = dataset.record.name
+
+  # Get entries
+  entries = dataset.entries
+
+  # Get filtered entries
+  completed_entries = dataset.entries({ status: "completed" })
+end`}</CodeBlock>
+      <p class="text-gray-700 dark:text-gray-300 mb-6 leading-relaxed text-sm">
+        <strong class="font-semibold">Note:</strong> Progress is automatically updated as you iterate through datasets.
+      </p>
+
+      <h3 id="access-entries" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#access-entries" class="hover:underline">Access Entries and Annotations</a>
+      </h3>
+      <CodeBlock language="ruby">{`dataset.entries.each do |entry|
+  # Access entry data
+  entry_id = entry.record.id
+  resource = entry.record.resource
+  status = entry.record.status
+
+  # Get annotations
+  annotations = entry.annotations
+
+  # Get filtered annotations
+  boxes = entry.annotations({ type: "bounding_box" })
+
+  # Get media files
+  medias = entry.medias
+  original = entry.medias({ key: "" }).first
+end`}</CodeBlock>
+
+      <h3 id="download-media" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#download-media" class="hover:underline">Download Media Files</a>
+      </h3>
+      <CodeBlock language="ruby">{`entry.medias.each do |media|
+  filename = media.media.filename
+  mime_type = media.media.mime_type
+
+  # Download media file
+  binary_data = media.download
+
+  # Save to export directory
+  File.write(File.join(dir, filename), binary_data)
+end`}</CodeBlock>
+
+      <h3 id="io-operations" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#io-operations" class="hover:underline">IO Operations</a>
+      </h3>
+      <CodeBlock language="ruby">{`file = context.io.file(format: "json")
+File.write(file.path, data.to_json)
+
+dir = context.io.directory
+File.write(File.join(dir, "data.json"), data.to_json)
+
+zip_path = context.io.zip_directory`}</CodeBlock>
+
+      <h2 id="workflow" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+        <a href="#workflow" class="hover:underline">Implementation Workflow</a>
+      </h2>
+
+      <h3 id="workflow-step-1" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#workflow-step-1" class="hover:underline">1. Add Sync Backend (if not present)</a>
+      </h3>
+      <CodeBlock language="bash">npx idah-plugin backend add data-exporter ./plugins</CodeBlock>
+      <p class="text-gray-700 dark:text-gray-300 mb-6 leading-relaxed text-sm">
+        Select "Sync Service" when prompted. This generates the sync backend structure.
+      </p>
+
+      <h3 id="workflow-step-2" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#workflow-step-2" class="hover:underline">2. Install Dependencies</a>
+      </h3>
+      <CodeBlock language="bash">cd plugins/data-exporter
+bundle install</CodeBlock>
+
+      <h3 id="workflow-step-3" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#workflow-step-3" class="hover:underline">3. Implement Export Logic</a>
+      </h3>
+      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+        Edit <code class="bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded">backends/sync/&lt;plugin_name&gt;/export.rb</code>:
+      </p>
+      <CodeBlock language="ruby" path="backends/sync/<plugin_name_underscore>/export.rb">{`require "json"
+
+module YourPlugin
+  class Export
+    def export(context)
+      Verse.logger.info "Starting export for #{context.dataset_ids.size} datasets"
+
+      # Create output file
+      file = context.io.file(format: "json")
+
+      # Export all datasets
+      all_data = []
+      context.datasets.each do |dataset|
+        all_data << export_dataset(dataset)
+      end
+
+      # Write to file
+      File.write(file.path, JSON.pretty_generate(all_data))
+
+      Verse.logger.info "Export complete"
+    rescue StandardError => e
+      Verse.logger.error "Export failed: #{e.message}"
+      context.error!(e.message)
+      raise
+    end
+
+    private
+
+    def export_dataset(dataset)
+      {
+        id: dataset.record.id,
+        name: dataset.record.name,
+        modality: dataset.record.modality,
+        entries: export_entries(dataset)
+      }
+    end
+
+    def export_entries(dataset)
+      dataset.entries.map do |entry|
+        {
+          id: entry.record.id,
+          resource: entry.record.resource,
+          status: entry.record.status,
+          annotations: entry.annotations.map { |a| export_annotation(a) }
+        }
+      end
+    end
+
+    def export_annotation(annotation)
+      {
+        id: annotation.record.id,
+        dimensions: annotation.record.dimensions,
+        shape: annotation.record.shape
+      }
+    end
+  end
+end`}</CodeBlock>
+
+      <h3 id="workflow-step-4" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#workflow-step-4" class="hover:underline">4. Write Tests</a>
+      </h3>
+      <CodeBlock language="ruby" path="backends/sync/<plugin_name_underscore>/export_spec.rb">{`require "spec_helper"
+require_relative "export"
+
+RSpec.describe YourPlugin::Export do
+  let(:export) { described_class.new }
+
+  describe "#export" do
+    it "exports datasets successfully" do
+      context = double("context")
+      io = double("io")
+      file = double("file", path: "/tmp/export.json")
+
+      allow(context).to receive(:dataset_ids).and_return(["ds1"])
+      allow(context).to receive(:options).and_return({})
+      allow(context).to receive(:io).and_return(io)
+      allow(context).to receive(:datasets).and_return([])
+
+      allow(io).to receive(:file).and_return(file)
+
+      expect { export.export(context) }.not_to raise_error
+    end
+  end
+end`}</CodeBlock>
+
+      <h3 id="workflow-step-5" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#workflow-step-5" class="hover:underline">5. Run Tests</a>
+      </h3>
+      <CodeBlock language="bash">bundle exec rspec backends/sync/</CodeBlock>
+
+      <h2 id="data-context-objects" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+        <a href="#data-context-objects" class="hover:underline">Data Context Objects</a>
+      </h2>
+
+      <h3 id="dataset-context" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#dataset-context" class="hover:underline">DatasetContext</a>
+      </h3>
+      <CodeBlock language="ruby">{`context.datasets.each do |dataset|
+  # Access dataset record
+  dataset.record.id
+  dataset.record.name
+  dataset.record.modality
+
+  # Get all entries
+  entries = dataset.entries
+
+  # Get filtered entries
+  entries = dataset.entries({ status: "completed" })
+end`}</CodeBlock>
+
+      <h3 id="entry-context" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#entry-context" class="hover:underline">EntryContext</a>
+      </h3>
+      <CodeBlock language="ruby">{`dataset.entries.each do |entry|
+  # Access entry record
+  entry.record.id
+  entry.record.resource
+  entry.record.status
+
+  # Get annotations
+  annotations = entry.annotations
+  annotations = entry.annotations({ type: "bounding_box" })
+
+  # Get media files
+  medias = entry.medias
+  original = entry.medias({ key: "" }).first
+end`}</CodeBlock>
+
+      <h3 id="annotation-context" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#annotation-context" class="hover:underline">AnnotationContext</a>
+      </h3>
+      <CodeBlock language="ruby">{`entry.annotations.each do |annotation|
+  annotation.record.id
+  annotation.record.dimensions
+  annotation.record.annotation
+  annotation.record.metadata
+end`}</CodeBlock>
+
+      <h3 id="media-context" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#media-context" class="hover:underline">MediaContext</a>
+      </h3>
+      <CodeBlock language="ruby">{`entry.medias.each do |media|
+  media.media.resource
+  media.media.key
+  media.media.filename
+  media.media.mime_type
+
+  # Download the file
+  binary_data = media.download
+  File.write(media.media.filename, binary_data)
+end`}</CodeBlock>
+
+      <h2 id="export-patterns" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+        <a href="#export-patterns" class="hover:underline">Common Export Patterns</a>
+      </h2>
+
+      <h3 id="single-json-file" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#single-json-file" class="hover:underline">Export to Single JSON File</a>
+      </h3>
+      <CodeBlock language="ruby">{`def export(context)
+  file = context.io.file(format: "json")
+
+  all_data = []
+  context.datasets.each do |dataset|
+    all_data << {
+      dataset: dataset.record,
+      entries: dataset.entries.map { |e| format_entry(e) }
+    }
+  end
+
+  File.write(file.path, JSON.pretty_generate(all_data))
+end`}</CodeBlock>
+
+      <h3 id="multiple-files" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#multiple-files" class="hover:underline">Export to Multiple Files</a>
+      </h3>
+      <CodeBlock language="ruby">{`def export(context)
+  dir = context.io.directory
+
+  context.datasets.each_with_index do |dataset, idx|
+    filename = "dataset_#{idx + 1}.json"
+    data = export_dataset(dataset)
+    File.write(File.join(dir, filename), data.to_json)
+  end
+
+  # Create summary
+  summary = { total: context.dataset_ids.size }
+  File.write(File.join(dir, "summary.json"), summary.to_json)
+
+  # Zip everything
+  zip_path = context.io.zip_directory
+  Verse.logger.info "Export zipped to #{zip_path}"
+end`}</CodeBlock>
+
+      <h3 id="export-to-api" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#export-to-api" class="hover:underline">Export to External API</a>
+      </h3>
+      <CodeBlock language="ruby">{`require "net/http"
+require "json"
+
+def export(context)
+  api_key = context.options[:api_key]
+  api_url = context.options[:api_url]
+
+  context.datasets.each do |dataset|
+    data = prepare_dataset_data(dataset)
+    send_to_api(data, api_url, api_key)
+  end
+end
+
+def send_to_api(data, url, api_key)
+  uri = URI(url)
+  req = Net::HTTP::Post.new(uri)
+  req["Authorization"] = "Bearer #{api_key}"
+  req["Content-Type"] = "application/json"
+  req.body = data.to_json
+
+  Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) do |http|
+    response = http.request(req)
+    raise "API error: #{response.code}" unless response.is_a?(Net::HTTPSuccess)
+  end
+end`}</CodeBlock>
+
+      <h3 id="export-with-media" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#export-with-media" class="hover:underline">Export with Media Files</a>
+      </h3>
+      <CodeBlock language="ruby">{`def export(context)
+  dir = context.io.directory
+
+  # Create media directory
+  media_dir = File.join(dir, "media")
+  Dir.mkdir(media_dir)
+
+  context.datasets.each do |dataset|
+    # Export data
+    data = export_dataset_data(dataset)
+    File.write(File.join(dir, "#{dataset.record.id}.json"), data.to_json)
+
+    # Export media files
+    dataset.entries.each do |entry|
+      entry.medias.each do |media|
+        media_path = File.join(media_dir, media.media.filename)
+        File.write(media_path, media.download)
+      end
+    end
+  end
+
+  # Zip everything
+  context.io.zip_directory
+end`}</CodeBlock>
+
+      <h2 id="best-practices" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+        <a href="#best-practices" class="hover:underline">Best Practices</a>
+      </h2>
+
+      <h3 id="handle-large-datasets" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#handle-large-datasets" class="hover:underline">1. Handle Large Datasets</a>
+      </h3>
+      <CodeBlock language="ruby">{`def export(context)
+  file = context.io.file(format: "json")
+
+  # Stream data to avoid memory issues
+  File.open(file.path, "w") do |f|
+    f.write("[")
+
+    context.datasets.each_with_index do |dataset, idx|
+      f.write(",") if idx > 0
+      f.write(export_dataset(dataset).to_json)
+    end
+
+    f.write("]")
+  end
+end`}</CodeBlock>
+
+      <h3 id="error-handling-best" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#error-handling-best" class="hover:underline">2. Handle Errors Gracefully</a>
+      </h3>
+      <CodeBlock language="ruby">{`def export(context)
+  context.datasets.each do |dataset|
+    begin
+      export_dataset(dataset)
+    rescue StandardError => e
+      Verse.logger.warn "Failed to export #{dataset.record.id}: #{e.message}"
+      # Continue or fail based on your requirements
+    end
+  end
+end`}</CodeBlock>
+
+      <h3 id="validate-options" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#validate-options" class="hover:underline">3. Validate Options</a>
+      </h3>
+      <CodeBlock language="ruby">{`def export(context)
+  raise ArgumentError, "API key required" unless context.options[:api_key]
+  raise ArgumentError, "No datasets to export" if context.dataset_ids.empty?
+
+  # Proceed with export
+end`}</CodeBlock>
+
+      <h3 id="cleanup-resources" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#cleanup-resources" class="hover:underline">4. Clean Up Resources</a>
+      </h3>
+      <CodeBlock language="ruby">{`def export(context)
+  temp_files = []
+
+  begin
+    # Create and process temp files
+    temp_files << create_temp_file
+    # ... processing
+  ensure
+    # Clean up
+    temp_files.each { |f| File.unlink(f) if File.exist?(f) }
+    context.io.cleanup
+  end
+end`}</CodeBlock>
+
+      <h2 id="testing-sync-backend" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+        <a href="#testing-sync-backend" class="hover:underline">Testing Your Sync Backend</a>
+      </h2>
+
+      <h3 id="run-tests" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#run-tests" class="hover:underline">Run Tests</a>
+      </h3>
+      <CodeBlock language="bash">{`bundle exec rspec backends/sync/
+bundle exec rspec backends/sync/<plugin_name>/export_spec.rb`}</CodeBlock>
+
+      <h3 id="test-in-idah" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#test-in-idah" class="hover:underline">Test in IDAH Platform</a>
+      </h3>
+      <ol class="list-decimal list-inside space-y-2 mb-6 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed">Build your plugin frontend: <code class="bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded">cd frontend && pnpm build</code></li>
+        <li class="leading-relaxed">Restart IDAH platform to load the plugin</li>
+        <li class="leading-relaxed">Create and annotate a dataset</li>
+        <li class="leading-relaxed">Trigger an export using your sync service</li>
+        <li class="leading-relaxed">Verify the exported data is correct</li>
+        <li class="leading-relaxed">Check logs for any errors or warnings</li>
+      </ol>
+
+      <h2 id="real-world-example" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+        <a href="#real-world-example" class="hover:underline">Real-World Example</a>
+      </h2>
+      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+        See the <strong class="font-semibold text-gray-900 dark:text-white">UPD Exporter</strong> for a complete implementation:
+      </p>
+      <ul class="list-disc list-inside space-y-2 mb-6 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed"><a href="https://github.com/ingedata-ph/idah/tree/main/app/sync/app/service/exports/upd/" class="text-blue-600 dark:text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer">View UPD Exporter on GitHub</a></li>
+      </ul>
+
+      <div class="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-l-4 border-blue-500 p-6 mb-6 rounded-lg">
+        <p class="text-lg text-gray-800 dark:text-gray-200 leading-relaxed font-medium">
+          📤 Ready to export data! Start by adding a sync backend to your plugin and implement your custom export logic.
+        </p>
+      </div>
+    </div>
   </PageContainer>
   <Pagination />
 </PageLayout>
