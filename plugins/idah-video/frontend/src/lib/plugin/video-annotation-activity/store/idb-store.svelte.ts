@@ -8,3 +8,11 @@ export const idbUpdatedAt = writable<Date>(new SvelteDate());
 export const boundingBoxes = writable<VideoAnnotationObject[]>([]);
 
 export const entryRoot = writable<VideoAnnotationObject | undefined>();
+
+export function setEntryRoot(annotation: VideoAnnotationObject | undefined) {
+  entryRoot.set(annotation);
+}
+
+export function setIndexedDBUpdatedAt(date?: SvelteDate) {
+  idbUpdatedAt.set(date || new SvelteDate());
+}
