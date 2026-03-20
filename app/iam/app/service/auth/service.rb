@@ -65,7 +65,7 @@ module Auth
       system_account_sessions.logout(session_id)
     end
 
-    def login_api(key, _ip: "", token_expiration: 3600)
+    def login_api(key, token_expiration: 3600)
       now = Time.now
 
       # Validate key format
@@ -87,12 +87,13 @@ module Auth
       end
 
       # Check if key is valid (not revoked and not expired)
-      if api_key.revoked?
-        raise Verse::Error::Authorization, "API key has been revoked"
+      unless api_key.valid_key?
+        raise Verse::Error::Authorization, "API key has been revoked or expired"
       end
 
-      if api_key.expired?
-        raise Verse::Error::Authorization, "API key is already expired"
+      # Check status field
+      unless api_key.status == "active"
+        raise Verse::Error::Authorization, "API key is not active (status: #{api_key.status})"
       end
 
       # Get the service account

@@ -9,16 +9,4 @@ api/org_rw_all:
     # Organizations
     - "iam:organizations.read.*"
     - "iam:organizations.update.*"
-
-    # Dataset Service - Read Write
-    - "dataset:projects.*.*"
-    - "dataset:project_members.*.*"
-    - "dataset:datasets.*.*"
-    - "dataset:entries.*.*"
-    - "dataset:annotations.*.*"
-    - "dataset:note_feeds.*.*"
-    - "dataset:note_comments.*.*"
-
-    # Media Service - Read Write
-    - "media:medias.*.*"
-    - "media:jobs.read.*"
+    - "iam:accounts.create.*"
