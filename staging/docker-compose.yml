@@ -200,8 +200,8 @@ services:
 
   sync:
     build:
-      context: ../app/sync
-      dockerfile: Dockerfile
+      context: ../.
+      dockerfile: ./app/sync/Dockerfile
       args:
         BUNDLE_WITHOUT: "" # Allow all groups for dev.
         APP_ENVIRONMENT: staging
@@ -219,6 +219,7 @@ services:
     volumes:
       - ../app/sync:/app
       - ../app/sync/common:/app/common
+      - ../plugins:/app/plugins
       - bundler_cache:/usr/local/bundle
     extra_hosts:
       - "host.docker.internal:host-gateway"
