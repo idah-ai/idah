@@ -13,6 +13,8 @@ Sequel.migration do
                   on_update: :cascade,
                   index: true
 
+      column :name, String, null: true
+
       column :key_label, String, null: false
       column :key_sha, String, null: false, unique: true, index: true
 
@@ -21,6 +23,7 @@ Sequel.migration do
       column :scope_type, String, null: false # all | org | project
       column :scope_value, "text[]", null: false # List of org_ids or project_ids based on scope_type
 
+      column :status, String, null: false, default: "active", index: true # active | revoked | expired
       column :expires_at, Time, null: true
       column :revoked_at, Time, null: true
 

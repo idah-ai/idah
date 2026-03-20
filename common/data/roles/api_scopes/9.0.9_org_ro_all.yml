@@ -8,16 +8,3 @@ api/org_ro_all:
   rights:
     # Organizations
     - "iam:organizations.read.*"
-
-    # Dataset Service - Read Only
-    - "dataset:projects.read.*"
-    - "dataset:project_members.read.*"
-    - "dataset:datasets.read.*"
-    - "dataset:entries.read.*"
-    - "dataset:annotations.read.*"
-    - "dataset:note_feeds.read.*"
-    - "dataset:note_comments.read.*"
-
-    # Media Service - Read Only
-    - "media:medias.read.*"
-    - "media:jobs.read.*"

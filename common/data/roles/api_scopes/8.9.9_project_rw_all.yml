@@ -1,0 +1,25 @@
+api/project_rw_all:
+  title: "API - Project Read Write (All Scope)"
+  mask: "8.9.9"
+  description: |
+    API role for read and write access to project resources.
+    This scope is compoundable, meaning a role for api can be defined as "api:project_rw_all,org_rw_all".
+  assignable: false
+  rights:
+    # Dataset Service - Read Write (Project level)
+    - "dataset:projects.*.*"
+    - "dataset:project_members.*.*"
+    - "dataset:datasets.*.*"
+    - "dataset:entries.*.*"
+    - "dataset:annotations.*.*"
+    - "dataset:note_feeds.*.*"
+    - "dataset:note_comments.*.*"
+
+    # Media Service - Read Write (Project level)
+    - "media:medias.*.*"
+    - "media:jobs.read.*"
+
+    # Sync Service - Read Write (Project level)
+    - "sync:jobs.read.*"
+    - "sync:exports.create.*"
+    - "sync:exports.read.*"

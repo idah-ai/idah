@@ -69,6 +69,8 @@ module ApiKey
 
         attr[:account_id] = service_account.id
 
+        attr[:status] ||= "active"
+
         # Create API key record
         id = api_keys.create(attr)
 
@@ -86,8 +88,7 @@ module ApiKey
 
     def update(record)
       api_keys.transaction do
-        # Only expires_at fields can be updated
-        updatable_attributes = record.attributes.slice(:expires_at)
+        updatable_attributes = record.attributes.slice(:expires_at, :name)
         api_key = api_keys.find!(record.id)
 
         if api_key.revoked?
@@ -113,7 +114,7 @@ module ApiKey
 
     def revoke(id)
       api_keys.transaction do
-        api_keys.update!(id, { revoked_at: Time.now })
+        api_keys.update!(id, { revoked_at: Time.now, status: "revoked" })
         api_keys.find!(id)
       end
     end
@@ -129,6 +130,15 @@ module ApiKey
       end
     end
 
+    def expire_api_keys
+      # Find all API keys that have expired but status is still 'active'
+      expired_keys = api_keys.chunked_index({ expires_at__lte: Time.now, status: "active" }).to_a
+
+      expired_keys.each do |key|
+        api_keys.update!(key.id, { status: "expired" })
+      end
+    end
+
     private
 
     def api_permission_list
@@ -139,7 +149,7 @@ module ApiKey
         title = role.title
         description = role.description
 
-        Model::ApiPermission::Record.new(
+        ApiPermission::Record.new(
           {
             name:,
             title:,
