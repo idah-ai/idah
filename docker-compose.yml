@@ -161,8 +161,8 @@ services:
 
   sync:
     build:
-      context: ./app/sync
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./app/sync/Dockerfile
       args:
         BUNDLE_WITHOUT: "" # Allow all groups for dev.
         APP_ENVIRONMENT: development
