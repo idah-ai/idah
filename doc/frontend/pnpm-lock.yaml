@@ -41,6 +41,9 @@ importers:
       prettier-plugin-tailwindcss:
         specifier: ^0.7.2
         version: 0.7.2(prettier-plugin-astro@0.14.1)(prettier-plugin-svelte@3.5.1(prettier@3.8.1)(svelte@5.54.0))(prettier@3.8.1)
+      prism-svelte:
+        specifier: ^0.5.0
+        version: 0.5.0
       prismjs:
         specifier: ^1.30.0
         version: 1.30.0
@@ -1735,6 +1738,9 @@ packages:
     resolution: {integrity: sha512-UOnG6LftzbdaHZcKoPFtOcCKztrQ57WkHDeRD9t/PTQtmT0NHSeWWepj6pS0z/N7+08BHFDQVUrfmfMRcZwbMg==}
     engines: {node: '>=14'}
     hasBin: true
+
+  prism-svelte@0.5.0:
+    resolution: {integrity: sha512-db91Bf3pRGKDPz1lAqLFSJXeW13mulUJxhycysFpfXV5MIK7RgWWK2E5aPAa71s8TCzQUXxF5JOV42/iOs6QkA==}
 
   prismjs@1.30.0:
     resolution: {integrity: sha512-DEvV2ZF2r2/63V+tK8hQvrR2ZGn10srHbXviTlcv7Kpzw8jWiNTqbVgjO3IY8RxrrOUF8VPMQQFysYYYv0YZxw==}
@@ -3866,6 +3872,8 @@ snapshots:
       prettier-plugin-svelte: 3.5.1(prettier@3.8.1)(svelte@5.54.0)
 
   prettier@3.8.1: {}
+
+  prism-svelte@0.5.0: {}
 
   prismjs@1.30.0: {}
 

@@ -23,6 +23,7 @@
     "prettier-plugin-astro": "^0.14.1",
     "prettier-plugin-svelte": "^3.4.1",
     "prettier-plugin-tailwindcss": "^0.7.2",
+    "prism-svelte": "^0.5.0",
     "prismjs": "^1.30.0",
     "svelte": "^5.47.1",
     "tailwindcss": "^4.1.18",
