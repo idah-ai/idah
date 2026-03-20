@@ -39,7 +39,7 @@ RecordFactory.registerTypes(ApiKeyRecord);
 const apiKeyBasePath: string = `${import.meta.env.VITE_IDAH_HOST}/api/v1/iam/api_keys`;
 
 export const apiKeysBackendDataSource = createBackendDataSource(ApiKeyRecord, apiKeyBasePath, {
-  permissions: async () => {
+  permission_list: async () => {
     const res = await fetch(`${apiKeyBasePath}/permissions`, {
       method: "GET",
     });
