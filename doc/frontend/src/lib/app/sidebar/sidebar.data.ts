@@ -2,42 +2,42 @@ export interface SidebarType {
   label: string;
   href?: string;
   children: SidebarType[];
+  visible?: boolean;
+  selectable?: boolean;
 }
 
-export const destopSidebarItems: SidebarType[] = [
+export const desktopSidebarItems: SidebarType[] = [
   {
-    label: "IDAH Documentation",
+    label: "Welcome",
     href: "/",
     children: [],
+    visible: false,
   },
   {
-    label: "PROJECTS",
+    label: "Getting Started",
     children: [
-      {
-        label: "Projcts, and Organisation",
-        children: [
-          { label: "Create a project", href: "/projects/create", children: [] },
-          { label: "Rename a Project", href: "/projects/rename", children: [] },
-          { label: "Delete a Project", href: "/projects/delete", children: [] },
-        ],
-      },
-      {
-        label: "Project Members",
-        children: [
-          { label: "Adding new Member", href: "/projects/members/add", children: [] },
-          { label: "Edit Member", href: "/projects/members/edit", children: [] },
-          { label: "Delete Member", href: "/projects/members/delete", children: [] },
-        ],
-      },
+      { label: "What is IDAH?", href: "/getting-started/about", children: [] },
+      { label: "Key features", href: "/getting-started/key-features", children: [] },
+      { label: "Use cases", href: "/getting-started/use-cases", children: [] },
     ],
   },
   {
-    label: "WORKFLOWS",
+    label: "Installation Guide",
     children: [
-      { label: "What is Workflows ?", href: "/workflows/what-is", children: [] },
-      { label: "Create a Workflow", href: "/workflows/create", children: [] },
-      { label: "Build a Workflow", href: "/workflows/build", children: [] },
-      { label: "Test a Workflow", href: "/workflows/test", children: [] },
+      { label: "Installation", href: "/install", children: [] },
+      { label: "Set up database", href: "/install/database", children: [] },
+      { label: "Set up persistent storage", href: "/install/storage", children: [] },
+      { label: "Start IDAH", href: "/install/start", children: [] },
+    ],
+  },
+  {
+    label: "Plugin Development",
+    children: [
+      { label: "Create a plugin", href: "/plugin/create-plugin", children: [] },
+      { label: "Frontend guide", href: "/plugin/frontend-guide", children: [] },
+      { label: "Backend guide", href: "/plugin/backend-guide", children: [] },
+      { label: "Import and process media", href: "/plugin/import-media", children: [] },
+      { label: "Export datasets", href: "/plugin/export-datasets", children: [] },
     ],
   },
 ];
@@ -46,5 +46,5 @@ export const mobileSidebarItems: SidebarType[] = [
   { label: "Changing log", href: "/changelog", children: [] },
   { label: "Support", href: "/support", children: [] },
   { label: "Install IDAH", href: "/install", children: [] },
-  ...destopSidebarItems,
+  ...desktopSidebarItems,
 ];

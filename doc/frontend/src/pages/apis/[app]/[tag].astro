@@ -1,9 +1,29 @@
 ---
-export const prerender = false;
 
+import { getApiUrls } from "$lib/app/sidebar/api-urls";
+import Pagination from "@components/app/page/Pagination.astro";
 import PageLayout from "@layouts/PageLayout.astro";
 import { compile } from "json-schema-to-typescript";
 import { marked } from "marked";
+
+export async function getStaticPaths() {
+  const urls = await getApiUrls();
+
+  const mappedUrls: Array<{ params: { app: string; tag: string } }> = [];
+
+  urls.forEach((item) => {
+    item.tags?.forEach((tag) => {
+      mappedUrls.push({
+        params: {
+          app: item.name,
+          tag,
+        }
+      });
+    });
+  });
+
+  return mappedUrls;
+}
 
 // Configure marked for safe rendering
 marked.setOptions({
@@ -97,7 +117,7 @@ function schemaToExampleJSON(schema: any): any {
   }
 }
 
-const app = Astro.url.searchParams.get("app") ?? "dataset";
+const { app, tag } = Astro.params;
 const res = await fetch(new URL("/data/definitions/" + app + ".json", Astro.url));
 
 if (!res.ok) {
@@ -186,20 +206,21 @@ for (const [tag, paths] of pathsByTag) {
 ---
 
 <PageLayout>
-  <div class="mx-auto max-w-7xl px-4 py-8">
+  <div class="mx-auto max-w-7xl px-4 py-8" data-tag={tag}>
     <h1 class="mb-2 text-4xl font-bold">{data.info.title} API Reference</h1>
     <p class="markdown-content mb-8 text-gray-600">{data.info.description}</p>
 
     {data.tags.length > 0 ? (
       <div class="space-y-8">
-        {data.tags.map((tag: any, index: number) => {
-          const tagPaths = pathsByTag.get(tag.name) || [];
+        {data.tags.map((tagData: any, index: number) => {
+          const tagPaths = pathsByTag.get(tagData.name) || [];
+          const isActiveTag = tagData.name === tag;
           return (
-            <div id={`tag-${tag.name}`} data-index={index} class="tag-group rounded-lg border border-gray-200 bg-white shadow-sm">
-              <div class="border-b border-gray-200 bg-gray-50 px-6 py-4">
-                <h2 class="text-2xl font-semibold text-gray-900">{tag.name}</h2>
-                {tag.description && (
-                  <div class="markdown-content mt-1 text-sm text-gray-600" set:html={renderMarkdown(tag.description)} />
+            <div id={`tag-${tagData.name}`} data-index={index} class="tag-group rounded-lg border shadow-sm border-gray-200 bg-white">
+              <div class={`border-b px-6 py-4 ${isActiveTag ? 'bg-blue-50' : 'border-gray-200 bg-gray-50'}`}>
+                <h2 class={`text-2xl font-semibold ${isActiveTag ? 'text-primary' : 'text-gray-900'}`}>{tagData.name}</h2>
+                {tagData.description && (
+                  <div class="markdown-content mt-1 text-sm text-gray-600" set:html={renderMarkdown(tagData.description)} />
                 )}
               </div>
 
@@ -408,6 +429,8 @@ for (const [tag, paths] of pathsByTag) {
       </div>
     )}
   </div>
+
+  <Pagination />
 </PageLayout>
 
 <style>
@@ -664,6 +687,11 @@ for (const [tag, paths] of pathsByTag) {
 
   :global(.dark) .text-green-700 {
     color: #86efac !important;
+  }
+
+  /* Active tag highlighting - Dark mode */
+  :global(.dark) .bg-blue-50 {
+    background: #1e3a5f !important;
   }
 
   /* Markdown content styling */
@@ -956,23 +984,23 @@ for (const [tag, paths] of pathsByTag) {
 
   // Scroll to tag if specified in URL
   function scrollToTag() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const tagParam = urlParams.get('tag');
+    // Get tag from data attribute
+    const container = document.querySelector('[data-tag]');
+    if (!container) return;
 
-    if (tagParam) {
-      const tagElement = document.getElementById(`tag-${tagParam}`);
+    const tag = container.dataset.tag;
+    const tagElement = document.getElementById(`tag-${tag}`);
 
-      if (tagElement && tagElement.dataset.index > 0) {
-        setTimeout(() => {
-          const elementPosition = tagElement.getBoundingClientRect().top + window.pageYOffset;
-          const offsetPosition = elementPosition - 80; // 80px offset from top
+    if (tagElement && tagElement.dataset.index > 0) {
+      setTimeout(() => {
+        const elementPosition = tagElement.getBoundingClientRect().top + window.pageYOffset;
+        const offsetPosition = elementPosition - 80; // 80px offset from top
 
-          window.scrollTo({
-            top: offsetPosition,
-            behavior: 'smooth'
-          });
-        }, 200);
-      }
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth'
+        });
+      }, 200);
     }
   }
 

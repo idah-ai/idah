@@ -3,7 +3,7 @@
   import MobileApplicationSidebar from "$lib/app/application/sidebar/mobile-application-sidebar.svelte";
   import { getApiUrls } from "$lib/app/sidebar/api-urls";
 
-  const urls = await getApiUrls(Astro.url);
+  const urls = await getApiUrls();
   const pathname = Astro.url.pathname + Astro.url.search;
 ---
 
