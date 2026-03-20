@@ -11,14 +11,16 @@ import SearchIconButton from "$lib/app/button/search-icon-button.svelte";
 <header id="header" class="bg-background fixed top-0 left-0 z-50 h-16 w-full border-b px-4 shadow-sm">
   <div class="mx-auto flex h-full w-full items-center gap-3">
     <!-- left -->
-    <div class="flex shrink-0 items-center">
-      <a href="/">
-        <Logo id="header-logo" />
-      </a>
+    <a href="/">
+      <div class="flex shrink-0 items-center">
+          <Logo id="header-logo" />
 
-      <Separator orientation="vertical" class="ml-3 h-6" />
-      <Button href="#docs" variant="link" class="text-foreground"> Docs </Button>
-    </div>
+        <Separator orientation="vertical" class="ml-3 h-6 mx-3" />
+        <div class="hidden text-lg font-semibold dark:text-white sm:block">
+          Docs
+        </div>
+      </div>
+    </a>
 
     <SearchBar client:load />
 
