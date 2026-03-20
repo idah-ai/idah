@@ -1,6 +1,6 @@
 <script lang="ts">
   import {
-    destopSidebarItems,
+    desktopSidebarItems,
     type SidebarType,
   } from "$lib/app/sidebar/sidebar.data";
   import {
@@ -23,7 +23,7 @@
   }: { pathname: string; apiUrls: { url: string; name: string }[] } = $props();
 
   const mergedSidebarItems = $derived<SidebarType[]>(
-    mergeSidebarItemsWithApiUrls(destopSidebarItems, apiUrls),
+    mergeSidebarItemsWithApiUrls(desktopSidebarItems, apiUrls),
   );
 </script>
 

@@ -26,11 +26,7 @@ import SearchIconButton from "$lib/app/button/search-icon-button.svelte";
     <div class="ml-auto flex shrink-0 items-center gap-1">
       <SearchIconButton client:load />
 
-      <Button href="#changelog" variant="link" class="text-foreground hidden lg:flex"> Changelog </Button>
-
-      <Button href="#support" variant="link" class="text-foreground hidden lg:flex"> Support </Button>
-
-      <Button href="#install" class="hidden lg:flex dark:text-white"> Install IDAH </Button>
+      <Button href="/install" class="hidden lg:flex dark:text-white"> Install IDAH </Button>
 
       <SidebarToggleButton client:load />
     </div>

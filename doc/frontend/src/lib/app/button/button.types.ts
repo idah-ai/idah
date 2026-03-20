@@ -3,4 +3,5 @@ export interface PaginationButtonProps {
     label: string;
     href?: string;
   };
+  parent?: string | null;
 }

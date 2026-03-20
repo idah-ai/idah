@@ -7,7 +7,7 @@ export interface SidebarItem {
 
 export function findSidebarItem(items: SidebarType[], result: SidebarItem[] = []): SidebarItem[] {
   for (const item of items) {
-    if (item.href) {
+    if (item.href && item.selectable !== false) {
       result.push({
         label: item.label,
         href: item.href,
@@ -73,21 +73,28 @@ export function hasActiveChild(item: SidebarType, pathname: string): boolean {
 export function mergeSidebarItemsWithApiUrls(
   baseSidebarItems: SidebarType[],
   apiUrls: { url: string; name: string; title?: string; tags?: string[] }[],
+  onlyVisible = true,
 ): SidebarType[] {
+  const visibleSidebarItems =
+    onlyVisible && baseSidebarItems.length > 0
+      ? baseSidebarItems.filter((item) => item.visible !== false)
+      : baseSidebarItems;
+
   return [
-    ...baseSidebarItems,
+    ...visibleSidebarItems,
     {
       label: "API References",
       children: apiUrls.map((api) => ({
         label: api.title || api.name,
-        href: encodeURI("/api_references?app=" + api.name),
+        href: encodeURI("/apis/" + api.name),
+        selectable: false,
         children:
           api.tags?.map((tag) => ({
             label: tag,
-            href: encodeURI("/api_references?app=" + api.name + "&tag=" + tag),
+            href: encodeURI("/apis/" + api.name + "/" + tag),
             children: [],
           })) || [],
       })),
     },
-  ];
+  ]
 }
