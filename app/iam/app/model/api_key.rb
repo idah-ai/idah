@@ -8,6 +8,7 @@ module ApiKey
 
     field :account_id, type: Integer, readonly: true
 
+    field :name, type: String
     field :key_label, type: String, readonly: true
     field :key_sha, type: String, readonly: true, visible: false
 
@@ -19,6 +20,8 @@ module ApiKey
     field :expires_at, type: [Time, NilClass]
     field :revoked_at, type: [Time, NilClass]
 
+    field :status, type: String
+
     field :last_used_at, type: [Time, NilClass], readonly: true
 
     field :created_at, type: Time, readonly: true
@@ -29,7 +32,9 @@ module ApiKey
     belongs_to :service_account, repository: "Account::Repository", foreign_key: :account_id
 
     def expired?
-      expires_at && expires_at < Time.now
+      return false if expires_at.nil?
+
+      expires_at < Time.now
     end
 
     def revoked?
