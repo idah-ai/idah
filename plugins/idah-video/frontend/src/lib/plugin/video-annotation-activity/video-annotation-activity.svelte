@@ -29,10 +29,12 @@
   } from "$lib/plugin/video-annotation-activity/shortcut";
   import { boundingBoxes, entryRoot, idbUpdatedAt } from "$lib/plugin/video-annotation-activity/store/idb-store.svelte";
   import {
+    currentMode,
     deselectAnnotation,
     deselectAnnotationGroup,
     selectedAnnotation,
     selectedAnnotationGroup,
+    setCurrentModeTo,
     setSelectedAnnotation,
   } from "$lib/plugin/video-annotation-activity/store/store";
 
@@ -46,8 +48,6 @@
   import VideoController from "$lib/plugin/video-annotation-activity/video/video-controller.svelte";
   import Video from "$lib/plugin/video-annotation-activity/video/video.svelte";
 
-  import type { IActivityContext } from "$idah/context/activity-context";
-  import type { AnnotationGroup, AnnotationShape, AnnotationValue } from "$idah/context/annotation-context";
   import {
     type InterpolatedVertex,
     type Point,
@@ -57,6 +57,9 @@
     getInterpolatedFrame,
   } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
   import { showErrorToast } from "$lib/utils/error/error.toasts";
+
+  import type { IActivityContext } from "$idah/context/activity-context";
+  import type { AnnotationGroup, AnnotationShape, AnnotationValue } from "$idah/context/annotation-context";
 
   // Props
   interface Props {
@@ -74,13 +77,13 @@
   let { id: entryId, mediaUrl, workflowStep } = $derived(context);
   let editable = $derived<boolean>(editableWorkflowSteps.includes(workflowStep));
   let notable = $derived<boolean>(notableWorkflowSteps.includes(workflowStep));
+  let isNoteMode = $derived($currentMode === IDAH_NOTE);
 
   let player: Video | undefined = $state();
   let player_container: HTMLDivElement | undefined = $state();
   let currentFrame = $state(0);
   let totalFrames = $state(0);
 
-  let mode: string = $state("visual");
   let annotationSidebarResizablePercentage = $state<number>(16);
   let annotationSidebarWidthRem = $derived<number>(annotationSidebarResizablePercentage + 3);
 
@@ -172,6 +175,8 @@
 
   onMount(async () => {
     $boundingBoxes = [];
+
+    /** REGISTER TOOLS */
     tools = [
       {
         label: "Visual",
@@ -201,10 +206,8 @@
         handleClick: () => context.commands.run("tools.note"),
       },
     ];
-
     context.tools.setTools(tools);
-
-    $effect(() => context.tools.setTool(mode));
+    $effect(() => context.tools.setTool($currentMode));
 
     annotationsIndexedDB(["idah-video", "entry", entryId].join(":")).then((idb) => {
       annotationsIDB = idb;
@@ -984,7 +987,7 @@
       return {
         name: "visual tool",
         apply: () => {
-          mode = DEFAULT_MODE;
+          setCurrentModeTo(DEFAULT_MODE);
           deselectAnnotation();
         },
         undo: () => {},
@@ -997,7 +1000,7 @@
       return {
         name: "bounding box tool",
         apply: () => {
-          mode = IDAH_VIDEO_BOUNDING_BOX;
+          setCurrentModeTo(IDAH_VIDEO_BOUNDING_BOX);
           deselectAnnotation();
           deselectAnnotationGroup();
         },
@@ -1011,7 +1014,7 @@
       return {
         name: "note tool",
         apply: () => {
-          mode = IDAH_NOTE;
+          setCurrentModeTo(IDAH_NOTE);
           deselectAnnotation();
         },
         undo: () => {},
@@ -1024,7 +1027,7 @@
       return {
         name: "reset tool",
         apply: () => {
-          mode = DEFAULT_MODE;
+          setCurrentModeTo(DEFAULT_MODE);
           deselectAnnotation();
           deselectAnnotationGroup();
         },
@@ -1038,7 +1041,7 @@
       return {
         name: "polygon tool",
         apply: () => {
-          mode = IDAH_VIDEO_POLYGON;
+          setCurrentModeTo(IDAH_VIDEO_POLYGON);
           deselectAnnotation();
           deselectAnnotationGroup();
         },
@@ -1120,7 +1123,7 @@
 
     let requirementFullfilled = requiredFullfilled(value, context.config[valueMode]?.properties);
     annotationValue = value;
-    mode = valueMode;
+    setCurrentModeTo(valueMode);
     if (valueMode == ENTRY_ROOT && !$selectedAnnotation && $entryRoot?.metadata.id) $selectedAnnotation = $entryRoot;
 
     // wait for confirmation
@@ -1154,7 +1157,7 @@
     angle: number = 0,
     selectedId?: string,
   ) {
-    if (!editable || mode === "note") return;
+    if (!editable || isNoteMode) return;
 
     let points = $state.snapshot(_points) as Point[];
     if (!selectedId) {
@@ -1222,10 +1225,10 @@
     /**
      * Set mode to the annotation shape type when selecting an annotation
      */
-    if (mode === "note") {
+    if (isNoteMode) {
       return;
     } else if (annotation?.shape.type && editable) {
-      mode = annotation.shape.type;
+      setCurrentModeTo(annotation.shape.type);
       // Register selection-specific shortcuts for the current mode
       registerOnSelectBoxModeShortcuts(
         context,
@@ -1234,7 +1237,7 @@
         () => currentFrame,
       );
     } else {
-      mode = DEFAULT_MODE;
+      setCurrentModeTo(DEFAULT_MODE);
     }
     if ($selectedAnnotation) {
       $selectedAnnotationGroup = {
@@ -1252,20 +1255,20 @@
     /**
      * Set mode to the annotation shape type when selecting an annotation
      */
-    if (mode === "note") {
+    if (isNoteMode) {
       return;
     } else if (selectedFrame && firstAnnotation.shape.type && editable) {
       /**
        * If user select timeline row at specific frame (selectedFrame is exists)
        * and workflow step is in review or annotation
        */
-      mode = firstAnnotation.shape.type;
+      setCurrentModeTo(firstAnnotation.shape.type);
       selectClosestAnnotation(annotationGroup, selectedFrame);
       // Register selection-specific shortcuts for the current mode
       registerOnSelectBoxModeShortcuts(context, undefined, annotationGroup.groupId, () => currentFrame);
     } else {
       selectAnnotation(undefined);
-      mode = DEFAULT_MODE;
+      setCurrentModeTo(DEFAULT_MODE);
     }
   }
 
@@ -1300,7 +1303,7 @@
     }
 
     if (closestAnnotation) {
-      mode = closestAnnotation.shape.type;
+      setCurrentModeTo(closestAnnotation.shape.type);
       selectAnnotation(closestAnnotation);
     }
 
@@ -1406,7 +1409,7 @@
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
         <CommandGroup heading={`MODE: ${ShortcutManager.getCurrentMode()}`}>
-          {#each Object.entries(ShortcutManager.getEffectiveKeyMap(mode) || {}) as [key, value] (key)}
+          {#each Object.entries(ShortcutManager.getEffectiveKeyMap($currentMode) || {}) as [key, value] (key)}
             <CommandItem onclick={() => value.action()}>
               <span>{value.name} ({value.description})</span>
               <CommandShortcut>{key}</CommandShortcut>
@@ -1430,7 +1433,7 @@
       <div class="h-auto max-h-86 overflow-y-auto p-2">
         {#if annotationValue.category}
           <CategoryProperties
-            {mode}
+            mode={$currentMode}
             selectedCategory={annotationValue.category}
             {annotationValue}
             onSelectCategory={(selectedCategory) => {
@@ -1439,9 +1442,9 @@
                 ...annotationValue,
                 category: selectedCategory,
               };
-              onEditValue({ category: annotationValue.category }, mode);
+              onEditValue({ category: annotationValue.category }, $currentMode);
             }}
-            onEditValue={(value) => value && onEditValue(value, mode)}
+            onEditValue={(value) => value && onEditValue(value, $currentMode)}
             disabled={false}
           />
         {:else}
@@ -1459,7 +1462,7 @@
             {onLock}
             {onVisibility}
             {context}
-            {mode}
+            mode={$currentMode}
           />
         {/if}
       </div>
@@ -1481,7 +1484,7 @@
           size="sm"
           onclick={() => {
             showPopOver = false;
-            switch (mode) {
+            switch ($currentMode) {
               case ENTRY_ROOT:
                 onShapeSelection(ENTRY_ROOT, currentFrame);
                 break;
@@ -1489,7 +1492,7 @@
                 if (shapeSelectionArgs) onShapeSelection(...shapeSelectionArgs);
             }
           }}
-          disabled={shapeSelectionArgs == undefined && ENTRY_ROOT != mode}>Confirm</Button
+          disabled={shapeSelectionArgs == undefined && ENTRY_ROOT != $currentMode}>Confirm</Button
         >
       </div>
     </PopoverContent>
@@ -1513,7 +1516,7 @@
               {onLock}
               {onVisibility}
               {context}
-              {mode}
+              mode={$currentMode}
             />
           </ResizablePane>
 
@@ -1528,7 +1531,7 @@
               <SvgOverlay
                 bind:this={overlay}
                 {annotations_promise}
-                {mode}
+                mode={$currentMode}
                 frame={currentFrame}
                 onSelectAnnotation={selectAnnotation}
                 onSelection={onShapeSelection}
@@ -1553,7 +1556,14 @@
                 />
               </SvgOverlay>
 
-              <PropertiesSidebar {annotationId} {annotationValue} {onEditValue} {onReSelectCategory} {context} {mode} />
+              <PropertiesSidebar
+                {annotationId}
+                {annotationValue}
+                {onEditValue}
+                {onReSelectCategory}
+                {context}
+                mode={$currentMode}
+              />
             </section>
           </ResizablePane>
         </ResizablePaneGroup>

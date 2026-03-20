@@ -1,7 +1,16 @@
 import { writable } from "svelte/store";
 
+import { DEFAULT_MODE } from "$lib/plugin/type";
+
 import type { AnnotationGroup } from "$idah/context/annotation-context";
 import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
+
+/** CURRENT MODE */
+export const currentMode = writable<string>(DEFAULT_MODE);
+
+export function setCurrentModeTo(mode: string) {
+  currentMode.set(mode);
+}
 
 /** SELECTED ANNOTATION */
 export const selectedAnnotation = writable<VideoAnnotationObject | undefined>(undefined);
