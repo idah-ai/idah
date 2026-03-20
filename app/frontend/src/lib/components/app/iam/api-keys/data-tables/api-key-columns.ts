@@ -1,22 +1,10 @@
 import ApiKeyCell from "@/components/app/iam/api-keys/data-tables/api-key-cell.svelte";
-import ApiKeyNameCell from "@/components/app/iam/api-keys/data-tables/api-key-name-cell.svelte";
 import ApiKeyPermissionsCell from "@/components/app/iam/api-keys/data-tables/api-key-permissions-cell.svelte";
 import ApiKeyScopeTypeCell from "@/components/app/iam/api-keys/data-tables/api-key-scope-type-cell.svelte";
 
 import { ApiKeyRecord } from "@/data/model/iam/api-keys/record";
 
 import type { ColumnSettings, ColumnsSettings } from "@/components/app/datasource-table/types";
-
-export const apiKeyNameColumn: ColumnSettings<ApiKeyRecord> = {
-  label: "Name",
-  dataType: "string",
-  clickable: false,
-  sortable: true,
-  filterable: false,
-  visible: true,
-  hidable: false,
-  cellComponent: ApiKeyNameCell,
-};
 
 export const apiKeyCreatedAtColumn = (params: { label: string }): ColumnSettings<ApiKeyRecord> => {
   const { label = "Created At" } = params;
@@ -55,8 +43,16 @@ export const apiKeyLastUsedColumn = (params: { label: string }): ColumnSettings<
 };
 
 export const apiKeyColumns: ColumnsSettings<ApiKeyRecord> = {
-  name: apiKeyNameColumn,
-  api_key: {
+  name: {
+    label: "Name",
+    dataType: "string",
+    clickable: false,
+    sortable: true,
+    filterable: false,
+    visible: true,
+    hidable: false,
+  },
+  key_label: {
     label: "API Key",
     dataType: "string",
     clickable: false,

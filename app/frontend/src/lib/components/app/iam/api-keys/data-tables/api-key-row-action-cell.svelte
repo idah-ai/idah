@@ -1,16 +1,13 @@
 <script lang="ts">
-  import { RotateCcwIcon, SquarePenIcon, UserXIcon } from "@lucide/svelte";
+  import { RotateCcwIcon, SquarePenIcon, Trash2Icon } from "@lucide/svelte";
   import { onMount } from "svelte";
 
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
-  import AccountFormModal from "@/components/app/iam/accounts/overlays/account-form-modal.svelte";
+  import ApiKeyFormModal from "@/components/app/iam/api-keys/overlays/api-key-form-modal.svelte";
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
 
   import { showToast } from "@/components/ui/toast/index.svelte";
-  import { resourcePath } from "@/data/BackendDataSource";
-  import { clearCache } from "@/data/Cache";
-  import { projectMembersBasePath } from "@/data/model/dataset/projects/members/record";
-  import { AccountRecord, accountsBackendDataSource } from "@/data/model/iam/accounts/record";
+  import { ApiKeyRecord, apiKeysBackendDataSource } from "@/data/model/iam/api-keys/record";
   import { authStatus } from "@/security/AuthContext";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
@@ -19,92 +16,78 @@
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
 
   // Props
-  let { record: account }: DataTableCellBaseProps<AccountRecord> = $props();
+  let { record: apiKey }: DataTableCellBaseProps<ApiKeyRecord> = $props();
 
   // Variables
   let currentAccount = $authStatus.authContext;
-  let canUpdateAccount = $state(false);
-  let canResentInvitation = $state(false);
-  let canCancelInvitation = $state(false);
+  let canUpdateAPIKey = $state(false);
+  let canRevokeAPIKey = $state(false);
+  let canDeleteAPIKey = $state(false);
   let menus: IDropdownMenus = $derived({
     actions: {
       items: [
         {
           label: "Edit",
           icon: SquarePenIcon,
-          hidden: !canUpdateAccount,
+          hidden: !canUpdateAPIKey,
           action: async () => {
-            const accountRes = await fetchAccount();
-            accountRecord = accountRes.data;
+            const apiKeyRes = await fetchAPIKey();
+            apiKey = apiKeyRes.data;
 
-            openEditAccountFormModal = true;
+            openEditAPIKeyFormModal = true;
           },
         },
         {
-          label: "Resend Invitation",
+          label: "Invoke",
           icon: RotateCcwIcon,
-          hidden: !canResentInvitation,
-          action: resendInvitation,
-        },
-        {
-          label: "Cancel Invitation",
-          icon: UserXIcon,
-          hidden: canCancelInvitation,
+          hidden: !canRevokeAPIKey,
           action: () => {
-            openConfirmCancelInvitationModal = true;
+           
+          },
+        },
+       {
+          label: "Delete",
+          icon: Trash2Icon,
+          hidden: !canDeleteAPIKey,
+          action: () => {
+            openConfirmDeleteAPIKeyModal = true;
           },
         },
       ],
     },
   });
-  let accountRecord: AccountRecord | undefined = $state(undefined);
-  let openEditAccountFormModal: boolean = $state(false);
-  let openConfirmCancelInvitationModal: boolean = $state(false);
+  let apiKeyRecord: ApiKeyRecord | undefined = $state(undefined);
+  let openEditAPIKeyFormModal: boolean = $state(false);
+  let openConfirmDeleteAPIKeyModal: boolean = $state(false);
 
   // Lifecycle
   onMount(async () => {
-    canUpdateAccount = (await currentAccount?.can("update", "iam:accounts", ["as_org_owner"])) || false;
+    canUpdateAPIKey = (await currentAccount?.can("update", "iam:api_keys")) || false;
 
-    const alreadyJoined = account.joined_at !== null;
-    canResentInvitation = !alreadyJoined;
-    canCancelInvitation = alreadyJoined;
+    // canRevokeAPIKey = (await currentAccount?.can("revoke", "iam:api_keys")) || false;
+    canDeleteAPIKey = (await currentAccount?.can("delete", "iam:api_keys")) || false;
   });
 
   // Functions
-  async function fetchAccount() {
-    return await accountsBackendDataSource.get(account.id, {
+  async function fetchAPIKey() {
+    return await apiKeysBackendDataSource.get(apiKey.id, {
       fields: {
-        [AccountRecord.type]: ["name", "email", "enabled", "role_name", "sso_channel"],
+        [ApiKeyRecord.type]: ["name", "scope_type", "scope_value", "expired_at", "permissions"],
       },
       noCache: true,
     });
   }
 
-  async function resendInvitation() {
+
+  async function removeAPIKey(): Promise<void> {
     try {
-      await accountsBackendDataSource.resend_invitation({ id: account.id });
-      $refetches.accounts.list = new Date();
+      await apiKeysBackendDataSource.delete(apiKey.id, { showErrorToast: false });
+
+      openConfirmDeleteAPIKeyModal = false;
+      $refetches.apiKeys.list = new Date();
       showToast.success({
-        title: "Invitation resent",
-        description: `The account invitation for "${account.email}" has been resent.`,
-      });
-    } catch (error) {
-      showActionFailedToast(error);
-    }
-  }
-
-  async function removeAccount(): Promise<void> {
-    try {
-      await accountsBackendDataSource.delete(account.id, { showErrorToast: false });
-
-      // Delete project member cache to force refetch
-      clearCache(resourcePath(projectMembersBasePath, null, undefined));
-
-      openConfirmCancelInvitationModal = false;
-      $refetches.accounts.list = new Date();
-      showToast.success({
-        title: "Invitation cancelled",
-        description: `The account invitation for "${account.email}" has been cancelled.`,
+        title: "API Key deleted",
+        description: `The API key "${apiKey.name}" has been deleted.`,
       });
     } catch (error) {
       showActionFailedToast(error);
@@ -112,15 +95,15 @@
   }
 </script>
 
-{#if canUpdateAccount || canCancelInvitation}
+{#if canUpdateAPIKey || canDeleteAPIKey}
   <DropdownMenus {menus} align="center" />
 
-  <AccountFormModal title="Account" action="update" {accountRecord} bind:open={openEditAccountFormModal} />
+  <ApiKeyFormModal title="API Key" action="update" {apiKeyRecord} bind:open={openEditAPIKeyFormModal} />
 
   <ConfirmModal
-    title="Cancel Invitation"
-    description={`Are you sure you want to cancel invitation for "${account.email}"?`}
-    onConfirm={removeAccount}
-    bind:open={openConfirmCancelInvitationModal}
+    title="Delete API Key"
+    description={`Are you sure you want to delete the API key "${apiKey.name}"?`}
+    onConfirm={removeAPIKey}
+    bind:open={openConfirmDeleteAPIKeyModal}
   />
 {/if}
