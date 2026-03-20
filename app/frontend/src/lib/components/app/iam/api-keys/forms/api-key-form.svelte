@@ -9,8 +9,8 @@
   import { cn } from "@/utils";
 
   import { projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
-  import { scopeTypes } from "@/data/model/iam/api-keys/constants";
-  import { ApiKeyRecord } from "@/data/model/iam/api-keys/record";
+  import { apiKeyPermissions, scopeTypes } from "@/data/model/iam/api-keys/constants";
+  import { ApiKeyRecord, apiKeysBackendDataSource } from "@/data/model/iam/api-keys/record";
   import { organizationsBackendDataSource } from "@/data/model/iam/organizations/record";
 
   import type { FormBaseProps } from "@/components/app/forms/form.types";
@@ -29,7 +29,7 @@
   
   // Functions
   async function loadPermissions(): Promise<void> {
-    const permissionsRes = await apiKeysBackendDataSource.permissions()
+    const permissionsRes = await apiKeysBackendDataSource.permission_list()
     console.log({permissionsRes});
     
   }
@@ -53,7 +53,7 @@
     />
 
     <!-- APIKEY:SCOPE_TYPE -->
-      {#await loadPermissions() then permissions}
+    
     <SingleSelectField
       name="{resource}/scope_type"
       label="Scope Type"
@@ -65,22 +65,8 @@
       onSelected={(selectedValue) => {
         scope_type = selectedValue as string;
       }}
-    >
-     {#snippet slotChoice({ choice, select })}
-    {#if choice.data}
-
-      <CommandItem
-        class={cn("group cursor-pointer", {
-        })}
-        onclick={() => select(choice)}
-      >
-        <div>{choice.label}</div>
-        <div>{choice.description}</div>
-      </CommandItem>
-    {/if}
-  {/snippet}
-    </SingleSelectField>
-    {/await}
+    />
+    
 
     <!-- APIKEY:ORGANIZATIONS -->
     {#if scope_type == "organization"}
@@ -121,15 +107,31 @@
     {/if}
 
     <!-- APIKEY:PERMISSIONS -->
+       {#await loadPermissions() then permissionsChoices}
     <MultipleSelectField
       name="{resource}/permissions"
       label="Permissions"
       placeholder="Select permissions"
       required
-      choices={permissionChoices}
+      choices={apiKeyPermissions}
       errors={fieldErrors["permission"]}
       values={permissions}
-    />
+    >
+     {#snippet slotChoice({ choice, select })}
+    {#if choice.data}
+
+      <CommandItem
+        class={cn("group cursor-pointer", {
+        })}
+        onclick={() => select(choice)}
+      >
+        <div>{choice.label}</div>
+        <div>{choice.description}</div>
+      </CommandItem>
+    {/if}
+  {/snippet}
+    </MultipleSelectField>
+    {/await}
 
     <DatePickerField
       name="{resource}/expired_at"
