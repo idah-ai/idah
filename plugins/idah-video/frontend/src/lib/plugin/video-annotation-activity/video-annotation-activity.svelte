@@ -344,13 +344,12 @@
           setIndexedDBUpdatedAt();
         },
         async undo() {
-          const undoCreatedAt = new Date();
           let annotationToCreate = {
             ...snapshotAnnotation,
             metadata: {
               ...snapshotAnnotation.metadata,
-              createdAt: undoCreatedAt,
-              updatedAt: undoCreatedAt,
+              createdAt: snapshotAnnotation.metadata.createdAt,
+              updatedAt: snapshotAnnotation.metadata.updatedAt,
               metadata: {
                 group_id: snapshotAnnotation.metadata.metadata?.group_id,
                 parent_id: snapshotAnnotation.metadata.metadata?.parent_id,
@@ -387,15 +386,14 @@
           setIndexedDBUpdatedAt();
         },
         async undo() {
-          const undoCreatedAt = new Date();
           for (const annotation of snapshotAnnotations) {
             const annotationId = annotation.metadata.id;
             let annotationToCreate = {
               ...annotation,
               metadata: {
                 ...annotation.metadata,
-                createdAt: undoCreatedAt,
-                updatedAt: undoCreatedAt,
+                createdAt: annotation.metadata.createdAt,
+                updatedAt: annotation.metadata.updatedAt,
               },
               synced: false,
               locked: false,
