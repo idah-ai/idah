@@ -129,8 +129,6 @@
     const schema: ZodSchema = newRecord ? createApiKeySchema : updateApiKeySchema;
 
     try {
-      console.log({ apiKey });
-
       const validated = validateData(schema, {
         name: apiKey.name,
         scope_type: apiKey.scope_type,
@@ -139,12 +137,22 @@
         expired_at: apiKey.expired_at,
       });
 
+      if (!apiKey.scope_type && apiKey.permissions.length === 0) {
+        apiKey.errors.permissions = "Please select at least 1 permission.";
+      } else {
+        delete apiKey.errors.permissions;
+      }
+
       if (!validated.success) {
         fieldErrors = getFieldErrors(validated.error);
+
+        if (apiKey.errors?.permissions) {
+          fieldErrors["permissions"] = [...(fieldErrors["permissions"] || []), apiKey.errors.permissions];
+        }
+
         submitting = false;
         return;
       }
-
       if (newRecord) {
         await createApiKey();
       } else {
