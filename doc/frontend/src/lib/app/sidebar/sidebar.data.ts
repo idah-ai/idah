@@ -25,8 +25,8 @@ export const desktopSidebarItems: SidebarType[] = [
     label: "Installation Guide",
     children: [
       { label: "Installation", href: "/install", children: [] },
-      { label: "Set up database", href: "/install/database", children: [] },
-      { label: "Set up persistent storage", href: "/install/storage", children: [] },
+      { label: "Set up Databases", href: "/install/databases", children: [] },
+      { label: "Set up Persistent Storage", href: "/install/storage", children: [] },
       { label: "Start IDAH", href: "/install/start", children: [] },
     ],
   },

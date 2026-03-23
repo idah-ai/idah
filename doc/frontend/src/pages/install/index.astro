@@ -3,6 +3,7 @@ import PageLayout from "@layouts/PageLayout.astro";
 import Pagination from "@components/app/page/Pagination.astro";
 import PageContainer from "@components/app/page/PageContainer.astro";
 import PageTitle from "@components/app/page/PageTitle.astro";
+import CodeBlock from "@components/app/CodeBlock.astro";
 ---
 
 <PageLayout>
@@ -10,6 +11,204 @@ import PageTitle from "@components/app/page/PageTitle.astro";
     <PageTitle>
       Installation
     </PageTitle>
+
+    <div class="prose prose-lg max-w-none dark:prose-invert">
+      <p class="text-lg text-gray-700 dark:text-gray-300 mb-8 leading-relaxed">
+        Get started with IDAH by setting up your development environment and cloning the repository.
+      </p>
+
+      <h2 id="prerequisites" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+        <a href="#prerequisites" class="hover:underline">Prerequisites</a>
+      </h2>
+      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+        Before installing IDAH, ensure you have the following tools installed on your system:
+      </p>
+
+      <h3 id="required-tools" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#required-tools" class="hover:underline">Required Tools</a>
+      </h3>
+      <ul class="list-disc list-inside space-y-2 mb-6 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed"><strong class="font-semibold text-gray-900 dark:text-white">Docker:</strong> Container platform for running IDAH services
+          <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
+            <li class="text-sm"><a href="https://docs.docker.com/get-docker/" class="text-blue-600 dark:text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer">Install Docker</a></li>
+          </ul>
+        </li>
+        <li class="leading-relaxed"><strong class="font-semibold text-gray-900 dark:text-white">Docker Compose:</strong> Tool for defining and running multi-container applications
+          <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
+            <li class="text-sm">Included with Docker Desktop</li>
+            <li class="text-sm"><a href="https://docs.docker.com/compose/install/" class="text-blue-600 dark:text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer">Install Docker Compose</a></li>
+          </ul>
+        </li>
+        <li class="leading-relaxed"><strong class="font-semibold text-gray-900 dark:text-white">Git:</strong> Version control system
+          <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
+            <li class="text-sm"><a href="https://git-scm.com/downloads" class="text-blue-600 dark:text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer">Install Git</a></li>
+          </ul>
+        </li>
+      </ul>
+
+      <h3 id="verify-installation" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#verify-installation" class="hover:underline">Verify Installation</a>
+      </h3>
+      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+        Check that all required tools are properly installed:
+      </p>
+      <CodeBlock language="bash">docker --version
+docker compose version
+git --version</CodeBlock>
+
+      <h2 id="clone-repository" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+        <a href="#clone-repository" class="hover:underline">Clone the Repository</a>
+      </h2>
+
+      <h3 id="clone-from-github" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#clone-from-github" class="hover:underline">1. Clone from GitHub</a>
+      </h3>
+      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+        Clone the IDAH repository to your local machine:
+      </p>
+      <CodeBlock language="bash">git clone https://github.com/idah-ai/idah.git
+cd idah</CodeBlock>
+
+      <h3 id="navigate-directory" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#navigate-directory" class="hover:underline">2. Navigate to Project Directory</a>
+      </h3>
+      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+        You should now be in the IDAH project directory:
+      </p>
+      <CodeBlock language="bash">pwd
+ls</CodeBlock>
+
+      <h2 id="project-structure" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+        <a href="#project-structure" class="hover:underline">Project Structure</a>
+      </h2>
+      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+        IDAH follows a microservices architecture with separate services for different domains:
+      </p>
+
+      <CodeBlock>{`idah/
+├── app/                    # Microservices
+│   ├── audit/             # Audit logging service
+│   ├── dataset/           # Dataset management service
+│   ├── frontend/          # Web UI (SvelteKit)
+│   ├── iam/               # Identity & Access Management
+│   ├── media/             # Media processing service
+│   ├── notification/      # Notification service
+│   ├── setting/           # Settings management
+│   └── sync/              # Data export & sync service
+├── common/                # Shared code & utilities
+├── plugins/               # Production plugins
+│   └── idah-video/       # Built-in video annotation plugin
+├── plugins_dev/          # Development plugins & CLI
+├── dev/                  # Development configuration
+│   └── nginx/            # Nginx configuration
+├── doc/                  # Documentation site
+├── docker-compose.yml    # Docker services configuration
+├── docker-compose-db.yml # Database services
+└── README.md`}</CodeBlock>
+
+      <h3 id="microservices-overview" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#microservices-overview" class="hover:underline">Microservices Overview</a>
+      </h3>
+
+      <div class="space-y-4 mb-8">
+        <div class="border-l-4 border-blue-500 pl-4 py-2 bg-gray-50 dark:bg-gray-800 rounded-r">
+          <h4 class="font-semibold text-gray-900 dark:text-white mb-1">Frontend</h4>
+          <p class="text-sm text-gray-700 dark:text-gray-300">
+            Web application built with SvelteKit. Provides the user interface for dataset management, annotation, and collaboration.
+          </p>
+        </div>
+
+        <div class="border-l-4 border-green-500 pl-4 py-2 bg-gray-50 dark:bg-gray-800 rounded-r">
+          <h4 class="font-semibold text-gray-900 dark:text-white mb-1">IAM (Identity & Access Management)</h4>
+          <p class="text-sm text-gray-700 dark:text-gray-300">
+            Handles user authentication, authorization, and access control.
+          </p>
+        </div>
+
+        <div class="border-l-4 border-purple-500 pl-4 py-2 bg-gray-50 dark:bg-gray-800 rounded-r">
+          <h4 class="font-semibold text-gray-900 dark:text-white mb-1">Dataset</h4>
+          <p class="text-sm text-gray-700 dark:text-gray-300">
+            Manages datasets, entries, annotations, and workflow states.
+          </p>
+        </div>
+
+        <div class="border-l-4 border-orange-500 pl-4 py-2 bg-gray-50 dark:bg-gray-800 rounded-r">
+          <h4 class="font-semibold text-gray-900 dark:text-white mb-1">Media</h4>
+          <p class="text-sm text-gray-700 dark:text-gray-300">
+            Processes and stores media files (images, videos, audio). Handles thumbnails and format conversions.
+          </p>
+        </div>
+
+        <div class="border-l-4 border-red-500 pl-4 py-2 bg-gray-50 dark:bg-gray-800 rounded-r">
+          <h4 class="font-semibold text-gray-900 dark:text-white mb-1">Sync</h4>
+          <p class="text-sm text-gray-700 dark:text-gray-300">
+            Handles data export and synchronization with external systems.
+          </p>
+        </div>
+
+        <div class="border-l-4 border-yellow-500 pl-4 py-2 bg-gray-50 dark:bg-gray-800 rounded-r">
+          <h4 class="font-semibold text-gray-900 dark:text-white mb-1">Setting</h4>
+          <p class="text-sm text-gray-700 dark:text-gray-300">
+            Manages application settings and configuration.
+          </p>
+        </div>
+
+        <div class="border-l-4 border-pink-500 pl-4 py-2 bg-gray-50 dark:bg-gray-800 rounded-r">
+          <h4 class="font-semibold text-gray-900 dark:text-white mb-1">Audit</h4>
+          <p class="text-sm text-gray-700 dark:text-gray-300">
+            Tracks and logs user actions for auditing and compliance.
+          </p>
+        </div>
+
+        <div class="border-l-4 border-indigo-500 pl-4 py-2 bg-gray-50 dark:bg-gray-800 rounded-r">
+          <h4 class="font-semibold text-gray-900 dark:text-white mb-1">Notification</h4>
+          <p class="text-sm text-gray-700 dark:text-gray-300">
+            Sends notifications and manages email communications.
+          </p>
+        </div>
+      </div>
+
+      <h3 id="microservice-structure" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#microservice-structure" class="hover:underline">Individual Microservice Structure</a>
+      </h3>
+      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+        Each microservice follows a consistent structure:
+      </p>
+      <CodeBlock>{`app/<service_name>/
+├── app/
+│   ├── expo/              # API & Resource Events
+│   ├── model/             # Data models & repositories
+│   └── service/           # Business logic
+├── config/                # Service configuration
+├── db/
+│   └── migrations/        # Database migrations
+├── common/                # Symlink to shared code
+├── .env                   # Environment variables
+├── Dockerfile             # Container definition
+├── Gemfile                # Ruby dependencies
+└── README.md`}</CodeBlock>
+
+      <h3 id="plugins-directory" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#plugins-directory" class="hover:underline">Plugins Directory</a>
+      </h3>
+      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+        IDAH supports two plugin directories:
+      </p>
+      <ul class="list-disc list-inside space-y-2 mb-6 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed">
+          <code class="bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded">plugins/</code> - Production-ready plugins (loaded in all environments)
+        </li>
+        <li class="leading-relaxed">
+          <code class="bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded">plugins_dev/</code> - Development plugins and CLI tool (development only)
+        </li>
+      </ul>
+
+      <div class="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-l-4 border-blue-500 p-6 mb-6 rounded-lg">
+        <p class="text-lg text-gray-800 dark:text-gray-200 leading-relaxed font-medium">
+          🚀 Ready to set up IDAH! Continue with <a href="/install/databases" class="text-blue-600 dark:text-blue-400 hover:underline font-semibold">database configuration</a> and then start the services.
+        </p>
+      </div>
+    </div>
   </PageContainer>
   <Pagination />
 </PageLayout>
