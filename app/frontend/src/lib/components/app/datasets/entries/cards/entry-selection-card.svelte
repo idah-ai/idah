@@ -3,7 +3,7 @@
   import { onDestroy, onMount } from "svelte";
 
   import { mediaBackendDataSource } from "@/data/model/media/medias/medias-record";
-  import { AspectRatio } from "@/components/ui/aspect-ratio"
+  import { AspectRatio } from "@/components/ui/aspect-ratio";
   import { Checkbox } from "@/components/ui/checkbox";
   import type { EntryRecord } from "@/data/model/dataset/entries/record";
   import { Label } from "@/components/ui/label";
