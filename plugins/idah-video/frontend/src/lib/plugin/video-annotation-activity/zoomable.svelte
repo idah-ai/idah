@@ -9,14 +9,14 @@
     Y,
     type Point,
   } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
+  import { currentMode } from "$lib/plugin/video-annotation-activity/store/store";
 
   // Props
   interface Props {
-    mode: string;
     children: Snippet;
     onZoomChange: (scale: number, offset: Point) => void;
   }
-  let { mode, children, onZoomChange }: Props = $props();
+  let { children, onZoomChange }: Props = $props();
 
   // Variables
   let offset: Point = $state([0, 0]);
@@ -97,7 +97,7 @@
   export function onWheel(e: WheelEvent) {
     let step = e.deltaY > 0 ? -zoom.step : zoom.step;
 
-    switch (mode) {
+    switch ($currentMode) {
       case IDAH_NOTE: {
         break; // Do not zoom in note mode
       }
@@ -108,7 +108,7 @@
   }
 
   export function mouseDown(e: MouseEvent) {
-    switch (mode) {
+    switch ($currentMode) {
       case IDAH_NOTE: {
         break; // Do not pan in note mode
       }
@@ -121,7 +121,7 @@
   }
 
   export function mouseUp(_e: MouseEvent) {
-    switch (mode) {
+    switch ($currentMode) {
       case IDAH_NOTE: {
         break; // Do not pan in note mode
       }
@@ -133,7 +133,7 @@
   }
 
   export function mouseMove(e: MouseEvent) {
-    switch (mode) {
+    switch ($currentMode) {
       case IDAH_NOTE: {
         break; // Do not pan in note mode
       }
