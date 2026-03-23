@@ -2,7 +2,7 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
-  
+
   import { datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { DialogTitle } from "@/components/ui/dialog";
   import type { EntryRecord } from "@/data/model/dataset/entries/record";
@@ -132,7 +132,7 @@
         }
       } else {
         const fallbackUrl = resolve(`/projects/${projectId}/datasets`);
-        await goto(fallbackUrl);  
+        await goto(fallbackUrl);
       }
 
       // close modal and update state after navigation
