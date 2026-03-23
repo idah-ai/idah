@@ -3,6 +3,14 @@ import PageLayout from "@layouts/PageLayout.astro";
 import Pagination from "@components/app/page/Pagination.astro";
 import PageContainer from "@components/app/page/PageContainer.astro";
 import PageTitle from "@components/app/page/PageTitle.astro";
+import {
+  Layers,
+  Users,
+  Puzzle,
+  Image,
+  Download,
+  Shield
+} from '@lucide/astro';
 ---
 
 <PageLayout>
@@ -10,6 +18,178 @@ import PageTitle from "@components/app/page/PageTitle.astro";
     <PageTitle>
       Key Features
     </PageTitle>
+
+    <div class="prose prose-lg max-w-none dark:prose-invert">
+      <p class="text-lg text-gray-700 dark:text-gray-300 mb-8 leading-relaxed">
+        IDAH provides a rich set of features designed to streamline your data annotation workflow and improve collaboration.
+      </p>
+
+      <h2 id="core-features" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+        <a href="#core-features" class="hover:underline">Core Features</a>
+      </h2>
+
+      <div class="space-y-4 mb-8 grid grid-cols-1 md:grid-cols-2 gap-4 not-prose">
+        <div class="border-l-4 border-blue-500 pl-4 py-3 bg-gray-50 dark:bg-gray-800 rounded-r h-full">
+          <div class="flex items-start gap-3">
+            <Layers class="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" stroke-width={2} />
+            <div class="flex-1">
+              <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Multi-Modal Support</h4>
+              <p class="text-sm text-gray-700 dark:text-gray-300">
+                Annotate various data types including images, videos, audio, text, and custom formats through plugins. IDAH's flexible architecture allows you to work with any media type your project requires.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="border-l-4 border-green-500 pl-4 py-3 bg-gray-50 dark:bg-gray-800 rounded-r h-full">
+          <div class="flex items-start gap-3">
+            <Users class="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" stroke-width={2} />
+            <div class="flex-1">
+              <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Collaborative Workflows</h4>
+              <p class="text-sm text-gray-700 dark:text-gray-300">
+                Support for team collaboration with role-based access control, assignment management, and progress tracking. Manage annotation tasks, distribute work among team members, and monitor completion status in real-time.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="border-l-4 border-purple-500 pl-4 py-3 bg-gray-50 dark:bg-gray-800 rounded-r h-full">
+          <div class="flex items-start gap-3">
+            <Puzzle class="w-5 h-5 text-purple-600 dark:text-purple-400 flex-shrink-0 mt-0.5" stroke-width={2} />
+            <div class="flex-1">
+              <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Extensible Plugin System</h4>
+              <p class="text-sm text-gray-700 dark:text-gray-300">
+                Easily extend functionality with custom plugins for specialized annotation tools, media processors, and data exporters. Build plugins using familiar web technologies like SvelteKit and Ruby.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="border-l-4 border-orange-500 pl-4 py-3 bg-gray-50 dark:bg-gray-800 rounded-r h-full">
+          <div class="flex items-start gap-3">
+            <Image class="w-5 h-5 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5" stroke-width={2} />
+            <div class="flex-1">
+              <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Media Processing</h4>
+              <p class="text-sm text-gray-700 dark:text-gray-300">
+                Automatic processing of uploaded media files including thumbnail generation, format conversion, and optimization. Support for various image and video formats out of the box, with plugin support for specialized formats.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="border-l-4 border-red-500 pl-4 py-3 bg-gray-50 dark:bg-gray-800 rounded-r h-full">
+          <div class="flex items-start gap-3">
+            <Download class="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" stroke-width={2} />
+            <div class="flex-1">
+              <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Data Export & Sync</h4>
+              <p class="text-sm text-gray-700 dark:text-gray-300">
+                Export annotated datasets in various formats (JSON, CSV, COCO, YOLO, etc.) and sync with external systems through customizable exporters. Schedule automated exports and integrate with MLOps pipelines.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="border-l-4 border-yellow-500 pl-4 py-3 bg-gray-50 dark:bg-gray-800 rounded-r h-full">
+          <div class="flex items-start gap-3">
+            <Shield class="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" stroke-width={2} />
+            <div class="flex-1">
+              <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Audit & Compliance</h4>
+              <p class="text-sm text-gray-700 dark:text-gray-300">
+                Comprehensive audit logging for tracking user actions, ensuring compliance, and maintaining data integrity. Track who annotated what, when, and how annotations have changed over time.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h2 id="annotation-features" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+        <a href="#annotation-features" class="hover:underline">Annotation Features</a>
+      </h2>
+
+      <h3 id="annotation-tools" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#annotation-tools" class="hover:underline">Annotation Tools</a>
+      </h3>
+      <ul class="list-disc list-inside space-y-2 mb-6 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed"><strong class="font-semibold text-gray-900 dark:text-white">Bounding Boxes:</strong> Draw rectangular boxes for object detection</li>
+        <li class="leading-relaxed"><strong class="font-semibold text-gray-900 dark:text-white">Polygons:</strong> Create precise segmentation masks</li>
+        <li class="leading-relaxed"><strong class="font-semibold text-gray-900 dark:text-white">Polylines:</strong> Annotate paths and trajectories</li>
+        <li class="leading-relaxed"><strong class="font-semibold text-gray-900 dark:text-white">Points:</strong> Mark specific locations (keypoints, landmarks)</li>
+        <li class="leading-relaxed"><strong class="font-semibold text-gray-900 dark:text-white">Classification:</strong> Assign labels and categories to data</li>
+        <li class="leading-relaxed"><strong class="font-semibold text-gray-900 dark:text-white">Custom Tools:</strong> Create specialized annotation tools through plugins</li>
+      </ul>
+
+      <h3 id="workflow-management" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#workflow-management" class="hover:underline">Workflow Management</a>
+      </h3>
+      <ul class="list-disc list-inside space-y-2 mb-6 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed"><strong class="font-semibold text-gray-900 dark:text-white">Task Assignment:</strong> Distribute annotation tasks to team members</li>
+        <li class="leading-relaxed"><strong class="font-semibold text-gray-900 dark:text-white">Review Process:</strong> Multi-stage review and approval workflows</li>
+        <li class="leading-relaxed"><strong class="font-semibold text-gray-900 dark:text-white">Quality Control:</strong> Inter-annotator agreement and quality metrics</li>
+        <li class="leading-relaxed"><strong class="font-semibold text-gray-900 dark:text-white">Progress Tracking:</strong> Monitor completion rates and productivity</li>
+      </ul>
+
+      <h2 id="plugin-system" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+        <a href="#plugin-system" class="hover:underline">Plugin System</a>
+      </h2>
+      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+        IDAH's plugin system allows you to extend the platform with custom functionality:
+      </p>
+
+      <div class="space-y-4 mb-8">
+        <div class="border-l-4 border-blue-500 pl-4 py-3 bg-gray-50 dark:bg-gray-800 rounded-r">
+          <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Frontend Plugins</h4>
+          <p class="text-sm text-gray-700 dark:text-gray-300">
+            Build custom annotation tools, visualizations, and UI components using SvelteKit. Create specialized interfaces for domain-specific annotation tasks.
+          </p>
+        </div>
+
+        <div class="border-l-4 border-green-500 pl-4 py-3 bg-gray-50 dark:bg-gray-800 rounded-r">
+          <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Media Service Plugins</h4>
+          <p class="text-sm text-gray-700 dark:text-gray-300">
+            Create custom media processors for specialized file formats or transformations. Handle medical imaging (DICOM), 3D point clouds, or any custom format.
+          </p>
+        </div>
+
+        <div class="border-l-4 border-purple-500 pl-4 py-3 bg-gray-50 dark:bg-gray-800 rounded-r">
+          <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Sync Service Plugins</h4>
+          <p class="text-sm text-gray-700 dark:text-gray-300">
+            Develop custom data exporters for specific formats or integration with external APIs. Push annotations directly to your ML training pipeline.
+          </p>
+        </div>
+      </div>
+
+      <p class="text-gray-700 dark:text-gray-300 mb-6 leading-relaxed">
+        Learn more about creating plugins in the <a href="/plugin" class="text-blue-600 dark:text-blue-400 hover:underline font-semibold">Plugin Development Guide</a>.
+      </p>
+
+      <h2 id="collaboration-features" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+        <a href="#collaboration-features" class="hover:underline">Collaboration Features</a>
+      </h2>
+
+      <h3 id="access-control" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#access-control" class="hover:underline">Access Control</a>
+      </h3>
+      <ul class="list-disc list-inside space-y-2 mb-6 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed">Role-based permissions (Admin, Manager, Annotator, Reviewer)</li>
+        <li class="leading-relaxed">Project-level and dataset-level access control</li>
+        <li class="leading-relaxed">User and organization management</li>
+      </ul>
+
+      <h3 id="communication" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#communication" class="hover:underline">Communication</a>
+      </h3>
+      <ul class="list-disc list-inside space-y-2 mb-6 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed">Email notifications for task assignments and updates</li>
+        <li class="leading-relaxed">In-app notifications and alerts</li>
+        <li class="leading-relaxed">Activity feeds and audit trails</li>
+      </ul>
+
+      <div class="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-l-4 border-blue-500 p-6 mb-6 rounded-lg">
+        <p class="text-lg text-gray-800 dark:text-gray-200 leading-relaxed font-medium">
+          💡 Want to see IDAH in action? Check out the <a href="/getting-started/use-cases" class="text-blue-600 dark:text-blue-400 hover:underline font-semibold">Use Cases</a> to learn how IDAH can be applied to different domains.
+        </p>
+      </div>
+    </div>
   </PageContainer>
   <Pagination />
 </PageLayout>

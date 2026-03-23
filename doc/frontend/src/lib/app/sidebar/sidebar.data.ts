@@ -8,12 +8,6 @@ export interface SidebarType {
 
 export const desktopSidebarItems: SidebarType[] = [
   {
-    label: "Welcome",
-    href: "/",
-    children: [],
-    visible: false,
-  },
-  {
     label: "Getting Started",
     children: [
       { label: "What is IDAH?", href: "/getting-started/about", children: [] },

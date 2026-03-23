@@ -4,6 +4,7 @@ import Pagination from "@components/app/page/Pagination.astro";
 import PageContainer from "@components/app/page/PageContainer.astro";
 import PageTitle from "@components/app/page/PageTitle.astro";
 import CodeBlock from "@components/app/CodeBlock.astro";
+import FolderBlock from "@components/app/FolderBlock.astro";
 ---
 
 <PageLayout>
@@ -37,18 +38,27 @@ import CodeBlock from "@components/app/CodeBlock.astro";
       <h2 id="file-structure" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
         <a href="#file-structure" class="hover:underline">File Structure</a>
       </h2>
-      <CodeBlock>{`backends/
-├── README.md             # Backend quick start guide
-├── spec_helper.rb        # Shared RSpec configuration
-├── .rspec                # RSpec configuration
-├── media/                # Media service (if enabled)
-│   └── <plugin_name_underscore>/
-│       └── ..
-└── sync/                 # Sync service (if enabled)
-    └── <plugin_name_underscore>/
-        └── ..`}</CodeBlock>
+      <FolderBlock structure={[
+        { name: '<plugin_name>/', type: 'folder', children: [
+          { name: 'backends/', type: 'folder', children: [
+            { name: 'README.md', type: 'file', comment: 'Backend quick start guide' },
+            { name: 'spec_helper.rb', type: 'file', comment: 'Shared RSpec configuration' },
+            { name: '.rspec', type: 'file', comment: 'RSpec configuration' },
+            { name: 'media/', type: 'folder', comment: 'Media service (if enabled)', children: [
+              { name: '<plugin_name_underscore>/', type: 'folder', children: [
+                { name: '..', type: 'file' }
+              ]}
+            ]},
+            { name: 'sync/', type: 'folder', comment: 'Sync service (if enabled)', children: [
+              { name: '<plugin_name_underscore>/', type: 'folder', children: [
+                { name: '..', type: 'file' }
+              ]}
+            ]}
+          ]}
+        ]}
+      ]} />
 
-      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed mt-6">
         <strong class="font-semibold text-gray-900 dark:text-white">Note:</strong> <code class="bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded">&lt;plugin_name_underscore&gt;</code> is your plugin name in snake_case (e.g., <code class="bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded">my_awesome_plugin</code> for plugin <code class="bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded">my-awesome-plugin</code>).
       </p>
 

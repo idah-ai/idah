@@ -1,15 +1,236 @@
 ---
 import PageLayout from "@layouts/PageLayout.astro";
-import Pagination from "@components/app/page/Pagination.astro";
 import PageContainer from "@components/app/page/PageContainer.astro";
-import PageTitle from "@components/app/page/PageTitle.astro";
+import { Button } from "$lib/components/ui/button";
+import {
+  Sparkles,
+  Zap,
+  Shield,
+  Puzzle,
+  Users,
+  ArrowRight,
+  BookOpen,
+  Download,
+  Layers
+} from '@lucide/astro';
 ---
 
 <PageLayout>
   <PageContainer>
-    <PageTitle>
-      Welcome to IDAH Documentation
-    </PageTitle>
+    <!-- Hero Section -->
+    <div class="text-center mb-16 mt-8">
+      <div class="flex justify-center mb-6">
+        <div class="p-4 rounded-2xl shadow-xl" style="background: linear-gradient(to bottom right, #2391ea, #1e7ac9);">
+          <Layers class="w-16 h-16 text-white" stroke-width={2} />
+        </div>
+      </div>
+      <h1 class="text-5xl md:text-6xl font-extrabold text-gray-900 dark:text-white mb-4">
+        Welcome to <span style="background: linear-gradient(to right, #2391ea, #1e7ac9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">IDAH</span> Docs
+      </h1>
+      <p class="text-2xl text-gray-600 dark:text-gray-400 mb-2">Ingedata Annotation Hub</p>
+      <p class="text-xl text-gray-700 dark:text-gray-300 max-w-3xl mx-auto mb-8 leading-relaxed">
+        An open-source platform for collaborative data annotation, designed to streamline the creation of high-quality training datasets for machine learning models.
+      </p>
+
+      <!-- CTA Buttons -->
+      <div class="flex flex-wrap justify-center gap-4 mb-12">
+        <Button
+          href="/getting-started/about"
+          class="inline-flex items-center gap-2 py-6 font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all"
+          size="lg"
+          variant="outline"
+        >
+          <BookOpen class="w-5 h-5" stroke-width={2} />
+          Learn More
+        </Button>
+        <Button
+          href="/install"
+          class="inline-flex items-center gap-2 py-6 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all"
+          style="background: linear-gradient(to right, #2391ea, #1e7ac9);"
+          size="lg"
+        >
+          <Download class="w-5 h-5" stroke-width={2} />
+          Get Started
+        </Button>
+      </div>
+    </div>
+
+    <!-- Key Highlights -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+      <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border-2 border-blue-200 dark:border-blue-800 hover:shadow-2xl transition-all duration-300">
+        <div class="p-3 rounded-xl shadow-md mb-4 inline-block" style="background: linear-gradient(to bottom right, rgba(35, 145, 234, 0.1), rgba(35, 145, 234, 0.2));">
+          <Sparkles class="w-7 h-7" style="color: #2391ea;" stroke-width={2} />
+        </div>
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">Multi-Modal</h3>
+        <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+          Support for images, videos, audio, text, and custom data types through an extensible plugin system.
+        </p>
+      </div>
+
+      <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border-2 border-green-200 dark:border-green-800 hover:shadow-2xl transition-all duration-300">
+        <div class="bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900/30 dark:to-green-800/30 p-3 rounded-xl shadow-md mb-4 inline-block">
+          <Users class="w-7 h-7 text-green-600 dark:text-green-400" stroke-width={2} />
+        </div>
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">Collaborative</h3>
+        <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+          Team-based workflows with role management, task assignments, and multi-stage review processes.
+        </p>
+      </div>
+
+      <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border-2 border-purple-200 dark:border-purple-800 hover:shadow-2xl transition-all duration-300">
+        <div class="bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900/30 dark:to-purple-800/30 p-3 rounded-xl shadow-md mb-4 inline-block">
+          <Puzzle class="w-7 h-7 text-purple-600 dark:text-purple-400" stroke-width={2} />
+        </div>
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">Extensible</h3>
+        <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+          Powerful plugin system for custom annotation tools, media processors, and export formats.
+        </p>
+      </div>
+
+      <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border-2 border-orange-200 dark:border-orange-800 hover:shadow-2xl transition-all duration-300">
+        <div class="bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/30 dark:to-orange-800/30 p-3 rounded-xl shadow-md mb-4 inline-block">
+          <Shield class="w-7 h-7 text-orange-600 dark:text-orange-400" stroke-width={2} />
+        </div>
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">Enterprise-Ready</h3>
+        <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+          Built-in audit logging, compliance tracking, and scalable microservices architecture.
+        </p>
+      </div>
+    </div>
+
+    <!-- Quick Navigation -->
+    <div class="prose prose-lg max-w-none dark:prose-invert">
+      <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-6">
+        Quick Start Guide
+      </h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 not-prose">
+        <a href="/getting-started/about" class="group block p-8 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300" style="background: linear-gradient(135deg, rgba(35, 145, 234, 0.08) 0%, rgba(30, 122, 201, 0.08) 100%);">
+          <div class="flex flex-col items-center text-center gap-4">
+            <div class="p-4 rounded-full shadow-lg" style="background: linear-gradient(to bottom right, #2391ea, #1e7ac9);">
+              <BookOpen class="w-8 h-8 text-white" stroke-width={2.5} />
+            </div>
+            <div>
+              <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Learn</h3>
+              <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
+                Understand the architecture, features, and capabilities of the platform.
+              </p>
+              <div class="inline-flex items-center gap-2 text-sm font-bold group-hover:gap-3 transition-all" style="color: #2391ea;">
+                Read More <ArrowRight class="w-4 h-4" stroke-width={2.5} />
+              </div>
+            </div>
+          </div>
+        </a>
+
+        <a href="/install" class="group block p-8 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300" style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.08) 0%, rgba(20, 184, 166, 0.08) 100%);">
+          <div class="flex flex-col items-center text-center gap-4">
+            <div class="bg-gradient-to-br from-green-500 to-teal-600 p-4 rounded-full shadow-lg">
+              <Download class="w-8 h-8 text-white" stroke-width={2.5} />
+            </div>
+            <div>
+              <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Install</h3>
+              <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
+                Follow step-by-step instructions to set up IDAH on your local machine or server.
+              </p>
+              <div class="inline-flex items-center gap-2 text-green-600 dark:text-green-400 text-sm font-bold group-hover:gap-3 transition-all">
+                Install Now <ArrowRight class="w-4 h-4" stroke-width={2.5} />
+              </div>
+            </div>
+          </div>
+        </a>
+
+        <a href="/plugin" class="group block p-8 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300" style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.08) 0%, rgba(192, 132, 252, 0.08) 100%);">
+          <div class="flex flex-col items-center text-center gap-4">
+            <div class="bg-gradient-to-br from-purple-500 to-purple-400 p-4 rounded-full shadow-lg">
+              <Puzzle class="w-8 h-8 text-white" stroke-width={2.5} />
+            </div>
+            <div>
+              <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Extend</h3>
+              <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
+                Create custom plugins to add specialized annotation tools and workflows.
+              </p>
+              <div class="inline-flex items-center gap-2 text-purple-600 dark:text-purple-400 text-sm font-bold group-hover:gap-3 transition-all">
+                Create Plugins <ArrowRight class="w-4 h-4" stroke-width={2.5} />
+              </div>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-6">
+        Why Choose IDAH?
+      </h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12 not-prose">
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-md hover:shadow-xl transition-all duration-300">
+          <div class="flex items-start gap-4">
+            <span class="font-bold text-3xl flex-shrink-0" style="color: #2391ea;">✓</span>
+            <div>
+              <h4 class="text-lg font-bold text-gray-900 dark:text-white mb-2">Open Source</h4>
+              <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                Free to use, modify, and distribute under MIT license
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-md hover:shadow-xl transition-all duration-300">
+          <div class="flex items-start gap-4">
+            <span class="font-bold text-3xl flex-shrink-0" style="color: #2391ea;">✓</span>
+            <div>
+              <h4 class="text-lg font-bold text-gray-900 dark:text-white mb-2">Microservices Architecture</h4>
+              <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                Scalable and maintainable with independent services
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-md hover:shadow-xl transition-all duration-300">
+          <div class="flex items-start gap-4">
+            <span class="font-bold text-3xl flex-shrink-0" style="color: #2391ea;">✓</span>
+            <div>
+              <h4 class="text-lg font-bold text-gray-900 dark:text-white mb-2">Modern Tech Stack</h4>
+              <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                Built with SvelteKit, Ruby Verse Framework, PostgreSQL, and Redis
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-md hover:shadow-xl transition-all duration-300">
+          <div class="flex items-start gap-4">
+            <span class="font-bold text-3xl flex-shrink-0" style="color: #2391ea;">✓</span>
+            <div>
+              <h4 class="text-lg font-bold text-gray-900 dark:text-white mb-2">Plugin Ecosystem</h4>
+              <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                Extend functionality without modifying core code
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="relative overflow-hidden text-center p-10 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-lg hover:shadow-xl transition-all duration-300" style="background: linear-gradient(135deg, rgba(35, 145, 234, 0.05) 0%, rgba(30, 122, 201, 0.08) 100%);">
+        <div class="absolute top-0 right-0 w-96 h-96 rounded-full opacity-10" style="background: radial-gradient(circle, #2391ea 0%, transparent 70%); transform: translate(40%, -40%);"></div>
+        <div class="absolute bottom-0 left-0 w-80 h-80 rounded-full opacity-10" style="background: radial-gradient(circle, #2391ea 0%, transparent 70%); transform: translate(-40%, 40%);"></div>
+        <div class="relative">
+          <div class="flex justify-center mb-4">
+            <div class="p-3 rounded-full shadow-md" style="background: linear-gradient(to bottom right, rgba(35, 145, 234, 0.15), rgba(35, 145, 234, 0.25));">
+              <Zap class="w-10 h-10" style="color: #2391ea;" stroke-width={2.5} />
+            </div>
+          </div>
+          <h3 class="text-3xl font-extrabold mb-4 text-gray-900 dark:text-white">Ready to Start Annotating?</h3>
+          <p class="text-xl mb-8 text-gray-700 dark:text-gray-300 max-w-2xl mx-auto leading-relaxed">
+            Set up IDAH in minutes and begin creating high-quality datasets for your ML projects.
+          </p>
+          <a href="/install" class="inline-flex items-center gap-3 px-8 py-4 text-white font-bold rounded-xl shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300" style="background: linear-gradient(to right, #2391ea, #1e7ac9);">
+            <Download class="w-6 h-6" stroke-width={2.5} />
+            Install IDAH Now
+          </a>
+        </div>
+      </div>
+    </div>
   </PageContainer>
-  <Pagination />
 </PageLayout>

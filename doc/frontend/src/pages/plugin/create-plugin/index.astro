@@ -4,6 +4,7 @@ import Pagination from "@components/app/page/Pagination.astro";
 import PageContainer from "@components/app/page/PageContainer.astro";
 import PageTitle from "@components/app/page/PageTitle.astro";
 import CodeBlock from "@components/app/CodeBlock.astro";
+import FolderBlock from "@components/app/FolderBlock.astro";
 ---
 
 <PageLayout>
@@ -181,21 +182,26 @@ idah-plugin backend add audio-plugin ./plugins
       <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
         When you create a plugin, the following high-level structure is generated:
       </p>
-      <CodeBlock>&lt;plugin_name&gt;/
-├── README.md               # Plugin overview and quick start
-├── manifest.json           # Plugin metadata and configuration
-├── Gemfile                 # Ruby dependencies (for backends)
-├── Rakefile                # Build and test tasks
-├── .gitignore
-├── .rspec
-├── backends/               # Backend services (optional)
-│   ├── README.md          # Backend quick start guide
-│   ├── media/             # Media processing service (if selected)
-│   └── sync/              # Data export/sync service (if selected)
-└── frontend/               # Frontend SvelteKit application
-    ├── README.md          # Frontend quick start guide
-    ├── package.json
-    └── src/               # Source code</CodeBlock>
+      <FolderBlock structure={[
+        { name: '<plugin_name>/', type: 'folder', children: [
+          { name: 'README.md', type: 'file', comment: 'Plugin overview and quick start' },
+          { name: 'manifest.json', type: 'file', comment: 'Plugin metadata and configuration' },
+          { name: 'Gemfile', type: 'file', comment: 'Ruby dependencies (for backends)' },
+          { name: 'Rakefile', type: 'file', comment: 'Build and test tasks' },
+          { name: '.gitignore', type: 'file' },
+          { name: '.rspec', type: 'file' },
+          { name: 'backends/', type: 'folder', comment: 'Backend services (optional)', children: [
+            { name: 'README.md', type: 'file', comment: 'Backend quick start guide' },
+            { name: 'media/', type: 'folder', comment: 'Media processing service (if selected)' },
+            { name: 'sync/', type: 'folder', comment: 'Data export/sync service (if selected)' }
+          ]},
+          { name: 'frontend/', type: 'folder', comment: 'Frontend SvelteKit application', children: [
+            { name: 'README.md', type: 'file', comment: 'Frontend quick start guide' },
+            { name: 'package.json', type: 'file' },
+            { name: 'src/', type: 'folder', comment: 'Source code' }
+          ]}
+        ]}
+      ]} />
 
       <h3 id="key-files" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
         <a href="#key-files" class="hover:underline">Key Files:</a>

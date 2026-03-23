@@ -4,6 +4,7 @@ import Pagination from "@components/app/page/Pagination.astro";
 import PageContainer from "@components/app/page/PageContainer.astro";
 import PageTitle from "@components/app/page/PageTitle.astro";
 import CodeBlock from "@components/app/CodeBlock.astro";
+import FolderBlock from "@components/app/FolderBlock.astro";
 ---
 
 <PageLayout>
@@ -37,33 +38,44 @@ import CodeBlock from "@components/app/CodeBlock.astro";
       <h2 id="file-structure" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
         <a href="#file-structure" class="hover:underline">File Structure</a>
       </h2>
-      <CodeBlock>{`frontend/
-├── README.md                 # Frontend quick start guide
-├── package.json              # npm dependencies and scripts
-├── pnpm-lock.yaml            # Locked dependencies
-├── pnpm-workspace.yaml       # pnpm workspace configuration
-├── svelte.config.js          # SvelteKit configuration
-├── vite.config.ts            # Vite build configuration
-├── tsconfig.json             # TypeScript configuration
-├── .gitignore                # Git ignore rules
-├── .npmrc                    # npm configuration
-├── src/
-│   ├── app.html              # HTML template
-│   ├── app.d.ts              # TypeScript declarations
-│   ├── lib/
-│   │   ├── index.ts          # Library exports
-│   │   ├── context.ts        # Activity Context interface
-│   │   ├── assets/
-│   │   │   └── favicon.svg   # Favicon
-│   │   └── plugin/
-│   │       ├── plugin.svelte # Main plugin component (your code here!)
-│   │       └── plugin.css    # Plugin styles
-│   └── routes/
-│       ├── +layout.svelte    # Root layout
-│       ├── +page.svelte      # Main page (loads plugin)
-│       └── test_context.ts   # Mock Activity Context for development
-└── static/
-    └── robots.txt            # Robots.txt for SEO`}</CodeBlock>
+      <FolderBlock structure={[
+        { name: '<plugin_name>/', type: 'folder', children: [
+          { name: 'frontend/', type: 'folder', children: [
+            { name: 'README.md', type: 'file', comment: 'Frontend quick start guide' },
+            { name: 'package.json', type: 'file', comment: 'npm dependencies and scripts' },
+            { name: 'pnpm-lock.yaml', type: 'file', comment: 'Locked dependencies' },
+            { name: 'pnpm-workspace.yaml', type: 'file', comment: 'pnpm workspace configuration' },
+            { name: 'svelte.config.js', type: 'file', comment: 'SvelteKit configuration' },
+            { name: 'vite.config.ts', type: 'file', comment: 'Vite build configuration' },
+            { name: 'tsconfig.json', type: 'file', comment: 'TypeScript configuration' },
+            { name: '.gitignore', type: 'file', comment: 'Git ignore rules' },
+            { name: '.npmrc', type: 'file', comment: 'npm configuration' },
+            { name: 'src/', type: 'folder', children: [
+              { name: 'app.html', type: 'file', comment: 'HTML template' },
+              { name: 'app.d.ts', type: 'file', comment: 'TypeScript declarations' },
+              { name: 'lib/', type: 'folder', children: [
+                { name: 'index.ts', type: 'file', comment: 'Library exports' },
+                { name: 'context.ts', type: 'file', comment: 'Activity Context interface' },
+                { name: 'assets/', type: 'folder', children: [
+                  { name: 'favicon.svg', type: 'file', comment: 'Favicon' }
+                ]},
+                { name: 'plugin/', type: 'folder', children: [
+                  { name: 'plugin.svelte', type: 'file', comment: 'Main plugin component (your code here!)' },
+                  { name: 'plugin.css', type: 'file', comment: 'Plugin styles' }
+                ]}
+              ]},
+              { name: 'routes/', type: 'folder', children: [
+                { name: '+layout.svelte', type: 'file', comment: 'Root layout' },
+                { name: '+page.svelte', type: 'file', comment: 'Main page (loads plugin)' },
+                { name: 'test_context.ts', type: 'file', comment: 'Mock Activity Context for development' }
+              ]}
+            ]},
+            { name: 'static/', type: 'folder', children: [
+              { name: 'robots.txt', type: 'file', comment: 'Robots.txt for SEO' }
+            ]}
+          ]}
+        ]}
+      ]} />
 
       <h3 id="key-files" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
         <a href="#key-files" class="hover:underline">Key Files:</a>
@@ -323,19 +335,27 @@ pnpm check:watch</CodeBlock>
       <h3 id="component-organization" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
         <a href="#component-organization" class="hover:underline">1. Component Organization</a>
       </h3>
-      <CodeBlock>{`src/lib/
-├── plugin/
-│   ├── plugin.svelte          # Main plugin component
-│   ├── components/            # Reusable components
-│   │   ├── Header.svelte
-│   │   ├── DataTable.svelte
-│   │   └── Chart.svelte
-│   ├── stores/                # Svelte stores for state
-│   │   └── pluginState.ts
-│   ├── utils/                 # Utility functions
-│   │   └── formatters.ts
-│   └── types/                 # TypeScript types
-│       └── index.ts`}</CodeBlock>
+      <FolderBlock title="Recommended Component Organization" structure={[
+        { name: 'src/lib/', type: 'folder', children: [
+          { name: 'plugin/', type: 'folder', children: [
+            { name: 'plugin.svelte', type: 'file', comment: 'Main plugin component' },
+            { name: 'components/', type: 'folder', comment: 'Reusable components', children: [
+              { name: 'Header.svelte', type: 'file' },
+              { name: 'DataTable.svelte', type: 'file' },
+              { name: 'Chart.svelte', type: 'file' }
+            ]},
+            { name: 'stores/', type: 'folder', comment: 'Svelte stores for state', children: [
+              { name: 'pluginState.ts', type: 'file' }
+            ]},
+            { name: 'utils/', type: 'folder', comment: 'Utility functions', children: [
+              { name: 'formatters.ts', type: 'file' }
+            ]},
+            { name: 'types/', type: 'folder', comment: 'TypeScript types', children: [
+              { name: 'index.ts', type: 'file' }
+            ]}
+          ]}
+        ]}
+      ]} />
 
       <h3 id="state-management" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
         <a href="#state-management" class="hover:underline">2. State Management</a>

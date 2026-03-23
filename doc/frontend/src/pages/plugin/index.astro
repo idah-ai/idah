@@ -4,6 +4,7 @@ import Pagination from "@components/app/page/Pagination.astro";
 import PageContainer from "@components/app/page/PageContainer.astro";
 import PageTitle from "@components/app/page/PageTitle.astro";
 import CodeBlock from "@components/app/CodeBlock.astro";
+import FolderBlock from "@components/app/FolderBlock.astro";
 ---
 
 <PageLayout>
@@ -127,17 +128,22 @@ import CodeBlock from "@components/app/CodeBlock.astro";
       <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
         A typical IDAH plugin follows this structure:
       </p>
-      <CodeBlock language="plaintext">{`<plugin_name>/
-├── manifest.json           # Plugin metadata
-├── README.md              # Plugin documentation
-├── Gemfile                # Ruby dependencies (backends)
-├── Rakefile               # Build tasks
-├── backends/              # Optional backend services
-│   ├── media/            # Media processing
-│   └── sync/             # Data export
-└── frontend/              # SvelteKit UI
-    ├── package.json
-    └── src/`}</CodeBlock>
+      <FolderBlock structure={[
+        { name: '<plugin_name>/', type: 'folder', children: [
+          { name: 'manifest.json', type: 'file', comment: 'Plugin metadata' },
+          { name: 'README.md', type: 'file', comment: 'Plugin documentation' },
+          { name: 'Gemfile', type: 'file', comment: 'Ruby dependencies (backends)' },
+          { name: 'Rakefile', type: 'file', comment: 'Build tasks' },
+          { name: 'backends/', type: 'folder', comment: 'Optional backend services', children: [
+            { name: 'media/', type: 'folder', comment: 'Media processing' },
+            { name: 'sync/', type: 'folder', comment: 'Data export' }
+          ]},
+          { name: 'frontend/', type: 'folder', comment: 'SvelteKit UI', children: [
+            { name: 'package.json', type: 'file' },
+            { name: 'src/', type: 'folder' }
+          ]}
+        ]}
+      ]} />
 
       <h3 id="manifest-file" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
         <a href="#manifest-file" class="hover:underline">Manifest File</a>
@@ -145,7 +151,7 @@ import CodeBlock from "@components/app/CodeBlock.astro";
       <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
         The <code class="bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded">manifest.json</code> file contains plugin metadata:
       </p>
-      <CodeBlock language="json" path="manifest.json">{`{
+      <CodeBlock language="json" path="<plugin_name>/manifest.json">{`{
   "name": "my-plugin",
   "display_name": "My Plugin",
   "description": "A custom annotation plugin",
