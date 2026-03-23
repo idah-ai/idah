@@ -18,15 +18,22 @@ class ApiKeysExpo < BaseExpo
     delete
   end
 
-  expose on_http(:get, "/permissions") do
+  expose on_http(:get, "/permissions(/:scope_type)?") do
     desc <<-MD
       List all existing permissions used when generating an
       API key. Based on the role used to generate the key,
       some permissions may be unavailable.
     MD
+    input do
+      field?(:scope_type, [String, NilClass]).transform { |v| v || "all" }.meta(
+        description: "The scope type to filter permissions; optional, if not provided, defaults to 'all'"
+      )
+    end
   end
   def permissions
-    service.show_permissions
+    service.show_permissions(
+      params[:scope_type]
+    )
   end
 
   expose on_http(:post, "/:id/revoke") do

@@ -1,9 +1,8 @@
-api/org_ro_own:
+api/org_ro_org:
   title: "API - Organization Read Only Own"
   mask: "9.0.1"
   description: |
     API role for read-only access to only is own organization resources.
-    This scope is compoundable, meaning a role for api can be defined as "api:org_ro_all,project_rw_org".
   assignable: false
   rights:
     # Organizations

@@ -3,7 +3,6 @@ api/project_rw_all:
   mask: "8.9.9"
   description: |
     API role for read and write access to project resources.
-    This scope is compoundable, meaning a role for api can be defined as "api:project_rw_all,org_rw_all".
   assignable: false
   rights:
     # Dataset Service - Read Write (Project level)

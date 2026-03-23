@@ -3,7 +3,6 @@ api/project_rw_org:
   mask: "8.1.9"
   description: |
     API role for read and write access to project resources within organization scope.
-    This scope is compoundable, meaning a role for api can be defined as "api:project_rw_org,org_ro_all".
   assignable: false
   rights:
     # IAM
