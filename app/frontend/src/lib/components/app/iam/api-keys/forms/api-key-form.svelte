@@ -41,13 +41,13 @@
   }
 
   $effect(() => {
-     if (scope_type === "all" && allPermissionChoices.length > 0) {
-    const allIds = allPermissionChoices.map(c => String(c.value));
+    if (scope_type === "all" && allPermissionChoices.length > 0) {
+      const allIds = allPermissionChoices.map((c) => String(c.value));
 
-    if (permissions.length !== allIds.length) {
-      permissions = allIds;
+      if (permissions.length !== allIds.length) {
+        permissions = allIds;
+      }
     }
-  }
     onValueChange({ name, scope_type, scope_value, permissions });
   });
 </script>
@@ -120,7 +120,7 @@
 
     <!-- APIKEY:PERMISSIONS -->
     {#await loadPermissions() then choices}
-      {@const _ = (allPermissionChoices = choices)}
+      {@const _ = allPermissionChoices = choices}
 
       <MultipleSelectField
         name="{resource}/permissions"
