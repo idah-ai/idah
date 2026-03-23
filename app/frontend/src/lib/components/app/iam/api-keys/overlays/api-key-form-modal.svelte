@@ -129,8 +129,8 @@
     const schema: ZodSchema = newRecord ? createApiKeySchema : updateApiKeySchema;
 
     try {
-      console.log({apiKey});
-      
+      console.log({ apiKey });
+
       const validated = validateData(schema, {
         name: apiKey.name,
         scope_type: apiKey.scope_type,

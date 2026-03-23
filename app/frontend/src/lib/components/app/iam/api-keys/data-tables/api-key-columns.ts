@@ -26,7 +26,10 @@ export const apiKeyCreatedAtColumn = (params: { label: string }): ColumnSettings
   };
 };
 
-export const apiKeyDateColumn = (params: { label: string, cellComponent?: Component<DataTableCellBaseProps<ApiKeyRecord>, object, "">; }): ColumnSettings<ApiKeyRecord> => {
+export const apiKeyDateColumn = (params: {
+  label: string;
+  cellComponent?: Component<DataTableCellBaseProps<ApiKeyRecord>, object, "">;
+}): ColumnSettings<ApiKeyRecord> => {
   const { label = "Last Used", cellComponent } = params;
   return {
     label,
@@ -81,8 +84,8 @@ export const apiKeyColumns: ColumnsSettings<ApiKeyRecord> = {
     cellComponent: ApiKeyPermissionsCell,
   },
   last_used_at: apiKeyDateColumn({ label: "Last Used" }),
-  created_at: apiKeyDateColumn({ label: "Created At", }),
-  expire_at:  apiKeyDateColumn({ label: "Expired At", }),
+  created_at: apiKeyDateColumn({ label: "Created At" }),
+  expire_at: apiKeyDateColumn({ label: "Expired At" }),
   action: {
     label: "Action",
     dataType: "string",

@@ -9,7 +9,7 @@
   import { cn } from "@/utils";
 
   import { projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
-  import { apiKeyPermissions, scopeTypes } from "@/data/model/iam/api-keys/constants";
+  import { scopeTypes } from "@/data/model/iam/api-keys/constants";
   import { ApiKeyRecord, apiKeysBackendDataSource } from "@/data/model/iam/api-keys/record";
   import { organizationsBackendDataSource } from "@/data/model/iam/organizations/record";
 
@@ -26,12 +26,18 @@
 
   // Variables::Reactive
   let { name, scope_type, scope_value, permissions } = $derived(apiKey);
-  
+
   // Functions
   async function loadPermissions(): Promise<void> {
-    const permissionsRes = await apiKeysBackendDataSource.permission_list()
-    console.log({permissionsRes});
-    
+    const permissionsRes = await apiKeysBackendDataSource.permission_list();
+    console.log({ permissionsRes });
+
+    return permissionsRes.data.map((permission) => ({
+      label: permission.name,
+      value: permission.id,
+      description: permission.description,
+      data: permission,
+    }));
   }
 
   $effect(() => {
@@ -53,7 +59,7 @@
     />
 
     <!-- APIKEY:SCOPE_TYPE -->
-    
+
     <SingleSelectField
       name="{resource}/scope_type"
       label="Scope Type"
@@ -66,7 +72,6 @@
         scope_type = selectedValue as string;
       }}
     />
-    
 
     <!-- APIKEY:ORGANIZATIONS -->
     {#if scope_type == "organization"}
@@ -107,30 +112,25 @@
     {/if}
 
     <!-- APIKEY:PERMISSIONS -->
-       {#await loadPermissions() then permissionsChoices}
-    <MultipleSelectField
-      name="{resource}/permissions"
-      label="Permissions"
-      placeholder="Select permissions"
-      required
-      choices={apiKeyPermissions}
-      errors={fieldErrors["permission"]}
-      values={permissions}
-    >
-     {#snippet slotChoice({ choice, select })}
-    {#if choice.data}
-
-      <CommandItem
-        class={cn("group cursor-pointer", {
-        })}
-        onclick={() => select(choice)}
+    {#await loadPermissions() then permissionsChoices}
+      <MultipleSelectField
+        name="{resource}/permissions"
+        label="Permissions"
+        placeholder="Select permissions"
+        required
+        choices={permissionsChoices}
+        errors={fieldErrors["permission"]}
+        values={permissions}
       >
-        <div>{choice.label}</div>
-        <div>{choice.description}</div>
-      </CommandItem>
-    {/if}
-  {/snippet}
-    </MultipleSelectField>
+        {#snippet slotChoice({ choice, select })}
+          {#if choice.data}
+            <CommandItem class={cn("group cursor-pointer", {})} onclick={() => select(choice)}>
+              <div>{choice.label}</div>
+              <div>{choice.description}</div>
+            </CommandItem>
+          {/if}
+        {/snippet}
+      </MultipleSelectField>
     {/await}
 
     <DatePickerField
