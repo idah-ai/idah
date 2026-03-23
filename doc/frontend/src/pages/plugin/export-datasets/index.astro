@@ -4,6 +4,7 @@ import Pagination from "@components/app/page/Pagination.astro";
 import PageContainer from "@components/app/page/PageContainer.astro";
 import PageTitle from "@components/app/page/PageTitle.astro";
 import CodeBlock from "@components/app/CodeBlock.astro";
+import FolderBlock from "@components/app/FolderBlock.astro";
 ---
 
 <PageLayout>
@@ -56,12 +57,20 @@ import CodeBlock from "@components/app/CodeBlock.astro";
       <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
         The sync backend generator creates the following files:
       </p>
-      <CodeBlock language="plaintext">{`backends/sync/
-└── <plugin_name_underscore>/
-    ├── sync.rb           # Sync service module (registers exporter)
-    ├── sync_spec.rb      # Sync service tests
-    ├── export.rb         # Export/sync logic
-    └── export_spec.rb    # Export tests`}</CodeBlock>
+      <FolderBlock structure={[
+        { name: '<plugin_name>/', type: 'folder', children: [
+          { name: 'backends/', type: 'folder', children: [
+            { name: 'sync/', type: 'folder', children: [
+              { name: '<plugin_name_underscore>/', type: 'folder', children: [
+                { name: 'sync.rb', type: 'file', comment: 'Sync service module (registers exporter)' },
+                { name: 'sync_spec.rb', type: 'file', comment: 'Sync service tests' },
+                { name: 'export.rb', type: 'file', comment: 'Export/sync logic' },
+                { name: 'export_spec.rb', type: 'file', comment: 'Export tests' }
+              ]}
+            ]}
+          ]}
+        ]}
+      ]} />
 
       <h2 id="implementation-steps" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
         <a href="#implementation-steps" class="hover:underline">Implementation Steps</a>

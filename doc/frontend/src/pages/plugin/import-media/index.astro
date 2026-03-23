@@ -4,6 +4,7 @@ import Pagination from "@components/app/page/Pagination.astro";
 import PageContainer from "@components/app/page/PageContainer.astro";
 import PageTitle from "@components/app/page/PageTitle.astro";
 import CodeBlock from "@components/app/CodeBlock.astro";
+import FolderBlock from "@components/app/FolderBlock.astro";
 ---
 
 <PageLayout>
@@ -56,14 +57,22 @@ import CodeBlock from "@components/app/CodeBlock.astro";
       <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
         The media backend generator creates the following files:
       </p>
-      <CodeBlock>{`backends/media/
-└── <plugin_name_underscore>/
-    ├── media.rb          # Media service module (registers processor)
-    ├── media_spec.rb     # Media service tests
-    ├── processor.rb      # Core processing logic
-    ├── processor_spec.rb # Processor tests
-    ├── options.rb        # Options schema and validation
-    └── options_spec.rb   # Options tests`}</CodeBlock>
+      <FolderBlock structure={[
+        { name: '<plugin_name>/', type: 'folder', children: [
+          { name: 'backends/', type: 'folder', children: [
+            { name: 'media/', type: 'folder', children: [
+              { name: '<plugin_name_underscore>/', type: 'folder', children: [
+                { name: 'media.rb', type: 'file', comment: 'Media service module (registers processor)' },
+                { name: 'media_spec.rb', type: 'file', comment: 'Media service tests' },
+                { name: 'processor.rb', type: 'file', comment: 'Core processing logic' },
+                { name: 'processor_spec.rb', type: 'file', comment: 'Processor tests' },
+                { name: 'options.rb', type: 'file', comment: 'Options schema and validation' },
+                { name: 'options_spec.rb', type: 'file', comment: 'Options tests' }
+              ]}
+            ]}
+          ]}
+        ]}
+      ]} />
 
       <h2 id="implementation-steps" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
         <a href="#implementation-steps" class="hover:underline">Implementation Steps</a>

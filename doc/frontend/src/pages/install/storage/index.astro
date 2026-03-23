@@ -4,6 +4,7 @@ import Pagination from "@components/app/page/Pagination.astro";
 import PageContainer from "@components/app/page/PageContainer.astro";
 import PageTitle from "@components/app/page/PageTitle.astro";
 import CodeBlock from "@components/app/CodeBlock.astro";
+import FolderBlock from "@components/app/FolderBlock.astro";
 ---
 
 <PageLayout>
@@ -237,11 +238,23 @@ MEDIAS_FILES_ENDPOINT=https://nyc3.digitaloceanspaces.com</CodeBlock>
       <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
         The <code class="bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded">prefix: files</code> configuration adds a directory prefix to all stored files:
       </p>
-      <CodeBlock language="plaintext">my-bucket/
-└── files/
-    ├── media-file-1.jpg
-    ├── media-file-2.mp4
-    └── export-dataset-1.json</CodeBlock>
+      <FolderBlock title="Example S3 Bucket Structure" structure={[
+        {
+          name: 'my-bucket',
+          type: 'folder',
+          children: [
+            {
+              name: 'files',
+              type: 'folder',
+              children: [
+                { name: 'media-file-1.jpg', type: 'file' },
+                { name: 'media-file-2.mp4', type: 'file' },
+                { name: 'export-dataset-1.json', type: 'file' },
+              ],
+            },
+          ],
+        },
+      ]} />
 
       <h3 id="security" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
         <a href="#security" class="hover:underline">Security Considerations</a>

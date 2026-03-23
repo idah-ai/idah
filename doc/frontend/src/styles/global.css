@@ -139,7 +139,7 @@
 
 /* Global code block styling - consistent dark background on both light and dark modes */
 .code-block {
-  background: #1e1e1e !important;
+  background: #111827 !important;
   margin: 0 !important;
   border: none !important;
   color: #d4d4d4 !important;
