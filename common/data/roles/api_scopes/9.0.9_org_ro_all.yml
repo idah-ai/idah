@@ -3,7 +3,6 @@ api/org_ro_all:
   mask: "9.0.9"
   description: |
     API role for read-only access to organization resources.
-    This scope is compoundable, meaning a role for api can be defined as "api:org_ro_all,project_rw_org".
   assignable: false
   rights:
     # Organizations

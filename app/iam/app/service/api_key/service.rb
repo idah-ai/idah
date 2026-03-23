@@ -119,13 +119,25 @@ module ApiKey
       end
     end
 
-    def show_permissions
+    def show_permissions(scope_type = "all")
       # Get all available API permissions based on current user's role
       auth_context.can!(:create, "iam:api_keys") do |scope|
         scope.all? { api_permission_list }
         scope.array? { |allowed_permissions|
           # Return only the permissions that the user is allowed to create
-          api_permission_list.select { |permission| allowed_permissions.include?(permission.name.to_sym) }
+          # api_permission_list.select { |permission| allowed_permissions.include?(permission.name.to_sym) }
+          case scope_type
+          when "all"
+            api_permission_list.select { |permission| allowed_permissions.include?(permission.name.to_sym) && permission.name.end_with?("_all") }
+          when "org"
+            api_permission_list.select { |permission| allowed_permissions.include?(permission.name.to_sym) && permission.name.end_with?("_org") }
+          when "project"
+            api_permission_list.select {
+              |permission| allowed_permissions.include?(permission.name.to_sym) && permission.name.start_with?("project_") && permission.name.end_with?("_org")
+            }
+          else
+            raise Verse::Error::ValidationFailed, "Invalid scope_type. Must be 'all', 'org', or 'project'."
+          end
         }
       end
     end

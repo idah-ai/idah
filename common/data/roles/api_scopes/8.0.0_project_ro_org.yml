@@ -3,7 +3,6 @@ api/project_ro_org:
   mask: "8.0.0"
   description: |
     API role for read-only access to project resources within organization scope.
-    This scope is compoundable, meaning a role for api can be defined as "api:project_ro_org,org_ro_all".
   assignable: false
   rights:
     # Dataset Service - Read Only (Project level)
