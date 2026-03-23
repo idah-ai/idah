@@ -23,9 +23,19 @@
     datasetName: string | undefined;
     projectId: string;
     datasetEntryRecords: EntryRecord[];
+    duplicatingEntriesTotalCount: number;
   }
 
-  let { open = $bindable(), action, title, datasetId, datasetName, projectId, datasetEntryRecords }: Props = $props();
+  let {
+    open = $bindable(),
+    action,
+    title,
+    datasetId,
+    datasetName,
+    projectId,
+    datasetEntryRecords,
+    duplicatingEntriesTotalCount,
+  }: Props = $props();
 
   let submitting = $state(false);
   let newDatasetName = $state("");
@@ -80,7 +90,10 @@
   }
 
   async function submit(): Promise<void> {
-    // disable submitting if selectedEntryIds = []
+    // disable submitting just in case if there's no entry to do so
+    if (!selectAll && (!selectedEntryIds || selectedEntryIds.length === 0)) {
+      return;
+    }
 
     submitting = true;
 
@@ -94,6 +107,25 @@
 
       if (createdDatasetRes?.data?.id) {
         const newDatasetUrl = resolve(`/projects/${projectId}/datasets/${createdDatasetRes.data.id}/entries`);
+
+        // auto-refetch configuration
+        const AUTO_REFETCH_INTERVAL_MS = 1000; // Refetch every 2 seconds
+        const expectedCount = selectAll ? duplicatingEntriesTotalCount : (selectedEntryIds?.length ?? 0);
+        const defaultItemsPerPage = 10; // TODO: get from const some where else ?
+        const MAX_REFETCH_ATTEMPTS = 30; // Max 30 seconds wait
+        let attempts = 0;
+        let isDuplicating = true;
+
+        while (isDuplicating && attempts < MAX_REFETCH_ATTEMPTS) {
+          const res = await datasetsBackendDataSource.get(createdDatasetRes.data.id, { noCache: true });
+          if (res.data.entries_total_count >= expectedCount || res.data.entries_total_count >= defaultItemsPerPage) {
+            isDuplicating = false;
+          } else {
+            attempts++;
+            await new Promise((resolve) => setTimeout(resolve, AUTO_REFETCH_INTERVAL_MS));
+          }
+        }
+
         await goto(newDatasetUrl);
       } else {
         const fallbackUrl = resolve(`/projects/${projectId}/datasets`);

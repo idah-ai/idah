@@ -31,6 +31,7 @@ export class DatasetRecord extends Record {
   @field() public workflow_configuration!: Hash;
   @field() public status!: string;
   @field() public progress!: number;
+  @field() public entries_total_count!: number;
   @field() public updated_at!: Date;
   @field() public created_at!: string;
 
