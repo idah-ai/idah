@@ -153,7 +153,7 @@
   }
 </script>
 
-{#if canCreateDataset}
+{#if canCreateDataset && datasetRecord}
   <DatasetDuplicateModal
     title="Duplicate Dataset"
     action="create"
@@ -161,6 +161,7 @@
     {datasetId}
     {datasetName}
     {datasetEntryRecords}
+    duplicatingEntriesTotalCount={datasetRecord.entries_total_count}
     bind:open={openDuplicateDatasetFormModal}
   />
 {/if}
