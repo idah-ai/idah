@@ -118,13 +118,23 @@ function schemaToExampleJSON(schema: any): any {
 }
 
 const { app, tag } = Astro.params;
-const res = await fetch(new URL("/data/definitions/" + app + ".json", Astro.url));
 
-if (!res.ok) {
-  throw new Error("Failed to load swagger.json");
+let data;
+// During build (SSR), read from filesystem
+if (import.meta.env.SSR) {
+  const fs = await import('node:fs/promises');
+  const path = await import('node:path');
+  const filePath = path.join(process.cwd(), 'public', 'data', 'definitions', `${app}.json`);
+  const content = await fs.readFile(filePath, 'utf-8');
+  data = JSON.parse(content);
+} else {
+  // In browser, use fetch
+  const res = await fetch(`/data/definitions/${app}.json`);
+  if (!res.ok) {
+    throw new Error("Failed to load definition file");
+  }
+  data = await res.json();
 }
-
-const data = await res.json();
 
 // Helper function to convert schema to TypeScript
 async function convertSchemaToTypescript(schema: any, name: string = "Schema"): Promise<string> {
