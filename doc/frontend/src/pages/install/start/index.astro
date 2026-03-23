@@ -3,6 +3,7 @@ import PageLayout from "@layouts/PageLayout.astro";
 import Pagination from "@components/app/page/Pagination.astro";
 import PageContainer from "@components/app/page/PageContainer.astro";
 import PageTitle from "@components/app/page/PageTitle.astro";
+import CodeBlock from "@components/app/CodeBlock.astro";
 ---
 
 <PageLayout>
@@ -10,6 +11,128 @@ import PageTitle from "@components/app/page/PageTitle.astro";
     <PageTitle>
       Start IDAH
     </PageTitle>
+
+    <div class="prose prose-lg max-w-none dark:prose-invert">
+      <p class="text-lg text-gray-700 dark:text-gray-300 mb-8 leading-relaxed">
+        Build and run the IDAH platform using Docker Compose.
+      </p>
+
+      <h2 id="start-services" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+        <a href="#start-services" class="hover:underline">Start IDAH Services</a>
+      </h2>
+
+      <h3 id="build-and-start" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#build-and-start" class="hover:underline">1. Build and Start Containers</a>
+      </h3>
+      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+        From the project root directory, start all IDAH services:
+      </p>
+      <CodeBlock language="bash">docker compose up -d</CodeBlock>
+      <p class="text-gray-700 dark:text-gray-300 mb-6 leading-relaxed text-sm">
+        This builds and starts all microservices (frontend, IAM, dataset, media, sync, notification, audit, setting) and the nginx gateway.
+      </p>
+
+      <h3 id="first-time-setup" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#first-time-setup" class="hover:underline">2. First-Time Setup</a>
+      </h3>
+      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+        For the first time setup, run this command to create service accounts and a default Admin User:
+      </p>
+      <CodeBlock language="bash">docker compose run iam bundle exec rake dev:setup dev:users</CodeBlock>
+
+      <div class="bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500 p-4 mb-6 rounded-r">
+        <p class="text-sm text-gray-800 dark:text-gray-200 font-semibold mb-2">Default Admin Credentials</p>
+        <ul class="text-sm text-gray-700 dark:text-gray-300 space-y-1">
+          <li><strong>Email:</strong> <code class="bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">admin@idah.ai</code></li>
+          <li><strong>Password:</strong> <code class="bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">P@ssword01</code></li>
+        </ul>
+      </div>
+
+      <h3 id="access-idah" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#access-idah" class="hover:underline">3. Access IDAH</a>
+      </h3>
+      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+        Open your browser and navigate to:
+      </p>
+      <div class="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 p-4 mb-6 rounded-r">
+        <p class="text-sm text-gray-800 dark:text-gray-200 font-semibold mb-2">IDAH URL</p>
+        <p class="text-sm text-gray-700 dark:text-gray-300">
+          <a href="https://idah.localhost:8443" class="text-blue-600 dark:text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer">https://idah.localhost:8443</a>
+        </p>
+      </div>
+      <p class="text-gray-700 dark:text-gray-300 mb-6 leading-relaxed text-sm">
+        Log in using the default admin credentials above.
+      </p>
+
+      <h2 id="verify-installation" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+        <a href="#verify-installation" class="hover:underline">Verify Installation</a>
+      </h2>
+
+      <h3 id="check-services" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#check-services" class="hover:underline">Check Running Services</a>
+      </h3>
+      <CodeBlock language="bash">docker compose ps</CodeBlock>
+      <p class="text-gray-700 dark:text-gray-300 mb-6 leading-relaxed text-sm">
+        All services should show status as "running".
+      </p>
+
+      <h3 id="view-logs" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#view-logs" class="hover:underline">View Logs</a>
+      </h3>
+      <CodeBlock language="bash"># View all service logs
+docker compose logs -f
+
+# View specific service logs
+docker compose logs -f frontend
+docker compose logs -f iam
+docker compose logs -f media</CodeBlock>
+
+      <h2 id="common-commands" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+        <a href="#common-commands" class="hover:underline">Common Commands</a>
+      </h2>
+
+      <h3 id="stop-services" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#stop-services" class="hover:underline">Stop Services</a>
+      </h3>
+      <CodeBlock language="bash">docker compose down</CodeBlock>
+
+      <h3 id="restart-services" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#restart-services" class="hover:underline">Restart Services</a>
+      </h3>
+      <CodeBlock language="bash"># Restart all services
+docker compose restart
+
+# Restart specific service
+docker compose restart frontend</CodeBlock>
+
+      <h3 id="rebuild-services" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+        <a href="#rebuild-services" class="hover:underline">Rebuild Services</a>
+      </h3>
+      <CodeBlock language="bash"># Rebuild and restart all services
+docker compose up -d --build
+
+# Rebuild specific service
+docker compose up -d --build frontend</CodeBlock>
+
+      <h2 id="next-steps" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+        <a href="#next-steps" class="hover:underline">Next Steps</a>
+      </h2>
+      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+        Now that IDAH is running, you can:
+      </p>
+      <ul class="list-disc list-inside space-y-2 mb-6 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed">Log in with the default admin credentials</li>
+        <li class="leading-relaxed">Create your first dataset</li>
+        <li class="leading-relaxed">Explore the annotation tools</li>
+        <li class="leading-relaxed"><a href="/plugin/create-plugin" class="text-blue-600 dark:text-blue-400 hover:underline">Create a Plugin</a> - Build custom annotation plugins</li>
+      </ul>
+
+      <div class="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-l-4 border-blue-500 p-6 mb-6 rounded-lg">
+        <p class="text-lg text-gray-800 dark:text-gray-200 leading-relaxed font-medium">
+          🚀 IDAH is now running! Access it at <a href="https://idah.localhost:8443" class="text-blue-600 dark:text-blue-400 hover:underline font-semibold">https://idah.localhost:8443</a>
+        </p>
+      </div>
+    </div>
   </PageContainer>
   <Pagination />
 </PageLayout>
