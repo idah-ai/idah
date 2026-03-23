@@ -15,7 +15,7 @@ export function setCurrentModeTo(mode: string) {
 /** SELECTED ANNOTATION */
 export const selectedAnnotation = writable<VideoAnnotationObject | undefined>(undefined);
 
-export function setSelectedAnnotation(annotation: VideoAnnotationObject) {
+export function setSelectedAnnotation(annotation: VideoAnnotationObject | undefined) {
   selectedAnnotation.set(annotation);
 }
 
@@ -25,6 +25,10 @@ export function deselectAnnotation() {
 
 /** SELECTED ANNOTATION GROUP */
 export const selectedAnnotationGroup = writable<AnnotationGroup<VideoAnnotationObject> | undefined>(undefined);
+
+export function setSelectedAnnotationGroup(annotationGroup: AnnotationGroup<VideoAnnotationObject> | undefined) {
+ selectedAnnotationGroup.set(annotationGroup);
+}
 
 export function deselectAnnotationGroup() {
   selectedAnnotationGroup.set(undefined);
