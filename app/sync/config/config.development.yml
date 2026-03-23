@@ -23,4 +23,4 @@ plugins:
         - name: default
           adapter: file_system
           config:
-            path: tmp/storage/test
+            path: tmp/storage/development
