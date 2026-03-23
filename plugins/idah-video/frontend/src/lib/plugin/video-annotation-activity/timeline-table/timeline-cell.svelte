@@ -193,10 +193,7 @@
           <ContextMenuSeparator />
           <ContextMenuGroup>
             <ContextMenuItem
-              onclick={() =>
-                context.commands.run("annotation.delete", {
-                  id: annotation?.metadata.id,
-                })}
+              onclick={() => context.commands.run("annotation.delete", { annotationId: annotation?.metadata.id })}
             >
               <Trash2Icon class="size-4" />
               Delete annotation

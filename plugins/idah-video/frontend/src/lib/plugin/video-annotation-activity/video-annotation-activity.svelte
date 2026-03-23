@@ -349,7 +349,7 @@
             ...snapshotAnnotation,
             metadata: {
               ...snapshotAnnotation.metadata,
-              createdAt: snapshotAnnotation.metadata.createdAt,
+              createdAt: undoCreatedAt,
               updatedAt: undoCreatedAt,
               metadata: {
                 group_id: snapshotAnnotation.metadata.metadata?.group_id,
