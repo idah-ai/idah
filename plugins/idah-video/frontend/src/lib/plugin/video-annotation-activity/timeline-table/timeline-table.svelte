@@ -254,8 +254,8 @@
     annotations.forEach((annotation) => onEditability(!isAllLocked, annotation));
   }
 
-  function deleteAllAnnotations(annotations: VideoAnnotationObject[]) {
-    annotations.forEach((annotation) => onDeleteAnnotation(annotation));
+  function deleteAllAnnotations(groupId: string) {
+    context.commands.run("annotation.deleteGroup", { groupId });
   }
 
   function selectAnnotationGroup(annotationGroup: AnnotationGroup<VideoAnnotationObject>, frame?: number) {
@@ -347,7 +347,7 @@
               })}
               onclick={(e) => {
                 e.stopPropagation();
-                deleteAllAnnotations(annotations);
+                deleteAllAnnotations(groupId);
               }}
               disabled={someAnnotationIsLocked}
             >
