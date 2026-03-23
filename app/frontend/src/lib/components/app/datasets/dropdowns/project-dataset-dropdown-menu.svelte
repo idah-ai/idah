@@ -1,7 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
-
   import { CopyIcon, DownloadIcon, SquarePenIcon, Trash2Icon } from "@lucide/svelte";
   import { onMount } from "svelte";
 
@@ -164,10 +163,6 @@
     {datasetEntryRecords}
     bind:open={openDuplicateDatasetFormModal}
   />
-{/if}
-
-{#if canUpdateDataset || canDeleteDataset}
-  <DropdownMenus {menus} align="end" />
 {/if}
 
 {#if canUpdateDataset || canDeleteDataset || canExportDataset}

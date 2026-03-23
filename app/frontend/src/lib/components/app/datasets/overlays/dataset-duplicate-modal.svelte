@@ -1,20 +1,22 @@
 <script lang="ts">
-  import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
-  import { showToast } from "@/components/ui/toast/index.svelte";
-  import { datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
+  import { goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
-  import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
+  
+  import { datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
+  import { DialogTitle } from "@/components/ui/dialog";
   import type { EntryRecord } from "@/data/model/dataset/entries/record";
+  import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
+  import { showToast } from "@/components/ui/toast/index.svelte";
+
   import Button from "@/components/ui/button/button.svelte";
   import Checkbox from "@/components/ui/checkbox/checkbox.svelte";
+  import EntrySelectionCard from "@/components/app/datasets/entries/cards/entry-selection-card.svelte";
+  import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
   import InputField from "../../forms/fields/input/input-field.svelte";
   import Label from "@/components/ui/label/label.svelte";
   import Switch from "@/components/ui/switch/switch.svelte";
   import Tooltips from "@/components/app/tooltips/tooltips.svelte";
-  import EntrySelectionCard from "@/components/app/datasets/entries/cards/entry-selection-card.svelte";
-  import { DialogTitle } from "@/components/ui/dialog";
-  import { goto } from "$app/navigation";
-  import { resolve } from "$app/paths";
 
   interface Props extends FormModalBaseProps {
     datasetId: string;
@@ -195,7 +197,7 @@
       </Tooltips>
     </div>
 
-    <div class="flex flex-col gap-1 overflow-y-auto pr-2">
+    <div class="grid grid-cols-2 gap-2 overflow-y-auto pr-2 md:grid-cols-4">
       {#each datasetEntryRecords as entry (entry.id)}
         <EntrySelectionCard
           {entry}
@@ -205,7 +207,7 @@
       {/each}
 
       {#if datasetEntryRecords.length === 0}
-        <div class="text-muted-foreground rounded-md border py-4 text-center text-sm">
+        <div class="text-muted-foreground col-span-full rounded-md border py-4 text-center text-sm">
           No entries found in this dataset.
         </div>
       {/if}

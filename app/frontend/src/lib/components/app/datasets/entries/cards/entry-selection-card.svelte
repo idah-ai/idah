@@ -1,16 +1,15 @@
 <script lang="ts">
+  import { cn } from "@/utils";
   import { onDestroy, onMount } from "svelte";
 
-  import { Checkbox } from "@/components/ui/checkbox";
-  import { Label } from "@/components/ui/label";
-  import { AspectRatio } from "@/components/ui/aspect-ratio";
-  import EntryStatusBadge from "@/components/app/datasets/entries/badges/entry-status.svelte";
-  import EntryPriorityBadge from "@/components/app/datasets/entries/badges/entry-priority.svelte";
-  import DateText from "@/components/app/texts/date-text.svelte";
   import { mediaBackendDataSource } from "@/data/model/media/medias/medias-record";
-  import { humanize } from "@/utils/string";
+  import { AspectRatio } from "@/components/ui/aspect-ratio"
+  import { Checkbox } from "@/components/ui/checkbox";
   import type { EntryRecord } from "@/data/model/dataset/entries/record";
-  import { cn } from "@/utils";
+  import { Label } from "@/components/ui/label";
+
+  import DataDisplay from "@/components/app/texts/data-display.svelte";
+  import DateText from "@/components/app/texts/date-text.svelte";
 
   interface Props {
     entry: EntryRecord;
@@ -21,8 +20,6 @@
   let { entry, selected, onToggle }: Props = $props();
 
   // thumbnail state - following entry-card.svelte
-  let imgContainer: HTMLDivElement | undefined = $state(undefined);
-  let containerWidth: number = $state(84); // compact thumbnail width with max constraint
   let thumbnailImg: HTMLImageElement = $state(new Image());
   let thumbnailUrl: string | null = $state(null);
   let thumbnailError = $state(false);
@@ -43,12 +40,7 @@
         key: "thumbnail.jpg",
       });
 
-      thumbnailImg.onload = () => {
-        const width = thumbnailImg.width;
-        const calculatedWidth = width / TOTAL_POSITIONS;
-        // set max width of 84 for compact cards while preserving sprite functionality
-        containerWidth = Math.min(calculatedWidth, 84);
-      };
+      thumbnailImg.onload = () => {};
 
       thumbnailImg.src = thumbnailUrl;
       thumbnailError = false;
@@ -94,61 +86,53 @@
 
 <div
   class={cn(
-    "flex items-center gap-4 rounded-md border p-3 transition-colors",
+    "flex flex-col gap-2 rounded-md border p-3 transition-colors",
     selected ? "bg-primary/5 border-primary/20" : "hover:bg-muted/50 border-transparent",
   )}
 >
-  <Checkbox id={"select-" + entry.id} checked={selected} onCheckedChange={handleCheck} />
+  <div class="flex flex-col gap-3">
+    <div class="flex items-center gap-3">
+      <Checkbox id={"select-" + entry.id} checked={selected} onCheckedChange={handleCheck} />
 
-  <!-- THUMBNAIL -->
-  <div class="flex shrink-0 items-center">
-    <div class="h-12 overflow-hidden" style:width="{containerWidth}px" style:max-width="{containerWidth}px">
-      <AspectRatio ratio={16 / 9} class="bg-muted h-full rounded-lg">
-        {#if thumbnailUrl}
-          <div
-            bind:this={imgContainer}
-            role="img"
-            class="relative h-full w-full overflow-hidden rounded-lg"
-            onmouseenter={startAnimation}
-            onmouseleave={stopAnimation}
-          >
-            <img
-              src={thumbnailUrl}
-              alt="Entry thumbnail"
-              class="absolute top-0 left-0 cursor-pointer object-cover"
-              style:height="{imgContainer?.clientHeight}px"
-              style:width="{containerWidth * TOTAL_POSITIONS}px"
-              style:max-width="none"
-              style:transform="translateX(-{currentImagePosition * containerWidth || 0}px)"
-            />
-          </div>
-        {:else if thumbnailError}
-          <div class="text-muted-foreground flex h-full items-center justify-center text-xs">No thumbnail</div>
-        {:else}
-          <div class="flex h-full items-center justify-center">
-            <div class="bg-muted/50 h-full w-full animate-pulse rounded-lg"></div>
-          </div>
-        {/if}
-      </AspectRatio>
+      <div class="flex-1 overflow-hidden">
+        <AspectRatio ratio={16 / 9} class="bg-muted w-full rounded-lg">
+          {#if thumbnailUrl}
+            <div
+              role="img"
+              class="relative h-full w-full overflow-hidden rounded-lg"
+              onmouseenter={startAnimation}
+              onmouseleave={stopAnimation}
+            >
+              <img
+                src={thumbnailUrl}
+                alt="Entry thumbnail"
+                class="absolute top-0 left-0 h-full cursor-pointer object-cover"
+                style:width="{TOTAL_POSITIONS * 100}%"
+                style:max-width="none"
+                style:transform="translateX(-{currentImagePosition * (100 / TOTAL_POSITIONS)}%)"
+              />
+            </div>
+          {:else if thumbnailError}
+            <div class="text-muted-foreground flex h-full items-center justify-center text-xs">No thumbnail</div>
+          {:else}
+            <div class="flex h-full items-center justify-center">
+              <div class="bg-muted/50 h-full w-full animate-pulse rounded-lg"></div>
+            </div>
+          {/if}
+        </AspectRatio>
+      </div>
     </div>
-  </div>
 
-  <div class="flex min-w-0 flex-1 items-center gap-3">
-    <div class="flex min-w-0 flex-1 flex-col gap-1">
+    <div class="flex min-w-0 flex-col gap-1">
       <Label for={"select-" + entry.id} class="cursor-pointer truncate text-sm font-medium" title={entry.resource}>
         {entry.resource}
       </Label>
       <div class="text-muted-foreground flex items-center gap-1 text-xs">
-        <span>Created At:</span>
-        <DateText datetime={entry.created_at} datetimeFormat="MMM dd, yyyy" size="xs" weight="light" />
-      </div>
-    </div>
-
-    <div class="flex items-center gap-2">
-      <EntryStatusBadge {entry} />
-      <EntryPriorityBadge {entry} />
-      <div class="bg-muted text-muted-foreground hidden rounded px-1.5 py-0.5 text-[10px] font-medium sm:block">
-        {humanize(entry.wf_step)}
+        <DataDisplay label="Created at">
+          {#snippet slotValue()}
+            <DateText datetime={entry.created_at} datetimeFormat="MMM dd, yyyy" size="xs" weight="light" />
+          {/snippet}
+        </DataDisplay>
       </div>
     </div>
   </div>
