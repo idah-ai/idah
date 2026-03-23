@@ -121,7 +121,7 @@
     return await datasetsBackendDataSource.get(datasetId, {
       fields: {
         [ProjectRecord.type]: ["id"],
-        [DatasetRecord.type]: ["name", "modality"],
+        [DatasetRecord.type]: ["name", "modality", "entries_total_count"],
       },
       included: ["project"],
       noCache: true,
