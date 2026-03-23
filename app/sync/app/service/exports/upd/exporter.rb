@@ -11,7 +11,7 @@ module Exports
         file_path = "/tmp/idah-export-#{Time.now.to_i}.upd"
 
         # Init UPD file
-        system("bin/updcli-static --input #{file_path} init", exception: true)
+        system("updcli-static --input #{file_path} init", exception: true)
 
         context.datasets.each do |dataset|
           append_dataset(file_path, dataset)
@@ -74,7 +74,7 @@ module Exports
 
         # Create dataset in UPD
         system(
-          "bin/updcli-static --input #{file_path} " \
+          "updcli-static --input #{file_path} " \
           "dataset create --id \"#{dataset.record.id}\" "\
           "--name \"#{dataset.record.name}\" "\
           "--modality #{dataset.record.modality} "\
@@ -112,7 +112,7 @@ module Exports
 
         # Create entry in UPD
         system(
-          "bin/updcli-static --input #{file_path} " \
+          "updcli-static --input #{file_path} " \
           "entry create --id \"#{entry.record.id}\" "\
           "--dataset_id \"#{dataset_id}\" "\
           "--url \"#{media_url}\" "\
@@ -137,7 +137,7 @@ module Exports
 
         # Create annotation in UPD
         system(
-          "bin/updcli-static --input #{file_path} " \
+          "updcli-static --input #{file_path} " \
           "annotation create --id \"#{annotation.record.id}\" "\
           "--entry_id \"#{entry_id}\" "\
           "--type \"#{type}\" "\
@@ -162,7 +162,7 @@ module Exports
 
         # Create media in UPD
         system(
-          "bin/updcli-static --input #{file_path} " \
+          "updcli-static --input #{file_path} " \
           "media create --id \"#{media.record.resource}\" "\
           "--file \"#{tempfile.path}\" "\
           "--key \"#{media.record.key}\" "\
