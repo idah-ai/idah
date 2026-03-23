@@ -78,8 +78,8 @@
         attributes: {
           name: apiKey.name,
           scope_type: apiKey.scope_type,
-          scope_value: apiKey.scope_value,
-          permissions: apiKey.permissions,
+          scope_value: apiKey.scope_value || [],
+          permissions: apiKey.permissions || [],
           expired_at: apiKey.expired_at,
         },
       },
@@ -145,6 +145,7 @@
 
       if (!validated.success) {
         fieldErrors = getFieldErrors(validated.error);
+        console.log(fieldErrors);
 
         if (apiKey.errors?.permissions) {
           fieldErrors["permissions"] = [...(fieldErrors["permissions"] || []), apiKey.errors.permissions];

@@ -4,7 +4,7 @@ export const apiKeySchema = z.object({
   name: z.string("Api Key name is required.").min(3, "Api Key name must be at least 3 characters."),
 
   scope_type: z.string("Scope type is required."),
-  scope_value: z.string(),
+  scope_value: z.string().array(),
   permissions: z.string().array(),
   expired_at: z.coerce.date().nullable().default(null),
 });
