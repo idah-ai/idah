@@ -20,13 +20,12 @@
   import { IDAH_VIDEO_BOUNDING_BOX } from "$lib/plugin/type";
   import { visibilityFullfilled } from "$lib/plugin/video-annotation-activity/category-properties";
   import { idbUpdatedAt } from "$lib/plugin/video-annotation-activity/store/idb-store.svelte";
-  import { selectedAnnotationGroup } from "$lib/plugin/video-annotation-activity/store/store";
+  import { currentMode, selectedAnnotationGroup } from "$lib/plugin/video-annotation-activity/store/store";
 
   import type { IActivityContext, IConfigProperty } from "$idah/context/activity-context";
   import type { AnnotationValue } from "$idah/context/annotation-context";
 
   type Props = {
-    mode: string;
     selectedCategory: string;
     annotationId?: string;
     annotationValue: AnnotationValue;
@@ -37,7 +36,6 @@
   };
 
   let {
-    mode,
     selectedCategory,
     annotationId,
     annotationValue,
@@ -51,7 +49,7 @@
   const context: IActivityContext = getContext("context");
 
   // Variables
-  let configByMode = $derived(context.config[mode]);
+  let configByMode = $derived(context.config[$currentMode]);
   let category = $derived(configByMode?.values?.find((c) => c.id == selectedCategory));
   let properties = $derived(configByMode?.properties?.filter((p) => visibilityFullfilled(annotationValue, p)));
 
@@ -82,7 +80,7 @@
 
   function getModeTitle() {
     return ((s: string) => [s.slice(0, 1).toUpperCase(), s.slice(1)].join(""))(
-      mode.split(":").reverse()[0].split(new RegExp(/-|_/)).join(" "),
+      $currentMode.split(":").reverse()[0].split(new RegExp(/-|_/)).join(" "),
     );
   }
 

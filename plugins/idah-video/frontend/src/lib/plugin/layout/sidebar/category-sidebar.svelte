@@ -16,7 +16,7 @@
 
   import { IDAH_VIDEO_BOUNDING_BOX, IDAH_VIDEO_POLYGON } from "$lib/plugin/type";
   import { idbUpdatedAt } from "$lib/plugin/video-annotation-activity/store/idb-store.svelte";
-  import { selectedAnnotation } from "$lib/plugin/video-annotation-activity/store/store";
+  import { currentMode, selectedAnnotation } from "$lib/plugin/video-annotation-activity/store/store";
   import { groupAnnotations } from "$lib/plugin/video-annotation-activity/utils/group-annotation.svelte";
 
   import type { IConfigValue } from "$idah/context/activity-context";
@@ -31,7 +31,6 @@
     db?: AnnotationsIndexedDB;
 
     currentFrame: number;
-    currentMode: string;
 
     modalityShape: string;
     categories: IConfigValue[];
@@ -48,7 +47,6 @@
     view,
     db,
     currentFrame,
-    currentMode,
     modalityShape,
     categories,
     onSelectCategory,
@@ -61,7 +59,7 @@
 
   // Variables
   let openCategory = $state(true);
-  let currentModeIsSameAsShape = $derived(currentMode == modalityShape);
+  let currentModeIsSameAsShape = $derived($currentMode == modalityShape);
 
   // Automatically expand all categories when categories prop changes, but allow manual toggles
   let manualToggleStates = $state<Record<string, boolean>>({});

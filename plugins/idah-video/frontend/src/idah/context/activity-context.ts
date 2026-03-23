@@ -1,6 +1,7 @@
 import type { Component } from "svelte";
 
 import type { AnnotationShape, AnnotationValue } from "$idah/context/annotation-context";
+import type { Hash } from "$idah/utils/types";
 
 export type ASTValue = string | number | string[] | boolean | undefined;
 export type ASTNodeValue = ASTValue | ASTNode | [ASTValue];
@@ -93,6 +94,7 @@ export type IConfigPropertyStyles = {
 export type IConfigPropertyOption = {
   id: string;
   label: string;
+  styles?: Hash;
 };
 
 export type IConfigPropertyFormatKeys = keyof IConfigPropertyFormat;

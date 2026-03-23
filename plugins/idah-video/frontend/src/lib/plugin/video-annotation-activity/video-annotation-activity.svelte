@@ -128,8 +128,8 @@
 
     const handleKeydown = (e: KeyboardEvent) => {
       const activeElement = document.activeElement;
-      const isTyping =
-        activeElement?.tagName === "INPUT" || activeElement?.tagName === "TEXTAREA" || activeElement?.isContentEditable;
+      const isTyping = activeElement?.tagName === "INPUT" || activeElement?.tagName === "TEXTAREA";
+      // || activeElement?.isContentEditable
 
       if (isTyping) return;
 
@@ -174,7 +174,6 @@
   });
 
   // Lifecycles
-  // for now
   $effect(() => {
     if (mediaUrl && player && mediaUrl != player?.source()) {
       player?.source(mediaUrl);
@@ -1396,7 +1395,6 @@
       <div class="h-auto max-h-86 overflow-y-auto p-2">
         {#if annotationValue.category}
           <CategoryProperties
-            mode={$currentMode}
             selectedCategory={annotationValue.category}
             {annotationValue}
             onSelectCategory={(selectedCategory) => {
@@ -1425,7 +1423,6 @@
             onEditability={setEditability}
             onVisibility={setVisibility}
             {context}
-            mode={$currentMode}
           />
         {/if}
       </div>
@@ -1479,7 +1476,6 @@
               onEditability={setEditability}
               onVisibility={setVisibility}
               {context}
-              mode={$currentMode}
             />
           </ResizablePane>
 
@@ -1494,7 +1490,6 @@
               <SvgOverlay
                 bind:this={overlay}
                 {annotations_promise}
-                mode={$currentMode}
                 frame={currentFrame}
                 onSelectAnnotation={selectAnnotation}
                 onSelection={onShapeSelection}
@@ -1525,7 +1520,6 @@
                 {onEditValue}
                 onReSelectCategory={reSelectCategory}
                 {context}
-                mode={$currentMode}
               />
             </section>
           </ResizablePane>
