@@ -9,7 +9,7 @@ import CodeBlock from "@components/app/CodeBlock.astro";
 <PageLayout>
   <PageContainer>
     <PageTitle>
-      Frontend Development Guide
+      Frontend Guide
     </PageTitle>
 
     <div class="prose prose-lg max-w-none dark:prose-invert">
@@ -458,17 +458,20 @@ pnpm build</CodeBlock>
         <li class="leading-relaxed"><a href="https://vitejs.dev/" class="text-blue-600 dark:text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer">Vite Documentation</a></li>
       </ul>
 
-      <h2 id="support" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
-        <a href="#support" class="hover:underline">Support</a>
+      <h2 id="next-steps" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+        <a href="#next-steps" class="hover:underline">Next Steps</a>
       </h2>
-      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
-        For plugin-specific questions:
-      </p>
-      <ol class="list-decimal list-inside space-y-2 mb-6 text-gray-700 dark:text-gray-300">
-        <li class="leading-relaxed">Check the <a href="https://github.com/ingedata-ph/idah" class="text-blue-600 dark:text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer">IDAH platform documentation</a></li>
-        <li class="leading-relaxed">Review other plugin examples in the <a href="https://github.com/ingedata-ph/idah/tree/main/plugins" class="text-blue-600 dark:text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer">plugins directory on GitHub</a></li>
-        <li class="leading-relaxed">Contact the IDAH development team</li>
-      </ol>
+      <ul class="list-disc list-inside space-y-2 mb-6 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed"><a href="/plugin/backend-guide" class="text-blue-600 dark:text-blue-400 hover:underline">Backend Guide</a> - Add backend services to your plugin</li>
+        <li class="leading-relaxed"><a href="/plugin/import-media" class="text-blue-600 dark:text-blue-400 hover:underline">Import & Process Media</a> - Process media files</li>
+        <li class="leading-relaxed"><a href="/plugin/export-datasets" class="text-blue-600 dark:text-blue-400 hover:underline">Export Datasets</a> - Export and sync data</li>
+      </ul>
+
+      <div class="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-l-4 border-blue-500 p-6 mb-6 rounded-lg">
+        <p class="text-lg text-gray-800 dark:text-gray-200 leading-relaxed font-medium">
+          🎨 Frontend ready! Add backend services to complete your full-stack plugin.
+        </p>
+      </div>
     </div>
   </PageContainer>
   <Pagination />

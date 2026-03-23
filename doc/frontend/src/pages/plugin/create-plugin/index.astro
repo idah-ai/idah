@@ -279,50 +279,6 @@ idah-plugin backend add image-processor ./plugins
         <li class="leading-relaxed"><strong class="font-semibold text-gray-900 dark:text-white">Ruby filename</strong> (generated): snake_case (e.g., <code class="bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded">my_awesome_plugin.rb</code>)</li>
       </ul>
 
-      <h2 id="plugin-paths" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
-        <a href="#plugin-paths" class="hover:underline">Plugin Paths</a>
-      </h2>
-      <p class="text-gray-700 dark:text-gray-300 mb-6 leading-relaxed">
-        IDAH supports two plugin directories for different environments:
-      </p>
-
-      <div class="bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500 p-4 mb-6 rounded">
-        <h3 id="development-plugins" class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
-          <a href="#development-plugins" class="hover:underline">Development Plugins</a>
-        </h3>
-        <p class="text-gray-700 dark:text-gray-300 mb-2">
-          <strong class="font-semibold text-gray-900 dark:text-white">Path:</strong> <code class="bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded">./plugins_dev/plugins</code>
-        </p>
-        <ul class="list-disc list-inside space-y-1 text-gray-700 dark:text-gray-300 ml-4">
-          <li class="leading-relaxed"><strong class="font-semibold text-gray-900 dark:text-white">Purpose:</strong> Development and testing</li>
-          <li class="leading-relaxed"><strong class="font-semibold text-gray-900 dark:text-white">Environment:</strong> Local development only</li>
-          <li class="leading-relaxed"><strong class="font-semibold text-gray-900 dark:text-white">Loading:</strong> Automatically loaded when running IDAH in development mode</li>
-          <li class="leading-relaxed"><strong class="font-semibold text-gray-900 dark:text-white">Not included:</strong> These plugins are <strong>not</strong> loaded in production</li>
-          <li class="leading-relaxed"><strong class="font-semibold text-gray-900 dark:text-white">Use for:</strong> Experimental plugins, work-in-progress features, testing</li>
-        </ul>
-      </div>
-
-      <div class="bg-purple-50 dark:bg-purple-900/20 border-l-4 border-purple-500 p-4 mb-6 rounded">
-        <h3 id="production-plugins" class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
-          <a href="#production-plugins" class="hover:underline">Production Plugins</a>
-        </h3>
-        <p class="text-gray-700 dark:text-gray-300 mb-2">
-          <strong class="font-semibold text-gray-900 dark:text-white">Path:</strong> <code class="bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded">./plugins</code>
-        </p>
-        <ul class="list-disc list-inside space-y-1 text-gray-700 dark:text-gray-300 ml-4">
-          <li class="leading-relaxed"><strong class="font-semibold text-gray-900 dark:text-white">Purpose:</strong> Production-ready plugins</li>
-          <li class="leading-relaxed"><strong class="font-semibold text-gray-900 dark:text-white">Environment:</strong> Both development and production</li>
-          <li class="leading-relaxed"><strong class="font-semibold text-gray-900 dark:text-white">Loading:</strong> Always loaded in all environments</li>
-          <li class="leading-relaxed"><strong class="font-semibold text-gray-900 dark:text-white">Use for:</strong> Stable, production-ready plugins</li>
-        </ul>
-      </div>
-
-      <div class="bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 p-4 mb-6 rounded">
-        <p class="text-gray-700 dark:text-gray-300 leading-relaxed">
-          <strong class="font-semibold text-gray-900 dark:text-white">Recommendation:</strong> Start developing in <code class="bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded">./plugins_dev/plugins</code>, and move to <code class="bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded">./plugins</code> when ready for production.
-        </p>
-      </div>
-
       <h2 id="troubleshooting" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
         <a href="#troubleshooting" class="hover:underline">Troubleshooting</a>
       </h2>
@@ -354,6 +310,25 @@ idah-plugin backend add image-processor ./plugins
       </p>
       <CodeBlock language="bash">sudo npm install -g .
 # or use a Node version manager like nvm</CodeBlock>
+
+      <h2 id="next-steps" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+        <a href="#next-steps" class="hover:underline">Next Steps</a>
+      </h2>
+      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+        After creating your plugin, learn how to develop its components:
+      </p>
+      <ul class="list-disc list-inside space-y-2 mb-6 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed"><a href="/plugin/frontend-guide" class="text-blue-600 dark:text-blue-400 hover:underline">Frontend Guide</a> - Build the plugin UI with SvelteKit</li>
+        <li class="leading-relaxed"><a href="/plugin/backend-guide" class="text-blue-600 dark:text-blue-400 hover:underline">Backend Guide</a> - Develop backend services in Ruby</li>
+        <li class="leading-relaxed"><a href="/plugin/import-media" class="text-blue-600 dark:text-blue-400 hover:underline">Import & Process Media</a> - Add media processing capabilities</li>
+        <li class="leading-relaxed"><a href="/plugin/export-datasets" class="text-blue-600 dark:text-blue-400 hover:underline">Export Datasets</a> - Create data exporters</li>
+      </ul>
+
+      <div class="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-l-4 border-blue-500 p-6 mb-6 rounded-lg">
+        <p class="text-lg text-gray-800 dark:text-gray-200 leading-relaxed font-medium">
+          🎉 Plugin scaffolded! Continue with the guides above to build your plugin's functionality.
+        </p>
+      </div>
     </div>
   </PageContainer>
   <Pagination />
