@@ -41,11 +41,9 @@
           label: "Invoke",
           icon: RotateCcwIcon,
           hidden: !canRevokeAPIKey,
-          action: () => {
-           
-          },
+          action: () => {},
         },
-       {
+        {
           label: "Delete",
           icon: Trash2Icon,
           hidden: !canDeleteAPIKey,
@@ -77,7 +75,6 @@
       noCache: true,
     });
   }
-
 
   async function removeAPIKey(): Promise<void> {
     try {
