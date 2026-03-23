@@ -7,6 +7,7 @@ import { getApiUrls } from "$lib/app/sidebar/api-urls";
 
 const apiUrls = await getApiUrls();
 const pathname = Astro.url.pathname;
+console.log("Current pathname:", pathname);
 const mergedSidebarItems = mergeSidebarItemsWithApiUrls(desktopSidebarItems, apiUrls, false);
 const flat = findSidebarItem(mergedSidebarItems)
 

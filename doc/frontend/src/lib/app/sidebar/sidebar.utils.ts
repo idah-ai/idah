@@ -86,12 +86,12 @@ export function mergeSidebarItemsWithApiUrls(
       label: "API References",
       children: apiUrls.map((api) => ({
         label: api.title || api.name,
-        href: encodeURI("/apis/" + api.name),
+        href: encodeURI("/apis/" + api.name + "/"),
         selectable: false,
         children:
           api.tags?.map((tag) => ({
             label: tag,
-            href: encodeURI("/apis/" + api.name + "/" + tag),
+            href: encodeURI("/apis/" + api.name + "/" + tag + "/"),
             children: [],
           })) || [],
       })),
