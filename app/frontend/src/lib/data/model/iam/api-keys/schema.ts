@@ -5,13 +5,13 @@ export const apiKeySchema = z.object({
 
   scope_type: z.string("Scope type is required."),
   scope_value: z.string().array().min(1, {
-    message: "Please select at least 1."
+    message: "Please select at least 1.",
   }),
   permissions: z.string().array().min(1, {
-    message: "Please select at least 1 permission."
+    message: "Please select at least 1 permission.",
   }),
 
-  expired_at: z.coerce.date().nullable().default(null)
+  expired_at: z.coerce.date().nullable().default(null),
 });
 
 export const createApiKeySchema = apiKeySchema.pick({
@@ -23,5 +23,5 @@ export const createApiKeySchema = apiKeySchema.pick({
 });
 
 export const updateApiKeySchema = apiKeySchema.pick({
-  expired_at: true
+  expired_at: true,
 });
