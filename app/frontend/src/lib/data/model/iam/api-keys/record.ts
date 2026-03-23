@@ -1,7 +1,7 @@
 import { createBackendDataSource, resourcePath } from "@/data/BackendDataSource";
 import { clearCache } from "@/data/Cache";
 import { AccountRecord } from "@/data/model/iam/accounts/record";
-import { parseSingleElementError, parseSingleElementReturn } from "@/data/model/json_api";
+import { parseSingleElementError } from "@/data/model/json_api";
 import { field, Record, RecordFactory, relationship, type } from "@/data/model/Record";
 import { Transformers } from "@/data/model/transformers";
 
@@ -46,10 +46,6 @@ export const apiKeysBackendDataSource = createBackendDataSource(ApiKeyRecord, ap
 
     const body = await res.json();
 
-    // Cache Management
-    const cacheIndexKey = resourcePath(apiKeyBasePath, null, undefined);
-    clearCache(cacheIndexKey);
-
     if (body && body.errors) {
       if (body.errors.length > 0) {
         body.errors.forEach((err: Hash) => {
@@ -61,7 +57,7 @@ export const apiKeysBackendDataSource = createBackendDataSource(ApiKeyRecord, ap
     }
 
     if (body && body.data) {
-      return Promise.resolve(parseSingleElementReturn<ApiKeyRecord>(body));
+      return Promise.resolve(body);
     }
 
     throw "No data returned";

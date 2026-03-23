@@ -6,7 +6,6 @@
   import SingleSelectField from "@/components/app/forms/fields/select/single/single-select-field.svelte";
   import { CommandItem } from "@/components/ui/command";
   import { FieldGroup, FieldSet } from "@/components/ui/field";
-  import { cn } from "@/utils";
 
   import { projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import { scopeTypes } from "@/data/model/iam/api-keys/constants";
@@ -14,6 +13,7 @@
   import { organizationsBackendDataSource } from "@/data/model/iam/organizations/record";
 
   import type { FormBaseProps } from "@/components/app/forms/form.types";
+  import type { LabelValue } from "@/utils/types";
 
   // Props
   interface Props extends FormBaseProps {
@@ -22,21 +22,19 @@
   let { apiKey, fieldErrors, onValueChange }: Props = $props();
 
   // Variables
-  let resource: string = ApiKeyRecord.type;
+  const resource: string = ApiKeyRecord.type;
 
   // Variables::Reactive
   let { name, scope_type, scope_value, permissions } = $derived(apiKey);
 
   // Functions
-  async function loadPermissions(): Promise<void> {
+  async function loadPermissions(): Promise<Array<LabelValue<string | number>>> {
     const permissionsRes = await apiKeysBackendDataSource.permission_list();
-    console.log({ permissionsRes });
 
     return permissionsRes.data.map((permission) => ({
-      label: permission.name,
+      label: permission.attributes.name,
       value: permission.id,
-      description: permission.description,
-      data: permission,
+      description: permission.attributes.description,
     }));
   }
 
@@ -112,23 +110,25 @@
     {/if}
 
     <!-- APIKEY:PERMISSIONS -->
-    {#await loadPermissions() then permissionsChoices}
+    {#await loadPermissions() then choices}
       <MultipleSelectField
         name="{resource}/permissions"
         label="Permissions"
         placeholder="Select permissions"
         required
-        choices={permissionsChoices}
-        errors={fieldErrors["permission"]}
+        {choices}
+        disabled={scope_type === "all"}
+        errors={fieldErrors["permissions"]}
         values={permissions}
       >
         {#snippet slotChoice({ choice, select })}
-          {#if choice.data}
-            <CommandItem class={cn("group cursor-pointer", {})} onclick={() => select(choice)}>
-              <div>{choice.label}</div>
-              <div>{choice.description}</div>
-            </CommandItem>
-          {/if}
+          {@const { label, description, value } = choice}
+          <CommandItem value={String(value)} onSelect={() => select(choice)}>
+            <div class="flex flex-col gap-0">
+              <p>{label}</p>
+              <small class="text-muted-foreground">{description}</small>
+            </div>
+          </CommandItem>
         {/snippet}
       </MultipleSelectField>
     {/await}
