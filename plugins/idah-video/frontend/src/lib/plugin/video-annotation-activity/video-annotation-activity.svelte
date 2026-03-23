@@ -181,7 +181,7 @@
     }
 
     /** Set tool to visual mode when video is playing & mode is not visual */
-    if (isPlaying && mode !== DEFAULT_MODE) {
+    if (isPlaying && $currentMode !== DEFAULT_MODE) {
       context.commands.run("tools.visual");
     }
   });
@@ -335,8 +335,8 @@
 
     context.commands.on("annotation.delete", async (props: { annotationId: string }) => {
       const { annotationId } = props;
-      const ann = await annotationsIDB?.get("annotations", annotationId);
-      if (!ann) return showToast.error({ title: "cannot remove not found annotation" });
+      const snapshotAnnotation = await annotationsIDB?.get("annotations", annotationId);
+      if (!snapshotAnnotation) return showToast.error({ title: "cannot remove not found annotation" });
 
       return {
         name: "remove annotation",
@@ -347,14 +347,14 @@
         async undo() {
           const undoCreatedAt = new Date();
           let annotationToCreate = {
-            ...ann,
+            ...snapshotAnnotation,
             metadata: {
-              ...ann.metadata,
-              createdAt: undoCreatedAt,
+              ...snapshotAnnotation.metadata,
+              createdAt: snapshotAnnotation.metadata.createdAt,
               updatedAt: undoCreatedAt,
               metadata: {
-                group_id: ann.metadata.metadata?.group_id,
-                parent_id: ann.metadata.metadata?.parent_id,
+                group_id: snapshotAnnotation.metadata.metadata?.group_id,
+                parent_id: snapshotAnnotation.metadata.metadata?.parent_id,
               },
             },
             synced: false,
@@ -688,8 +688,8 @@
 
       return {
         name: "toggle hidden",
-        apply: () => onVisibility(!wasHidden, snapshotAnnotation),
-        undo: () => onVisibility(wasHidden, snapshotAnnotation),
+        apply: () => setVisibility(!wasHidden, snapshotAnnotation),
+        undo: () => setVisibility(wasHidden, snapshotAnnotation),
         isCombinable: () => true,
         combine: (prevCmd) => prevCmd,
       };
@@ -703,8 +703,8 @@
 
       return {
         name: "toggle locked",
-        apply: () => onLock(!wasLocked, snapshotAnnotation),
-        undo: () => onLock(wasLocked, snapshotAnnotation),
+        apply: () => setEditability(!wasLocked, snapshotAnnotation),
+        undo: () => setEditability(wasLocked, snapshotAnnotation),
         isCombinable: () => true,
         combine: (prevCmd) => prevCmd,
       };
@@ -1076,11 +1076,14 @@
     context.commands.run("keyframe.delete", { annotationId, frame });
   }
 
-  function onDeleteAnnotation(annotation: VideoAnnotationObject, frame?: number) {
+  function deleteAnnotation(annotation: VideoAnnotationObject, frame?: number) {
     if (!editable) return;
 
-    if (frame != undefined) deleteSelection(annotation.metadata.id, frame);
-    else removeAnnotation(annotation.metadata.id);
+    if (frame != undefined) {
+      deleteSelection(annotation.metadata.id, frame);
+    } else {
+      removeAnnotation(annotation.metadata.id);
+    }
   }
 
   let shapeSelectionArgs:
@@ -1313,7 +1316,7 @@
     player?.seekToFrame(frame);
   }
 
-  function onVisibility(hidden: boolean, annotation?: VideoAnnotationObject) {
+  function setVisibility(hidden: boolean, annotation?: VideoAnnotationObject) {
     if (annotation) {
       annotation.hidden = hidden;
       if (annotation.metadata.id == $selectedAnnotation?.metadata.id) $selectedAnnotation.hidden = hidden;
@@ -1327,7 +1330,7 @@
     }
   }
 
-  function onLock(locked: boolean, annotation?: VideoAnnotationObject) {
+  function setEditability(locked: boolean, annotation?: VideoAnnotationObject) {
     if (annotation) {
       annotation.locked = locked;
       if (annotation.metadata.id == $selectedAnnotation?.metadata.id) $selectedAnnotation.locked = locked;
@@ -1418,9 +1421,9 @@
             {onEditValue}
             onSelectAnnotation={selectAnnotation}
             onSelectAnnotationGroup={() => {}}
-            {onDeleteAnnotation}
-            {onLock}
-            {onVisibility}
+            onDeleteAnnotation={deleteAnnotation}
+            onLock={setEditability}
+            onVisibility={setVisibility}
             {context}
             mode={$currentMode}
           />
@@ -1472,9 +1475,9 @@
               {onEditValue}
               onSelectAnnotation={selectAnnotation}
               onSelectAnnotationGroup={selectAnnotationGroup}
-              {onDeleteAnnotation}
-              {onLock}
-              {onVisibility}
+              onDeleteAnnotation={deleteAnnotation}
+              onLock={setEditability}
+              onVisibility={setVisibility}
               {context}
               mode={$currentMode}
             />
@@ -1554,9 +1557,9 @@
               {currentFrame}
               {totalFrames}
               onSeekFrame={seekToFrame}
-              {onDeleteAnnotation}
-              {onLock}
-              {onVisibility}
+              onDeleteAnnotation={deleteAnnotation}
+              onLock={setEditability}
+              onVisibility={setVisibility}
               {allHidden}
               {allLocked}
               onSelectAnnotation={selectAnnotation}
