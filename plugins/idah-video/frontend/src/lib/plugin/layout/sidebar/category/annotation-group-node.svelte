@@ -24,11 +24,18 @@
     level: number;
     onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<VideoAnnotationObject>) => void;
     onVisibility: (hidden: boolean, annotation?: VideoAnnotationObject) => void;
-    onLock: (locked: boolean, annotation?: VideoAnnotationObject) => void;
+    onEditability: (locked: boolean, annotation?: VideoAnnotationObject) => void;
     onDeleteAnnotation: (annotation: VideoAnnotationObject) => void;
   }
-  let { category, annotationGroup, level, onSelectAnnotationGroup, onVisibility, onLock, onDeleteAnnotation }: Props =
-    $props();
+  let {
+    category,
+    annotationGroup,
+    level,
+    onSelectAnnotationGroup,
+    onVisibility,
+    onEditability,
+    onDeleteAnnotation,
+  }: Props = $props();
 
   // Variables
   let { groupId, annotations } = $derived(annotationGroup);
@@ -48,7 +55,7 @@
   }
 
   function toggleLockAllAnnotations() {
-    annotations.forEach((annotation) => onLock(!isAllLocked, annotation));
+    annotations.forEach((annotation) => onEditability(!isAllLocked, annotation));
   }
 
   function deleteAllAnnotations() {

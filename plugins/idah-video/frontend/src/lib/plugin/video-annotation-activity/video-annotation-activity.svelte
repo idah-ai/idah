@@ -1354,7 +1354,7 @@
     return points as Point[];
   }
 
-  async function onReSelectCategory(reselectedCategoryId: string) {
+  async function reSelectCategory(reselectedCategoryId: string) {
     if (!$selectedAnnotationGroup) return;
 
     /** Update annotation group category */
@@ -1422,7 +1422,7 @@
             onSelectAnnotation={selectAnnotation}
             onSelectAnnotationGroup={() => {}}
             onDeleteAnnotation={deleteAnnotation}
-            onLock={setEditability}
+            onEditability={setEditability}
             onVisibility={setVisibility}
             {context}
             mode={$currentMode}
@@ -1476,7 +1476,7 @@
               onSelectAnnotation={selectAnnotation}
               onSelectAnnotationGroup={selectAnnotationGroup}
               onDeleteAnnotation={deleteAnnotation}
-              onLock={setEditability}
+              onEditability={setEditability}
               onVisibility={setVisibility}
               {context}
               mode={$currentMode}
@@ -1523,7 +1523,7 @@
                 {annotationId}
                 {annotationValue}
                 {onEditValue}
-                {onReSelectCategory}
+                onReSelectCategory={reSelectCategory}
                 {context}
                 mode={$currentMode}
               />
@@ -1556,15 +1556,15 @@
               {zoom}
               {currentFrame}
               {totalFrames}
-              onSeekFrame={seekToFrame}
-              onDeleteAnnotation={deleteAnnotation}
-              onLock={setEditability}
-              onVisibility={setVisibility}
               {allHidden}
               {allLocked}
+              {isPlaying}
+              onSeekFrame={seekToFrame}
+              onEditability={setEditability}
+              onVisibility={setVisibility}
+              onDeleteAnnotation={deleteAnnotation}
               onSelectAnnotation={selectAnnotation}
               onSelectGroupAtFrame={selectAnnotationGroup}
-              {isPlaying}
               onScaleChange={(s) => {
                 scale = s;
               }}

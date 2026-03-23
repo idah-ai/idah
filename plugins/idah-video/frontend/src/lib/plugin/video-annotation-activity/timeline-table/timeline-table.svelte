@@ -33,7 +33,7 @@
     onSelectGroupAtFrame,
     onZoomChange,
     onScaleChange,
-    onLock,
+    onEditability,
     onVisibility,
     isPlaying = false,
   }: {
@@ -49,7 +49,7 @@
     onSelectAnnotation: (annotation?: VideoAnnotationObject) => void;
     onSelectGroupAtFrame: (annotationGroup: AnnotationGroup<VideoAnnotationObject>, frame?: number) => void;
     onDeleteAnnotation: (annotation: VideoAnnotationObject, frame?: number) => void;
-    onLock: (locked: boolean, annotation?: VideoAnnotationObject) => void;
+    onEditability: (locked: boolean, annotation?: VideoAnnotationObject) => void;
     onVisibility: (hidden: boolean, annotation?: VideoAnnotationObject) => void;
     onZoomChange?: (zoom: number) => void;
     onScaleChange?: (zoom: number) => void;
@@ -65,7 +65,7 @@
   }
 
   function toggleLocked() {
-    onLock(!allLocked);
+    onEditability(!allLocked);
   }
 
   let range_span = $derived(Math.min(scale * zoom, totalFrames));
@@ -251,7 +251,7 @@
 
   function toggleLockAllAnnotations(annotations: VideoAnnotationObject[]) {
     const isAllLocked = annotations.map((annotation) => annotation.locked).every((locked) => locked);
-    annotations.forEach((annotation) => onLock(!isAllLocked, annotation));
+    annotations.forEach((annotation) => onEditability(!isAllLocked, annotation));
   }
 
   function deleteAllAnnotations(annotations: VideoAnnotationObject[]) {
