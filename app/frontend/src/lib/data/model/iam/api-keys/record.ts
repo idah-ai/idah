@@ -2,8 +2,7 @@ import { createBackendDataSource, resourcePath } from "@/data/BackendDataSource"
 import { clearCache } from "@/data/Cache";
 import { AccountRecord } from "@/data/model/iam/accounts/record";
 import { apiKeyStatuses, type ApiKeyStatusBadgeProps } from "@/data/model/iam/api-keys/constants";
-import { ApiPermissionRecord } from "@/data/model/iam/api-permission/record";
-import { parseCollectionReturn, parseSingleElementError } from "@/data/model/json_api";
+import { parseSingleElementError } from "@/data/model/json_api";
 import { field, Record, RecordFactory, relationship, type } from "@/data/model/Record";
 import { Transformers } from "@/data/model/transformers";
 
