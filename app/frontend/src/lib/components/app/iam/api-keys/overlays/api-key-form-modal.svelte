@@ -144,18 +144,8 @@
         expires_at: apiKey.expires_at,
       });
 
-      if (!apiKey.scope_type && apiKey.permissions.length === 0 && newRecord) {
-        apiKey.errors.permissions = "Please select at least 1 permission.";
-      } else {
-        delete apiKey.errors.permissions;
-      }
-
       if (!validated.success) {
         fieldErrors = getFieldErrors(validated.error);
-
-        if (apiKey.errors?.permissions) {
-          fieldErrors["permissions"] = [...(fieldErrors["permissions"] || []), apiKey.errors.permissions];
-        }
 
         submitting = false;
         return;
