@@ -1,6 +1,7 @@
 ---
 import PageLayout from "@layouts/PageLayout.astro";
 import PageContainer from "@components/app/page/PageContainer.astro";
+import HeroSection from "@components/app/section/HeroSection.astro";
 import { Button } from "$lib/components/ui/button";
 import {
   Sparkles,
@@ -17,8 +18,9 @@ import {
 
 <PageLayout>
   <PageContainer>
-    <!-- Hero Section -->
-    <div class="text-center mb-16 mt-8">
+    <div class="relative text-center mb-16 mt-8 overflow-hidden">
+      <HeroSection />
+
       <div class="flex justify-center mb-6">
         <div class="p-4 rounded-2xl shadow-xl" style="background: linear-gradient(to bottom right, #2391ea, #1e7ac9);">
           <Layers class="w-16 h-16 text-white" stroke-width={2} />
