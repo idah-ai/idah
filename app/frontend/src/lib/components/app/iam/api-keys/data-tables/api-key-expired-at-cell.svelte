@@ -9,4 +9,4 @@
   let { record: apiKey }: DataTableCellBaseProps<ApiKeyRecord> = $props();
 </script>
 
-<DateText datetime={apiKey.expired_at} datetimeFormat="MMM dd, yyyy HH:mm:ss" size="sm" showTooltip></DateText>
+<DateText datetime={apiKey.expires_at} datetimeFormat="MMM dd, yyyy HH:mm:ss" size="sm" showTooltip></DateText>

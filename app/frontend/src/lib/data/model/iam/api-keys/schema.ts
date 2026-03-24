@@ -6,7 +6,7 @@ export const apiKeySchema = z.object({
   scope_type: z.string("Scope type is required."),
   scope_value: z.string().array(),
   permissions: z.string().array(),
-  expired_at: z.coerce.date().nullable().default(null),
+  expires_at: z.coerce.date().nullable().default(null),
 });
 
 export const createApiKeySchema = apiKeySchema
@@ -15,7 +15,7 @@ export const createApiKeySchema = apiKeySchema
     scope_type: true,
     scope_value: true,
     permissions: true,
-    expired_at: true,
+    expires_at: true,
   })
   .superRefine((data, ctx) => {
     if (data.scope_type === "all") return;
@@ -37,5 +37,5 @@ export const createApiKeySchema = apiKeySchema
     }
   });
 export const updateApiKeySchema = apiKeySchema.pick({
-  expired_at: true,
+  expires_at: true,
 });

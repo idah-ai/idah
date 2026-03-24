@@ -77,7 +77,7 @@
             "permissions",
             "last_used_at",
             "created_at",
-            "expired_at",
+            "expires_at",
             "updated_at",
           ],
         },

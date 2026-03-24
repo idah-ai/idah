@@ -18,8 +18,9 @@
   // Props
   interface Props extends FormBaseProps {
     apiKey: ApiKeyRecord;
+    newRecord?: boolean;
   }
-  let { apiKey, fieldErrors, onValueChange }: Props = $props();
+  let { apiKey, fieldErrors, onValueChange, newRecord }: Props = $props();
 
   // Variables
   const resource: string = ApiKeyRecord.type;
@@ -62,6 +63,7 @@
       required
       errors={fieldErrors["name"]}
       value={name}
+      disabled={!newRecord}
       oninput={(e) => (name = e.currentTarget.value)}
     />
 
@@ -75,6 +77,7 @@
       choices={scopeTypes}
       errors={fieldErrors["scope_type"]}
       value={scope_type}
+      disabled={!newRecord}
       onSelected={(selectedValue) => {
         scope_type = selectedValue as string;
       }}
@@ -92,6 +95,7 @@
         searchKeyWithOperation="name__match"
         clearable
         required
+        disabled={!newRecord}
         errors={fieldErrors["scope_value"]}
         onSelected={(selectedChoices) => {
           scope_value = selectedChoices.map((choice) => String(choice.value));
@@ -111,6 +115,7 @@
         searchKeyWithOperation="name__match"
         clearable
         required
+        disabled={!newRecord}
         errors={fieldErrors["scope_value"]}
         onSelected={(selectedChoices) => {
           scope_value = selectedChoices.map((choice) => String(choice.value));
@@ -128,7 +133,7 @@
         placeholder="Select permissions"
         required
         {choices}
-        disabled={scope_type === "all"}
+        disabled={scope_type === "all" || !newRecord}
         errors={fieldErrors["permissions"]}
         values={permissions}
       >
@@ -145,11 +150,12 @@
     {/await}
 
     <DatePickerField
-      name="{resource}/expired_at"
+      name="{resource}/expires_at"
       label="Expired At"
       placeholder="Select expiration date"
-      errors={fieldErrors["expired_at"]}
-      value={apiKey.expired_at}
+      errors={fieldErrors["expires_at"]}
+      value={apiKey.expires_at}
+      onDateSelected={(selectedDate) => (apiKey.expires_at = selectedDate)}
     />
   </FieldGroup>
 </FieldSet>

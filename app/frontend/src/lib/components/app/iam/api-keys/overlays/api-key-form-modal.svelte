@@ -41,7 +41,7 @@
             scope_type: null,
             scope_value: [],
             permissions: [],
-            expired_at: null,
+            expires_at: null,
           },
         }),
   );
@@ -60,7 +60,7 @@
         scope_type: null,
         scope_value: [],
         permissions: [],
-        expired_at: null,
+        expires_at: null,
       },
     });
   }
@@ -70,7 +70,7 @@
     apiKey.scope_type = value.scope_type;
     apiKey.scope_value = value.scope_value;
     apiKey.permissions = value.permissions;
-    apiKey.expired_at = value.expired_at;
+    apiKey.expires_at = value.expires_at;
     apiKey.key = value.key;
   }
 
@@ -82,7 +82,7 @@
           scope_type: apiKey.scope_type,
           scope_value: apiKey.scope_value || [],
           permissions: apiKey.permissions || [],
-          expired_at: apiKey.expired_at,
+          expires_at: apiKey.expires_at,
         },
       },
       {
@@ -104,7 +104,7 @@
       apiKey.id,
       {
         attributes: {
-          expired_at: apiKey.expired_at,
+          expires_at: apiKey.expires_at,
         },
       },
       {
@@ -137,10 +137,10 @@
         scope_type: apiKey.scope_type,
         scope_value: apiKey.scope_value,
         permissions: apiKey.permissions,
-        expired_at: apiKey.expired_at,
+        expires_at: apiKey.expires_at,
       });
 
-      if (!apiKey.scope_type && apiKey.permissions.length === 0) {
+      if (!apiKey.scope_type && apiKey.permissions.length === 0 && newRecord) {
         apiKey.errors.permissions = "Please select at least 1 permission.";
       } else {
         delete apiKey.errors.permissions;
@@ -159,6 +159,7 @@
       if (newRecord) {
         await createApiKey();
       } else {
+        console.log(apiKey);
         await updateApiKey();
       }
     } catch (error) {
@@ -170,7 +171,7 @@
 </script>
 
 <FormModal {action} {title} loading={submitting} onCancel={resetForm} onConfirm={submit} bind:open>
-  <ApiKeyForm {apiKey} {fieldErrors} onValueChange={setValue} />
+  <ApiKeyForm {apiKey} {fieldErrors} {newRecord} onValueChange={setValue} />
 </FormModal>
 
 <ApiKeyGeneratedModal value={apiKey.key_label} bind:open={openApiKeyGeneratedModal} />
