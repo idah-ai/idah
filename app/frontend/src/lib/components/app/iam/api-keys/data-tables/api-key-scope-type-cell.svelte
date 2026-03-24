@@ -13,13 +13,11 @@
 
   // Types
   type Context = {
-    permissions: Record<string, { title: string }>;
     organizations: OrganizationRecord[];
     projects: ProjectRecord[];
   };
-  let { permissions, organizations, projects }: Context = $derived(
+  let { organizations, projects }: Context = $derived(
     (contexts as Context) || {
-      permissions: [],
       organizations: [],
       projects: [],
     },
@@ -52,7 +50,7 @@
       {:else}
         {`${scopeTypeLabel}: `}
       {/if}
-      {#each scope_value as value}
+      {#each scope_value as value, index (index)}
         <div class="flex flex-col gap-1">
           {#if scope_type === "org"}
             {getOrganizationName(value)}

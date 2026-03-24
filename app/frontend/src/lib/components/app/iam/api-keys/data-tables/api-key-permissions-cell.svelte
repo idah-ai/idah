@@ -25,7 +25,7 @@
 </script>
 
 <div class="flex flex-col gap-1">
-  {#each apiKeyRecord.permissions as permission}
+  {#each apiKeyRecord.permissions as permission, index (index)}
     <Badge variant="outline" rounded="full">
       {getPermission(permission)?.title || permission}
     </Badge>

@@ -29,8 +29,6 @@
   // Variables
   const resource: string = ApiKeyRecord.type;
 
-  let allPermissionChoices: Array<LabelValue<string | number>> = [];
-
   // Variables::Reactive
   let { name, scope_type, scope_value, permissions, expires_at, status } = $derived(apiKey);
 
