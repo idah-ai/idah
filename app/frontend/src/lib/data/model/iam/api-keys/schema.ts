@@ -9,14 +9,13 @@ export const apiKeySchema = z.object({
   expires_at: z.coerce.date().nullable().default(null),
 });
 
-export const createApiKeySchema = apiKeySchema
-  .pick({
-    name: true,
-    scope_type: true,
-    scope_value: true,
-    permissions: true,
-    expires_at: true,
-  });
+export const createApiKeySchema = apiKeySchema.pick({
+  name: true,
+  scope_type: true,
+  scope_value: true,
+  permissions: true,
+  expires_at: true,
+});
 
 export const updateApiKeySchema = apiKeySchema.pick({
   name: true,
