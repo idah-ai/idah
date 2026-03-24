@@ -47,10 +47,16 @@
   let isDatasetEmpty = $derived(datasetEntryRecords.length === 0);
   let isSubmitDisabled = $derived(isDatasetEmpty || selectedEntryIds?.length === 0);
 
-  // Set all selected by default when entries arrive or modal opens
+  // set default name when modal opens
   $effect(() => {
     if (open) {
       newDatasetName = `${datasetName} - duplicated`;
+    }
+  });
+
+  // set entries selected by default
+  $effect(() => {
+    if (open) {
       if (isDatasetEmpty) {
         selectAll = false;
         selectedEntryIds = [];
