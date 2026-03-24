@@ -1,0 +1,9 @@
+---
+import { SIDEBAR_WIDTH } from "$lib/components/ui/sidebar/constants";
+---
+
+<!-- calc with SIDEBAR_WIDTH -->
+<!-- <div class="flex flex-1 flex-col w-[calc(100%-{SIDEBAR_WIDTH} -->
+<div class="flex flex-1 flex-col" style={`width: calc(100% - ${SIDEBAR_WIDTH})`}>
+  <slot />
+</div>

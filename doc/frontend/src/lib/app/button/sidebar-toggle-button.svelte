@@ -10,7 +10,7 @@
   data-sidebar-toggle
   variant="ghost"
   size="icon"
-  class={cn("lg:hidden", {
+  class={cn("md:hidden", {
     hidden: $searchOpen,
   })}
   onclick={toggleSidebar}

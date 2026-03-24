@@ -1,21 +1,23 @@
 <script lang="ts">
-  import { closeSearch, openSearch, searchOpen } from "$lib/app/bar/search-bar.store";
-  import { sidebarOpen } from "$lib/app/sidebar/sidebar.store";
+  import { searchOpen } from "$lib/app/bar/search-bar.store";
   import Button from "$lib/components/ui/button/button.svelte";
-  import { cn } from "$lib/utils";
-  import { SearchIcon, XIcon } from "@lucide/svelte";
+  import { SearchIcon } from "@lucide/svelte";
+
+  function handleClick() {
+    searchOpen.set(true);
+    // Focus on input after a small delay to ensure it's rendered
+    setTimeout(() => {
+      const input = document.querySelector('input[placeholder="Search documentation..."]') as HTMLInputElement;
+      input?.focus();
+    }, 100);
+  }
 </script>
 
-<div
-  class={cn("flex items-center gap-1 lg:hidden shrink-0", {
-    hidden: $sidebarOpen,
-  })}
+<Button
+  variant="ghost"
+  size="icon"
+  class="md:hidden"
+  onclick={handleClick}
 >
-  <Button class={cn({ hidden: !$searchOpen })} variant="ghost" size="icon" onclick={closeSearch}>
-    <XIcon />
-  </Button>
-
-  <Button class={cn({ hidden: $searchOpen })} variant="ghost" size="icon" onclick={openSearch}>
-    <SearchIcon />
-  </Button>
-</div>
+  <SearchIcon class="size-5" style="color: #2391ea;" />
+</Button>
