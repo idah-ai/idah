@@ -1,7 +1,7 @@
 import { createBackendDataSource, resourcePath } from "@/data/BackendDataSource";
 import { clearCache } from "@/data/Cache";
 import { AccountRecord } from "@/data/model/iam/accounts/record";
-import { apiKeyStatuses, type ApiKeyStatusBadgeProps } from "@/data/model/iam/api-keys/constants";
+import { apiKeyStatuses, scopeTypes, type ApiKeyStatusBadgeProps } from "@/data/model/iam/api-keys/constants";
 import { parseSingleElementError } from "@/data/model/json_api";
 import { field, Record, RecordFactory, relationship, type } from "@/data/model/Record";
 import { Transformers } from "@/data/model/transformers";
@@ -44,6 +44,12 @@ export class ApiKeyRecord extends Record {
     const foundApiKeyStatus = apiKeyStatuses.find((s) => s.value === this.status);
 
     return foundApiKeyStatus ?? defaultBadgeProps;
+  }
+
+  public get scopeTypeLabel(): string {
+    const foundApiKeyScopeType = scopeTypes.find((s) => s.value === this.scope_type);
+
+    return foundApiKeyScopeType ? foundApiKeyScopeType.label : "Unknown";
   }
 }
 
