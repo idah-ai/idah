@@ -4,6 +4,7 @@ import ApiKeyCell from "@/components/app/iam/api-keys/data-tables/api-key-cell.s
 import ApiKeyPermissionsCell from "@/components/app/iam/api-keys/data-tables/api-key-permissions-cell.svelte";
 import ApiKeyRowActionCell from "@/components/app/iam/api-keys/data-tables/api-key-row-action-cell.svelte";
 import ApiKeyScopeTypeCell from "@/components/app/iam/api-keys/data-tables/api-key-scope-type-cell.svelte";
+import ApiKeyStatusCell from "@/components/app/iam/api-keys/data-tables/api-key-status-cell.svelte";
 
 import { ApiKeyRecord } from "@/data/model/iam/api-keys/record";
 
@@ -78,6 +79,16 @@ export const apiKeyColumns: ColumnsSettings<ApiKeyRecord> = {
     visible: true,
     hidable: false,
     cellComponent: ApiKeyPermissionsCell,
+  },
+  status: {
+    label: "Status",
+    dataType: "enum",
+    clickable: false,
+    sortable: false,
+    filterable: false,
+    visible: true,
+    hidable: false,
+    cellComponent: ApiKeyStatusCell,
   },
   last_used_at: apiKeyDatetimeColumn({ label: "Last Used" }),
   created_at: apiKeyDatetimeColumn({ label: "Created At" }),

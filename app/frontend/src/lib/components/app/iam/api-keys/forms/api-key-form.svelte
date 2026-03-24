@@ -32,7 +32,9 @@
 
   // Functions
   async function loadPermissions(): Promise<Array<LabelValue<string | number>>> {
-    const permissionsRes = await apiKeysBackendDataSource.permission_list();
+    const permissionsRes = await apiKeysBackendDataSource.permission_list({
+      scope_type,
+    });
 
     return permissionsRes.data.map((permission) => ({
       label: permission.attributes.title,
@@ -63,91 +65,92 @@
       required
       errors={fieldErrors["name"]}
       value={name}
-      disabled={!newRecord}
       oninput={(e) => (name = e.currentTarget.value)}
     />
 
     <!-- APIKEY:SCOPE_TYPE -->
 
-    <SingleSelectField
-      name="{resource}/scope_type"
-      label="Scope Type"
-      placeholder="Select scope"
-      required
-      choices={scopeTypes}
-      errors={fieldErrors["scope_type"]}
-      value={scope_type}
-      disabled={!newRecord}
-      onSelected={(selectedValue) => {
-        scope_type = selectedValue as string;
-      }}
-    />
-
-    <!-- APIKEY:ORGANIZATIONS -->
-    {#if scope_type == "organization"}
-      <MultipleSelectDatasourceField
-        name="{resource}/scope_value/organizations"
-        label="Organizations"
-        dataSource={organizationsBackendDataSource}
-        displayKey="name"
-        values={scope_value}
-        placeholder="Select an organization"
-        searchKeyWithOperation="name__match"
-        clearable
+    {#if newRecord}
+      <SingleSelectField
+        name="{resource}/scope_type"
+        label="Scope Type"
+        placeholder="Select scope"
         required
+        choices={scopeTypes}
+        errors={fieldErrors["scope_type"]}
+        value={scope_type}
         disabled={!newRecord}
-        errors={fieldErrors["scope_value"]}
-        onSelected={(selectedChoices) => {
-          scope_value = selectedChoices.map((choice) => String(choice.value));
+        onSelected={(selectedValue) => {
+          scope_type = selectedValue as string;
         }}
       />
+
+      <!-- APIKEY:ORGANIZATIONS -->
+      {#if scope_type == "org"}
+        <MultipleSelectDatasourceField
+          name="{resource}/scope_value/organizations"
+          label="Organizations"
+          dataSource={organizationsBackendDataSource}
+          displayKey="name"
+          values={scope_value}
+          placeholder="Select an organization"
+          searchKeyWithOperation="name__match"
+          clearable
+          required
+          disabled={!newRecord}
+          errors={fieldErrors["scope_value"]}
+          onSelected={(selectedChoices) => {
+            scope_value = selectedChoices.map((choice) => String(choice.value));
+          }}
+        />
+      {/if}
+
+      <!-- APIKEY:PROJECTS -->
+      {#if scope_type == "project"}
+        <MultipleSelectDatasourceField
+          name="{resource}/scope_value/projects"
+          label="Projects"
+          dataSource={projectsBackendDataSource}
+          displayKey="name"
+          values={scope_value}
+          placeholder="Select projects"
+          searchKeyWithOperation="name__match"
+          clearable
+          required
+          disabled={!newRecord}
+          errors={fieldErrors["scope_value"]}
+          onSelected={(selectedChoices) => {
+            scope_value = selectedChoices.map((choice) => String(choice.value));
+          }}
+        />
+      {/if}
+
+      <!-- APIKEY:PERMISSIONS -->
+      {#await loadPermissions() then choices}
+        {@const _ = allPermissionChoices = choices}
+
+        <MultipleSelectField
+          name="{resource}/permissions"
+          label="Permissions"
+          placeholder="Select permissions"
+          required
+          {choices}
+          disabled={scope_type === "all" || !newRecord}
+          errors={fieldErrors["permissions"]}
+          values={permissions}
+        >
+          {#snippet slotChoice({ choice, select })}
+            {@const { label, description, value } = choice}
+            <CommandItem value={String(value)} onSelect={() => select(choice)}>
+              <div class="flex flex-col gap-0">
+                <p>{label}</p>
+                <small class="text-muted-foreground">{description}</small>
+              </div>
+            </CommandItem>
+          {/snippet}
+        </MultipleSelectField>
+      {/await}
     {/if}
-
-    <!-- APIKEY:PROJECTS -->
-    {#if scope_type == "project"}
-      <MultipleSelectDatasourceField
-        name="{resource}/scope_value/projects"
-        label="Projects"
-        dataSource={projectsBackendDataSource}
-        displayKey="name"
-        values={scope_value}
-        placeholder="Select projects"
-        searchKeyWithOperation="name__match"
-        clearable
-        required
-        disabled={!newRecord}
-        errors={fieldErrors["scope_value"]}
-        onSelected={(selectedChoices) => {
-          scope_value = selectedChoices.map((choice) => String(choice.value));
-        }}
-      />
-    {/if}
-
-    <!-- APIKEY:PERMISSIONS -->
-    {#await loadPermissions() then choices}
-      {@const _ = allPermissionChoices = choices}
-
-      <MultipleSelectField
-        name="{resource}/permissions"
-        label="Permissions"
-        placeholder="Select permissions"
-        required
-        {choices}
-        disabled={scope_type === "all" || !newRecord}
-        errors={fieldErrors["permissions"]}
-        values={permissions}
-      >
-        {#snippet slotChoice({ choice, select })}
-          {@const { label, description, value } = choice}
-          <CommandItem value={String(value)} onSelect={() => select(choice)}>
-            <div class="flex flex-col gap-0">
-              <p>{label}</p>
-              <small class="text-muted-foreground">{description}</small>
-            </div>
-          </CommandItem>
-        {/snippet}
-      </MultipleSelectField>
-    {/await}
 
     <DatePickerField
       name="{resource}/expires_at"
@@ -155,7 +158,9 @@
       placeholder="Select expiration date"
       errors={fieldErrors["expires_at"]}
       value={apiKey.expires_at}
-      onDateSelected={(selectedDate) => (apiKey.expires_at = selectedDate)}
+      onDateSelected={(selectedDate) => {
+        apiKey.expires_at = selectedDate ? new Date(selectedDate) : null;
+      }}
     />
   </FieldGroup>
 </FieldSet>

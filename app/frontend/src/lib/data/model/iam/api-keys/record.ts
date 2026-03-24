@@ -1,7 +1,9 @@
 import { createBackendDataSource, resourcePath } from "@/data/BackendDataSource";
 import { clearCache } from "@/data/Cache";
 import { AccountRecord } from "@/data/model/iam/accounts/record";
-import { parseSingleElementError } from "@/data/model/json_api";
+import { apiKeyStatuses, type ApiKeyStatusBadgeProps } from "@/data/model/iam/api-keys/constants";
+import { ApiPermissionRecord } from "@/data/model/iam/api-permission/record";
+import { parseCollectionReturn, parseSingleElementError } from "@/data/model/json_api";
 import { field, Record, RecordFactory, relationship, type } from "@/data/model/Record";
 import { Transformers } from "@/data/model/transformers";
 
@@ -32,6 +34,18 @@ export class ApiKeyRecord extends Record {
   @field() public key!: string;
 
   @relationship() public service_account!: AccountRecord;
+
+  public get statusBadge(): ApiKeyStatusBadgeProps {
+    const defaultBadgeProps: ApiKeyStatusBadgeProps = {
+      label: "Pending",
+      value: "pending",
+      variant: "warning",
+    };
+
+    const foundApiKeyStatus = apiKeyStatuses.find((s) => s.value === this.status);
+
+    return foundApiKeyStatus ?? defaultBadgeProps;
+  }
 }
 
 RecordFactory.registerTypes(ApiKeyRecord);
@@ -39,8 +53,9 @@ RecordFactory.registerTypes(ApiKeyRecord);
 const apiKeyBasePath: string = `${import.meta.env.VITE_IDAH_HOST}/api/v1/iam/api_keys`;
 
 export const apiKeysBackendDataSource = createBackendDataSource(ApiKeyRecord, apiKeyBasePath, {
-  permission_list: async () => {
-    const res = await fetch(`${apiKeyBasePath}/permissions`, {
+  permission_list: async (params: { scope_type: string }) => {
+    const { scope_type } = params;
+    const res = await fetch(`${apiKeyBasePath}/permissions/${scope_type}`, {
       method: "GET",
     });
 
