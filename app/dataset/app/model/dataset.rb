@@ -49,7 +49,7 @@ module Dataset
 
         scope.as_org_owner? do
           org_ids = auth_context.custom_scopes[:org]
-          project_id = auth_context.custom_scopes[:project]
+          project_ids = auth_context.custom_scopes[:project]
 
           if org_ids
             table.where(
@@ -58,8 +58,8 @@ module Dataset
                 .where(id: Sequel[:datasets][:project_id])
                 .select(1).exists
             )
-          elsif project_id
-            table.where(project_id:)
+          elsif project_ids
+            table.where(project_id: project_ids)
           else
             table.where(Sequel.lit("false"))
           end
