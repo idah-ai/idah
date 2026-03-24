@@ -32,7 +32,8 @@
           hidden: !canUpdateAPIKey,
           action: async () => {
             const apiKeyRes = await fetchAPIKey();
-            apiKey = apiKeyRes.data;
+            apiKeyRecord = apiKeyRes.data;
+            console.log(apiKeyRecord);
 
             openEditAPIKeyFormModal = true;
           },

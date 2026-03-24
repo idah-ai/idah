@@ -2,13 +2,14 @@ import type { Component } from "svelte";
 
 import ApiKeyCell from "@/components/app/iam/api-keys/data-tables/api-key-cell.svelte";
 import ApiKeyPermissionsCell from "@/components/app/iam/api-keys/data-tables/api-key-permissions-cell.svelte";
+import ApiKeyRowActionCell from "@/components/app/iam/api-keys/data-tables/api-key-row-action-cell.svelte";
 import ApiKeyScopeTypeCell from "@/components/app/iam/api-keys/data-tables/api-key-scope-type-cell.svelte";
 
 import { ApiKeyRecord } from "@/data/model/iam/api-keys/record";
 
 import type { ColumnSettings, ColumnsSettings, DataTableCellBaseProps } from "@/components/app/datasource-table/types";
 
-export const apiKeyCreatedAtColumn = (params: { label: string }): ColumnSettings<ApiKeyRecord> => {
+export const apiKeyDatetimeColumn = (params: { label: string }): ColumnSettings<ApiKeyRecord> => {
   const { label = "Created At" } = params;
   return {
     label,
@@ -16,11 +17,6 @@ export const apiKeyCreatedAtColumn = (params: { label: string }): ColumnSettings
     clickable: false,
     sortable: true,
     filterable: true,
-    filterOptions: {
-      filterKey: "created_at",
-      filterBy: "date-range",
-      filterOperation: "gte",
-    },
     visible: true,
     hidable: false,
   };
@@ -33,7 +29,7 @@ export const apiKeyDateColumn = (params: {
   const { label = "Last Used", cellComponent } = params;
   return {
     label,
-    dataType: "datetime",
+    dataType: "date",
     clickable: false,
     sortable: true,
     visible: true,
@@ -83,9 +79,9 @@ export const apiKeyColumns: ColumnsSettings<ApiKeyRecord> = {
     hidable: false,
     cellComponent: ApiKeyPermissionsCell,
   },
-  last_used_at: apiKeyDateColumn({ label: "Last Used" }),
-  created_at: apiKeyDateColumn({ label: "Created At" }),
-  expire_at: apiKeyDateColumn({ label: "Expired At" }),
+  last_used_at: apiKeyDatetimeColumn({ label: "Last Used" }),
+  created_at: apiKeyDatetimeColumn({ label: "Created At" }),
+  expires_at: apiKeyDateColumn({ label: "Expired At" }),
   action: {
     label: "Action",
     dataType: "string",
@@ -94,5 +90,6 @@ export const apiKeyColumns: ColumnsSettings<ApiKeyRecord> = {
     filterable: false,
     visible: true,
     hidable: false,
+    cellComponent: ApiKeyRowActionCell,
   },
 };

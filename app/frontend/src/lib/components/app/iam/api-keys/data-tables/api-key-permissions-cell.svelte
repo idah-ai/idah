@@ -18,12 +18,12 @@
   }
 </script>
 
-{#each apiKeyRecord.permissions as permission}
-  {#await getPermissionTitle(permission) then title}
-    <div class="flex flex-col gap-1">
+<div class="flex flex-col gap-1">
+  {#each apiKeyRecord.permissions as permission}
+    {#await getPermissionTitle(permission) then title}
       <Badge variant="outline" rounded="full">
         {title}
       </Badge>
-    </div>
-  {/await}
-{/each}
+    {/await}
+  {/each}
+</div>

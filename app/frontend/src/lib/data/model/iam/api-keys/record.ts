@@ -19,7 +19,7 @@ export class ApiKeyRecord extends Record {
   @field() public scope_type!: string;
   @field() public scope_value!: string[];
 
-  @field() public expired_at!: Date | null;
+  @field() public expires_at!: Date | null;
   @field() public readonly revoked_at!: Date | null;
 
   @field() public status!: string;
