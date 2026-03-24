@@ -20,7 +20,7 @@
 
   import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
   import type { CollectionResponse } from "@/data/model/types";
-  
+
   pageBreadcrumbsStore.set([apiKeyBreadcrumb]);
 
   // Variables
@@ -45,46 +45,39 @@
     openNewAPIKeyFormModal = true;
   }
 
- async function onLoadSetContexts<T extends Record = ApiKeyRecord>(response: CollectionResponse<T>) {
-  const scopeValues = Array.from(new Set(response.data.map((key) => key.scope_value)));
+  async function onLoadSetContexts<T extends Record = ApiKeyRecord>(response: CollectionResponse<T>) {
+    const scopeValues = Array.from(new Set(response.data.map((key) => key.scope_value)));
 
-  const [allPermissionRes, orgPermissionRes, projectPermissionRes] = await Promise.all([
-    apiKeysBackendDataSource.permission_list({ scope_type: "all" }),
-    apiKeysBackendDataSource.permission_list({ scope_type: "org" }),
-    apiKeysBackendDataSource.permission_list({ scope_type: "project" }),
-  ]);
+    const [allPermissionRes, orgPermissionRes, projectPermissionRes] = await Promise.all([
+      apiKeysBackendDataSource.permission_list({ scope_type: "all" }),
+      apiKeysBackendDataSource.permission_list({ scope_type: "org" }),
+      apiKeysBackendDataSource.permission_list({ scope_type: "project" }),
+    ]);
 
-  const organizationRes = await organizationsBackendDataSource.list({
-    fields: {
-      [OrganizationRecord.type]: ["name"],
-    },
-    filters: {
-      id__in: scopeValues,
-    },
-  });
+    const organizationRes = await organizationsBackendDataSource.list({
+      fields: {
+        [OrganizationRecord.type]: ["name"],
+      },
+      filters: {
+        id__in: scopeValues,
+      },
+    });
 
-  const projectRes = await projectsBackendDataSource.list({
-    fields: {
-      [ProjectRecord.type]: ["name"],
-    },
-    filters: {
-      id__in: scopeValues,
-    },
-  });
+    const projectRes = await projectsBackendDataSource.list({
+      fields: {
+        [ProjectRecord.type]: ["name"],
+      },
+      filters: {
+        id__in: scopeValues,
+      },
+    });
 
-
-  return {
-    permissions: [
-      ...allPermissionRes.data,
-      ...orgPermissionRes.data,
-      ...projectPermissionRes.data,
-    ],
-    organizations: [...organizationRes.data],
-    projects: [...projectRes.data],
-
-  };
-}
-
+    return {
+      permissions: [...allPermissionRes.data, ...orgPermissionRes.data, ...projectPermissionRes.data],
+      organizations: [...organizationRes.data],
+      projects: [...projectRes.data],
+    };
+  }
 </script>
 
 {#snippet AddNewAPIKeyButton()}
@@ -125,7 +118,7 @@
             "created_at",
             "expires_at",
             "updated_at",
-            "status"
+            "status",
           ],
         },
       }}
