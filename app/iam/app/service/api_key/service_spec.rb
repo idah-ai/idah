@@ -55,7 +55,7 @@ RSpec.describe ApiKey::Service, database: true do
       let(:attributes) do
         {
           name: "Test API Key",
-          permissions: %w[org_rw_all org_ro_own],
+          permissions: %w[org_rw_all org_ro_org],
           scope_type: "org",
           scope_value: ["org-123"],
           expires_at: Time.now + 30 * 24 * 60 * 60
@@ -141,7 +141,7 @@ RSpec.describe ApiKey::Service, database: true do
               type: Resource::Iam::ApiKeys,
               attributes: {
                 name: "Show Test Key",
-                permissions: %w[org_ro_own],
+                permissions: %w[org_ro_org],
                 scope_type: "all",
                 scope_value: []
               }
@@ -168,7 +168,7 @@ RSpec.describe ApiKey::Service, database: true do
               type: Resource::Iam::ApiKeys,
               attributes: {
                 name: "Original Name",
-                permissions: %w[org_ro_own],
+                permissions: %w[org_ro_org],
                 scope_type: "all",
                 scope_value: [],
                 expires_at: Time.now + 30 * 24 * 60 * 60
@@ -276,7 +276,7 @@ RSpec.describe ApiKey::Service, database: true do
               type: Resource::Iam::ApiKeys,
               attributes: {
                 name: "To Revoke",
-                permissions: %w[org_ro_own],
+                permissions: %w[org_ro_org],
                 scope_type: "all",
                 scope_value: []
               }
@@ -318,7 +318,7 @@ RSpec.describe ApiKey::Service, database: true do
               type: Resource::Iam::ApiKeys,
               attributes: {
                 name: "Expired Key",
-                permissions: %w[org_ro_own],
+                permissions: %w[org_ro_org],
                 scope_type: "all",
                 scope_value: [],
                 expires_at: Time.now - 3600

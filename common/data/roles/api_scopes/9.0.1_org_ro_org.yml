@@ -1,8 +1,8 @@
 api/org_ro_org:
-  title: "API - Organization Read Only Own (Org Scope)"
+  title: "API - Organization Read Only (Org Scope)"
   mask: "9.0.1"
   description: |
-    API role for read-only access to only is own organization resources.
+    API role for read-only access to organization resources.
   assignable: false
   rights:
     # Organizations
