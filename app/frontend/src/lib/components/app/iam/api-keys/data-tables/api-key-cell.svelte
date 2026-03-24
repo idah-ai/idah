@@ -7,7 +7,7 @@
   let { record: apiKeyRecord }: DataTableCellBaseProps<ApiKeyRecord> = $props();
 
   // Variables
-  let { sha_label } = $derived(apiKeyRecord);
+  let { key_label } = $derived(apiKeyRecord);
 </script>
 
-<Label>{sha_label}</Label>
+<Label>{key_label}</Label>
