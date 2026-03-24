@@ -7,13 +7,14 @@
 
   // Props
   let { record: apiKeyRecord, contexts }: DataTableCellBaseProps<ApiKeyRecord> = $props();
+
   // Types
   type Context = {
     permissions: Record<string, { title: string }>;
   };
   let { permissions }: Context = $derived(
     (contexts as Context) || {
-      permissions: {},
+      permissions: [],
     },
   );
 

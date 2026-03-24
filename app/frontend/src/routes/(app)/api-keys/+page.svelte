@@ -13,13 +13,14 @@
   import { apiKeyBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
   import { ApiKeyRecord, apiKeysBackendDataSource } from "@/data/model/iam/api-keys/record";
+  import { OrganizationRecord, organizationsBackendDataSource } from "@/data/model/iam/organizations/record";
   import { Record } from "@/data/model/Record";
   import { authStatus } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
+
+  import { ProjectRecord, projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
+  import type { CollectionResponse } from "@/data/model/types";
   
-  import type { Hash } from "@/utils/types";
-
-
   pageBreadcrumbsStore.set([apiKeyBreadcrumb]);
 
   // Variables
@@ -44,19 +45,43 @@
     openNewAPIKeyFormModal = true;
   }
 
- async function onLoadSetContexts(): Promise<Hash> {
-  const [allRes, orgRes, projectRes] = await Promise.all([
+ async function onLoadSetContexts<T extends Record = ApiKeyRecord>(response: CollectionResponse<T>) {
+  const scopeValues = Array.from(new Set(response.data.map((key) => key.scope_value)));
+
+  const [allPermissionRes, orgPermissionRes, projectPermissionRes] = await Promise.all([
     apiKeysBackendDataSource.permission_list({ scope_type: "all" }),
     apiKeysBackendDataSource.permission_list({ scope_type: "org" }),
     apiKeysBackendDataSource.permission_list({ scope_type: "project" }),
   ]);
 
+  const organizationRes = await organizationsBackendDataSource.list({
+    fields: {
+      [OrganizationRecord.type]: ["name"],
+    },
+    filters: {
+      id__in: scopeValues,
+    },
+  });
+
+  const projectRes = await projectsBackendDataSource.list({
+    fields: {
+      [ProjectRecord.type]: ["name"],
+    },
+    filters: {
+      id__in: scopeValues,
+    },
+  });
+
+
   return {
     permissions: [
-      ...allRes.data,
-      ...orgRes.data,
-      ...projectRes.data,
+      ...allPermissionRes.data,
+      ...orgPermissionRes.data,
+      ...projectPermissionRes.data,
     ],
+    organizations: [...organizationRes.data],
+    projects: [...projectRes.data],
+
   };
 }
 
@@ -93,8 +118,8 @@
             "id",
             "name",
             "key_label",
-            "key_sha",
             "scope_type",
+            "scope_value",
             "permissions",
             "last_used_at",
             "created_at",
