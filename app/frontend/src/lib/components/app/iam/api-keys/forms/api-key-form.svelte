@@ -1,4 +1,8 @@
 <script lang="ts">
+  import { cn } from "@/utils";
+  import { CheckIcon } from "@lucide/svelte";
+
+  import ComboboxTriggerValueBadges from "@/components/app/forms/fields/combobox/combobox-trigger-value-badges.svelte";
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import DatePickerField from "@/components/app/forms/fields/picker/date-picker-field.svelte";
   import MultipleSelectDatasourceField from "@/components/app/forms/fields/select/multiple/multiple-select-datasource-field.svelte";
@@ -28,7 +32,7 @@
   let allPermissionChoices: Array<LabelValue<string | number>> = [];
 
   // Variables::Reactive
-  let { name, scope_type, scope_value, permissions, expires_at } = $derived(apiKey);
+  let { name, scope_type, scope_value, permissions, expires_at, status } = $derived(apiKey);
 
   // Functions
   async function loadPermissions(): Promise<Array<LabelValue<string | number>>> {
@@ -86,7 +90,7 @@
           dataSource={organizationsBackendDataSource}
           displayKey="name"
           values={scope_value}
-          placeholder="Select an organization"
+          placeholder="Select organizations"
           searchKeyWithOperation="name__match"
           clearable
           required
@@ -95,7 +99,16 @@
           onSelected={(selectedChoices) => {
             scope_value = selectedChoices.map((choice) => String(choice.value));
           }}
-        />
+        >
+          {#snippet slotTriggerValues({ selectedChoices })}
+            <ComboboxTriggerValueBadges
+              values={selectedChoices.map((choice) => choice.value)}
+              dataSource={organizationsBackendDataSource}
+              displayKey="name"
+              maxShown={2}
+            />
+          {/snippet}
+        </MultipleSelectDatasourceField>
       {/if}
 
       <!-- APIKEY:PROJECTS -->
@@ -115,19 +128,27 @@
           onSelected={(selectedChoices) => {
             scope_value = selectedChoices.map((choice) => String(choice.value));
           }}
-        />
+        >
+          {#snippet slotTriggerValues({ selectedChoices })}
+            <ComboboxTriggerValueBadges
+              values={selectedChoices.map((choice) => choice.value)}
+              dataSource={organizationsBackendDataSource}
+              displayKey="name"
+              maxShown={2}
+            />
+          {/snippet}
+        </MultipleSelectDatasourceField>
       {/if}
 
       <!-- APIKEY:PERMISSIONS -->
       {#await loadPermissions() then choices}
-        {@const _ = allPermissionChoices = choices}
-
         <MultipleSelectField
           name="{resource}/permissions"
           label="Permissions"
           placeholder="Select permissions"
           required
           {choices}
+          clearable
           disabled={!newRecord}
           errors={fieldErrors["permissions"]}
           values={permissions}
@@ -135,9 +156,18 @@
             permissions = selectedChoices.map((choice) => String(choice.value));
           }}
         >
+          {#snippet slotTriggerValues({ selectedChoices })}
+            <ComboboxTriggerValueBadges values={selectedChoices.map((choice) => choice.label)} />
+          {/snippet}
+
           {#snippet slotChoice({ choice, select })}
             {@const { label, description, value } = choice}
             <CommandItem value={String(value)} onSelect={() => select(choice)}>
+              <CheckIcon
+                class={cn("mr-2 size-4", {
+                  "opacity-0": !permissions.find((v) => v == choice.value),
+                })}
+              />
               <div class="flex flex-col gap-0">
                 <p>{label}</p>
                 <small class="text-muted-foreground">{description}</small>
@@ -154,6 +184,7 @@
       placeholder="Select expiration date"
       errors={fieldErrors["expires_at"]}
       value={expires_at}
+      disabled={status === "revoked" || (expires_at !== null && expires_at < new Date())}
       onDateSelected={(selectedDate) => {
         expires_at = selectedDate ? new Date(selectedDate) : null;
       }}
