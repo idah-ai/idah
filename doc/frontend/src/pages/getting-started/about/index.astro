@@ -12,14 +12,19 @@ import {
   RefreshCw,
   Settings,
   FileText,
-  Bell
+  Bell,
+  BookOpen
 } from '@lucide/astro';
 ---
 
 <PageLayout>
   <PageContainer>
     <PageTitle>
+      <div class="p-3 rounded-xl text-blue-400 dark:text-blue-600 bg-blue-50 dark:bg-blue-900/20">
+        <BookOpen class="w-9 h-9" stroke-width={2} />
+      </div>
       What is IDAH?
+      </span>
     </PageTitle>
 
     <div class="prose prose-lg max-w-none dark:prose-invert">
