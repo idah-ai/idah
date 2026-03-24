@@ -44,13 +44,6 @@
   }
 
   $effect(() => {
-    if (scope_type === "all" && allPermissionChoices.length > 0) {
-      const allIds = allPermissionChoices.map((c) => String(c.value));
-
-      if (permissions.length !== allIds.length) {
-        permissions = allIds;
-      }
-    }
     onValueChange({ name, scope_type, scope_value, permissions });
   });
 </script>
@@ -135,7 +128,7 @@
           placeholder="Select permissions"
           required
           {choices}
-          disabled={scope_type === "all" || !newRecord}
+          disabled={!newRecord}
           errors={fieldErrors["permissions"]}
           values={permissions}
           onSelected={(selectedChoices) => {
