@@ -45,10 +45,20 @@
   }
 
  async function onLoadSetContexts(): Promise<Hash> {
-    const permissionsRes = await apiKeysBackendDataSource.permission_list({ scope_type: "all" });
+  const [allRes, orgRes, projectRes] = await Promise.all([
+    apiKeysBackendDataSource.permission_list({ scope_type: "all" }),
+    apiKeysBackendDataSource.permission_list({ scope_type: "org" }),
+    apiKeysBackendDataSource.permission_list({ scope_type: "project" }),
+  ]);
 
-    return { permissions: permissionsRes.data };
-  }
+  return {
+    permissions: [
+      ...allRes.data,
+      ...orgRes.data,
+      ...projectRes.data,
+    ],
+  };
+}
 
 </script>
 

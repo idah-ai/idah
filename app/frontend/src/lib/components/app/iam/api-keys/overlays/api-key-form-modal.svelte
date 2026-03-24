@@ -30,6 +30,7 @@
   let fieldErrors: Hash = $state({});
   let submitting: boolean = $state(false);
   let openApiKeyGeneratedModal: boolean = $state(false);
+  let keyLabel: string = $state("");
 
   let apiKey: ApiKeyRecord = $derived(
     apiKeyRecord
@@ -75,7 +76,7 @@
   }
 
   async function createApiKey(): Promise<void> {
-    await apiKeysBackendDataSource.create(
+    const response = await apiKeysBackendDataSource.create(
       {
         attributes: {
           name: apiKey.name,
@@ -89,6 +90,7 @@
         showErrorToast: false,
       },
     );
+    keyLabel = response.data.attributes.key_label;
 
     closeThisModal();
     openApiKeyGeneratedModal = true;
@@ -174,4 +176,4 @@
   <ApiKeyForm {apiKey} {fieldErrors} {newRecord} onValueChange={setValue} />
 </FormModal>
 
-<ApiKeyGeneratedModal value={apiKey.key_label} bind:open={openApiKeyGeneratedModal} />
+<ApiKeyGeneratedModal value={keyLabel} bind:open={openApiKeyGeneratedModal} />

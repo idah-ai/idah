@@ -32,7 +32,7 @@
   }
 </script>
 
-<div id="email-container" class="hover:bg-primary/10 group inline-flex items-center gap-2 rounded-md px-2 py-0.5">
+<div id="copy-container" class="hover:bg-primary/10 group inline-flex items-center gap-2 rounded-md px-2 py-0.5">
   {#if slotValue}
     {@render slotValue()}
   {:else}

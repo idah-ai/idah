@@ -138,6 +138,9 @@
           disabled={scope_type === "all" || !newRecord}
           errors={fieldErrors["permissions"]}
           values={permissions}
+          onSelected={(selectedChoices) => {
+            permissions = selectedChoices.map((choice) => String(choice.value));
+          }}
         >
           {#snippet slotChoice({ choice, select })}
             {@const { label, description, value } = choice}
