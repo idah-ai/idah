@@ -28,7 +28,7 @@
 </script>
 
 <SidebarProvider>
-  <Sidebar class="pt-16 overflow-y-auto border-none">
+  <Sidebar class="pt-0 md:pt-16 overflow-y-auto border-none">
     <SidebarContent
       class="h-full pt-2 text-muted-foreground border-r bg-background"
     >

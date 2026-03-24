@@ -1,27 +1,38 @@
 ---
   import ApplicationSidebar from "$lib/app/application/sidebar/application-sidebar.svelte";
-  import MobileApplicationSidebar from "$lib/app/application/sidebar/mobile-application-sidebar.svelte";
   import { getApiUrls } from "$lib/app/sidebar/api-urls";
 
   const urls = await getApiUrls();
   const pathname = Astro.url.pathname + Astro.url.search;
 ---
 
-<script lang="ts">
-  const sidebar = document.getElementById("mobile-sidebar");
-  const toggle = document.querySelector("[data-sidebar-toggle]");
-
-  toggle?.addEventListener("click", () => {
-    sidebar?.classList.toggle("-translate-x-full");
-  });
-</script>
-
-<!-- Desktop sidebar -->
-<aside class="bg-background hidden w-64 shrink-0 lg:flex">
+<!-- Desktop sidebar (visible on md and above) -->
+<aside class="bg-background hidden md:flex w-64 shrink-0">
   <ApplicationSidebar client:load {pathname} apiUrls={urls} />
 </aside>
 
-<!-- Mobile sidebar -->
-<aside id="mobile-sidebar" class="bg-background fixed inset-y-0 left-0 z-40 w-full -translate-x-full pt-16 lg:hidden">
-  <MobileApplicationSidebar client:load {pathname} apiUrls={urls} />
+<!-- Mobile sidebar (full width overlay, controlled by toggle) -->
+<aside id="mobile-sidebar" class="bg-background fixed top-16 bottom-0 left-0 z-40 w-full md:hidden -translate-x-full transition-transform duration-300 ease-in-out overflow-y-auto">
+  <ApplicationSidebar client:load {pathname} apiUrls={urls} />
 </aside>
+
+<script>
+  // Watch for sidebar toggle events
+  function handleSidebarToggle() {
+    const mobileSidebar = document.getElementById("mobile-sidebar");
+    const toggleButton = document.querySelector("[data-sidebar-toggle]");
+
+    if (!mobileSidebar || !toggleButton) return;
+
+    toggleButton.addEventListener("click", () => {
+      mobileSidebar.classList.toggle("-translate-x-full");
+    });
+  }
+
+  // Run on page load
+  handleSidebarToggle();
+
+  document.addEventListener("astro:page-load", () => {
+    handleSidebarToggle();
+  });
+</script>

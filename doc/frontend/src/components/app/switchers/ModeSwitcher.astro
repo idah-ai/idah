@@ -13,18 +13,23 @@ const { className } = Astro.props;
   type="button"
   role="switch"
   aria-label="Toggle theme"
+  title="Toggle theme"
   class={`relative inline-flex h-8 w-16 items-center rounded-full p-1 transition-colors duration-300 focus:outline-none bg-gray-100 dark:bg-slate-700 ${className || ""}`}>
-  <!-- Light Mode Icon -->
-  <SunIcon class="text-background-foreground absolute left-2 size-4 transition-opacity duration-300 dark:opacity-30" />
+  <!-- Light Mode Icon (left side) -->
+  <SunIcon class="text-amber-500 absolute left-2 size-4 transition-opacity duration-300 opacity-100 dark:opacity-30" />
 
-  <!-- Dark Mode Icon -->
+  <!-- Dark Mode Icon (right side) -->
   <MoonIcon
-    class="text-background-foreground absolute right-2 size-4 opacity-30 transition-opacity duration-300 dark:opacity-100"
+    class="text-blue-400 absolute right-2 size-4 transition-opacity duration-300 opacity-50 dark:opacity-100"
   />
 
-  <!-- Sliding Circle Toggle -->
+  <!-- Sliding Circle Toggle with Icon -->
   <div
-    class="relative size-6 translate-x-8 transform rounded-full bg-white dark:bg-gray-800 shadow-lg transition-transform duration-300 ease-in-out dark:translate-x-0">
+    class="relative size-6 translate-x-0 transform rounded-full bg-white dark:bg-gray-800 shadow-lg transition-transform duration-300 ease-in-out dark:translate-x-8 flex items-center justify-center">
+    <!-- Sun Icon in light mode (on the circle) -->
+    <SunIcon class="size-3.5 text-amber-500 block dark:hidden" />
+    <!-- Moon Icon in dark mode (on the circle) -->
+    <MoonIcon class="size-3.5 text-blue-400 hidden dark:block" />
   </div>
 </button>
 
