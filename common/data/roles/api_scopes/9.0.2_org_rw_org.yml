@@ -1,0 +1,11 @@
+api/org_rw_org:
+  title: "API - Organization Read Write (Org Scope)"
+  mask: "9.0.2"
+  description: |
+    API role for read and write access to organization resources.
+  assignable: false
+  rights:
+    # Organizations
+    - "iam:organizations.read.as_org_owner"
+    - "iam:organizations.update.as_org_owner"
+    - "iam:accounts.create.as_org_owner"

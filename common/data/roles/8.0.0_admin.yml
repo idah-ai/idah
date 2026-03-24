@@ -12,7 +12,7 @@ admin:
     - "iam:organizations.*.*"
 
     # API Keys
-    - "iam:api_keys.create.{account_ro_all, account_rw_all, org_ro_all, org_rw_all, project_ro_org, project_rw_org, org_ro_org, project_ro_all, project_rw_all}"
+    - "iam:api_keys.create.{account_ro_all, account_rw_all, org_ro_all, org_rw_all, project_ro_org, project_rw_org, org_ro_org, org_rw_org, project_ro_all, project_rw_all}"
     - "iam:api_keys.read.*"
     - "iam:api_keys.update.*"
     - "iam:api_keys.delete.*"

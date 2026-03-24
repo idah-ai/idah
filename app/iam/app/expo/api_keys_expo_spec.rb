@@ -13,7 +13,7 @@ RSpec.describe ApiKeysExpo, type: :exposition, as: :system do
         name: "Test API Key",
         key_label: "IDAH_1234...abcd",
         key_sha: Digest::SHA256.hexdigest("test_key"),
-        permissions: %w[org_rw_all org_ro_own],
+        permissions: %w[org_rw_all org_ro_org],
         scope_type: "org",
         scope_value: ["org-123"],
         expires_at: now + 30 * 24 * 60 * 60,
@@ -33,7 +33,7 @@ RSpec.describe ApiKeysExpo, type: :exposition, as: :system do
         id: "test-key-id",
         attributes: {
           name: "Test API Key",
-          permissions: %w[org_rw_all org_ro_own],
+          permissions: %w[org_rw_all org_ro_org],
           scope_type: "org",
           scope_value: ["org-123"],
           expires_at: (now + 30 * 24 * 60 * 60).iso8601
@@ -58,7 +58,7 @@ RSpec.describe ApiKeysExpo, type: :exposition, as: :system do
 
     expect(records[0].id).to eq "test-key-id"
     expect(records[0].name).to eq "Test API Key"
-    expect(records[0].permissions).to eq %w[org_rw_all org_ro_own]
+    expect(records[0].permissions).to eq %w[org_rw_all org_ro_org]
   end
 
   it "show an API key" do
@@ -110,7 +110,7 @@ RSpec.describe ApiKeysExpo, type: :exposition, as: :system do
     permissions = [
       ApiPermission::Record.new(
         {
-          name: "org_ro_own",
+          name: "org_ro_org",
           title: "API - Organization Read-Only (Own)",
           description: "Can read data for own organization"
         }
