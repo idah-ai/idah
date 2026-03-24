@@ -1,5 +1,6 @@
 <script lang="ts">
   import ApiKeyForm from "@/components/app/iam/api-keys/forms/api-key-form.svelte";
+  import ApiKeyGeneratedModal from "@/components/app/iam/api-keys/overlays/api-key-generated-modal.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
 
   import { refetches } from "@/utils/refetch";
@@ -28,6 +29,7 @@
   let newRecord: boolean = $derived(action === "create");
   let fieldErrors: Hash = $state({});
   let submitting: boolean = $state(false);
+  let openApiKeyGeneratedModal: boolean = $state(false);
 
   let apiKey: ApiKeyRecord = $derived(
     apiKeyRecord
@@ -89,6 +91,7 @@
     );
 
     closeThisModal();
+    openApiKeyGeneratedModal = true;
     $refetches.apiKeys.list = new Date();
     showToast.success({
       title: "API Key created",
@@ -145,7 +148,6 @@
 
       if (!validated.success) {
         fieldErrors = getFieldErrors(validated.error);
-        console.log(fieldErrors);
 
         if (apiKey.errors?.permissions) {
           fieldErrors["permissions"] = [...(fieldErrors["permissions"] || []), apiKey.errors.permissions];
@@ -170,3 +172,5 @@
 <FormModal {action} {title} loading={submitting} onCancel={resetForm} onConfirm={submit} bind:open>
   <ApiKeyForm {apiKey} {fieldErrors} onValueChange={setValue} />
 </FormModal>
+
+<ApiKeyGeneratedModal value={apiKey.key_label} bind:open={openApiKeyGeneratedModal} />

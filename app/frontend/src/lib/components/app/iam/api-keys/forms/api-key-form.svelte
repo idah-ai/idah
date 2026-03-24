@@ -34,7 +34,7 @@
     const permissionsRes = await apiKeysBackendDataSource.permission_list();
 
     return permissionsRes.data.map((permission) => ({
-      label: permission.attributes.name,
+      label: permission.attributes.title,
       value: permission.id,
       description: permission.attributes.description,
     }));

@@ -70,6 +70,7 @@
         fields: {
           [ApiKeyRecord.type]: [
             "id",
+            "name",
             "key_label",
             "key_sha",
             "scope_type",
