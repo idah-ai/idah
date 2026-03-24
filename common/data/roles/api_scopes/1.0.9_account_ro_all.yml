@@ -1,5 +1,5 @@
 api/account_ro_all:
-  title: "API - Account Read Only"
+  title: "API - Account Read Only (All scope)"
   mask: "1.0.9"
   description: |
     API role for read-only access to account resources.

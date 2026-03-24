@@ -1,5 +1,5 @@
 api/org_rw_all:
-  title: "API - Organization Read Write"
+  title: "API - Organization Read Write (All scope)"
   mask: "9.9.9"
   description: |
     API role for read and write access to organization resources.

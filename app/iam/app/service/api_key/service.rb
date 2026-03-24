@@ -130,10 +130,10 @@ module ApiKey
           when "all"
             api_permission_list.select { |permission| allowed_permissions.include?(permission.name.to_sym) && permission.name.end_with?("_all") }
           when "org"
-            api_permission_list.select { |permission| allowed_permissions.include?(permission.name.to_sym) && permission.name.end_with?("_org") }
+            api_permission_list.select { |permission| allowed_permissions.include?(permission.name.to_sym) && !permission.name.start_with?("account_") }
           when "project"
             api_permission_list.select {
-              |permission| allowed_permissions.include?(permission.name.to_sym) && permission.name.start_with?("project_") && permission.name.end_with?("_org")
+              |permission| allowed_permissions.include?(permission.name.to_sym) && permission.name.start_with?("project_")
             }
           else
             raise Verse::Error::ValidationFailed, "Invalid scope_type. Must be 'all', 'org', or 'project'."
