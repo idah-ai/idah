@@ -25,13 +25,17 @@ import {
   ClipboardCheck,
   Users,
   Grip,
-  Boxes
+  Boxes,
+  Blocks
 } from '@lucide/astro';
 ---
 
 <PageLayout>
   <PageContainer>
     <PageTitle>
+      <div class="p-3 rounded-xl text-blue-400 dark:text-blue-600 bg-blue-50 dark:bg-blue-900/20">
+        <Blocks class="w-9 h-9" stroke-width={2} />
+      </div>
       Use Cases
     </PageTitle>
 

@@ -1,3 +1,11 @@
-<h1 class="scroll-m-20 text-4xl font-extrabold tracking-tight text-balance">
+---
+interface Props {
+  color?: string;
+}
+
+const { color } = Astro.props;
+---
+
+<h1 class:list={["scroll-m-20 text-4xl font-extrabold tracking-tight text-balance flex items-center gap-4", color]} >
   <slot />
 </h1>

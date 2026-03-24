@@ -4,11 +4,15 @@ import Pagination from "@components/app/page/Pagination.astro";
 import PageContainer from "@components/app/page/PageContainer.astro";
 import PageTitle from "@components/app/page/PageTitle.astro";
 import CodeBlock from "@components/app/CodeBlock.astro";
+import { Rocket } from '@lucide/astro';
 ---
 
 <PageLayout>
   <PageContainer>
     <PageTitle>
+      <div class="p-3 rounded-xl text-green-500 dark:text-green-700 bg-green-50 dark:bg-green-900/20">
+        <Rocket class="w-9 h-9" stroke-width={2} />
+      </div>
       Start IDAH
     </PageTitle>
 
