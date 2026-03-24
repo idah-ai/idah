@@ -30,7 +30,7 @@
   let fieldErrors: Hash = $state({});
   let submitting: boolean = $state(false);
   let openApiKeyGeneratedModal: boolean = $state(false);
-  let keyLabel: string = $state("");
+  let keyValue: string = $state("");
 
   let apiKey: ApiKeyRecord = $derived(
     apiKeyRecord
@@ -90,7 +90,8 @@
         showErrorToast: false,
       },
     );
-    keyLabel = response.data.attributes.key_label;
+
+    keyValue = response.data.key;
 
     closeThisModal();
     openApiKeyGeneratedModal = true;
@@ -176,4 +177,4 @@
   <ApiKeyForm {apiKey} {fieldErrors} {newRecord} onValueChange={setValue} />
 </FormModal>
 
-<ApiKeyGeneratedModal value={keyLabel} bind:open={openApiKeyGeneratedModal} />
+<ApiKeyGeneratedModal value={keyValue} bind:open={openApiKeyGeneratedModal} />
