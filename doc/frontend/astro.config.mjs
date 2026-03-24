@@ -7,6 +7,7 @@ import tailwindcss from "@tailwindcss/vite";
 // https://astro.build/config
 export default defineConfig({
   site: import.meta.env.SITE_URL || 'http://localhost:4231',
+  trailingSlash: "always",
   integrations: [svelte({ extensions: [".svelte"] })],
   vite: {
     plugins: [tailwindcss()],
