@@ -32,7 +32,6 @@
           action: async () => {
             const apiKeyRes = await fetchAPIKey();
             apiKeyRecord = apiKeyRes.data;
-            console.log(apiKeyRecord);
 
             openEditAPIKeyFormModal = true;
           },
@@ -73,7 +72,7 @@
   async function fetchAPIKey() {
     return await apiKeysBackendDataSource.get(apiKey.id, {
       fields: {
-        [ApiKeyRecord.type]: ["name", "scope_type", "scope_value", "expires_at", "permissions"],
+        [ApiKeyRecord.type]: ["name", "scope_type", "scope_value", "expires_at", "permissions", "status"],
       },
       noCache: true,
     });
