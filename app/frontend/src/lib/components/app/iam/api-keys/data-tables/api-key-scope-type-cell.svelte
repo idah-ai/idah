@@ -9,9 +9,9 @@
   let { record: apiKeyRecord }: DataTableCellBaseProps<ApiKeyRecord> = $props();
 
   // Variables
-  let { scope_type } = $derived(apiKeyRecord);
+  let { scopeTypeLabel } = $derived(apiKeyRecord);
 </script>
 
 <Badge>
-  {scope_type}
+  {scopeTypeLabel}
 </Badge>

@@ -28,7 +28,7 @@
   let allPermissionChoices: Array<LabelValue<string | number>> = [];
 
   // Variables::Reactive
-  let { name, scope_type, scope_value, permissions } = $derived(apiKey);
+  let { name, scope_type, scope_value, permissions, expires_at } = $derived(apiKey);
 
   // Functions
   async function loadPermissions(): Promise<Array<LabelValue<string | number>>> {
@@ -44,7 +44,7 @@
   }
 
   $effect(() => {
-    onValueChange({ name, scope_type, scope_value, permissions });
+    onValueChange({ name, scope_type, scope_value, permissions, expires_at });
   });
 </script>
 
@@ -153,9 +153,9 @@
       label="Expired At"
       placeholder="Select expiration date"
       errors={fieldErrors["expires_at"]}
-      value={apiKey.expires_at}
+      value={expires_at}
       onDateSelected={(selectedDate) => {
-        apiKey.expires_at = selectedDate ? new Date(selectedDate) : null;
+        expires_at = selectedDate ? new Date(selectedDate) : null;
       }}
     />
   </FieldGroup>

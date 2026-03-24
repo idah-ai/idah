@@ -73,7 +73,7 @@
   async function fetchAPIKey() {
     return await apiKeysBackendDataSource.get(apiKey.id, {
       fields: {
-        [ApiKeyRecord.type]: ["name", "scope_type", "scope_value", "expired_at", "permissions"],
+        [ApiKeyRecord.type]: ["name", "scope_type", "scope_value", "expires_at", "permissions"],
       },
       noCache: true,
     });

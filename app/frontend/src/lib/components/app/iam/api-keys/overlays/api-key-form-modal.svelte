@@ -103,6 +103,8 @@
   }
 
   async function updateApiKey(): Promise<void> {
+    console.log({ apiKey });
+
     await apiKeysBackendDataSource.update(
       apiKey.id,
       {
