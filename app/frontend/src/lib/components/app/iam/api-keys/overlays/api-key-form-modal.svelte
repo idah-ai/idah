@@ -123,7 +123,7 @@
     // Delete entries cache
     clearCache(resourcePath(entriesBasePath, null, undefined));
 
-    $refetches.accounts.list = new Date();
+    $refetches.apiKeys.list = new Date();
     showToast.success({
       title: "API Key updated",
       description: `The API Key "${apiKey.name}" has been updated.`,
