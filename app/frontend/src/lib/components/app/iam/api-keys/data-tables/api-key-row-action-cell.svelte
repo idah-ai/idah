@@ -125,7 +125,7 @@
   <ConfirmModal
     title="Revoke API Key"
     confirmLabel="Revoke API Key"
-    description={"Revoking this key will immediately block all requests using it. Any applications relying on this key will stop working."}
+    description="Revoking this key will immediately block all requests using it. Any applications relying on this key will stop working."
     onConfirm={revokeAPIKey}
     bind:open={openConfirmRevokeAPIKeyModal}
   />
