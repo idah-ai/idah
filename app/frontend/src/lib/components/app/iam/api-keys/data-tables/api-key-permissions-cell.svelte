@@ -1,29 +1,32 @@
 <script lang="ts">
   import { Badge } from "@/components/ui/badge";
 
-  import { ApiKeyRecord, apiKeysBackendDataSource } from "@/data/model/iam/api-keys/record";
+  import { ApiKeyRecord } from "@/data/model/iam/api-keys/record";
 
   import type { DataTableCellBaseProps } from "@/components/app/datasource-table/types";
 
   // Props
-  let { record: apiKeyRecord }: DataTableCellBaseProps<ApiKeyRecord> = $props();
+  let { record: apiKeyRecord, contexts }: DataTableCellBaseProps<ApiKeyRecord> = $props();
+  // Types
+  type Context = {
+    permissions: Record<string, { title: string }>;
+  };
+  let { permissions }: Context = $derived(
+    (contexts as Context) || {
+      permissions: {},
+    },
+  );
 
   // Functions
-  async function getPermissionTitle(permissionId: string): Promise<string> {
-    const permissionsRes = await apiKeysBackendDataSource.permission_list();
-
-    return (
-      permissionsRes.data.filter((permission) => permission.id === permissionId)[0]?.attributes.title || permissionId
-    );
+  function getPermission(value: string) {
+    return permissions.find((permission) => permission.id == value)?.attributes;
   }
 </script>
 
 <div class="flex flex-col gap-1">
   {#each apiKeyRecord.permissions as permission}
-    {#await getPermissionTitle(permission) then title}
-      <Badge variant="outline" rounded="full">
-        {title}
-      </Badge>
-    {/await}
+    <Badge variant="outline" rounded="full">
+      {getPermission(permission)?.title || permission}
+    </Badge>
   {/each}
 </div>

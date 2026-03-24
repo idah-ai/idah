@@ -38,7 +38,7 @@
           type: ApiKeyRecord.type,
           attributes: {
             name: null,
-            scope_type: null,
+            scope_type: "all",
             scope_value: [],
             permissions: [],
             expires_at: null,
@@ -57,7 +57,7 @@
       type: ApiKeyRecord.type,
       attributes: {
         name: null,
-        scope_type: null,
+        scope_type: "all",
         scope_value: [],
         permissions: [],
         expires_at: null,
@@ -104,6 +104,7 @@
       apiKey.id,
       {
         attributes: {
+          name: apiKey.name,
           expires_at: apiKey.expires_at,
         },
       },
@@ -159,7 +160,6 @@
       if (newRecord) {
         await createApiKey();
       } else {
-        console.log(apiKey);
         await updateApiKey();
       }
     } catch (error) {

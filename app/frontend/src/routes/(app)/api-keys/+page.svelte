@@ -13,8 +13,12 @@
   import { apiKeyBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
   import { ApiKeyRecord, apiKeysBackendDataSource } from "@/data/model/iam/api-keys/record";
+  import { Record } from "@/data/model/Record";
   import { authStatus } from "@/security/AuthContext";
   import { refetches } from "@/utils/refetch";
+  
+  import type { Hash } from "@/utils/types";
+
 
   pageBreadcrumbsStore.set([apiKeyBreadcrumb]);
 
@@ -39,10 +43,17 @@
   function openNewAPIKeyModal(): void {
     openNewAPIKeyFormModal = true;
   }
+
+ async function onLoadSetContexts(): Promise<Hash> {
+    const permissionsRes = await apiKeysBackendDataSource.permission_list({ scope_type: "all" });
+
+    return { permissions: permissionsRes.data };
+  }
+
 </script>
 
 {#snippet AddNewAPIKeyButton()}
-  <Can action="create" resource="iam:accounts" roles={["admin"]}>
+  <Can action="create" resource="iam:api_keys">
     <Button onclick={openNewAPIKeyModal}>
       <PlusIcon />
       New API Key
@@ -61,7 +72,7 @@
 
   {#key $refetches.apiKeys.list}
     <DatasourceTable
-      id="apiKeys"
+      id="api-keys"
       name="API Key"
       refetchKey="apiKeys"
       {columns}
@@ -79,9 +90,11 @@
             "created_at",
             "expires_at",
             "updated_at",
+            "status"
           ],
         },
       }}
+      {onLoadSetContexts}
     >
       {#snippet addNewRecordButton()}
         {@render AddNewAPIKeyButton()}

@@ -37,5 +37,6 @@ export const createApiKeySchema = apiKeySchema
     }
   });
 export const updateApiKeySchema = apiKeySchema.pick({
+  name: true,
   expires_at: true,
 });

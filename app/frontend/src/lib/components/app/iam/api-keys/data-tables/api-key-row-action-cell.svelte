@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { RotateCcwIcon, SquarePenIcon, Trash2Icon } from "@lucide/svelte";
+  import { CircleSlashIcon, SquarePenIcon, Trash2Icon } from "@lucide/svelte";
   import { onMount } from "svelte";
 
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
@@ -21,7 +21,6 @@
   // Variables
   let currentAccount = $authStatus.authContext;
   let canUpdateAPIKey = $state(false);
-  let canRevokeAPIKey = $state(false);
   let canDeleteAPIKey = $state(false);
   let menus: IDropdownMenus = $derived({
     actions: {
@@ -39,10 +38,12 @@
           },
         },
         {
-          label: "Invoke",
-          icon: RotateCcwIcon,
-          hidden: !canRevokeAPIKey,
-          action: () => {},
+          label: "Revoke",
+          icon: CircleSlashIcon,
+          hidden: !canUpdateAPIKey,
+          action: () => {
+            openConfirmRevokeAPIKeyModal = true;
+          },
         },
         {
           label: "Delete",
@@ -58,6 +59,7 @@
   let apiKeyRecord: ApiKeyRecord | undefined = $state(undefined);
   let openEditAPIKeyFormModal: boolean = $state(false);
   let openConfirmDeleteAPIKeyModal: boolean = $state(false);
+  let openConfirmRevokeAPIKeyModal: boolean = $state(false);
 
   // Lifecycle
   onMount(async () => {
@@ -91,6 +93,21 @@
       showActionFailedToast(error);
     }
   }
+
+  async function revokeAPIKey(): Promise<void> {
+    try {
+      await apiKeysBackendDataSource.revoke({ id: apiKey.id });
+
+      openConfirmRevokeAPIKeyModal = false;
+      $refetches.apiKeys.list = new Date();
+      showToast.success({
+        title: "API Key revoked",
+        description: `The API key "${apiKey.name}" has been revoked.`,
+      });
+    } catch (error) {
+      showActionFailedToast(error);
+    }
+  }
 </script>
 
 {#if canUpdateAPIKey || canDeleteAPIKey}
@@ -100,8 +117,17 @@
 
   <ConfirmModal
     title="Delete API Key"
+    confirmLabel="Delete API Key"
     description={`Are you sure you want to delete the API key "${apiKey.name}"?`}
     onConfirm={removeAPIKey}
     bind:open={openConfirmDeleteAPIKeyModal}
+  />
+
+  <ConfirmModal
+    title="Revoke API Key"
+    confirmLabel="Revoke API Key"
+    description={"Revoking this key will immediately block all requests using it. Any applications relying on this key will stop working."}
+    onConfirm={revokeAPIKey}
+    bind:open={openConfirmRevokeAPIKeyModal}
   />
 {/if}
