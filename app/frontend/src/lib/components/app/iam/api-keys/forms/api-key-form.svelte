@@ -13,9 +13,10 @@
   import { FieldGroup, FieldSet } from "@/components/ui/field";
 
   import { projectsBackendDataSource } from "@/data/model/dataset/projects/project-record";
-  import { scopeTypes } from "@/data/model/iam/api-keys/constants";
+  import { adminsScopeTypes, orgOwnersScopeTypes } from "@/data/model/iam/api-keys/constants";
   import { ApiKeyRecord, apiKeysBackendDataSource } from "@/data/model/iam/api-keys/record";
   import { organizationsBackendDataSource } from "@/data/model/iam/organizations/record";
+  import { authStatus } from "@/security/AuthContext";
 
   import type { FormBaseProps } from "@/components/app/forms/form.types";
   import type { LabelValue } from "@/utils/types";
@@ -29,6 +30,7 @@
 
   // Variables
   const resource: string = ApiKeyRecord.type;
+  const currentAccount = $authStatus.authContext;
 
   // Variables::Reactive
   let { name, scope_type, scope_value, permissions, expires_at, status } = $derived(apiKey);
@@ -71,7 +73,7 @@
         label="Scope Type"
         placeholder="Select scope"
         required
-        choices={scopeTypes}
+        choices={currentAccount?.isRole("admin") ? adminsScopeTypes : orgOwnersScopeTypes}
         errors={fieldErrors["scope_type"]}
         value={scope_type}
         disabled={!newRecord}
