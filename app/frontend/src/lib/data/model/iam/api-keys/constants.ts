@@ -1,6 +1,6 @@
 import type { BadgeVariant } from "@/components/ui/badge";
 import type { LabelValue } from "@/utils/types";
-import type { ApiKeyRecord } from "./record";
+import type { ApiKeyRecord } from "@/data/model/iam/api-keys/record";
 
 export const scopeTypes: LabelValue<string>[] = [
   { label: "All", value: "all" },

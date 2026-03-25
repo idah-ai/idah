@@ -2,6 +2,7 @@
   import { Badge } from "@/components/ui/badge";
 
   import { ApiKeyRecord } from "@/data/model/iam/api-keys/record";
+  import { humanize } from "@/utils/string";
 
   import type { DataTableCellBaseProps } from "@/components/app/datasource-table/types";
 
@@ -27,7 +28,7 @@
 <div class="flex flex-col gap-1">
   {#each apiKeyRecord.permissions as permission, index (index)}
     <Badge variant="outline" rounded="full">
-      {getPermission(permission)?.title || permission}
+      {getPermission(permission)?.title || humanize(permission)}
     </Badge>
   {/each}
 </div>

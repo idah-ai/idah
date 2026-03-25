@@ -6,6 +6,7 @@
   import { Tooltip, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
   import { CopyIcon, SquareCheckBigIcon } from "@lucide/svelte";
 
+  // Props
   let {
     open = $bindable(),
     value,
