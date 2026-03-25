@@ -7,7 +7,7 @@ export const orgOwnersScopeTypes: LabelValue<string>[] = [
   { label: "Project", value: "project" },
 ];
 
-export const adminsScopeTypes: LabelValue<string>[] = [...orgOwnersScopeTypes, { label: "All", value: "all" }];
+export const adminsScopeTypes: LabelValue<string>[] = [{ label: "All", value: "all" }, ...orgOwnersScopeTypes];
 
 export const apiKeyPermissions: LabelValue<string>[] = [
   { label: "Organization Read-Only", value: "read" },
