@@ -6,6 +6,7 @@ import ApiKeyRowActionCell from "@/components/app/iam/api-keys/data-tables/api-k
 import ApiKeyScopeTypeCell from "@/components/app/iam/api-keys/data-tables/api-key-scope-type-cell.svelte";
 import ApiKeyStatusCell from "@/components/app/iam/api-keys/data-tables/api-key-status-cell.svelte";
 
+import { apiKeyStatuses, scopeTypes } from "@/data/model/iam/api-keys/constants";
 import { ApiKeyRecord } from "@/data/model/iam/api-keys/record";
 
 import type { ColumnSettings, ColumnsSettings, DataTableCellBaseProps } from "@/components/app/datasource-table/types";
@@ -17,7 +18,7 @@ export const apiKeyDatetimeColumn = (params: { label: string }): ColumnSettings<
     dataType: "datetime",
     clickable: false,
     sortable: true,
-    filterable: true,
+    filterable: false,
     visible: true,
     hidable: false,
   };
@@ -35,7 +36,7 @@ export const apiKeyDateColumn = (params: {
     sortable: true,
     visible: true,
     hidable: false,
-    filterable: true,
+    filterable: false,
     cellComponent,
   };
 };
@@ -46,7 +47,12 @@ export const apiKeyColumns: ColumnsSettings<ApiKeyRecord> = {
     dataType: "string",
     clickable: false,
     sortable: true,
-    filterable: false,
+    filterable: true,
+    filterOptions: {
+      filterKey: "name",
+      filterBy: "string",
+      filterOperation: "match",
+    },
     visible: true,
     hidable: false,
   },
@@ -54,7 +60,7 @@ export const apiKeyColumns: ColumnsSettings<ApiKeyRecord> = {
     label: "API Key",
     dataType: "string",
     clickable: false,
-    sortable: true,
+    sortable: false,
     filterable: false,
     visible: true,
     hidable: false,
@@ -65,7 +71,13 @@ export const apiKeyColumns: ColumnsSettings<ApiKeyRecord> = {
     dataType: "string",
     clickable: false,
     sortable: true,
-    filterable: false,
+    filterable: true,
+    filterOptions: {
+      filterKey: "scope_type",
+      filterBy: "multiple-select",
+      filterOperation: "in",
+      choices: scopeTypes,
+    },
     visible: true,
     hidable: false,
     cellComponent: ApiKeyScopeTypeCell,
@@ -74,7 +86,7 @@ export const apiKeyColumns: ColumnsSettings<ApiKeyRecord> = {
     label: "Permissions",
     dataType: "string",
     clickable: false,
-    sortable: true,
+    sortable: false,
     filterable: false,
     visible: true,
     hidable: false,
@@ -84,8 +96,14 @@ export const apiKeyColumns: ColumnsSettings<ApiKeyRecord> = {
     label: "Status",
     dataType: "enum",
     clickable: false,
-    sortable: false,
-    filterable: false,
+    sortable: true,
+    filterable: true,
+    filterOptions: {
+      filterKey: "status",
+      filterBy: "multiple-select",
+      filterOperation: "in",
+      choices: apiKeyStatuses,
+    },
     visible: true,
     hidable: false,
     cellComponent: ApiKeyStatusCell,
