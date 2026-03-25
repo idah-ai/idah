@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { Calendar as CalendarPrimitive } from "bits-ui";
-	import * as Calendar from "./index.js";
 	import { cn, type WithoutChildrenOrChild } from "$lib/utils.js";
-	import type { ButtonVariant } from "../button/button.svelte";
 	import { isEqualMonth, type DateValue } from "@internationalized/date";
+	import { Calendar as CalendarPrimitive } from "bits-ui";
 	import type { Snippet } from "svelte";
+	import type { ButtonVariant } from "../button/button.svelte";
+	import * as Calendar from "./index.js";
 
 	let {
 		ref = $bindable(null),
@@ -19,6 +19,8 @@
 		years,
 		monthFormat: monthFormatProp,
 		yearFormat = "numeric",
+		minValue,
+		maxValue,
 		day,
 		disableDaysOutsideMonth = false,
 		...restProps
@@ -30,6 +32,8 @@
 		monthFormat?: CalendarPrimitive.MonthSelectProps["monthFormat"];
 		yearFormat?: CalendarPrimitive.YearSelectProps["yearFormat"];
 		day?: Snippet<[{ day: DateValue; outsideMonth: boolean }]>;
+		minValue?: DateValue;
+		maxValue?: DateValue;
 	} = $props();
 
 	const monthFormat = $derived.by(() => {
@@ -56,6 +60,8 @@ get along, so we shut typescript up by casting `value` to `never`.
 	{locale}
 	{monthFormat}
 	{yearFormat}
+	{minValue}
+	{maxValue}
 	{...restProps}
 >
 	{#snippet children({ months, weekdays })}
