@@ -14,7 +14,7 @@ concurrency:
 env:
   # GKE Artifact Registry
   CONTAINER_REGISTRY: ${{ secrets.GCP_CONTAINER_REGISTRY }}
-  CONTAINER_REPO: ${{ secrets.GKE_PROJECT }}/apps
+  CONTAINER_REPO: ${{ secrets.GKE_PROJECT }}/idah
   GCP_ZONE: ${{ secrets.GCP_ZONE }}
 
   INSTANCE_NAME: idah-website
