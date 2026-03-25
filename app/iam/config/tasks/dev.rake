@@ -15,6 +15,8 @@ namespace :dev do
     ].join(",")
     Rake::Task["service_accounts:create"].invoke
 
+    Rake::Task["api_key_service_account:create"].invoke
+
     # admin account
     default_password = "P@ssword01" # default admin password
     admin_data = {

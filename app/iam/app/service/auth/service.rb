@@ -68,15 +68,12 @@ module Auth
     def login_api(key, token_expiration: 3600)
       now = Time.now
 
-      # Validate key format
       unless key.start_with?("IDAH_") && key.size == 69
         raise Verse::Error::Authorization, "Invalid Key"
       end
 
-      # Compute SHA digest
       key_sha = Digest::SHA256.hexdigest(key)
 
-      # Find API key by SHA
       api_key = system_api_keys.find_by(
         { key_sha: },
         included: ["service_account"]
@@ -86,26 +83,21 @@ module Auth
         raise Verse::Error::Authorization, "Invalid credentials"
       end
 
-      # Check if key is valid (not revoked and not expired)
       unless api_key.valid_key?
         raise Verse::Error::Authorization, "API key has been revoked or expired"
       end
 
-      # Check status field
       unless api_key.status == "active"
         raise Verse::Error::Authorization, "API key is not active (status: #{api_key.status})"
       end
 
-      # Get the service account
       account = api_key.service_account
 
-      # Build scope based on API key's scope_type and scope_value
       scope = api_key.build_scope
 
       # Generate the compound role from permissions
       role = "api:#{api_key.permissions.join(",")}"
 
-      # Calculate expiration
       exp = now.to_i + token_expiration
 
       # Encode the auth token with api label
