@@ -39,7 +39,7 @@
           type: ApiKeyRecord.type,
           attributes: {
             name: null,
-            scope_type: "all",
+            scope_type: "",
             scope_value: [],
             permissions: [],
             expires_at: null,
@@ -58,7 +58,7 @@
       type: ApiKeyRecord.type,
       attributes: {
         name: null,
-        scope_type: "all",
+        scope_type: "",
         scope_value: [],
         permissions: [],
         expires_at: null,

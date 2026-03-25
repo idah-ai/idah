@@ -1,12 +1,13 @@
 import type { BadgeVariant } from "@/components/ui/badge";
-import type { LabelValue } from "@/utils/types";
 import type { ApiKeyRecord } from "@/data/model/iam/api-keys/record";
+import type { LabelValue } from "@/utils/types";
 
-export const scopeTypes: LabelValue<string>[] = [
-  { label: "All", value: "all" },
+export const orgOwnersScopeTypes: LabelValue<string>[] = [
   { label: "Organization", value: "org" },
   { label: "Project", value: "project" },
 ];
+
+export const adminsScopeTypes: LabelValue<string>[] = [...orgOwnersScopeTypes, { label: "All", value: "all" }];
 
 export const apiKeyPermissions: LabelValue<string>[] = [
   { label: "Organization Read-Only", value: "read" },
