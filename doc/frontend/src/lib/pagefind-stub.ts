@@ -12,5 +12,5 @@ export async function search(query: string) {
 
 export default {
   init,
-  search
+  search,
 };
