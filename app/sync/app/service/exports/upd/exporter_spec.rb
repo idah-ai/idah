@@ -101,7 +101,7 @@ RSpec.describe Exports::Upd::Exporter do
         allow(exporter).to receive(:system) do |cmd, options|
           if cmd.include?("init")
             init_called = true
-            expect(cmd).to match(%r{bin/updcli-static --input /tmp/idah-export-\d+\.upd init})
+            expect(cmd).to match(%r{updcli-static --input /tmp/idah-export-\d+\.upd init})
             expect(options).to eq({ exception: true })
           end
           true
