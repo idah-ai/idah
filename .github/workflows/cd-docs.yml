@@ -1,4 +1,4 @@
-name: CD - Docs Website
+name: CD - Docs Platform
 
 on:
   workflow_dispatch:
