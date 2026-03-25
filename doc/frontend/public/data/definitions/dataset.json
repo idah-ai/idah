@@ -104,9 +104,7 @@
                           "type": "object"
                         }
                       },
-                      "required": [
-                        "type"
-                      ],
+                      "required": ["type"],
                       "additionalProperties": false
                     },
                     "included": {
@@ -116,18 +114,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Projects"
-        ],
+        "tags": ["Projects"],
         "security": [
           {
             "bearerAuth": []
@@ -204,9 +198,7 @@
                           "type": "object"
                         }
                       },
-                      "required": [
-                        "type"
-                      ],
+                      "required": ["type"],
                       "additionalProperties": false
                     },
                     "included": {
@@ -216,18 +208,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Projects"
-        ],
+        "tags": ["Projects"],
         "security": [
           {
             "bearerAuth": []
@@ -271,17 +259,11 @@
                         "additionalProperties": false
                       }
                     },
-                    "required": [
-                      "type",
-                      "attributes"
-                    ],
+                    "required": ["type", "attributes"],
                     "additionalProperties": false
                   }
                 },
-                "required": [
-                  "resource_id",
-                  "data"
-                ],
+                "required": ["resource_id", "data"],
                 "additionalProperties": false
               }
             }
@@ -306,9 +288,7 @@
             "description": "No content"
           }
         },
-        "tags": [
-          "Projects"
-        ],
+        "tags": ["Projects"],
         "security": [
           {
             "bearerAuth": []
@@ -513,9 +493,7 @@
                             "type": "object"
                           }
                         },
-                        "required": [
-                          "type"
-                        ],
+                        "required": ["type"],
                         "additionalProperties": false
                       }
                     },
@@ -526,18 +504,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Projects"
-        ],
+        "tags": ["Projects"],
         "security": [
           {
             "bearerAuth": []
@@ -605,9 +579,7 @@
                           "type": "object"
                         }
                       },
-                      "required": [
-                        "type"
-                      ],
+                      "required": ["type"],
                       "additionalProperties": false
                     },
                     "included": {
@@ -617,18 +589,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Projects"
-        ],
+        "tags": ["Projects"],
         "security": [
           {
             "bearerAuth": []
@@ -683,16 +651,11 @@
                         "additionalProperties": false
                       }
                     },
-                    "required": [
-                      "type",
-                      "attributes"
-                    ],
+                    "required": ["type", "attributes"],
                     "additionalProperties": false
                   }
                 },
-                "required": [
-                  "data"
-                ],
+                "required": ["data"],
                 "additionalProperties": false
               }
             }
@@ -950,9 +913,7 @@
                             "type": "object"
                           }
                         },
-                        "required": [
-                          "type"
-                        ],
+                        "required": ["type"],
                         "additionalProperties": false
                       }
                     },
@@ -963,18 +924,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Project Members"
-        ],
+        "tags": ["Project Members"],
         "security": [
           {
             "bearerAuth": []
@@ -1059,9 +1016,7 @@
                           "type": "object"
                         }
                       },
-                      "required": [
-                        "type"
-                      ],
+                      "required": ["type"],
                       "additionalProperties": false
                     },
                     "included": {
@@ -1071,18 +1026,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Project Members"
-        ],
+        "tags": ["Project Members"],
         "security": [
           {
             "bearerAuth": []
@@ -1169,34 +1120,23 @@
                                     "type": "string"
                                   }
                                 },
-                                "required": [
-                                  "type"
-                                ],
+                                "required": ["type"],
                                 "additionalProperties": false
                               }
                             },
-                            "required": [
-                              "data"
-                            ],
+                            "required": ["data"],
                             "additionalProperties": false
                           }
                         },
-                        "required": [
-                          "project"
-                        ],
+                        "required": ["project"],
                         "additionalProperties": false
                       }
                     },
-                    "required": [
-                      "type",
-                      "attributes"
-                    ],
+                    "required": ["type", "attributes"],
                     "additionalProperties": false
                   }
                 },
-                "required": [
-                  "data"
-                ],
+                "required": ["data"],
                 "additionalProperties": false
               }
             }
@@ -1314,9 +1254,7 @@
                           "type": "object"
                         }
                       },
-                      "required": [
-                        "type"
-                      ],
+                      "required": ["type"],
                       "additionalProperties": false
                     },
                     "included": {
@@ -1326,18 +1264,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Project Members"
-        ],
+        "tags": ["Project Members"],
         "security": [
           {
             "bearerAuth": []
@@ -1431,9 +1365,7 @@
                           "type": "object"
                         }
                       },
-                      "required": [
-                        "type"
-                      ],
+                      "required": ["type"],
                       "additionalProperties": false
                     },
                     "included": {
@@ -1443,18 +1375,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Project Members"
-        ],
+        "tags": ["Project Members"],
         "security": [
           {
             "bearerAuth": []
@@ -1512,17 +1440,11 @@
                         "additionalProperties": false
                       }
                     },
-                    "required": [
-                      "type",
-                      "attributes"
-                    ],
+                    "required": ["type", "attributes"],
                     "additionalProperties": false
                   }
                 },
-                "required": [
-                  "resource_id",
-                  "data"
-                ],
+                "required": ["resource_id", "data"],
                 "additionalProperties": false
               }
             }
@@ -1547,9 +1469,7 @@
             "description": "No content"
           }
         },
-        "tags": [
-          "Project Members"
-        ],
+        "tags": ["Project Members"],
         "security": [
           {
             "bearerAuth": []
@@ -1840,9 +1760,7 @@
                             "type": "object"
                           }
                         },
-                        "required": [
-                          "type"
-                        ],
+                        "required": ["type"],
                         "additionalProperties": false
                       }
                     },
@@ -1853,18 +1771,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Datasets"
-        ],
+        "tags": ["Datasets"],
         "security": [
           {
             "bearerAuth": []
@@ -1946,9 +1860,7 @@
                           "type": "object"
                         }
                       },
-                      "required": [
-                        "type"
-                      ],
+                      "required": ["type"],
                       "additionalProperties": false
                     },
                     "included": {
@@ -1958,18 +1870,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Datasets"
-        ],
+        "tags": ["Datasets"],
         "security": [
           {
             "bearerAuth": []
@@ -2053,34 +1961,23 @@
                                     "type": "string"
                                   }
                                 },
-                                "required": [
-                                  "type"
-                                ],
+                                "required": ["type"],
                                 "additionalProperties": false
                               }
                             },
-                            "required": [
-                              "data"
-                            ],
+                            "required": ["data"],
                             "additionalProperties": false
                           }
                         },
-                        "required": [
-                          "project"
-                        ],
+                        "required": ["project"],
                         "additionalProperties": false
                       }
                     },
-                    "required": [
-                      "type",
-                      "attributes"
-                    ],
+                    "required": ["type", "attributes"],
                     "additionalProperties": false
                   }
                 },
-                "required": [
-                  "data"
-                ],
+                "required": ["data"],
                 "additionalProperties": false
               }
             }
@@ -2195,9 +2092,7 @@
                           "type": "object"
                         }
                       },
-                      "required": [
-                        "type"
-                      ],
+                      "required": ["type"],
                       "additionalProperties": false
                     },
                     "included": {
@@ -2207,18 +2102,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Datasets"
-        ],
+        "tags": ["Datasets"],
         "security": [
           {
             "bearerAuth": []
@@ -2309,9 +2200,7 @@
                           "type": "object"
                         }
                       },
-                      "required": [
-                        "type"
-                      ],
+                      "required": ["type"],
                       "additionalProperties": false
                     },
                     "included": {
@@ -2321,18 +2210,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Datasets"
-        ],
+        "tags": ["Datasets"],
         "security": [
           {
             "bearerAuth": []
@@ -2375,17 +2260,11 @@
                         "additionalProperties": false
                       }
                     },
-                    "required": [
-                      "type",
-                      "attributes"
-                    ],
+                    "required": ["type", "attributes"],
                     "additionalProperties": false
                   }
                 },
-                "required": [
-                  "resource_id",
-                  "data"
-                ],
+                "required": ["resource_id", "data"],
                 "additionalProperties": false
               }
             }
@@ -2410,9 +2289,7 @@
             "description": "No content"
           }
         },
-        "tags": [
-          "Datasets"
-        ],
+        "tags": ["Datasets"],
         "security": [
           {
             "bearerAuth": []
@@ -2545,9 +2422,7 @@
                           "type": "object"
                         }
                       },
-                      "required": [
-                        "type"
-                      ],
+                      "required": ["type"],
                       "additionalProperties": false
                     },
                     "included": {
@@ -2557,18 +2432,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Entries"
-        ],
+        "tags": ["Entries"],
         "security": [
           {
             "bearerAuth": []
@@ -2677,9 +2548,7 @@
                           "type": "object"
                         }
                       },
-                      "required": [
-                        "type"
-                      ],
+                      "required": ["type"],
                       "additionalProperties": false
                     },
                     "included": {
@@ -2689,18 +2558,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Entries"
-        ],
+        "tags": ["Entries"],
         "security": [
           {
             "bearerAuth": []
@@ -2776,17 +2641,11 @@
                         "additionalProperties": false
                       }
                     },
-                    "required": [
-                      "type",
-                      "attributes"
-                    ],
+                    "required": ["type", "attributes"],
                     "additionalProperties": false
                   }
                 },
-                "required": [
-                  "resource_id",
-                  "data"
-                ],
+                "required": ["resource_id", "data"],
                 "additionalProperties": false
               }
             }
@@ -2811,9 +2670,7 @@
             "description": "No content"
           }
         },
-        "tags": [
-          "Entries"
-        ],
+        "tags": ["Entries"],
         "security": [
           {
             "bearerAuth": []
@@ -3104,9 +2961,7 @@
                             "type": "object"
                           }
                         },
-                        "required": [
-                          "type"
-                        ],
+                        "required": ["type"],
                         "additionalProperties": false
                       }
                     },
@@ -3117,18 +2972,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Entries"
-        ],
+        "tags": ["Entries"],
         "security": [
           {
             "bearerAuth": []
@@ -3228,9 +3079,7 @@
                           "type": "object"
                         }
                       },
-                      "required": [
-                        "type"
-                      ],
+                      "required": ["type"],
                       "additionalProperties": false
                     },
                     "included": {
@@ -3240,18 +3089,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Entries"
-        ],
+        "tags": ["Entries"],
         "security": [
           {
             "bearerAuth": []
@@ -3353,34 +3198,23 @@
                                     "type": "string"
                                   }
                                 },
-                                "required": [
-                                  "type"
-                                ],
+                                "required": ["type"],
                                 "additionalProperties": false
                               }
                             },
-                            "required": [
-                              "data"
-                            ],
+                            "required": ["data"],
                             "additionalProperties": false
                           }
                         },
-                        "required": [
-                          "dataset"
-                        ],
+                        "required": ["dataset"],
                         "additionalProperties": false
                       }
                     },
-                    "required": [
-                      "type",
-                      "attributes"
-                    ],
+                    "required": ["type", "attributes"],
                     "additionalProperties": false
                   }
                 },
-                "required": [
-                  "data"
-                ],
+                "required": ["data"],
                 "additionalProperties": false
               }
             }
@@ -3491,9 +3325,7 @@
                           "type": "object"
                         }
                       },
-                      "required": [
-                        "type"
-                      ],
+                      "required": ["type"],
                       "additionalProperties": false
                     },
                     "included": {
@@ -3503,18 +3335,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Entries"
-        ],
+        "tags": ["Entries"],
         "security": [
           {
             "bearerAuth": []
@@ -3539,22 +3367,15 @@
                             "type": "integer"
                           }
                         },
-                        "required": [
-                          "assigned_to_id"
-                        ],
+                        "required": ["assigned_to_id"],
                         "additionalProperties": false
                       }
                     },
-                    "required": [
-                      "attributes"
-                    ],
+                    "required": ["attributes"],
                     "additionalProperties": false
                   }
                 },
-                "required": [
-                  "id",
-                  "data"
-                ],
+                "required": ["id", "data"],
                 "additionalProperties": false
               }
             }
@@ -3665,9 +3486,7 @@
                           "type": "object"
                         }
                       },
-                      "required": [
-                        "type"
-                      ],
+                      "required": ["type"],
                       "additionalProperties": false
                     },
                     "included": {
@@ -3677,18 +3496,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Entries"
-        ],
+        "tags": ["Entries"],
         "security": [
           {
             "bearerAuth": []
@@ -3799,9 +3614,7 @@
                           "type": "object"
                         }
                       },
-                      "required": [
-                        "type"
-                      ],
+                      "required": ["type"],
                       "additionalProperties": false
                     },
                     "included": {
@@ -3811,18 +3624,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Entries"
-        ],
+        "tags": ["Entries"],
         "security": [
           {
             "bearerAuth": []
@@ -3847,9 +3656,7 @@
                     "additionalProperties": false
                   }
                 },
-                "required": [
-                  "id"
-                ],
+                "required": ["id"],
                 "additionalProperties": false
               }
             }
@@ -3960,9 +3767,7 @@
                           "type": "object"
                         }
                       },
-                      "required": [
-                        "type"
-                      ],
+                      "required": ["type"],
                       "additionalProperties": false
                     },
                     "included": {
@@ -3972,18 +3777,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Entries"
-        ],
+        "tags": ["Entries"],
         "security": [
           {
             "bearerAuth": []
@@ -4008,22 +3809,15 @@
                             "type": "string"
                           }
                         },
-                        "required": [
-                          "message"
-                        ],
+                        "required": ["message"],
                         "additionalProperties": false
                       }
                     },
-                    "required": [
-                      "attributes"
-                    ],
+                    "required": ["attributes"],
                     "additionalProperties": false
                   }
                 },
-                "required": [
-                  "id",
-                  "data"
-                ],
+                "required": ["id", "data"],
                 "additionalProperties": false
               }
             }
@@ -4072,26 +3866,18 @@
                         },
                         "data": {}
                       },
-                      "required": [
-                        "code",
-                        "message"
-                      ],
+                      "required": ["code", "message"],
                       "additionalProperties": false
                     }
                   },
-                  "required": [
-                    "jsonrpc",
-                    "id"
-                  ],
+                  "required": ["jsonrpc", "id"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Annotations"
-        ],
+        "tags": ["Annotations"],
         "security": [
           {
             "bearerAuth": []
@@ -4123,10 +3909,7 @@
                         ]
                       }
                     },
-                    "required": [
-                      "jsonrpc",
-                      "method"
-                    ],
+                    "required": ["jsonrpc", "method"],
                     "additionalProperties": false
                   },
                   {
@@ -4155,17 +3938,12 @@
                               ]
                             }
                           },
-                          "required": [
-                            "jsonrpc",
-                            "method"
-                          ],
+                          "required": ["jsonrpc", "method"],
                           "additionalProperties": false
                         }
                       }
                     },
-                    "required": [
-                      "_body"
-                    ],
+                    "required": ["_body"],
                     "additionalProperties": false
                   }
                 ]
@@ -4270,9 +4048,7 @@
                           "type": "object"
                         }
                       },
-                      "required": [
-                        "type"
-                      ],
+                      "required": ["type"],
                       "additionalProperties": false
                     },
                     "included": {
@@ -4282,18 +4058,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Annotations"
-        ],
+        "tags": ["Annotations"],
         "security": [
           {
             "bearerAuth": []
@@ -4372,9 +4144,7 @@
                           "type": "object"
                         }
                       },
-                      "required": [
-                        "type"
-                      ],
+                      "required": ["type"],
                       "additionalProperties": false
                     },
                     "included": {
@@ -4384,18 +4154,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Annotations"
-        ],
+        "tags": ["Annotations"],
         "security": [
           {
             "bearerAuth": []
@@ -4435,17 +4201,11 @@
                         "additionalProperties": false
                       }
                     },
-                    "required": [
-                      "type",
-                      "attributes"
-                    ],
+                    "required": ["type", "attributes"],
                     "additionalProperties": false
                   }
                 },
-                "required": [
-                  "resource_id",
-                  "data"
-                ],
+                "required": ["resource_id", "data"],
                 "additionalProperties": false
               }
             }
@@ -4470,9 +4230,7 @@
             "description": "No content"
           }
         },
-        "tags": [
-          "Annotations"
-        ],
+        "tags": ["Annotations"],
         "security": [
           {
             "bearerAuth": []
@@ -4655,9 +4413,7 @@
                             "type": "object"
                           }
                         },
-                        "required": [
-                          "type"
-                        ],
+                        "required": ["type"],
                         "additionalProperties": false
                       }
                     },
@@ -4668,18 +4424,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Annotations"
-        ],
+        "tags": ["Annotations"],
         "security": [
           {
             "bearerAuth": []
@@ -4749,9 +4501,7 @@
                           "type": "object"
                         }
                       },
-                      "required": [
-                        "type"
-                      ],
+                      "required": ["type"],
                       "additionalProperties": false
                     },
                     "included": {
@@ -4761,18 +4511,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Annotations"
-        ],
+        "tags": ["Annotations"],
         "security": [
           {
             "bearerAuth": []
@@ -4844,34 +4590,23 @@
                                     "type": "string"
                                   }
                                 },
-                                "required": [
-                                  "type"
-                                ],
+                                "required": ["type"],
                                 "additionalProperties": false
                               }
                             },
-                            "required": [
-                              "data"
-                            ],
+                            "required": ["data"],
                             "additionalProperties": false
                           }
                         },
-                        "required": [
-                          "entry"
-                        ],
+                        "required": ["entry"],
                         "additionalProperties": false
                       }
                     },
-                    "required": [
-                      "type",
-                      "attributes"
-                    ],
+                    "required": ["type", "attributes"],
                     "additionalProperties": false
                   }
                 },
-                "required": [
-                  "data"
-                ],
+                "required": ["data"],
                 "additionalProperties": false
               }
             }
@@ -4984,9 +4719,7 @@
                           "type": "object"
                         }
                       },
-                      "required": [
-                        "type"
-                      ],
+                      "required": ["type"],
                       "additionalProperties": false
                     },
                     "included": {
@@ -4996,18 +4729,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Note Feeds"
-        ],
+        "tags": ["Note Feeds"],
         "security": [
           {
             "bearerAuth": []
@@ -5096,9 +4825,7 @@
                           "type": "object"
                         }
                       },
-                      "required": [
-                        "type"
-                      ],
+                      "required": ["type"],
                       "additionalProperties": false
                     },
                     "included": {
@@ -5108,18 +4835,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Note Feeds"
-        ],
+        "tags": ["Note Feeds"],
         "security": [
           {
             "bearerAuth": []
@@ -5163,17 +4886,11 @@
                         "additionalProperties": false
                       }
                     },
-                    "required": [
-                      "type",
-                      "attributes"
-                    ],
+                    "required": ["type", "attributes"],
                     "additionalProperties": false
                   }
                 },
-                "required": [
-                  "resource_id",
-                  "data"
-                ],
+                "required": ["resource_id", "data"],
                 "additionalProperties": false
               }
             }
@@ -5198,9 +4915,7 @@
             "description": "No content"
           }
         },
-        "tags": [
-          "Note Feeds"
-        ],
+        "tags": ["Note Feeds"],
         "security": [
           {
             "bearerAuth": []
@@ -5459,9 +5174,7 @@
                             "type": "object"
                           }
                         },
-                        "required": [
-                          "type"
-                        ],
+                        "required": ["type"],
                         "additionalProperties": false
                       }
                     },
@@ -5472,18 +5185,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Note Feeds"
-        ],
+        "tags": ["Note Feeds"],
         "security": [
           {
             "bearerAuth": []
@@ -5499,9 +5208,7 @@
             "description": "No content"
           }
         },
-        "tags": [
-          "Note Feeds"
-        ],
+        "tags": ["Note Feeds"],
         "security": [
           {
             "bearerAuth": []
@@ -5538,24 +5245,15 @@
                             "type": "string"
                           }
                         },
-                        "required": [
-                          "entry_id",
-                          "anchor_type",
-                          "content_md"
-                        ],
+                        "required": ["entry_id", "anchor_type", "content_md"],
                         "additionalProperties": false
                       }
                     },
-                    "required": [
-                      "type",
-                      "attributes"
-                    ],
+                    "required": ["type", "attributes"],
                     "additionalProperties": false
                   }
                 },
-                "required": [
-                  "data"
-                ],
+                "required": ["data"],
                 "additionalProperties": false
               }
             }
@@ -5646,9 +5344,7 @@
                           "type": "object"
                         }
                       },
-                      "required": [
-                        "type"
-                      ],
+                      "required": ["type"],
                       "additionalProperties": false
                     },
                     "included": {
@@ -5658,18 +5354,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Note Feeds"
-        ],
+        "tags": ["Note Feeds"],
         "security": [
           {
             "bearerAuth": []
@@ -5685,9 +5377,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "id"
-                ],
+                "required": ["id"],
                 "additionalProperties": false
               }
             }
@@ -5782,9 +5472,7 @@
                           "type": "object"
                         }
                       },
-                      "required": [
-                        "type"
-                      ],
+                      "required": ["type"],
                       "additionalProperties": false
                     },
                     "included": {
@@ -5794,18 +5482,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Note Comments"
-        ],
+        "tags": ["Note Comments"],
         "security": [
           {
             "bearerAuth": []
@@ -5876,9 +5560,7 @@
                           "type": "object"
                         }
                       },
-                      "required": [
-                        "type"
-                      ],
+                      "required": ["type"],
                       "additionalProperties": false
                     },
                     "included": {
@@ -5888,18 +5570,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Note Comments"
-        ],
+        "tags": ["Note Comments"],
         "security": [
           {
             "bearerAuth": []
@@ -5940,17 +5618,11 @@
                         "additionalProperties": false
                       }
                     },
-                    "required": [
-                      "type",
-                      "attributes"
-                    ],
+                    "required": ["type", "attributes"],
                     "additionalProperties": false
                   }
                 },
-                "required": [
-                  "resource_id",
-                  "data"
-                ],
+                "required": ["resource_id", "data"],
                 "additionalProperties": false
               }
             }
@@ -5975,9 +5647,7 @@
             "description": "No content"
           }
         },
-        "tags": [
-          "Note Comments"
-        ],
+        "tags": ["Note Comments"],
         "security": [
           {
             "bearerAuth": []
@@ -6176,9 +5846,7 @@
                             "type": "object"
                           }
                         },
-                        "required": [
-                          "type"
-                        ],
+                        "required": ["type"],
                         "additionalProperties": false
                       }
                     },
@@ -6189,18 +5857,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Note Comments"
-        ],
+        "tags": ["Note Comments"],
         "security": [
           {
             "bearerAuth": []
@@ -6262,9 +5926,7 @@
                           "type": "object"
                         }
                       },
-                      "required": [
-                        "type"
-                      ],
+                      "required": ["type"],
                       "additionalProperties": false
                     },
                     "included": {
@@ -6274,18 +5936,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Note Comments"
-        ],
+        "tags": ["Note Comments"],
         "security": [
           {
             "bearerAuth": []
@@ -6349,34 +6007,23 @@
                                     "type": "string"
                                   }
                                 },
-                                "required": [
-                                  "type"
-                                ],
+                                "required": ["type"],
                                 "additionalProperties": false
                               }
                             },
-                            "required": [
-                              "data"
-                            ],
+                            "required": ["data"],
                             "additionalProperties": false
                           }
                         },
-                        "required": [
-                          "note_feed"
-                        ],
+                        "required": ["note_feed"],
                         "additionalProperties": false
                       }
                     },
-                    "required": [
-                      "type",
-                      "attributes"
-                    ],
+                    "required": ["type", "attributes"],
                     "additionalProperties": false
                   }
                 },
-                "required": [
-                  "data"
-                ],
+                "required": ["data"],
                 "additionalProperties": false
               }
             }

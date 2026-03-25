@@ -32,8 +32,8 @@ function matchesPathWithQuery(itemHref: string, pathname: string): boolean {
 
   // Parse URLs to compare base path and query parameters
   try {
-    const itemUrl = new URL(itemHref, 'http://dummy');
-    const pathUrl = new URL(pathname, 'http://dummy');
+    const itemUrl = new URL(itemHref, "http://dummy");
+    const pathUrl = new URL(pathname, "http://dummy");
 
     // Base paths must match
     if (itemUrl.pathname !== pathUrl.pathname) return false;
@@ -63,7 +63,7 @@ function matchesPathWithQuery(itemHref: string, pathname: string): boolean {
 export function hasActiveChild(item: SidebarType, pathname: string): boolean {
   if (!item.children) return false;
   return item.children.some(
-    (child) => matchesPathWithQuery(child.href || '', pathname) || hasActiveChild(child, pathname),
+    (child) => matchesPathWithQuery(child.href || "", pathname) || hasActiveChild(child, pathname),
   );
 }
 
@@ -96,5 +96,5 @@ export function mergeSidebarItemsWithApiUrls(
           })) || [],
       })),
     },
-  ]
+  ];
 }

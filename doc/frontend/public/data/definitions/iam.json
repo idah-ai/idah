@@ -150,9 +150,7 @@
                             "type": "object"
                           }
                         },
-                        "required": [
-                          "type"
-                        ],
+                        "required": ["type"],
                         "additionalProperties": false
                       }
                     },
@@ -163,18 +161,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Organizations"
-        ],
+        "tags": ["Organizations"],
         "security": [
           {
             "bearerAuth": []
@@ -226,9 +220,7 @@
                           "type": "object"
                         }
                       },
-                      "required": [
-                        "type"
-                      ],
+                      "required": ["type"],
                       "additionalProperties": false
                     },
                     "included": {
@@ -238,18 +230,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Organizations"
-        ],
+        "tags": ["Organizations"],
         "security": [
           {
             "bearerAuth": []
@@ -288,16 +276,11 @@
                         "additionalProperties": false
                       }
                     },
-                    "required": [
-                      "type",
-                      "attributes"
-                    ],
+                    "required": ["type", "attributes"],
                     "additionalProperties": false
                   }
                 },
-                "required": [
-                  "data"
-                ],
+                "required": ["data"],
                 "additionalProperties": false
               }
             }
@@ -382,9 +365,7 @@
                           "type": "object"
                         }
                       },
-                      "required": [
-                        "type"
-                      ],
+                      "required": ["type"],
                       "additionalProperties": false
                     },
                     "included": {
@@ -394,18 +375,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Organizations"
-        ],
+        "tags": ["Organizations"],
         "security": [
           {
             "bearerAuth": []
@@ -466,9 +443,7 @@
                           "type": "object"
                         }
                       },
-                      "required": [
-                        "type"
-                      ],
+                      "required": ["type"],
                       "additionalProperties": false
                     },
                     "included": {
@@ -478,18 +453,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Organizations"
-        ],
+        "tags": ["Organizations"],
         "security": [
           {
             "bearerAuth": []
@@ -523,17 +494,11 @@
                         "additionalProperties": false
                       }
                     },
-                    "required": [
-                      "type",
-                      "attributes"
-                    ],
+                    "required": ["type", "attributes"],
                     "additionalProperties": false
                   }
                 },
-                "required": [
-                  "resource_id",
-                  "data"
-                ],
+                "required": ["resource_id", "data"],
                 "additionalProperties": false
               }
             }
@@ -558,9 +523,7 @@
             "description": "No content"
           }
         },
-        "tags": [
-          "Organizations"
-        ],
+        "tags": ["Organizations"],
         "security": [
           {
             "bearerAuth": []
@@ -876,9 +839,7 @@
                             "type": "object"
                           }
                         },
-                        "required": [
-                          "type"
-                        ],
+                        "required": ["type"],
                         "additionalProperties": false
                       }
                     },
@@ -889,18 +850,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Accounts"
-        ],
+        "tags": ["Accounts"],
         "security": [
           {
             "bearerAuth": []
@@ -1013,9 +970,7 @@
                           "type": "object"
                         }
                       },
-                      "required": [
-                        "type"
-                      ],
+                      "required": ["type"],
                       "additionalProperties": false
                     },
                     "included": {
@@ -1025,18 +980,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Accounts"
-        ],
+        "tags": ["Accounts"],
         "security": [
           {
             "bearerAuth": []
@@ -1136,16 +1087,11 @@
                         "additionalProperties": false
                       }
                     },
-                    "required": [
-                      "type",
-                      "attributes"
-                    ],
+                    "required": ["type", "attributes"],
                     "additionalProperties": false
                   }
                 },
-                "required": [
-                  "data"
-                ],
+                "required": ["data"],
                 "additionalProperties": false
               }
             }
@@ -1291,9 +1237,7 @@
                           "type": "object"
                         }
                       },
-                      "required": [
-                        "type"
-                      ],
+                      "required": ["type"],
                       "additionalProperties": false
                     },
                     "included": {
@@ -1303,18 +1247,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Accounts"
-        ],
+        "tags": ["Accounts"],
         "security": [
           {
             "bearerAuth": []
@@ -1436,9 +1376,7 @@
                           "type": "object"
                         }
                       },
-                      "required": [
-                        "type"
-                      ],
+                      "required": ["type"],
                       "additionalProperties": false
                     },
                     "included": {
@@ -1448,18 +1386,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Accounts"
-        ],
+        "tags": ["Accounts"],
         "security": [
           {
             "bearerAuth": []
@@ -1509,17 +1443,11 @@
                         "additionalProperties": false
                       }
                     },
-                    "required": [
-                      "type",
-                      "attributes"
-                    ],
+                    "required": ["type", "attributes"],
                     "additionalProperties": false
                   }
                 },
-                "required": [
-                  "resource_id",
-                  "data"
-                ],
+                "required": ["resource_id", "data"],
                 "additionalProperties": false
               }
             }
@@ -1544,9 +1472,7 @@
             "description": "No content"
           }
         },
-        "tags": [
-          "Accounts"
-        ],
+        "tags": ["Accounts"],
         "security": [
           {
             "bearerAuth": []
@@ -1573,9 +1499,7 @@
             "description": "No content"
           }
         },
-        "tags": [
-          "Accounts"
-        ],
+        "tags": ["Accounts"],
         "requestBody": {
           "content": {
             "application/vnd.api+json": {
@@ -1586,9 +1510,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "token"
-                ],
+                "required": ["token"],
                 "additionalProperties": false
               }
             }
@@ -1615,9 +1537,7 @@
             "description": "No content"
           }
         },
-        "tags": [
-          "Accounts"
-        ],
+        "tags": ["Accounts"],
         "security": [
           {
             "bearerAuth": []
@@ -1633,9 +1553,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "id"
-                ],
+                "required": ["id"],
                 "additionalProperties": false
               }
             }
@@ -1792,9 +1710,7 @@
                             "type": "object"
                           }
                         },
-                        "required": [
-                          "type"
-                        ],
+                        "required": ["type"],
                         "additionalProperties": false
                       }
                     },
@@ -1805,18 +1721,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Account Sessions"
-        ],
+        "tags": ["Account Sessions"],
         "security": [
           {
             "bearerAuth": []
@@ -1843,9 +1755,7 @@
             "description": "No content"
           }
         },
-        "tags": [
-          "Account Sessions"
-        ],
+        "tags": ["Account Sessions"],
         "security": [
           {
             "bearerAuth": []
@@ -1863,9 +1773,7 @@
             "description": "No content"
           }
         },
-        "tags": [
-          "Account Passwords"
-        ],
+        "tags": ["Account Passwords"],
         "requestBody": {
           "content": {
             "application/vnd.api+json": {
@@ -1876,9 +1784,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "email"
-                ],
+                "required": ["email"],
                 "additionalProperties": false
               }
             }
@@ -1896,9 +1802,7 @@
             "description": "No content"
           }
         },
-        "tags": [
-          "Account Passwords"
-        ],
+        "tags": ["Account Passwords"],
         "requestBody": {
           "content": {
             "application/vnd.api+json": {
@@ -1912,10 +1816,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "token",
-                  "password"
-                ],
+                "required": ["token", "password"],
                 "additionalProperties": false
               }
             }
@@ -1949,18 +1850,14 @@
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "valid"
-                  ],
+                  "required": ["valid"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Account Passwords"
-        ]
+        "tags": ["Account Passwords"]
       }
     },
     "/account/passwords/change": {
@@ -1973,9 +1870,7 @@
             "description": "No content"
           }
         },
-        "tags": [
-          "Account Passwords"
-        ],
+        "tags": ["Account Passwords"],
         "security": [
           {
             "bearerAuth": []
@@ -1994,10 +1889,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "current_password",
-                  "new_password"
-                ],
+                "required": ["current_password", "new_password"],
                 "additionalProperties": false
               }
             }

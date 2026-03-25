@@ -10,49 +10,65 @@ const { language = "bash", path } = Astro.props;
 const uniqueId = `code-block-${Math.random().toString(36).substring(2, 9)}`;
 ---
 
-<div class="relative group">
-  {path && (
-    <div class="bg-gray-800 text-gray-300 px-4 py-2 text-sm font-mono rounded-t-lg border-b border-gray-700 flex items-center gap-2">
-      <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-      </svg>
-      <span>{path}</span>
-    </div>
-  )}
+<div class="group relative">
+  {
+    path && (
+      <div class="flex items-center gap-2 rounded-t-lg border-b border-gray-700 bg-gray-800 px-4 py-2 font-mono text-sm text-gray-300">
+        <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+          />
+        </svg>
+        <span>{path}</span>
+      </div>
+    )
+  }
   <button
     class:list={[
-      "absolute right-2 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white text-xs font-medium rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1.5 z-10",
-      path ? "top-12" : "top-2"
+      "absolute right-2 z-10 flex items-center gap-1.5 rounded bg-gray-700 px-3 py-1.5 text-xs font-medium text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100 hover:bg-gray-600",
+      path ? "top-12" : "top-2",
     ]}
     data-copy-btn
     data-code-id={uniqueId}
     title="Copy code"
   >
-    <svg class="w-4 h-4 copy-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+    <svg class="copy-icon h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+      ></path>
     </svg>
     <span class="copy-text">Copy</span>
   </button>
-  <pre class:list={["code-block", path && "!rounded-t-none rounded-b-lg"]}><code class:list={[`language-${language}`]} id={uniqueId}><slot /></code></pre>
+  <pre
+    class:list={[
+      "code-block",
+      path && "!rounded-t-none rounded-b-lg",
+    ]}><code class:list={[`language-${language}`]} id={uniqueId}><slot /></code></pre>
 </div>
 
 <script>
   // Add copy functionality to code blocks
   function initCopyButtons() {
-    document.querySelectorAll('[data-copy-btn]').forEach(button => {
+    document.querySelectorAll("[data-copy-btn]").forEach((button) => {
       // Remove existing listeners to prevent duplicates
       const newButton = button.cloneNode(true) as HTMLElement;
       button.parentNode?.replaceChild(newButton, button);
 
-      newButton.addEventListener('click', async () => {
-        const codeId = newButton.getAttribute('data-code-id');
+      newButton.addEventListener("click", async () => {
+        const codeId = newButton.getAttribute("data-code-id");
         const codeElement = document.getElementById(codeId!);
 
         if (codeElement) {
-          const text = codeElement.textContent || '';
+          const text = codeElement.textContent || "";
 
           // Filter out comment lines starting with # and clean up extra blank lines
-          const lines = text.split('\n');
+          const lines = text.split("\n");
           const filtered = [];
           let skipNextBlank = false;
 
@@ -60,13 +76,13 @@ const uniqueId = `code-block-${Math.random().toString(36).substring(2, 9)}`;
             const trimmed = line.trim();
 
             // Skip comment lines
-            if (trimmed.startsWith('#')) {
+            if (trimmed.startsWith("#")) {
               skipNextBlank = true;
               continue;
             }
 
             // Skip blank line after comment
-            if (skipNextBlank && trimmed === '') {
+            if (skipNextBlank && trimmed === "") {
               skipNextBlank = false;
               continue;
             }
@@ -75,29 +91,31 @@ const uniqueId = `code-block-${Math.random().toString(36).substring(2, 9)}`;
             filtered.push(line);
           }
 
-          const filteredText = filtered.join('\n').trim();
+          const filteredText = filtered.join("\n").trim();
 
           try {
             await navigator.clipboard.writeText(filteredText);
 
             // Update button text
-            const textSpan = newButton.querySelector('.copy-text') as HTMLElement;
-            const iconSvg = newButton.querySelector('.copy-icon') as SVGElement;
+            const textSpan = newButton.querySelector(".copy-text") as HTMLElement;
+            const iconSvg = newButton.querySelector(".copy-icon") as SVGElement;
 
-            if (textSpan) textSpan.textContent = 'Copied!';
+            if (textSpan) textSpan.textContent = "Copied!";
             if (iconSvg) {
-              iconSvg.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>';
+              iconSvg.innerHTML =
+                '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>';
             }
 
             // Reset after 2 seconds
             setTimeout(() => {
-              if (textSpan) textSpan.textContent = 'Copy';
+              if (textSpan) textSpan.textContent = "Copy";
               if (iconSvg) {
-                iconSvg.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>';
+                iconSvg.innerHTML =
+                  '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>';
               }
             }, 2000);
           } catch (err) {
-            console.error('Failed to copy:', err);
+            console.error("Failed to copy:", err);
           }
         }
       });
@@ -105,12 +123,12 @@ const uniqueId = `code-block-${Math.random().toString(36).substring(2, 9)}`;
   }
 
   // Initialize on DOM ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initCopyButtons);
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initCopyButtons);
   } else {
     initCopyButtons();
   }
 
   // Re-initialize on Astro page navigation
-  document.addEventListener('astro:after-swap', initCopyButtons);
+  document.addEventListener("astro:after-swap", initCopyButtons);
 </script>

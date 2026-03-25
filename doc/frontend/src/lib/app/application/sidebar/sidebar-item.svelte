@@ -1,10 +1,6 @@
 <script lang="ts">
   import type { SidebarType } from "$lib/app/sidebar/sidebar.data";
-  import {
-    Collapsible,
-    CollapsibleContent,
-    CollapsibleTrigger,
-  } from "$lib/components/ui/collapsible";
+  import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "$lib/components/ui/collapsible";
   import { cn } from "$lib/utils";
   import { ChevronRightIcon } from "@lucide/svelte";
   import { hasActiveChild } from "$lib/app/sidebar/sidebar.utils";
@@ -26,10 +22,7 @@
 </script>
 
 {#if hasChildren}
-  <Collapsible
-    class={cn("group/collapsible w-full", className)}
-    open={hasActiveDescendant}
-  >
+  <Collapsible class={cn("group/collapsible w-full", className)} open={hasActiveDescendant}>
     <CollapsibleTrigger
       class="
         flex w-full items-center justify-between rounded-md

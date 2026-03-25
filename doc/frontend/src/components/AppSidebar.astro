@@ -1,17 +1,15 @@
 ---
-  import ApplicationSidebar from "$lib/app/application/sidebar/application-sidebar.svelte";
-  import { getApiUrls } from "$lib/app/sidebar/api-urls";
+import ApplicationSidebar from "$lib/app/application/sidebar/application-sidebar.svelte";
+import { getApiUrls } from "$lib/app/sidebar/api-urls";
 
-  const urls = await getApiUrls();
-  const pathname = Astro.url.pathname + Astro.url.search;
+const urls = await getApiUrls();
+const pathname = Astro.url.pathname + Astro.url.search;
 ---
 
 <!-- Responsive sidebar: mobile overlay + desktop fixed -->
 <aside
   id="app-sidebar"
-  class="bg-background
-         fixed top-16 bottom-0 left-0 z-40 w-full -translate-x-full transition-transform duration-300 ease-in-out overflow-y-auto
-         md:top-auto md:bottom-auto md:z-auto md:translate-x-0 md:flex md:w-64 md:shrink-0 md:transition-none md:overflow-visible"
+  class="bg-background fixed top-16 bottom-0 left-0 z-40 w-full -translate-x-full overflow-y-auto transition-transform duration-300 ease-in-out md:top-auto md:bottom-auto md:z-auto md:flex md:w-64 md:shrink-0 md:translate-x-0 md:overflow-visible md:transition-none"
 >
   <ApplicationSidebar client:load {pathname} apiUrls={urls} />
 </aside>
