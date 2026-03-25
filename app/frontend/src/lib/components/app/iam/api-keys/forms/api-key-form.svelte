@@ -131,7 +131,7 @@
           {#snippet slotTriggerValues({ selectedChoices })}
             <ComboboxTriggerValueBadges
               values={selectedChoices.map((choice) => choice.value)}
-              dataSource={organizationsBackendDataSource}
+              dataSource={projectsBackendDataSource}
               displayKey="name"
               maxShown={2}
             />

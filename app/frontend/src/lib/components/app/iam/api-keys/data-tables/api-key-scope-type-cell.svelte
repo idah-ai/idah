@@ -39,7 +39,7 @@
 <TooltipProvider disableCloseOnTriggerClick>
   <Tooltip delayDuration={0}>
     <TooltipTrigger>
-      <Badge>
+      <Badge variant="outline">
         {scopeTypeLabel}
       </Badge>
     </TooltipTrigger>

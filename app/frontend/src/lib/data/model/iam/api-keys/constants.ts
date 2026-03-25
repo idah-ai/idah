@@ -19,7 +19,7 @@ export interface ApiKeyStatusBadgeProps extends LabelValue<string, ApiKeyRecord>
 
 export const apiKeyStatuses: ApiKeyStatusBadgeProps[] = [
   { label: "Active", value: "active", variant: "success" },
-  { label: "Expired", value: "expired", variant: "outline" },
+  { label: "Expired", value: "expired", variant: "gray" },
   { label: "Pending", value: "pending", variant: "warning" },
   { label: "Revoked", value: "revoked", variant: "destructive" },
 ];
