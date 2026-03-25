@@ -1,6 +1,7 @@
 <script lang="ts">
   import { cn } from "@/utils";
   import { CheckIcon } from "@lucide/svelte";
+  import { isBefore, startOfDay } from "date-fns";
 
   import ComboboxTriggerValueBadges from "@/components/app/forms/fields/combobox/combobox-trigger-value-badges.svelte";
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
@@ -182,7 +183,8 @@
       placeholder="Select expiration date"
       errors={fieldErrors["expires_at"]}
       value={expires_at}
-      disabled={status === "revoked" || (expires_at !== null && expires_at < new Date())}
+      disabled={status === "revoked" ||
+        (expires_at !== null && isBefore(startOfDay(expires_at), startOfDay(new Date())))}
       onDateSelected={(selectedDate) => {
         expires_at = selectedDate ? new Date(selectedDate) : null;
       }}
