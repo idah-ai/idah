@@ -65,7 +65,6 @@
     />
 
     <!-- APIKEY:SCOPE_TYPE -->
-
     {#if newRecord}
       <SingleSelectField
         name="{resource}/scope_type"

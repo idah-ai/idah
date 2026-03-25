@@ -50,6 +50,7 @@
       {:else}
         {`${scopeTypeLabel}: `}
       {/if}
+
       {#each scope_value as value, index (index)}
         <div class="flex flex-col gap-1">
           {#if scope_type === "org"}

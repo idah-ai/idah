@@ -76,7 +76,7 @@
   }
 
   async function createApiKey(): Promise<void> {
-    const response = await apiKeysBackendDataSource.create(
+    const createdApiKeyRes = await apiKeysBackendDataSource.create(
       {
         attributes: {
           name: apiKey.name,
@@ -91,7 +91,7 @@
       },
     );
 
-    keyValue = response.data.key;
+    keyValue = createdApiKeyRes.data.key;
 
     closeThisModal();
     openApiKeyGeneratedModal = true;
@@ -103,8 +103,6 @@
   }
 
   async function updateApiKey(): Promise<void> {
-    console.log({ apiKey });
-
     await apiKeysBackendDataSource.update(
       apiKey.id,
       {
