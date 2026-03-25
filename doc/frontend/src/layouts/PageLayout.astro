@@ -7,25 +7,25 @@ import Layout from "@layouts/Layout.astro";
 ---
 
 <Layout>
-  <slot name="header">
+  <div data-pagefind-ignore>
     <Header />
-  </slot>
+  </div>
 
   <div class="flex min-h-screen">
-    <slot name="sidebar">
+    <div data-pagefind-ignore>
       <AppSidebar />
-    </slot>
+    </div>
 
     <AppContent>
-      <main class="flex-1 md:px-8 md:py-8">
+      <main class="flex-1 md:px-8 md:py-8" data-pagefind-body>
         <div class="mx-auto max-w-screen pt-16">
           <slot />
         </div>
       </main>
 
-      <slot name="footer">
+      <div data-pagefind-ignore>
         <Footer />
-      </slot>
+      </div>
     </AppContent>
   </div>
 </Layout>

@@ -1,8 +1,11 @@
 ---
 
 import { getApiUrls } from "$lib/app/sidebar/api-urls";
+import PageContainer from "@components/app/page/PageContainer.astro";
+import PageTitle from "@components/app/page/PageTitle.astro";
 import Pagination from "@components/app/page/Pagination.astro";
 import PageLayout from "@layouts/PageLayout.astro";
+import { Braces } from "@lucide/svelte";
 import { compile } from "json-schema-to-typescript";
 import { marked } from "marked";
 
@@ -216,231 +219,240 @@ for (const [tag, paths] of pathsByTag) {
 ---
 
 <PageLayout>
-  <div class="mx-auto max-w-7xl px-4 py-8" data-tag={tag}>
-    <h1 class="mb-2 text-4xl font-bold">{data.info.title} API Reference</h1>
-    <p class="markdown-content mb-8 text-gray-600">{data.info.description}</p>
+  <div data-pagefind-ignore>
+    <PageContainer>
+      <PageTitle>
+        <div class="p-3 rounded-xl text-blue-400 dark:text-blue-600 bg-blue-50 dark:bg-blue-900/20">
+          <Braces class="w-9 h-9" stroke-width={2} />
+        </div>
+        {data.info.title} API Reference
+      </PageTitle>
+      <div class="mb-6" data-tag={tag}>
+        <p class="markdown-content mb-8 text-gray-600">{data.info.description}</p>
 
-    {data.tags.length > 0 ? (
-      <div class="space-y-8">
-        {data.tags.map((tagData: any, index: number) => {
-          const tagPaths = pathsByTag.get(tagData.name) || [];
-          const isActiveTag = tagData.name === tag;
-          return (
-            <div id={`tag-${tagData.name}`} data-index={index} class="tag-group rounded-lg border shadow-sm border-gray-200 bg-white">
-              <div class={`border-b px-6 py-4 ${isActiveTag ? 'bg-blue-50' : 'border-gray-200 bg-gray-50'}`}>
-                <h2 class={`text-2xl font-semibold ${isActiveTag ? 'text-primary' : 'text-gray-900'}`}>{tagData.name}</h2>
-                {tagData.description && (
-                  <div class="markdown-content mt-1 text-sm text-gray-600" set:html={renderMarkdown(tagData.description)} />
-                )}
-              </div>
+        {data.tags.length > 0 ? (
+          <div class="space-y-8">
+            {data.tags.map((tagData: any, index: number) => {
+              const tagPaths = pathsByTag.get(tagData.name) || [];
+              const isActiveTag = tagData.name === tag;
+              return (
+                <section data-pagefind-ignore={!isActiveTag ? true : undefined} id={`tag-${tagData.name}`} data-index={index} class="tag-group rounded-lg border shadow-sm border-gray-200 bg-white">
+                  <div class={`border-b px-6 py-4 ${isActiveTag ? 'bg-blue-50' : 'border-gray-200 bg-gray-50'}`}>
+                    <h2 class={`text-2xl font-semibold ${isActiveTag ? 'text-primary' : 'text-gray-900'}`}>{tagData.name}</h2>
+                    {tagData.description && (
+                      <div class="markdown-content mt-1 text-sm text-gray-600" set:html={renderMarkdown(tagData.description)} />
+                    )}
+                  </div>
 
-              <div class="divide-y divide-gray-100">
-                {tagPaths.map(({ path, method, operation }) => {
-                  const key = `${method}-${path}`;
-                  const tsSchemas = typescriptSchemas.get(key) || {};
-                  const methodColor = {
-                    get: "bg-blue-500",
-                    post: "bg-green-500",
-                    put: "bg-yellow-500",
-                    patch: "bg-orange-500",
-                    delete: "bg-red-500",
-                  }[method] || "bg-gray-500";
+                  <div class="divide-y divide-gray-100">
+                    {tagPaths.map(({ path, method, operation }) => {
+                      const key = `${method}-${path}`;
+                      const tsSchemas = typescriptSchemas.get(key) || {};
+                      const methodColor = {
+                        get: "bg-blue-500",
+                        post: "bg-green-500",
+                        put: "bg-yellow-500",
+                        patch: "bg-orange-500",
+                        delete: "bg-red-500",
+                      }[method] || "bg-gray-500";
 
-                  const parameters = operation.parameters || [];
-                  const requestBody = operation.requestBody;
-                  const responses = operation.responses || {};
+                      const parameters = operation.parameters || [];
+                      const requestBody = operation.requestBody;
+                      const responses = operation.responses || {};
 
-                  return (
-                    <details class="path-item group">
-                      <summary class="flex cursor-pointer items-center gap-4 px-6 py-4 hover:bg-gray-50">
-                        <span class={`inline-block w-20 rounded px-2 py-1 text-center text-xs font-bold uppercase text-white ${methodColor}`}>
-                          {method}
-                        </span>
-                        <span class="font-mono text-sm text-gray-900" set:html={highlightPathParams(path)} />
-                        {operation.summary && (
-                          <span class="text-sm text-gray-600">- {operation.summary}</span>
-                        )}
-                      </summary>
+                      return (
+                        <details class="path-item group">
+                          <summary class="flex cursor-pointer items-center gap-4 px-6 py-4 hover:bg-gray-50">
+                            <span class={`inline-block w-20 rounded px-2 py-1 text-center text-xs font-bold uppercase text-white ${methodColor}`}>
+                              {method}
+                            </span>
+                            <span class="font-mono text-sm text-gray-900" set:html={highlightPathParams(path)} />
+                            {operation.summary && (
+                              <span class="text-sm text-gray-600">- {operation.summary}</span>
+                            )}
+                          </summary>
 
-                      <div class="border-t border-gray-100 bg-gray-50 px-6 py-6">
-                        {operation.description && (
-                          <div class="mb-6">
-                            <h4 class="mb-2 font-semibold text-gray-900">Description</h4>
-                            <div class="markdown-content text-sm text-gray-600" set:html={renderMarkdown(operation.description)} />
-                          </div>
-                        )}
-
-                        {/* Parameters Section */}
-                        {parameters.length > 0 && (
-                          <div class="mb-6">
-                            <h4 class="mb-3 font-semibold text-gray-900">Parameters</h4>
-                            <div class="overflow-hidden rounded-lg border border-gray-200">
-                              <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-100">
-                                  <tr>
-                                    <th class="px-4 py-2 text-left text-xs font-medium uppercase text-gray-600">Name</th>
-                                    <th class="px-4 py-2 text-left text-xs font-medium uppercase text-gray-600">In</th>
-                                    <th class="px-4 py-2 text-left text-xs font-medium uppercase text-gray-600">Type</th>
-                                    <th class="px-4 py-2 text-left text-xs font-medium uppercase text-gray-600">Required</th>
-                                    <th class="px-4 py-2 text-left text-xs font-medium uppercase text-gray-600">Description</th>
-                                  </tr>
-                                </thead>
-                                <tbody class="divide-y divide-gray-200 bg-white">
-                                  {parameters.map((param: any) => (
-                                    <tr>
-                                      <td class="px-4 py-2 font-mono text-sm text-gray-900">{param.name}</td>
-                                      <td class="px-4 py-2 text-sm text-gray-600">{param.in}</td>
-                                      <td class="px-4 py-2 font-mono text-sm text-gray-600">{param.schema?.type || "any"}</td>
-                                      <td class="px-4 py-2 text-sm">
-                                        {param.required ? (
-                                          <span class="rounded bg-red-100 px-2 py-1 text-xs text-red-700">Required</span>
-                                        ) : (
-                                          <span class="rounded bg-gray-100 px-2 py-1 text-xs text-gray-600">Optional</span>
-                                        )}
-                                      </td>
-                                      <td class="px-4 py-2 text-sm text-gray-600">
-                                        {param.description ? (
-                                          <div class="markdown-content" set:html={renderMarkdown(param.description)} />
-                                        ) : "-"}
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Request Body Section */}
-                        {requestBody && (
-                          <div class="mb-6">
-                            <h4 class="mb-3 font-semibold text-gray-900">Request Body</h4>
-                            <div class="rounded-lg border border-gray-200 bg-white">
-                              <div class="flex border-b border-gray-200">
-                                <button
-                                  class="schema-tab active px-4 py-2 text-sm font-medium"
-                                  data-target={`input-json-${key}`}
-                                  onclick={`switchTab(event, 'input-json-${key}')`}
-                                >
-                                  Example Value
-                                </button>
-                                {tsSchemas.input && (
-                                  <button
-                                    class="schema-tab px-4 py-2 text-sm font-medium"
-                                    data-target={`input-ts-${key}`}
-                                    onclick={`switchTab(event, 'input-ts-${key}')`}
-                                  >
-                                    TypeScript
-                                  </button>
-                                )}
+                          <div class="border-t border-gray-100 bg-gray-50 px-6 py-6">
+                            {operation.description && (
+                              <div class="mb-6">
+                                <h4 class="mb-2 font-semibold text-gray-900">Description</h4>
+                                <div class="markdown-content text-sm text-gray-600" set:html={renderMarkdown(operation.description)} />
                               </div>
+                            )}
 
-                              <div class="p-4">
-                                <div id={`input-json-${key}`} class="schema-content">
-                                  <div
-                                    class="json-tree-container"
-                                    data-json={JSON.stringify(
-                                      schemaToExampleJSON(
-                                        requestBody.content?.["application/vnd.api+json"]?.schema ||
-                                        requestBody.content?.["application/json"]?.schema ||
-                                        requestBody.content?.["multipart/form-data"]?.schema || {}
-                                      )
-                                    )}
-                                  ></div>
+                            {/* Parameters Section */}
+                            {parameters.length > 0 && (
+                              <div class="mb-6">
+                                <h4 class="mb-3 font-semibold text-gray-900">Parameters</h4>
+                                <div class="overflow-hidden rounded-lg border border-gray-200">
+                                  <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-100">
+                                      <tr>
+                                        <th class="px-4 py-2 text-left text-xs font-medium uppercase text-gray-600">Name</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium uppercase text-gray-600">In</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium uppercase text-gray-600">Type</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium uppercase text-gray-600">Required</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium uppercase text-gray-600">Description</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-200 bg-white">
+                                      {parameters.map((param: any) => (
+                                        <tr>
+                                          <td class="px-4 py-2 font-mono text-sm text-gray-900">{param.name}</td>
+                                          <td class="px-4 py-2 text-sm text-gray-600">{param.in}</td>
+                                          <td class="px-4 py-2 font-mono text-sm text-gray-600">{param.schema?.type || "any"}</td>
+                                          <td class="px-4 py-2 text-sm">
+                                            {param.required ? (
+                                              <span class="rounded bg-red-100 px-2 py-1 text-xs text-red-700">Required</span>
+                                            ) : (
+                                              <span class="rounded bg-gray-100 px-2 py-1 text-xs text-gray-600">Optional</span>
+                                            )}
+                                          </td>
+                                          <td class="px-4 py-2 text-sm text-gray-600">
+                                            {param.description ? (
+                                              <div class="markdown-content" set:html={renderMarkdown(param.description)} />
+                                            ) : "-"}
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
                                 </div>
-
-                                {tsSchemas.input && (
-                                  <div id={`input-ts-${key}`} class="schema-content hidden">
-                                    <pre class="ts-code-block"><code class="language-typescript">{tsSchemas.input}</code></pre>
-                                  </div>
-                                )}
                               </div>
-                            </div>
-                          </div>
-                        )}
+                            )}
 
-                        {/* Response Section */}
-                        {Object.keys(responses).length > 0 && (
-                          <div class="mb-6">
-                            <h4 class="mb-3 font-semibold text-gray-900">Response</h4>
-
-                            {Object.entries(responses).map(([statusCode, response]: [string, any]) => (
-                              <div class="mb-4 rounded-lg border border-gray-200 bg-white">
-                                <div class="flex items-center border-b border-gray-200 bg-gray-50 px-4 py-2">
-                                  <span class={`inline-block rounded px-2 py-1 text-xs font-bold ${
-                                    statusCode.startsWith('2') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                                  }`}>
-                                    {statusCode}
-                                  </span>
-                                  {response.description && (
-                                    <div class="markdown-content ml-2 text-sm text-gray-600" set:html={renderMarkdown(response.description)} />
-                                  )}
-                                </div>
-
-                                {response.content && (
-                                  <div>
-                                    <div class="flex border-b border-gray-200">
+                            {/* Request Body Section */}
+                            {requestBody && (
+                              <div class="mb-6">
+                                <h4 class="mb-3 font-semibold text-gray-900">Request Body</h4>
+                                <div class="rounded-lg border border-gray-200 bg-white">
+                                  <div class="flex border-b border-gray-200">
+                                    <button
+                                      class="schema-tab active px-4 py-2 text-sm font-medium"
+                                      data-target={`input-json-${key}`}
+                                      onclick={`switchTab(event, 'input-json-${key}')`}
+                                    >
+                                      Example Value
+                                    </button>
+                                    {tsSchemas.input && (
                                       <button
-                                        class="schema-tab active px-4 py-2 text-sm font-medium"
-                                        data-target={`output-json-${key}-${statusCode}`}
-                                        onclick={`switchTab(event, 'output-json-${key}-${statusCode}')`}
+                                        class="schema-tab px-4 py-2 text-sm font-medium"
+                                        data-target={`input-ts-${key}`}
+                                        onclick={`switchTab(event, 'input-ts-${key}')`}
                                       >
-                                        Example Value
+                                        TypeScript
                                       </button>
-                                      {tsSchemas.output && statusCode === "200" && (
-                                        <button
-                                          class="schema-tab px-4 py-2 text-sm font-medium"
-                                          data-target={`output-ts-${key}`}
-                                          onclick={`switchTab(event, 'output-ts-${key}')`}
-                                        >
-                                          TypeScript
-                                        </button>
-                                      )}
-                                    </div>
-
-                                    <div class="p-4">
-                                      <div id={`output-json-${key}-${statusCode}`} class="schema-content">
-                                        <div
-                                          class="json-tree-container"
-                                          data-json={JSON.stringify(
-                                            schemaToExampleJSON(
-                                              response.content?.["application/vnd.api+json"]?.schema ||
-                                              response.content?.["application/json"]?.schema ||
-                                              response.content?.["multipart/form-data"]?.schema || {}
-                                            )
-                                          )}
-                                        ></div>
-                                      </div>
-
-                                      {tsSchemas.output && statusCode === "200" && (
-                                        <div id={`output-ts-${key}`} class="schema-content hidden">
-                                          <pre class="ts-code-block"><code class="language-typescript">{tsSchemas.output}</code></pre>
-                                        </div>
-                                      )}
-                                    </div>
+                                    )}
                                   </div>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </details>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    ) : (
-      <div class="rounded-lg border border-gray-200 bg-white p-8 text-center">
-        <p class="text-gray-600">No tags found in spec.</p>
-      </div>
-    )}
-  </div>
 
-  <Pagination />
+                                  <div class="p-4">
+                                    <div id={`input-json-${key}`} class="schema-content">
+                                      <div
+                                        class="json-tree-container"
+                                        data-json={JSON.stringify(
+                                          schemaToExampleJSON(
+                                            requestBody.content?.["application/vnd.api+json"]?.schema ||
+                                            requestBody.content?.["application/json"]?.schema ||
+                                            requestBody.content?.["multipart/form-data"]?.schema || {}
+                                          )
+                                        )}
+                                      ></div>
+                                    </div>
+
+                                    {tsSchemas.input && (
+                                      <div id={`input-ts-${key}`} class="schema-content hidden">
+                                        <pre class="ts-code-block"><code class="language-typescript">{tsSchemas.input}</code></pre>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Response Section */}
+                            {Object.keys(responses).length > 0 && (
+                              <div class="mb-6">
+                                <h4 class="mb-3 font-semibold text-gray-900">Response</h4>
+
+                                {Object.entries(responses).map(([statusCode, response]: [string, any]) => (
+                                  <div class="mb-4 rounded-lg border border-gray-200 bg-white">
+                                    <div class="flex items-center border-b border-gray-200 bg-gray-50 px-4 py-2">
+                                      <span class={`inline-block rounded px-2 py-1 text-xs font-bold ${
+                                        statusCode.startsWith('2') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                                      }`}>
+                                        {statusCode}
+                                      </span>
+                                      {response.description && (
+                                        <div class="markdown-content ml-2 text-sm text-gray-600" set:html={renderMarkdown(response.description)} />
+                                      )}
+                                    </div>
+
+                                    {response.content && (
+                                      <div>
+                                        <div class="flex border-b border-gray-200">
+                                          <button
+                                            class="schema-tab active px-4 py-2 text-sm font-medium"
+                                            data-target={`output-json-${key}-${statusCode}`}
+                                            onclick={`switchTab(event, 'output-json-${key}-${statusCode}')`}
+                                          >
+                                            Example Value
+                                          </button>
+                                          {tsSchemas.output && statusCode === "200" && (
+                                            <button
+                                              class="schema-tab px-4 py-2 text-sm font-medium"
+                                              data-target={`output-ts-${key}`}
+                                              onclick={`switchTab(event, 'output-ts-${key}')`}
+                                            >
+                                              TypeScript
+                                            </button>
+                                          )}
+                                        </div>
+
+                                        <div class="p-4">
+                                          <div id={`output-json-${key}-${statusCode}`} class="schema-content">
+                                            <div
+                                              class="json-tree-container"
+                                              data-json={JSON.stringify(
+                                                schemaToExampleJSON(
+                                                  response.content?.["application/vnd.api+json"]?.schema ||
+                                                  response.content?.["application/json"]?.schema ||
+                                                  response.content?.["multipart/form-data"]?.schema || {}
+                                                )
+                                              )}
+                                            ></div>
+                                          </div>
+
+                                          {tsSchemas.output && statusCode === "200" && (
+                                            <div id={`output-ts-${key}`} class="schema-content hidden">
+                                              <pre class="ts-code-block"><code class="language-typescript">{tsSchemas.output}</code></pre>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </details>
+                      );
+                    })}
+                  </div>
+                </section>
+              );
+            })}
+          </div>
+        ) : (
+          <div class="rounded-lg border border-gray-200 bg-white p-8 text-center">
+            <p class="text-gray-600">No tags found in spec.</p>
+          </div>
+        )}
+      </div>
+    </PageContainer>
+
+    <Pagination />
+  </div>
 </PageLayout>
 
 <style>
