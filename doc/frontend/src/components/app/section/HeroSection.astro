@@ -1,0 +1,97 @@
+---
+import {
+  PenTool,
+  Box,
+  VectorSquare,
+  Tag,
+  Type,
+  Image,
+  Pentagon,
+  MousePointer
+} from '@lucide/astro';
+---
+
+<!-- Floating Annotation Tool Icons Background -->
+<div class="absolute inset-0 -z-10 overflow-hidden opacity-20">
+  <!-- PenTool Icon -->
+  <div class="absolute" style="top: 10%; right: 15%; animation: float1 20s ease-in-out infinite;">
+    <div class="p-6 rounded-2xl bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/30 dark:to-blue-800/30 shadow-xl">
+      <PenTool class="w-12 h-12" style="color: #2391ea;" stroke-width={2} />
+    </div>
+  </div>
+
+  <!-- Box Shape Icon -->
+  <div class="absolute" style="top: 60%; right: 10%; animation: float2 25s ease-in-out infinite;">
+    <div class="p-5 rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 shadow-lg">
+      <Box class="w-10 h-10" style="color: #2391ea;" stroke-width={2} />
+    </div>
+  </div>
+
+  <!-- VectorSquare Shape Icon -->
+  <div class="absolute" style="top: 40%; left: 30%; animation: float3 22s ease-in-out infinite;">
+    <div class="p-5 rounded-2xl bg-gradient-to-br from-blue-100 to-cyan-100 dark:from-blue-900/30 dark:to-cyan-900/30 shadow-lg">
+      <VectorSquare class="w-10 h-10" style="color: #1e7ac9;" stroke-width={2} />
+    </div>
+  </div>
+
+  <!-- Tag Icon -->
+  <div class="absolute" style="top: 45%; left: 8%; animation: float4 28s ease-in-out infinite;">
+    <div class="p-4 rounded-xl bg-gradient-to-br from-cyan-100 to-blue-100 dark:from-cyan-900/20 dark:to-blue-900/20 shadow-md">
+      <Tag class="w-8 h-8" style="color: #2391ea;" stroke-width={2} />
+    </div>
+  </div>
+
+  <!-- Type Text Icon -->
+  <div class="absolute" style="top: 10%; left: 20%; animation: float1 24s ease-in-out infinite 2s;">
+    <div class="p-4 rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/25 dark:to-indigo-900/25 shadow-md">
+      <Type class="w-8 h-8" style="color: #2391ea;" stroke-width={2} />
+    </div>
+  </div>
+
+  <!-- Image Icon -->
+  <div class="absolute" style="bottom: 35%; right: 25%; animation: float2 26s ease-in-out infinite 3s;">
+    <div class="p-5 rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 shadow-lg">
+      <Image class="w-10 h-10" style="color: #1e7ac9;" stroke-width={2} />
+    </div>
+  </div>
+
+  <!-- MousePointer Icon -->
+  <div class="absolute" style="top: 70%; left: 25%; animation: float3 23s ease-in-out infinite 1s;">
+    <div class="p-4 rounded-xl bg-gradient-to-br from-cyan-50 to-blue-100 dark:from-cyan-900/15 dark:to-blue-900/25 shadow-md">
+      <MousePointer class="w-8 h-8" style="color: #2391ea;" stroke-width={2} />
+    </div>
+  </div>
+
+  <!-- Pentagon Icon -->
+  <div class="absolute" style="top: 15%; right: 30%; animation: float4 27s ease-in-out infinite 4s;">
+    <div class="p-4 rounded-xl bg-gradient-to-br from-blue-100 to-cyan-100 dark:from-blue-900/25 dark:to-cyan-900/25 shadow-md">
+      <Pentagon class="w-9 h-9" style="color: #1e7ac9;" stroke-width={2} />
+    </div>
+  </div>
+</div>
+
+<style>
+  @keyframes float1 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(30px, -30px) scale(1.05); }
+    66% { transform: translate(-20px, 20px) scale(0.95); }
+  }
+
+  @keyframes float2 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(-40px, 30px) scale(1.1); }
+    66% { transform: translate(30px, -20px) scale(0.9); }
+  }
+
+  @keyframes float3 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(20px, 40px) scale(0.95); }
+    66% { transform: translate(-30px, -30px) scale(1.05); }
+  }
+
+  @keyframes float4 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(-25px, -35px) scale(1.08); }
+    66% { transform: translate(35px, 25px) scale(0.92); }
+  }
+</style>

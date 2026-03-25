@@ -3,9 +3,9 @@ volumes:
   frontend_node_modules:
 
 services:
-  doc-generator:
-    container_name: doc-generator
-    image: doc-generator
+  generator:
+    container_name: generator
+    image: generator
     build:
       context: ../
       dockerfile: ./doc/Dockerfile.generator
@@ -29,30 +29,30 @@ services:
     extra_hosts:
       - localhost:host-gateway
 
-  doc-swagger:
+  swagger:
     image: swaggerapi/swagger-ui:latest
-    container_name: doc-swagger
+    container_name: swagger
     ports:
       - "4002:8080"
     depends_on:
-      - doc-generator
+      - generator
     volumes:
       # Mount the local 'swagger' directory to the container's '/app' directory
       - ./openapi:/usr/share/nginx/html/openapi
     environment:
       CONFIG_URL: /openapi/swagger.json
 
-  doc-frontend:
-    container_name: doc-frontend
-    image: doc-frontend
+  frontend:
+    container_name: frontend
+    image: frontend
     build:
       context: .
       dockerfile: ./Dockerfile.frontend
     volumes:
-      - ./public:/app:cached
+      - ./frontend:/app:cached
       - ./openapi:/app/public/data:cached
       - frontend_node_modules:/app/node_modules
     ports:
       - "4001:4001"
     depends_on:
-      - doc-generator
+      - generator
