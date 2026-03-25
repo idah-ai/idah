@@ -1,0 +1,698 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Setting",
+    "description": "Setting and Plugins Management Service",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://idah.localhost:8443/api/v1/setting"
+    }
+  ],
+  "paths": {
+    "/account_settings/{resource_id}": {
+      "get": {
+        "summary": "show",
+        "description": "Show a specific `setting:account_settings`",
+        "parameters": [
+          {
+            "name": "resource_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "included",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "fields",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "additionalProperties": {
+                "type": "array"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "attributes": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "integer"
+                            },
+                            "account_id": {
+                              "type": "integer"
+                            },
+                            "key": {
+                              "type": "string"
+                            },
+                            "plugin": {
+                              "type": "string"
+                            },
+                            "value": {
+                              "anyOf": [
+                                {
+                                  "type": "object"
+                                },
+                                {
+                                  "type": "array"
+                                },
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "integer"
+                                },
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "boolean"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "relationships": {
+                          "type": "object"
+                        }
+                      },
+                      "required": [
+                        "type"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "included": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Account Settings"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "patch": {
+        "summary": "update",
+        "description": "Update a `setting:account_settings`",
+        "parameters": [
+          {
+            "name": "resource_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "attributes": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "integer"
+                            },
+                            "account_id": {
+                              "type": "integer"
+                            },
+                            "key": {
+                              "type": "string"
+                            },
+                            "plugin": {
+                              "type": "string"
+                            },
+                            "value": {
+                              "anyOf": [
+                                {
+                                  "type": "object"
+                                },
+                                {
+                                  "type": "array"
+                                },
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "integer"
+                                },
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "boolean"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "relationships": {
+                          "type": "object"
+                        }
+                      },
+                      "required": [
+                        "type"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "included": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Account Settings"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/vnd.api+json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "resource_id": {
+                    "type": "integer"
+                  },
+                  "data": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string"
+                      },
+                      "attributes": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "account_id": {
+                            "type": "integer"
+                          },
+                          "value": {
+                            "anyOf": [
+                              {
+                                "type": "object"
+                              },
+                              {
+                                "type": "array"
+                              },
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "integer"
+                              },
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "boolean"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "attributes"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "resource_id",
+                  "data"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/account_settings": {
+      "get": {
+        "summary": "index",
+        "description": "Return a paginated list of `setting:account_settings`",
+        "parameters": [
+          {
+            "name": "page[number]",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "The page number, default to 1"
+          },
+          {
+            "name": "page[size]",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "The number of items per page, default to 1000"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The sort order, comma separated list of fields. See sorting section for more details"
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Set to true to return the total number of items in the collection"
+          },
+          {
+            "name": "filter[id]",
+            "in": "query",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "name": "filter[account_id]",
+            "in": "query",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "name": "filter[key]",
+            "in": "query",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "name": "filter[plugin]",
+            "in": "query",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "name": "filter[value]",
+            "in": "query",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "name": "filter[account_id]",
+            "in": "query",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "name": "filter[key]",
+            "in": "query",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "name": "fields",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "additionalProperties": {
+                "type": "array"
+              }
+            },
+            "description": "The fields to include in the response.\nThe key is the resource type and the value is an array of fields.\n"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string"
+                          },
+                          "id": {
+                            "type": "string"
+                          },
+                          "attributes": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "integer"
+                              },
+                              "account_id": {
+                                "type": "integer"
+                              },
+                              "key": {
+                                "type": "string"
+                              },
+                              "plugin": {
+                                "type": "string"
+                              },
+                              "value": {
+                                "anyOf": [
+                                  {
+                                    "type": "object"
+                                  },
+                                  {
+                                    "type": "array"
+                                  },
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "integer"
+                                  },
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "boolean"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "relationships": {
+                            "type": "object"
+                          }
+                        },
+                        "required": [
+                          "type"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "included": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Account Settings"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/plugins/modalities": {
+      "get": {
+        "summary": "modalities",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "modalities": {
+                          "type": "object",
+                          "description": "Mapping of modality IDs to their details"
+                        },
+                        "plugins": {
+                          "type": "object",
+                          "description": "Mapping of modality IDs to plugin names"
+                        }
+                      },
+                      "required": [
+                        "modalities",
+                        "plugins"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Plugins"
+        ]
+      }
+    },
+    "/plugins/modalities/{modality_name}": {
+      "get": {
+        "summary": "show_modality",
+        "description": "",
+        "parameters": [
+          {
+            "name": "modality_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "shapes": {
+                          "type": "object",
+                          "description": "Mapping of shape names to their details"
+                        }
+                      },
+                      "required": [
+                        "shapes"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Plugins"
+        ]
+      }
+    },
+    "/plugins/{plugin}/assets/*": {
+      "get": {
+        "summary": "serve_asset",
+        "description": "",
+        "parameters": [
+          {
+            "name": "plugin",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "splat",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No content"
+          }
+        },
+        "tags": [
+          "Plugins"
+        ]
+      }
+    },
+    "/plugins/{plugin}/files/{filename}": {
+      "get": {
+        "summary": "serve",
+        "description": "",
+        "parameters": [
+          {
+            "name": "plugin",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filename",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No content"
+          }
+        },
+        "tags": [
+          "Plugins"
+        ]
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Account Settings",
+      "description": "Manage account settings for user preferences and configurations,\nincluding retrieval and updating of settings.\n"
+    },
+    {
+      "name": "Plugins",
+      "description": "Manage and serve plugins within the system, including\nlisting available modalities, retrieving modality details,\nand serving plugin assets and files.\n"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}
