@@ -19,24 +19,24 @@ import "@styles/global.css";
 
 <script>
   // @ts-ignore - Types are installed but not detected properly by Astro
-  import Prism from 'prismjs';
+  import Prism from "prismjs";
   // @ts-ignore
-  import 'prismjs/components/prism-bash';
+  import "prismjs/components/prism-bash";
   // @ts-ignore
-  import 'prismjs/components/prism-typescript';
+  import "prismjs/components/prism-typescript";
   // @ts-ignore
-  import 'prismjs/components/prism-javascript';
+  import "prismjs/components/prism-javascript";
   // @ts-ignore
-  import 'prismjs/components/prism-json';
+  import "prismjs/components/prism-json";
   // @ts-ignore
-  import 'prismjs/components/prism-css';
+  import "prismjs/components/prism-css";
   // @ts-ignore
-  import 'prismjs/components/prism-ruby';
+  import "prismjs/components/prism-ruby";
   // @ts-ignore
-  import 'prismjs/components/prism-yaml';
+  import "prismjs/components/prism-yaml";
   // @ts-ignore
-  import 'prism-svelte';
-  import { marked } from 'marked';
+  import "prism-svelte";
+  import { marked } from "marked";
 
   // TypeScript declaration
   declare global {
@@ -53,7 +53,7 @@ import "@styles/global.css";
   });
 
   // Make Prism and marked available globally
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     window.Prism = Prism;
     window.marked = marked;
 
@@ -68,6 +68,6 @@ import "@styles/global.css";
     highlightCode();
 
     // Re-highlight on Astro page navigation
-    document.addEventListener('astro:after-swap', highlightCode);
+    document.addEventListener("astro:after-swap", highlightCode);
   }
 </script>

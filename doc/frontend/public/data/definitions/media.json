@@ -113,9 +113,7 @@
                           "type": "object"
                         }
                       },
-                      "required": [
-                        "type"
-                      ],
+                      "required": ["type"],
                       "additionalProperties": false
                     },
                     "included": {
@@ -125,18 +123,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Jobs"
-        ],
+        "tags": ["Jobs"],
         "security": [
           {
             "bearerAuth": []
@@ -161,9 +155,7 @@
             "description": "No content"
           }
         },
-        "tags": [
-          "Jobs"
-        ],
+        "tags": ["Jobs"],
         "security": [
           {
             "bearerAuth": []
@@ -437,9 +429,7 @@
                             "type": "object"
                           }
                         },
-                        "required": [
-                          "type"
-                        ],
+                        "required": ["type"],
                         "additionalProperties": false
                       }
                     },
@@ -450,18 +440,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Jobs"
-        ],
+        "tags": ["Jobs"],
         "security": [
           {
             "bearerAuth": []
@@ -662,9 +648,7 @@
                             "type": "object"
                           }
                         },
-                        "required": [
-                          "type"
-                        ],
+                        "required": ["type"],
                         "additionalProperties": false
                       }
                     },
@@ -675,18 +659,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Medias"
-        ],
+        "tags": ["Medias"],
         "security": [
           {
             "bearerAuth": []
@@ -721,9 +701,7 @@
             "description": "No content"
           }
         },
-        "tags": [
-          "Medias"
-        ],
+        "tags": ["Medias"],
         "security": [
           {
             "bearerAuth": []
@@ -758,9 +736,7 @@
             "description": "No content"
           }
         },
-        "tags": [
-          "Medias"
-        ],
+        "tags": ["Medias"],
         "security": [
           {
             "bearerAuth": []
@@ -853,9 +829,7 @@
                           "type": "object"
                         }
                       },
-                      "required": [
-                        "type"
-                      ],
+                      "required": ["type"],
                       "additionalProperties": false
                     },
                     "included": {
@@ -865,18 +839,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Medias"
-        ],
+        "tags": ["Medias"],
         "security": [
           {
             "bearerAuth": []
@@ -910,9 +880,7 @@
                         "type": "string"
                       }
                     },
-                    "required": [
-                      "tempfile"
-                    ],
+                    "required": ["tempfile"],
                     "additionalProperties": false
                   },
                   "project_id": {
@@ -933,11 +901,7 @@
                     "description": "The key of the media; optional, default to empty string"
                   }
                 },
-                "required": [
-                  "file",
-                  "project_id",
-                  "resource"
-                ],
+                "required": ["file", "project_id", "resource"],
                 "additionalProperties": false
               }
             }

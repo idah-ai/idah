@@ -111,9 +111,7 @@
                           "type": "object"
                         }
                       },
-                      "required": [
-                        "type"
-                      ],
+                      "required": ["type"],
                       "additionalProperties": false
                     },
                     "included": {
@@ -123,18 +121,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Account Settings"
-        ],
+        "tags": ["Account Settings"],
         "security": [
           {
             "bearerAuth": []
@@ -218,9 +212,7 @@
                           "type": "object"
                         }
                       },
-                      "required": [
-                        "type"
-                      ],
+                      "required": ["type"],
                       "additionalProperties": false
                     },
                     "included": {
@@ -230,18 +222,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Account Settings"
-        ],
+        "tags": ["Account Settings"],
         "security": [
           {
             "bearerAuth": []
@@ -300,17 +288,11 @@
                         "additionalProperties": false
                       }
                     },
-                    "required": [
-                      "type",
-                      "attributes"
-                    ],
+                    "required": ["type", "attributes"],
                     "additionalProperties": false
                   }
                 },
-                "required": [
-                  "resource_id",
-                  "data"
-                ],
+                "required": ["resource_id", "data"],
                 "additionalProperties": false
               }
             }
@@ -480,9 +462,7 @@
                             "type": "object"
                           }
                         },
-                        "required": [
-                          "type"
-                        ],
+                        "required": ["type"],
                         "additionalProperties": false
                       }
                     },
@@ -493,18 +473,14 @@
                       }
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Account Settings"
-        ],
+        "tags": ["Account Settings"],
         "security": [
           {
             "bearerAuth": []
@@ -537,25 +513,18 @@
                           "description": "Mapping of modality IDs to plugin names"
                         }
                       },
-                      "required": [
-                        "modalities",
-                        "plugins"
-                      ],
+                      "required": ["modalities", "plugins"],
                       "additionalProperties": false
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Plugins"
-        ]
+        "tags": ["Plugins"]
       }
     },
     "/plugins/modalities/{modality_name}": {
@@ -588,24 +557,18 @@
                           "description": "Mapping of shape names to their details"
                         }
                       },
-                      "required": [
-                        "shapes"
-                      ],
+                      "required": ["shapes"],
                       "additionalProperties": false
                     }
                   },
-                  "required": [
-                    "data"
-                  ],
+                  "required": ["data"],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": [
-          "Plugins"
-        ]
+        "tags": ["Plugins"]
       }
     },
     "/plugins/{plugin}/assets/*": {
@@ -638,9 +601,7 @@
             "description": "No content"
           }
         },
-        "tags": [
-          "Plugins"
-        ]
+        "tags": ["Plugins"]
       }
     },
     "/plugins/{plugin}/files/{filename}": {
@@ -670,9 +631,7 @@
             "description": "No content"
           }
         },
-        "tags": [
-          "Plugins"
-        ]
+        "tags": ["Plugins"]
       }
     }
   },
