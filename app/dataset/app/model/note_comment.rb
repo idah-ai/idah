@@ -34,7 +34,7 @@ module NoteComment
       return table if action == :create
 
       org_ids = auth_context.custom_scopes[:org]
-      project_id = auth_context.custom_scopes[:project]
+      project_ids = auth_context.custom_scopes[:project]
       email = auth_context.metadata[:email]
 
       case action
@@ -48,10 +48,10 @@ module NoteComment
                 .select(1).exists
             ).where(id: Sequel[:note_comments][:note_feed_id]).select(1).exists
           )
-        elsif project_id
+        elsif project_ids
           table.where(
             table.db[:note_feeds].where(
-              project_id: project_id
+              project_id: project_ids
             ).where(id: Sequel[:note_comments][:note_feed_id]).select(1).exists
           )
         else

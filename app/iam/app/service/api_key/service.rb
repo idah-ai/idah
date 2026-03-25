@@ -35,17 +35,14 @@ module ApiKey
           :create,
           "iam:api_keys"
         ) do |scope|
-          # Reduce permissions to the ones the current role has
           scope.array? { |elms| elms.map(&:to_s) }
           scope.all? { permissions }
         end
 
         raise Verse::Error::CannotCreateRecord, "Invalid API Key permission." if permissions.empty?
 
-        # Generate random API key
         raw_key = "IDAH_#{SecureRandom.hex(32)}"
 
-        # Compute SHA digest for storage
         attr[:key_sha] = Digest::SHA256.hexdigest(raw_key)
 
         # Generate key label (first 10 characters + ... + last 4 characters)
@@ -53,12 +50,10 @@ module ApiKey
 
         attr[:permissions] = permissions
 
-        # Validate scope_type
         unless %w[all org project].include?(attr[:scope_type])
           raise Verse::Error::ValidationFailed, "Invalid scope_type. Must be 'all', 'org', or 'project'."
         end
 
-        # Validate scope_value
         attr[:scope_value] ||= []
         if attr[:scope_type] != "all" && attr[:scope_value].empty?
           raise Verse::Error::ValidationFailed, "scope_value cannot be empty for scope_type '#{attr[:scope_type]}'."
@@ -71,12 +66,10 @@ module ApiKey
 
         attr[:status] ||= "active"
 
-        # Create API key record
         id = api_keys.create(attr)
 
         api_key_record = api_keys.find!(id)
 
-        # Return the record with the raw API key (only returned once)
         ApiKey::Record.new(
           {
             **api_key_record.fields,
@@ -125,15 +118,20 @@ module ApiKey
         scope.all? { api_permission_list }
         scope.array? { |allowed_permissions|
           # Return only the permissions that the user is allowed to create
-          # api_permission_list.select { |permission| allowed_permissions.include?(permission.name.to_sym) }
           case scope_type
           when "all"
-            api_permission_list.select { |permission| allowed_permissions.include?(permission.name.to_sym) && permission.name.end_with?("_all") }
+            api_permission_list.select { |permission|
+              allowed_permissions.include?(permission.name.to_sym) && permission.name.end_with?("_all")
+            }
           when "org"
-            api_permission_list.select { |permission| allowed_permissions.include?(permission.name.to_sym) && !permission.name.start_with?("account_") }
+            api_permission_list.select { |permission|
+              allowed_permissions.include?(permission.name.to_sym) && permission.name.end_with?("_org")
+            }
           when "project"
-            api_permission_list.select {
-              |permission| allowed_permissions.include?(permission.name.to_sym) && permission.name.start_with?("project_")
+            api_permission_list.select { |permission|
+              allowed_permissions.include?(permission.name.to_sym) &&
+                permission.name.start_with?("project_") &&
+                permission.name.end_with?("_org")
             }
           else
             raise Verse::Error::ValidationFailed, "Invalid scope_type. Must be 'all', 'org', or 'project'."
@@ -143,7 +141,6 @@ module ApiKey
     end
 
     def expire_api_keys
-      # Find all API keys that have expired but status is still 'active'
       expired_keys = api_keys.chunked_index({ expires_at__lte: Time.now, status: "active" }).to_a
 
       expired_keys.each do |key|
@@ -154,8 +151,6 @@ module ApiKey
     private
 
     def api_permission_list
-      # Get all API roles from the system and extract permissions
-
       system_roles.chunked_index({ name__match: %r{^api/} }).map do |role|
         name = role.name.split("/")[1]
         title = role.title
