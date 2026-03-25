@@ -46,6 +46,11 @@ namespace :dev do
 
     users = [
       {
+        name: "Admin User",
+        email: "admin@idah.ai",
+        role_name: "admin"
+      },
+      {
         email: "orgowner@idah.ai",
         name: "Organization Owner",
         role_name: "org_owner",
