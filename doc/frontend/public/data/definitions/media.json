@@ -1,0 +1,932 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Media",
+    "description": "Media Importer and Storage Service",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://idah.localhost:8443/api/v1/media"
+    }
+  ],
+  "paths": {
+    "/jobs/{resource_id}": {
+      "get": {
+        "summary": "show",
+        "description": "Show a specific `media:jobs`",
+        "parameters": [
+          {
+            "name": "resource_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "included",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "fields",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "additionalProperties": {
+                "type": "array"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "attributes": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "job_class": {
+                              "type": "string"
+                            },
+                            "arguments": {
+                              "type": "object"
+                            },
+                            "priority": {
+                              "type": "integer"
+                            },
+                            "status": {
+                              "type": "string"
+                            },
+                            "progress": {
+                              "type": "number"
+                            },
+                            "retry_count": {
+                              "type": "integer"
+                            },
+                            "error": {
+                              "type": "string"
+                            },
+                            "unicity": {
+                              "type": "string"
+                            },
+                            "scheduled_at": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "created_at": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "updated_at": {
+                              "type": "string",
+                              "format": "date-time"
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "relationships": {
+                          "type": "object"
+                        }
+                      },
+                      "required": ["type"],
+                      "additionalProperties": false
+                    },
+                    "included": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    }
+                  },
+                  "required": ["data"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": ["Jobs"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "summary": "delete",
+        "description": "Delete the `media:jobs`",
+        "parameters": [
+          {
+            "name": "resource_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No content"
+          }
+        },
+        "tags": ["Jobs"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/jobs": {
+      "get": {
+        "summary": "index",
+        "description": "Return a paginated list of `media:jobs`",
+        "parameters": [
+          {
+            "name": "page[number]",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "The page number, default to 1"
+          },
+          {
+            "name": "page[size]",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "The number of items per page, default to 1000"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The sort order, comma separated list of fields. See sorting section for more details"
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Set to true to return the total number of items in the collection"
+          },
+          {
+            "name": "filter[id]",
+            "in": "query",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "name": "filter[job_class]",
+            "in": "query",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "name": "filter[priority]",
+            "in": "query",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "name": "filter[status]",
+            "in": "query",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "name": "filter[progress]",
+            "in": "query",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "name": "filter[retry_count]",
+            "in": "query",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "name": "filter[error]",
+            "in": "query",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "name": "filter[unicity]",
+            "in": "query",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "name": "filter[scheduled_at]",
+            "in": "query",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "name": "filter[created_at]",
+            "in": "query",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "name": "filter[updated_at]",
+            "in": "query",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "name": "filter[id__in]",
+            "in": "query",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "name": "filter[job_class__in]",
+            "in": "query",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "name": "filter[priority__gte]",
+            "in": "query",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "name": "filter[priority__lte]",
+            "in": "query",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "name": "filter[status__in]",
+            "in": "query",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "name": "filter[retry_count__gte]",
+            "in": "query",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "name": "filter[retry_count__lte]",
+            "in": "query",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "name": "filter[scheduled_at__gte]",
+            "in": "query",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "name": "filter[scheduled_at__lte]",
+            "in": "query",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "name": "filter[created_at__gte]",
+            "in": "query",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "name": "filter[created_at__lte]",
+            "in": "query",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "name": "filter[updated_at__gte]",
+            "in": "query",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "name": "filter[updated_at__lte]",
+            "in": "query",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "name": "fields",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "additionalProperties": {
+                "type": "array"
+              }
+            },
+            "description": "The fields to include in the response.\nThe key is the resource type and the value is an array of fields.\n"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string"
+                          },
+                          "id": {
+                            "type": "string"
+                          },
+                          "attributes": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "job_class": {
+                                "type": "string"
+                              },
+                              "arguments": {
+                                "type": "object"
+                              },
+                              "priority": {
+                                "type": "integer"
+                              },
+                              "status": {
+                                "type": "string"
+                              },
+                              "progress": {
+                                "type": "number"
+                              },
+                              "retry_count": {
+                                "type": "integer"
+                              },
+                              "error": {
+                                "type": "string"
+                              },
+                              "unicity": {
+                                "type": "string"
+                              },
+                              "scheduled_at": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "created_at": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "updated_at": {
+                                "type": "string",
+                                "format": "date-time"
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "relationships": {
+                            "type": "object"
+                          }
+                        },
+                        "required": ["type"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "included": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    }
+                  },
+                  "required": ["data"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": ["Jobs"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/medias": {
+      "get": {
+        "summary": "index",
+        "description": "Return a paginated list of `media:medias`",
+        "parameters": [
+          {
+            "name": "page[number]",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "The page number, default to 1"
+          },
+          {
+            "name": "page[size]",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "The number of items per page, default to 1000"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The sort order, comma separated list of fields. See sorting section for more details"
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Set to true to return the total number of items in the collection"
+          },
+          {
+            "name": "filter[id]",
+            "in": "query",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "name": "filter[resource]",
+            "in": "query",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "name": "filter[key]",
+            "in": "query",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "name": "filter[filename]",
+            "in": "query",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "name": "filter[size]",
+            "in": "query",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "name": "filter[mime_type]",
+            "in": "query",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "name": "filter[created_by]",
+            "in": "query",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "name": "filter[created_role]",
+            "in": "query",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "name": "filter[public]",
+            "in": "query",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "name": "filter[created_at]",
+            "in": "query",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "name": "filter[updated_at]",
+            "in": "query",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "name": "filter[project_id]",
+            "in": "query",
+            "required": false,
+            "schema": {}
+          },
+          {
+            "name": "fields",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "additionalProperties": {
+                "type": "array"
+              }
+            },
+            "description": "The fields to include in the response.\nThe key is the resource type and the value is an array of fields.\n"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string"
+                          },
+                          "id": {
+                            "type": "string"
+                          },
+                          "attributes": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "resource": {
+                                "type": "string"
+                              },
+                              "key": {
+                                "type": "string"
+                              },
+                              "filename": {
+                                "type": "string"
+                              },
+                              "size": {
+                                "type": "integer"
+                              },
+                              "mime_type": {
+                                "type": "string"
+                              },
+                              "created_by": {
+                                "type": "integer"
+                              },
+                              "created_role": {
+                                "type": "string"
+                              },
+                              "public": {
+                                "type": "boolean"
+                              },
+                              "created_at": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "updated_at": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "project_id": {
+                                "type": "string"
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "relationships": {
+                            "type": "object"
+                          }
+                        },
+                        "required": ["type"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "included": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    }
+                  },
+                  "required": ["data"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": ["Medias"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/medias/info/{resource}(/{key})?": {
+      "get": {
+        "summary": "info",
+        "description": "## Get Media Info by ID and Key\n\nThis endpoint retrieves the metadata of a media record by its ID and optional key.",
+        "parameters": [
+          {
+            "name": "resource",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No content"
+          }
+        },
+        "tags": ["Medias"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/medias/files/{resource}(/{key})?": {
+      "get": {
+        "summary": "download",
+        "description": "## Get Media by ID and Key\n\nThis endpoint retrieves a media record by its ID and optional key.",
+        "parameters": [
+          {
+            "name": "resource",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No content"
+          }
+        },
+        "tags": ["Medias"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "upload",
+        "description": "## Upload Media\n\nThis endpoint allows you to upload a media file.\nIt expect form-data with a file field named `media`.",
+        "parameters": [
+          {
+            "name": "resource",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/vnd.api+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "attributes": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "resource": {
+                              "type": "string"
+                            },
+                            "key": {
+                              "type": "string"
+                            },
+                            "filename": {
+                              "type": "string"
+                            },
+                            "size": {
+                              "type": "integer"
+                            },
+                            "mime_type": {
+                              "type": "string"
+                            },
+                            "created_by": {
+                              "type": "integer"
+                            },
+                            "created_role": {
+                              "type": "string"
+                            },
+                            "public": {
+                              "type": "boolean"
+                            },
+                            "created_at": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "updated_at": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "project_id": {
+                              "type": "string"
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "relationships": {
+                          "type": "object"
+                        }
+                      },
+                      "required": ["type"],
+                      "additionalProperties": false
+                    },
+                    "included": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    }
+                  },
+                  "required": ["data"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": ["Medias"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "object",
+                    "properties": {
+                      "filename": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "type": "string",
+                        "default": "application/octet-stream"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "tempfile": {
+                        "type": "object",
+                        "instanceof": "IO",
+                        "description": "A native IO stream or file pointer"
+                      },
+                      "head": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["tempfile"],
+                    "additionalProperties": false
+                  },
+                  "project_id": {
+                    "type": "string"
+                  },
+                  "resource": {
+                    "type": "string"
+                  },
+                  "key": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "The key of the media; optional, default to empty string"
+                  }
+                },
+                "required": ["file", "project_id", "resource"],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Jobs",
+      "description": "This exposition provides access to the job records in the system.\nIt allows you to view, delete, and signal jobs.\nYou can also filter jobs by various attributes such as status, priority, and scheduled time.\n"
+    },
+    {
+      "name": "Medias",
+      "description": "This exposition provides access to the media records in the system.\n"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}
