@@ -22,7 +22,7 @@
     projectId: string;
     align?: DropdownMenuContentAlignment;
   }
-  let { projectId, align = "center" }: Props = $props();
+  let { projectId, align = "end" }: Props = $props();
 
   // Variables
   let currentAccount = $authStatus.authContext;

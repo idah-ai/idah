@@ -1,0 +1,100 @@
+{
+  "data": [
+    {
+      "type": "dataset:datasets",
+      "id": "019bba87-7810-7935-a8ae-d2a6bacebecb",
+      "attributes": {
+        "project_id": "019bba87-650e-74e8-a68a-bc49bfff2527",
+        "name": "Dataset 1",
+        "labels": [],
+        "modality": "idah-video",
+        "labeling_configuration": {
+          "idah-video:bounding-box": {
+            "values": [
+              {
+                "id": "vehicles/car",
+                "color": "#F6402B",
+                "label": "Car",
+                "text_color": "#FFFFFF"
+              },
+              {
+                "id": "vehicles/bus",
+                "color": "#3C4DB7",
+                "label": "Bus",
+                "parent": "vehicles",
+                "children": [],
+                "expanded": true,
+                "text_color": "#FFFFFF"
+              },
+              {
+                "id": "vehicles/van",
+                "color": "#009687",
+                "label": "Van",
+                "parent": "vehicles",
+                "children": [],
+                "expanded": true,
+                "text_color": "#000000"
+              }
+            ],
+            "properties": [
+              {
+                "id": "occlusion",
+                "type": "boolean",
+                "label": "occlusion",
+                "format": {},
+                "required": true,
+                "visibility": [
+                  "or",
+                  [
+                    [
+                      "eq",
+                      [
+                        [
+                          "get",
+                          [
+                            "value.category"
+                          ]
+                        ],
+                        "vehicles/car"
+                      ]
+                    ],
+                    [
+                      "eq",
+                      [
+                        [
+                          "get",
+                          [
+                            "value.category"
+                          ]
+                        ],
+                        "vehicles/bus"
+                      ]
+                    ]
+                  ]
+                ],
+                "description": ""
+              }
+            ]
+          }
+        },
+        "workflow_configuration": {},
+        "status": "in_progress",
+        "progress": 0,
+        "entries_total_count": 3,
+        "entries_completed_count": 0,
+        "entries_in_progress_count": 3,
+        "created_at": "2026-01-14 10:23:18 +0000",
+        "updated_at": "2026-01-20 16:04:23 +0000"
+      },
+      "relationships": {
+        "project": {
+          "data": {
+            "type": "dataset:projects",
+            "id": "019bba87-650e-74e8-a68a-bc49bfff2527"
+          }
+        }
+      }
+    }
+  ],
+  "meta": {}
+}

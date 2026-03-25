@@ -7,11 +7,12 @@ RUN apt-get update && apt-get install -y \
     # Basic build tools
     build-essential \
     pkg-config \
+    # Handle media processing
+    file \
     # pgSQL client libraries
     libpq-dev \
     # Additional useful packages
     curl \
-    wget \
     git \
     # Clean up apt cache to reduce image size
     && apt-get clean \
