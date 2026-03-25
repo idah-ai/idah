@@ -1,5 +1,4 @@
 ---
-
 import { getApiUrls } from "$lib/app/sidebar/api-urls";
 import PageContainer from "@components/app/page/PageContainer.astro";
 import PageTitle from "@components/app/page/PageTitle.astro";
@@ -20,7 +19,7 @@ export async function getStaticPaths() {
         params: {
           app: item.name,
           tag,
-        }
+        },
       });
     });
   });
@@ -42,12 +41,12 @@ function renderMarkdown(text: string): string {
 
 // Helper to highlight path parameters
 function highlightPathParams(path: string): string {
-  return path.replace(/\{([^}]+)\}/g, '<b>{$1}</b>');
+  return path.replace(/\{([^}]+)\}/g, "<b>{$1}</b>");
 }
 
 // Helper to convert JSON Schema to example JSON
 function schemaToExampleJSON(schema: any): any {
-  if (!schema || typeof schema !== 'object') return null;
+  if (!schema || typeof schema !== "object") return null;
 
   const type = schema.type;
 
@@ -66,7 +65,7 @@ function schemaToExampleJSON(schema: any): any {
 
   // Handle different types
   switch (type) {
-    case 'object':
+    case "object":
       const obj: any = {};
       if (schema.properties) {
         for (const [key, propSchema] of Object.entries(schema.properties)) {
@@ -75,36 +74,36 @@ function schemaToExampleJSON(schema: any): any {
       }
       return obj;
 
-    case 'array':
+    case "array":
       if (schema.items) {
         return [schemaToExampleJSON(schema.items)];
       }
       return [];
 
-    case 'string':
+    case "string":
       // Check for format-specific examples
-      if (schema.format === 'date-time') {
+      if (schema.format === "date-time") {
         return new Date().toISOString();
       }
-      if (schema.format === 'date') {
-        return new Date().toISOString().split('T')[0];
+      if (schema.format === "date") {
+        return new Date().toISOString().split("T")[0];
       }
-      if (schema.format === 'email') {
-        return 'user@example.com';
+      if (schema.format === "email") {
+        return "user@example.com";
       }
-      if (schema.format === 'uuid') {
-        return '123e4567-e89b-12d3-a456-426614174000';
+      if (schema.format === "uuid") {
+        return "123e4567-e89b-12d3-a456-426614174000";
       }
-      return 'string';
+      return "string";
 
-    case 'number':
-    case 'integer':
+    case "number":
+    case "integer":
       return 0;
 
-    case 'boolean':
+    case "boolean":
       return false;
 
-    case 'null':
+    case "null":
       return null;
 
     default:
@@ -125,10 +124,10 @@ const { app, tag } = Astro.params;
 let data;
 // During build (SSR), read from filesystem
 if (import.meta.env.SSR) {
-  const fs = await import('node:fs/promises');
-  const path = await import('node:path');
-  const filePath = path.join(process.cwd(), 'public', 'data', 'definitions', `${app}.json`);
-  const content = await fs.readFile(filePath, 'utf-8');
+  const fs = await import("node:fs/promises");
+  const path = await import("node:path");
+  const filePath = path.join(process.cwd(), "public", "data", "definitions", `${app}.json`);
+  const content = await fs.readFile(filePath, "utf-8");
   data = JSON.parse(content);
 } else {
   // In browser, use fetch
@@ -180,17 +179,17 @@ for (const [tag, paths] of pathsByTag) {
     if (operation.requestBody?.content?.["application/vnd.api+json"]?.schema) {
       schemas.input = await convertSchemaToTypescript(
         operation.requestBody.content["application/vnd.api+json"].schema,
-        "RequestBody"
+        "RequestBody",
       );
     } else if (operation.requestBody?.content?.["application/json"]?.schema) {
       schemas.input = await convertSchemaToTypescript(
         operation.requestBody.content["application/json"].schema,
-        "RequestBody"
+        "RequestBody",
       );
     } else if (operation.requestBody?.content?.["multipart/form-data"]?.schema) {
       schemas.input = await convertSchemaToTypescript(
         operation.requestBody.content["multipart/form-data"].schema,
-        "RequestBody"
+        "RequestBody",
       );
     }
 
@@ -199,17 +198,14 @@ for (const [tag, paths] of pathsByTag) {
     if (successResponse?.content?.["application/vnd.api+json"]?.schema) {
       schemas.output = await convertSchemaToTypescript(
         successResponse.content["application/vnd.api+json"].schema,
-        "Response"
+        "Response",
       );
     } else if (successResponse?.content?.["application/json"]?.schema) {
-      schemas.output = await convertSchemaToTypescript(
-        successResponse.content["application/json"].schema,
-        "Response"
-      );
+      schemas.output = await convertSchemaToTypescript(successResponse.content["application/json"].schema, "Response");
     } else if (successResponse?.content?.["multipart/form-data"]?.schema) {
       schemas.output = await convertSchemaToTypescript(
         successResponse.content["multipart/form-data"].schema,
-        "Response"
+        "Response",
       );
     }
 
@@ -222,232 +218,282 @@ for (const [tag, paths] of pathsByTag) {
   <div data-pagefind-ignore>
     <PageContainer>
       <PageTitle>
-        <div class="p-3 rounded-xl text-blue-400 dark:text-blue-600 bg-blue-50 dark:bg-blue-900/20">
-          <Braces class="w-9 h-9" stroke-width={2} />
+        <div class="rounded-xl bg-blue-50 p-3 text-blue-400 dark:bg-blue-900/20 dark:text-blue-600">
+          <Braces class="h-9 w-9" stroke-width={2} />
         </div>
         {data.info.title} API Reference
       </PageTitle>
       <div class="mb-6" data-tag={tag}>
         <p class="markdown-content mb-8 text-gray-600">{data.info.description}</p>
 
-        {data.tags.length > 0 ? (
-          <div class="space-y-8">
-            {data.tags.map((tagData: any, index: number) => {
-              const tagPaths = pathsByTag.get(tagData.name) || [];
-              const isActiveTag = tagData.name === tag;
-              return (
-                <section data-pagefind-ignore={!isActiveTag ? true : undefined} id={`tag-${tagData.name}`} data-index={index} class="tag-group rounded-lg border shadow-sm border-gray-200 bg-white">
-                  <div class={`border-b px-6 py-4 ${isActiveTag ? 'bg-blue-50' : 'border-gray-200 bg-gray-50'}`}>
-                    <h2 class={`text-2xl font-semibold ${isActiveTag ? 'text-primary' : 'text-gray-900'}`}>{tagData.name}</h2>
-                    {tagData.description && (
-                      <div class="markdown-content mt-1 text-sm text-gray-600" set:html={renderMarkdown(tagData.description)} />
-                    )}
-                  </div>
+        {
+          data.tags.length > 0 ? (
+            <div class="space-y-8">
+              {data.tags.map((tagData: any, index: number) => {
+                const tagPaths = pathsByTag.get(tagData.name) || [];
+                const isActiveTag = tagData.name === tag;
+                return (
+                  <section
+                    data-pagefind-ignore={!isActiveTag ? true : undefined}
+                    id={`tag-${tagData.name}`}
+                    data-index={index}
+                    class="tag-group rounded-lg border border-gray-200 bg-white shadow-sm"
+                  >
+                    <div class={`border-b px-6 py-4 ${isActiveTag ? "bg-blue-50" : "border-gray-200 bg-gray-50"}`}>
+                      <h2 class={`text-2xl font-semibold ${isActiveTag ? "text-primary" : "text-gray-900"}`}>
+                        {tagData.name}
+                      </h2>
+                      {tagData.description && (
+                        <div
+                          class="markdown-content mt-1 text-sm text-gray-600"
+                          set:html={renderMarkdown(tagData.description)}
+                        />
+                      )}
+                    </div>
 
-                  <div class="divide-y divide-gray-100">
-                    {tagPaths.map(({ path, method, operation }) => {
-                      const key = `${method}-${path}`;
-                      const tsSchemas = typescriptSchemas.get(key) || {};
-                      const methodColor = {
-                        get: "bg-blue-500",
-                        post: "bg-green-500",
-                        put: "bg-yellow-500",
-                        patch: "bg-orange-500",
-                        delete: "bg-red-500",
-                      }[method] || "bg-gray-500";
+                    <div class="divide-y divide-gray-100">
+                      {tagPaths.map(({ path, method, operation }) => {
+                        const key = `${method}-${path}`;
+                        const tsSchemas = typescriptSchemas.get(key) || {};
+                        const methodColor =
+                          {
+                            get: "bg-blue-500",
+                            post: "bg-green-500",
+                            put: "bg-yellow-500",
+                            patch: "bg-orange-500",
+                            delete: "bg-red-500",
+                          }[method] || "bg-gray-500";
 
-                      const parameters = operation.parameters || [];
-                      const requestBody = operation.requestBody;
-                      const responses = operation.responses || {};
+                        const parameters = operation.parameters || [];
+                        const requestBody = operation.requestBody;
+                        const responses = operation.responses || {};
 
-                      return (
-                        <details class="path-item group">
-                          <summary class="flex cursor-pointer items-center gap-4 px-6 py-4 hover:bg-gray-50">
-                            <span class={`inline-block w-20 rounded px-2 py-1 text-center text-xs font-bold uppercase text-white ${methodColor}`}>
-                              {method}
-                            </span>
-                            <span class="font-mono text-sm text-gray-900" set:html={highlightPathParams(path)} />
-                            {operation.summary && (
-                              <span class="text-sm text-gray-600">- {operation.summary}</span>
-                            )}
-                          </summary>
+                        return (
+                          <details class="path-item group">
+                            <summary class="flex cursor-pointer items-center gap-4 px-6 py-4 hover:bg-gray-50">
+                              <span
+                                class={`inline-block w-20 rounded px-2 py-1 text-center text-xs font-bold text-white uppercase ${methodColor}`}
+                              >
+                                {method}
+                              </span>
+                              <span class="font-mono text-sm text-gray-900" set:html={highlightPathParams(path)} />
+                              {operation.summary && <span class="text-sm text-gray-600">- {operation.summary}</span>}
+                            </summary>
 
-                          <div class="border-t border-gray-100 bg-gray-50 px-6 py-6">
-                            {operation.description && (
-                              <div class="mb-6">
-                                <h4 class="mb-2 font-semibold text-gray-900">Description</h4>
-                                <div class="markdown-content text-sm text-gray-600" set:html={renderMarkdown(operation.description)} />
-                              </div>
-                            )}
+                            <div class="border-t border-gray-100 bg-gray-50 px-6 py-6">
+                              {operation.description && (
+                                <div class="mb-6">
+                                  <h4 class="mb-2 font-semibold text-gray-900">Description</h4>
+                                  <div
+                                    class="markdown-content text-sm text-gray-600"
+                                    set:html={renderMarkdown(operation.description)}
+                                  />
+                                </div>
+                              )}
 
-                            {/* Parameters Section */}
-                            {parameters.length > 0 && (
-                              <div class="mb-6">
-                                <h4 class="mb-3 font-semibold text-gray-900">Parameters</h4>
-                                <div class="overflow-hidden rounded-lg border border-gray-200">
-                                  <table class="min-w-full divide-y divide-gray-200">
-                                    <thead class="bg-gray-100">
-                                      <tr>
-                                        <th class="px-4 py-2 text-left text-xs font-medium uppercase text-gray-600">Name</th>
-                                        <th class="px-4 py-2 text-left text-xs font-medium uppercase text-gray-600">In</th>
-                                        <th class="px-4 py-2 text-left text-xs font-medium uppercase text-gray-600">Type</th>
-                                        <th class="px-4 py-2 text-left text-xs font-medium uppercase text-gray-600">Required</th>
-                                        <th class="px-4 py-2 text-left text-xs font-medium uppercase text-gray-600">Description</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody class="divide-y divide-gray-200 bg-white">
-                                      {parameters.map((param: any) => (
+                              {/* Parameters Section */}
+                              {parameters.length > 0 && (
+                                <div class="mb-6">
+                                  <h4 class="mb-3 font-semibold text-gray-900">Parameters</h4>
+                                  <div class="overflow-hidden rounded-lg border border-gray-200">
+                                    <table class="min-w-full divide-y divide-gray-200">
+                                      <thead class="bg-gray-100">
                                         <tr>
-                                          <td class="px-4 py-2 font-mono text-sm text-gray-900">{param.name}</td>
-                                          <td class="px-4 py-2 text-sm text-gray-600">{param.in}</td>
-                                          <td class="px-4 py-2 font-mono text-sm text-gray-600">{param.schema?.type || "any"}</td>
-                                          <td class="px-4 py-2 text-sm">
-                                            {param.required ? (
-                                              <span class="rounded bg-red-100 px-2 py-1 text-xs text-red-700">Required</span>
-                                            ) : (
-                                              <span class="rounded bg-gray-100 px-2 py-1 text-xs text-gray-600">Optional</span>
-                                            )}
-                                          </td>
-                                          <td class="px-4 py-2 text-sm text-gray-600">
-                                            {param.description ? (
-                                              <div class="markdown-content" set:html={renderMarkdown(param.description)} />
-                                            ) : "-"}
-                                          </td>
+                                          <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase">
+                                            Name
+                                          </th>
+                                          <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase">
+                                            In
+                                          </th>
+                                          <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase">
+                                            Type
+                                          </th>
+                                          <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase">
+                                            Required
+                                          </th>
+                                          <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase">
+                                            Description
+                                          </th>
                                         </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
+                                      </thead>
+                                      <tbody class="divide-y divide-gray-200 bg-white">
+                                        {parameters.map((param: any) => (
+                                          <tr>
+                                            <td class="px-4 py-2 font-mono text-sm text-gray-900">{param.name}</td>
+                                            <td class="px-4 py-2 text-sm text-gray-600">{param.in}</td>
+                                            <td class="px-4 py-2 font-mono text-sm text-gray-600">
+                                              {param.schema?.type || "any"}
+                                            </td>
+                                            <td class="px-4 py-2 text-sm">
+                                              {param.required ? (
+                                                <span class="rounded bg-red-100 px-2 py-1 text-xs text-red-700">
+                                                  Required
+                                                </span>
+                                              ) : (
+                                                <span class="rounded bg-gray-100 px-2 py-1 text-xs text-gray-600">
+                                                  Optional
+                                                </span>
+                                              )}
+                                            </td>
+                                            <td class="px-4 py-2 text-sm text-gray-600">
+                                              {param.description ? (
+                                                <div
+                                                  class="markdown-content"
+                                                  set:html={renderMarkdown(param.description)}
+                                                />
+                                              ) : (
+                                                "-"
+                                              )}
+                                            </td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
                                 </div>
-                              </div>
-                            )}
+                              )}
 
-                            {/* Request Body Section */}
-                            {requestBody && (
-                              <div class="mb-6">
-                                <h4 class="mb-3 font-semibold text-gray-900">Request Body</h4>
-                                <div class="rounded-lg border border-gray-200 bg-white">
-                                  <div class="flex border-b border-gray-200">
-                                    <button
-                                      class="schema-tab active px-4 py-2 text-sm font-medium"
-                                      data-target={`input-json-${key}`}
-                                      onclick={`switchTab(event, 'input-json-${key}')`}
-                                    >
-                                      Example Value
-                                    </button>
-                                    {tsSchemas.input && (
+                              {/* Request Body Section */}
+                              {requestBody && (
+                                <div class="mb-6">
+                                  <h4 class="mb-3 font-semibold text-gray-900">Request Body</h4>
+                                  <div class="rounded-lg border border-gray-200 bg-white">
+                                    <div class="flex border-b border-gray-200">
                                       <button
-                                        class="schema-tab px-4 py-2 text-sm font-medium"
-                                        data-target={`input-ts-${key}`}
-                                        onclick={`switchTab(event, 'input-ts-${key}')`}
+                                        class="schema-tab active px-4 py-2 text-sm font-medium"
+                                        data-target={`input-json-${key}`}
+                                        onclick={`switchTab(event, 'input-json-${key}')`}
                                       >
-                                        TypeScript
+                                        Example Value
                                       </button>
-                                    )}
-                                  </div>
-
-                                  <div class="p-4">
-                                    <div id={`input-json-${key}`} class="schema-content">
-                                      <div
-                                        class="json-tree-container"
-                                        data-json={JSON.stringify(
-                                          schemaToExampleJSON(
-                                            requestBody.content?.["application/vnd.api+json"]?.schema ||
-                                            requestBody.content?.["application/json"]?.schema ||
-                                            requestBody.content?.["multipart/form-data"]?.schema || {}
-                                          )
-                                        )}
-                                      ></div>
-                                    </div>
-
-                                    {tsSchemas.input && (
-                                      <div id={`input-ts-${key}`} class="schema-content hidden">
-                                        <pre class="ts-code-block"><code class="language-typescript">{tsSchemas.input}</code></pre>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Response Section */}
-                            {Object.keys(responses).length > 0 && (
-                              <div class="mb-6">
-                                <h4 class="mb-3 font-semibold text-gray-900">Response</h4>
-
-                                {Object.entries(responses).map(([statusCode, response]: [string, any]) => (
-                                  <div class="mb-4 rounded-lg border border-gray-200 bg-white">
-                                    <div class="flex items-center border-b border-gray-200 bg-gray-50 px-4 py-2">
-                                      <span class={`inline-block rounded px-2 py-1 text-xs font-bold ${
-                                        statusCode.startsWith('2') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                                      }`}>
-                                        {statusCode}
-                                      </span>
-                                      {response.description && (
-                                        <div class="markdown-content ml-2 text-sm text-gray-600" set:html={renderMarkdown(response.description)} />
+                                      {tsSchemas.input && (
+                                        <button
+                                          class="schema-tab px-4 py-2 text-sm font-medium"
+                                          data-target={`input-ts-${key}`}
+                                          onclick={`switchTab(event, 'input-ts-${key}')`}
+                                        >
+                                          TypeScript
+                                        </button>
                                       )}
                                     </div>
 
-                                    {response.content && (
-                                      <div>
-                                        <div class="flex border-b border-gray-200">
-                                          <button
-                                            class="schema-tab active px-4 py-2 text-sm font-medium"
-                                            data-target={`output-json-${key}-${statusCode}`}
-                                            onclick={`switchTab(event, 'output-json-${key}-${statusCode}')`}
-                                          >
-                                            Example Value
-                                          </button>
-                                          {tsSchemas.output && statusCode === "200" && (
-                                            <button
-                                              class="schema-tab px-4 py-2 text-sm font-medium"
-                                              data-target={`output-ts-${key}`}
-                                              onclick={`switchTab(event, 'output-ts-${key}')`}
-                                            >
-                                              TypeScript
-                                            </button>
+                                    <div class="p-4">
+                                      <div id={`input-json-${key}`} class="schema-content">
+                                        <div
+                                          class="json-tree-container"
+                                          data-json={JSON.stringify(
+                                            schemaToExampleJSON(
+                                              requestBody.content?.["application/vnd.api+json"]?.schema ||
+                                                requestBody.content?.["application/json"]?.schema ||
+                                                requestBody.content?.["multipart/form-data"]?.schema ||
+                                                {},
+                                            ),
                                           )}
-                                        </div>
+                                        />
+                                      </div>
 
-                                        <div class="p-4">
-                                          <div id={`output-json-${key}-${statusCode}`} class="schema-content">
-                                            <div
-                                              class="json-tree-container"
-                                              data-json={JSON.stringify(
-                                                schemaToExampleJSON(
-                                                  response.content?.["application/vnd.api+json"]?.schema ||
-                                                  response.content?.["application/json"]?.schema ||
-                                                  response.content?.["multipart/form-data"]?.schema || {}
-                                                )
-                                              )}
-                                            ></div>
+                                      {tsSchemas.input && (
+                                        <div id={`input-ts-${key}`} class="schema-content hidden">
+                                          <pre class="ts-code-block">
+                                            <code class="language-typescript">{tsSchemas.input}</code>
+                                          </pre>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Response Section */}
+                              {Object.keys(responses).length > 0 && (
+                                <div class="mb-6">
+                                  <h4 class="mb-3 font-semibold text-gray-900">Response</h4>
+
+                                  {Object.entries(responses).map(([statusCode, response]: [string, any]) => (
+                                    <div class="mb-4 rounded-lg border border-gray-200 bg-white">
+                                      <div class="flex items-center border-b border-gray-200 bg-gray-50 px-4 py-2">
+                                        <span
+                                          class={`inline-block rounded px-2 py-1 text-xs font-bold ${
+                                            statusCode.startsWith("2")
+                                              ? "bg-green-100 text-green-700"
+                                              : "bg-red-100 text-red-700"
+                                          }`}
+                                        >
+                                          {statusCode}
+                                        </span>
+                                        {response.description && (
+                                          <div
+                                            class="markdown-content ml-2 text-sm text-gray-600"
+                                            set:html={renderMarkdown(response.description)}
+                                          />
+                                        )}
+                                      </div>
+
+                                      {response.content && (
+                                        <div>
+                                          <div class="flex border-b border-gray-200">
+                                            <button
+                                              class="schema-tab active px-4 py-2 text-sm font-medium"
+                                              data-target={`output-json-${key}-${statusCode}`}
+                                              onclick={`switchTab(event, 'output-json-${key}-${statusCode}')`}
+                                            >
+                                              Example Value
+                                            </button>
+                                            {tsSchemas.output && statusCode === "200" && (
+                                              <button
+                                                class="schema-tab px-4 py-2 text-sm font-medium"
+                                                data-target={`output-ts-${key}`}
+                                                onclick={`switchTab(event, 'output-ts-${key}')`}
+                                              >
+                                                TypeScript
+                                              </button>
+                                            )}
                                           </div>
 
-                                          {tsSchemas.output && statusCode === "200" && (
-                                            <div id={`output-ts-${key}`} class="schema-content hidden">
-                                              <pre class="ts-code-block"><code class="language-typescript">{tsSchemas.output}</code></pre>
+                                          <div class="p-4">
+                                            <div id={`output-json-${key}-${statusCode}`} class="schema-content">
+                                              <div
+                                                class="json-tree-container"
+                                                data-json={JSON.stringify(
+                                                  schemaToExampleJSON(
+                                                    response.content?.["application/vnd.api+json"]?.schema ||
+                                                      response.content?.["application/json"]?.schema ||
+                                                      response.content?.["multipart/form-data"]?.schema ||
+                                                      {},
+                                                  ),
+                                                )}
+                                              />
                                             </div>
-                                          )}
+
+                                            {tsSchemas.output && statusCode === "200" && (
+                                              <div id={`output-ts-${key}`} class="schema-content hidden">
+                                                <pre class="ts-code-block">
+                                                  <code class="language-typescript">{tsSchemas.output}</code>
+                                                </pre>
+                                              </div>
+                                            )}
+                                          </div>
                                         </div>
-                                      </div>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        </details>
-                      );
-                    })}
-                  </div>
-                </section>
-              );
-            })}
-          </div>
-        ) : (
-          <div class="rounded-lg border border-gray-200 bg-white p-8 text-center">
-            <p class="text-gray-600">No tags found in spec.</p>
-          </div>
-        )}
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </details>
+                        );
+                      })}
+                    </div>
+                  </section>
+                );
+              })}
+            </div>
+          ) : (
+            <div class="rounded-lg border border-gray-200 bg-white p-8 text-center">
+              <p class="text-gray-600">No tags found in spec.</p>
+            </div>
+          )
+        }
       </div>
     </PageContainer>
 
@@ -616,27 +662,27 @@ for (const [tag, paths] of pathsByTag) {
   // Tab switching function
   function switchTab(event, targetId) {
     const button = event.currentTarget;
-    const container = button.closest('.rounded-lg');
+    const container = button.closest(".rounded-lg");
 
     // Update active tab
-    container.querySelectorAll('.schema-tab').forEach(tab => {
-      tab.classList.remove('active');
+    container.querySelectorAll(".schema-tab").forEach((tab) => {
+      tab.classList.remove("active");
     });
-    button.classList.add('active');
+    button.classList.add("active");
 
     // Show/hide content
-    container.querySelectorAll('.schema-content').forEach(content => {
-      content.classList.add('hidden');
+    container.querySelectorAll(".schema-content").forEach((content) => {
+      content.classList.add("hidden");
     });
     const targetContent = document.getElementById(targetId);
     if (targetContent) {
-      targetContent.classList.remove('hidden');
+      targetContent.classList.remove("hidden");
 
       // Re-highlight TypeScript code when switching to TS tab
       setTimeout(() => {
-        if (typeof Prism !== 'undefined') {
+        if (typeof Prism !== "undefined") {
           const codeBlocks = targetContent.querySelectorAll('code[class*="language-"]');
-          codeBlocks.forEach(block => {
+          codeBlocks.forEach((block) => {
             Prism.highlightElement(block);
           });
         }
@@ -650,14 +696,14 @@ for (const [tag, paths] of pathsByTag) {
       return `<span class="json-tree-null">null</span>`;
     }
 
-    if (typeof data !== 'object') {
-      if (typeof data === 'string') {
+    if (typeof data !== "object") {
+      if (typeof data === "string") {
         return `<span class="json-tree-string">"${data}"</span>`;
       }
-      if (typeof data === 'number') {
+      if (typeof data === "number") {
         return `<span class="json-tree-number">${data}</span>`;
       }
-      if (typeof data === 'boolean') {
+      if (typeof data === "boolean") {
         return `<span class="json-tree-boolean">${data}</span>`;
       }
       return String(data);
@@ -667,19 +713,17 @@ for (const [tag, paths] of pathsByTag) {
     const entries = Object.entries(data);
 
     if (entries.length === 0) {
-      return isArray ?
-        `<span class="json-tree-bracket">[]</span>` :
-        `<span class="json-tree-bracket">{}</span>`;
+      return isArray ? `<span class="json-tree-bracket">[]</span>` : `<span class="json-tree-bracket">{}</span>`;
     }
 
-    const openBracket = isArray ? '[' : '{';
-    const closeBracket = isArray ? ']' : '}';
+    const openBracket = isArray ? "[" : "{";
+    const closeBracket = isArray ? "]" : "}";
 
     let html = `<span class="json-tree-bracket">${openBracket}</span>\n`;
 
     entries.forEach(([key, value], index) => {
       const isLastItem = index === entries.length - 1;
-      const hasChildren = value !== null && typeof value === 'object' && Object.keys(value).length > 0;
+      const hasChildren = value !== null && typeof value === "object" && Object.keys(value).length > 0;
 
       html += '<div class="json-tree-line">';
       html += '<div class="json-tree-toggle">';
@@ -697,7 +741,7 @@ for (const [tag, paths] of pathsByTag) {
       }
 
       if (hasChildren) {
-        html += `<span class="json-tree-preview">${Array.isArray(value) ? '[...]' : '{...}'}</span>`;
+        html += `<span class="json-tree-preview">${Array.isArray(value) ? "[...]" : "{...}"}</span>`;
         html += `<div class="json-tree-children" style="display: none;">`;
         html += createJsonTree(value, isLastItem);
         html += `</div>`;
@@ -709,7 +753,7 @@ for (const [tag, paths] of pathsByTag) {
         html += '<span class="json-tree-bracket">,</span>';
       }
 
-      html += '</div></div>\n';
+      html += "</div></div>\n";
     });
 
     html += `<span class="json-tree-bracket">${closeBracket}</span>`;
@@ -718,33 +762,33 @@ for (const [tag, paths] of pathsByTag) {
   }
 
   function toggleJsonNode(toggle) {
-    const line = toggle.closest('.json-tree-line');
+    const line = toggle.closest(".json-tree-line");
     if (!line) return;
 
-    const content = line.querySelector('.json-tree-content');
+    const content = line.querySelector(".json-tree-content");
     if (!content) return;
 
-    const children = content.querySelector('.json-tree-children');
-    const preview = content.querySelector('.json-tree-preview');
+    const children = content.querySelector(".json-tree-children");
+    const preview = content.querySelector(".json-tree-preview");
 
     if (children && preview) {
-      const isExpanded = children.style.display !== 'none';
+      const isExpanded = children.style.display !== "none";
 
       if (isExpanded) {
-        children.style.display = 'none';
-        preview.style.display = 'inline';
-        toggle.textContent = '▶';
+        children.style.display = "none";
+        preview.style.display = "inline";
+        toggle.textContent = "▶";
       } else {
-        children.style.display = 'block';
-        preview.style.display = 'none';
-        toggle.textContent = '▼';
+        children.style.display = "block";
+        preview.style.display = "none";
+        toggle.textContent = "▼";
       }
     }
   }
 
   // Initialize JSON trees
   function initJsonTrees() {
-    document.querySelectorAll('.json-tree-container').forEach(container => {
+    document.querySelectorAll(".json-tree-container").forEach((container) => {
       const jsonData = JSON.parse(container.dataset.json);
       const treeHtml = createJsonTree(jsonData);
       container.innerHTML = `<div class="json-tree">${treeHtml}</div>`;
@@ -753,7 +797,7 @@ for (const [tag, paths] of pathsByTag) {
 
   // Syntax highlighting for TypeScript
   function highlightTypeScript() {
-    if (typeof Prism !== 'undefined') {
+    if (typeof Prism !== "undefined") {
       Prism.highlightAll();
     }
   }
@@ -761,7 +805,7 @@ for (const [tag, paths] of pathsByTag) {
   // Scroll to tag if specified in URL
   function scrollToTag() {
     // Get tag from data attribute
-    const container = document.querySelector('[data-tag]');
+    const container = document.querySelector("[data-tag]");
     if (!container) return;
 
     const tag = container.dataset.tag;
@@ -774,15 +818,15 @@ for (const [tag, paths] of pathsByTag) {
 
         window.scrollTo({
           top: offsetPosition,
-          behavior: 'smooth'
+          behavior: "smooth",
         });
       }, 200);
     }
   }
 
   // Initialize when DOM is ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => {
       initJsonTrees();
       highlightTypeScript();
       scrollToTag();
