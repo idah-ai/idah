@@ -27,7 +27,7 @@ export function deselectAnnotation() {
 export const selectedAnnotationGroup = writable<AnnotationGroup<VideoAnnotationObject> | undefined>(undefined);
 
 export function setSelectedAnnotationGroup(annotationGroup: AnnotationGroup<VideoAnnotationObject> | undefined) {
- selectedAnnotationGroup.set(annotationGroup);
+  selectedAnnotationGroup.set(annotationGroup);
 }
 
 export function deselectAnnotationGroup() {

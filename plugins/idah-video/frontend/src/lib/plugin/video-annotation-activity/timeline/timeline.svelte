@@ -1,67 +1,94 @@
 <script lang="ts">
   import { SquareSplitHorizontalIcon, Trash2Icon } from "@lucide/svelte";
+  import { getContext, onMount } from "svelte";
 
-  import ScrollArea from "@/components/ui/scroll-area/scroll-area.svelte";
+  import ScrollArea from "$lib/components/ui/scroll-area/scroll-area.svelte";
 
-  import TimelineCells from "./timeline-cells.svelte";
+  import TimelineCells from "$lib/plugin/video-annotation-activity/timeline/timeline-cells.svelte";
   import TimelineContextMenu, {
     type ITimelineContextMenu,
     type TimelineContextMenuMenu,
-  } from "./timeline-context-menu.svelte";
-  import TimelineHeaderRow from "./timeline-header-row.svelte";
-  import TimelineRowActions from "./timeline-row-actions.svelte";
-  import TimelineRowGroup from "./timeline-row-group.svelte";
-  import TimelineRowHeader from "./timeline-row-header.svelte";
-  import TimelineRowHeading from "./timeline-row-heading.svelte";
-  import TimelineRow from "./timeline-row.svelte";
-  import TimelineRuler from "./timeline-ruler.svelte";
-  import VerticalLine from "./vertical-line.svelte";
+  } from "$lib/plugin/video-annotation-activity/timeline/timeline-context-menu.svelte";
+  import TimelineHeaderRow from "$lib/plugin/video-annotation-activity/timeline/timeline-header-row.svelte";
+  import TimelineRowActions from "$lib/plugin/video-annotation-activity/timeline/timeline-row-actions.svelte";
+  import TimelineRowGroup from "$lib/plugin/video-annotation-activity/timeline/timeline-row-group.svelte";
+  import TimelineRowHeader from "$lib/plugin/video-annotation-activity/timeline/timeline-row-header.svelte";
+  import TimelineRowHeading from "$lib/plugin/video-annotation-activity/timeline/timeline-row-heading.svelte";
+  import TimelineRow from "$lib/plugin/video-annotation-activity/timeline/timeline-row.svelte";
+  import TimelineRuler from "$lib/plugin/video-annotation-activity/timeline/timeline-ruler.svelte";
+  import TimelineVerticalLine from "$lib/plugin/video-annotation-activity/timeline/timeline-vertical-line.svelte";
 
-  import { groupAnnotations } from "../../../plugins/idah-video/video-annotation-activity/group-annotation.svelte";
-  import { selectedAnnotationGroup } from "../../../plugins/idah-video/video-annotation-activity/store";
-  import { annotations, type AnnotationObject } from "../data/annotations";
-  import { getFrameFromMouseX } from "./utils";
+  import { setSelectedAnnotationGroup } from "$lib/plugin/video-annotation-activity/store/store";
+  import {
+    selectedFrameX,
+    selectFirstFrameX,
+    setSelectedFrameX,
+    TIMELINE_ROW_HEADER_WIDTH,
+  } from "$lib/plugin/video-annotation-activity/timeline/store";
+  import { getFrameFromMouseX } from "$lib/plugin/video-annotation-activity/timeline/utils";
+  import { findCategory } from "$lib/plugin/video-annotation-activity/utils/category";
+  import { groupAnnotations } from "$lib/plugin/video-annotation-activity/utils/group-annotation.svelte";
 
-  import type { AnnotationGroup } from "@/context/AnnotationContext";
+  import type { IActivityContext } from "$idah/context/activity-context";
+  import type { AnnotationGroup } from "$idah/context/annotation-context";
+  import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
 
   // Props
   interface Props {
+    annotations: VideoAnnotationObject[];
     timelineHeight: number;
-    timelineRowHeaderWidth: number;
-    timelineCellWidth: number;
-    selectedFrameX: number;
-    onSelectFrameX: (frameX: number) => void;
     onToggleVisibility: (selectedGroupId?: string) => void;
     onToggleEditability: (selectedGroupId?: string) => void;
     onDeleteAnnotations: (selectedGroupId?: string) => void;
   }
-  let {
-    timelineHeight,
-    timelineRowHeaderWidth,
-    timelineCellWidth,
-    selectedFrameX,
-    onSelectFrameX,
-    onToggleVisibility,
-    onToggleEditability,
-    onDeleteAnnotations,
-  }: Props = $props();
+  let { annotations, timelineHeight, onToggleVisibility, onToggleEditability, onDeleteAnnotations }: Props = $props();
+
+  // Context
+  let context: IActivityContext = getContext("context");
+
+  // Lifecycle
+  onMount(() => {
+    /** Set selected frame x to timeline row header width (Selected Frame = 1) */
+    selectFirstFrameX();
+  });
 
   // Variables
   let timeline: HTMLDivElement;
   let clientMouseX: number = $state(0);
-  let annotationGroups = groupAnnotations(annotations);
-  let showVerticalLine = $derived(clientMouseX >= timelineRowHeaderWidth);
-  let showSelectedVerticalLine = $derived(Number(selectedFrameX) >= timelineRowHeaderWidth);
+  let annotationGroups = $derived(groupAnnotations(annotations));
+  let showVerticalLine = $derived(clientMouseX >= TIMELINE_ROW_HEADER_WIDTH);
+  let showSelectedVerticalLine = $derived(Number($selectedFrameX) >= TIMELINE_ROW_HEADER_WIDTH);
   let contextMenu = $state<ITimelineContextMenu>({ visible: false, x: 0, y: 0, menus: {} });
 
   // Functions
+  function getGroupTitle(props: { annotationGroup: AnnotationGroup<VideoAnnotationObject> }): string {
+    const { annotationGroup } = props;
+    const { groupId, annotations: anns } = annotationGroup;
+    const splittedGroupId = groupId.split("-");
+    const lastPartOfGroupId = splittedGroupId[splittedGroupId.length - 1];
+    const fallbackGroupTitle = `Group-${lastPartOfGroupId}`;
+
+    const firstAnnotationInGroup = anns[0];
+    const firstAnnotationCategoryId = firstAnnotationInGroup.value.category;
+    if (!firstAnnotationCategoryId) return fallbackGroupTitle;
+
+    const foundCategory = findCategory({
+      labelConfig: context.config,
+      categoryId: firstAnnotationCategoryId,
+      shapeType: firstAnnotationInGroup.shape.type,
+    });
+    if (!foundCategory) return fallbackGroupTitle;
+
+    return `${foundCategory.label}-${lastPartOfGroupId}`;
+  }
+
   function handleMouseMove(event: MouseEvent) {
     const rect = timeline.getBoundingClientRect();
     clientMouseX = event.clientX - rect.left;
   }
 
   function selectFrameX(frameX: number) {
-    onSelectFrameX(frameX);
+    setSelectedFrameX(frameX);
     closeContextMenu();
   }
 
@@ -69,13 +96,15 @@
     contextMenu = { visible: false, x: 0, y: 0, menus: {} };
   }
 
-  function showContextMenu(e: MouseEvent, selectAnnotationGroup?: AnnotationGroup<AnnotationObject>) {
+  function showContextMenu(e: MouseEvent, selectAnnotationGroup?: AnnotationGroup<VideoAnnotationObject>) {
     e.preventDefault();
 
-    /** Select annotation group ?*/
-    $selectedAnnotationGroup = selectAnnotationGroup;
+    setSelectedFrameX(e.clientX);
 
-    const frame = getFrameFromMouseX({ clientX: e.clientX, timelineRowHeaderWidth, timelineCellWidth });
+    /** Select annotation group */
+    setSelectedAnnotationGroup(selectAnnotationGroup);
+
+    const frame = getFrameFromMouseX({ clientX: e.clientX });
 
     /** Menus */
     const splitMenu: TimelineContextMenuMenu = {
@@ -133,7 +162,7 @@
   onmouseleave={() => (showVerticalLine = false)}
 >
   <TimelineHeaderRow>
-    <TimelineRowHeader width={timelineRowHeaderWidth}>
+    <TimelineRowHeader>
       <TimelineRowHeading class="font-semibold">Annotations</TimelineRowHeading>
 
       {@const allAnnotationsHidden = annotationGroups.every((annotationGroup) =>
@@ -153,7 +182,7 @@
       />
     </TimelineRowHeader>
 
-    <TimelineRuler {timelineCellWidth} onSelectFrameX={selectFrameX} />
+    <TimelineRuler onSelectFrameX={selectFrameX} />
   </TimelineHeaderRow>
 
   <ScrollArea>
@@ -166,13 +195,12 @@
           <TimelineRowGroup
             class="border-b"
             {annotationGroup}
-            {timelineCellWidth}
             onSelectFrameX={selectFrameX}
             onContextMenu={(e) => showContextMenu(e, annotationGroup)}
           >
-            <TimelineRowHeader width={timelineRowHeaderWidth}>
+            <TimelineRowHeader>
               <TimelineRowHeading>
-                {annotationGroup.groupId}
+                {getGroupTitle({ annotationGroup })}
               </TimelineRowHeading>
 
               <TimelineRowActions
@@ -184,7 +212,7 @@
               />
             </TimelineRowHeader>
 
-            <TimelineCells {annotationGroup} {timelineCellWidth} />
+            <TimelineCells {annotationGroup} />
           </TimelineRowGroup>
         </TimelineRow>
       {/each}
@@ -193,11 +221,11 @@
 
   <!-- Draw a vertical line when mouse move -->
   {#if showVerticalLine}
-    <VerticalLine positionX={clientMouseX} {timelineRowHeaderWidth} {timelineCellWidth} />
+    <TimelineVerticalLine positionX={clientMouseX} />
   {/if}
 
   {#if showSelectedVerticalLine}
-    <VerticalLine color="primary" positionX={selectedFrameX} {timelineRowHeaderWidth} {timelineCellWidth} />
+    <TimelineVerticalLine color="primary" positionX={$selectedFrameX} />
   {/if}
 </div>
 

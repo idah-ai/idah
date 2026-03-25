@@ -1,19 +1,17 @@
 <script lang="ts">
-  import { cn } from "@/utils";
+  import { cn } from "$lib/utils";
 
-  import { getFrameFromMouseX } from "./utils";
+  import { getFrameFromMouseX } from "$lib/plugin/video-annotation-activity/timeline/utils";
 
   // Props
   interface Props {
     positionX: number;
-    timelineRowHeaderWidth: number;
-    timelineCellWidth: number;
     color?: "default" | "primary";
   }
-  let { positionX, timelineRowHeaderWidth, timelineCellWidth, color = "default" }: Props = $props();
+  let { positionX, color = "default" }: Props = $props();
 
   // Variables
-  let frame = $derived(getFrameFromMouseX({ clientX: positionX, timelineRowHeaderWidth, timelineCellWidth }));
+  let frame = $derived(getFrameFromMouseX({ clientX: positionX }));
 
   let colorClass = $derived.by(() => {
     switch (color) {
@@ -30,7 +28,7 @@
 <!-- HIGHLIGHTED FRAME LABEL -->
 <div
   class={cn(
-    "pointer-events-none absolute top-[9px] z-50 min-w-6 -translate-x-1/2 rounded-sm px-2 py-1 text-center text-xs font-medium",
+    "pointer-events-none absolute top-[9px] z-50 min-w-6 -translate-x-1/2 rounded-md px-2 py-1 text-center text-xs font-medium",
     colorClass,
   )}
   style="transform: translateX({positionX}px)"

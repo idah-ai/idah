@@ -1,15 +1,14 @@
 <script lang="ts">
-  import TimelineAnnotationCell from "./timeline-annotation-cell.svelte";
+  import TimelineAnnotationCell from "$lib/plugin/video-annotation-activity/timeline/timeline-annotation-cell.svelte";
 
-  import type { AnnotationGroup } from "@/context/AnnotationContext";
-  import type { AnnotationObject } from "../data/annotations";
+  import type { AnnotationGroup } from "$idah/context/annotation-context";
+  import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
 
   // Props
   interface Props {
-    annotationGroup: AnnotationGroup<AnnotationObject>;
-    timelineCellWidth: number;
+    annotationGroup: AnnotationGroup<VideoAnnotationObject>;
   }
-  let { annotationGroup, timelineCellWidth }: Props = $props();
+  let { annotationGroup }: Props = $props();
 
   // Variables
   let timelineRulerWidth: number = $state(0);
@@ -29,6 +28,6 @@
 -->
 <div id="timeline-cells" bind:clientWidth={timelineRulerWidth} class="relative w-full">
   {#each annotationFrameRanges as frameRanges (frameRanges)}
-    <TimelineAnnotationCell {frameRanges} {timelineCellWidth} />
+    <TimelineAnnotationCell {annotationGroup} {frameRanges} />
   {/each}
 </div>
