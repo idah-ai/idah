@@ -36,9 +36,7 @@ class RoleBackend < Verse::Service::Base
       raise Verse::Error::Authorization, "Role `#{main}/#{scope}` not set"
     end
 
-    # Sort the sub_rights by mask:
     rights = sub_rights
-             .sort_by(&:mask)
              .map(&:rights)
              .sum(rights)
 

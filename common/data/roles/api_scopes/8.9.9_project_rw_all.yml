@@ -1,8 +1,8 @@
 api/project_rw_all:
-  title: "API - Project Read Write (All Scope)"
+  title: "API - Project Read Write"
   mask: "8.9.9"
   description: |
-    API role for read and write access to project resources.
+    Allow access to read and write project resources.
   assignable: false
   rights:
     # Dataset Service - Read Write (Project level)
