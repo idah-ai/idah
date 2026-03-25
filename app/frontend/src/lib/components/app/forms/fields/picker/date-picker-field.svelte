@@ -18,6 +18,8 @@
   // Props
   interface Props extends DateFieldBaseProps {
     value: Date | null | undefined;
+    minDate?: DateValue;
+    maxDate?: DateValue;
   }
   let {
     name,
@@ -28,6 +30,8 @@
     required = false,
     disabled = false,
     value = $bindable(null),
+    minDate,
+    maxDate,
     info,
     errors,
     class: className,
@@ -87,7 +91,14 @@
     </PopoverTrigger>
 
     <PopoverContent class="w-auto p-0">
-      <Calendar type="single" initialFocus onValueChange={handleValueChange} bind:value={calendarValue}></Calendar>
+      <Calendar
+        type="single"
+        minValue={minDate}
+        maxValue={maxDate}
+        initialFocus
+        onValueChange={handleValueChange}
+        bind:value={calendarValue}
+      ></Calendar>
     </PopoverContent>
   </Popover>
 
