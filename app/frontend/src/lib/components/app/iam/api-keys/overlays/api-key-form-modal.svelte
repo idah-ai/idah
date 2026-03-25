@@ -146,6 +146,7 @@
 
       if (!validated.success) {
         fieldErrors = getFieldErrors(validated.error);
+        console.log("Validation errors:", fieldErrors);
 
         submitting = false;
         return;
