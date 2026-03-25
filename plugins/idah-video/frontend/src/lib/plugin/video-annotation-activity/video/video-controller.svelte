@@ -10,8 +10,6 @@
     SquareSplitHorizontalIcon,
     Volume2Icon,
     VolumeXIcon,
-    ZoomInIcon,
-    ZoomOutIcon,
   } from "@lucide/svelte";
   import { getContext } from "svelte";
   import type { ChangeEventHandler } from "svelte/elements";
@@ -100,7 +98,6 @@
 
   function zoomOut(): void {
     zoom = zoom + 5;
-
     onZoomChange(Math.max(min, zoom - 1));
   }
 
@@ -244,45 +241,37 @@
   <!-- <Button variant="outline" class="border-primary text-primary hover:text-primary">Auto Track</Button> -->
 
   <!-- CONTAINER::RIGHT -->
-  <div class="flex items-center gap-2">
-    <!-- VIDEO::ZOOM ADJUSTER (ZOOM IN / ZOOM OUT) -->
-    <div class="flex items-center gap-2">
-      <Tooltips align="center">
-        {#snippet trigger()}
-          <Button variant="outline" size="icon-sm" onclick={zoomOut}>
-            <ZoomOutIcon />
-          </Button>
-        {/snippet}
+  <!-- <div class="flex items-center gap-2">
+    <Tooltips align="center">
+      {#snippet trigger()}
+        <Button variant="outline" size="icon-sm" onclick={zoomOut}>
+          <ZoomOutIcon />
+        </Button>
+      {/snippet}
 
-        {#snippet content()}
-          Zoom out
-        {/snippet}
-      </Tooltips>
+      {#snippet content()}
+        Zoom out
+      {/snippet}
+    </Tooltips>
 
-      <Slider
-        class="min-w-[200px]"
-        type="single"
-        {min}
-        {max}
-        step={5}
-        value={sliderValue}
-        onValueChange={onSliderChange}
-      ></Slider>
+    <Slider class="min-w-[200px]" type="single" {min} {max} step={5} value={sliderValue} onValueChange={onSliderChange}
+    ></Slider>
 
-      <Tooltips align="center">
-        {#snippet trigger()}
-          <Button variant="outline" size="icon-sm" onclick={zoomIn}>
-            <ZoomInIcon />
-          </Button>
-        {/snippet}
+    <Tooltips align="center">
+      {#snippet trigger()}
+        <Button variant="outline" size="icon-sm" onclick={zoomIn}>
+          <ZoomInIcon />
+        </Button>
+      {/snippet}
 
-        {#snippet content()}
-          Zoom in
-        {/snippet}
-      </Tooltips>
-    </div>
-    <!-- VIDEO::SCALE ADJUSTER (SCALE DOWN / SCALE UP) -->
-    <!-- <Popover>
+      {#snippet content()}
+        Zoom in
+      {/snippet}
+    </Tooltips>
+  </div> -->
+
+  <!-- VIDEO::SCALE ADJUSTER (SCALE DOWN / SCALE UP) -->
+  <!-- <Popover>
       <PopoverTrigger>
         <Tooltips align="center">
           {#snippet trigger()}
@@ -311,5 +300,4 @@
         />
       </PopoverContent>
     </Popover> -->
-  </div>
 </div>

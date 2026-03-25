@@ -1,32 +1,27 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import type { AnnotationGroup } from "@/context/AnnotationContext";
-  import type { AnnotationObject } from "../data/annotations";
+  import {
+    selectedAnnotationGroup,
+    setSelectedAnnotation,
+    setSelectedAnnotationGroup,
+  } from "$lib/plugin/video-annotation-activity/store/store";
+  import { getFrameFromMouseX } from "$lib/plugin/video-annotation-activity/timeline/utils";
+  import { cn } from "$lib/utils";
 
-  import { cn } from "@/utils";
-
-  import { selectedAnnotationGroup } from "../../../plugins/idah-video/video-annotation-activity/store";
-  import { getFrameFromMouseX } from "./utils";
+  import type { AnnotationGroup } from "$idah/context/annotation-context";
+  import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
 
   // Props
   interface Props {
-    annotationGroup: AnnotationGroup<AnnotationObject>;
-    timelineCellWidth: number;
+    annotationGroup: AnnotationGroup<VideoAnnotationObject>;
     onSelectFrameX: (frameX: number) => void;
     onContextMenu: (e: MouseEvent) => void;
 
     children: Snippet;
     class?: string | null;
   }
-  let {
-    annotationGroup,
-    timelineCellWidth,
-    onSelectFrameX,
-    onContextMenu,
-    children,
-    class: className,
-  }: Props = $props();
+  let { annotationGroup, onSelectFrameX, onContextMenu, children, class: className }: Props = $props();
 
   // Variables
   let { groupId, annotations } = $derived(annotationGroup);
@@ -65,10 +60,10 @@
   }
 
   function onCellClick(e: MouseEvent) {
-    const timelineRowHeaderWidth = 320;
+    onSelectFrameX(e.clientX);
 
     /** Compute frame base on timelineRulerWidth, e.clientX, windowWidth */
-    const frame = getFrameFromMouseX({ clientX: e.clientX, timelineRowHeaderWidth, timelineCellWidth });
+    const frame = getFrameFromMouseX({ clientX: e.clientX });
 
     if (frame > 0) {
       /** Click on annotation row which have a frame */
@@ -76,6 +71,7 @@
 
       /** Select annotation ? */
       const closestAnnotation = findClosestAnnotation(frame);
+      setSelectedAnnotation(closestAnnotation);
       console.log(
         `You're selecting on frame ${frame} in group ${groupId} with closest annotation ${closestAnnotation?.metadata.id}`,
       );
@@ -86,9 +82,7 @@
     }
 
     /** Select an annotation group */
-    $selectedAnnotationGroup = annotationGroup;
-
-    onSelectFrameX(e.clientX);
+    setSelectedAnnotationGroup(annotationGroup);
   }
 </script>
 

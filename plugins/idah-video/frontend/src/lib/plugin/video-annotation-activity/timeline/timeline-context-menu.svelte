@@ -24,8 +24,8 @@
 </script>
 
 <script lang="ts">
-  import Button from "@/components/ui/button/button.svelte";
-  import Separator from "@/components/ui/separator/separator.svelte";
+  import Button from "$lib/components/ui/button/button.svelte";
+  import Separator from "$lib/components/ui/separator/separator.svelte";
 
   // Props
   interface Props {

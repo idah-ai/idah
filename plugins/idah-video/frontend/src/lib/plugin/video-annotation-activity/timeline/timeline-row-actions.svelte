@@ -1,9 +1,9 @@
 <script lang="ts">
   import { EyeIcon, EyeOffIcon, LockIcon, LockOpenIcon, Trash2Icon } from "@lucide/svelte";
 
-  import Button from "@/components/ui/button/button.svelte";
+  import Button from "$lib/components/ui/button/button.svelte";
 
-  import { cn } from "@/utils";
+  import { cn } from "$lib/utils";
 
   // Props
   interface Props {

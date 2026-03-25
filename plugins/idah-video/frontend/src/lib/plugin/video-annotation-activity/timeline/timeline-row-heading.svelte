@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import { cn } from "@/utils";
+  import { cn } from "$lib/utils";
 
   // Props
   interface Props {
@@ -11,6 +11,6 @@
   let { children, class: className }: Props = $props();
 </script>
 
-<p class={cn("font-regular truncate text-xs", className)}>
+<p class={cn("font-regular truncate text-xs pl-2", className)}>
   {@render children?.()}
 </p>
