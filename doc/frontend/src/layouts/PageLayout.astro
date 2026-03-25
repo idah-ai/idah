@@ -1,0 +1,31 @@
+---
+import AppContent from "@components/AppContent.astro";
+import AppSidebar from "@components/AppSidebar.astro";
+import Footer from "@components/Footer.astro";
+import Header from "@components/Header.astro";
+import Layout from "@layouts/Layout.astro";
+---
+
+<Layout>
+  <div data-pagefind-ignore>
+    <Header />
+  </div>
+
+  <div class="flex min-h-screen">
+    <div data-pagefind-ignore>
+      <AppSidebar />
+    </div>
+
+    <AppContent>
+      <main class="flex-1 md:px-8 md:py-8" data-pagefind-body>
+        <div class="mx-auto max-w-screen pt-16">
+          <slot />
+        </div>
+      </main>
+
+      <div data-pagefind-ignore>
+        <Footer />
+      </div>
+    </AppContent>
+  </div>
+</Layout>

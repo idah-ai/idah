@@ -1,0 +1,43 @@
+---
+import PaginationNextButton from "$lib/app/button/pagination-next-button.svelte";
+import PaginationPreviousButton from "$lib/app/button/pagination-previous-button.svelte";
+import { findSidebarItem, mergeSidebarItemsWithApiUrls } from "$lib/app/sidebar/sidebar.utils";
+import { desktopSidebarItems } from "$lib/app/sidebar/sidebar.data";
+import { getApiUrls } from "$lib/app/sidebar/api-urls";
+
+const apiUrls = await getApiUrls();
+const pathname = Astro.url.pathname;
+const mergedSidebarItems = mergeSidebarItemsWithApiUrls(desktopSidebarItems, apiUrls, false);
+const flat = findSidebarItem(mergedSidebarItems)
+
+// Helper function to find parent label
+const findParent = (items: typeof mergedSidebarItems, targetHref: string, parent: string | null = null): string | null => {
+  for (const item of items) {
+    if (item.href === targetHref) {
+      return parent;
+    }
+    if (item.children && item.children.length > 0) {
+      const found = findParent(item.children, targetHref, item.label);
+      if (found !== null) {
+        return found;
+      }
+    }
+  }
+  return null;
+};
+
+const currentIndex = flat.findIndex((item) => item.href === pathname);
+const previous = currentIndex > 0 ? flat[currentIndex - 1] : null;
+const next = currentIndex < flat.length - 1 ? flat[currentIndex + 1] : null;
+const previousParent = previous ? findParent(mergedSidebarItems, previous.href) : null;
+const nextParent = next ? findParent(mergedSidebarItems, next.href) : null;
+---
+
+<nav class="mx-auto grid w-full gap-2 grid-cols-1 md:grid-cols-2 max-w-7xl">
+  <div class="flex justify-start">
+    {previous && <PaginationPreviousButton value={previous} parent={previousParent} />}
+  </div>
+  <div class="flex justify-end">
+    {next && <PaginationNextButton value={next} parent={nextParent} />}
+  </div>
+</nav>
