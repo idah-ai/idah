@@ -1,8 +1,0 @@
-{
-  "plugins": [
-    {
-      "name": "idah-video",
-      "src": "local"
-    }
-  ]
-}

@@ -5,6 +5,11 @@ class OrganizationsExpo < BaseExpo
 
   use_service Organization::Service
 
+  desc <<~MD
+    Manage organizations within the system, including creation,
+    updating, retrieval, and deletion.
+  MD
+
   json_api Organization::Record do
     index do
       allowed_filters :name__match,

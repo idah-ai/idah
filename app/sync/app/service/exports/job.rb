@@ -1,0 +1,41 @@
+# frozen_string_literal: true
+
+module Exports
+  class Job < Jobs::Base
+    def run_impl
+      options, dataset_ids = arguments.values_at(:options, :dataset_ids)
+      export_class = arguments[:exporter]
+
+      export_context = Exports::Context.new(
+        self,
+        dataset_ids,
+        options
+      )
+
+      export_class = Verse::Util::Reflection.constantize(export_class)
+      export_class.new.export(export_context)
+
+      import_file =
+        case export_context.io.mode
+        when :file
+          export_context.io.file.rewind
+          export_context.io.file
+        when :dir
+          File.open(export_context.io.zip_directory)
+        else
+          raise "Invalid IO mode: #{export_context.io.mode}"
+        end
+
+      export = exports.index({ job_id: }, items_per_page: 1).first
+      exports.upload(export.id, import_file)
+    ensure
+      export_context.io&.cleanup
+    end
+
+    private
+
+    def exports
+      @exports ||= Exports::Service.new(Verse::Auth::Context.new)
+    end
+  end
+end

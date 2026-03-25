@@ -64,7 +64,7 @@ services:
       - ./app/media:/app
       - ./app/media/common:/app/common
       - ./plugins:/app/plugins
-      - ./app/frontend/build:/app/plugins/idah-video/frontend/build
+      - ./plugins_dev:/app/plugins_dev
       - bundler_cache:/usr/local/bundle
     networks:
       - app-network
@@ -121,7 +121,7 @@ services:
       - ./app/setting:/app
       - ./app/setting/common:/app/common
       - ./plugins:/app/plugins
-      - ./app/frontend/build:/app/plugins/idah-video/frontend/build
+      - ./plugins_dev:/app/plugins_dev
       - bundler_cache:/usr/local/bundle
     networks:
       - app-network
@@ -175,6 +175,8 @@ services:
     volumes:
       - ./app/sync:/app
       - ./app/sync/common:/app/common
+      - ./plugins:/app/plugins
+      - ./plugins_dev:/app/plugins_dev
       - ./dev/nginx/ssl/cert.pem:/etc/ssl/certs/ca-certificates.crt
       - bundler_cache:/usr/local/bundle
     extra_hosts:
@@ -235,6 +237,8 @@ services:
       - "5173"
     volumes:
       - ./app/frontend:/app/frontend
+      - ./plugins:/app/plugins
+      - ./plugins_dev/plugins:/app/plugins_dev/plugins
       - node_modules:/app/frontend/node_modules
     networks:
       - app-network
