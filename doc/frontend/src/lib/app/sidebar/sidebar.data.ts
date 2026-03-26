@@ -36,10 +36,3 @@ export const desktopSidebarItems: SidebarType[] = [
     ],
   },
 ];
-
-export const mobileSidebarItems: SidebarType[] = [
-  { label: "Changing log", href: "/changelog/", children: [] },
-  { label: "Support", href: "/support/", children: [] },
-  { label: "Install IDAH", href: "/install/", children: [] },
-  ...desktopSidebarItems,
-];
