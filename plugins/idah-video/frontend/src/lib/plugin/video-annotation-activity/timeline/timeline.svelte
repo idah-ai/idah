@@ -18,7 +18,7 @@
   import TimelineRuler from "$lib/plugin/video-annotation-activity/timeline/timeline-ruler.svelte";
   import TimelineVerticalLine from "$lib/plugin/video-annotation-activity/timeline/timeline-vertical-line.svelte";
 
-  import { setSelectedAnnotationGroup } from "$lib/plugin/video-annotation-activity/store/store";
+  import { setCurrentFrame, setSelectedAnnotationGroup } from "$lib/plugin/video-annotation-activity/store/store";
   import {
     selectedFrameX,
     selectFirstFrameX,
@@ -37,11 +37,19 @@
   interface Props {
     annotations: VideoAnnotationObject[];
     timelineHeight: number;
+    onSeekFrame: (frame: number) => void;
     onToggleVisibility: (selectedGroupId?: string) => void;
     onToggleEditability: (selectedGroupId?: string) => void;
     onDeleteAnnotations: (selectedGroupId?: string) => void;
   }
-  let { annotations, timelineHeight, onToggleVisibility, onToggleEditability, onDeleteAnnotations }: Props = $props();
+  let {
+    annotations,
+    timelineHeight,
+    onSeekFrame,
+    onToggleVisibility,
+    onToggleEditability,
+    onDeleteAnnotations,
+  }: Props = $props();
 
   // Context
   let context: IActivityContext = getContext("context");
@@ -88,7 +96,10 @@
   }
 
   function selectFrameX(frameX: number) {
+    const selectedFrame = getFrameFromMouseX({ clientX: frameX });
+    setCurrentFrame(selectedFrame);
     setSelectedFrameX(frameX);
+    onSeekFrame(selectedFrame);
     closeContextMenu();
   }
 
@@ -173,6 +184,7 @@
       )}
 
       <TimelineRowActions
+        mode="multiple"
         alwaysShow
         {allAnnotationsHidden}
         {allAnnotationsLocked}
@@ -204,6 +216,7 @@
               </TimelineRowHeading>
 
               <TimelineRowActions
+                mode="single"
                 allAnnotationsHidden={allAnnotationsInGroupHidden}
                 allAnnotationsLocked={allAnnotationsInGroupLocked}
                 onToggleVisibility={() => onToggleVisibility(annotationGroup.groupId)}

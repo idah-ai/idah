@@ -30,7 +30,7 @@
   import Video from "$lib/plugin/video-annotation-activity/video/video.svelte";
 
   import { IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP } from "$lib/plugin/type";
-  import { selectedAnnotation } from "$lib/plugin/video-annotation-activity/store/store";
+  import { currentFrame, selectedAnnotation, totalFrames } from "$lib/plugin/video-annotation-activity/store/store";
 
   import type { IActivityContext } from "$idah/context/activity-context";
 
@@ -39,12 +39,10 @@
     video: Video;
     isPlaying: boolean;
     volume: { level: number; muted: boolean };
-    currentFrame: number;
-    totalFrames: number;
     zoom: number;
-    onZoomChange: (zoom: number) => void;
+    // onZoomChange: (zoom: number) => void;
   }
-  let { video = $bindable(), isPlaying, volume, zoom, currentFrame, totalFrames, onZoomChange }: Props = $props();
+  let { video = $bindable(), isPlaying, volume, zoom }: Props = $props();
 
   // Contexts
   const context: IActivityContext = getContext("context");
@@ -72,7 +70,7 @@
   let disabledSplitButton = $derived.by(() => {
     if (!$selectedAnnotation) return true;
     if ($selectedAnnotation.locked) return true;
-    if ($selectedAnnotation.shape.end < currentFrame) return true;
+    if ($selectedAnnotation.shape.end < $currentFrame) return true;
   });
 
   const seekToFrame: ChangeEventHandler<HTMLInputElement> = (event) => {
@@ -86,20 +84,20 @@
     video.playbackRate(currentSpeed);
   }
 
-  function onSliderChange(value: number): void {
-    zoom = max - (value - min); // flip value
-    onZoomChange(zoom);
-  }
+  // function onSliderChange(value: number): void {
+  //   zoom = max - (value - min); // flip value
+  //   // onZoomChange(zoom);
+  // }
 
-  function zoomIn(): void {
-    zoom = zoom - 5;
-    onZoomChange(Math.min(max, zoom + 1));
-  }
+  // function zoomIn(): void {
+  //   zoom = zoom - 5;
+  //   // onZoomChange(Math.min(max, zoom + 1));
+  // }
 
-  function zoomOut(): void {
-    zoom = zoom + 5;
-    onZoomChange(Math.max(min, zoom - 1));
-  }
+  // function zoomOut(): void {
+  //   zoom = zoom + 5;
+  //   // onZoomChange(Math.max(min, zoom - 1));
+  // }
 
   function gotoFrameStep(direction: "prev" | "next") {
     let frameStep = Number(localStorage.getItem(IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP) || 10);
@@ -206,9 +204,9 @@
         class="min-w-24"
         placeholder="Frame"
         min={1}
-        max={Math.max(0, totalFrames)}
-        suffix={`/ ${Math.max(0, totalFrames)}`}
-        value={currentFrame}
+        max={Math.max(0, $totalFrames)}
+        suffix={`/ ${Math.max(0, $totalFrames)}`}
+        value={$currentFrame}
         oninput={seekToFrame}
         groupInputClass="h-7"
       />
@@ -225,7 +223,7 @@
             $selectedAnnotation &&
             context.commands.run("annotation.split", {
               id: $selectedAnnotation.metadata.id,
-              at: currentFrame,
+              at: $currentFrame,
             })}
         >
           <SquareSplitHorizontalIcon />

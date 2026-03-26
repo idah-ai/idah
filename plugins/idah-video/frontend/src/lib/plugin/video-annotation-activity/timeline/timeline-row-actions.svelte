@@ -1,12 +1,14 @@
 <script lang="ts">
   import { EyeIcon, EyeOffIcon, LockIcon, LockOpenIcon, Trash2Icon } from "@lucide/svelte";
 
+  import Tooltips from "$lib/components/app/tooltips/tooltips.svelte";
   import Button from "$lib/components/ui/button/button.svelte";
 
   import { cn } from "$lib/utils";
 
   // Props
   interface Props {
+    mode: "single" | "multiple";
     alwaysShow?: boolean;
     allAnnotationsHidden: boolean;
     allAnnotationsLocked: boolean;
@@ -15,6 +17,7 @@
     onClickDelete: () => void;
   }
   let {
+    mode,
     alwaysShow = false,
     allAnnotationsHidden,
     allAnnotationsLocked,
@@ -47,19 +50,43 @@
   )}
 >
   <!-- BUTTON::VISIBILITY (SHOW / HIDE) -->
-  <Button variant="ghost" size="icon-sm" onclick={handleClickVisibility}>
-    {@const VisibilityIcon = allAnnotationsHidden ? EyeOffIcon : EyeIcon}
-    <VisibilityIcon />
-  </Button>
+  <Tooltips align="center">
+    {#snippet trigger()}
+      <Button variant="ghost" size="icon-sm" onclick={handleClickVisibility}>
+        {@const VisibilityIcon = allAnnotationsHidden ? EyeOffIcon : EyeIcon}
+        <VisibilityIcon />
+      </Button>
+    {/snippet}
+
+    {#snippet content()}
+      {mode === "multiple" ? "Toggle hide / show all" : "Toggle hide / show"}
+    {/snippet}
+  </Tooltips>
 
   <!-- BUTTON::EDITABILITY (LOCK / UNLOCK) -->
-  <Button variant="ghost" size="icon-sm" onclick={handleClickEditability}>
-    {@const EditibilityIcon = allAnnotationsLocked ? LockOpenIcon : LockIcon}
-    <EditibilityIcon />
-  </Button>
+  <Tooltips align="center">
+    {#snippet trigger()}
+      <Button variant="ghost" size="icon-sm" onclick={handleClickEditability}>
+        {@const EditibilityIcon = allAnnotationsLocked ? LockOpenIcon : LockIcon}
+        <EditibilityIcon />
+      </Button>
+    {/snippet}
+
+    {#snippet content()}
+      {mode === "multiple" ? "Toggle lock / unlock all" : "Toggle lock / unlock"}
+    {/snippet}
+  </Tooltips>
 
   <!-- BUTTON::DELETE -->
-  <Button variant="ghost" size="icon-sm" onclick={handleClickDelete}>
-    <Trash2Icon />
-  </Button>
+  <Tooltips align="center">
+    {#snippet trigger()}
+      <Button variant="ghost" size="icon-sm" onclick={handleClickDelete}>
+        <Trash2Icon />
+      </Button>
+    {/snippet}
+
+    {#snippet content()}
+      {mode === "multiple" ? "Delete all" : "Delete"}
+    {/snippet}
+  </Tooltips>
 </div>

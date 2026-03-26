@@ -16,7 +16,7 @@
 
   import { IDAH_VIDEO_BOUNDING_BOX, IDAH_VIDEO_POLYGON } from "$lib/plugin/type";
   import { idbUpdatedAt } from "$lib/plugin/video-annotation-activity/store/idb-store.svelte";
-  import { currentMode, selectedAnnotation } from "$lib/plugin/video-annotation-activity/store/store";
+  import { currentFrame, currentMode, selectedAnnotation } from "$lib/plugin/video-annotation-activity/store/store";
   import { groupAnnotations } from "$lib/plugin/video-annotation-activity/utils/group-annotation.svelte";
 
   import type { IConfigValue } from "$idah/context/activity-context";
@@ -29,8 +29,6 @@
   interface Props {
     view: "sidebar" | "popover";
     db?: AnnotationsIndexedDB;
-
-    currentFrame: number;
 
     modalityShape: string;
     categories: IConfigValue[];
@@ -46,7 +44,6 @@
   let {
     view,
     db,
-    currentFrame,
     modalityShape,
     categories,
     onSelectCategory,
@@ -158,8 +155,8 @@
   } {
     const filteredAnnotations = annotations.filter(
       (annotation) =>
-        currentFrame >= annotation.shape.start &&
-        currentFrame <= annotation.shape.end &&
+        $currentFrame >= annotation.shape.start &&
+        $currentFrame <= annotation.shape.end &&
         annotation.shape.type == modalityShape,
     );
     const filteredGroupedAnnotations = groupAnnotations(filteredAnnotations);

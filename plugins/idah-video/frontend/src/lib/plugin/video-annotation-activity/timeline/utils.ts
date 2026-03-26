@@ -10,3 +10,12 @@ export function getFrameFromMouseX(props: { clientX: number }) {
   const timelineCellWidth = get(timelineCellWidthStore);
   return Math.ceil((clientX - TIMELINE_ROW_HEADER_WIDTH) / timelineCellWidth);
 }
+
+export function getSelectedFrameXFromCurrentFrame(props: { currentFrame: number }) {
+  const { currentFrame } = props;
+  const middleOfCurrentFrame = currentFrame - 0.5;
+
+  const timelineCellWidth = get(timelineCellWidthStore);
+
+  return Number(middleOfCurrentFrame * timelineCellWidth) + TIMELINE_ROW_HEADER_WIDTH;
+}
