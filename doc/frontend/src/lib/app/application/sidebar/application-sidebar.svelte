@@ -70,7 +70,7 @@
                       {#each child.children as grandchild (grandchild.label)}
                         <a
                           href={grandchild.href}
-                          class="block rounded-md px-3 py-1.5 text-xs transition-colors {isActive(grandchild.href)
+                          class="block rounded-md px-3 py-1.5 text-sm transition-colors {isActive(grandchild.href)
                             ? 'bg-blue-100 font-medium text-blue-600 dark:bg-blue-900/40 dark:text-blue-400'
                             : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200'}"
                         >
