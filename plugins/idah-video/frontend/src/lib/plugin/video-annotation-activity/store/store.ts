@@ -12,6 +12,20 @@ export function setCurrentModeTo(mode: string) {
   currentMode.set(mode);
 }
 
+/** CURRENT FRAME */
+export const currentFrame = writable<number>(0);
+
+export function setCurrentFrame(frame: number) {
+  currentFrame.set(frame);
+}
+
+/** TOTAL FRAMES */
+export const totalFrames = writable<number>(0);
+
+export function setTotalFrames(totalFrame: number) {
+  totalFrames.set(totalFrame);
+}
+
 /** SELECTED ANNOTATION */
 export const selectedAnnotation = writable<VideoAnnotationObject | undefined>(undefined);
 

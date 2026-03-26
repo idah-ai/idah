@@ -32,13 +32,18 @@
     setIndexedDBUpdatedAt,
   } from "$lib/plugin/video-annotation-activity/store/idb-store.svelte";
   import {
+    currentFrame,
     currentMode,
     selectedAnnotation,
     selectedAnnotationGroup,
+    setCurrentFrame,
     setCurrentModeTo,
     setSelectedAnnotation,
     setSelectedAnnotationGroup,
+    setTotalFrames,
   } from "$lib/plugin/video-annotation-activity/store/store";
+  import { setSelectedFrameX } from "$lib/plugin/video-annotation-activity/timeline/store";
+  import { getSelectedFrameXFromCurrentFrame } from "$lib/plugin/video-annotation-activity/timeline/utils";
 
   import AnnotationFooterToolbar from "$lib/plugin/layout/footer/annotation-footer-toolbar.svelte";
   import AnnotationFooter from "$lib/plugin/layout/footer/annotation-footer.svelte";
@@ -46,7 +51,6 @@
   import PropertiesSidebar from "$lib/plugin/layout/sidebar/properties-sidebar.svelte";
   import CategoryProperties from "$lib/plugin/video-annotation-activity/category-properties/category-properties.svelte";
   import SvgOverlay, { type OnAddNewNoteParams } from "$lib/plugin/video-annotation-activity/svg-overlay.svelte";
-  import TimelineTable from "$lib/plugin/video-annotation-activity/timeline-table/timeline-table.svelte";
   import TimelineController from "$lib/plugin/video-annotation-activity/timeline/timeline-controller.svelte";
   import Timeline from "$lib/plugin/video-annotation-activity/timeline/timeline.svelte";
   import VideoController from "$lib/plugin/video-annotation-activity/video/video-controller.svelte";
@@ -83,8 +87,6 @@
 
   let player: Video | undefined = $state();
   let player_container: HTMLDivElement | undefined = $state();
-  let currentFrame = $state(0);
-  let totalFrames = $state(0);
 
   let annotationSidebarResizablePercentage = $state<number>(16);
   let annotationSidebarWidthRem = $derived<number>(annotationSidebarResizablePercentage + 3);
@@ -95,7 +97,6 @@
   // Variables::Timeline
   let zoom = $state(85);
   let scale = $state(1);
-  let timelineTable: TimelineTable;
 
   let annotationsIDB: AnnotationsIndexedDB | undefined = $state();
   let isPlaying = $state(false);
@@ -471,7 +472,7 @@
         context,
         annotation.metadata.id,
         annotation.metadata.metadata?.group_id,
-        () => currentFrame,
+        () => $currentFrame,
       );
     } else {
       setCurrentModeTo(DEFAULT_MODE);
@@ -501,7 +502,7 @@
       setCurrentModeTo(firstAnnotation.shape.type);
       selectClosestAnnotation(annotationGroup, selectedFrame);
       // Register selection-specific shortcuts for the current mode
-      registerOnSelectBoxModeShortcuts(context, undefined, annotationGroup.groupId, () => currentFrame);
+      registerOnSelectBoxModeShortcuts(context, undefined, annotationGroup.groupId, () => $currentFrame);
     } else {
       selectAnnotation(undefined);
       setCurrentModeTo(DEFAULT_MODE);
@@ -656,7 +657,6 @@
             class="rounded-t-lg"
             db={annotationsIDB}
             {annotationValue}
-            {currentFrame}
             {onEditValue}
             onSelectAnnotation={selectAnnotation}
             onSelectAnnotationGroup={() => {}}
@@ -687,7 +687,7 @@
             showPopOver = false;
             switch ($currentMode) {
               case ENTRY_ROOT:
-                onShapeSelection(ENTRY_ROOT, currentFrame);
+                onShapeSelection(ENTRY_ROOT, $currentFrame);
                 break;
               default:
                 if (shapeSelectionArgs) onShapeSelection(...shapeSelectionArgs);
@@ -709,7 +709,6 @@
               sidebarWidthRem={annotationSidebarWidthRem}
               db={annotationsIDB}
               {annotationValue}
-              {currentFrame}
               {onEditValue}
               onSelectAnnotation={selectAnnotation}
               onSelectAnnotationGroup={selectAnnotationGroup}
@@ -731,7 +730,7 @@
               <SvgOverlay
                 bind:this={overlay}
                 {annotations_promise}
-                frame={currentFrame}
+                frame={$currentFrame}
                 onSelectAnnotation={selectAnnotation}
                 onSelection={onShapeSelection}
                 onAddNewNote={showNewNotePopup}
@@ -747,8 +746,9 @@
                     videoResizedAt = new Date();
                   }}
                   onFramesChange={(current, total, playing) => {
-                    currentFrame = current;
-                    totalFrames = total;
+                    setCurrentFrame(current);
+                    setSelectedFrameX(getSelectedFrameXFromCurrentFrame({ currentFrame: current }));
+                    setTotalFrames(total);
                     isPlaying = playing;
                   }}
                   onVolumeChange={(level, muted) => (volume = { level, muted })}
@@ -772,15 +772,7 @@
       <ResizablePane defaultSize={25} minSize={15}>
         <AnnotationFooter>
           <AnnotationFooterToolbar>
-            <VideoController
-              {isPlaying}
-              {zoom}
-              {currentFrame}
-              {totalFrames}
-              {volume}
-              bind:video={player}
-              onZoomChange={(z) => timelineTable.setZoom(z)}
-            />
+            <VideoController {isPlaying} {zoom} {volume} bind:video={player} />
 
             <TimelineController />
           </AnnotationFooterToolbar>
@@ -789,13 +781,14 @@
             <Timeline
               {annotations}
               {timelineHeight}
+              onSeekFrame={seekToFrame}
               onToggleVisibility={() => {}}
               onToggleEditability={() => {}}
               onDeleteAnnotations={() => {}}
             />
           {/await}
 
-          <TimelineTable
+          <!-- <TimelineTable
             bind:this={timelineTable}
             {annotations_promise}
             {scale}
@@ -817,7 +810,7 @@
             onZoomChange={(z) => {
               zoom = z;
             }}
-          />
+          /> -->
         </AnnotationFooter>
       </ResizablePane>
     </ResizablePaneGroup>

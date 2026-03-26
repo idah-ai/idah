@@ -31,13 +31,11 @@
     onVisibility,
     onEditability,
     context,
-    currentFrame,
     db,
     class: className,
   }: {
     view: "sidebar" | "popover";
     sidebarWidthRem: number;
-    currentFrame: number;
     annotationValue: AnnotationValue;
     onEditValue: (annotationValue: AnnotationValue, mode: string) => void;
     onSelectAnnotation: (annotation?: VideoAnnotationObject) => void;
@@ -135,7 +133,6 @@
         <CategorySidebar
           {view}
           {db}
-          {currentFrame}
           modalityShape={tool}
           {categories}
           selectedCategory={tool == ENTRY_ROOT && !(tool == $currentMode)
