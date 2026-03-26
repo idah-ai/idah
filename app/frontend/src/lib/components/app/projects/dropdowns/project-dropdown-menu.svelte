@@ -100,8 +100,7 @@
     } catch (error) {
       showToast.error({
         title: "Unable to delete project",
-        description:
-          "The action could not be completed, please try again later. If the problem continues, please contact support.",
+        description: error?.errors[0]?.detail || "The action could not be completed, please try again later.",
       });
     }
   }
