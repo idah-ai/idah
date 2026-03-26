@@ -5,10 +5,6 @@ class RoleRecord < Verse::Model::Record::Base
 
   field :name, type: String, primary: true
 
-  field :mask, type: String do
-    @semmask ||= SemanticVersion[self[:mask]]
-  end
-
   field :title, type: String
 
   field :rights, type: Array

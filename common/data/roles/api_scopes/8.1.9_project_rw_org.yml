@@ -1,8 +1,8 @@
 api/project_rw_org:
-  title: "API - Project Read Write (Org Scope)"
+  title: "API - Project Read Write"
   mask: "8.1.9"
   description: |
-    API role for read and write access to project resources within organization scope.
+    Allow access to read and write project resources with scope.
   assignable: false
   rights:
     # IAM

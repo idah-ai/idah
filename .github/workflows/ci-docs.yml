@@ -1,0 +1,97 @@
+name: CI - Docs Platform
+
+on:
+  pull_request:
+    paths:
+      - "doc/frontend/**"
+      - ".github/workflows/ci-docs.yml"
+    types:
+      - ready_for_review
+      - synchronize
+      - opened
+      - reopened
+
+env:
+  DOC_FRONTEND_DIR: ./doc/frontend
+
+concurrency:
+  group: ci-docs-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - added|modified: '${{ env.DOC_FRONTEND_DIR }}/**'
+
+  frontend:
+    name: Doc Frontend
+    if: ${{ needs.changes.outputs.frontend == 'true' }}
+    needs: changes
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.DOC_FRONTEND_DIR }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          list-files: shell
+          filters: |
+            astro:
+              - added|modified: '${{ env.DOC_FRONTEND_DIR }}/**/*.astro'
+              - added|modified: '${{ env.DOC_FRONTEND_DIR }}/**/*.ts'
+              - added|modified: '${{ env.DOC_FRONTEND_DIR }}/**/*.js'
+              - added|modified: '${{ env.DOC_FRONTEND_DIR }}/**/*.svelte'
+              - added|modified: '${{ env.DOC_FRONTEND_DIR }}/**/*.css'
+
+      - name: Format Changed files
+        id: filter-format
+        run: |
+          echo "astro_files=$(echo "${{ steps.filter.outputs.astro_files }}" | sed -r 's/doc\/frontend\/+//g')" >> $GITHUB_OUTPUT
+
+      - uses: actions/cache@v4
+        if: ${{ steps.filter.outputs.astro == 'true' }}
+        with:
+          path: "**/node_modules"
+          key: ${{ runner.os }}-docs-modules-${{ hashFiles('**/pnpm-lock.yaml') }}
+
+      - name: Setup Node
+        if: ${{ steps.filter.outputs.astro == 'true' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install pnpm
+        if: ${{ steps.filter.outputs.astro == 'true' }}
+        run: |
+          corepack enable
+          corepack prepare pnpm@9 --activate
+
+      - name: Install modules
+        if: ${{ steps.filter.outputs.astro == 'true' }}
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Prettier Check
+        if: ${{ steps.filter.outputs.astro == 'true' }}
+        run: |
+          pnpm prettier --check ${{ steps.filter-format.outputs.astro_files }}
+
+      - name: Build Astro Site
+        if: ${{ steps.filter.outputs.astro == 'true' }}
+        run: pnpm run build
+
+      - name: Build Pagefind Index
+        if: ${{ steps.filter.outputs.astro == 'true' }}
+        run: pnpm run build:pagefind
