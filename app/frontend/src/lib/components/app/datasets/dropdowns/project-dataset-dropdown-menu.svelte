@@ -13,7 +13,6 @@
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
   import { authStatus } from "@/security/AuthContext";
-  import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
 
   import type { DropdownMenuContentAlignment, IDropdownMenus } from "@/components/app/dropdown-menus/types";
@@ -120,7 +119,11 @@
         description: `The dataset "${datasetRecord?.name}" has been deleted.`,
       });
     } catch (error) {
-      showActionFailedToast(error);
+      showToast.error({
+        title: "Unable to delete dataset",
+        description:
+          "The action could not be completed, please try again later. If the problem continues, please contact support.",
+      });
     }
   }
 </script>
