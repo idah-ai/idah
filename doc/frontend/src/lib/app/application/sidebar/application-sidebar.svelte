@@ -1,8 +1,5 @@
 <script lang="ts">
-  import {
-    desktopSidebarItems,
-    type SidebarType,
-  } from "$lib/app/sidebar/sidebar.data";
+  import { desktopSidebarItems, type SidebarType } from "$lib/app/sidebar/sidebar.data";
   import {
     Sidebar,
     SidebarContent,
@@ -17,21 +14,14 @@
   import SidebarItem from "./sidebar-item.svelte";
   import { mergeSidebarItemsWithApiUrls } from "$lib/app/sidebar/sidebar.utils";
 
-  let {
-    pathname,
-    apiUrls,
-  }: { pathname: string; apiUrls: { url: string; name: string }[] } = $props();
+  let { pathname, apiUrls }: { pathname: string; apiUrls: { url: string; name: string }[] } = $props();
 
-  const mergedSidebarItems = $derived<SidebarType[]>(
-    mergeSidebarItemsWithApiUrls(desktopSidebarItems, apiUrls),
-  );
+  const mergedSidebarItems = $derived<SidebarType[]>(mergeSidebarItemsWithApiUrls(desktopSidebarItems, apiUrls));
 </script>
 
 <SidebarProvider>
   <Sidebar class="pt-0 md:pt-16 overflow-y-auto border-none">
-    <SidebarContent
-      class="h-full pt-2 text-muted-foreground border-r bg-background"
-    >
+    <SidebarContent class="h-full pt-2 text-muted-foreground border-r bg-background">
       {#each mergedSidebarItems as sidebar (sidebar.label)}
         <SidebarGroup>
           {#if sidebar.href}

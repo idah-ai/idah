@@ -11,91 +11,93 @@ import { PackagePlus } from "@lucide/svelte";
 <PageLayout>
   <PageContainer>
     <PageTitle>
-      <div class="p-3 rounded-xl text-purple-700 dark:text-purple-800 bg-purple-50 dark:bg-purple-900/20">
-        <PackagePlus class="w-9 h-9" stroke-width={2} />
+      <div class="rounded-xl bg-purple-50 p-3 text-purple-700 dark:bg-purple-900/20 dark:text-purple-800">
+        <PackagePlus class="h-9 w-9" stroke-width={2} />
       </div>
       Create a Plugin
     </PageTitle>
 
-    <div class="prose prose-lg max-w-none dark:prose-invert">
-      <p class="text-lg text-gray-700 dark:text-gray-300 mb-8 leading-relaxed">
-        The IDAH Plugin Generator is a CLI tool that helps you quickly scaffold new plugins with frontend and optional backend components for the IDAH platform.
+    <div class="prose prose-lg dark:prose-invert max-w-none">
+      <p class="mb-8 text-lg leading-relaxed text-gray-700 dark:text-gray-300">
+        The IDAH Plugin Generator is a CLI tool that helps you quickly scaffold new plugins with frontend and optional
+        backend components for the IDAH platform.
       </p>
 
-      <h2 id="installation" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+      <h2
+        id="installation"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
         <a href="#installation" class="hover:underline">Installation</a>
       </h2>
 
-      <h3 id="quick-start-npx" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="quick-start-npx" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#quick-start-npx" class="hover:underline">Quick start using npx</a>
       </h3>
-      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
         The easiest way to use the plugin generator is with npx, which doesn't require any installation:
       </p>
-      <CodeBlock language="bash"># Create a plugin
+      <CodeBlock
+        language="bash"
+        code={`# Create a plugin
 npx idah-plugin create audio-plugin ./plugins
 
 # Add backend to existing plugin in ./plugins directory
 npx idah-plugin backend add audio-plugin ./plugins
 
 # Get help
-npx idah-plugin --help</CodeBlock>
+npx idah-plugin --help`}
+      />
 
-      <h3 id="local-development-npm-link" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="local-development-npm-link" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#local-development-npm-link" class="hover:underline">Local Development with npm link</a>
       </h3>
-      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
         For local development and testing, use npm link:
       </p>
-      <CodeBlock language="bash">cd plugins_dev
-npm install
-npm link</CodeBlock>
-      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
-        This creates a symlink in your global node_modules. You can now use the <code class="bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded">idah-plugin</code> command from anywhere, and changes to the source code will be immediately available.
+      <CodeBlock language="bash" code="cd plugins_dev npm install npm link" />
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
+        This creates a symlink in your global node_modules. You can now use the <code
+          class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400">idah-plugin</code
+        > command from anywhere, and changes to the source code will be immediately available.
       </p>
-      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
-        To unlink when you're done:
-      </p>
-      <CodeBlock language="bash">npm unlink -g idah-plugin</CodeBlock>
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">To unlink when you're done:</p>
+      <CodeBlock language="bash" code="npm unlink -g idah-plugin" />
 
-      <h3 id="global-installation" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="global-installation" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#global-installation" class="hover:underline">Global Installation</a>
       </h3>
-      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
-        Install the CLI globally:
-      </p>
-      <CodeBlock language="bash"># From npm (after publishing)
-npm install -g idah-plugin
-
-# Or from local directory
-cd plugins_dev
-npm install -g .</CodeBlock>
-      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
-        After installation, you can use the <code class="bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded">idah-plugin</code> command from any directory.
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">Install the CLI globally:</p>
+      <CodeBlock
+        language="bash"
+        code="# From npm (after publishing) npm install -g idah-plugin # Or from local directory cd plugins_dev npm install -g ."
+      />
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
+        After installation, you can use the <code
+          class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400">idah-plugin</code
+        > command from any directory.
       </p>
 
-      <h3 id="direct-usage" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="direct-usage" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#direct-usage" class="hover:underline">Direct Usage (Without Installation)</a>
       </h3>
-      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
-        If you prefer not to install at all:
-      </p>
-      <CodeBlock language="bash">cd plugins_dev
-npm install
-node _cli/bin/cli.js &lt;command&gt;</CodeBlock>
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">If you prefer not to install at all:</p>
+      <CodeBlock language="bash" code="cd plugins_dev npm install node _cli/bin/cli.js <command>" />
 
-      <h2 id="create-new-plugin" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+      <h2
+        id="create-new-plugin"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
         <a href="#create-new-plugin" class="hover:underline">Create a New Plugin</a>
       </h2>
-      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
-        Create a new plugin from scratch:
-      </p>
-      <CodeBlock language="bash">idah-plugin create &lt;plugin_name&gt; [output_path]</CodeBlock>
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">Create a new plugin from scratch:</p>
+      <CodeBlock language="bash" code="idah-plugin create <plugin_name> [output_path]" />
 
-      <h3 id="examples" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="examples" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#examples" class="hover:underline">Examples:</a>
       </h3>
-      <CodeBlock language="bash"># Create in current directory
+      <CodeBlock
+        language="bash"
+        code={`# Create in current directory
 idah-plugin create my-awesome-plugin
 # Creates: ./my-awesome-plugin
 
@@ -105,130 +107,207 @@ idah-plugin create audio-plugin ./plugins
 
 # Create with absolute path
 idah-plugin create video-plugin /path/to/plugins
-# Creates: /path/to/plugins/video-plugin</CodeBlock>
+# Creates: /path/to/plugins/video-plugin`}
+      />
 
-      <h3 id="what-happens" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="what-happens" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#what-happens" class="hover:underline">What happens when you create a plugin:</a>
       </h3>
-      <ol class="list-decimal list-inside space-y-2 mb-6 text-gray-700 dark:text-gray-300">
-        <li class="leading-relaxed">Prompts you for a <strong class="font-semibold text-gray-900 dark:text-white">display name</strong> (user-friendly name shown in the UI)</li>
-        <li class="leading-relaxed">Prompts you for a <strong class="font-semibold text-gray-900 dark:text-white">description</strong> (brief description of your plugin)</li>
-        <li class="leading-relaxed">Prompts you for a <strong class="font-semibold text-gray-900 dark:text-white">version</strong> (semantic version, default: 0.0.1)</li>
-        <li class="leading-relaxed">Asks which <strong class="font-semibold text-gray-900 dark:text-white">backend services</strong> you want to include (media, sync, or none)</li>
+      <ol class="mb-6 list-inside list-decimal space-y-2 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed">
+          Prompts you for a <strong class="font-semibold text-gray-900 dark:text-white">display name</strong> (user-friendly
+          name shown in the UI)
+        </li>
+        <li class="leading-relaxed">
+          Prompts you for a <strong class="font-semibold text-gray-900 dark:text-white">description</strong> (brief description
+          of your plugin)
+        </li>
+        <li class="leading-relaxed">
+          Prompts you for a <strong class="font-semibold text-gray-900 dark:text-white">version</strong> (semantic version,
+          default: 0.0.1)
+        </li>
+        <li class="leading-relaxed">
+          Asks which <strong class="font-semibold text-gray-900 dark:text-white">backend services</strong> you want to include
+          (media, sync, or none)
+        </li>
         <li class="leading-relaxed">Generates the complete plugin structure in the specified location</li>
       </ol>
 
-      <h3 id="parameters" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="parameters" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#parameters" class="hover:underline">Parameters:</a>
       </h3>
-      <ul class="list-disc list-inside space-y-2 mb-6 text-gray-700 dark:text-gray-300">
-        <li class="leading-relaxed"><code class="bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded">&lt;plugin_name&gt;</code> - (Required) Name of the plugin in kebab-case</li>
-        <li class="leading-relaxed"><code class="bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded">[output_path]</code> - (Optional) Directory where the plugin should be created (default: current directory)</li>
+      <ul class="mb-6 list-inside list-disc space-y-2 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed">
+          <code class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+            >&lt;plugin_name&gt;</code
+          > - (Required) Name of the plugin in kebab-case
+        </li>
+        <li class="leading-relaxed">
+          <code class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+            >[output_path]</code
+          > - (Optional) Directory where the plugin should be created (default: current directory)
+        </li>
       </ul>
 
-      <div class="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 p-4 mb-6 rounded">
-        <p class="text-gray-700 dark:text-gray-300 leading-relaxed">
-          <strong class="font-semibold text-gray-900 dark:text-white">Note:</strong> You can create frontend-only plugins by not selecting any backend services. This is useful for plugins that only need a UI component.
+      <div class="mb-6 rounded border-l-4 border-blue-500 bg-blue-50 p-4 dark:bg-blue-900/20">
+        <p class="leading-relaxed text-gray-700 dark:text-gray-300">
+          <strong class="font-semibold text-gray-900 dark:text-white">Note:</strong> You can create frontend-only plugins
+          by not selecting any backend services. This is useful for plugins that only need a UI component.
         </p>
       </div>
 
-      <h2 id="add-backend-services" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+      <h2
+        id="add-backend-services"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
         <a href="#add-backend-services" class="hover:underline">Add Backend Services to Existing Plugin</a>
       </h2>
-      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
         Add one or more backend services to an existing plugin:
       </p>
-      <CodeBlock language="bash">idah-plugin backend add &lt;plugin_name&gt; [base_path]</CodeBlock>
+      <CodeBlock language="bash" code="idah-plugin backend add <plugin_name> [base_path]" />
 
-      <h3 id="backend-examples" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="backend-examples" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#backend-examples" class="hover:underline">Examples:</a>
       </h3>
-      <CodeBlock language="bash"># Add backend to plugin in current directory
-idah-plugin backend add my-awesome-plugin
-# Looks for: ./my-awesome-plugin
+      <CodeBlock
+        language="bash"
+        code="# Add backend to plugin in current directory idah-plugin backend add my-awesome-plugin # Looks for: ./my-awesome-plugin # Add backend to plugin in specific directory idah-plugin backend add audio-plugin ./plugins # Looks for: ./plugins/audio-plugin"
+      />
 
-# Add backend to plugin in specific directory
-idah-plugin backend add audio-plugin ./plugins
-# Looks for: ./plugins/audio-plugin</CodeBlock>
-
-      <h3 id="backend-parameters" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="backend-parameters" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#backend-parameters" class="hover:underline">Parameters:</a>
       </h3>
-      <ul class="list-disc list-inside space-y-2 mb-6 text-gray-700 dark:text-gray-300">
-        <li class="leading-relaxed"><code class="bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded">&lt;plugin_name&gt;</code> - (Required) Name of the plugin</li>
-        <li class="leading-relaxed"><code class="bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded">[base_path]</code> - (Optional) Directory containing the plugin (default: current directory)</li>
+      <ul class="mb-6 list-inside list-disc space-y-2 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed">
+          <code class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+            >&lt;plugin_name&gt;</code
+          > - (Required) Name of the plugin
+        </li>
+        <li class="leading-relaxed">
+          <code class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+            >[base_path]</code
+          > - (Optional) Directory containing the plugin (default: current directory)
+        </li>
       </ul>
 
-      <h3 id="backend-what-happens" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="backend-what-happens" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#backend-what-happens" class="hover:underline">What happens when you add backends:</a>
       </h3>
-      <ol class="list-decimal list-inside space-y-2 mb-6 text-gray-700 dark:text-gray-300">
+      <ol class="mb-6 list-inside list-decimal space-y-2 text-gray-700 dark:text-gray-300">
         <li class="leading-relaxed">Checks if the plugin exists at the specified location</li>
         <li class="leading-relaxed">Prompts you to select which backend service(s) to add</li>
         <li class="leading-relaxed">Copies the backend templates and configures them for your plugin</li>
         <li class="leading-relaxed">Skips any backend services that already exist</li>
       </ol>
 
-      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
-        <strong class="font-semibold text-gray-900 dark:text-white">Output location:</strong> The new backend(s) will be added to <code class="bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded">&lt;plugin_name&gt;/backends/&lt;backend_service&gt;/</code>
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
+        <strong class="font-semibold text-gray-900 dark:text-white">Output location:</strong> The new backend(s) will be added
+        to <code class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+          >&lt;plugin_name&gt;/backends/&lt;backend_service&gt;/</code
+        >
       </p>
-      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
-        For example:
-      </p>
-      <ul class="list-disc list-inside space-y-2 mb-6 text-gray-700 dark:text-gray-300">
-        <li class="leading-relaxed">Adding "media" service → <code class="bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded">&lt;plugin_name&gt;/backends/media/</code></li>
-        <li class="leading-relaxed">Adding "sync" service → <code class="bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded">&lt;plugin_name&gt;/backends/sync/</code></li>
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">For example:</p>
+      <ul class="mb-6 list-inside list-disc space-y-2 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed">
+          Adding "media" service → <code
+            class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+            >&lt;plugin_name&gt;/backends/media/</code
+          >
+        </li>
+        <li class="leading-relaxed">
+          Adding "sync" service → <code
+            class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+            >&lt;plugin_name&gt;/backends/sync/</code
+          >
+        </li>
       </ul>
 
-      <h2 id="plugin-structure" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+      <h2
+        id="plugin-structure"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
         <a href="#plugin-structure" class="hover:underline">Plugin Structure</a>
       </h2>
-      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
         When you create a plugin, the following high-level structure is generated:
       </p>
-      <FolderBlock structure={[
-        { name: '<plugin_name>/', type: 'folder', children: [
-          { name: 'README.md', type: 'file', comment: 'Plugin overview and quick start' },
-          { name: 'manifest.json', type: 'file', comment: 'Plugin metadata and configuration' },
-          { name: 'Gemfile', type: 'file', comment: 'Ruby dependencies (for backends)' },
-          { name: 'Rakefile', type: 'file', comment: 'Build and test tasks' },
-          { name: '.gitignore', type: 'file' },
-          { name: '.rspec', type: 'file' },
-          { name: 'backends/', type: 'folder', comment: 'Backend services (optional)', children: [
-            { name: 'README.md', type: 'file', comment: 'Backend quick start guide' },
-            { name: 'media/', type: 'folder', comment: 'Media processing service (if selected)' },
-            { name: 'sync/', type: 'folder', comment: 'Data export/sync service (if selected)' }
-          ]},
-          { name: 'frontend/', type: 'folder', comment: 'Frontend SvelteKit application', children: [
-            { name: 'README.md', type: 'file', comment: 'Frontend quick start guide' },
-            { name: 'package.json', type: 'file' },
-            { name: 'src/', type: 'folder', comment: 'Source code' }
-          ]}
+      <FolderBlock
+        structure={[
+          {
+            name: "<plugin_name>/",
+            type: "folder",
+            children: [
+              { name: "README.md", type: "file", comment: "Plugin overview and quick start" },
+              { name: "manifest.json", type: "file", comment: "Plugin metadata and configuration" },
+              { name: "Gemfile", type: "file", comment: "Ruby dependencies (for backends)" },
+              { name: "Rakefile", type: "file", comment: "Build and test tasks" },
+              { name: ".gitignore", type: "file" },
+              { name: ".rspec", type: "file" },
+              {
+                name: "backends/",
+                type: "folder",
+                comment: "Backend services (optional)",
+                children: [
+                  { name: "README.md", type: "file", comment: "Backend quick start guide" },
+                  { name: "media/", type: "folder", comment: "Media processing service (if selected)" },
+                  { name: "sync/", type: "folder", comment: "Data export/sync service (if selected)" },
+                ],
+              },
+              {
+                name: "frontend/",
+                type: "folder",
+                comment: "Frontend SvelteKit application",
+                children: [
+                  { name: "README.md", type: "file", comment: "Frontend quick start guide" },
+                  { name: "package.json", type: "file" },
+                  { name: "src/", type: "folder", comment: "Source code" },
+                ],
+              },
+            ],
+          },
         ]}
-      ]} />
+      />
 
-      <h3 id="key-files" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="key-files" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#key-files" class="hover:underline">Key Files:</a>
       </h3>
-      <ul class="list-disc list-inside space-y-2 mb-6 text-gray-700 dark:text-gray-300">
-        <li class="leading-relaxed"><strong class="font-semibold text-gray-900 dark:text-white">manifest.json</strong> - Contains plugin metadata and configuration</li>
-        <li class="leading-relaxed"><strong class="font-semibold text-gray-900 dark:text-white">backends/</strong> - Optional backend services for server-side functionality</li>
-        <li class="leading-relaxed"><strong class="font-semibold text-gray-900 dark:text-white">frontend/</strong> - SvelteKit application for the plugin UI</li>
+      <ul class="mb-6 list-inside list-disc space-y-2 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed">
+          <strong class="font-semibold text-gray-900 dark:text-white">manifest.json</strong> - Contains plugin metadata and
+          configuration
+        </li>
+        <li class="leading-relaxed">
+          <strong class="font-semibold text-gray-900 dark:text-white">backends/</strong> - Optional backend services for server-side
+          functionality
+        </li>
+        <li class="leading-relaxed">
+          <strong class="font-semibold text-gray-900 dark:text-white">frontend/</strong> - SvelteKit application for the plugin
+          UI
+        </li>
       </ul>
 
-      <h2 id="workflow-examples" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+      <h2
+        id="workflow-examples"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
         <a href="#workflow-examples" class="hover:underline">Workflow Examples</a>
       </h2>
-      <div class="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 p-4 mb-6 rounded">
-        <p class="text-gray-700 dark:text-gray-300 leading-relaxed">
-          <strong class="font-semibold text-gray-900 dark:text-white">Note:</strong> It's recommended to create plugins in the <code class="bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded">./plugins</code> directory, as this path is automatically loaded by the IDAH platform during development.
+      <div class="mb-6 rounded border-l-4 border-blue-500 bg-blue-50 p-4 dark:bg-blue-900/20">
+        <p class="leading-relaxed text-gray-700 dark:text-gray-300">
+          <strong class="font-semibold text-gray-900 dark:text-white">Note:</strong> It's recommended to create plugins in
+          the <code class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+            >./plugins</code
+          > directory, as this path is automatically loaded by the IDAH platform during development.
         </p>
       </div>
 
-      <h3 id="example-1" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="example-1" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#example-1" class="hover:underline">Example 1: Create a Frontend-Only Plugin</a>
       </h3>
-      <CodeBlock language="bash"># Create a new plugin in the plugins directory (recommended)
+      <CodeBlock
+        language="bash"
+        code={`# Create a new plugin in the plugins directory (recommended)
 idah-plugin create ui-widget ./plugins
 
 # When prompted:
@@ -240,12 +319,15 @@ idah-plugin create ui-widget ./plugins
 # Your plugin is ready at ./plugins/ui-widget/
 cd plugins/ui-widget/frontend
 pnpm install
-pnpm dev</CodeBlock>
+pnpm dev`}
+      />
 
-      <h3 id="example-2" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="example-2" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#example-2" class="hover:underline">Example 2: Create a Full-Stack Plugin</a>
       </h3>
-      <CodeBlock language="bash"># Create a plugin with both backend services in plugins directory
+      <CodeBlock
+        language="bash"
+        code={`# Create a plugin with both backend services in plugins directory
 idah-plugin create video-converter ./plugins
 
 # When prompted:
@@ -255,87 +337,143 @@ idah-plugin create video-converter ./plugins
 # - Backend services: Select both "Media Service" and "Sync Service"
 
 # Your plugin is ready with backend and frontend
-cd plugins/video-converter</CodeBlock>
+cd plugins/video-converter`}
+      />
 
-      <h3 id="example-3" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="example-3" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#example-3" class="hover:underline">Example 3: Create Multiple Plugins</a>
       </h3>
-      <CodeBlock language="bash"># Create several plugins in the standard plugins directory
+      <CodeBlock
+        language="bash"
+        code={`# Create several plugins in the standard plugins directory
 idah-plugin create image-gallery ./plugins
 idah-plugin create data-exporter ./plugins
 idah-plugin create custom-dashboard ./plugins
 
-# All plugins will be in ./plugins/ and automatically loaded by IDAH</CodeBlock>
+# All plugins will be in ./plugins/ and automatically loaded by IDAH`}
+      />
 
-      <h3 id="example-4" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="example-4" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#example-4" class="hover:underline">Example 4: Add Backend to Existing Plugin</a>
       </h3>
-      <CodeBlock language="bash"># First create a frontend-only plugin
+      <CodeBlock
+        language="bash"
+        code={`# First create a frontend-only plugin
 idah-plugin create image-processor ./plugins
 
 # Later, add backend services (specify base path where plugin is located)
 idah-plugin backend add image-processor ./plugins
 
 # When prompted, select "Media Service"
-# The media backend is now added to your existing plugin at ./plugins/image-processor</CodeBlock>
+# The media backend is now added to your existing plugin at ./plugins/image-processor`}
+      />
 
-      <h2 id="plugin-naming-conventions" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+      <h2
+        id="plugin-naming-conventions"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
         <a href="#plugin-naming-conventions" class="hover:underline">Plugin Naming Conventions</a>
       </h2>
-      <ul class="list-disc list-inside space-y-2 mb-6 text-gray-700 dark:text-gray-300">
-        <li class="leading-relaxed"><strong class="font-semibold text-gray-900 dark:text-white">Plugin name</strong> (CLI argument): Use kebab-case (e.g., <code class="bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded">my-awesome-plugin</code>)</li>
-        <li class="leading-relaxed"><strong class="font-semibold text-gray-900 dark:text-white">Display name</strong> (prompts): Use human-readable format (e.g., <code class="bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded">My Awesome Plugin</code>)</li>
-        <li class="leading-relaxed"><strong class="font-semibold text-gray-900 dark:text-white">Module name</strong> (generated): PascalCase (e.g., <code class="bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded">MyAwesomePlugin</code>)</li>
-        <li class="leading-relaxed"><strong class="font-semibold text-gray-900 dark:text-white">Ruby filename</strong> (generated): snake_case (e.g., <code class="bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded">my_awesome_plugin.rb</code>)</li>
+      <ul class="mb-6 list-inside list-disc space-y-2 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed">
+          <strong class="font-semibold text-gray-900 dark:text-white">Plugin name</strong> (CLI argument): Use kebab-case
+          (e.g., <code class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+            >my-awesome-plugin</code
+          >)
+        </li>
+        <li class="leading-relaxed">
+          <strong class="font-semibold text-gray-900 dark:text-white">Display name</strong> (prompts): Use human-readable
+          format (e.g., <code class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+            >My Awesome Plugin</code
+          >)
+        </li>
+        <li class="leading-relaxed">
+          <strong class="font-semibold text-gray-900 dark:text-white">Module name</strong> (generated): PascalCase (e.g.,
+          <code class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+            >MyAwesomePlugin</code
+          >)
+        </li>
+        <li class="leading-relaxed">
+          <strong class="font-semibold text-gray-900 dark:text-white">Ruby filename</strong> (generated): snake_case (e.g.,
+          <code class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+            >my_awesome_plugin.rb</code
+          >)
+        </li>
       </ul>
 
-      <h2 id="troubleshooting" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+      <h2
+        id="troubleshooting"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
         <a href="#troubleshooting" class="hover:underline">Troubleshooting</a>
       </h2>
 
-      <h3 id="plugin-already-exists" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="plugin-already-exists" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#plugin-already-exists" class="hover:underline">Plugin already exists</a>
       </h3>
-      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
         If you see an error that the plugin already exists, either:
       </p>
-      <ul class="list-disc list-inside space-y-2 mb-6 text-gray-700 dark:text-gray-300">
+      <ul class="mb-6 list-inside list-disc space-y-2 text-gray-700 dark:text-gray-300">
         <li class="leading-relaxed">Choose a different name</li>
         <li class="leading-relaxed">Delete the existing plugin directory first</li>
-        <li class="leading-relaxed">Use <code class="bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded">backend add</code> to add services to the existing plugin</li>
+        <li class="leading-relaxed">
+          Use <code class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+            >backend add</code
+          > to add services to the existing plugin
+        </li>
       </ul>
 
-      <h3 id="backend-service-already-exists" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="backend-service-already-exists" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#backend-service-already-exists" class="hover:underline">Backend service already exists</a>
       </h3>
-      <p class="text-gray-700 dark:text-gray-300 mb-6 leading-relaxed">
-        When using <code class="bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded">backend add</code>, if a service already exists, it will be skipped automatically. You'll see an informational message.
+      <p class="mb-6 leading-relaxed text-gray-700 dark:text-gray-300">
+        When using <code class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+          >backend add</code
+        >, if a service already exists, it will be skipped automatically. You'll see an informational message.
       </p>
 
-      <h3 id="permission-errors" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="permission-errors" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#permission-errors" class="hover:underline">Permission errors</a>
       </h3>
-      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
         If you get permission errors during global installation:
       </p>
-      <CodeBlock language="bash">sudo npm install -g .
-# or use a Node version manager like nvm</CodeBlock>
+      <CodeBlock language="bash" code="sudo npm install -g . # or use a Node version manager like nvm" />
 
-      <h2 id="next-steps" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+      <h2
+        id="next-steps"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
         <a href="#next-steps" class="hover:underline">Next Steps</a>
       </h2>
-      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
         After creating your plugin, learn how to develop its components:
       </p>
-      <ul class="list-disc list-inside space-y-2 mb-6 text-gray-700 dark:text-gray-300">
-        <li class="leading-relaxed"><a href="/plugin/frontend-guide/" class="text-blue-600 dark:text-blue-400 hover:underline">Frontend Guide</a> - Build the plugin UI with SvelteKit</li>
-        <li class="leading-relaxed"><a href="/plugin/backend-guide/" class="text-blue-600 dark:text-blue-400 hover:underline">Backend Guide</a> - Develop backend services in Ruby</li>
-        <li class="leading-relaxed"><a href="/plugin/import-media/" class="text-blue-600 dark:text-blue-400 hover:underline">Import & Process Media</a> - Add media processing capabilities</li>
-        <li class="leading-relaxed"><a href="/plugin/export-datasets/" class="text-blue-600 dark:text-blue-400 hover:underline">Export Datasets</a> - Create data exporters</li>
+      <ul class="mb-6 list-inside list-disc space-y-2 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed">
+          <a href="/plugin/frontend-guide/" class="text-blue-600 hover:underline dark:text-blue-400">Frontend Guide</a> -
+          Build the plugin UI with SvelteKit
+        </li>
+        <li class="leading-relaxed">
+          <a href="/plugin/backend-guide/" class="text-blue-600 hover:underline dark:text-blue-400">Backend Guide</a> - Develop
+          backend services in Ruby
+        </li>
+        <li class="leading-relaxed">
+          <a href="/plugin/import-media/" class="text-blue-600 hover:underline dark:text-blue-400"
+            >Import & Process Media</a
+          > - Add media processing capabilities
+        </li>
+        <li class="leading-relaxed">
+          <a href="/plugin/export-datasets/" class="text-blue-600 hover:underline dark:text-blue-400">Export Datasets</a
+          > - Create data exporters
+        </li>
       </ul>
 
-      <div class="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-l-4 border-blue-500 p-6 mb-6 rounded-lg">
-        <p class="text-lg text-gray-800 dark:text-gray-200 leading-relaxed font-medium">
+      <div
+        class="mb-6 rounded-lg border-l-4 border-blue-500 bg-gradient-to-r from-blue-50 to-purple-50 p-6 dark:from-blue-900/20 dark:to-purple-900/20"
+      >
+        <p class="text-lg leading-relaxed font-medium text-gray-800 dark:text-gray-200">
           🎉 Plugin scaffolded! Continue with the guides above to build your plugin's functionality.
         </p>
       </div>
