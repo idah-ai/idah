@@ -5,123 +5,173 @@ import PageContainer from "@components/app/page/PageContainer.astro";
 import PageTitle from "@components/app/page/PageTitle.astro";
 import CodeBlock from "@components/app/CodeBlock.astro";
 import FolderBlock from "@components/app/FolderBlock.astro";
-import { HardDrive } from '@lucide/astro';
+import { HardDrive } from "@lucide/astro";
 ---
 
 <PageLayout>
   <PageContainer>
     <PageTitle>
-      <div class="p-3 rounded-xl text-green-500 dark:text-green-700 bg-green-50 dark:bg-green-900/20">
-        <HardDrive class="w-9 h-9" stroke-width={2} />
+      <div class="rounded-xl bg-green-50 p-3 text-green-500 dark:bg-green-900/20 dark:text-green-700">
+        <HardDrive class="h-9 w-9" stroke-width={2} />
       </div>
       Persistent Storage
     </PageTitle>
 
-    <div class="prose prose-lg max-w-none dark:prose-invert">
-      <p class="text-lg text-gray-700 dark:text-gray-300 mb-8 leading-relaxed">
+    <div class="prose prose-lg dark:prose-invert max-w-none">
+      <p class="mb-8 text-lg leading-relaxed text-gray-700 dark:text-gray-300">
         Configure persistent storage for media files and dataset exports in IDAH.
       </p>
 
-      <h2 id="overview" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+      <h2
+        id="overview"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
         <a href="#overview" class="hover:underline">Overview</a>
       </h2>
-      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
         IDAH uses persistent storage in two services to store files:
       </p>
 
-      <div class="space-y-4 mb-8">
-        <div class="border-l-4 border-blue-500 pl-4 py-2 bg-gray-50 dark:bg-gray-800 rounded-r">
-          <h4 class="font-semibold text-gray-900 dark:text-white mb-1">Media Service</h4>
+      <div class="mb-8 space-y-4">
+        <div class="rounded-r border-l-4 border-blue-500 bg-gray-50 py-2 pl-4 dark:bg-gray-800">
+          <h4 class="mb-1 font-semibold text-gray-900 dark:text-white">Media Service</h4>
           <p class="text-sm text-gray-700 dark:text-gray-300">
             Stores imported media files such as images, videos, audio files, and other media assets used in datasets.
           </p>
         </div>
 
-        <div class="border-l-4 border-green-500 pl-4 py-2 bg-gray-50 dark:bg-gray-800 rounded-r">
-          <h4 class="font-semibold text-gray-900 dark:text-white mb-1">Sync Service</h4>
+        <div class="rounded-r border-l-4 border-green-500 bg-gray-50 py-2 pl-4 dark:bg-gray-800">
+          <h4 class="mb-1 font-semibold text-gray-900 dark:text-white">Sync Service</h4>
           <p class="text-sm text-gray-700 dark:text-gray-300">
             Stores exported dataset files generated during data export and synchronization operations.
           </p>
         </div>
       </div>
 
-      <h2 id="storage-system" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+      <h2
+        id="storage-system"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
         <a href="#storage-system" class="hover:underline">Storage System</a>
       </h2>
-      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
-        IDAH uses the <strong class="font-semibold text-gray-900 dark:text-white">verse-shrine</strong> gem for file storage management. This provides a flexible interface to configure different storage backends.
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
+        IDAH uses the <strong class="font-semibold text-gray-900 dark:text-white">verse-shrine</strong> gem for file storage
+        management. This provides a flexible interface to configure different storage backends.
       </p>
 
-      <div class="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 p-4 mb-6 rounded-r">
-        <p class="text-sm text-gray-800 dark:text-gray-200 font-semibold mb-2">verse-shrine</p>
-        <p class="text-sm text-gray-700 dark:text-gray-300 mb-2">
+      <div class="mb-6 rounded-r border-l-4 border-blue-500 bg-blue-50 p-4 dark:bg-blue-900/20">
+        <p class="mb-2 text-sm font-semibold text-gray-800 dark:text-gray-200">verse-shrine</p>
+        <p class="mb-2 text-sm text-gray-700 dark:text-gray-300">
           A file attachment toolkit for Ruby applications with support for multiple storage backends.
         </p>
         <p class="text-sm">
-          <a href="https://github.com/verse-rb/verse-shrine" class="text-blue-600 dark:text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer">View on GitHub →</a>
+          <a
+            href="https://github.com/verse-rb/verse-shrine"
+            class="text-blue-600 hover:underline dark:text-blue-400"
+            target="_blank"
+            rel="noopener noreferrer">View on GitHub →</a
+          >
         </p>
       </div>
 
-      <h3 id="supported-storage" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="supported-storage" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#supported-storage" class="hover:underline">Supported Storage Backends</a>
       </h3>
-      <ul class="list-disc list-inside space-y-2 mb-6 text-gray-700 dark:text-gray-300">
-        <li class="leading-relaxed"><strong class="font-semibold text-gray-900 dark:text-white">File System</strong> - Local file storage (development)</li>
-        <li class="leading-relaxed"><strong class="font-semibold text-gray-900 dark:text-white">AWS S3</strong> - Amazon S3 storage</li>
-        <li class="leading-relaxed"><strong class="font-semibold text-gray-900 dark:text-white">Google Cloud Storage</strong> - GCS</li>
-        <li class="leading-relaxed"><strong class="font-semibold text-gray-900 dark:text-white">S3-Compatible</strong> - MinIO, DigitalOcean Spaces, etc.</li>
+      <ul class="mb-6 list-inside list-disc space-y-2 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed">
+          <strong class="font-semibold text-gray-900 dark:text-white">File System</strong> - Local file storage (development)
+        </li>
+        <li class="leading-relaxed">
+          <strong class="font-semibold text-gray-900 dark:text-white">AWS S3</strong> - Amazon S3 storage
+        </li>
+        <li class="leading-relaxed">
+          <strong class="font-semibold text-gray-900 dark:text-white">Google Cloud Storage</strong> - GCS
+        </li>
+        <li class="leading-relaxed">
+          <strong class="font-semibold text-gray-900 dark:text-white">S3-Compatible</strong> - MinIO, DigitalOcean Spaces,
+          etc.
+        </li>
       </ul>
 
-      <h2 id="configuration" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+      <h2
+        id="configuration"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
         <a href="#configuration" class="hover:underline">Configuration</a>
       </h2>
-      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
         Storage is configured separately for each service using YAML configuration files.
       </p>
 
-      <h3 id="config-files" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="config-files" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#config-files" class="hover:underline">Configuration Files</a>
       </h3>
 
-      <h4 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mt-6 mb-3">Media Service</h4>
-      <ul class="list-disc list-inside space-y-2 mb-6 text-gray-700 dark:text-gray-300 text-sm">
-        <li class="leading-relaxed"><code class="bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded">app/media/config/config.yml</code> - Production configuration</li>
-        <li class="leading-relaxed"><code class="bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded">app/media/config/config.development.yml</code> - Development overrides</li>
+      <h4 class="mt-6 mb-3 text-xl font-semibold text-gray-800 dark:text-gray-200">Media Service</h4>
+      <ul class="mb-6 list-inside list-disc space-y-2 text-sm text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed">
+          <code class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+            >app/media/config/config.yml</code
+          > - Production configuration
+        </li>
+        <li class="leading-relaxed">
+          <code class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+            >app/media/config/config.development.yml</code
+          > - Development overrides
+        </li>
       </ul>
 
-      <h4 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mt-6 mb-3">Sync Service</h4>
-      <ul class="list-disc list-inside space-y-2 mb-6 text-gray-700 dark:text-gray-300 text-sm">
-        <li class="leading-relaxed"><code class="bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded">app/sync/config/config.yml</code> - Production configuration</li>
-        <li class="leading-relaxed"><code class="bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded">app/sync/config/config.development.yml</code> - Development overrides</li>
+      <h4 class="mt-6 mb-3 text-xl font-semibold text-gray-800 dark:text-gray-200">Sync Service</h4>
+      <ul class="mb-6 list-inside list-disc space-y-2 text-sm text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed">
+          <code class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+            >app/sync/config/config.yml</code
+          > - Production configuration
+        </li>
+        <li class="leading-relaxed">
+          <code class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+            >app/sync/config/config.development.yml</code
+          > - Development overrides
+        </li>
       </ul>
 
-      <h3 id="development-config" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="development-config" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#development-config" class="hover:underline">Development Configuration</a>
       </h3>
-      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
         In development, IDAH uses local file system storage by default:
       </p>
-      <CodeBlock language="yaml" path="app/media/config/config.development.yml">{`plugins:
+      <CodeBlock
+        language="yaml"
+        path="app/media/config/config.development.yml"
+        code={`plugins:
   - name: shrine
     config:
       storages:
         - name: default
           adapter: file_system
           config:
-            path: tmp/storage/development`}</CodeBlock>
-      <p class="text-gray-700 dark:text-gray-300 mb-6 leading-relaxed text-sm">
-        Files are stored in the <code class="bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded">tmp/storage/development</code> directory within each service.
+            path: tmp/storage/development`}
+      />
+      <p class="mb-6 text-sm leading-relaxed text-gray-700 dark:text-gray-300">
+        Files are stored in the <code
+          class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+          >tmp/storage/development</code
+        > directory within each service.
       </p>
 
-      <h3 id="production-config" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="production-config" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#production-config" class="hover:underline">Production Configuration</a>
       </h3>
-      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
         In production, configure S3-compatible storage:
       </p>
 
-      <h4 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mt-6 mb-3">Media Service Storage</h4>
-      <CodeBlock language="yaml" path="app/media/config/config.yml">{`plugins:
+      <h4 class="mt-6 mb-3 text-xl font-semibold text-gray-800 dark:text-gray-200">Media Service Storage</h4>
+      <CodeBlock
+        language="yaml"
+        path="app/media/config/config.yml"
+        code={`plugins:
   - name: shrine
     config:
       storages:
@@ -134,10 +184,14 @@ import { HardDrive } from '@lucide/astro';
             public: false
             region: <%= ENV.fetch("MEDIAS_FILES_REGION") %>
             prefix: files
-            endpoint: <%= ENV.fetch("MEDIAS_FILES_ENDPOINT") %>`}</CodeBlock>
+            endpoint: <%= ENV.fetch("MEDIAS_FILES_ENDPOINT") %>`}
+      />
 
-      <h4 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mt-6 mb-3">Sync Service Storage</h4>
-      <CodeBlock language="yaml" path="app/sync/config/config.yml">{`plugins:
+      <h4 class="mt-6 mb-3 text-xl font-semibold text-gray-800 dark:text-gray-200">Sync Service Storage</h4>
+      <CodeBlock
+        language="yaml"
+        path="app/sync/config/config.yml"
+        code={`plugins:
   - name: shrine
     config:
       storages:
@@ -150,136 +204,194 @@ import { HardDrive } from '@lucide/astro';
             public: false
             region: <%= ENV.fetch("SYNC_FILES_REGION") %>
             prefix: files
-            endpoint: <%= ENV.fetch("SYNC_FILES_ENDPOINT") %>`}</CodeBlock>
+            endpoint: <%= ENV.fetch("SYNC_FILES_ENDPOINT") %>`}
+      />
 
-      <h2 id="environment-variables" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+      <h2
+        id="environment-variables"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
         <a href="#environment-variables" class="hover:underline">Environment Variables</a>
       </h2>
 
-      <h3 id="media-env-vars" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="media-env-vars" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#media-env-vars" class="hover:underline">Media Service Variables</a>
       </h3>
-      <CodeBlock language="bash" path="app/media/.env"># Media storage configuration
+      <CodeBlock
+        language="bash"
+        path="app/media/.env"
+        code={`# Media storage configuration
 MEDIAS_FILES_BUCKET=my-media-bucket
 MEDIAS_FILES_ACCESS_KEY_ID=your-access-key
 MEDIAS_FILES_SECRET_ACCESS_KEY=your-secret-key
 MEDIAS_FILES_REGION=us-east-1
-MEDIAS_FILES_ENDPOINT=https://s3.amazonaws.com</CodeBlock>
+MEDIAS_FILES_ENDPOINT=https://s3.amazonaws.com`}
+      />
 
-      <h3 id="sync-env-vars" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="sync-env-vars" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#sync-env-vars" class="hover:underline">Sync Service Variables</a>
       </h3>
-      <CodeBlock language="bash" path="app/sync/.env"># Sync storage configuration
+      <CodeBlock
+        language="bash"
+        path="app/sync/.env"
+        code={`# Sync storage configuration
 SYNC_FILES_BUCKET=my-exports-bucket
 SYNC_FILES_ACCESS_KEY_ID=your-access-key
 SYNC_FILES_SECRET_ACCESS_KEY=your-secret-key
 SYNC_FILES_REGION=us-east-1
-SYNC_FILES_ENDPOINT=https://s3.amazonaws.com</CodeBlock>
+SYNC_FILES_ENDPOINT=https://s3.amazonaws.com`}
+      />
 
-      <h2 id="storage-providers" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+      <h2
+        id="storage-providers"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
         <a href="#storage-providers" class="hover:underline">Storage Provider Examples</a>
       </h2>
 
-      <h3 id="aws-s3" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="aws-s3" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#aws-s3" class="hover:underline">AWS S3</a>
       </h3>
-      <CodeBlock language="bash" path="app/media/.env"># AWS S3
+      <CodeBlock
+        language="bash"
+        path="app/media/.env"
+        code={`# AWS S3
 MEDIAS_FILES_BUCKET=my-idah-media
 MEDIAS_FILES_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
 MEDIAS_FILES_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 MEDIAS_FILES_REGION=us-east-1
-MEDIAS_FILES_ENDPOINT=https://s3.amazonaws.com</CodeBlock>
+MEDIAS_FILES_ENDPOINT=https://s3.amazonaws.com`}
+      />
 
-      <h3 id="google-cloud" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="google-cloud" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#google-cloud" class="hover:underline">Google Cloud Storage</a>
       </h3>
-      <CodeBlock language="bash" path="app/media/.env"># Google Cloud Storage (S3-compatible)
+      <CodeBlock
+        language="bash"
+        path="app/media/.env"
+        code={`# Google Cloud Storage (S3-compatible)
 MEDIAS_FILES_BUCKET=my-idah-media
 MEDIAS_FILES_ACCESS_KEY_ID=your-gcs-access-key
 MEDIAS_FILES_SECRET_ACCESS_KEY=your-gcs-secret-key
 MEDIAS_FILES_REGION=us-east1
-MEDIAS_FILES_ENDPOINT=https://storage.googleapis.com</CodeBlock>
+MEDIAS_FILES_ENDPOINT=https://storage.googleapis.com`}
+      />
 
-      <h3 id="minio" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="minio" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#minio" class="hover:underline">MinIO (Self-Hosted)</a>
       </h3>
-      <CodeBlock language="bash" path="app/media/.env"># MinIO
+      <CodeBlock
+        language="bash"
+        path="app/media/.env"
+        code={`# MinIO
 MEDIAS_FILES_BUCKET=idah-media
 MEDIAS_FILES_ACCESS_KEY_ID=minioadmin
 MEDIAS_FILES_SECRET_ACCESS_KEY=minioadmin
 MEDIAS_FILES_REGION=us-east-1
-MEDIAS_FILES_ENDPOINT=http://minio:9000</CodeBlock>
+MEDIAS_FILES_ENDPOINT=http://minio:9000`}
+      />
 
-      <h3 id="digitalocean-spaces" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="digitalocean-spaces" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#digitalocean-spaces" class="hover:underline">DigitalOcean Spaces</a>
       </h3>
-      <CodeBlock language="bash" path="app/media/.env"># DigitalOcean Spaces
+      <CodeBlock
+        language="bash"
+        path="app/media/.env"
+        code={`# DigitalOcean Spaces
 MEDIAS_FILES_BUCKET=my-space
 MEDIAS_FILES_ACCESS_KEY_ID=your-spaces-key
 MEDIAS_FILES_SECRET_ACCESS_KEY=your-spaces-secret
 MEDIAS_FILES_REGION=nyc3
-MEDIAS_FILES_ENDPOINT=https://nyc3.digitaloceanspaces.com</CodeBlock>
+MEDIAS_FILES_ENDPOINT=https://nyc3.digitaloceanspaces.com`}
+      />
 
-      <h2 id="configuration-tips" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+      <h2
+        id="configuration-tips"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
         <a href="#configuration-tips" class="hover:underline">Configuration Tips</a>
       </h2>
 
-      <h3 id="separate-buckets" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="separate-buckets" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#separate-buckets" class="hover:underline">Use Separate Buckets</a>
       </h3>
-      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
         It's recommended to use separate buckets for media and exports:
       </p>
-      <ul class="list-disc list-inside space-y-2 mb-6 text-gray-700 dark:text-gray-300">
+      <ul class="mb-6 list-inside list-disc space-y-2 text-gray-700 dark:text-gray-300">
         <li class="leading-relaxed">Easier to manage lifecycle policies</li>
         <li class="leading-relaxed">Better access control and permissions</li>
         <li class="leading-relaxed">Simplified backup and retention strategies</li>
       </ul>
 
-      <h3 id="prefix-usage" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="prefix-usage" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#prefix-usage" class="hover:underline">File Prefix</a>
       </h3>
-      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
-        The <code class="bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded">prefix: files</code> configuration adds a directory prefix to all stored files:
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
+        The <code class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+          >prefix: files</code
+        > configuration adds a directory prefix to all stored files:
       </p>
-      <FolderBlock title="Example S3 Bucket Structure" structure={[
-        {
-          name: 'my-bucket',
-          type: 'folder',
-          children: [
-            {
-              name: 'files',
-              type: 'folder',
-              children: [
-                { name: 'media-file-1.jpg', type: 'file' },
-                { name: 'media-file-2.mp4', type: 'file' },
-                { name: 'export-dataset-1.json', type: 'file' },
-              ],
-            },
-          ],
-        },
-      ]} />
+      <FolderBlock
+        title="Example S3 Bucket Structure"
+        structure={[
+          {
+            name: "my-bucket",
+            type: "folder",
+            children: [
+              {
+                name: "files",
+                type: "folder",
+                children: [
+                  { name: "media-file-1.jpg", type: "file" },
+                  { name: "media-file-2.mp4", type: "file" },
+                  { name: "export-dataset-1.json", type: "file" },
+                ],
+              },
+            ],
+          },
+        ]}
+      />
 
-      <h3 id="security" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="security" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#security" class="hover:underline">Security Considerations</a>
       </h3>
-      <ul class="list-disc list-inside space-y-2 mb-6 text-gray-700 dark:text-gray-300">
-        <li class="leading-relaxed">Keep <code class="bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded">public: false</code> to prevent public access</li>
+      <ul class="mb-6 list-inside list-disc space-y-2 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed">
+          Keep <code class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+            >public: false</code
+          > to prevent public access
+        </li>
         <li class="leading-relaxed">Use IAM roles instead of access keys when possible (AWS)</li>
         <li class="leading-relaxed">Rotate access credentials regularly</li>
         <li class="leading-relaxed">Enable encryption at rest on your storage bucket</li>
       </ul>
 
-      <h2 id="next-steps" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+      <h2
+        id="next-steps"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
         <a href="#next-steps" class="hover:underline">Next Steps</a>
       </h2>
-      <ul class="list-disc list-inside space-y-2 mb-6 text-gray-700 dark:text-gray-300">
-        <li class="leading-relaxed"><a href="/install/start/" class="text-blue-600 dark:text-blue-400 hover:underline">Starting IDAH</a> - Launch the platform after configuration</li>
-        <li class="leading-relaxed"><a href="https://github.com/verse-rb/verse-shrine" class="text-blue-600 dark:text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer">verse-shrine Documentation</a> - Learn more about storage options</li>
+      <ul class="mb-6 list-inside list-disc space-y-2 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed">
+          <a href="/install/start/" class="text-blue-600 hover:underline dark:text-blue-400">Starting IDAH</a> - Launch the
+          platform after configuration
+        </li>
+        <li class="leading-relaxed">
+          <a
+            href="https://github.com/verse-rb/verse-shrine"
+            class="text-blue-600 hover:underline dark:text-blue-400"
+            target="_blank"
+            rel="noopener noreferrer">verse-shrine Documentation</a
+          > - Learn more about storage options
+        </li>
       </ul>
 
-      <div class="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-l-4 border-blue-500 p-6 mb-6 rounded-lg">
-        <p class="text-lg text-gray-800 dark:text-gray-200 leading-relaxed font-medium">
+      <div
+        class="mb-6 rounded-lg border-l-4 border-blue-500 bg-gradient-to-r from-blue-50 to-purple-50 p-6 dark:from-blue-900/20 dark:to-purple-900/20"
+      >
+        <p class="text-lg leading-relaxed font-medium text-gray-800 dark:text-gray-200">
           🗄️ Storage configured! Your media and exports are now persisted to your chosen storage backend.
         </p>
       </div>

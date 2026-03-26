@@ -1,7 +1,7 @@
 ---
 interface FolderItem {
   name: string;
-  type: 'file' | 'folder';
+  type: "file" | "folder";
   comment?: string;
   children?: FolderItem[];
 }
@@ -18,7 +18,7 @@ function getDisplayWidth(items: FolderItem[], depth: number = 0): number {
   let maxWidth = 0;
 
   items.forEach((item) => {
-    const treePrefix = depth === 0 ? 0 : (depth * 4 + 4); // Each level adds 4 chars, plus 4 for ├── or └──
+    const treePrefix = depth === 0 ? 0 : depth * 4 + 4; // Each level adds 4 chars, plus 4 for ├── or └──
     const iconWidth = 2; // Icon + space
     const nameWidth = item.name.length;
     const totalWidth = treePrefix + iconWidth + nameWidth;
@@ -34,7 +34,7 @@ function getDisplayWidth(items: FolderItem[], depth: number = 0): number {
 }
 
 function renderTree(items: FolderItem[], isLast: boolean[] = [], maxWidth: number, depth: number = 0): string {
-  let output = '';
+  let output = "";
 
   items.forEach((item, index) => {
     const isLastItem = index === items.length - 1;
@@ -42,38 +42,40 @@ function renderTree(items: FolderItem[], isLast: boolean[] = [], maxWidth: numbe
     const isRoot = isLast.length === 0;
 
     // Build the tree line prefix with gray styling
-    let line = '';
+    let line = "";
     if (!isRoot) {
       line += '<span class="tree-lines">';
       for (let i = 0; i < isLast.length; i++) {
-        line += isLast[i] ? '   ' : '│  ';
+        line += isLast[i] ? "   " : "│  ";
       }
-      line += isLastItem ? '└─ ' : '├─ ';
-      line += '</span>';
+      line += isLastItem ? "└─ " : "├─ ";
+      line += "</span>";
     }
 
     // Escape HTML entities (escape & first, then < and >)
-    const escapeName = (str: string) => str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const escapeName = (str: string) => str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
     // Add icon with color (using SVG for both folder and file)
-    const icon = item.type === 'folder'
-      ? '<svg class="folder-icon" fill="currentColor" viewBox="0 0 20 20" style="width:0.875rem;height:0.875rem;display:inline-block;vertical-align:middle;margin-right:0.25rem;"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"></path></svg>'
-      : '<svg class="file-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:0.875rem;height:0.875rem;display:inline-block;vertical-align:middle;margin-right:0.25rem;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>';
+    const icon =
+      item.type === "folder"
+        ? '<svg class="folder-icon" fill="currentColor" viewBox="0 0 20 20" style="width:0.875rem;height:0.875rem;display:inline-block;vertical-align:middle;margin-right:0.25rem;"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"></path></svg>'
+        : '<svg class="file-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:0.875rem;height:0.875rem;display:inline-block;vertical-align:middle;margin-right:0.25rem;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>';
 
     // Style the name based on type
-    const styledName = item.type === 'folder'
-      ? `<span class="folder-name">${escapeName(item.name)}</span>`
-      : `<span class="file-name">${escapeName(item.name)}</span>`;
+    const styledName =
+      item.type === "folder"
+        ? `<span class="folder-name">${escapeName(item.name)}</span>`
+        : `<span class="file-name">${escapeName(item.name)}</span>`;
 
     // Calculate padding for comment alignment (add depth-based indentation)
-    const currentWidth = line.replace(/<[^>]*>/g, '').length + 2 + item.name.length; // tree prefix + icon + name
+    const currentWidth = line.replace(/<[^>]*>/g, "").length + 2 + item.name.length; // tree prefix + icon + name
     const baseCommentColumn = maxWidth + 2;
     const commentIndent = depth * 3; // Add 2 spaces per depth level
     const targetColumn = baseCommentColumn + commentIndent;
-    const padding = ' '.repeat(Math.max(2, targetColumn - currentWidth));
+    const padding = " ".repeat(Math.max(2, targetColumn - currentWidth));
 
     // Add comment if exists
-    const comment = item.comment ? `${padding}<span class="comment"># ${escapeName(item.comment)}</span>` : '';
+    const comment = item.comment ? `${padding}<span class="comment"># ${escapeName(item.comment)}</span>` : "";
 
     // Build the complete line
     output += `${line}${icon}${styledName}${comment}\n`;
@@ -92,15 +94,17 @@ const treeText = renderTree(structure, [], maxWidth);
 ---
 
 <div class="relative">
-  {title && (
-    <div class="bg-gray-800 text-gray-300 px-4 py-2 text-sm font-mono rounded-t-lg border-b border-gray-700 flex items-center gap-2">
-      <svg class="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-        <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"></path>
-      </svg>
-      <span>{title}</span>
-    </div>
-  )}
-  <pre class:list={["folder-block", title && "!rounded-t-none rounded-b-lg"]} set:html={treeText}></pre>
+  {
+    title && (
+      <div class="flex items-center gap-2 rounded-t-lg border-b border-gray-700 bg-gray-800 px-4 py-2 font-mono text-sm text-gray-300">
+        <svg class="h-4 w-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+        </svg>
+        <span>{title}</span>
+      </div>
+    )
+  }
+  <pre class:list={["folder-block", title && "!rounded-t-none rounded-b-lg"]} set:html={treeText} />
 </div>
 
 <style>

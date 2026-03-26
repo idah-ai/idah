@@ -147,98 +147,59 @@
   border-radius: 0.5rem !important;
   overflow-x: auto !important;
   margin-bottom: 1.5rem !important;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important;
+  font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace !important;
   font-size: 13px !important;
   line-height: 1.5 !important;
   box-shadow: none !important;
   text-shadow: none !important;
 }
 
-.token.comment { color: #6a9955; }
-.token.keyword { color: #569cd6; }
-.token.string { color: #ce9178; }
-.token.number { color: #b5cea8; }
-.token.boolean { color: #569cd6; }
-.token.operator { color: #d4d4d4; }
-.token.punctuation { color: #808080; }
-.token.class-name { color: #4ec9b0; }
-.token.function { color: #dcdcaa; }
-.token.builtin { color: #4ec9b0; }
-.token.property { color: #9cdcfe; }
-.token.parameter { color: #9cdcfe; }
-.token.tag { color: #569cd6; }
-.token.shell-symbol { color: #808080; }
+.token.comment {
+  color: #6a9955;
+}
+.token.keyword {
+  color: #569cd6;
+}
+.token.string {
+  color: #ce9178;
+}
+.token.number {
+  color: #b5cea8;
+}
+.token.boolean {
+  color: #569cd6;
+}
+.token.operator {
+  color: #d4d4d4;
+}
+.token.punctuation {
+  color: #808080;
+}
+.token.class-name {
+  color: #4ec9b0;
+}
+.token.function {
+  color: #dcdcaa;
+}
+.token.builtin {
+  color: #4ec9b0;
+}
+.token.property {
+  color: #9cdcfe;
+}
+.token.parameter {
+  color: #9cdcfe;
+}
+.token.tag {
+  color: #569cd6;
+}
+.token.shell-symbol {
+  color: #808080;
+}
 
 /* Ensure code blocks have proper syntax highlighting */
 pre code {
   display: block;
-}
-
-/* TypeScript code block styling */
-.ts-code-block {
-  background: #1e1e1e !important;
-  border-radius: 0.5rem;
-  padding: 1rem;
-  overflow-x: auto;
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-/* JSON Tree Styles */
-.json-tree {
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  font-size: 13px;
-  line-height: 1.8;
-  background: #1e1e1e;
-  color: #d4d4d4;
-  padding: 1rem;
-  border-radius: 0.5rem;
-  overflow-x: auto;
-}
-
-.json-tree-line {
-  display: flex;
-  align-items: start;
-}
-
-.json-tree-line:hover {
-  background-color: rgba(255, 255, 255, 0.05);
-}
-
-.json-tree-toggle {
-  cursor: pointer;
-  user-select: none;
-  width: 16px;
-  min-width: 16px;
-  text-align: left;
-  color: #808080;
-  flex-shrink: 0;
-  line-height: 1.8;
-}
-
-.json-tree-toggle:hover {
-  color: #cccccc;
-}
-
-.json-tree-content {
-  flex: 1;
-  min-width: 0;
-  line-height: 1.8;
-}
-
-.json-tree-children {
-  margin-left: 16px;
-}
-
-.json-tree-key { color: #9cdcfe; }
-.json-tree-string { color: #ce9178; }
-.json-tree-number { color: #b5cea8; }
-.json-tree-boolean { color: #569cd6; }
-.json-tree-null { color: #569cd6; }
-.json-tree-bracket { color: #808080; }
-.json-tree-preview {
-  color: #808080;
-  font-style: italic;
 }
 
 /* Markdown content styling */
@@ -269,7 +230,7 @@ pre code {
   padding: 0.125rem 0.25rem;
   border-radius: 0.25rem;
   font-size: 0.875em;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
 }
 
 .markdown-content pre {
@@ -313,9 +274,15 @@ pre code {
   margin-bottom: 0.5rem;
 }
 
-.markdown-content h1 { font-size: 1.5em; }
-.markdown-content h2 { font-size: 1.25em; }
-.markdown-content h3 { font-size: 1.125em; }
+.markdown-content h1 {
+  font-size: 1.5em;
+}
+.markdown-content h2 {
+  font-size: 1.25em;
+}
+.markdown-content h3 {
+  font-size: 1.125em;
+}
 
 .markdown-content blockquote {
   border-left: 4px solid #e5e7eb;
