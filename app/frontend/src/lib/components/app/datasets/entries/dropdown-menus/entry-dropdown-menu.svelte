@@ -83,7 +83,6 @@
         description: `The entry "${entry.resource}" has been deleted.`,
       });
     } catch (error) {
-      console.log(error);
       showToast.error({
         title: "Unable to delete entry",
         description: error?.errors[0]?.detail || "The action could not be completed, please try again later.",
