@@ -34,7 +34,7 @@ import { Rocket } from "@lucide/astro";
       <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
         From the project root directory, start all IDAH services:
       </p>
-      <CodeBlock language="bash">docker compose up -d</CodeBlock>
+      <CodeBlock language="bash" code={`docker compose up -d`} />
       <p class="mb-6 text-sm leading-relaxed text-gray-700 dark:text-gray-300">
         This builds and starts all microservices (frontend, IAM, dataset, media, sync, notification, audit, setting) and
         the nginx gateway.
@@ -46,7 +46,7 @@ import { Rocket } from "@lucide/astro";
       <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
         For the first time setup, run this command to create service accounts and a default Admin User:
       </p>
-      <CodeBlock language="bash">docker compose run iam bundle exec rake dev:setup dev:users</CodeBlock>
+      <CodeBlock language="bash" code={`docker compose run iam bundle exec rake dev:setup dev:users`} />
 
       <div class="mb-6 rounded-r border-l-4 border-green-500 bg-green-50 p-4 dark:bg-green-900/20">
         <p class="mb-2 text-sm font-semibold text-gray-800 dark:text-gray-200">Default Admin Credentials</p>
@@ -91,7 +91,7 @@ import { Rocket } from "@lucide/astro";
       <h3 id="check-services" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#check-services" class="hover:underline">Check Running Services</a>
       </h3>
-      <CodeBlock language="bash">docker compose ps</CodeBlock>
+      <CodeBlock language="bash" code={`docker compose ps`} />
       <p class="mb-6 text-sm leading-relaxed text-gray-700 dark:text-gray-300">
         All services should show status as "running".
       </p>
@@ -99,10 +99,16 @@ import { Rocket } from "@lucide/astro";
       <h3 id="view-logs" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#view-logs" class="hover:underline">View Logs</a>
       </h3>
-      <CodeBlock language="bash"
-        ># View all service logs docker compose logs -f # View specific service logs docker compose logs -f frontend
-        docker compose logs -f iam docker compose logs -f media</CodeBlock
-      >
+      <CodeBlock
+        language="bash"
+        code={`# View all service logs
+docker compose logs -f
+
+# View specific service logs
+docker compose logs -f frontend
+docker compose logs -f iam
+docker compose logs -f media`}
+      />
 
       <h2
         id="common-commands"
@@ -114,22 +120,31 @@ import { Rocket } from "@lucide/astro";
       <h3 id="stop-services" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#stop-services" class="hover:underline">Stop Services</a>
       </h3>
-      <CodeBlock language="bash">docker compose down</CodeBlock>
+      <CodeBlock language="bash" code={`docker compose down`} />
 
       <h3 id="restart-services" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#restart-services" class="hover:underline">Restart Services</a>
       </h3>
-      <CodeBlock language="bash"
-        ># Restart all services docker compose restart # Restart specific service docker compose restart frontend</CodeBlock
-      >
+      <CodeBlock
+        language="bash"
+        code={`# Restart all services
+docker compose restart
+
+# Restart specific service
+docker compose restart frontend`}
+      />
 
       <h3 id="rebuild-services" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#rebuild-services" class="hover:underline">Rebuild Services</a>
       </h3>
-      <CodeBlock language="bash"
-        ># Rebuild and restart all services docker compose up -d --build # Rebuild specific service docker compose up -d
-        --build frontend</CodeBlock
-      >
+      <CodeBlock
+        language="bash"
+        code={`# Rebuild and restart all services
+docker compose up -d --build
+
+# Rebuild specific service
+docker compose up -d --build frontend`}
+      />
 
       <h2
         id="next-steps"
