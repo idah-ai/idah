@@ -1,8 +1,8 @@
 api/account_rw_all:
-  title: "API - Account Read Write (All scope)"
+  title: "API - Account Read Write"
   mask: "1.9.9"
   description: |
-    API role for read and write access to account resources.
+    Allow access to  read and write account resources.
   assignable: false
   rights:
     # Accounts

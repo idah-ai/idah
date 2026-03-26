@@ -1,0 +1,645 @@
+---
+import PageLayout from "@layouts/PageLayout.astro";
+import Pagination from "@components/app/page/Pagination.astro";
+import PageContainer from "@components/app/page/PageContainer.astro";
+import PageTitle from "@components/app/page/PageTitle.astro";
+import {
+  Box,
+  Layers,
+  Video,
+  ScanFace,
+  FileText,
+  Tags,
+  MessageCircle,
+  Mic,
+  AudioLines,
+  Activity,
+  ShoppingCart,
+  Factory,
+  Car,
+  Sprout,
+  Eye,
+  Share2,
+  Lightbulb,
+  CheckCircle,
+  ClipboardCheck,
+  Users,
+  Grip,
+  Boxes,
+  Blocks,
+} from "@lucide/astro";
+---
+
+<PageLayout>
+  <PageContainer>
+    <PageTitle>
+      <div class="rounded-xl bg-blue-50 p-3 text-blue-400 dark:bg-blue-900/20 dark:text-blue-600">
+        <Blocks class="h-9 w-9" stroke-width={2} />
+      </div>
+      Use Cases
+    </PageTitle>
+
+    <div class="prose prose-lg dark:prose-invert max-w-none">
+      <p class="mb-8 text-lg leading-relaxed text-gray-700 dark:text-gray-300">
+        IDAH is versatile and can be applied to various data annotation scenarios across different domains and
+        industries.
+      </p>
+
+      <h2
+        id="computer-vision"
+        class="mt-12 mb-8 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
+        <a href="#computer-vision" class="hover:underline">Computer Vision</a>
+      </h2>
+
+      <div class="not-prose mb-12 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div
+          class="relative overflow-hidden rounded-lg border border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 p-4 transition-shadow hover:shadow-lg dark:border-blue-800 dark:from-blue-900/20 dark:to-indigo-900/20"
+        >
+          <Box class="absolute top-2 right-2 h-24 w-24 text-blue-600/10 dark:text-blue-400/10" stroke-width="2" />
+          <h3 class="relative z-10 mb-2 text-lg font-semibold text-gray-900 dark:text-white">
+            Object Detection & Classification
+          </h3>
+          <p class="relative z-10 mb-3 text-sm text-gray-700 dark:text-gray-300">
+            Create datasets for training object detection models with bounding boxes and categories.
+          </p>
+          <div class="relative z-10 flex flex-wrap gap-2">
+            <span
+              class="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"
+              >Autonomous vehicles</span
+            >
+            <span
+              class="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"
+              >Retail analytics</span
+            >
+            <span
+              class="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"
+              >Security systems</span
+            >
+            <span
+              class="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"
+              >Wildlife monitoring</span
+            >
+          </div>
+        </div>
+
+        <div
+          class="relative overflow-hidden rounded-lg border border-purple-200 bg-gradient-to-br from-purple-50 to-pink-50 p-4 transition-shadow hover:shadow-lg dark:border-purple-800 dark:from-purple-900/20 dark:to-pink-900/20"
+        >
+          <Layers
+            class="absolute top-2 right-2 h-24 w-24 text-purple-600/10 dark:text-purple-400/10"
+            stroke-width="2"
+          />
+          <h3 class="relative z-10 mb-2 text-lg font-semibold text-gray-900 dark:text-white">Image Segmentation</h3>
+          <p class="relative z-10 mb-3 text-sm text-gray-700 dark:text-gray-300">
+            Precise pixel-level annotations using polygon tools for semantic and instance segmentation.
+          </p>
+          <div class="relative z-10 flex flex-wrap gap-2">
+            <span
+              class="rounded-full bg-purple-100 px-3 py-1 text-xs font-medium text-purple-700 dark:bg-purple-900/50 dark:text-purple-300"
+              >Medical imaging</span
+            >
+            <span
+              class="rounded-full bg-purple-100 px-3 py-1 text-xs font-medium text-purple-700 dark:bg-purple-900/50 dark:text-purple-300"
+              >Satellite imagery</span
+            >
+            <span
+              class="rounded-full bg-purple-100 px-3 py-1 text-xs font-medium text-purple-700 dark:bg-purple-900/50 dark:text-purple-300"
+              >Manufacturing QA</span
+            >
+            <span
+              class="rounded-full bg-purple-100 px-3 py-1 text-xs font-medium text-purple-700 dark:bg-purple-900/50 dark:text-purple-300"
+              >Agricultural monitoring</span
+            >
+          </div>
+        </div>
+
+        <div
+          class="relative overflow-hidden rounded-lg border border-green-200 bg-gradient-to-br from-green-50 to-teal-50 p-4 transition-shadow hover:shadow-lg dark:border-green-800 dark:from-green-900/20 dark:to-teal-900/20"
+        >
+          <Video class="absolute top-2 right-2 h-24 w-24 text-green-600/10 dark:text-green-400/10" stroke-width="2" />
+          <h3 class="relative z-10 mb-2 text-lg font-semibold text-gray-900 dark:text-white">
+            Video Annotation & Tracking
+          </h3>
+          <p class="relative z-10 mb-3 text-sm text-gray-700 dark:text-gray-300">
+            Annotate video sequences with temporal tracking of objects across frames.
+          </p>
+          <div class="relative z-10 flex flex-wrap gap-2">
+            <span
+              class="rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700 dark:bg-green-900/50 dark:text-green-300"
+              >Action recognition</span
+            >
+            <span
+              class="rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700 dark:bg-green-900/50 dark:text-green-300"
+              >Object tracking</span
+            >
+            <span
+              class="rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700 dark:bg-green-900/50 dark:text-green-300"
+              >Gesture recognition</span
+            >
+            <span
+              class="rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700 dark:bg-green-900/50 dark:text-green-300"
+              >Scene understanding</span
+            >
+          </div>
+        </div>
+
+        <div
+          class="relative overflow-hidden rounded-lg border border-orange-200 bg-gradient-to-br from-orange-50 to-red-50 p-4 transition-shadow hover:shadow-lg dark:border-orange-800 dark:from-orange-900/20 dark:to-red-900/20"
+        >
+          <ScanFace
+            class="absolute top-2 right-2 h-24 w-24 text-orange-600/10 dark:text-orange-400/10"
+            stroke-width="2"
+          />
+          <h3 class="relative z-10 mb-2 text-lg font-semibold text-gray-900 dark:text-white">
+            Facial Recognition & Analysis
+          </h3>
+          <p class="relative z-10 mb-3 text-sm text-gray-700 dark:text-gray-300">
+            Annotate faces with landmarks, attributes, and identification labels.
+          </p>
+          <div class="relative z-10 flex flex-wrap gap-2">
+            <span
+              class="rounded-full bg-orange-100 px-3 py-1 text-xs font-medium text-orange-700 dark:bg-orange-900/50 dark:text-orange-300"
+              >Face detection</span
+            >
+            <span
+              class="rounded-full bg-orange-100 px-3 py-1 text-xs font-medium text-orange-700 dark:bg-orange-900/50 dark:text-orange-300"
+              >Emotion recognition</span
+            >
+            <span
+              class="rounded-full bg-orange-100 px-3 py-1 text-xs font-medium text-orange-700 dark:bg-orange-900/50 dark:text-orange-300"
+              >Age & gender estimation</span
+            >
+            <span
+              class="rounded-full bg-orange-100 px-3 py-1 text-xs font-medium text-orange-700 dark:bg-orange-900/50 dark:text-orange-300"
+              >Landmark detection</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <h2
+        id="nlp"
+        class="mt-12 mb-8 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
+        <a href="#nlp" class="hover:underline">Natural Language Processing</a>
+      </h2>
+
+      <div class="not-prose mb-12 grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div
+          class="relative overflow-hidden rounded-lg border border-cyan-200 bg-gradient-to-br from-cyan-50 to-blue-50 p-4 transition-shadow hover:shadow-lg dark:border-cyan-800 dark:from-cyan-900/20 dark:to-blue-900/20"
+        >
+          <FileText class="absolute top-2 right-2 h-24 w-24 text-cyan-600/10 dark:text-cyan-400/10" stroke-width="2" />
+          <h3 class="relative z-10 mb-2 text-lg font-semibold text-gray-900 dark:text-white">
+            Text Classification & Tagging
+          </h3>
+          <p class="relative z-10 mb-3 text-sm text-gray-700 dark:text-gray-300">
+            Assign labels and categories to text data for various NLP tasks.
+          </p>
+          <div class="relative z-10 flex flex-wrap gap-2">
+            <span
+              class="rounded-full bg-cyan-100 px-3 py-1 text-xs font-medium text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-300"
+              >Sentiment analysis</span
+            >
+            <span
+              class="rounded-full bg-cyan-100 px-3 py-1 text-xs font-medium text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-300"
+              >Topic categorization</span
+            >
+            <span
+              class="rounded-full bg-cyan-100 px-3 py-1 text-xs font-medium text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-300"
+              >Intent detection</span
+            >
+            <span
+              class="rounded-full bg-cyan-100 px-3 py-1 text-xs font-medium text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-300"
+              >Spam detection</span
+            >
+          </div>
+        </div>
+
+        <div
+          class="relative overflow-hidden rounded-lg border border-violet-200 bg-gradient-to-br from-violet-50 to-purple-50 p-4 transition-shadow hover:shadow-lg dark:border-violet-800 dark:from-violet-900/20 dark:to-purple-900/20"
+        >
+          <Tags class="absolute top-2 right-2 h-24 w-24 text-violet-600/10 dark:text-violet-400/10" stroke-width="2" />
+          <h3 class="relative z-10 mb-2 text-lg font-semibold text-gray-900 dark:text-white">
+            Named Entity Recognition
+          </h3>
+          <p class="relative z-10 mb-3 text-sm text-gray-700 dark:text-gray-300">
+            Identify and classify named entities in text documents.
+          </p>
+          <div class="relative z-10 flex flex-wrap gap-2">
+            <span
+              class="rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700 dark:bg-violet-900/50 dark:text-violet-300"
+              >Person, organization, location</span
+            >
+            <span
+              class="rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700 dark:bg-violet-900/50 dark:text-violet-300"
+              >Structured data extraction</span
+            >
+            <span
+              class="rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700 dark:bg-violet-900/50 dark:text-violet-300"
+              >Domain-specific entities</span
+            >
+            <span
+              class="rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700 dark:bg-violet-900/50 dark:text-violet-300"
+              >Relationship extraction</span
+            >
+          </div>
+        </div>
+
+        <div
+          class="relative overflow-hidden rounded-lg border border-indigo-200 bg-gradient-to-br from-indigo-50 to-blue-50 p-4 transition-shadow hover:shadow-lg dark:border-indigo-800 dark:from-indigo-900/20 dark:to-blue-900/20"
+        >
+          <MessageCircle
+            class="absolute top-2 right-2 h-24 w-24 text-indigo-600/10 dark:text-indigo-400/10"
+            stroke-width="2"
+          />
+          <h3 class="relative z-10 mb-2 text-lg font-semibold text-gray-900 dark:text-white">Question Answering</h3>
+          <p class="relative z-10 mb-3 text-sm text-gray-700 dark:text-gray-300">
+            Build datasets for conversational AI and question-answering systems.
+          </p>
+          <div class="relative z-10 flex flex-wrap gap-2">
+            <span
+              class="rounded-full bg-indigo-100 px-3 py-1 text-xs font-medium text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300"
+              >Reading comprehension</span
+            >
+            <span
+              class="rounded-full bg-indigo-100 px-3 py-1 text-xs font-medium text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300"
+              >Conversational AI data</span
+            >
+            <span
+              class="rounded-full bg-indigo-100 px-3 py-1 text-xs font-medium text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300"
+              >FAQ creation</span
+            >
+            <span
+              class="rounded-full bg-indigo-100 px-3 py-1 text-xs font-medium text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300"
+              >Knowledge base building</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <h2
+        id="audio"
+        class="mt-12 mb-8 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
+        <a href="#audio" class="hover:underline">Audio Processing</a>
+      </h2>
+
+      <div class="not-prose mb-12 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div
+          class="relative overflow-hidden rounded-lg border border-emerald-200 bg-gradient-to-br from-emerald-50 to-green-50 p-4 transition-shadow hover:shadow-lg dark:border-emerald-800 dark:from-emerald-900/20 dark:to-green-900/20"
+        >
+          <Mic class="absolute top-2 right-2 h-24 w-24 text-emerald-600/10 dark:text-emerald-400/10" stroke-width="2" />
+          <h3 class="relative z-10 mb-1 text-lg font-semibold text-gray-900 dark:text-white">Speech Recognition</h3>
+          <p class="relative z-10 mb-2 text-sm text-gray-700 dark:text-gray-300">
+            Create transcription datasets and train automatic speech recognition systems.
+          </p>
+          <div class="relative z-10 flex flex-wrap gap-2">
+            <span
+              class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300"
+              >ASR transcription datasets</span
+            >
+            <span
+              class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300"
+              >Speaker identification</span
+            >
+            <span
+              class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300"
+              >Voice commands</span
+            >
+            <span
+              class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300"
+              >Multilingual speech</span
+            >
+          </div>
+        </div>
+
+        <div
+          class="relative overflow-hidden rounded-lg border border-teal-200 bg-gradient-to-br from-teal-50 to-cyan-50 p-4 transition-shadow hover:shadow-lg dark:border-teal-800 dark:from-teal-900/20 dark:to-cyan-900/20"
+        >
+          <AudioLines
+            class="absolute top-2 right-2 h-24 w-24 text-teal-600/10 dark:text-teal-400/10"
+            stroke-width="2"
+          />
+          <h3 class="relative z-10 mb-1 text-lg font-semibold text-gray-900 dark:text-white">Audio Classification</h3>
+          <p class="relative z-10 mb-2 text-sm text-gray-700 dark:text-gray-300">
+            Classify and categorize audio samples for various audio ML applications.
+          </p>
+          <div class="relative z-10 flex flex-wrap gap-2">
+            <span
+              class="rounded-full bg-teal-100 px-3 py-1 text-xs font-medium text-teal-700 dark:bg-teal-900/50 dark:text-teal-300"
+              >Sound event detection</span
+            >
+            <span
+              class="rounded-full bg-teal-100 px-3 py-1 text-xs font-medium text-teal-700 dark:bg-teal-900/50 dark:text-teal-300"
+              >Music genre classification</span
+            >
+            <span
+              class="rounded-full bg-teal-100 px-3 py-1 text-xs font-medium text-teal-700 dark:bg-teal-900/50 dark:text-teal-300"
+              >Audio quality assessment</span
+            >
+            <span
+              class="rounded-full bg-teal-100 px-3 py-1 text-xs font-medium text-teal-700 dark:bg-teal-900/50 dark:text-teal-300"
+              >Acoustic scene classification</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <h2
+        id="specialized"
+        class="mt-12 mb-8 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
+        <a href="#specialized" class="hover:underline">Specialized Applications</a>
+      </h2>
+
+      <div class="not-prose mb-12 grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div
+          class="relative overflow-hidden rounded-lg border border-red-200 bg-gradient-to-br from-red-50 to-pink-50 p-4 transition-shadow hover:shadow-lg dark:border-red-800 dark:from-red-900/20 dark:to-pink-900/20"
+        >
+          <Activity class="absolute top-2 right-2 h-24 w-24 text-red-600/10 dark:text-red-400/10" stroke-width="2" />
+          <h3 class="relative z-10 mb-1 text-lg font-semibold text-gray-900 dark:text-white">Medical Imaging</h3>
+          <p class="relative z-10 mb-2 text-sm text-gray-700 dark:text-gray-300">
+            Annotate medical images for diagnostic assistance and research.
+          </p>
+          <div class="relative z-10 flex flex-wrap gap-2">
+            <span
+              class="rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-700 dark:bg-red-900/50 dark:text-red-300"
+              >DICOM image annotation</span
+            >
+            <span
+              class="rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-700 dark:bg-red-900/50 dark:text-red-300"
+              >CT & MRI scan analysis</span
+            >
+            <span
+              class="rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-700 dark:bg-red-900/50 dark:text-red-300"
+              >X-ray classification</span
+            >
+            <span
+              class="rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-700 dark:bg-red-900/50 dark:text-red-300"
+              >Pathology slides</span
+            >
+          </div>
+        </div>
+
+        <div
+          class="relative overflow-hidden rounded-lg border border-sky-200 bg-gradient-to-br from-sky-50 to-blue-50 p-4 transition-shadow hover:shadow-lg dark:border-sky-800 dark:from-sky-900/20 dark:to-blue-900/20"
+        >
+          <Grip class="absolute top-2 right-2 h-24 w-24 text-sky-600/10 dark:text-sky-400/10" stroke-width="2" />
+          <h3 class="relative z-10 mb-1 text-lg font-semibold text-gray-900 dark:text-white">3D Point Clouds</h3>
+          <p class="relative z-10 mb-2 text-sm text-gray-700 dark:text-gray-300">
+            Annotate 3D point cloud data from LiDAR and depth sensors.
+          </p>
+          <div class="relative z-10 flex flex-wrap gap-2">
+            <span
+              class="rounded-full bg-sky-100 px-3 py-1 text-xs font-medium text-sky-700 dark:bg-sky-900/50 dark:text-sky-300"
+              >LiDAR data annotation</span
+            >
+            <span
+              class="rounded-full bg-sky-100 px-3 py-1 text-xs font-medium text-sky-700 dark:bg-sky-900/50 dark:text-sky-300"
+              >3D object detection</span
+            >
+            <span
+              class="rounded-full bg-sky-100 px-3 py-1 text-xs font-medium text-sky-700 dark:bg-sky-900/50 dark:text-sky-300"
+              >Autonomous driving scenes</span
+            >
+            <span
+              class="rounded-full bg-sky-100 px-3 py-1 text-xs font-medium text-sky-700 dark:bg-sky-900/50 dark:text-sky-300"
+              >Robotics perception</span
+            >
+          </div>
+        </div>
+
+        <div
+          class="relative overflow-hidden rounded-lg border border-slate-200 bg-gradient-to-br from-slate-50 to-gray-50 p-4 transition-shadow hover:shadow-lg dark:border-slate-800 dark:from-slate-900/20 dark:to-gray-900/20"
+        >
+          <Boxes class="absolute top-2 right-2 h-24 w-24 text-slate-600/10 dark:text-slate-400/10" stroke-width="2" />
+          <h3 class="relative z-10 mb-1 text-lg font-semibold text-gray-900 dark:text-white">Custom Modalities</h3>
+          <p class="relative z-10 mb-2 text-sm text-gray-700 dark:text-gray-300">
+            Extend IDAH with plugins for specialized data types.
+          </p>
+          <div class="relative z-10 flex flex-wrap gap-2">
+            <span
+              class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:bg-slate-900/50 dark:text-slate-300"
+              >IoT sensor data</span
+            >
+            <span
+              class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:bg-slate-900/50 dark:text-slate-300"
+              >Geospatial data</span
+            >
+            <span
+              class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:bg-slate-900/50 dark:text-slate-300"
+              >Scientific data</span
+            >
+            <span
+              class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:bg-slate-900/50 dark:text-slate-300"
+              >Time series data</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <h2
+        id="industry-applications"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
+        <a href="#industry-applications" class="hover:underline">Industry Applications</a>
+      </h2>
+
+      <div class="not-prose mb-8 grid grid-cols-1 gap-4 space-y-4 md:grid-cols-2 lg:grid-cols-3">
+        <div class="h-full rounded-r border-l-4 border-blue-500 bg-gray-50 py-3 pl-4 dark:bg-gray-800">
+          <div class="flex items-start gap-3">
+            <Activity class="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600 dark:text-blue-400" stroke-width={2} />
+            <div class="flex-1">
+              <h4 class="mb-2 font-semibold text-gray-900 dark:text-white">Healthcare</h4>
+              <p class="text-sm text-gray-700 dark:text-gray-300">
+                Medical image analysis, diagnosis assistance, treatment planning, and clinical research datasets.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="h-full rounded-r border-l-4 border-green-500 bg-gray-50 py-3 pl-4 dark:bg-gray-800">
+          <div class="flex items-start gap-3">
+            <Car class="mt-0.5 h-5 w-5 flex-shrink-0 text-green-600 dark:text-green-400" stroke-width={2} />
+            <div class="flex-1">
+              <h4 class="mb-2 font-semibold text-gray-900 dark:text-white">Autonomous Vehicles</h4>
+              <p class="text-sm text-gray-700 dark:text-gray-300">
+                Self-driving perception, road scene understanding, object detection, and lane & traffic sign
+                recognition.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="h-full rounded-r border-l-4 border-purple-500 bg-gray-50 py-3 pl-4 dark:bg-gray-800">
+          <div class="flex items-start gap-3">
+            <Factory class="mt-0.5 h-5 w-5 flex-shrink-0 text-purple-600 dark:text-purple-400" stroke-width={2} />
+            <div class="flex-1">
+              <h4 class="mb-2 font-semibold text-gray-900 dark:text-white">Manufacturing</h4>
+              <p class="text-sm text-gray-700 dark:text-gray-300">
+                Quality control, defect detection, visual inspection, and production line monitoring.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="h-full rounded-r border-l-4 border-orange-500 bg-gray-50 py-3 pl-4 dark:bg-gray-800">
+          <div class="flex items-start gap-3">
+            <ShoppingCart class="mt-0.5 h-5 w-5 flex-shrink-0 text-orange-600 dark:text-orange-400" stroke-width={2} />
+            <div class="flex-1">
+              <h4 class="mb-2 font-semibold text-gray-900 dark:text-white">Retail & E-commerce</h4>
+              <p class="text-sm text-gray-700 dark:text-gray-300">
+                Product categorization, visual search, inventory management, and customer behavior analysis.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="h-full rounded-r border-l-4 border-lime-500 bg-gray-50 py-3 pl-4 dark:bg-gray-800">
+          <div class="flex items-start gap-3">
+            <Sprout class="mt-0.5 h-5 w-5 flex-shrink-0 text-lime-600 dark:text-lime-400" stroke-width={2} />
+            <div class="flex-1">
+              <h4 class="mb-2 font-semibold text-gray-900 dark:text-white">Agriculture</h4>
+              <p class="text-sm text-gray-700 dark:text-gray-300">
+                Crop monitoring, disease detection, yield prediction, and precision farming applications.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="h-full rounded-r border-l-4 border-yellow-500 bg-gray-50 py-3 pl-4 dark:bg-gray-800">
+          <div class="flex items-start gap-3">
+            <Eye class="mt-0.5 h-5 w-5 flex-shrink-0 text-yellow-600 dark:text-yellow-400" stroke-width={2} />
+            <div class="flex-1">
+              <h4 class="mb-2 font-semibold text-gray-900 dark:text-white">Security & Surveillance</h4>
+              <p class="text-sm text-gray-700 dark:text-gray-300">
+                Person detection, behavior analysis, threat detection, and real-time monitoring systems.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="h-full rounded-r border-l-4 border-pink-500 bg-gray-50 py-3 pl-4 dark:bg-gray-800">
+          <div class="flex items-start gap-3">
+            <Share2 class="mt-0.5 h-5 w-5 flex-shrink-0 text-pink-600 dark:text-pink-400" stroke-width={2} />
+            <div class="flex-1">
+              <h4 class="mb-2 font-semibold text-gray-900 dark:text-white">Social Media</h4>
+              <p class="text-sm text-gray-700 dark:text-gray-300">
+                Content moderation, sentiment analysis, image tagging, and user-generated content classification.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="h-full rounded-r border-l-4 border-indigo-500 bg-gray-50 py-3 pl-4 dark:bg-gray-800">
+          <div class="flex items-start gap-3">
+            <Lightbulb class="mt-0.5 h-5 w-5 flex-shrink-0 text-indigo-600 dark:text-indigo-400" stroke-width={2} />
+            <div class="flex-1">
+              <h4 class="mb-2 font-semibold text-gray-900 dark:text-white">Research</h4>
+              <p class="text-sm text-gray-700 dark:text-gray-300">
+                Academic research datasets, annotation studies, ML model validation, and experimental data collection.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h2
+        id="workflow-scenarios"
+        class="mt-12 mb-8 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
+        <a href="#workflow-scenarios" class="hover:underline">Common Workflow Scenarios</a>
+      </h2>
+
+      <div class="not-prose mb-12 grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div
+          class="rounded-xl border-2 border-gray-200 bg-white p-6 transition-colors hover:border-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-blue-500"
+        >
+          <div class="mb-4 flex items-center gap-3">
+            <div class="rounded-lg bg-blue-100 p-3 dark:bg-blue-900">
+              <CheckCircle class="h-8 w-8 text-blue-600 dark:text-blue-400" stroke-width={2} />
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Simple Classification</h3>
+          </div>
+          <p class="mb-3 text-sm text-gray-600 dark:text-gray-400">Single annotator workflow for quick tasks</p>
+          <ol class="space-y-2 text-sm text-gray-700 dark:text-gray-300">
+            <li class="flex gap-2">
+              <span class="font-semibold text-blue-600 dark:text-blue-400">1.</span> Upload dataset entries
+            </li>
+            <li class="flex gap-2">
+              <span class="font-semibold text-blue-600 dark:text-blue-400">2.</span> Assign labels
+            </li>
+            <li class="flex gap-2">
+              <span class="font-semibold text-blue-600 dark:text-blue-400">3.</span> Export dataset
+            </li>
+          </ol>
+        </div>
+
+        <div
+          class="rounded-xl border-2 border-gray-200 bg-white p-6 transition-colors hover:border-purple-500 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-purple-500"
+        >
+          <div class="mb-4 flex items-center gap-3">
+            <div class="rounded-lg bg-purple-100 p-3 dark:bg-purple-900">
+              <ClipboardCheck class="h-8 w-8 text-purple-600 dark:text-purple-400" stroke-width={2} />
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Multi-Stage Review</h3>
+          </div>
+          <p class="mb-3 text-sm text-gray-600 dark:text-gray-400">Quality-controlled workflow</p>
+          <ol class="space-y-2 text-sm text-gray-700 dark:text-gray-300">
+            <li class="flex gap-2">
+              <span class="font-semibold text-purple-600 dark:text-purple-400">1.</span> Annotators create
+            </li>
+            <li class="flex gap-2">
+              <span class="font-semibold text-purple-600 dark:text-purple-400">2.</span> Reviewers validate
+            </li>
+            <li class="flex gap-2">
+              <span class="font-semibold text-purple-600 dark:text-purple-400">3.</span> Rework if rejected
+            </li>
+            <li class="flex gap-2">
+              <span class="font-semibold text-purple-600 dark:text-purple-400">4.</span> Approve to final
+            </li>
+          </ol>
+        </div>
+
+        <div
+          class="rounded-xl border-2 border-gray-200 bg-white p-6 transition-colors hover:border-green-500 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-green-500"
+        >
+          <div class="mb-4 flex items-center gap-3">
+            <div class="rounded-lg bg-green-100 p-3 dark:bg-green-900">
+              <Users class="h-8 w-8 text-green-600 dark:text-green-400" stroke-width={2} />
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Team Collaboration</h3>
+          </div>
+          <p class="mb-3 text-sm text-gray-600 dark:text-gray-400">Distributed annotation workflow</p>
+          <ol class="space-y-2 text-sm text-gray-700 dark:text-gray-300">
+            <li class="flex gap-2">
+              <span class="font-semibold text-green-600 dark:text-green-400">1.</span> Manager assigns tasks
+            </li>
+            <li class="flex gap-2">
+              <span class="font-semibold text-green-600 dark:text-green-400">2.</span> Team annotates
+            </li>
+            <li class="flex gap-2">
+              <span class="font-semibold text-green-600 dark:text-green-400">3.</span> Track progress
+            </li>
+            <li class="flex gap-2">
+              <span class="font-semibold text-green-600 dark:text-green-400">4.</span> Export in batches
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <div
+        class="not-prose mb-6 rounded-lg border-l-4 border-blue-500 bg-gradient-to-r from-blue-50 to-purple-50 p-6 dark:from-blue-900/20 dark:to-purple-900/20"
+      >
+        <p class="text-lg leading-relaxed font-medium text-gray-800 dark:text-gray-200">
+          🚀 Ready to start annotating? Check out the <a
+            href="/install/"
+            class="font-semibold text-blue-600 hover:underline dark:text-blue-400">Installation Guide</a
+          > to set up IDAH for your project.
+        </p>
+      </div>
+    </div>
+  </PageContainer>
+  <Pagination />
+</PageLayout>

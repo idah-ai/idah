@@ -1,0 +1,54 @@
+---
+import Logo from "@components/app/brands/Logo.astro";
+
+import { Separator } from "$lib/components/ui/separator";
+import { Button } from "$lib/components/ui/button";
+import SidebarToggleButton from "$lib/app/button/sidebar-toggle-button.svelte";
+import SearchBar from "$lib/app/bar/search-bar.svelte";
+import { Download } from "@lucide/astro";
+import ModeSwitcher from "./app/switchers/ModeSwitcher.astro";
+import SearchIconButton from "$lib/app/button/search-icon-button.svelte";
+---
+
+<header
+  id="header"
+  class="fixed top-0 left-0 z-50 h-16 w-full border-b bg-white px-4 shadow-md dark:bg-gray-950"
+  style="border-bottom-color: #2391ea33;"
+>
+  <div class="mx-auto flex h-full w-full items-center gap-3">
+    <!-- left -->
+    <a href="/" class="transition-opacity hover:opacity-80">
+      <div class="flex shrink-0 items-center">
+        <Logo id="header-logo" />
+
+        <Separator orientation="vertical" class="mx-3 ml-3 h-6 bg-blue-200 dark:bg-blue-700" />
+        <div
+          class="text-lg font-bold sm:block"
+          style="background: linear-gradient(to right, #2391ea, #1e7ac9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"
+        >
+          Docs
+        </div>
+      </div>
+    </a>
+
+    <SearchBar client:load />
+
+    <!-- right -->
+    <div class="ml-auto flex shrink-0 items-center gap-3">
+      <SearchIconButton client:load />
+
+      <ModeSwitcher />
+
+      <Button
+        href="/install/"
+        class="flex border-0 font-semibold text-white shadow-lg transition-all duration-200 hover:scale-105 hover:shadow-xl"
+        style="background: linear-gradient(to right, #2391ea, #1e7ac9);"
+      >
+        <Download class="h-4 w-4" stroke-width={2} />
+        Install IDAH
+      </Button>
+
+      <SidebarToggleButton client:load />
+    </div>
+  </div>
+</header>

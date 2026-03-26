@@ -1,8 +1,8 @@
 api/project_ro_org:
-  title: "API - Project Read Only (Org Scope)"
+  title: "API - Project Read Only"
   mask: "8.0.0"
   description: |
-    API role for read-only access to project resources within organization scope.
+    Allow access to read project resources with scope.
   assignable: false
   rights:
     # Dataset Service - Read Only (Project level)
