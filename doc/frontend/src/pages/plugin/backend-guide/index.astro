@@ -145,9 +145,7 @@ import { Server } from "@lucide/svelte";
       <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
         All backend code should have comprehensive tests:
       </p>
-      <CodeBlock language="ruby" path="media/processor_spec.rb"
-        >{
-          `require "spec_helper"
+      <CodeBlock language="ruby" path="media/processor_spec.rb" code={`require "spec_helper"
 require_relative "processor"
 
 RSpec.describe YourPlugin::Processor do
@@ -164,16 +162,12 @@ RSpec.describe YourPlugin::Processor do
       expect { processor.process(context) }.not_to raise_error
     end
   end
-end`
-        }</CodeBlock
-      >
+end`}></CodeBlock>
 
       <h3 id="running-tests" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#running-tests" class="hover:underline">Running Tests</a>
       </h3>
-      <CodeBlock language="bash"
-        >bundle exec rspec bundle exec rspec media/processor_spec.rb bundle exec rspec --format documentation</CodeBlock
-      >
+      <CodeBlock language="bash" code="bundle exec rspec bundle exec rspec media/processor_spec.rb bundle exec rspec --format documentation" />
 
       <h2
         id="best-practices"
@@ -200,9 +194,7 @@ end`
       <h3 id="error-handling" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#error-handling" class="hover:underline">2. Error Handling</a>
       </h3>
-      <CodeBlock language="ruby"
-        >{
-          `def process(context)
+      <CodeBlock language="ruby"code={`def process(context)
   raise ArgumentError, "Input file required" unless context.input_file
 
   begin
@@ -211,22 +203,17 @@ end`
     Verse.logger.error("Processing failed: #{e.message}")
     raise
   end
-end`
-        }</CodeBlock
+end`}></CodeBlock
       >
 
       <h3 id="logging" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#logging" class="hover:underline">3. Logging</a>
       </h3>
-      <CodeBlock language="ruby"
-        >{
-          `def process(context)
+      <CodeBlock language="ruby" code={`def process(context)
   Verse.logger.info("Starting processing for #{context.input_file}")
   # ... processing
   Verse.logger.info("Processing complete")
-end`
-        }</CodeBlock
-      >
+end`}></CodeBlock>
 
       <h3 id="performance" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#performance" class="hover:underline">4. Performance</a>
@@ -257,21 +244,18 @@ end`
       <h3 id="enable-debug-logging" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#enable-debug-logging" class="hover:underline">Enable Debug Logging</a>
       </h3>
-      <CodeBlock language="ruby">{`Verse.logger.level = Logger::DEBUG`}</CodeBlock>
+      <CodeBlock language="ruby" code="Verse.logger.level = Logger::DEBUG" />
 
       <h3 id="use-pry" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#use-pry" class="hover:underline">Use Pry for Debugging</a>
       </h3>
-      <CodeBlock language="ruby"
-        >{
-          `require "pry"
+      <CodeBlock language="ruby" code={`require "pry"
 
 def process(context)
   binding.pry  # Debugger breakpoint
   # ... rest of code
 end`
-        }</CodeBlock
-      >
+        }></CodeBlock>
 
       <h2
         id="common-patterns"
@@ -283,9 +267,7 @@ end`
       <h3 id="media-processing-pipeline" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#media-processing-pipeline" class="hover:underline">Media Processing Pipeline</a>
       </h3>
-      <CodeBlock language="ruby"
-        >{
-          `def process(context)
+      <CodeBlock language="ruby" code={`def process(context)
   validate_input(context.input_file)
 
   temp_file = create_temp_file
@@ -296,24 +278,19 @@ end`
   ensure
     cleanup(temp_file)
   end
-end`
-        }</CodeBlock
+end`}></CodeBlock
       >
 
       <h3 id="batch-export" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#batch-export" class="hover:underline">Batch Export</a>
       </h3>
-      <CodeBlock language="ruby"
-        >{
-          `def export(context)
+      <CodeBlock language="ruby" code={`def export(context)
   entries = fetch_entries(context.dataset)
 
   entries.each_slice(100) do |batch|
     export_batch(batch)
   end
-end`
-        }</CodeBlock
-      >
+end`}></CodeBlock>
 
       <h2
         id="next-steps"
