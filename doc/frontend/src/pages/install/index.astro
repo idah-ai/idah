@@ -114,9 +114,12 @@ import { Package, Container, GitBranch, Download } from "@lucide/astro";
       <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
         Check that all required tools are properly installed:
       </p>
-      <CodeBlock language="bash" code={`docker --version
+      <CodeBlock
+        language="bash"
+        code={`docker --version
 docker compose version
-git --version`} ></CodeBlock>
+git --version`}
+      />
 
       <h2
         id="clone-repository"
@@ -131,8 +134,11 @@ git --version`} ></CodeBlock>
       <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
         Clone the IDAH repository to your local machine:
       </p>
-      <CodeBlock language="bash" code={`git clone
-cd idah`}></CodeBlock>
+      <CodeBlock
+        language="bash"
+        code={`git clone
+cd idah`}
+      />
 
       <h3 id="navigate-directory" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#navigate-directory" class="hover:underline">2. Navigate to Project Directory</a>
@@ -140,8 +146,11 @@ cd idah`}></CodeBlock>
       <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
         You should now be in the IDAH project directory:
       </p>
-      <CodeBlock language="bash" code={`pwd
-ls -la`} />
+      <CodeBlock
+        language="bash"
+        code={`pwd
+ls -la`}
+      />
 
       <div
         class="mb-6 rounded-lg border-l-4 border-blue-500 bg-gradient-to-r from-blue-50 to-purple-50 p-6 dark:from-blue-900/20 dark:to-purple-900/20"

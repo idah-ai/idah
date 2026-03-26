@@ -118,7 +118,10 @@ import { Download } from "@lucide/svelte";
       <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
         The sync module registers your exporter with IDAH:
       </p>
-      <CodeBlock language="ruby" path="backends/sync/<plugin_name_underscore>/sync.rb" code={`module YourPlugin
+      <CodeBlock
+        language="ruby"
+        path="backends/sync/<plugin_name_underscore>/sync.rb"
+        code={`module YourPlugin
   class Sync
     def self.init(context)
       context.register_exports(
@@ -127,7 +130,8 @@ import { Download } from "@lucide/svelte";
       )
     end
   end
-end`}></CodeBlock>
+end`}
+      />
 
       <h3 id="step-2-implement-export" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#step-2-implement-export" class="hover:underline">Step 2: Implement the Export Logic</a>
@@ -135,7 +139,10 @@ end`}></CodeBlock>
       <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
         Implement the core export logic in your export class:
       </p>
-      <CodeBlock language="ruby" path="backends/sync/<plugin_name_underscore>/export.rb" code={`module YourPlugin
+      <CodeBlock
+        language="ruby"
+        path="backends/sync/<plugin_name_underscore>/export.rb"
+        code={`module YourPlugin
   class Export
     def export(context)
       # Get dataset IDs being exported
@@ -179,7 +186,8 @@ end`}></CodeBlock>
       end
     end
   end
-end`}></CodeBlock>
+end`}
+      />
 
       <h2
         id="export-context-api"
@@ -191,14 +199,19 @@ end`}></CodeBlock>
       <h3 id="context-attributes" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#context-attributes" class="hover:underline">Context Attributes</a>
       </h3>
-      <CodeBlock language="ruby" code={`context.dataset_ids   # Array of dataset IDs
+      <CodeBlock
+        language="ruby"
+        code={`context.dataset_ids   # Array of dataset IDs
 context.options       # Export options hash
-context.io            # IO context for file operations`} />
+context.io            # IO context for file operations`}
+      />
 
       <h3 id="iterate-datasets" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#iterate-datasets" class="hover:underline">Iterate Through Datasets</a>
       </h3>
-      <CodeBlock language="ruby" code={`context.datasets.each do |dataset|
+      <CodeBlock
+        language="ruby"
+        code={`context.datasets.each do |dataset|
   # Access dataset data
   dataset_data = dataset.record
   dataset_id = dataset.record.id
@@ -209,7 +222,8 @@ context.io            # IO context for file operations`} />
 
   # Get filtered entries
   completed_entries = dataset.entries({ status: "completed" })
-end`}></CodeBlock>
+end`}
+      />
       <p class="mb-6 text-sm leading-relaxed text-gray-700 dark:text-gray-300">
         <strong class="font-semibold">Note:</strong> Progress is automatically updated as you iterate through datasets.
       </p>
@@ -217,7 +231,9 @@ end`}></CodeBlock>
       <h3 id="access-entries" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#access-entries" class="hover:underline">Access Entries and Annotations</a>
       </h3>
-      <CodeBlock language="ruby" code={`dataset.entries.each do |entry|
+      <CodeBlock
+        language="ruby"
+        code={`dataset.entries.each do |entry|
   # Access entry data
   entry_id = entry.record.id
   resource = entry.record.resource
@@ -232,12 +248,15 @@ end`}></CodeBlock>
   # Get media files
   medias = entry.medias
   original = entry.medias({ key: "" }).first
-end`}></CodeBlock>
+end`}
+      />
 
       <h3 id="download-media" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#download-media" class="hover:underline">Download Media Files</a>
       </h3>
-      <CodeBlock language="ruby" code={`entry.medias.each do |media|
+      <CodeBlock
+        language="ruby"
+        code={`entry.medias.each do |media|
   filename = media.media.filename
   mime_type = media.media.mime_type
 
@@ -246,18 +265,22 @@ end`}></CodeBlock>
 
   # Save to export directory
   File.write(File.join(dir, filename), binary_data)
-end`}></CodeBlock>
+end`}
+      />
 
       <h3 id="io-operations" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#io-operations" class="hover:underline">IO Operations</a>
       </h3>
-      <CodeBlock language="ruby" code={`file = context.io.file(format: "json")
+      <CodeBlock
+        language="ruby"
+        code={`file = context.io.file(format: "json")
 File.write(file.path, data.to_json)
 
 dir = context.io.directory
 File.write(File.join(dir, "data.json"), data.to_json)
 
-zip_path = context.io.zip_directory`}></CodeBlock>
+zip_path = context.io.zip_directory`}
+      />
 
       <h2
         id="workflow"
@@ -287,7 +310,10 @@ zip_path = context.io.zip_directory`}></CodeBlock>
           >backends/sync/&lt;plugin_name&gt;/export.rb</code
         >:
       </p>
-      <CodeBlock language="ruby" path="backends/sync/<plugin_name_underscore>/export.rb" code={`require "json"
+      <CodeBlock
+        language="ruby"
+        path="backends/sync/<plugin_name_underscore>/export.rb"
+        code={`require "json"
 
 module YourPlugin
   class Export
@@ -343,12 +369,16 @@ module YourPlugin
       }
     end
   end
-end`}></CodeBlock>
+end`}
+      />
 
       <h3 id="workflow-step-4" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#workflow-step-4" class="hover:underline">4. Write Tests</a>
       </h3>
-      <CodeBlock language="ruby" path="backends/sync/<plugin_name_underscore>/export_spec.rb" code={`require "spec_helper"
+      <CodeBlock
+        language="ruby"
+        path="backends/sync/<plugin_name_underscore>/export_spec.rb"
+        code={`require "spec_helper"
 require_relative "export"
 
 RSpec.describe YourPlugin::Export do
@@ -370,7 +400,8 @@ RSpec.describe YourPlugin::Export do
       expect { export.export(context) }.not_to raise_error
     end
   end
-end`}></CodeBlock>
+end`}
+      />
 
       <h3 id="workflow-step-5" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#workflow-step-5" class="hover:underline">5. Run Tests</a>
@@ -387,7 +418,9 @@ end`}></CodeBlock>
       <h3 id="dataset-context" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#dataset-context" class="hover:underline">DatasetContext</a>
       </h3>
-      <CodeBlock language="ruby" code={`context.datasets.each do |dataset|
+      <CodeBlock
+        language="ruby"
+        code={`context.datasets.each do |dataset|
   # Access dataset record
   dataset.record.id
   dataset.record.name
@@ -398,12 +431,15 @@ end`}></CodeBlock>
 
   # Get filtered entries
   entries = dataset.entries({ status: "completed" })
-end`}></CodeBlock>
+end`}
+      />
 
       <h3 id="entry-context" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#entry-context" class="hover:underline">EntryContext</a>
       </h3>
-      <CodeBlock language="ruby" code={`dataset.entries.each do |entry|
+      <CodeBlock
+        language="ruby"
+        code={`dataset.entries.each do |entry|
   # Access entry record
   entry.record.id
   entry.record.resource
@@ -416,22 +452,28 @@ end`}></CodeBlock>
   # Get media files
   medias = entry.medias
   original = entry.medias({ key: "" }).first
-end`}></CodeBlock>
+end`}
+      />
 
       <h3 id="annotation-context" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#annotation-context" class="hover:underline">AnnotationContext</a>
       </h3>
-      <CodeBlock language="ruby" code={`entry.annotations.each do |annotation|
+      <CodeBlock
+        language="ruby"
+        code={`entry.annotations.each do |annotation|
   annotation.record.id
   annotation.record.dimensions
   annotation.record.annotation
   annotation.record.metadata
-end`}></CodeBlock>
+end`}
+      />
 
       <h3 id="media-context" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#media-context" class="hover:underline">MediaContext</a>
       </h3>
-      <CodeBlock language="ruby" code={`entry.medias.each do |media|
+      <CodeBlock
+        language="ruby"
+        code={`entry.medias.each do |media|
   media.media.resource
   media.media.key
   media.media.filename
@@ -440,7 +482,8 @@ end`}></CodeBlock>
   # Download the file
   binary_data = media.download
   File.write(media.media.filename, binary_data)
-end`}></CodeBlock>
+end`}
+      />
 
       <h2
         id="export-patterns"
@@ -452,7 +495,9 @@ end`}></CodeBlock>
       <h3 id="single-json-file" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#single-json-file" class="hover:underline">Export to Single JSON File</a>
       </h3>
-      <CodeBlock language="ruby" code={`def export(context)
+      <CodeBlock
+        language="ruby"
+        code={`def export(context)
   file = context.io.file(format: "json")
 
   all_data = []
@@ -464,12 +509,15 @@ end`}></CodeBlock>
   end
 
   File.write(file.path, JSON.pretty_generate(all_data))
-end`} />
+end`}
+      />
 
       <h3 id="multiple-files" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#multiple-files" class="hover:underline">Export to Multiple Files</a>
       </h3>
-      <CodeBlock language="ruby" code={`def export(context)
+      <CodeBlock
+        language="ruby"
+        code={`def export(context)
   dir = context.io.directory
 
   context.datasets.each_with_index do |dataset, idx|
@@ -485,12 +533,15 @@ end`} />
   # Zip everything
   zip_path = context.io.zip_directory
   Verse.logger.info "Export zipped to #{zip_path}"
-end`} />
+end`}
+      />
 
       <h3 id="export-to-api" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#export-to-api" class="hover:underline">Export to External API</a>
       </h3>
-      <CodeBlock language="ruby" code={`require "net/http"
+      <CodeBlock
+        language="ruby"
+        code={`require "net/http"
 require "json"
 
 def export(context)
@@ -514,12 +565,15 @@ def send_to_api(data, url, api_key)
     response = http.request(req)
     raise "API error: #{response.code}" unless response.is_a?(Net::HTTPSuccess)
   end
-end`} />
+end`}
+      />
 
       <h3 id="export-with-media" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#export-with-media" class="hover:underline">Export with Media Files</a>
       </h3>
-      <CodeBlock language="ruby" code={`def export(context)
+      <CodeBlock
+        language="ruby"
+        code={`def export(context)
   dir = context.io.directory
 
   # Create media directory
@@ -542,7 +596,8 @@ end`} />
 
   # Zip everything
   context.io.zip_directory
-end`} />
+end`}
+      />
 
       <h2
         id="best-practices"
@@ -554,7 +609,9 @@ end`} />
       <h3 id="handle-large-datasets" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#handle-large-datasets" class="hover:underline">1. Handle Large Datasets</a>
       </h3>
-      <CodeBlock language="ruby" code={`def export(context)
+      <CodeBlock
+        language="ruby"
+        code={`def export(context)
   file = context.io.file(format: "json")
 
   # Stream data to avoid memory issues
@@ -568,12 +625,15 @@ end`} />
 
     f.write("]")
   end
-end`} />
+end`}
+      />
 
       <h3 id="error-handling-best" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#error-handling-best" class="hover:underline">2. Handle Errors Gracefully</a>
       </h3>
-      <CodeBlock language="ruby" code={`def export(context)
+      <CodeBlock
+        language="ruby"
+        code={`def export(context)
   context.datasets.each do |dataset|
     begin
       export_dataset(dataset)
@@ -582,22 +642,28 @@ end`} />
       # Continue or fail based on your requirements
     end
   end
-end`} />
+end`}
+      />
 
       <h3 id="validate-options" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#validate-options" class="hover:underline">3. Validate Options</a>
       </h3>
-      <CodeBlock language="ruby" code={`def export(context)
+      <CodeBlock
+        language="ruby"
+        code={`def export(context)
   raise ArgumentError, "API key required" unless context.options[:api_key]
   raise ArgumentError, "No datasets to export" if context.dataset_ids.empty?
 
   # Proceed with export
-end`} />
+end`}
+      />
 
       <h3 id="cleanup-resources" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#cleanup-resources" class="hover:underline">4. Clean Up Resources</a>
       </h3>
-      <CodeBlock language="ruby" code={`def export(context)
+      <CodeBlock
+        language="ruby"
+        code={`def export(context)
   temp_files = []
 
   begin
@@ -609,7 +675,8 @@ end`} />
     temp_files.each { |f| File.unlink(f) if File.exist?(f) }
     context.io.cleanup
   end
-end`} />
+end`}
+      />
 
       <h2
         id="testing-sync-backend"
@@ -621,8 +688,11 @@ end`} />
       <h3 id="run-tests" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#run-tests" class="hover:underline">Run Tests</a>
       </h3>
-      <CodeBlock language="bash" code={`bundle exec rspec backends/sync/
-bundle exec rspec backends/sync/<plugin_name>/export_spec.rb`} />
+      <CodeBlock
+        language="bash"
+        code={`bundle exec rspec backends/sync/
+bundle exec rspec backends/sync/<plugin_name>/export_spec.rb`}
+      />
 
       <h3 id="test-in-idah" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#test-in-idah" class="hover:underline">Test in IDAH Platform</a>

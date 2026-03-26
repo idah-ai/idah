@@ -141,16 +141,18 @@ import { HardDrive } from "@lucide/astro";
       <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
         In development, IDAH uses local file system storage by default:
       </p>
-      <CodeBlock language="yaml" path="app/media/config/config.development.yml" code={`plugins:
+      <CodeBlock
+        language="yaml"
+        path="app/media/config/config.development.yml"
+        code={`plugins:
   - name: shrine
     config:
       storages:
         - name: default
           adapter: file_system
           config:
-            path: tmp/storage/development`
-        }></CodeBlock
-      >
+            path: tmp/storage/development`}
+      />
       <p class="mb-6 text-sm leading-relaxed text-gray-700 dark:text-gray-300">
         Files are stored in the <code
           class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
@@ -166,7 +168,10 @@ import { HardDrive } from "@lucide/astro";
       </p>
 
       <h4 class="mt-6 mb-3 text-xl font-semibold text-gray-800 dark:text-gray-200">Media Service Storage</h4>
-      <CodeBlock language="yaml" path="app/media/config/config.yml" code={`plugins:
+      <CodeBlock
+        language="yaml"
+        path="app/media/config/config.yml"
+        code={`plugins:
   - name: shrine
     config:
       storages:
@@ -179,12 +184,14 @@ import { HardDrive } from "@lucide/astro";
             public: false
             region: <%= ENV.fetch("MEDIAS_FILES_REGION") %>
             prefix: files
-            endpoint: <%= ENV.fetch("MEDIAS_FILES_ENDPOINT") %>`
-        }></CodeBlock
-      >
+            endpoint: <%= ENV.fetch("MEDIAS_FILES_ENDPOINT") %>`}
+      />
 
       <h4 class="mt-6 mb-3 text-xl font-semibold text-gray-800 dark:text-gray-200">Sync Service Storage</h4>
-      <CodeBlock language="yaml" path="app/sync/config/config.yml" code={`plugins:
+      <CodeBlock
+        language="yaml"
+        path="app/sync/config/config.yml"
+        code={`plugins:
   - name: shrine
     config:
       storages:
@@ -197,9 +204,8 @@ import { HardDrive } from "@lucide/astro";
             public: false
             region: <%= ENV.fetch("SYNC_FILES_REGION") %>
             prefix: files
-            endpoint: <%= ENV.fetch("SYNC_FILES_ENDPOINT") %>`
-        }></CodeBlock
-      >
+            endpoint: <%= ENV.fetch("SYNC_FILES_ENDPOINT") %>`}
+      />
 
       <h2
         id="environment-variables"
@@ -211,26 +217,30 @@ import { HardDrive } from "@lucide/astro";
       <h3 id="media-env-vars" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#media-env-vars" class="hover:underline">Media Service Variables</a>
       </h3>
-      <CodeBlock language="bash" path="app/media/.env" code={`# Media storage configuration
+      <CodeBlock
+        language="bash"
+        path="app/media/.env"
+        code={`# Media storage configuration
 MEDIAS_FILES_BUCKET=my-media-bucket
 MEDIAS_FILES_ACCESS_KEY_ID=your-access-key
 MEDIAS_FILES_SECRET_ACCESS_KEY=your-secret-key
 MEDIAS_FILES_REGION=us-east-1
-MEDIAS_FILES_ENDPOINT=https://s3.amazonaws.com`
-        }></CodeBlock
-      >
+MEDIAS_FILES_ENDPOINT=https://s3.amazonaws.com`}
+      />
 
       <h3 id="sync-env-vars" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#sync-env-vars" class="hover:underline">Sync Service Variables</a>
       </h3>
-      <CodeBlock language="bash" path="app/sync/.env" code={`# Sync storage configuration
+      <CodeBlock
+        language="bash"
+        path="app/sync/.env"
+        code={`# Sync storage configuration
 SYNC_FILES_BUCKET=my-exports-bucket
 SYNC_FILES_ACCESS_KEY_ID=your-access-key
 SYNC_FILES_SECRET_ACCESS_KEY=your-secret-key
 SYNC_FILES_REGION=us-east-1
-SYNC_FILES_ENDPOINT=https://s3.amazonaws.com`
-        }></CodeBlock
-      >
+SYNC_FILES_ENDPOINT=https://s3.amazonaws.com`}
+      />
 
       <h2
         id="storage-providers"
@@ -242,50 +252,58 @@ SYNC_FILES_ENDPOINT=https://s3.amazonaws.com`
       <h3 id="aws-s3" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#aws-s3" class="hover:underline">AWS S3</a>
       </h3>
-      <CodeBlock language="bash" path="app/media/.env" code={`# AWS S3
+      <CodeBlock
+        language="bash"
+        path="app/media/.env"
+        code={`# AWS S3
 MEDIAS_FILES_BUCKET=my-idah-media
 MEDIAS_FILES_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
 MEDIAS_FILES_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 MEDIAS_FILES_REGION=us-east-1
-MEDIAS_FILES_ENDPOINT=https://s3.amazonaws.com`
-        }></CodeBlock
-      >
+MEDIAS_FILES_ENDPOINT=https://s3.amazonaws.com`}
+      />
 
       <h3 id="google-cloud" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#google-cloud" class="hover:underline">Google Cloud Storage</a>
       </h3>
-      <CodeBlock language="bash" path="app/media/.env" code={`# Google Cloud Storage (S3-compatible)
+      <CodeBlock
+        language="bash"
+        path="app/media/.env"
+        code={`# Google Cloud Storage (S3-compatible)
 MEDIAS_FILES_BUCKET=my-idah-media
 MEDIAS_FILES_ACCESS_KEY_ID=your-gcs-access-key
 MEDIAS_FILES_SECRET_ACCESS_KEY=your-gcs-secret-key
 MEDIAS_FILES_REGION=us-east1
-MEDIAS_FILES_ENDPOINT=https://storage.googleapis.com`
-        }></CodeBlock
-      >
+MEDIAS_FILES_ENDPOINT=https://storage.googleapis.com`}
+      />
 
       <h3 id="minio" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#minio" class="hover:underline">MinIO (Self-Hosted)</a>
       </h3>
-      <CodeBlock language="bash" path="app/media/.env" code={`# MinIO
+      <CodeBlock
+        language="bash"
+        path="app/media/.env"
+        code={`# MinIO
 MEDIAS_FILES_BUCKET=idah-media
 MEDIAS_FILES_ACCESS_KEY_ID=minioadmin
 MEDIAS_FILES_SECRET_ACCESS_KEY=minioadmin
 MEDIAS_FILES_REGION=us-east-1
-MEDIAS_FILES_ENDPOINT=http://minio:9000`
-        }></CodeBlock
-      >
+MEDIAS_FILES_ENDPOINT=http://minio:9000`}
+      />
 
       <h3 id="digitalocean-spaces" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#digitalocean-spaces" class="hover:underline">DigitalOcean Spaces</a>
       </h3>
-      <CodeBlock language="bash" path="app/media/.env" code={`# DigitalOcean Spaces
+      <CodeBlock
+        language="bash"
+        path="app/media/.env"
+        code={`# DigitalOcean Spaces
 MEDIAS_FILES_BUCKET=my-space
 MEDIAS_FILES_ACCESS_KEY_ID=your-spaces-key
 MEDIAS_FILES_SECRET_ACCESS_KEY=your-spaces-secret
 MEDIAS_FILES_REGION=nyc3
-MEDIAS_FILES_ENDPOINT=https://nyc3.digitaloceanspaces.com`
-        }></CodeBlock
-      >
+MEDIAS_FILES_ENDPOINT=https://nyc3.digitaloceanspaces.com`}
+      />
 
       <h2
         id="configuration-tips"
