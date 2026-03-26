@@ -36,10 +36,17 @@ import { PackagePlus } from "@lucide/svelte";
       <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
         The easiest way to use the plugin generator is with npx, which doesn't require any installation:
       </p>
-      <CodeBlock language="bash"
-        ># Create a plugin npx idah-plugin create audio-plugin ./plugins # Add backend to existing plugin in ./plugins
-        directory npx idah-plugin backend add audio-plugin ./plugins # Get help npx idah-plugin --help</CodeBlock
-      >
+      <CodeBlock
+        language="bash"
+        code={`# Create a plugin
+npx idah-plugin create audio-plugin ./plugins
+
+# Add backend to existing plugin in ./plugins directory
+npx idah-plugin backend add audio-plugin ./plugins
+
+# Get help
+npx idah-plugin --help`}
+      />
 
       <h3 id="local-development-npm-link" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#local-development-npm-link" class="hover:underline">Local Development with npm link</a>
@@ -47,23 +54,23 @@ import { PackagePlus } from "@lucide/svelte";
       <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
         For local development and testing, use npm link:
       </p>
-      <CodeBlock language="bash">cd plugins_dev npm install npm link</CodeBlock>
+      <CodeBlock language="bash" code="cd plugins_dev npm install npm link" />
       <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
         This creates a symlink in your global node_modules. You can now use the <code
           class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400">idah-plugin</code
         > command from anywhere, and changes to the source code will be immediately available.
       </p>
       <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">To unlink when you're done:</p>
-      <CodeBlock language="bash">npm unlink -g idah-plugin</CodeBlock>
+      <CodeBlock language="bash" code="npm unlink -g idah-plugin" />
 
       <h3 id="global-installation" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#global-installation" class="hover:underline">Global Installation</a>
       </h3>
       <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">Install the CLI globally:</p>
-      <CodeBlock language="bash"
-        ># From npm (after publishing) npm install -g idah-plugin # Or from local directory cd plugins_dev npm install
-        -g .</CodeBlock
-      >
+      <CodeBlock
+        language="bash"
+        code="# From npm (after publishing) npm install -g idah-plugin # Or from local directory cd plugins_dev npm install -g ."
+      />
       <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
         After installation, you can use the <code
           class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400">idah-plugin</code
@@ -74,7 +81,7 @@ import { PackagePlus } from "@lucide/svelte";
         <a href="#direct-usage" class="hover:underline">Direct Usage (Without Installation)</a>
       </h3>
       <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">If you prefer not to install at all:</p>
-      <CodeBlock language="bash">cd plugins_dev npm install node _cli/bin/cli.js &lt;command&gt;</CodeBlock>
+      <CodeBlock language="bash" code="cd plugins_dev npm install node _cli/bin/cli.js &lt;command&gt;" />
 
       <h2
         id="create-new-plugin"
@@ -83,16 +90,25 @@ import { PackagePlus } from "@lucide/svelte";
         <a href="#create-new-plugin" class="hover:underline">Create a New Plugin</a>
       </h2>
       <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">Create a new plugin from scratch:</p>
-      <CodeBlock language="bash">idah-plugin create &lt;plugin_name&gt; [output_path]</CodeBlock>
+      <CodeBlock language="bash" code="idah-plugin create &lt;plugin_name&gt; [output_path]" />
 
       <h3 id="examples" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#examples" class="hover:underline">Examples:</a>
       </h3>
-      <CodeBlock language="bash"
-        ># Create in current directory idah-plugin create my-awesome-plugin # Creates: ./my-awesome-plugin # Create in
-        specific directory idah-plugin create audio-plugin ./plugins # Creates: ./plugins/audio-plugin # Create with
-        absolute path idah-plugin create video-plugin /path/to/plugins # Creates: /path/to/plugins/video-plugin</CodeBlock
-      >
+      <CodeBlock
+        language="bash"
+        code={`# Create in current directory
+idah-plugin create my-awesome-plugin
+# Creates: ./my-awesome-plugin
+
+# Create in specific directory
+idah-plugin create audio-plugin ./plugins
+# Creates: ./plugins/audio-plugin
+
+# Create with absolute path
+idah-plugin create video-plugin /path/to/plugins
+# Creates: /path/to/plugins/video-plugin`}
+      />
 
       <h3 id="what-happens" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#what-happens" class="hover:underline">What happens when you create a plugin:</a>
@@ -149,16 +165,15 @@ import { PackagePlus } from "@lucide/svelte";
       <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
         Add one or more backend services to an existing plugin:
       </p>
-      <CodeBlock language="bash">idah-plugin backend add &lt;plugin_name&gt; [base_path]</CodeBlock>
+      <CodeBlock language="bash" code="idah-plugin backend add &lt;plugin_name&gt; [base_path]" />
 
       <h3 id="backend-examples" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#backend-examples" class="hover:underline">Examples:</a>
       </h3>
-      <CodeBlock language="bash"
-        ># Add backend to plugin in current directory idah-plugin backend add my-awesome-plugin # Looks for:
-        ./my-awesome-plugin # Add backend to plugin in specific directory idah-plugin backend add audio-plugin ./plugins
-        # Looks for: ./plugins/audio-plugin</CodeBlock
-      >
+      <CodeBlock
+        language="bash"
+        code="# Add backend to plugin in current directory idah-plugin backend add my-awesome-plugin # Looks for: ./my-awesome-plugin # Add backend to plugin in specific directory idah-plugin backend add audio-plugin ./plugins # Looks for: ./plugins/audio-plugin"
+      />
 
       <h3 id="backend-parameters" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#backend-parameters" class="hover:underline">Parameters:</a>
@@ -290,41 +305,56 @@ import { PackagePlus } from "@lucide/svelte";
       <h3 id="example-1" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#example-1" class="hover:underline">Example 1: Create a Frontend-Only Plugin</a>
       </h3>
-      <CodeBlock language="bash"
-        ># Create a new plugin in the plugins directory (recommended) idah-plugin create ui-widget ./plugins # When
-        prompted: # - Display name: UI Widget # - Description: A simple UI widget plugin # - Version: 0.0.1 (or press
-        Enter for default) # - Backend services: (press Enter without selecting any) # Your plugin is ready at
-        ./plugins/ui-widget/ cd plugins/ui-widget/frontend pnpm install pnpm dev</CodeBlock
-      >
+      <CodeBlock language="bash" code={`# Create a new plugin in the plugins directory (recommended)
+idah-plugin create ui-widget ./plugins
+
+# When prompted:
+# - Display name: UI Widget
+# - Description: A simple UI widget plugin
+# - Version: 0.0.1 (or press Enter for default)
+# - Backend services: (press Enter without selecting any)
+
+# Your plugin is ready at ./plugins/ui-widget/
+cd plugins/ui-widget/frontend
+pnpm install
+pnpm dev`} />
 
       <h3 id="example-2" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#example-2" class="hover:underline">Example 2: Create a Full-Stack Plugin</a>
       </h3>
-      <CodeBlock language="bash"
-        ># Create a plugin with both backend services in plugins directory idah-plugin create video-converter ./plugins
-        # When prompted: # - Display name: Video Converter # - Description: Convert videos to different formats # -
-        Version: 1.0.0 # - Backend services: Select both "Media Service" and "Sync Service" # Your plugin is ready with
-        backend and frontend cd plugins/video-converter</CodeBlock
-      >
+      <CodeBlock language="bash" code={`# Create a plugin with both backend services in plugins directory
+idah-plugin create video-converter ./plugins
+
+# When prompted:
+# - Display name: Video Converter
+# - Description: Convert videos to different formats
+# - Version: 1.0.0
+# - Backend services: Select both "Media Service" and "Sync Service"
+
+# Your plugin is ready with backend and frontend
+cd plugins/video-converter`} />
 
       <h3 id="example-3" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#example-3" class="hover:underline">Example 3: Create Multiple Plugins</a>
       </h3>
-      <CodeBlock language="bash"
-        ># Create several plugins in the standard plugins directory idah-plugin create image-gallery ./plugins
-        idah-plugin create data-exporter ./plugins idah-plugin create custom-dashboard ./plugins # All plugins will be
-        in ./plugins/ and automatically loaded by IDAH</CodeBlock
-      >
+      <CodeBlock language="bash" code={`# Create several plugins in the standard plugins directory
+idah-plugin create image-gallery ./plugins
+idah-plugin create data-exporter ./plugins
+idah-plugin create custom-dashboard ./plugins
+
+# All plugins will be in ./plugins/ and automatically loaded by IDAH`} />
 
       <h3 id="example-4" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#example-4" class="hover:underline">Example 4: Add Backend to Existing Plugin</a>
       </h3>
-      <CodeBlock language="bash"
-        ># First create a frontend-only plugin idah-plugin create image-processor ./plugins # Later, add backend
-        services (specify base path where plugin is located) idah-plugin backend add image-processor ./plugins # When
-        prompted, select "Media Service" # The media backend is now added to your existing plugin at
-        ./plugins/image-processor</CodeBlock
-      >
+      <CodeBlock language="bash" code={`# First create a frontend-only plugin
+idah-plugin create image-processor ./plugins
+
+# Later, add backend services (specify base path where plugin is located)
+idah-plugin backend add image-processor ./plugins
+
+# When prompted, select "Media Service"
+# The media backend is now added to your existing plugin at ./plugins/image-processor`} />
 
       <h2
         id="plugin-naming-conventions"
@@ -397,7 +427,7 @@ import { PackagePlus } from "@lucide/svelte";
       <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
         If you get permission errors during global installation:
       </p>
-      <CodeBlock language="bash">sudo npm install -g . # or use a Node version manager like nvm</CodeBlock>
+      <CodeBlock language="bash" code="sudo npm install -g . # or use a Node version manager like nvm" />
 
       <h2
         id="next-steps"
