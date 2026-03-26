@@ -1,5 +1,6 @@
 ---
 import { getApiUrls } from "$lib/app/sidebar/api-urls";
+import CodeBlock from "@components/app/CodeBlock.astro";
 import PageContainer from "@components/app/page/PageContainer.astro";
 import PageTitle from "@components/app/page/PageTitle.astro";
 import Pagination from "@components/app/page/Pagination.astro";
@@ -379,24 +380,24 @@ for (const [tag, paths] of pathsByTag) {
 
                                     <div class="p-4">
                                       <div id={`input-json-${key}`} class="schema-content">
-                                        <div
-                                          class="json-tree-container"
-                                          data-json={JSON.stringify(
+                                        <CodeBlock
+                                          language="json"
+                                          code={JSON.stringify(
                                             schemaToExampleJSON(
                                               requestBody.content?.["application/vnd.api+json"]?.schema ||
                                                 requestBody.content?.["application/json"]?.schema ||
                                                 requestBody.content?.["multipart/form-data"]?.schema ||
                                                 {},
                                             ),
+                                            null,
+                                            2,
                                           )}
                                         />
                                       </div>
 
                                       {tsSchemas.input && (
                                         <div id={`input-ts-${key}`} class="schema-content hidden">
-                                          <pre class="ts-code-block">
-                                            <code class="language-typescript">{tsSchemas.input}</code>
-                                          </pre>
+                                          <CodeBlock language="typescript" code={tsSchemas.input} />
                                         </div>
                                       )}
                                     </div>
@@ -452,24 +453,24 @@ for (const [tag, paths] of pathsByTag) {
 
                                           <div class="p-4">
                                             <div id={`output-json-${key}-${statusCode}`} class="schema-content">
-                                              <div
-                                                class="json-tree-container"
-                                                data-json={JSON.stringify(
+                                              <CodeBlock
+                                                language="json"
+                                                code={JSON.stringify(
                                                   schemaToExampleJSON(
                                                     response.content?.["application/vnd.api+json"]?.schema ||
                                                       response.content?.["application/json"]?.schema ||
                                                       response.content?.["multipart/form-data"]?.schema ||
                                                       {},
                                                   ),
+                                                  null,
+                                                  2,
                                                 )}
                                               />
                                             </div>
 
                                             {tsSchemas.output && statusCode === "200" && (
                                               <div id={`output-ts-${key}`} class="schema-content hidden">
-                                                <pre class="ts-code-block">
-                                                  <code class="language-typescript">{tsSchemas.output}</code>
-                                                </pre>
+                                                <CodeBlock language="typescript" code={tsSchemas.output} />
                                               </div>
                                             )}
                                           </div>
@@ -653,7 +654,6 @@ for (const [tag, paths] of pathsByTag) {
   declare global {
     interface Window {
       switchTab: (event: Event, targetId: string) => void;
-      toggleJsonNode: (toggle: HTMLElement) => void;
     }
   }
 </script>
@@ -677,128 +677,6 @@ for (const [tag, paths] of pathsByTag) {
     const targetContent = document.getElementById(targetId);
     if (targetContent) {
       targetContent.classList.remove("hidden");
-
-      // Re-highlight TypeScript code when switching to TS tab
-      setTimeout(() => {
-        if (typeof Prism !== "undefined") {
-          const codeBlocks = targetContent.querySelectorAll('code[class*="language-"]');
-          codeBlocks.forEach((block) => {
-            Prism.highlightElement(block);
-          });
-        }
-      }, 50);
-    }
-  }
-
-  // JSON Tree Renderer
-  function createJsonTree(data, isLast = true) {
-    if (data === null) {
-      return `<span class="json-tree-null">null</span>`;
-    }
-
-    if (typeof data !== "object") {
-      if (typeof data === "string") {
-        return `<span class="json-tree-string">"${data}"</span>`;
-      }
-      if (typeof data === "number") {
-        return `<span class="json-tree-number">${data}</span>`;
-      }
-      if (typeof data === "boolean") {
-        return `<span class="json-tree-boolean">${data}</span>`;
-      }
-      return String(data);
-    }
-
-    const isArray = Array.isArray(data);
-    const entries = Object.entries(data);
-
-    if (entries.length === 0) {
-      return isArray ? `<span class="json-tree-bracket">[]</span>` : `<span class="json-tree-bracket">{}</span>`;
-    }
-
-    const openBracket = isArray ? "[" : "{";
-    const closeBracket = isArray ? "]" : "}";
-
-    let html = `<span class="json-tree-bracket">${openBracket}</span>\n`;
-
-    entries.forEach(([key, value], index) => {
-      const isLastItem = index === entries.length - 1;
-      const hasChildren = value !== null && typeof value === "object" && Object.keys(value).length > 0;
-
-      html += '<div class="json-tree-line">';
-      html += '<div class="json-tree-toggle">';
-
-      if (hasChildren) {
-        html += `<span onclick="toggleJsonNode(this)" style="cursor: pointer;">▶</span>`;
-      } else {
-        html += `<span style="opacity: 0; cursor: default;">▶</span>`;
-      }
-
-      html += '</div><div class="json-tree-content">';
-
-      if (!isArray) {
-        html += `<span class="json-tree-key">"${key}"</span>: `;
-      }
-
-      if (hasChildren) {
-        html += `<span class="json-tree-preview">${Array.isArray(value) ? "[...]" : "{...}"}</span>`;
-        html += `<div class="json-tree-children" style="display: none;">`;
-        html += createJsonTree(value, isLastItem);
-        html += `</div>`;
-      } else {
-        html += createJsonTree(value, isLastItem);
-      }
-
-      if (!isLastItem) {
-        html += '<span class="json-tree-bracket">,</span>';
-      }
-
-      html += "</div></div>\n";
-    });
-
-    html += `<span class="json-tree-bracket">${closeBracket}</span>`;
-
-    return html;
-  }
-
-  function toggleJsonNode(toggle) {
-    const line = toggle.closest(".json-tree-line");
-    if (!line) return;
-
-    const content = line.querySelector(".json-tree-content");
-    if (!content) return;
-
-    const children = content.querySelector(".json-tree-children");
-    const preview = content.querySelector(".json-tree-preview");
-
-    if (children && preview) {
-      const isExpanded = children.style.display !== "none";
-
-      if (isExpanded) {
-        children.style.display = "none";
-        preview.style.display = "inline";
-        toggle.textContent = "▶";
-      } else {
-        children.style.display = "block";
-        preview.style.display = "none";
-        toggle.textContent = "▼";
-      }
-    }
-  }
-
-  // Initialize JSON trees
-  function initJsonTrees() {
-    document.querySelectorAll(".json-tree-container").forEach((container) => {
-      const jsonData = JSON.parse(container.dataset.json);
-      const treeHtml = createJsonTree(jsonData);
-      container.innerHTML = `<div class="json-tree">${treeHtml}</div>`;
-    });
-  }
-
-  // Syntax highlighting for TypeScript
-  function highlightTypeScript() {
-    if (typeof Prism !== "undefined") {
-      Prism.highlightAll();
     }
   }
 
@@ -827,17 +705,12 @@ for (const [tag, paths] of pathsByTag) {
   // Initialize when DOM is ready
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => {
-      initJsonTrees();
-      highlightTypeScript();
       scrollToTag();
     });
   } else {
-    initJsonTrees();
-    highlightTypeScript();
     scrollToTag();
   }
 
   // Make functions available globally
   window.switchTab = switchTab;
-  window.toggleJsonNode = toggleJsonNode;
 </script>
