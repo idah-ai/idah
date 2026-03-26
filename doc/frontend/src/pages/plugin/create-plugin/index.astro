@@ -81,7 +81,7 @@ npx idah-plugin --help`}
         <a href="#direct-usage" class="hover:underline">Direct Usage (Without Installation)</a>
       </h3>
       <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">If you prefer not to install at all:</p>
-      <CodeBlock language="bash" code="cd plugins_dev npm install node _cli/bin/cli.js &lt;command&gt;" />
+      <CodeBlock language="bash" code="cd plugins_dev npm install node _cli/bin/cli.js <command>" />
 
       <h2
         id="create-new-plugin"
@@ -90,7 +90,7 @@ npx idah-plugin --help`}
         <a href="#create-new-plugin" class="hover:underline">Create a New Plugin</a>
       </h2>
       <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">Create a new plugin from scratch:</p>
-      <CodeBlock language="bash" code="idah-plugin create &lt;plugin_name&gt; [output_path]" />
+      <CodeBlock language="bash" code="idah-plugin create <plugin_name> [output_path]" />
 
       <h3 id="examples" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#examples" class="hover:underline">Examples:</a>
@@ -165,7 +165,7 @@ idah-plugin create video-plugin /path/to/plugins
       <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
         Add one or more backend services to an existing plugin:
       </p>
-      <CodeBlock language="bash" code="idah-plugin backend add &lt;plugin_name&gt; [base_path]" />
+      <CodeBlock language="bash" code="idah-plugin backend add <plugin_name> [base_path]" />
 
       <h3 id="backend-examples" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#backend-examples" class="hover:underline">Examples:</a>
@@ -305,7 +305,9 @@ idah-plugin create video-plugin /path/to/plugins
       <h3 id="example-1" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#example-1" class="hover:underline">Example 1: Create a Frontend-Only Plugin</a>
       </h3>
-      <CodeBlock language="bash" code={`# Create a new plugin in the plugins directory (recommended)
+      <CodeBlock
+        language="bash"
+        code={`# Create a new plugin in the plugins directory (recommended)
 idah-plugin create ui-widget ./plugins
 
 # When prompted:
@@ -317,12 +319,15 @@ idah-plugin create ui-widget ./plugins
 # Your plugin is ready at ./plugins/ui-widget/
 cd plugins/ui-widget/frontend
 pnpm install
-pnpm dev`} />
+pnpm dev`}
+      />
 
       <h3 id="example-2" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#example-2" class="hover:underline">Example 2: Create a Full-Stack Plugin</a>
       </h3>
-      <CodeBlock language="bash" code={`# Create a plugin with both backend services in plugins directory
+      <CodeBlock
+        language="bash"
+        code={`# Create a plugin with both backend services in plugins directory
 idah-plugin create video-converter ./plugins
 
 # When prompted:
@@ -332,29 +337,36 @@ idah-plugin create video-converter ./plugins
 # - Backend services: Select both "Media Service" and "Sync Service"
 
 # Your plugin is ready with backend and frontend
-cd plugins/video-converter`} />
+cd plugins/video-converter`}
+      />
 
       <h3 id="example-3" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#example-3" class="hover:underline">Example 3: Create Multiple Plugins</a>
       </h3>
-      <CodeBlock language="bash" code={`# Create several plugins in the standard plugins directory
+      <CodeBlock
+        language="bash"
+        code={`# Create several plugins in the standard plugins directory
 idah-plugin create image-gallery ./plugins
 idah-plugin create data-exporter ./plugins
 idah-plugin create custom-dashboard ./plugins
 
-# All plugins will be in ./plugins/ and automatically loaded by IDAH`} />
+# All plugins will be in ./plugins/ and automatically loaded by IDAH`}
+      />
 
       <h3 id="example-4" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#example-4" class="hover:underline">Example 4: Add Backend to Existing Plugin</a>
       </h3>
-      <CodeBlock language="bash" code={`# First create a frontend-only plugin
+      <CodeBlock
+        language="bash"
+        code={`# First create a frontend-only plugin
 idah-plugin create image-processor ./plugins
 
 # Later, add backend services (specify base path where plugin is located)
 idah-plugin backend add image-processor ./plugins
 
 # When prompted, select "Media Service"
-# The media backend is now added to your existing plugin at ./plugins/image-processor`} />
+# The media backend is now added to your existing plugin at ./plugins/image-processor`}
+      />
 
       <h2
         id="plugin-naming-conventions"

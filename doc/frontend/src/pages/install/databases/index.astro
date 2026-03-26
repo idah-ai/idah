@@ -82,22 +82,28 @@ import { Database } from "@lucide/astro";
         </p>
       </div>
 
-      <CodeBlock language="bash" path=".env.docker" code={`# PostgreSQL configuration
+      <CodeBlock
+        language="bash"
+        path=".env.docker"
+        code={`# PostgreSQL configuration
 POSTGRES_HOST=host.docker.internal
 POSTGRES_CREDENTIALS=postgres:postgres
 POSTGRES_PORT=5432
 
 # Redis configuration
-REDIS_STREAM_URL=redis://host.docker.internal:6379/0`} />
+REDIS_STREAM_URL=redis://host.docker.internal:6379/0`}
+      />
 
       <h4 class="mt-6 mb-3 text-xl font-semibold text-gray-800 dark:text-gray-200">Verify Local Services</h4>
       <p class="mb-4 text-sm leading-relaxed text-gray-700 dark:text-gray-300">Check that both services are running:</p>
-      <CodeBlock language="bash" code={`# Check PostgreSQL connection
+      <CodeBlock
+        language="bash"
+        code={`# Check PostgreSQL connection
 psql -h localhost -U postgres -c "SELECT version();"
 
 # Check Redis connection
-redis-cli ping`} />
-
+redis-cli ping`}
+      />
 
       <h3 id="option-2-docker" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#option-2-docker" class="hover:underline">Option 2: Use Docker Containers</a>
@@ -112,14 +118,17 @@ redis-cli ping`} />
 
       <h4 class="mt-6 mb-3 text-xl font-semibold text-gray-800 dark:text-gray-200">Verify Docker Containers</h4>
       <p class="mb-4 text-sm leading-relaxed text-gray-700 dark:text-gray-300">Check that containers are running:</p>
-      <CodeBlock language="bash" code={`# Check container status
+      <CodeBlock
+        language="bash"
+        code={`# Check container status
 docker compose -f docker-compose-db.yml ps
 
 # Test PostgreSQL connection
 docker compose -f docker-compose-db.yml exec postgres psql -U postgres -c "SELECT version();"
 
 # Test Redis connection
-docker compose -f docker-compose-db.yml exec redis redis-cli ping`} />
+docker compose -f docker-compose-db.yml exec redis redis-cli ping`}
+      />
       <h2
         id="next-steps"
         class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"

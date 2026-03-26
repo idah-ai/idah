@@ -99,13 +99,16 @@ import { Rocket } from "@lucide/astro";
       <h3 id="view-logs" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#view-logs" class="hover:underline">View Logs</a>
       </h3>
-      <CodeBlock language="bash" code={`# View all service logs
+      <CodeBlock
+        language="bash"
+        code={`# View all service logs
 docker compose logs -f
 
 # View specific service logs
 docker compose logs -f frontend
 docker compose logs -f iam
-docker compose logs -f media`} />
+docker compose logs -f media`}
+      />
 
       <h2
         id="common-commands"
@@ -122,20 +125,26 @@ docker compose logs -f media`} />
       <h3 id="restart-services" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#restart-services" class="hover:underline">Restart Services</a>
       </h3>
-      <CodeBlock language="bash" code={`# Restart all services
+      <CodeBlock
+        language="bash"
+        code={`# Restart all services
 docker compose restart
 
 # Restart specific service
-docker compose restart frontend`} />
+docker compose restart frontend`}
+      />
 
       <h3 id="rebuild-services" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#rebuild-services" class="hover:underline">Rebuild Services</a>
       </h3>
-      <CodeBlock language="bash" code={`# Rebuild and restart all services
+      <CodeBlock
+        language="bash"
+        code={`# Rebuild and restart all services
 docker compose up -d --build
 
 # Rebuild specific service
-docker compose up -d --build frontend`} />
+docker compose up -d --build frontend`}
+      />
 
       <h2
         id="next-steps"
