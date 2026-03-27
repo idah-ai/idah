@@ -1,0 +1,168 @@
+---
+import PageLayout from "@layouts/PageLayout.astro";
+import Pagination from "@components/app/page/Pagination.astro";
+import PageContainer from "@components/app/page/PageContainer.astro";
+import PageTitle from "@components/app/page/PageTitle.astro";
+import CodeBlock from "@components/app/CodeBlock.astro";
+import { Package, Container, GitBranch, Download } from "@lucide/astro";
+---
+
+<PageLayout>
+  <PageContainer>
+    <PageTitle>
+      <div class="rounded-xl bg-green-50 p-3 text-green-500 dark:bg-green-900/20 dark:text-green-700">
+        <Download class="h-9 w-9" stroke-width={2} />
+      </div>
+      Installation
+    </PageTitle>
+
+    <div class="prose prose-lg dark:prose-invert max-w-none">
+      <p class="mb-8 text-lg leading-relaxed text-gray-700 dark:text-gray-300">
+        Get started with IDAH by setting up your development environment and cloning the repository.
+      </p>
+
+      <h2
+        id="prerequisites"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
+        <a href="#prerequisites" class="hover:underline">Prerequisites</a>
+      </h2>
+      <p class="mb-8 leading-relaxed text-gray-700 dark:text-gray-300">
+        Before installing IDAH, ensure you have the following tools installed on your system:
+      </p>
+
+      <h3 id="required-tools" class="mt-8 mb-6 text-2xl font-semibold text-gray-800 dark:text-gray-200">
+        <a href="#required-tools" class="hover:underline">Required Tools</a>
+      </h3>
+
+      <div class="not-prose grid grid-cols-1 lg:grid-cols-3 gap-6 space-y-6">
+        <!-- Docker -->
+        <div class="group flex items-start gap-4">
+          <div
+            class="flex-shrink-0 rounded-lg p-2 transition-transform duration-300 group-hover:scale-110"
+            style="background: rgba(35, 145, 234, 0.1);"
+          >
+            <Container class="h-7 w-7" style="color: #2391ea;" stroke-width={2} />
+          </div>
+          <div class="flex-1">
+            <h4 class="mb-1 font-semibold text-gray-900 dark:text-white">Docker</h4>
+            <p class="mb-2 text-sm text-gray-600 dark:text-gray-400">Container platform for running IDAH services</p>
+            <a
+              href="https://docs.docker.com/get-docker/"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex items-center gap-1 text-sm font-semibold text-blue-600 hover:underline dark:text-blue-400"
+            >
+              <Download class="h-4 w-4" stroke-width={2} />
+              Install Docker
+            </a>
+          </div>
+        </div>
+
+        <!-- Docker Compose -->
+        <div class="group flex items-start gap-4">
+          <div
+            class="flex-shrink-0 rounded-lg p-2 transition-transform duration-300 group-hover:scale-110"
+            style="background: rgba(168, 85, 247, 0.1);"
+          >
+            <Package class="h-7 w-7 text-purple-600 dark:text-purple-400" stroke-width={2} />
+          </div>
+          <div class="flex-1">
+            <h4 class="mb-1 font-semibold text-gray-900 dark:text-white">Docker Compose</h4>
+            <p class="mb-2 text-sm text-gray-600 dark:text-gray-400">
+              Multi-container orchestration tool (Included with Docker Desktop)
+            </p>
+            <a
+              href="https://docs.docker.com/compose/install/"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex items-center gap-1 text-sm font-semibold text-purple-600 hover:underline dark:text-purple-400"
+            >
+              <Download class="h-4 w-4" stroke-width={2} />
+              Install Standalone
+            </a>
+          </div>
+        </div>
+
+        <!-- Git -->
+        <div class="group flex items-start gap-4">
+          <div
+            class="flex-shrink-0 rounded-lg p-2 transition-transform duration-300 group-hover:scale-110"
+            style="background: rgba(245, 158, 11, 0.1);"
+          >
+            <GitBranch class="h-7 w-7 text-orange-600 dark:text-orange-400" stroke-width={2} />
+          </div>
+          <div class="flex-1">
+            <h4 class="mb-1 font-semibold text-gray-900 dark:text-white">Git</h4>
+            <p class="mb-2 text-sm text-gray-600 dark:text-gray-400">Version control system</p>
+            <a
+              href="https://git-scm.com/downloads"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex items-center gap-1 text-sm font-semibold text-orange-600 hover:underline dark:text-orange-400"
+            >
+              <Download class="h-4 w-4" stroke-width={2} />
+              Install Git
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <h3 id="verify-installation" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
+        <a href="#verify-installation" class="hover:underline">Verify Installation</a>
+      </h3>
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
+        Check that all required tools are properly installed:
+      </p>
+      <CodeBlock
+        language="bash"
+        code={`docker --version
+docker compose version
+git --version`}
+      />
+
+      <h2
+        id="clone-repository"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
+        <a href="#clone-repository" class="hover:underline">Clone the Repository</a>
+      </h2>
+
+      <h3 id="clone-from-github" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
+        <a href="#clone-from-github" class="hover:underline">1. Clone from GitHub</a>
+      </h3>
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
+        Clone the IDAH repository to your local machine:
+      </p>
+      <CodeBlock
+        language="bash"
+        code={`git clone https://github.com/idah-ai/idah.git
+cd idah`}
+      />
+
+      <h3 id="navigate-directory" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
+        <a href="#navigate-directory" class="hover:underline">2. Navigate to Project Directory</a>
+      </h3>
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
+        You should now be in the IDAH project directory:
+      </p>
+      <CodeBlock
+        language="bash"
+        code={`pwd
+ls -la`}
+      />
+
+      <div
+        class="mb-6 rounded-lg border-l-4 border-blue-500 bg-gradient-to-r from-blue-50 to-purple-50 p-6 dark:from-blue-900/20 dark:to-purple-900/20"
+      >
+        <p class="text-lg leading-relaxed font-medium text-gray-800 dark:text-gray-200">
+          🚀 Ready to set up IDAH! Continue with <a
+            href="/install/databases/"
+            class="font-semibold text-blue-600 hover:underline dark:text-blue-400">database configuration</a
+          > and then start the services.
+        </p>
+      </div>
+    </div>
+  </PageContainer>
+  <Pagination />
+</PageLayout>

@@ -1,0 +1,21 @@
+---
+import { Button } from "$lib/components/ui/button";
+import { Download } from "@lucide/astro";
+import ModeSwitcher from "./switchers/ModeSwitcher.astro";
+import GithubStarButton from "$lib/app/button/github-star-button.svelte";
+---
+
+<div class="flex items-center gap-3">
+  <ModeSwitcher />
+
+  <GithubStarButton client:load />
+
+  <Button
+    href="/install/"
+    class="border-0 font-semibold text-white shadow-lg transition-all duration-200 hover:scale-105 hover:shadow-xl"
+    style="background: linear-gradient(to right, #2391ea, #1e7ac9);"
+  >
+    <Download class="h-4 w-4" stroke-width={2} />
+    Install IDAH
+  </Button>
+</div>
