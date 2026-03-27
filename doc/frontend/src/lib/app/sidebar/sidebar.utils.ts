@@ -28,9 +28,7 @@ export function findSidebarItem(items: SidebarType[], result: SidebarItem[] = []
  */
 export function hasActiveChild(item: SidebarType, pathname: string): boolean {
   if (!item.children) return false;
-  return item.children.some(
-    (child) => hasActiveChild(child, pathname),
-  );
+  return item.children.some((child) => hasActiveChild(child, pathname));
 }
 
 /**
@@ -49,18 +47,21 @@ export function mergeSidebarItemsWithApiUrls(
   return [
     ...visibleSidebarItems,
     {
-      label: "API References",
-      children: apiUrls.map((api) => ({
-        label: api.title || api.name,
-        href: encodeURI("/apis/" + api.name + "/"),
-        selectable: false,
-        children:
-          api.tags?.map((tag) => ({
-            label: tag,
-            href: encodeURI("/apis/" + api.name + "/" + tag + "/"),
-            children: [],
-          })) || [],
-      })),
+      label: "API Reference",
+      children: [
+        { label: "Overview", href: "/apis/", children: [] },
+        ...apiUrls.map((api) => ({
+          label: api.title || api.name,
+          href: encodeURI("/apis/" + api.name + "/"),
+          selectable: false,
+          children:
+            api.tags?.map((tag) => ({
+              label: tag,
+              href: encodeURI("/apis/" + api.name + "/" + tag + "/"),
+              children: [],
+            })) || [],
+        })),
+      ],
     },
   ];
 }
