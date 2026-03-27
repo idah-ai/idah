@@ -15,7 +15,7 @@
 </script>
 
 <a
-  href="https://github.com/ingedata-ph/idah"
+  href="https://github.com/idah-ai/idah"
   target="_blank"
   rel="noopener noreferrer"
   class="group flex items-center gap-2 bg-transparent px-3 py-1.5 text-sm font-medium text-gray-700 transition-all duration-200 hover:scale-120 dark:bg-transparent dark:text-gray-300"
