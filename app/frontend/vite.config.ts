@@ -27,6 +27,11 @@ export default defineConfig({
     sveltekit(),
   ],
   server: {
+    fs: {
+      allow: [
+        '/app/frontend/build',
+      ],
+    },
     watch: {
       // use polling if file system events don’t trigger (Docker, WSL, NFS)
       usePolling: true,
