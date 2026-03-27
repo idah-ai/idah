@@ -31,7 +31,7 @@
     />
   </svg>
 
-  {#if stars !== null}
+  {#if stars}
     <span class="transition-colors">
       {stars.toLocaleString()}
     </span>
