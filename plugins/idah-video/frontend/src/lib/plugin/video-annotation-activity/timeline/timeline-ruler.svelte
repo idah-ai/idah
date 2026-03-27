@@ -1,5 +1,10 @@
 <script lang="ts">
-  import { timelineCellWidth } from "$lib/plugin/video-annotation-activity/timeline/store";
+  import { totalFrames } from "$lib/plugin/video-annotation-activity/store/store";
+  import {
+    framePerScale,
+    timelineCellWidth,
+    timelineRulerWidth,
+  } from "$lib/plugin/video-annotation-activity/timeline/store";
 
   // Props
   interface Props {
@@ -8,34 +13,44 @@
   let { onSelectFrameX }: Props = $props();
 
   // Variables
-  /** totalFrames = timelineRulerWidth / timelineCellWidth */
-  let timelineRulerWidth: number = $state(0);
-  let totalFrames: number = $derived(Math.round(timelineRulerWidth / $timelineCellWidth));
+  let rulerScale = $derived<number>(Math.floor($timelineRulerWidth / $timelineCellWidth));
+  let majorTicks = $derived.by<Array<number>>(() => {
+    return Array.from({ length: rulerScale })
+      .map((_tick, tickIndex) => (tickIndex % $framePerScale === 0 ? tickIndex : null))
+      .filter((tick) => tick !== null);
+  });
 
-  /** If total frames greater than timeline cell width,
-   * it means that the timeline ruler is not wide enough to display all frames
-   * We need to display the frames in chunks
-   */
-  let scale = $derived(Math.ceil(totalFrames / $timelineCellWidth));
+  $inspect(majorTicks);
 
+  // Functions
   function selectFrameX(e: MouseEvent) {
     onSelectFrameX(e.clientX);
   }
 </script>
 
-<button bind:clientWidth={timelineRulerWidth} id="timeline-ruler" class="relative w-full" onclick={selectFrameX}>
-  {#each Array.from({ length: totalFrames }) as _, frameIndex (frameIndex)}
-    {@const showFrameNumber = frameIndex % scale === 0}
-    {@const frameNumber = frameIndex + 1}
-    <div
-      class="absolute bottom-0 flex items-center border-l pl-0.5 text-sm select-none first:border-l-0"
-      style:height="{showFrameNumber ? 28 : 14}px"
-      style:width="{$timelineCellWidth}px"
-      style:left="{frameIndex * $timelineCellWidth}px"
-    >
-      {#if showFrameNumber}
-        <p class="text-muted-foreground">{frameNumber}</p>
-      {/if}
-    </div>
+<button
+  bind:clientWidth={$timelineRulerWidth}
+  id="timeline-ruler"
+  class="relative w-full border-0 focus:outline-none"
+  onclick={selectFrameX}
+>
+  {#each Array.from({ length: rulerScale }) as _, frameIndex (frameIndex)}
+    {@const isMajorTick = majorTicks.includes(frameIndex)}
+    {@const frameNumber = (frameIndex + 1) * $framePerScale}
+    {@const isInRangeOfTotalFrames = frameIndex * $framePerScale <= $totalFrames - 1}
+
+    {#if isInRangeOfTotalFrames}
+      <div
+        class="absolute bottom-0 flex items-center border-l pl-0.5 text-sm select-none first:border-l-0"
+        style:height="{isMajorTick ? 28 : 14}px"
+        style:width="{$timelineCellWidth}px"
+        style:left="{frameIndex * $timelineCellWidth}px"
+        style:z-index={isMajorTick ? 40 : 0}
+      >
+        {#if isMajorTick}
+          <p class="text-muted-foreground">{frameNumber}</p>
+        {/if}
+      </div>
+    {/if}
   {/each}
 </button>

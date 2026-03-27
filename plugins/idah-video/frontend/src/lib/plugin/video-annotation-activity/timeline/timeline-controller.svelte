@@ -6,31 +6,38 @@
   import Slider from "$lib/components/ui/slider/slider.svelte";
 
   import {
+    recalculateFramePerScale,
+    recalculateFrameRange,
     selectFirstFrameX,
     setTimelineCellWidth,
+    TIMELINE_CELL_MAX_WIDTH,
+    TIMELINE_CELL_MIN_WIDTH,
+    TIMELINE_CELL_WIDTH_STEP,
     timelineCellWidth,
   } from "$lib/plugin/video-annotation-activity/timeline/store";
 
-  // Variables
-  const timelineCellWidthStep = 5;
-  const timelineCellMinWidth: number = 10; // Unit: px
-  const timelineCellMaxWidth: number = 60; // Unit: px
-
   // Functions
   function zoomTimelineOut() {
-    const newTimelineCellWidth = $timelineCellWidth - timelineCellWidthStep;
-    if (newTimelineCellWidth < timelineCellMinWidth) return;
-    setTimelineCellWidth(newTimelineCellWidth);
+    const newCellWidth = $timelineCellWidth - TIMELINE_CELL_WIDTH_STEP;
+    if (newCellWidth < TIMELINE_CELL_MIN_WIDTH) return;
+    setTimelineZoom(newCellWidth);
   }
 
   function zoomTimelineIn() {
-    const newTimelineCellWidth = $timelineCellWidth + timelineCellWidthStep;
-    if (newTimelineCellWidth > timelineCellMaxWidth) return;
-    setTimelineCellWidth(newTimelineCellWidth);
+    const newCellWidth = $timelineCellWidth + TIMELINE_CELL_WIDTH_STEP;
+    if (newCellWidth > TIMELINE_CELL_MAX_WIDTH) return;
+    setTimelineZoom(newCellWidth);
   }
 
-  function setTimelineZoom(value: number) {
-    setTimelineCellWidth(value);
+  function setTimelineZoom(newCellWidth: number) {
+    /** 1. Set a new timeline cell width */
+    setTimelineCellWidth(newCellWidth);
+
+    /** 2. Re-calculate framePerScale & rangeRange */
+    recalculateFrameRange();
+    recalculateFramePerScale();
+
+    /** 3. Then select the first frame as frame range is re-computed */
     selectFirstFrameX();
   }
 </script>
@@ -53,9 +60,9 @@
   <Slider
     class="min-w-[200px]"
     type="single"
-    min={timelineCellMinWidth}
-    max={timelineCellMaxWidth}
-    step={timelineCellWidthStep}
+    min={TIMELINE_CELL_MIN_WIDTH}
+    max={TIMELINE_CELL_MAX_WIDTH}
+    step={TIMELINE_CELL_WIDTH_STEP}
     value={$timelineCellWidth}
     onValueChange={setTimelineZoom}
   ></Slider>

@@ -42,8 +42,6 @@
     setSelectedAnnotationGroup,
     setTotalFrames,
   } from "$lib/plugin/video-annotation-activity/store/store";
-  import { setSelectedFrameX } from "$lib/plugin/video-annotation-activity/timeline/store";
-  import { getSelectedFrameXFromCurrentFrame } from "$lib/plugin/video-annotation-activity/timeline/utils";
 
   import AnnotationFooterToolbar from "$lib/plugin/layout/footer/annotation-footer-toolbar.svelte";
   import AnnotationFooter from "$lib/plugin/layout/footer/annotation-footer.svelte";
@@ -747,7 +745,6 @@
                   }}
                   onFramesChange={(current, total, playing) => {
                     setCurrentFrame(current);
-                    setSelectedFrameX(getSelectedFrameXFromCurrentFrame({ currentFrame: current }));
                     setTotalFrames(total);
                     isPlaying = playing;
                   }}
