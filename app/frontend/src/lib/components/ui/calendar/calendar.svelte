@@ -1,10 +1,11 @@
 <script lang="ts">
+  import * as Calendar from "$lib/components/ui/calendar/index.js";
   import { cn, type WithoutChildrenOrChild } from "$lib/utils.js";
   import { isEqualMonth, type DateValue } from "@internationalized/date";
   import { Calendar as CalendarPrimitive } from "bits-ui";
+
+  import type { ButtonVariant } from "$lib/components/ui/button/button.svelte";
   import type { Snippet } from "svelte";
-  import type { ButtonVariant } from "../button/button.svelte";
-  import * as Calendar from "./index.js";
 
   let {
     ref = $bindable(null),
