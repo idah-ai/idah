@@ -123,7 +123,9 @@
                           "type": "object"
                         }
                       },
-                      "required": ["type"],
+                      "required": [
+                        "type"
+                      ],
                       "additionalProperties": false
                     },
                     "included": {
@@ -133,14 +135,18 @@
                       }
                     }
                   },
-                  "required": ["data"],
+                  "required": [
+                    "data"
+                  ],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": ["Exports"],
+        "tags": [
+          "Exports"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -358,7 +364,9 @@
                             "type": "object"
                           }
                         },
-                        "required": ["type"],
+                        "required": [
+                          "type"
+                        ],
                         "additionalProperties": false
                       }
                     },
@@ -369,14 +377,18 @@
                       }
                     }
                   },
-                  "required": ["data"],
+                  "required": [
+                    "data"
+                  ],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": ["Exports"],
+        "tags": [
+          "Exports"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -403,7 +415,9 @@
             "description": "No content"
           }
         },
-        "tags": ["Exports"],
+        "tags": [
+          "Exports"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -421,7 +435,9 @@
             "description": "No content"
           }
         },
-        "tags": ["Exports"],
+        "tags": [
+          "Exports"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -442,7 +458,12 @@
                     }
                   }
                 },
-                "required": ["project_id", "dataset_ids", "exporter", "options"],
+                "required": [
+                  "project_id",
+                  "dataset_ids",
+                  "exporter",
+                  "options"
+                ],
                 "additionalProperties": false
               }
             }
@@ -467,7 +488,9 @@
             "description": "No content"
           }
         },
-        "tags": ["Exports"],
+        "tags": [
+          "Exports"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -577,7 +600,9 @@
                           "type": "object"
                         }
                       },
-                      "required": ["type"],
+                      "required": [
+                        "type"
+                      ],
                       "additionalProperties": false
                     },
                     "included": {
@@ -587,14 +612,18 @@
                       }
                     }
                   },
-                  "required": ["data"],
+                  "required": [
+                    "data"
+                  ],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": ["Jobs"],
+        "tags": [
+          "Jobs"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -619,7 +648,9 @@
             "description": "No content"
           }
         },
-        "tags": ["Jobs"],
+        "tags": [
+          "Jobs"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -905,7 +936,9 @@
                             "type": "object"
                           }
                         },
-                        "required": ["type"],
+                        "required": [
+                          "type"
+                        ],
                         "additionalProperties": false
                       }
                     },
@@ -916,14 +949,18 @@
                       }
                     }
                   },
-                  "required": ["data"],
+                  "required": [
+                    "data"
+                  ],
                   "additionalProperties": false
                 }
               }
             }
           }
         },
-        "tags": ["Jobs"],
+        "tags": [
+          "Jobs"
+        ],
         "security": [
           {
             "bearerAuth": []

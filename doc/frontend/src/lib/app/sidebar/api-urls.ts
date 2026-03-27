@@ -1,4 +1,6 @@
-export async function getApiUrls(): Promise<{ url: string; name: string; title?: string; tags?: string[] }[]> {
+export async function getApiUrls(): Promise<
+  { url: string; name: string; title?: string; description?: string; tags?: string[] }[]
+> {
   try {
     // During build time (SSR), read from filesystem
     if (import.meta.env.SSR) {
