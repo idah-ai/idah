@@ -251,10 +251,10 @@
     <!-- POPULAR TOPICS (shown when focused but no query) -->
     {#if isFocused && !$searchQuery}
       <div
-        class="absolute top-full left-0 right-0 -mx-4 md:mx-0 md:left-auto md:right-auto md:w-[400px] lg:w-[500px] md:mt-2 bg-white dark:bg-gray-800 border-t md:border border-gray-200 dark:border-gray-700 md:rounded-xl shadow-2xl z-50 overflow-hidden"
+        class="absolute w-full top-full left-0 md:mx-0 md:left-auto md:right-auto md:w-100 lg:w-125 md:mt-2 bg-white dark:bg-gray-800 border-t md:border border-gray-200 dark:border-gray-700 md:rounded-xl shadow-2xl z-50 overflow-hidden"
       >
         <div
-          class="px-5 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-gray-800 dark:to-gray-750"
+          class="px-5 py-4 border-b border-gray-200 dark:border-gray-700 bg-linear-to-r from-blue-50 to-blue-100 dark:from-gray-800 dark:to-gray-750"
         >
           <h4 class="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <span style="color: #2391ea;">✨</span>
@@ -272,7 +272,7 @@
                   <div class="p-2 rounded-lg {topic.bgColor} group-hover:scale-110 transition-transform">
                     <svelte:component
                       this={topic.icon}
-                      class="w-4 h-4 flex-shrink-0"
+                      class="w-4 h-4 shrink-0"
                       style="color: {topic.iconColor};"
                     />
                   </div>
@@ -297,7 +297,7 @@
     <!-- SEARCH RESULTS DROPDOWN -->
     {#if isFocused && $searchQuery}
       <div
-        class="absolute top-full left-0 right-0 -mx-4 md:mx-0 md:left-auto md:right-auto md:w-[400px] lg:w-[500px] md:mt-2 bg-white dark:bg-gray-800 border-t md:border border-gray-200 dark:border-gray-700 md:rounded-lg shadow-xl max-h-[400px] overflow-y-auto z-50"
+        class="absolute w-full top-full left-0 md:mx-0 md:left-auto md:right-auto md:w-100 lg:w-125 md:mt-2 bg-white dark:bg-gray-800 border-t md:border border-gray-200 dark:border-gray-700 md:rounded-lg shadow-xl max-h-100 overflow-y-auto z-50"
       >
         {#if isSearching}
           <div class="p-4 text-center text-gray-500 dark:text-gray-400">Searching...</div>
@@ -309,7 +309,7 @@
                   class="w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-start gap-3"
                   onclick={() => handleResultClick(result.url)}
                 >
-                  <FileTextIcon class="w-4 h-4 mt-1 flex-shrink-0" style="color: #2391ea;" />
+                  <FileTextIcon class="w-4 h-4 mt-1 shrink-0" style="color: #2391ea;" />
                   <div class="flex-1 min-w-0">
                     <div class="font-semibold text-gray-900 dark:text-white mb-1">
                       {result.title}
