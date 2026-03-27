@@ -1,12 +1,14 @@
-export async function getApiUrls(): Promise<{ url: string; name: string; title?: string; tags?: string[] }[]> {
+export async function getApiUrls(): Promise<
+  { url: string; name: string; title?: string; description?: string; tags?: string[] }[]
+> {
   try {
     // During build time (SSR), read from filesystem
     if (import.meta.env.SSR) {
       try {
-        const fs = await import('node:fs/promises');
-        const path = await import('node:path');
-        const swaggerPath = path.join(process.cwd(), 'public', 'data', 'swagger.json');
-        const content = await fs.readFile(swaggerPath, 'utf-8');
+        const fs = await import("node:fs/promises");
+        const path = await import("node:path");
+        const swaggerPath = path.join(process.cwd(), "public", "data", "swagger.json");
+        const content = await fs.readFile(swaggerPath, "utf-8");
         const result = JSON.parse(content);
         return result.urls || [];
       } catch (fsError) {

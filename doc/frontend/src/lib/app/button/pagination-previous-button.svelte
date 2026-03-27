@@ -7,11 +7,7 @@
   let { value, parent }: PaginationButtonProps = $props();
 </script>
 
-<Button
-  href={value?.href}
-  variant="outline"
-  class="flex-1 flex w-full h-auto hover:cursor-pointer justify-between p-3"
->
+<Button href={value?.href} variant="outline" class="flex-1 flex w-full h-auto hover:cursor-pointer justify-between p-3">
   <div class="flex gap-2">
     <ChevronLeftIcon class="h-4 w-4 shrink-0" />
     <span class="text-xs text-muted-foreground"> Previous </span>

@@ -17,202 +17,226 @@ import {
   Tag,
   GitBranch,
   CheckCircle,
-  BarChart
-} from '@lucide/astro';
+  BarChart,
+} from "@lucide/astro";
 ---
 
 <PageLayout>
   <PageContainer>
     <PageTitle>
-      <div class="p-3 rounded-xl text-blue-400 dark:text-blue-600 bg-blue-50 dark:bg-blue-900/20">
-        <Sparkles class="w-9 h-9" stroke-width={2} />
+      <div class="rounded-xl bg-blue-50 p-3 text-blue-400 dark:bg-blue-900/20 dark:text-blue-600">
+        <Sparkles class="h-9 w-9" stroke-width={2} />
       </div>
       Key Features
     </PageTitle>
 
-    <div class="prose prose-lg max-w-none dark:prose-invert">
-      <p class="text-lg text-gray-700 dark:text-gray-300 mb-8 leading-relaxed">
-        IDAH provides a rich set of features designed to streamline your data annotation workflow and improve collaboration.
+    <div class="prose prose-lg dark:prose-invert max-w-none">
+      <p class="mb-8 text-lg leading-relaxed text-gray-700 dark:text-gray-300">
+        IDAH provides a rich set of features designed to streamline your data annotation workflow and improve
+        collaboration.
       </p>
 
-      <h2 id="core-features" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+      <h2
+        id="core-features"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
         <a href="#core-features" class="hover:underline">Core Features</a>
       </h2>
 
-      <div class="space-y-4 mb-8 grid grid-cols-1 md:grid-cols-2 gap-4 not-prose">
-        <div class="border-l-4 border-blue-500 pl-4 py-3 bg-gray-50 dark:bg-gray-800 rounded-r h-full">
+      <div class="not-prose mb-8 grid grid-cols-1 gap-4 space-y-4 lg:grid-cols-2">
+        <div class="h-full rounded-r border-l-4 border-blue-500 bg-gray-50 py-3 pl-4 dark:bg-gray-800">
           <div class="flex items-start gap-3">
-            <Layers class="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" stroke-width={2} />
+            <Layers class="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600 dark:text-blue-400" stroke-width={2} />
             <div class="flex-1">
-              <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Multi-Modal Support</h4>
+              <h4 class="mb-2 font-semibold text-gray-900 dark:text-white">Multi-Modal Support</h4>
               <p class="text-sm text-gray-700 dark:text-gray-300">
-                Annotate various data types including images, videos, audio, text, and custom formats through plugins. IDAH's flexible architecture allows you to work with any media type your project requires.
+                Annotate various data types including images, videos, audio, text, and custom formats through plugins.
+                IDAH's flexible architecture allows you to work with any media type your project requires.
               </p>
             </div>
           </div>
         </div>
 
-        <div class="border-l-4 border-green-500 pl-4 py-3 bg-gray-50 dark:bg-gray-800 rounded-r h-full">
+        <div class="h-full rounded-r border-l-4 border-green-500 bg-gray-50 py-3 pl-4 dark:bg-gray-800">
           <div class="flex items-start gap-3">
-            <Users class="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" stroke-width={2} />
+            <Users class="mt-0.5 h-5 w-5 flex-shrink-0 text-green-600 dark:text-green-400" stroke-width={2} />
             <div class="flex-1">
-              <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Collaborative Workflows</h4>
+              <h4 class="mb-2 font-semibold text-gray-900 dark:text-white">Collaborative Workflows</h4>
               <p class="text-sm text-gray-700 dark:text-gray-300">
-                Support for team collaboration with role-based access control, assignment management, and progress tracking. Manage annotation tasks, distribute work among team members, and monitor completion status in real-time.
+                Support for team collaboration with role-based access control, assignment management, and progress
+                tracking. Manage annotation tasks, distribute work among team members, and monitor completion status in
+                real-time.
               </p>
             </div>
           </div>
         </div>
 
-        <div class="border-l-4 border-purple-500 pl-4 py-3 bg-gray-50 dark:bg-gray-800 rounded-r h-full">
+        <div class="h-full rounded-r border-l-4 border-purple-500 bg-gray-50 py-3 pl-4 dark:bg-gray-800">
           <div class="flex items-start gap-3">
-            <Puzzle class="w-5 h-5 text-purple-600 dark:text-purple-400 flex-shrink-0 mt-0.5" stroke-width={2} />
+            <Puzzle class="mt-0.5 h-5 w-5 flex-shrink-0 text-purple-600 dark:text-purple-400" stroke-width={2} />
             <div class="flex-1">
-              <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Extensible Plugin System</h4>
+              <h4 class="mb-2 font-semibold text-gray-900 dark:text-white">Extensible Plugin System</h4>
               <p class="text-sm text-gray-700 dark:text-gray-300">
-                Easily extend functionality with custom plugins for specialized annotation tools, media processors, and data exporters. Build plugins using familiar web technologies like SvelteKit and Ruby.
+                Easily extend functionality with custom plugins for specialized annotation tools, media processors, and
+                data exporters. Build plugins using familiar web technologies like SvelteKit and Ruby.
               </p>
             </div>
           </div>
         </div>
 
-        <div class="border-l-4 border-orange-500 pl-4 py-3 bg-gray-50 dark:bg-gray-800 rounded-r h-full">
+        <div class="h-full rounded-r border-l-4 border-orange-500 bg-gray-50 py-3 pl-4 dark:bg-gray-800">
           <div class="flex items-start gap-3">
-            <Image class="w-5 h-5 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5" stroke-width={2} />
+            <Image class="mt-0.5 h-5 w-5 flex-shrink-0 text-orange-600 dark:text-orange-400" stroke-width={2} />
             <div class="flex-1">
-              <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Media Processing</h4>
+              <h4 class="mb-2 font-semibold text-gray-900 dark:text-white">Media Processing</h4>
               <p class="text-sm text-gray-700 dark:text-gray-300">
-                Automatic processing of uploaded media files including thumbnail generation, format conversion, and optimization. Support for various image and video formats out of the box, with plugin support for specialized formats.
+                Automatic processing of uploaded media files including thumbnail generation, format conversion, and
+                optimization. Support for various image and video formats out of the box, with plugin support for
+                specialized formats.
               </p>
             </div>
           </div>
         </div>
 
-        <div class="border-l-4 border-red-500 pl-4 py-3 bg-gray-50 dark:bg-gray-800 rounded-r h-full">
+        <div class="h-full rounded-r border-l-4 border-red-500 bg-gray-50 py-3 pl-4 dark:bg-gray-800">
           <div class="flex items-start gap-3">
-            <Download class="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" stroke-width={2} />
+            <Download class="mt-0.5 h-5 w-5 flex-shrink-0 text-red-600 dark:text-red-400" stroke-width={2} />
             <div class="flex-1">
-              <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Data Export & Sync</h4>
+              <h4 class="mb-2 font-semibold text-gray-900 dark:text-white">Data Export & Sync</h4>
               <p class="text-sm text-gray-700 dark:text-gray-300">
-                Export annotated datasets in various formats (JSON, CSV, COCO, YOLO, etc.) and sync with external systems through customizable exporters. Schedule automated exports and integrate with MLOps pipelines.
+                Export annotated datasets in various formats (JSON, CSV, COCO, YOLO, etc.) and sync with external
+                systems through customizable exporters. Schedule automated exports and integrate with MLOps pipelines.
               </p>
             </div>
           </div>
         </div>
 
-        <div class="border-l-4 border-yellow-500 pl-4 py-3 bg-gray-50 dark:bg-gray-800 rounded-r h-full">
+        <div class="h-full rounded-r border-l-4 border-yellow-500 bg-gray-50 py-3 pl-4 dark:bg-gray-800">
           <div class="flex items-start gap-3">
-            <Shield class="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" stroke-width={2} />
+            <Shield class="mt-0.5 h-5 w-5 flex-shrink-0 text-yellow-600 dark:text-yellow-400" stroke-width={2} />
             <div class="flex-1">
-              <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Audit & Compliance</h4>
+              <h4 class="mb-2 font-semibold text-gray-900 dark:text-white">Audit & Compliance</h4>
               <p class="text-sm text-gray-700 dark:text-gray-300">
-                Comprehensive audit logging for tracking user actions, ensuring compliance, and maintaining data integrity. Track who annotated what, when, and how annotations have changed over time.
+                Comprehensive audit logging for tracking user actions, ensuring compliance, and maintaining data
+                integrity. Track who annotated what, when, and how annotations have changed over time.
               </p>
             </div>
           </div>
         </div>
       </div>
 
-      <h2 id="annotation-features" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+      <h2
+        id="annotation-features"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
         <a href="#annotation-features" class="hover:underline">Annotation Features</a>
       </h2>
 
-      <h3 id="annotation-tools" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-8">
+      <h3 id="annotation-tools" class="mt-8 mb-8 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#annotation-tools" class="hover:underline">Annotation Tools</a>
       </h3>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6 mb-12 not-prose">
+      <div class="not-prose mb-12 grid grid-cols-1 gap-x-12 gap-y-6 md:grid-cols-2">
         <!-- Bounding Boxes -->
-        <div class="flex items-start gap-4 group">
-          <div class="p-2 rounded-lg flex-shrink-0 group-hover:scale-110 transition-transform duration-300" style="background: rgba(35, 145, 234, 0.1);">
-            <Square class="w-7 h-7" style="color: #2391ea;" stroke-width={2} />
+        <div class="group flex items-start gap-4">
+          <div
+            class="flex-shrink-0 rounded-lg p-2 transition-transform duration-300 group-hover:scale-110"
+            style="background: rgba(35, 145, 234, 0.1);"
+          >
+            <Square class="h-7 w-7" style="color: #2391ea;" stroke-width={2} />
           </div>
           <div class="flex-1">
-            <h4 class="font-semibold text-gray-900 dark:text-white mb-1">Bounding Boxes</h4>
-            <p class="text-sm text-gray-600 dark:text-gray-400">
-              Draw rectangular boxes for object detection
-            </p>
+            <h4 class="mb-1 font-semibold text-gray-900 dark:text-white">Bounding Boxes</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Draw rectangular boxes for object detection</p>
           </div>
         </div>
 
         <!-- Polygons -->
-        <div class="flex items-start gap-4 group">
-          <div class="p-2 rounded-lg flex-shrink-0 group-hover:scale-110 transition-transform duration-300" style="background: rgba(168, 85, 247, 0.1);">
-            <PenTool class="w-7 h-7 text-purple-600 dark:text-purple-400" stroke-width={2} />
+        <div class="group flex items-start gap-4">
+          <div
+            class="flex-shrink-0 rounded-lg p-2 transition-transform duration-300 group-hover:scale-110"
+            style="background: rgba(168, 85, 247, 0.1);"
+          >
+            <PenTool class="h-7 w-7 text-purple-600 dark:text-purple-400" stroke-width={2} />
           </div>
           <div class="flex-1">
-            <h4 class="font-semibold text-gray-900 dark:text-white mb-1">Polygons</h4>
-            <p class="text-sm text-gray-600 dark:text-gray-400">
-              Create precise segmentation masks
-            </p>
+            <h4 class="mb-1 font-semibold text-gray-900 dark:text-white">Polygons</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Create precise segmentation masks</p>
           </div>
         </div>
 
         <!-- Polylines -->
-        <div class="flex items-start gap-4 group">
-          <div class="p-2 rounded-lg flex-shrink-0 group-hover:scale-110 transition-transform duration-300" style="background: rgba(6, 182, 212, 0.1);">
-            <GitBranch class="w-7 h-7 text-cyan-600 dark:text-cyan-400" stroke-width={2} />
+        <div class="group flex items-start gap-4">
+          <div
+            class="flex-shrink-0 rounded-lg p-2 transition-transform duration-300 group-hover:scale-110"
+            style="background: rgba(6, 182, 212, 0.1);"
+          >
+            <GitBranch class="h-7 w-7 text-cyan-600 dark:text-cyan-400" stroke-width={2} />
           </div>
           <div class="flex-1">
-            <h4 class="font-semibold text-gray-900 dark:text-white mb-1">Polylines</h4>
-            <p class="text-sm text-gray-600 dark:text-gray-400">
-              Annotate paths and trajectories
-            </p>
+            <h4 class="mb-1 font-semibold text-gray-900 dark:text-white">Polylines</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Annotate paths and trajectories</p>
           </div>
         </div>
 
         <!-- Points -->
-        <div class="flex items-start gap-4 group">
-          <div class="p-2 rounded-lg flex-shrink-0 group-hover:scale-110 transition-transform duration-300" style="background: rgba(236, 72, 153, 0.1);">
-            <Circle class="w-7 h-7 text-pink-600 dark:text-pink-400" stroke-width={2} />
+        <div class="group flex items-start gap-4">
+          <div
+            class="flex-shrink-0 rounded-lg p-2 transition-transform duration-300 group-hover:scale-110"
+            style="background: rgba(236, 72, 153, 0.1);"
+          >
+            <Circle class="h-7 w-7 text-pink-600 dark:text-pink-400" stroke-width={2} />
           </div>
           <div class="flex-1">
-            <h4 class="font-semibold text-gray-900 dark:text-white mb-1">Points</h4>
-            <p class="text-sm text-gray-600 dark:text-gray-400">
-              Mark specific locations (keypoints, landmarks)
-            </p>
+            <h4 class="mb-1 font-semibold text-gray-900 dark:text-white">Points</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Mark specific locations (keypoints, landmarks)</p>
           </div>
         </div>
 
         <!-- Classification -->
-        <div class="flex items-start gap-4 group">
-          <div class="p-2 rounded-lg flex-shrink-0 group-hover:scale-110 transition-transform duration-300" style="background: rgba(34, 197, 94, 0.1);">
-            <Tag class="w-7 h-7 text-green-600 dark:text-green-400" stroke-width={2} />
+        <div class="group flex items-start gap-4">
+          <div
+            class="flex-shrink-0 rounded-lg p-2 transition-transform duration-300 group-hover:scale-110"
+            style="background: rgba(34, 197, 94, 0.1);"
+          >
+            <Tag class="h-7 w-7 text-green-600 dark:text-green-400" stroke-width={2} />
           </div>
           <div class="flex-1">
-            <h4 class="font-semibold text-gray-900 dark:text-white mb-1">Classification</h4>
-            <p class="text-sm text-gray-600 dark:text-gray-400">
-              Assign labels and categories to data
-            </p>
+            <h4 class="mb-1 font-semibold text-gray-900 dark:text-white">Classification</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Assign labels and categories to data</p>
           </div>
         </div>
 
         <!-- Custom Tools -->
-        <div class="flex items-start gap-4 group">
-          <div class="p-2 rounded-lg flex-shrink-0 group-hover:scale-110 transition-transform duration-300" style="background: rgba(245, 158, 11, 0.1);">
-            <Sparkles class="w-7 h-7 text-amber-600 dark:text-amber-400" stroke-width={2} />
+        <div class="group flex items-start gap-4">
+          <div
+            class="flex-shrink-0 rounded-lg p-2 transition-transform duration-300 group-hover:scale-110"
+            style="background: rgba(245, 158, 11, 0.1);"
+          >
+            <Sparkles class="h-7 w-7 text-amber-600 dark:text-amber-400" stroke-width={2} />
           </div>
           <div class="flex-1">
-            <h4 class="font-semibold text-gray-900 dark:text-white mb-1">Custom Tools</h4>
-            <p class="text-sm text-gray-600 dark:text-gray-400">
-              Create specialized annotation tools through plugins
-            </p>
+            <h4 class="mb-1 font-semibold text-gray-900 dark:text-white">Custom Tools</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Create specialized annotation tools through plugins</p>
           </div>
         </div>
       </div>
 
-      <h3 id="workflow-management" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-12 mb-8">
+      <h3 id="workflow-management" class="mt-12 mb-8 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#workflow-management" class="hover:underline">Workflow Management</a>
       </h3>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6 mb-12 not-prose">
+      <div class="not-prose mb-12 grid grid-cols-1 gap-x-12 gap-y-6 md:grid-cols-2">
         <!-- Task Assignment -->
-        <div class="flex items-start gap-4 group">
-          <div class="p-2 rounded-lg flex-shrink-0 group-hover:scale-110 transition-transform duration-300" style="background: rgba(35, 145, 234, 0.1);">
-            <Users class="w-7 h-7" style="color: #2391ea;" stroke-width={2} />
+        <div class="group flex items-start gap-4">
+          <div
+            class="flex-shrink-0 rounded-lg p-2 transition-transform duration-300 group-hover:scale-110"
+            style="background: rgba(35, 145, 234, 0.1);"
+          >
+            <Users class="h-7 w-7" style="color: #2391ea;" stroke-width={2} />
           </div>
           <div class="flex-1">
-            <h4 class="font-semibold text-gray-900 dark:text-white mb-1">Task Assignment</h4>
+            <h4 class="mb-1 font-semibold text-gray-900 dark:text-white">Task Assignment</h4>
             <p class="text-sm text-gray-600 dark:text-gray-400">
               Distribute annotation tasks to team members efficiently
             </p>
@@ -220,101 +244,119 @@ import {
         </div>
 
         <!-- Review Process -->
-        <div class="flex items-start gap-4 group">
-          <div class="p-2 rounded-lg flex-shrink-0 group-hover:scale-110 transition-transform duration-300" style="background: rgba(168, 85, 247, 0.1);">
-            <CheckCircle class="w-7 h-7 text-purple-600 dark:text-purple-400" stroke-width={2} />
+        <div class="group flex items-start gap-4">
+          <div
+            class="flex-shrink-0 rounded-lg p-2 transition-transform duration-300 group-hover:scale-110"
+            style="background: rgba(168, 85, 247, 0.1);"
+          >
+            <CheckCircle class="h-7 w-7 text-purple-600 dark:text-purple-400" stroke-width={2} />
           </div>
           <div class="flex-1">
-            <h4 class="font-semibold text-gray-900 dark:text-white mb-1">Review Process</h4>
-            <p class="text-sm text-gray-600 dark:text-gray-400">
-              Multi-stage review and approval workflows
-            </p>
+            <h4 class="mb-1 font-semibold text-gray-900 dark:text-white">Review Process</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Multi-stage review and approval workflows</p>
           </div>
         </div>
 
         <!-- Quality Control -->
-        <div class="flex items-start gap-4 group">
-          <div class="p-2 rounded-lg flex-shrink-0 group-hover:scale-110 transition-transform duration-300" style="background: rgba(34, 197, 94, 0.1);">
-            <Shield class="w-7 h-7 text-green-600 dark:text-green-400" stroke-width={2} />
+        <div class="group flex items-start gap-4">
+          <div
+            class="flex-shrink-0 rounded-lg p-2 transition-transform duration-300 group-hover:scale-110"
+            style="background: rgba(34, 197, 94, 0.1);"
+          >
+            <Shield class="h-7 w-7 text-green-600 dark:text-green-400" stroke-width={2} />
           </div>
           <div class="flex-1">
-            <h4 class="font-semibold text-gray-900 dark:text-white mb-1">Quality Control</h4>
-            <p class="text-sm text-gray-600 dark:text-gray-400">
-              Inter-annotator agreement and quality metrics
-            </p>
+            <h4 class="mb-1 font-semibold text-gray-900 dark:text-white">Quality Control</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Inter-annotator agreement and quality metrics</p>
           </div>
         </div>
 
         <!-- Progress Tracking -->
-        <div class="flex items-start gap-4 group">
-          <div class="p-2 rounded-lg flex-shrink-0 group-hover:scale-110 transition-transform duration-300" style="background: rgba(245, 158, 11, 0.1);">
-            <BarChart class="w-7 h-7 text-orange-600 dark:text-orange-400" stroke-width={2} />
+        <div class="group flex items-start gap-4">
+          <div
+            class="flex-shrink-0 rounded-lg p-2 transition-transform duration-300 group-hover:scale-110"
+            style="background: rgba(245, 158, 11, 0.1);"
+          >
+            <BarChart class="h-7 w-7 text-orange-600 dark:text-orange-400" stroke-width={2} />
           </div>
           <div class="flex-1">
-            <h4 class="font-semibold text-gray-900 dark:text-white mb-1">Progress Tracking</h4>
-            <p class="text-sm text-gray-600 dark:text-gray-400">
-              Monitor completion rates and productivity
-            </p>
+            <h4 class="mb-1 font-semibold text-gray-900 dark:text-white">Progress Tracking</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Monitor completion rates and productivity</p>
           </div>
         </div>
       </div>
 
-      <h2 id="plugin-system" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+      <h2
+        id="plugin-system"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
         <a href="#plugin-system" class="hover:underline">Plugin System</a>
       </h2>
-      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
         IDAH's plugin system allows you to extend the platform with custom functionality:
       </p>
 
-      <div class="space-y-4 mb-8">
-        <div class="border-l-4 border-blue-500 pl-4 py-3 bg-gray-50 dark:bg-gray-800 rounded-r">
-          <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Frontend Plugins</h4>
+      <div class="mb-8 space-y-4">
+        <div class="rounded-r border-l-4 border-blue-500 bg-gray-50 py-3 pl-4 dark:bg-gray-800">
+          <h4 class="mb-2 font-semibold text-gray-900 dark:text-white">Frontend Plugins</h4>
           <p class="text-sm text-gray-700 dark:text-gray-300">
-            Build custom annotation tools, visualizations, and UI components using SvelteKit. Create specialized interfaces for domain-specific annotation tasks.
+            Build custom annotation tools, visualizations, and UI components using SvelteKit. Create specialized
+            interfaces for domain-specific annotation tasks.
           </p>
         </div>
 
-        <div class="border-l-4 border-green-500 pl-4 py-3 bg-gray-50 dark:bg-gray-800 rounded-r">
-          <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Media Service Plugins</h4>
+        <div class="rounded-r border-l-4 border-green-500 bg-gray-50 py-3 pl-4 dark:bg-gray-800">
+          <h4 class="mb-2 font-semibold text-gray-900 dark:text-white">Media Service Plugins</h4>
           <p class="text-sm text-gray-700 dark:text-gray-300">
-            Create custom media processors for specialized file formats or transformations. Handle medical imaging (DICOM), 3D point clouds, or any custom format.
+            Create custom media processors for specialized file formats or transformations. Handle medical imaging
+            (DICOM), 3D point clouds, or any custom format.
           </p>
         </div>
 
-        <div class="border-l-4 border-purple-500 pl-4 py-3 bg-gray-50 dark:bg-gray-800 rounded-r">
-          <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Sync Service Plugins</h4>
+        <div class="rounded-r border-l-4 border-purple-500 bg-gray-50 py-3 pl-4 dark:bg-gray-800">
+          <h4 class="mb-2 font-semibold text-gray-900 dark:text-white">Sync Service Plugins</h4>
           <p class="text-sm text-gray-700 dark:text-gray-300">
-            Develop custom data exporters for specific formats or integration with external APIs. Push annotations directly to your ML training pipeline.
+            Develop custom data exporters for specific formats or integration with external APIs. Push annotations
+            directly to your ML training pipeline.
           </p>
         </div>
       </div>
 
-      <p class="text-gray-700 dark:text-gray-300 mb-6 leading-relaxed">
-        Learn more about creating plugins in the <a href="/plugin/" class="text-blue-600 dark:text-blue-400 hover:underline font-semibold">Plugin Development Guide</a>.
+      <p class="mb-6 leading-relaxed text-gray-700 dark:text-gray-300">
+        Learn more about creating plugins in the <a
+          href="/plugin/"
+          class="font-semibold text-blue-600 hover:underline dark:text-blue-400">Plugin Development Guide</a
+        >.
       </p>
 
-      <h2 id="collaboration-features" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-8 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+      <h2
+        id="collaboration-features"
+        class="mt-12 mb-8 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
         <a href="#collaboration-features" class="hover:underline">Collaboration Features</a>
       </h2>
 
-      <div class="space-y-8 mb-12 not-prose grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div class="not-prose mb-12 grid grid-cols-1 gap-8 space-y-8 md:grid-cols-2">
         <!-- Access Control -->
         <div>
-          <h3 id="access-control" class="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+          <h3
+            id="access-control"
+            class="mb-4 flex items-center gap-2 text-xl font-semibold text-gray-900 dark:text-white"
+          >
             <span class="text-2xl" style="color: #2391ea;">•</span>
             <a href="#access-control" class="hover:underline">Access Control</a>
           </h3>
           <div class="ml-8 space-y-3">
-            <p class="text-gray-700 dark:text-gray-300 flex items-start gap-3">
-              <span class="text-blue-500 mt-1">→</span>
+            <p class="flex items-start gap-3 text-gray-700 dark:text-gray-300">
+              <span class="mt-1 text-blue-500">→</span>
               <span>Role-based permissions (Admin, Manager, Annotator, Reviewer)</span>
             </p>
-            <p class="text-gray-700 dark:text-gray-300 flex items-start gap-3">
-              <span class="text-blue-500 mt-1">→</span>
+            <p class="flex items-start gap-3 text-gray-700 dark:text-gray-300">
+              <span class="mt-1 text-blue-500">→</span>
               <span>Project-level and dataset-level access control</span>
             </p>
-            <p class="text-gray-700 dark:text-gray-300 flex items-start gap-3">
-              <span class="text-blue-500 mt-1">→</span>
+            <p class="flex items-start gap-3 text-gray-700 dark:text-gray-300">
+              <span class="mt-1 text-blue-500">→</span>
               <span>User and organization management</span>
             </p>
           </div>
@@ -322,30 +364,38 @@ import {
 
         <!-- Communication -->
         <div>
-          <h3 id="communication" class="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+          <h3
+            id="communication"
+            class="mb-4 flex items-center gap-2 text-xl font-semibold text-gray-900 dark:text-white"
+          >
             <span class="text-2xl" style="color: #2391ea;">•</span>
             <a href="#communication" class="hover:underline">Communication</a>
           </h3>
           <div class="ml-8 space-y-3">
-            <p class="text-gray-700 dark:text-gray-300 flex items-start gap-3">
-              <span class="text-blue-500 mt-1">→</span>
+            <p class="flex items-start gap-3 text-gray-700 dark:text-gray-300">
+              <span class="mt-1 text-blue-500">→</span>
               <span>Email notifications for task assignments and updates</span>
             </p>
-            <p class="text-gray-700 dark:text-gray-300 flex items-start gap-3">
-              <span class="text-blue-500 mt-1">→</span>
+            <p class="flex items-start gap-3 text-gray-700 dark:text-gray-300">
+              <span class="mt-1 text-blue-500">→</span>
               <span>In-app notifications and alerts</span>
             </p>
-            <p class="text-gray-700 dark:text-gray-300 flex items-start gap-3">
-              <span class="text-blue-500 mt-1">→</span>
+            <p class="flex items-start gap-3 text-gray-700 dark:text-gray-300">
+              <span class="mt-1 text-blue-500">→</span>
               <span>Activity feeds and audit trails</span>
             </p>
           </div>
         </div>
       </div>
 
-      <div class="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-l-4 border-blue-500 p-6 mb-6 rounded-lg">
-        <p class="text-lg text-gray-800 dark:text-gray-200 leading-relaxed font-medium">
-          💡 Want to see IDAH in action? Check out the <a href="/getting-started/use-cases/" class="text-blue-600 dark:text-blue-400 hover:underline font-semibold">Use Cases</a> to learn how IDAH can be applied to different domains.
+      <div
+        class="mb-6 rounded-lg border-l-4 border-blue-500 bg-gradient-to-r from-blue-50 to-purple-50 p-6 dark:from-blue-900/20 dark:to-purple-900/20"
+      >
+        <p class="text-lg leading-relaxed font-medium text-gray-800 dark:text-gray-200">
+          💡 Want to see IDAH in action? Check out the <a
+            href="/getting-started/use-cases/"
+            class="font-semibold text-blue-600 hover:underline dark:text-blue-400">Use Cases</a
+          > to learn how IDAH can be applied to different domains.
         </p>
       </div>
     </div>

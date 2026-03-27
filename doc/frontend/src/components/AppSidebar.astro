@@ -1,19 +1,29 @@
 ---
-  import ApplicationSidebar from "$lib/app/application/sidebar/application-sidebar.svelte";
-  import { getApiUrls } from "$lib/app/sidebar/api-urls";
+import ApplicationSidebar from "$lib/app/application/sidebar/application-sidebar.svelte";
+import { getApiUrls } from "$lib/app/sidebar/api-urls";
+import { SIDEBAR_WIDTH } from "$lib/app/sidebar/constants";
+import HeaderActions from "./app/HeaderActions.astro";
 
-  const urls = await getApiUrls();
-  const pathname = Astro.url.pathname + Astro.url.search;
+const urls = await getApiUrls();
+const pathname = Astro.url.pathname + Astro.url.search;
 ---
 
 <!-- Responsive sidebar: mobile overlay + desktop fixed -->
 <aside
   id="app-sidebar"
-  class="bg-background
-         fixed top-16 bottom-0 left-0 z-40 w-full -translate-x-full transition-transform duration-300 ease-in-out overflow-y-auto
-         md:top-auto md:bottom-auto md:z-auto md:translate-x-0 md:flex md:w-64 md:shrink-0 md:transition-none md:overflow-visible"
+  style={`--sidebar-width: ${SIDEBAR_WIDTH}`}
+  class="bg-background fixed top-16 bottom-0 left-0 z-40 w-full -translate-x-full transition-transform duration-300 ease-in-out md:top-16 md:bottom-0 md:z-auto md:flex md:w-(--sidebar-width) md:shrink-0 md:translate-x-0 md:transition-none"
 >
-  <ApplicationSidebar client:load {pathname} apiUrls={urls} />
+  <div class="flex h-full w-full flex-col overflow-hidden border-r dark:border-gray-700">
+    <!-- Header Actions for mobile -->
+    <div class="relative z-50 shrink-0 border-b bg-white p-4 dark:bg-gray-950 md:hidden justify-items-end">
+      <HeaderActions />
+    </div>
+
+    <div class="flex-1 overflow-y-auto">
+      <ApplicationSidebar client:load {pathname} apiUrls={urls} />
+    </div>
+  </div>
 </aside>
 
 <script>
