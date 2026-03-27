@@ -98,7 +98,6 @@
   function selectFrameX(frameX: number) {
     const selectedFrame = getFrameFromMouseX({ clientX: frameX });
     setCurrentFrame(selectedFrame);
-    setSelectedFrameX(frameX);
     onSeekFrame(selectedFrame);
     closeContextMenu();
   }
