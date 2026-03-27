@@ -47,7 +47,7 @@
     },
     {
       title: "API Reference",
-      url: "/apis/dataset/Projects/",
+      url: "/apis/",
       description: "Browse the complete API documentation",
       icon: CodeIcon,
       iconColor: "#f59e0b",
