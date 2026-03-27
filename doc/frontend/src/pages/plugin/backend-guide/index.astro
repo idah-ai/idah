@@ -11,93 +11,144 @@ import { Server } from "@lucide/svelte";
 <PageLayout>
   <PageContainer>
     <PageTitle>
-      <div class="p-3 rounded-xl text-purple-700 dark:text-purple-800 bg-purple-50 dark:bg-purple-900/20">
-        <Server class="w-9 h-9" stroke-width={2} />
+      <div class="rounded-xl bg-purple-50 p-3 text-purple-700 dark:bg-purple-900/20 dark:text-purple-800">
+        <Server class="h-9 w-9" stroke-width={2} />
       </div>
       Backend Guide
     </PageTitle>
 
-    <div class="prose prose-lg max-w-none dark:prose-invert">
-      <p class="text-lg text-gray-700 dark:text-gray-300 mb-8 leading-relaxed">
+    <div class="prose prose-lg dark:prose-invert max-w-none">
+      <p class="mb-8 text-lg leading-relaxed text-gray-700 dark:text-gray-300">
         This guide covers backend development for IDAH plugins using Ruby.
       </p>
 
-      <h2 id="overview" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+      <h2
+        id="overview"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
         <a href="#overview" class="hover:underline">Overview</a>
       </h2>
-      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
-        IDAH plugins can have backend services that process media files, export data, or integrate with external systems. Backend services are written in Ruby and follow a modular structure.
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
+        IDAH plugins can have backend services that process media files, export data, or integrate with external
+        systems. Backend services are written in Ruby and follow a modular structure.
       </p>
 
-      <h3 id="technology-stack" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="technology-stack" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#technology-stack" class="hover:underline">Technology Stack:</a>
       </h3>
-      <ul class="list-disc list-inside space-y-2 mb-6 text-gray-700 dark:text-gray-300">
-        <li class="leading-relaxed"><strong class="font-semibold text-gray-900 dark:text-white">Language:</strong> Ruby 3.4+</li>
-        <li class="leading-relaxed"><strong class="font-semibold text-gray-900 dark:text-white">Testing Framework:</strong> RSpec</li>
-        <li class="leading-relaxed"><strong class="font-semibold text-gray-900 dark:text-white">Schema Validation:</strong> Verse Schema</li>
-        <li class="leading-relaxed"><strong class="font-semibold text-gray-900 dark:text-white">Dependencies:</strong> Bundler</li>
+      <ul class="mb-6 list-inside list-disc space-y-2 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed">
+          <strong class="font-semibold text-gray-900 dark:text-white">Language:</strong> Ruby 3.4+
+        </li>
+        <li class="leading-relaxed">
+          <strong class="font-semibold text-gray-900 dark:text-white">Testing Framework:</strong> RSpec
+        </li>
+        <li class="leading-relaxed">
+          <strong class="font-semibold text-gray-900 dark:text-white">Schema Validation:</strong> Verse Schema
+        </li>
+        <li class="leading-relaxed">
+          <strong class="font-semibold text-gray-900 dark:text-white">Dependencies:</strong> Bundler
+        </li>
       </ul>
 
-      <h2 id="file-structure" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+      <h2
+        id="file-structure"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
         <a href="#file-structure" class="hover:underline">File Structure</a>
       </h2>
-      <FolderBlock structure={[
-        { name: '<plugin_name>/', type: 'folder', children: [
-          { name: 'backends/', type: 'folder', children: [
-            { name: 'README.md', type: 'file', comment: 'Backend quick start guide' },
-            { name: 'spec_helper.rb', type: 'file', comment: 'Shared RSpec configuration' },
-            { name: '.rspec', type: 'file', comment: 'RSpec configuration' },
-            { name: 'media/', type: 'folder', comment: 'Media service (if enabled)', children: [
-              { name: '<plugin_name_underscore>/', type: 'folder', children: [
-                { name: '..', type: 'file' }
-              ]}
-            ]},
-            { name: 'sync/', type: 'folder', comment: 'Sync service (if enabled)', children: [
-              { name: '<plugin_name_underscore>/', type: 'folder', children: [
-                { name: '..', type: 'file' }
-              ]}
-            ]}
-          ]}
+      <FolderBlock
+        structure={[
+          {
+            name: "<plugin_name>/",
+            type: "folder",
+            children: [
+              {
+                name: "backends/",
+                type: "folder",
+                children: [
+                  { name: "README.md", type: "file", comment: "Backend quick start guide" },
+                  { name: "spec_helper.rb", type: "file", comment: "Shared RSpec configuration" },
+                  { name: ".rspec", type: "file", comment: "RSpec configuration" },
+                  {
+                    name: "media/",
+                    type: "folder",
+                    comment: "Media service (if enabled)",
+                    children: [
+                      { name: "<plugin_name_underscore>/", type: "folder", children: [{ name: "..", type: "file" }] },
+                    ],
+                  },
+                  {
+                    name: "sync/",
+                    type: "folder",
+                    comment: "Sync service (if enabled)",
+                    children: [
+                      { name: "<plugin_name_underscore>/", type: "folder", children: [{ name: "..", type: "file" }] },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
         ]}
-      ]} />
+      />
 
-      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed mt-6">
-        <strong class="font-semibold text-gray-900 dark:text-white">Note:</strong> <code class="bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded">&lt;plugin_name_underscore&gt;</code> is your plugin name in snake_case (e.g., <code class="bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded">my_awesome_plugin</code> for plugin <code class="bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded">my-awesome-plugin</code>).
+      <p class="mt-6 mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
+        <strong class="font-semibold text-gray-900 dark:text-white">Note:</strong>
+        <code class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+          >&lt;plugin_name_underscore&gt;</code
+        > is your plugin name in snake_case (e.g., <code
+          class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+          >my_awesome_plugin</code
+        > for plugin <code class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+          >my-awesome-plugin</code
+        >).
       </p>
 
-      <h2 id="available-backend-services" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+      <h2
+        id="available-backend-services"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
         <a href="#available-backend-services" class="hover:underline">Available Backend Services</a>
       </h2>
-      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
-        IDAH plugins can include <strong class="font-semibold text-gray-900 dark:text-white">one, all, or none</strong> of these backend services. You can create frontend-only plugins, or add backend services as needed.
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
+        IDAH plugins can include <strong class="font-semibold text-gray-900 dark:text-white">one, all, or none</strong> of
+        these backend services. You can create frontend-only plugins, or add backend services as needed.
       </p>
 
-      <h3 id="media-service" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="media-service" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#media-service" class="hover:underline">Media Service</a>
       </h3>
-      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
-        Handles media file processing (images, videos, audio, etc.). Process original media files and generate thumbnails, previews, or transformations.
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
+        Handles media file processing (images, videos, audio, etc.). Process original media files and generate
+        thumbnails, previews, or transformations.
       </p>
 
-      <h3 id="sync-service" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="sync-service" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#sync-service" class="hover:underline">Sync Service</a>
       </h3>
-      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
-        Handles data export and synchronization with external systems. Export datasets, entries, annotations, and media to various formats or external APIs.
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
+        Handles data export and synchronization with external systems. Export datasets, entries, annotations, and media
+        to various formats or external APIs.
       </p>
 
-      <h2 id="testing" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+      <h2
+        id="testing"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
         <a href="#testing" class="hover:underline">Testing</a>
       </h2>
 
-      <h3 id="using-rspec" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="using-rspec" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#using-rspec" class="hover:underline">Using RSpec</a>
       </h3>
-      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
         All backend code should have comprehensive tests:
       </p>
-      <CodeBlock language="ruby" path="media/processor_spec.rb">{`require "spec_helper"
+      <CodeBlock
+        language="ruby"
+        path="media/processor_spec.rb"
+        code={`require "spec_helper"
 require_relative "processor"
 
 RSpec.describe YourPlugin::Processor do
@@ -114,31 +165,45 @@ RSpec.describe YourPlugin::Processor do
       expect { processor.process(context) }.not_to raise_error
     end
   end
-end`}</CodeBlock>
+end`}
+      />
 
-      <h3 id="running-tests" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="running-tests" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#running-tests" class="hover:underline">Running Tests</a>
       </h3>
-      <CodeBlock language="bash">bundle exec rspec
-bundle exec rspec media/processor_spec.rb
-bundle exec rspec --format documentation</CodeBlock>
+      <CodeBlock
+        language="bash"
+        code="bundle exec rspec bundle exec rspec media/processor_spec.rb bundle exec rspec --format documentation"
+      />
 
-      <h2 id="best-practices" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+      <h2
+        id="best-practices"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
         <a href="#best-practices" class="hover:underline">Best Practices</a>
       </h2>
 
-      <h3 id="module-naming" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="module-naming" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#module-naming" class="hover:underline">1. Module Naming</a>
       </h3>
-      <ul class="list-disc list-inside space-y-2 mb-6 text-gray-700 dark:text-gray-300">
-        <li class="leading-relaxed">Use nested classes (<code class="bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded">YourPlugin::Media</code>, <code class="bg-gray-100 dark:bg-gray-800 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded">YourPlugin::Sync</code>) to avoid Zeitwerk conflicts</li>
+      <ul class="mb-6 list-inside list-disc space-y-2 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed">
+          Use nested classes (<code
+            class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+            >YourPlugin::Media</code
+          >, <code class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+            >YourPlugin::Sync</code
+          >) to avoid Zeitwerk conflicts
+        </li>
         <li class="leading-relaxed">Follow Ruby naming conventions (PascalCase for classes, snake_case for files)</li>
       </ul>
 
-      <h3 id="error-handling" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="error-handling" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#error-handling" class="hover:underline">2. Error Handling</a>
       </h3>
-      <CodeBlock language="ruby">{`def process(context)
+      <CodeBlock
+        language="ruby"
+        code={`def process(context)
   raise ArgumentError, "Input file required" unless context.input_file
 
   begin
@@ -147,63 +212,78 @@ bundle exec rspec --format documentation</CodeBlock>
     Verse.logger.error("Processing failed: #{e.message}")
     raise
   end
-end`}</CodeBlock>
+end`}
+      />
 
-      <h3 id="logging" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="logging" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#logging" class="hover:underline">3. Logging</a>
       </h3>
-      <CodeBlock language="ruby">{`def process(context)
+      <CodeBlock
+        language="ruby"
+        code={`def process(context)
   Verse.logger.info("Starting processing for #{context.input_file}")
   # ... processing
   Verse.logger.info("Processing complete")
-end`}</CodeBlock>
+end`}
+      />
 
-      <h3 id="performance" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="performance" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#performance" class="hover:underline">4. Performance</a>
       </h3>
-      <ul class="list-disc list-inside space-y-2 mb-6 text-gray-700 dark:text-gray-300">
+      <ul class="mb-6 list-inside list-disc space-y-2 text-gray-700 dark:text-gray-300">
         <li class="leading-relaxed">Process files in batches when possible</li>
         <li class="leading-relaxed">Use background jobs for long-running tasks</li>
         <li class="leading-relaxed">Clean up temporary files</li>
       </ul>
 
-      <h3 id="security" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="security" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#security" class="hover:underline">5. Security</a>
       </h3>
-      <ul class="list-disc list-inside space-y-2 mb-6 text-gray-700 dark:text-gray-300">
+      <ul class="mb-6 list-inside list-disc space-y-2 text-gray-700 dark:text-gray-300">
         <li class="leading-relaxed">Validate all input options</li>
         <li class="leading-relaxed">Sanitize file paths</li>
         <li class="leading-relaxed">Use safe file operations</li>
         <li class="leading-relaxed">Don't expose sensitive data in logs</li>
       </ul>
 
-      <h2 id="debugging" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+      <h2
+        id="debugging"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
         <a href="#debugging" class="hover:underline">Debugging</a>
       </h2>
 
-      <h3 id="enable-debug-logging" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="enable-debug-logging" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#enable-debug-logging" class="hover:underline">Enable Debug Logging</a>
       </h3>
-      <CodeBlock language="ruby">{`Verse.logger.level = Logger::DEBUG`}</CodeBlock>
+      <CodeBlock language="ruby" code="Verse.logger.level = Logger::DEBUG" />
 
-      <h3 id="use-pry" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="use-pry" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#use-pry" class="hover:underline">Use Pry for Debugging</a>
       </h3>
-      <CodeBlock language="ruby">{`require "pry"
+      <CodeBlock
+        language="ruby"
+        code={`require "pry"
 
 def process(context)
   binding.pry  # Debugger breakpoint
   # ... rest of code
-end`}</CodeBlock>
+end`}
+      />
 
-      <h2 id="common-patterns" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+      <h2
+        id="common-patterns"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
         <a href="#common-patterns" class="hover:underline">Common Patterns</a>
       </h2>
 
-      <h3 id="media-processing-pipeline" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="media-processing-pipeline" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#media-processing-pipeline" class="hover:underline">Media Processing Pipeline</a>
       </h3>
-      <CodeBlock language="ruby">{`def process(context)
+      <CodeBlock
+        language="ruby"
+        code={`def process(context)
   validate_input(context.input_file)
 
   temp_file = create_temp_file
@@ -214,42 +294,87 @@ end`}</CodeBlock>
   ensure
     cleanup(temp_file)
   end
-end`}</CodeBlock>
+end`}
+      />
 
-      <h3 id="batch-export" class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-4">
+      <h3 id="batch-export" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#batch-export" class="hover:underline">Batch Export</a>
       </h3>
-      <CodeBlock language="ruby">{`def export(context)
+      <CodeBlock
+        language="ruby"
+        code={`def export(context)
   entries = fetch_entries(context.dataset)
 
   entries.each_slice(100) do |batch|
     export_batch(batch)
   end
-end`}</CodeBlock>
+end`}
+      />
 
-      <h2 id="next-steps" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+      <h2
+        id="next-steps"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
         <a href="#next-steps" class="hover:underline">Next Steps</a>
       </h2>
-      <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
-        Learn about specific backend implementations:
-      </p>
-      <ul class="list-disc list-inside space-y-2 mb-6 text-gray-700 dark:text-gray-300">
-        <li class="leading-relaxed"><a href="/plugin/import-media/" class="text-blue-600 dark:text-blue-400 hover:underline">Import & Process Media</a> - Process and transform media files</li>
-        <li class="leading-relaxed"><a href="/plugin/export-datasets/" class="text-blue-600 dark:text-blue-400 hover:underline">Export Datasets</a> - Create custom data exporters</li>
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">Learn about specific backend implementations:</p>
+      <ul class="mb-6 list-inside list-disc space-y-2 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed">
+          <a href="/plugin/import-media/" class="text-blue-600 hover:underline dark:text-blue-400"
+            >Import & Process Media</a
+          > - Process and transform media files
+        </li>
+        <li class="leading-relaxed">
+          <a href="/plugin/export-datasets/" class="text-blue-600 hover:underline dark:text-blue-400">Export Datasets</a
+          > - Create custom data exporters
+        </li>
       </ul>
 
-      <h2 id="resources" class="text-3xl font-bold text-gray-900 dark:text-white mt-12 mb-6 pb-3 border-b-2 border-gray-200 dark:border-gray-700">
+      <h2
+        id="resources"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
         <a href="#resources" class="hover:underline">Resources</a>
       </h2>
-      <ul class="list-disc list-inside space-y-2 mb-6 text-gray-700 dark:text-gray-300">
-        <li class="leading-relaxed"><a href="https://ruby-doc.org/" class="text-blue-600 dark:text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer">Ruby Documentation</a></li>
-        <li class="leading-relaxed"><a href="https://rspec.info/" class="text-blue-600 dark:text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer">RSpec Documentation</a></li>
-        <li class="leading-relaxed"><a href="https://github.com/verse-rb" class="text-blue-600 dark:text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer">Verse Framework</a></li>
-        <li class="leading-relaxed"><a href="https://github.com/verse-rb/verse-schema" class="text-blue-600 dark:text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer">Verse Schema</a></li>
+      <ul class="mb-6 list-inside list-disc space-y-2 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed">
+          <a
+            href="https://ruby-doc.org/"
+            class="text-blue-600 hover:underline dark:text-blue-400"
+            target="_blank"
+            rel="noopener noreferrer">Ruby Documentation</a
+          >
+        </li>
+        <li class="leading-relaxed">
+          <a
+            href="https://rspec.info/"
+            class="text-blue-600 hover:underline dark:text-blue-400"
+            target="_blank"
+            rel="noopener noreferrer">RSpec Documentation</a
+          >
+        </li>
+        <li class="leading-relaxed">
+          <a
+            href="https://github.com/verse-rb"
+            class="text-blue-600 hover:underline dark:text-blue-400"
+            target="_blank"
+            rel="noopener noreferrer">Verse Framework</a
+          >
+        </li>
+        <li class="leading-relaxed">
+          <a
+            href="https://github.com/verse-rb/verse-schema"
+            class="text-blue-600 hover:underline dark:text-blue-400"
+            target="_blank"
+            rel="noopener noreferrer">Verse Schema</a
+          >
+        </li>
       </ul>
 
-      <div class="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-l-4 border-blue-500 p-6 mb-6 rounded-lg">
-        <p class="text-lg text-gray-800 dark:text-gray-200 leading-relaxed font-medium">
+      <div
+        class="mb-6 rounded-lg border-l-4 border-blue-500 bg-gradient-to-r from-blue-50 to-purple-50 p-6 dark:from-blue-900/20 dark:to-purple-900/20"
+      >
+        <p class="text-lg leading-relaxed font-medium text-gray-800 dark:text-gray-200">
           ⚙️ Backend services ready! Explore media processing and data export guides.
         </p>
       </div>

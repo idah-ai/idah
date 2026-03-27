@@ -13,11 +13,6 @@
   }
 </script>
 
-<Button
-  variant="ghost"
-  size="icon"
-  class="md:hidden"
-  onclick={handleClick}
->
+<Button variant="ghost" size="icon" class="md:hidden" onclick={handleClick}>
   <SearchIcon class="size-5" style="color: #2391ea;" />
 </Button>
