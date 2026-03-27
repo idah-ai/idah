@@ -17,13 +17,14 @@ for file in "/openapi/definitions"/*.json; do
   name=$(basename "$file" .json)
 
   title=$(jq -r '.info.title' "$file")
+  description=$(jq -r '.info.description' "$file")
 
   # Parse the JSON and retrieve the tags to be used as a string
   tags=$(jq -r '[.paths[] | to_entries[] | .value.tags[]] | unique | map("\"" + . + "\"") | join(", ")' "$file")
 
 
   # Add the name and tags to the URLS string
-  URLS="${URLS}{ \"url\": \"./openapi/definitions/$name.json\", \"name\": \"$name\", \"title\": \"$title\", \"tags\": ["${tags}"] },"
+  URLS="${URLS}{ \"url\": \"./openapi/definitions/$name.json\", \"name\": \"$name\", \"title\": \"$title\", \"description\": \"$description\", \"tags\": ["${tags}"] },"
 done
 
 # Remove the trailing comma and close the array
