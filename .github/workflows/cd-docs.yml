@@ -1,0 +1,99 @@
+name: CD - Docs Platform
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: idah-docs-deploy
+
+env:
+  # GKE Artifact Registry
+  CONTAINER_REGISTRY: ${{ secrets.GCP_CONTAINER_REGISTRY }}
+  CONTAINER_REPO: ${{ secrets.GKE_PROJECT }}/idah
+  GCP_ZONE: ${{ secrets.GCP_ZONE }}
+
+  INSTANCE_NAME: idah-website
+  IMAGE_NAME: idah-docs
+  APP_HOME: /home/apps/website
+
+jobs:
+  build:
+    name: Build and Push Image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main repo (no submodules)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.GCP_DEPLOY_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+      # This is the a separate action that sets up buildx runner
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          install: true
+
+      - name: Login to GCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.CONTAINER_REGISTRY }}
+          username: _json_key
+          password: ${{ secrets.GKE_SA_KEY }}
+
+      # Setup docker cache
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache-${{ env.IMAGE_NAME }}
+          key: ${{ runner.os }}-${{ env.IMAGE_NAME }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-${{ env.IMAGE_NAME }}-buildx-
+
+      - name: Build and Push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./doc/Dockerfile
+          push: true
+          build-args: |
+            SITE_URL=https://docs.idah.ai
+          tags: |
+            ${{ env.CONTAINER_REGISTRY }}/${{ env.CONTAINER_REPO }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.CONTAINER_REGISTRY }}/${{ env.CONTAINER_REPO }}/${{ env.IMAGE_NAME }}:latest
+          cache-from: type=local,src=/tmp/.buildx-cache-${{ env.IMAGE_NAME }}
+          cache-to: type=local,dest=/tmp/.buildx-cache-${{ env.IMAGE_NAME }}-new
+
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache-${{ env.IMAGE_NAME }}
+          mv /tmp/.buildx-cache-${{ env.IMAGE_NAME }}-new /tmp/.buildx-cache-${{ env.IMAGE_NAME }}
+
+  deploy:
+    name: Deploy to GCP VM Instance
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GKE_SA_KEY }}
+
+      - name: Update Docs Website on VM
+        run: |
+          # Deploy on VM
+          gcloud compute ssh ${{ env.INSTANCE_NAME }} --zone=${{ env.GCP_ZONE }} \
+            --command="
+              cd ${{ env.APP_HOME }} && \
+              sudo docker compose pull && \
+              sudo docker compose up -d
+            "

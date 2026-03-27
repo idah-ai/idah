@@ -1,0 +1,10 @@
+---
+import { SIDEBAR_WIDTH } from "$lib/app/sidebar/constants";
+---
+
+<div
+  style={`--sidebar-width: ${SIDEBAR_WIDTH}`}
+  class="flex flex-1 flex-col md:ml-(--sidebar-width) md:w-[calc(100%-var(--sidebar-width))]"
+>
+  <slot />
+</div>
