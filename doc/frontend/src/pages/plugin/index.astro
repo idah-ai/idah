@@ -217,17 +217,17 @@ import { Plug } from "@lucide/svelte";
           >manifest.json</code
         > file contains plugin metadata:
       </p>
-      <CodeBlock language="json" path="<plugin_name>/manifest.json"
-        >{
-          `{
+      <CodeBlock
+        language="json"
+        path="<plugin_name>/manifest.json"
+        code={`{
   "name": "my-plugin",
   "display_name": "My Plugin",
   "description": "A custom annotation plugin",
   "version": "1.0.0",
   "author": "Your Name"
-}`
-        }</CodeBlock
-      >
+}`}
+      />
 
       <h2
         id="built-in-plugins"
