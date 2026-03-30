@@ -1,5 +1,6 @@
 <script lang="ts">
   import { cn } from "@/utils";
+  import { getLocalTimeZone, today } from "@internationalized/date";
   import { CheckIcon } from "@lucide/svelte";
   import { isBefore, startOfDay } from "date-fns";
 
@@ -184,6 +185,7 @@
       placeholder="Select expiration date"
       errors={fieldErrors["expires_at"]}
       value={expires_at}
+      minDate={today(getLocalTimeZone()).add({ days: 1 })}
       disabled={status === "revoked" ||
         (expires_at !== null && isBefore(startOfDay(expires_at), startOfDay(new Date())))}
       onDateSelected={(selectedDate) => {
