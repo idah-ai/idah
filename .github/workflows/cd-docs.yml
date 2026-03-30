@@ -88,10 +88,17 @@ jobs:
         with:
           credentials_json: ${{ secrets.GKE_SA_KEY }}
 
+      - name: Setup SSH Key for VM
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.GCP_IDAH_DOCS_SSH_KEY }}" > ~/.ssh/google_compute_engine
+          chmod 600 ~/.ssh/google_compute_engine
+
       - name: Update Docs Website on VM
         run: |
-          # Deploy on VM
-          gcloud compute ssh ${{ env.INSTANCE_NAME }} --zone=${{ env.GCP_ZONE }} \
+          # Deploy on VM - gcloud will use ~/.ssh/google_compute_engine by default
+          gcloud compute ssh ${{ env.INSTANCE_NAME }} \
+            --zone=${{ env.GCP_ZONE }} \
             --command="
               cd ${{ env.APP_HOME }} && \
               sudo docker compose pull && \
