@@ -46,7 +46,7 @@ import { Upload } from "@lucide/svelte";
       <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
         When creating a new plugin, select "Media Service" during the setup:
       </p>
-      <CodeBlock language="bash">npx idah-plugin create my-plugin ./plugins</CodeBlock>
+      <CodeBlock language="bash" code="npx idah-plugin create my-plugin ./plugins" />
       <p class="mb-6 text-sm leading-relaxed text-gray-700 dark:text-gray-300">
         When prompted, select <strong class="font-semibold">Media Service</strong> from the backend services options.
       </p>
@@ -57,7 +57,7 @@ import { Upload } from "@lucide/svelte";
       <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
         If you have an existing plugin without a media backend, you can add it:
       </p>
-      <CodeBlock language="bash">npx idah-plugin backend add my-plugin ./plugins</CodeBlock>
+      <CodeBlock language="bash" code="npx idah-plugin backend add my-plugin ./plugins" />
       <p class="mb-6 text-sm leading-relaxed text-gray-700 dark:text-gray-300">
         When prompted, select <strong class="font-semibold">Media Service</strong> to add media processing capabilities.
       </p>
@@ -119,9 +119,10 @@ import { Upload } from "@lucide/svelte";
       <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
         The media module registers your processor with IDAH:
       </p>
-      <CodeBlock language="ruby" path="backends/media/<plugin_name_underscore>/media.rb"
-        >{
-          `module YourPlugin
+      <CodeBlock
+        language="ruby"
+        path="backends/media/<plugin_name_underscore>/media.rb"
+        code={`module YourPlugin
   class Media
     def self.init(context)
       context.register_processor(
@@ -131,9 +132,8 @@ import { Upload } from "@lucide/svelte";
       )
     end
   end
-end`
-        }</CodeBlock
-      >
+end`}
+      />
 
       <h3 id="step-2-implement-processor" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#step-2-implement-processor" class="hover:underline">Step 2: Implement the Processor</a>
@@ -141,9 +141,10 @@ end`
       <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
         Implement the core processing logic in your processor class:
       </p>
-      <CodeBlock language="ruby" path="backends/media/<plugin_name_underscore>/processor.rb"
-        >{
-          `module YourPlugin
+      <CodeBlock
+        language="ruby"
+        path="backends/media/<plugin_name_underscore>/processor.rb"
+        code={`module YourPlugin
   class Processor
     def initialize(options)
       @options = options
@@ -174,9 +175,8 @@ end`
       # Return an IO object (e.g., File.open or StringIO)
     end
   end
-end`
-        }</CodeBlock
-      >
+end`}
+      />
 
       <h3 id="step-3-define-options" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#step-3-define-options" class="hover:underline">Step 3: Define Options Schema</a>
@@ -184,9 +184,10 @@ end`
       <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
         Define configurable options for your processor:
       </p>
-      <CodeBlock language="ruby" path="backends/media/<plugin_name_underscore>/options.rb"
-        >{
-          `require "verse/schema"
+      <CodeBlock
+        language="ruby"
+        path="backends/media/<plugin_name_underscore>/options.rb"
+        code={`require "verse/schema"
 
 module YourPlugin
   class Options < Verse::Schema::Struct
@@ -200,9 +201,8 @@ module YourPlugin
       errors.add(:quality, "must be between 1 and 100") unless (1..100).cover?(quality)
     end
   end
-end`
-        }</CodeBlock
-      >
+end`}
+      />
 
       <h2
         id="processor-context-api"
@@ -214,7 +214,7 @@ end`
       <h3 id="download-original" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#download-original" class="hover:underline">Download Original Media</a>
       </h3>
-      <CodeBlock language="ruby">{`input_path = context.download_original`}</CodeBlock>
+      <CodeBlock language="ruby" code={`input_path = context.download_original`} />
       <p class="mb-6 text-sm leading-relaxed text-gray-700 dark:text-gray-300">
         Downloads the original media file and returns a temporary file path.
       </p>
@@ -222,9 +222,9 @@ end`
       <h3 id="upload-media" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#upload-media" class="hover:underline">Upload Processed Media</a>
       </h3>
-      <CodeBlock language="ruby"
-        >{
-          `context.upload_media(
+      <CodeBlock
+        language="ruby"
+        code={`context.upload_media(
   File.open("output.jpg"),  # IO object
   "thumbnail.jpg",          # Key/identifier
   "image/jpeg"              # MIME type
@@ -234,9 +234,8 @@ context.upload_media(
   StringIO.new(image_data), # StringIO for raw data
   "preview.jpg",
   "image/jpeg"
-)`
-        }</CodeBlock
-      >
+)`}
+      />
       <p class="mb-6 text-sm leading-relaxed text-gray-700 dark:text-gray-300">
         <strong class="font-semibold">Parameters:</strong>
       </p>
@@ -259,22 +258,21 @@ context.upload_media(
       <h3 id="update-progress" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#update-progress" class="hover:underline">Update Progress</a>
       </h3>
-      <CodeBlock language="ruby"
-        >{
-          `context.progress = 50   # 50% complete
-context.progress = 100  # Done`
-        }</CodeBlock
-      >
+      <CodeBlock
+        language="ruby"
+        code={`context.progress = 50   # 50% complete
+context.progress = 100  # Done`}
+      />
 
       <h3 id="handle-errors" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#handle-errors" class="hover:underline">Handle Errors</a>
       </h3>
-      <CodeBlock language="ruby">{`context.error!("Processing failed: #{error_message}")`}</CodeBlock>
+      <CodeBlock language="ruby" code={`context.error!("Processing failed: #{error_message}")`} />
 
       <h3 id="reschedule-job" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#reschedule-job" class="hover:underline">Reschedule Job</a>
       </h3>
-      <CodeBlock language="ruby">{`context.reschedule!(after: 10)  # Retry after 10 seconds`}</CodeBlock>
+      <CodeBlock language="ruby" code={`context.reschedule!(after: 10)  # Retry after 10 seconds`} />
 
       <h2
         id="complete-example"
@@ -289,9 +287,10 @@ context.progress = 100  # Done`
       <h3 id="processor-implementation" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#processor-implementation" class="hover:underline">Processor Implementation</a>
       </h3>
-      <CodeBlock language="ruby" path="backends/media/<plugin_name_underscore>/processor.rb"
-        >{
-          `module YourPlugin
+      <CodeBlock
+        language="ruby"
+        path="backends/media/<plugin_name_underscore>/processor.rb"
+        code={`module YourPlugin
   class Processor
     def initialize(options)
       @options = options
@@ -332,16 +331,16 @@ context.progress = 100  # Done`
       # Return File.open(output_path)
     end
   end
-end`
-        }</CodeBlock
-      >
+end`}
+      />
 
       <h3 id="media-registration" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#media-registration" class="hover:underline">Media Service Registration</a>
       </h3>
-      <CodeBlock language="ruby" path="backends/media/<plugin_name_underscore>/media.rb"
-        >{
-          `module YourPlugin
+      <CodeBlock
+        language="ruby"
+        path="backends/media/<plugin_name_underscore>/media.rb"
+        code={`module YourPlugin
   class Media
     def self.init(context)
       context.register_processor(
@@ -351,16 +350,16 @@ end`
       )
     end
   end
-end`
-        }</CodeBlock
-      >
+end`}
+      />
 
       <h3 id="options-schema" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#options-schema" class="hover:underline">Options Schema</a>
       </h3>
-      <CodeBlock language="ruby" path="backends/media/<plugin_name_underscore>/options.rb"
-        >{
-          `require "verse/schema"
+      <CodeBlock
+        language="ruby"
+        path="backends/media/<plugin_name_underscore>/options.rb"
+        code={`require "verse/schema"
 
 module YourPlugin
   class Options < Verse::Schema::Struct
@@ -373,9 +372,8 @@ module YourPlugin
       errors.add(:quality, "must be between 1 and 100") unless (1..100).cover?(quality)
     end
   end
-end`
-        }</CodeBlock
-      >
+end`}
+      />
 
       <h2
         id="workflow"
@@ -387,7 +385,7 @@ end`
       <h3 id="workflow-step-1" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#workflow-step-1" class="hover:underline">1. Add Media Backend (if not present)</a>
       </h3>
-      <CodeBlock language="bash">npx idah-plugin backend add image-processor ./plugins</CodeBlock>
+      <CodeBlock language="bash" code="npx idah-plugin backend add image-processor ./plugins" />
       <p class="mb-6 text-sm leading-relaxed text-gray-700 dark:text-gray-300">
         Select "Media Service" when prompted. This generates the media backend structure.
       </p>
@@ -395,7 +393,11 @@ end`
       <h3 id="workflow-step-2" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#workflow-step-2" class="hover:underline">2. Install Dependencies</a>
       </h3>
-      <CodeBlock language="bash">cd plugins/image-processor bundle install</CodeBlock>
+      <CodeBlock
+        language="bash"
+        code={`cd plugins/image-processor
+bundle install`}
+      />
 
       <h3 id="workflow-step-3" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#workflow-step-3" class="hover:underline">3. Implement Processing Logic</a>
@@ -408,9 +410,10 @@ end`
           >transform_media</code
         > method:
       </p>
-      <CodeBlock language="ruby" path="backends/media/<plugin_name_underscore>/processor.rb"
-        >{
-          `def transform_media(input_path)
+      <CodeBlock
+        language="ruby"
+        path="backends/media/<plugin_name_underscore>/processor.rb"
+        code={`def transform_media(input_path)
   output_path = "#{Dir.tmpdir}/output_#{SecureRandom.hex(8)}.jpg"
 
   # Example: Use ImageMagick to resize and compress
@@ -423,17 +426,17 @@ end`
   )
 
   File.open(output_path, "rb")
-end`
-        }</CodeBlock
-      >
+end`}
+      />
 
       <h3 id="workflow-step-4" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#workflow-step-4" class="hover:underline">4. Configure Options</a>
       </h3>
       <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">Customize the options schema for your needs:</p>
-      <CodeBlock language="ruby" path="backends/media/<plugin_name_underscore>/options.rb"
-        >{
-          `require "verse/schema"
+      <CodeBlock
+        language="ruby"
+        path="backends/media/<plugin_name_underscore>/options.rb"
+        code={`require "verse/schema"
 
 module YourPlugin
   class Options < Verse::Schema::Struct
@@ -452,16 +455,16 @@ module YourPlugin
       errors.add(:max_height, "must be positive") if max_height <= 0
     end
   end
-end`
-        }</CodeBlock
-      >
+end`}
+      />
 
       <h3 id="workflow-step-5" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#workflow-step-5" class="hover:underline">5. Write Tests</a>
       </h3>
-      <CodeBlock language="ruby" path="backends/media/<plugin_name_underscore>/processor_spec.rb"
-        >{
-          `require "spec_helper"
+      <CodeBlock
+        language="ruby"
+        path="backends/media/<plugin_name_underscore>/processor_spec.rb"
+        code={`require "spec_helper"
 require_relative "processor"
 require_relative "options"
 
@@ -483,14 +486,13 @@ RSpec.describe YourPlugin::Processor do
       expect(context).to have_received(:progress=).with(100)
     end
   end
-end`
-        }</CodeBlock
-      >
+end`}
+      />
 
       <h3 id="workflow-step-6" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#workflow-step-6" class="hover:underline">6. Run Tests</a>
       </h3>
-      <CodeBlock language="bash">bundle exec rspec backends/media/</CodeBlock>
+      <CodeBlock language="bash" code="bundle exec rspec backends/media/" />
 
       <h2
         id="common-patterns"
@@ -502,9 +504,9 @@ end`
       <h3 id="image-processing" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#image-processing" class="hover:underline">Image Processing</a>
       </h3>
-      <CodeBlock language="ruby"
-        >{
-          `def process(context)
+      <CodeBlock
+        language="ruby"
+        code={`def process(context)
   input_path = context.download_original
 
   # Generate multiple sizes
@@ -521,16 +523,15 @@ end
 def generate_size(input, name, width, height, context)
   output = resize_image(input, width, height)
   context.upload_media(output, "#{name}.jpg", "image/jpeg")
-end`
-        }</CodeBlock
-      >
+end`}
+      />
 
       <h3 id="video-processing" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#video-processing" class="hover:underline">Video Processing</a>
       </h3>
-      <CodeBlock language="ruby"
-        >{
-          `def process(context)
+      <CodeBlock
+        language="ruby"
+        code={`def process(context)
   input_path = context.download_original
 
   # Extract frame for thumbnail
@@ -547,16 +548,15 @@ end`
   preview_1080 = transcode(input_path, 1920, 1080)
   context.upload_media(preview_1080, "1080p.mp4", "video/mp4")
   context.progress = 100
-end`
-        }</CodeBlock
-      >
+end`}
+      />
 
       <h3 id="audio-processing" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#audio-processing" class="hover:underline">Audio Processing</a>
       </h3>
-      <CodeBlock language="ruby"
-        >{
-          `def process(context)
+      <CodeBlock
+        language="ruby"
+        code={`def process(context)
   input_path = context.download_original
 
   # Generate waveform visualization
@@ -568,9 +568,8 @@ end`
   web_audio = convert_to_web(input_path)
   context.upload_media(web_audio, "audio.mp3", "audio/mpeg")
   context.progress = 100
-end`
-        }</CodeBlock
-      >
+end`}
+      />
 
       <h2
         id="best-practices"
@@ -582,9 +581,9 @@ end`
       <h3 id="cleanup-temp-files" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#cleanup-temp-files" class="hover:underline">1. Clean Up Temporary Files</a>
       </h3>
-      <CodeBlock language="ruby"
-        >{
-          `def process(context)
+      <CodeBlock
+        language="ruby"
+        code={`def process(context)
   input_path = context.download_original
   temp_file = nil
 
@@ -597,16 +596,15 @@ end`
   end
 
   context.progress = 100
-end`
-        }</CodeBlock
-      >
+end`}
+      />
 
       <h3 id="error-handling-best" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#error-handling-best" class="hover:underline">2. Handle Errors Gracefully</a>
       </h3>
-      <CodeBlock language="ruby"
-        >{
-          `def process(context)
+      <CodeBlock
+        language="ruby"
+        code={`def process(context)
   input_path = context.download_original
 
   begin
@@ -621,16 +619,15 @@ end`
     context.error!(e.message)
     raise
   end
-end`
-        }</CodeBlock
-      >
+end`}
+      />
 
       <h3 id="progress-updates" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#progress-updates" class="hover:underline">3. Provide Progress Updates</a>
       </h3>
-      <CodeBlock language="ruby"
-        >{
-          `def process(context)
+      <CodeBlock
+        language="ruby"
+        code={`def process(context)
   steps = [
     { name: "Download", weight: 10 },
     { name: "Process", weight: 70 },
@@ -650,9 +647,8 @@ end`
   context.upload_media(output, "result.jpg", "image/jpeg")
   progress += steps[2][:weight]
   context.progress = progress
-end`
-        }</CodeBlock
-      >
+end`}
+      />
 
       <h2
         id="testing-media-backend"
@@ -664,12 +660,11 @@ end`
       <h3 id="run-tests" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#run-tests" class="hover:underline">Run Tests</a>
       </h3>
-      <CodeBlock language="bash"
-        >{
-          `bundle exec rspec backends/media/
-bundle exec rspec backends/media/<plugin_name>/processor_spec.rb`
-        }</CodeBlock
-      >
+      <CodeBlock
+        language="bash"
+        code={`bundle exec rspec backends/media/
+bundle exec rspec backends/media/<plugin_name>/processor_spec.rb`}
+      />
 
       <h3 id="test-in-idah" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#test-in-idah" class="hover:underline">Test in IDAH Platform</a>
@@ -699,7 +694,7 @@ bundle exec rspec backends/media/<plugin_name>/processor_spec.rb`
       <ul class="mb-6 list-inside list-disc space-y-2 text-gray-700 dark:text-gray-300">
         <li class="leading-relaxed">
           <a
-            href="https://github.com/ingedata-ph/idah/tree/main/plugins/idah-video/backends/media/"
+            href="https://github.com/idah-ai/idah/tree/main/plugins/idah-video/backends/media/"
             class="text-blue-600 hover:underline dark:text-blue-400"
             target="_blank"
             rel="noopener noreferrer">View idah-video media backend on GitHub</a

@@ -176,7 +176,13 @@ import { Palette } from "@lucide/svelte";
       <h3 id="installation" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#installation" class="hover:underline">Installation</a>
       </h3>
-      <CodeBlock language="bash">pnpm install pnpm dev pnpm build pnpm preview</CodeBlock>
+      <CodeBlock
+        language="bash"
+        code={`pnpm install
+pnpm dev
+pnpm build
+pnpm preview`}
+      />
 
       <h2
         id="development-workflow"
@@ -193,9 +199,10 @@ import { Palette } from "@lucide/svelte";
           >src/lib/plugin/plugin.svelte</code
         > - this is your main plugin component:
       </p>
-      <CodeBlock language="svelte" path="src/lib/plugin/plugin.svelte"
-        >{
-          `<script lang="ts">
+      <CodeBlock
+        language="svelte"
+        path="src/lib/plugin/plugin.svelte"
+        code={`<script lang="ts">
   import { onMount } from 'svelte'
   import type { IActivityContext } from "$lib/context";
 
@@ -217,9 +224,8 @@ import { Palette } from "@lucide/svelte";
   .plugin-container {
     padding: 1rem;
   }
-</style>`
-        }</CodeBlock
-      >
+</style>`}
+      />
 
       <h3 id="use-activity-context" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#use-activity-context" class="hover:underline">2. Use the Activity Context</a>
@@ -240,25 +246,24 @@ import { Palette } from "@lucide/svelte";
       <h3 id="basic-properties" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#basic-properties" class="hover:underline">Basic Properties</a>
       </h3>
-      <CodeBlock language="typescript"
-        >{
-          `context.id              // Current entry ID
+      <CodeBlock
+        language="typescript"
+        code={`context.id              // Current entry ID
 context.type            // Activity type
 context.workflowStep    // 'start' | 'annotate' | 'review' | 'done' | 'export'
 context.status          // Entry status
 context.config          // Dataset configuration
 context.mediaUrl        // Root media URL
 context.user            // Current user info
-context.userRole        // User role`
-        }</CodeBlock
-      >
+context.userRole        // User role`}
+      />
 
       <h3 id="annotations-driver" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#annotations-driver" class="hover:underline">Annotations Driver</a>
       </h3>
-      <CodeBlock language="typescript"
-        >{
-          `await context.annotations.create(
+      <CodeBlock
+        language="typescript"
+        code={`await context.annotations.create(
   id,           // unique ID (optional, defaults to: uuidv7())
   dimensions,   // shape/dimension data
   annotation,   // annotation values
@@ -279,16 +284,15 @@ const results = await context.annotations.list(
   { page: 1, itemsPerPage: 100 }
 )
 
-context.annotations.flush()`
-        }</CodeBlock
-      >
+context.annotations.flush()`}
+      />
 
       <h3 id="commands-undo-redo" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#commands-undo-redo" class="hover:underline">Commands (Undo/Redo System)</a>
       </h3>
-      <CodeBlock language="typescript"
-        >{
-          `context.commands.on('commandName', (props) => {
+      <CodeBlock
+        language="typescript"
+        code={`context.commands.on('commandName', (props) => {
   return {
     name: 'Human-readable name',
     async apply() {
@@ -305,16 +309,15 @@ context.annotations.flush()`
 context.commands.run('commandName', { /* props */ })
 
 context.commands.undo()
-context.commands.redo()`
-        }</CodeBlock
-      >
+context.commands.redo()`}
+      />
 
       <h3 id="tools-header-bar" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#tools-header-bar" class="hover:underline">Tools (Header Bar Tools)</a>
       </h3>
-      <CodeBlock language="typescript"
-        >{
-          `context.tools.setTools([
+      <CodeBlock
+        language="typescript"
+        code={`context.tools.setTools([
   {
     type: 'visual',
     label: 'Visual',
@@ -334,16 +337,15 @@ context.tools.setTool('visual')
 
 context.tools.onToolChange((tool) => {
   console.log('Tool changed:', tool)
-})`
-        }</CodeBlock
-      >
+})`}
+      />
 
       <h3 id="notes" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#notes" class="hover:underline">Notes</a>
       </h3>
-      <CodeBlock language="typescript"
-        >{
-          `context.notes.showNewNoteFeedPopup({
+      <CodeBlock
+        language="typescript"
+        code={`context.notes.showNewNoteFeedPopup({
   anchor_type: 'annotation',  // 'entry' | 'annotation'
   position: { x: 100, y: 200, sidebar_width: 256 },
   annotation_id: 'ann-123'
@@ -353,22 +355,20 @@ context.notes.gotoFeed(noteFeedId, noteCommentId)
 
 context.notes.onNoteSelected((noteFeedId, noteCommentId) => {
   // Handle note selection
-})`
-        }</CodeBlock
-      >
+})`}
+      />
 
       <h3 id="workflow-navigation" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#workflow-navigation" class="hover:underline">Workflow Navigation</a>
       </h3>
-      <CodeBlock language="typescript"
-        >{
-          `await context.submit({ approved: true })
+      <CodeBlock
+        language="typescript"
+        code={`await context.submit({ approved: true })
 
 context.back()
 
-await context.error('Error message')`
-        }</CodeBlock
-      >
+await context.error('Error message')`}
+      />
 
       <h3 id="style-your-plugin" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#style-your-plugin" class="hover:underline">3. Style Your Plugin</a>
@@ -378,15 +378,15 @@ await context.error('Error message')`
           >src/lib/plugin/plugin.css</code
         > or use scoped styles within your Svelte components:
       </p>
-      <CodeBlock language="css" path="src/lib/plugin/plugin.css"
-        >{
-          `.plugin-container {
+      <CodeBlock
+        language="css"
+        path="src/lib/plugin/plugin.css"
+        code={`.plugin-container {
   font-family: system-ui, sans-serif;
   max-width: 1200px;
   margin: 0 auto;
-}`
-        }</CodeBlock
-      >
+}`}
+      />
 
       <h2
         id="building-for-production"
@@ -398,7 +398,7 @@ await context.error('Error message')`
       <h3 id="build-the-plugin" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#build-the-plugin" class="hover:underline">Build the Plugin</a>
       </h3>
-      <CodeBlock language="bash">pnpm build</CodeBlock>
+      <CodeBlock language="bash" code="pnpm build" />
       <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">This generates:</p>
       <ul class="mb-6 list-inside list-disc space-y-2 text-gray-700 dark:text-gray-300">
         <li class="leading-relaxed">
@@ -432,18 +432,17 @@ await context.error('Error message')`
           class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400">manifest.json</code
         >:
       </p>
-      <CodeBlock language="json"
-        >{
-          `{
+      <CodeBlock
+        language="json"
+        code={`{
   "entryPoints": {
     "entryPlugin": {
       "script": "/frontend/build/plugin.umd.js",
       "style": "/frontend/build/plugin.css"
     }
   }
-}`
-        }</CodeBlock
-      >
+}`}
+      />
 
       <h2
         id="typescript"
@@ -455,7 +454,11 @@ await context.error('Error message')`
       <h3 id="type-checking" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#type-checking" class="hover:underline">Type Checking</a>
       </h3>
-      <CodeBlock language="bash">pnpm check pnpm check:watch</CodeBlock>
+      <CodeBlock
+        language="bash"
+        code={`pnpm check
+pnpm check:watch`}
+      />
 
       <h3 id="adding-types" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#adding-types" class="hover:underline">Adding Types</a>
@@ -466,15 +469,14 @@ await context.error('Error message')`
           >src/lib/types.ts</code
         > or alongside your components:
       </p>
-      <CodeBlock language="typescript"
-        >{
-          `export interface MyPluginData {
+      <CodeBlock
+        language="typescript"
+        code={`export interface MyPluginData {
   id: string
   title: string
   metadata: Record<string, any>
-}`
-        }</CodeBlock
-      >
+}`}
+      />
 
       <h2
         id="best-practices"
@@ -537,14 +539,14 @@ await context.error('Error message')`
         <a href="#state-management" class="hover:underline">2. State Management</a>
       </h3>
       <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">Use Svelte stores for shared state:</p>
-      <CodeBlock language="typescript" path="src/lib/plugin/stores/pluginState.ts"
-        >{
-          `import { writable } from 'svelte/store'
+      <CodeBlock
+        language="typescript"
+        path="src/lib/plugin/stores/pluginState.ts"
+        code={`import { writable } from 'svelte/store'
 
 export const selectedItems = writable<string[]>([])
-export const isLoading = writable(false)`
-        }</CodeBlock
-      >
+export const isLoading = writable(false)`}
+      />
 
       <h3 id="error-handling" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#error-handling" class="hover:underline">3. Error Handling</a>
@@ -554,9 +556,10 @@ export const isLoading = writable(false)`
           >src/lib/plugin/plugin.svelte</code
         > - this is your main plugin component:
       </p>
-      <CodeBlock language="typescript" path="src/lib/plugin/plugin.svelte"
-        >{
-          `<script lang="ts">
+      <CodeBlock
+        language="typescript"
+        path="src/lib/plugin/plugin.svelte"
+        code={`<script lang="ts">
   let error = $state<string | null>(null)
 
   async function loadData() {
@@ -571,9 +574,8 @@ export const isLoading = writable(false)`
 
 {#if error}
   <div class="error-message">{error}</div>
-{/if}`
-        }</CodeBlock
-      >
+{/if}`}
+      />
 
       <h3 id="performance" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#performance" class="hover:underline">4. Performance</a>
@@ -658,19 +660,24 @@ export const isLoading = writable(false)`
       <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
         If port 5173 is busy, Vite will try the next available port. You can also specify a port:
       </p>
-      <CodeBlock language="bash">pnpm dev -- --port 3000</CodeBlock>
+      <CodeBlock language="bash" code="pnpm dev -- --port 3000" />
 
       <h3 id="build-errors" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#build-errors" class="hover:underline">Build Errors</a>
       </h3>
       <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">Clear the build cache and reinstall:</p>
-      <CodeBlock language="bash">rm -rf node_modules build .svelte-kit pnpm install pnpm build</CodeBlock>
+      <CodeBlock
+        language="bash"
+        code={`rm -rf node_modules build .svelte-kit
+pnpm install
+pnpm build`}
+      />
 
       <h3 id="type-errors" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
         <a href="#type-errors" class="hover:underline">Type Errors</a>
       </h3>
       <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">Regenerate SvelteKit types:</p>
-      <CodeBlock language="bash">pnpm run prepare</CodeBlock>
+      <CodeBlock language="bash" code="pnpm run prepare" />
 
       <h2
         id="resources"
