@@ -2,9 +2,10 @@
 interface Props {
   language?: string;
   path?: string;
+  code: string;
 }
 
-const { language = "bash", path } = Astro.props;
+const { language = "bash", path, code } = Astro.props;
 
 // Generate a unique ID for this code block
 const uniqueId = `code-block-${Math.random().toString(36).substring(2, 9)}`;
@@ -49,7 +50,7 @@ const uniqueId = `code-block-${Math.random().toString(36).substring(2, 9)}`;
     class:list={[
       "code-block",
       path && "!rounded-t-none rounded-b-lg",
-    ]}><code class:list={[`language-${language}`]} id={uniqueId}><slot /></code></pre>
+    ]}><code class:list={[`language-${language}`]} id={uniqueId}>{code}</code></pre>
 </div>
 
 <script>
