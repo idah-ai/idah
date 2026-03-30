@@ -91,8 +91,10 @@ jobs:
       - name: Setup SSH Key for VM
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.GCP_IDAH_DOCS_SSH_KEY }}" > ~/.ssh/google_compute_engine
+          echo "${{ secrets.GCP_IDAH_WEBSITE_VM_SSH_KEY }}" > ~/.ssh/google_compute_engine
+          echo "${{ secrets.GCP_IDAH_WEBSITE_VM_SSH_KEY_PUB }}" > ~/.ssh/google_compute_engine.pub
           chmod 600 ~/.ssh/google_compute_engine
+          chmod 644 ~/.ssh/google_compute_engine.pub
 
       - name: Update Docs Website on VM
         run: |
