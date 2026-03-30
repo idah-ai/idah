@@ -194,7 +194,7 @@
           console.error("Error fetching updated entry:", error);
           stopPeriodicCheckJobStatus();
         }
-      }, 2_000);
+      }, 2_000) as unknown as number;
     } else {
       /**
        * Then load the thumbnail once the job is complete
@@ -209,7 +209,7 @@
 
     animationInterval = setInterval(() => {
       currentImagePosition = (currentImagePosition + 1) % TOTAL_POSITIONS;
-    }, ANIMATION_INTERVAL_MS);
+    }, ANIMATION_INTERVAL_MS) as unknown as number;
   }
 
   function stopAnimation() {
