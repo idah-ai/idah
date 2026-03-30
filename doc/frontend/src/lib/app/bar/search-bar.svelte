@@ -270,11 +270,7 @@
               >
                 <div class="flex items-start gap-3">
                   <div class="p-2 rounded-lg {topic.bgColor} group-hover:scale-110 transition-transform">
-                    <svelte:component
-                      this={topic.icon}
-                      class="w-4 h-4 shrink-0"
-                      style="color: {topic.iconColor};"
-                    />
+                    <svelte:component this={topic.icon} class="w-4 h-4 shrink-0" style="color: {topic.iconColor};" />
                   </div>
                   <div class="flex-1">
                     <div
