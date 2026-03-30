@@ -1,6 +1,13 @@
 <script lang="ts">
   import { onMount, setContext } from "svelte";
 
+  import {
+    DEFAULT_MODE,
+    IMAGE_BOUNDING_BOX,
+    IMAGE_NOTE,
+    IMAGE_POLYGON,
+  } from "$lib/components/app/controller/image-controller.types";
+  import ImageOverlay from "$lib/components/app/overlay/image-overlay.svelte";
   import ImagePropertiesSidebar from "$lib/components/app/sidebar/image-properties-sidebar.svelte";
   import ImageSidebar from "$lib/components/app/sidebar/image-sidebar.svelte";
   import Button from "$lib/components/ui/button/button.svelte";
@@ -10,15 +17,6 @@
   import { ResizablePane } from "$lib/components/ui/resizable";
   import ResizableHandle from "$lib/components/ui/resizable/resizable-handle.svelte";
   import ResizablePaneGroup from "$lib/components/ui/resizable/resizable-pane-group.svelte";
-
-  import {
-    DEFAULT_MODE,
-    IMAGE_BOUNDING_BOX,
-    IMAGE_NOTE,
-    IMAGE_POLYGON,
-  } from "$lib/components/app/controller/image-controller.types";
-  import ImageOverlay from "$lib/components/app/overlay/image-overlay.svelte";
-  import test from "./test.png";
 
   import type { IActivityContext } from "$lib/context/context";
 
@@ -34,7 +32,6 @@
 
   // Variables
   let mode: string = $state("visual");
-  let annotationSidebarResizablePercentage = $state<number>(16);
 
   let tools: (
     | { label: string; type: string; iconName: string; handleClick: () => void }
@@ -42,6 +39,9 @@
   )[] = $state([]);
 
   let showPopOver = $state(false);
+  $effect(() => {
+    console.log({ context });
+  });
 
   onMount(async () => {
     tools = [
@@ -150,7 +150,7 @@
           <!-- IMAGE EDITOR -->
           <ResizablePane defaultSize={60}>
             <section id="image-section" class="flex h-full w-full">
-              <ImageOverlay src={test} />
+              <ImageOverlay src={context.mediaUrl} />
             </section>
           </ResizablePane>
 
