@@ -444,7 +444,7 @@
 {/key}
 
 <!-- MODAL::ADD TASK -->
-<CreateEntryFormModal action="create" title="Entry" bind:open={openNewEntryModal} />
+<CreateEntryFormModal action="create" modality={dataset.modality} title="Entry" bind:open={openNewEntryModal} />
 
 <!-- MODAL::ASSIGN ANNOTATOR  -->
 <AssignEntryFormModal action="update" entryIds={selectedRows} bind:open={openAssignEntryFormModal} />

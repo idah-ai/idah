@@ -41,6 +41,7 @@
   let showPopOver = $state(false);
   $effect(() => {
     console.log({ context });
+    console.log(context.mediaUrl.src);
   });
 
   onMount(async () => {
