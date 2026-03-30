@@ -48,6 +48,7 @@
       projectMemberRoles: ["project_owner"],
     },
   };
+  const allowedShapes = ["bounding-box", "polygon"];
 
   pageBreadcrumbsStore.set([
     projectBreadcrumb,
@@ -67,9 +68,13 @@
     modality = datasetRes.data.modality;
 
     const showModalityRes = await pluginsBackendDataSource.showModality(modality);
-    shapes = showModalityRes.shapes;
+
+    shapes = Object.fromEntries(
+      Object.entries(showModalityRes.shapes).filter(([key]) => allowedShapes.includes(key)),
+    ) as ModalityShapes;
 
     labelConfig = datasetRes.data.labeling_configuration;
+
     initialLabelConfig = JSON.parse(JSON.stringify(labelConfig));
   }
 
