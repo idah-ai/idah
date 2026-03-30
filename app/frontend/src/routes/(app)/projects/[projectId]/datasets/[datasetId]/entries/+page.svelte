@@ -142,8 +142,11 @@
 
   let listOptions: ListOptions = $state({
     filters: filters,
-    included: ["assigned_to", "submitted_by", "reviewed_by"],
-    fields: { [ProjectMemberRecord.type]: ["name", "email", "picture_url"] },
+    included: ["assigned_to", "submitted_by", "reviewed_by", "dataset"],
+    fields: {
+      [ProjectMemberRecord.type]: ["name", "email", "picture_url"],
+      [DatasetRecord.type]: ["modality"],
+    },
     sort: ["priority"],
     count: true,
     pagination: {

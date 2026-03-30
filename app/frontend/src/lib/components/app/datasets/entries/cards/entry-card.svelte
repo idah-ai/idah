@@ -87,7 +87,7 @@
   let jobProgress: number = $state(1);
 
   const processingStatuses: EntryStatusType[] = ["processing", "pending"];
-  const TOTAL_POSITIONS = 10; // 10 images inside the larger image
+  const TOTAL_POSITIONS = entry.dataset.modality === "idah:video" ? 10 : 2; // 10 images inside the larger image
   const ANIMATION_INTERVAL_MS = 350; // 1 second per position
 
   // Functions
@@ -128,6 +128,7 @@
 
       thumbnailImg.onload = () => {
         const width = thumbnailImg.width;
+
         containerWidth = width / TOTAL_POSITIONS;
       };
 
@@ -204,7 +205,7 @@
 
   // Animation functions
   function startAnimation() {
-    if (animationInterval) return;
+    if (animationInterval || entry.dataset.modality !== "idah:video") return;
 
     animationInterval = setInterval(() => {
       currentImagePosition = (currentImagePosition + 1) % TOTAL_POSITIONS;
@@ -264,7 +265,9 @@
                 alt="Entry thumbnail"
                 class="absolute top-0 left-0 cursor-pointer object-cover"
                 style:height="{imgContainer?.clientHeight}px"
-                style:width="{containerWidth * TOTAL_POSITIONS}px"
+                style:width="{entry.dataset.modality === 'idah:video'
+                  ? containerWidth * TOTAL_POSITIONS
+                  : containerWidth}px"
                 style:max-width="none"
                 style:transform="translateX(-{currentImagePosition * containerWidth || 0}px)"
               />
