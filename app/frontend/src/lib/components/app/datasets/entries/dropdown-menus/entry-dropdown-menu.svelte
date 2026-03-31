@@ -18,7 +18,6 @@
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
   import { authStatus } from "@/security/AuthContext";
-  import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
 
   import type { ProjectMemberScope } from "@/security/types";
@@ -84,7 +83,10 @@
         description: `The entry "${entry.resource}" has been deleted.`,
       });
     } catch (error) {
-      showActionFailedToast(error);
+      showToast.error({
+        title: "Unable to delete entry",
+        description: error?.errors[0]?.detail || "The action could not be completed, please try again later.",
+      });
     }
   }
 </script>

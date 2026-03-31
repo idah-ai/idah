@@ -1,6 +1,6 @@
 import type { Command } from "@/command/Command";
 import type { AnnotationHeaderBarBaseTool } from "@/plugin/layout/header/annotation-header-bar.types";
-import type { ASTNode } from "../../../plugins/idah-video/test_ast_resolution";
+import type { ASTNode } from "@/utils/ast_resolution";
 
 interface IUser {
   id: number;
@@ -18,6 +18,7 @@ export interface IAnnotation<T = IDimension, U = any> {
   id: string;
   dimensions: T;
   annotation: U;
+  metadata?: Record<string, unknown>;
 }
 
 export interface INoteFeed {
@@ -53,7 +54,7 @@ export interface INoteComment {
 
 export interface IAnnotationDriver {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  create(id: string, dimension: any, annotation: any): Promise<IAnnotation>;
+  create(id: string, dimension: any, annotation: any, metadata?: any): Promise<IAnnotation>;
 
   update(ann: IAnnotation): Promise<void>;
   delete(id: string): Promise<void>;
@@ -76,9 +77,15 @@ export interface INotes {
 
 export type IConfigPropertyType = "text" | "integer" | "boolean" | "single-select" | "multi-select";
 
+export type IConfigPropertyStyles = {
+  border?: "solid" | "dotted" | "dashed";
+  opacity?: number;
+};
+
 export type IConfigPropertyOption = {
   id: string;
   label: string;
+  styles?: IConfigPropertyStyles;
 };
 
 export type IConfigPropertyFormatKeys = keyof IConfigPropertyFormat;
@@ -97,6 +104,7 @@ export interface IConfigValue {
   label: string;
   color: string | null;
   text_color: string | null;
+  description: string | undefined;
 }
 
 export interface IConfigProperty {

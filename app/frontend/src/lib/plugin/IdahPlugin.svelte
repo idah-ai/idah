@@ -42,7 +42,7 @@
   <AnnotationHeaderBar bind:ref={headerBarElement} {pluginContainerElement} {context} />
 
   <!-- Plugin Container -->
-  <div style:height={`calc(100vh - ${headerBarHeight}px)`} bind:this={pluginContainerElement}>
+  <div style:height={`calc(100vh - ${headerBarHeight + 1}px)`} bind:this={pluginContainerElement}>
     {#await p}
       Loading Plugins
     {:then}

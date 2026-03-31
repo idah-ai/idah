@@ -5,14 +5,16 @@ class MediasExpo < BaseExpo
 
   use_service Medias::Service
 
-  desc <<-MD
-    # Medias Expo
-
+  desc <<~MD
     This exposition provides access to the media records in the system.
   MD
 
+  json_api Medias::Record do
+    index
+  end
+
   expose on_http(:get, "info/:resource(/:key)?") do
-    desc <<-MD
+    desc <<~MD
       ## Get Media Info by ID and Key
 
       This endpoint retrieves the metadata of a media record by its ID and optional key.
@@ -33,7 +35,7 @@ class MediasExpo < BaseExpo
   end
 
   expose on_http(:get, "files/:resource(/:key)?", renderer: Verse::Http::Renderer::Stream) do
-    desc <<-MD
+    desc <<~MD
       ## Get Media by ID and Key
 
       This endpoint retrieves a media record by its ID and optional key.
@@ -59,7 +61,7 @@ class MediasExpo < BaseExpo
   end
 
   expose on_http(:post, "files/:resource(/:key)?") do
-    desc <<-MD
+    desc <<~MD
       ## Upload Media
 
       This endpoint allows you to upload a media file.
@@ -70,7 +72,7 @@ class MediasExpo < BaseExpo
       field :project_id, String
 
       field :resource, String
-      field(:key, [String, NilClass]).transform { |v| v || "" }.meta(
+      field?(:key, [String, NilClass]).transform { |v| v || "" }.meta(
         desc: "The key of the media; optional, default to empty string"
       )
     end

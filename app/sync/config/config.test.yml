@@ -20,3 +20,10 @@ plugins:
     config:
       url: <%= ENV.fetch("REDIS_STREAM_URL") %>
       max_connections: 10
+  - name: shrine
+    config:
+      storages:
+        - name: default
+          adapter: file_system
+          config:
+            path: tmp/storage/test

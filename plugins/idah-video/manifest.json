@@ -46,8 +46,8 @@
 
   "entryPoints": {
     "entryPlugin": {
-      "script": "/frontend/build/idah-video.umd.js",
-      "style": "/frontend/build/idah-video.css"
+      "script": "/frontend/build/plugin.umd.js",
+      "style": "/frontend/build/plugin.css"
     },
     "entryDetails": {
       "script": "/frontend/build/entryDetailsBuild.js",
