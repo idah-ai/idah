@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+public/data/
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# Build output
+dist/
+.astro/
+
+# System files
+.DS_Store
+
+# Git
+.git/

@@ -5,15 +5,19 @@
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import NumberField from "@/components/app/forms/fields/input/number-field.svelte";
   import TextareaField from "@/components/app/forms/fields/input/textarea-field.svelte";
+  import SingleSelectField from "@/components/app/forms/fields/select/single/single-select-field.svelte";
   import Button from "@/components/ui/button/button.svelte";
+  import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
   import Separator from "@/components/ui/separator/separator.svelte";
   import Text from "@/components/ui/text/Text.svelte";
+
+  import { borderTypes } from "@/data/model/dataset/labels";
 
   import type { IConfigProperty } from "@/plugin/interface/Activity";
   import type { Hash } from "@/utils/types";
 
   import * as parser from "@build/parser.js";
-  import { ASTNodeToFunctionString } from "../../../../../../plugins/idah-video/test_ast_resolution";
+  import { ASTNodeToFunctionString } from "@/utils/ast_resolution";
 
   // Props
   interface Props {
@@ -108,46 +112,115 @@
     <!-- PROPERTY OPTIONS::TYPE::[SINGLE SELECT, MULTIPLE SELECT] -->
     {#if type.includes("select")}
       {#each format.options as option, index (index)}
-        <div class="flex items-center gap-2">
-          <InputField
-            class="flex-1"
-            name="{id}/option_{index}/id"
-            label={index ? undefined : "ID"}
-            placeholder="ID"
-            value={option.id}
-            oninput={(e) =>
-              onSetValue({
-                format: {
-                  ...format,
-                  options: format.options?.map((opt, i) => (i === index ? { ...opt, id: e.currentTarget.value } : opt)),
-                },
-              })}
-          />
-          <InputField
-            class="flex-1"
-            name="{id}/option_{index}/label"
-            label={index ? undefined : "Label"}
-            placeholder="Label"
-            value={option.label}
-            oninput={(e) =>
-              onSetValue({
-                format: {
-                  ...format,
-                  options: format.options?.map((opt, i) =>
-                    i === index ? { ...opt, label: e.currentTarget.value } : opt,
-                  ),
-                },
-              })}
-          />
-          <Button
-            variant="ghost"
-            size="icon"
-            onclick={() =>
-              onSetValue({ format: { ...format, options: format.options?.filter((_, i) => i !== index) } })}
-          >
-            <Trash2Icon />
-          </Button>
-        </div>
+        <Card class="gap-1">
+          <CardHeader>
+            <CardTitle class="text-sm">Option {index + 1}</CardTitle>
+            <CardAction>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onclick={() =>
+                  onSetValue({ format: { ...format, options: format.options?.filter((_, i) => i !== index) } })}
+              >
+                <Trash2Icon />
+              </Button>
+            </CardAction>
+          </CardHeader>
+
+          <CardContent>
+            <div class="grid grid-cols-2 gap-2">
+              <InputField
+                class="flex-1"
+                name="{id}/option_{index}/id"
+                label="ID"
+                placeholder="ID"
+                value={option.id}
+                oninput={(e) =>
+                  onSetValue({
+                    format: {
+                      ...format,
+                      options: format.options?.map((opt, i) =>
+                        i === index ? { ...opt, id: e.currentTarget.value } : opt,
+                      ),
+                    },
+                  })}
+              />
+              <InputField
+                class="flex-1"
+                name="{id}/option_{index}/label"
+                label="Label"
+                placeholder="Label"
+                value={option.label}
+                oninput={(e) =>
+                  onSetValue({
+                    format: {
+                      ...format,
+                      options: format.options?.map((opt, i) =>
+                        i === index ? { ...opt, label: e.currentTarget.value } : opt,
+                      ),
+                    },
+                  })}
+              />
+
+              <CheckboxField
+                class="col-span-2"
+                name="{id}/option_{index}/styles/hidden"
+                label="Set styles?"
+                checked={!!option.styles}
+                onCheckedChange={(checked) =>
+                  onSetValue({
+                    format: {
+                      ...format,
+                      options: format.options?.map((opt, i) =>
+                        i === index ? { ...opt, styles: checked ? {} : undefined } : opt,
+                      ),
+                    },
+                  })}
+              />
+
+              {#if !!option.styles}
+                <NumberField
+                  class="col-span-2"
+                  name="{id}/opacity_{index}/opacity"
+                  label="Opacity"
+                  min={0}
+                  max={100}
+                  step={1}
+                  placeholder="0 - 100"
+                  value={option.styles.opacity}
+                  oninput={(e) =>
+                    onSetValue({
+                      format: {
+                        ...format,
+                        options: format.options?.map((opt, i) =>
+                          i === index
+                            ? { ...opt, styles: { ...opt.styles, opacity: e.currentTarget.valueAsNumber } }
+                            : opt,
+                        ),
+                      },
+                    })}
+                />
+                <SingleSelectField
+                  class="col-span-2"
+                  name="{id}/border_{index}/border"
+                  label="Border"
+                  value={option.styles.border || null}
+                  clearable
+                  choices={borderTypes}
+                  onSelected={(value) =>
+                    onSetValue({
+                      format: {
+                        ...format,
+                        options: format.options?.map((opt, i) =>
+                          i === index ? { ...opt, styles: { ...opt.styles, border: value } } : opt,
+                        ),
+                      },
+                    })}
+                ></SingleSelectField>
+              {/if}
+            </div>
+          </CardContent>
+        </Card>
       {/each}
 
       <Button

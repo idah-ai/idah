@@ -1,0 +1,3 @@
+#!/bin/sh
+
+./common/gems/update_all.sh

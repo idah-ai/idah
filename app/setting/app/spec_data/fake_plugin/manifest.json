@@ -24,8 +24,8 @@
       "style": "plugin.css"
     },
     "entryDetails": {
-      "script": "entryDetailsBuild.js",
-      "style": "entryDetailsBuild.css"
+      "script": "details.js",
+      "style": "details.css"
     },
     "datasetConfig": "dataset.json",
     "pluginShortcut": "shortcut.json",

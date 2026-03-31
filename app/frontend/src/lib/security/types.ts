@@ -30,6 +30,10 @@ export const resources = [
 
   /** SETTINGS */
   "setting:account_settings",
+
+  /** SYNC */
+  "sync:jobs",
+  "sync:exports",
 ] as const;
 
 export type Resource = (typeof resources)[number];
