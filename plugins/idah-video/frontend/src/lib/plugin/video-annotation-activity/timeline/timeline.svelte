@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { SquareSplitHorizontalIcon, Trash2Icon } from "@lucide/svelte";
+  import { SearchIcon, SquareSplitHorizontalIcon, Trash2Icon } from "@lucide/svelte";
   import { getContext, onMount } from "svelte";
 
   import ScrollArea from "$lib/components/ui/scroll-area/scroll-area.svelte";
@@ -117,6 +117,15 @@
     const frame = getFrameFromMouseX({ clientX: e.clientX });
 
     /** Menus */
+    const seekToFrameMenu: TimelineContextMenuMenu = {
+      label: `Seek to frame ${frame}`,
+      icon: SearchIcon,
+      onClick: () => {
+        onSeekFrame(frame);
+        closeContextMenu();
+      },
+    };
+
     const splitMenu: TimelineContextMenuMenu = {
       label: `Split at frame ${frame}`,
       icon: SquareSplitHorizontalIcon,
@@ -153,7 +162,7 @@
       y: e.clientY,
       menus: {
         frameRelatedMenu: {
-          items: [splitMenu, deleteInterpolationMenu],
+          items: [seekToFrameMenu, splitMenu, deleteInterpolationMenu],
         },
         annotationMenu: {
           items: [deleteAnnotationMenu],
@@ -241,4 +250,4 @@
   {/if}
 </div>
 
-<TimelineContextMenu {contextMenu} />
+<TimelineContextMenu {contextMenu} onCloseContextMenu={closeContextMenu} />

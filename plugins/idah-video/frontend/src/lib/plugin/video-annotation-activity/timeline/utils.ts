@@ -6,6 +6,21 @@ import {
   timelineCellWidth as timelineCellWidthStore,
 } from "$lib/plugin/video-annotation-activity/timeline/store";
 
+import type { AnnotationGroup } from "$idah/context/annotation-context";
+import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
+
+export function getAnnotationGroupFrameRanges(props: {
+  annotationGroup: AnnotationGroup<VideoAnnotationObject> | undefined;
+}): Array<number[]> {
+  const { annotationGroup } = props;
+
+  if (!annotationGroup) return [];
+
+  return annotationGroup.annotations.map((ann) =>
+    (ann.shape.frames as { frame: number }[]).map((frame) => frame.frame).sort((a, b) => a - b),
+  );
+}
+
 export function getFrameFromMouseX(props: { clientX: number }) {
   const { clientX } = props;
   const timelineCellWidth = get(timelineCellWidthStore);
@@ -24,18 +39,12 @@ export function getMouseXFromFrame(props: { frame: number }) {
 
   const timelineCellWidth = get(timelineCellWidthStore);
   const framePerScaleStore = get(framePerScale);
+  const frameFloat = frame / framePerScaleStore;
 
-  let frameFloat: number;
+  const actualMouseX = Math.ceil(frameFloat * timelineCellWidth) + TIMELINE_ROW_HEADER_WIDTH;
+  const displayMouseX = Number(actualMouseX - timelineCellWidth) + 1;
 
-  // if (framePerScaleStore <= 1) {
-  // frameFloat = frame / framePerScaleStore;
-  // } else {
-  frameFloat = frame / framePerScaleStore - 1;
-  // }
-
-  const mouseX = Math.ceil(frameFloat * timelineCellWidth) + TIMELINE_ROW_HEADER_WIDTH;
-
-  return Math.max(mouseX, TIMELINE_ROW_HEADER_WIDTH);
+  return Math.max(displayMouseX, TIMELINE_ROW_HEADER_WIDTH);
 }
 
 export function getSelectedFrameXFromCurrentFrame(props: { currentFrame: number }) {
