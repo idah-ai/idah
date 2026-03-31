@@ -1,7 +1,7 @@
 # IDAH - Ingedata Annotation Hub
 
-![GitHub stars](https://img.shields.io/github/stars/ingedata-ph/idah)
-![License](https://img.shields.io/github/license/ingedata-ph/idah)
+![GitHub stars](https://img.shields.io/github/stars/idah-ai/idah)
+![License](https://img.shields.io/github/license/idah-ai/idah)
 
 **An open-source platform for collaborative data annotation**, designed to streamline the creation of high-quality training datasets for machine learning models.
 
@@ -32,7 +32,7 @@
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/ingedata-ph/idah.git
+   git clone https://github.com/idah-ai/idah.git
    cd idah
    ```
 
@@ -60,6 +60,26 @@
    - Password: `P@ssword01`
 
 🎉 **That's it!** IDAH is now running on your machine.
+
+---
+
+## ⚠️ Security Notice
+
+**Development Environment:** The development configuration includes default credentials for ease of setup. These are **ONLY for local development**:
+
+- Database: `postgres:postgres`
+- Admin: `admin@idah.ai` / `P@ssword01`
+- Dev SSL certificates are self-signed
+- JWT signing keys are for development only
+
+**⚠️ DO NOT use these credentials in production or staging environments.**
+
+For production deployment, ensure you:
+1. Generate unique, strong passwords and secrets
+2. Use proper SSL certificates from a trusted CA
+3. Configure secure environment variables
+4. Generate new JWT signing keys
+5. Follow the [Security Best Practices](SECURITY.md) guide
 
 ---
 
@@ -190,7 +210,7 @@ IDAH can be applied to various domains:
 ## 📞 Support & Community
 
 - **Documentation:** [docs.idah.ai](https://docs.idah.ai)
-- **Issues:** [GitHub Issues](https://github.com/ingedata-ph/idah/issues)
+- **Issues:** [GitHub Issues](https://github.com/idah-ai/idah/issues)
 
 ---
 
@@ -198,6 +218,6 @@ IDAH can be applied to various domains:
 
 **Made with ❤️ by the IDAH Team**
 
-[Website](https://idah.ai) • [Documentation](https://docs.idah.ai) • [GitHub](https://github.com/ingedata-ph/idah)
+[Website](https://idah.ai) • [Documentation](https://docs.idah.ai) • [GitHub](https://github.com/idah-ai/idah)
 
 </div>
