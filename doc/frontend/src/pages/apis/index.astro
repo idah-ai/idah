@@ -127,12 +127,10 @@ const apiUrls = await getApiUrls();
                     </div>
                     <h3 class="text-lg font-bold text-gray-900 dark:text-white">{api.title}</h3>
                   </div>
-                  {api.description && (
-                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">{api.description}</p>
-                  )}
+                  {api.description && <p class="mb-3 text-sm text-gray-600 dark:text-gray-400">{api.description}</p>}
                 </div>
                 <div>
-                  <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                  <p class="mb-2 text-xs font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400">
                     Available Resources:
                   </p>
                   <div class="flex flex-wrap gap-2">

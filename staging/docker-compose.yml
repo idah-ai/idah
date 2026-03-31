@@ -4,7 +4,6 @@ services:
     restart: always
     ports:
       - "8080:80"
-      - "8443:443"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
@@ -19,11 +18,8 @@ services:
     image: pgvector/pgvector:0.8.0-pg17
     container_name: postgres_db
     restart: always
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: postgres
-      PGHOST: /var/run/postgresql
+    env_file:
+      - ./config/envs/.env.postgres
     ports:
       - "5432:5432"
     volumes:
@@ -50,21 +46,22 @@ services:
       args:
         BUNDLE_WITHOUT: "" # Allow all groups for dev.
         APP_ENVIRONMENT: staging
+    env_file:
+      - ./config/envs/.env.postgres
+      - ./config/envs/.env.common
+      - ./config/envs/.env.iam
+    environment:
+      - IDAH_URL=${IDAH_URL:-http://localhost:8080}
     restart: always
     cpus: 0.5
     mem_limit: 2g
-    environment:
-      - DATABASE_URI=postgres://postgres:postgres@host.docker.internal:5432/idah_iam_development
-      - REDIS_STREAM_URL=redis://host.docker.internal:6379/0
-      - EAGER_LOAD=1
-      - IDAH_SERVICE_ACCOUNT=iam@services.idah.ai
-      - IDAH_SERVICE_PASSWORD=EJvTU9fFRao4iNT911Lh90z
     ports:
       - "3000"
     volumes:
       - ../app/iam:/app
       - ../app/iam/common:/app/common
-      - bundler_cache:/usr/local/bundle
+      - ./config/keys/private.staging.pem:/app/config/keys/private.staging.pem:ro
+      - iam_bundler_cache:/usr/local/bundle
     networks:
       - app-network
     extra_hosts:
@@ -81,23 +78,24 @@ services:
       args:
         BUNDLE_WITHOUT: "" # Allow all groups for dev.
         APP_ENVIRONMENT: staging
+    env_file:
+      - ./config/envs/.env.postgres
+      - ./config/envs/.env.common
+      - ./config/envs/.env.media
+    environment:
+      - IDAH_URL=${IDAH_URL:-http://localhost:8080}
     restart: always
     cpus: 0.5
     mem_limit: 2g
-    environment:
-      - DATABASE_URI=postgres://postgres:postgres@host.docker.internal:5432/idah_media_development
-      - REDIS_STREAM_URL=redis://host.docker.internal:6379/0
-      - EAGER_LOAD=1
-      - IDAH_SERVICE_ACCOUNT=media@services.idah.ai
-      - IDAH_SERVICE_PASSWORD=EJvTU9fFRao4iNT911Lh90z
     ports:
       - "3000"
     volumes:
       - ../app/media:/app
       - ../app/media/common:/app/common
+      - ./config/keys/public.staging.pem:/app/config/keys/public.staging.pem:ro
       - ../plugins:/app/plugins
       - frontend_build:/app/plugins/idah-video/frontend/build
-      - bundler_cache:/usr/local/bundle
+      - media_bundler_cache:/usr/local/bundle
     networks:
       - app-network
     extra_hosts:
@@ -114,21 +112,22 @@ services:
       args:
         BUNDLE_WITHOUT: "" # Allow all groups for dev.
         APP_ENVIRONMENT: staging
+    env_file:
+      - ./config/envs/.env.postgres
+      - ./config/envs/.env.common
+      - ./config/envs/.env.dataset
+    environment:
+      - IDAH_URL=${IDAH_URL:-http://localhost:8080}
     restart: always
     cpus: 0.5
     mem_limit: 2g
-    environment:
-      - DATABASE_URI=postgres://postgres:postgres@host.docker.internal:5432/idah_dataset_development
-      - REDIS_STREAM_URL=redis://host.docker.internal:6379/0
-      - EAGER_LOAD=1
-      - IDAH_SERVICE_ACCOUNT=dataset@services.idah.ai
-      - IDAH_SERVICE_PASSWORD=EJvTU9fFRao4iNT911Lh90z
     ports:
       - "3000"
     volumes:
       - ../app/dataset:/app
       - ../app/dataset/common:/app/common
-      - bundler_cache:/usr/local/bundle
+      - ./config/keys/public.staging.pem:/app/config/keys/public.staging.pem:ro
+      - dataset_bundler_cache:/usr/local/bundle
     extra_hosts:
       - "host.docker.internal:host-gateway"
       - "localhost:host-gateway"
@@ -145,21 +144,22 @@ services:
       args:
         BUNDLE_WITHOUT: "" # Allow all groups for dev.
         APP_ENVIRONMENT: staging
+    env_file:
+      - ./config/envs/.env.postgres
+      - ./config/envs/.env.common
+      - ./config/envs/.env.notification
+    environment:
+      - IDAH_URL=${IDAH_URL:-http://localhost:8080}
     restart: always
     cpus: 0.5
     mem_limit: 2g
-    environment:
-      - DATABASE_URI=postgres://postgres:postgres@host.docker.internal:5432/idah_notification_staging
-      - REDIS_STREAM_URL=redis://host.docker.internal:6379/0
-      - EAGER_LOAD=1
-      - IDAH_SERVICE_ACCOUNT=notification@services.idah.ai
-      - IDAH_SERVICE_PASSWORD=EJvTU9fFRao4iNT911Lh90z
     ports:
       - "3000"
     volumes:
       - ../app/notification:/app
       - ../app/notification/common:/app/common
-      - bundler_cache:/usr/local/bundle
+      - ./config/keys/public.staging.pem:/app/config/keys/public.staging.pem:ro
+      - notification_bundler_cache:/usr/local/bundle
     extra_hosts:
       - "host.docker.internal:host-gateway"
       - "localhost:host-gateway"
@@ -176,19 +176,20 @@ services:
       args:
         BUNDLE_WITHOUT: "" # Allow all groups for dev.
         APP_ENVIRONMENT: staging
-    restart: always
+    env_file:
+      - ./config/envs/.env.postgres
+      - ./config/envs/.env.common
+      - ./config/envs/.env.audit
     environment:
-      - DATABASE_URI=postgres://postgres:postgres@host.docker.internal:5432/idah_audit_staging
-      - REDIS_STREAM_URL=redis://host.docker.internal:6379/0
-      - EAGER_LOAD=1
-      - IDAH_SERVICE_ACCOUNT=audit@services.idah.ai
-      - IDAH_SERVICE_PASSWORD=EJvTU9fFRao4iNT911Lh90z
+      - IDAH_URL=${IDAH_URL:-http://localhost:8080}
+    restart: always
     ports:
       - "3000"
     volumes:
       - ../app/audit:/app
       - ../app/audit/common:/app/common
-      - bundler_cache:/usr/local/bundle
+      - ./config/keys/public.staging.pem:/app/config/keys/public.staging.pem:ro
+      - audit_bundler_cache:/usr/local/bundle
     extra_hosts:
       - "host.docker.internal:host-gateway"
       - "localhost:host-gateway"
@@ -205,22 +206,23 @@ services:
       args:
         BUNDLE_WITHOUT: "" # Allow all groups for dev.
         APP_ENVIRONMENT: staging
+    env_file:
+      - ./config/envs/.env.postgres
+      - ./config/envs/.env.common
+      - ./config/envs/.env.sync
+    environment:
+      - IDAH_URL=${IDAH_URL:-http://localhost:8080}
     restart: always
     cpus: 0.5
     mem_limit: 2g
-    environment:
-      - DATABASE_URI=postgres://postgres:postgres@host.docker.internal:5432/idah_sync_staging
-      - REDIS_STREAM_URL=redis://host.docker.internal:6379/0
-      - EAGER_LOAD=1
-      - IDAH_SERVICE_ACCOUNT=sync@services.idah.ai
-      - IDAH_SERVICE_PASSWORD=EJvTU9fFRao4iNT911Lh90z
     ports:
       - "3000"
     volumes:
       - ../app/sync:/app
       - ../app/sync/common:/app/common
+      - ./config/keys/public.staging.pem:/app/config/keys/public.staging.pem:ro
       - ../plugins:/app/plugins
-      - bundler_cache:/usr/local/bundle
+      - sync_bundler_cache:/usr/local/bundle
     extra_hosts:
       - "host.docker.internal:host-gateway"
       - "localhost:host-gateway"
@@ -237,23 +239,24 @@ services:
       args:
         BUNDLE_WITHOUT: "" # Allow all groups for dev.
         APP_ENVIRONMENT: staging
+    env_file:
+      - ./config/envs/.env.postgres
+      - ./config/envs/.env.common
+      - ./config/envs/.env.setting
+    environment:
+      - IDAH_URL=${IDAH_URL:-http://localhost:8080}
     restart: always
     cpus: 0.5
     mem_limit: 2g
-    environment:
-      - DATABASE_URI=postgres://postgres:postgres@host.docker.internal:5432/idah_setting_development
-      - REDIS_STREAM_URL=redis://host.docker.internal:6379/0
-      - EAGER_LOAD=1
-      - IDAH_SERVICE_ACCOUNT=setting@services.idah.ai
-      - IDAH_SERVICE_PASSWORD=EJvTU9fFRao4iNT911Lh90z
     ports:
       - "3000"
     volumes:
       - ../app/setting:/app
       - ../app/setting/common:/app/common
+      - ./config/keys/public.staging.pem:/app/config/keys/public.staging.pem:ro
       - ../plugins:/app/plugins
       - frontend_build:/app/plugins/idah-video/frontend/build
-      - bundler_cache:/usr/local/bundle
+      - setting_bundler_cache:/usr/local/bundle
     networks:
       - app-network
     extra_hosts:
@@ -269,6 +272,8 @@ services:
     build:
       context: ../.
       dockerfile: ./staging/Dockerfile.frontend
+      args:
+        VITE_IDAH_HOST: ${VITE_IDAH_HOST:-http://localhost:8080}
     restart: always
     ports:
       - "3000"
@@ -281,7 +286,13 @@ services:
 
 volumes:
   frontend_build:
-  bundler_cache:
+  iam_bundler_cache:
+  media_bundler_cache:
+  dataset_bundler_cache:
+  setting_bundler_cache:
+  audit_bundler_cache:
+  sync_bundler_cache:
+  notification_bundler_cache:
   postgres_data:
   redis_data:
 
