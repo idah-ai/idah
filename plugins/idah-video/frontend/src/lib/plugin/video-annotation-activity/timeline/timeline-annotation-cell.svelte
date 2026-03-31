@@ -2,7 +2,7 @@
   import { getContext } from "svelte";
 
   import { selectedAnnotation } from "$lib/plugin/video-annotation-activity/store/store";
-  import { timelineCellWidth } from "$lib/plugin/video-annotation-activity/timeline/store";
+  import { framePerScale, timelineCellWidth } from "$lib/plugin/video-annotation-activity/timeline/store";
   import { findCategory } from "$lib/plugin/video-annotation-activity/utils/category";
 
   import type { IActivityContext, IConfigValue } from "$idah/context/activity-context";
@@ -25,7 +25,19 @@
   let rangeLength = $derived(frameRanges.length);
   let startOfRange = $derived(frameRanges[0]);
   let endOfRange = $derived(frameRanges[rangeLength - 1]);
-  let rangeWidth = $derived((endOfRange - (startOfRange - 1)) * $timelineCellWidth);
+
+  /**
+   * The frame ranges computed with framePerScale
+   * E.g. frameRanges = [1, 9, 10] / [11, 18, 20] and framePerScale = 2
+   * scaledFrameRanges should be [1, 4, 5] / [5, 8, 9]
+   */
+  let scaledFrameRanges = $derived(
+    frameRanges.map((frameRange) => Math.max(1, Math.floor(frameRange / $framePerScale))),
+  );
+  let scaledRangeLength = $derived(scaledFrameRanges.length);
+  let startOfScaledRange = $derived(scaledFrameRanges[0]);
+  let endOfScaledRange = $derived(scaledFrameRanges[scaledRangeLength - 1]);
+  let scaledRangeWidth = $derived((endOfScaledRange - (startOfScaledRange - 1)) * $timelineCellWidth);
 
   let isSelected = $derived(
     $selectedAnnotation?.shape.start === startOfRange && $selectedAnnotation?.shape.end === endOfRange,
@@ -71,22 +83,22 @@
 
 <!-- ANNOTATION GROUP -->
 <div
-  id="timeline-annotation-cell"
+  id="timeline-annotation-cell__scaled"
   role="cell"
   tabindex="-1"
   class="hover:bg-primary/30 absolute -translate-y-[50%] rounded-sm border"
   style:border-color={groupColor}
   style:background-color="{groupColor}{isSelectedOrHovered ? 60 : 30}"
   style:color={groupTextColor}
-  style:width="{rangeWidth}px"
+  style:width="{scaledRangeWidth}px"
   style:height="{annotationHeight}px"
-  style:left="{Math.abs(startOfRange - 1) * $timelineCellWidth}px"
+  style:left="{Math.abs(startOfScaledRange - 1) * $timelineCellWidth}px"
   onmouseenter={() => (isHovered = true)}
   onmouseleave={() => (isHovered = false)}
 ></div>
 
 <!-- ANNOTATION AT FRAME (INTERPOLATION) -->
-{#each frameRanges as interpolationAtFrame (interpolationAtFrame)}
+{#each scaledFrameRanges as interpolationAtFrame, interpolationAtFrameIndex (interpolationAtFrameIndex)}
   <div
     class="absolute translate-x-[15%] -translate-y-[50%] rounded-sm"
     style:background-color={groupColor}

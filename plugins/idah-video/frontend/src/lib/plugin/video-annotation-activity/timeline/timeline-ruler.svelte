@@ -20,8 +20,6 @@
       .filter((tick) => tick !== null);
   });
 
-  $inspect(majorTicks);
-
   // Functions
   function selectFrameX(e: MouseEvent) {
     onSelectFrameX(e.clientX);

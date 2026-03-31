@@ -1,6 +1,8 @@
 <script lang="ts">
   import TimelineAnnotationCell from "$lib/plugin/video-annotation-activity/timeline/timeline-annotation-cell.svelte";
 
+  import { getAnnotationGroupFrameRanges } from "$lib/plugin/video-annotation-activity/timeline/utils";
+
   import type { AnnotationGroup } from "$idah/context/annotation-context";
   import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
 
@@ -12,12 +14,7 @@
 
   // Variables
   let timelineRulerWidth: number = $state(0);
-
-  let annotationFrameRanges: Array<number[]> = $derived(
-    annotationGroup.annotations.map((ann) =>
-      (ann.shape.frames as { frame: number }[]).map((frame) => frame.frame).sort((a, b) => a - b),
-    ),
-  );
+  let annotationFrameRanges: Array<number[]> = $derived(getAnnotationGroupFrameRanges({ annotationGroup }));
 </script>
 
 <!-- NOTE:: 

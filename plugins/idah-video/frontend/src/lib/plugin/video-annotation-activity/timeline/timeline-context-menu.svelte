@@ -30,8 +30,9 @@
   // Props
   interface Props {
     contextMenu: ITimelineContextMenu;
+    onCloseContextMenu: () => void;
   }
-  let { contextMenu }: Props = $props();
+  let { contextMenu, onCloseContextMenu }: Props = $props();
 
   // Variables
   let { visible, x: positionX, y: positionY, menus } = $derived(contextMenu);
@@ -39,12 +40,30 @@
   let contextMenuHeight = $state<number>(0);
   let canShowLeft = $derived(positionX + contextMenuWidth <= window.innerWidth);
   let canShowBottom = $derived(positionY + contextMenuHeight <= window.innerHeight);
+
+  // Functions
+  function onClickOutSide(node: HTMLElement, callback: () => void) {
+    function handleClick(event: MouseEvent) {
+      if (!node.contains(event.target as Node)) {
+        callback();
+      }
+    }
+
+    document.addEventListener("click", handleClick, true);
+
+    return {
+      destroy() {
+        document.removeEventListener("click", handleClick, true);
+      },
+    };
+  }
 </script>
 
 {#if visible}
   <div
     bind:clientWidth={contextMenuWidth}
     bind:clientHeight={contextMenuHeight}
+    use:onClickOutSide={onCloseContextMenu}
     class="bg-background absolute z-50 min-w-40 rounded-lg border"
     style:left="{canShowLeft ? positionX : positionX - contextMenuWidth}px"
     style:top="{canShowBottom ? positionY : positionY - contextMenuHeight}px"
