@@ -1004,7 +1004,7 @@
             />
           </ResizablePane>
 
-          <!--
+          <!-- 
             NOTE: Can not resize annotation sidebar,
             as it will affect the note overlay and svg overlay
             <ResizableHandle withHandle />
