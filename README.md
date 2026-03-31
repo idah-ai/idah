@@ -63,6 +63,26 @@
 
 ---
 
+## ⚠️ Security Notice
+
+**Development Environment:** The development configuration includes default credentials for ease of setup. These are **ONLY for local development**:
+
+- Database: `postgres:postgres`
+- Admin: `admin@idah.ai` / `P@ssword01`
+- Dev SSL certificates are self-signed
+- JWT signing keys are for development only
+
+**⚠️ DO NOT use these credentials in production or staging environments.**
+
+For production deployment, ensure you:
+1. Generate unique, strong passwords and secrets
+2. Use proper SSL certificates from a trusted CA
+3. Configure secure environment variables
+4. Generate new JWT signing keys
+5. Follow the [Security Best Practices](SECURITY.md) guide
+
+---
+
 ## 📖 Documentation
 
 For detailed information, visit **[docs.idah.ai](https://docs.idah.ai)**:
