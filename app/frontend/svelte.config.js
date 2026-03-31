@@ -15,6 +15,7 @@ const config = {
     alias: {
       "@/*": "./src/lib/*",
       "@build": "./build/*",
+      "@plugins": "./src/plugins/*"
     },
   },
 };
