@@ -19,6 +19,19 @@ plugins:
     config:
       url: <%= ENV.fetch("REDIS_STREAM_URL") %>
       max_connections: 10
+  - name: shrine
+    config:
+      storages:
+        - name: default
+          adapter: s3
+          config:
+            bucket: <%= ENV.fetch("SYNC_FILES_BUCKET") %>
+            access_key_id: <%= ENV.fetch("SYNC_FILES_ACCESS_KEY_ID") %>
+            secret_access_key: <%= ENV.fetch("SYNC_FILES_SECRET_ACCESS_KEY") %>
+            public: false
+            region: <%= ENV.fetch("SYNC_FILES_REGION") %>
+            prefix: files
+            endpoint: <%= ENV.fetch("SYNC_FILES_ENDPOINT") %> # https://storage.googleapis.com
 
 kv_store:
   adapter: Verse::Redis::KVStore
@@ -40,6 +53,23 @@ counter:
 
 logging:
   level: <%= ENV.fetch("LOG_LEVEL", "info") %>
+
+idah:
+  # Jobs used for processing sync
+  jobs:
+    concurrency: <%= ENV.fetch("IDAH_JOBS_CONCURRENCY", 1) %>
+  # Define where mounted plugins are stored.
+  # Plugin system is managed directly by the application,
+  # except for manual mounting and dev mode.
+  plugins:
+    path: <%= ENV.fetch("IDAH_PLUGIN_PATH", "plugins") %>
+    # Mount modules manually using their path in the modules
+    # directory
+    manual:
+      - idah-video
+    # Auto reload modules when files change (only manual plugins)
+    # True if the IDAH_DEV_PLUGIN env var is set to any value
+    watch: <%= !!ENV["IDAH_DEV_PLUGIN"] %>
 
 credentials:
   account: <%= ENV.fetch("IDAH_SERVICE_ACCOUNT") %>

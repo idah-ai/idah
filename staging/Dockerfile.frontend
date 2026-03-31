@@ -24,7 +24,9 @@ RUN pnpm svelte-kit sync
 RUN pnpm run build:parser
 
 # Build SvelteKit app
-RUN VITE_IDAH_HOST=https://idah.ingedata.ai pnpm run build --mode $NODE_ENV_ALIAS
+# Accept VITE_IDAH_HOST as a build argument with a default value
+ARG VITE_IDAH_HOST=http://localhost:8080
+RUN VITE_IDAH_HOST=${VITE_IDAH_HOST} pnpm run build --mode $NODE_ENV_ALIAS
 RUN pnpm run build:idah-video
 
 # Delete source code files that were used to build the app that are no longer needed

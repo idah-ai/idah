@@ -2,6 +2,7 @@
   import DataTableEmpty from "@/components/app/datasource-table/datasource-table-empty.svelte";
   import Copyable from "@/components/app/texts/copyable.svelte";
   import DateText from "@/components/app/texts/date-text.svelte";
+  import Checkbox from "@/components/ui/checkbox/checkbox.svelte";
   import TableBody from "@/components/ui/table/table-body.svelte";
   import TableCell from "@/components/ui/table/table-cell.svelte";
   import TableRow from "@/components/ui/table/table-row.svelte";
@@ -16,13 +17,23 @@
     tableData: TableData<T>;
     columns: ColumnsSettings<T>;
     isFiltering: boolean;
+    selectable?: boolean;
+    selectedRecords: T[];
+    onToggleRow: (record: T) => void;
   }
-  let { tableData, columns, isFiltering }: Props<T> = $props();
+  let { tableData, columns, isFiltering, selectable, selectedRecords, onToggleRow }: Props<T> = $props();
 </script>
 
 <TableBody>
   {#each tableData.response.data as record (record.id)}
+    {@const isRowSelected = !!selectedRecords.find((r) => r.id === record.id)}
     <TableRow>
+      {#if selectable}
+        <TableCell class="pl-6">
+          <Checkbox checked={isRowSelected} onCheckedChange={() => onToggleRow(record)} />
+        </TableCell>
+      {/if}
+
       {#each Object.entries(columns) as [columnKey, columnSetting] (columnKey)}
         {@const { dataType, clickable, cellComponent: CellComponent, filterOptions, visible } = columnSetting}
         {@const value = record[columnKey] || ""}

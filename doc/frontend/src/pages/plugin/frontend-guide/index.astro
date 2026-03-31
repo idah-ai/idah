@@ -1,0 +1,755 @@
+---
+import PageLayout from "@layouts/PageLayout.astro";
+import Pagination from "@components/app/page/Pagination.astro";
+import PageContainer from "@components/app/page/PageContainer.astro";
+import PageTitle from "@components/app/page/PageTitle.astro";
+import CodeBlock from "@components/app/CodeBlock.astro";
+import FolderBlock from "@components/app/FolderBlock.astro";
+import { Palette } from "@lucide/svelte";
+---
+
+<PageLayout>
+  <PageContainer>
+    <PageTitle>
+      <div class="rounded-xl bg-purple-50 p-3 text-purple-700 dark:bg-purple-900/20 dark:text-purple-800">
+        <Palette class="h-9 w-9" stroke-width={2} />
+      </div>
+      Frontend Guide
+    </PageTitle>
+
+    <div class="prose prose-lg dark:prose-invert max-w-none">
+      <p class="mb-8 text-lg leading-relaxed text-gray-700 dark:text-gray-300">
+        This guide covers frontend development for IDAH plugins using SvelteKit and Svelte 5.
+      </p>
+
+      <h2
+        id="overview"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
+        <a href="#overview" class="hover:underline">Overview</a>
+      </h2>
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
+        IDAH plugin frontends are built with SvelteKit and Svelte 5, providing a modern, reactive UI framework. Plugins
+        are compiled to UMD bundles and loaded dynamically by the IDAH platform. The Activity Context API provides
+        access to datasets, annotations, tools, and workflow management.
+      </p>
+
+      <h3 id="technology-stack" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
+        <a href="#technology-stack" class="hover:underline">Technology Stack:</a>
+      </h3>
+      <ul class="mb-6 list-inside list-disc space-y-2 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed">
+          <strong class="font-semibold text-gray-900 dark:text-white">Framework:</strong> SvelteKit with Svelte 5
+        </li>
+        <li class="leading-relaxed">
+          <strong class="font-semibold text-gray-900 dark:text-white">Language:</strong> TypeScript
+        </li>
+        <li class="leading-relaxed">
+          <strong class="font-semibold text-gray-900 dark:text-white">Build Tool:</strong> Vite
+        </li>
+        <li class="leading-relaxed">
+          <strong class="font-semibold text-gray-900 dark:text-white">Package Manager:</strong> pnpm (recommended) or npm
+        </li>
+      </ul>
+
+      <h2
+        id="file-structure"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
+        <a href="#file-structure" class="hover:underline">File Structure</a>
+      </h2>
+      <FolderBlock
+        structure={[
+          {
+            name: "<plugin_name>/",
+            type: "folder",
+            children: [
+              {
+                name: "frontend/",
+                type: "folder",
+                children: [
+                  { name: "README.md", type: "file", comment: "Frontend quick start guide" },
+                  { name: "package.json", type: "file", comment: "npm dependencies and scripts" },
+                  { name: "pnpm-lock.yaml", type: "file", comment: "Locked dependencies" },
+                  { name: "pnpm-workspace.yaml", type: "file", comment: "pnpm workspace configuration" },
+                  { name: "svelte.config.js", type: "file", comment: "SvelteKit configuration" },
+                  { name: "vite.config.ts", type: "file", comment: "Vite build configuration" },
+                  { name: "tsconfig.json", type: "file", comment: "TypeScript configuration" },
+                  { name: ".gitignore", type: "file", comment: "Git ignore rules" },
+                  { name: ".npmrc", type: "file", comment: "npm configuration" },
+                  {
+                    name: "src/",
+                    type: "folder",
+                    children: [
+                      { name: "app.html", type: "file", comment: "HTML template" },
+                      { name: "app.d.ts", type: "file", comment: "TypeScript declarations" },
+                      {
+                        name: "lib/",
+                        type: "folder",
+                        children: [
+                          { name: "index.ts", type: "file", comment: "Library exports" },
+                          { name: "context.ts", type: "file", comment: "Activity Context interface" },
+                          {
+                            name: "assets/",
+                            type: "folder",
+                            children: [{ name: "favicon.svg", type: "file", comment: "Favicon" }],
+                          },
+                          {
+                            name: "plugin/",
+                            type: "folder",
+                            children: [
+                              {
+                                name: "plugin.svelte",
+                                type: "file",
+                                comment: "Main plugin component (your code here!)",
+                              },
+                              { name: "plugin.css", type: "file", comment: "Plugin styles" },
+                            ],
+                          },
+                        ],
+                      },
+                      {
+                        name: "routes/",
+                        type: "folder",
+                        children: [
+                          { name: "+layout.svelte", type: "file", comment: "Root layout" },
+                          { name: "+page.svelte", type: "file", comment: "Main page (loads plugin)" },
+                          { name: "test_context.ts", type: "file", comment: "Mock Activity Context for development" },
+                        ],
+                      },
+                    ],
+                  },
+                  {
+                    name: "static/",
+                    type: "folder",
+                    children: [{ name: "robots.txt", type: "file", comment: "Robots.txt for SEO" }],
+                  },
+                ],
+              },
+            ],
+          },
+        ]}
+      />
+
+      <h3 id="key-files" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
+        <a href="#key-files" class="hover:underline">Key Files:</a>
+      </h3>
+      <ul class="mb-6 list-inside list-disc space-y-2 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed">
+          <code class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+            >src/lib/plugin/plugin.svelte</code
+          > - <strong class="font-semibold text-gray-900 dark:text-white">Your main plugin component</strong> - develop your
+          UI here
+        </li>
+        <li class="leading-relaxed">
+          <code class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+            >src/lib/context.ts</code
+          > - Activity Context TypeScript interface
+        </li>
+        <li class="leading-relaxed">
+          <code class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+            >src/routes/test_context.ts</code
+          > - Mock context for local development
+        </li>
+        <li class="leading-relaxed">
+          <code class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+            >vite.config.ts</code
+          > - Build configuration (UMD output for IDAH)
+        </li>
+      </ul>
+
+      <h2
+        id="getting-started"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
+        <a href="#getting-started" class="hover:underline">Getting Started</a>
+      </h2>
+
+      <h3 id="prerequisites" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
+        <a href="#prerequisites" class="hover:underline">Prerequisites</a>
+      </h3>
+      <ul class="mb-6 list-inside list-disc space-y-2 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed">Node.js 18+</li>
+        <li class="leading-relaxed">pnpm (recommended) or npm</li>
+      </ul>
+
+      <h3 id="installation" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
+        <a href="#installation" class="hover:underline">Installation</a>
+      </h3>
+      <CodeBlock
+        language="bash"
+        code={`pnpm install
+pnpm dev
+pnpm build
+pnpm preview`}
+      />
+
+      <h2
+        id="development-workflow"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
+        <a href="#development-workflow" class="hover:underline">Development Workflow</a>
+      </h2>
+
+      <h3 id="develop-your-plugin" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
+        <a href="#develop-your-plugin" class="hover:underline">1. Develop Your Plugin</a>
+      </h3>
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
+        Edit <code class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+          >src/lib/plugin/plugin.svelte</code
+        > - this is your main plugin component:
+      </p>
+      <CodeBlock
+        language="svelte"
+        path="src/lib/plugin/plugin.svelte"
+        code={`<script lang="ts">
+  import { onMount } from 'svelte'
+  import type { IActivityContext } from "$lib/context";
+
+  let { context }: { context: IActivityContext } = $props();
+
+  onMount(() => {
+    console.log('Plugin mounted!', context)
+  })
+</script>
+
+<div class="plugin-container">
+  <h1>My Plugin</h1>
+  <p>Your plugin description here</p>
+
+  <!-- Your plugin UI here -->
+</div>
+
+<style>
+  .plugin-container {
+    padding: 1rem;
+  }
+</style>`}
+      />
+
+      <h3 id="use-activity-context" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
+        <a href="#use-activity-context" class="hover:underline">2. Use the Activity Context</a>
+      </h3>
+
+      <h2
+        id="activity-context-api"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
+        <a href="#activity-context-api" class="hover:underline">Activity Context API Reference</a>
+      </h2>
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
+        The <code class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+          >IActivityContext</code
+        > interface provides these core APIs:
+      </p>
+
+      <h3 id="basic-properties" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
+        <a href="#basic-properties" class="hover:underline">Basic Properties</a>
+      </h3>
+      <CodeBlock
+        language="typescript"
+        code={`context.id              // Current entry ID
+context.type            // Activity type
+context.workflowStep    // 'start' | 'annotate' | 'review' | 'done' | 'export'
+context.status          // Entry status
+context.config          // Dataset configuration
+context.mediaUrl        // Root media URL
+context.user            // Current user info
+context.userRole        // User role`}
+      />
+
+      <h3 id="annotations-driver" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
+        <a href="#annotations-driver" class="hover:underline">Annotations Driver</a>
+      </h3>
+      <CodeBlock
+        language="typescript"
+        code={`await context.annotations.create(
+  id,           // unique ID (optional, defaults to: uuidv7())
+  dimensions,   // shape/dimension data
+  annotation,   // annotation values
+  metadata      // optional metadata
+)
+
+await context.annotations.update({
+  id,
+  dimensions,
+  annotation,
+  metadata
+})
+
+await context.annotations.delete(id)
+
+const results = await context.annotations.list(
+  { entry_id: context.id },
+  { page: 1, itemsPerPage: 100 }
+)
+
+context.annotations.flush()`}
+      />
+
+      <h3 id="commands-undo-redo" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
+        <a href="#commands-undo-redo" class="hover:underline">Commands (Undo/Redo System)</a>
+      </h3>
+      <CodeBlock
+        language="typescript"
+        code={`context.commands.on('commandName', (props) => {
+  return {
+    name: 'Human-readable name',
+    async apply() {
+      // Do the action
+    },
+    async undo() {
+      // Undo the action
+    },
+    isCombinable: () => false,
+    combine: (cmd) => cmd
+  }
+})
+
+context.commands.run('commandName', { /* props */ })
+
+context.commands.undo()
+context.commands.redo()`}
+      />
+
+      <h3 id="tools-header-bar" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
+        <a href="#tools-header-bar" class="hover:underline">Tools (Header Bar Tools)</a>
+      </h3>
+      <CodeBlock
+        language="typescript"
+        code={`context.tools.setTools([
+  {
+    type: 'visual',
+    label: 'Visual',
+    iconName: 'mouse-pointer-2',
+    handleClick: () => context.commands.run('tools.visual')
+  },
+  {
+    type: 'bounding-box',
+    label: 'Bounding Box',
+    iconName: 'vector-square',
+    disabled: !['annotate', 'review'].includes(context.workflowStep),
+    handleClick: () => context.commands.run('tools.boundingBox')
+  }
+])
+
+context.tools.setTool('visual')
+
+context.tools.onToolChange((tool) => {
+  console.log('Tool changed:', tool)
+})`}
+      />
+
+      <h3 id="notes" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
+        <a href="#notes" class="hover:underline">Notes</a>
+      </h3>
+      <CodeBlock
+        language="typescript"
+        code={`context.notes.showNewNoteFeedPopup({
+  anchor_type: 'annotation',  // 'entry' | 'annotation'
+  position: { x: 100, y: 200, sidebar_width: 256 },
+  annotation_id: 'ann-123'
+})
+
+context.notes.gotoFeed(noteFeedId, noteCommentId)
+
+context.notes.onNoteSelected((noteFeedId, noteCommentId) => {
+  // Handle note selection
+})`}
+      />
+
+      <h3 id="workflow-navigation" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
+        <a href="#workflow-navigation" class="hover:underline">Workflow Navigation</a>
+      </h3>
+      <CodeBlock
+        language="typescript"
+        code={`await context.submit({ approved: true })
+
+context.back()
+
+await context.error('Error message')`}
+      />
+
+      <h3 id="style-your-plugin" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
+        <a href="#style-your-plugin" class="hover:underline">3. Style Your Plugin</a>
+      </h3>
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
+        Add styles in <code class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+          >src/lib/plugin/plugin.css</code
+        > or use scoped styles within your Svelte components:
+      </p>
+      <CodeBlock
+        language="css"
+        path="src/lib/plugin/plugin.css"
+        code={`.plugin-container {
+  font-family: system-ui, sans-serif;
+  max-width: 1200px;
+  margin: 0 auto;
+}`}
+      />
+
+      <h2
+        id="building-for-production"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
+        <a href="#building-for-production" class="hover:underline">Building for Production</a>
+      </h2>
+
+      <h3 id="build-the-plugin" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
+        <a href="#build-the-plugin" class="hover:underline">Build the Plugin</a>
+      </h3>
+      <CodeBlock language="bash" code="pnpm build" />
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">This generates:</p>
+      <ul class="mb-6 list-inside list-disc space-y-2 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed">
+          <code class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+            >build/plugin.umd.js</code
+          > - Main plugin bundle
+        </li>
+        <li class="leading-relaxed">
+          <code class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+            >build/plugin.css</code
+          > - Plugin styles
+        </li>
+        <li class="leading-relaxed">
+          <code class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+            >build/entryDetailsBuild.js</code
+          > - Entry details component (if applicable)
+        </li>
+        <li class="leading-relaxed">
+          <code class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+            >build/entryDetailsBuild.css</code
+          > - Entry details styles
+        </li>
+      </ul>
+
+      <h3 id="build-output" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
+        <a href="#build-output" class="hover:underline">Build Output</a>
+      </h3>
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
+        The build process creates UMD (Universal Module Definition) bundles that can be loaded by the IDAH platform.
+        These files are referenced in your plugin's <code
+          class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400">manifest.json</code
+        >:
+      </p>
+      <CodeBlock
+        language="json"
+        code={`{
+  "entryPoints": {
+    "entryPlugin": {
+      "script": "/frontend/build/plugin.umd.js",
+      "style": "/frontend/build/plugin.css"
+    }
+  }
+}`}
+      />
+
+      <h2
+        id="typescript"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
+        <a href="#typescript" class="hover:underline">TypeScript</a>
+      </h2>
+
+      <h3 id="type-checking" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
+        <a href="#type-checking" class="hover:underline">Type Checking</a>
+      </h3>
+      <CodeBlock
+        language="bash"
+        code={`pnpm check
+pnpm check:watch`}
+      />
+
+      <h3 id="adding-types" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
+        <a href="#adding-types" class="hover:underline">Adding Types</a>
+      </h3>
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
+        Define your types in <code
+          class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+          >src/lib/types.ts</code
+        > or alongside your components:
+      </p>
+      <CodeBlock
+        language="typescript"
+        code={`export interface MyPluginData {
+  id: string
+  title: string
+  metadata: Record<string, any>
+}`}
+      />
+
+      <h2
+        id="best-practices"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
+        <a href="#best-practices" class="hover:underline">Best Practices</a>
+      </h2>
+
+      <h3 id="component-organization" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
+        <a href="#component-organization" class="hover:underline">1. Component Organization</a>
+      </h3>
+      <FolderBlock
+        title="Recommended Component Organization"
+        structure={[
+          {
+            name: "src/lib/",
+            type: "folder",
+            children: [
+              {
+                name: "plugin/",
+                type: "folder",
+                children: [
+                  { name: "plugin.svelte", type: "file", comment: "Main plugin component" },
+                  {
+                    name: "components/",
+                    type: "folder",
+                    comment: "Reusable components",
+                    children: [
+                      { name: "Header.svelte", type: "file" },
+                      { name: "DataTable.svelte", type: "file" },
+                      { name: "Chart.svelte", type: "file" },
+                    ],
+                  },
+                  {
+                    name: "stores/",
+                    type: "folder",
+                    comment: "Svelte stores for state",
+                    children: [{ name: "pluginState.ts", type: "file" }],
+                  },
+                  {
+                    name: "utils/",
+                    type: "folder",
+                    comment: "Utility functions",
+                    children: [{ name: "formatters.ts", type: "file" }],
+                  },
+                  {
+                    name: "types/",
+                    type: "folder",
+                    comment: "TypeScript types",
+                    children: [{ name: "index.ts", type: "file" }],
+                  },
+                ],
+              },
+            ],
+          },
+        ]}
+      />
+
+      <h3 id="state-management" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
+        <a href="#state-management" class="hover:underline">2. State Management</a>
+      </h3>
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">Use Svelte stores for shared state:</p>
+      <CodeBlock
+        language="typescript"
+        path="src/lib/plugin/stores/pluginState.ts"
+        code={`import { writable } from 'svelte/store'
+
+export const selectedItems = writable<string[]>([])
+export const isLoading = writable(false)`}
+      />
+
+      <h3 id="error-handling" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
+        <a href="#error-handling" class="hover:underline">3. Error Handling</a>
+      </h3>
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
+        Edit <code class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+          >src/lib/plugin/plugin.svelte</code
+        > - this is your main plugin component:
+      </p>
+      <CodeBlock
+        language="typescript"
+        path="src/lib/plugin/plugin.svelte"
+        code={`<script lang="ts">
+  let error = $state<string | null>(null)
+
+  async function loadData() {
+    try {
+      // ... load data
+    } catch (err) {
+      error = err instanceof Error ? err.message : 'Unknown error'
+      console.error('Failed to load data:', err)
+    }
+  }
+</script>
+
+{#if error}
+  <div class="error-message">{error}</div>
+{/if}`}
+      />
+
+      <h3 id="performance" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
+        <a href="#performance" class="hover:underline">4. Performance</a>
+      </h3>
+      <ul class="mb-6 list-inside list-disc space-y-2 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed">
+          Use <code class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+            >$effect</code
+          > for side effects instead of <code
+            class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400">onMount</code
+          > when appropriate
+        </li>
+        <li class="leading-relaxed">Lazy load heavy components</li>
+        <li class="leading-relaxed">Optimize images and assets</li>
+        <li class="leading-relaxed">Use virtual scrolling for large lists</li>
+      </ul>
+
+      <h3 id="accessibility" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
+        <a href="#accessibility" class="hover:underline">5. Accessibility</a>
+      </h3>
+      <ul class="mb-6 list-inside list-disc space-y-2 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed">Use semantic HTML</li>
+        <li class="leading-relaxed">Add ARIA labels where needed</li>
+        <li class="leading-relaxed">Ensure keyboard navigation works</li>
+        <li class="leading-relaxed">Test with screen readers</li>
+      </ul>
+
+      <h2
+        id="testing"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
+        <a href="#testing" class="hover:underline">Testing</a>
+      </h2>
+
+      <h3 id="manual-testing" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
+        <a href="#manual-testing" class="hover:underline">Manual Testing</a>
+      </h3>
+      <ol class="mb-6 list-inside list-decimal space-y-2 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed">
+          Start the dev server: <code
+            class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400">pnpm dev</code
+          >
+        </li>
+        <li class="leading-relaxed">
+          Open <a href="http://localhost:5173" class="text-blue-600 hover:underline dark:text-blue-400"
+            >http://localhost:5173</a
+          >
+        </li>
+        <li class="leading-relaxed">
+          Modify <code class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+            >test_context.ts</code
+          > to test different scenarios
+        </li>
+        <li class="leading-relaxed">Test responsive design at different screen sizes</li>
+      </ol>
+
+      <h3 id="integration-testing" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
+        <a href="#integration-testing" class="hover:underline">Integration Testing</a>
+      </h3>
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">Test your plugin in the full IDAH platform:</p>
+      <ol class="mb-6 list-inside list-decimal space-y-2 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed">
+          Build the plugin: <code
+            class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400">pnpm build</code
+          >
+        </li>
+        <li class="leading-relaxed">Copy the plugin to IDAH's plugins directory</li>
+        <li class="leading-relaxed">Restart IDAH</li>
+        <li class="leading-relaxed">Test with real data</li>
+      </ol>
+
+      <h2
+        id="troubleshooting"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
+        <a href="#troubleshooting" class="hover:underline">Troubleshooting</a>
+      </h2>
+
+      <h3 id="port-already-in-use" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
+        <a href="#port-already-in-use" class="hover:underline">Port Already in Use</a>
+      </h3>
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
+        If port 5173 is busy, Vite will try the next available port. You can also specify a port:
+      </p>
+      <CodeBlock language="bash" code="pnpm dev -- --port 3000" />
+
+      <h3 id="build-errors" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
+        <a href="#build-errors" class="hover:underline">Build Errors</a>
+      </h3>
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">Clear the build cache and reinstall:</p>
+      <CodeBlock
+        language="bash"
+        code={`rm -rf node_modules build .svelte-kit
+pnpm install
+pnpm build`}
+      />
+
+      <h3 id="type-errors" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
+        <a href="#type-errors" class="hover:underline">Type Errors</a>
+      </h3>
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">Regenerate SvelteKit types:</p>
+      <CodeBlock language="bash" code="pnpm run prepare" />
+
+      <h2
+        id="resources"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
+        <a href="#resources" class="hover:underline">Resources</a>
+      </h2>
+      <ul class="mb-6 list-inside list-disc space-y-2 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed">
+          <a
+            href="https://kit.svelte.dev/docs"
+            class="text-blue-600 hover:underline dark:text-blue-400"
+            target="_blank"
+            rel="noopener noreferrer">SvelteKit Documentation</a
+          >
+        </li>
+        <li class="leading-relaxed">
+          <a
+            href="https://svelte-5-preview.vercel.app/tutorial"
+            class="text-blue-600 hover:underline dark:text-blue-400"
+            target="_blank"
+            rel="noopener noreferrer">Svelte 5 Tutorial</a
+          >
+        </li>
+        <li class="leading-relaxed">
+          <a
+            href="https://www.typescriptlang.org/docs/"
+            class="text-blue-600 hover:underline dark:text-blue-400"
+            target="_blank"
+            rel="noopener noreferrer">TypeScript Handbook</a
+          >
+        </li>
+        <li class="leading-relaxed">
+          <a
+            href="https://vitejs.dev/"
+            class="text-blue-600 hover:underline dark:text-blue-400"
+            target="_blank"
+            rel="noopener noreferrer">Vite Documentation</a
+          >
+        </li>
+      </ul>
+
+      <h2
+        id="next-steps"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
+        <a href="#next-steps" class="hover:underline">Next Steps</a>
+      </h2>
+      <ul class="mb-6 list-inside list-disc space-y-2 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed">
+          <a href="/plugin/backend-guide/" class="text-blue-600 hover:underline dark:text-blue-400">Backend Guide</a> - Add
+          backend services to your plugin
+        </li>
+        <li class="leading-relaxed">
+          <a href="/plugin/import-media/" class="text-blue-600 hover:underline dark:text-blue-400"
+            >Import & Process Media</a
+          > - Process media files
+        </li>
+        <li class="leading-relaxed">
+          <a href="/plugin/export-datasets/" class="text-blue-600 hover:underline dark:text-blue-400">Export Datasets</a
+          > - Export and sync data
+        </li>
+      </ul>
+
+      <div
+        class="mb-6 rounded-lg border-l-4 border-blue-500 bg-gradient-to-r from-blue-50 to-purple-50 p-6 dark:from-blue-900/20 dark:to-purple-900/20"
+      >
+        <p class="text-lg leading-relaxed font-medium text-gray-800 dark:text-gray-200">
+          🎨 Frontend ready! Add backend services to complete your full-stack plugin.
+        </p>
+      </div>
+    </div>
+  </PageContainer>
+  <Pagination />
+</PageLayout>
