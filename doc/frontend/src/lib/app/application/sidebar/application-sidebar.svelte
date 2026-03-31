@@ -66,7 +66,9 @@
 
                   <!-- Third-level children (dropdown) -->
                   {#if expandedItems[child.label]}
-                    <div class="ml-4 mt-1 space-y-1 border-l-2 border-gray-200 bg-gray-50/50 py-2 pl-3 dark:border-gray-700 dark:bg-gray-800/30">
+                    <div
+                      class="ml-4 mt-1 space-y-1 border-l-2 border-gray-200 bg-gray-50/50 py-2 pl-3 dark:border-gray-700 dark:bg-gray-800/30"
+                    >
                       {#each child.children as grandchild (grandchild.label)}
                         <a
                           href={grandchild.href}
