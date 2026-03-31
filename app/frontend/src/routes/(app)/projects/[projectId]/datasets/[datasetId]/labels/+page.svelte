@@ -314,11 +314,17 @@
     const selectedLabelConfig = labelConfig[labelConfigKey];
     const propertyToUpdateIndex = selectedLabelConfig.properties.findIndex((p) => p.id === property.id);
     if (propertyToUpdateIndex >= 0) {
-      selectedLabelConfig.properties[propertyToUpdateIndex] = {
-        ...property,
-        id: slugify(property.label),
-      };
+      /** Update existing property */
+      let propertyToCreate = property;
+
+      /** If user update the label, update the property.id with slugified label */
+      if (propertyToCreate.label !== "New Property") {
+        propertyToCreate.id = slugify(propertyToCreate.label);
+      }
+
+      selectedLabelConfig.properties[propertyToUpdateIndex] = { ...propertyToCreate };
     } else {
+      /** Add new property */
       selectedLabelConfig.properties.push(property);
     }
   }

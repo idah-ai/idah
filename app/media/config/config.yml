@@ -72,6 +72,12 @@ idah:
     # True if the IDAH_DEV_PLUGIN env var is set to any value
     watch: <%= !!ENV["IDAH_DEV_PLUGIN"] %>
 
+    config:
+      # Configuration for the video plugin
+      idah_video:
+        decoding_threads: <%= ENV.fetch("IDAH_VIDEO_DECODING_THREADS", 1) %>
+        encoding_threads: <%= ENV.fetch("IDAH_VIDEO_ENCODING_THREADS", 1) %>
+
 credentials:
   account: <%= ENV.fetch("IDAH_SERVICE_ACCOUNT") %>
   password: <%= ENV.fetch("IDAH_SERVICE_PASSWORD") %>

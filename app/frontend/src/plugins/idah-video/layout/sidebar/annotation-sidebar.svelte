@@ -1,6 +1,5 @@
 <script lang="ts">
   import { CircleXIcon } from "@lucide/svelte";
-  import { SvelteMap } from "svelte/reactivity";
 
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import SidebarContent from "@/components/ui/sidebar/sidebar-content.svelte";
@@ -12,6 +11,7 @@
   import CategorySidebar from "./category-sidebar.svelte";
 
   import type {
+    AnnotationGroup,
     AnnotationMetadata,
     AnnotationObj,
     AnnotationShape,
@@ -28,10 +28,12 @@
 
   // Props
   let {
+    view,
     sidebarWidthRem,
     annotationValue,
     onEditValue,
     onSelectAnnotation,
+    onSelectAnnotationGroup,
     onDeleteAnnotation,
     onVisibility,
     onLock,
@@ -39,21 +41,21 @@
     mode,
     currentFrame,
     db,
-    selectedAnnotationId,
     class: className,
   }: {
+    view: "sidebar" | "popover";
     sidebarWidthRem: number;
     currentFrame: number;
     annotationValue: AnnotationValue;
     onEditValue: (annotationValue: AnnotationValue, mode: string) => void;
     onSelectAnnotation: (annotation?: TAnnotationObj) => void;
+    onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<TAnnotationObj>) => void;
     onDeleteAnnotation: (annotation: TAnnotationObj) => void;
     onLock: (locked: boolean, annotation?: TAnnotationObj) => void;
     onVisibility: (hidden: boolean, annotation?: TAnnotationObj) => void;
     context: IActivityContext;
     mode: string;
     db?: AnnotationsIndexedDB;
-    selectedAnnotationId?: string;
     class?: string | null;
   } = $props();
 
@@ -69,16 +71,19 @@
   let filteredTools = $derived.by(() => {
     if (!searchValue) return tools;
 
-    const filtered = new SvelteMap<string, IConfigValue[]>();
+    const result: [string, IConfigValue[]][] = [];
+
     for (const [toolType, categories] of tools) {
-      const matchingCategories = categories.filter((category) =>
+      const matching = categories.filter((category) =>
         category.label.toLowerCase().includes(searchValue.toLowerCase()),
       );
-      if (matchingCategories.length > 0) {
-        filtered.set(toolType, matchingCategories);
+
+      if (matching.length > 0) {
+        result.push([toolType, matching]);
       }
     }
-    return filtered;
+
+    return result;
   });
 
   // Functions
@@ -135,6 +140,7 @@
     {#each filteredTools as [tool, categories] (tool)}
       {#if !filteredTools.has(mode) || (filteredTools.has(mode) && tool == mode) || mode == ENTRY_ROOT}
         <CategorySidebar
+          {view}
           {db}
           {currentFrame}
           currentMode={mode}
@@ -144,8 +150,7 @@
             ? $entryRoot?.value.category
             : annotationValue.category}
           onSelectCategory={(selected) => categorySelection(tool, selected)}
-          {selectedAnnotationId}
-          {onSelectAnnotation}
+          {onSelectAnnotationGroup}
           {onDeleteAnnotation}
           {onLock}
           {onVisibility}

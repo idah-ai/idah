@@ -34,3 +34,8 @@ user:
 
     # Setting Service
     - "setting:account_settings.*.own"
+
+    # Sync Service
+    - "sync:jobs.read.as_user"
+    - "sync:exports.read.as_user"
+    - "sync:exports.create.as_user"

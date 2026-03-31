@@ -5,6 +5,11 @@ class AnnotationsExpo < BaseExpo
 
   use_service Annotation::Service
 
+  desc <<~MD
+    Annotations capture labeled data or markups on entries,
+    supporting both JSON:API and JSON-RPC interfaces for flexible batch operations.
+  MD
+
   json_api Annotation::Record do
     show
     index
@@ -33,6 +38,7 @@ class AnnotationsExpo < BaseExpo
     field(:entry_id, String)
     field(:dimensions, Hash) # Open Hash
     field(:annotation, Hash) # Open Hash
+    field?(:metadata, Hash) # Open Hash
   end
 
   # Add the id as a required field for the update method

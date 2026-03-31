@@ -2,6 +2,8 @@
   import { IDAH_NOTE } from "../type";
   import { X, Y, type Point } from "./VideoAnnotationContext";
 
+  import type { IConfigPropertyStyles } from "@/plugin/interface/Activity";
+
   let {
     ratio = [1, 1],
     offset = [0, 0],
@@ -10,9 +12,12 @@
     editable = false,
     cursor,
     color = "rgba(246, 64, 43, 0.5)",
+    styles,
     mode,
     onChange,
     onmousedown,
+    // pointer,
+    hidden = false,
     onEditingChange,
     onPointerChange,
   }: {
@@ -23,11 +28,17 @@
     editable?: boolean;
     cursor?: Point;
     color?: string;
+    styles?: IConfigPropertyStyles;
     mode: string;
     onmousedown?: (e: MouseEvent) => void;
+    // onChange?: (bb: BoundingBox) => void;
+    // pointer: string;
+    // hidden?: boolean;
     onChange?: (bb: Point[], angle: number) => void;
     onEditingChange?: (isEditing: boolean) => void;
     onPointerChange?: (pointer: string | undefined) => void;
+    // pointer: string;
+    hidden?: boolean;
   } = $props();
 
   export interface ToolSelection {
@@ -83,9 +94,11 @@
 
   $effect(() => {
     onEditingChange?.(isEditing);
+    return () => onEditingChange?.(false);
   });
   $effect(() => {
     onPointerChange?.(edition_cursor);
+    return () => onPointerChange?.(undefined);
   });
 
   // Update points based on cursor movement (pan)
@@ -103,7 +116,7 @@
       const topLeft: Point = [Math.min(points[0][X], cursor[X]), Math.min(points[0][Y], cursor[Y])];
       const bottomRight: Point = [Math.max(points[0][X], cursor[X]), Math.max(points[0][Y], cursor[Y])];
 
-      return [topLeft, [bottomRight[X], topLeft[Y]], bottomRight, [topLeft[X], bottomRight[Y]]];
+      return [topLeft, [bottomRight[X], topLeft[Y]], bottomRight, [topLeft[X], bottomRight[Y]]] as Point[];
     }
     // Use updatedPoints (which handles pan) for display
     return updatedPoints;
@@ -358,7 +371,7 @@
     let newBottomRightY = initialBottomRight[Y];
 
     // Determine which point/edge to keep fixed (in unrotated space)
-    let fixedPointUnrotated: Point;
+    let fixedPointUnrotated: Point = [0, 0];
 
     // Handle corner resizing (even indices)
     if (handleIndex % 2 === 0) {
@@ -457,7 +470,7 @@
     return `data:image/svg+xml;base64,${btoa(`
       <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none">
         <g transform="scale(0.75) translate(3, 3)">
-          <path d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C14.3456 3 16.4922 3.93392 18.1243 5.43938" 
+          <path d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C14.3456 3 16.4922 3.93392 18.1243 5.43938"
                 stroke="${color}" stroke-width="2" stroke-linecap="round"/>
           <path d="M17 3L18.1243 5.43938L15.5 6.5"
                 stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="${color}"/>
@@ -468,255 +481,306 @@
   }
 
   let over = $state(false);
+
+  function getBoundingBoxStyles(styles?: IConfigPropertyStyles) {
+    const defaultBackgroundOpacity = 0.4;
+    const border = styles?.border;
+
+    let dashArray = "none";
+    let width = "2";
+    let opacity = defaultBackgroundOpacity;
+
+    /** OPACITY */
+    /** NOTE:: Can't use switch statement as it will not work with null value  */
+    if (styles?.opacity === undefined) {
+      opacity = defaultBackgroundOpacity;
+    } else if (styles?.opacity === null) {
+      opacity = defaultBackgroundOpacity;
+    } else if (styles.opacity === 0) {
+      opacity = 0;
+    } else {
+      opacity = (styles?.opacity / 100) * defaultBackgroundOpacity;
+    }
+
+    switch (border) {
+      case "dashed": {
+        dashArray = "10, 10";
+        width = "2";
+        break;
+      }
+      case "dotted": {
+        dashArray = "1, 10";
+        width = "4";
+        break;
+      }
+      default: {
+        dashArray = "none";
+        width = "2";
+        break;
+      }
+    }
+
+    return { dashArray, width, opacity, strokeColor: opacity ? color : "none" };
+  }
 </script>
 
 <g transform={`translate(${offset[X]}, ${offset[Y]})`}>
-  <!-- Bounding Box -->
-  {#if displayPoints.length > 0}
-    <path
-      role="grid"
-      tabindex="-1"
-      d={draw_cmd(displayPoints)}
-      onmouseenter={() => (over = true)}
-      onmouseleave={() => (over = false)}
-      style:transform-origin={`${displayCentroid[X] * ratio[X]}px ${displayCentroid[Y] * ratio[Y]}px`}
-      style:transform={`rotate(${getAngle()}rad)`}
-      vector-effect="non-scaling-stroke"
-      class={isEditing ? "cursor-none" : edition_cursor}
-      fill-opacity="0.4"
-      style:fill={color}
-      style:stroke={color}
-      style:stroke-width="2"
-      onmousedown={(e) => {
-        onmousedown?.(e);
-        if (editable && points.length === 4 && !panStart && !rotateStart && resizeHandleIndex === undefined) {
-          e.stopPropagation();
-          panStart = cursor_pixel;
-        }
-      }}
-    />
+  {#if !hidden}
+    <!-- Bounding Box -->
+    {#if displayPoints.length > 0}
+      <!--
+        NOTE:: Don't add role & tabindex props
+        as it will have an focus ring when drag or mouse down on bounding box
+      -->
+      <path
+        d={draw_cmd(displayPoints)}
+        onmouseenter={() => (over = true)}
+        onmouseleave={() => (over = false)}
+        style:transform-origin={`${displayCentroid[X] * ratio[X]}px ${displayCentroid[Y] * ratio[Y]}px`}
+        style:transform={`rotate(${getAngle()}rad)`}
+        vector-effect="non-scaling-stroke"
+        class={isEditing ? "cursor-none" : edition_cursor}
+        fill-opacity={getBoundingBoxStyles(styles).opacity}
+        style:fill={color}
+        style:stroke={getBoundingBoxStyles(styles).strokeColor}
+        style:stroke-width={getBoundingBoxStyles(styles).width}
+        stroke-dasharray={getBoundingBoxStyles(styles).dashArray}
+        stroke-linecap="round"
+        onmousedown={(e) => {
+          onmousedown?.(e);
+          if (editable && points.length === 4 && !panStart && !rotateStart && resizeHandleIndex === undefined) {
+            e.stopPropagation();
+            panStart = cursor_pixel;
+          }
+        }}
+      />
 
-    <!-- Bounding Box Handles -->
-    {#if editable && points.length === 4}
-      <!-- Debug: Show line from centroid to cursor when rotating -->
-      {#if rotateStart && cursor_pixel}
-        <line
-          x1={displayCentroid[X] * ratio[X]}
-          y1={displayCentroid[Y] * ratio[Y]}
-          x2={cursor_pixel[X]}
-          y2={cursor_pixel[Y]}
-          stroke={color}
-          stroke-width="2"
-          stroke-dasharray="5,5"
-        />
-        <circle
-          cx={displayCentroid[X] * ratio[X]}
-          cy={displayCentroid[Y] * ratio[Y]}
-          r={4}
-          style:transform-origin={`${displayCentroid[X] * ratio[X]}px ${displayCentroid[Y] * ratio[Y]}px`}
-          style:transform={`rotate(${getAngle()}rad)`}
-          vector-effect="non-scaling-stroke"
-          style:stroke={color}
-          style:fill={color}
-          style:opacity="0.5"
-        />
-      {/if}
-
-      <!-- Rotation handle (above top edge) -->
+      <!-- Bounding Box Handles -->
       {#if editable && points.length === 4}
-        {@const minY = Math.min(updatedPoints[0][Y], updatedPoints[1][Y], updatedPoints[2][Y], updatedPoints[3][Y])}
-        {@const minX = Math.min(updatedPoints[0][X], updatedPoints[1][X], updatedPoints[2][X], updatedPoints[3][X])}
-        {@const maxX = Math.max(updatedPoints[0][X], updatedPoints[1][X], updatedPoints[2][X], updatedPoints[3][X])}
+        <!-- Debug: Show line from centroid to cursor when rotating -->
+        {#if rotateStart && cursor_pixel}
+          <line
+            x1={displayCentroid[X] * ratio[X]}
+            y1={displayCentroid[Y] * ratio[Y]}
+            x2={cursor_pixel[X]}
+            y2={cursor_pixel[Y]}
+            stroke={color}
+            stroke-width="2"
+            stroke-dasharray="5,5"
+          />
+          <circle
+            cx={displayCentroid[X] * ratio[X]}
+            cy={displayCentroid[Y] * ratio[Y]}
+            r={4}
+            style:transform-origin={`${displayCentroid[X] * ratio[X]}px ${displayCentroid[Y] * ratio[Y]}px`}
+            style:transform={`rotate(${getAngle()}rad)`}
+            vector-effect="non-scaling-stroke"
+            style:stroke={color}
+            style:fill={color}
+            style:opacity="0.5"
+          />
+        {/if}
 
-        {@const topEdgeMidpoint = [(minX + maxX) / 2, minY]}
-        {@const handleDistance = 60}
-        {@const handleOffset = handleDistance / Math.max(ratio[X], ratio[Y])}
+        <!-- Rotation handle (above top edge) -->
+        {#if editable && points.length === 4}
+          {@const minY = Math.min(updatedPoints[0][Y], updatedPoints[1][Y], updatedPoints[2][Y], updatedPoints[3][Y])}
+          {@const minX = Math.min(updatedPoints[0][X], updatedPoints[1][X], updatedPoints[2][X], updatedPoints[3][X])}
+          {@const maxX = Math.max(updatedPoints[0][X], updatedPoints[1][X], updatedPoints[2][X], updatedPoints[3][X])}
 
-        <line
-          x1={topEdgeMidpoint[X] * ratio[X]}
-          y1={topEdgeMidpoint[Y] * ratio[Y]}
-          x2={topEdgeMidpoint[X] * ratio[X]}
-          y2={(topEdgeMidpoint[Y] - handleOffset) * ratio[Y]}
-          stroke={color}
-          stroke-width="2"
-          style:transform-origin={`${displayCentroid[X] * ratio[X]}px ${displayCentroid[Y] * ratio[Y]}px`}
-          style:transform={`rotate(${getAngle()}rad)`}
-          pointer-events="none"
-        />
+          {@const topEdgeMidpoint = [(minX + maxX) / 2, minY]}
+          {@const handleDistance = 60}
+          {@const handleOffset = handleDistance / Math.max(ratio[X], ratio[Y])}
 
-        <!-- Rotation handle circle with custom cursor -->
-        <circle
-          cx={topEdgeMidpoint[X] * ratio[X]}
-          cy={(topEdgeMidpoint[Y] - handleOffset) * ratio[Y]}
-          r={2}
-          style:transform-origin={`${displayCentroid[X] * ratio[X]}px ${displayCentroid[Y] * ratio[Y]}px`}
-          style:transform={`rotate(${getAngle()}rad)`}
-          style:cursor={isEditing ? "none" : `url('${getRotateCursorSVG()}') 18 18, grab`}
-          style:fill={color}
-        />
-        <circle
-          role="slider"
-          tabindex="0"
-          style:outline="none"
-          aria-valuenow={getAngle() * (180 / Math.PI)}
-          onmousedown={(e) => {
-            if (!panStart && !rotateStart && resizeHandleIndex === undefined) {
+          <line
+            x1={topEdgeMidpoint[X] * ratio[X]}
+            y1={topEdgeMidpoint[Y] * ratio[Y]}
+            x2={topEdgeMidpoint[X] * ratio[X]}
+            y2={(topEdgeMidpoint[Y] - handleOffset) * ratio[Y]}
+            stroke={color}
+            stroke-width="2"
+            style:transform-origin={`${displayCentroid[X] * ratio[X]}px ${displayCentroid[Y] * ratio[Y]}px`}
+            style:transform={`rotate(${getAngle()}rad)`}
+            pointer-events="none"
+          />
+
+          <!-- Rotation handle circle with custom cursor -->
+          <circle
+            cx={topEdgeMidpoint[X] * ratio[X]}
+            cy={(topEdgeMidpoint[Y] - handleOffset) * ratio[Y]}
+            r={2}
+            style:transform-origin={`${displayCentroid[X] * ratio[X]}px ${displayCentroid[Y] * ratio[Y]}px`}
+            style:transform={`rotate(${getAngle()}rad)`}
+            style:cursor={isEditing ? "none" : `url('${getRotateCursorSVG()}') 18 18, grab`}
+            style:fill={color}
+          />
+          <circle
+            role="slider"
+            tabindex="0"
+            style:outline="none"
+            aria-valuenow={getAngle() * (180 / Math.PI)}
+            onmousedown={(e) => {
+              if (!panStart && !rotateStart && resizeHandleIndex === undefined) {
+                e.stopPropagation();
+                rotateStart = centroid;
+                rotateStartRevolutions = revolutionCount;
+                activeCursor = getRotateCursorSVG();
+
+                const centroidPixel: Point = [displayCentroid[X] * ratio[X], displayCentroid[Y] * ratio[Y]];
+                const rel: Point = [cursor_pixel[X] - centroidPixel[X], cursor_pixel[Y] - centroidPixel[Y]];
+                rotateStartAngle = Math.atan2(rel[X], -rel[Y]);
+              }
+              onmousedown?.(e);
+            }}
+            cx={topEdgeMidpoint[X] * ratio[X]}
+            cy={(topEdgeMidpoint[Y] - handleOffset) * ratio[Y]}
+            r={6}
+            style:transform-origin={`${displayCentroid[X] * ratio[X]}px ${displayCentroid[Y] * ratio[Y]}px`}
+            style:transform={`rotate(${getAngle()}rad)`}
+            style:cursor={isEditing ? "none" : `url('${getRotateCursorSVG()}') 18 18, grab`}
+            style:fill={color}
+            style:opacity="50%"
+          />
+
+          <!-- Revolution counter (not rotated, always horizontal) -->
+          {@const handleX = topEdgeMidpoint[X] * ratio[X]}
+          {@const handleY = (topEdgeMidpoint[Y] - handleOffset) * ratio[Y]}
+          {@const centroidPixelX = displayCentroid[X] * ratio[X]}
+          {@const centroidPixelY = displayCentroid[Y] * ratio[Y]}
+          {@const currentAngle = getAngle()}
+          {@const dx = handleX - centroidPixelX}
+          {@const dy = handleY - centroidPixelY}
+          {@const cos = Math.cos(currentAngle)}
+          {@const sin = Math.sin(currentAngle)}
+          {@const rotatedHandleX = centroidPixelX + dx * cos - dy * sin}
+          {@const rotatedHandleY = centroidPixelY + dx * sin + dy * cos}
+          {@const buttonRadius = 7}
+          {@const buttonSpacing = 20}
+
+          <!-- Decrement button (left) -->
+          <line
+            x1={rotatedHandleX - buttonSpacing - buttonRadius}
+            y1={rotatedHandleY}
+            x2={rotatedHandleX - buttonSpacing + buttonRadius}
+            y2={rotatedHandleY}
+            stroke={color}
+            stroke-width="2"
+          />
+          <circle
+            role="button"
+            tabindex="-1"
+            style:outline="none"
+            cx={rotatedHandleX - buttonSpacing}
+            cy={rotatedHandleY}
+            r={buttonRadius}
+            style:fill={color}
+            fill-opacity="1%"
+            style:cursor="pointer"
+            onmousedown={(e) => {
               e.stopPropagation();
-              rotateStart = centroid;
-              rotateStartRevolutions = revolutionCount;
-              activeCursor = getRotateCursorSVG();
+              decrementRevolution();
+              onmousedown?.(e);
+            }}
+          />
 
-              const centroidPixel: Point = [displayCentroid[X] * ratio[X], displayCentroid[Y] * ratio[Y]];
-              const rel: Point = [cursor_pixel[X] - centroidPixel[X], cursor_pixel[Y] - centroidPixel[Y]];
-              rotateStartAngle = Math.atan2(rel[X], -rel[Y]);
-            }
-            onmousedown?.(e);
-          }}
-          cx={topEdgeMidpoint[X] * ratio[X]}
-          cy={(topEdgeMidpoint[Y] - handleOffset) * ratio[Y]}
-          r={6}
-          style:transform-origin={`${displayCentroid[X] * ratio[X]}px ${displayCentroid[Y] * ratio[Y]}px`}
-          style:transform={`rotate(${getAngle()}rad)`}
-          style:cursor={isEditing ? "none" : `url('${getRotateCursorSVG()}') 18 18, grab`}
-          style:fill={color}
-          style:opacity="50%"
-        />
+          <!-- Degree angle display -->
+          <text
+            x={rotatedHandleX}
+            y={rotatedHandleY - 20}
+            text-anchor="middle"
+            dominant-baseline="central"
+            style:font-size="11px"
+            style:font-weight="bold"
+            style:fill={color}
+            style:pointer-events="none"
+            style:user-select="none"
+          >
+            {(getAngle() * (180 / Math.PI)).toFixed(1)}°
+          </text>
 
-        <!-- Revolution counter (not rotated, always horizontal) -->
-        {@const handleX = topEdgeMidpoint[X] * ratio[X]}
-        {@const handleY = (topEdgeMidpoint[Y] - handleOffset) * ratio[Y]}
-        {@const centroidPixelX = displayCentroid[X] * ratio[X]}
-        {@const centroidPixelY = displayCentroid[Y] * ratio[Y]}
-        {@const currentAngle = getAngle()}
-        {@const dx = handleX - centroidPixelX}
-        {@const dy = handleY - centroidPixelY}
-        {@const cos = Math.cos(currentAngle)}
-        {@const sin = Math.sin(currentAngle)}
-        {@const rotatedHandleX = centroidPixelX + dx * cos - dy * sin}
-        {@const rotatedHandleY = centroidPixelY + dx * sin + dy * cos}
-        {@const buttonRadius = 7}
-        {@const buttonSpacing = 20}
+          <!-- Increment button (right) -->
+          <line
+            x1={rotatedHandleX + buttonSpacing - buttonRadius}
+            y1={rotatedHandleY}
+            x2={rotatedHandleX + buttonSpacing + buttonRadius}
+            y2={rotatedHandleY}
+            stroke={color}
+            stroke-width="2"
+          />
+          <line
+            x1={rotatedHandleX + buttonSpacing}
+            y1={rotatedHandleY - buttonRadius}
+            x2={rotatedHandleX + buttonSpacing}
+            y2={rotatedHandleY + buttonRadius}
+            stroke={color}
+            stroke-width="2"
+          />
+          <circle
+            role="button"
+            tabindex="-1"
+            style:outline="none"
+            cx={rotatedHandleX + buttonSpacing}
+            cy={rotatedHandleY}
+            r={buttonRadius}
+            style:fill={color}
+            fill-opacity="1%"
+            style:cursor="pointer"
+            onmousedown={(e) => {
+              e.stopPropagation();
+              incrementRevolution();
+              onmousedown?.(e);
+            }}
+          />
+        {/if}
 
-        <!-- Decrement button (left) -->
-        <line
-          x1={rotatedHandleX - buttonSpacing - buttonRadius}
-          y1={rotatedHandleY}
-          x2={rotatedHandleX - buttonSpacing + buttonRadius}
-          y2={rotatedHandleY}
-          stroke={color}
-          stroke-width="2"
-        />
-        <circle
-          role="button"
-          tabindex="-1"
-          style:outline="none"
-          cx={rotatedHandleX - buttonSpacing}
-          cy={rotatedHandleY}
-          r={buttonRadius}
-          style:fill={color}
-          fill-opacity="1%"
-          style:cursor="pointer"
-          onmousedown={(e) => {
-            e.stopPropagation();
-            decrementRevolution();
-            onmousedown?.(e);
-          }}
-        />
-
-        <!-- Degree angle display -->
-        <text
-          x={rotatedHandleX}
-          y={rotatedHandleY - 20}
-          text-anchor="middle"
-          dominant-baseline="central"
-          style:font-size="11px"
-          style:font-weight="bold"
-          style:fill={color}
-          style:pointer-events="none"
-          style:user-select="none"
-        >
-          {(getAngle() * (180 / Math.PI)).toFixed(1)}°
-        </text>
-
-        <!-- Increment button (right) -->
-        <line
-          x1={rotatedHandleX + buttonSpacing - buttonRadius}
-          y1={rotatedHandleY}
-          x2={rotatedHandleX + buttonSpacing + buttonRadius}
-          y2={rotatedHandleY}
-          stroke={color}
-          stroke-width="2"
-        />
-        <line
-          x1={rotatedHandleX + buttonSpacing}
-          y1={rotatedHandleY - buttonRadius}
-          x2={rotatedHandleX + buttonSpacing}
-          y2={rotatedHandleY + buttonRadius}
-          stroke={color}
-          stroke-width="2"
-        />
-        <circle
-          role="button"
-          tabindex="-1"
-          style:outline="none"
-          cx={rotatedHandleX + buttonSpacing}
-          cy={rotatedHandleY}
-          r={buttonRadius}
-          style:fill={color}
-          fill-opacity="1%"
-          style:cursor="pointer"
-          onmousedown={(e) => {
-            e.stopPropagation();
-            incrementRevolution();
-            onmousedown?.(e);
-          }}
-        />
+        <!-- Resize handles with rotated cursors -->
+        {#each boundingBoxHandle(updatedPoints) as point, handle (handle)}
+          <circle
+            cx={point[X] * ratio[X]}
+            cy={point[Y] * ratio[Y]}
+            r={2}
+            style:transform-origin={`${displayCentroid[X] * ratio[X]}px ${displayCentroid[Y] * ratio[Y]}px`}
+            style:transform={`rotate(${getAngle()}rad)`}
+            style:cursor={isEditing
+              ? "none"
+              : `url('${getRotatedCursorSVG(handle)}') 18 18, ${getHandleCursor(handle)}`}
+            vector-effect="non-scaling-stroke"
+            style:stroke={color}
+            style:fill={color}
+          />
+          <circle
+            role="grid"
+            tabindex="-1"
+            style:outline="none"
+            onmousedown={(e) => {
+              e.stopPropagation();
+              if (!panStart && !rotateStart && resizeHandleIndex === undefined) {
+                resizeHandleIndex = handle;
+                resizeInitialPoints = [...points];
+                activeCursor = getRotatedCursorSVG(handle);
+              }
+            }}
+            cx={point[X] * ratio[X]}
+            cy={point[Y] * ratio[Y]}
+            r={5}
+            style:transform-origin={`${displayCentroid[X] * ratio[X]}px ${displayCentroid[Y] * ratio[Y]}px`}
+            style:transform={`rotate(${getAngle()}rad)`}
+            style:cursor={isEditing
+              ? "none"
+              : `url('${getRotatedCursorSVG(handle)}') 18 18, ${getHandleCursor(handle)}`}
+            vector-effect="non-scaling-stroke"
+            style:stroke={color}
+            style:fill={color}
+            style:opacity="50%"
+          />
+        {/each}
       {/if}
-
-      <!-- Resize handles with rotated cursors -->
-      {#each boundingBoxHandle(updatedPoints) as point, handle (handle)}
-        <circle
-          cx={point[X] * ratio[X]}
-          cy={point[Y] * ratio[Y]}
-          r={2}
-          style:transform-origin={`${displayCentroid[X] * ratio[X]}px ${displayCentroid[Y] * ratio[Y]}px`}
-          style:transform={`rotate(${getAngle()}rad)`}
-          style:cursor={isEditing ? "none" : `url('${getRotatedCursorSVG(handle)}') 18 18, ${getHandleCursor(handle)}`}
-          vector-effect="non-scaling-stroke"
-          style:stroke={color}
-          style:fill={color}
-        />
-        <circle
-          role="grid"
-          tabindex="-1"
-          style:outline="none"
-          onmousedown={(e) => {
-            e.stopPropagation();
-            if (!panStart && !rotateStart && resizeHandleIndex === undefined) {
-              resizeHandleIndex = handle;
-              resizeInitialPoints = [...points];
-              activeCursor = getRotatedCursorSVG(handle);
-            }
-          }}
-          cx={point[X] * ratio[X]}
-          cy={point[Y] * ratio[Y]}
-          r={5}
-          style:transform-origin={`${displayCentroid[X] * ratio[X]}px ${displayCentroid[Y] * ratio[Y]}px`}
-          style:transform={`rotate(${getAngle()}rad)`}
-          style:cursor={isEditing ? "none" : `url('${getRotatedCursorSVG(handle)}') 18 18, ${getHandleCursor(handle)}`}
-          vector-effect="non-scaling-stroke"
-          style:stroke={color}
-          style:fill={color}
-          style:opacity="50%"
-        />
-      {/each}
     {/if}
-  {/if}
 
-  <!-- Active cursor overlay that persists during drag operations -->
-  {#if activeCursor && cursor_pixel}
-    <g style="pointer-events: none;">
-      <image href={activeCursor} x={cursor_pixel[X] - 18} y={cursor_pixel[Y] - 18} width="36" height="36" />
-    </g>
+    <!-- Active cursor overlay that persists during drag operations -->
+    {#if activeCursor && cursor_pixel}
+      <g style="pointer-events: none;">
+        <image href={activeCursor} x={cursor_pixel[X] - 18} y={cursor_pixel[Y] - 18} width="36" height="36" />
+      </g>
+    {/if}
   {/if}
 </g>

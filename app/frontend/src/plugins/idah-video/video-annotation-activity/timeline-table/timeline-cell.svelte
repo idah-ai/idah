@@ -1,116 +1,209 @@
 <script lang="ts">
+  import { ArrowLeftRightIcon, SquareSplitHorizontalIcon, Trash2Icon } from "@lucide/svelte";
   import { getContext } from "svelte";
-  import type { HTMLAttributes } from "svelte/elements";
 
-  import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu";
+  import {
+    ContextMenu,
+    ContextMenuContent,
+    ContextMenuGroup,
+    ContextMenuItem,
+    ContextMenuSeparator,
+    ContextMenuTrigger,
+  } from "@/components/ui/context-menu";
 
   import { cn } from "@/utils";
-  import { ArrowLeftRightIcon, Trash2Icon } from "@lucide/svelte";
 
   import type {
+    AnnotationGroup,
     AnnotationMetadata,
     AnnotationObj,
     AnnotationShape,
     AnnotationValue,
   } from "@/context/AnnotationContext";
-  import type { IActivityContext } from "@/plugin/interface/Activity";
 
-  let {
-    annotation,
-    frame,
-    currentFrame,
-    range,
-    scale,
-    inSpan,
-    keyframes,
-    hovered,
-    onSeekFrame,
-    onSelectAnnotation,
-    onDeleteFrame,
-    zoom,
-    totalFrames,
-    ...restProps
-  }: HTMLAttributes<HTMLDivElement> & {
-    annotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
-    frame: number;
-    currentFrame: number;
+  import type { IActivityContext } from "@/plugin/interface/Activity";
+  import { selectedAnnotation } from "../store";
+
+  // Type
+  type TAnnotationObj = AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>;
+
+  // Props
+  interface Props {
+    group: AnnotationGroup<TAnnotationObj>;
+    annotations: TAnnotationObj[];
+    currentFrameInCell: number;
     range: [number, number];
     scale: number;
-    inSpan: boolean;
-    keyframes: number[];
-    hovered: boolean;
-    zoom: number;
     totalFrames: number;
+    zoom: number;
+    hoveredAnnotation: TAnnotationObj | undefined;
     onSeekFrame: (frame: number) => void;
-    onSelectAnnotation: (annotation: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>) => void;
-    onDeleteFrame: (frame: number) => void;
-  } = $props();
+    onDeleteFrame: (annotation: TAnnotationObj, frame: number) => void;
+    onSelectAnnotation: (annotation?: TAnnotationObj) => void;
+    onHoverAnnotation: (annotation: TAnnotationObj | undefined) => void;
+    onHoverCell: (frame?: number) => void;
+    onSelectGroupAtFrame: (annotationGrop: AnnotationGroup<TAnnotationObj>, frame: number) => void;
+  }
+  let {
+    group,
+    annotations,
+    currentFrameInCell,
+    range,
+    scale,
+    totalFrames,
+    zoom,
+    hoveredAnnotation,
+    onSeekFrame,
+    onDeleteFrame,
+    onSelectAnnotation,
+    onHoverAnnotation,
+    onHoverCell,
+    onSelectGroupAtFrame,
+  }: Props = $props();
 
   // Contexts
   const context: IActivityContext = getContext("context");
 
   // Variables
-  let categoryColor: string | undefined | null = $derived(getCategory(annotation.value.category)?.color); // null....
-  let range_span = $derived(Math.min(scale * zoom, totalFrames));
-  let cellWidth: number = $derived((1 / ((range[1] - range[0] + (scale - (range_span % scale))) / 100)) * scale);
-  let isSelected: boolean = $derived(currentFrame >= frame && currentFrame < frame + scale && frame <= totalFrames);
-  let isHovered: boolean = $derived(hovered && !isSelected && frame <= totalFrames);
+  let rangeSpan: number = $derived(Math.min(scale * zoom, totalFrames));
+  let cellWidth: number = $derived((1 / ((range[1] - range[0] + (scale - (rangeSpan % scale))) / 100)) * scale);
+
+  /** IN THIS CELL */
+  let annotation: TAnnotationObj | undefined = $derived(
+    annotations.find(
+      (annotation) => currentFrameInCell >= annotation.shape.start && currentFrameInCell <= annotation.shape.end,
+    ),
+  );
+  let category = $derived(annotation ? getCategory(annotation.value.category) : undefined);
+  let categoryColor = $derived(category?.color);
+  let keyFrames = $derived(
+    (annotation?.shape.frames || []).filter(
+      (frame) => frame.frame >= currentFrameInCell && frame.frame <= currentFrameInCell,
+    ),
+  );
+  let isStartOfKeyFrameRange = $derived(annotation?.shape.start === currentFrameInCell);
+  let isEndOfKeyFrameRange = $derived(annotation?.shape.end === currentFrameInCell);
+  let annotationIsSelected: boolean = $derived($selectedAnnotation?.metadata.id == annotation?.metadata.id);
+  let annotationIsHovered: boolean = $derived(hoveredAnnotation?.metadata.id == annotation?.metadata.id);
+  let annotationIsSelectedOrHovered: boolean = $derived(annotationIsSelected || annotationIsHovered);
 
   // Functions
   function getCategory(categoryId: string | undefined) {
-    if (!categoryId) return undefined;
-
     return Object.entries(context.config)
-      .find(([k, _]) => k == annotation.shape.type)?.[1]
-      .values.find((cat) => cat.id === categoryId);
+      .find(([shapeKey, _value]) => shapeKey == annotation?.shape.type)?.[1]
+      .values.find((category) => category.id === categoryId);
+  }
+
+  function deleteFrame(frame: number) {
+    if (!annotation) return;
+    onDeleteFrame(annotation, frame);
+  }
+
+  function selectFrame() {
+    onSeekFrame(currentFrameInCell);
+
+    if (annotation) {
+      onSelectAnnotation(annotation);
+    } else {
+      onSelectGroupAtFrame(group, currentFrameInCell);
+    }
+  }
+
+  function onMouseOver() {
+    onHoverAnnotation(annotation);
+    onHoverCell(currentFrameInCell);
+  }
+
+  function onMouseEnter() {
+    onHoverAnnotation(annotation);
+    onHoverCell(currentFrameInCell);
+  }
+
+  function onMouseLeave() {
+    onHoverAnnotation(undefined);
+    onHoverCell(undefined);
   }
 </script>
 
 <div
+  id="{group.groupId}__{currentFrameInCell}"
   class={cn("inline-block h-full border-b py-1 first:border-l", {
-    "cursor-pointer": isHovered,
+    "cursor-pointer": annotationIsSelectedOrHovered,
   })}
+  role="button"
+  tabindex={annotationIsSelectedOrHovered ? 0 : -1}
   style:box-sizing="border-box"
   style:width="{cellWidth}%"
-  onclick={() => {
-    onSeekFrame(frame);
-    onSelectAnnotation(annotation);
-  }}
-  {...restProps}
+  onclick={selectFrame}
+  onfocus={selectFrame}
+  onkeypress={selectFrame}
+  onmouseover={onMouseOver}
+  onmouseenter={onMouseEnter}
+  onmouseleave={onMouseLeave}
 >
-  {#if inSpan}
-    <div
-      class={cn("relative z-20 h-full", {
-        "bg-primary/5": isHovered || isSelected,
-      })}
-      style:background-color={categoryColor ? categoryColor + "30" : "#FEF9C2"}
-    >
-      {#if keyframes.length}
-        <ContextMenu>
-          <ContextMenuTrigger class="absolute top-[3px] h-full w-full pt-0">
+  <div
+    class={cn("relative z-20 h-full", {
+      "bg-primary/5": annotationIsSelectedOrHovered,
+      "border-t border-b": !!categoryColor,
+      "rounded-tl-sm rounded-bl-sm border-l": isStartOfKeyFrameRange && !!categoryColor,
+      "rounded-tr-sm rounded-br-sm border-r": isEndOfKeyFrameRange && !!categoryColor,
+    })}
+    style:background-color={categoryColor
+      ? `${categoryColor}${annotationIsSelectedOrHovered ? "60" : "30"}`
+      : "transparent"}
+    style:border-color={categoryColor}
+  >
+    <!-- Only render context menu if the cell have annotation, this will prevent over-render in empty timeline cell -->
+    {#if annotation}
+      <ContextMenu>
+        <ContextMenuTrigger class="absolute top-[3px] h-full w-full pt-0">
+          <!-- If have keyframes, render a box -->
+          {#if keyFrames.length}
             <div
               class="m-auto h-3/4 w-3/4 rounded"
-              style:background-color={categoryColor ? categoryColor : "#FF0000"}
+              style:background-color={categoryColor ? categoryColor : "transparent"}
             ></div>
-          </ContextMenuTrigger>
+          {/if}
+        </ContextMenuTrigger>
 
-          <ContextMenuContent>
-            {#each keyframes as keyframe, index (index)}
-              <ContextMenuItem onclick={() => onSeekFrame?.(keyframe)}>
-                <ArrowLeftRightIcon class="size-4"></ArrowLeftRightIcon>
-                Seek frame {keyframe}
+        <ContextMenuContent>
+          <ContextMenuGroup>
+            <!-- SPLIT ANNOTATION -->
+            <ContextMenuItem
+              onclick={() =>
+                context.commands.run("annotation.split", { id: annotation?.metadata.id, at: currentFrameInCell })}
+              disabled={annotation?.locked}
+            >
+              <SquareSplitHorizontalIcon class="size-4" />
+              Split at frame {currentFrameInCell}
+            </ContextMenuItem>
+          </ContextMenuGroup>
+
+          <ContextMenuGroup>
+            {#each keyFrames as { frame }, index (index)}
+              <ContextMenuItem onclick={() => onSeekFrame?.(frame)}>
+                <ArrowLeftRightIcon class="size-4" />
+                Seek frame {frame}
               </ContextMenuItem>
 
               {#if ["review", "annotate"].includes(context.workflowStep)}
-                <ContextMenuItem onclick={() => onDeleteFrame?.(keyframe)} disabled={annotation.locked}>
-                  <Trash2Icon class="size-4"></Trash2Icon>
-                  Delete frame {keyframe}
+                <ContextMenuItem onclick={() => deleteFrame(frame)} disabled={annotation?.locked}>
+                  <Trash2Icon class="size-4" />
+                  Delete frame {frame}
                 </ContextMenuItem>
               {/if}
             {/each}
-          </ContextMenuContent>
-        </ContextMenu>
-      {/if}
-    </div>
-  {/if}
+          </ContextMenuGroup>
+
+          <ContextMenuSeparator />
+          <ContextMenuGroup>
+            <ContextMenuItem onclick={() => context.commands.run("annotation.delete", { id: annotation?.metadata.id })}>
+              <Trash2Icon class="size-4" />
+              Delete annotation
+            </ContextMenuItem>
+          </ContextMenuGroup>
+        </ContextMenuContent>
+      </ContextMenu>
+    {/if}
+  </div>
 </div>

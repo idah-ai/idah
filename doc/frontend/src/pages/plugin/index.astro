@@ -1,0 +1,304 @@
+---
+import PageLayout from "@layouts/PageLayout.astro";
+import Pagination from "@components/app/page/Pagination.astro";
+import PageContainer from "@components/app/page/PageContainer.astro";
+import PageTitle from "@components/app/page/PageTitle.astro";
+import CodeBlock from "@components/app/CodeBlock.astro";
+import FolderBlock from "@components/app/FolderBlock.astro";
+import { Plug } from "@lucide/svelte";
+---
+
+<PageLayout>
+  <PageContainer>
+    <PageTitle>
+      <div class="rounded-xl bg-purple-50 p-3 text-purple-700 dark:bg-purple-900/20 dark:text-purple-800">
+        <Plug class="h-9 w-9" stroke-width={2} />
+      </div>
+      Plugin Overview
+    </PageTitle>
+
+    <div class="prose prose-lg dark:prose-invert max-w-none">
+      <p class="mb-8 text-lg leading-relaxed text-gray-700 dark:text-gray-300">
+        IDAH's plugin system allows you to extend the platform with custom annotation tools, media processors, and data
+        exporters.
+      </p>
+
+      <h2
+        id="what-are-plugins"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
+        <a href="#what-are-plugins" class="hover:underline">What are Plugins?</a>
+      </h2>
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
+        Plugins in IDAH are modular components that can add new functionality to the platform. Each plugin can include:
+      </p>
+
+      <div class="mb-8 space-y-4">
+        <div class="rounded-r border-l-4 border-blue-500 bg-gray-50 py-2 pl-4 dark:bg-gray-800">
+          <h4 class="mb-1 font-semibold text-gray-900 dark:text-white">Frontend Components</h4>
+          <p class="text-sm text-gray-700 dark:text-gray-300">
+            Custom UI elements, annotation tools, and visualizations built with SvelteKit.
+          </p>
+        </div>
+
+        <div class="rounded-r border-l-4 border-green-500 bg-gray-50 py-2 pl-4 dark:bg-gray-800">
+          <h4 class="mb-1 font-semibold text-gray-900 dark:text-white">Media Service Backend</h4>
+          <p class="text-sm text-gray-700 dark:text-gray-300">
+            Process and transform media files (images, videos, audio) during import.
+          </p>
+        </div>
+
+        <div class="rounded-r border-l-4 border-purple-500 bg-gray-50 py-2 pl-4 dark:bg-gray-800">
+          <h4 class="mb-1 font-semibold text-gray-900 dark:text-white">Sync Service Backend</h4>
+          <p class="text-sm text-gray-700 dark:text-gray-300">
+            Export and synchronize dataset data with external systems.
+          </p>
+        </div>
+      </div>
+
+      <h2
+        id="plugin-types"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
+        <a href="#plugin-types" class="hover:underline">Plugin Types</a>
+      </h2>
+
+      <h3 id="frontend-only" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
+        <a href="#frontend-only" class="hover:underline">Frontend-Only Plugins</a>
+      </h3>
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
+        Plugins that consist only of UI components. These are ideal for:
+      </p>
+      <ul class="mb-6 list-inside list-disc space-y-2 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed">Custom annotation tools and editors</li>
+        <li class="leading-relaxed">Data visualizations and dashboards</li>
+        <li class="leading-relaxed">UI widgets and utilities</li>
+        <li class="leading-relaxed">Custom dataset views</li>
+      </ul>
+
+      <h3 id="full-stack" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
+        <a href="#full-stack" class="hover:underline">Full-Stack Plugins</a>
+      </h3>
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
+        Plugins with both frontend and backend components. These can:
+      </p>
+      <ul class="mb-6 list-inside list-disc space-y-2 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed">Process media files during import</li>
+        <li class="leading-relaxed">Transform and convert media formats</li>
+        <li class="leading-relaxed">Export data in custom formats</li>
+        <li class="leading-relaxed">Integrate with external APIs and services</li>
+      </ul>
+
+      <h2
+        id="plugin-paths"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
+        <a href="#plugin-paths" class="hover:underline">Plugin Paths</a>
+      </h2>
+      <p class="mb-6 leading-relaxed text-gray-700 dark:text-gray-300">
+        IDAH supports two plugin directories for different environments:
+      </p>
+
+      <div class="mb-6 rounded border-l-4 border-green-500 bg-green-50 p-4 dark:bg-green-900/20">
+        <h3 id="development-plugins" class="mb-3 text-xl font-semibold text-gray-900 dark:text-white">
+          <a href="#development-plugins" class="hover:underline">Development Plugins</a>
+        </h3>
+        <p class="mb-2 text-gray-700 dark:text-gray-300">
+          <strong class="font-semibold text-gray-900 dark:text-white">Path:</strong>
+          <code class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+            >./plugins_dev/plugins</code
+          >
+        </p>
+        <ul class="ml-4 list-inside list-disc space-y-1 text-gray-700 dark:text-gray-300">
+          <li class="leading-relaxed">
+            <strong class="font-semibold text-gray-900 dark:text-white">Purpose:</strong> Development and testing
+          </li>
+          <li class="leading-relaxed">
+            <strong class="font-semibold text-gray-900 dark:text-white">Environment:</strong> Local development only
+          </li>
+          <li class="leading-relaxed">
+            <strong class="font-semibold text-gray-900 dark:text-white">Loading:</strong> Automatically loaded when running
+            IDAH in development mode
+          </li>
+          <li class="leading-relaxed">
+            <strong class="font-semibold text-gray-900 dark:text-white">Not included:</strong> These plugins are <strong
+              >not</strong
+            > loaded in production
+          </li>
+          <li class="leading-relaxed">
+            <strong class="font-semibold text-gray-900 dark:text-white">Use for:</strong> Experimental plugins, work-in-progress
+            features, testing
+          </li>
+        </ul>
+      </div>
+
+      <div class="mb-6 rounded border-l-4 border-purple-500 bg-purple-50 p-4 dark:bg-purple-900/20">
+        <h3 id="production-plugins" class="mb-3 text-xl font-semibold text-gray-900 dark:text-white">
+          <a href="#production-plugins" class="hover:underline">Production Plugins</a>
+        </h3>
+        <p class="mb-2 text-gray-700 dark:text-gray-300">
+          <strong class="font-semibold text-gray-900 dark:text-white">Path:</strong>
+          <code class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+            >./plugins</code
+          >
+        </p>
+        <ul class="ml-4 list-inside list-disc space-y-1 text-gray-700 dark:text-gray-300">
+          <li class="leading-relaxed">
+            <strong class="font-semibold text-gray-900 dark:text-white">Purpose:</strong> Production-ready plugins
+          </li>
+          <li class="leading-relaxed">
+            <strong class="font-semibold text-gray-900 dark:text-white">Environment:</strong> Both development and production
+          </li>
+          <li class="leading-relaxed">
+            <strong class="font-semibold text-gray-900 dark:text-white">Loading:</strong> Always loaded in all environments
+          </li>
+          <li class="leading-relaxed">
+            <strong class="font-semibold text-gray-900 dark:text-white">Use for:</strong> Stable, production-ready plugins
+          </li>
+        </ul>
+      </div>
+
+      <div class="mb-6 rounded border-l-4 border-amber-500 bg-amber-50 p-4 dark:bg-amber-900/20">
+        <p class="leading-relaxed text-gray-700 dark:text-gray-300">
+          <strong class="font-semibold text-gray-900 dark:text-white">Recommendation:</strong> Start developing in <code
+            class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+            >./plugins_dev/plugins</code
+          >, and move to <code class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+            >./plugins</code
+          > when ready for production.
+        </p>
+      </div>
+
+      <h2
+        id="plugin-structure"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
+        <a href="#plugin-structure" class="hover:underline">Plugin Structure</a>
+      </h2>
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">A typical IDAH plugin follows this structure:</p>
+      <FolderBlock
+        structure={[
+          {
+            name: "<plugin_name>/",
+            type: "folder",
+            children: [
+              { name: "manifest.json", type: "file", comment: "Plugin metadata" },
+              { name: "README.md", type: "file", comment: "Plugin documentation" },
+              { name: "Gemfile", type: "file", comment: "Ruby dependencies (backends)" },
+              { name: "Rakefile", type: "file", comment: "Build tasks" },
+              {
+                name: "backends/",
+                type: "folder",
+                comment: "Optional backend services",
+                children: [
+                  { name: "media/", type: "folder", comment: "Media processing" },
+                  { name: "sync/", type: "folder", comment: "Data export" },
+                ],
+              },
+              {
+                name: "frontend/",
+                type: "folder",
+                comment: "SvelteKit UI",
+                children: [
+                  { name: "package.json", type: "file" },
+                  { name: "src/", type: "folder" },
+                ],
+              },
+            ],
+          },
+        ]}
+      />
+
+      <h3 id="manifest-file" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
+        <a href="#manifest-file" class="hover:underline">Manifest File</a>
+      </h3>
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
+        The <code class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+          >manifest.json</code
+        > file contains plugin metadata:
+      </p>
+      <CodeBlock
+        language="json"
+        path="<plugin_name>/manifest.json"
+        code={`{
+  "name": "my-plugin",
+  "display_name": "My Plugin",
+  "description": "A custom annotation plugin",
+  "version": "1.0.0",
+  "author": "Your Name"
+}`}
+      />
+
+      <h2
+        id="built-in-plugins"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
+        <a href="#built-in-plugins" class="hover:underline">Built-in Plugins</a>
+      </h2>
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
+        IDAH comes with a built-in video annotation plugin:
+      </p>
+
+      <div class="mb-6 rounded-r border-l-4 border-blue-500 bg-gray-50 py-2 pl-4 dark:bg-gray-800">
+        <h4 class="mb-1 font-semibold text-gray-900 dark:text-white">idah-video</h4>
+        <p class="mb-2 text-sm text-gray-700 dark:text-gray-300">
+          A full-stack plugin for video annotation with frame-by-frame processing, object tracking, and timeline-based
+          annotations.
+        </p>
+        <p class="text-sm">
+          <strong class="font-semibold text-gray-900 dark:text-white">Location:</strong>
+          <code class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+            >./plugins/idah-video/</code
+          >
+        </p>
+      </div>
+
+      <h2
+        id="plugin-lifecycle"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
+        <a href="#plugin-lifecycle" class="hover:underline">Plugin Lifecycle</a>
+      </h2>
+
+      <ol class="mb-6 list-inside list-decimal space-y-3 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed">
+          <strong class="font-semibold text-gray-900 dark:text-white">Development</strong><br />
+          <span class="text-sm"
+            >Create and test your plugin in <code
+              class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+              >./plugins_dev/plugins</code
+            ></span
+          >
+        </li>
+        <li class="leading-relaxed">
+          <strong class="font-semibold text-gray-900 dark:text-white">Testing</strong><br />
+          <span class="text-sm">Write and run tests for both frontend and backend components</span>
+        </li>
+        <li class="leading-relaxed">
+          <strong class="font-semibold text-gray-900 dark:text-white">Building</strong><br />
+          <span class="text-sm">Build the frontend for production deployment</span>
+        </li>
+        <li class="leading-relaxed">
+          <strong class="font-semibold text-gray-900 dark:text-white">Deployment</strong><br />
+          <span class="text-sm"
+            >Move to <code class="rounded bg-gray-100 px-2 py-0.5 text-pink-600 dark:bg-gray-800 dark:text-pink-400"
+              >./plugins</code
+            > for production use</span
+          >
+        </li>
+      </ol>
+
+      <div
+        class="mb-6 rounded-lg border-l-4 border-blue-500 bg-gradient-to-r from-blue-50 to-purple-50 p-6 dark:from-blue-900/20 dark:to-purple-900/20"
+      >
+        <p class="text-lg leading-relaxed font-medium text-gray-800 dark:text-gray-200">
+          🔌 Ready to extend IDAH? Start by <a
+            href="/plugin/create-plugin/"
+            class="font-semibold text-blue-600 hover:underline dark:text-blue-400">creating your first plugin</a
+          >!
+        </p>
+      </div>
+    </div>
+  </PageContainer>
+  <Pagination />
+</PageLayout>

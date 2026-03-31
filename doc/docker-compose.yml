@@ -1,0 +1,58 @@
+volumes:
+  generator_bundle:
+  frontend_node_modules:
+
+services:
+  generator:
+    container_name: generator
+    image: generator
+    build:
+      context: ../
+      dockerfile: ./doc/Dockerfile.generator
+    environment:
+      - COMMON_PATH=../../common
+    stdin_open: true
+    tty: true
+    volumes:
+      - ../app:/idah/app:cached
+      - ../common:/idah/common:cached
+      - ../bin/all_services:/idah/bin/all_services
+      - ./bin/generate_openapi:/idah/bin/generate_openapi
+      - ./openapi:/openapi:cached
+      - generator_bundle:/vendor/bundle
+    command: >
+      sh -c "
+        ./bin/all_services bundle install &&
+        ./bin/generate_openapi &&
+        bash
+      "
+    extra_hosts:
+      - localhost:host-gateway
+
+  swagger:
+    image: swaggerapi/swagger-ui:latest
+    container_name: swagger
+    ports:
+      - "4002:8080"
+    depends_on:
+      - generator
+    volumes:
+      # Mount the local 'swagger' directory to the container's '/app' directory
+      - ./openapi:/usr/share/nginx/html/openapi
+    environment:
+      CONFIG_URL: /openapi/swagger.json
+
+  frontend:
+    container_name: frontend
+    image: frontend
+    build:
+      context: .
+      dockerfile: ./Dockerfile.frontend
+    volumes:
+      - ./frontend:/app:cached
+      - ./openapi:/app/public/data:cached
+      - frontend_node_modules:/app/node_modules
+    ports:
+      - "4001:4001"
+    depends_on:
+      - generator

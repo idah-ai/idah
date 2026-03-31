@@ -1,7 +1,9 @@
 # frozen_string_literal: true
 
 namespace :dev do
+  # create necessary accounts (services and admin)
   task setup: :environment do
+    # service accounts
     ENV["SERVICES"] = %w[
       audit
       dataset
@@ -14,14 +16,15 @@ namespace :dev do
     Rake::Task["service_accounts:create"].invoke
   end
 
+  # create role users for development
   task users: :environment do
     password = "P@ssword01"
     hashed_password = BCrypt::Password.create(password)
 
     users = [
       {
-        email: "admin@idah.ai",
         name: "Admin User",
+        email: "admin@idah.ai",
         role_name: "admin"
       },
       {
