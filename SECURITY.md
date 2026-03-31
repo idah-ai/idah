@@ -177,7 +177,7 @@ IDAH includes several built-in security features:
 
 ## 📞 Contact
 
-- **General Support:** [GitHub Issues](https://github.com/ingedata-ph/idah/issues)
+- **General Support:** [GitHub Issues](https://github.com/idah-ai/idah/issues)
 - **Documentation:** [docs.idah.ai](https://docs.idah.ai)
 
 ---

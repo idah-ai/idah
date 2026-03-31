@@ -1,7 +1,7 @@
 # IDAH - Ingedata Annotation Hub
 
-![GitHub stars](https://img.shields.io/github/stars/ingedata-ph/idah)
-![License](https://img.shields.io/github/license/ingedata-ph/idah)
+![GitHub stars](https://img.shields.io/github/stars/idah-ai/idah)
+![License](https://img.shields.io/github/license/idah-ai/idah)
 
 **An open-source platform for collaborative data annotation**, designed to streamline the creation of high-quality training datasets for machine learning models.
 
@@ -32,7 +32,7 @@
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/ingedata-ph/idah.git
+   git clone https://github.com/idah-ai/idah.git
    cd idah
    ```
 
@@ -210,7 +210,7 @@ IDAH can be applied to various domains:
 ## 📞 Support & Community
 
 - **Documentation:** [docs.idah.ai](https://docs.idah.ai)
-- **Issues:** [GitHub Issues](https://github.com/ingedata-ph/idah/issues)
+- **Issues:** [GitHub Issues](https://github.com/idah-ai/idah/issues)
 
 ---
 
@@ -218,6 +218,6 @@ IDAH can be applied to various domains:
 
 **Made with ❤️ by the IDAH Team**
 
-[Website](https://idah.ai) • [Documentation](https://docs.idah.ai) • [GitHub](https://github.com/ingedata-ph/idah)
+[Website](https://idah.ai) • [Documentation](https://docs.idah.ai) • [GitHub](https://github.com/idah-ai/idah)
 
 </div>
