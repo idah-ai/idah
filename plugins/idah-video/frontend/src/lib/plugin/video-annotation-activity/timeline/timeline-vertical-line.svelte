@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { currentFrame, totalFrames } from "$lib/plugin/video-annotation-activity/store/store";
-  import { setSelectedFrameX } from "$lib/plugin/video-annotation-activity/timeline/store";
-  import { getFrameFromMouseX, getMouseXFromFrame } from "$lib/plugin/video-annotation-activity/timeline/utils";
+  import { totalFrames } from "$lib/plugin/video-annotation-activity/store/store";
+  import { currentFrameRange, framePerScale } from "$lib/plugin/video-annotation-activity/timeline/store";
+  import { getFrameFromMouseX } from "$lib/plugin/video-annotation-activity/timeline/utils";
   import { cn } from "$lib/utils";
 
   // Props
@@ -11,12 +11,8 @@
   }
   let { positionX, color = "default" }: Props = $props();
 
-  $effect(() => {
-    const newMouseX = getMouseXFromFrame({ frame: $currentFrame });
-    setSelectedFrameX(newMouseX);
-  });
-
   // Variables
+  let startOfCurrentFrameRange = $derived($currentFrameRange[0]);
   let frame = $derived(getFrameFromMouseX({ clientX: positionX }));
   let isFrameInRangeOfTotalFrames = $derived(frame <= $totalFrames);
 
@@ -41,7 +37,7 @@
     )}
     style="transform: translateX({positionX}px)"
   >
-    {frame}
+    {frame + Number(startOfCurrentFrameRange * $framePerScale)}
 
     <div class={cn("absolute top-full left-1/2 -mt-1 size-1.5 -translate-x-1/2 rotate-45", colorClass)}></div>
   </div>

@@ -1,6 +1,7 @@
 import { get } from "svelte/store";
 
 import {
+  currentFrameRange,
   framePerScale,
   TIMELINE_ROW_HEADER_WIDTH,
   timelineCellWidth as timelineCellWidthStore,
@@ -39,7 +40,8 @@ export function getMouseXFromFrame(props: { frame: number }) {
 
   const timelineCellWidth = get(timelineCellWidthStore);
   const framePerScaleStore = get(framePerScale);
-  const frameFloat = frame / framePerScaleStore;
+  const startOfCurrentFrameRange = get(currentFrameRange)[0];
+  const frameFloat = (frame - startOfCurrentFrameRange) / framePerScaleStore;
 
   const actualMouseX = Math.ceil(frameFloat * timelineCellWidth) + TIMELINE_ROW_HEADER_WIDTH;
   const displayMouseX = Number(actualMouseX - timelineCellWidth) + 1;
