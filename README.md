@@ -191,7 +191,6 @@ IDAH can be applied to various domains:
 
 - **Documentation:** [docs.idah.ai](https://docs.idah.ai)
 - **Issues:** [GitHub Issues](https://github.com/ingedata-ph/idah/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/ingedata-ph/idah/discussions)
 
 ---
 
@@ -199,6 +198,6 @@ IDAH can be applied to various domains:
 
 **Made with ❤️ by the IDAH Team**
 
-[Website](https://docs.idah.ai) • [Documentation](https://docs.idah.ai) • [GitHub](https://github.com/ingedata-ph/idah)
+[Website](https://idah.ai) • [Documentation](https://docs.idah.ai) • [GitHub](https://github.com/ingedata-ph/idah)
 
 </div>
