@@ -18,14 +18,22 @@
   import TimelineRuler from "$lib/plugin/video-annotation-activity/timeline/timeline-ruler.svelte";
   import TimelineVerticalLine from "$lib/plugin/video-annotation-activity/timeline/timeline-vertical-line.svelte";
 
-  import { setCurrentFrame, setSelectedAnnotationGroup } from "$lib/plugin/video-annotation-activity/store/store";
   import {
+    setCurrentFrame,
+    setSelectedAnnotationGroup,
+    totalFrames,
+  } from "$lib/plugin/video-annotation-activity/store/store";
+  import {
+    currentFrameRange,
+    deselectFrameX,
+    getCurrentFrameRangeSpan,
     selectedFrameX,
     selectFirstFrameX,
+    setCurrentFrameRange,
     setSelectedFrameX,
     TIMELINE_ROW_HEADER_WIDTH,
   } from "$lib/plugin/video-annotation-activity/timeline/store";
-  import { getFrameFromMouseX } from "$lib/plugin/video-annotation-activity/timeline/utils";
+  import { getFrameFromMouseX, getMouseXFromFrame } from "$lib/plugin/video-annotation-activity/timeline/utils";
   import { findCategory } from "$lib/plugin/video-annotation-activity/utils/category";
   import { groupAnnotations } from "$lib/plugin/video-annotation-activity/utils/group-annotation.svelte";
 
@@ -67,6 +75,7 @@
   let showVerticalLine = $derived(clientMouseX >= TIMELINE_ROW_HEADER_WIDTH);
   let showSelectedVerticalLine = $derived(Number($selectedFrameX) >= TIMELINE_ROW_HEADER_WIDTH);
   let contextMenu = $state<ITimelineContextMenu>({ visible: false, x: 0, y: 0, menus: {} });
+  let wheelThrottling = $state<boolean>(false);
 
   // Functions
   function getGroupTitle(props: { annotationGroup: AnnotationGroup<VideoAnnotationObject> }): string {
@@ -95,10 +104,75 @@
     clientMouseX = event.clientX - rect.left;
   }
 
+  function scrollRight(shiftRangeSpan: number) {
+    const [start, end] = $currentFrameRange;
+    const rangeSpan = end - start;
+    let newStart: number;
+    if (start + shiftRangeSpan <= $totalFrames - rangeSpan) {
+      newStart = start + shiftRangeSpan;
+    } else {
+      newStart = $totalFrames - rangeSpan;
+    }
+
+    let newEnd: number;
+    if (end + shiftRangeSpan <= $totalFrames) {
+      newEnd = end + shiftRangeSpan;
+    } else {
+      newEnd = $totalFrames;
+    }
+
+    setCurrentFrameRange([newStart, newEnd]);
+  }
+
+  function scrollLeft(shiftRangeSpan: number) {
+    const [start, end] = $currentFrameRange;
+
+    let newStart = start - shiftRangeSpan;
+    if (newStart < 0) newStart = 0;
+    const newEnd = newStart + (end - start);
+
+    setCurrentFrameRange([newStart, newEnd]);
+  }
+
+  function scrollTimelineHorizontal(e: WheelEvent) {
+    const isScrollUp = e.deltaX < 0;
+    const isScrollDown = e.deltaX > 0;
+    const rangeSpan = getCurrentFrameRangeSpan();
+    const shiftRangeSpan = Math.floor(rangeSpan / 4);
+
+    deselectFrameX();
+    if (isScrollUp) return scrollRight(shiftRangeSpan);
+    if (isScrollDown) return scrollLeft(shiftRangeSpan);
+  }
+
+  function handleTimelineWheel(e: WheelEvent) {
+    if (!wheelThrottling) {
+      wheelThrottling = true;
+      setTimeout(() => (wheelThrottling = false), 10);
+
+      if (e.shiftKey) {
+        scrollTimelineHorizontal(e);
+      }
+
+      if (e.metaKey) {
+        // zoomTimeline()
+      }
+
+      // Check if user scroll horizontal by mouse or track pad
+      if (e.deltaX !== 0) {
+        scrollTimelineHorizontal(e);
+      }
+    }
+  }
+
   function selectFrameX(frameX: number) {
-    const selectedFrame = getFrameFromMouseX({ clientX: frameX });
+    const selectedFrame = getFrameFromMouseX({ clientX: frameX }) + $currentFrameRange[0];
     setCurrentFrame(selectedFrame);
     onSeekFrame(selectedFrame);
+
+    const newMouseX = getMouseXFromFrame({ frame: selectedFrame });
+    setSelectedFrameX(newMouseX);
+
     closeContextMenu();
   }
 
@@ -206,7 +280,7 @@
   </TimelineHeaderRow>
 
   <ScrollArea>
-    <div style:height="{timelineHeight - 96}px">
+    <div style:height="{timelineHeight - 96}px" onwheel={handleTimelineWheel}>
       {#each annotationGroups as annotationGroup (annotationGroup.groupId)}
         {@const allAnnotationsInGroupHidden = annotationGroup.annotations.every((annotation) => annotation.hidden)}
         {@const allAnnotationsInGroupLocked = annotationGroup.annotations.every((annotation) => annotation.locked)}

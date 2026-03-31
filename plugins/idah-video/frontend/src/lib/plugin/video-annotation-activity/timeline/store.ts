@@ -24,7 +24,7 @@ export function setTimelineCellWidth(newWidth: number) {
 export const timelineRulerWidth = writable<number>(0);
 
 /** TIMELINE::OFFSET */
-export const timelineOffset = writable<number>(0);
+export const timelineOffset = writable<number>(5);
 
 export function setTimelineOffset(newOffset: number) {
   timelineOffset.set(newOffset);
@@ -39,6 +39,15 @@ export const currentFrameRange = writable<[number, number]>([0, 1]);
 
 export function setCurrentFrameRange(newRange: [number, number]) {
   currentFrameRange.set(newRange);
+}
+
+export function getCurrentFrameRangeSpan() {
+  const [startFrame, endFrame] = get(currentFrameRange);
+  return endFrame - startFrame;
+}
+
+export function getFrameRange(startFrame: number, endFrame: number) {
+  return Array.from({ length: endFrame - startFrame }, (_, i) => startFrame + i);
 }
 
 export function recalculateFrameRange() {}
