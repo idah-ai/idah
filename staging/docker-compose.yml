@@ -50,6 +50,8 @@ services:
       - ./config/envs/.env.postgres
       - ./config/envs/.env.common
       - ./config/envs/.env.iam
+    environment:
+      - IDAH_URL=${IDAH_URL:-http://localhost:8080}
     restart: always
     cpus: 0.5
     mem_limit: 2g
@@ -80,6 +82,8 @@ services:
       - ./config/envs/.env.postgres
       - ./config/envs/.env.common
       - ./config/envs/.env.media
+    environment:
+      - IDAH_URL=${IDAH_URL:-http://localhost:8080}
     restart: always
     cpus: 0.5
     mem_limit: 2g
@@ -112,6 +116,8 @@ services:
       - ./config/envs/.env.postgres
       - ./config/envs/.env.common
       - ./config/envs/.env.dataset
+    environment:
+      - IDAH_URL=${IDAH_URL:-http://localhost:8080}
     restart: always
     cpus: 0.5
     mem_limit: 2g
@@ -142,6 +148,8 @@ services:
       - ./config/envs/.env.postgres
       - ./config/envs/.env.common
       - ./config/envs/.env.notification
+    environment:
+      - IDAH_URL=${IDAH_URL:-http://localhost:8080}
     restart: always
     cpus: 0.5
     mem_limit: 2g
@@ -172,6 +180,8 @@ services:
       - ./config/envs/.env.postgres
       - ./config/envs/.env.common
       - ./config/envs/.env.audit
+    environment:
+      - IDAH_URL=${IDAH_URL:-http://localhost:8080}
     restart: always
     ports:
       - "3000"
@@ -200,6 +210,8 @@ services:
       - ./config/envs/.env.postgres
       - ./config/envs/.env.common
       - ./config/envs/.env.sync
+    environment:
+      - IDAH_URL=${IDAH_URL:-http://localhost:8080}
     restart: always
     cpus: 0.5
     mem_limit: 2g
@@ -231,6 +243,8 @@ services:
       - ./config/envs/.env.postgres
       - ./config/envs/.env.common
       - ./config/envs/.env.setting
+    environment:
+      - IDAH_URL=${IDAH_URL:-http://localhost:8080}
     restart: always
     cpus: 0.5
     mem_limit: 2g
@@ -258,6 +272,8 @@ services:
     build:
       context: ../.
       dockerfile: ./staging/Dockerfile.frontend
+      args:
+        VITE_IDAH_HOST: ${VITE_IDAH_HOST:-http://localhost:8080}
     restart: always
     ports:
       - "3000"
