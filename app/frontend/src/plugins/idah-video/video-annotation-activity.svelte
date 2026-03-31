@@ -891,9 +891,6 @@
 
   let allHidden: boolean = $state(false);
   let allLocked: boolean = $state(false);
-  $effect(() => {
-    console.log(annotationValue);
-  });
 </script>
 
 <div class="relative flex h-full w-full flex-col">
@@ -1007,7 +1004,7 @@
             />
           </ResizablePane>
 
-          <!-- 
+          <!--
             NOTE: Can not resize annotation sidebar,
             as it will affect the note overlay and svg overlay
             <ResizableHandle withHandle />

@@ -13,7 +13,7 @@
   import type { Hash } from "@/utils/types";
 
   import * as parser from "@build/parser.js";
-  import { ASTNodeToFunctionString } from "@plugins/idah-video/test_ast_resolution";
+  import { ASTNodeToFunctionString } from "../../../../../../plugins/idah-video/test_ast_resolution";
 
   // Props
   interface Props {
