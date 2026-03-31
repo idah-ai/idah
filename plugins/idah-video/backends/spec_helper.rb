@@ -10,6 +10,7 @@ require "dotenv"
 
 # Dotenv.load(".env", ".env.test")
 
+require "verse/spec"
 require "rspec"
 require "webmock/rspec"
 require "simplecov"
@@ -18,17 +19,24 @@ require "pry"
 require "zeitwerk"
 
 loader = Zeitwerk::Loader.new
-loader.push_dir("./media")
+
+# Dynamically load only existing backend service directories
+backend_services = ["media", "sync"]
+backend_services.each do |service|
+  service_path = "./backends/#{service}"
+  loader.push_dir(service_path) if Dir.exist?(service_path)
+end
+
 loader.setup
 
 SimpleCov.start do
-  add_group "Media Service", "media"
+  backend_services.each do |service|
+    add_group "#{service.capitalize} Service", service if Dir.exist?("./backends/#{service}")
+  end
 
   add_filter /_spec.rb$/
   add_filter /spec_data/
 end
-
-require_relative "spec_data/fake_processor_context"
 
 RSpec.configure do |config|
   config.before :each do
