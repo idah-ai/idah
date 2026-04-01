@@ -1,0 +1,14 @@
+---
+interface Props {
+  color?: string;
+}
+
+const { color } = Astro.props;
+---
+
+<h1
+  data-pagefind-meta="title"
+  class:list={["flex scroll-m-20 items-center gap-4 text-4xl font-extrabold tracking-tight text-balance", color]}
+>
+  <slot />
+</h1>
