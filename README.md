@@ -1,168 +1,223 @@
-<!-- 1. Project Title -->
-
 # IDAH - Ingedata Annotation Hub
 
-<!-- 2. Logo & Badges -->
+![GitHub stars](https://img.shields.io/github/stars/idah-ai/idah)
+![License](https://img.shields.io/github/license/idah-ai/idah)
 
-<!-- LOGO GOES HERE -->
+**An open-source platform for collaborative data annotation**, designed to streamline the creation of high-quality training datasets for machine learning models.
 
-![GitHub stars](https://img.shields.io/github/stars/ingedata-ph/idah)
-![License](https://img.shields.io/github/license/ingedata-ph/idah)
-![Build Status](https://img.shields.io/github/actions/workflow/status/ingedata-ph/idah/ci.yml)
-
-_A short description of the project._
+📚 **[Full Documentation](https://docs.idah.ai)** | 🚀 **[Getting Started Guide](https://docs.idah.ai/getting-started/about/)** | 🔌 **[Plugin Development](https://docs.idah.ai/plugin/)**
 
 ---
 
-<!-- 3. Table of Contents (TOC) -->
+## ✨ Key Features
 
-## Table of Contents
+- **Multi-Modal Support** - Images, videos, audio, text, and custom data types
+- **Collaborative Workflows** - Team-based annotation with role management and review processes
+- **Extensible Plugin System** - Custom annotation tools, media processors, and exporters
+- **Enterprise-Ready** - Audit logging, compliance tracking, microservices architecture
 
-- [About](#about)
-- [Features](#features)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Contributing](#contributing)
-- [License](#license)
+[Learn more about features →](https://docs.idah.ai/getting-started/key-features/)
 
 ---
 
-<!-- 4. About -->
-
-## **About**
-
-_Detailed explanation of the project, its purpose, and key highlights._
-
----
-
-<!-- 5. Features -->
-
-## **Features**
-
-- _Media Annotation_
-- _Multiple Users Collboration and Review_
-- _Pre-installed annotation plugins for medias like image and videos_
-- _Support third-party plugins for annotation editor_
-- _Project & Dataset Management_
-- _User Management_
-- _Logs for tracking and auditing_
-
----
-
-<!-- TODO: TO BE REVIEWED -->
-<!-- 6. Installation -->
-
-## **Installation**
+## 🚀 Quick Start
 
 ### Prerequisites
 
-- _[Node](https://nodejs.org/)_
-- A Node Package Manager (_[pnpm](https://pnpm.io)_, _[bun](https://bun.sh)_)
-- _[Ruby](https://www.ruby-lang.org/)_
+- **[Docker](https://docs.docker.com/get-docker/)** - Container platform
+- **[Docker Compose](https://docs.docker.com/compose/install/)** - Multi-container orchestration
+- **[Git](https://git-scm.com/downloads)** - Version control
 
-### Clone the repo
+### Installation
 
-```bash
-git clone https://github.com/ingedata-ph/idah.git
-cd idah
-```
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/idah-ai/idah.git
+   cd idah
+   ```
 
-<!--TODO: this should be changed so the frontend container works by its own ?-->
+2. **Start databases** (PostgreSQL & Redis)
+   ```bash
+   docker compose -f docker-compose-db.yml up -d
+   ```
 
-### Install dependencies
+3. **Start IDAH services**
+   ```bash
+   docker compose up -d --build
+   ```
 
-```bash
-cd app/frontend/
-pnpm i
-pnpm build:parser
-cd ../..
-```
+4. **Initialize setup** (first time only)
+   ```bash
+   docker compose exec iam bundle exec rake dev:setup dev:users
+   ```
 
-### Starting with Docker containers
+5. **Access IDAH**
 
-#### **Databases**
+   Open your browser: **[https://idah.localhost:8443](https://idah.localhost:8443)**
 
-IDAH can be used with databases of your choice, but by default, we provide a simple database containers setup which can be started by running
+   **Default Admin Credentials:**
+   - Email: `admin@idah.ai`
+   - Password: `P@ssword01`
 
-```bash
-docker compose -f docker-compose-db.yml up -d
-```
-
-This should start a `postgres` and a `redis` container
-
-#### **IDAH containers**
-
-To start IDAH service containers, run
-
-```bash
-docker compose up -d
-```
-
-By default, IDAH will start to run on the port `8443` by default, and the IDAH webpage can be accessed at `https://idah.localhost:8443` or with the port configured.
-
-For the first time setup, run this command to create service accounts and a default Admin User account
-
-```bash
-docker compose exec iam bundle exec rake dev:setup
-```
-
-The created Admin User account will be created for your first time login with the default credentials
-
-```bash
-email: admin@idah.ai
-password: P@ssword01
-```
+🎉 **That's it!** IDAH is now running on your machine.
 
 ---
 
-<!-- 7. Contributing -->
+## ⚠️ Security Notice
 
-## **Contributing**
+**Development Environment:** The development configuration includes default credentials for ease of setup. These are **ONLY for local development**:
 
-_Contribution guides, and PR templates/steps/guidelines_
+- Database: `postgres:postgres`
+- Admin: `admin@idah.ai` / `P@ssword01`
+- Dev SSL certificates are self-signed
+- JWT signing keys are for development only
 
-### Project Structure
+**⚠️ DO NOT use these credentials in production or staging environments.**
 
-```text
-/
+For production deployment, ensure you:
+1. Generate unique, strong passwords and secrets
+2. Use proper SSL certificates from a trusted CA
+3. Configure secure environment variables
+4. Generate new JWT signing keys
+5. Follow the [Security Best Practices](SECURITY.md) guide
+
+---
+
+## 📖 Documentation
+
+For detailed information, visit **[docs.idah.ai](https://docs.idah.ai)**:
+
+- **[Installation Guide](https://docs.idah.ai/install/)** - Detailed setup instructions
+- **[Database Configuration](https://docs.idah.ai/install/databases/)** - PostgreSQL & Redis setup options
+- **[Storage Configuration](https://docs.idah.ai/install/storage/)** - S3-compatible storage setup
+- **[Plugin Development](https://docs.idah.ai/plugin/)** - Create custom plugins
+- **[API Reference](https://docs.idah.ai/apis/)** - Complete API documentation
+
+---
+
+## 🏗️ Architecture
+
+IDAH follows a **microservices architecture**:
+
+```
+idah/
 ├── app/
-│   └── microservice_app_name/
-│       ├── app/
-│       │   ├── expo/
-│       │   │   └── app_expo.rb       # Exposition Layer (API, Resource Events)
-│       │   ├── model/
-│       │   │   └── app_model.rb      # Model Layer (Record, Repository)
-│       │   └── service/
-│       │       └── app_service.rb    # Service Layer
-│       ├── config/
-│       ├── db/
-│       │   └── migrations/           # Database Migrations
-│       ├── .env
-│       ├── Dockerfile
-│       └── Gemfile
-├── common/
-└── plugins/
-    ├── idah-video
-    └── other-plugins
+│   ├── frontend/         # Web UI (SvelteKit)
+│   ├── iam/             # Identity & Access Management
+│   ├── dataset/         # Dataset management service
+│   ├── media/           # Media processing service
+│   ├── sync/            # Data export & sync service
+│   ├── notification/    # Notification service
+│   ├── audit/           # Audit logging service
+│   └── setting/         # Settings management
+├── common/              # Shared code & utilities
+├── plugins/            # Production plugins
+└── plugins_dev/        # Plugin development tools
+```
+
+[Learn more about architecture →](https://docs.idah.ai/getting-started/about/#architecture)
+
+---
+
+## 🔧 Common Commands
+
+### View running services
+```bash
+docker compose ps
+```
+
+### View logs
+```bash
+docker compose logs -f
+docker compose logs -f frontend  # Specific service
+```
+
+### Stop services
+```bash
+docker compose down
+```
+
+### Restart services
+```bash
+docker compose restart
+docker compose restart frontend  # Specific service
+```
+
+### Rebuild after code changes
+```bash
+docker compose up -d --build
 ```
 
 ---
 
-<!-- 8. License -->
+## 🔌 Plugin Development
 
-## **License**
+Create custom annotation tools, media processors, and export formats.
 
-_This project is licensed under the [License](LICENSE)._
+**Quick start:**
+```bash
+cd plugins_dev
+npm install
+npm run create-plugin my-plugin
+```
+
+📖 **[Complete Plugin Guide](https://docs.idah.ai/plugin/create-plugin/)**
 
 ---
 
-<!-- TODO: improvements as parts of docs-->
-<!--
-  1. setup method ? apart from docker
-  2. setting up with/without databases
-  3. revise setup/dev-setup script
-  4. revise environment variables
-  5. support external data sources/destinations (for medias, etc.)
-  6. usage guides ?
-  7. dev guides
--->
+## 🤝 Contributing
+
+We welcome contributions from the community!
+
+- **[Contributing Guide](CONTRIBUTING.md)** - How to contribute
+- **[Authors & Credits](AUTHORS.md)** - Contributors and maintainers
+- **[Code of Conduct](https://docs.idah.ai)** - Community guidelines
+- **[Development Guides](https://docs.idah.ai)** - Technical documentation
+
+---
+
+## 📄 License
+
+This project is licensed under the **[Mozilla Public License 2.0](LICENSE)**.
+
+---
+
+## 🌟 Technology Stack
+
+- **Frontend:** SvelteKit, TypeScript, Tailwind CSS
+- **Backend:** Ruby, [Verse Framework](https://github.com/verse-rb)
+- **Databases:** PostgreSQL, Redis
+- **Infrastructure:** Docker, Nginx, S3-compatible storage
+
+[Learn more about the tech stack →](https://docs.idah.ai/getting-started/about/#technology-stack)
+
+---
+
+## 💡 Use Cases
+
+IDAH can be applied to various domains:
+
+- Computer Vision (object detection, segmentation, video tracking)
+- Natural Language Processing (text classification, NER)
+- Audio Processing (speech recognition, sound classification)
+- Medical Imaging, Autonomous Vehicles, Manufacturing QA
+- And more...
+
+[Explore use cases →](https://docs.idah.ai/getting-started/use-cases/)
+
+---
+
+## 📞 Support & Community
+
+- **Documentation:** [docs.idah.ai](https://docs.idah.ai)
+- **Issues:** [GitHub Issues](https://github.com/idah-ai/idah/issues)
+
+---
+
+<div align="center">
+
+**Made with ❤️ by the IDAH Team**
+
+[Website](https://idah.ai) • [Documentation](https://docs.idah.ai) • [GitHub](https://github.com/idah-ai/idah)
+
+</div>

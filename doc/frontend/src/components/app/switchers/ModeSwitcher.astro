@@ -1,0 +1,72 @@
+---
+import { MoonIcon, SunIcon } from "@lucide/astro";
+
+export interface Props {
+  className?: string | null;
+}
+
+const { className } = Astro.props;
+---
+
+<button
+  type="button"
+  role="switch"
+  aria-label="Toggle theme"
+  title="Toggle theme"
+  class={`theme-toggle relative inline-flex h-8 w-16 items-center rounded-full p-1 transition-all duration-300 focus:outline-none bg-gray-100 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600 hover:scale-105 cursor-pointer ${className || ""}`}
+>
+  <!-- Light Mode Icon (left side) -->
+  <SunIcon class="absolute left-2 size-4 text-amber-500 opacity-100 transition-opacity duration-300 dark:opacity-30" />
+
+  <!-- Dark Mode Icon (right side) -->
+  <MoonIcon class="absolute right-2 size-4 text-blue-400 opacity-50 transition-opacity duration-300 dark:opacity-100" />
+
+  <!-- Sliding Circle Toggle with Icon -->
+  <div
+    class="relative flex size-6 translate-x-0 transform items-center justify-center rounded-full bg-white shadow-lg transition-transform duration-300 ease-in-out dark:translate-x-8 dark:bg-gray-800"
+  >
+    <!-- Sun Icon in light mode (on the circle) -->
+    <SunIcon class="block size-3.5 text-amber-500 dark:hidden" />
+    <!-- Moon Icon in dark mode (on the circle) -->
+    <MoonIcon class="hidden size-3.5 text-blue-400 dark:block" />
+  </div>
+</button>
+
+<script>
+  function checkTheme() {
+    const selectedTheme = localStorage.getItem("theme");
+
+    if (selectedTheme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }
+
+  function initThemeToggle() {
+    const buttons = document.querySelectorAll(".theme-toggle");
+    if (!buttons.length) return;
+
+    buttons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const isDark = document.documentElement.classList.contains("dark");
+
+        if (isDark) {
+          document.documentElement.classList.remove("dark");
+          localStorage.setItem("theme", "light");
+        } else {
+          document.documentElement.classList.add("dark");
+          localStorage.setItem("theme", "dark");
+        }
+      });
+    });
+  }
+
+  checkTheme();
+  initThemeToggle();
+
+  document.addEventListener("astro:page-load", () => {
+    checkTheme();
+    initThemeToggle();
+  });
+</script>

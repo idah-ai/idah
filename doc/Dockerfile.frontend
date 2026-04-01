@@ -6,12 +6,12 @@ RUN corepack enable && corepack prepare pnpm@9 --activate
 WORKDIR /app
 
 # Copy only lock + manifest first (better caching)
-COPY ./public/package.json ./public/pnpm-lock.yaml ./
+COPY ./frontend/package.json ./frontend/pnpm-lock.yaml ./
 
 RUN pnpm install
 
 # Copy the rest of the source
-COPY ./public .
+COPY ./frontend .
 
 # Expose port 4001, the default for Astro's dev server
 EXPOSE 4001
