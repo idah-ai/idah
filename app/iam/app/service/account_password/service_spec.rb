@@ -46,12 +46,11 @@ RSpec.describe AccountPassword::Service, database: true do
     end
 
     context "when account does not exist" do
-      it "does not raise an error and does not send an email" do
+      it "does not send an email" do
         expect(::Service::Notification).not_to receive(:email)
+        expect(subject).not_to receive(:update_password_reset_token)
 
-        expect {
-          subject.request_password_reset("nonexistent@example.com")
-        }.to raise_error(Verse::Error::NotFound, "account not found")
+        subject.request_password_reset("not_xist_mail@example.com")
       end
     end
   end
