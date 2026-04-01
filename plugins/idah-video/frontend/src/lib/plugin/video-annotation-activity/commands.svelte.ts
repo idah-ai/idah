@@ -43,6 +43,7 @@ interface CommandContext {
     setAllHidden: (hidden: boolean) => void;
     setAllLocked: (locked: boolean) => void;
     setAnnotationValue: (value: AnnotationValue) => void;
+    selectAnnotation: (annotation?: VideoAnnotationObject) => void;
   };
 }
 
@@ -57,7 +58,7 @@ export function registerCommands(params: CommandContext) {
     const { annotationToCreate } = props;
     const db = getDb();
 
-    setSelectedAnnotation(annotationToCreate);
+    updaters.selectAnnotation(annotationToCreate);
     await db?.upsertAnnotations([annotationToCreate]);
     entryRoot.set(
       annotationToCreate.shape.type == ENTRY_ROOT
@@ -73,7 +74,7 @@ export function registerCommands(params: CommandContext) {
     const db = getDb();
 
     await db?.upsertAnnotations([annotationToUpdate]);
-    setSelectedAnnotation(annotationToUpdate);
+    updaters.selectAnnotation(annotationToUpdate);
     if (get(entryRoot)?.metadata.id == annotationToUpdate.metadata.id)
       setEntryRoot(annotationToUpdate);
     setIndexedDBUpdatedAt();
@@ -107,7 +108,7 @@ export function registerCommands(params: CommandContext) {
               ? createdAnnotation
               : undefined,
           );
-          if (setSelected) setSelectedAnnotation(createdAnnotation);
+          if (setSelected) updaters.selectAnnotation(createdAnnotation);
         }
       });
   }
@@ -150,7 +151,7 @@ export function registerCommands(params: CommandContext) {
             setEntryRoot(updatedAnnotation);
 
           updaters.setAnnotationValue(value);
-          if (setSelected) setSelectedAnnotation(updatedAnnotation);
+          if (setSelected) updaters.selectAnnotation(updatedAnnotation);
           setIndexedDBUpdatedAt();
         }
       });
@@ -299,7 +300,7 @@ export function registerCommands(params: CommandContext) {
     };
   });
 
-  /** ANNOTAION COMMANDS */
+  /** ANNOTATION COMMANDS */
 
   context.commands.on(
     "annotation.add",
@@ -510,7 +511,7 @@ export function registerCommands(params: CommandContext) {
             metadata: {
               ...snapshotAnnotation.metadata,
               createdAt: snapshotAnnotation.metadata.createdAt,
-              updatedAt: undoCreatedAt,
+              updatedAt: snapshotAnnotation.metadata.createdAt,
               metadata: {
                 group_id: snapshotAnnotation.metadata.metadata?.group_id,
                 parent_id: snapshotAnnotation.metadata.metadata?.parent_id,
@@ -561,7 +562,7 @@ export function registerCommands(params: CommandContext) {
               metadata: {
                 ...annotation.metadata,
                 createdAt: annotation.metadata.createdAt,
-                updatedAt: annotation.metadata.createdAt,
+                updatedAt: annotation.metadata.updatedAt,
               },
               synced: false,
               locked: false,

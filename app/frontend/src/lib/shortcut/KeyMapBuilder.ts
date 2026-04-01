@@ -17,7 +17,7 @@ type ActionKey = string;
 type KeyCombination = string;
 type Action = () => void;
 
-class Builder {
+export class Builder {
   // Modifier key constants
   readonly Shift: ModifierKey = "Shift";
   readonly Ctrl: ModifierKey = "Control";
