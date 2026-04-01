@@ -19,7 +19,7 @@ class ApiKeysExpo < BaseExpo
   end
 
   expose on_http(:get, "/permissions(/:scope_type)?") do
-    desc <<-MD
+    desc <<~MD
       List all existing permissions used when generating an
       API key. Based on the role used to generate the key,
       some permissions may be unavailable.
@@ -29,6 +29,7 @@ class ApiKeysExpo < BaseExpo
         description: "The scope type to filter permissions; optional, if not provided, defaults to 'all'"
       )
     end
+    output Verse::JsonApi::Util.jsonapi_record(ApiPermission::Record)
   end
   def permissions
     service.show_permissions(
@@ -37,19 +38,20 @@ class ApiKeysExpo < BaseExpo
   end
 
   expose on_http(:post, "/:id/revoke") do
-    desc <<-MD
+    desc <<~MD
       Revoke an API key.
     MD
     input do
       field :id, String
     end
+    output Verse::JsonApi::Util.jsonapi_record(ApiKey::Record)
   end
   def revoke
     service.revoke(params[:id])
   end
 
   expose on_schedule("15 0 * * *") do
-    desc <<-MD
+    desc <<~MD
       Daily scheduler to check and update expired API keys status.
       Runs every day at 00:15.
     MD
