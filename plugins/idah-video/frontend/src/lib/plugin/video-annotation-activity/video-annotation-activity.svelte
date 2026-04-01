@@ -39,8 +39,8 @@
     AnnotationsIndexedDB,
   } from "$lib/plugin/video-annotation-activity/indexedDB";
   import {
-    registerOnSelectBoxModeShortcuts,
-    registerVisualModeShortcuts,
+    registerOnSelectShortcuts,
+    registerShortcuts,
   } from "$lib/plugin/video-annotation-activity/shortcut";
   import {
     boundingBoxes,
@@ -94,7 +94,12 @@
   let { context }: Props = $props();
 
   // Contexts
-  setContext("context", () => context);
+  const activityContext = new Proxy({} as IActivityContext, {
+    get(_, prop) {
+      return Reflect.get(context, prop);
+    },
+  });
+  setContext("context", activityContext);
 
   // Variables
   const editableWorkflowSteps = ["annotate", "review"];
@@ -131,16 +136,13 @@
   let annotationsIDB: AnnotationsIndexedDB | undefined = $state();
   let isPlaying = $state(false);
   let volume = $state({ level: 0, muted: false });
-  let tools: (
-    | { label: string; type: string; iconName: string; handleClick: () => void }
-    | {
-        label: string;
-        type: string;
-        iconName: string;
-        disabled: boolean;
-        handleClick: () => void;
-      }
-  )[] = $state([]);
+  let tools: {
+    label: string;
+    type: string;
+    iconName: string;
+    disabled?: boolean;
+    handleClick: () => void;
+  }[] = $state([]);
 
   let commandOpen = $state(false);
 
@@ -218,46 +220,51 @@
     if (mediaUrl && player && mediaUrl != player?.source()) {
       player?.source(mediaUrl);
     }
-
-    /** Set tool to visual mode when video is playing & mode is not visual */
-    if (isPlaying && $currentMode !== DEFAULT_MODE) {
-      context.commands.run("tools.visual");
-    }
   });
 
   onMount(async () => {
     $boundingBoxes = [];
 
-    /** REGISTER TOOLS */
-    tools = [
+    /** TOOLS CONFIGURATION */
+    const toolConfig = [
       {
         label: "Visual",
         type: DEFAULT_MODE,
         iconName: "mouse-pointer-2",
-        handleClick: () => context.commands.run("tools.visual"),
+        command: "tools.visual",
       },
       {
         label: "Bounding Box",
         type: IDAH_VIDEO_BOUNDING_BOX,
         iconName: "vector-square",
         disabled: !editable,
-        handleClick: () => context.commands.run("tools.bounding_box"),
+        command: "tools.bounding_box",
       },
       {
         label: "Polygon",
         type: IDAH_VIDEO_POLYGON,
         iconName: "polygon",
         disabled: !editable,
-        handleClick: () => context.commands.run("tools.polygon"),
+        command: "tools.polygon",
       },
       {
         label: "Notes",
         type: IDAH_NOTE,
         iconName: "message-circle",
         disabled: !notable, // Note: Only allow to create note when workflow steps are "annotate" and "review"
-        handleClick: () => context.commands.run("tools.note"),
+        command: "tools.note",
       },
     ];
+
+    tools = toolConfig.map((config) => {
+      return {
+        label: config.label,
+        type: config.type,
+        iconName: config.iconName,
+        disabled: config.disabled,
+        handleClick: () => context.commands.run(config.command),
+      };
+    });
     context.tools.setTools(tools);
     $effect(() => context.tools.setTool($currentMode));
 
@@ -278,6 +285,7 @@
               setAllHidden: (v) => (allHidden = v),
               setAllLocked: (v) => (allLocked = v),
               setAnnotationValue: (v) => (annotationValue = v),
+              selectAnnotation: (v) => selectAnnotation(v),
             },
           });
           setVisibility = commands.setVisibility;
@@ -286,6 +294,20 @@
       },
       console.error,
     );
+
+    registerShortcuts({
+      commands: context.commands,
+      player: () => player,
+      toggleCommandCB: () => {
+        commandOpen = !commandOpen;
+      },
+      flush: () => context.annotations.flush(),
+      switch_mode: (mode: string) => {
+        const config = toolConfig.find((c) => c.type === mode) || toolConfig[0];
+        context.commands.run(config.command);
+      },
+      zoom: { in: overlay.zoomIn, out: overlay.zoomOut },
+    });
 
     function fetchAnnotations(
       db: AnnotationsIndexedDB,
@@ -331,34 +353,6 @@
           });
       });
     }
-
-    registerVisualModeShortcuts({
-      context,
-      player: () => player,
-      toggleCommandCB: () => {
-        commandOpen = !commandOpen;
-      },
-      flush: () => context.annotations.flush(),
-      switch_mode: (mode: string) => {
-        let tool;
-        switch (mode) {
-          case IDAH_VIDEO_BOUNDING_BOX:
-            tool = "tools.bounding_box";
-            break;
-          case IDAH_NOTE:
-            tool = "tools.note";
-            break;
-          case IDAH_VIDEO_POLYGON:
-            tool = "tools.polygon";
-            break;
-          default:
-            tool = "tools.visual";
-        }
-
-        context.commands.run(tool);
-      },
-      zoom: { in: overlay.zoomIn, out: overlay.zoomOut },
-    });
   });
 
   function seekToFrame(frame: number) {
@@ -549,12 +543,12 @@
     } else if (annotation?.shape.type && editable) {
       setCurrentModeTo(annotation.shape.type);
       // Register selection-specific shortcuts for the current mode
-      registerOnSelectBoxModeShortcuts(
-        context,
-        annotation.metadata.id,
-        annotation.metadata.metadata?.group_id,
-        () => currentFrame,
-      );
+      registerOnSelectShortcuts(annotation.shape.type, {
+        commands: context.commands,
+        selectedId: annotation.metadata.id,
+        selectedGroupId: annotation.metadata.metadata?.group_id,
+        getCurrentFrame: () => currentFrame,
+      });
     } else {
       setCurrentModeTo(DEFAULT_MODE);
     }
@@ -588,12 +582,12 @@
       setCurrentModeTo(firstAnnotation.shape.type);
       selectClosestAnnotation(annotationGroup, selectedFrame);
       // Register selection-specific shortcuts for the current mode
-      registerOnSelectBoxModeShortcuts(
-        context,
-        undefined,
-        annotationGroup.groupId,
-        () => currentFrame,
-      );
+      registerOnSelectShortcuts(firstAnnotation.shape.type, {
+        commands: context.commands,
+        selectedId: undefined,
+        selectedGroupId: annotationGroup.groupId,
+        getCurrentFrame: () => currentFrame,
+      });
     } else {
       selectAnnotation(undefined);
       setCurrentModeTo(DEFAULT_MODE);
@@ -842,6 +836,7 @@
                 onChangeFrame={seekToFrame}
                 target_container={() => player_container}
                 {videoResizedAt}
+                {isPlaying}
               >
                 <!-- container context ?-->
                 <Video
