@@ -1,12 +1,6 @@
 <script lang="ts">
   import { onMount, setContext } from "svelte";
 
-  import {
-    DEFAULT_MODE,
-    IMAGE_BOUNDING_BOX,
-    IMAGE_NOTE,
-    IMAGE_POLYGON,
-  } from "$lib/components/app/controller/image-controller.types";
   import ImageOverlay from "$lib/components/app/overlay/image-overlay.svelte";
   import ImagePropertiesSidebar from "$lib/components/app/sidebar/image-properties-sidebar.svelte";
   import ImageSidebar from "$lib/components/app/sidebar/image-sidebar.svelte";
@@ -17,6 +11,12 @@
   import { ResizablePane } from "$lib/components/ui/resizable";
   import ResizableHandle from "$lib/components/ui/resizable/resizable-handle.svelte";
   import ResizablePaneGroup from "$lib/components/ui/resizable/resizable-pane-group.svelte";
+  import {
+      DEFAULT_MODE,
+      IMAGE_BOUNDING_BOX,
+      IMAGE_NOTE,
+      IMAGE_POLYGON,
+  } from "$lib/plugin/types";
 
   import type { IActivityContext } from "$lib/context/context";
 
@@ -29,6 +29,10 @@
 
   // Contexts
   setContext("context", context);
+
+  onMount(() => {
+    console.log(context);
+  });
 
   // Variables
   let mode: string = $state("visual");
