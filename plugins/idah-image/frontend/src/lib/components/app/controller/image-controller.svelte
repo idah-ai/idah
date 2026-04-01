@@ -11,12 +11,8 @@
   import { ResizablePane } from "$lib/components/ui/resizable";
   import ResizableHandle from "$lib/components/ui/resizable/resizable-handle.svelte";
   import ResizablePaneGroup from "$lib/components/ui/resizable/resizable-pane-group.svelte";
-  import {
-      DEFAULT_MODE,
-      IMAGE_BOUNDING_BOX,
-      IMAGE_NOTE,
-      IMAGE_POLYGON,
-  } from "$lib/plugin/types";
+  import { currentMode } from "$lib/plugin/store/store";
+  import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_NOTE, IMAGE_POLYGON } from "$lib/plugin/types";
 
   import type { IActivityContext } from "$lib/context/context";
 
@@ -35,14 +31,52 @@
   });
 
   // Variables
-  let mode: string = $state("visual");
+  const editableWorkflowSteps = ["annotate", "review"];
+  const notableWorkflowSteps = ["annotate", "review", "done"];
+  const annotations = $state([
+    {
+      id: "1",
+      type: "bounding_box",
+      value: {
+        x: 10,
+        y: 10,
+        width: 100,
+        height: 100,
+      },
+      metadata: {
+        created_at: new Date().toISOString(),
+        created_by: "user1",
+      },
+    },
+    {
+      id: "2",
+      type: "polygon",
+      value: {
+        points: [
+          { x: 150, y: 50 },
+          { x: 200, y: 80 },
+          { x: 180, y: 150 },
+        ],
+      },
+      metadata: {
+        created_at: new Date().toISOString(),
+        created_by: "user2",
+      },
+    },
+  ]);
 
+  let { workflowStep } = $derived(context);
+  let editable = $derived<boolean>(editableWorkflowSteps.includes(workflowStep));
+  let notable = $derived<boolean>(notableWorkflowSteps.includes(workflowStep));
+  let isNoteMode = $derived($currentMode === IMAGE_NOTE);
   let tools: (
     | { label: string; type: string; iconName: string; handleClick: () => void }
     | { label: string; type: string; iconName: string; disabled: boolean; handleClick: () => void }
   )[] = $state([]);
-
   let showPopOver = $state(false);
+
+  // let annotationId = $derived<string | undefined>($selectedAnnotation ? $selectedAnnotation.metadata.id : undefined);
+  // let annotationValue: AnnotationValue = $derived($selectedAnnotation?.value || {});
 
   onMount(async () => {
     tools = [
@@ -76,40 +110,8 @@
     ];
 
     context.tools.setTools(tools);
-    $effect(() => context.tools.setTool(mode));
+    $effect(() => context.tools.setTool($currentMode));
   });
-
-  const annotations = $state([
-    {
-      id: "1",
-      type: "bounding_box",
-      value: {
-        x: 10,
-        y: 10,
-        width: 100,
-        height: 100,
-      },
-      metadata: {
-        created_at: new Date().toISOString(),
-        created_by: "user1",
-      },
-    },
-    {
-      id: "2",
-      type: "polygon",
-      value: {
-        points: [
-          { x: 150, y: 50 },
-          { x: 200, y: 80 },
-          { x: 180, y: 150 },
-        ],
-      },
-      metadata: {
-        created_at: new Date().toISOString(),
-        created_by: "user2",
-      },
-    },
-  ]);
 </script>
 
 <div class="relative flex h-full w-full flex-col">
