@@ -23,22 +23,6 @@
         "polygon": {
           "label": "Polygon",
           "icon": "api/v1/plugins/idah-video/assets/polygon-icon.svg"
-        },
-        "frame-tagging": {
-          "label": "Frame Tagging",
-          "icon": "api/v1/plugins/idah-video/assets/frame-tagging-icon.svg"
-        },
-        "framerange-tagging": {
-          "label": "Frame Range Tagging",
-          "icon": "api/v1/plugins/idah-video/assets/frame-range-tagging-icon.svg"
-        },
-        "polyline": {
-          "label": "Polyline",
-          "icon": "api/v1/plugins/idah-video/assets/polyline-icon.svg"
-        },
-        "point": {
-          "label": "Point",
-          "icon": "api/v1/plugins/idah-video/assets/point-icon.svg"
         }
       }
     }
