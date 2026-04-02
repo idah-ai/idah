@@ -1,11 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
-import { KeyMapBuilder } from './KeyMapBuilder';
+import { BuildKeymap } from './KeyMapBuilder';
 
 describe('KeyMapBuilder', () => {
   it('should create a key map with a single shortcut without modifiers', () => {
     const action = vi.fn();
 
-    const keyMap = KeyMapBuilder((b) => {
+    const keyMap = BuildKeymap((b) => {
       b.on(null, "A", action, "A Command", "Executes A command");
     });
 
@@ -18,7 +18,7 @@ describe('KeyMapBuilder', () => {
   it('should create a key map with a single shortcut with modifiers', () => {
     const action = vi.fn();
 
-    const keyMap = KeyMapBuilder((b) => {
+    const keyMap = BuildKeymap((b) => {
       b.on([b.Shift, b.Ctrl], "A", action, "Ctrl+Shift+A Command", "Executes Ctrl+Shift+A command");
     });
 
@@ -33,7 +33,7 @@ describe('KeyMapBuilder', () => {
     const action1 = vi.fn();
     const action2 = vi.fn();
 
-    const keyMap = KeyMapBuilder((b) => {
+    const keyMap = BuildKeymap((b) => {
       b.on([b.Shift, b.Ctrl], "A", action1, "Ctrl+Shift+A Command", "Executes Ctrl+Shift+A command");
       b.on(null, "B", action2, "B Command", "Executes B command");
     });
@@ -47,7 +47,7 @@ describe('KeyMapBuilder', () => {
   it('should allow custom names and descriptions', () => {
     const action = vi.fn();
 
-    const keyMap = KeyMapBuilder((b) => {
+    const keyMap = BuildKeymap((b) => {
       b.on([b.Shift], "A", action, "Custom Name", "Custom Description");
     });
 
@@ -59,7 +59,7 @@ describe('KeyMapBuilder', () => {
   it('should handle all modifier keys', () => {
     const action = vi.fn();
 
-    const keyMap = KeyMapBuilder((b) => {
+    const keyMap = BuildKeymap((b) => {
       b.on([b.Shift, b.Ctrl, b.Alt, b.Meta], "A", action, "All Modifiers", "Uses all modifier keys");
     });
 
@@ -71,7 +71,7 @@ describe('KeyMapBuilder', () => {
     const action1 = vi.fn();
     const action2 = vi.fn();
 
-    const keyMap = KeyMapBuilder((b) => {
+    const keyMap = BuildKeymap((b) => {
       b.on([b.Shift], "A", action1, "Shift+A Command", "Executes Shift+A command")
        .on([b.Ctrl], "B", action2, "Ctrl+B Command", "Executes Ctrl+B command");
     });

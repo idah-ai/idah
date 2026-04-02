@@ -1,4 +1,4 @@
-import { KeyMapBuilder, Builder } from "$idah/shortcut/key-map-builder";
+import { KeyMapBuilder, BuildKeymap } from "$idah/shortcut/key-map-builder";
 import { ShortcutManager } from "$idah/shortcut/shortcut-manager";
 
 import { DEFAULT_MODE, IDAH_VISUAL, IDAH_VIDEO_POLYGON, IDAH_VIDEO_BOUNDING_BOX, IDAH_NOTE, IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP } from "$lib/plugin/type";
@@ -43,7 +43,7 @@ const injectCommonShortcuts = (context: KeyMapContext) => {
     context.switch_mode(ShortcutManager.defaultMode);
   };
 
-  return (b: Builder) => {
+  return (b: KeyMapBuilder) => {
     b.on([b.Alt], "S", flushAction, "Flush", "flush action");
     b.on([b.Ctrl], "Space", toggleCommand, "Commands Dialog", "Toggle this commands dialog");
     b.on([b.Ctrl], "Z", undoAction, "Undo", "Undo last action");
@@ -78,7 +78,7 @@ const buildVisualModeShortcuts = (context: KeyMapContext) => {
   const startFrame = () => { context.player()?.seekToFrame(0); };
   const endFrame = () => { context.player()?.seekToFrame(context.player()?.getFrames() || 0); };
 
-  return (b: Builder) => {
+  return (b: KeyMapBuilder) => {
     b.on(null, "Space", togglePlay, "Toggle Play", "Play/Pause the video player");
     b.on(null, "ArrowRight", nextFrame, "Next", "go to the next frame");
     b.on(null, "ArrowLeft", previousFrame, "Previous", "go to the previous frame");
@@ -100,7 +100,7 @@ const buildBoundingBoxModeShortcuts = (context: KeyMapContext) => {
     context.switch_mode(ShortcutManager.getCurrentMode());
   };
 
-  return (b: Builder) => {
+  return (b: KeyMapBuilder) => {
     b.on(null, "Backspace", backAction, "back", "back action");
   };
 };
@@ -125,7 +125,7 @@ const buildPolygonModeShortcuts = (context: KeyMapContext) => {
   const startFrame = () => { context.player()?.seekToFrame(0); };
   const endFrame = () => { context.player()?.seekToFrame(context.player()?.getFrames() || 0); };
 
-  return (b: Builder) => {
+  return (b: KeyMapBuilder) => {
     b.on(null, "Space", togglePlay, "Toggle Play", "Play/Pause the video player");
     b.on(null, "ArrowRight", nextFrame, "Next", "go to the next frame");
     b.on(null, "ArrowLeft", previousFrame, "Previous", "go to the previous frame");
@@ -141,13 +141,13 @@ const buildPolygonModeShortcuts = (context: KeyMapContext) => {
 };
 
 const buildNoteModeShortcuts = (context: KeyMapContext) => {
-  return (b: Builder) => {
+  return (b: KeyMapBuilder) => {
     // No specific shortcuts for note mode yet
   };
 };
 
 // Add mode and shortcut definitions here.
-const MODE_BUILDERS: Record<string, (context: KeyMapContext) => (b: Builder) => void> = {
+const MODE_BUILDERS: Record<string, (context: KeyMapContext) => (b: KeyMapBuilder) => void> = {
   [IDAH_VISUAL]: buildVisualModeShortcuts,
   [IDAH_VIDEO_BOUNDING_BOX]: buildBoundingBoxModeShortcuts,
   [IDAH_VIDEO_POLYGON]: buildPolygonModeShortcuts,
@@ -160,7 +160,7 @@ const MODE_BUILDERS: Record<string, (context: KeyMapContext) => (b: Builder) => 
  */
 export function registerShortcuts(context: KeyMapContext) {
   Object.entries(MODE_BUILDERS).forEach(([mode, buildFn]) => {
-    const keyMap = KeyMapBuilder((b) => {
+    const keyMap = BuildKeymap((b) => {
       injectCommonShortcuts(context)(b);
       buildFn(context)(b);
     });
@@ -205,7 +205,7 @@ const buildOnSelectBoundingBoxModeShortcuts = (context: SelectionKeyMapContext) 
     context.commands.run("annotation.split", { id: context.selectedId, at: currentFrame });
   };
 
-  return (b: Builder) => {
+  return (b: KeyMapBuilder) => {
     b.on(null, "Delete", deleteSelected, "Delete", "Delete selected annotation");
     b.on([b.Ctrl], "Backspace", deleteSelected, "Delete", "Delete selected annotation");
     b.on(null, "H", toggleHidden, "Toggle Hidden", "Hide/Show selected annotation");
@@ -244,7 +244,7 @@ const buildOnSelectPolygonModeShortcuts = (context: SelectionKeyMapContext) => {
     context.commands.run("annotation.split", { id: context.selectedId, at: currentFrame });
   };
 
-  return (b: Builder) => {
+  return (b: KeyMapBuilder) => {
     b.on(null, "Delete", deleteSelected, "Delete", "Delete selected annotation");
     b.on([b.Ctrl], "Backspace", deleteSelected, "Delete", "Delete selected annotation");
     b.on(null, "H", toggleHidden, "Toggle Hidden", "Hide/Show selected annotation");
@@ -254,7 +254,7 @@ const buildOnSelectPolygonModeShortcuts = (context: SelectionKeyMapContext) => {
 };
 
 // Add mode and shortcut definitions for selected annotation/object here.
-const SELECTION_MODE_BUILDERS: Record<string, (context: SelectionKeyMapContext) => (b: Builder) => void> = {
+const SELECTION_MODE_BUILDERS: Record<string, (context: SelectionKeyMapContext) => (b: KeyMapBuilder) => void> = {
   [IDAH_VIDEO_BOUNDING_BOX]: buildOnSelectBoundingBoxModeShortcuts,
   [IDAH_VIDEO_POLYGON]: buildOnSelectPolygonModeShortcuts,
 };
@@ -271,7 +271,7 @@ export function registerOnSelectShortcuts(mode: string, context: SelectionKeyMap
   ShortcutManager.clearAllKeyMapExtensions();
 
   // create and register new extension for the current mode
-  const selectionKeyMap = KeyMapBuilder(buildFn(context));
+  const selectionKeyMap = BuildKeymap(buildFn(context));
   ShortcutManager.setKeyMapExtension(mode, selectionKeyMap);
   ShortcutManager.enterMode(mode);
 }
