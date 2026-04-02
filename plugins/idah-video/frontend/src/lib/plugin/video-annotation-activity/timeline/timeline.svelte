@@ -26,7 +26,6 @@
   import {
     currentFrameRange,
     deselectFrameX,
-    getCurrentFrameRangeSpan,
     selectedFrameX,
     selectFirstFrameX,
     setCurrentFrameRange,
@@ -137,8 +136,7 @@
   function scrollTimelineHorizontal(e: WheelEvent) {
     const isScrollUp = e.deltaX < 0;
     const isScrollDown = e.deltaX > 0;
-    const rangeSpan = getCurrentFrameRangeSpan();
-    const shiftRangeSpan = Math.floor(rangeSpan / 4);
+    const shiftRangeSpan = 1;
 
     deselectFrameX();
     if (isScrollUp) return scrollRight(shiftRangeSpan);
