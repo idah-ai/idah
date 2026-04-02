@@ -24,32 +24,180 @@
   let context: IActivityContext = getContext("context");
 
   // Variables
+  let { groupId } = $derived(annotationGroup);
+
+  /** Overall height of annotation in px */
   const annotationHeight = 24;
 
-  let startOfCurrentFrameRange = $derived($currentFrameRange[0]);
+  /** The first frame index of current frame range (0-based), e.g. [0, 48] will return 0 */
+  let startFrameIndexOfCurrentFrameRange = $derived($currentFrameRange[0]);
+
+  /** The last frame index of current frame range (0-based), e.g. [0, 48] will return 48 */
+  let endFrameIndexOfCurrentFrameRange = $derived($currentFrameRange[1]);
+
+  /** The first frame of current frame range (1-based), e.g. [0, 48] will return 1 */
+  let startFrameOfCurrentFrameRange = $derived(startFrameIndexOfCurrentFrameRange + 1);
+
+  /** The last frame of current frame range (1-based), e.g. [0, 48] will return 49 */
+  let endFrameOfCurrentFrameRange = $derived(endFrameIndexOfCurrentFrameRange + 1);
+
+  /** The count of frame ranges */
   let rangeLength = $derived(frameRanges.length);
-  let startOfRange = $derived(frameRanges[0]);
-  let endOfRange = $derived(frameRanges[rangeLength - 1]);
+
+  /** The first frame of the first frame range, e.g. [1, 9, 10] will return 1 */
+  let startFrameOfGroup = $derived(frameRanges[0]);
+
+  /** The last frame of the last frame range, e.g. [1, 9, 10] will return 10 */
+  let endFrameOfGroup = $derived(frameRanges[rangeLength - 1]);
 
   /**
-   * The frame ranges computed with framePerScale
-   * E.g. frameRanges = [1, 9, 10] / [11, 18, 20] and framePerScale = 2
-   * scaledFrameRanges should be [1, 4, 5] / [5, 8, 9]
+   * The frame ranges that are within the current frame span
+   * If the frame is outside the current frame span, it will be null
+   * Example 1: frameRanges = [1, 9, 10] / [11, 18, 20] and currentFrameRange = [0, 48]
+   * transformedFrameRanges should be [1, 9, 10] / [11, 18, 20]
+   *
+   * Example 2: frameRanges = [1, 9, 10] / [11, 18, 20] and currentFrameRange = [18, 66]
+   * transformedFrameRanges should be [null, null, null] / [null, 20, 21]
    */
-  let scaledFrameRanges = $derived(
-    frameRanges.map((frameRange) => Math.max(1, Math.floor(frameRange / $framePerScale))),
-  );
-  let scaledRangeLength = $derived(scaledFrameRanges.length);
-  let startOfScaledRange = $derived(scaledFrameRanges[0]);
-  let endOfScaledRange = $derived(scaledFrameRanges[scaledRangeLength - 1]);
-  let scaledRangeWidth = $derived((endOfScaledRange - (startOfScaledRange - 1)) * $timelineCellWidth);
+  let transformedFrameRanges = $derived.by(() => {
+    return frameRanges.map((eachFrame) => {
+      /** If each frame in frame ranges is less than the scaled start frame of current frame range */
+      if (eachFrame < startFrameOfCurrentFrameRange * $framePerScale) {
+        return null;
+      }
 
-  let isSelected = $derived(
-    $selectedAnnotation?.shape.start === startOfRange && $selectedAnnotation?.shape.end === endOfRange,
-  );
+      /** If each frame in frame ranges is within the scaled current frame range */
+      if (
+        eachFrame >= startFrameOfCurrentFrameRange * $framePerScale &&
+        eachFrame <= endFrameOfCurrentFrameRange * $framePerScale
+      ) {
+        return eachFrame;
+      }
+
+      /** If each frame in frame ranges is greater than the scaled end frame of current frame range */
+      if (
+        eachFrame >= startFrameOfCurrentFrameRange * $framePerScale &&
+        eachFrame >= endFrameOfCurrentFrameRange * $framePerScale
+      ) {
+        return eachFrame;
+      }
+
+      /** If each frame in frame ranges is greater than the end frame of current frame range */
+      if (eachFrame > endFrameOfCurrentFrameRange) {
+        return null;
+      }
+    });
+  });
+
+  let scaledTransformedFrameRanges = $derived.by(() => {
+    return transformedFrameRanges.map((frame) => {
+      if (!frame) return null;
+      return Math.max(1, Math.floor(frame / $framePerScale));
+    });
+  });
+  let notNullScaledTransformedFrameRanges = $derived(scaledTransformedFrameRanges.filter((frame) => frame !== null));
+  let scaledTransformedRangeLength = $derived(scaledTransformedFrameRanges.length);
+  let startOfScaledTransformedRange = $derived(scaledTransformedFrameRanges[0]);
+  let endOfScaledTransformedRange = $derived(scaledTransformedFrameRanges[scaledTransformedRangeLength - 1]);
+  let scaledTransformedRangeStyle = $derived.by(() => {
+    let width: number = 0;
+    let left: number = 0;
+    let showBorderLeft: boolean = true;
+    let showBorderRight: boolean = true;
+    let borderRadiusLeft: number = 0;
+    let borderRadiusRight: number = 0;
+    let debug: number = 0;
+
+    /** No frame to display in current frame span */
+    if (!startOfScaledTransformedRange && !endOfScaledTransformedRange) {
+      return { width, left, showBorderLeft, showBorderRight, borderRadiusLeft, borderRadiusRight };
+    }
+
+    /** Have start frame in current frame span, but no end frame in current frame span */
+    if (startOfScaledTransformedRange && !endOfScaledTransformedRange) {
+      width = endFrameOfCurrentFrameRange - startOfScaledTransformedRange;
+      left = Math.max(startOfScaledTransformedRange - 1, 0);
+      return {
+        width: (width + 1) * $timelineCellWidth,
+        left: left * $timelineCellWidth,
+        showBorderLeft: true,
+        showBorderRight: false,
+        borderRadiusLeft: 6,
+        borderRadiusRight: 0,
+        debug: 1,
+      };
+    }
+
+    /** Have end frame in current frame span, but no start frame in current frame span */
+    if (!startOfScaledTransformedRange && endOfScaledTransformedRange) {
+      width = endOfScaledTransformedRange - startFrameOfCurrentFrameRange;
+      left = 0;
+      return {
+        width: (width + 1) * $timelineCellWidth,
+        left: left * $timelineCellWidth,
+        showBorderLeft: false,
+        showBorderRight: true,
+        borderRadiusLeft: 0,
+        borderRadiusRight: 6,
+        debug: 2,
+      };
+    }
+
+    /** Have both start and end frame in current frame span */
+    if (startOfScaledTransformedRange && endOfScaledTransformedRange) {
+      width = endOfScaledTransformedRange - startOfScaledTransformedRange;
+      left = Math.max(startOfScaledTransformedRange - startFrameOfCurrentFrameRange, 0);
+      return {
+        width: (width + 1) * $timelineCellWidth,
+        left: left * $timelineCellWidth,
+        showBorderLeft: true,
+        showBorderRight: true,
+        borderRadiusLeft: 6,
+        borderRadiusRight: 6,
+        debug: 3,
+      };
+    }
+
+    return { width, left, showBorderLeft, showBorderRight, borderRadiusLeft, borderRadiusRight, debug: 4 };
+  });
+
+  // Variables::Selected and Hovered
+  let isSelected = $derived.by<boolean>(() => {
+    const selectedAnnotationId = $selectedAnnotation?.metadata.id;
+    const selectedAnnotationGroupId = $selectedAnnotation?.metadata?.metadata?.group_id;
+    let selectedAnnotationIsInThisAnnotationGroup: boolean;
+
+    /** Check if selected annotation is in this annotation group or not*/
+    if (selectedAnnotationId === groupId) {
+      selectedAnnotationIsInThisAnnotationGroup = true;
+    } else if (selectedAnnotationGroupId === groupId) {
+      selectedAnnotationIsInThisAnnotationGroup = true;
+    } else {
+      selectedAnnotationIsInThisAnnotationGroup = false;
+    }
+
+    /** If selected annotation is not in this annotation group, isSelected = false */
+    if (!selectedAnnotationIsInThisAnnotationGroup) return false;
+
+    /** Check if selected annotation is in this frame range */
+    const startFrameOfSelectedAnnotation = $selectedAnnotation?.shape.start;
+    const endFrameOfSelectedAnnotation = $selectedAnnotation?.shape.end;
+    let selectedAnnotationIsInThisFrameRange: boolean;
+
+    if (startFrameOfSelectedAnnotation === startFrameOfGroup) {
+      selectedAnnotationIsInThisFrameRange = true;
+    } else if (endFrameOfSelectedAnnotation === endFrameOfGroup) {
+      selectedAnnotationIsInThisFrameRange = true;
+    } else {
+      selectedAnnotationIsInThisFrameRange = false;
+    }
+
+    return selectedAnnotationIsInThisFrameRange;
+  });
   let isHovered = $state(false);
   let isSelectedOrHovered = $derived(isSelected || isHovered);
 
+  // Variables::Group Category
   let groupCategory = $derived(getGroupCategory(annotationGroup));
   let groupColor = $derived(groupCategory.color);
   let groupTextColor = $derived(groupCategory.text_color);
@@ -87,31 +235,36 @@
 -->
 
 <!-- ANNOTATION GROUP -->
-{#if scaledFrameRanges.length > 0}
+{#if scaledTransformedRangeStyle.width}
   <div
     id="timeline-annotation-cell__scaled"
     role="cell"
     tabindex="-1"
-    class="hover:bg-primary/30 absolute -translate-y-[50%] rounded-sm border"
+    class="hover:bg-primary/30 absolute -translate-y-[50%] border-t border-b"
     style:border-color={groupColor}
+    style:border-left={scaledTransformedRangeStyle.showBorderLeft ? `1px solid ${groupColor}` : "none"}
+    style:border-right={scaledTransformedRangeStyle.showBorderRight ? `1px solid ${groupColor}` : "none"}
     style:background-color="{groupColor}{isSelectedOrHovered ? 60 : 30}"
+    style:border-top-left-radius="{scaledTransformedRangeStyle.borderRadiusLeft}px"
+    style:border-bottom-left-radius="{scaledTransformedRangeStyle.borderRadiusLeft}px"
+    style:border-top-right-radius="{scaledTransformedRangeStyle.borderRadiusRight}px"
+    style:border-bottom-right-radius="{scaledTransformedRangeStyle.borderRadiusRight}px"
     style:color={groupTextColor}
-    style:width="{scaledRangeWidth}px"
+    style:width="{scaledTransformedRangeStyle.width}px"
     style:height="{annotationHeight}px"
-    style:left="{Math.abs(startOfScaledRange - startOfCurrentFrameRange - 1) * $timelineCellWidth}px"
+    style:left="{scaledTransformedRangeStyle.left}px"
     onmouseenter={() => (isHovered = true)}
     onmouseleave={() => (isHovered = false)}
   ></div>
 
   <!-- ANNOTATION AT FRAME (INTERPOLATION) -->
-
-  {#each scaledFrameRanges as interpolationAtFrame, interpolationAtFrameIndex (interpolationAtFrameIndex)}
+  {#each notNullScaledTransformedFrameRanges as interpolationAtFrame, interpolationAtFrameIndex (interpolationAtFrameIndex)}
     <div
-      class="absolute translate-x-[15%] -translate-y-[50%] rounded-sm"
+      class="absolute translate-x-[15%] -translate-y-[50%] rounded-sm text-white"
       style:background-color={groupColor}
       style:height="{annotationHeight * 0.6}px"
       style:width="{$timelineCellWidth * 0.8}px"
-      style:left="{Math.abs(interpolationAtFrame - startOfCurrentFrameRange - 1) * $timelineCellWidth}px"
+      style:left="{Math.max(interpolationAtFrame - startFrameIndexOfCurrentFrameRange - 1, 0) * $timelineCellWidth}px"
     ></div>
   {/each}
 {/if}
