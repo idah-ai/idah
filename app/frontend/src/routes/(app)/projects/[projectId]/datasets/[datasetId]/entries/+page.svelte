@@ -320,6 +320,10 @@
       selectedRows = [];
     }
   }
+
+  function setSelectedRows(): void {
+    selectedRows = [];
+  }
 </script>
 
 {#snippet AddEntryButton(className?: string)}
@@ -461,7 +465,12 @@
 <CreateEntryFormModal action="create" title="Entry" bind:open={openNewEntryModal} />
 
 <!-- MODAL::ASSIGN ANNOTATOR  -->
-<AssignEntryFormModal action="update" entryIds={selectedRows} bind:open={openAssignEntryFormModal} />
+<AssignEntryFormModal
+  action="update"
+  entryIds={selectedRows}
+  onAssigned={setSelectedRows}
+  bind:open={openAssignEntryFormModal}
+/>
 
 <!-- MODAL::SET PRIORITY -->
 <UpdateEntryPriorityFormModal action="update" entryIds={selectedRows} bind:open={openSetPriorityModal} />
