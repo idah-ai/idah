@@ -1,4 +1,4 @@
-import type { AnnotationValue } from "$lib/context/AnnotationContext";
+import type { AnnotationValue } from "$lib/context/annotation-context";
 
 export function visibilityFullfilled(value: AnnotationValue, field: IConfigProperty) {
   if (typeof field.visibility == "boolean") return field.visibility;

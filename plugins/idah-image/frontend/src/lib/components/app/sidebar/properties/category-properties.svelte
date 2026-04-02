@@ -11,7 +11,7 @@
   import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger } from "$lib/components/ui/select";
 
   import type { PropertyComponent } from "$lib/components/app/sidebar/properties/property.types";
-  import type { AnnotationValue } from "$lib/context/AnnotationContext";
+  import type { AnnotationValue } from "$lib/context/annotation-context";
   import type { IActivityContext } from "$lib/context/context";
 
   // Type Props

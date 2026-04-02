@@ -11,10 +11,15 @@
   import { ResizablePane } from "$lib/components/ui/resizable";
   import ResizableHandle from "$lib/components/ui/resizable/resizable-handle.svelte";
   import ResizablePaneGroup from "$lib/components/ui/resizable/resizable-pane-group.svelte";
-  import { currentMode } from "$lib/plugin/store/store";
-  import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_NOTE, IMAGE_POLYGON } from "$lib/plugin/types";
 
+  import { entryRoot, setIndexedDBUpdatedAt } from "$lib/plugin/store/idb-store.svelte";
+  import { currentMode, selectedAnnotation } from "$lib/plugin/store/store";
+  import { DEFAULT_MODE, ENTRY_ROOT, IMAGE_BOUNDING_BOX, IMAGE_NOTE, IMAGE_POLYGON } from "$lib/plugin/types";
+
+  import type { AnnotationValue } from "$lib/context/annotation-context";
   import type { IActivityContext } from "$lib/context/context";
+  import type { ImageAnnotationObject, ImageShape } from "$lib/context/image-annotation-context";
+  import { annotationsIndexedDB, type AnnotationsIndexedDB } from "$lib/plugin/indexedDB";
 
   // Props
   interface Props {
@@ -65,7 +70,7 @@
     },
   ]);
 
-  let { workflowStep } = $derived(context);
+  let { id: entryId, workflowStep } = $derived(context);
   let editable = $derived<boolean>(editableWorkflowSteps.includes(workflowStep));
   let notable = $derived<boolean>(notableWorkflowSteps.includes(workflowStep));
   let isNoteMode = $derived($currentMode === IMAGE_NOTE);
@@ -74,9 +79,10 @@
     | { label: string; type: string; iconName: string; disabled: boolean; handleClick: () => void }
   )[] = $state([]);
   let showPopOver = $state(false);
+  let annotationsIDB: AnnotationsIndexedDB | undefined = $state();
 
-  // let annotationId = $derived<string | undefined>($selectedAnnotation ? $selectedAnnotation.metadata.id : undefined);
-  // let annotationValue: AnnotationValue = $derived($selectedAnnotation?.value || {});
+  let annotationId = $derived<string | undefined>($selectedAnnotation ? $selectedAnnotation.metadata.id : undefined);
+  let annotationValue: AnnotationValue = $derived($selectedAnnotation?.value || {});
 
   onMount(async () => {
     tools = [
@@ -111,6 +117,53 @@
 
     context.tools.setTools(tools);
     $effect(() => context.tools.setTool($currentMode));
+
+    annotationsIndexedDB(["idah-image", "entry", entryId].join(":")).then((idb) => {
+      annotationsIDB = idb;
+      fetchAnnotations(idb).then(() => {
+        // quick fix if unsynced data, though we dont have way to send it anyway for now if so
+        idb?.getAllIndex("type", ENTRY_ROOT).then((anns) => ($entryRoot = anns[0]));
+      });
+    }, console.error);
+
+    function fetchAnnotations(db: AnnotationsIndexedDB, page = 1, itemsPerPage = 100): Promise<void> {
+      return new Promise<void>((resolve, reject) => {
+        context.annotations.list({ entry_id: entryId }, { page, itemsPerPage }).then((res) => {
+          let d = res.map((ann) => {
+            const annotation: ImageAnnotationObject = {
+              shape: {
+                ...(ann.dimensions as ImageShape),
+                range: [ann.dimensions.start, ann.dimensions.end],
+              },
+              value: {
+                ...ann.annotation,
+                category: ann.annotation.category || "null",
+              },
+              metadata: {
+                id: ann.id,
+                updatedAt: ann.updated_at || new Date(),
+                createdAt: ann.created_at || new Date(),
+                metadata: ann.metadata || {},
+              },
+              hidden: false,
+              locked: false,
+              synced: true,
+            };
+            if (annotation.shape.type == ENTRY_ROOT) $entryRoot = annotation;
+            return annotation;
+          });
+
+          if (d.length) {
+            db.upsertAnnotations(d).then(() => {
+              setIndexedDBUpdatedAt();
+              fetchAnnotations(db, page + 1).then(resolve, reject);
+            });
+          } else {
+            resolve();
+          }
+        });
+      });
+    }
   });
 </script>
 

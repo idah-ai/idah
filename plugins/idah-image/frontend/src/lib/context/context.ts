@@ -1,5 +1,3 @@
-
-
 import type { Component } from "svelte";
 
 export type ASTValue = string | number | string[] | boolean | undefined;
@@ -123,10 +121,10 @@ export type ICommand = {
   apply: () => void;
   undo: () => void;
 
-  name : string; // A human readable name for the command, used for showing in the UI.
-  isCombinable: (previousCommand : ICommand) => boolean;
-  combine: (previousCommand : ICommand) => ICommand;
-}
+  name: string; // A human readable name for the command, used for showing in the UI.
+  isCombinable: (previousCommand: ICommand) => boolean;
+  combine: (previousCommand: ICommand) => ICommand;
+};
 
 export interface ICommands {
   on(name: string, commandBuilder: (props?: object) => ICommand, manager?: boolean): void;

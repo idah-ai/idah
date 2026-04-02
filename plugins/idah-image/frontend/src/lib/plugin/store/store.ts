@@ -2,8 +2,8 @@ import { writable } from "svelte/store";
 
 import { DEFAULT_MODE } from "$lib/plugin/types";
 
-// import type { AnnotationGroup } from "$lib/context/annotation-context";
-// import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
+import type { AnnotationGroup } from "$lib/context/annotation-context";
+import type { ImageAnnotationObject } from "$lib/context/image-annotation-context";
 
 /** CURRENT MODE */
 export const currentMode = writable<string>(DEFAULT_MODE);
@@ -13,19 +13,19 @@ export function setCurrentModeTo(mode: string) {
 }
 
 /** SELECTED ANNOTATION */
-// export const selectedAnnotation = writable<VideoAnnotationObject | undefined>(undefined);
+export const selectedAnnotation = writable<ImageAnnotationObject | undefined>(undefined);
 
-// export function setSelectedAnnotation(annotation: VideoAnnotationObject) {
-//   selectedAnnotation.set(annotation);
-// }
+export function setSelectedAnnotation(annotation: ImageAnnotationObject) {
+  selectedAnnotation.set(annotation);
+}
 
-// export function deselectAnnotation() {
-//   selectedAnnotation.set(undefined);
-// }
+export function deselectAnnotation() {
+  selectedAnnotation.set(undefined);
+}
 
-// /** SELECTED ANNOTATION GROUP */
-// export const selectedAnnotationGroup = writable<AnnotationGroup<VideoAnnotationObject> | undefined>(undefined);
+/** SELECTED ANNOTATION GROUP */
+export const selectedAnnotationGroup = writable<AnnotationGroup<ImageAnnotationObject> | undefined>(undefined);
 
-// export function deselectAnnotationGroup() {
-//   selectedAnnotationGroup.set(undefined);
-// }
+export function deselectAnnotationGroup() {
+  selectedAnnotationGroup.set(undefined);
+}

@@ -1,7 +1,12 @@
 <script lang="ts">
   import BoundingBox from "./bounding-box.svelte";
 
-  import type { AnnotationMetadata, AnnotationObj, AnnotationShape, AnnotationValue } from "./AnnotationContext";
+  import type {
+    AnnotationMetadata,
+    AnnotationObj,
+    AnnotationShape,
+    AnnotationValue,
+  } from "$lib/context/annotation-context";
 
   export let src: string;
 

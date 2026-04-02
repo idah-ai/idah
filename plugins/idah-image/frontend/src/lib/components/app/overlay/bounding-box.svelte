@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { X, Y, type Point } from "$lib/components/app/overlay/image-annotation-context";
+  import { X, Y, type Point } from "$lib/context/image-annotation-context";
   import { IMAGE_NOTE } from "$lib/plugin/types";
 
   let {
