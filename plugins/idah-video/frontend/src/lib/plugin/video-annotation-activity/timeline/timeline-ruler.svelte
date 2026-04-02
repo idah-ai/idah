@@ -1,13 +1,15 @@
 <script lang="ts">
-  import { totalFrames } from "$lib/plugin/video-annotation-activity/store/store";
+  import { currentFrame, isVideoPlaying, totalFrames } from "$lib/plugin/video-annotation-activity/store/store";
   import {
     currentFrameRange,
     framePerScale,
     getFrameRange,
     setCurrentFrameRange,
+    setSelectedFrameX,
     timelineCellWidth,
     timelineRulerWidth,
   } from "$lib/plugin/video-annotation-activity/timeline/store";
+  import { getSelectedFrameXFromCurrentFrame } from "$lib/plugin/video-annotation-activity/timeline/utils";
 
   // Props
   interface Props {
@@ -16,6 +18,7 @@
   let { onSelectFrameX }: Props = $props();
 
   // Variables
+  let startFrameIndexOfCurrentFrameRange = $derived($currentFrameRange[0]);
   let rulerScale = $derived<number>(Math.floor($timelineRulerWidth / $timelineCellWidth));
   let frameRanges = $derived(getFrameRange($currentFrameRange[0], $currentFrameRange[1]));
   let majorTicks = $derived.by<Array<number>>(() => {
@@ -26,8 +29,37 @@
 
   // Lifecycle
   $effect(() => {
-    /** Set current frame range every time ruler scale changes */
+    /**
+     * Set current frame range every time ruler scale changes
+     * Note: Can't use onMount as we need to wait for the timelineRulerWidth to be set.
+     */
     setCurrentFrameRange([0, rulerScale]);
+  });
+
+  $effect(() => {
+    if ($isVideoPlaying) {
+      /**
+       * Set selected frame x to current frame when video is playing
+       * This make timeline-vertical-line change every time current frame is changed.
+       */
+      const mouseX = getSelectedFrameXFromCurrentFrame({
+        currentFrame: $currentFrame - startFrameIndexOfCurrentFrameRange,
+      });
+      setSelectedFrameX(mouseX);
+
+      /**
+       * If currentFrame is out of current frame range
+       * - Shift the current frame range to the right
+       */
+
+      /** The last frame index of current frame range (0-based), e.g. [0, 48] will return 48 */
+      let endFrameIndexOfCurrentFrameRange = $currentFrameRange[1];
+      if ($currentFrame > endFrameIndexOfCurrentFrameRange + 1) {
+        const newStart = $currentFrame - Math.floor(rulerScale / 2);
+        const newEnd = newStart + rulerScale;
+        setCurrentFrameRange([newStart, newEnd]);
+      }
+    }
   });
 
   // Functions
