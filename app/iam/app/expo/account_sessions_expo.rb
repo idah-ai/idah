@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# Test CI/CD
+
 class AccountSessionsExpo < BaseExpo
   http_path "/account_sessions"
 

@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# Test CI/CD
+
 require "spec_helper"
 
 RSpec.describe AccountSettingsExpo, type: :exposition, as: :system do

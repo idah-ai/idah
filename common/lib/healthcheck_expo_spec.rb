@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# Test CI/CD
+
 RSpec.describe HealthcheckExpo, type: :exposition do
   it "is successful when all services are up" do
     expect(HealthcheckService).to receive(:run).and_return(

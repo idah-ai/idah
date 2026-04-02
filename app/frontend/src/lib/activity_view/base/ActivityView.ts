@@ -1,6 +1,8 @@
 import type { ActivityContext } from "$lib/context/ActivityContext"
 import type { Component } from "svelte"
 
+// Test CI/CD
+
 /*
 * ActivityView is a component that can be used to play with an activity.
 * It can be used to display and interact with an activity type.
