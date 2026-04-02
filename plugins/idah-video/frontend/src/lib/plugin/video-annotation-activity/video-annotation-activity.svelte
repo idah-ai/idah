@@ -34,6 +34,7 @@
   import {
     currentFrame,
     currentMode,
+    isVideoPlaying,
     selectedAnnotation,
     selectedAnnotationGroup,
     setCurrentFrame,
@@ -41,6 +42,7 @@
     setSelectedAnnotation,
     setSelectedAnnotationGroup,
     setTotalFrames,
+    setVideoIsPlaying,
   } from "$lib/plugin/video-annotation-activity/store/store";
 
   import AnnotationFooterToolbar from "$lib/plugin/layout/footer/annotation-footer-toolbar.svelte";
@@ -97,7 +99,6 @@
   let scale = $state(1);
 
   let annotationsIDB: AnnotationsIndexedDB | undefined = $state();
-  let isPlaying = $state(false);
   let volume = $state({ level: 0, muted: false });
   let tools: (
     | { label: string; type: string; iconName: string; handleClick: () => void }
@@ -179,7 +180,7 @@
     }
 
     /** Set tool to visual mode when video is playing & mode is not visual */
-    if (isPlaying && $currentMode !== DEFAULT_MODE) {
+    if ($isVideoPlaying && $currentMode !== DEFAULT_MODE) {
       context.commands.run("tools.visual");
     }
   });
@@ -746,7 +747,7 @@
                   onFramesChange={(current, total, playing) => {
                     setCurrentFrame(current);
                     setTotalFrames(total);
-                    isPlaying = playing;
+                    setVideoIsPlaying(playing);
                   }}
                   onVolumeChange={(level, muted) => (volume = { level, muted })}
                 />
@@ -769,7 +770,7 @@
       <ResizablePane defaultSize={25} minSize={15}>
         <AnnotationFooter>
           <AnnotationFooterToolbar>
-            <VideoController {isPlaying} {zoom} {volume} bind:video={player} />
+            <VideoController {zoom} {volume} bind:video={player} />
 
             <TimelineController />
           </AnnotationFooterToolbar>

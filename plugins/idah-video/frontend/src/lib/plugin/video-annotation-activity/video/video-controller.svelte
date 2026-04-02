@@ -30,19 +30,23 @@
   import Video from "$lib/plugin/video-annotation-activity/video/video.svelte";
 
   import { IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP } from "$lib/plugin/type";
-  import { currentFrame, selectedAnnotation, totalFrames } from "$lib/plugin/video-annotation-activity/store/store";
+  import {
+    currentFrame,
+    isVideoPlaying,
+    selectedAnnotation,
+    totalFrames,
+  } from "$lib/plugin/video-annotation-activity/store/store";
 
   import type { IActivityContext } from "$idah/context/activity-context";
 
   // Props
   interface Props {
     video: Video;
-    isPlaying: boolean;
     volume: { level: number; muted: boolean };
     zoom: number;
     // onZoomChange: (zoom: number) => void;
   }
-  let { video = $bindable(), isPlaying, volume, zoom }: Props = $props();
+  let { video = $bindable(), volume, zoom }: Props = $props();
 
   // Contexts
   const context: IActivityContext = getContext("context");
@@ -136,7 +140,7 @@
         video.togglePlay();
       }}
     >
-      {#if isPlaying}
+      {#if $isVideoPlaying}
         <PauseIcon />
       {:else}
         <PlayIcon />
