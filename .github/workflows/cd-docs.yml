@@ -9,7 +9,7 @@ concurrency:
 env:
   # GKE Artifact Registry
   CONTAINER_REGISTRY: ${{ secrets.GCP_CONTAINER_REGISTRY }}
-  CONTAINER_REPO: ${{ secrets.GKE_PROJECT }}/idah
+  CONTAINER_REPO: ${{ secrets.GCP_PROJECT }}/idah
   GCP_ZONE: ${{ secrets.GCP_ZONE }}
 
   INSTANCE_NAME: idah-website
@@ -33,7 +33,7 @@ jobs:
         with:
           registry: ${{ env.CONTAINER_REGISTRY }}
           username: _json_key
-          password: ${{ secrets.GKE_SA_KEY }}
+          password: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
 
       # Setup docker cache
       - name: Cache Docker layers
@@ -74,7 +74,7 @@ jobs:
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v3
         with:
-          credentials_json: ${{ secrets.GKE_SA_KEY }}
+          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
 
       - name: Setup SSH Key for VM
         run: |
