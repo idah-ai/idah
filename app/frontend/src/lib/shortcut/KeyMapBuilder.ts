@@ -34,7 +34,13 @@ export class KeyMapBuilder {
    * @param name Name for the shortcut
    * @param description Description for the shortcut
    */
-  on(modifiers: ModifierKey[] | null, key: ActionKey, action: Action, name: string, description: string): KeyMapBuilder {
+  on(
+    modifiers: ModifierKey[] | null,
+    key: ActionKey,
+    action: Action,
+    name: string,
+    description: string,
+  ): KeyMapBuilder {
     const keyCombination = this.buildKeyCombination(modifiers, key);
 
     this.keyMap[keyCombination] = {
