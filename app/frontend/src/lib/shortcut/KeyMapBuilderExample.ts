@@ -1,4 +1,4 @@
-import { KeyMapBuilder } from './KeyMapBuilder';
+import { BuildKeymap } from './KeyMapBuilder';
 import { ShortcutManager } from './ShortcutManager';
 
 // Example of creating a key map for a "visual" mode
@@ -25,7 +25,7 @@ const createVisualModeKeyMap = () => {
   };
 
   // Create a key map using the KeyMapBuilder DSL
-  const keyMap = KeyMapBuilder((b) => {
+  const keyMap = BuildKeymap((b) => {
     // Copy: Ctrl+C
     b.on([b.Ctrl], "C", copyAction, "Copy", "Copy selected content");
 
