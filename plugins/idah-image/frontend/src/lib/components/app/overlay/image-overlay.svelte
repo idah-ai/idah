@@ -29,7 +29,10 @@
   }
 </script>
 
-<div bind:this={container} class="relative flex h-full w-full items-center justify-center overflow-hidden bg-gray-200 p-12">
+<div
+  bind:this={container}
+  class="relative flex h-full w-full items-center justify-center overflow-hidden bg-gray-200 p-12"
+>
   <div class="relative">
     <img
       bind:this={image}

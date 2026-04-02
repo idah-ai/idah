@@ -1,4 +1,4 @@
-import type { DefaultMode, ImageBoundingBox } from "$lib/components/app/controller/image-controller.types";
+import type { DefaultMode, ImageBoundingBox } from "$lib/plugin/types";
 import type {
   AnnotationMetadata,
   AnnotationObj,

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { IMAGE_NOTE } from "$lib/components/app/controller/image-controller.types";
   import { X, Y, type Point } from "$lib/components/app/overlay/image-annotation-context";
+  import { IMAGE_NOTE } from "$lib/plugin/types";
 
   let {
     ratio = [1, 1],
