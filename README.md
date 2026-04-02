@@ -1,7 +1,7 @@
 # IDAH - Ingedata Annotation Hub
 
 ![GitHub stars](https://img.shields.io/github/stars/idah-ai/idah)
-![License](https://img.shields.io/github/license/idah-ai/idah)
+![License](https://img.shields.io/badge/license-FSL-blue)
 
 **An open-source platform for collaborative data annotation**, designed to streamline the creation of high-quality training datasets for machine learning models.
 
@@ -178,7 +178,7 @@ We welcome contributions from the community!
 
 ## 📄 License
 
-This project is licensed under the **[Mozilla Public License 2.0](LICENSE)**.
+This project is licensed under the **[Functional Source License (FSL)](LICENSE)**.
 
 ---
 
