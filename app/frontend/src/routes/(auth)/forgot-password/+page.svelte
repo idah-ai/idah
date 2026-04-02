@@ -34,7 +34,7 @@
       email = "";
       showToast.info({
         title: "Reset link sent!",
-        description: "If that email is associated with an account, you will receive a rest password email.",
+        description: "If that email is associated with an account, you will receive a reset password email.",
       });
     } catch (error) {
       sendingPasswordResetLink = false;
