@@ -26,6 +26,13 @@ export function setTotalFrames(totalFrame: number) {
   totalFrames.set(totalFrame);
 }
 
+/** IS PLAYING */
+export const isVideoPlaying = writable<boolean>(false);
+
+export function setVideoIsPlaying(isPlaying: boolean) {
+  isVideoPlaying.set(isPlaying);
+}
+
 /** SELECTED ANNOTATION */
 export const selectedAnnotation = writable<VideoAnnotationObject | undefined>(undefined);
 
