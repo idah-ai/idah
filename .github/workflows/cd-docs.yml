@@ -7,7 +7,7 @@ concurrency:
   group: idah-docs-deploy
 
 env:
-  # GKE Artifact Registry
+  # GCP Artifact Registry
   CONTAINER_REGISTRY: ${{ secrets.GCP_CONTAINER_REGISTRY }}
   CONTAINER_REPO: ${{ secrets.GCP_PROJECT }}/idah
   GCP_ZONE: ${{ secrets.GCP_ZONE }}
