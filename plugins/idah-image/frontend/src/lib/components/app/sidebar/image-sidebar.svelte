@@ -1,21 +1,21 @@
 <script lang="ts">
-import { ChevronRightIcon } from "lucide-svelte";
+  import { ChevronRightIcon } from "lucide-svelte";
 
   import { currentMode } from "$lib/plugin/store/store";
   import { cn } from "$lib/utils";
   import { humanize } from "$lib/utils/string";
 
-    import Button from "$lib/components/ui/button/button.svelte";
-    import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "$lib/components/ui/collapsible";
-    import { SidebarGroup, SidebarGroupContent, SidebarMenuItem } from "$lib/components/ui/sidebar";
-    import { ENTRY_ROOT } from "$lib/plugin/types";
-    import { groupAnnotations } from "$lib/utils/group-annotation.svelte";
-    
-    import type { AnnotationGroup } from "$lib/context/annotation-context";
-    import type { CategoryDefinition } from "$lib/context/category-context";
-    import type { IActivityContext, IConfigValue } from "$lib/context/context";
-    import type { ImageAnnotationObject } from "$lib/context/image-annotation-context";
-    import type { AnnotationsIndexedDB } from "$lib/plugin/indexedDB";
+  import Button from "$lib/components/ui/button/button.svelte";
+  import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "$lib/components/ui/collapsible";
+  import { SidebarGroup, SidebarGroupContent, SidebarMenuItem } from "$lib/components/ui/sidebar";
+  import { ENTRY_ROOT } from "$lib/plugin/types";
+  import { groupAnnotations } from "$lib/utils/group-annotation.svelte";
+
+  import type { AnnotationGroup } from "$lib/context/annotation-context";
+  import type { CategoryDefinition } from "$lib/context/category-context";
+  import type { IActivityContext, IConfigValue } from "$lib/context/context";
+  import type { ImageAnnotationObject } from "$lib/context/image-annotation-context";
+  import type { AnnotationsIndexedDB } from "$lib/plugin/indexedDB";
 
   // Props
   interface Props {
@@ -42,7 +42,7 @@ import { ChevronRightIcon } from "lucide-svelte";
     modalityShape,
     // onSelectCategory,
     selectedCategory,
-     context,
+    context,
     // onSelectAnnotationGroup,
     // onDeleteAnnotation,
     // onEditability,
@@ -53,7 +53,7 @@ import { ChevronRightIcon } from "lucide-svelte";
   let openCategory = $state(true);
   let currentModeIsSameAsShape = $derived($currentMode == modalityShape);
 
-   let categories = $derived(
+  let categories = $derived(
     new Map<string, IConfigValue[]>(
       Object.entries(context.config)
         .filter(([shapeType, _]) => shapeType != ENTRY_ROOT)
@@ -61,31 +61,34 @@ import { ChevronRightIcon } from "lucide-svelte";
     ),
   );
 
-
   // Automatically expand all categories when categories prop changes, but allow manual toggles
   let manualToggleStates = $state<Record<string, boolean>>({});
   let openStates = $derived.by(() => {
-    const autoExpanded = ([] as IConfigValue[]).concat(...Array.from(categories.values())).reduce<Record<string, boolean>>((acc, category) => {
-      if (category.id.includes("/")) {
-        const parts = category.id.split("/");
-        for (let i = 0; i < parts.length - 1; i++) {
-          const parentPath = parts.slice(0, i + 1).join("/");
-          acc[parentPath] = true;
+    const autoExpanded = ([] as IConfigValue[])
+      .concat(...Array.from(categories.values()))
+      .reduce<Record<string, boolean>>((acc, category) => {
+        if (category.id.includes("/")) {
+          const parts = category.id.split("/");
+          for (let i = 0; i < parts.length - 1; i++) {
+            const parentPath = parts.slice(0, i + 1).join("/");
+            acc[parentPath] = true;
+          }
         }
-      }
-      // Always set the category itself to true
-      acc[category.id] = true;
-      return acc;
-    }, {});
+        // Always set the category itself to true
+        acc[category.id] = true;
+        return acc;
+      }, {});
 
     // Merge with manual toggles (manual toggles take precedence)
     return { ...autoExpanded, ...manualToggleStates };
   });
 
   let categoriesTree = $derived(
-    ([] as IConfigValue[]).concat(...Array.from(categories.values())).reduce<CategoryDefinition[]>((acc, category_configuration) => {
-      return buildTree(acc, category_configuration.id.split("/"), category_configuration);
-    }, []),
+    ([] as IConfigValue[])
+      .concat(...Array.from(categories.values()))
+      .reduce<CategoryDefinition[]>((acc, category_configuration) => {
+        return buildTree(acc, category_configuration.id.split("/"), category_configuration);
+      }, []),
   );
 
   // Functions
@@ -172,9 +175,8 @@ import { ChevronRightIcon } from "lucide-svelte";
   }
 
   $effect(() => {
-   console.log({categories});
+    console.log({ categories });
   });
-
 </script>
 
 <SidebarGroup>
@@ -182,18 +184,18 @@ import { ChevronRightIcon } from "lucide-svelte";
     <Collapsible bind:open={openCategory}>
       <CollapsibleTrigger class="w-full">
         {#snippet child({ props })}
-        <Button variant="ghost" class="w-full justify-between">
-          <!-- {formatShapeName(modalityShape)} -->
+          <Button variant="ghost" class="w-full justify-between">
+            <!-- {formatShapeName(modalityShape)} -->
             {modalityShape}
-          formatShapeName
-          <div
-            class={cn("rotate-0 transition-transform duration-200", {
-              "rotate-90": openCategory,
-            })}
-          >
-            <ChevronRightIcon />
-          </div>
-        </Button>
+            formatShapeName
+            <div
+              class={cn("rotate-0 transition-transform duration-200", {
+                "rotate-90": openCategory,
+              })}
+            >
+              <ChevronRightIcon />
+            </div>
+          </Button>
         {/snippet}
       </CollapsibleTrigger>
 

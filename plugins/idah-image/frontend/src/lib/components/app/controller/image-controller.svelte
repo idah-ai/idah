@@ -198,12 +198,7 @@
         <ResizablePaneGroup direction="horizontal">
           <!-- LEFT SIDEBAR -->
           <ResizablePane minSize={14} defaultSize={20} maxSize={20}>
-            <ImageSidebar
-            view="sidebar"
-             db={annotationsIDB}
-              {context}
-               {annotationValue}
-             />
+            <ImageSidebar view="sidebar" db={annotationsIDB} {context} {annotationValue} />
           </ResizablePane>
 
           <ResizableHandle withHandle />
