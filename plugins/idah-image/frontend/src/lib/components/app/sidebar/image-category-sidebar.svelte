@@ -8,7 +8,6 @@
   import Button from "$lib/components/ui/button/button.svelte";
   import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "$lib/components/ui/collapsible";
   import { SidebarGroup, SidebarGroupContent, SidebarMenuItem } from "$lib/components/ui/sidebar";
-  import { ENTRY_ROOT } from "$lib/plugin/types";
   import { groupAnnotations } from "$lib/utils/group-annotation.svelte";
 
   import type { AnnotationGroup } from "$lib/context/annotation-context";
@@ -22,10 +21,8 @@
     view: "sidebar" | "popover";
     db?: AnnotationsIndexedDB;
 
-    currentFrame: number;
-
     modalityShape: string;
-    // categories: IConfigValue[];
+    categories: IConfigValue[];
 
     // onSelectCategory: (category?: string) => void;
     selectedCategory: string | undefined;
@@ -38,8 +35,8 @@
   let {
     view,
     db,
-    currentFrame,
     modalityShape,
+    categories,
     // onSelectCategory,
     selectedCategory,
     context,
@@ -52,14 +49,6 @@
   // Variables
   let openCategory = $state(true);
   let currentModeIsSameAsShape = $derived($currentMode == modalityShape);
-
-  let categories = $derived(
-    new Map<string, IConfigValue[]>(
-      Object.entries(context.config)
-        .filter(([shapeType, _]) => shapeType != ENTRY_ROOT)
-        .map(([shapeType, { values }]) => [shapeType, values]),
-    ),
-  );
 
   // Automatically expand all categories when categories prop changes, but allow manual toggles
   let manualToggleStates = $state<Record<string, boolean>>({});
@@ -162,8 +151,8 @@
   } {
     const filteredAnnotations = annotations.filter(
       (annotation) =>
-        currentFrame >= annotation.shape.start &&
-        currentFrame <= annotation.shape.end &&
+        // currentFrame >= annotation.shape.start &&
+        // currentFrame <= annotation.shape.end &&
         annotation.shape.type == modalityShape,
     );
     const filteredGroupedAnnotations = groupAnnotations(filteredAnnotations);
@@ -187,7 +176,6 @@
           <Button variant="ghost" class="w-full justify-between">
             <!-- {formatShapeName(modalityShape)} -->
             {modalityShape}
-            formatShapeName
             <div
               class={cn("rotate-0 transition-transform duration-200", {
                 "rotate-90": openCategory,
@@ -223,7 +211,7 @@
         <Button variant="ghost" size="icon-sm">
           <ChevronRightIcon />
         </Button>
-        category name
+        {category.name}
 
         <!-- <VectorSqaureIcon
                 color={category.data.color}

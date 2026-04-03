@@ -3,7 +3,6 @@
 
   import ImageOverlay from "$lib/components/app/overlay/image-overlay.svelte";
   import ImagePropertiesSidebar from "$lib/components/app/sidebar/image-properties-sidebar.svelte";
-  import ImageSidebar from "$lib/components/app/sidebar/image-sidebar.svelte";
   import Button from "$lib/components/ui/button/button.svelte";
   import PopoverContent from "$lib/components/ui/popover/popover-content.svelte";
   import PopoverTrigger from "$lib/components/ui/popover/popover-trigger.svelte";
@@ -20,6 +19,8 @@
   import type { IActivityContext } from "$lib/context/context";
   import type { ImageAnnotationObject, ImageShape } from "$lib/context/image-annotation-context";
   import { annotationsIndexedDB, type AnnotationsIndexedDB } from "$lib/plugin/indexedDB";
+  import ImageAnnotationSidebar from "../sidebar/image-annotation-sidebar.svelte";
+  import CategoryProperties from "../sidebar/properties/category-properties.svelte";
 
   // Props
   interface Props {
@@ -83,6 +84,9 @@
 
   let annotationId = $derived<string | undefined>($selectedAnnotation ? $selectedAnnotation.metadata.id : undefined);
   let annotationValue: AnnotationValue = $derived($selectedAnnotation?.value || {});
+
+  let annotationSidebarResizablePercentage = $state<number>(16);
+  let annotationSidebarWidthRem = $derived<number>(annotationSidebarResizablePercentage + 3);
 
   onMount(async () => {
     tools = [
@@ -179,7 +183,32 @@
 
     <PopoverContent class="min-w-80 p-0">
       <div class="h-auto max-h-86 overflow-y-auto p-2">
-        <ImageSidebar />
+        {#if annotationValue.category}
+          <CategoryProperties
+            selectedCategory={annotationValue.category}
+            {annotationValue}
+            onSelectCategory={(selectedCategory) => {
+              console.log("selected category", selectedCategory);
+            }}
+            onEditValue={() => console.log("edit value")}
+            disabled={false}
+          />
+          <!--  if (!selectedCategory) selectAnnotation();
+               annotationValue = {
+                ...annotationValue,
+                 category: selectedCategory,
+              };
+               onEditValue({ category: annotationValue.category }, $currentMode); -->
+          <!-- onEditValue={(value) => value && console.log("edit value", value)} -->
+        {:else}
+          <ImageAnnotationSidebar
+            view="popover"
+            sidebarWidthRem={annotationSidebarWidthRem}
+            db={annotationsIDB}
+            {annotationValue}
+            {context}
+          />
+        {/if}
       </div>
 
       <div class="flex justify-end gap-2 p-2">
@@ -198,7 +227,13 @@
         <ResizablePaneGroup direction="horizontal">
           <!-- LEFT SIDEBAR -->
           <ResizablePane minSize={14} defaultSize={20} maxSize={20}>
-            <ImageSidebar view="sidebar" db={annotationsIDB} {context} {annotationValue} />
+            <ImageAnnotationSidebar
+              view="sidebar"
+              sidebarWidthRem={annotationSidebarWidthRem}
+              db={annotationsIDB}
+              {context}
+              {annotationValue}
+            />
           </ResizablePane>
 
           <ResizableHandle withHandle />
