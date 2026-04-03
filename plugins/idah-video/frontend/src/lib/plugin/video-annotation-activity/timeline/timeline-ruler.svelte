@@ -17,8 +17,14 @@
   }
   let { onSelectFrameX }: Props = $props();
 
-  // Variables
+  // Variables::Current Frames Ranges
   let startFrameIndexOfCurrentFrameRange = $derived($currentFrameRange[0]);
+  let endFrameIndexOfCurrentFrameRange = $derived($currentFrameRange[1]);
+  let middleFrameIndexOfCurrentFrameRange = $derived(
+    Math.floor((startFrameIndexOfCurrentFrameRange + endFrameIndexOfCurrentFrameRange) / 2),
+  );
+
+  // Variables::Timeline Ruler
   let rulerScale = $derived<number>(Math.floor($timelineRulerWidth / $timelineCellWidth));
   let frameRanges = $derived(getFrameRange($currentFrameRange[0], $currentFrameRange[1]));
   let majorTicks = $derived.by<Array<number>>(() => {
@@ -48,15 +54,20 @@
       setSelectedFrameX(mouseX);
 
       /**
-       * If currentFrame is out of current frame range
-       * - Shift the current frame range to the right
+       * If current frame is out of current frame range
+       * If current frame is at the middle of current frame range,
+       * - shift the current frame range to the right by 1
+       *
+       * If current frame is greater than the middle of current frame range,
+       * - shift the current frame range to the right by 1, until current frame is at the middle
        */
-
-      /** The last frame index of current frame range (0-based), e.g. [0, 48] will return 48 */
-      let endFrameIndexOfCurrentFrameRange = $currentFrameRange[1];
-      if ($currentFrame > endFrameIndexOfCurrentFrameRange + 1) {
-        const newStart = $currentFrame - Math.floor(rulerScale / 2);
-        const newEnd = newStart + rulerScale;
+      if ($currentFrame === middleFrameIndexOfCurrentFrameRange) {
+        const newStart = startFrameIndexOfCurrentFrameRange + 1;
+        const newEnd = endFrameIndexOfCurrentFrameRange + 1;
+        setCurrentFrameRange([newStart, newEnd]);
+      } else if ($currentFrame > middleFrameIndexOfCurrentFrameRange) {
+        const newStart = startFrameIndexOfCurrentFrameRange + 1;
+        const newEnd = endFrameIndexOfCurrentFrameRange + 1;
         setCurrentFrameRange([newStart, newEnd]);
       }
     }
