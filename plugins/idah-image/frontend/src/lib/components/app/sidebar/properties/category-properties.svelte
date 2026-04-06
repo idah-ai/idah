@@ -2,8 +2,6 @@
   import { getContext } from "svelte";
 
   import BooleanProperty from "$lib/components/app/sidebar/properties/boolean-property.svelte";
-  import PolygonCircleIcon from "$lib/components/app/sidebar/properties/icon/polygon-circle-icon.svelte";
-  import VectorSquareIcon from "$lib/components/app/sidebar/properties/icon/vector-square-icon.svelte";
   import IntegerProperty from "$lib/components/app/sidebar/properties/integer-property.svelte";
   import MultiSelectProperty from "$lib/components/app/sidebar/properties/multi-select-property.svelte";
   import { visibilityFullfilled } from "$lib/components/app/sidebar/properties/property.utils";
@@ -12,6 +10,9 @@
   import Label from "$lib/components/ui/label/label.svelte";
   import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger } from "$lib/components/ui/select";
   import Separator from "$lib/components/ui/separator/separator.svelte";
+
+  import PolygonCircleIcon from "$lib/plugin/icon/polygon-circle-icon.svelte";
+  import VectorSquareIcon from "$lib/plugin/icon/vector-square-icon.svelte";
 
   import { idbUpdatedAt } from "$lib/plugin/store/idb-store.svelte";
   import { currentMode, selectedAnnotationGroup } from "$lib/plugin/store/store";

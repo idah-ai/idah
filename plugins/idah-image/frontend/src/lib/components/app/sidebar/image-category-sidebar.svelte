@@ -1,14 +1,20 @@
 <script lang="ts">
-  import { ChevronRightIcon } from "lucide-svelte";
+  import { ChevronRightIcon, CircleSmallIcon, PlusIcon } from "lucide-svelte";
 
-  import { currentMode } from "$lib/plugin/store/store";
+  import { currentMode, selectedAnnotation } from "$lib/plugin/store/store";
+  import { IMAGE_BOUNDING_BOX, IMAGE_POLYGON } from "$lib/plugin/types";
   import { cn } from "$lib/utils";
+  import { groupAnnotations } from "$lib/utils/group-annotation.svelte";
   import { humanize } from "$lib/utils/string";
 
+  import AnnotationCountBadge from "$lib/components/app/sidebar/badge/annotation-count-badge.svelte";
+  import ImageCategoryName from "$lib/components/app/sidebar/category/image-category-name.svelte";
   import Button from "$lib/components/ui/button/button.svelte";
   import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "$lib/components/ui/collapsible";
   import { SidebarGroup, SidebarGroupContent, SidebarMenuItem } from "$lib/components/ui/sidebar";
-  import { groupAnnotations } from "$lib/utils/group-annotation.svelte";
+
+  import PolygonCircleIcon from "$lib/plugin/icon/polygon-circle-icon.svelte";
+  import VectorSquareIcon from "$lib/plugin/icon/vector-square-icon.svelte";
 
   import type { AnnotationGroup } from "$lib/context/annotation-context";
   import type { CategoryDefinition } from "$lib/context/category-context";
@@ -173,9 +179,8 @@
     <Collapsible bind:open={openCategory}>
       <CollapsibleTrigger class="w-full">
         {#snippet child({ props })}
-          <Button variant="ghost" class="w-full justify-between">
-            <!-- {formatShapeName(modalityShape)} -->
-            {modalityShape}
+          <Button variant="ghost" class="w-full justify-between" {...props}>
+            {formatShapeName(modalityShape)}
             <div
               class={cn("rotate-0 transition-transform duration-200", {
                 "rotate-90": openCategory,
@@ -205,26 +210,129 @@
   parent: string[] = [],
   level: number = 1,
 )}
-  <Collapsible>
-    <CollapsibleTrigger>
-      <SidebarMenuItem class="flex h-8 w-full flex-row items-center gap-1">
-        <Button variant="ghost" size="icon-sm">
-          <ChevronRightIcon />
-        </Button>
-        {category.name}
+  <Collapsible open={openStates[category.id] || false}>
+    {@const count = 0}
+    <!-- {@const { count } = groupFilteredAnnotations(annotations)} -->
+    {@const hasAnnotations = count > 0}
 
-        <!-- <VectorSqaureIcon
-                color={category.data.color}
-                class={cn({
-                  hidden: category.requiredNested,
-                })}
-              /> -->
+    <CollapsibleTrigger
+      class={cn("text-secondary-foreground flex w-full rounded-md text-xs", {
+        "bg-secondary border-primary border": selectedCategory == category.id,
+        "hover:bg-primary-foreground hover:dark:bg-accent cursor-pointer": !category.requiredNested,
+        "hover:bg-accent cursor-pointer": !currentModeIsSameAsShape,
+      })}
+      onclick={(e) => toggleCategory(e, category)}
+    >
+      <div class="flex w-full items-center" style:padding-left="{level - 1}rem">
+        <SidebarMenuItem class="flex h-8 w-full flex-row items-center gap-1">
+          {@const hasChildren = !!category.nestedCategories}
+          {@const isSelectingCategory = selectedCategory == category.id}
+          {@const showChevronRightIcon = hasChildren || hasAnnotations}
 
-        <!-- <AnnotationCountBadge class="mr-2" count={1} /> -->
-      </SidebarMenuItem>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            disabled={currentModeIsSameAsShape}
+            class={cn("p-0", {
+              "opacity-0": !showChevronRightIcon || $selectedAnnotation?.metadata.id,
+            })}
+            onclick={(e) => {
+              e.stopPropagation();
+
+              if (category.nestedCategories || showChevronRightIcon) {
+                manualToggleStates = {
+                  ...manualToggleStates,
+                  [category.id]: !openStates[category.id],
+                };
+              }
+            }}
+          >
+            {#if view === "sidebar"}
+              {#if currentModeIsSameAsShape}
+                <!-- TOOLS::BOUNDING BOX / POLYGON / OTHER SHAPES -->
+                {#if isSelectingCategory}
+                  <PlusIcon class="text-primary" strokeWidth={4} />
+                {:else if hasChildren}
+                  <ChevronRightIcon
+                    class={cn({
+                      "rotate-90": openStates[category.id],
+                      "stroke-blue-300": isSelectingCategory,
+                      "stroke-gray-500": !isSelectingCategory,
+                    })}
+                  />
+                {:else}
+                  <CircleSmallIcon class="fill-gray-400 stroke-gray-400" />
+                {/if}
+              {:else}
+                <!-- TOOLS::VISUAL -->
+                <ChevronRightIcon
+                  class={cn({
+                    "opacity-0": !showChevronRightIcon,
+                    "rotate-90": openStates[category.id],
+                    "stroke-blue-300": isSelectingCategory,
+                    "stroke-gray-500": !isSelectingCategory,
+                  })}
+                />
+              {/if}
+            {/if}
+
+            {#if view === "popover"}
+              {#if hasChildren}
+                <ChevronRightIcon
+                  class={cn({
+                    "rotate-90": openStates[category.id],
+                  })}
+                />
+              {:else}
+                <CircleSmallIcon class="fill-gray-400 stroke-gray-400" />
+              {/if}
+            {/if}
+          </Button>
+
+          {#if modalityShape === IMAGE_BOUNDING_BOX}
+            <VectorSquareIcon
+              color={category.data?.color}
+              class={cn({
+                hidden: category.requiredNested,
+              })}
+            />
+          {:else if modalityShape === IMAGE_POLYGON}
+            <PolygonCircleIcon
+              color={category.data?.color}
+              class={cn({
+                hidden: category.requiredNested,
+              })}
+            />
+          {/if}
+          <ImageCategoryName name={category.name} />
+
+          {#if view === "sidebar"}
+            <AnnotationCountBadge class="mr-2" {count} />
+          {/if}
+        </SidebarMenuItem>
+      </div>
     </CollapsibleTrigger>
 
-    <CollapsibleContent>
+    <CollapsibleContent hidden={!openStates[category.id]}>
+      <!-- {#key $idbUpdatedAt}
+        {#if !currentModeIsSameAsShape && db && category}
+          {#await db.getAllIndex("category", category.id) then annotations}
+            {@const { groups: filteredAnnotationGroups } = groupFilteredAnnotations(annotations)}
+            {#each filteredAnnotationGroups as annotationGroup (annotationGroup.groupId)}
+              <AnnotationGroupNode
+                {category}
+                {annotationGroup}
+                level={level + 1}
+                {onSelectAnnotationGroup}
+                {onVisibility}
+                {onEditability}
+                {onDeleteAnnotation}
+              />
+            {/each}
+          {/await}
+        {/if}
+      {/key}   -->
+
       {#if subCategories}
         {#each subCategories as subCategory (subCategory.id)}
           {@render CategoryNode(
