@@ -1,9 +1,16 @@
-import { KeyMapBuilder, BuildKeymap } from "$idah/shortcut/key-map-builder";
+import { BuildKeymap, KeyMapBuilder } from "$idah/shortcut/key-map-builder";
 import { ShortcutManager } from "$idah/shortcut/shortcut-manager";
 
-import { DEFAULT_MODE, IDAH_VISUAL, IDAH_VIDEO_POLYGON, IDAH_VIDEO_BOUNDING_BOX, IDAH_NOTE, IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP } from "$lib/plugin/type";
+import {
+  DEFAULT_MODE,
+  IDAH_NOTE,
+  IDAH_VIDEO_BOUNDING_BOX,
+  IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP,
+  IDAH_VIDEO_POLYGON,
+  IDAH_VISUAL,
+} from "$lib/plugin/type";
 
-import type { IActivityContext, ICommands } from "$idah/context/activity-context";
+import type { ICommands } from "$idah/context/activity-context";
 import type Video from "$lib/plugin/video-annotation-activity/video/video.svelte";
 
 // Mode-related shortcut context
@@ -25,10 +32,18 @@ type SelectionKeyMapContext = {
 };
 
 const injectCommonShortcuts = (context: KeyMapContext) => {
-  const flushAction = () => { context.flush(); };
-  const redoAction = () => { context.commands.redo(); };
-  const undoAction = () => { context.commands.undo(); };
-  const toggleCommand = () => { context.toggleCommandCB(); };
+  const flushAction = () => {
+    context.flush();
+  };
+  const redoAction = () => {
+    context.commands.redo();
+  };
+  const undoAction = () => {
+    context.commands.undo();
+  };
+  const toggleCommand = () => {
+    context.toggleCommandCB();
+  };
 
   const enterMode = (mode: string, replace: boolean = false) => {
     return () => {
@@ -59,9 +74,15 @@ const injectCommonShortcuts = (context: KeyMapContext) => {
 };
 
 const buildVisualModeShortcuts = (context: KeyMapContext) => {
-  const togglePlay = () => { context.player()?.togglePlay(); };
-  const nextFrame = () => { context.player()?.nextFrame(); };
-  const previousFrame = () => { context.player()?.previousFrame(); };
+  const togglePlay = () => {
+    context.player()?.togglePlay();
+  };
+  const nextFrame = () => {
+    context.player()?.nextFrame();
+  };
+  const previousFrame = () => {
+    context.player()?.previousFrame();
+  };
 
   const defaultFrameStep = 10;
 
@@ -75,8 +96,12 @@ const buildVisualModeShortcuts = (context: KeyMapContext) => {
     context.player()?.previousFrame(frameStep);
   };
 
-  const startFrame = () => { context.player()?.seekToFrame(0); };
-  const endFrame = () => { context.player()?.seekToFrame(context.player()?.getFrames() || 0); };
+  const startFrame = () => {
+    context.player()?.seekToFrame(0);
+  };
+  const endFrame = () => {
+    context.player()?.seekToFrame(context.player()?.getFrames() || 0);
+  };
 
   return (b: KeyMapBuilder) => {
     b.on(null, "Space", togglePlay, "Toggle Play", "Play/Pause the video player");
@@ -106,9 +131,15 @@ const buildBoundingBoxModeShortcuts = (context: KeyMapContext) => {
 };
 
 const buildPolygonModeShortcuts = (context: KeyMapContext) => {
-  const togglePlay = () => { context.player()?.togglePlay(); };
-  const nextFrame = () => { context.player()?.nextFrame(); };
-  const previousFrame = () => { context.player()?.previousFrame(); };
+  const togglePlay = () => {
+    context.player()?.togglePlay();
+  };
+  const nextFrame = () => {
+    context.player()?.nextFrame();
+  };
+  const previousFrame = () => {
+    context.player()?.previousFrame();
+  };
 
   const defaultFrameStep = 10;
 
@@ -122,8 +153,12 @@ const buildPolygonModeShortcuts = (context: KeyMapContext) => {
     context.player()?.previousFrame(frameStep);
   };
 
-  const startFrame = () => { context.player()?.seekToFrame(0); };
-  const endFrame = () => { context.player()?.seekToFrame(context.player()?.getFrames() || 0); };
+  const startFrame = () => {
+    context.player()?.seekToFrame(0);
+  };
+  const endFrame = () => {
+    context.player()?.seekToFrame(context.player()?.getFrames() || 0);
+  };
 
   return (b: KeyMapBuilder) => {
     b.on(null, "Space", togglePlay, "Toggle Play", "Play/Pause the video player");
@@ -187,19 +222,19 @@ const buildOnSelectBoundingBoxModeShortcuts = (context: SelectionKeyMapContext) 
   };
 
   const toggleHidden = () => {
-    if (!context.selectedId) return
+    if (!context.selectedId) return;
 
-    context.commands.run("annotation.toggleHidden", { id: context.selectedId });
+    context.commands.run("annotation.toggleVisibility", { id: context.selectedId });
   };
 
   const toggleLocked = () => {
-    if (!context.selectedId) return
+    if (!context.selectedId) return;
 
-    context.commands.run("annotation.toggleLocked", { id: context.selectedId });
+    context.commands.run("annotation.toggleEditability", { id: context.selectedId });
   };
 
   const splitAnnotation = () => {
-    if (!context.selectedId) return
+    if (!context.selectedId) return;
 
     const currentFrame = context.getCurrentFrame();
     context.commands.run("annotation.split", { id: context.selectedId, at: currentFrame });
@@ -226,20 +261,20 @@ const buildOnSelectPolygonModeShortcuts = (context: SelectionKeyMapContext) => {
   };
 
   const toggleHidden = () => {
-    if (!context.selectedId) return
+    if (!context.selectedId) return;
 
-    context.commands.run("annotation.toggleHidden", { id: context.selectedId });
+    context.commands.run("annotation.toggleVisibility", { id: context.selectedId });
   };
 
   const toggleLocked = () => {
-    if (!context.selectedId) return
+    if (!context.selectedId) return;
 
-    context.commands.run("annotation.toggleLocked", { id: context.selectedId });
+    context.commands.run("annotation.toggleEditability", { id: context.selectedId });
   };
 
   const splitAnnotation = () => {
-    if (!context.selectedId) return
-    
+    if (!context.selectedId) return;
+
     const currentFrame = context.getCurrentFrame();
     context.commands.run("annotation.split", { id: context.selectedId, at: currentFrame });
   };

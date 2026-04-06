@@ -54,7 +54,6 @@
   import Video from "$lib/plugin/video-annotation-activity/video/video.svelte";
 
   import {
-    type InterpolatedVertex,
     type Point,
     type VideoAnnotationObject,
     type VideoFrameSelection,
@@ -97,8 +96,8 @@
   let annotationValue: AnnotationValue = $derived($selectedAnnotation?.value || {});
 
   // Variables::Timeline
+  let timelineHeight = $state<number>(0);
   let zoom = $state(85);
-  let scale = $state(1);
 
   let annotationsIDB: AnnotationsIndexedDB | undefined = $state();
   let volume = $state({ level: 0, muted: false });
@@ -111,16 +110,9 @@
   }[] = $state([]);
 
   let commandOpen = $state(false);
-
-  let allHidden: boolean = $state(false);
-  let allLocked: boolean = $state(false);
-
   let overlay: SvgOverlay;
   let showPopOver = $state(false);
   let videoResizedAt = $state(new Date());
-
-  let setVisibility: (hidden: boolean, annotation?: VideoAnnotationObject) => void = $state(() => {});
-  let setEditability: (locked: boolean, annotation?: VideoAnnotationObject) => void = $state(() => {});
 
   $effect(() => {
     if (typeof window === "undefined") return;
@@ -232,18 +224,14 @@
         idb?.getAllIndex("type", ENTRY_ROOT).then((anns) => ($entryRoot = anns[0]));
 
         /** Register commands */
-        const commands = registerCommands({
+        registerCommands({
           context,
           getDb: () => annotationsIDB,
           updaters: {
-            setAllHidden: (v) => (allHidden = v),
-            setAllLocked: (v) => (allLocked = v),
             setAnnotationValue: (v) => (annotationValue = v),
             selectAnnotation: (v) => selectAnnotation(v),
           },
         });
-        setVisibility = commands.setVisibility;
-        setEditability = commands.setEditability;
       });
     }, console.error);
 
@@ -573,16 +561,6 @@
     });
   }
 
-  // Helper function to normalize interpolated points to Point[]
-  function normalizePoints(points: Point[] | InterpolatedVertex[] | undefined): Point[] | undefined {
-    if (!points) return undefined;
-    // Check if first element is InterpolatedVertex by checking if it has a 'point' property
-    if (points.length > 0 && typeof points[0] === "object" && "point" in points[0]) {
-      return (points as InterpolatedVertex[]).map((item) => item.point);
-    }
-    return points as Point[];
-  }
-
   async function reSelectCategory(reselectedCategoryId: string) {
     if (!$selectedAnnotationGroup) return;
 
@@ -591,13 +569,6 @@
       groupId: $selectedAnnotationGroup.groupId,
       categoryIdToBeUpdate: reselectedCategoryId,
     });
-  }
-
-  /** TIMELINE */
-  let timelineHeight = $state<number>(0);
-
-  function onTimelineResize(resizeValue: number) {
-    timelineHeight = window.innerHeight * (resizeValue / 100);
   }
 </script>
 
@@ -656,8 +627,6 @@
             onSelectAnnotation={selectAnnotation}
             onSelectAnnotationGroup={() => {}}
             onDeleteAnnotation={deleteAnnotation}
-            onEditability={setEditability}
-            onVisibility={setVisibility}
             {context}
           />
         {/if}
@@ -708,8 +677,6 @@
               onSelectAnnotation={selectAnnotation}
               onSelectAnnotationGroup={selectAnnotationGroup}
               onDeleteAnnotation={deleteAnnotation}
-              onEditability={setEditability}
-              onVisibility={setVisibility}
               {context}
             />
           </ResizablePane>
@@ -773,39 +740,8 @@
           </AnnotationFooterToolbar>
 
           {#await annotations_promise then annotations}
-            <Timeline
-              {annotations}
-              {timelineHeight}
-              onSeekFrame={seekToFrame}
-              onToggleVisibility={() => {}}
-              onToggleEditability={() => {}}
-              onDeleteAnnotations={() => {}}
-            />
+            <Timeline {annotations} {timelineHeight} onSeekFrame={seekToFrame} />
           {/await}
-
-          <!-- <TimelineTable
-            bind:this={timelineTable}
-            {annotations_promise}
-            {scale}
-            {zoom}
-            {currentFrame}
-            {totalFrames}
-            {allHidden}
-            {allLocked}
-            {isPlaying}
-            onSeekFrame={seekToFrame}
-            onEditability={setEditability}
-            onVisibility={setVisibility}
-            onDeleteAnnotation={deleteAnnotation}
-            onSelectAnnotation={selectAnnotation}
-            onSelectGroupAtFrame={selectAnnotationGroup}
-            onScaleChange={(s) => {
-              scale = s;
-            }}
-            onZoomChange={(z) => {
-              zoom = z;
-            }}
-          /> -->
         </AnnotationFooter>
       </ResizablePane>
     </ResizablePaneGroup>
