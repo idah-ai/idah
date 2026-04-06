@@ -11,6 +11,7 @@
   } from "$lib/plugin/video-annotation-activity/timeline/timeline-context-menu.svelte";
   import TimelineHeaderRow from "$lib/plugin/video-annotation-activity/timeline/timeline-header-row.svelte";
   // import TimelineHorizontalScrollbar from "$lib/plugin/video-annotation-activity/timeline/timeline-horizontal-scrollbar.svelte";
+  import TimelineEmptyAnnotations from "$lib/plugin/video-annotation-activity/timeline/timeline-empty-annotations.svelte";
   import TimelineRowActions from "$lib/plugin/video-annotation-activity/timeline/timeline-row-actions.svelte";
   import TimelineRowGroup from "$lib/plugin/video-annotation-activity/timeline/timeline-row-group.svelte";
   import TimelineRowHeader from "$lib/plugin/video-annotation-activity/timeline/timeline-row-header.svelte";
@@ -47,18 +48,8 @@
     annotations: VideoAnnotationObject[];
     timelineHeight: number;
     onSeekFrame: (frame: number) => void;
-    onToggleVisibility: (selectedGroupId?: string) => void;
-    onToggleEditability: (selectedGroupId?: string) => void;
-    onDeleteAnnotations: (selectedGroupId?: string) => void;
   }
-  let {
-    annotations,
-    timelineHeight,
-    onSeekFrame,
-    onToggleVisibility,
-    onToggleEditability,
-    onDeleteAnnotations,
-  }: Props = $props();
+  let { annotations, timelineHeight, onSeekFrame }: Props = $props();
 
   // Context
   let context: IActivityContext = getContext("context");
@@ -251,6 +242,30 @@
       },
     };
   }
+
+  function toggleAllAnnotationsVisibility() {
+    context.commands.run("annotation.toggleAllVisibility");
+  }
+
+  function toggleAllAnnotationsEditability() {
+    context.commands.run("annotation.toggleAllEditability");
+  }
+
+  function deleteAllAnnotations() {
+    context.commands.run("annotation.deleteAll");
+  }
+
+  function toggleAnnotationGroupVisibility(groupId: string) {
+    context.commands.run("annotation.toggleGroupVisibility", { groupId });
+  }
+
+  function toggleAnnotationGroupEditability(groupId: string) {
+    context.commands.run("annotation.toggleGroupEditability", { groupId });
+  }
+
+  function deleteAnnotationGroup(groupId: string) {
+    context.commands.run("annotation.deleteGroup", { groupId });
+  }
 </script>
 
 <div
@@ -278,9 +293,9 @@
         alwaysShow
         {allAnnotationsHidden}
         {allAnnotationsLocked}
-        {onToggleVisibility}
-        {onToggleEditability}
-        onClickDelete={onDeleteAnnotations}
+        onToggleVisibility={toggleAllAnnotationsVisibility}
+        onToggleEditability={toggleAllAnnotationsEditability}
+        onClickDelete={deleteAllAnnotations}
       />
     </TimelineRowHeader>
 
@@ -309,15 +324,17 @@
                 mode="single"
                 allAnnotationsHidden={allAnnotationsInGroupHidden}
                 allAnnotationsLocked={allAnnotationsInGroupLocked}
-                onToggleVisibility={() => onToggleVisibility(annotationGroup.groupId)}
-                onToggleEditability={() => onToggleEditability(annotationGroup.groupId)}
-                onClickDelete={() => onDeleteAnnotations(annotationGroup.groupId)}
+                onToggleVisibility={() => toggleAnnotationGroupVisibility(annotationGroup.groupId)}
+                onToggleEditability={() => toggleAnnotationGroupEditability(annotationGroup.groupId)}
+                onClickDelete={() => deleteAnnotationGroup(annotationGroup.groupId)}
               />
             </TimelineRowHeader>
 
             <TimelineCells {annotationGroup} />
           </TimelineRowGroup>
         </TimelineRow>
+      {:else}
+        <TimelineEmptyAnnotations />
       {/each}
     </div>
   </ScrollArea>
