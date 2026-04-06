@@ -10,6 +10,7 @@
     type TimelineContextMenuMenu,
   } from "$lib/plugin/video-annotation-activity/timeline/timeline-context-menu.svelte";
   import TimelineHeaderRow from "$lib/plugin/video-annotation-activity/timeline/timeline-header-row.svelte";
+  // import TimelineHorizontalScrollbar from "$lib/plugin/video-annotation-activity/timeline/timeline-horizontal-scrollbar.svelte";
   import TimelineRowActions from "$lib/plugin/video-annotation-activity/timeline/timeline-row-actions.svelte";
   import TimelineRowGroup from "$lib/plugin/video-annotation-activity/timeline/timeline-row-group.svelte";
   import TimelineRowHeader from "$lib/plugin/video-annotation-activity/timeline/timeline-row-header.svelte";
@@ -26,6 +27,7 @@
   import {
     currentFrameRange,
     deselectFrameX,
+    framePerScale,
     selectedFrameX,
     selectFirstFrameX,
     setCurrentFrameRange,
@@ -73,6 +75,7 @@
   let annotationGroups = $derived(groupAnnotations(annotations));
   let showVerticalLine = $derived(clientMouseX >= TIMELINE_ROW_HEADER_WIDTH);
   let showSelectedVerticalLine = $derived(Number($selectedFrameX) >= TIMELINE_ROW_HEADER_WIDTH);
+  let showHorizontalScrollbar = $state<boolean>(false);
   let contextMenu = $state<ITimelineContextMenu>({ visible: false, x: 0, y: 0, menus: {} });
   let wheelThrottling = $state<boolean>(false);
 
@@ -98,6 +101,11 @@
     return `${foundCategory.label}-${lastPartOfGroupId}`;
   }
 
+  function handleMouseLeave() {
+    showHorizontalScrollbar = false;
+    showVerticalLine = false;
+  }
+
   function handleMouseMove(event: MouseEvent) {
     const rect = timeline.getBoundingClientRect();
     clientMouseX = event.clientX - rect.left;
@@ -107,14 +115,14 @@
     const [start, end] = $currentFrameRange;
     const rangeSpan = end - start;
     let newStart: number;
-    if (start + shiftRangeSpan <= $totalFrames - rangeSpan) {
+    if ((start + shiftRangeSpan) * $framePerScale <= $totalFrames - rangeSpan) {
       newStart = start + shiftRangeSpan;
     } else {
       newStart = $totalFrames - rangeSpan;
     }
 
     let newEnd: number;
-    if (end + shiftRangeSpan <= $totalFrames) {
+    if ((end + shiftRangeSpan) * $framePerScale <= $totalFrames) {
       newEnd = end + shiftRangeSpan;
     } else {
       newEnd = $totalFrames;
@@ -124,6 +132,7 @@
   }
 
   function scrollLeft(shiftRangeSpan: number) {
+    // TODO: I think this function is not working as expected
     const [start, end] = $currentFrameRange;
 
     let newStart = start - shiftRangeSpan;
@@ -250,7 +259,8 @@
   bind:this={timeline}
   class="relative w-full max-w-screen"
   onmousemove={handleMouseMove}
-  onmouseleave={() => (showVerticalLine = false)}
+  onmouseenter={() => (showHorizontalScrollbar = true)}
+  onmouseleave={handleMouseLeave}
 >
   <TimelineHeaderRow>
     <TimelineRowHeader>
@@ -319,6 +329,10 @@
 
   {#if showSelectedVerticalLine}
     <TimelineVerticalLine color="primary" positionX={$selectedFrameX} />
+  {/if}
+
+  {#if showHorizontalScrollbar}
+    <!-- <TimelineHorizontalScrollbar /> -->
   {/if}
 </div>
 
