@@ -21,10 +21,7 @@
   import { requiredFullfilled } from "$lib/plugin/video-annotation-activity/category-properties";
   import { registerCommands } from "$lib/plugin/video-annotation-activity/commands.svelte";
   import { annotationsIndexedDB, AnnotationsIndexedDB } from "$lib/plugin/video-annotation-activity/indexedDB";
-  import {
-    registerOnSelectShortcuts,
-    registerShortcuts,
-  } from "$lib/plugin/video-annotation-activity/shortcut";
+  import { registerOnSelectShortcuts, registerShortcuts } from "$lib/plugin/video-annotation-activity/shortcut";
   import {
     boundingBoxes,
     entryRoot,
@@ -228,32 +225,27 @@
     context.tools.setTools(tools);
     $effect(() => context.tools.setTool($currentMode));
 
-    annotationsIndexedDB(["idah-video", "entry", entryId].join(":")).then(
-      (idb) => {
-        annotationsIDB = idb;
-        fetchAnnotations(idb).then(() => {
-          // quick fix if unsynced data, though we dont have way to send it anyway for now if so
-          idb
-            ?.getAllIndex("type", ENTRY_ROOT)
-            .then((anns) => ($entryRoot = anns[0]));
+    annotationsIndexedDB(["idah-video", "entry", entryId].join(":")).then((idb) => {
+      annotationsIDB = idb;
+      fetchAnnotations(idb).then(() => {
+        // quick fix if unsynced data, though we dont have way to send it anyway for now if so
+        idb?.getAllIndex("type", ENTRY_ROOT).then((anns) => ($entryRoot = anns[0]));
 
-          /** Register commands */
-          const commands = registerCommands({
-            context,
-            getDb: () => annotationsIDB,
-            updaters: {
-              setAllHidden: (v) => (allHidden = v),
-              setAllLocked: (v) => (allLocked = v),
-              setAnnotationValue: (v) => (annotationValue = v),
-              selectAnnotation: (v) => selectAnnotation(v),
-            },
-          });
-          setVisibility = commands.setVisibility;
-          setEditability = commands.setEditability;
+        /** Register commands */
+        const commands = registerCommands({
+          context,
+          getDb: () => annotationsIDB,
+          updaters: {
+            setAllHidden: (v) => (allHidden = v),
+            setAllLocked: (v) => (allLocked = v),
+            setAnnotationValue: (v) => (annotationValue = v),
+            selectAnnotation: (v) => selectAnnotation(v),
+          },
         });
-      },
-      console.error,
-    );
+        setVisibility = commands.setVisibility;
+        setEditability = commands.setEditability;
+      });
+    }, console.error);
 
     registerShortcuts({
       commands: context.commands,
@@ -268,39 +260,6 @@
       },
       zoom: { in: overlay.zoomIn, out: overlay.zoomOut },
     });
-
-    function fetchAnnotations(
-      db: AnnotationsIndexedDB,
-      page = 1,
-      itemsPerPage = 100,
-    ): Promise<void> {
-      return new Promise<void>((resolve, reject) => {
-        context.annotations
-          .list({ entry_id: entryId }, { page, itemsPerPage })
-          .then((res) => {
-            let d = res.map((ann) => {
-              const annotation: VideoAnnotationObject = {
-                shape: {
-                  ...(ann.dimensions as VideoShape),
-                  range: [ann.dimensions.start, ann.dimensions.end],
-                },
-                value: {
-                  ...ann.annotation,
-                  category: ann.annotation.category || "null",
-                },
-                metadata: {
-                  id: ann.id,
-                  updatedAt: ann.updated_at || new Date(),
-                  createdAt: ann.created_at || new Date(),
-                  metadata: ann.metadata || {},
-                },
-                hidden: false,
-                locked: false,
-                synced: true,
-              };
-              if (annotation.shape.type == ENTRY_ROOT) $entryRoot = annotation;
-              return annotation;
-            });
 
     function fetchAnnotations(db: AnnotationsIndexedDB, page = 1, itemsPerPage = 100): Promise<void> {
       return new Promise<void>((resolve, reject) => {
@@ -503,7 +462,7 @@
         commands: context.commands,
         selectedId: annotation.metadata.id,
         selectedGroupId: annotation.metadata.metadata?.group_id,
-        getCurrentFrame: () => currentFrame,
+        getCurrentFrame: () => $currentFrame,
       });
     } else {
       setCurrentModeTo(DEFAULT_MODE);
@@ -537,7 +496,7 @@
         commands: context.commands,
         selectedId: undefined,
         selectedGroupId: annotationGroup.groupId,
-        getCurrentFrame: () => currentFrame,
+        getCurrentFrame: () => $currentFrame,
       });
     } else {
       selectAnnotation(undefined);
@@ -773,7 +732,7 @@
                 onChangeFrame={seekToFrame}
                 target_container={() => player_container}
                 {videoResizedAt}
-                {isPlaying}
+                isPlaying={$isVideoPlaying}
               >
                 <!-- container context ?-->
                 <Video
