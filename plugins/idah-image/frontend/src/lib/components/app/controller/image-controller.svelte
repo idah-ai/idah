@@ -15,7 +15,7 @@
   import { currentMode, selectedAnnotation, selectedAnnotationGroup, setCurrentModeTo } from "$lib/plugin/store/store";
   import { DEFAULT_MODE, ENTRY_ROOT, IMAGE_BOUNDING_BOX, IMAGE_NOTE, IMAGE_POLYGON } from "$lib/plugin/types";
 
-  import type { AnnotationShape, AnnotationValue } from "$lib/context/annotation-context";
+  import type { AnnotationGroup, AnnotationShape, AnnotationValue } from "$lib/context/annotation-context";
   import type { IActivityContext } from "$lib/context/context";
   import type { ImageAnnotationObject, ImageShape, Point } from "$lib/context/image-annotation-context";
   import { annotationsIndexedDB, type AnnotationsIndexedDB } from "$lib/plugin/indexedDB";
@@ -115,21 +115,21 @@
         label: "Bounding Box",
         type: IMAGE_BOUNDING_BOX,
         iconName: "vector-square",
-        disabled: !["annotate", "review"].includes(context.workflowStep),
+        disabled: !editable,
         handleClick: () => context.commands.run("tools.bounding_box"),
       },
       {
         label: "Polygon",
         type: IMAGE_POLYGON,
         iconName: "polygon",
-        disabled: !["annotate", "review", "done"].includes(context.workflowStep), // Note: Only allow to create note when workflow steps are "annotate" and "review"
+        disabled: !editable,
         handleClick: () => context.commands.run("tools.polygon"),
       },
       {
         label: "Notes",
         type: IMAGE_NOTE,
         iconName: "message-circle",
-        disabled: !["annotate", "review", "done"].includes(context.workflowStep), // Note: Only allow to create note when workflow steps are "annotate" and "review"
+        disabled: !notable, // Note: Only allow to create note when workflow steps are "annotate" and "review"
         handleClick: () => context.commands.run("tools.note"),
       },
     ];
@@ -327,9 +327,102 @@
     });
   }
 
-  function handleLoad() {
-    width = image.naturalWidth;
-    height = image.naturalHeight;
+  function selectClosestAnnotation(annotationGroup: AnnotationGroup<ImageAnnotationObject>, frame: number) {
+    let closestAnnotation = annotationGroup.annotations[0];
+
+    if (annotationGroup.annotations.length === 1) {
+      selectAnnotation(closestAnnotation);
+      return closestAnnotation;
+    }
+
+    let minDiff = Infinity;
+
+    for (const annotation of annotationGroup.annotations) {
+      const start = annotation.shape.start;
+      const end = annotation.shape.end;
+
+      // If frame is within an annotation, that's the one
+      if (frame >= start && frame <= end) {
+        closestAnnotation = annotation;
+        minDiff = 0;
+        break;
+      }
+
+      // Calculate distance to nearest edge
+      const diff = Math.min(Math.abs(frame - start), Math.abs(frame - end));
+
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestAnnotation = annotation;
+      }
+    }
+
+    if (closestAnnotation) {
+      setCurrentModeTo(closestAnnotation.shape.type);
+      selectAnnotation(closestAnnotation);
+    }
+
+    return closestAnnotation;
+  }
+
+  function selectAnnotationGroup(annotationGroup: AnnotationGroup<ImageAnnotationObject>, selectedFrame?: number) {
+    $selectedAnnotationGroup = annotationGroup;
+
+    const firstAnnotation = annotationGroup.annotations[0];
+    /**
+     * Set mode to the annotation shape type when selecting an annotation
+     */
+    if (isNoteMode) {
+      return;
+    } else if (selectedFrame && firstAnnotation.shape.type && editable) {
+      /**
+       * If user select timeline row at specific frame (selectedFrame is exists)
+       * and workflow step is in review or annotation
+       */
+      setCurrentModeTo(firstAnnotation.shape.type);
+      selectClosestAnnotation(annotationGroup, selectedFrame);
+      // Register selection-specific shortcuts for the current mode
+      // registerOnSelectBoxModeShortcuts(context, undefined, annotationGroup.groupId, () => currentFrame);
+    } else {
+      selectAnnotation(undefined);
+      setCurrentModeTo(DEFAULT_MODE);
+    }
+  }
+
+  function setVisibility(hidden: boolean, annotation?: ImageAnnotationObject) {
+    if (annotation) {
+      annotation.hidden = hidden;
+      if (annotation.metadata.id == $selectedAnnotation?.metadata.id) $selectedAnnotation.hidden = hidden;
+      if (annotation.shape.type == ENTRY_ROOT) $entryRoot = annotation;
+
+      annotationsIDB?.upsertAnnotations([annotation]).then(() => setIndexedDBUpdatedAt());
+    } else {
+      if ($selectedAnnotation) $selectedAnnotation.hidden = hidden;
+      annotationsIDB?.updateAllVisibility(hidden).then(() => setIndexedDBUpdatedAt());
+    }
+  }
+
+  function setEditability(locked: boolean, annotation?: ImageAnnotationObject) {
+    if (annotation) {
+      annotation.locked = locked;
+      if (annotation.metadata.id == $selectedAnnotation?.metadata.id) $selectedAnnotation.locked = locked;
+      if (annotation.shape.type == ENTRY_ROOT) $entryRoot = annotation;
+      annotationsIDB?.upsertAnnotations([annotation]).then(() => setIndexedDBUpdatedAt());
+    } else {
+      if ($entryRoot) $entryRoot.locked = locked;
+      if ($selectedAnnotation) $selectedAnnotation.locked = locked;
+      annotationsIDB?.updateAllLock(locked).then(() => setIndexedDBUpdatedAt());
+    }
+  }
+
+  function deleteAnnotation(annotation: ImageAnnotationObject, frame?: number) {
+    if (!editable) return;
+
+    // if (frame != undefined) {
+    //   deleteSelection(annotation.metadata.id, frame);
+    // } else {
+    //   removeAnnotation(annotation.metadata.id);
+    // }
   }
 </script>
 
@@ -350,18 +443,16 @@
             selectedCategory={annotationValue.category}
             {annotationValue}
             onSelectCategory={(selectedCategory) => {
-              console.log("selected category", selectedCategory);
+              if (!selectedCategory) selectAnnotation();
+              annotationValue = {
+                ...annotationValue,
+                category: selectedCategory,
+              };
+              onEditValue({ category: annotationValue.category }, $currentMode);
             }}
-            onEditValue={() => console.log("edit value")}
+            onEditValue={(value) => value && onEditValue(value, $currentMode)}
             disabled={false}
           />
-          <!--  if (!selectedCategory) selectAnnotation();
-               annotationValue = {
-                ...annotationValue,
-                 category: selectedCategory,
-              };
-               onEditValue({ category: annotationValue.category }, $currentMode); -->
-          <!-- onEditValue={(value) => value && console.log("edit value", value)} -->
         {:else}
           <ImageAnnotationSidebar
             view="popover"
@@ -369,6 +460,11 @@
             db={annotationsIDB}
             {annotationValue}
             {context}
+            onSelectAnnotation={selectAnnotation}
+            onSelectAnnotationGroup={selectAnnotationGroup}
+            onDeleteAnnotation={deleteAnnotation}
+            onEditability={setEditability}
+            onVisibility={setVisibility}
           />
         {/if}
       </div>
@@ -395,6 +491,11 @@
               db={annotationsIDB}
               {context}
               {annotationValue}
+              onSelectAnnotation={selectAnnotation}
+              onSelectAnnotationGroup={selectAnnotationGroup}
+              onDeleteAnnotation={deleteAnnotation}
+              onEditability={setEditability}
+              onVisibility={setVisibility}
             />
           </ResizablePane>
 

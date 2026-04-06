@@ -8,6 +8,7 @@
   import { humanize } from "$lib/utils/string";
 
   import AnnotationCountBadge from "$lib/components/app/sidebar/badge/annotation-count-badge.svelte";
+  import ImageAnnotationGroupNode from "$lib/components/app/sidebar/category/image-annotation-group-node.svelte";
   import ImageCategoryName from "$lib/components/app/sidebar/category/image-category-name.svelte";
   import Button from "$lib/components/ui/button/button.svelte";
   import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "$lib/components/ui/collapsible";
@@ -15,6 +16,8 @@
 
   import PolygonCircleIcon from "$lib/plugin/icon/polygon-circle-icon.svelte";
   import VectorSquareIcon from "$lib/plugin/icon/vector-square-icon.svelte";
+
+  import { idbUpdatedAt } from "$lib/plugin/store/idb-store.svelte";
 
   import type { AnnotationGroup } from "$lib/context/annotation-context";
   import type { CategoryDefinition } from "$lib/context/category-context";
@@ -30,26 +33,26 @@
     modalityShape: string;
     categories: IConfigValue[];
 
-    // onSelectCategory: (category?: string) => void;
+    onSelectCategory: (category?: string) => void;
     selectedCategory: string | undefined;
     context: IActivityContext;
-    // onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<VideoAnnotationObject>) => void;
-    // onDeleteAnnotation: (annotation: VideoAnnotationObject) => void;
-    // onEditability: (locked: boolean, annotation?: VideoAnnotationObject) => void;
-    // onVisibility: (hidden: boolean, annotation?: VideoAnnotationObject) => void;
+    onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<ImageAnnotationObject>) => void;
+    onDeleteAnnotation: (annotation: ImageAnnotationObject) => void;
+    onEditability: (locked: boolean, annotation?: ImageAnnotationObject) => void;
+    onVisibility: (hidden: boolean, annotation?: ImageAnnotationObject) => void;
   }
   let {
     view,
     db,
     modalityShape,
     categories,
-    // onSelectCategory,
+    onSelectCategory,
     selectedCategory,
     context,
-    // onSelectAnnotationGroup,
-    // onDeleteAnnotation,
-    // onEditability,
-    // onVisibility,
+    onSelectAnnotationGroup,
+    onDeleteAnnotation,
+    onEditability,
+    onVisibility,
   }: Props = $props();
 
   // Variables
@@ -139,9 +142,9 @@
   function toggleCategory(e: MouseEvent, category: CategoryDefinition) {
     e.preventDefault();
 
-    // if (categories.find((c) => c.id === category.id)) {
-    //   onSelectCategory(category.id);
-    // }
+    if (categories.find((c) => c.id === category.id)) {
+      onSelectCategory(category.id);
+    }
 
     if (category.nestedCategories) {
       manualToggleStates = {
@@ -195,7 +198,7 @@
       <CollapsibleContent>
         <!-- CATEGORY TREE -->
         {#each categoriesTree as category (category.id)}
-          {@render CategoryNode(category, category.nestedCategories, selectedCategory)}
+          {@render CategoryNode(category, category.nestedCategories, onSelectCategory, selectedCategory)}
         {/each}
       </CollapsibleContent>
     </Collapsible>
@@ -205,7 +208,7 @@
 {#snippet CategoryNode(
   category: CategoryDefinition,
   subCategories: CategoryDefinition[] | undefined,
-  // onSelectCategory: (category?: string) => void,
+  onSelectCategory: (category?: string) => void,
   selectedCategory: string | undefined,
   parent: string[] = [],
   level: number = 1,
@@ -314,12 +317,12 @@
     </CollapsibleTrigger>
 
     <CollapsibleContent hidden={!openStates[category.id]}>
-      <!-- {#key $idbUpdatedAt}
+      {#key $idbUpdatedAt}
         {#if !currentModeIsSameAsShape && db && category}
           {#await db.getAllIndex("category", category.id) then annotations}
             {@const { groups: filteredAnnotationGroups } = groupFilteredAnnotations(annotations)}
             {#each filteredAnnotationGroups as annotationGroup (annotationGroup.groupId)}
-              <AnnotationGroupNode
+              <ImageAnnotationGroupNode
                 {category}
                 {annotationGroup}
                 level={level + 1}
@@ -331,13 +334,14 @@
             {/each}
           {/await}
         {/if}
-      {/key}   -->
+      {/key}
 
       {#if subCategories}
         {#each subCategories as subCategory (subCategory.id)}
           {@render CategoryNode(
             subCategory,
             subCategory.nestedCategories,
+            onSelectCategory,
             selectedCategory,
             [...parent, category.id.split("/").slice(parent.length)[0]],
             level + 1,

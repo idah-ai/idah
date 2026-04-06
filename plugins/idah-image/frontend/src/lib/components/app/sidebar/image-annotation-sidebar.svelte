@@ -13,8 +13,10 @@
   import { ENTRY_ROOT } from "$lib/plugin/types";
 
   import Input from "$lib/components/ui/input/input.svelte";
-  import type { AnnotationValue } from "$lib/context/annotation-context";
+
+  import type { AnnotationGroup, AnnotationValue } from "$lib/context/annotation-context";
   import type { IActivityContext, IConfigValue } from "$lib/context/context";
+  import type { ImageAnnotationObject } from "$lib/context/image-annotation-context";
   import type { AnnotationsIndexedDB } from "$lib/plugin/indexedDB";
 
   // Props
@@ -23,11 +25,11 @@
     sidebarWidthRem,
     annotationValue,
     // onEditValue,
-    // onSelectAnnotation,
-    // onSelectAnnotationGroup,
-    // onDeleteAnnotation,
-    // onVisibility,
-    // onEditability,
+    onSelectAnnotation,
+    onSelectAnnotationGroup,
+    onDeleteAnnotation,
+    onVisibility,
+    onEditability,
     context,
     db,
     class: className,
@@ -36,11 +38,11 @@
     sidebarWidthRem: number;
     annotationValue: AnnotationValue;
     // onEditValue: (annotationValue: AnnotationValue, mode: string) => void;
-    // onSelectAnnotation: (annotation?: VideoAnnotationObject) => void;
-    // onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<VideoAnnotationObject>) => void;
-    // onDeleteAnnotation: (annotation: VideoAnnotationObject) => void;
-    // onEditability: (locked: boolean, annotation?: VideoAnnotationObject) => void;
-    // onVisibility: (hidden: boolean, annotation?: VideoAnnotationObject) => void;
+    onSelectAnnotation: (annotation?: ImageAnnotationObject) => void;
+    onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<ImageAnnotationObject>) => void;
+    onDeleteAnnotation: (annotation: ImageAnnotationObject) => void;
+    onEditability: (locked: boolean, annotation?: ImageAnnotationObject) => void;
+    onVisibility: (hidden: boolean, annotation?: ImageAnnotationObject) => void;
     context: IActivityContext;
     db?: AnnotationsIndexedDB;
     class?: string | null;
@@ -78,7 +80,7 @@
   // Functions
   function categorySelection(shape_type: string, category?: string) {
     if (category) {
-      // if (shape_type != $currentMode) onSelectAnnotation();
+      if (shape_type != $currentMode) onSelectAnnotation();
       // onEditValue({ category }, shape_type);
     } // else {
     //   onEditValue(
@@ -131,9 +133,13 @@
           selectedCategory={tool == ENTRY_ROOT && !(tool == $currentMode)
             ? $entryRoot?.value.category
             : annotationValue.category}
+          onSelectCategory={(selected) => categorySelection(tool, selected)}
+          {onSelectAnnotationGroup}
+          {onDeleteAnnotation}
+          {onEditability}
+          {onVisibility}
           {context}
         ></ImageCategorySidebar>
-        <!-- onSelectCategory={(selected) => categorySelection(tool, selected)} -->
       {/if}
     {/each}
   </SidebarContent>
