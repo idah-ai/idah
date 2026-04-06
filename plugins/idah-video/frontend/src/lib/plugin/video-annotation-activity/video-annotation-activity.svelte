@@ -41,6 +41,7 @@
     setTotalFrames,
     setVideoIsPlaying,
   } from "$lib/plugin/video-annotation-activity/store/store";
+  import { findClosestAnnotationInGroup } from "$lib/plugin/video-annotation-activity/utils/group-annotation.svelte";
 
   import AnnotationFooterToolbar from "$lib/plugin/layout/footer/annotation-footer-toolbar.svelte";
   import AnnotationFooter from "$lib/plugin/layout/footer/annotation-footer.svelte";
@@ -493,39 +494,40 @@
   }
 
   function selectClosestAnnotation(annotationGroup: AnnotationGroup<VideoAnnotationObject>, frame: number) {
-    let closestAnnotation = annotationGroup.annotations[0];
+    const closestAnnotation = findClosestAnnotationInGroup({ annotationGroup, frame });
+    // let closestAnnotation = annotationGroup.annotations[0];
 
-    if (annotationGroup.annotations.length === 1) {
-      selectAnnotation(closestAnnotation);
-      return closestAnnotation;
-    }
+    // if (annotationGroup.annotations.length === 1) {
+    //   selectAnnotation(closestAnnotation);
+    //   return closestAnnotation;
+    // }
 
-    let minDiff = Infinity;
+    // let minDiff = Infinity;
 
-    for (const annotation of annotationGroup.annotations) {
-      const start = annotation.shape.start;
-      const end = annotation.shape.end;
+    // for (const annotation of annotationGroup.annotations) {
+    //   const start = annotation.shape.start;
+    //   const end = annotation.shape.end;
 
-      // If frame is within an annotation, that's the one
-      if (frame >= start && frame <= end) {
-        closestAnnotation = annotation;
-        minDiff = 0;
-        break;
-      }
+    //   // If frame is within an annotation, that's the one
+    //   if (frame >= start && frame <= end) {
+    //     closestAnnotation = annotation;
+    //     minDiff = 0;
+    //     break;
+    //   }
 
-      // Calculate distance to nearest edge
-      const diff = Math.min(Math.abs(frame - start), Math.abs(frame - end));
+    //   // Calculate distance to nearest edge
+    //   const diff = Math.min(Math.abs(frame - start), Math.abs(frame - end));
 
-      if (diff < minDiff) {
-        minDiff = diff;
-        closestAnnotation = annotation;
-      }
-    }
+    //   if (diff < minDiff) {
+    //     minDiff = diff;
+    //     closestAnnotation = annotation;
+    //   }
+    // }
 
-    if (closestAnnotation) {
-      setCurrentModeTo(closestAnnotation.shape.type);
-      selectAnnotation(closestAnnotation);
-    }
+    // if (closestAnnotation) {
+    setCurrentModeTo(closestAnnotation.shape.type);
+    selectAnnotation(closestAnnotation);
+    // }
 
     return closestAnnotation;
   }
