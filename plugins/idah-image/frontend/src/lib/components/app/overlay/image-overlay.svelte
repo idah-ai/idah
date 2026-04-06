@@ -1,32 +1,237 @@
 <script lang="ts">
-  import BoundingBox from "./bounding-box.svelte";
+  import { getContext } from "svelte";
 
-  import type {
-    AnnotationMetadata,
-    AnnotationObj,
-    AnnotationShape,
-    AnnotationValue,
-  } from "$lib/context/annotation-context";
+  import { cn } from "$lib/utils";
 
-  export let src: string;
+  import {
+    getInterpolatedFrame,
+    HEIGHT,
+    ORIGIN,
+    WIDTH,
+    X,
+    Y,
+    type ImageAnnotationObject,
+    type ImageShape,
+    type InterpolatedVertex,
+    type Point,
+  } from "$lib/context/image-annotation-context";
+  import BoundingBox, { type ToolSelection } from "$lib/plugin/shape/bounding-box/bounding-box.svelte";
+  import Polygon from "$lib/plugin/shape/polygon/polygon.svelte";
+  import { boundingBoxes } from "$lib/plugin/store/idb-store.svelte";
+  import { currentMode, deselectAnnotationGroup, selectedAnnotation } from "$lib/plugin/store/store";
+  import {
+    DEFAULT_MODE,
+    ENTRY_ROOT,
+    IMAGE_BOUNDING_BOX,
+    IMAGE_NOTE,
+    IMAGE_POLYGON,
+    type EntryRoot,
+  } from "$lib/plugin/types";
 
-  export let selected: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata> | undefined;
+  import type { AnnotationShape } from "$lib/context/annotation-context";
+  import type { IActivityContext, IConfigPropertyStyles } from "$lib/context/context";
 
-  export let annotations: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>[] = [];
+  // Types
+  export interface OnAddNewNoteParams {
+    anchorType: "entry" | "annotation";
+    position: Record<string, unknown>;
+    annotationId: string | null;
+  }
 
-  // export let mode: string;
+  // Props
+  type Props = {
+    target_container: () => HTMLDivElement | undefined; // ..
+    annotations_promise: Promise<ImageAnnotationObject[]>;
+    onSelectAnnotation: (annotation?: ImageAnnotationObject) => void;
+    onmouseup?: (e: MouseEvent) => void;
+    onmousedown?: (e: MouseEvent) => void;
+    onmousemove?: (e: MouseEvent) => void;
+    onwheel?: (e: WheelEvent) => void;
+    onSelection: (type: string, points?: Point[], angle?: number, id?: string) => void;
+    onAddNewNote: (params: OnAddNewNoteParams) => void;
+    src: string;
+  };
+  let {
+    target_container,
+    annotations_promise,
+    onSelectAnnotation,
+    onSelection, // valid shape output
+    onAddNewNote,
+    src,
+    ...restProps
+  }: Props = $props();
 
-  export let onSelectAnnotation: (
-    annotation?: AnnotationObj<AnnotationShape, AnnotationValue, AnnotationMetadata>,
-  ) => void;
+  // Contexts
+  let context = getContext<IActivityContext>("context");
 
-  export let onSelection: (type: string, angle?: number, id?: string) => void;
+  // Variables
+  interface ZoomInfo {
+    scale: number;
+    offset: Point;
+  }
+  let zoomInfo: ZoomInfo = $state({
+    scale: 1,
+    offset: [0, 0],
+  });
 
-  let container: HTMLDivElement;
+  let height = $state(0);
+  let width = $state(0);
+  let mouse: Point = $state([0, 0]);
+  let shape: AnnotationShape | { type: EntryRoot } | undefined = $derived(
+    $selectedAnnotation
+      ? $selectedAnnotation.shape
+      : $currentMode != DEFAULT_MODE
+        ? $currentMode == ENTRY_ROOT
+          ? { type: ENTRY_ROOT }
+          : {
+              type: $currentMode,
+              frames: [],
+            }
+        : undefined,
+  );
+
+  let current_shape = $derived.by(() => {
+    if (shape) return getInterpolatedFrame(shape as ImageShape);
+  });
+
+  let points: Point[] | InterpolatedVertex[] | undefined = $derived(
+    current_shape && "points" in current_shape ? current_shape?.points || [] : [],
+  );
+
+  let angle: number = $derived.by(() => {
+    return current_shape?.angle || 0;
+  });
+
   let image: HTMLImageElement;
 
-  let width = 1;
-  let height = 1;
+  // Functions
+  function updatedSize(): Point {
+    let target_dom_rect = target_container()?.getBoundingClientRect();
+
+    return !target_dom_rect ? ORIGIN : [target_dom_rect.width, target_dom_rect.height];
+  }
+
+  let target_size: Point = $derived.by(updatedSize);
+
+  let cursor = $derived([mouse[X] - zoomInfo.offset[X], mouse[Y] - zoomInfo.offset[Y]]);
+
+  let target: Point = $derived([
+    Math.min(target_size[WIDTH], Math.max(0, cursor[X])),
+    Math.min(target_size[HEIGHT], Math.max(0, cursor[Y])),
+  ]);
+
+  let target_line = $derived.by(() => {
+    let tl: Point = $state.snapshot(mouse) as Point;
+
+    if (cursor[X] < 0) {
+      tl[X] -= cursor[X];
+    } else if (cursor[X] > target_size[X]) {
+      tl[X] -= cursor[X] - target_size[X];
+    }
+    if (cursor[Y] < 0) {
+      tl[Y] -= cursor[Y];
+    } else if (cursor[Y] > target_size[Y]) {
+      tl[Y] -= cursor[Y] - target_size[Y];
+    }
+
+    return tl;
+  });
+
+  let cursor_downscaled: Point = $derived([target[X] / target_size[X], target[Y] / target_size[Y]]);
+  let toolSelection: ToolSelection | undefined = $state();
+
+  export function selectionStart(e: MouseEvent) {
+    if (!shape) {
+      deselectAnnotationGroup();
+      return;
+    }
+
+    toolSelection?.startSelection(cursor_downscaled);
+
+    if (!isEditing) {
+      if (!toolSelection) {
+        console.error("no tool for mode:", $currentMode, "deselecting annotation (and reverting to mode", DEFAULT_MODE);
+      }
+
+      onSelectAnnotation();
+      deselectAnnotationGroup();
+    }
+  }
+
+  export function selectionEnd(e: MouseEvent) {
+    toolSelection?.endSelection(cursor_downscaled);
+
+    showNewNoteFeedPopup();
+  }
+
+  function showNewNoteFeedPopup(annotation?: ImageAnnotationObject) {
+    /**
+     * Show new note feed dialog only when there is no dragging (i.e. zoom offset did not change)
+     */
+    if ($currentMode === IMAGE_NOTE) {
+      onAddNewNote({
+        anchorType: annotation ? "annotation" : "entry",
+        position: {
+          x: cursor_downscaled[X],
+          y: cursor_downscaled[Y],
+          target_size,
+        },
+        annotationId: annotation?.metadata.id || null,
+      });
+    }
+  }
+
+  let isEditing = $state(false);
+  let editionCursor: string | undefined = $state(undefined);
+
+  // Reset editionCursor when switching to visual mode without selection
+  $effect(() => {
+    if ($currentMode === DEFAULT_MODE && !$selectedAnnotation) {
+      editionCursor = undefined;
+    }
+  });
+
+  let pointer = $derived.by(() => {
+    if ($currentMode == IMAGE_NOTE) return "cursor-note";
+    if (editionCursor) return editionCursor;
+    if ($selectedAnnotation) return "cursor-pointer";
+    return "cursor-grab";
+  });
+
+  function getAnnotationPropertyStyle(annotation?: ImageAnnotationObject): IConfigPropertyStyles {
+    const defaultStyle: IConfigPropertyStyles = {
+      border: "solid",
+      opacity: 100,
+    };
+    if (!annotation) return defaultStyle;
+
+    const assignedAttributes = annotation.value.attributes || {};
+
+    // Determine which config to use based on annotation shape type
+    const configKey = annotation.shape.type;
+
+    const assignedAttributeProperties =
+      Object.entries(context.config)
+        .find(([k, _]) => k == configKey)?.[1]
+        .properties.filter((property) => property.id in assignedAttributes) || [];
+
+    const assignedAttributesStyles = Object.entries(assignedAttributes)
+      .map(([propertyKey, properyValue]) => {
+        const property = assignedAttributeProperties.find((p) => p.id === propertyKey);
+        if (property) {
+          return {
+            ...property.format.options?.find((option) => option.id === properyValue)?.styles,
+          };
+        } else {
+          return {};
+        }
+      })
+      .filter((style) => style != undefined && Object.keys(style).length > 0);
+
+    const lastAssignedAttributeStyle = assignedAttributesStyles[assignedAttributesStyles.length - 1];
+
+    return lastAssignedAttributeStyle;
+  }
 
   function handleLoad() {
     width = image.naturalWidth;
@@ -34,38 +239,244 @@
   }
 </script>
 
-<div
-  bind:this={container}
-  class="relative flex h-full w-full items-center justify-center overflow-hidden bg-gray-200 p-12"
->
-  <div class="relative">
-    <img
-      bind:this={image}
-      {src}
-      alt=""
-      on:load={handleLoad}
-      class="pointer-events-none block max-h-full max-w-full select-none"
-    />
-
-    <svg class="absolute inset-0 h-full w-full" viewBox={`0 0 ${width} ${height}`}>
-      {#each annotations as annotation (annotation.id)}
-        <BoundingBox
-          {annotation}
-          selected={annotation.id === selected?.id}
-          onSelect={() => onSelectAnnotation(annotation)}
-          onChange={(points) => onSelection(annotation.shape.type, points, undefined, annotation.id)}
-        />
-      {/each}
-    </svg>
+<div class={cn("svg-overlay flex-1", pointer)}>
+  <div class="flex h-full w-full items-center justify-center">
+    <img bind:this={image} {src} alt="" onload={handleLoad} />
   </div>
+
+  <svg
+    bind:clientHeight={height}
+    bind:clientWidth={width}
+    class="h-full w-full"
+    onmousemove={(e) => {
+      mouse = [e.offsetX, e.offsetY]; //..
+    }}
+    onmouseup={(e) => selectionEnd(e)}
+    onmousedown={(e) => selectionStart(e)}
+    {...restProps}
+  >
+    {#if width && height && ![IMAGE_NOTE, DEFAULT_MODE].includes($currentMode) && (pointer == "crosshair" || isEditing)}
+      <!-- prevent display issue on load for now -->
+      <line
+        x1={0}
+        y1={target_line[Y]}
+        x2={width}
+        y2={target_line[Y]}
+        stroke={$selectedAnnotation?.synced
+          ? Object.entries(context.config)
+              .find(([k, _]) => k == $currentMode)?.[1]
+              .values.find((c) => c.id == $selectedAnnotation?.value?.category)?.color || "grey"
+          : "grey"}
+      />
+      <line
+        x1={target_line[X]}
+        y1={0}
+        x2={target_line[X]}
+        y2={height}
+        stroke={$selectedAnnotation?.synced
+          ? Object.entries(context.config)
+              .find(([k, _]) => k == $currentMode)?.[1]
+              .values.find((c) => c.id == $selectedAnnotation?.value?.category)?.color || "grey"
+          : "grey"}
+      />
+    {/if}
+
+    <!-- draw annotation context -->
+    {#await annotations_promise}
+      {#each $boundingBoxes as annotation (annotation.metadata.id)}
+        {#if annotation.metadata.id != $selectedAnnotation?.metadata.id}
+          {@const propertyStyle = getAnnotationPropertyStyle(annotation)}
+          {#if annotation.shape.type == IMAGE_BOUNDING_BOX && !annotation.hidden}
+            {@const current_annotation_shape = getInterpolatedFrame(annotation.shape as ImageShape)}
+            {@const current_annotation_points = current_annotation_shape?.points || []}
+            {@const current_annotation_angle = current_annotation_shape?.angle || 0}
+            <BoundingBox
+              mode={$currentMode}
+              points={current_annotation_points as Point[]}
+              angle={current_annotation_angle}
+              ratio={target_size}
+              offset={zoomInfo.offset}
+              color={Object.entries(context.config)
+                .find(([k, _]) => k == IMAGE_BOUNDING_BOX)?.[1]
+                .values.find((c) => c.id == annotation.value?.category)?.color || "grey"}
+              styles={propertyStyle}
+              onmousedown={(e) => {
+                e.stopPropagation();
+
+                if ($currentMode == DEFAULT_MODE || $selectedAnnotation) {
+                  onSelectAnnotation(annotation);
+                }
+
+                if ($currentMode === IMAGE_NOTE) {
+                  showNewNoteFeedPopup(annotation);
+                }
+              }}
+            />
+          {:else if annotation.shape.type == IMAGE_POLYGON && !annotation.hidden}
+            <Polygon
+              mode={$currentMode}
+              points={(getInterpolatedFrame(annotation.shape as ImageShape)?.points || []) as InterpolatedVertex[]}
+              ratio={target_size}
+              offset={zoomInfo.offset}
+              color={Object.entries(context.config)
+                .find(([k, _]) => k == IMAGE_POLYGON)?.[1]
+                .values.find((c) => c.id == annotation.value?.category)?.color || "grey"}
+              styles={propertyStyle}
+              onmousedown={(e) => {
+                e.stopPropagation();
+
+                if ($currentMode == DEFAULT_MODE || $selectedAnnotation) {
+                  onSelectAnnotation(annotation);
+                }
+
+                if ($currentMode === IMAGE_NOTE) {
+                  showNewNoteFeedPopup(annotation);
+                }
+              }}
+            />
+          {/if}
+        {/if}
+      {/each}
+    {:then annotations}
+      {#each annotations as annotation (annotation.metadata.id)}
+        {#if annotation.metadata.id != $selectedAnnotation?.metadata.id}
+          {@const propertyStyle = getAnnotationPropertyStyle(annotation)}
+          {#if annotation.shape.type == IMAGE_BOUNDING_BOX && !annotation.hidden}
+            {@const current_annotation_shape = getInterpolatedFrame(annotation.shape as ImageShape)}
+            {@const current_annotation_points = current_annotation_shape?.points || []}
+            {@const current_annotation_angle = current_annotation_shape?.angle || 0}
+
+            <BoundingBox
+              mode={$currentMode}
+              points={current_annotation_points as Point[]}
+              angle={current_annotation_angle}
+              ratio={target_size}
+              offset={zoomInfo.offset}
+              color={annotation?.synced
+                ? Object.entries(context.config)
+                    .find(([k, _]) => k == IMAGE_BOUNDING_BOX)?.[1]
+                    .values.find((c) => c.id == annotation?.value?.category)?.color || "grey"
+                : "grey"}
+              styles={propertyStyle}
+              onmousedown={(e) => {
+                e.stopPropagation();
+
+                if ($currentMode == DEFAULT_MODE || $selectedAnnotation) {
+                  onSelectAnnotation(annotation);
+                }
+
+                if ($currentMode === IMAGE_NOTE) {
+                  showNewNoteFeedPopup(annotation);
+                }
+              }}
+            />
+          {:else if annotation.shape.type == IMAGE_POLYGON && !annotation.hidden}
+            <Polygon
+              mode={$currentMode}
+              points={(getInterpolatedFrame(annotation.shape as ImageShape)?.points || []) as InterpolatedVertex[]}
+              ratio={target_size}
+              offset={zoomInfo.offset}
+              color={annotation?.synced
+                ? Object.entries(context.config)
+                    .find(([k, _]) => k == IMAGE_POLYGON)?.[1]
+                    .values.find((c) => c.id == annotation?.value?.category)?.color || "grey"
+                : "grey"}
+              styles={propertyStyle}
+              onmousedown={(e) => {
+                e.stopPropagation();
+
+                if ($currentMode == DEFAULT_MODE || $selectedAnnotation) {
+                  onSelectAnnotation(annotation);
+                }
+
+                if ($currentMode === IMAGE_NOTE) {
+                  showNewNoteFeedPopup(annotation);
+                }
+              }}
+            />
+          {/if}
+        {/if}
+      {/each}
+    {/await}
+
+    <!-- STATE:: SELECTED -->
+    {#if $selectedAnnotation || $currentMode != DEFAULT_MODE}
+      {@const propertyStyle = getAnnotationPropertyStyle($selectedAnnotation)}
+      {#if shape?.type == IMAGE_BOUNDING_BOX || $currentMode == IMAGE_BOUNDING_BOX}
+        {#key [shape]}
+          <BoundingBox
+            bind:this={toolSelection}
+            mode={$currentMode}
+            points={points as Point[]}
+            {angle}
+            onEditingChange={(editing) => {
+              isEditing = editing;
+            }}
+            onPointerChange={(c) => (editionCursor = c)}
+            ratio={target_size}
+            offset={zoomInfo.offset}
+            cursor={cursor_downscaled}
+            hidden={$selectedAnnotation?.hidden}
+            editable={(shape?.type == IMAGE_BOUNDING_BOX || $currentMode == IMAGE_BOUNDING_BOX) &&
+              !$selectedAnnotation?.locked &&
+              ["annotate", "review"].includes(context.workflowStep)}
+            color={$selectedAnnotation?.synced
+              ? Object.entries(context.config)
+                  .find(([k, _]) => k == $currentMode)?.[1]
+                  .values.find((c) => c.id == $selectedAnnotation?.value?.category)?.color || "grey"
+              : "grey"}
+            styles={propertyStyle}
+            onChange={(bb, newAngle) => {
+              onSelection(IMAGE_BOUNDING_BOX, bb, newAngle, $selectedAnnotation?.metadata.id);
+              // points = bb;
+            }}
+          />
+        {/key}
+      {/if}
+
+      {#if shape?.type == IMAGE_POLYGON || $currentMode == IMAGE_POLYGON}
+        <Polygon
+          bind:this={toolSelection}
+          mode={$currentMode}
+          points={points as Point[] | InterpolatedVertex[]}
+          onEditingChange={(editing) => {
+            isEditing = editing;
+          }}
+          onPointerChange={(c) => (editionCursor = c)}
+          ratio={target_size}
+          offset={zoomInfo.offset}
+          cursor={cursor_downscaled}
+          hidden={$selectedAnnotation?.hidden}
+          editable={(shape?.type == IMAGE_POLYGON || $currentMode == IMAGE_POLYGON) &&
+            !$selectedAnnotation?.locked &&
+            ["annotate", "review"].includes(context.workflowStep)}
+          color={$selectedAnnotation?.synced
+            ? Object.entries(context.config)
+                .find(([k, _]) => k == $currentMode)?.[1]
+                .values.find((c) => c.id == $selectedAnnotation?.value?.category)?.color || "grey"
+            : "grey"}
+          styles={propertyStyle}
+          onChange={(polygon_points) => {
+            onSelection(IMAGE_POLYGON, polygon_points, $selectedAnnotation?.metadata.id);
+          }}
+        />
+      {/if}
+    {/if}
+  </svg>
 </div>
 
 <style>
-  svg {
-    pointer-events: none;
+  .svg-overlay {
+    position: relative;
   }
 
-  :global(.bbox) {
-    pointer-events: auto;
+  .cursor-note {
+    cursor: url("/app/frontend/src/plugins/assets/icons/message-circle.svg"), auto;
+  }
+
+  .svg-overlay > svg {
+    position: absolute;
+    top: 0;
+    left: 0;
   }
 </style>

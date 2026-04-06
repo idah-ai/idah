@@ -1,5 +1,8 @@
 import type { Component } from "svelte";
 
+import type { AnnotationShape, AnnotationValue } from "$lib/context/annotation-context";
+import type { Hash } from "$lib/utils/types";
+
 export type ASTValue = string | number | string[] | boolean | undefined;
 export type ASTNodeValue = ASTValue | ASTNode | [ASTValue];
 export type ASTNode = [string, ASTNodeValue[]];
@@ -18,8 +21,13 @@ export interface IDimension {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface IAnnotation<T = IDimension, U = any> {
   id: string;
-  dimensions: T;
-  annotation: U;
+  dimensions: AnnotationShape;
+  annotation: AnnotationValue;
+  created_by_id?: string;
+  created_at?: Date;
+  updated_at?: Date;
+
+  metadata?: { [key: string]: unknown };
 }
 
 export interface INoteFeed {
@@ -78,9 +86,15 @@ export interface INotes {
 
 export type IConfigPropertyType = "text" | "integer" | "boolean" | "single-select" | "multi-select";
 
+export type IConfigPropertyStyles = {
+  border?: "solid" | "dotted" | "dashed";
+  opacity?: number;
+};
+
 export type IConfigPropertyOption = {
   id: string;
   label: string;
+  styles?: Hash;
 };
 
 export type IConfigPropertyFormatKeys = keyof IConfigPropertyFormat;
@@ -99,6 +113,7 @@ export interface IConfigValue {
   label: string;
   color: string | null;
   text_color: string | null;
+  description?: string;
 }
 
 export interface IConfigProperty {
@@ -118,17 +133,22 @@ export interface IConfig {
 }
 
 export type ICommand = {
-  apply: () => void;
-  undo: () => void;
-
   name: string; // A human readable name for the command, used for showing in the UI.
+
+  apply: () => Promise<void> | void;
+  undo: () => Promise<void> | void;
+
   isCombinable: (previousCommand: ICommand) => boolean;
   combine: (previousCommand: ICommand) => ICommand;
 };
 
 export interface ICommands {
-  on(name: string, commandBuilder: (props?: object) => ICommand, manager?: boolean): void;
-  run(name: string, props?: object): void;
+  on<T>(
+    name: string,
+    commandBuilder: (props: T) => ICommand | void | Promise<ICommand | void>,
+    manager?: boolean,
+  ): void;
+  run<T>(name: string, props?: T): void;
   undo(times?: number): void;
   redo(times?: number): void;
 }
@@ -152,6 +172,9 @@ export interface ITools {
   onToolChange: (cb: (tool: string) => void) => void;
 }
 
+export type IWorkflowStep = "start" | "annotate" | "review" | "done" | "export";
+export type IEntryStatus = "processing" | "ready" | "assigned" | "in_progress" | "pending" | "completed" | "errored";
+
 export interface IActivityContext {
   // Id of the current entry
   get id(): string;
@@ -160,10 +183,10 @@ export interface IActivityContext {
   get type(): string;
 
   // Returns the current workflow step
-  get workflowStep(): "start" | "annotate" | "review" | "done" | "export";
+  get workflowStep(): IWorkflowStep;
 
   // Returns the current status of the entry
-  get status(): "processing" | "ready" | "assigned" | "in_progress" | "pending" | "completed" | "errored";
+  get status(): IEntryStatus;
 
   // Get the dataset configuration
   get config(): IConfig;

@@ -78,7 +78,7 @@ export interface LabellingConfiguration {
 
 export function getInterpolatedFrame(
   shape: ImageShape,
-  current_frame: number,
+  current_frame: number = 0,
   interpolate: boolean = true,
 ):
   | { points: Point[] | undefined; angle: number }
