@@ -38,8 +38,6 @@
 
     onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<VideoAnnotationObject>) => void;
     onDeleteAnnotation: (annotation: VideoAnnotationObject) => void;
-    onEditability: (locked: boolean, annotation?: VideoAnnotationObject) => void;
-    onVisibility: (hidden: boolean, annotation?: VideoAnnotationObject) => void;
   }
   let {
     view,
@@ -50,8 +48,6 @@
     selectedCategory,
     onSelectAnnotationGroup,
     onDeleteAnnotation,
-    onEditability,
-    onVisibility,
   }: Props = $props();
 
   // Variables
@@ -325,8 +321,6 @@
                 {annotationGroup}
                 level={level + 1}
                 {onSelectAnnotationGroup}
-                {onVisibility}
-                {onEditability}
                 {onDeleteAnnotation}
               />
             {/each}

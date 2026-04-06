@@ -28,8 +28,6 @@
     onSelectAnnotation,
     onSelectAnnotationGroup,
     onDeleteAnnotation,
-    onVisibility,
-    onEditability,
     context,
     db,
     class: className,
@@ -41,8 +39,6 @@
     onSelectAnnotation: (annotation?: VideoAnnotationObject) => void;
     onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<VideoAnnotationObject>) => void;
     onDeleteAnnotation: (annotation: VideoAnnotationObject) => void;
-    onEditability: (locked: boolean, annotation?: VideoAnnotationObject) => void;
-    onVisibility: (hidden: boolean, annotation?: VideoAnnotationObject) => void;
     context: IActivityContext;
     db?: AnnotationsIndexedDB;
     class?: string | null;
@@ -141,8 +137,6 @@
           onSelectCategory={(selected) => categorySelection(tool, selected)}
           {onSelectAnnotationGroup}
           {onDeleteAnnotation}
-          {onEditability}
-          {onVisibility}
         ></CategorySidebar>
       {/if}
     {/each}
