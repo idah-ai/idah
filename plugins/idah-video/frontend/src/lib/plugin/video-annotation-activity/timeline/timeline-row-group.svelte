@@ -30,14 +30,15 @@
 
   // Functions
   function onCellClick(e: MouseEvent) {
-    onSelectFrameX(e.clientX);
-
     /** Compute frame base on timelineRulerWidth, e.clientX, windowWidth */
     const frame = getFrameFromMouseX({ clientX: e.clientX });
 
     if (frame > 0) {
       /** Click on annotation row which have a frame */
-      /** Select annotation ? */
+      /** Select frame X if click on cells (not group header) */
+      onSelectFrameX(e.clientX);
+
+      /** Select closest annotation */
       const closestAnnotation = findClosestAnnotationInGroup({ annotationGroup, frame });
       setSelectedAnnotation(closestAnnotation);
     } else {
