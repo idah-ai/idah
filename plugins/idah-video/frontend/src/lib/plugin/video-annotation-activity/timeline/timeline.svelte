@@ -37,7 +37,10 @@
   } from "$lib/plugin/video-annotation-activity/timeline/store";
   import { getFrameFromMouseX, getMouseXFromFrame } from "$lib/plugin/video-annotation-activity/timeline/utils";
   import { findCategory } from "$lib/plugin/video-annotation-activity/utils/category";
-  import { groupAnnotations } from "$lib/plugin/video-annotation-activity/utils/group-annotation.svelte";
+  import {
+    findClosestAnnotationInGroup,
+    groupAnnotations,
+  } from "$lib/plugin/video-annotation-activity/utils/group-annotation.svelte";
 
   import type { IActivityContext } from "$idah/context/activity-context";
   import type { AnnotationGroup } from "$idah/context/annotation-context";
@@ -188,6 +191,9 @@
 
     const frame = getFrameFromMouseX({ clientX: e.clientX });
 
+    /** Closest annotation */
+    const closestAnnotation = findClosestAnnotationInGroup({ annotationGroup: selectAnnotationGroup, frame });
+
     /** Menus */
     const seekToFrameMenu: TimelineContextMenuMenu = {
       label: `Seek to frame ${frame}`,
@@ -201,20 +207,23 @@
     const splitMenu: TimelineContextMenuMenu = {
       label: `Split at frame ${frame}`,
       icon: SquareSplitHorizontalIcon,
-      disabled: false, // TODO:: annotation.locked
+      disabled: closestAnnotation.locked,
       onClick: () => {
+        context.commands.run("annotation.split", {
+          id: closestAnnotation.metadata.id,
+          at: frame,
+        });
         closeContextMenu();
-        // context.commands.run("annotation.split", { id: annotation?.metadata.id, at: frame })
       },
     };
 
     const deleteInterpolationMenu: TimelineContextMenuMenu = {
       label: `Delete frame ${frame}`,
       icon: Trash2Icon,
-      disabled: false, // TODO:: annotation.locked
+      disabled: closestAnnotation.locked,
       onClick: () => {
+        context.commands.run("keyframe.delete", { annotationId: closestAnnotation.metadata.id, frame });
         closeContextMenu();
-        // context.commands.run("annotation.deleteInterpolation", { id: annotation?.metadata.id, at: frame })
       },
     };
 
@@ -222,8 +231,8 @@
       label: "Delete annotation",
       icon: Trash2Icon,
       onClick: () => {
+        context.commands.run("annotation.delete", { annotationId: closestAnnotation.metadata.id });
         closeContextMenu();
-        // context.commands.run("annotation.delete", { id: annotation?.metadata.id })
       },
     };
 
