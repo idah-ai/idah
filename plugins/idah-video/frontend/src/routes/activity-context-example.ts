@@ -5,6 +5,7 @@ import type {
   HeaderBarModeTool,
   IActivityContext,
   IAnnotationDriver,
+  ICommand,
   ICommands,
   IConfig,
   IEntryStatus,
@@ -17,18 +18,19 @@ function createCommandsInterface(): ICommands {
   const commands = new Map();
 
   return {
-    on: (name: string, builder: (props?: object) => Command, manager = true) => {
+    on: <T>(name: string, builder: (props: T) => ICommand | void | Promise<ICommand | void>, manager = true) => {
       commands.set(name, { manager, builder });
       console.debug({ command_on: name, manager });
     },
-    async run(name: string, props?: object) {
-      const { manager, builder }: { manager: boolean; builder: (props?: object) => Command } = commands.get(name);
+    async run<T>(name: string, props?: T) {
+      const commandData = commands.get(name);
+      if (!commandData) return console.error("builder not found command:", name);
 
-      if (!builder) return console.error("builder not found command:", name);
+      const { manager, builder } = commandData;
 
-      const command = await builder(props);
+      const command = (await builder(props as T)) as Command;
 
-      if (!commands)
+      if (!command)
         // properly extract and we shouldnt have to await ?
         return console.error("builder error on command:", name);
 
