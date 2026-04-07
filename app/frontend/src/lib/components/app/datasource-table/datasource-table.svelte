@@ -1,5 +1,5 @@
 <script lang="ts" generics="T extends Record">
-  import { goto } from "$app/navigation";
+  import { replaceState } from "$app/navigation";
   import { page } from "$app/state";
   import { onDestroy, onMount, setContext } from "svelte";
 
@@ -236,7 +236,7 @@
      * please beaware of this.
      */
     /* eslint-disable svelte/no-navigation-without-resolve */
-    await goto(url.href, { replaceState: true });
+    replaceState(url.href, {});
     /* eslint-enable svelte/no-navigation-without-resolve */
 
     await fetchData();
