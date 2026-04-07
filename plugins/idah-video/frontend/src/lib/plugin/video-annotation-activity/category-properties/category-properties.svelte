@@ -135,7 +135,7 @@
 
         <SelectContent>
           <SelectGroup>
-            {#each configByMode.values as { id: value, label, color } (value)}
+            {#each configByMode.values as { id: value, label, color }, index (`${value}-${index}`)}
               <SelectItem class="text-xs" {label} {value}>
                 {#if firstAnnotationInGroup?.shape.type === IDAH_VIDEO_BOUNDING_BOX}
                   <VectorSquareIcon {color} />
@@ -177,7 +177,7 @@
 
       <SelectContent>
         <SelectGroup>
-          {#each configByGroup.values as { id: value, label, color } (value)}
+          {#each configByGroup.values as { id: value, label, color }, index (`${value}-${index}`)}
             <SelectItem class="text-xs" {label} {value} disabled={firstAnnotationInGroupCategory == value}>
               {#if firstAnnotationInGroup?.shape.type === IDAH_VIDEO_BOUNDING_BOX}
                 <VectorSquareIcon {color} />
@@ -216,7 +216,7 @@
       <section class="flex flex-col gap-2">
         <Text class="mb-2" weight="semibold" size="sm">Properties</Text>
 
-        {#each properties as property (property.id)}
+        {#each properties as property, index (`${property.id}-${index}`)}
           {@const foundPropertyComponent = propertyComponents.find((p) => p.type == property.type)}
 
           {#if foundPropertyComponent}
