@@ -14,8 +14,15 @@
   import DropdownMenus from "$lib/components/app/dropdown-menus/dropdown-menus.svelte";
   import Badge from "$lib/components/ui/badge/badge.svelte";
   import Button from "$lib/components/ui/button/button.svelte";
-  import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "$lib/components/ui/collapsible";
-  import { SidebarMenuButton, SidebarMenuItem } from "$lib/components/ui/sidebar";
+  import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+  } from "$lib/components/ui/collapsible";
+  import {
+    SidebarMenuButton,
+    SidebarMenuItem,
+  } from "$lib/components/ui/sidebar";
 
   import { cn } from "$lib/utils";
   import { humanize } from "$lib/utils/string";
@@ -23,13 +30,15 @@
   import PolygonCircleIcon from "$lib/plugin/icon/polygon-circle-icon.svelte";
   import VectorSquareIcon from "$lib/plugin/icon/vector-square-icon.svelte";
 
-  import { IDAH_VIDEO_BOUNDING_BOX, IDAH_VIDEO_POLYGON } from "$lib/plugin/type";
-  import { idbUpdatedAt } from "$lib/plugin/video-annotation-activity/store/idb-store.svelte";
+  import {
+    IDAH_VIDEO_BOUNDING_BOX,
+    IDAH_VIDEO_POLYGON,
+  } from "$lib/plugin/type";
 
   import type { IConfigValue } from "$idah/context/activity-context";
   import type { CategoryDefinition } from "$idah/context/category-context";
   import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
-  import type { AnnotationsIndexedDB } from "$lib/plugin/video-annotation-activity/indexedDB";
+  import type { AnnotationsIndexedDB } from "$lib/plugin/video-annotation-activity/indexedDB.svelte";
 
   // Props
   let {
@@ -65,18 +74,21 @@
 
   // Automatically expand all categories when categories prop changes, but allow manual toggles
   let openStates = $derived.by(() => {
-    const autoExpanded = categories.reduce<Record<string, boolean>>((acc, category) => {
-      if (category.id.includes("/")) {
-        const parts = category.id.split("/");
-        for (let i = 0; i < parts.length - 1; i++) {
-          const parentPath = parts.slice(0, i + 1).join("/");
-          acc[parentPath] = true;
+    const autoExpanded = categories.reduce<Record<string, boolean>>(
+      (acc, category) => {
+        if (category.id.includes("/")) {
+          const parts = category.id.split("/");
+          for (let i = 0; i < parts.length - 1; i++) {
+            const parentPath = parts.slice(0, i + 1).join("/");
+            acc[parentPath] = true;
+          }
         }
-      }
-      // Always set the category itself to true
-      acc[category.id] = true;
-      return acc;
-    }, {});
+        // Always set the category itself to true
+        acc[category.id] = true;
+        return acc;
+      },
+      {},
+    );
 
     // Merge with manual toggles (manual toggles take precedence)
     return { ...autoExpanded, ...manualToggleStates };
@@ -85,12 +97,20 @@
   let forceRender = $state(0); // Force re-render trigger
   let categoriesTree = $derived(
     categories.reduce<CategoryDefinition[]>((acc, category_configuration) => {
-      return buildTree(acc, category_configuration.id.split("/"), category_configuration);
+      return buildTree(
+        acc,
+        category_configuration.id.split("/"),
+        category_configuration,
+      );
     }, []),
   );
 
   // Functions
-  function buildTree(acc: CategoryDefinition[], ids: string[], configuration: IConfigValue): CategoryDefinition[] {
+  function buildTree(
+    acc: CategoryDefinition[],
+    ids: string[],
+    configuration: IConfigValue,
+  ): CategoryDefinition[] {
     let currentLevel = acc;
     let fullPath = "";
 
@@ -98,7 +118,9 @@
       fullPath = i === 0 ? ids[i] : `${fullPath}/${ids[i]}`;
 
       // find if node exists at this level
-      let existingNode = currentLevel.find((current) => current.id === fullPath);
+      let existingNode = currentLevel.find(
+        (current) => current.id === fullPath,
+      );
       if (!existingNode) {
         existingNode = {
           id: fullPath,
@@ -136,12 +158,16 @@
     return acc;
   }
 
-  async function haveAnnotationsInCategory(categoryId: string): Promise<boolean> {
+  async function haveAnnotationsInCategory(
+    categoryId: string,
+  ): Promise<boolean> {
     if (!db || !categoryId) return false;
     const allAnnotations = await db.getAllStartingWith("category", categoryId);
     const filterAnnotations = allAnnotations.filter((annotation) => {
       return (
-        currentFrame >= annotation.shape.start && currentFrame <= annotation.shape.end && annotation.shape.type == type
+        currentFrame >= annotation.shape.start &&
+        currentFrame <= annotation.shape.end &&
+        annotation.shape.type == type
       );
     });
 
@@ -236,9 +262,12 @@
               {...props}
               variant={isOpen ? "secondary" : "ghost"}
               size="icon-sm"
-              class={cn("text-muted-foreground shrink-0 opacity-0 group-hover:opacity-100", {
-                "opacity-100": isOpen,
-              })}
+              class={cn(
+                "text-muted-foreground shrink-0 opacity-0 group-hover:opacity-100",
+                {
+                  "opacity-100": isOpen,
+                },
+              )}
               onclick={(e) => {
                 e.stopPropagation();
               }}
@@ -252,7 +281,11 @@
   </SidebarMenuItem>
 {/snippet}
 
-{#snippet showCategoryTitle(category: CategoryDefinition, haveChildren: boolean = false, open: boolean = false)}
+{#snippet showCategoryTitle(
+  category: CategoryDefinition,
+  haveChildren: boolean = false,
+  open: boolean = false,
+)}
   <div
     class={cn("flex w-full items-center gap-1 text-xs group-hover:w-2/4", {
       "p-2": toolMode && selected_id,
@@ -283,7 +316,8 @@
         {@const parentOpen = category.nestedCategories && toolMode}
         <ChevronRight
           class={cn("", {
-            "opacity-0": !haveChildren || category.nestedCategories?.length === 0,
+            "opacity-0":
+              !haveChildren || category.nestedCategories?.length === 0,
             "rotate-90": open || parentOpen,
             "stroke-blue-300": selected,
             "stroke-gray-500": !selected,
@@ -293,9 +327,15 @@
     </Button>
 
     {#if type === IDAH_VIDEO_BOUNDING_BOX}
-      <VectorSquareIcon color={category.data?.color} class={cn({ hidden: category.requiredNested })} />
+      <VectorSquareIcon
+        color={category.data?.color}
+        class={cn({ hidden: category.requiredNested })}
+      />
     {:else if type === IDAH_VIDEO_POLYGON}>
-      <PolygonCircleIcon color={category.data?.color} class={cn({ hidden: category.requiredNested })} />
+      <PolygonCircleIcon
+        color={category.data?.color}
+        class={cn({ hidden: category.requiredNested })}
+      />
     {/if}
     {@render CategoryName(category.name)}
   </div>
@@ -309,16 +349,18 @@
   parent: string[] = [],
 )}
   <Collapsible open={toolMode ? !!category : openStates[category.id] || false}>
-    {#key `${forceRender}-${$idbUpdatedAt}-${type}`}
+    {#key `${forceRender}-${type}`}
       {#await haveAnnotationsInCategory(category.id) then hasAnnotations}
         <CollapsibleTrigger
           class={cn(
             "text-secondary-foreground flex w-full items-center justify-between pr-1 text-xs group-hover:w-2/4",
             {
-              "bg-secondary border-ring text-secondary-foreground rounded-sm border": selected == category.id,
+              "bg-secondary border-ring text-secondary-foreground rounded-sm border":
+                selected == category.id,
               "hover:bg-primary-foreground hover:dark:bg-accent hover:cursor-pointer hover:rounded-sm":
                 !category.requiredNested,
-              "hover:bg-accent hover:cursor-pointer hover:rounded-sm": !toolMode,
+              "hover:bg-accent hover:cursor-pointer hover:rounded-sm":
+                !toolMode,
             },
           )}
           onclick={(e) => {
@@ -346,49 +388,50 @@
           )}
 
           {#if db && category}
-            {#key $idbUpdatedAt}
-              {#await db.getAllStartingWith("category", category.id) then anns}
-                {@const filteredCount = anns.filter(
-                  (annotation) =>
-                    currentFrame >= annotation.shape.start &&
-                    currentFrame <= annotation.shape.end &&
-                    annotation.shape.type == type,
-                ).length}
-                <Badge variant="gray" rounded="full" class="text-[0.625rem]">
-                  {filteredCount}
-                </Badge>
-              {/await}
-            {/key}
+            {@const categoryAnnotations = db.annotations.filter((a) =>
+              a.value.category?.startsWith(category.id),
+            )}
+            {@const filteredCount = categoryAnnotations.filter(
+              (annotation) =>
+                currentFrame >= annotation.shape.start &&
+                currentFrame <= annotation.shape.end &&
+                annotation.shape.type == type,
+            ).length}
+            <Badge variant="gray" rounded="full" class="text-[0.625rem]">
+              {filteredCount}
+            </Badge>
           {/if}
         </CollapsibleTrigger>
       {/await}
     {/key}
 
     <CollapsibleContent class="ml-4" hidden={!openStates[category.id]}>
-      {#key $idbUpdatedAt}
-        {#if !toolMode && db && category}
-          {#await db.getAllIndex("category", category.id) then anns}
-            {@const filteredAnns = anns.filter((annotation) => {
-              // prettier-ignore ...
-              return (
-                currentFrame >= annotation.shape.start &&
-                currentFrame <= annotation.shape.end &&
-                annotation.shape.type == type
-              );
-            })}
-            {#each filteredAnns as annotation, i (annotation.metadata.id)}
-              {@render annotationSelection(annotation, `${category.name}_${i}`)}
-            {/each}
-          {/await}
-        {/if}
-      {/key}
+      {#if !toolMode && db && category}
+        {@const categoryAnnotations = db.annotations.filter(
+          (a) => a.value.category === category.id,
+        )}
+        {@const filteredAnns = categoryAnnotations.filter((annotation) => {
+          // prettier-ignore ...
+          return (
+            currentFrame >= annotation.shape.start &&
+            currentFrame <= annotation.shape.end &&
+            annotation.shape.type == type
+          );
+        })}
+        {#each filteredAnns as annotation, i (annotation.metadata.id)}
+          {@render annotationSelection(annotation, `${category.name}_${i}`)}
+        {/each}
+      {/if}
 
       {#if subCategories}
         {#each subCategories as subCategory (subCategory.id)}
-          {@render categorySelection(subCategory, subCategory.nestedCategories, onSelect, selected, [
-            ...parent,
-            category.id.split("/").slice(parent.length)[0],
-          ])}
+          {@render categorySelection(
+            subCategory,
+            subCategory.nestedCategories,
+            onSelect,
+            selected,
+            [...parent, category.id.split("/").slice(parent.length)[0]],
+          )}
           <!-- pass managed open state for children -->
         {/each}
       {/if}
@@ -398,6 +441,11 @@
 
 <div class="flex-col overflow-x-hidden">
   {#each categoriesTree as category (category.id)}
-    {@render categorySelection(category, category.nestedCategories, onSelect, selected_category)}
+    {@render categorySelection(
+      category,
+      category.nestedCategories,
+      onSelect,
+      selected_category,
+    )}
   {/each}
 </div>

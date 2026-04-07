@@ -2,8 +2,16 @@
   import { ChevronRightIcon, CircleSmallIcon, PlusIcon } from "@lucide/svelte";
 
   import { Button } from "$lib/components/ui/button";
-  import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "$lib/components/ui/collapsible";
-  import { SidebarGroup, SidebarGroupContent, SidebarMenuItem } from "$lib/components/ui/sidebar";
+  import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+  } from "$lib/components/ui/collapsible";
+  import {
+    SidebarGroup,
+    SidebarGroupContent,
+    SidebarMenuItem,
+  } from "$lib/components/ui/sidebar";
 
   import { cn } from "$lib/utils";
   import { humanize } from "$lib/utils/string";
@@ -14,16 +22,22 @@
   import AnnotationGroupNode from "$lib/plugin/layout/sidebar/category/annotation-group-node.svelte";
   import CategoryName from "$lib/plugin/layout/sidebar/category/category-name.svelte";
 
-  import { IDAH_VIDEO_BOUNDING_BOX, IDAH_VIDEO_POLYGON } from "$lib/plugin/type";
-  import { idbUpdatedAt } from "$lib/plugin/video-annotation-activity/store/idb-store.svelte";
-  import { currentFrame, currentMode, selectedAnnotation } from "$lib/plugin/video-annotation-activity/store/store";
+  import {
+    IDAH_VIDEO_BOUNDING_BOX,
+    IDAH_VIDEO_POLYGON,
+  } from "$lib/plugin/type";
+  import {
+    currentFrame,
+    currentMode,
+    selectedAnnotation,
+  } from "$lib/plugin/video-annotation-activity/store/store";
   import { groupAnnotations } from "$lib/plugin/video-annotation-activity/utils/group-annotation.svelte";
 
   import type { IConfigValue } from "$idah/context/activity-context";
   import type { AnnotationGroup } from "$idah/context/annotation-context";
   import type { CategoryDefinition } from "$idah/context/category-context";
   import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
-  import type { AnnotationsIndexedDB } from "$lib/plugin/video-annotation-activity/indexedDB";
+  import type { AnnotationsIndexedDB } from "$lib/plugin/video-annotation-activity/indexedDB.svelte";
 
   // Props
   interface Props {
@@ -36,7 +50,9 @@
     onSelectCategory: (category?: string) => void;
     selectedCategory: string | undefined;
 
-    onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<VideoAnnotationObject>) => void;
+    onSelectAnnotationGroup: (
+      annotationGroup: AnnotationGroup<VideoAnnotationObject>,
+    ) => void;
     onDeleteAnnotation: (annotation: VideoAnnotationObject) => void;
   }
   let {
@@ -57,18 +73,21 @@
   // Automatically expand all categories when categories prop changes, but allow manual toggles
   let manualToggleStates = $state<Record<string, boolean>>({});
   let openStates = $derived.by(() => {
-    const autoExpanded = categories.reduce<Record<string, boolean>>((acc, category) => {
-      if (category.id.includes("/")) {
-        const parts = category.id.split("/");
-        for (let i = 0; i < parts.length - 1; i++) {
-          const parentPath = parts.slice(0, i + 1).join("/");
-          acc[parentPath] = true;
+    const autoExpanded = categories.reduce<Record<string, boolean>>(
+      (acc, category) => {
+        if (category.id.includes("/")) {
+          const parts = category.id.split("/");
+          for (let i = 0; i < parts.length - 1; i++) {
+            const parentPath = parts.slice(0, i + 1).join("/");
+            acc[parentPath] = true;
+          }
         }
-      }
-      // Always set the category itself to true
-      acc[category.id] = true;
-      return acc;
-    }, {});
+        // Always set the category itself to true
+        acc[category.id] = true;
+        return acc;
+      },
+      {},
+    );
 
     // Merge with manual toggles (manual toggles take precedence)
     return { ...autoExpanded, ...manualToggleStates };
@@ -76,16 +95,26 @@
 
   // Functions
   function formatShapeName(shape: string) {
-    return humanize(shape.split(":").reverse()[0].split(new RegExp(/-|_/)).join(" "));
+    return humanize(
+      shape.split(":").reverse()[0].split(new RegExp(/-|_/)).join(" "),
+    );
   }
 
   let categoriesTree = $derived(
     categories.reduce<CategoryDefinition[]>((acc, category_configuration) => {
-      return buildTree(acc, category_configuration.id.split("/"), category_configuration);
+      return buildTree(
+        acc,
+        category_configuration.id.split("/"),
+        category_configuration,
+      );
     }, []),
   );
 
-  function buildTree(acc: CategoryDefinition[], ids: string[], configuration: IConfigValue): CategoryDefinition[] {
+  function buildTree(
+    acc: CategoryDefinition[],
+    ids: string[],
+    configuration: IConfigValue,
+  ): CategoryDefinition[] {
     let currentLevel = acc;
     let fullPath = "";
 
@@ -93,7 +122,9 @@
       fullPath = i === 0 ? ids[i] : `${fullPath}/${ids[i]}`;
 
       // find if node exists at this level
-      let existingNode = currentLevel.find((current) => current.id === fullPath);
+      let existingNode = currentLevel.find(
+        (current) => current.id === fullPath,
+      );
       if (!existingNode) {
         existingNode = {
           id: fullPath,
@@ -145,7 +176,9 @@
     }
   }
 
-  function groupFilteredAnnotations(annotations: Array<VideoAnnotationObject>): {
+  function groupFilteredAnnotations(
+    annotations: Array<VideoAnnotationObject>,
+  ): {
     groups: Array<AnnotationGroup<VideoAnnotationObject>>;
     count: number;
   } {
@@ -186,7 +219,12 @@
       <CollapsibleContent>
         <!-- CATEGORY TREE -->
         {#each categoriesTree as category (category.id)}
-          {@render CategoryNode(category, category.nestedCategories, onSelectCategory, selectedCategory)}
+          {@render CategoryNode(
+            category,
+            category.nestedCategories,
+            onSelectCategory,
+            selectedCategory,
+          )}
         {/each}
       </CollapsibleContent>
     </Collapsible>
@@ -202,144 +240,148 @@
   level: number = 1,
 )}
   <Collapsible open={openStates[category.id] || false}>
-    {#key `${$idbUpdatedAt}`}
-      {#if db && category}
-        {#await db.getAllStartingWith("category", category.id) then annotations}
-          {@const { count } = groupFilteredAnnotations(annotations)}
-          {@const hasAnnotations = count > 0}
+    {#if db && category}
+      {@const annotations = db.annotations.filter((a) =>
+        a.value.category?.startsWith(category.id),
+      )}
+      {@const { count } = groupFilteredAnnotations(annotations)}
+      {@const hasAnnotations = count > 0}
 
-          <CollapsibleTrigger
-            class={cn("text-secondary-foreground flex w-full rounded-md text-xs", {
-              "bg-secondary border-primary border": selectedCategory == category.id,
-              "hover:bg-primary-foreground hover:dark:bg-accent cursor-pointer": !category.requiredNested,
-              "hover:bg-accent cursor-pointer": !currentModeIsSameAsShape,
-            })}
-            onclick={(e) => toggleCategory(e, category)}
-          >
-            <div class="flex w-full items-center" style:padding-left="{level - 1}rem">
-              <SidebarMenuItem class="flex h-8 w-full flex-row items-center gap-1">
-                {@const hasChildren = !!category.nestedCategories}
-                {@const isSelectingCategory = selectedCategory == category.id}
-                {@const showChevronRightIcon = hasChildren || hasAnnotations}
+      <CollapsibleTrigger
+        class={cn("text-secondary-foreground flex w-full rounded-md text-xs", {
+          "bg-secondary border-primary border": selectedCategory == category.id,
+          "hover:bg-primary-foreground hover:dark:bg-accent cursor-pointer":
+            !category.requiredNested,
+          "hover:bg-accent cursor-pointer": !currentModeIsSameAsShape,
+        })}
+        onclick={(e) => toggleCategory(e, category)}
+      >
+        <div
+          class="flex w-full items-center"
+          style:padding-left="{level - 1}rem"
+        >
+          <SidebarMenuItem class="flex h-8 w-full flex-row items-center gap-1">
+            {@const hasChildren = !!category.nestedCategories}
+            {@const isSelectingCategory = selectedCategory == category.id}
+            {@const showChevronRightIcon = hasChildren || hasAnnotations}
 
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  disabled={currentModeIsSameAsShape}
-                  class={cn("p-0", {
-                    "opacity-0": !showChevronRightIcon || $selectedAnnotation?.metadata.id,
-                  })}
-                  onclick={(e) => {
-                    e.stopPropagation();
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              disabled={currentModeIsSameAsShape}
+              class={cn("p-0", {
+                "opacity-0":
+                  !showChevronRightIcon || $selectedAnnotation?.metadata.id,
+              })}
+              onclick={(e) => {
+                e.stopPropagation();
 
-                    if (category.nestedCategories || showChevronRightIcon) {
-                      manualToggleStates = {
-                        ...manualToggleStates,
-                        [category.id]: !openStates[category.id],
-                      };
-                    }
-                  }}
-                >
-                  {#if view === "sidebar"}
-                    {#if currentModeIsSameAsShape}
-                      <!-- TOOLS::BOUNDING BOX / POLYGON / OTHER SHAPES -->
-                      {#if isSelectingCategory}
-                        <PlusIcon class="text-primary" strokeWidth={4} />
-                      {:else if hasChildren}
-                        <ChevronRightIcon
-                          class={cn({
-                            "rotate-90": openStates[category.id],
-                            "stroke-blue-300": isSelectingCategory,
-                            "stroke-gray-500": !isSelectingCategory,
-                          })}
-                        />
-                      {:else}
-                        <CircleSmallIcon class="fill-gray-400 stroke-gray-400" />
-                      {/if}
-                    {:else}
-                      <!-- TOOLS::VISUAL -->
-                      <ChevronRightIcon
-                        class={cn({
-                          "opacity-0": !showChevronRightIcon,
-                          "rotate-90": openStates[category.id],
-                          "stroke-blue-300": isSelectingCategory,
-                          "stroke-gray-500": !isSelectingCategory,
-                        })}
-                      />
-                    {/if}
+                if (category.nestedCategories || showChevronRightIcon) {
+                  manualToggleStates = {
+                    ...manualToggleStates,
+                    [category.id]: !openStates[category.id],
+                  };
+                }
+              }}
+            >
+              {#if view === "sidebar"}
+                {#if currentModeIsSameAsShape}
+                  <!-- TOOLS::BOUNDING BOX / POLYGON / OTHER SHAPES -->
+                  {#if isSelectingCategory}
+                    <PlusIcon class="text-primary" strokeWidth={4} />
+                  {:else if hasChildren}
+                    <ChevronRightIcon
+                      class={cn({
+                        "rotate-90": openStates[category.id],
+                        "stroke-blue-300": isSelectingCategory,
+                        "stroke-gray-500": !isSelectingCategory,
+                      })}
+                    />
+                  {:else}
+                    <CircleSmallIcon class="fill-gray-400 stroke-gray-400" />
                   {/if}
-
-                  {#if view === "popover"}
-                    {#if hasChildren}
-                      <ChevronRightIcon
-                        class={cn({
-                          "rotate-90": openStates[category.id],
-                        })}
-                      />
-                    {:else}
-                      <CircleSmallIcon class="fill-gray-400 stroke-gray-400" />
-                    {/if}
-                  {/if}
-                </Button>
-
-                {#if modalityShape === IDAH_VIDEO_BOUNDING_BOX}
-                  <VectorSquareIcon
-                    color={category.data?.color}
+                {:else}
+                  <!-- TOOLS::VISUAL -->
+                  <ChevronRightIcon
                     class={cn({
-                      hidden: category.requiredNested,
-                    })}
-                  />
-                {:else if modalityShape === IDAH_VIDEO_POLYGON}
-                  <PolygonCircleIcon
-                    color={category.data?.color}
-                    class={cn({
-                      hidden: category.requiredNested,
+                      "opacity-0": !showChevronRightIcon,
+                      "rotate-90": openStates[category.id],
+                      "stroke-blue-300": isSelectingCategory,
+                      "stroke-gray-500": !isSelectingCategory,
                     })}
                   />
                 {/if}
+              {/if}
 
-                <CategoryName name={category.name} />
-
-                {#if view === "sidebar"}
-                  <AnnotationCountBadge class="mr-2" {count} />
+              {#if view === "popover"}
+                {#if hasChildren}
+                  <ChevronRightIcon
+                    class={cn({
+                      "rotate-90": openStates[category.id],
+                    })}
+                  />
+                {:else}
+                  <CircleSmallIcon class="fill-gray-400 stroke-gray-400" />
                 {/if}
-              </SidebarMenuItem>
-            </div>
-          </CollapsibleTrigger>
-        {/await}
-      {/if}
-    {/key}
+              {/if}
+            </Button>
 
-    <CollapsibleContent hidden={!openStates[category.id]}>
-      {#key $idbUpdatedAt}
-        {#if !currentModeIsSameAsShape && db && category}
-          {#await db.getAllIndex("category", category.id) then annotations}
-            {@const { groups: filteredAnnotationGroups } = groupFilteredAnnotations(annotations)}
-            {#each filteredAnnotationGroups as annotationGroup (annotationGroup.groupId)}
-              <AnnotationGroupNode
-                {category}
-                {annotationGroup}
-                level={level + 1}
-                {onSelectAnnotationGroup}
-                {onDeleteAnnotation}
+            {#if modalityShape === IDAH_VIDEO_BOUNDING_BOX}
+              <VectorSquareIcon
+                color={category.data?.color}
+                class={cn({
+                  hidden: category.requiredNested,
+                })}
               />
-            {/each}
-          {/await}
-        {/if}
-      {/key}
+            {:else if modalityShape === IDAH_VIDEO_POLYGON}
+              <PolygonCircleIcon
+                color={category.data?.color}
+                class={cn({
+                  hidden: category.requiredNested,
+                })}
+              />
+            {/if}
 
-      {#if subCategories}
-        {#each subCategories as subCategory (subCategory.id)}
-          {@render CategoryNode(
-            subCategory,
-            subCategory.nestedCategories,
-            onSelectCategory,
-            selectedCategory,
-            [...parent, category.id.split("/").slice(parent.length)[0]],
-            level + 1,
+            <CategoryName name={category.name} />
+
+            {#if view === "sidebar"}
+              <AnnotationCountBadge class="mr-2" {count} />
+            {/if}
+          </SidebarMenuItem>
+        </div>
+      </CollapsibleTrigger>
+
+      <CollapsibleContent hidden={!openStates[category.id]}>
+        {#if !currentModeIsSameAsShape && db && category}
+          {@const categoryAnnotations = db.annotations.filter(
+            (a) => a.value.category === category.id,
           )}
-        {/each}
-      {/if}
-    </CollapsibleContent>
+          {@const { groups: filteredAnnotationGroups } =
+            groupFilteredAnnotations(categoryAnnotations)}
+          {#each filteredAnnotationGroups as annotationGroup (annotationGroup.groupId)}
+            <AnnotationGroupNode
+              {category}
+              {annotationGroup}
+              level={level + 1}
+              {onSelectAnnotationGroup}
+              {onDeleteAnnotation}
+            />
+          {/each}
+        {/if}
+      </CollapsibleContent>
+    {/if}
+
+    {#if subCategories}
+      {#each subCategories as subCategory (subCategory.id)}
+        {@render CategoryNode(
+          subCategory,
+          subCategory.nestedCategories,
+          onSelectCategory,
+          selectedCategory,
+          [...parent, category.id.split("/").slice(parent.length)[0]],
+          level + 1,
+        )}
+      {/each}
+    {/if}
   </Collapsible>
 {/snippet}

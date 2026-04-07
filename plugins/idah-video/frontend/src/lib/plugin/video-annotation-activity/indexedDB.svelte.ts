@@ -6,7 +6,6 @@ import {
 // the current version of IndexedDB, bump incrementally if there's a change
 const currentDBVersion: number = 2;
 
-//test
 const storeDefinition: StoresDefinition = {
   annotations: [
     { index: "start", path: "shape.start", opts: { unique: false } },
@@ -49,13 +48,12 @@ export async function annotationsIndexedDB(name: string, stores: StoresDefinitio
 
       const db = DBOpenRequest.result;
 
-      // the cleanest way to "drop and recreate" the data when an upgrade is needed
-      // is to delete all existing object stores, then create them fresh.
+      // Delete all existing object stores
       Array.from(db.objectStoreNames).forEach((store) => {
         db.deleteObjectStore(store);
       });
 
-      // creating object stores and indexes
+      // Create object stores and indexes
       Object.entries(stores).forEach(([store, indexes]) => {
         const s = db.createObjectStore(store);
         indexes.forEach((i) => s.createIndex(i.index, i.path, i?.opts));
@@ -67,13 +65,38 @@ export async function annotationsIndexedDB(name: string, stores: StoresDefinitio
 }
 
 export class AnnotationsIndexedDB {
-  db: IDBDatabase;
+  private db: IDBDatabase;
+  private annotationsState = $state<VideoAnnotationObject[]>([]);
 
   constructor(db: IDBDatabase) {
     this.db = db;
+    this.loadAnnotations();
   }
 
-  upsertAnnotations(annotations: VideoAnnotationObject[]): Promise<void> {
+  /**
+   * Reactive annotations getter - returns a snapshot to prevent external mutations
+   */
+  get annotations(): VideoAnnotationObject[] {
+    return this.annotationsState;
+  }
+
+  /**
+   * Load all annotations from IndexedDB and update the reactive state
+   */
+  private async loadAnnotations(): Promise<void> {
+    try {
+      const allAnnotations = await this.getAllStore("annotations");
+      this.annotationsState = allAnnotations;
+    } catch (error) {
+      console.error("Failed to load annotations:", error);
+      this.annotationsState = [];
+    }
+  }
+
+  /**
+   * Upsert annotations into IndexedDB
+   */
+  async upsertAnnotations(annotations: VideoAnnotationObject[]): Promise<void> {
     const transaction = this.db.transaction(["annotations", "keyframes"], "readwrite");
     const astore = transaction.objectStore("annotations");
     const kstore = transaction.objectStore("keyframes");
@@ -98,12 +121,18 @@ export class AnnotationsIndexedDB {
     });
 
     return new Promise<void>((resolve, reject) => {
-      transaction.oncomplete = () => resolve();
+      transaction.oncomplete = async () => {
+        await this.loadAnnotations();
+        resolve();
+      };
       transaction.onerror = () => reject();
     });
   }
 
-  deleteAnnotation(annotation_id: string): Promise<void> {
+  /**
+   * Delete an annotation and its keyframes
+   */
+  async deleteAnnotation(annotation_id: string): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       const ktransaction = this.db.transaction("keyframes", "readwrite");
       const kstore = ktransaction.objectStore("keyframes");
@@ -115,10 +144,13 @@ export class AnnotationsIndexedDB {
         const atransaction = this.db.transaction("annotations", "readwrite");
         const astore = atransaction.objectStore("annotations");
 
-        const request = astore.delete(annotation_id);
+        const deleteRequest = astore.delete(annotation_id);
 
-        request.onsuccess = () => resolve();
-        request.onerror = () => reject(request.error);
+        deleteRequest.onsuccess = async () => {
+          await this.loadAnnotations();
+          resolve();
+        };
+        deleteRequest.onerror = () => reject(deleteRequest.error);
       };
       request.onerror = (_) => {
         reject(request.error);
@@ -126,7 +158,10 @@ export class AnnotationsIndexedDB {
     });
   }
 
-  get(store_name: string, key: string): Promise<VideoAnnotationObject> {
+  /**
+   * Get a single annotation by ID
+   */
+  async get(store_name: string, key: string): Promise<VideoAnnotationObject> {
     return new Promise<VideoAnnotationObject>((resolve, reject) => {
       const transaction = this.db.transaction(store_name, "readonly");
       const store = transaction.objectStore(store_name);
@@ -137,7 +172,10 @@ export class AnnotationsIndexedDB {
     });
   }
 
-  getGroupAnnotations(groupId: string): Promise<VideoAnnotationObject[]> {
+  /**
+   * Get all annotations in a group
+   */
+  async getGroupAnnotations(groupId: string): Promise<VideoAnnotationObject[]> {
     const transaction = this.db.transaction("annotations", "readonly");
     const store = transaction.objectStore("annotations");
 
@@ -162,7 +200,10 @@ export class AnnotationsIndexedDB {
     });
   }
 
-  addKeyFrame(annotation: VideoAnnotationObject, keyFrame: VideoFrameSelection) {
+  /**
+   * Add a keyframe to an annotation
+   */
+  async addKeyFrame(annotation: VideoAnnotationObject, keyFrame: VideoFrameSelection): Promise<void> {
     const transaction = this.db.transaction(["annotations", "keyframes"], "readwrite");
     const store = transaction.objectStore("keyframes");
     const Astore = transaction.objectStore("annotations");
@@ -171,6 +212,7 @@ export class AnnotationsIndexedDB {
       keyFrame.frame,
     ]);
     const index = transaction.objectStore("keyframes").index("annotation");
+
     return new Promise<void>((resolve, reject) => {
       request.onsuccess = () => {
         const Arequest = Astore.get(annotation.metadata.id);
@@ -181,31 +223,42 @@ export class AnnotationsIndexedDB {
 
           keyframesRequest.onsuccess = () => {
             const keyframes = keyframesRequest.result;
-
             annotation.shape.frames = keyframes;
-
             Astore.put(annotation, annotation.metadata.id);
           };
         };
       };
 
-      transaction.oncomplete = () => resolve();
+      transaction.oncomplete = async () => {
+        await this.loadAnnotations();
+        resolve();
+      };
       transaction.onerror = (e) => reject(e);
     });
   }
 
-  deleteKeyFrame(annotation: VideoAnnotationObject, frame: number): Promise<void> {
+  /**
+   * Delete a keyframe from an annotation
+   */
+  async deleteKeyFrame(annotation: VideoAnnotationObject, frame: number): Promise<void> {
     const transaction = this.db.transaction("keyframes", "readwrite");
     const store = transaction.objectStore("keyframes");
     const request = store.delete([annotation.metadata.id, frame]);
 
     return new Promise<void>((resolve, reject) => {
       request.onerror = (r) => reject(r);
-      request.onsuccess = (r) => resolve(console.debug(r));
+      request.onsuccess = async (r) => {
+        console.debug(r);
+        await this.loadAnnotations();
+        resolve();
+      };
     });
   }
 
-  getAllIndex(key: string, value?: string) {
+  /**
+   * Get all annotations by index
+   */
+  async getAllIndex(key: string, value?: string): Promise<VideoAnnotationObject[]> {
     return new Promise<VideoAnnotationObject[]>((resolve, reject) => {
       const transaction = this.db.transaction("annotations", "readonly");
       const store = transaction.objectStore("annotations").index(key);
@@ -222,13 +275,16 @@ export class AnnotationsIndexedDB {
     });
   }
 
-  updateAllVisibility(hidden: boolean) {
+  /**
+   * Update visibility for all annotations
+   */
+  async updateAllVisibility(hidden: boolean): Promise<void> {
     const transaction = this.db.transaction(["annotations"], "readwrite");
     const objectStore = transaction.objectStore("annotations");
 
     return new Promise<void>((resolve, reject) => {
       objectStore.openCursor().onsuccess = (event) => {
-        const cursor = event.target?.result;
+        const cursor = (event.target as IDBRequest)?.result;
 
         if (cursor) {
           try {
@@ -243,25 +299,29 @@ export class AnnotationsIndexedDB {
         }
       };
 
-      transaction.oncomplete = () => {
+      transaction.oncomplete = async () => {
+        await this.loadAnnotations();
         resolve();
       };
       transaction.onerror = (event) => {
-        reject(event.target?.error);
+        reject((event.target as IDBRequest)?.error);
       };
       transaction.onabort = (event) => {
-        reject(event.target?.error);
+        reject((event.target as IDBRequest)?.error);
       };
     });
   }
 
-  updateAllLock(locked: boolean) {
+  /**
+   * Update lock state for all annotations
+   */
+  async updateAllLock(locked: boolean): Promise<void> {
     const transaction = this.db.transaction(["annotations"], "readwrite");
     const objectStore = transaction.objectStore("annotations");
 
     return new Promise<void>((resolve, reject) => {
       objectStore.openCursor().onsuccess = (event) => {
-        const cursor = event.target?.result;
+        const cursor = (event.target as IDBRequest)?.result;
 
         if (cursor) {
           try {
@@ -276,19 +336,23 @@ export class AnnotationsIndexedDB {
         }
       };
 
-      transaction.oncomplete = () => {
+      transaction.oncomplete = async () => {
+        await this.loadAnnotations();
         resolve();
       };
       transaction.onerror = (event) => {
-        reject(event.target?.error);
+        reject((event.target as IDBRequest)?.error);
       };
       transaction.onabort = (event) => {
-        reject(event.target?.error);
+        reject((event.target as IDBRequest)?.error);
       };
     });
   }
 
-  getAllStore(storename: string) {
+  /**
+   * Get all items from a store
+   */
+  async getAllStore(storename: string): Promise<VideoAnnotationObject[]> {
     return new Promise<VideoAnnotationObject[]>((resolve, reject) => {
       const transaction = this.db.transaction(storename, "readonly");
       const store = transaction.objectStore(storename);
@@ -304,7 +368,10 @@ export class AnnotationsIndexedDB {
     });
   }
 
-  getAllStartingWith(key: string, value: string) {
+  /**
+   * Get all annotations where category starts with a value
+   */
+  async getAllStartingWith(key: string, value: string): Promise<VideoAnnotationObject[]> {
     return new Promise<VideoAnnotationObject[]>((resolve, reject) => {
       const transaction = this.db.transaction("annotations", "readonly");
       const store = transaction.objectStore("annotations").index(key);
