@@ -2,16 +2,16 @@
   import { SearchIcon, SquareSplitHorizontalIcon, Trash2Icon } from "@lucide/svelte";
   import { getContext } from "svelte";
 
+  import ConfirmModal from "$lib/components/app/overlays/modals/confirm-modal.svelte";
   import ScrollArea from "$lib/components/ui/scroll-area/scroll-area.svelte";
-
   import TimelineCells from "$lib/plugin/video-annotation-activity/timeline/timeline-cells.svelte";
   import TimelineContextMenu, {
     type ITimelineContextMenu,
     type TimelineContextMenuMenu,
   } from "$lib/plugin/video-annotation-activity/timeline/timeline-context-menu.svelte";
-  import TimelineHeaderRow from "$lib/plugin/video-annotation-activity/timeline/timeline-header-row.svelte";
-  // import TimelineHorizontalScrollbar from "$lib/plugin/video-annotation-activity/timeline/timeline-horizontal-scrollbar.svelte";
   import TimelineEmptyAnnotations from "$lib/plugin/video-annotation-activity/timeline/timeline-empty-annotations.svelte";
+  import TimelineHeaderRow from "$lib/plugin/video-annotation-activity/timeline/timeline-header-row.svelte";
+  import TimelineHorizontalScrollbar from "$lib/plugin/video-annotation-activity/timeline/timeline-horizontal-scrollbar.svelte";
   import TimelineRowActions from "$lib/plugin/video-annotation-activity/timeline/timeline-row-actions.svelte";
   import TimelineRowGroup from "$lib/plugin/video-annotation-activity/timeline/timeline-row-group.svelte";
   import TimelineRowHeader from "$lib/plugin/video-annotation-activity/timeline/timeline-row-header.svelte";
@@ -50,8 +50,9 @@
     annotations: VideoAnnotationObject[];
     timelineHeight: number;
     onSeekFrame: (frame: number) => void;
+    onSelectGroup: (annotationGroup: AnnotationGroup<VideoAnnotationObject>, selectedFrame?: number) => void;
   }
-  let { annotations, timelineHeight, onSeekFrame }: Props = $props();
+  let { annotations, timelineHeight, onSeekFrame, onSelectGroup }: Props = $props();
 
   // Context
   let context: IActivityContext = getContext("context");
@@ -65,6 +66,8 @@
   let showHorizontalScrollbar = $state<boolean>(false);
   let contextMenu = $state<ITimelineContextMenu>({ visible: false, x: 0, y: 0, menus: {} });
   let wheelThrottling = $state<boolean>(false);
+  let openConfirmDeleteModal = $state<boolean>(false);
+  let selectedGroupId = $state<string | undefined>(undefined);
 
   // Functions
   function getGroupTitle(props: { annotationGroup: AnnotationGroup<VideoAnnotationObject> }): string {
@@ -270,6 +273,11 @@
   function deleteAnnotationGroup(groupId: string) {
     context.commands.run("annotation.deleteGroup", { groupId });
   }
+
+  function showConfirmDeleteModal(groupId?: string) {
+    selectedGroupId = groupId;
+    openConfirmDeleteModal = true;
+  }
 </script>
 
 <div
@@ -299,7 +307,7 @@
         {allAnnotationsLocked}
         onToggleVisibility={toggleAllAnnotationsVisibility}
         onToggleEditability={toggleAllAnnotationsEditability}
-        onClickDelete={deleteAllAnnotations}
+        onClickDelete={showConfirmDeleteModal}
       />
     </TimelineRowHeader>
 
@@ -318,6 +326,7 @@
             {annotationGroup}
             onSelectFrameX={selectFrameX}
             onContextMenu={(e) => showContextMenu(e, annotationGroup)}
+            {onSelectGroup}
           >
             <TimelineRowHeader>
               <TimelineRowHeading>
@@ -330,7 +339,7 @@
                 allAnnotationsLocked={allAnnotationsInGroupLocked}
                 onToggleVisibility={() => toggleAnnotationGroupVisibility(annotationGroup.groupId)}
                 onToggleEditability={() => toggleAnnotationGroupEditability(annotationGroup.groupId)}
-                onClickDelete={() => deleteAnnotationGroup(annotationGroup.groupId)}
+                onClickDelete={() => showConfirmDeleteModal(annotationGroup.groupId)}
               />
             </TimelineRowHeader>
 
@@ -353,8 +362,21 @@
   {/if}
 
   {#if showHorizontalScrollbar}
-    <!-- <TimelineHorizontalScrollbar /> -->
+    <TimelineHorizontalScrollbar />
   {/if}
 </div>
 
 <TimelineContextMenu {contextMenu} onCloseContextMenu={closeContextMenu} />
+
+<ConfirmModal
+  title="Delete {selectedGroupId ? 'annotation group' : 'annotations'}"
+  description="Are you sure you want to delete {selectedGroupId ? 'this annotation group' : 'all annotations'}?"
+  onConfirm={() => {
+    if (selectedGroupId) {
+      deleteAnnotationGroup(selectedGroupId);
+    } else {
+      deleteAllAnnotations();
+    }
+  }}
+  bind:open={openConfirmDeleteModal}
+/>

@@ -18,11 +18,12 @@
     annotationGroup: AnnotationGroup<VideoAnnotationObject>;
     onSelectFrameX: (frameX: number) => void;
     onContextMenu: (e: MouseEvent) => void;
+    onSelectGroup: (annotationGroup: AnnotationGroup<VideoAnnotationObject>, selectedFrame?: number) => void;
 
     children: Snippet;
     class?: string | null;
   }
-  let { annotationGroup, onSelectFrameX, onContextMenu, children, class: className }: Props = $props();
+  let { annotationGroup, onSelectFrameX, onContextMenu, onSelectGroup, children, class: className }: Props = $props();
 
   // Variables
   let { groupId } = $derived(annotationGroup);
@@ -52,6 +53,7 @@
 
     /** Select an annotation group */
     setSelectedAnnotationGroup(annotationGroup);
+    onSelectGroup(annotationGroup);
   }
 
   function jumpToRowWhenGroupSelected(node: HTMLElement, params: { id: string; isGroupSelected: boolean }) {

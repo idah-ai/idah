@@ -22,8 +22,8 @@
     // (startFrameIndexOfCurrentFrameRange * $framePerScale);
     return (startFrameIndexOfCurrentFrameRange / $totalFrames) * $timelineRulerWidth;
   });
-
-  // $inspect($timelineRulerWidth / currentRangeSpan);
+  let scrollbarHandleWidth = $derived((currentRangeSpan / $totalFrames) * $timelineRulerWidth);
+  let scrollbarMaxWidth = $derived($timelineRulerWidth - scrollbarHandleWidth);
 </script>
 
 <!-- -->
@@ -39,11 +39,13 @@
   onmouseover={() => {}}
 >
   <!-- SCROLL BAR::HANDLE -->
-  <button
-    aria-label="scrollbar-handle"
-    class="rounded-lg bg-gray-300 h-3 absolute bottom-1"
-    style:width="{(currentRangeSpan / $totalFrames) * viewportWidthPx}px"
-    style:left="{handlePositionX}px"
-    onmousemovecapture={() => {}}
-  ></button>
+  <div class="bg-primary" style:width="{scrollbarMaxWidth}px">
+    <button
+      aria-label="scrollbar-handle"
+      class="rounded-lg bg-gray-300 h-3 absolute bottom-1"
+      style:width="{scrollbarHandleWidth}px"
+      style:left="{handlePositionX}px"
+      onmousemovecapture={() => {}}
+    ></button>
+  </div>
 </div>

@@ -527,7 +527,7 @@
       registerOnSelectShortcuts(annotation.shape.type, {
         commands: context.commands,
         selectedId: annotation.metadata.id,
-        selectedGroupId: annotation.metadata.metadata?.group_id,
+        selectedGroupId: annotation.metadata.metadata?.group_id || $selectedAnnotationGroup?.groupId,
         getCurrentFrame: () => $currentFrame,
       });
     } else {
@@ -555,13 +555,14 @@
      */
     if (isNoteMode) {
       return;
-    } else if (selectedFrame && firstAnnotation.shape.type && editable) {
+    } else if (firstAnnotation.shape.type && editable) {
       /**
        * If user select timeline row at specific frame (selectedFrame is exists)
        * and workflow step is in review or annotation
        */
       setCurrentModeTo(firstAnnotation.shape.type);
-      selectClosestAnnotation(annotationGroup, selectedFrame);
+      if (selectedFrame) selectClosestAnnotation(annotationGroup, selectedFrame);
+
       // Register selection-specific shortcuts for the current mode
       registerOnSelectShortcuts(firstAnnotation.shape.type, {
         commands: context.commands,
@@ -569,6 +570,7 @@
         selectedGroupId: annotationGroup.groupId,
         getCurrentFrame: () => $currentFrame,
       });
+      console.log("registered on select shortcuts");
     } else {
       selectAnnotation(undefined);
       setCurrentModeTo(DEFAULT_MODE);
@@ -818,6 +820,7 @@
               {annotations}
               {timelineHeight}
               onSeekFrame={seekToFrame}
+              onSelectGroup={selectAnnotationGroup}
             />
           {/await}
         </AnnotationFooter>
