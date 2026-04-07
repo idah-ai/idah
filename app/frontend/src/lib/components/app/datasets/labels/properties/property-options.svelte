@@ -271,10 +271,11 @@
           onSetValue({
             visibility: parsed.length ? parsed : false,
           });
-        } catch (_) {
+        } catch (error) {
           onSetValue({
             visibility: false,
           });
+          console.error(error);
         }
       }}
     />
