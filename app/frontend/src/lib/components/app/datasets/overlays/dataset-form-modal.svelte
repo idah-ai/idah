@@ -62,17 +62,16 @@
 
   async function getLabelConfig() {
     let labelConfig: IConfig = {};
+    let selectedId = selectedDatasetId || (datasetRecord?.id as string);
 
-    /** Get label config, if selected dataset */
-    if (selectedDatasetId) {
-      const datasetRes = await datasetsBackendDataSource.get(selectedDatasetId, {
-        fields: {
-          [DatasetRecord.type]: ["labeling_configuration"],
-        },
-        noCache: true,
-      });
-      labelConfig = datasetRes.data.labeling_configuration;
-    }
+    const datasetRes = await datasetsBackendDataSource.get(selectedId, {
+      fields: {
+        [DatasetRecord.type]: ["labeling_configuration"],
+      },
+      noCache: true,
+    });
+
+    labelConfig = datasetRes.data.labeling_configuration;
 
     return labelConfig;
   }
@@ -130,6 +129,7 @@
 
     open = false;
     $refetches.datasets.list = new Date();
+    $refetches.datasets.get = new Date();
     showToast.success({
       title: "Dataset updated",
       description: `The dataset "${dataset.name}" has been updated.`,
