@@ -13,9 +13,11 @@
   import { datasetTabs, type DatasetTab } from "@/components/app/datasets/tabs/dataset.tabs";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { authStatus } from "@/security/AuthContext";
+  
+  import { refetches } from "@/utils/refetch";
 
   import type { ProjectMemberScope } from "@/security/types";
-
+  
   // Props
   interface Props {
     children: Snippet;
@@ -70,6 +72,7 @@
   }
 </script>
 
+{#key $refetches.datasets.get}
 {#await fetchData()}
   <PageLoading />
 {:then datasetRecord}
@@ -94,3 +97,4 @@
     {@render children()}
   </div>
 {/await}
+{/key}
