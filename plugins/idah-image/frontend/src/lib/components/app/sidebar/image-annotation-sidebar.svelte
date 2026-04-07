@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { CircleXIcon } from "lucide-svelte";
+  import { SvelteMap } from "svelte/reactivity";
   // import InputField from "$lib/components/app/forms/fields/input/input-field.svelte";
   import SidebarContent from "$lib/components/ui/sidebar/sidebar-content.svelte";
   import SidebarHeader from "$lib/components/ui/sidebar/sidebar-header.svelte";
@@ -12,8 +14,9 @@
   import { currentMode } from "$lib/plugin/store/store";
   import { ENTRY_ROOT } from "$lib/plugin/types";
 
-  import Input from "$lib/components/ui/input/input.svelte";
+  import InputField from "$lib/components/app/forms/fields/input-field.svelte";
 
+  import type { SidebarView } from "$lib/components/app/sidebar/sidebar.types";
   import type { AnnotationGroup, AnnotationValue } from "$lib/context/annotation-context";
   import type { IActivityContext, IConfigValue } from "$lib/context/context";
   import type { ImageAnnotationObject } from "$lib/context/image-annotation-context";
@@ -34,7 +37,7 @@
     db,
     class: className,
   }: {
-    view: "sidebar" | "popover";
+    view: SidebarView;
     sidebarWidthRem: number;
     annotationValue: AnnotationValue;
     // onEditValue: (annotationValue: AnnotationValue, mode: string) => void;
@@ -62,7 +65,7 @@
   let filteredTools = $derived.by(() => {
     if (!searchValue) return tools;
 
-    const result = new Map<string, IConfigValue[]>();
+    const result = new SvelteMap<string, IConfigValue[]>();
 
     for (const [toolType, categories] of tools) {
       const matching = categories.filter((category) =>
@@ -112,13 +115,18 @@
 <Sidebar variant="inset" collapsible="none" class={cn(className)} style="width: ${sidebarWidthRem}rem">
   {#if !tools.has($currentMode)}
     <SidebarHeader>
-      <Input placeholder="Search" value={searchValue} oninput={(e) => searchCategory(e)}>
-        <!--  {#snippet suffixIcon()}
+      <InputField
+        name="input/plugin/search"
+        placeholder="Search"
+        value={searchValue}
+        oninput={(e) => searchCategory(e)}
+      >
+        {#snippet suffixIcon()}
           {#if searchValue}
             <CircleXIcon class="hover:cursor-pointer" onclick={clearSearch} />
           {/if}
-        {/snippet} -->
-      </Input>
+        {/snippet}
+      </InputField>
     </SidebarHeader>
   {/if}
 
@@ -138,7 +146,6 @@
           {onDeleteAnnotation}
           {onEditability}
           {onVisibility}
-          {context}
         ></ImageCategorySidebar>
       {/if}
     {/each}

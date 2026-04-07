@@ -21,7 +21,7 @@
 
   import type { AnnotationGroup } from "$lib/context/annotation-context";
   import type { CategoryDefinition } from "$lib/context/category-context";
-  import type { IActivityContext, IConfigValue } from "$lib/context/context";
+  import type { IConfigValue } from "$lib/context/context";
   import type { ImageAnnotationObject } from "$lib/context/image-annotation-context";
   import type { AnnotationsIndexedDB } from "$lib/plugin/indexedDB";
 
@@ -35,7 +35,6 @@
 
     onSelectCategory: (category?: string) => void;
     selectedCategory: string | undefined;
-    context: IActivityContext;
     onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<ImageAnnotationObject>) => void;
     onDeleteAnnotation: (annotation: ImageAnnotationObject) => void;
     onEditability: (locked: boolean, annotation?: ImageAnnotationObject) => void;
@@ -48,7 +47,6 @@
     categories,
     onSelectCategory,
     selectedCategory,
-    context,
     onSelectAnnotationGroup,
     onDeleteAnnotation,
     onEditability,
@@ -158,12 +156,7 @@
     groups: Array<AnnotationGroup<ImageAnnotationObject>>;
     count: number;
   } {
-    const filteredAnnotations = annotations.filter(
-      (annotation) =>
-        // currentFrame >= annotation.shape.start &&
-        // currentFrame <= annotation.shape.end &&
-        annotation.shape.type == modalityShape,
-    );
+    const filteredAnnotations = annotations.filter((annotation) => annotation.shape.type == modalityShape);
     const filteredGroupedAnnotations = groupAnnotations(filteredAnnotations);
 
     return {
@@ -171,10 +164,6 @@
       count: filteredGroupedAnnotations.length,
     };
   }
-
-  $effect(() => {
-    console.log({ categories });
-  });
 </script>
 
 <SidebarGroup>
@@ -184,6 +173,7 @@
         {#snippet child({ props })}
           <Button variant="ghost" class="w-full justify-between" {...props}>
             {formatShapeName(modalityShape)}
+
             <div
               class={cn("rotate-0 transition-transform duration-200", {
                 "rotate-90": openCategory,
@@ -214,107 +204,112 @@
   level: number = 1,
 )}
   <Collapsible open={openStates[category.id] || false}>
-    {@const count = 0}
-    <!-- {@const { count } = groupFilteredAnnotations(annotations)} -->
-    {@const hasAnnotations = count > 0}
+    {#key `${$idbUpdatedAt}`}
+      {#if db && category}
+        {#await db.getAllStartingWith("category", category.id) then annotations}
+          {@const { count } = groupFilteredAnnotations(annotations)}
+          {@const hasAnnotations = count > 0}
 
-    <CollapsibleTrigger
-      class={cn("text-secondary-foreground flex w-full rounded-md text-xs", {
-        "bg-secondary border-primary border": selectedCategory == category.id,
-        "hover:bg-primary-foreground hover:dark:bg-accent cursor-pointer": !category.requiredNested,
-        "hover:bg-accent cursor-pointer": !currentModeIsSameAsShape,
-      })}
-      onclick={(e) => toggleCategory(e, category)}
-    >
-      <div class="flex w-full items-center" style:padding-left="{level - 1}rem">
-        <SidebarMenuItem class="flex h-8 w-full flex-row items-center gap-1">
-          {@const hasChildren = !!category.nestedCategories}
-          {@const isSelectingCategory = selectedCategory == category.id}
-          {@const showChevronRightIcon = hasChildren || hasAnnotations}
-
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            disabled={currentModeIsSameAsShape}
-            class={cn("p-0", {
-              "opacity-0": !showChevronRightIcon || $selectedAnnotation?.metadata.id,
+          <CollapsibleTrigger
+            class={cn("text-secondary-foreground flex w-full rounded-md text-xs", {
+              "bg-secondary border-primary border": selectedCategory == category.id,
+              "hover:bg-primary-foreground hover:dark:bg-accent cursor-pointer": !category.requiredNested,
+              "hover:bg-accent cursor-pointer": !currentModeIsSameAsShape,
             })}
-            onclick={(e) => {
-              e.stopPropagation();
-
-              if (category.nestedCategories || showChevronRightIcon) {
-                manualToggleStates = {
-                  ...manualToggleStates,
-                  [category.id]: !openStates[category.id],
-                };
-              }
-            }}
+            onclick={(e) => toggleCategory(e, category)}
           >
-            {#if view === "sidebar"}
-              {#if currentModeIsSameAsShape}
-                <!-- TOOLS::BOUNDING BOX / POLYGON / OTHER SHAPES -->
-                {#if isSelectingCategory}
-                  <PlusIcon class="text-primary" strokeWidth={4} />
-                {:else if hasChildren}
-                  <ChevronRightIcon
+            <div class="flex w-full items-center" style:padding-left="{level - 1}rem">
+              <SidebarMenuItem class="flex h-8 w-full flex-row items-center gap-1">
+                {@const hasChildren = !!category.nestedCategories}
+                {@const isSelectingCategory = selectedCategory == category.id}
+                {@const showChevronRightIcon = hasChildren || hasAnnotations}
+
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  disabled={currentModeIsSameAsShape}
+                  class={cn("p-0", {
+                    "opacity-0": !showChevronRightIcon || $selectedAnnotation?.metadata.id,
+                  })}
+                  onclick={(e) => {
+                    e.stopPropagation();
+
+                    if (category.nestedCategories || showChevronRightIcon) {
+                      manualToggleStates = {
+                        ...manualToggleStates,
+                        [category.id]: !openStates[category.id],
+                      };
+                    }
+                  }}
+                >
+                  {#if view === "sidebar"}
+                    {#if currentModeIsSameAsShape}
+                      <!-- TOOLS::BOUNDING BOX / POLYGON / OTHER SHAPES -->
+                      {#if isSelectingCategory}
+                        <PlusIcon class="text-primary" strokeWidth={4} />
+                      {:else if hasChildren}
+                        <ChevronRightIcon
+                          class={cn({
+                            "rotate-90": openStates[category.id],
+                            "stroke-blue-300": isSelectingCategory,
+                            "stroke-gray-500": !isSelectingCategory,
+                          })}
+                        />
+                      {:else}
+                        <CircleSmallIcon class="fill-gray-400 stroke-gray-400" />
+                      {/if}
+                    {:else}
+                      <!-- TOOLS::VISUAL -->
+                      <ChevronRightIcon
+                        class={cn({
+                          "opacity-0": !showChevronRightIcon,
+                          "rotate-90": openStates[category.id],
+                          "stroke-blue-300": isSelectingCategory,
+                          "stroke-gray-500": !isSelectingCategory,
+                        })}
+                      />
+                    {/if}
+                  {/if}
+
+                  {#if view === "popover"}
+                    {#if hasChildren}
+                      <ChevronRightIcon
+                        class={cn({
+                          "rotate-90": openStates[category.id],
+                        })}
+                      />
+                    {:else}
+                      <CircleSmallIcon class="fill-gray-400 stroke-gray-400" />
+                    {/if}
+                  {/if}
+                </Button>
+
+                {#if modalityShape === IMAGE_BOUNDING_BOX}
+                  <VectorSquareIcon
+                    color={category.data?.color}
                     class={cn({
-                      "rotate-90": openStates[category.id],
-                      "stroke-blue-300": isSelectingCategory,
-                      "stroke-gray-500": !isSelectingCategory,
+                      hidden: category.requiredNested,
                     })}
                   />
-                {:else}
-                  <CircleSmallIcon class="fill-gray-400 stroke-gray-400" />
+                {:else if modalityShape === IMAGE_POLYGON}
+                  <PolygonCircleIcon
+                    color={category.data?.color}
+                    class={cn({
+                      hidden: category.requiredNested,
+                    })}
+                  />
                 {/if}
-              {:else}
-                <!-- TOOLS::VISUAL -->
-                <ChevronRightIcon
-                  class={cn({
-                    "opacity-0": !showChevronRightIcon,
-                    "rotate-90": openStates[category.id],
-                    "stroke-blue-300": isSelectingCategory,
-                    "stroke-gray-500": !isSelectingCategory,
-                  })}
-                />
-              {/if}
-            {/if}
+                <ImageCategoryName name={category.name} />
 
-            {#if view === "popover"}
-              {#if hasChildren}
-                <ChevronRightIcon
-                  class={cn({
-                    "rotate-90": openStates[category.id],
-                  })}
-                />
-              {:else}
-                <CircleSmallIcon class="fill-gray-400 stroke-gray-400" />
-              {/if}
-            {/if}
-          </Button>
-
-          {#if modalityShape === IMAGE_BOUNDING_BOX}
-            <VectorSquareIcon
-              color={category.data?.color}
-              class={cn({
-                hidden: category.requiredNested,
-              })}
-            />
-          {:else if modalityShape === IMAGE_POLYGON}
-            <PolygonCircleIcon
-              color={category.data?.color}
-              class={cn({
-                hidden: category.requiredNested,
-              })}
-            />
-          {/if}
-          <ImageCategoryName name={category.name} />
-
-          {#if view === "sidebar"}
-            <AnnotationCountBadge class="mr-2" {count} />
-          {/if}
-        </SidebarMenuItem>
-      </div>
-    </CollapsibleTrigger>
+                {#if view === "sidebar"}
+                  <AnnotationCountBadge class="mr-2" {count} />
+                {/if}
+              </SidebarMenuItem>
+            </div>
+          </CollapsibleTrigger>
+        {/await}
+      {/if}
+    {/key}
 
     <CollapsibleContent hidden={!openStates[category.id]}>
       {#key $idbUpdatedAt}
