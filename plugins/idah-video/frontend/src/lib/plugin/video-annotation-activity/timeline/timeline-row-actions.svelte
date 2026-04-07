@@ -41,6 +41,46 @@
     e.stopPropagation();
     onClickDelete();
   }
+
+  function getVisibilityTooltipContent() {
+    switch (mode) {
+      case "multiple": {
+        if (allAnnotationsHidden) return "Show all";
+        return "Hide all";
+      }
+
+      case "single": {
+        if (allAnnotationsHidden) return "Show";
+        return "Hide";
+      }
+    }
+  }
+
+  function getEditabilityTooltipContent() {
+    switch (mode) {
+      case "multiple": {
+        if (allAnnotationsLocked) return "Unlock all";
+        return "Lock all";
+      }
+
+      case "single": {
+        if (allAnnotationsLocked) return "Unlock";
+        return "Lock";
+      }
+    }
+  }
+
+  function getDeleteTooltipContent() {
+    switch (mode) {
+      case "multiple": {
+        return "Delete all";
+      }
+
+      case "single": {
+        return "Delete";
+      }
+    }
+  }
 </script>
 
 <div
@@ -59,7 +99,7 @@
     {/snippet}
 
     {#snippet content()}
-      {mode === "multiple" ? "Toggle hide / show all" : "Toggle hide / show"}
+      {getVisibilityTooltipContent()}
     {/snippet}
   </Tooltips>
 
@@ -73,7 +113,7 @@
     {/snippet}
 
     {#snippet content()}
-      {mode === "multiple" ? "Toggle lock / unlock all" : "Toggle lock / unlock"}
+      {getEditabilityTooltipContent()}
     {/snippet}
   </Tooltips>
 
@@ -86,7 +126,7 @@
     {/snippet}
 
     {#snippet content()}
-      {mode === "multiple" ? "Delete all" : "Delete"}
+      {getDeleteTooltipContent()}
     {/snippet}
   </Tooltips>
 </div>
