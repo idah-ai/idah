@@ -167,7 +167,7 @@
 
         <SelectContent>
           <SelectGroup>
-            {#each configByMode.values as { id: value, label, color } (value)}
+            {#each configByMode.values as { id: value, label, color }, index (`${value}-${index}`)}
               <SelectItem class="text-xs" {label} {value}>
                 {#if firstAnnotationInGroup?.shape.type === IDAH_VIDEO_BOUNDING_BOX}
                   <VectorSquareIcon {color} />
@@ -211,13 +211,8 @@
 
       <SelectContent>
         <SelectGroup>
-          {#each configByGroup.values as { id: value, label, color } (value)}
-            <SelectItem
-              class="text-xs"
-              {label}
-              {value}
-              disabled={firstAnnotationInGroupCategory == value}
-            >
+          {#each configByGroup.values as { id: value, label, color }, index (`${value}-${index}`)}
+            <SelectItem class="text-xs" {label} {value} disabled={firstAnnotationInGroupCategory == value}>
               {#if firstAnnotationInGroup?.shape.type === IDAH_VIDEO_BOUNDING_BOX}
                 <VectorSquareIcon {color} />
               {:else}
@@ -276,4 +271,30 @@
       {/each}
     </section>
   {/if}
-</div>
+
+  <!-- PROPERTIES -->
+  <div class="flex flex-col gap-4">
+    {#if category && properties?.length > 0}
+      <section class="flex flex-col gap-2">
+        <Text class="mb-2" weight="semibold" size="sm">Properties</Text>
+
+        {#each properties as property, index (`${property.id}-${index}`)}
+          {@const foundPropertyComponent = propertyComponents.find((p) => p.type == property.type)}
+
+          {#if foundPropertyComponent}
+            <div class="flex flex-col gap-1">
+              <foundPropertyComponent.component
+                {...{
+                  property,
+                  value: annotationValue.attributes?.[property.id],
+                  onValueChange: (v: string | number | boolean | string[] | undefined) => onValueChange(property, v),
+                  disabled,
+                }}
+              />
+            </div>
+          {/if}
+        {/each}
+      </section>
+    {/if}
+  </div>
+{/key}

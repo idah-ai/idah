@@ -1,6 +1,6 @@
 <script lang="ts">
   import { SearchIcon, SquareSplitHorizontalIcon, Trash2Icon } from "@lucide/svelte";
-  import { getContext, onMount } from "svelte";
+  import { getContext } from "svelte";
 
   import ScrollArea from "$lib/components/ui/scroll-area/scroll-area.svelte";
 
@@ -30,12 +30,11 @@
     deselectFrameX,
     framePerScale,
     selectedFrameX,
-    selectFirstFrameX,
     setCurrentFrameRange,
     setSelectedFrameX,
     TIMELINE_ROW_HEADER_WIDTH,
   } from "$lib/plugin/video-annotation-activity/timeline/store";
-  import { getFrameFromMouseX, getMouseXFromFrame } from "$lib/plugin/video-annotation-activity/timeline/utils";
+  import { getFrameFromMouseX } from "$lib/plugin/video-annotation-activity/timeline/utils";
   import { findCategory } from "$lib/plugin/video-annotation-activity/utils/category";
   import {
     findClosestAnnotationInGroup,
@@ -56,12 +55,6 @@
 
   // Context
   let context: IActivityContext = getContext("context");
-
-  // Lifecycle
-  onMount(() => {
-    /** Set selected frame x to timeline row header width (Selected Frame = 1) */
-    selectFirstFrameX();
-  });
 
   // Variables
   let timeline: HTMLDivElement;
@@ -171,8 +164,10 @@
     setCurrentFrame(selectedFrame);
     onSeekFrame(selectedFrame);
 
-    const newMouseX = getMouseXFromFrame({ frame: selectedFrame });
-    setSelectedFrameX(newMouseX);
+    /**
+     * Note: Do not setSelectedFrameX here
+     * If you want to setSelectedFrameX, set it on timeline-ruler.svelte inside $effect runes.
+     */
 
     closeContextMenu();
   }

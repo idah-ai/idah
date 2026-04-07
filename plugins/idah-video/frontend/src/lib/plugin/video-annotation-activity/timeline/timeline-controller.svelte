@@ -8,13 +8,18 @@
   import {
     recalculateFramePerScale,
     recalculateFrameRange,
-    selectFirstFrameX,
     setTimelineCellWidth,
     TIMELINE_CELL_MAX_WIDTH,
     TIMELINE_CELL_MIN_WIDTH,
     TIMELINE_CELL_WIDTH_STEP,
     timelineCellWidth,
   } from "$lib/plugin/video-annotation-activity/timeline/store";
+
+  // Props
+  interface Props {
+    onSeekFrame: (frame: number) => void;
+  }
+  let { onSeekFrame }: Props = $props();
 
   // Functions
   function zoomTimelineOut() {
@@ -38,7 +43,7 @@
     recalculateFramePerScale();
 
     /** 3. Then select the first frame as frame range is re-computed */
-    selectFirstFrameX();
+    onSeekFrame(1);
   }
 </script>
 

@@ -129,7 +129,7 @@
   );
 
   // Variables::Timeline
-  let timelineHeight = $state<number>(0);
+  let timelineHeight: number = $state(0);
   let zoom = $state(85);
 
   let annotationsIDB: AnnotationsIndexedDB | undefined = $state();
@@ -583,39 +583,8 @@
       annotationGroup,
       frame,
     });
-    // let closestAnnotation = annotationGroup.annotations[0];
-
-    // if (annotationGroup.annotations.length === 1) {
-    //   selectAnnotation(closestAnnotation);
-    //   return closestAnnotation;
-    // }
-
-    // let minDiff = Infinity;
-
-    // for (const annotation of annotationGroup.annotations) {
-    //   const start = annotation.shape.start;
-    //   const end = annotation.shape.end;
-
-    //   // If frame is within an annotation, that's the one
-    //   if (frame >= start && frame <= end) {
-    //     closestAnnotation = annotation;
-    //     minDiff = 0;
-    //     break;
-    //   }
-
-    //   // Calculate distance to nearest edge
-    //   const diff = Math.min(Math.abs(frame - start), Math.abs(frame - end));
-
-    //   if (diff < minDiff) {
-    //     minDiff = diff;
-    //     closestAnnotation = annotation;
-    //   }
-    // }
-
-    // if (closestAnnotation) {
     setCurrentModeTo(closestAnnotation.shape.type);
     selectAnnotation(closestAnnotation);
-    // }
 
     return closestAnnotation;
   }
@@ -662,6 +631,10 @@
       groupId: $selectedAnnotationGroup.groupId,
       categoryIdToBeUpdate: reselectedCategoryId,
     });
+  }
+
+  function onTimelineResize(resizeValue: number) {
+    timelineHeight = window.innerHeight * (resizeValue / 100);
   }
 </script>
 
@@ -832,12 +805,12 @@
 
       <ResizableHandle withHandle />
 
-      <ResizablePane defaultSize={25} minSize={15}>
+      <ResizablePane defaultSize={25} minSize={15} onResize={onTimelineResize}>
         <AnnotationFooter>
           <AnnotationFooterToolbar>
             <VideoController {zoom} {volume} bind:video={player} />
 
-            <TimelineController />
+            <TimelineController onSeekFrame={seekToFrame} />
           </AnnotationFooterToolbar>
 
           {#await annotations_promise then annotations}

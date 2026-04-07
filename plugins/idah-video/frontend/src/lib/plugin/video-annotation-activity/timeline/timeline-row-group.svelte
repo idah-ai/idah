@@ -27,6 +27,7 @@
   // Variables
   let { groupId } = $derived(annotationGroup);
   let isGroupSelected = $derived($selectedAnnotationGroup?.groupId == groupId);
+  let rowElements: Record<string, HTMLElement> = $state({});
 
   // Functions
   function onCellClick(e: MouseEvent) {
@@ -35,6 +36,7 @@
 
     if (frame > 0) {
       /** Click on annotation row which have a frame */
+
       /** Select frame X if click on cells (not group header) */
       onSelectFrameX(e.clientX);
 
@@ -43,10 +45,34 @@
       setSelectedAnnotation(closestAnnotation);
     } else {
       /** Click on annotation group header */
+
+      /** Unselect any selected annotation group */
+      setSelectedAnnotation(undefined);
     }
 
     /** Select an annotation group */
     setSelectedAnnotationGroup(annotationGroup);
+  }
+
+  function jumpToRowWhenGroupSelected(node: HTMLElement, params: { id: string; isGroupSelected: boolean }) {
+    rowElements[params.id] = node;
+
+    return {
+      update(newParams: { id: string; isGroupSelected: boolean }) {
+        // Scroll into view immediately when this row (group) becomes selected
+        if (newParams.isGroupSelected && !params.isGroupSelected) {
+          node.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+            inline: "nearest",
+          });
+        }
+        params = newParams;
+      },
+      destroy() {
+        delete rowElements[params.id];
+      },
+    };
   }
 </script>
 
@@ -61,6 +87,7 @@
     },
     className,
   )}
+  use:jumpToRowWhenGroupSelected={{ id: groupId, isGroupSelected }}
   onclick={onCellClick}
   oncontextmenu={onContextMenu}
   onkeypress={() => {}}
