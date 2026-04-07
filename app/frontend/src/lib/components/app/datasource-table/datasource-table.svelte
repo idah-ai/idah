@@ -26,12 +26,12 @@
   import { convertSearchParamsToHash } from "@/utils/uri";
 
   import type {
-    DataTableBaseProps,
-    FilterDataSourceParams,
-    SortDataSourceParams,
-    TableData,
-    TablePreferences,
-    TableState,
+      DataTableBaseProps,
+      FilterDataSourceParams,
+      SortDataSourceParams,
+      TableData,
+      TablePreferences,
+      TableState,
   } from "@/components/app/datasource-table/types";
 
   import type { ListOptions } from "@/data/DataSource";
@@ -236,7 +236,6 @@
      * please beaware of this.
      */
     /* eslint-disable svelte/no-navigation-without-resolve */
-    // await goto(url.href, { replaceState: true });
     replaceState(url.href, {});
     /* eslint-enable svelte/no-navigation-without-resolve */
 
