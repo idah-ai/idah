@@ -61,6 +61,11 @@
    */
   let transformedFrameRanges = $derived.by(() => {
     return frameRanges.map((eachFrame) => {
+      /** If each frame in frame ranges is greater than the scaled end frame of current frame range */
+      if (eachFrame >= startFrameIndexOfCurrentFrameRange * $framePerScale) {
+        return eachFrame;
+      }
+
       /** If each frame in frame ranges is less than the scaled start frame of current frame range */
       if (eachFrame < startFrameOfCurrentFrameRange * $framePerScale) {
         return null;
@@ -83,7 +88,7 @@
       }
 
       /** If each frame in frame ranges is greater than the end frame of current frame range */
-      if (eachFrame > endFrameOfCurrentFrameRange) {
+      if (eachFrame > endFrameOfCurrentFrameRange * $framePerScale) {
         return null;
       }
     });

@@ -35,7 +35,7 @@
     setSelectedFrameX,
     TIMELINE_ROW_HEADER_WIDTH,
   } from "$lib/plugin/video-annotation-activity/timeline/store";
-  import { getFrameFromMouseX, getMouseXFromFrame } from "$lib/plugin/video-annotation-activity/timeline/utils";
+  import { getFrameFromMouseX } from "$lib/plugin/video-annotation-activity/timeline/utils";
   import { findCategory } from "$lib/plugin/video-annotation-activity/utils/category";
   import {
     findClosestAnnotationInGroup,
@@ -171,8 +171,10 @@
     setCurrentFrame(selectedFrame);
     onSeekFrame(selectedFrame);
 
-    const newMouseX = getMouseXFromFrame({ frame: selectedFrame });
-    setSelectedFrameX(newMouseX);
+    /**
+     * Note: Do not setSelectedFrameX here
+     * If you want to setSelectedFrameX, set it on timeline-ruler.svelte inside $effect runes.
+     */
 
     closeContextMenu();
   }

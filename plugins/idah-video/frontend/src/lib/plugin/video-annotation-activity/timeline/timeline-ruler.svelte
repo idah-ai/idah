@@ -70,6 +70,18 @@
         const newEnd = endFrameIndexOfCurrentFrameRange + 1;
         setCurrentFrameRange([newStart, newEnd]);
       }
+    } else {
+      /**
+       * Set selected frame x to current frame when video is not playing, but shortcut is pressed (ArrowRight/ArrowLeft)
+       * This make timeline-vertical-line change every time current frame is changed.
+       */
+      const mouseX = getSelectedFrameXFromCurrentFrame({ currentFrame: $currentFrame });
+      setSelectedFrameX(mouseX);
+
+      /**
+       * To set current frame range when shortcut is pressed (Arrow Left / Arrow Right)
+       * Please add your logic on shortcut.ts
+       */
     }
   });
 
@@ -87,12 +99,12 @@
 >
   {#each frameRanges as frame, frameIndex (frameIndex)}
     {@const isMajorTick = majorTicks.includes(frameIndex)}
-    {@const frameNumber = (frame + 1) * $framePerScale}
+    {@const frameNumber = Number(frame * $framePerScale) + 1}
     {@const isInRangeOfTotalFrames = frameIndex * $framePerScale <= $totalFrames - 1}
 
     {#if isInRangeOfTotalFrames}
       <div
-        class="absolute bottom-0 flex items-center border-l pl-0.5 text-sm select-none first:border-l-0"
+        class="absolute bottom-0 flex border-l pl-0.5 text-sm select-none first:border-l-0"
         style:height="{isMajorTick ? 28 : 14}px"
         style:width="{$timelineCellWidth}px"
         style:left="{frameIndex * $timelineCellWidth}px"

@@ -35,6 +35,7 @@
 
     if (frame > 0) {
       /** Click on annotation row which have a frame */
+
       /** Select frame X if click on cells (not group header) */
       onSelectFrameX(e.clientX);
 
@@ -43,6 +44,9 @@
       setSelectedAnnotation(closestAnnotation);
     } else {
       /** Click on annotation group header */
+
+      /** Unselect any selected annotation group */
+      setSelectedAnnotation(undefined);
     }
 
     /** Select an annotation group */

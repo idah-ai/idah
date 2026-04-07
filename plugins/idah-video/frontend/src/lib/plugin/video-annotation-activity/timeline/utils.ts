@@ -28,11 +28,7 @@ export function getFrameFromMouseX(props: { clientX: number }) {
   const framePerScaleStore = get(framePerScale);
   const frameFloat = (clientX - TIMELINE_ROW_HEADER_WIDTH) / timelineCellWidth;
 
-  if (framePerScaleStore <= 1) {
-    return Math.ceil(frameFloat) * framePerScaleStore;
-  }
-
-  return Math.floor((frameFloat + 1) * framePerScaleStore);
+  return Math.ceil(frameFloat * framePerScaleStore);
 }
 
 export function getMouseXFromFrame(props: { frame: number }) {
@@ -51,9 +47,15 @@ export function getMouseXFromFrame(props: { frame: number }) {
 
 export function getSelectedFrameXFromCurrentFrame(props: { currentFrame: number }) {
   const { currentFrame } = props;
-  const middleOfCurrentFrame = currentFrame - 0.5;
-
   const timelineCellWidth = get(timelineCellWidthStore);
+  const framePerScaleStore = get(framePerScale);
+  const startOfCurrentFrameRange = get(currentFrameRange)[0];
 
-  return Number(middleOfCurrentFrame * timelineCellWidth) + TIMELINE_ROW_HEADER_WIDTH;
+  const normalizedCurrentFrame = currentFrame / framePerScaleStore;
+  const normalizedStartOfCurrentFrameRange = startOfCurrentFrameRange / framePerScaleStore;
+
+  const normalizedFrameInScale = normalizedCurrentFrame - normalizedStartOfCurrentFrameRange;
+  const middleOfnormalizedFrameInScale = normalizedFrameInScale - Number(0.5 / framePerScaleStore);
+
+  return Number(middleOfnormalizedFrameInScale * timelineCellWidth) + TIMELINE_ROW_HEADER_WIDTH;
 }
