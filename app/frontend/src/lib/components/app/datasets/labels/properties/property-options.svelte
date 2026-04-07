@@ -16,8 +16,8 @@
   import type { IConfigProperty } from "@/plugin/interface/Activity";
   import type { Hash } from "@/utils/types";
 
-  import * as parser from "@build/parser.js";
   import { ASTNodeToFunctionString } from "@/utils/ast_resolution";
+  import * as parser from "@build/parser.js";
 
   // Props
   interface Props {
@@ -28,8 +28,6 @@
 
   // Variables
   let { id, description, type, format, required, visibility } = $derived(property);
-
-  let visibilityError: string | undefined = $state();
 </script>
 
 {#snippet SectionHeading(heading: string)}
@@ -263,19 +261,22 @@
       class="col-span-1 md:col-span-2"
       label="Visibility"
       placeholder="e.g. task_name match '...' and status = '...'"
-      value={visibility == true ? "" : ASTNodeToFunctionString(visibility)}
+      value={visibility == false ? "" : ASTNodeToFunctionString(visibility)}
       oninput={(e) => {
+        const inputValue = e.currentTarget.value;
+
         try {
-          const visibility = parser.parse(e.currentTarget.value);
-          visibilityError = undefined;
-          onSetValue({ visibility: visibility.length ? visibility : true });
+          const parsed = parser.parse(inputValue);
+
+          onSetValue({
+            visibility: parsed.length ? parsed : false,
+          });
         } catch (error) {
-          if (error instanceof Error) {
-            visibilityError = error.message;
-          }
+          onSetValue({
+            visibility: false,
+          });
         }
       }}
-      errors={visibilityError ? [visibilityError] : undefined}
     />
   </div>
 </div>
