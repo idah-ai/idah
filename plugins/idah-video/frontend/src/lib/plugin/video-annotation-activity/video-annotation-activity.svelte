@@ -711,7 +711,7 @@
           <AnnotationFooterToolbar>
             <VideoController {zoom} {volume} bind:video={player} />
 
-            <TimelineController />
+            <TimelineController onSeekFrame={seekToFrame} />
           </AnnotationFooterToolbar>
 
           {#await annotations_promise then annotations}

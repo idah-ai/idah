@@ -5,7 +5,6 @@
   import Button from "$lib/components/ui/button/button.svelte";
   import Slider from "$lib/components/ui/slider/slider.svelte";
 
-  import { setCurrentFrame } from "$lib/plugin/video-annotation-activity/store/store";
   import {
     recalculateFramePerScale,
     recalculateFrameRange,
@@ -15,6 +14,12 @@
     TIMELINE_CELL_WIDTH_STEP,
     timelineCellWidth,
   } from "$lib/plugin/video-annotation-activity/timeline/store";
+
+  // Props
+  interface Props {
+    onSeekFrame: (frame: number) => void;
+  }
+  let { onSeekFrame }: Props = $props();
 
   // Functions
   function zoomTimelineOut() {
@@ -38,7 +43,8 @@
     recalculateFramePerScale();
 
     /** 3. Then select the first frame as frame range is re-computed */
-    setCurrentFrame(1);
+    onSeekFrame(1);
+    // setCurrentFrame(1);
   }
 </script>
 
