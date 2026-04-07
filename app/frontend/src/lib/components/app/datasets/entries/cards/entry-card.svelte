@@ -87,7 +87,7 @@
   let jobProgress: number = $state(1);
 
   const processingStatuses: EntryStatusType[] = ["processing", "pending"];
-  const TOTAL_POSITIONS = entry.dataset.modality === "idah:video" ? 10 : 2; // 10 images inside the larger image
+  const TOTAL_POSITIONS = entry.dataset.modality === "idah-video" ? 10 : 2; // 10 images inside the larger image
   const ANIMATION_INTERVAL_MS = 350; // 1 second per position
 
   // Functions
@@ -205,7 +205,7 @@
 
   // Animation functions
   function startAnimation() {
-    if (animationInterval || entry.dataset.modality !== "idah:video") return;
+    if (animationInterval || entry.dataset.modality !== "idah-video") return;
 
     animationInterval = setInterval(() => {
       currentImagePosition = (currentImagePosition + 1) % TOTAL_POSITIONS;

@@ -72,7 +72,7 @@ export function activityContextForEntry(entry: EntryRecord): IActivityContext {
     status: entry.status,
     config: entry.dataset.labeling_configuration,
     mediaUrl:
-      entry.dataset.modality === "idah:video"
+      entry.dataset.modality === "idah-video"
         ? [`${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files`, entry.resource, "master.m3u8"].join("/")
         : [`${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias/files`, entry.resource].join("/"),
     user: {
