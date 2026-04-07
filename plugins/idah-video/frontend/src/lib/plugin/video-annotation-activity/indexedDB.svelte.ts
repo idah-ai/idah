@@ -419,30 +419,19 @@ export class AnnotationsIndexedDB {
 
   /**
    * Get all annotations where category starts with a value
+   * Optimized: Uses in-memory reactive state instead of IndexedDB query
+   * Performance: O(n) filter operation on cached data
    */
-  async getAllStartingWith(key: string, value: string): Promise<VideoAnnotationObject[]> {
-    return new Promise<VideoAnnotationObject[]>((resolve, reject) => {
-      const transaction = this.db.transaction("annotations", "readonly");
-      const store = transaction.objectStore("annotations").index(key);
-      const keyRange = IDBKeyRange.lowerBound(value);
+  annotationsStartsWith(value: string): VideoAnnotationObject[] {
+    return this.annotations.filter((ann) => ann.value.category?.startsWith(value));
+  }
 
-      const request = store.openCursor(keyRange);
-
-      const result: VideoAnnotationObject[] = [];
-      request.onsuccess = () => {
-        const cursor = request.result;
-
-        if (cursor && cursor.value.value.category.startsWith(value)) {
-          result.push(cursor.value);
-          cursor.continue();
-        } else {
-          // stop cursor
-          resolve(result);
-        }
-      };
-      request.onerror = () => {
-        reject(request.error);
-      };
-    });
+  /**
+   * Get all annotations with exact category match
+   * Optimized: Uses in-memory reactive state instead of IndexedDB query
+   * Performance: O(n) filter operation on cached data
+   */
+  annotationsWithCategory(categoryId: string): VideoAnnotationObject[] {
+    return this.annotations.filter((ann) => ann.value.category === categoryId);
   }
 }

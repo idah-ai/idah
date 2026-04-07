@@ -241,9 +241,7 @@
 )}
   <Collapsible open={openStates[category.id] || false}>
     {#if db && category}
-      {@const annotations = db.annotations.filter((a) =>
-        a.value.category?.startsWith(category.id),
-      )}
+      {@const annotations = db.annotationsStartsWith(category.id)}
       {@const { count } = groupFilteredAnnotations(annotations)}
       {@const hasAnnotations = count > 0}
 
@@ -353,9 +351,7 @@
 
       <CollapsibleContent hidden={!openStates[category.id]}>
         {#if !currentModeIsSameAsShape && db && category}
-          {@const categoryAnnotations = db.annotations.filter(
-            (a) => a.value.category === category.id,
-          )}
+          {@const categoryAnnotations = db.annotationsWithCategory(category.id)}
           {@const { groups: filteredAnnotationGroups } =
             groupFilteredAnnotations(categoryAnnotations)}
           {#each filteredAnnotationGroups as annotationGroup (annotationGroup.groupId)}

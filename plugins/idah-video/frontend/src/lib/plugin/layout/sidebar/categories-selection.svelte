@@ -158,11 +158,9 @@
     return acc;
   }
 
-  async function haveAnnotationsInCategory(
-    categoryId: string,
-  ): Promise<boolean> {
+  function haveAnnotationsInCategory(categoryId: string): boolean {
     if (!db || !categoryId) return false;
-    const allAnnotations = await db.getAllStartingWith("category", categoryId);
+    const allAnnotations = db.annotationsStartsWith(categoryId);
     const filterAnnotations = allAnnotations.filter((annotation) => {
       return (
         currentFrame >= annotation.shape.start &&
@@ -350,66 +348,60 @@
 )}
   <Collapsible open={toolMode ? !!category : openStates[category.id] || false}>
     {#key `${forceRender}-${type}`}
-      {#await haveAnnotationsInCategory(category.id) then hasAnnotations}
-        <CollapsibleTrigger
-          class={cn(
-            "text-secondary-foreground flex w-full items-center justify-between pr-1 text-xs group-hover:w-2/4",
-            {
-              "bg-secondary border-ring text-secondary-foreground rounded-sm border":
-                selected == category.id,
-              "hover:bg-primary-foreground hover:dark:bg-accent hover:cursor-pointer hover:rounded-sm":
-                !category.requiredNested,
-              "hover:bg-accent hover:cursor-pointer hover:rounded-sm":
-                !toolMode,
-            },
-          )}
-          onclick={(e) => {
-            // Prevent default toggle behavior
-            e.preventDefault();
+      {@const hasAnnotations = haveAnnotationsInCategory(category.id)}
+      <CollapsibleTrigger
+        class={cn(
+          "text-secondary-foreground flex w-full items-center justify-between pr-1 text-xs group-hover:w-2/4",
+          {
+            "bg-secondary border-ring text-secondary-foreground rounded-sm border":
+              selected == category.id,
+            "hover:bg-primary-foreground hover:dark:bg-accent hover:cursor-pointer hover:rounded-sm":
+              !category.requiredNested,
+            "hover:bg-accent hover:cursor-pointer hover:rounded-sm": !toolMode,
+          },
+        )}
+        onclick={(e) => {
+          // Prevent default toggle behavior
+          e.preventDefault();
 
-            // Allow selection if category is not requiredNested,
-            // or if it's a parent that exists in the original categories list
-            if (categories.find((c) => c.id === category.id)) {
-              onSelect(category.id);
-            }
+          // Allow selection if category is not requiredNested,
+          // or if it's a parent that exists in the original categories list
+          if (categories.find((c) => c.id === category.id)) {
+            onSelect(category.id);
+          }
 
-            if (category.nestedCategories) {
-              // Toggle the category open state manually
-              manualToggleStates[category.id] = !openStates[category.id];
-            }
-            // Force re-render of annotation counts
-            forceRender++;
-          }}
-        >
-          {@render showCategoryTitle(
-            category,
-            !!category.nestedCategories || hasAnnotations,
-            openStates[category.id] || false,
-          )}
+          if (category.nestedCategories) {
+            // Toggle the category open state manually
+            manualToggleStates[category.id] = !openStates[category.id];
+          }
+          // Force re-render of annotation counts
+          forceRender++;
+        }}
+      >
+        {@render showCategoryTitle(
+          category,
+          !!category.nestedCategories || hasAnnotations,
+          openStates[category.id] || false,
+        )}
 
-          {#if db && category}
-            {@const categoryAnnotations = db.annotations.filter((a) =>
-              a.value.category?.startsWith(category.id),
-            )}
-            {@const filteredCount = categoryAnnotations.filter(
-              (annotation) =>
-                currentFrame >= annotation.shape.start &&
-                currentFrame <= annotation.shape.end &&
-                annotation.shape.type == type,
-            ).length}
-            <Badge variant="gray" rounded="full" class="text-[0.625rem]">
-              {filteredCount}
-            </Badge>
-          {/if}
-        </CollapsibleTrigger>
-      {/await}
+        {#if db && category}
+          {@const categoryAnnotations = db.annotationsStartsWith(category.id)}
+          {@const filteredCount = categoryAnnotations.filter(
+            (annotation) =>
+              currentFrame >= annotation.shape.start &&
+              currentFrame <= annotation.shape.end &&
+              annotation.shape.type == type,
+          ).length}
+          <Badge variant="gray" rounded="full" class="text-[0.625rem]">
+            {filteredCount}
+          </Badge>
+        {/if}
+      </CollapsibleTrigger>
     {/key}
 
     <CollapsibleContent class="ml-4" hidden={!openStates[category.id]}>
       {#if !toolMode && db && category}
-        {@const categoryAnnotations = db.annotations.filter(
-          (a) => a.value.category === category.id,
-        )}
+        {@const categoryAnnotations = db.annotationsWithCategory(category.id)}
         {@const filteredAnns = categoryAnnotations.filter((annotation) => {
           // prettier-ignore ...
           return (
