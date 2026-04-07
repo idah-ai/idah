@@ -44,7 +44,6 @@
 
     /** 3. Then select the first frame as frame range is re-computed */
     onSeekFrame(1);
-    // setCurrentFrame(1);
   }
 </script>
 
