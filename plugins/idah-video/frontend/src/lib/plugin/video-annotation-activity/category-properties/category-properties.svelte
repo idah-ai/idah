@@ -212,7 +212,12 @@
       <SelectContent>
         <SelectGroup>
           {#each configByGroup.values as { id: value, label, color }, index (`${value}-${index}`)}
-            <SelectItem class="text-xs" {label} {value} disabled={firstAnnotationInGroupCategory == value}>
+            <SelectItem
+              class="text-xs"
+              {label}
+              {value}
+              disabled={firstAnnotationInGroupCategory == value}
+            >
               {#if firstAnnotationInGroup?.shape.type === IDAH_VIDEO_BOUNDING_BOX}
                 <VectorSquareIcon {color} />
               {:else}
@@ -279,7 +284,9 @@
         <Text class="mb-2" weight="semibold" size="sm">Properties</Text>
 
         {#each properties as property, index (`${property.id}-${index}`)}
-          {@const foundPropertyComponent = propertyComponents.find((p) => p.type == property.type)}
+          {@const foundPropertyComponent = propertyComponents.find(
+            (p) => p.type == property.type,
+          )}
 
           {#if foundPropertyComponent}
             <div class="flex flex-col gap-1">
@@ -287,7 +294,9 @@
                 {...{
                   property,
                   value: annotationValue.attributes?.[property.id],
-                  onValueChange: (v: string | number | boolean | string[] | undefined) => onValueChange(property, v),
+                  onValueChange: (
+                    v: string | number | boolean | string[] | undefined,
+                  ) => onValueChange(property, v),
                   disabled,
                 }}
               />
@@ -297,4 +306,4 @@
       </section>
     {/if}
   </div>
-{/key}
+</div>
