@@ -271,7 +271,7 @@
           onSetValue({
             visibility: parsed.length ? parsed : false,
           });
-        } catch (error) {
+        } catch (_error) {
           onSetValue({
             visibility: false,
           });
