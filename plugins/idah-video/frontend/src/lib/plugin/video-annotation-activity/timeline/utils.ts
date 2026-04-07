@@ -25,7 +25,7 @@ export function getAnnotationGroupFrameRanges(props: {
   );
 }
 
-export function getFrameFromMouseX(props: { clientX: number }) {
+export function getFrameFromMouse// BeforeX(props: { clientX: number }) {
   const { clientX } = props;
   const timelineCellWidthStore = get(timelineCellWidth);
   const framePerScaleStore = get(framePerScale);
@@ -55,9 +55,12 @@ export function getSelectedFrameXFromCurrentFrame(props: { currentFrame: number 
   const startOfCurrentFrameRange = get(currentFrameRange)[0];
 
   const normalizedCurrentFrame = currentFrame / framePerScaleStore;
-  const normalizedStartOfCurrentFrameRange = startOfCurrentFrameRange / framePerScaleStore;
 
-  const normalizedFrameInScale = normalizedCurrentFrame - normalizedStartOfCurrentFrameRange;
+  // Before onchange input
+  // const normalizedStartOfCurrentFrameRange = startOfCurrentFrameRange / framePerScaleStore;
+  // const normalizedFrameInScale = normalizedCurrentFrame - normalizedStartOfCurrentFrameRange;
+
+  const normalizedFrameInScale = normalizedCurrentFrame - startOfCurrentFrameRange;
   const middleOfnormalizedFrameInScale = normalizedFrameInScale - Number(0.5 / framePerScaleStore);
 
   return Number(middleOfnormalizedFrameInScale * timelineCellWidthStore) + TIMELINE_ROW_HEADER_WIDTH;

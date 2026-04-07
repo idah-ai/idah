@@ -21,7 +21,7 @@
   let startFrameIndexOfCurrentFrameRange = $derived($currentFrameRange[0]);
   let endFrameIndexOfCurrentFrameRange = $derived($currentFrameRange[1]);
   let middleFrameIndexOfCurrentFrameRange = $derived(
-    Math.floor((startFrameIndexOfCurrentFrameRange + endFrameIndexOfCurrentFrameRange) / 2),
+    Math.floor((startFrameIndexOfCurrentFrameRange + endFrameIndexOfCurrentFrameRange) / 2) * $framePerScale,
   );
 
   // Variables::Timeline Ruler

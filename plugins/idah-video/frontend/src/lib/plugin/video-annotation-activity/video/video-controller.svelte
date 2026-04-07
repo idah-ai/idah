@@ -36,6 +36,13 @@
     selectedAnnotation,
     totalFrames,
   } from "$lib/plugin/video-annotation-activity/store/store";
+  import {
+    currentFrameRange,
+    framePerScale,
+    setCurrentFrameRange,
+    timelineCellWidth,
+    timelineRulerWidth,
+  } from "$lib/plugin/video-annotation-activity/timeline/store";
 
   import type { IActivityContext } from "$idah/context/activity-context";
 
@@ -80,6 +87,18 @@
   const seekToFrame: ChangeEventHandler<HTMLInputElement> = (event) => {
     const target = event.target as HTMLInputElement;
     const { value } = target;
+
+    /** If value is out of current frame range, set a new frame range */
+    const [startFrameIndexOfCurrentFrameRange, endFrameIndexOfCurrentFrameRange] = $currentFrameRange;
+    const rulerScale = Math.floor($timelineRulerWidth / $timelineCellWidth);
+    const halfOfRulerScale = Math.floor(rulerScale / 2) * $framePerScale;
+
+    if (Number(value) >= endFrameIndexOfCurrentFrameRange || Number(value) <= startFrameIndexOfCurrentFrameRange) {
+      const newStart = Math.max((Number(value) - halfOfRulerScale) / $framePerScale, 0);
+      const newEnd = Math.max((Number(value) + halfOfRulerScale) / $framePerScale, rulerScale);
+      setCurrentFrameRange([newStart, newEnd]);
+    }
+
     video.seekToFrame(Number(value));
   };
 
