@@ -1,11 +1,13 @@
 # IDAH - Ingedata Annotation Hub
 
-![GitHub stars](https://img.shields.io/github/stars/ingedata-ph/idah)
-![License](https://img.shields.io/github/license/ingedata-ph/idah)
+[![CI](https://github.com/idah-ai/idah/actions/workflows/ci.yml/badge.svg)](https://github.com/idah-ai/idah/actions/workflows/ci.yml)
+[![CI - Docs](https://github.com/idah-ai/idah/actions/workflows/ci-docs.yml/badge.svg)](https://github.com/idah-ai/idah/actions/workflows/ci-docs.yml)
+[![License](https://img.shields.io/badge/license-FSL-blue)](LICENSE.md)
+[![Docker](https://img.shields.io/badge/docker-supported-2496ED?logo=docker&logoColor=white)](docker-compose.yml)
 
 **An open-source platform for collaborative data annotation**, designed to streamline the creation of high-quality training datasets for machine learning models.
 
-📚 **[Full Documentation](https://docs.idah.ai)** | 🚀 **[Getting Started Guide](https://docs.idah.ai/getting-started/about/)** | 🔌 **[Plugin Development](https://docs.idah.ai/plugin/)**
+🌐 **[Website](https://idah.ai)** | 📚 **[Documentation](https://docs.idah.ai)** | 🚀 **[Getting Started](https://docs.idah.ai/getting-started/about/)** | 🔌 **[Plugin Development](https://docs.idah.ai/plugin/)**
 
 ---
 
@@ -32,7 +34,7 @@
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/ingedata-ph/idah.git
+   git clone https://github.com/idah-ai/idah.git
    cd idah
    ```
 
@@ -60,6 +62,26 @@
    - Password: `P@ssword01`
 
 🎉 **That's it!** IDAH is now running on your machine.
+
+---
+
+## ⚠️ Security Notice
+
+**Development Environment:** The development configuration includes default credentials for ease of setup. These are **ONLY for local development**:
+
+- Database: `postgres:postgres`
+- Admin: `admin@idah.ai` / `P@ssword01`
+- Dev SSL certificates are self-signed
+- JWT signing keys are for development only
+
+**⚠️ DO NOT use these credentials in production or staging environments.**
+
+For production deployment, ensure you:
+1. Generate unique, strong passwords and secrets
+2. Use proper SSL certificates from a trusted CA
+3. Configure secure environment variables
+4. Generate new JWT signing keys
+5. Follow the [Security Best Practices](SECURITY.md) guide
 
 ---
 
@@ -158,7 +180,7 @@ We welcome contributions from the community!
 
 ## 📄 License
 
-This project is licensed under the **[Mozilla Public License 2.0](LICENSE)**.
+This project is licensed under the **[Functional Source License (FSL)](LICENSE)**.
 
 ---
 
@@ -190,8 +212,7 @@ IDAH can be applied to various domains:
 ## 📞 Support & Community
 
 - **Documentation:** [docs.idah.ai](https://docs.idah.ai)
-- **Issues:** [GitHub Issues](https://github.com/ingedata-ph/idah/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/ingedata-ph/idah/discussions)
+- **Issues:** [GitHub Issues](https://github.com/idah-ai/idah/issues)
 
 ---
 
@@ -199,6 +220,6 @@ IDAH can be applied to various domains:
 
 **Made with ❤️ by the IDAH Team**
 
-[Website](https://docs.idah.ai) • [Documentation](https://docs.idah.ai) • [GitHub](https://github.com/ingedata-ph/idah)
+[Website](https://idah.ai) • [Documentation](https://docs.idah.ai) • [GitHub](https://github.com/idah-ai/idah)
 
 </div>
