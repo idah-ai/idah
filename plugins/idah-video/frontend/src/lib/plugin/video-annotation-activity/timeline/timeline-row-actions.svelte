@@ -120,7 +120,7 @@
   <!-- BUTTON::DELETE -->
   <Tooltips align="center">
     {#snippet trigger()}
-      <Button variant="ghost" size="icon-sm" onclick={handleClickDelete}>
+      <Button variant="ghost" size="icon-sm" disabled={allAnnotationsLocked} onclick={handleClickDelete}>
         <Trash2Icon />
       </Button>
     {/snippet}

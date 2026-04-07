@@ -25,7 +25,7 @@ export function getAnnotationGroupFrameRanges(props: {
   );
 }
 
-export function getFrameFromMouse// BeforeX(props: { clientX: number }) {
+export function getFrameFromMouseX(props: { clientX: number }) {
   const { clientX } = props;
   const timelineCellWidthStore = get(timelineCellWidth);
   const framePerScaleStore = get(framePerScale);
