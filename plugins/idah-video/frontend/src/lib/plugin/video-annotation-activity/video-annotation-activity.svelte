@@ -28,6 +28,8 @@
 
   import {
     DEFAULT_MODE,
+    EDITOR_MODE_TOOLS,
+    VIEW_MODE_TOOLS,
     ENTRY_ROOT,
     IDAH_NOTE,
     IDAH_VIDEO_BOUNDING_BOX,
@@ -259,7 +261,7 @@
     }
 
     /** TOOLS CONFIGURATION */
-    const toolConfig = [
+    const toolListConfig = [
       {
         label: "Visual",
         type: DEFAULT_MODE,
@@ -289,6 +291,13 @@
       },
     ];
 
+    const toolConfig = toolListConfig.filter((tool) => {
+      if (EDITOR_MODE_TOOLS.includes(tool.type)) {
+        return !!context.config[tool.type];
+      }
+      return true;
+    });
+
     tools = toolConfig.map((tool) => {
       return {
         label: tool.label,
@@ -308,7 +317,8 @@
       },
       flush: () => context.annotations.flush(),
       switch_mode: (mode: string) => {
-        const config = toolConfig.find((c) => c.type === mode) || toolConfig[0];
+        const config =
+          toolConfig.find((c) => c.type === mode) || toolListConfig[0];
         context.commands.run(config.command);
       },
       zoom: { in: overlay.zoomIn, out: overlay.zoomOut },

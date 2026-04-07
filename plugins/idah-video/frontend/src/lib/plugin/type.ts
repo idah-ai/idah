@@ -15,6 +15,13 @@ export type IdahNote = "note";
 export const DEFAULT_MODE = IDAH_VISUAL;
 export type DefaultMode = IdahVisual;
 
+/** EDITOR MODE */
+export const EDITOR_MODE_TOOLS = [IDAH_VIDEO_BOUNDING_BOX, IDAH_VIDEO_POLYGON];
+
+// TODO: review mode name
+/** VIEW MODE */
+export const VIEW_MODE_TOOLS = [IDAH_NOTE];
+
 /** ENTRY ROOT */
 export const ENTRY_ROOT = "entry:root";
 export type EntryRoot = "entry:root";
