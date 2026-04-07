@@ -13,11 +13,11 @@
   import { datasetTabs, type DatasetTab } from "@/components/app/datasets/tabs/dataset.tabs";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { authStatus } from "@/security/AuthContext";
-  
+
   import { refetches } from "@/utils/refetch";
 
   import type { ProjectMemberScope } from "@/security/types";
-  
+
   // Props
   interface Props {
     children: Snippet;
@@ -73,28 +73,28 @@
 </script>
 
 {#key $refetches.datasets.get}
-{#await fetchData()}
-  <PageLoading />
-{:then datasetRecord}
-  <div class="space-y-6">
-    <PageHeader>
-      {#snippet slotTitle()}
-        <div class="flex items-center gap-2">
-          <Text size="h2" weight="semibold">{datasetRecord.name}</Text>
-          <ProjectDatasetDropdownMenu {datasetId} {projectId} align="center" />
-        </div>
-      {/snippet}
-    </PageHeader>
+  {#await fetchData()}
+    <PageLoading />
+  {:then datasetRecord}
+    <div class="space-y-6">
+      <PageHeader>
+        {#snippet slotTitle()}
+          <div class="flex items-center gap-2">
+            <Text size="h2" weight="semibold">{datasetRecord.name}</Text>
+            <ProjectDatasetDropdownMenu {datasetId} {projectId} align="center" />
+          </div>
+        {/snippet}
+      </PageHeader>
 
-    <Tabs bind:value={activeTab}>
-      <TabsList>
-        {#each tabs as { label, value } (value)}
-          <TabsTrigger {value} onclick={() => handleTabChange(value)}>{label}</TabsTrigger>
-        {/each}
-      </TabsList>
-    </Tabs>
+      <Tabs bind:value={activeTab}>
+        <TabsList>
+          {#each tabs as { label, value } (value)}
+            <TabsTrigger {value} onclick={() => handleTabChange(value)}>{label}</TabsTrigger>
+          {/each}
+        </TabsList>
+      </Tabs>
 
-    {@render children()}
-  </div>
-{/await}
+      {@render children()}
+    </div>
+  {/await}
 {/key}

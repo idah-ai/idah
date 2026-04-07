@@ -22,7 +22,7 @@
     datasetRecord?: DatasetRecord;
   }
   let { action, open = $bindable(), title, datasetRecord }: Props = $props();
-  
+
   // Variables
   let projectId: string | undefined = $derived(page.params.projectId);
   let newRecord: boolean = $derived(action === "create");
@@ -62,16 +62,16 @@
 
   async function getLabelConfig() {
     let labelConfig: IConfig = {};
-    let selectedId = selectedDatasetId || datasetRecord?.id as string;
-        
-      const datasetRes = await datasetsBackendDataSource.get(selectedId, {
-        fields: {
-          [DatasetRecord.type]: ["labeling_configuration"],
-        },
-        noCache: true,
-      });
-      
-      labelConfig = datasetRes.data.labeling_configuration;
+    let selectedId = selectedDatasetId || (datasetRecord?.id as string);
+
+    const datasetRes = await datasetsBackendDataSource.get(selectedId, {
+      fields: {
+        [DatasetRecord.type]: ["labeling_configuration"],
+      },
+      noCache: true,
+    });
+
+    labelConfig = datasetRes.data.labeling_configuration;
 
     return labelConfig;
   }
