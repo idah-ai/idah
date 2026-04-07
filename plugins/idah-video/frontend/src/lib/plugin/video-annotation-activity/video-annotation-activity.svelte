@@ -644,7 +644,7 @@
     () => {
       $idbUpdatedAt; // eslint-disable-line @typescript-eslint/no-unused-expressions
 
-      if (!annotationsIDB) return new Promise((_, ko) => ko("no database"));
+      if (!annotationsIDB) return new Promise(() => {});
 
       let p = annotationsIDB.getAllStore("annotations");
 
