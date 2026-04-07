@@ -36,7 +36,7 @@
   import { registerCommands } from "$lib/plugin/video-annotation-activity/commands.svelte";
   import {
     annotationsIndexedDB,
-    AnnotationsIndexedDB,
+    type AnnotationsMiddleware,
   } from "$lib/plugin/video-annotation-activity/indexedDB.svelte";
   import {
     registerOnSelectShortcuts,
@@ -132,7 +132,7 @@
   let timelineHeight: number = $state(0);
   let zoom = $state(85);
 
-  let annotationsIDB: AnnotationsIndexedDB | undefined = $state();
+  let annotationsIDB: AnnotationsMiddleware | undefined = $state();
   let volume = $state({ level: 0, muted: false });
   let tools: {
     label: string;
@@ -292,7 +292,7 @@
     });
 
     function fetchAnnotations(
-      db: AnnotationsIndexedDB,
+      db: AnnotationsMiddleware,
       page = 1,
       itemsPerPage = 100,
     ): Promise<void> {

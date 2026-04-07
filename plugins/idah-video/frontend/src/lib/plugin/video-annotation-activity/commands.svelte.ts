@@ -34,11 +34,11 @@ import { showErrorToast } from "$lib/utils/error/error.toasts";
 
 import type { IActivityContext } from "$idah/context/activity-context";
 import type { AnnotationValue } from "$idah/context/annotation-context";
-import type { AnnotationsIndexedDB } from "$lib/plugin/video-annotation-activity/indexedDB";
+import type { AnnotationsMiddleware } from "$lib/plugin/video-annotation-activity/indexedDB.svelte";
 
 interface CommandContext {
   context: IActivityContext;
-  getDb: () => AnnotationsIndexedDB | undefined;
+  getDb: () => AnnotationsMiddleware | undefined;
   updaters: {
     setAnnotationValue: (value: AnnotationValue) => void;
     selectAnnotation: (annotation?: VideoAnnotationObject) => void;

@@ -38,7 +38,7 @@
   import type { IConfigValue } from "$idah/context/activity-context";
   import type { CategoryDefinition } from "$idah/context/category-context";
   import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
-  import type { AnnotationsIndexedDB } from "$lib/plugin/video-annotation-activity/indexedDB.svelte";
+  import type { AnnotationsMiddleware } from "$lib/plugin/video-annotation-activity/indexedDB.svelte";
 
   // Props
   let {
@@ -66,7 +66,7 @@
     onDeleteAnnotation: (annotation: VideoAnnotationObject) => void;
     onLock: (locked: boolean, annotation?: VideoAnnotationObject) => void;
     onVisibility: (hidden: boolean, annotation?: VideoAnnotationObject) => void;
-    db?: AnnotationsIndexedDB;
+    db?: AnnotationsMiddleware;
   } = $props();
 
   // Variables
@@ -160,7 +160,7 @@
 
   function haveAnnotationsInCategory(categoryId: string): boolean {
     if (!db || !categoryId) return false;
-    const allAnnotations = db.annotationsStartsWith(categoryId);
+    const allAnnotations = db.annotationsForCategory(categoryId);
     const filterAnnotations = allAnnotations.filter((annotation) => {
       return (
         currentFrame >= annotation.shape.start &&
@@ -385,7 +385,7 @@
         )}
 
         {#if db && category}
-          {@const categoryAnnotations = db.annotationsStartsWith(category.id)}
+          {@const categoryAnnotations = db.annotationsForCategory(category.id)}
           {@const filteredCount = categoryAnnotations.filter(
             (annotation) =>
               currentFrame >= annotation.shape.start &&
@@ -401,7 +401,7 @@
 
     <CollapsibleContent class="ml-4" hidden={!openStates[category.id]}>
       {#if !toolMode && db && category}
-        {@const categoryAnnotations = db.annotationsWithCategory(category.id)}
+        {@const categoryAnnotations = db.annotationsByCategory(category.id)}
         {@const filteredAnns = categoryAnnotations.filter((annotation) => {
           // prettier-ignore ...
           return (
