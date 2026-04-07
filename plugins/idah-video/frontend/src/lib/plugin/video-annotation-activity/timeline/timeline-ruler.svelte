@@ -48,9 +48,7 @@
        * Set selected frame x to current frame when video is playing
        * This make timeline-vertical-line change every time current frame is changed.
        */
-      const mouseX = getSelectedFrameXFromCurrentFrame({
-        currentFrame: $currentFrame - startFrameIndexOfCurrentFrameRange,
-      });
+      const mouseX = getSelectedFrameXFromCurrentFrame({ currentFrame: $currentFrame });
       setSelectedFrameX(mouseX);
 
       /**
