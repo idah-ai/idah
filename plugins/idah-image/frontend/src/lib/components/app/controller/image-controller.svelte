@@ -2,7 +2,9 @@
   import { onMount, setContext } from "svelte";
 
   import ImageOverlay, { type OnAddNewNoteParams } from "$lib/components/app/overlay/image-overlay.svelte";
+  import ImageAnnotationSidebar from "$lib/components/app/sidebar/image-annotation-sidebar.svelte";
   import ImagePropertiesSidebar from "$lib/components/app/sidebar/image-properties-sidebar.svelte";
+  import CategoryProperties from "$lib/components/app/sidebar/properties/category-properties.svelte";
   import Button from "$lib/components/ui/button/button.svelte";
   import PopoverContent from "$lib/components/ui/popover/popover-content.svelte";
   import PopoverTrigger from "$lib/components/ui/popover/popover-trigger.svelte";
@@ -11,6 +13,7 @@
   import ResizableHandle from "$lib/components/ui/resizable/resizable-handle.svelte";
   import ResizablePaneGroup from "$lib/components/ui/resizable/resizable-pane-group.svelte";
 
+  import { annotationsIndexedDB, type AnnotationsIndexedDB } from "$lib/plugin/indexedDB";
   import { boundingBoxes, entryRoot, idbUpdatedAt, setIndexedDBUpdatedAt } from "$lib/plugin/store/idb-store.svelte";
   import { currentMode, selectedAnnotation, selectedAnnotationGroup, setCurrentModeTo } from "$lib/plugin/store/store";
   import { DEFAULT_MODE, ENTRY_ROOT, IMAGE_BOUNDING_BOX, IMAGE_NOTE, IMAGE_POLYGON } from "$lib/plugin/types";
@@ -18,15 +21,11 @@
   import type { AnnotationGroup, AnnotationShape, AnnotationValue } from "$lib/context/annotation-context";
   import type { IActivityContext } from "$lib/context/context";
   import type { ImageAnnotationObject, ImageShape, Point } from "$lib/context/image-annotation-context";
-  import { annotationsIndexedDB, type AnnotationsIndexedDB } from "$lib/plugin/indexedDB";
-  import ImageAnnotationSidebar from "../sidebar/image-annotation-sidebar.svelte";
-  import CategoryProperties from "../sidebar/properties/category-properties.svelte";
 
   // Props
   interface Props {
     context: IActivityContext;
   }
-
   let { context }: Props = $props();
 
   // Contexts
