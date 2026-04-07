@@ -66,7 +66,7 @@ export async function annotationsIndexedDB(name: string, stores: StoresDefinitio
 
 export class AnnotationsIndexedDB {
   private db: IDBDatabase;
-  private annotationsState = $state<VideoAnnotationObject[]>([]);
+  private annotationsMap = $state<Map<string, VideoAnnotationObject>>(new Map());
 
   constructor(db: IDBDatabase) {
     this.db = db;
@@ -74,27 +74,63 @@ export class AnnotationsIndexedDB {
   }
 
   /**
-   * Reactive annotations getter - returns a snapshot to prevent external mutations
+   * Reactive annotations getter - returns array from the map
+   * Performance: O(n) conversion from Map to Array
    */
   get annotations(): VideoAnnotationObject[] {
-    return this.annotationsState;
+    return Array.from(this.annotationsMap.values());
+  }
+
+  /**
+   * Get annotation by ID - Performance: O(1) lookup
+   */
+  getById(id: string): VideoAnnotationObject | undefined {
+    return this.annotationsMap.get(id);
   }
 
   /**
    * Load all annotations from IndexedDB and update the reactive state
+   * Only called on initialization and when bulk operations occur
    */
   private async loadAnnotations(): Promise<void> {
     try {
       const allAnnotations = await this.getAllStore("annotations");
-      this.annotationsState = allAnnotations;
+      // Create new Map to trigger reactivity
+      this.annotationsMap = new Map(
+        allAnnotations.map((ann) => [ann.metadata.id, ann])
+      );
     } catch (error) {
       console.error("Failed to load annotations:", error);
-      this.annotationsState = [];
+      this.annotationsMap = new Map();
     }
   }
 
   /**
+   * Update specific annotations in state - Performance: O(n) where n = changed items
+   * More efficient than reloading everything
+   */
+  private updateAnnotationsInState(annotations: VideoAnnotationObject[]): void {
+    // Create new Map to trigger reactivity
+    const newMap = new Map(this.annotationsMap);
+    annotations.forEach((ann) => {
+      newMap.set(ann.metadata.id, ann);
+    });
+    this.annotationsMap = newMap;
+  }
+
+  /**
+   * Remove annotation from state - Performance: O(1)
+   */
+  private removeAnnotationFromState(annotation_id: string): void {
+    // Create new Map to trigger reactivity
+    const newMap = new Map(this.annotationsMap);
+    newMap.delete(annotation_id);
+    this.annotationsMap = newMap;
+  }
+
+  /**
    * Upsert annotations into IndexedDB
+   * Optimized: Only updates the changed annotations in state
    */
   async upsertAnnotations(annotations: VideoAnnotationObject[]): Promise<void> {
     const transaction = this.db.transaction(["annotations", "keyframes"], "readwrite");
@@ -121,8 +157,9 @@ export class AnnotationsIndexedDB {
     });
 
     return new Promise<void>((resolve, reject) => {
-      transaction.oncomplete = async () => {
-        await this.loadAnnotations();
+      transaction.oncomplete = () => {
+        // Optimized: Only update the changed annotations, not reload everything
+        this.updateAnnotationsInState(annotations);
         resolve();
       };
       transaction.onerror = () => reject();
@@ -131,6 +168,7 @@ export class AnnotationsIndexedDB {
 
   /**
    * Delete an annotation and its keyframes
+   * Optimized: Only removes the deleted annotation from state
    */
   async deleteAnnotation(annotation_id: string): Promise<void> {
     return new Promise<void>((resolve, reject) => {
@@ -146,8 +184,9 @@ export class AnnotationsIndexedDB {
 
         const deleteRequest = astore.delete(annotation_id);
 
-        deleteRequest.onsuccess = async () => {
-          await this.loadAnnotations();
+        deleteRequest.onsuccess = () => {
+          // Optimized: Only remove this annotation from state
+          this.removeAnnotationFromState(annotation_id);
           resolve();
         };
         deleteRequest.onerror = () => reject(deleteRequest.error);
@@ -202,6 +241,7 @@ export class AnnotationsIndexedDB {
 
   /**
    * Add a keyframe to an annotation
+   * Optimized: Updates only the specific annotation in state
    */
   async addKeyFrame(annotation: VideoAnnotationObject, keyFrame: VideoFrameSelection): Promise<void> {
     const transaction = this.db.transaction(["annotations", "keyframes"], "readwrite");
@@ -230,7 +270,9 @@ export class AnnotationsIndexedDB {
       };
 
       transaction.oncomplete = async () => {
-        await this.loadAnnotations();
+        // Optimized: Fetch and update only the changed annotation
+        const updatedAnnotation = await this.get("annotations", annotation.metadata.id);
+        this.updateAnnotationsInState([updatedAnnotation]);
         resolve();
       };
       transaction.onerror = (e) => reject(e);
@@ -239,6 +281,7 @@ export class AnnotationsIndexedDB {
 
   /**
    * Delete a keyframe from an annotation
+   * Optimized: Updates only the specific annotation in state
    */
   async deleteKeyFrame(annotation: VideoAnnotationObject, frame: number): Promise<void> {
     const transaction = this.db.transaction("keyframes", "readwrite");
@@ -249,7 +292,9 @@ export class AnnotationsIndexedDB {
       request.onerror = (r) => reject(r);
       request.onsuccess = async (r) => {
         console.debug(r);
-        await this.loadAnnotations();
+        // Optimized: Fetch and update only the changed annotation
+        const updatedAnnotation = await this.get("annotations", annotation.metadata.id);
+        this.updateAnnotationsInState([updatedAnnotation]);
         resolve();
       };
     });
@@ -277,6 +322,7 @@ export class AnnotationsIndexedDB {
 
   /**
    * Update visibility for all annotations
+   * Note: This is a bulk operation, so full reload is acceptable
    */
   async updateAllVisibility(hidden: boolean): Promise<void> {
     const transaction = this.db.transaction(["annotations"], "readwrite");
@@ -300,6 +346,7 @@ export class AnnotationsIndexedDB {
       };
 
       transaction.oncomplete = async () => {
+        // Bulk operation: reload all annotations
         await this.loadAnnotations();
         resolve();
       };
@@ -314,6 +361,7 @@ export class AnnotationsIndexedDB {
 
   /**
    * Update lock state for all annotations
+   * Note: This is a bulk operation, so full reload is acceptable
    */
   async updateAllLock(locked: boolean): Promise<void> {
     const transaction = this.db.transaction(["annotations"], "readwrite");
@@ -337,6 +385,7 @@ export class AnnotationsIndexedDB {
       };
 
       transaction.oncomplete = async () => {
+        // Bulk operation: reload all annotations
         await this.loadAnnotations();
         resolve();
       };
