@@ -222,8 +222,41 @@
     }
   });
 
+  $effect(() => {
+    context.tools.setTool($currentMode);
+  });
+
   onMount(async () => {
     $boundingBoxes = [];
+
+    try {
+      annotationsIDB = await annotationsIndexedDB(
+        ["idah-video", "entry", entryId].join(":"),
+      );
+
+      /** Register commands */
+      const commands = registerCommands({
+        context,
+        getDb: () => annotationsIDB,
+        updaters: {
+          setAllHidden: (v) => (allHidden = v),
+          setAllLocked: (v) => (allLocked = v),
+          setAnnotationValue: (v) => (annotationValue = v),
+          selectAnnotation: (v) => selectAnnotation(v),
+        },
+      });
+
+      fetchAnnotations(annotationsIDB).then(() => {
+        // quick fix if unsynced data, though we dont have way to send it anyway for now if so
+        annotationsIDB
+          ?.getAllIndex("type", ENTRY_ROOT)
+          .then((anns) => ($entryRoot = anns[0]));
+        setVisibility = commands.setVisibility;
+        setEditability = commands.setEditability;
+      });
+    } catch (e) {
+      console.error(e);
+    }
 
     /** TOOLS CONFIGURATION */
     const toolConfig = [
@@ -256,44 +289,16 @@
       },
     ];
 
-    tools = toolConfig.map((config) => {
+    tools = toolConfig.map((tool) => {
       return {
-        label: config.label,
-        type: config.type,
-        iconName: config.iconName,
-        disabled: config.disabled,
-        handleClick: () => context.commands.run(config.command),
+        label: tool.label,
+        type: tool.type,
+        iconName: tool.iconName,
+        disabled: tool.disabled,
+        handleClick: () => context.commands.run(tool.command),
       };
     });
     context.tools.setTools(tools);
-    $effect(() => context.tools.setTool($currentMode));
-
-    annotationsIndexedDB(["idah-video", "entry", entryId].join(":")).then(
-      (idb) => {
-        annotationsIDB = idb;
-        fetchAnnotations(idb).then(() => {
-          // quick fix if unsynced data, though we dont have way to send it anyway for now if so
-          idb
-            ?.getAllIndex("type", ENTRY_ROOT)
-            .then((anns) => ($entryRoot = anns[0]));
-
-          /** Register commands */
-          const commands = registerCommands({
-            context,
-            getDb: () => annotationsIDB,
-            updaters: {
-              setAllHidden: (v) => (allHidden = v),
-              setAllLocked: (v) => (allLocked = v),
-              setAnnotationValue: (v) => (annotationValue = v),
-              selectAnnotation: (v) => selectAnnotation(v),
-            },
-          });
-          setVisibility = commands.setVisibility;
-          setEditability = commands.setEditability;
-        });
-      },
-      console.error,
-    );
 
     registerShortcuts({
       commands: context.commands,
