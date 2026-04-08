@@ -28,6 +28,7 @@
 
   // Variables
   let { id, description, type, format, required, visibility } = $derived(property);
+  let visibilityError: string | undefined = $state();
 </script>
 
 {#snippet SectionHeading(heading: string)}
@@ -263,22 +264,25 @@
       placeholder="e.g. task_name match '...' and status = '...'"
       value={visibility == true ? "" : ASTNodeToFunctionString(visibility)}
       oninput={(e) => {
-        const inputValue = e.currentTarget.value;
+        const value = e.currentTarget.value.trim();
+
+        if (!value) {
+          visibilityError = undefined;
+          onSetValue({ visibility: true });
+          return;
+        }
 
         try {
-          const parsed = parser.parse(inputValue);
-
-          onSetValue({
-            visibility: parsed.length ? parsed : true,
-          });
+          const visibility = parser.parse(value);
+          visibilityError = undefined;
+          onSetValue({ visibility: visibility.length ? visibility : true });
         } catch (error) {
-          onSetValue({
-            visibility: true,
-          });
-
-          console.error(error);
+          if (error instanceof Error) {
+            visibilityError = error.message;
+          }
         }
       }}
+      errors={visibilityError ? [visibilityError] : undefined}
     />
   </div>
 </div>
