@@ -10,8 +10,6 @@
     SquareSplitHorizontalIcon,
     Volume2Icon,
     VolumeXIcon,
-    ZoomInIcon,
-    ZoomOutIcon,
   } from "@lucide/svelte";
   import { getContext } from "svelte";
   import type { ChangeEventHandler } from "svelte/elements";
@@ -32,21 +30,30 @@
   import Video from "$lib/plugin/video-annotation-activity/video/video.svelte";
 
   import { IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP } from "$lib/plugin/type";
-  import { selectedAnnotation } from "$lib/plugin/video-annotation-activity/store/store";
+  import {
+    currentFrame,
+    isVideoPlaying,
+    selectedAnnotation,
+    totalFrames,
+  } from "$lib/plugin/video-annotation-activity/store/store";
+  import {
+    currentFrameRange,
+    framePerScale,
+    setCurrentFrameRange,
+    timelineCellWidth,
+    timelineRulerWidth,
+  } from "$lib/plugin/video-annotation-activity/timeline/store";
 
   import type { IActivityContext } from "$idah/context/activity-context";
 
   // Props
   interface Props {
     video: Video;
-    isPlaying: boolean;
     volume: { level: number; muted: boolean };
-    currentFrame: number;
-    totalFrames: number;
     zoom: number;
-    onZoomChange: (zoom: number) => void;
+    // onZoomChange: (zoom: number) => void;
   }
-  let { video = $bindable(), isPlaying, volume, zoom, currentFrame, totalFrames, onZoomChange }: Props = $props();
+  let { video = $bindable(), volume, zoom }: Props = $props();
 
   // Contexts
   const context: IActivityContext = getContext("context");
@@ -74,12 +81,24 @@
   let disabledSplitButton = $derived.by(() => {
     if (!$selectedAnnotation) return true;
     if ($selectedAnnotation.locked) return true;
-    if ($selectedAnnotation.shape.end < currentFrame) return true;
+    if ($selectedAnnotation.shape.end < $currentFrame) return true;
   });
 
   const seekToFrame: ChangeEventHandler<HTMLInputElement> = (event) => {
     const target = event.target as HTMLInputElement;
     const { value } = target;
+
+    /** If value is out of current frame range, set a new frame range */
+    const [startFrameIndexOfCurrentFrameRange, endFrameIndexOfCurrentFrameRange] = $currentFrameRange;
+    const rulerScale = Math.floor($timelineRulerWidth / $timelineCellWidth);
+    const halfOfRulerScale = Math.floor(rulerScale / 2) * $framePerScale;
+
+    if (Number(value) >= endFrameIndexOfCurrentFrameRange || Number(value) <= startFrameIndexOfCurrentFrameRange) {
+      const newStart = Math.max((Number(value) - halfOfRulerScale) / $framePerScale, 0);
+      const newEnd = Math.max((Number(value) + halfOfRulerScale) / $framePerScale, rulerScale);
+      setCurrentFrameRange([newStart, newEnd]);
+    }
+
     video.seekToFrame(Number(value));
   };
 
@@ -88,21 +107,20 @@
     video.playbackRate(currentSpeed);
   }
 
-  function onSliderChange(value: number): void {
-    zoom = max - (value - min); // flip value
-    onZoomChange(zoom);
-  }
+  // function onSliderChange(value: number): void {
+  //   zoom = max - (value - min); // flip value
+  //   // onZoomChange(zoom);
+  // }
 
-  function zoomIn(): void {
-    zoom = zoom - 5;
-    onZoomChange(Math.min(max, zoom + 1));
-  }
+  // function zoomIn(): void {
+  //   zoom = zoom - 5;
+  //   // onZoomChange(Math.min(max, zoom + 1));
+  // }
 
-  function zoomOut(): void {
-    zoom = zoom + 5;
-
-    onZoomChange(Math.max(min, zoom - 1));
-  }
+  // function zoomOut(): void {
+  //   zoom = zoom + 5;
+  //   // onZoomChange(Math.max(min, zoom - 1));
+  // }
 
   function gotoFrameStep(direction: "prev" | "next") {
     let frameStep = Number(localStorage.getItem(IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP) || 10);
@@ -141,7 +159,7 @@
         video.togglePlay();
       }}
     >
-      {#if isPlaying}
+      {#if $isVideoPlaying}
         <PauseIcon />
       {:else}
         <PlayIcon />
@@ -209,9 +227,9 @@
         class="min-w-24"
         placeholder="Frame"
         min={1}
-        max={Math.max(0, totalFrames)}
-        suffix={`/ ${Math.max(0, totalFrames)}`}
-        value={currentFrame}
+        max={Math.max(0, $totalFrames)}
+        suffix={`/ ${Math.max(0, $totalFrames)}`}
+        value={$currentFrame}
         oninput={seekToFrame}
         groupInputClass="h-7"
       />
@@ -228,7 +246,7 @@
             $selectedAnnotation &&
             context.commands.run("annotation.split", {
               id: $selectedAnnotation.metadata.id,
-              at: currentFrame,
+              at: $currentFrame,
             })}
         >
           <SquareSplitHorizontalIcon />
@@ -244,45 +262,37 @@
   <!-- <Button variant="outline" class="border-primary text-primary hover:text-primary">Auto Track</Button> -->
 
   <!-- CONTAINER::RIGHT -->
-  <div class="flex items-center gap-2">
-    <!-- VIDEO::ZOOM ADJUSTER (ZOOM IN / ZOOM OUT) -->
-    <div class="flex items-center gap-2">
-      <Tooltips align="center">
-        {#snippet trigger()}
-          <Button variant="outline" size="icon-sm" onclick={zoomOut}>
-            <ZoomOutIcon />
-          </Button>
-        {/snippet}
+  <!-- <div class="flex items-center gap-2">
+    <Tooltips align="center">
+      {#snippet trigger()}
+        <Button variant="outline" size="icon-sm" onclick={zoomOut}>
+          <ZoomOutIcon />
+        </Button>
+      {/snippet}
 
-        {#snippet content()}
-          Zoom out
-        {/snippet}
-      </Tooltips>
+      {#snippet content()}
+        Zoom out
+      {/snippet}
+    </Tooltips>
 
-      <Slider
-        class="min-w-[200px]"
-        type="single"
-        {min}
-        {max}
-        step={5}
-        value={sliderValue}
-        onValueChange={onSliderChange}
-      ></Slider>
+    <Slider class="min-w-[200px]" type="single" {min} {max} step={5} value={sliderValue} onValueChange={onSliderChange}
+    ></Slider>
 
-      <Tooltips align="center">
-        {#snippet trigger()}
-          <Button variant="outline" size="icon-sm" onclick={zoomIn}>
-            <ZoomInIcon />
-          </Button>
-        {/snippet}
+    <Tooltips align="center">
+      {#snippet trigger()}
+        <Button variant="outline" size="icon-sm" onclick={zoomIn}>
+          <ZoomInIcon />
+        </Button>
+      {/snippet}
 
-        {#snippet content()}
-          Zoom in
-        {/snippet}
-      </Tooltips>
-    </div>
-    <!-- VIDEO::SCALE ADJUSTER (SCALE DOWN / SCALE UP) -->
-    <!-- <Popover>
+      {#snippet content()}
+        Zoom in
+      {/snippet}
+    </Tooltips>
+  </div> -->
+
+  <!-- VIDEO::SCALE ADJUSTER (SCALE DOWN / SCALE UP) -->
+  <!-- <Popover>
       <PopoverTrigger>
         <Tooltips align="center">
           {#snippet trigger()}
@@ -311,5 +321,4 @@
         />
       </PopoverContent>
     </Popover> -->
-  </div>
 </div>

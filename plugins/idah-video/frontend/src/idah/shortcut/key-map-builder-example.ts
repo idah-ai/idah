@@ -1,31 +1,31 @@
-import { KeyMapBuilder } from "$idah/shortcut/key-map-builder";
+import { BuildKeymap } from "$idah/shortcut/key-map-builder";
 import { ShortcutManager } from "$idah/shortcut/shortcut-manager";
 
 // Example of creating a key map for a "visual" mode
 const createVisualModeKeyMap = () => {
   // Define some example actions
   const copyAction = () => {
-    console.log("Copy action executed");
+    console.log('Copy action executed');
     // Actual implementation would go here
   };
 
   const pasteAction = () => {
-    console.log("Paste action executed");
+    console.log('Paste action executed');
     // Actual implementation would go here
   };
 
   const saveAction = () => {
-    console.log("Save action executed");
+    console.log('Save action executed');
     // Actual implementation would go here
   };
 
   const undoAction = () => {
-    console.log("Undo action executed");
+    console.log('Undo action executed');
     // Actual implementation would go here
   };
 
   // Create a key map using the KeyMapBuilder DSL
-  const keyMap = KeyMapBuilder((b) => {
+  const keyMap = BuildKeymap((b) => {
     // Copy: Ctrl+C
     b.on([b.Ctrl], "C", copyAction, "Copy", "Copy selected content");
 
@@ -39,15 +39,9 @@ const createVisualModeKeyMap = () => {
     b.on([b.Ctrl], "Z", undoAction, "Undo", "Undo last action");
 
     // Example with multiple modifiers: Ctrl+Shift+S (Save As)
-    b.on(
-      [b.Ctrl, b.Shift],
-      "S",
-      () => {
-        console.log("Save As action executed");
-      },
-      "Save As",
-      "Save document with a new name",
-    );
+    b.on([b.Ctrl, b.Shift], "S", () => {
+      console.log('Save As action executed');
+    }, "Save As", "Save document with a new name");
   });
 
   return keyMap;
@@ -56,15 +50,15 @@ const createVisualModeKeyMap = () => {
 // Example of registering the key map with the ShortcutManager
 export function registerVisualModeShortcuts() {
   const visualModeKeyMap = createVisualModeKeyMap();
-  ShortcutManager.registerKeyMap("visual", visualModeKeyMap);
+  ShortcutManager.registerKeyMap('visual', visualModeKeyMap);
 
   // Set visual as the default mode if needed
-  ShortcutManager.defaultMode = "visual";
+  ShortcutManager.defaultMode = 'visual';
 
   // Enter visual mode
-  ShortcutManager.enterMode("visual");
+  ShortcutManager.enterMode('visual');
 
-  console.log("Visual mode shortcuts registered");
+  console.log('Visual mode shortcuts registered');
 
   return visualModeKeyMap;
 }

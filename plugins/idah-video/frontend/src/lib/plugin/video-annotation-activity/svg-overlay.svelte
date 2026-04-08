@@ -62,6 +62,7 @@
     onAddNewNote: (params: OnAddNewNoteParams) => void;
     onChangeFrame?: (newFrame: number) => void;
     videoResizedAt: Date;
+    isPlaying: boolean;
   };
   let {
     frame,
@@ -73,6 +74,7 @@
     onChangeFrame,
     children,
     videoResizedAt,
+    isPlaying,
     ...restProps
   }: Props = $props();
 
@@ -255,6 +257,14 @@
     return "cursor-grab";
   });
 
+  let showCrosshair = $derived(
+    width > 0 &&
+      height > 0 &&
+      !isPlaying &&
+      ![IDAH_NOTE, DEFAULT_MODE].includes($currentMode) && // TODO:: Change to check set of editing mode @audi
+      (pointer === "crosshair" || pointer === "cursor-crosshair" || isEditing),
+  );
+
   function getAnnotationPropertyStyle(annotation?: VideoAnnotationObject): IConfigPropertyStyles {
     const defaultStyle: IConfigPropertyStyles = {
       border: "solid",
@@ -317,7 +327,7 @@
     onwheel={(e) => zoomableElement.onWheel(e)}
     {...restProps}
   >
-    {#if width && height && ![IDAH_NOTE, DEFAULT_MODE].includes($currentMode) && (pointer == "crosshair" || isEditing)}
+    {#if showCrosshair}
       <!-- prevent display issue on load for now -->
       <line
         x1={0}
@@ -490,7 +500,7 @@
               ? Object.entries(context.config)
                   .find(([k, _]) => k == $currentMode)?.[1]
                   .values.find((c) => c.id == $selectedAnnotation?.value?.category)?.color || "grey"
-              : "grey"}
+              : "gray"}
             styles={propertyStyle}
             onChange={(bb, newAngle) => {
               onSelection(IDAH_VIDEO_BOUNDING_BOX, frame, bb, newAngle, $selectedAnnotation?.metadata.id);
