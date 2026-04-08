@@ -82,10 +82,12 @@
       valueKey="id"
       searchable
       searchKeyWithOperation="name__match"
+      hiddenChoices={dataset.id ? [dataset.id] : []}
       dataSource={datasetsBackendDataSource}
       listOptions={{
         filters: {
           project_id: projectId,
+          modality,
         },
         sort: ["name"],
       }}
