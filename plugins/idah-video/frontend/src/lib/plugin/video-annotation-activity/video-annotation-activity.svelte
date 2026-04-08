@@ -27,6 +27,8 @@
 
   import {
     DEFAULT_MODE,
+    EDITOR_MODE_TOOLS,
+    VIEW_MODE_TOOLS,
     ENTRY_ROOT,
     IDAH_NOTE,
     IDAH_VIDEO_BOUNDING_BOX,
@@ -208,11 +210,41 @@
     }
   });
 
+  $effect(() => {
+    context.tools.setTool($currentMode);
+  });
+
   onMount(async () => {
     $boundingBoxes = [];
 
+    try {
+      annotationsIDB = await annotationsIndexedDB(
+        ["idah-video", "entry", entryId].join(":"),
+      );
+
+      /** Register commands */
+      registerCommands({
+        context,
+        getDb: () => annotationsIDB,
+        updaters: {
+          setAnnotationValue: (v) => (annotationValue = v),
+          selectAnnotation: (v) => selectAnnotation(v),
+        },
+      });
+      
+      fetchAnnotations(annotationsIDB).then(() => {
+        // quick fix if unsynced data, though we dont have way to send it anyway for now if so
+        const entryRootAnnotation = annotationsIDB.annotations.find(
+          (a) => a.shape.type === ENTRY_ROOT,
+        );
+        if (entryRootAnnotation) $entryRoot = entryRootAnnotation;
+      });
+    } catch (e) {
+      console.error(e);
+    }
+
     /** TOOLS CONFIGURATION */
-    const toolConfig = [
+    const toolListConfig = [
       {
         label: "Visual",
         type: DEFAULT_MODE,
@@ -242,41 +274,24 @@
       },
     ];
 
-    tools = toolConfig.map((config) => {
+    const toolConfig = toolListConfig.filter((tool) => {
+      if (EDITOR_MODE_TOOLS.includes(tool.type)) {
+        return !!context.config[tool.type];
+      }
+      return true;
+    });
+
+    tools = toolConfig.map((tool) => {
       return {
-        label: config.label,
-        type: config.type,
-        iconName: config.iconName,
-        disabled: config.disabled,
-        handleClick: () => context.commands.run(config.command),
+        label: tool.label,
+        type: tool.type,
+        iconName: tool.iconName,
+        disabled: tool.disabled,
+        handleClick: () => context.commands.run(tool.command),
       };
     });
+
     context.tools.setTools(tools);
-    $effect(() => context.tools.setTool($currentMode));
-
-    annotationsIndexedDB(["idah-video", "entry", entryId].join(":")).then(
-      (idb) => {
-        annotationsIDB = idb;
-        fetchAnnotations(idb).then(() => {
-          // quick fix if unsynced data, though we dont have way to send it anyway for now if so
-          const entryRootAnnotation = idb.annotations.find(
-            (a) => a.shape.type === ENTRY_ROOT,
-          );
-          if (entryRootAnnotation) $entryRoot = entryRootAnnotation;
-
-          /** Register commands */
-          registerCommands({
-            context,
-            getDb: () => annotationsIDB,
-            updaters: {
-              setAnnotationValue: (v) => (annotationValue = v),
-              selectAnnotation: (v) => selectAnnotation(v),
-            },
-          });
-        });
-      },
-      console.error,
-    );
 
     registerShortcuts({
       commands: context.commands,
@@ -286,7 +301,8 @@
       },
       flush: () => context.annotations.flush(),
       switch_mode: (mode: string) => {
-        const config = toolConfig.find((c) => c.type === mode) || toolConfig[0];
+        const config =
+          toolConfig.find((c) => c.type === mode) || toolListConfig[0];
         context.commands.run(config.command);
       },
       zoom: { in: overlay.zoomIn, out: overlay.zoomOut },
@@ -639,7 +655,7 @@
 
   let annotations_promise: Promise<VideoAnnotationObject[]> = $derived.by(
     () => {
-      if (!annotationsIDB) return new Promise((_, ko) => ko("no database"));
+      if (!annotationsIDB) return new Promise(() => {});
 
       // Return reactive annotations from the IndexedDB instance
       const annotations = annotationsIDB.annotations;
