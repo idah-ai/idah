@@ -89,7 +89,7 @@ export function registerCommands(params: CommandContext) {
     const db = getDb();
 
     await context.annotations
-      .create(annotationId, annotationToCreate.shape, annotationToCreate.value)
+      .create(annotationId, annotationToCreate.shape, annotationToCreate.value, annotationToCreate.metadata.metadata)
       .then(async () => {
         const createdAnnotation = await db?.get(
           "annotations",
@@ -779,7 +779,7 @@ export function registerCommands(params: CommandContext) {
           await db?.upsertAnnotations([a2]);
           setIndexedDBUpdatedAt();
 
-          let p2 = context.annotations.create(newId, a2.shape, a2.value);
+          let p2 = context.annotations.create(newId, a2.shape, a2.value, a2.metadata.metadata);
           p2.then(async () => {
             const annotation = await db?.get(
               "annotations",
