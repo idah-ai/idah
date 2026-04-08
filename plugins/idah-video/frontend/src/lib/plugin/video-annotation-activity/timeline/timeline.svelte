@@ -417,9 +417,12 @@
   onConfirm={() => {
     if (selectedGroupId) {
       deleteAnnotationGroup(selectedGroupId);
+      selectedGroupId = undefined;
     } else {
       deleteAllAnnotations();
     }
+
+    openConfirmDeleteModal = false;
   }}
   bind:open={openConfirmDeleteModal}
 />
