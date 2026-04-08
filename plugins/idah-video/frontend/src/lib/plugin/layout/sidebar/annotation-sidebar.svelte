@@ -12,7 +12,7 @@
 
   import { ENTRY_ROOT } from "$lib/plugin/type";
   import { entryRoot } from "$lib/plugin/video-annotation-activity/store/idb-store.svelte";
-  import { currentMode } from "$lib/plugin/video-annotation-activity/store/store";
+  import { currentMode, deselectAnnotationGroup } from "$lib/plugin/video-annotation-activity/store/store";
 
   import type {
     IActivityContext,
@@ -85,6 +85,7 @@
   function categorySelection(shape_type: string, category?: string) {
     if (category) {
       if (shape_type != $currentMode) onSelectAnnotation();
+      deselectAnnotationGroup();
       onEditValue({ category }, shape_type);
     } // else {
     //   onEditValue(

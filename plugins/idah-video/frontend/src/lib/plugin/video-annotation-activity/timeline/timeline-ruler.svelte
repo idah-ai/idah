@@ -1,8 +1,10 @@
 <script lang="ts">
+  import { DEFAULT_MODE } from "$lib/plugin/type";
   import {
     currentFrame,
-    deselectAnnotationGroup,
+    deselectAnnotation,
     isVideoPlaying,
+    setCurrentModeTo,
     totalFrames,
   } from "$lib/plugin/video-annotation-activity/store/store";
   import {
@@ -90,7 +92,8 @@
 
   // Functions
   function selectFrameX(e: MouseEvent) {
-    deselectAnnotationGroup();
+    setCurrentModeTo(DEFAULT_MODE);
+    deselectAnnotation();
     onSelectFrameX(e.clientX);
   }
 </script>
