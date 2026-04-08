@@ -28,7 +28,7 @@
   onMount(() => {
     p.then((_plugin) => {
       plugin = _plugin;
-      // console.debug({ plugin: $state.snapshot(plugin), pluginContainerElement, context });
+      console.log({ pluginContainerElement, context });
       plugin.render?.(pluginContainerElement, context);
     });
   });

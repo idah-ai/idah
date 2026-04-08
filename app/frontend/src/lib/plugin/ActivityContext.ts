@@ -21,6 +21,8 @@ function createCommandsInterface() {
       console.debug({ command_on: name, manager });
     },
     async run(name: string, props?: object) {
+      console.log({commands});
+      
       const { manager, builder }: { manager: boolean; builder: (props?: object) => Command } = commands.get(name);
 
       if (!builder) return console.error("builder not found command:", name);

@@ -14,3 +14,10 @@ export const IMAGE_NOTE = "note";
 export type ImageNote = "note";
 
 export const IMAGE_LOCALSTORAGE_FRAME_STEP = "idah-image:settings:frame-step";
+
+export const IMAGE_VISUAL = "visual";
+export type ImageVisual = "visual";
+
+export const EDITOR_MODE_TOOLS = [IMAGE_BOUNDING_BOX, IMAGE_POLYGON];
+
+export const VIEW_MODE_TOOLS = [IMAGE_NOTE];

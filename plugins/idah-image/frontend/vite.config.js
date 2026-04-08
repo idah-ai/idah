@@ -17,7 +17,7 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       lib: {
-        entry: "src/index.ts",
+        entry: "src/lib/index.ts",
         // use for now to plug in window.idah_plugin = IActivityView
         name: "idah_plugin",
         external: ["svelte"],
