@@ -36,3 +36,38 @@ export function groupAnnotations(annotations: VideoAnnotationObject[]): Annotati
 
   return groups;
 }
+
+export function findClosestAnnotationInGroup(props: {
+  annotationGroup: AnnotationGroup<VideoAnnotationObject>;
+  frame: number;
+}) {
+  const { annotationGroup, frame } = props;
+  const { annotations } = annotationGroup;
+  let closestAnnotation = annotations[0];
+
+  if (annotations.length <= 1) return annotations[0];
+
+  let minDiff = Infinity;
+
+  for (const annotation of annotations) {
+    const start = annotation.shape.start;
+    const end = annotation.shape.end;
+
+    // If frame is within an annotation, that's the one
+    if (frame >= start && frame <= end) {
+      closestAnnotation = annotation;
+      minDiff = 0;
+      break;
+    }
+
+    // Calculate distance to nearest edge
+    const diff = Math.min(Math.abs(frame - start), Math.abs(frame - end));
+
+    if (diff < minDiff) {
+      minDiff = diff;
+      closestAnnotation = annotation;
+    }
+  }
+
+  return closestAnnotation;
+}
