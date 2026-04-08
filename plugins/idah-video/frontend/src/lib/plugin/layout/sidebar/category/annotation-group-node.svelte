@@ -70,7 +70,7 @@
     })}
     onclick={selectAnnotationGroup}
   >
-    <div class="flex w-full items-center gap-1 text-xs" style="padding-left: {Number(level - 1) + 0.5}rem">
+    <div class="flex w-full items-center gap-1 text-xs" style="padding-left: {Number(level - 1) + 1.5}rem">
       <div class="shrink-0">
         <div>
           {#if annotationGroup.annotations[0].shape.type === IDAH_VIDEO_BOUNDING_BOX}
