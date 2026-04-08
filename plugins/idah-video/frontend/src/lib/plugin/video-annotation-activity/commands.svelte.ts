@@ -840,7 +840,6 @@ export function registerCommands(params: CommandContext) {
         let p2 = context.annotations.create(newId, a2.shape, a2.value, a2.metadata.metadata);
         p2.then(async () => {
           const annotation = await db?.get("annotations", newId);
-          console.log("created new annotation", annotation)
           if (annotation && annotation.metadata.updatedAt.valueOf() == createdAt.valueOf()) {
             annotation.synced = true;
             if (get(entryRoot)?.metadata.id == annotation.metadata.id) entryRoot.set(annotation);
