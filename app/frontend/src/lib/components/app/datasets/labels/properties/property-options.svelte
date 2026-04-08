@@ -275,7 +275,7 @@
         try {
           const visibility = parser.parse(value);
           visibilityError = undefined;
-          onSetValue({ visibility: visibility.length ? visibility : true });
+          if (visibility.length) onSetValue({ visibility: visibility });
         } catch (error) {
           if (error instanceof Error) {
             visibilityError = error.message;
