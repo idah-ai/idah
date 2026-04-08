@@ -81,9 +81,10 @@
             const parentPath = parts.slice(0, i + 1).join("/");
             acc[parentPath] = true;
           }
+        } else {
+          // Set last level categories to false by default (only parent categories are auto-expanded)
+          acc[category.id] = false;
         }
-        // Always set the category itself to true
-        acc[category.id] = true;
         return acc;
       },
       {},
