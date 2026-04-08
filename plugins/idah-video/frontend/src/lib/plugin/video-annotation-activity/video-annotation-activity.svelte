@@ -600,6 +600,7 @@
           getCurrentFrame: () => $currentFrame,
         });
       } else {
+        setCurrentModeTo(DEFAULT_MODE);
         deselectAnnotation();
         /** Register selection-specific shortcuts for the current mode with non selectedId */
         registerOnSelectShortcuts(firstAnnotation.shape.type, {
