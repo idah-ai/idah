@@ -249,11 +249,11 @@
     style:border-color={groupColor}
     style:border-left={scaledTransformedRangeStyle.showBorderLeft ? `1px solid ${groupColor}` : "none"}
     style:border-right={scaledTransformedRangeStyle.showBorderRight ? `1px solid ${groupColor}` : "none"}
-    style:background-color="{groupColor}{isSelectedOrHovered ? 60 : 30}"
     style:border-top-left-radius="{scaledTransformedRangeStyle.borderRadiusLeft}px"
     style:border-bottom-left-radius="{scaledTransformedRangeStyle.borderRadiusLeft}px"
     style:border-top-right-radius="{scaledTransformedRangeStyle.borderRadiusRight}px"
     style:border-bottom-right-radius="{scaledTransformedRangeStyle.borderRadiusRight}px"
+    style:background-color="{groupColor}{isSelectedOrHovered ? 60 : 30}"
     style:color={groupTextColor}
     style:width="{scaledTransformedRangeStyle.width}px"
     style:height="{annotationHeight}px"

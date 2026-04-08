@@ -11,7 +11,7 @@
   } from "$lib/plugin/video-annotation-activity/timeline/timeline-context-menu.svelte";
   import TimelineEmptyAnnotations from "$lib/plugin/video-annotation-activity/timeline/timeline-empty-annotations.svelte";
   import TimelineHeaderRow from "$lib/plugin/video-annotation-activity/timeline/timeline-header-row.svelte";
-  import TimelineHorizontalScrollbar from "$lib/plugin/video-annotation-activity/timeline/timeline-horizontal-scrollbar.svelte";
+  // import TimelineHorizontalScrollbar from "$lib/plugin/video-annotation-activity/timeline/timeline-horizontal-scrollbar.svelte";
   import TimelineRowActions from "$lib/plugin/video-annotation-activity/timeline/timeline-row-actions.svelte";
   import TimelineRowGroup from "$lib/plugin/video-annotation-activity/timeline/timeline-row-group.svelte";
   import TimelineRowHeader from "$lib/plugin/video-annotation-activity/timeline/timeline-row-header.svelte";
@@ -363,14 +363,14 @@
   {/if}
 
   {#if showHorizontalScrollbar}
-    <TimelineHorizontalScrollbar />
+    <!-- <TimelineHorizontalScrollbar /> -->
   {/if}
 </div>
 
 <TimelineContextMenu {contextMenu} onCloseContextMenu={closeContextMenu} />
 
 <ConfirmModal
-  title="Delete {selectedGroupId ? 'annotation group' : 'annotations'}"
+  title="Delete {selectedGroupId ? 'annotation group' : 'all annotations'}"
   description="Are you sure you want to delete {selectedGroupId ? 'this annotation group' : 'all annotations'}?"
   onConfirm={() => {
     if (selectedGroupId) {

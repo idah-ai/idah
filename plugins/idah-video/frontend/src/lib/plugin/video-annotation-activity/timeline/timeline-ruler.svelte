@@ -1,5 +1,10 @@
 <script lang="ts">
-  import { currentFrame, isVideoPlaying, totalFrames } from "$lib/plugin/video-annotation-activity/store/store";
+  import {
+    currentFrame,
+    deselectAnnotationGroup,
+    isVideoPlaying,
+    totalFrames,
+  } from "$lib/plugin/video-annotation-activity/store/store";
   import {
     currentFrameRange,
     framePerScale,
@@ -85,6 +90,7 @@
 
   // Functions
   function selectFrameX(e: MouseEvent) {
+    deselectAnnotationGroup();
     onSelectFrameX(e.clientX);
   }
 </script>
