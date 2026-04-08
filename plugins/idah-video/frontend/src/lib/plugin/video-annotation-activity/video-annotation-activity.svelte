@@ -31,6 +31,7 @@
   import {
     currentFrame,
     currentMode,
+    deselectAnnotation,
     isVideoPlaying,
     selectedAnnotation,
     selectedAnnotationGroup,
@@ -491,6 +492,7 @@
           getCurrentFrame: () => $currentFrame,
         });
       } else {
+        deselectAnnotation();
         /** Register selection-specific shortcuts for the current mode with non selectedId */
         registerOnSelectShortcuts(firstAnnotation.shape.type, {
           commands: context.commands,
