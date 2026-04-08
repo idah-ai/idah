@@ -351,6 +351,19 @@
       </CollapsibleTrigger>
 
       <CollapsibleContent hidden={!openStates[category.id]}>
+        {#if subCategories}
+          {#each subCategories as subCategory (subCategory.id)}
+            {@render CategoryNode(
+              subCategory,
+              subCategory.nestedCategories,
+              onSelectCategory,
+              selectedCategory,
+              [...parent, category.id.split("/").slice(parent.length)[0]],
+              level + 1,
+            )}
+          {/each}
+        {/if}
+
         {#if !currentModeIsSameAsShape && db && category}
           {@const categoryAnnotations = db.annotationsByCategory(category.id)}
           {@const { groups: filteredAnnotationGroups } =
@@ -366,19 +379,6 @@
           {/each}
         {/if}
       </CollapsibleContent>
-    {/if}
-
-    {#if subCategories}
-      {#each subCategories as subCategory (subCategory.id)}
-        {@render CategoryNode(
-          subCategory,
-          subCategory.nestedCategories,
-          onSelectCategory,
-          selectedCategory,
-          [...parent, category.id.split("/").slice(parent.length)[0]],
-          level + 1,
-        )}
-      {/each}
     {/if}
   </Collapsible>
 {/snippet}
