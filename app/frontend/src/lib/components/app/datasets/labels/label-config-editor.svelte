@@ -192,7 +192,7 @@
       description: "",
       required: false,
       format: {},
-      visibility: false,
+      visibility: true,
     });
   }
 

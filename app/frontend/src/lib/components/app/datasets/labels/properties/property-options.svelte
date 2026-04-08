@@ -261,7 +261,7 @@
       class="col-span-1 md:col-span-2"
       label="Visibility"
       placeholder="e.g. task_name match '...' and status = '...'"
-      value={visibility == false ? "" : ASTNodeToFunctionString(visibility)}
+      value={visibility == true ? "" : ASTNodeToFunctionString(visibility)}
       oninput={(e) => {
         const inputValue = e.currentTarget.value;
 
@@ -269,12 +269,13 @@
           const parsed = parser.parse(inputValue);
 
           onSetValue({
-            visibility: parsed.length ? parsed : false,
+            visibility: parsed.length ? parsed : true,
           });
         } catch (error) {
           onSetValue({
-            visibility: false,
+            visibility: true,
           });
+
           console.error(error);
         }
       }}
