@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import { selectedAnnotationGroup } from "$lib/plugin/video-annotation-activity/store/store";
-  import { getFrameFromMouseX } from "$lib/plugin/video-annotation-activity/timeline/utils";
+  import { currentFrame, selectedAnnotationGroup } from "$lib/plugin/video-annotation-activity/store/store";
+  import { TIMELINE_ROW_HEADER_WIDTH } from "$lib/plugin/video-annotation-activity/timeline/store";
   import { cn } from "$lib/utils";
 
   import type { AnnotationGroup } from "$idah/context/annotation-context";
@@ -34,17 +34,16 @@
 
   // Functions
   function onCellClick(e: MouseEvent) {
-    /** Compute frame base on timelineRulerWidth, e.clientX, windowWidth */
-    const frame = getFrameFromMouseX({ clientX: e.clientX });
+    const mouseIsClickedOnCells = e.clientX > TIMELINE_ROW_HEADER_WIDTH;
 
-    if (frame > 0) {
+    if (mouseIsClickedOnCells) {
       /** Click on annotation row which have a frame */
 
       /** Select frame X if click on cells (not group header) */
       onSelectFrameX(e.clientX);
 
       /** Select annotation group at specific frame (click on frames) */
-      onSelectAnnotationGroup(annotationGroup, frame);
+      onSelectAnnotationGroup(annotationGroup, $currentFrame);
     } else {
       /** Click on annotation group header */
 
