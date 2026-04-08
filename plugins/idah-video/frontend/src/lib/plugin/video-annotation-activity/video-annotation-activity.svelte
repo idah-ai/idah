@@ -516,7 +516,6 @@
   function selectAnnotation(annotation?: VideoAnnotationObject) {
     setSelectedAnnotation(annotation);
 
-    console.log("selected annotation", annotation);
     /**
      * Set mode to the annotation shape type when selecting an annotation
      */

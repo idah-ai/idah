@@ -236,7 +236,6 @@
       icon: SquareSplitHorizontalIcon,
       disabled: closestAnnotation.locked,
       onClick: () => {
-        console.log("split annotation at frame", frame);
         context.commands.run("annotation.split", {
           id: closestAnnotation.metadata.id,
           at: frame,

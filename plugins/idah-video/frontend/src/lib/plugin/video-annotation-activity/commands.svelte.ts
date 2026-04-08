@@ -780,8 +780,6 @@ export function registerCommands(params: CommandContext) {
       async apply() {
         const a1 = await db?.get("annotations", props.id);
 
-        console.log("apply")
-
         if (a1) {
           a1.shape.end = part1End;
           a1.shape.frames = part1Frames;
@@ -798,8 +796,6 @@ export function registerCommands(params: CommandContext) {
             annotation: a1.value,
             metadata: a1.metadata.metadata,
           });
-
-          console.log("update original annotation", { a1 })
 
           p.then(async () => {
             const annotation = await db?.get("annotations", props.id);
