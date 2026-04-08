@@ -1,9 +1,17 @@
-import { KeyMapBuilder, BuildKeymap } from "$idah/shortcut/key-map-builder";
+import { BuildKeymap, KeyMapBuilder } from "$idah/shortcut/key-map-builder";
 import { ShortcutManager } from "$idah/shortcut/shortcut-manager";
 
-import { DEFAULT_MODE, IDAH_VISUAL, IDAH_VIDEO_POLYGON, IDAH_VIDEO_BOUNDING_BOX, IDAH_NOTE, IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP } from "$lib/plugin/type";
+import {
+  DEFAULT_MODE,
+  IDAH_NOTE,
+  IDAH_VIDEO_BOUNDING_BOX,
+  IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP,
+  IDAH_VIDEO_POLYGON,
+  IDAH_VISUAL,
+} from "$lib/plugin/type";
+import { paginateCurrentFrameRange } from "$lib/plugin/video-annotation-activity/timeline/utils";
 
-import type { IActivityContext, ICommands } from "$idah/context/activity-context";
+import type { ICommands } from "$idah/context/activity-context";
 import type Video from "$lib/plugin/video-annotation-activity/video/video.svelte";
 
 // Mode-related shortcut context
@@ -25,10 +33,18 @@ type SelectionKeyMapContext = {
 };
 
 const injectCommonShortcuts = (context: KeyMapContext) => {
-  const flushAction = () => { context.flush(); };
-  const redoAction = () => { context.commands.redo(); };
-  const undoAction = () => { context.commands.undo(); };
-  const toggleCommand = () => { context.toggleCommandCB(); };
+  const flushAction = () => {
+    context.flush();
+  };
+  const redoAction = () => {
+    context.commands.redo();
+  };
+  const undoAction = () => {
+    context.commands.undo();
+  };
+  const toggleCommand = () => {
+    context.toggleCommandCB();
+  };
 
   const enterMode = (mode: string, replace: boolean = false) => {
     return () => {
@@ -59,24 +75,46 @@ const injectCommonShortcuts = (context: KeyMapContext) => {
 };
 
 const buildVisualModeShortcuts = (context: KeyMapContext) => {
-  const togglePlay = () => { context.player()?.togglePlay(); };
-  const nextFrame = () => { context.player()?.nextFrame(); };
-  const previousFrame = () => { context.player()?.previousFrame(); };
+  const togglePlay = () => {
+    context.player()?.togglePlay();
+  };
+  const nextFrame = () => {
+    context.player()?.nextFrame();
+
+    /** Shift current frame range to the right by 1, when nextFrame is executed */
+    paginateCurrentFrameRange({ frameStep: 1 });
+  };
+  const previousFrame = () => {
+    context.player()?.previousFrame();
+
+    /** Shift current frame range to the left by 1, when previousFrame is executed */
+    paginateCurrentFrameRange({ frameStep: -1 });
+  };
 
   const defaultFrameStep = 10;
 
   const nextMultipleFrames = () => {
     const frameStep = Number(localStorage.getItem(IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP)) || defaultFrameStep;
     context.player()?.nextFrame(frameStep);
+
+    /** Shift current frame range to the right by `frameStep`, when nextFrame is executed */
+    paginateCurrentFrameRange({ frameStep: frameStep });
   };
 
   const previousMultipleFrames = () => {
     const frameStep = Number(localStorage.getItem(IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP)) || defaultFrameStep;
     context.player()?.previousFrame(frameStep);
+
+    /** Shift current frame range to the left by `-frameStep`, when previousFrame is executed */
+    paginateCurrentFrameRange({ frameStep: -frameStep });
   };
 
-  const startFrame = () => { context.player()?.seekToFrame(0); };
-  const endFrame = () => { context.player()?.seekToFrame(context.player()?.getFrames() || 0); };
+  const startFrame = () => {
+    context.player()?.seekToFrame(0);
+  };
+  const endFrame = () => {
+    context.player()?.seekToFrame(context.player()?.getFrames() || 0);
+  };
 
   return (b: KeyMapBuilder) => {
     b.on(null, "Space", togglePlay, "Toggle Play", "Play/Pause the video player");
@@ -106,9 +144,15 @@ const buildBoundingBoxModeShortcuts = (context: KeyMapContext) => {
 };
 
 const buildPolygonModeShortcuts = (context: KeyMapContext) => {
-  const togglePlay = () => { context.player()?.togglePlay(); };
-  const nextFrame = () => { context.player()?.nextFrame(); };
-  const previousFrame = () => { context.player()?.previousFrame(); };
+  const togglePlay = () => {
+    context.player()?.togglePlay();
+  };
+  const nextFrame = () => {
+    context.player()?.nextFrame();
+  };
+  const previousFrame = () => {
+    context.player()?.previousFrame();
+  };
 
   const defaultFrameStep = 10;
 
@@ -122,8 +166,12 @@ const buildPolygonModeShortcuts = (context: KeyMapContext) => {
     context.player()?.previousFrame(frameStep);
   };
 
-  const startFrame = () => { context.player()?.seekToFrame(0); };
-  const endFrame = () => { context.player()?.seekToFrame(context.player()?.getFrames() || 0); };
+  const startFrame = () => {
+    context.player()?.seekToFrame(0);
+  };
+  const endFrame = () => {
+    context.player()?.seekToFrame(context.player()?.getFrames() || 0);
+  };
 
   return (b: KeyMapBuilder) => {
     b.on(null, "Space", togglePlay, "Toggle Play", "Play/Pause the video player");
@@ -186,20 +234,20 @@ const buildOnSelectBoundingBoxModeShortcuts = (context: SelectionKeyMapContext) 
     }
   };
 
-  const toggleHidden = () => {
-    if (!context.selectedId) return
+  const toggleGroupVisibility = () => {
+    if (!context.selectedGroupId) return;
 
-    context.commands.run("annotation.toggleHidden", { id: context.selectedId });
+    context.commands.run("annotation.toggleGroupVisibility", { groupId: context.selectedGroupId });
   };
 
-  const toggleLocked = () => {
-    if (!context.selectedId) return
+  const toggleGroupEditability = () => {
+    if (!context.selectedGroupId) return;
 
-    context.commands.run("annotation.toggleLocked", { id: context.selectedId });
+    context.commands.run("annotation.toggleGroupEditability", { groupId: context.selectedGroupId });
   };
 
   const splitAnnotation = () => {
-    if (!context.selectedId) return
+    if (!context.selectedId) return;
 
     const currentFrame = context.getCurrentFrame();
     context.commands.run("annotation.split", { id: context.selectedId, at: currentFrame });
@@ -208,8 +256,8 @@ const buildOnSelectBoundingBoxModeShortcuts = (context: SelectionKeyMapContext) 
   return (b: KeyMapBuilder) => {
     b.on(null, "Delete", deleteSelected, "Delete", "Delete selected annotation");
     b.on([b.Ctrl], "Backspace", deleteSelected, "Delete", "Delete selected annotation");
-    b.on(null, "H", toggleHidden, "Toggle Hidden", "Hide/Show selected annotation");
-    b.on(null, "L", toggleLocked, "Toggle Locked", "Lock/Unlock selected annotation");
+    b.on(null, "H", toggleGroupVisibility, "Toggle Group Visibility", "Hide/Show selected annotation group");
+    b.on(null, "L", toggleGroupEditability, "Toggle Group Editability", "Lock/Unlock selected annotation group");
     b.on(null, "S", splitAnnotation, "Split", "Split selected annotation at selected frame");
   };
 };
@@ -225,21 +273,21 @@ const buildOnSelectPolygonModeShortcuts = (context: SelectionKeyMapContext) => {
     }
   };
 
-  const toggleHidden = () => {
-    if (!context.selectedId) return
+  const toggleGroupVisibility = () => {
+    if (!context.selectedGroupId) return;
 
-    context.commands.run("annotation.toggleHidden", { id: context.selectedId });
+    context.commands.run("annotation.toggleGroupVisibility", { groupId: context.selectedGroupId });
   };
 
-  const toggleLocked = () => {
-    if (!context.selectedId) return
+  const toggleGroupEditability = () => {
+    if (!context.selectedGroupId) return;
 
-    context.commands.run("annotation.toggleLocked", { id: context.selectedId });
+    context.commands.run("annotation.toggleGroupEditability", { groupId: context.selectedGroupId });
   };
 
   const splitAnnotation = () => {
-    if (!context.selectedId) return
-    
+    if (!context.selectedId) return;
+
     const currentFrame = context.getCurrentFrame();
     context.commands.run("annotation.split", { id: context.selectedId, at: currentFrame });
   };
@@ -247,8 +295,8 @@ const buildOnSelectPolygonModeShortcuts = (context: SelectionKeyMapContext) => {
   return (b: KeyMapBuilder) => {
     b.on(null, "Delete", deleteSelected, "Delete", "Delete selected annotation");
     b.on([b.Ctrl], "Backspace", deleteSelected, "Delete", "Delete selected annotation");
-    b.on(null, "H", toggleHidden, "Toggle Hidden", "Hide/Show selected annotation");
-    b.on(null, "L", toggleLocked, "Toggle Locked", "Lock/Unlock selected annotation");
+    b.on(null, "H", toggleGroupVisibility, "Toggle Group Visibility", "Hide/Show selected annotation group");
+    b.on(null, "L", toggleGroupEditability, "Toggle Group Editability", "Lock/Unlock selected annotation group");
     b.on(null, "S", splitAnnotation, "Split", "Split selected annotation at selected frame");
   };
 };

@@ -22,7 +22,6 @@
     ResizablePane,
     ResizablePaneGroup,
   } from "$lib/components/ui/resizable";
-  import { ScrollArea } from "$lib/components/ui/scroll-area";
 
   import { ShortcutManager } from "$idah/shortcut/shortcut-manager";
 
@@ -36,10 +35,11 @@
     IDAH_VIDEO_POLYGON,
   } from "$lib/plugin/type";
   import { requiredFullfilled } from "$lib/plugin/video-annotation-activity/category-properties";
+  import { registerCommands } from "$lib/plugin/video-annotation-activity/commands.svelte";
   import {
     annotationsIndexedDB,
-    AnnotationsIndexedDB,
-  } from "$lib/plugin/video-annotation-activity/indexedDB";
+    type AnnotationBackend,
+  } from "$lib/plugin/video-annotation-activity/data/annotation/annotaiton-backend.svelte";
   import {
     registerOnSelectShortcuts,
     registerShortcuts,
@@ -47,19 +47,22 @@
   import {
     boundingBoxes,
     entryRoot,
-    idbUpdatedAt,
-    setEntryRoot,
-    setIndexedDBUpdatedAt,
   } from "$lib/plugin/video-annotation-activity/store/idb-store.svelte";
   import {
+    currentFrame,
     currentMode,
+    deselectAnnotation,
+    isVideoPlaying,
     selectedAnnotation,
     selectedAnnotationGroup,
+    setCurrentFrame,
     setCurrentModeTo,
     setSelectedAnnotation,
     setSelectedAnnotationGroup,
+    setTotalFrames,
+    setVideoIsPlaying,
   } from "$lib/plugin/video-annotation-activity/store/store";
-  import { registerCommands } from "$lib/plugin/video-annotation-activity/commands.svelte";
+  import { findClosestAnnotationInGroup } from "$lib/plugin/video-annotation-activity/utils/group-annotation.svelte";
 
   import AnnotationFooterToolbar from "$lib/plugin/layout/footer/annotation-footer-toolbar.svelte";
   import AnnotationFooter from "$lib/plugin/layout/footer/annotation-footer.svelte";
@@ -69,17 +72,16 @@
   import SvgOverlay, {
     type OnAddNewNoteParams,
   } from "$lib/plugin/video-annotation-activity/svg-overlay.svelte";
-  import TimelineTable from "$lib/plugin/video-annotation-activity/timeline-table/timeline-table.svelte";
+  import TimelineController from "$lib/plugin/video-annotation-activity/timeline/timeline-controller.svelte";
+  import Timeline from "$lib/plugin/video-annotation-activity/timeline/timeline.svelte";
   import VideoController from "$lib/plugin/video-annotation-activity/video/video-controller.svelte";
   import Video from "$lib/plugin/video-annotation-activity/video/video.svelte";
 
   import {
-    type InterpolatedVertex,
     type Point,
     type VideoAnnotationObject,
     type VideoFrameSelection,
     type VideoShape,
-    getInterpolatedFrame,
   } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
 
   import type { IActivityContext } from "$idah/context/activity-context";
@@ -116,8 +118,6 @@
 
   let player: Video | undefined = $state();
   let player_container: HTMLDivElement | undefined = $state();
-  let currentFrame = $state(0);
-  let totalFrames = $state(0);
 
   let annotationSidebarResizablePercentage = $state<number>(16);
   let annotationSidebarWidthRem = $derived<number>(
@@ -131,12 +131,11 @@
     $selectedAnnotation?.value || {},
   );
 
+  // Variables::Timeline
+  let timelineHeight: number = $state(0);
   let zoom = $state(85);
-  let scale = $state(1);
-  let timelineTable: TimelineTable;
 
-  let annotationsIDB: AnnotationsIndexedDB | undefined = $state();
-  let isPlaying = $state(false);
+  let annotationsIDB: AnnotationBackend | undefined = $state();
   let volume = $state({ level: 0, muted: false });
   let tools: {
     label: string;
@@ -147,22 +146,9 @@
   }[] = $state([]);
 
   let commandOpen = $state(false);
-
-  let allHidden: boolean = $state(false);
-  let allLocked: boolean = $state(false);
-
   let overlay: SvgOverlay;
   let showPopOver = $state(false);
   let videoResizedAt = $state(new Date());
-
-  let setVisibility: (
-    hidden: boolean,
-    annotation?: VideoAnnotationObject,
-  ) => void = $state(() => {});
-  let setEditability: (
-    locked: boolean,
-    annotation?: VideoAnnotationObject,
-  ) => void = $state(() => {});
 
   $effect(() => {
     if (typeof window === "undefined") return;
@@ -237,24 +223,21 @@
       );
 
       /** Register commands */
-      const commands = registerCommands({
+      registerCommands({
         context,
         getDb: () => annotationsIDB,
         updaters: {
-          setAllHidden: (v) => (allHidden = v),
-          setAllLocked: (v) => (allLocked = v),
           setAnnotationValue: (v) => (annotationValue = v),
           selectAnnotation: (v) => selectAnnotation(v),
         },
       });
-
+      
       fetchAnnotations(annotationsIDB).then(() => {
         // quick fix if unsynced data, though we dont have way to send it anyway for now if so
-        annotationsIDB
-          ?.getAllIndex("type", ENTRY_ROOT)
-          .then((anns) => ($entryRoot = anns[0]));
-        setVisibility = commands.setVisibility;
-        setEditability = commands.setEditability;
+        const entryRootAnnotation = annotationsIDB.annotations.find(
+          (a) => a.shape.type === ENTRY_ROOT,
+        );
+        if (entryRootAnnotation) $entryRoot = entryRootAnnotation;
       });
     } catch (e) {
       console.error(e);
@@ -307,6 +290,7 @@
         handleClick: () => context.commands.run(tool.command),
       };
     });
+
     context.tools.setTools(tools);
 
     registerShortcuts({
@@ -325,7 +309,7 @@
     });
 
     function fetchAnnotations(
-      db: AnnotationsIndexedDB,
+      db: AnnotationBackend,
       page = 1,
       itemsPerPage = 100,
     ): Promise<void> {
@@ -359,7 +343,6 @@
 
             if (d.length) {
               db.upsertAnnotations(d).then(() => {
-                setIndexedDBUpdatedAt();
                 fetchAnnotations(db, page + 1).then(resolve, reject);
               });
             } else {
@@ -374,13 +357,34 @@
     player?.seekToFrame(frame);
   }
 
-  function addAnnotation(shape: AnnotationShape, value: AnnotationValue = {}) {
+  async function addAnnotation(
+    shape: AnnotationShape,
+    value: AnnotationValue = {},
+  ) {
     if (!editable) return;
 
     const { type, start, end, frames } = shape;
     const videoShape: VideoShape = { type, start, end, frames, value };
 
     context.commands.run("annotation.add", { shape: videoShape, value });
+
+    const timelineScrollAreaEl = document.getElementById(
+      "timeline-scroll-area",
+    );
+
+    if (timelineScrollAreaEl) {
+      const scrollContainer = timelineScrollAreaEl.querySelector(
+        `[data-slot="scroll-area-viewport"]`,
+      ) as HTMLElement;
+
+      setTimeout(() => {
+        // scroll to bottom most
+        scrollContainer.scrollTo({
+          top: scrollContainer.scrollHeight,
+          behavior: "smooth",
+        });
+      }, 100);
+    }
   }
 
   async function removeAnnotation(annotationId: string) {
@@ -561,8 +565,10 @@
       registerOnSelectShortcuts(annotation.shape.type, {
         commands: context.commands,
         selectedId: annotation.metadata.id,
-        selectedGroupId: annotation.metadata.metadata?.group_id,
-        getCurrentFrame: () => currentFrame,
+        selectedGroupId:
+          annotation.metadata.metadata?.group_id ||
+          $selectedAnnotationGroup?.groupId,
+        getCurrentFrame: () => $currentFrame,
       });
     } else {
       setCurrentModeTo(DEFAULT_MODE);
@@ -589,20 +595,37 @@
      */
     if (isNoteMode) {
       return;
-    } else if (selectedFrame && firstAnnotation.shape.type && editable) {
+    } else if (firstAnnotation.shape.type && editable) {
       /**
        * If user select timeline row at specific frame (selectedFrame is exists)
        * and workflow step is in review or annotation
        */
-      setCurrentModeTo(firstAnnotation.shape.type);
-      selectClosestAnnotation(annotationGroup, selectedFrame);
-      // Register selection-specific shortcuts for the current mode
-      registerOnSelectShortcuts(firstAnnotation.shape.type, {
-        commands: context.commands,
-        selectedId: undefined,
-        selectedGroupId: annotationGroup.groupId,
-        getCurrentFrame: () => currentFrame,
-      });
+      if (selectedFrame) {
+        /** Set current mode and select closest annotation when selectedFrame is exitsts */
+        setCurrentModeTo(firstAnnotation.shape.type);
+        const closestAnnotation = selectClosestAnnotation(
+          annotationGroup,
+          selectedFrame,
+        );
+
+        /** Register selection-specific shortcuts for the current mode with closest annotation id */
+        registerOnSelectShortcuts(firstAnnotation.shape.type, {
+          commands: context.commands,
+          selectedId: closestAnnotation.metadata.id,
+          selectedGroupId: annotationGroup.groupId,
+          getCurrentFrame: () => $currentFrame,
+        });
+      } else {
+        setCurrentModeTo(DEFAULT_MODE);
+        deselectAnnotation();
+        /** Register selection-specific shortcuts for the current mode with non selectedId */
+        registerOnSelectShortcuts(firstAnnotation.shape.type, {
+          commands: context.commands,
+          selectedId: undefined,
+          selectedGroupId: annotationGroup.groupId,
+          getCurrentFrame: () => $currentFrame,
+        });
+      }
     } else {
       selectAnnotation(undefined);
       setCurrentModeTo(DEFAULT_MODE);
@@ -613,56 +636,30 @@
     annotationGroup: AnnotationGroup<VideoAnnotationObject>,
     frame: number,
   ) {
-    let closestAnnotation = annotationGroup.annotations[0];
-
-    if (annotationGroup.annotations.length === 1) {
-      selectAnnotation(closestAnnotation);
-      return closestAnnotation;
-    }
-
-    let minDiff = Infinity;
-
-    for (const annotation of annotationGroup.annotations) {
-      const start = annotation.shape.start;
-      const end = annotation.shape.end;
-
-      // If frame is within an annotation, that's the one
-      if (frame >= start && frame <= end) {
-        closestAnnotation = annotation;
-        minDiff = 0;
-        break;
-      }
-
-      // Calculate distance to nearest edge
-      const diff = Math.min(Math.abs(frame - start), Math.abs(frame - end));
-
-      if (diff < minDiff) {
-        minDiff = diff;
-        closestAnnotation = annotation;
-      }
-    }
-
-    if (closestAnnotation) {
-      setCurrentModeTo(closestAnnotation.shape.type);
-      selectAnnotation(closestAnnotation);
-    }
+    const closestAnnotation = findClosestAnnotationInGroup({
+      annotationGroup,
+      frame,
+    });
+    setCurrentModeTo(closestAnnotation.shape.type);
+    selectAnnotation(closestAnnotation);
 
     return closestAnnotation;
   }
 
+  // Sync annotations to boundingBoxes whenever they change
+  $effect(() => {
+    if (annotationsIDB) {
+      $boundingBoxes = annotationsIDB.annotations;
+    }
+  });
+
   let annotations_promise: Promise<VideoAnnotationObject[]> = $derived.by(
     () => {
-      $idbUpdatedAt; // eslint-disable-line @typescript-eslint/no-unused-expressions
-
       if (!annotationsIDB) return new Promise(() => {});
 
-      let p = annotationsIDB.getAllStore("annotations");
-
-      p.then((updatedAnnotations) => {
-        $boundingBoxes = updatedAnnotations;
-      });
-
-      return p;
+      // Return reactive annotations from the IndexedDB instance
+      const annotations = annotationsIDB.annotations;
+      return Promise.resolve(annotations);
     },
   );
 
@@ -683,22 +680,6 @@
     });
   }
 
-  // Helper function to normalize interpolated points to Point[]
-  function normalizePoints(
-    points: Point[] | InterpolatedVertex[] | undefined,
-  ): Point[] | undefined {
-    if (!points) return undefined;
-    // Check if first element is InterpolatedVertex by checking if it has a 'point' property
-    if (
-      points.length > 0 &&
-      typeof points[0] === "object" &&
-      "point" in points[0]
-    ) {
-      return (points as InterpolatedVertex[]).map((item) => item.point);
-    }
-    return points as Point[];
-  }
-
   async function reSelectCategory(reselectedCategoryId: string) {
     if (!$selectedAnnotationGroup) return;
 
@@ -707,6 +688,10 @@
       groupId: $selectedAnnotationGroup.groupId,
       categoryIdToBeUpdate: reselectedCategoryId,
     });
+  }
+
+  function onTimelineResize(resizeValue: number) {
+    timelineHeight = window.innerHeight * (resizeValue / 100);
   }
 </script>
 
@@ -764,13 +749,10 @@
             class="rounded-t-lg"
             db={annotationsIDB}
             {annotationValue}
-            {currentFrame}
             {onEditValue}
             onSelectAnnotation={selectAnnotation}
             onSelectAnnotationGroup={() => {}}
             onDeleteAnnotation={deleteAnnotation}
-            onEditability={setEditability}
-            onVisibility={setVisibility}
             {context}
           />
         {/if}
@@ -795,7 +777,7 @@
             showPopOver = false;
             switch ($currentMode) {
               case ENTRY_ROOT:
-                onShapeSelection(ENTRY_ROOT, currentFrame);
+                onShapeSelection(ENTRY_ROOT, $currentFrame);
                 break;
               default:
                 if (shapeSelectionArgs) onShapeSelection(...shapeSelectionArgs);
@@ -822,13 +804,10 @@
               sidebarWidthRem={annotationSidebarWidthRem}
               db={annotationsIDB}
               {annotationValue}
-              {currentFrame}
               {onEditValue}
               onSelectAnnotation={selectAnnotation}
               onSelectAnnotationGroup={selectAnnotationGroup}
               onDeleteAnnotation={deleteAnnotation}
-              onEditability={setEditability}
-              onVisibility={setVisibility}
               {context}
             />
           </ResizablePane>
@@ -844,14 +823,14 @@
               <SvgOverlay
                 bind:this={overlay}
                 {annotations_promise}
-                frame={currentFrame}
+                frame={$currentFrame}
                 onSelectAnnotation={selectAnnotation}
                 onSelection={onShapeSelection}
                 onAddNewNote={showNewNotePopup}
                 onChangeFrame={seekToFrame}
                 target_container={() => player_container}
                 {videoResizedAt}
-                {isPlaying}
+                isPlaying={$isVideoPlaying}
               >
                 <!-- container context ?-->
                 <Video
@@ -861,9 +840,9 @@
                     videoResizedAt = new Date();
                   }}
                   onFramesChange={(current, total, playing) => {
-                    currentFrame = current;
-                    totalFrames = total;
-                    isPlaying = playing;
+                    setCurrentFrame(current);
+                    setTotalFrames(total);
+                    setVideoIsPlaying(playing);
                   }}
                   onVolumeChange={(level, muted) => (volume = { level, muted })}
                 />
@@ -883,45 +862,22 @@
 
       <ResizableHandle withHandle />
 
-      <ResizablePane defaultSize={25} minSize={15}>
+      <ResizablePane defaultSize={25} minSize={15} onResize={onTimelineResize}>
         <AnnotationFooter>
           <AnnotationFooterToolbar>
-            <VideoController
-              {isPlaying}
-              {zoom}
-              {currentFrame}
-              {totalFrames}
-              {volume}
-              bind:video={player}
-              onZoomChange={(z) => timelineTable.setZoom(z)}
-            />
+            <VideoController {zoom} {volume} bind:video={player} />
+
+            <TimelineController onSeekFrame={seekToFrame} />
           </AnnotationFooterToolbar>
 
-          <ScrollArea class="h-[calc(100%-3rem)]">
-            <TimelineTable
-              bind:this={timelineTable}
-              {annotations_promise}
-              {scale}
-              {zoom}
-              {currentFrame}
-              {totalFrames}
-              {allHidden}
-              {allLocked}
-              {isPlaying}
+          {#if annotationsIDB}
+            <Timeline
+              annotations={annotationsIDB.annotations}
+              {timelineHeight}
               onSeekFrame={seekToFrame}
-              onEditability={setEditability}
-              onVisibility={setVisibility}
-              onDeleteAnnotation={deleteAnnotation}
-              onSelectAnnotation={selectAnnotation}
-              onSelectGroupAtFrame={selectAnnotationGroup}
-              onScaleChange={(s) => {
-                scale = s;
-              }}
-              onZoomChange={(z) => {
-                zoom = z;
-              }}
+              onSelectAnnotationGroup={selectAnnotationGroup}
             />
-          </ScrollArea>
+          {/if}
         </AnnotationFooter>
       </ResizablePane>
     </ResizablePaneGroup>

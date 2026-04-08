@@ -12,6 +12,27 @@ export function setCurrentModeTo(mode: string) {
   currentMode.set(mode);
 }
 
+/** CURRENT FRAME */
+export const currentFrame = writable<number>(0);
+
+export function setCurrentFrame(frame: number) {
+  currentFrame.set(frame);
+}
+
+/** TOTAL FRAMES */
+export const totalFrames = writable<number>(0);
+
+export function setTotalFrames(totalFrame: number) {
+  totalFrames.set(totalFrame);
+}
+
+/** IS PLAYING */
+export const isVideoPlaying = writable<boolean>(false);
+
+export function setVideoIsPlaying(isPlaying: boolean) {
+  isVideoPlaying.set(isPlaying);
+}
+
 /** SELECTED ANNOTATION */
 export const selectedAnnotation = writable<VideoAnnotationObject | undefined>(undefined);
 
@@ -27,7 +48,7 @@ export function deselectAnnotation() {
 export const selectedAnnotationGroup = writable<AnnotationGroup<VideoAnnotationObject> | undefined>(undefined);
 
 export function setSelectedAnnotationGroup(annotationGroup: AnnotationGroup<VideoAnnotationObject> | undefined) {
- selectedAnnotationGroup.set(annotationGroup);
+  selectedAnnotationGroup.set(annotationGroup);
 }
 
 export function deselectAnnotationGroup() {
