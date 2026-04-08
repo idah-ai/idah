@@ -348,7 +348,7 @@
     <TimelineRuler onSelectFrameX={selectFrameX} />
   </TimelineHeaderRow>
 
-  <ScrollArea>
+  <ScrollArea id="timeline-scroll-area">
     <div style:height="{timelineHeight - 96}px" onwheel={handleTimelineWheel}>
       {#each annotationGroups as annotationGroup (annotationGroup.groupId)}
         {@const allAnnotationsInGroupHidden = annotationGroup.annotations.every(
@@ -411,7 +411,9 @@
 
 <ConfirmModal
   title="Delete {selectedGroupId ? 'annotation group' : 'all annotations'}"
-  description="Are you sure you want to delete {selectedGroupId ? 'this annotation group' : 'all annotations'}?"
+  description="Are you sure you want to delete {selectedGroupId
+    ? 'this annotation group'
+    : 'all annotations'}?"
   onConfirm={() => {
     if (selectedGroupId) {
       deleteAnnotationGroup(selectedGroupId);

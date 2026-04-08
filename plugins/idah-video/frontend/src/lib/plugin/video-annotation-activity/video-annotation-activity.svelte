@@ -340,13 +340,34 @@
     player?.seekToFrame(frame);
   }
 
-  function addAnnotation(shape: AnnotationShape, value: AnnotationValue = {}) {
+  async function addAnnotation(
+    shape: AnnotationShape,
+    value: AnnotationValue = {},
+  ) {
     if (!editable) return;
 
     const { type, start, end, frames } = shape;
     const videoShape: VideoShape = { type, start, end, frames, value };
 
     context.commands.run("annotation.add", { shape: videoShape, value });
+
+    const timelineScrollAreaEl = document.getElementById(
+      "timeline-scroll-area",
+    );
+
+    if (timelineScrollAreaEl) {
+      const scrollContainer = timelineScrollAreaEl.querySelector(
+        `[data-slot="scroll-area-viewport"]`,
+      ) as HTMLElement;
+
+      setTimeout(() => {
+        // scroll to bottom most
+        scrollContainer.scrollTo({
+          top: scrollContainer.scrollHeight,
+          behavior: "smooth",
+        });
+      }, 100);
+    }
   }
 
   async function removeAnnotation(annotationId: string) {
