@@ -25,8 +25,8 @@
   let { onSelectFrameX }: Props = $props();
 
   // Variables::Current Frames Ranges
-  let startFrameIndexOfCurrentFrameRange = $derived($currentFrameRange[0]);
-  let endFrameIndexOfCurrentFrameRange = $derived($currentFrameRange[1]);
+  let [startFrameIndexOfCurrentFrameRange, endFrameIndexOfCurrentFrameRange] = $derived($currentFrameRange);
+  let currentRangeSpan = $derived(endFrameIndexOfCurrentFrameRange - startFrameIndexOfCurrentFrameRange);
   let middleFrameIndexOfCurrentFrameRange = $derived(
     Math.floor((startFrameIndexOfCurrentFrameRange + endFrameIndexOfCurrentFrameRange) / 2) * $framePerScale,
   );
@@ -66,13 +66,18 @@
        * If current frame is greater than the middle of current frame range,
        * - shift the current frame range to the right by 1, until current frame is at the middle
        */
+      const maximumStartFrame = $totalFrames - currentRangeSpan;
+
+      /** Don't shift the current frame range, if the scaled end frame of current range is greater than or equal to total frames */
+      if (endFrameIndexOfCurrentFrameRange * $framePerScale >= $totalFrames) return;
+
       if ($currentFrame === middleFrameIndexOfCurrentFrameRange) {
-        const newStart = startFrameIndexOfCurrentFrameRange + 1;
-        const newEnd = endFrameIndexOfCurrentFrameRange + 1;
+        const newStart = Math.min(maximumStartFrame, startFrameIndexOfCurrentFrameRange + 1);
+        const newEnd = newStart + currentRangeSpan;
         setCurrentFrameRange([newStart, newEnd]);
       } else if ($currentFrame > middleFrameIndexOfCurrentFrameRange) {
-        const newStart = startFrameIndexOfCurrentFrameRange + 1;
-        const newEnd = endFrameIndexOfCurrentFrameRange + 1;
+        const newStart = Math.min(maximumStartFrame, startFrameIndexOfCurrentFrameRange + 1);
+        const newEnd = newStart + currentRangeSpan;
         setCurrentFrameRange([newStart, newEnd]);
       }
     } else {
