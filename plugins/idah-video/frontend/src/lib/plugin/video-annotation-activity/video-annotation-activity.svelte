@@ -481,16 +481,24 @@
       if (selectedFrame) {
         /** Set current mode and select closest annotation when selectedFrame is exitsts */
         setCurrentModeTo(firstAnnotation.shape.type);
-        selectClosestAnnotation(annotationGroup, selectedFrame);
-      }
+        const closestAnnotation = selectClosestAnnotation(annotationGroup, selectedFrame);
 
-      /** Register selection-specific shortcuts for the current mode (both selectedFrame exists or not) */
-      registerOnSelectShortcuts(firstAnnotation.shape.type, {
-        commands: context.commands,
-        selectedId: undefined,
-        selectedGroupId: annotationGroup.groupId,
-        getCurrentFrame: () => $currentFrame,
-      });
+        /** Register selection-specific shortcuts for the current mode with closest annotation id */
+        registerOnSelectShortcuts(firstAnnotation.shape.type, {
+          commands: context.commands,
+          selectedId: closestAnnotation.metadata.id,
+          selectedGroupId: annotationGroup.groupId,
+          getCurrentFrame: () => $currentFrame,
+        });
+      } else {
+        /** Register selection-specific shortcuts for the current mode with non selectedId */
+        registerOnSelectShortcuts(firstAnnotation.shape.type, {
+          commands: context.commands,
+          selectedId: undefined,
+          selectedGroupId: annotationGroup.groupId,
+          getCurrentFrame: () => $currentFrame,
+        });
+      }
     } else {
       selectAnnotation(undefined);
       setCurrentModeTo(DEFAULT_MODE);
