@@ -12,12 +12,18 @@
 
   import { ENTRY_ROOT } from "$lib/plugin/type";
   import { entryRoot } from "$lib/plugin/video-annotation-activity/store/idb-store.svelte";
-  import { currentMode } from "$lib/plugin/video-annotation-activity/store/store";
+  import { currentMode, deselectAnnotationGroup } from "$lib/plugin/video-annotation-activity/store/store";
 
-  import type { IActivityContext, IConfigValue } from "$idah/context/activity-context";
-  import type { AnnotationGroup, AnnotationValue } from "$idah/context/annotation-context";
+  import type {
+    IActivityContext,
+    IConfigValue,
+  } from "$idah/context/activity-context";
+  import type {
+    AnnotationGroup,
+    AnnotationValue,
+  } from "$idah/context/annotation-context";
   import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
-  import type { AnnotationsIndexedDB } from "$lib/plugin/video-annotation-activity/indexedDB";
+  import type { AnnotationBackend } from "$lib/plugin/video-annotation-activity/data/annotation/annotaiton-backend.svelte";
 
   // Props
   let {
@@ -28,25 +34,21 @@
     onSelectAnnotation,
     onSelectAnnotationGroup,
     onDeleteAnnotation,
-    onVisibility,
-    onEditability,
     context,
-    currentFrame,
     db,
     class: className,
   }: {
     view: "sidebar" | "popover";
     sidebarWidthRem: number;
-    currentFrame: number;
     annotationValue: AnnotationValue;
     onEditValue: (annotationValue: AnnotationValue, mode: string) => void;
     onSelectAnnotation: (annotation?: VideoAnnotationObject) => void;
-    onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<VideoAnnotationObject>) => void;
+    onSelectAnnotationGroup: (
+      annotationGroup: AnnotationGroup<VideoAnnotationObject>,
+    ) => void;
     onDeleteAnnotation: (annotation: VideoAnnotationObject) => void;
-    onEditability: (locked: boolean, annotation?: VideoAnnotationObject) => void;
-    onVisibility: (hidden: boolean, annotation?: VideoAnnotationObject) => void;
     context: IActivityContext;
-    db?: AnnotationsIndexedDB;
+    db?: AnnotationBackend;
     class?: string | null;
   } = $props();
 
@@ -83,6 +85,7 @@
   function categorySelection(shape_type: string, category?: string) {
     if (category) {
       if (shape_type != $currentMode) onSelectAnnotation();
+      deselectAnnotationGroup();
       onEditValue({ category }, shape_type);
     } // else {
     //   onEditValue(
@@ -111,7 +114,12 @@
   }
 </script>
 
-<Sidebar variant="inset" collapsible="none" class={cn(className)} style="width: ${sidebarWidthRem}rem">
+<Sidebar
+  variant="inset"
+  collapsible="none"
+  class={cn(className)}
+  style="width: ${sidebarWidthRem}rem"
+>
   {#if !tools.has($currentMode)}
     <SidebarHeader>
       <InputField
@@ -135,7 +143,6 @@
         <CategorySidebar
           {view}
           {db}
-          {currentFrame}
           modalityShape={tool}
           {categories}
           selectedCategory={tool == ENTRY_ROOT && !(tool == $currentMode)
@@ -144,8 +151,6 @@
           onSelectCategory={(selected) => categorySelection(tool, selected)}
           {onSelectAnnotationGroup}
           {onDeleteAnnotation}
-          {onEditability}
-          {onVisibility}
         ></CategorySidebar>
       {/if}
     {/each}
