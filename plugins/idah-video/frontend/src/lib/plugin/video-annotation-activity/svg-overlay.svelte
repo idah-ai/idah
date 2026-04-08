@@ -261,7 +261,7 @@
     width > 0 &&
       height > 0 &&
       !isPlaying &&
-      ![IDAH_NOTE, DEFAULT_MODE].includes($currentMode) &&
+      ![IDAH_NOTE, DEFAULT_MODE].includes($currentMode) && // TODO:: Change to check set of editing mode @audi
       (pointer === "crosshair" || pointer === "cursor-crosshair" || isEditing),
   );
 

@@ -49,10 +49,11 @@
   interface Props {
     annotations: VideoAnnotationObject[];
     timelineHeight: number;
+
     onSeekFrame: (frame: number) => void;
-    onSelectGroup: (annotationGroup: AnnotationGroup<VideoAnnotationObject>, selectedFrame?: number) => void;
+    onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<VideoAnnotationObject>, selectedFrame?: number) => void;
   }
-  let { annotations, timelineHeight, onSeekFrame, onSelectGroup }: Props = $props();
+  let { annotations, timelineHeight, onSeekFrame, onSelectAnnotationGroup }: Props = $props();
 
   // Context
   let context: IActivityContext = getContext("context");
@@ -179,7 +180,7 @@
     contextMenu = { visible: false, x: 0, y: 0, menus: {} };
   }
 
-  function showContextMenu(e: MouseEvent, selectAnnotationGroup?: AnnotationGroup<VideoAnnotationObject>) {
+  function showContextMenu(e: MouseEvent, selectAnnotationGroup: AnnotationGroup<VideoAnnotationObject>) {
     e.preventDefault();
 
     setSelectedFrameX(e.clientX);
@@ -326,7 +327,7 @@
             {annotationGroup}
             onSelectFrameX={selectFrameX}
             onContextMenu={(e) => showContextMenu(e, annotationGroup)}
-            {onSelectGroup}
+            {onSelectAnnotationGroup}
           >
             <TimelineRowHeader>
               <TimelineRowHeading>

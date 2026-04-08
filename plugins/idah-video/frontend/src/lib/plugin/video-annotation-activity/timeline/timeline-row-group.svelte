@@ -1,13 +1,8 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import {
-    selectedAnnotationGroup,
-    setSelectedAnnotation,
-    setSelectedAnnotationGroup,
-  } from "$lib/plugin/video-annotation-activity/store/store";
+  import { selectedAnnotationGroup } from "$lib/plugin/video-annotation-activity/store/store";
   import { getFrameFromMouseX } from "$lib/plugin/video-annotation-activity/timeline/utils";
-  import { findClosestAnnotationInGroup } from "$lib/plugin/video-annotation-activity/utils/group-annotation.svelte";
   import { cn } from "$lib/utils";
 
   import type { AnnotationGroup } from "$idah/context/annotation-context";
@@ -18,12 +13,19 @@
     annotationGroup: AnnotationGroup<VideoAnnotationObject>;
     onSelectFrameX: (frameX: number) => void;
     onContextMenu: (e: MouseEvent) => void;
-    onSelectGroup: (annotationGroup: AnnotationGroup<VideoAnnotationObject>, selectedFrame?: number) => void;
+    onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<VideoAnnotationObject>, selectedFrame?: number) => void;
 
     children: Snippet;
     class?: string | null;
   }
-  let { annotationGroup, onSelectFrameX, onContextMenu, onSelectGroup, children, class: className }: Props = $props();
+  let {
+    annotationGroup,
+    onSelectFrameX,
+    onContextMenu,
+    onSelectAnnotationGroup,
+    children,
+    class: className,
+  }: Props = $props();
 
   // Variables
   let { groupId } = $derived(annotationGroup);
@@ -41,19 +43,14 @@
       /** Select frame X if click on cells (not group header) */
       onSelectFrameX(e.clientX);
 
-      /** Select closest annotation */
-      const closestAnnotation = findClosestAnnotationInGroup({ annotationGroup, frame });
-      setSelectedAnnotation(closestAnnotation);
+      /** Select annotation group at specific frame (click on frames) */
+      onSelectAnnotationGroup(annotationGroup, frame);
     } else {
       /** Click on annotation group header */
 
-      /** Unselect any selected annotation group */
-      setSelectedAnnotation(undefined);
+      /** Select annotation group without specific frame (click on header group) */
+      onSelectAnnotationGroup(annotationGroup, undefined);
     }
-
-    /** Select an annotation group */
-    setSelectedAnnotationGroup(annotationGroup);
-    onSelectGroup(annotationGroup);
   }
 
   function jumpToRowWhenGroupSelected(node: HTMLElement, params: { id: string; isGroupSelected: boolean }) {

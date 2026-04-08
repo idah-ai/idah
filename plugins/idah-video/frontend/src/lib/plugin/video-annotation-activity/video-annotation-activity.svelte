@@ -478,17 +478,19 @@
        * If user select timeline row at specific frame (selectedFrame is exists)
        * and workflow step is in review or annotation
        */
-      setCurrentModeTo(firstAnnotation.shape.type);
-      if (selectedFrame) selectClosestAnnotation(annotationGroup, selectedFrame);
+      if (selectedFrame) {
+        /** Set current mode and select closest annotation when selectedFrame is exitsts */
+        setCurrentModeTo(firstAnnotation.shape.type);
+        selectClosestAnnotation(annotationGroup, selectedFrame);
+      }
 
-      // Register selection-specific shortcuts for the current mode
+      /** Register selection-specific shortcuts for the current mode (both selectedFrame exists or not) */
       registerOnSelectShortcuts(firstAnnotation.shape.type, {
         commands: context.commands,
         selectedId: undefined,
         selectedGroupId: annotationGroup.groupId,
         getCurrentFrame: () => $currentFrame,
       });
-      console.log("registered on select shortcuts");
     } else {
       selectAnnotation(undefined);
       setCurrentModeTo(DEFAULT_MODE);
@@ -717,7 +719,12 @@
           </AnnotationFooterToolbar>
 
           {#await annotations_promise then annotations}
-            <Timeline {annotations} {timelineHeight} onSeekFrame={seekToFrame} onSelectGroup={selectAnnotationGroup} />
+            <Timeline
+              {annotations}
+              {timelineHeight}
+              onSeekFrame={seekToFrame}
+              onSelectAnnotationGroup={selectAnnotationGroup}
+            />
           {/await}
         </AnnotationFooter>
       </ResizablePane>
