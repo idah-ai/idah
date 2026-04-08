@@ -343,7 +343,7 @@
 
             <CategoryName name={category.name} />
 
-            {#if view === "sidebar"}
+            {#if view === "sidebar" && count > 0}
               <AnnotationCountBadge class="mr-2" {count} />
             {/if}
           </SidebarMenuItem>
