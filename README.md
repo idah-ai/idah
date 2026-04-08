@@ -1,11 +1,13 @@
 # IDAH - Ingedata Annotation Hub
 
-![GitHub stars](https://img.shields.io/github/stars/idah-ai/idah)
-![License](https://img.shields.io/github/license/idah-ai/idah)
+[![CI](https://github.com/idah-ai/idah/actions/workflows/ci.yml/badge.svg)](https://github.com/idah-ai/idah/actions/workflows/ci.yml)
+[![CI - Docs](https://github.com/idah-ai/idah/actions/workflows/ci-docs.yml/badge.svg)](https://github.com/idah-ai/idah/actions/workflows/ci-docs.yml)
+[![License](https://img.shields.io/badge/license-FSL-blue)](LICENSE.md)
+[![Docker](https://img.shields.io/badge/docker-supported-2496ED?logo=docker&logoColor=white)](docker-compose.yml)
 
 **An open-source platform for collaborative data annotation**, designed to streamline the creation of high-quality training datasets for machine learning models.
 
-📚 **[Full Documentation](https://docs.idah.ai)** | 🚀 **[Getting Started Guide](https://docs.idah.ai/getting-started/about/)** | 🔌 **[Plugin Development](https://docs.idah.ai/plugin/)**
+🌐 **[Website](https://idah.ai)** | 📚 **[Documentation](https://docs.idah.ai)** | 🚀 **[Getting Started](https://docs.idah.ai/getting-started/about/)** | 🔌 **[Plugin Development](https://docs.idah.ai/plugin/)**
 
 ---
 
@@ -178,7 +180,7 @@ We welcome contributions from the community!
 
 ## 📄 License
 
-This project is licensed under the **[Mozilla Public License 2.0](LICENSE)**.
+This project is licensed under the **[Functional Source License (FSL)](LICENSE)**.
 
 ---
 
