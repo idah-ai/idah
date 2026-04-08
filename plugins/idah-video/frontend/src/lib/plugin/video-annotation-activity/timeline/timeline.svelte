@@ -255,17 +255,35 @@
       y: e.clientY,
       menus: {
         frameRelatedMenu: {
-          items: [seekToFrameMenu, splitMenu],
+          items: [],
         },
         annotationMenu: {
-          items: [deleteAnnotationMenu],
+          items: [],
         },
       },
     };
 
+    /** Only show split menu, if selected frame is in the closest  */
+    const closestAnnotationKeyFrames = closestAnnotation.shape.frames.map((f) => f.frame);
+    const sortedClosestAnnotationKeyFrames = closestAnnotationKeyFrames.sort((a, b) => a - b);
+
+    const isSelectedFrameInKeyFrames = sortedClosestAnnotationKeyFrames.some((f, i) => {
+      if (i === sortedClosestAnnotationKeyFrames.length - 1) return false;
+      const next = sortedClosestAnnotationKeyFrames[i + 1];
+
+      return frame >= f && frame <= next;
+    });
+    if (isSelectedFrameInKeyFrames) contextMenu.menus.frameRelatedMenu.items.push(seekToFrameMenu, splitMenu);
+    if (isSelectedFrameInKeyFrames) contextMenu.menus.annotationMenu.items.push(deleteAnnotationMenu);
+
     /** Only show delete interpolation menu, if selected annotations have keyframe at selected frame */
     const hasInterpolationAtFrame = closestAnnotation.shape.frames.filter((f) => f.frame === frame).length > 0;
     if (hasInterpolationAtFrame) contextMenu.menus.frameRelatedMenu.items.push(deleteInterpolationMenu);
+
+    const frameRelatedMenus = contextMenu.menus.frameRelatedMenu.items.length;
+    const annotationMenus = contextMenu.menus.annotationMenu.items.length;
+
+    contextMenu.visible = frameRelatedMenus + annotationMenus >= 1;
   }
 
   function toggleAllAnnotationsVisibility() {
