@@ -34,11 +34,11 @@ import { showErrorToast } from "$lib/utils/error/error.toasts";
 
 import type { IActivityContext } from "$idah/context/activity-context";
 import type { AnnotationValue } from "$idah/context/annotation-context";
-import type { AnnotationsIndexedDB } from "$lib/plugin/video-annotation-activity/indexedDB";
+import type { AnnotationBackend } from "$lib/plugin/video-annotation-activity/data/annotation/annotaiton-backend.svelte";
 
 interface CommandContext {
   context: IActivityContext;
-  getDb: () => AnnotationsIndexedDB | undefined;
+  getDb: () => AnnotationBackend | undefined;
   updaters: {
     setAnnotationValue: (value: AnnotationValue) => void;
     selectAnnotation: (annotation?: VideoAnnotationObject) => void;
@@ -779,6 +779,7 @@ export function registerCommands(params: CommandContext) {
       name: "split annotation",
       async apply() {
         const a1 = await db?.get("annotations", props.id);
+
         if (a1) {
           a1.shape.end = part1End;
           a1.shape.frames = part1Frames;
