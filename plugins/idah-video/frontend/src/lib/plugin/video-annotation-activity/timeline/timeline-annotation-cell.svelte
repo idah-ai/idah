@@ -111,7 +111,6 @@
     let showBorderRight: boolean = true;
     let borderRadiusLeft: number = 0;
     let borderRadiusRight: number = 0;
-    let debug: number = 0;
 
     /** No frame to display in current frame span */
     if (!startOfScaledTransformedRange && !endOfScaledTransformedRange) {
@@ -241,14 +240,21 @@
 
 <!-- ANNOTATION GROUP -->
 {#if scaledTransformedRangeStyle.width}
+  {@const showBorder = isSelected}
   <div
     id="timeline-annotation-cell__scaled"
     role="cell"
     tabindex="-1"
-    class="hover:bg-primary/30 absolute -translate-y-[50%] border-t border-b"
+    class="hover:bg-primary/30 absolute -translate-y-[50%]"
     style:border-color={groupColor}
-    style:border-left={scaledTransformedRangeStyle.showBorderLeft ? `1px solid ${groupColor}` : "none"}
-    style:border-right={scaledTransformedRangeStyle.showBorderRight ? `1px solid ${groupColor}` : "none"}
+    style:border-top="{showBorder ? 1 : 0}px solid {groupColor}"
+    style:border-bottom="{showBorder ? 1 : 0}px solid {groupColor}"
+    style:border-left={scaledTransformedRangeStyle.showBorderLeft
+      ? `${showBorder ? 1 : 0}px solid ${groupColor}`
+      : "none"}
+    style:border-right={scaledTransformedRangeStyle.showBorderRight
+      ? `${showBorder ? 1 : 0}px solid ${groupColor}`
+      : "none"}
     style:border-top-left-radius="{scaledTransformedRangeStyle.borderRadiusLeft}px"
     style:border-bottom-left-radius="{scaledTransformedRangeStyle.borderRadiusLeft}px"
     style:border-top-right-radius="{scaledTransformedRangeStyle.borderRadiusRight}px"

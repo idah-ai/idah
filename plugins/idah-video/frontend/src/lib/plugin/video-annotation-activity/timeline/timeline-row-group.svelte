@@ -82,7 +82,7 @@
   class={cn(
     "relative flex w-full items-center font-light",
     {
-      "bg-primary/10 font-medium": isGroupSelected,
+      "bg-primary/10 font-medium dark:bg-primary/20": isGroupSelected,
     },
     className,
   )}
