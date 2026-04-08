@@ -38,7 +38,7 @@
   import type { IConfigValue } from "$idah/context/activity-context";
   import type { CategoryDefinition } from "$idah/context/category-context";
   import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
-  import type { AnnotationsMiddleware } from "$lib/plugin/video-annotation-activity/indexedDB.svelte";
+  import type { AnnotationBackend } from "$lib/plugin/video-annotation-activity/data/annotation/annotaiton-backend.svelte";
 
   // Props
   let {
@@ -66,7 +66,7 @@
     onDeleteAnnotation: (annotation: VideoAnnotationObject) => void;
     onLock: (locked: boolean, annotation?: VideoAnnotationObject) => void;
     onVisibility: (hidden: boolean, annotation?: VideoAnnotationObject) => void;
-    db?: AnnotationsMiddleware;
+    db?: AnnotationBackend;
   } = $props();
 
   // Variables

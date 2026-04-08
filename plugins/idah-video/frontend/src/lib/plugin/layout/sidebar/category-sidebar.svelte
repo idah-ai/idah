@@ -37,12 +37,12 @@
   import type { AnnotationGroup } from "$idah/context/annotation-context";
   import type { CategoryDefinition } from "$idah/context/category-context";
   import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
-  import type { AnnotationsMiddleware } from "$lib/plugin/video-annotation-activity/indexedDB.svelte";
+  import type { AnnotationBackend } from "$lib/plugin/video-annotation-activity/data/annotation/annotaiton-backend.svelte";
 
   // Props
   interface Props {
     view: "sidebar" | "popover";
-    db?: AnnotationsMiddleware;
+    db?: AnnotationBackend;
 
     modalityShape: string;
     categories: IConfigValue[];

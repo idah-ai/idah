@@ -254,7 +254,7 @@
     <section class="flex flex-col gap-2">
       <Text class="mb-2" weight="semibold" size="sm">Properties</Text>
 
-      {#each properties as property (property.id)}
+      {#each properties as property, index (`${property.id}-${index}`)}
         {@const foundPropertyComponent = propertyComponents.find(
           (p) => p.type == property.type,
         )}
@@ -276,34 +276,4 @@
       {/each}
     </section>
   {/if}
-
-  <!-- PROPERTIES -->
-  <div class="flex flex-col gap-4">
-    {#if category && properties?.length > 0}
-      <section class="flex flex-col gap-2">
-        <Text class="mb-2" weight="semibold" size="sm">Properties</Text>
-
-        {#each properties as property, index (`${property.id}-${index}`)}
-          {@const foundPropertyComponent = propertyComponents.find(
-            (p) => p.type == property.type,
-          )}
-
-          {#if foundPropertyComponent}
-            <div class="flex flex-col gap-1">
-              <foundPropertyComponent.component
-                {...{
-                  property,
-                  value: annotationValue.attributes?.[property.id],
-                  onValueChange: (
-                    v: string | number | boolean | string[] | undefined,
-                  ) => onValueChange(property, v),
-                  disabled,
-                }}
-              />
-            </div>
-          {/if}
-        {/each}
-      </section>
-    {/if}
-  </div>
 </div>

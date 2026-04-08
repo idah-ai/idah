@@ -1,18 +1,17 @@
-import {
-  AnnotationsIndexedDB,
-  openAnnotationsDB,
-  type StoresDefinition,
-} from "$lib/plugin/video-annotation-activity/indexedDB";
+import { openAnnotationsDB } from "$lib/plugin/video-annotation-activity/data/annotation/annotation-db";
+
 import type {
   VideoAnnotationObject,
   VideoFrameSelection,
 } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
 
+import type { AnnotationsIndexedDB, StoresDefinition } from "./annotation-db";
+
 /**
  * Reactive middleware layer
  * Manages state and provides business logic on top of IndexedDB
  */
-export class AnnotationsMiddleware {
+export class AnnotationBackend {
   private db: AnnotationsIndexedDB;
 
   /**
@@ -126,6 +125,7 @@ export class AnnotationsMiddleware {
 
   /**
    * Load all annotations from IndexedDB into reactive state
+   * Sorted by creation date (ascending) for consistent ordering
    *
    * TODO: Replace with loadVisibleAnnotations()
    * - Accept frame range parameters (startFrame, endFrame)
@@ -184,7 +184,9 @@ export class AnnotationsMiddleware {
    * Get all annotations where category starts with value (for hierarchies)
    */
   annotationsForCategory(value: string): VideoAnnotationObject[] {
-    return this.annotations.filter((ann) => ann.value.category?.startsWith(value));
+    return this.annotations.filter((ann) =>
+      ann.value.category?.startsWith(value),
+    );
   }
 
   /**
@@ -213,7 +215,10 @@ export class AnnotationsMiddleware {
   /**
    * Add a keyframe to an annotation
    */
-  async addKeyFrame(annotation: VideoAnnotationObject, keyFrame: VideoFrameSelection): Promise<void> {
+  async addKeyFrame(
+    annotation: VideoAnnotationObject,
+    keyFrame: VideoFrameSelection,
+  ): Promise<void> {
     await this.db.addKeyFrame(annotation.metadata.id, keyFrame);
     await this.reload();
   }
@@ -221,7 +226,10 @@ export class AnnotationsMiddleware {
   /**
    * Delete a keyframe from an annotation
    */
-  async deleteKeyFrame(annotation: VideoAnnotationObject, frame: number): Promise<void> {
+  async deleteKeyFrame(
+    annotation: VideoAnnotationObject,
+    frame: number,
+  ): Promise<void> {
     await this.db.deleteKeyFrame(annotation.metadata.id, frame);
     await this.reload();
   }
@@ -243,7 +251,10 @@ export class AnnotationsMiddleware {
   /**
    * Get all annotations by index from database (not cache)
    */
-  async getAllIndex(key: string, value?: string): Promise<VideoAnnotationObject[]> {
+  async getAllIndex(
+    key: string,
+    value?: string,
+  ): Promise<VideoAnnotationObject[]> {
     return this.db.getAllByIndex(key, value);
   }
 
@@ -274,7 +285,10 @@ export class AnnotationsMiddleware {
 /**
  * Initialize IndexedDB and return middleware instance
  */
-export async function annotationsIndexedDB(name: string, stores?: StoresDefinition) {
+export async function annotationsIndexedDB(
+  name: string,
+  stores?: StoresDefinition,
+) {
   const db = await openAnnotationsDB(name, stores);
-  return new AnnotationsMiddleware(db);
+  return new AnnotationBackend(db);
 }

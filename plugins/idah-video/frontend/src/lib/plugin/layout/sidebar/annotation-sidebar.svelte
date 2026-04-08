@@ -23,7 +23,7 @@
     AnnotationValue,
   } from "$idah/context/annotation-context";
   import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
-  import type { AnnotationsMiddleware } from "$lib/plugin/video-annotation-activity/indexedDB.svelte";
+  import type { AnnotationBackend } from "$lib/plugin/video-annotation-activity/data/annotation/annotaiton-backend.svelte";
 
   // Props
   let {
@@ -48,7 +48,7 @@
     ) => void;
     onDeleteAnnotation: (annotation: VideoAnnotationObject) => void;
     context: IActivityContext;
-    db?: AnnotationsMiddleware;
+    db?: AnnotationBackend;
     class?: string | null;
   } = $props();
 

@@ -34,11 +34,11 @@ import { showErrorToast } from "$lib/utils/error/error.toasts";
 
 import type { IActivityContext } from "$idah/context/activity-context";
 import type { AnnotationValue } from "$idah/context/annotation-context";
-import type { AnnotationsMiddleware } from "$lib/plugin/video-annotation-activity/indexedDB.svelte";
+import type { AnnotationBackend } from "$lib/plugin/video-annotation-activity/data/annotation/annotaiton-backend.svelte";
 
 interface CommandContext {
   context: IActivityContext;
-  getDb: () => AnnotationsMiddleware | undefined;
+  getDb: () => AnnotationBackend | undefined;
   updaters: {
     setAnnotationValue: (value: AnnotationValue) => void;
     selectAnnotation: (annotation?: VideoAnnotationObject) => void;
@@ -779,6 +779,9 @@ export function registerCommands(params: CommandContext) {
       name: "split annotation",
       async apply() {
         const a1 = await db?.get("annotations", props.id);
+
+        console.log("apply")
+
         if (a1) {
           a1.shape.end = part1End;
           a1.shape.frames = part1Frames;
@@ -795,6 +798,8 @@ export function registerCommands(params: CommandContext) {
             annotation: a1.value,
             metadata: a1.metadata.metadata,
           });
+
+          console.log("update original annotation", { a1 })
 
           p.then(async () => {
             const annotation = await db?.get("annotations", props.id);
@@ -839,6 +844,7 @@ export function registerCommands(params: CommandContext) {
         let p2 = context.annotations.create(newId, a2.shape, a2.value);
         p2.then(async () => {
           const annotation = await db?.get("annotations", newId);
+          console.log("created new annotation", annotation)
           if (annotation && annotation.metadata.updatedAt.valueOf() == createdAt.valueOf()) {
             annotation.synced = true;
             if (get(entryRoot)?.metadata.id == annotation.metadata.id) entryRoot.set(annotation);

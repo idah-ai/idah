@@ -36,8 +36,8 @@
   import { registerCommands } from "$lib/plugin/video-annotation-activity/commands.svelte";
   import {
     annotationsIndexedDB,
-    type AnnotationsMiddleware,
-  } from "$lib/plugin/video-annotation-activity/indexedDB.svelte";
+    type AnnotationBackend,
+  } from "$lib/plugin/video-annotation-activity/data/annotation/annotaiton-backend.svelte";
   import {
     registerOnSelectShortcuts,
     registerShortcuts,
@@ -132,7 +132,7 @@
   let timelineHeight: number = $state(0);
   let zoom = $state(85);
 
-  let annotationsIDB: AnnotationsMiddleware | undefined = $state();
+  let annotationsIDB: AnnotationBackend | undefined = $state();
   let volume = $state({ level: 0, muted: false });
   let tools: {
     label: string;
@@ -292,7 +292,7 @@
     });
 
     function fetchAnnotations(
-      db: AnnotationsMiddleware,
+      db: AnnotationBackend,
       page = 1,
       itemsPerPage = 100,
     ): Promise<void> {
@@ -516,6 +516,7 @@
   function selectAnnotation(annotation?: VideoAnnotationObject) {
     setSelectedAnnotation(annotation);
 
+    console.log("selected annotation", annotation);
     /**
      * Set mode to the annotation shape type when selecting an annotation
      */
@@ -527,7 +528,9 @@
       registerOnSelectShortcuts(annotation.shape.type, {
         commands: context.commands,
         selectedId: annotation.metadata.id,
-        selectedGroupId: annotation.metadata.metadata?.group_id || $selectedAnnotationGroup?.groupId,
+        selectedGroupId:
+          annotation.metadata.metadata?.group_id ||
+          $selectedAnnotationGroup?.groupId,
         getCurrentFrame: () => $currentFrame,
       });
     } else {
@@ -563,7 +566,10 @@
       if (selectedFrame) {
         /** Set current mode and select closest annotation when selectedFrame is exitsts */
         setCurrentModeTo(firstAnnotation.shape.type);
-        const closestAnnotation = selectClosestAnnotation(annotationGroup, selectedFrame);
+        const closestAnnotation = selectClosestAnnotation(
+          annotationGroup,
+          selectedFrame,
+        );
 
         /** Register selection-specific shortcuts for the current mode with closest annotation id */
         registerOnSelectShortcuts(firstAnnotation.shape.type, {

@@ -3,8 +3,6 @@ import {
   type VideoFrameSelection,
 } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
 
-// the current version of IndexedDB, bump incrementally if there's a change
-export const currentDBVersion: number = 2;
 
 export const storeDefinition: StoresDefinition = {
   annotations: [
@@ -13,8 +11,8 @@ export const storeDefinition: StoresDefinition = {
     { index: "range", path: "shape.range", opts: { unique: false } },
     { index: "type", path: "shape.type", opts: { unique: false } },
     { index: "category", path: "value.category", opts: { unique: false } },
-    { index: "created_at", path: "metadata.updatedAt", opts: { unique: false } },
-    { index: "updated_at", path: "metadata.createdAt", opts: { unique: false } },
+    { index: "created_at", path: "metadata.createdAt", opts: { unique: false } },
+    { index: "updated_at", path: "metadata.updatedAt", opts: { unique: false } },
     { index: "groupIdIndex", path: "metadata.metadata.group_id", opts: { unique: false } },
   ],
   keyframes: [
@@ -32,6 +30,9 @@ export type StoreDefinition = {
 export type StoresDefinition = {
   [name: string]: StoreDefinition[];
 };
+
+// the current version of IndexedDB, bump incrementally if there's a change
+export const currentDBVersion: number = 2;
 
 /**
  * Pure IndexedDB database layer
@@ -59,16 +60,54 @@ export class AnnotationsIndexedDB {
   }
 
   /**
-   * Get all items from a store
+   * Get all items from a store with optional sorting using IndexedDB indexes
+   * Uses cursors for efficient sorting at the database level
    */
-  async getAll(storename: string): Promise<VideoAnnotationObject[]> {
+  async getAll(
+    storename: string,
+    options?: {
+      sortBy?: "created_at" | "updated_at" | "start" | "end";
+      sortDirection?: "asc" | "desc";
+    },
+  ): Promise<VideoAnnotationObject[]> {
     return new Promise<VideoAnnotationObject[]>((resolve, reject) => {
       const transaction = this.db.transaction(storename, "readonly");
       const store = transaction.objectStore(storename);
-      const request = store.getAll();
 
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
+      // If no sorting specified, use simple getAll()
+      if (!options?.sortBy) {
+        const request = store.getAll();
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+        return;
+      }
+
+      // Use indexed cursor for efficient sorting
+      const results: VideoAnnotationObject[] = [];
+      const direction = options.sortDirection === "desc" ? "prev" : "next";
+
+      try {
+        const index = store.index(options.sortBy);
+        const cursorRequest = index.openCursor(null, direction);
+
+        cursorRequest.onsuccess = (event) => {
+          const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
+          if (cursor) {
+            results.push(cursor.value);
+            cursor.continue();
+          } else {
+            resolve(results);
+          }
+        };
+
+        cursorRequest.onerror = () => reject(cursorRequest.error);
+      } catch (error) {
+        // Fallback to unsorted if index doesn't exist
+        console.warn(`Index "${options.sortBy}" not found, falling back to unsorted results`, error);
+        const request = store.getAll();
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      }
     });
   }
 
