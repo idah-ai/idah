@@ -831,14 +831,14 @@
             <TimelineController onSeekFrame={seekToFrame} />
           </AnnotationFooterToolbar>
 
-          {#await annotations_promise then annotations}
+          {#if annotationsIDB}
             <Timeline
-              {annotations}
+              annotations={annotationsIDB.annotations}
               {timelineHeight}
               onSeekFrame={seekToFrame}
               onSelectAnnotationGroup={selectAnnotationGroup}
             />
-          {/await}
+          {/if}
         </AnnotationFooter>
       </ResizablePane>
     </ResizablePaneGroup>
