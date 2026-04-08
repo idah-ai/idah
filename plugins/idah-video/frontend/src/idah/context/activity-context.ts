@@ -63,7 +63,7 @@ export interface INoteComment {
 
 export interface IAnnotationDriver {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  create(id: string, dimension: any, annotation: any): Promise<IAnnotation>;
+  create(id: string, dimension: any, annotation: any, metadata?: any): Promise<IAnnotation>;
 
   update(ann: IAnnotation): Promise<void>;
   delete(id: string): Promise<void>;
