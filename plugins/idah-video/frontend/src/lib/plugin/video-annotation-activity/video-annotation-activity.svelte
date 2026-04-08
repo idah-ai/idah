@@ -560,17 +560,27 @@
        * If user select timeline row at specific frame (selectedFrame is exists)
        * and workflow step is in review or annotation
        */
-      setCurrentModeTo(firstAnnotation.shape.type);
-      if (selectedFrame) selectClosestAnnotation(annotationGroup, selectedFrame);
+      if (selectedFrame) {
+        /** Set current mode and select closest annotation when selectedFrame is exitsts */
+        setCurrentModeTo(firstAnnotation.shape.type);
+        const closestAnnotation = selectClosestAnnotation(annotationGroup, selectedFrame);
 
-      // Register selection-specific shortcuts for the current mode
-      registerOnSelectShortcuts(firstAnnotation.shape.type, {
-        commands: context.commands,
-        selectedId: undefined,
-        selectedGroupId: annotationGroup.groupId,
-        getCurrentFrame: () => $currentFrame,
-      });
-      console.log("registered on select shortcuts");
+        /** Register selection-specific shortcuts for the current mode with closest annotation id */
+        registerOnSelectShortcuts(firstAnnotation.shape.type, {
+          commands: context.commands,
+          selectedId: closestAnnotation.metadata.id,
+          selectedGroupId: annotationGroup.groupId,
+          getCurrentFrame: () => $currentFrame,
+        });
+      } else {
+        /** Register selection-specific shortcuts for the current mode with non selectedId */
+        registerOnSelectShortcuts(firstAnnotation.shape.type, {
+          commands: context.commands,
+          selectedId: undefined,
+          selectedGroupId: annotationGroup.groupId,
+          getCurrentFrame: () => $currentFrame,
+        });
+      }
     } else {
       selectAnnotation(undefined);
       setCurrentModeTo(DEFAULT_MODE);
@@ -820,7 +830,7 @@
               {annotations}
               {timelineHeight}
               onSeekFrame={seekToFrame}
-              onSelectGroup={selectAnnotationGroup}
+              onSelectAnnotationGroup={selectAnnotationGroup}
             />
           {/await}
         </AnnotationFooter>

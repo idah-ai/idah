@@ -55,11 +55,6 @@ export function getSelectedFrameXFromCurrentFrame(props: { currentFrame: number 
   const startOfCurrentFrameRange = get(currentFrameRange)[0];
 
   const normalizedCurrentFrame = currentFrame / framePerScaleStore;
-
-  // Before onchange input
-  // const normalizedStartOfCurrentFrameRange = startOfCurrentFrameRange / framePerScaleStore;
-  // const normalizedFrameInScale = normalizedCurrentFrame - normalizedStartOfCurrentFrameRange;
-
   const normalizedFrameInScale = normalizedCurrentFrame - startOfCurrentFrameRange;
   const middleOfnormalizedFrameInScale = normalizedFrameInScale - Number(0.5 / framePerScaleStore);
 

@@ -93,7 +93,7 @@
   <Tooltips align="center">
     {#snippet trigger()}
       <Button variant="ghost" size="icon-sm" onclick={handleClickVisibility}>
-        {@const VisibilityIcon = allAnnotationsHidden ? EyeOffIcon : EyeIcon}
+        {@const VisibilityIcon = allAnnotationsHidden ? EyeIcon : EyeOffIcon}
         <VisibilityIcon />
       </Button>
     {/snippet}
@@ -107,7 +107,7 @@
   <Tooltips align="center">
     {#snippet trigger()}
       <Button variant="ghost" size="icon-sm" onclick={handleClickEditability}>
-        {@const EditibilityIcon = allAnnotationsLocked ? LockOpenIcon : LockIcon}
+        {@const EditibilityIcon = allAnnotationsLocked ? LockIcon : LockOpenIcon}
         <EditibilityIcon />
       </Button>
     {/snippet}
