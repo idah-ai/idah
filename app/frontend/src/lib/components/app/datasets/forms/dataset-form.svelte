@@ -74,30 +74,30 @@
     {/await}
 
     <!-- DATASET::LABELING CONFIGURATION -->
-     {#key modality}
-    <SingleSelectDatasourceField
-      name="{resource}/labeling_configuration"
-      label="Copy label configurations from"
-      placeholder="Select a dataset"
-      displayKey="name"
-      valueKey="id"
-      searchable
-      searchKeyWithOperation="name__match"
-      hiddenChoices={dataset.id ? [dataset.id] : []}
-      dataSource={datasetsBackendDataSource}
-      listOptions={{
-        filters: {
-          project_id: projectId,
-          modality,
-        },
-        sort: ["name"],
-      }}
-      disabled={!modality}
-      value={selectedDatasetId}
-      onSelected={(selectedValue) => {
-        selectedDatasetId = selectedValue as string;
-      }}
-    ></SingleSelectDatasourceField>
-      {/key}
+    {#key modality}
+      <SingleSelectDatasourceField
+        name="{resource}/labeling_configuration"
+        label="Copy label configurations from"
+        placeholder="Select a dataset"
+        displayKey="name"
+        valueKey="id"
+        searchable
+        searchKeyWithOperation="name__match"
+        hiddenChoices={dataset.id ? [dataset.id] : []}
+        dataSource={datasetsBackendDataSource}
+        listOptions={{
+          filters: {
+            project_id: projectId,
+            modality,
+          },
+          sort: ["name"],
+        }}
+        disabled={!modality}
+        value={selectedDatasetId}
+        onSelected={(selectedValue) => {
+          selectedDatasetId = selectedValue as string;
+        }}
+      ></SingleSelectDatasourceField>
+    {/key}
   </FieldGroup>
 </FieldSet>

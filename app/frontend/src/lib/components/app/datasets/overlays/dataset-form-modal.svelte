@@ -64,7 +64,7 @@
   async function getLabelConfig() {
     let labelConfig: IConfig = {};
     let selectedId = selectedDatasetId || (datasetRecord?.id as string);
-    
+
     if (!selectedId) return labelConfig;
 
     const datasetRes = await datasetsBackendDataSource.get(selectedId, {
