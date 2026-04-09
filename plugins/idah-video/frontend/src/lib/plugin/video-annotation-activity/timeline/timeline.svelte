@@ -228,7 +228,7 @@
       onClick: () => {
         context.commands.run("keyframe.delete", {
           annotationId: closestAnnotation.metadata.id,
-          displayScaledFrame,
+          frame: displayScaledFrame,
         });
         closeContextMenu();
       },
