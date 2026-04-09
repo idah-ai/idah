@@ -26,6 +26,10 @@ export function deselectAnnotation() {
 /** SELECTED ANNOTATION GROUP */
 export const selectedAnnotationGroup = writable<AnnotationGroup<ImageAnnotationObject> | undefined>(undefined);
 
+export function setSelectedAnnotationGroup(annotationGroup: AnnotationGroup<ImageAnnotationObject> | undefined) {
+  selectedAnnotationGroup.set(annotationGroup);
+}
+
 export function deselectAnnotationGroup() {
   selectedAnnotationGroup.set(undefined);
 }

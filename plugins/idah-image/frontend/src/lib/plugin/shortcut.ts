@@ -20,7 +20,6 @@ type SelectionKeyMapContext = {
   commands: ICommands;
   selectedId: string | undefined;
   selectedGroupId: string;
-  getCurrentFrame: () => number;
 };
 
 const injectCommonShortcuts = (context: KeyMapContext) => {
@@ -136,8 +135,7 @@ const buildOnSelectBoundingBoxModeShortcuts = (context: SelectionKeyMapContext) 
   const splitAnnotation = () => {
     if (!context.selectedId) return;
 
-    const currentFrame = context.getCurrentFrame();
-    context.commands.run("annotation.split", { id: context.selectedId, at: currentFrame });
+    context.commands.run("annotation.split", { id: context.selectedId, at: 0 });
   };
 
   return (b: KeyMapBuilder) => {
@@ -175,8 +173,7 @@ const buildOnSelectPolygonModeShortcuts = (context: SelectionKeyMapContext) => {
   const splitAnnotation = () => {
     if (!context.selectedId) return;
 
-    const currentFrame = context.getCurrentFrame();
-    context.commands.run("annotation.split", { id: context.selectedId, at: currentFrame });
+    context.commands.run("annotation.split", { id: context.selectedId, at: 0 });
   };
 
   return (b: KeyMapBuilder) => {
