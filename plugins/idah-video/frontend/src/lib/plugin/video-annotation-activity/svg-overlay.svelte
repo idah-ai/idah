@@ -504,7 +504,7 @@
             styles={propertyStyle}
             onChange={(bb, newAngle) => {
               onSelection(IDAH_VIDEO_BOUNDING_BOX, frame, bb, newAngle, $selectedAnnotation?.metadata.id);
-              // points = bb;
+              points = bb;
             }}
           />
         {/key}
@@ -534,7 +534,7 @@
           styles={propertyStyle}
           onChange={(polygon_points) => {
             onSelection(IDAH_VIDEO_POLYGON, frame, polygon_points, 0, $selectedAnnotation?.metadata.id);
-            // points = polygon_points;
+            points = polygon_points;
           }}
         />
       {/if}
