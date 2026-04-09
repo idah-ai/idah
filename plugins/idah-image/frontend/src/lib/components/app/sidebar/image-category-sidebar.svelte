@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ChevronRightIcon, CircleSmallIcon, PlusIcon } from "lucide-svelte";
 
-  import { currentMode, selectedAnnotation } from "$lib/plugin/store/store";
+  import { currentFrame, currentMode, selectedAnnotation } from "$lib/plugin/store/store";
   import { IMAGE_BOUNDING_BOX, IMAGE_POLYGON } from "$lib/plugin/types";
   import { cn } from "$lib/utils";
   import { groupAnnotations } from "$lib/utils/group-annotation.svelte";
@@ -152,7 +152,12 @@
     groups: Array<AnnotationGroup<ImageAnnotationObject>>;
     count: number;
   } {
-    const filteredAnnotations = annotations.filter((annotation) => annotation.shape.type == modalityShape);
+    const filteredAnnotations = annotations.filter(
+      (annotation) =>
+        $currentFrame >= annotation.shape.start &&
+        $currentFrame <= annotation.shape.end &&
+        annotation.shape.type == modalityShape,
+    );
     const filteredGroupedAnnotations = groupAnnotations(filteredAnnotations);
 
     return {

@@ -1,5 +1,5 @@
+import { interpolatePolygonAtFrame } from "$lib/plugin/shape/polygon/polygon-interpolation";
 import { IMAGE_BOUNDING_BOX, IMAGE_POLYGON } from "$lib/plugin/types";
-// import { interpolatePolygonAtFrame } from "$lib/plugin/video-annotation-activity/shape/polygon/polygon-interpolation";
 
 import type {
   AnnotationMetadata,
@@ -7,7 +7,6 @@ import type {
   AnnotationShape,
   AnnotationValue,
 } from "$lib/context/annotation-context";
-
 import type { DefaultMode, ImageBoundingBox, ImagePolygon } from "$lib/plugin/types";
 
 export type Point = [number, number];
@@ -125,10 +124,10 @@ export function getInterpolatedFrame(
       angle: ((frame_end.angle || 0) - (frame_start.angle || 0)) * ratio + frame_start.angle,
     };
   }
-  // else if (shape.type == IMAGE_POLYGON) {
-  //   return {
-  //     points: interpolatePolygonAtFrame(frame_start, frame_end, current_frame),
-  //     angle: 0,
-  //   };
-  // }
+  else if (shape.type == IMAGE_POLYGON) {
+    return {
+      points: interpolatePolygonAtFrame(frame_start, frame_end, current_frame),
+      angle: 0,
+    };
+  }
 }

@@ -31,6 +31,7 @@
   import { registerOnSelectShortcuts, registerShortcuts } from "$lib/plugin/shortcut";
   import { boundingBoxes, entryRoot } from "$lib/plugin/store/idb-store.svelte";
   import {
+    currentFrame,
     currentMode,
     selectedAnnotation,
     selectedAnnotationGroup,
@@ -182,7 +183,7 @@
 
       fetchAnnotations(annotationsIDB).then(() => {
         // quick fix if unsynced data, though we dont have way to send it anyway for now if so
-        const entryRootAnnotation = annotationsIDB.annotations.find((a) => a.shape.type === ENTRY_ROOT);
+        const entryRootAnnotation = annotationsIDB?.annotations.find((a) => a.shape.type === ENTRY_ROOT);
         if (entryRootAnnotation) $entryRoot = entryRootAnnotation;
       });
     } catch (e) {
@@ -536,8 +537,6 @@
        */
       setCurrentModeTo(firstAnnotation.shape.type);
       selectClosestAnnotation(annotationGroup, selectedFrame);
-      // Register selection-specific shortcuts for the current mode
-      // registerOnSelectBoxModeShortcuts(context, undefined, annotationGroup.groupId, () => currentFrame);
     } else {
       selectAnnotation(undefined);
       setCurrentModeTo(DEFAULT_MODE);
@@ -623,7 +622,7 @@
             showPopOver = false;
             switch ($currentMode) {
               case ENTRY_ROOT:
-                onShapeSelection(ENTRY_ROOT, 1);
+                onShapeSelection(ENTRY_ROOT, $currentFrame);
                 break;
               default:
                 if (shapeSelectionArgs) onShapeSelection(...shapeSelectionArgs);
@@ -664,7 +663,7 @@
               <ImageOverlay
                 bind:this={overlay}
                 {annotations_promise}
-                frame={1}
+                frame={$currentFrame}
                 onSelectAnnotation={selectAnnotation}
                 onSelection={onShapeSelection}
                 onAddNewNote={showNewNotePopup}

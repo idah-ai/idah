@@ -69,6 +69,7 @@
   // Variables
   let offset: Point = $state([0, 0]);
   let target_container: HTMLImageElement | undefined = $state();
+  let imageLoaded = $state(false);
 
   let height = $state(0);
   let width = $state(0);
@@ -102,8 +103,7 @@
 
   // Functions
   function updatedSize(): Point {
-    if (!target_container) {
-      console.error({ setUpPlayer: { target_container } });
+    if (!target_container || !imageLoaded) {
       return ORIGIN;
     }
 
@@ -122,7 +122,7 @@
   ]);
 
   let target_line = $derived.by(() => {
-    let tl: Point = $state.snapshot(mouse) as Point;
+    let tl: Point = [mouse[X], mouse[Y]];
 
     if (cursor[X] < 0) {
       tl[X] -= cursor[X];
@@ -248,7 +248,15 @@
 
 <div class={cn("svg-overlay flex-1", pointer)}>
   <div>
-    <img id="idah-image" bind:this={target_container} {src} alt="" />
+    <img
+      id="idah-image"
+      bind:this={target_container}
+      {src}
+      alt=""
+      onload={() => {
+        imageLoaded = true;
+      }}
+    />
   </div>
 
   <svg

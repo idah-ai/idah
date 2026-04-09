@@ -132,18 +132,11 @@ const buildOnSelectBoundingBoxModeShortcuts = (context: SelectionKeyMapContext) 
     context.commands.run("annotation.toggleGroupEditability", { groupId: context.selectedGroupId });
   };
 
-  const splitAnnotation = () => {
-    if (!context.selectedId) return;
-
-    context.commands.run("annotation.split", { id: context.selectedId, at: 0 });
-  };
-
   return (b: KeyMapBuilder) => {
     b.on(null, "Delete", deleteSelected, "Delete", "Delete selected annotation");
     b.on([b.Ctrl], "Backspace", deleteSelected, "Delete", "Delete selected annotation");
     b.on(null, "H", toggleGroupVisibility, "Toggle Group Visibility", "Hide/Show selected annotation group");
     b.on(null, "L", toggleGroupEditability, "Toggle Group Editability", "Lock/Unlock selected annotation group");
-    b.on(null, "S", splitAnnotation, "Split", "Split selected annotation at selected frame");
   };
 };
 
@@ -170,18 +163,11 @@ const buildOnSelectPolygonModeShortcuts = (context: SelectionKeyMapContext) => {
     context.commands.run("annotation.toggleGroupEditability", { groupId: context.selectedGroupId });
   };
 
-  const splitAnnotation = () => {
-    if (!context.selectedId) return;
-
-    context.commands.run("annotation.split", { id: context.selectedId, at: 0 });
-  };
-
   return (b: KeyMapBuilder) => {
     b.on(null, "Delete", deleteSelected, "Delete", "Delete selected annotation");
     b.on([b.Ctrl], "Backspace", deleteSelected, "Delete", "Delete selected annotation");
     b.on(null, "H", toggleGroupVisibility, "Toggle Group Visibility", "Hide/Show selected annotation group");
     b.on(null, "L", toggleGroupEditability, "Toggle Group Editability", "Lock/Unlock selected annotation group");
-    b.on(null, "S", splitAnnotation, "Split", "Split selected annotation at selected frame");
   };
 };
 

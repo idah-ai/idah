@@ -12,6 +12,13 @@ export function setCurrentModeTo(mode: string) {
   currentMode.set(mode);
 }
 
+/** CURRENT FRAME */
+export const currentFrame = writable<number>(0);
+
+export function setCurrentFrame(frame: number) {
+  currentFrame.set(frame);
+}
+
 /** SELECTED ANNOTATION */
 export const selectedAnnotation = writable<ImageAnnotationObject | undefined>(undefined);
 
