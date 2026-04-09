@@ -294,6 +294,8 @@
 
             {#snippet content()}
               <div>
+                <Text size="sm" weight="bold">How to set visibility</Text>
+                <br />
                 <p>Leave this field empty to apply the property to all categories.</p>
                 <br />
 
