@@ -6,12 +6,11 @@
   import NumberField from "@/components/app/forms/fields/input/number-field.svelte";
   import TextareaField from "@/components/app/forms/fields/input/textarea-field.svelte";
   import SingleSelectField from "@/components/app/forms/fields/select/single/single-select-field.svelte";
+  import Tooltips from "@/components/app/tooltips/tooltips.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
   import Separator from "@/components/ui/separator/separator.svelte";
   import Text from "@/components/ui/text/Text.svelte";
-  // import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-  import Tooltips from "@/components/app/tooltips/tooltips.svelte";
 
   import { borderTypes } from "@/data/model/dataset/labels";
 
@@ -288,29 +287,6 @@
       {#snippet slotLabel()}
         <div class="flex items-center gap-1">
           <Text size="sm" class="text-accent-foreground/70">Visibility</Text>
-          <!-- <Popover>
-      <PopoverTrigger >
-        <Button variant="ghost">
-          <CircleQuestionMarkIcon class="w-4 h-4 text-muted-foreground" />
-        </Button>
-      </PopoverTrigger>
-
-      <PopoverContent align="start" class="break-all w-full">
-       Leave this field empty to apply the property to all categories.
-       <br />
-
-To target a specific category, enter a condition value.category = "[category_id]"
- <br />
-	Example: value.category = "vehicles/car"
-   <br />
-To target multiple categories, combine conditions with or.
- <br />
-	Example: (value.category = "vehicles/car") or (value.category = "traffic-light") 
-   <br />
-
-[category_id] can be found in Categories section.
-      </PopoverContent>
-    </Popover> -->
           <Tooltips align="center">
             {#snippet trigger()}
               <CircleQuestionMarkIcon class="text-muted-foreground h-4 w-4" />
@@ -318,19 +294,23 @@ To target multiple categories, combine conditions with or.
 
             {#snippet content()}
               <div>
-                Leave this field empty to apply the property to all categories.
+                <p>Leave this field empty to apply the property to all categories.</p>
                 <br />
 
-                To target a specific category, enter a condition value.category = "[category_id]"
-                <br />
-                Example: value.category = "vehicles/car"
-                <br />
-                To target multiple categories, combine conditions with or.
-                <br />
-                Example: (value.category = "vehicles/car") or (value.category = "traffic-light")
+                <p>
+                  To target a specific category, enter a condition:<br />
+                  value.category = "[category_id]"<br />
+                  Example: value.category = "vehicles/car"
+                </p>
                 <br />
 
-                [category_id] can be found in Categories section.
+                <p>
+                  To target multiple categories, combine conditions using "or":<br />
+                  Example: (value.category = "vehicles/car") or (value.category = "traffic-light")
+                </p>
+                <br />
+
+                <p>You can find [category_id] in the Categories section.</p>
               </div>
             {/snippet}
           </Tooltips>
