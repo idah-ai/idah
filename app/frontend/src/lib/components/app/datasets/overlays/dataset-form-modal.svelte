@@ -9,6 +9,7 @@
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { createDatasetSchema, updateDatasetSchema } from "@/data/model/dataset/datasets/schema";
+  import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
   import { getFieldErrors, validateData, type ZodSchema } from "@/utils/validate";
@@ -64,6 +65,8 @@
     let labelConfig: IConfig = {};
     let selectedId = selectedDatasetId || (datasetRecord?.id as string);
 
+    if (!selectedId) return labelConfig;
+
     const datasetRes = await datasetsBackendDataSource.get(selectedId, {
       fields: {
         [DatasetRecord.type]: ["labeling_configuration"],
@@ -90,7 +93,7 @@
         relationships: {
           project: {
             data: {
-              type: "datasets:projects",
+              type: ProjectRecord.type,
               id: projectId!,
             },
           },
