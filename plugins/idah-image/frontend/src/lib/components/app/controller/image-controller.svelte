@@ -29,7 +29,7 @@
   import { registerCommands } from "$lib/plugin/commands.svelte";
   import { annotationsIndexedDB, type AnnotationBackend } from "$lib/plugin/data/annotation/annotaiton-backend.svelte";
   import { registerOnSelectShortcuts, registerShortcuts } from "$lib/plugin/shortcut";
-  import { boundingBoxes, entryRoot, idbUpdatedAt, setIndexedDBUpdatedAt } from "$lib/plugin/store/idb-store.svelte";
+  import { boundingBoxes, entryRoot, setIndexedDBUpdatedAt } from "$lib/plugin/store/idb-store.svelte";
   import {
     currentMode,
     selectedAnnotation,
@@ -65,10 +65,6 @@
   // Contexts
   setContext("context", context);
 
-  onMount(() => {
-    console.log(context);
-  });
-
   // Variables
   const editableWorkflowSteps = ["annotate", "review"];
   const notableWorkflowSteps = ["annotate", "review", "done"];
@@ -86,6 +82,8 @@
     handleClick: () => void;
   }[] = $state([]);
   let showPopOver = $state(false);
+  let imageResizedAt = $state(new Date());
+
   let annotationsIDB: AnnotationBackend | undefined = $state();
 
   let annotationId = $derived<string | undefined>($selectedAnnotation ? $selectedAnnotation.metadata.id : undefined);
@@ -95,23 +93,23 @@
   let annotationSidebarWidthRem = $derived<number>(annotationSidebarResizablePercentage + 3);
   let overlay: ImageOverlay;
   let annotations_promise: Promise<ImageAnnotationObject[]> = $derived.by(() => {
-    $idbUpdatedAt; // eslint-disable-line @typescript-eslint/no-unused-expressions
+    if (!annotationsIDB) return new Promise(() => {});
 
-    if (!annotationsIDB) return new Promise((_, ko) => ko("no database"));
-
-    let p = annotationsIDB.getAllStore("annotations");
-
-    p.then((updatedAnnotations) => {
-      $boundingBoxes = updatedAnnotations;
-    });
-
-    return p;
+    // Return reactive annotations from the IndexedDB instance
+    const annotations = annotationsIDB.annotations;
+    return Promise.resolve(annotations);
   });
-  let player_container: HTMLDivElement | undefined = $state();
   let commandOpen = $state(false);
   let shapeSelectionArgs:
     | [type: string, frame: number, _points: Point[], angle: number, selectedId?: string]
     | undefined = $state();
+
+  // Sync annotations to boundingBoxes whenever they change
+  $effect(() => {
+    if (annotationsIDB) {
+      $boundingBoxes = annotationsIDB.annotations;
+    }
+  });
 
   $effect(() => {
     if (typeof window === "undefined") return;
@@ -687,11 +685,12 @@
               <ImageOverlay
                 bind:this={overlay}
                 {annotations_promise}
+                frame={1}
                 onSelectAnnotation={selectAnnotation}
                 onSelection={onShapeSelection}
                 onAddNewNote={showNewNotePopup}
-                target_container={() => player_container}
                 src={context.mediaUrl}
+                {imageResizedAt}
               ></ImageOverlay>
             </section>
           </ResizablePane>
