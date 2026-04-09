@@ -28,7 +28,6 @@
   onMount(() => {
     p.then((_plugin) => {
       plugin = _plugin;
-      console.log({ pluginContainerElement, context });
       plugin.render?.(pluginContainerElement, context);
     });
   });
