@@ -334,36 +334,46 @@
     context.commands.run("keyframe.delete", { annotationId, frame });
   }
 
+  function deleteAnnotation(annotation: ImageAnnotationObject, frame?: number) {
+    if (!editable) return;
+
+    if (frame != undefined) {
+      deleteSelection(annotation.metadata.id, frame);
+    } else {
+      removeAnnotation(annotation.metadata.id);
+    }
+  }
+
   function onEditValue(value: AnnotationValue, valueMode: string) {
     if (!editable) return;
 
-    // let requirementFullfilled = requiredFullfilled(value, context.config[valueMode]?.properties);
-    // annotationValue = value;
-    // setCurrentModeTo(valueMode);
-    // if (valueMode == ENTRY_ROOT && !$selectedAnnotation && $entryRoot?.metadata.id) $selectedAnnotation = $entryRoot;
+    let requirementFullfilled = requiredFullfilled(value, context.config[valueMode]?.properties);
+    annotationValue = value;
+    setCurrentModeTo(valueMode);
+    if (valueMode == ENTRY_ROOT && !$selectedAnnotation && $entryRoot?.metadata.id) $selectedAnnotation = $entryRoot;
 
-    // // wait for confirmation
-    // if (showPopOver) {
-    //   if ($selectedAnnotation)
-    //     $selectedAnnotation = {
-    //       ...$selectedAnnotation,
-    //       value: annotationValue,
-    //     };
-    // } else {
-    //   if (valueMode == ENTRY_ROOT && !$selectedAnnotation) {
-    //     if (value.category && value.category != "" && requirementFullfilled)
-    //       addAnnotation({ type: valueMode }, $state.snapshot(value));
-    //   } else if ($selectedAnnotation) {
-    //     $selectedAnnotation = {
-    //       ...$selectedAnnotation,
-    //       value: annotationValue,
-    //     };
-    //     if (requirementFullfilled) updateAnnotationValue($state.snapshot($selectedAnnotation), $state.snapshot(value));
-    //   } else if (shapeSelectionArgs && requirementFullfilled) {
-    //     showPopOver = false;
-    //     onShapeSelection(...shapeSelectionArgs);
-    //   }
-    // }
+    // wait for confirmation
+    if (showPopOver) {
+      if ($selectedAnnotation)
+        $selectedAnnotation = {
+          ...$selectedAnnotation,
+          value: annotationValue,
+        };
+    } else {
+      if (valueMode == ENTRY_ROOT && !$selectedAnnotation) {
+        if (value.category && value.category != "" && requirementFullfilled)
+          addAnnotation({ type: valueMode }, $state.snapshot(value));
+      } else if ($selectedAnnotation) {
+        $selectedAnnotation = {
+          ...$selectedAnnotation,
+          value: annotationValue,
+        };
+        if (requirementFullfilled) updateAnnotationValue($state.snapshot($selectedAnnotation), $state.snapshot(value));
+      } else if (shapeSelectionArgs && requirementFullfilled) {
+        showPopOver = false;
+        onShapeSelection(...shapeSelectionArgs);
+      }
+    }
   }
 
   async function reSelectCategory(reselectedCategoryId: string) {
@@ -575,16 +585,6 @@
       if ($selectedAnnotation) $selectedAnnotation.locked = locked;
       annotationsIDB?.updateAllLock(locked).then(() => setIndexedDBUpdatedAt());
     }
-  }
-
-  function deleteAnnotation(annotation: ImageAnnotationObject, frame?: number) {
-    if (!editable) return;
-
-    // if (frame != undefined) {
-    //   deleteSelection(annotation.metadata.id, frame);
-    // } else {
-    //   removeAnnotation(annotation.metadata.id);
-    // }
   }
 </script>
 
