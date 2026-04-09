@@ -185,7 +185,7 @@
     contextMenu = { visible: false, x: 0, y: 0, menus: {} };
   }
 
-  function showContextMenu(e: MouseEvent, selectAnnotationGroup?: AnnotationGroup<VideoAnnotationObject>) {
+  function showContextMenu(e: MouseEvent, selectAnnotationGroup: AnnotationGroup<VideoAnnotationObject>) {
     e.preventDefault();
 
     setSelectedFrameX(e.clientX);
@@ -317,89 +317,91 @@
 </script>
 
 <div
-  id="timeline"
+  class="timeline-container"
   role="document"
-  bind:this={timeline}
-  class="relative w-full max-w-screen"
   onmousemove={handleMouseMove}
   onmouseenter={() => (showHorizontalScrollbar = true)}
   onmouseleave={handleMouseLeave}
 >
-  <TimelineHeaderRow>
-    <TimelineRowHeader>
-      <TimelineRowHeading class="font-semibold">Annotations</TimelineRowHeading>
+  <div id="timeline" bind:this={timeline} class="relative w-full max-w-screen">
+    <TimelineHeaderRow>
+      <TimelineRowHeader>
+        <TimelineRowHeading class="font-semibold">Annotations</TimelineRowHeading>
 
-      {@const allAnnotationsHidden = annotationGroups.every((annotationGroup) =>
-        annotationGroup.annotations.every((annotation) => annotation.hidden),
-      )}
-      {@const allAnnotationsLocked = annotationGroups.every((annotationGroup) =>
-        annotationGroup.annotations.every((annotation) => annotation.locked),
-      )}
+        {@const allAnnotationsHidden = annotationGroups.every((annotationGroup) =>
+          annotationGroup.annotations.every((annotation) => annotation.hidden),
+        )}
+        {@const allAnnotationsLocked = annotationGroups.every((annotationGroup) =>
+          annotationGroup.annotations.every((annotation) => annotation.locked),
+        )}
 
-      <TimelineRowActions
-        mode="multiple"
-        alwaysShow
-        {allAnnotationsHidden}
-        {allAnnotationsLocked}
-        onToggleVisibility={toggleAllAnnotationsVisibility}
-        onToggleEditability={toggleAllAnnotationsEditability}
-        onClickDelete={showConfirmDeleteModal}
-      />
-    </TimelineRowHeader>
+        <TimelineRowActions
+          mode="multiple"
+          alwaysShow
+          {allAnnotationsHidden}
+          {allAnnotationsLocked}
+          onToggleVisibility={toggleAllAnnotationsVisibility}
+          onToggleEditability={toggleAllAnnotationsEditability}
+          onClickDelete={showConfirmDeleteModal}
+        />
+      </TimelineRowHeader>
 
-    <TimelineRuler onSelectFrameX={selectFrameX} />
-  </TimelineHeaderRow>
+      <TimelineRuler onSelectFrameX={selectFrameX} />
+    </TimelineHeaderRow>
 
-  <ScrollArea id="timeline-scroll-area">
-    <div style:height="{timelineHeight - 96}px" onwheel={handleTimelineWheel}>
-      {#each annotationGroups as annotationGroup (annotationGroup.groupId)}
-        {@const allAnnotationsInGroupHidden = annotationGroup.annotations.every((annotation) => annotation.hidden)}
-        {@const allAnnotationsInGroupLocked = annotationGroup.annotations.every((annotation) => annotation.locked)}
+    <ScrollArea id="timeline-scroll-area">
+      <div style:height="{timelineHeight - 96}px" onwheel={handleTimelineWheel}>
+        {#each annotationGroups as annotationGroup (annotationGroup.groupId)}
+          {@const allAnnotationsInGroupHidden = annotationGroup.annotations.every((annotation) => annotation.hidden)}
+          {@const allAnnotationsInGroupLocked = annotationGroup.annotations.every((annotation) => annotation.locked)}
 
-        <TimelineRow>
-          <TimelineRowGroup
-            class="border-b"
-            {annotationGroup}
-            onSelectFrameX={selectFrameX}
-            onContextMenu={(e) => showContextMenu(e, annotationGroup)}
-            {onSelectAnnotationGroup}
-          >
-            <TimelineRowHeader>
-              <TimelineRowHeading>
-                {getGroupTitle({ annotationGroup })}
-              </TimelineRowHeading>
+          <TimelineRow>
+            <TimelineRowGroup
+              class="border-b"
+              {annotationGroup}
+              onSelectFrameX={selectFrameX}
+              onContextMenu={(e) => showContextMenu(e, annotationGroup)}
+              {onSelectAnnotationGroup}
+            >
+              <TimelineRowHeader>
+                <TimelineRowHeading>
+                  {getGroupTitle({ annotationGroup })}
+                </TimelineRowHeading>
 
-              <TimelineRowActions
-                mode="single"
-                allAnnotationsHidden={allAnnotationsInGroupHidden}
-                allAnnotationsLocked={allAnnotationsInGroupLocked}
-                onToggleVisibility={() => toggleAnnotationGroupVisibility(annotationGroup.groupId)}
-                onToggleEditability={() => toggleAnnotationGroupEditability(annotationGroup.groupId)}
-                onClickDelete={() => showConfirmDeleteModal(annotationGroup.groupId)}
-              />
-            </TimelineRowHeader>
+                <TimelineRowActions
+                  mode="single"
+                  allAnnotationsHidden={allAnnotationsInGroupHidden}
+                  allAnnotationsLocked={allAnnotationsInGroupLocked}
+                  onToggleVisibility={() => toggleAnnotationGroupVisibility(annotationGroup.groupId)}
+                  onToggleEditability={() => toggleAnnotationGroupEditability(annotationGroup.groupId)}
+                  onClickDelete={() => showConfirmDeleteModal(annotationGroup.groupId)}
+                />
+              </TimelineRowHeader>
 
-            <TimelineCells {annotationGroup} />
-          </TimelineRowGroup>
-        </TimelineRow>
-      {:else}
-        <TimelineEmptyAnnotations />
-      {/each}
-    </div>
-  </ScrollArea>
+              <TimelineCells {annotationGroup} />
+            </TimelineRowGroup>
+          </TimelineRow>
+        {:else}
+          <TimelineEmptyAnnotations />
+        {/each}
+      </div>
+    </ScrollArea>
 
-  <!-- Draw a vertical line when mouse move -->
-  {#if showVerticalLine}
-    <TimelineVerticalLine positionX={clientMouseX} />
-  {/if}
+    <!-- Draw a vertical line when mouse move -->
+    {#if showVerticalLine}
+      <TimelineVerticalLine positionX={clientMouseX} />
+    {/if}
 
-  {#if showSelectedVerticalLine}
-    <TimelineVerticalLine color="primary" positionX={$selectedFrameX} />
-  {/if}
+    {#if showSelectedVerticalLine}
+      <TimelineVerticalLine color="primary" positionX={$selectedFrameX} />
+    {/if}
+  </div>
 
-  {#if showHorizontalScrollbar}
-    <TimelineHorizontalScrollbar />
-  {/if}
+  <div id="timeline-horizontal-scrollbar-container">
+    {#if showHorizontalScrollbar}
+      <TimelineHorizontalScrollbar />
+    {/if}
+  </div>
 </div>
 
 <TimelineContextMenu {contextMenu} onCloseContextMenu={closeContextMenu} />

@@ -862,7 +862,7 @@
 
       <ResizableHandle withHandle />
 
-      <ResizablePane defaultSize={25} minSize={15} onResize={onTimelineResize}>
+      <ResizablePane defaultSize={25} minSize={15} maxSize={60} onResize={onTimelineResize}>
         <AnnotationFooter>
           <AnnotationFooterToolbar>
             <VideoController {zoom} {volume} bind:video={player} />
