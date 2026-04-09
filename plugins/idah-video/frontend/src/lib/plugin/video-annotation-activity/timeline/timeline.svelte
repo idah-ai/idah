@@ -20,18 +20,13 @@
   import TimelineRuler from "$lib/plugin/video-annotation-activity/timeline/timeline-ruler.svelte";
   import TimelineVerticalLine from "$lib/plugin/video-annotation-activity/timeline/timeline-vertical-line.svelte";
 
-  import {
-    setCurrentFrame,
-    setSelectedAnnotationGroup,
-    totalFrames,
-  } from "$lib/plugin/video-annotation-activity/store/store";
+  import { setCurrentFrame, totalFrames } from "$lib/plugin/video-annotation-activity/store/store";
   import {
     currentFrameRange,
     deselectFrameX,
     framePerScale,
     selectedFrameX,
     setCurrentFrameRange,
-    setSelectedFrameX,
     TIMELINE_ROW_HEADER_WIDTH,
   } from "$lib/plugin/video-annotation-activity/timeline/store";
   import { getFrameFromMouseX } from "$lib/plugin/video-annotation-activity/timeline/utils";
@@ -185,53 +180,55 @@
     contextMenu = { visible: false, x: 0, y: 0, menus: {} };
   }
 
-  function showContextMenu(e: MouseEvent, selectAnnotationGroup?: AnnotationGroup<VideoAnnotationObject>) {
+  function showContextMenu(e: MouseEvent, selectAnnotationGroup: AnnotationGroup<VideoAnnotationObject>) {
     e.preventDefault();
 
-    setSelectedFrameX(e.clientX);
+    /** (If UX need to select annotation group & set selected vertical line on context menu) Select annotation group */
+    // setSelectedFrameX(e.clientX);
+    // setSelectedAnnotationGroup(selectAnnotationGroup);
 
-    /** Select annotation group */
-    setSelectedAnnotationGroup(selectAnnotationGroup);
-
-    const frame = getFrameFromMouseX({ clientX: e.clientX });
+    const scaledFrame = getFrameFromMouseX({ clientX: e.clientX });
+    const [startFrameIndexOfCurrentFrameRange, _] = $currentFrameRange;
+    const scaledStartFrameIndexOfCurrentFrameRange = Number(startFrameIndexOfCurrentFrameRange * $framePerScale);
+    const displayScaledFrame = scaledFrame + scaledStartFrameIndexOfCurrentFrameRange;
 
     /** Closest annotation */
     const closestAnnotation = findClosestAnnotationInGroup({
       annotationGroup: selectAnnotationGroup,
-      frame,
+      frame: displayScaledFrame,
     });
 
     /** Menus */
     const seekToFrameMenu: TimelineContextMenuMenu = {
-      label: `Seek to frame ${frame}`,
+      label: `Seek to frame ${displayScaledFrame}`,
       icon: SearchIcon,
       onClick: () => {
-        onSeekFrame(frame);
+        onSeekFrame(displayScaledFrame);
         closeContextMenu();
       },
     };
 
     const splitMenu: TimelineContextMenuMenu = {
-      label: `Split at frame ${frame}`,
+      label: `Split at frame ${displayScaledFrame}`,
       icon: SquareSplitHorizontalIcon,
       disabled: closestAnnotation.locked,
       onClick: () => {
         context.commands.run("annotation.split", {
           id: closestAnnotation.metadata.id,
-          at: frame,
+          at: displayScaledFrame,
         });
         closeContextMenu();
       },
     };
 
     const deleteInterpolationMenu: TimelineContextMenuMenu = {
-      label: `Delete frame ${frame}`,
+      label: `Delete frame ${displayScaledFrame}`,
       icon: Trash2Icon,
       disabled: closestAnnotation.locked,
       onClick: () => {
         context.commands.run("keyframe.delete", {
           annotationId: closestAnnotation.metadata.id,
-          frame,
+          displayScaledFrame,
         });
         closeContextMenu();
       },
@@ -271,13 +268,14 @@
       if (i === sortedClosestAnnotationKeyFrames.length - 1) return false;
       const next = sortedClosestAnnotationKeyFrames[i + 1];
 
-      return frame >= f && frame <= next;
+      return displayScaledFrame >= f && displayScaledFrame <= next;
     });
     if (isSelectedFrameInKeyFrames) contextMenu.menus.frameRelatedMenu.items.push(seekToFrameMenu, splitMenu);
     if (isSelectedFrameInKeyFrames) contextMenu.menus.annotationMenu.items.push(deleteAnnotationMenu);
 
     /** Only show delete interpolation menu, if selected annotations have keyframe at selected frame */
-    const hasInterpolationAtFrame = closestAnnotation.shape.frames.filter((f) => f.frame === frame).length > 0;
+    const hasInterpolationAtFrame =
+      closestAnnotation.shape.frames.filter((f) => f.frame === displayScaledFrame).length > 0;
     if (hasInterpolationAtFrame) contextMenu.menus.frameRelatedMenu.items.push(deleteInterpolationMenu);
 
     const frameRelatedMenus = contextMenu.menus.frameRelatedMenu.items.length;
