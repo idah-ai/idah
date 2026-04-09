@@ -11,7 +11,7 @@
   } from "$lib/plugin/video-annotation-activity/timeline/timeline-context-menu.svelte";
   import TimelineEmptyAnnotations from "$lib/plugin/video-annotation-activity/timeline/timeline-empty-annotations.svelte";
   import TimelineHeaderRow from "$lib/plugin/video-annotation-activity/timeline/timeline-header-row.svelte";
-  // import TimelineHorizontalScrollbar from "$lib/plugin/video-annotation-activity/timeline/timeline-horizontal-scrollbar.svelte";
+  import TimelineHorizontalScrollbar from "$lib/plugin/video-annotation-activity/timeline/timeline-horizontal-scrollbar.svelte";
   import TimelineRowActions from "$lib/plugin/video-annotation-activity/timeline/timeline-row-actions.svelte";
   import TimelineRowGroup from "$lib/plugin/video-annotation-activity/timeline/timeline-row-group.svelte";
   import TimelineRowHeader from "$lib/plugin/video-annotation-activity/timeline/timeline-row-header.svelte";
@@ -385,6 +385,12 @@
       {:else}
         <TimelineEmptyAnnotations />
       {/each}
+
+      {#if showHorizontalScrollbar}
+        <div>
+          <TimelineHorizontalScrollbar />
+        </div>
+      {/if}
     </div>
   </ScrollArea>
 
@@ -395,10 +401,6 @@
 
   {#if showSelectedVerticalLine}
     <TimelineVerticalLine color="primary" positionX={$selectedFrameX} />
-  {/if}
-
-  {#if showHorizontalScrollbar}
-    <!-- <TimelineHorizontalScrollbar /> -->
   {/if}
 </div>
 
