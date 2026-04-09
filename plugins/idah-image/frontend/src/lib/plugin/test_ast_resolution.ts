@@ -289,7 +289,6 @@ export class AstProcessor {
 
 export function objectVariables(obj: object, root?: string) {
   return Object.entries(obj).reduce((acc: [string, ASTValue][], [k, v]) => {
-    console.log({ k, v, type: typeof v });
     if (typeof v === "object" && !Array.isArray(v)) {
       acc = acc.concat(objectVariables(v, root ? [root, k].join(".") : k));
     } else {

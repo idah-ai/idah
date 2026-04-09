@@ -29,7 +29,7 @@
   import { registerCommands } from "$lib/plugin/commands.svelte";
   import { annotationsIndexedDB, type AnnotationBackend } from "$lib/plugin/data/annotation/annotaiton-backend.svelte";
   import { registerOnSelectShortcuts, registerShortcuts } from "$lib/plugin/shortcut";
-  import { boundingBoxes, entryRoot, setIndexedDBUpdatedAt } from "$lib/plugin/store/idb-store.svelte";
+  import { boundingBoxes, entryRoot } from "$lib/plugin/store/idb-store.svelte";
   import {
     currentMode,
     selectedAnnotation,
@@ -297,20 +297,6 @@
     const imageShape: ImageShape = { type, start, end, frames, value };
 
     context.commands.run("annotation.add", { shape: imageShape, value });
-
-    const timelineScrollAreaEl = document.getElementById("timeline-scroll-area");
-
-    if (timelineScrollAreaEl) {
-      const scrollContainer = timelineScrollAreaEl.querySelector(`[data-slot="scroll-area-viewport"]`) as HTMLElement;
-
-      setTimeout(() => {
-        // scroll to bottom most
-        scrollContainer.scrollTo({
-          top: scrollContainer.scrollHeight,
-          behavior: "smooth",
-        });
-      }, 100);
-    }
   }
 
   async function removeAnnotation(annotationId: string) {
@@ -347,24 +333,24 @@
     let requirementFullfilled = requiredFullfilled(value, context.config[valueMode]?.properties);
     annotationValue = value;
     setCurrentModeTo(valueMode);
-    if (valueMode == ENTRY_ROOT && !$selectedAnnotation && $entryRoot?.metadata.id) $selectedAnnotation = $entryRoot;
+    if (valueMode == ENTRY_ROOT && !$selectedAnnotation && $entryRoot?.metadata.id) setSelectedAnnotation($entryRoot);
 
     // wait for confirmation
     if (showPopOver) {
       if ($selectedAnnotation)
-        $selectedAnnotation = {
+        setSelectedAnnotation({
           ...$selectedAnnotation,
           value: annotationValue,
-        };
+        });
     } else {
       if (valueMode == ENTRY_ROOT && !$selectedAnnotation) {
         if (value.category && value.category != "" && requirementFullfilled)
           addAnnotation({ type: valueMode }, $state.snapshot(value));
       } else if ($selectedAnnotation) {
-        $selectedAnnotation = {
+        setSelectedAnnotation({
           ...$selectedAnnotation,
           value: annotationValue,
-        };
+        });
         if (requirementFullfilled) updateAnnotationValue($state.snapshot($selectedAnnotation), $state.snapshot(value));
       } else if (shapeSelectionArgs && requirementFullfilled) {
         showPopOver = false;
@@ -557,32 +543,6 @@
       setCurrentModeTo(DEFAULT_MODE);
     }
   }
-
-  function setVisibility(hidden: boolean, annotation?: ImageAnnotationObject) {
-    if (annotation) {
-      annotation.hidden = hidden;
-      if (annotation.metadata.id == $selectedAnnotation?.metadata.id) $selectedAnnotation.hidden = hidden;
-      if (annotation.shape.type == ENTRY_ROOT) $entryRoot = annotation;
-
-      annotationsIDB?.upsertAnnotations([annotation]).then(() => setIndexedDBUpdatedAt());
-    } else {
-      if ($selectedAnnotation) $selectedAnnotation.hidden = hidden;
-      annotationsIDB?.updateAllVisibility(hidden).then(() => setIndexedDBUpdatedAt());
-    }
-  }
-
-  function setEditability(locked: boolean, annotation?: ImageAnnotationObject) {
-    if (annotation) {
-      annotation.locked = locked;
-      if (annotation.metadata.id == $selectedAnnotation?.metadata.id) $selectedAnnotation.locked = locked;
-      if (annotation.shape.type == ENTRY_ROOT) $entryRoot = annotation;
-      annotationsIDB?.upsertAnnotations([annotation]).then(() => setIndexedDBUpdatedAt());
-    } else {
-      if ($entryRoot) $entryRoot.locked = locked;
-      if ($selectedAnnotation) $selectedAnnotation.locked = locked;
-      annotationsIDB?.updateAllLock(locked).then(() => setIndexedDBUpdatedAt());
-    }
-  }
 </script>
 
 <div class="relative flex h-full w-full flex-col">
@@ -636,20 +596,43 @@
             sidebarWidthRem={annotationSidebarWidthRem}
             db={annotationsIDB}
             {annotationValue}
+            {onEditValue}
             {context}
             onSelectAnnotation={selectAnnotation}
             onSelectAnnotationGroup={selectAnnotationGroup}
             onDeleteAnnotation={deleteAnnotation}
-            onEditability={setEditability}
-            onVisibility={setVisibility}
           />
         {/if}
       </div>
 
       <div class="flex justify-end gap-2 p-2">
-        <Button size="sm" variant="outline" onclick={() => (showPopOver = false)}>Cancel</Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onclick={() => {
+            showPopOver = false;
+            annotationValue = {};
+            shapeSelectionArgs = undefined;
+            selectAnnotation();
+          }}>Cancel</Button
+        >
 
-        <Button size="sm" onclick={() => (showPopOver = false)}>Confirm</Button>
+        <Button
+          size="sm"
+          onclick={() => {
+            showPopOver = false;
+            switch ($currentMode) {
+              case ENTRY_ROOT:
+                onShapeSelection(ENTRY_ROOT, 1);
+                break;
+              default:
+                if (shapeSelectionArgs) onShapeSelection(...shapeSelectionArgs);
+            }
+          }}
+          disabled={shapeSelectionArgs == undefined && ENTRY_ROOT != $currentMode}
+        >
+          Confirm
+        </Button>
       </div>
     </PopoverContent>
   </Popover>
@@ -671,8 +654,7 @@
               onSelectAnnotation={selectAnnotation}
               onSelectAnnotationGroup={selectAnnotationGroup}
               onDeleteAnnotation={deleteAnnotation}
-              onEditability={setEditability}
-              onVisibility={setVisibility}
+              {onEditValue}
             />
           </ResizablePane>
 

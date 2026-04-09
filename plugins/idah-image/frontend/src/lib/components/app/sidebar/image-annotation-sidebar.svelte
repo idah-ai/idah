@@ -27,12 +27,10 @@
     view,
     sidebarWidthRem,
     annotationValue,
-    // onEditValue,
+    onEditValue,
     onSelectAnnotation,
     onSelectAnnotationGroup,
     onDeleteAnnotation,
-    onVisibility,
-    onEditability,
     context,
     db,
     class: className,
@@ -40,12 +38,10 @@
     view: SidebarView;
     sidebarWidthRem: number;
     annotationValue: AnnotationValue;
-    // onEditValue: (annotationValue: AnnotationValue, mode: string) => void;
+    onEditValue: (annotationValue: AnnotationValue, mode: string) => void;
     onSelectAnnotation: (annotation?: ImageAnnotationObject) => void;
     onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<ImageAnnotationObject>) => void;
     onDeleteAnnotation: (annotation: ImageAnnotationObject) => void;
-    onEditability: (locked: boolean, annotation?: ImageAnnotationObject) => void;
-    onVisibility: (hidden: boolean, annotation?: ImageAnnotationObject) => void;
     context: IActivityContext;
     db?: AnnotationBackend;
     class?: string | null;
@@ -84,7 +80,7 @@
   function categorySelection(shape_type: string, category?: string) {
     if (category) {
       if (shape_type != $currentMode) onSelectAnnotation();
-      // onEditValue({ category }, shape_type);
+      onEditValue({ category }, shape_type);
     } // else {
     //   onEditValue(
     //     Object.fromEntries(Object.entries(annotationValue).filter(([type, _]) => type == "categories")),
@@ -144,8 +140,6 @@
           onSelectCategory={(selected) => categorySelection(tool, selected)}
           {onSelectAnnotationGroup}
           {onDeleteAnnotation}
-          {onEditability}
-          {onVisibility}
         ></ImageCategorySidebar>
       {/if}
     {/each}
