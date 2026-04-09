@@ -20,7 +20,7 @@
   import type { AnnotationGroup, AnnotationValue } from "$lib/context/annotation-context";
   import type { IActivityContext, IConfigValue } from "$lib/context/context";
   import type { ImageAnnotationObject } from "$lib/context/image-annotation-context";
-  import type { AnnotationsIndexedDB } from "$lib/plugin/indexedDB";
+  import type { AnnotationBackend } from "$lib/plugin/data/annotation/annotaiton-backend.svelte";
 
   // Props
   let {
@@ -47,7 +47,7 @@
     onEditability: (locked: boolean, annotation?: ImageAnnotationObject) => void;
     onVisibility: (hidden: boolean, annotation?: ImageAnnotationObject) => void;
     context: IActivityContext;
-    db?: AnnotationsIndexedDB;
+    db?: AnnotationBackend;
     class?: string | null;
   } = $props();
 

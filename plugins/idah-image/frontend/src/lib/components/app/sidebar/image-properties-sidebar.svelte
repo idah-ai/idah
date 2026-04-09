@@ -8,12 +8,12 @@
     SidebarHeader,
   } from "$lib/components/ui/sidebar";
 
+  import { entryRoot } from "$lib/plugin/store/idb-store.svelte";
   import { currentMode, selectedAnnotation } from "$lib/plugin/store/store";
+  import { DEFAULT_MODE, ENTRY_ROOT } from "$lib/plugin/types";
 
   import type { AnnotationValue } from "$lib/context/annotation-context";
   import type { IActivityContext, IConfigValue } from "$lib/context/context";
-  import { entryRoot } from "$lib/plugin/store/idb-store.svelte";
-  import { DEFAULT_MODE, ENTRY_ROOT } from "$lib/plugin/types";
 
   // Props
   let {
