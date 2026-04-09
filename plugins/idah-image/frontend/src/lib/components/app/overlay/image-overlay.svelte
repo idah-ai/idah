@@ -114,8 +114,6 @@
 
     let target_dom_rect = target_container.getBoundingClientRect();
 
-    console.log({ target_dom_rect });
-
     return !target_dom_rect ? ORIGIN : [target_dom_rect.width, target_dom_rect.height];
   }
 
@@ -130,7 +128,6 @@
 
   let target_line = $derived.by(() => {
     let tl: Point = $state.snapshot(mouse) as Point;
-    console.log({ cursor });
 
     if (cursor[X] < 0) {
       tl[X] -= cursor[X];

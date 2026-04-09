@@ -64,13 +64,11 @@
   // Sync initialPoints when not editing
   $effect(() => {
     const newPoints = initialPoints;
-    console.log({panStart, rotateStart, resizeHandleIndex})
 
     // Only update if not currently editing
     if (!panStart && !rotateStart && resizeHandleIndex === undefined) {
       points = [...newPoints];
     }
-    console.log({newPoints})
   });
 
   let cursor_pixel: Point = $derived.by(() => {
