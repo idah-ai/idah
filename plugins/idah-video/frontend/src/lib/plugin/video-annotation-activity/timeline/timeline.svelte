@@ -164,9 +164,12 @@
   }
 
   function selectFrameX(frameX: number) {
-    const selectedFrame = getFrameFromMouseX({ clientX: frameX }) + $currentFrameRange[0];
-    setCurrentFrame(selectedFrame);
-    onSeekFrame(selectedFrame);
+    const selectedFrame = getFrameFromMouseX({ clientX: frameX });
+    const [startFrameIndexOfCurrentFrameRange, _] = $currentFrameRange;
+    const scaledStartFrameIndexOfCurrentFrameRange = Number(startFrameIndexOfCurrentFrameRange * $framePerScale);
+
+    setCurrentFrame(selectedFrame + scaledStartFrameIndexOfCurrentFrameRange);
+    onSeekFrame(selectedFrame + scaledStartFrameIndexOfCurrentFrameRange);
 
     /**
      * Note: Do not setSelectedFrameX here
