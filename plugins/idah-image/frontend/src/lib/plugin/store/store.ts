@@ -15,7 +15,7 @@ export function setCurrentModeTo(mode: string) {
 /** SELECTED ANNOTATION */
 export const selectedAnnotation = writable<ImageAnnotationObject | undefined>(undefined);
 
-export function setSelectedAnnotation(annotation: ImageAnnotationObject) {
+export function setSelectedAnnotation(annotation: ImageAnnotationObject | undefined) {
   selectedAnnotation.set(annotation);
 }
 

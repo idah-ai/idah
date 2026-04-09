@@ -25,6 +25,7 @@
 
   import { ShortcutManager } from "$lib/shortcut/shortcut-manager";
 
+  import { requiredFullfilled } from "$lib/components/app/sidebar/properties/properties.index";
   import { registerCommands } from "$lib/plugin/commands.svelte";
   import { annotationsIndexedDB, type AnnotationBackend } from "$lib/plugin/data/annotation/annotaiton-backend.svelte";
   import { registerOnSelectShortcuts, registerShortcuts } from "$lib/plugin/shortcut";
@@ -46,7 +47,7 @@
     IMAGE_POLYGON,
   } from "$lib/plugin/types";
 
-  import type { AnnotationGroup, AnnotationValue } from "$lib/context/annotation-context";
+  import type { AnnotationGroup, AnnotationShape, AnnotationValue } from "$lib/context/annotation-context";
   import type { IActivityContext } from "$lib/context/context";
   import type {
     ImageAnnotationObject,
@@ -108,6 +109,9 @@
   });
   let player_container: HTMLDivElement | undefined = $state();
   let commandOpen = $state(false);
+  let shapeSelectionArgs:
+    | [type: string, frame: number, _points: Point[], angle: number, selectedId?: string]
+    | undefined = $state();
 
   $effect(() => {
     if (typeof window === "undefined") return;
@@ -289,6 +293,35 @@
     }
   });
 
+  async function addAnnotation(shape: AnnotationShape, value: AnnotationValue = {}) {
+    if (!editable) return;
+
+    const { type, start, end, frames } = shape;
+    const imageShape: ImageShape = { type, start, end, frames, value };
+
+    context.commands.run("annotation.add", { shape: imageShape, value });
+
+    const timelineScrollAreaEl = document.getElementById("timeline-scroll-area");
+
+    if (timelineScrollAreaEl) {
+      const scrollContainer = timelineScrollAreaEl.querySelector(`[data-slot="scroll-area-viewport"]`) as HTMLElement;
+
+      setTimeout(() => {
+        // scroll to bottom most
+        scrollContainer.scrollTo({
+          top: scrollContainer.scrollHeight,
+          behavior: "smooth",
+        });
+      }, 100);
+    }
+  }
+
+  async function removeAnnotation(annotationId: string) {
+    if (!editable) return;
+
+    context.commands.run("annotation.delete", { annotationId });
+  }
+
   async function addSelection(id: string, selection: ImageFrameSelection) {
     if (!editable) return;
 
@@ -371,7 +404,7 @@
       switch (type) {
         case DEFAULT_MODE:
           break;
-        case IDAH_VIDEO_BOUNDING_BOX:
+        case IMAGE_BOUNDING_BOX:
           shape = {
             ...shape,
             start: frame,
@@ -379,7 +412,7 @@
             frames: [{ frame, angle, points }],
           };
           break;
-        case IDAH_VIDEO_POLYGON:
+        case IMAGE_POLYGON:
           shape = {
             ...shape,
             start: frame,
