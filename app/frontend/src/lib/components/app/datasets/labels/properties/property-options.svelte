@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { PlusIcon, Trash2Icon } from "@lucide/svelte";
+  import { CircleQuestionMarkIcon, PlusIcon, Trash2Icon } from "@lucide/svelte";
 
   import CheckboxField from "@/components/app/forms/fields/input/checkbox-field.svelte";
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
@@ -10,6 +10,8 @@
   import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
   import Separator from "@/components/ui/separator/separator.svelte";
   import Text from "@/components/ui/text/Text.svelte";
+  // import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+  import Tooltips from "@/components/app/tooltips/tooltips.svelte";
 
   import { borderTypes } from "@/data/model/dataset/labels";
 
@@ -260,7 +262,6 @@
     <TextareaField
       name="{id}/visibility"
       class="col-span-1 md:col-span-2"
-      label="Visibility"
       placeholder="e.g. task_name match '...' and status = '...'"
       value={visibility == true ? "" : ASTNodeToFunctionString(visibility)}
       oninput={(e) => {
@@ -283,6 +284,58 @@
         }
       }}
       errors={visibilityError ? [visibilityError] : undefined}
-    />
+    >
+      {#snippet slotLabel()}
+        <div class="flex items-center gap-1">
+          <Text size="sm" class="text-accent-foreground/70">Visibility</Text>
+          <!-- <Popover>
+      <PopoverTrigger >
+        <Button variant="ghost">
+          <CircleQuestionMarkIcon class="w-4 h-4 text-muted-foreground" />
+        </Button>
+      </PopoverTrigger>
+
+      <PopoverContent align="start" class="break-all w-full">
+       Leave this field empty to apply the property to all categories.
+       <br />
+
+To target a specific category, enter a condition value.category = "[category_id]"
+ <br />
+	Example: value.category = "vehicles/car"
+   <br />
+To target multiple categories, combine conditions with or.
+ <br />
+	Example: (value.category = "vehicles/car") or (value.category = "traffic-light") 
+   <br />
+
+[category_id] can be found in Categories section.
+      </PopoverContent>
+    </Popover> -->
+          <Tooltips align="center">
+            {#snippet trigger()}
+              <CircleQuestionMarkIcon class="text-muted-foreground h-4 w-4" />
+            {/snippet}
+
+            {#snippet content()}
+              <div>
+                Leave this field empty to apply the property to all categories.
+                <br />
+
+                To target a specific category, enter a condition value.category = "[category_id]"
+                <br />
+                Example: value.category = "vehicles/car"
+                <br />
+                To target multiple categories, combine conditions with or.
+                <br />
+                Example: (value.category = "vehicles/car") or (value.category = "traffic-light")
+                <br />
+
+                [category_id] can be found in Categories section.
+              </div>
+            {/snippet}
+          </Tooltips>
+        </div>
+      {/snippet}
+    </TextareaField>
   </div>
 </div>
