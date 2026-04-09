@@ -74,6 +74,7 @@
     {/await}
 
     <!-- DATASET::LABELING CONFIGURATION -->
+     {#key modality}
     <SingleSelectDatasourceField
       name="{resource}/labeling_configuration"
       label="Copy label configurations from"
@@ -91,10 +92,12 @@
         },
         sort: ["name"],
       }}
+      disabled={!modality}
       value={selectedDatasetId}
       onSelected={(selectedValue) => {
         selectedDatasetId = selectedValue as string;
       }}
     ></SingleSelectDatasourceField>
+      {/key}
   </FieldGroup>
 </FieldSet>
