@@ -385,12 +385,6 @@
       {:else}
         <TimelineEmptyAnnotations />
       {/each}
-
-      {#if showHorizontalScrollbar}
-        <div>
-          <TimelineHorizontalScrollbar />
-        </div>
-      {/if}
     </div>
   </ScrollArea>
 
@@ -401,6 +395,10 @@
 
   {#if showSelectedVerticalLine}
     <TimelineVerticalLine color="primary" positionX={$selectedFrameX} />
+  {/if}
+
+  {#if showHorizontalScrollbar}
+    <TimelineHorizontalScrollbar />
   {/if}
 </div>
 

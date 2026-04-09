@@ -64,7 +64,7 @@
 <div
   role="button"
   tabindex="0"
-  class="h-4 bg-secondary absolute bottom-0 border-t opacity-70"
+  class="h-3 bg-secondary absolute -bottom-3 border-t opacity-70"
   style:width="{$timelineRulerWidth}px"
   style:left="{TIMELINE_ROW_HEADER_WIDTH}px"
   onkeypress={() => {}}
@@ -74,7 +74,7 @@
   <div class="bg-primary" style:width="{scrollbarMaxWidth}px">
     <button
       aria-label="scrollbar-handle"
-      class="rounded-lg bg-gray-300 h-3 absolute bottom-0.5 focus:outline-none"
+      class="rounded-lg bg-gray-300 h-3 absolute bottom-0 focus:outline-none"
       style:width="{scrollbarHandleWidth}px"
       style:left="{handlePositionX}px"
       onclick={(e) => e.stopPropagation()}
