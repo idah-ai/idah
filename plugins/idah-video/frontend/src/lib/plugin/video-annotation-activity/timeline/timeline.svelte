@@ -323,7 +323,7 @@
   onmouseenter={() => (showHorizontalScrollbar = true)}
   onmouseleave={handleMouseLeave}
 >
-  <div id="timeline" bind:this={timeline} style:height="{timelineHeight * 0.85}px" class="relative w-full max-w-screen">
+  <div id="timeline" bind:this={timeline} class="relative w-full max-w-screen">
     <TimelineHeaderRow>
       <TimelineRowHeader>
         <TimelineRowHeading class="font-semibold">Annotations</TimelineRowHeading>
@@ -350,7 +350,7 @@
     </TimelineHeaderRow>
 
     <ScrollArea id="timeline-scroll-area">
-      <div style:height="{timelineHeight * 0.85}px" onwheel={handleTimelineWheel}>
+      <div style:height="{timelineHeight - 96}px" onwheel={handleTimelineWheel}>
         {#each annotationGroups as annotationGroup (annotationGroup.groupId)}
           {@const allAnnotationsInGroupHidden = annotationGroup.annotations.every((annotation) => annotation.hidden)}
           {@const allAnnotationsInGroupLocked = annotationGroup.annotations.every((annotation) => annotation.locked)}
