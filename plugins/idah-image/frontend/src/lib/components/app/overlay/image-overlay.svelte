@@ -69,7 +69,7 @@
   // Variables
   let offset: Point = $state([0, 0]);
   let target_container: HTMLImageElement | undefined = $state();
-  let imageLoaded = $state(false);
+  let imageLoaded = $state(new Date());
 
   let height = $state(0);
   let width = $state(0);
@@ -100,12 +100,28 @@
   let angle: number = $derived.by(() => {
     return current_shape?.angle || 0;
   });
+  let imageResizedAt = $state(new Date());
+
+  // Svelte action for resize observation
+  function observeResize(element: HTMLElement) {
+    const resizeObserver = new ResizeObserver(() => {
+      imageResizedAt = new Date();
+    });
+
+    resizeObserver.observe(element);
+
+    return {
+      destroy() {
+        resizeObserver.disconnect();
+      },
+    };
+  }
 
   // Functions
   function updatedSize(): Point {
-    if (!target_container || !imageLoaded) {
-      return ORIGIN;
-    }
+    if (!target_container) return ORIGIN;
+    imageResizedAt; // eslint-disable-line @typescript-eslint/no-unused-expressions
+    imageLoaded; // eslint-disable-line @typescript-eslint/no-unused-expressions
 
     let target_dom_rect = target_container.getBoundingClientRect();
 
@@ -251,10 +267,11 @@
     <img
       id="idah-image"
       bind:this={target_container}
+      use:observeResize
       {src}
       alt=""
       onload={() => {
-        imageLoaded = true;
+        imageLoaded = new Date();
       }}
     />
   </div>
