@@ -52,7 +52,6 @@
     onSelection: (type: string, frame: number, points?: Point[], angle?: number, id?: string) => void;
     onAddNewNote: (params: OnAddNewNoteParams) => void;
     src: string;
-    imageResizedAt: Date;
   };
   let {
     frame,
@@ -61,7 +60,6 @@
     onSelection, // valid shape output
     onAddNewNote,
     src,
-    imageResizedAt,
     ...restProps
   }: Props = $props();
 
@@ -102,11 +100,8 @@
     return current_shape?.angle || 0;
   });
 
-  let image: HTMLImageElement;
-
   // Functions
   function updatedSize(): Point {
-    imageResizedAt; // eslint-disable-line @typescript-eslint/no-unused-expressions
     if (!target_container) {
       console.error({ setUpPlayer: { target_container } });
       return ORIGIN;
@@ -139,7 +134,6 @@
     } else if (cursor[Y] > target_size[Y]) {
       tl[Y] -= cursor[Y] - target_size[Y];
     }
-    console.log({ shape, tl, cursor, target_size });
 
     return tl;
   });
@@ -264,8 +258,8 @@
     onmousemove={(e) => {
       mouse = [e.offsetX, e.offsetY];
     }}
-    onmouseup={(e) => selectionEnd(e)}
-    onmousedown={(e) => selectionStart(e)}
+    onmouseup={() => selectionEnd()}
+    onmousedown={() => selectionStart()}
     {...restProps}
   >
     {#if showCrosshair}

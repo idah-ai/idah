@@ -82,7 +82,6 @@
     handleClick: () => void;
   }[] = $state([]);
   let showPopOver = $state(false);
-  let imageResizedAt = $state(new Date());
 
   let annotationsIDB: AnnotationBackend | undefined = $state();
 
@@ -677,11 +676,9 @@
             />
           </ResizablePane>
 
-          <ResizableHandle withHandle />
-
           <!-- IMAGE EDITOR -->
-          <ResizablePane defaultSize={60}>
-            <section id="image-section" class="flex h-full w-full">
+          <ResizablePane defaultSize={75}>
+            <section id="image-section" class="flex h-full w-full flex-1 items-center">
               <ImageOverlay
                 bind:this={overlay}
                 {annotations_promise}
@@ -690,12 +687,9 @@
                 onSelection={onShapeSelection}
                 onAddNewNote={showNewNotePopup}
                 src={context.mediaUrl}
-                {imageResizedAt}
               ></ImageOverlay>
             </section>
           </ResizablePane>
-
-          <ResizableHandle withHandle />
 
           <!-- RIGHT SIDEBAR -->
           <ResizablePane minSize={16} defaultSize={16} maxSize={20}>
