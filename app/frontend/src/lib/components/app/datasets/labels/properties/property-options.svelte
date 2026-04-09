@@ -299,18 +299,23 @@
 
                 <p>
                   To target a specific category, enter a condition:<br />
-                  value.category = "[category_id]"<br />
-                  Example: value.category = "vehicles/car"
+                  <code class="bg-secondary/20 rounded">value.category = "[category_id]"</code><br />
+                  Example: <code class="bg-secondary/20 rounded">value.category = "vehicles/car"</code>
                 </p>
                 <br />
 
                 <p>
                   To target multiple categories, combine conditions using "or":<br />
-                  Example: (value.category = "vehicles/car") or (value.category = "traffic-light")
+                  Example:
+                  <code class="bg-secondary/20 rounded"
+                    >(value.category = "vehicles/car") or (value.category = "traffic-light")</code
+                  >
                 </p>
                 <br />
 
-                <p>You can find [category_id] in the Categories section.</p>
+                <p>
+                  You can find <code class="bg-secondary/20 rounded">[category_id]</code> in the Categories section.
+                </p>
               </div>
             {/snippet}
           </Tooltips>
