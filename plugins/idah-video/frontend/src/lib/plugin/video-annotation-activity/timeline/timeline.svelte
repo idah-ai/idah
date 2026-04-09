@@ -323,7 +323,7 @@
   onmouseenter={() => (showHorizontalScrollbar = true)}
   onmouseleave={handleMouseLeave}
 >
-  <div id="timeline" bind:this={timeline} class="relative w-full max-w-screen">
+  <div id="timeline" bind:this={timeline} style:height="{timelineHeight * 0.85}px" class="relative w-full max-w-screen">
     <TimelineHeaderRow>
       <TimelineRowHeader>
         <TimelineRowHeading class="font-semibold">Annotations</TimelineRowHeading>
