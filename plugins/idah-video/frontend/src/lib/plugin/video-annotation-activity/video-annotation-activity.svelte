@@ -274,7 +274,7 @@
       },
       {
         name: "tools.note",
-        label: "Notes",
+        label: "Add Note",
         type: IDAH_NOTE,
         iconName: "message-circle",
         disabled: !notable, // Note: Only allow to create note when workflow steps are "annotate" and "review"

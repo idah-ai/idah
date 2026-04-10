@@ -57,7 +57,7 @@
   let menus: AnnotationHeaderBarBaseTool[] = $derived([
     {
       name: "notes",
-      label: "Notes Sidebar",
+      label: "All Notes",
       icon: MessageCircleIcon,
       isActive: openNoteSidebar,
       handleClick: () => {
