@@ -100,9 +100,6 @@
     });
     onReSelectCategory?.(reselectedCategoryId);
   }
-  $effect(() => {
-    console.log({ properties });
-  });
 </script>
 
 {#snippet SelectCategory()}
