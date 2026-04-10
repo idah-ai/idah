@@ -87,7 +87,7 @@
   let jobProgress: number = $state(1);
 
   const processingStatuses: EntryStatusType[] = ["processing", "pending"];
-  const TOTAL_POSITIONS = entry.dataset.modality === "idah-video" ? 10 : 2; // 10 images inside the larger image
+  const TOTAL_POSITIONS = 10; // 10 images inside the larger image
   const ANIMATION_INTERVAL_MS = 350; // 1 second per position
 
   // Functions
@@ -121,15 +121,22 @@
 
   async function loadThumbnail(): Promise<void> {
     try {
+      const { resource, dataset } = entry;
+
       thumbnailUrl = await mediaBackendDataSource.getFiles({
-        resource: entry.resource,
-        key: "thumbnail.jpg",
+        resource,
+        key: dataset.modality === "idah-video" ? "thumbnail.jpg" : "",
       });
 
       thumbnailImg.onload = () => {
         const width = thumbnailImg.width;
 
-        containerWidth = width / TOTAL_POSITIONS;
+        // For idah-image, use a fixed width. For idah-video, divide by TOTAL_POSITIONS
+        if (dataset.modality === "idah-image") {
+          containerWidth = 240; // Fixed size for idah-image
+        } else {
+          containerWidth = width / TOTAL_POSITIONS;
+        }
       };
 
       thumbnailImg.src = thumbnailUrl;
@@ -253,25 +260,31 @@
       <div class="h-full overflow-hidden" style:width="{containerWidth}px" style:max-width="{containerWidth}px">
         <AspectRatio ratio={16 / 9} class="bg-muted h-full rounded-lg">
           {#if thumbnailUrl}
-            <div
-              bind:this={imgContainer}
-              role="img"
-              class="relative h-full w-full overflow-hidden rounded-lg"
-              onmouseenter={startAnimation}
-              onmouseleave={stopAnimation}
-            >
-              <img
-                src={thumbnailUrl}
-                alt="Entry thumbnail"
-                class="absolute top-0 left-0 cursor-pointer object-cover"
-                style:height="{imgContainer?.clientHeight}px"
-                style:width="{entry.dataset.modality === 'idah:video'
-                  ? containerWidth * TOTAL_POSITIONS
-                  : containerWidth}px"
-                style:max-width="none"
-                style:transform="translateX(-{currentImagePosition * containerWidth || 0}px)"
-              />
-            </div>
+            {#if entry.dataset.modality === "idah-image"}
+              <!-- Display static image for idah-image -->
+              <div bind:this={imgContainer} role="img" class="relative h-full w-full overflow-hidden rounded-lg">
+                <img src={thumbnailUrl} alt="Entry thumbnail" class="h-full w-full rounded-lg object-cover" />
+              </div>
+            {:else}
+              <!-- Display animated sprite sheet for idah-video -->
+              <div
+                bind:this={imgContainer}
+                role="img"
+                class="relative h-full w-full overflow-hidden rounded-lg"
+                onmouseenter={startAnimation}
+                onmouseleave={stopAnimation}
+              >
+                <img
+                  src={thumbnailUrl}
+                  alt="Entry thumbnail"
+                  class="absolute top-0 left-0 cursor-pointer object-cover"
+                  style:height="{imgContainer?.clientHeight}px"
+                  style:width="{containerWidth * TOTAL_POSITIONS}px"
+                  style:max-width="none"
+                  style:transform="translateX(-{currentImagePosition * containerWidth || 0}px)"
+                />
+              </div>
+            {/if}
           {:else if thumbnailError}
             <div class="text-muted-foreground flex h-full items-center justify-center text-sm">
               Unable to load thumbnail
