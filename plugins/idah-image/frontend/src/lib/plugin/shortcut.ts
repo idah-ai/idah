@@ -2,7 +2,7 @@
 import { BuildKeymap, type KeyMapBuilder } from "$lib/shortcut/key-map-builder";
 
 import { ShortcutManager } from "$lib/shortcut/shortcut-manager";
-import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_NOTE, IMAGE_POLYGON } from "./types";
+import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_NOTE, IMAGE_POLYGON, IMAGE_VISUAL } from "./types";
 
 import type { ICommands } from "$lib/context/context";
 
@@ -12,7 +12,7 @@ type KeyMapContext = {
   toggleCommandCB: () => void;
   flush: () => void;
   switch_mode: (mode: string) => void;
-  // zoom: { in: () => void; out: () => void };
+  zoom: { in: () => void; out: () => void };
 };
 
 // Selection-specific shortcut context
@@ -64,6 +64,14 @@ const injectCommonShortcuts = (context: KeyMapContext) => {
   };
 };
 
+const buildVisualModeShortcuts = (context: KeyMapContext) => {
+  return (b: KeyMapBuilder) => {
+    // TODO: test, need uniform way to map accross keyboards (-/+)
+    b.on(null, "Equal", context.zoom.in, "Zoom in", "Zoom In");
+    b.on(null, "Minus", context.zoom.out, "Zoom Out", "Zoom Out");
+  };
+};
+
 // TODO: review this mode's shortcuts
 const buildBoundingBoxModeShortcuts = (context: KeyMapContext) => {
   const backAction = () => {
@@ -76,6 +84,14 @@ const buildBoundingBoxModeShortcuts = (context: KeyMapContext) => {
   };
 };
 
+const buildPolygonModeShortcuts = (context: KeyMapContext) => {
+  return (b: KeyMapBuilder) => {
+    // TODO: test, need uniform way to map accross keyboards (-/+)
+    b.on(null, "Equal", context.zoom.in, "Zoom in", "Zoom In");
+    b.on(null, "Minus", context.zoom.out, "Zoom Out", "Zoom Out");
+  };
+};
+
 const buildNoteModeShortcuts = (context: KeyMapContext) => {
   return (b: KeyMapBuilder) => {
     // No specific shortcuts for note mode yet
@@ -84,7 +100,9 @@ const buildNoteModeShortcuts = (context: KeyMapContext) => {
 
 // Add mode and shortcut definitions here.
 const MODE_BUILDERS: Record<string, (context: KeyMapContext) => (b: KeyMapBuilder) => void> = {
+  [IMAGE_VISUAL]: buildVisualModeShortcuts,
   [IMAGE_BOUNDING_BOX]: buildBoundingBoxModeShortcuts,
+  [IMAGE_POLYGON]: buildPolygonModeShortcuts,
   [IMAGE_NOTE]: buildNoteModeShortcuts,
 };
 

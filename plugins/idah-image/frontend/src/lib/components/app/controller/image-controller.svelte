@@ -20,7 +20,6 @@
   import PopoverTrigger from "$lib/components/ui/popover/popover-trigger.svelte";
   import Popover from "$lib/components/ui/popover/popover.svelte";
   import { ResizablePane } from "$lib/components/ui/resizable";
-  import ResizableHandle from "$lib/components/ui/resizable/resizable-handle.svelte";
   import ResizablePaneGroup from "$lib/components/ui/resizable/resizable-pane-group.svelte";
 
   import { ShortcutManager } from "$lib/shortcut/shortcut-manager";
@@ -250,6 +249,7 @@
         const config = toolConfig.find((c) => c.type === mode) || toolListConfig[0];
         context.commands.run(config.command);
       },
+      zoom: { in: overlay.zoomIn, out: overlay.zoomOut },
     });
 
     function fetchAnnotations(db: AnnotationBackend, page = 1, itemsPerPage = 100): Promise<void> {
@@ -659,7 +659,7 @@
 
           <!-- IMAGE EDITOR -->
           <ResizablePane defaultSize={75}>
-            <section id="image-section" class="flex h-full w-full flex-1 items-center">
+            <section id="image-section" class="flex h-full w-full flex-1">
               <ImageOverlay
                 bind:this={overlay}
                 {annotations_promise}
@@ -684,9 +684,6 @@
           </ResizablePane>
         </ResizablePaneGroup>
       </ResizablePane>
-
-      <!-- BOTTOM PANEL -->
-      <ResizableHandle withHandle />
     </ResizablePaneGroup>
   </div>
 </div>

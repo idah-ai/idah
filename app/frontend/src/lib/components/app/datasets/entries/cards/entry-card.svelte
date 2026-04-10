@@ -125,7 +125,7 @@
 
       thumbnailUrl = await mediaBackendDataSource.getFiles({
         resource,
-        key: dataset.modality === "idah-video" ? "thumbnail.jpg" : "",
+        key: dataset.modality === "idah-video" ? "thumbnail.jpg" : "processed.webp",
       });
 
       thumbnailImg.onload = () => {

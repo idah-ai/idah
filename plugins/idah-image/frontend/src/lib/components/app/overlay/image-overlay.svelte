@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getContext } from "svelte";
+  import { getContext, onMount } from "svelte";
 
   import { cn } from "$lib/utils";
 
@@ -28,9 +28,10 @@
 
   import BoundingBox from "$lib/plugin/shape/bounding-box/bounding-box.svelte";
   import Polygon from "$lib/plugin/shape/polygon/polygon.svelte";
+  import Zoomable from "$lib/plugin/zoomable.svelte";
 
   import type { AnnotationShape } from "$lib/context/annotation-context";
-  import type { IActivityContext, IConfigPropertyStyles } from "$lib/context/context";
+  import type { IActivityContext, IConfigPropertyStyles, INoteFeed } from "$lib/context/context";
   import type { ToolSelection } from "$lib/plugin/shape/bounding-box/bounding-box.svelte";
 
   // Types
@@ -67,9 +68,16 @@
   let context = getContext<IActivityContext>("context");
 
   // Variables
-  let offset: Point = $state([0, 0]);
+  interface ZoomInfo {
+    scale: number;
+    offset: Point;
+  }
+  let zoomInfo: ZoomInfo = $state({
+    scale: 1,
+    offset: [0, 0],
+  });
+
   let target_container: HTMLImageElement | undefined = $state();
-  let imageLoaded = $state(new Date());
 
   let height = $state(0);
   let width = $state(0);
@@ -102,26 +110,11 @@
   });
   let imageResizedAt = $state(new Date());
 
-  // Svelte action for resize observation
-  function observeResize(element: HTMLElement) {
-    const resizeObserver = new ResizeObserver(() => {
-      imageResizedAt = new Date();
-    });
-
-    resizeObserver.observe(element);
-
-    return {
-      destroy() {
-        resizeObserver.disconnect();
-      },
-    };
-  }
-
   // Functions
   function updatedSize(): Point {
     if (!target_container) return ORIGIN;
     imageResizedAt; // eslint-disable-line @typescript-eslint/no-unused-expressions
-    imageLoaded; // eslint-disable-line @typescript-eslint/no-unused-expressions
+    zoomInfo; // eslint-disable-line @typescript-eslint/no-unused-expressions
 
     let target_dom_rect = target_container.getBoundingClientRect();
 
@@ -130,7 +123,7 @@
 
   let target_size: Point = $derived.by(updatedSize);
 
-  let cursor = $derived([mouse[X] - offset[X], mouse[Y] - offset[Y]]);
+  let cursor = $derived([mouse[X] - zoomInfo.offset[X], mouse[Y] - zoomInfo.offset[Y]]);
 
   let target: Point = $derived([
     Math.min(target_size[WIDTH], Math.max(0, cursor[X])),
@@ -156,11 +149,22 @@
 
   let cursor_downscaled: Point = $derived([target[X] / target_size[X], target[Y] / target_size[Y]]);
 
+  // let svg: SVGElement
+  let zoomableElement: Zoomable;
+
+  export function zoomIn() {
+    zoomableElement.zoomIn();
+  }
+  export function zoomOut() {
+    zoomableElement.zoomOut();
+  }
+
   let toolSelection: ToolSelection | undefined = $state();
 
-  export function selectionStart() {
+  export function selectionStart(e: MouseEvent) {
     if (!shape) {
       deselectAnnotationGroup();
+      zoomableElement.mouseDown(e);
       return;
     }
 
@@ -172,14 +176,16 @@
       }
 
       onSelectAnnotation();
+      zoomableElement.mouseDown(e);
       deselectAnnotationGroup();
     }
   }
 
-  export function selectionEnd() {
+  export function selectionEnd(e: MouseEvent) {
     toolSelection?.endSelection(cursor_downscaled);
 
     showNewNoteFeedPopup();
+    zoomableElement.mouseUp(e);
   }
 
   function showNewNoteFeedPopup(annotation?: ImageAnnotationObject) {
@@ -195,12 +201,27 @@
           start: frame,
           end: frame,
           target_size,
-          // zoom_info: zoomInfo,
+          zoom_info: zoomInfo,
         },
         annotationId: annotation?.metadata.id || null,
       });
     }
   }
+
+  onMount(() => {
+    context.notes.onRequireNoteFeedPosition(async (noteFeed: INoteFeed) => {
+      /**
+       * 3. Make the viewport at the same position from reviewer fow now
+       * and will centered on the note feed later
+       */
+      const noteFeedZoomScale = (noteFeed.position.zoom_info as ZoomInfo)?.scale || 1;
+      const noteFeedOffset = (noteFeed.position.zoom_info as ZoomInfo)?.offset || [height / 2, -(width / 2)];
+      zoomableElement.setZoom(noteFeedZoomScale);
+      zoomableElement.setOffset(noteFeedOffset);
+
+      // 4. Return the absolute position for the top left corner of the note feed.
+    });
+  });
 
   let isEditing = $state(false);
   let editionCursor: string | undefined = $state(undefined);
@@ -264,16 +285,17 @@
 
 <div class={cn("svg-overlay flex-1", pointer)}>
   <div>
-    <img
-      id="idah-image"
-      bind:this={target_container}
-      use:observeResize
-      {src}
-      alt=""
-      onload={() => {
-        imageLoaded = new Date();
-      }}
-    />
+    <Zoomable bind:this={zoomableElement} onZoomChange={(scale, offset) => (zoomInfo = { scale, offset })}>
+      <img
+        id="idah-image"
+        bind:this={target_container}
+        {src}
+        alt=""
+        onload={() => {
+          imageResizedAt = new Date();
+        }}
+      />
+    </Zoomable>
   </div>
 
   <svg
@@ -282,9 +304,11 @@
     class="h-full w-full"
     onmousemove={(e) => {
       mouse = [e.offsetX, e.offsetY];
+      zoomableElement.mouseMove(e);
     }}
-    onmouseup={() => selectionEnd()}
-    onmousedown={() => selectionStart()}
+    onmouseup={(e) => selectionEnd(e)}
+    onmousedown={(e) => selectionStart(e)}
+    onwheel={(e) => zoomableElement.onWheel(e)}
     {...restProps}
   >
     {#if showCrosshair}
@@ -327,7 +351,7 @@
               points={current_annotation_points as Point[]}
               angle={current_annotation_angle}
               ratio={target_size}
-              {offset}
+              offset={zoomInfo.offset}
               color={Object.entries(context.config)
                 .find(([k, _]) => k == IMAGE_BOUNDING_BOX)?.[1]
                 .values.find((c) => c.id == annotation.value?.category)?.color || "grey"}
@@ -350,7 +374,7 @@
               points={(getInterpolatedFrame(annotation.shape as ImageShape, frame)?.points ||
                 []) as InterpolatedVertex[]}
               ratio={target_size}
-              {offset}
+              offset={zoomInfo.offset}
               color={Object.entries(context.config)
                 .find(([k, _]) => k == IMAGE_POLYGON)?.[1]
                 .values.find((c) => c.id == annotation.value?.category)?.color || "grey"}
@@ -385,7 +409,7 @@
                 points={current_annotation_points as Point[]}
                 angle={current_annotation_angle}
                 ratio={target_size}
-                {offset}
+                offset={zoomInfo.offset}
                 color={annotation?.synced
                   ? Object.entries(context.config)
                       .find(([k, _]) => k == IMAGE_BOUNDING_BOX)?.[1]
@@ -410,7 +434,7 @@
                 points={(getInterpolatedFrame(annotation.shape as ImageShape, frame)?.points ||
                   []) as InterpolatedVertex[]}
                 ratio={target_size}
-                {offset}
+                offset={zoomInfo.offset}
                 color={annotation?.synced
                   ? Object.entries(context.config)
                       .find(([k, _]) => k == IMAGE_POLYGON)?.[1]
@@ -450,7 +474,7 @@
             }}
             onPointerChange={(c) => (editionCursor = c)}
             ratio={target_size}
-            {offset}
+            offset={zoomInfo.offset}
             cursor={cursor_downscaled}
             hidden={$selectedAnnotation?.hidden}
             editable={(shape?.type == IMAGE_BOUNDING_BOX || $currentMode == IMAGE_BOUNDING_BOX) &&
@@ -480,7 +504,7 @@
           }}
           onPointerChange={(c) => (editionCursor = c)}
           ratio={target_size}
-          {offset}
+          offset={zoomInfo.offset}
           cursor={cursor_downscaled}
           hidden={$selectedAnnotation?.hidden}
           editable={(shape?.type == IMAGE_POLYGON || $currentMode == IMAGE_POLYGON) &&
@@ -515,6 +539,15 @@
     width: 100%;
     height: 100%;
     position: relative;
+  }
+
+  #idah-image {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    display: block;
+    object-fit: contain;
   }
 
   .svg-overlay > svg {
