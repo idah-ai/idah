@@ -343,7 +343,7 @@
 
             <CategoryName name={category.name} />
 
-            {#if view === "sidebar"}
+            {#if view === "sidebar" && count > 0}
               <AnnotationCountBadge class="mr-2" {count} />
             {/if}
           </SidebarMenuItem>
@@ -365,20 +365,20 @@
             />
           {/each}
         {/if}
-      </CollapsibleContent>
-    {/if}
 
-    {#if subCategories}
-      {#each subCategories as subCategory (subCategory.id)}
-        {@render CategoryNode(
-          subCategory,
-          subCategory.nestedCategories,
-          onSelectCategory,
-          selectedCategory,
-          [...parent, category.id.split("/").slice(parent.length)[0]],
-          level + 1,
-        )}
-      {/each}
+        {#if subCategories}
+          {#each subCategories as subCategory (subCategory.id)}
+            {@render CategoryNode(
+              subCategory,
+              subCategory.nestedCategories,
+              onSelectCategory,
+              selectedCategory,
+              [...parent, category.id.split("/").slice(parent.length)[0]],
+              level + 1,
+            )}
+          {/each}
+        {/if}
+      </CollapsibleContent>
     {/if}
   </Collapsible>
 {/snippet}

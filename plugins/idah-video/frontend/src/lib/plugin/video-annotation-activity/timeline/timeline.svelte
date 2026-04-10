@@ -1,9 +1,5 @@
 <script lang="ts">
-  import {
-    SearchIcon,
-    SquareSplitHorizontalIcon,
-    Trash2Icon,
-  } from "@lucide/svelte";
+  import { SearchIcon, SquareSplitHorizontalIcon, Trash2Icon } from "@lucide/svelte";
   import { getContext } from "svelte";
 
   import ConfirmModal from "$lib/components/app/overlays/modals/confirm-modal.svelte";
@@ -55,17 +51,9 @@
     timelineHeight: number;
 
     onSeekFrame: (frame: number) => void;
-    onSelectAnnotationGroup: (
-      annotationGroup: AnnotationGroup<VideoAnnotationObject>,
-      selectedFrame?: number,
-    ) => void;
+    onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<VideoAnnotationObject>, selectedFrame?: number) => void;
   }
-  let {
-    annotations,
-    timelineHeight,
-    onSeekFrame,
-    onSelectAnnotationGroup,
-  }: Props = $props();
+  let { annotations, timelineHeight, onSeekFrame, onSelectAnnotationGroup }: Props = $props();
 
   // Context
   let context: IActivityContext = getContext("context");
@@ -75,9 +63,7 @@
   let clientMouseX: number = $state(0);
   let annotationGroups = $derived(groupAnnotations(annotations));
   let showVerticalLine = $derived(clientMouseX >= TIMELINE_ROW_HEADER_WIDTH);
-  let showSelectedVerticalLine = $derived(
-    Number($selectedFrameX) >= TIMELINE_ROW_HEADER_WIDTH,
-  );
+  let showSelectedVerticalLine = $derived(Number($selectedFrameX) >= TIMELINE_ROW_HEADER_WIDTH);
   let showHorizontalScrollbar = $state<boolean>(false);
   let contextMenu = $state<ITimelineContextMenu>({
     visible: false,
@@ -90,9 +76,7 @@
   let selectedGroupId = $state<string | undefined>(undefined);
 
   // Functions
-  function getGroupTitle(props: {
-    annotationGroup: AnnotationGroup<VideoAnnotationObject>;
-  }): string {
+  function getGroupTitle(props: { annotationGroup: AnnotationGroup<VideoAnnotationObject> }): string {
     const { annotationGroup } = props;
     const { groupId, annotations: anns } = annotationGroup;
     const splittedGroupId = groupId.split("-");
@@ -185,8 +169,7 @@
   }
 
   function selectFrameX(frameX: number) {
-    const selectedFrame =
-      getFrameFromMouseX({ clientX: frameX }) + $currentFrameRange[0];
+    const selectedFrame = getFrameFromMouseX({ clientX: frameX }) + $currentFrameRange[0];
     setCurrentFrame(selectedFrame);
     onSeekFrame(selectedFrame);
 
@@ -202,10 +185,7 @@
     contextMenu = { visible: false, x: 0, y: 0, menus: {} };
   }
 
-  function showContextMenu(
-    e: MouseEvent,
-    selectAnnotationGroup?: AnnotationGroup<VideoAnnotationObject>,
-  ) {
+  function showContextMenu(e: MouseEvent, selectAnnotationGroup?: AnnotationGroup<VideoAnnotationObject>) {
     e.preventDefault();
 
     setSelectedFrameX(e.clientX);
@@ -275,13 +255,35 @@
       y: e.clientY,
       menus: {
         frameRelatedMenu: {
-          items: [seekToFrameMenu, splitMenu, deleteInterpolationMenu],
+          items: [],
         },
         annotationMenu: {
-          items: [deleteAnnotationMenu],
+          items: [],
         },
       },
     };
+
+    /** Only show split menu, if selected frame is in the closest  */
+    const closestAnnotationKeyFrames = closestAnnotation.shape.frames.map((f) => f.frame);
+    const sortedClosestAnnotationKeyFrames = closestAnnotationKeyFrames.sort((a, b) => a - b);
+
+    const isSelectedFrameInKeyFrames = sortedClosestAnnotationKeyFrames.some((f, i) => {
+      if (i === sortedClosestAnnotationKeyFrames.length - 1) return false;
+      const next = sortedClosestAnnotationKeyFrames[i + 1];
+
+      return frame >= f && frame <= next;
+    });
+    if (isSelectedFrameInKeyFrames) contextMenu.menus.frameRelatedMenu.items.push(seekToFrameMenu, splitMenu);
+    if (isSelectedFrameInKeyFrames) contextMenu.menus.annotationMenu.items.push(deleteAnnotationMenu);
+
+    /** Only show delete interpolation menu, if selected annotations have keyframe at selected frame */
+    const hasInterpolationAtFrame = closestAnnotation.shape.frames.filter((f) => f.frame === frame).length > 0;
+    if (hasInterpolationAtFrame) contextMenu.menus.frameRelatedMenu.items.push(deleteInterpolationMenu);
+
+    const frameRelatedMenus = contextMenu.menus.frameRelatedMenu.items.length;
+    const annotationMenus = contextMenu.menus.annotationMenu.items.length;
+
+    contextMenu.visible = frameRelatedMenus + annotationMenus >= 1;
   }
 
   function toggleAllAnnotationsVisibility() {
@@ -351,12 +353,8 @@
   <ScrollArea id="timeline-scroll-area">
     <div style:height="{timelineHeight - 96}px" onwheel={handleTimelineWheel}>
       {#each annotationGroups as annotationGroup (annotationGroup.groupId)}
-        {@const allAnnotationsInGroupHidden = annotationGroup.annotations.every(
-          (annotation) => annotation.hidden,
-        )}
-        {@const allAnnotationsInGroupLocked = annotationGroup.annotations.every(
-          (annotation) => annotation.locked,
-        )}
+        {@const allAnnotationsInGroupHidden = annotationGroup.annotations.every((annotation) => annotation.hidden)}
+        {@const allAnnotationsInGroupLocked = annotationGroup.annotations.every((annotation) => annotation.locked)}
 
         <TimelineRow>
           <TimelineRowGroup
@@ -375,12 +373,9 @@
                 mode="single"
                 allAnnotationsHidden={allAnnotationsInGroupHidden}
                 allAnnotationsLocked={allAnnotationsInGroupLocked}
-                onToggleVisibility={() =>
-                  toggleAnnotationGroupVisibility(annotationGroup.groupId)}
-                onToggleEditability={() =>
-                  toggleAnnotationGroupEditability(annotationGroup.groupId)}
-                onClickDelete={() =>
-                  showConfirmDeleteModal(annotationGroup.groupId)}
+                onToggleVisibility={() => toggleAnnotationGroupVisibility(annotationGroup.groupId)}
+                onToggleEditability={() => toggleAnnotationGroupEditability(annotationGroup.groupId)}
+                onClickDelete={() => showConfirmDeleteModal(annotationGroup.groupId)}
               />
             </TimelineRowHeader>
 
@@ -411,15 +406,16 @@
 
 <ConfirmModal
   title="Delete {selectedGroupId ? 'annotation group' : 'all annotations'}"
-  description="Are you sure you want to delete {selectedGroupId
-    ? 'this annotation group'
-    : 'all annotations'}?"
+  description="Are you sure you want to delete {selectedGroupId ? 'this annotation group' : 'all annotations'}?"
   onConfirm={() => {
     if (selectedGroupId) {
       deleteAnnotationGroup(selectedGroupId);
+      selectedGroupId = undefined;
     } else {
       deleteAllAnnotations();
     }
+
+    openConfirmDeleteModal = false;
   }}
   bind:open={openConfirmDeleteModal}
 />

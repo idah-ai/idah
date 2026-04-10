@@ -103,7 +103,7 @@
   >
     {#snippet trigger()}
       <Button variant="ghost" size="icon-sm" onclick={handleClickVisibility}>
-        {@const VisibilityIcon = allAnnotationsHidden ? EyeIcon : EyeOffIcon}
+        {@const VisibilityIcon = allAnnotationsHidden ? EyeOffIcon : EyeIcon}
         <VisibilityIcon />
       </Button>
     {/snippet}

@@ -213,22 +213,31 @@ export class AnnotationsIndexedDB {
    * Add a keyframe to an annotation
    */
   async addKeyFrame(annotation_id: string, keyFrame: VideoFrameSelection): Promise<void> {
-    const transaction = this.db.transaction(["annotations", "keyframes"], "readwrite");
-    const kstore = transaction.objectStore("keyframes");
-    const astore = transaction.objectStore("annotations");
-
+    // First transaction: add the keyframe
+    const keyframesTransaction = this.db.transaction(["keyframes"], "readwrite");
+    const kstore = keyframesTransaction.objectStore("keyframes");
     kstore.put({ annotation: annotation_id, ...keyFrame }, [annotation_id, keyFrame.frame]);
 
     return new Promise<void>((resolve, reject) => {
-      transaction.oncomplete = async () => {
-        // Fetch and update the annotation with all keyframes
-        const annotation = (await this.get("annotations", annotation_id)) as VideoAnnotationObject;
-        const keyframes = await this.getKeyFrames(annotation_id);
-        annotation.shape.frames = keyframes;
-        await astore.put(annotation, annotation_id);
-        resolve();
+      keyframesTransaction.oncomplete = async () => {
+        try {
+          // Fetch and update the annotation with all keyframes
+          const annotation = (await this.get("annotations", annotation_id)) as VideoAnnotationObject;
+          const keyframes = await this.getKeyFrames(annotation_id);
+          annotation.shape.frames = keyframes;
+
+          // Second transaction: update the annotation
+          const annotationsTransaction = this.db.transaction(["annotations"], "readwrite");
+          const astore = annotationsTransaction.objectStore("annotations");
+          astore.put(annotation, annotation_id);
+
+          annotationsTransaction.oncomplete = () => resolve();
+          annotationsTransaction.onerror = () => reject(annotationsTransaction.error);
+        } catch (error) {
+          reject(error);
+        }
       };
-      transaction.onerror = (e) => reject(e);
+      keyframesTransaction.onerror = (e) => reject(e);
     });
   }
 
