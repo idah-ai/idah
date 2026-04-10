@@ -34,6 +34,7 @@ import { showErrorToast } from "$lib/utils/error/error.toasts";
 
 import type { IActivityContext } from "$idah/context/activity-context";
 import type { AnnotationValue } from "$idah/context/annotation-context";
+import { uiStore } from "$lib/plugin/video-annotation-activity/store/ui-store.svelte";
 import type { AnnotationBackend } from "$lib/plugin/video-annotation-activity/data/annotation/annotaiton-backend.svelte";
 
 interface CommandContext {
@@ -1067,4 +1068,21 @@ export function registerCommands(params: CommandContext) {
       combine: (prevCmd) => prevCmd,
     };
   });
+
+
+  context.commands.on(
+    "command_dialog",
+    () => {
+      return {
+        name: "Toggle shortcut guide",
+        apply: () => {
+          uiStore.toggleCommandDialog();
+        },
+        undo: () => {},
+        isCombinable: () => true,
+        combine: (c) => c,
+      };
+    },
+    false,
+  );
 }
