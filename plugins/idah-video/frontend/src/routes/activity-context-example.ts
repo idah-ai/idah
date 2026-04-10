@@ -102,6 +102,12 @@ export const activityContextExample: IActivityContext = {
             label: "Van",
             text_color: "#FFFFFF",
           },
+          {
+            id: "person",
+            color: "#1464EB",
+            label: "Person",
+            text_color: "#FFFFFF",
+          }
         ],
         properties: [
           {
