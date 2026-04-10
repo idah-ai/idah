@@ -15,7 +15,6 @@
   import PolygonCircleIcon from "$lib/plugin/icon/polygon-circle-icon.svelte";
   import VectorSquareIcon from "$lib/plugin/icon/vector-square-icon.svelte";
 
-  import { idbUpdatedAt } from "$lib/plugin/store/idb-store.svelte";
   import { currentMode, selectedAnnotationGroup } from "$lib/plugin/store/store";
   import { IMAGE_BOUNDING_BOX } from "$lib/plugin/types";
   import { truncate } from "$lib/utils/string";
@@ -101,6 +100,9 @@
     });
     onReSelectCategory?.(reselectedCategoryId);
   }
+  $effect(() => {
+    console.log({ properties });
+  });
 </script>
 
 {#snippet SelectCategory()}
@@ -187,44 +189,44 @@
   </section>
 {/snippet}
 
-{#key $idbUpdatedAt}
-  <!-- CATEGORIES -->
-  {#if annotationId}
-    <!--
+<!-- {#key $idbUpdatedAt} -->
+<!-- CATEGORIES -->
+{#if annotationId}
+  <!--
         If annotationId provided (annotation already created)
         - We don't allow to change the category when select annotation
         - We only allow to edit the properties
         - We only allow to edit the categories at group level
       -->
-  {:else if $selectedAnnotationGroup && !annotationId}
-    {@render ReSelectCategory()}
-  {:else}
-    {@render SelectCategory()}
+{:else if $selectedAnnotationGroup && !annotationId}
+  {@render ReSelectCategory()}
+{:else}
+  {@render SelectCategory()}
+{/if}
+
+<!-- PROPERTIES -->
+<div class="flex flex-col gap-4">
+  {#if category && properties?.length > 0}
+    <section class="flex flex-col gap-2">
+      <Label>Properties</Label>
+
+      {#each properties as property (property.id)}
+        {@const foundPropertyComponent = propertyComponents.find((p) => p.type == property.type)}
+
+        {#if foundPropertyComponent}
+          <div class="flex flex-col gap-1">
+            <foundPropertyComponent.component
+              {...{
+                property,
+                value: annotationValue.attributes?.[property.id],
+                onValueChange: (v: string | number | boolean | string[] | undefined) => onValueChange(property, v),
+                disabled,
+              }}
+            />
+          </div>
+        {/if}
+      {/each}
+    </section>
   {/if}
-
-  <!-- PROPERTIES -->
-  <div class="flex flex-col gap-4">
-    {#if category && properties?.length > 0}
-      <section class="flex flex-col gap-2">
-        <Label>Properties</Label>
-
-        {#each properties as property (property.id)}
-          {@const foundPropertyComponent = propertyComponents.find((p) => p.type == property.type)}
-
-          {#if foundPropertyComponent}
-            <div class="flex flex-col gap-1">
-              <foundPropertyComponent.component
-                {...{
-                  property,
-                  value: annotationValue.attributes?.[property.id],
-                  onValueChange: (v: string | number | boolean | string[] | undefined) => onValueChange(property, v),
-                  disabled,
-                }}
-              />
-            </div>
-          {/if}
-        {/each}
-      </section>
-    {/if}
-  </div>
-{/key}
+</div>
+<!-- {/key} -->

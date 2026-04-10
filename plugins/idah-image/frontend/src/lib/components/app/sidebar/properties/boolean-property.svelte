@@ -1,0 +1,55 @@
+<script lang="ts">
+  import { Label } from "$lib/components/ui/label";
+  import { Switch } from "$lib/components/ui/switch";
+
+  import { formatConformity, propertyFullfilled } from "$lib/components/app/sidebar/properties/properties.index";
+
+  import type { IConfigProperty } from "$lib/context/context";
+
+  let {
+    property,
+    value,
+    onValueChange,
+    disabled,
+  }: {
+    property: IConfigProperty;
+    value: boolean;
+    onValueChange: (v: boolean) => void;
+    disabled: boolean;
+  } = $props();
+
+  const invalid = $derived(!propertyFullfilled(value, property));
+  const format = $derived(invalid ? formatConformity(value, property) : []);
+
+  // set default value to false if boolean is required
+  if (value == undefined && property.required) onValueChange(false);
+
+  const formatters = new Map<string, ((v: boolean) => string) | ((v: number) => string)>([
+    ["required", (_: boolean) => [property.label, "is required"].join(" ")],
+  ]);
+</script>
+
+<div class="flex flex-col gap-1">
+  <div class="flex items-center space-x-2 text-center">
+    <Label for={property.id} class="text-xs">
+      {property.label}
+      {#if property.required}
+        <span class="text-red-500">*</span>
+      {/if}
+    </Label>
+
+    <Switch aria-invalid={invalid} id={property.id} checked={!!value} onCheckedChange={onValueChange} {disabled} />
+  </div>
+
+  {#if invalid}
+    <ul class="text-xs">
+      {#each format as [k, v] (k)}
+        {@const formatter = formatters.get(k)}
+
+        {#if formatter && formatter(v)}
+          <li style:color="red">{formatter(v)}</li>
+        {/if}
+      {/each}
+    </ul>
+  {/if}
+</div>
