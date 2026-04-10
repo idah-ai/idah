@@ -3,6 +3,7 @@
     ChevronDownIcon,
     ChevronsLeft,
     ChevronsRight,
+    KeyboardIcon,
     MessageCircleIcon,
     MoonIcon,
     Settings2Icon,
@@ -15,9 +16,10 @@
   import { mode, resetMode, setMode } from "mode-watcher";
   import { onMount } from "svelte";
 
+  import { getShortcut } from "@/components/ui/kbd/utils";
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import NumberField from "@/components/app/forms/fields/input/number-field.svelte";
-  import Tooltips from "@/components/app/tooltips/tooltips.svelte";
+  import ToolTooltip from "@/components/app/tooltips/tool-tooltip.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import {
     DropdownMenu,
@@ -54,6 +56,7 @@
   let openSettingsPopover = $state(false);
   let menus: AnnotationHeaderBarBaseTool[] = $derived([
     {
+      name: "notes",
       label: "Notes Sidebar",
       icon: MessageCircleIcon,
       isActive: openNoteSidebar,
@@ -122,13 +125,29 @@
     frameStep = stepToSet;
     localStorage.setItem(idahVideolocalStorageFrameStep, stepToSet.toString());
   }
+  function toggleCommand() {
+    context.commands.run("command_dialog");
+  }
 </script>
 
 <div id="annotation-header-bar-actions" class="flex h-full items-center justify-end gap-2">
   <div id="annotation-header-bar-actions-menu" class="flex items-center gap-1">
+    <ToolTooltip
+      label="Shortcuts"
+      shortcut={getShortcut(context.shortcutReferences?.["command_dialog"].keyCombinations)}
+      align="center"
+      delayDuration={100}
+    >
+      {#snippet trigger()}
+        <Button variant="ghost" size="icon-sm" onclick={toggleCommand}>
+          <KeyboardIcon />
+        </Button>
+      {/snippet}
+    </ToolTooltip>
+
     <DropdownMenu bind:open={openSettingsPopover}>
       <DropdownMenuTrigger>
-        <Tooltips align="center" delayDuration={100}>
+        <ToolTooltip label="Settings" align="center" delayDuration={100}>
           {#snippet trigger()}
             <Button
               variant={openSettingsPopover ? "default" : "ghost"}
@@ -138,11 +157,7 @@
               <Settings2Icon />
             </Button>
           {/snippet}
-
-          {#snippet content()}
-            Settings
-          {/snippet}
-        </Tooltips>
+        </ToolTooltip>
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="end" side="bottom" class="min-w-64">
@@ -207,17 +222,13 @@
     </DropdownMenu>
 
     {#each menus as { label, icon: Icon, isActive, handleClick }, menuIndex (menuIndex)}
-      <Tooltips align="center" delayDuration={100}>
+      <ToolTooltip {label} align="center" delayDuration={100}>
         {#snippet trigger()}
           <Button variant={isActive ? "default" : "ghost"} size="icon-sm" onclick={handleClick}>
             <Icon />
           </Button>
         {/snippet}
-
-        {#snippet content()}
-          {label}
-        {/snippet}
-      </Tooltips>
+      </ToolTooltip>
     {/each}
   </div>
 

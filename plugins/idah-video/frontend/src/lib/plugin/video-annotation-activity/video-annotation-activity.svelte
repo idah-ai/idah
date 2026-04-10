@@ -12,6 +12,7 @@
     CommandSeparator,
     CommandShortcut,
   } from "$lib/components/ui/command";
+  import { getShortcuts } from "$lib/components/ui/kbd/utils";
   import {
     Popover,
     PopoverContent,
@@ -23,12 +24,11 @@
     ResizablePaneGroup,
   } from "$lib/components/ui/resizable";
 
-  import { ShortcutManager } from "$idah/shortcut/shortcut-manager";
+  import { ShortcutManager } from "$idah/shortcut/shortcut-manager.svelte";
 
   import {
     DEFAULT_MODE,
     EDITOR_MODE_TOOLS,
-    VIEW_MODE_TOOLS,
     ENTRY_ROOT,
     IDAH_NOTE,
     IDAH_VIDEO_BOUNDING_BOX,
@@ -43,6 +43,7 @@
   import {
     registerOnSelectShortcuts,
     registerShortcuts,
+    registerShortcutsReference,
   } from "$lib/plugin/video-annotation-activity/shortcut";
   import {
     boundingBoxes,
@@ -63,6 +64,7 @@
     setVideoIsPlaying,
   } from "$lib/plugin/video-annotation-activity/store/store";
   import { findClosestAnnotationInGroup } from "$lib/plugin/video-annotation-activity/utils/group-annotation.svelte";
+  import { uiStore } from "$lib/plugin/video-annotation-activity/store/ui-store.svelte";
 
   import AnnotationFooterToolbar from "$lib/plugin/layout/footer/annotation-footer-toolbar.svelte";
   import AnnotationFooter from "$lib/plugin/layout/footer/annotation-footer.svelte";
@@ -98,12 +100,7 @@
   let { context }: Props = $props();
 
   // Contexts
-  const activityContext = new Proxy({} as IActivityContext, {
-    get(_, prop) {
-      return Reflect.get(context, prop);
-    },
-  });
-  setContext("context", activityContext);
+  setContext("context", context);
 
   // Variables
   const editableWorkflowSteps = ["annotate", "review"];
@@ -138,6 +135,7 @@
   let annotationsIDB: AnnotationBackend | undefined = $state();
   let volume = $state({ level: 0, muted: false });
   let tools: {
+    name: string;
     label: string;
     type: string;
     iconName: string;
@@ -145,7 +143,6 @@
     handleClick: () => void;
   }[] = $state([]);
 
-  let commandOpen = $state(false);
   let overlay: SvgOverlay;
   let showPopOver = $state(false);
   let videoResizedAt = $state(new Date());
@@ -215,6 +212,9 @@
   });
 
   onMount(async () => {
+    // Generate the full static reference list of shortcuts and register them to the shared context
+    registerShortcutsReference(context);
+
     $boundingBoxes = [];
 
     try {
@@ -227,11 +227,15 @@
         context,
         getDb: () => annotationsIDB,
         updaters: {
-          setAnnotationValue: (v) => (annotationValue = v),
-          selectAnnotation: (v) => selectAnnotation(v),
+          setAnnotationValue: (v) => {
+            annotationValue = v;
+          },
+          selectAnnotation: (v) => {
+            selectAnnotation(v);
+          },
         },
       });
-      
+
       fetchAnnotations(annotationsIDB).then(() => {
         // quick fix if unsynced data, though we dont have way to send it anyway for now if so
         const entryRootAnnotation = annotationsIDB.annotations.find(
@@ -246,12 +250,14 @@
     /** TOOLS CONFIGURATION */
     const toolListConfig = [
       {
+        name: "tools.visual",
         label: "Visual",
         type: DEFAULT_MODE,
         iconName: "mouse-pointer-2",
         command: "tools.visual",
       },
       {
+        name: "tools.bounding_box",
         label: "Bounding Box",
         type: IDAH_VIDEO_BOUNDING_BOX,
         iconName: "vector-square",
@@ -259,6 +265,7 @@
         command: "tools.bounding_box",
       },
       {
+        name: "tools.polygon",
         label: "Polygon",
         type: IDAH_VIDEO_POLYGON,
         iconName: "polygon",
@@ -266,6 +273,7 @@
         command: "tools.polygon",
       },
       {
+        name: "tools.note",
         label: "Notes",
         type: IDAH_NOTE,
         iconName: "message-circle",
@@ -283,6 +291,7 @@
 
     tools = toolConfig.map((tool) => {
       return {
+        name: tool.name,
         label: tool.label,
         type: tool.type,
         iconName: tool.iconName,
@@ -296,9 +305,6 @@
     registerShortcuts({
       commands: context.commands,
       player: () => player,
-      toggleCommandCB: () => {
-        commandOpen = !commandOpen;
-      },
       flush: () => context.annotations.flush(),
       switch_mode: (mode: string) => {
         const config =
@@ -697,18 +703,23 @@
 
 <div class="relative flex h-full w-full flex-col">
   {#key [ShortcutManager, ShortcutManager.currentMode, ShortcutManager.getCurrentMode(), $selectedAnnotation]}
+    <!-- All available shortcuts list -->
     <CommandDialog
-      bind:open={commandOpen}
+      bind:open={uiStore.isCommandDialogOpen}
       accesskey={ShortcutManager.getCurrentMode()}
     >
       <CommandInput placeholder="Type a command or search..." />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
-        <CommandGroup heading={`MODE: ${ShortcutManager.getCurrentMode()}`}>
-          {#each Object.entries(ShortcutManager.getEffectiveKeyMap($currentMode) || {}) as [key, value] (key)}
-            <CommandItem onclick={() => value.action()}>
-              <span>{value.name} ({value.description})</span>
-              <CommandShortcut>{key}</CommandShortcut>
+        <CommandGroup heading="All Shortcuts">
+          <!-- Get shortcuts from reference list -->
+          {#each Object.entries(context.shortcutReferences || {}) as [name, value] (name)}
+            <CommandItem>
+              <span>{value.label} ({value.description})</span>
+              <CommandShortcut>
+                <!-- Get humanized key combinations, with symbols, join if multiple is available for an action  -->
+                {getShortcuts(value.keyCombinations)?.join(" or ")}
+              </CommandShortcut>
             </CommandItem>
           {/each}
         </CommandGroup>

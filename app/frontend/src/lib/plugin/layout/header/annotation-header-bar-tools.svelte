@@ -1,13 +1,14 @@
 <script lang="ts">
   import { RedoIcon, UndoIcon } from "@lucide/svelte";
 
-  import Tooltips from "@/components/app/tooltips/tooltips.svelte";
+  import ToolTooltip from "@/components/app/tooltips/tool-tooltip.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import Separator from "@/components/ui/separator/separator.svelte";
 
   import { pluginsBackendDataSource } from "@/data/model/setting/plugin/record";
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import type { AnnotationHeaderBarBaseTool } from "./annotation-header-bar.types";
+  import { getShortcut } from "@/components/ui/kbd/utils";
 
   // Props
   interface Props {
@@ -29,12 +30,14 @@
 
   const commands: AnnotationHeaderBarBaseTool[] = [
     {
+      name: "undo",
       label: "Undo",
       icon: UndoIcon,
       disabled: disabledToolsIfWorkflowSteps.includes(context.workflowStep),
       handleClick: () => context.commands.undo(),
     },
     {
+      name: "redo",
       label: "Redo",
       icon: RedoIcon,
       disabled: disabledToolsIfWorkflowSteps.includes(context.workflowStep),
@@ -52,8 +55,13 @@
 </script>
 
 <div id="annotation-header-bar-tools" class="flex h-full items-center justify-center gap-1">
-  {#each tools as { label, type, iconName, disabled, handleClick }, toolIndex (toolIndex)}
-    <Tooltips align="center" delayDuration={100}>
+  {#each tools as { name, label, type, iconName, disabled, handleClick }, toolIndex (toolIndex)}
+    <ToolTooltip
+      {label}
+      shortcut={getShortcut(context.shortcutReferences?.[name].keyCombinations)}
+      align="center"
+      delayDuration={100}
+    >
       {#snippet trigger()}
         {#await loadIcon(iconName) then iconSvg}
           <Button variant={mode === type ? "default" : "ghost"} size="icon-sm" {disabled} onclick={handleClick}>
@@ -66,26 +74,23 @@
           </Button>
         {/await}
       {/snippet}
-
-      {#snippet content()}
-        {label}
-      {/snippet}
-    </Tooltips>
+    </ToolTooltip>
   {/each}
 
   <Separator orientation="vertical"></Separator>
 
-  {#each commands as { label, icon: Icon, disabled, handleClick }, commandIndex (commandIndex)}
-    <Tooltips align="center" delayDuration={100}>
+  {#each commands as { name, label, icon: Icon, disabled, handleClick }, commandIndex (commandIndex)}
+    <ToolTooltip
+      {label}
+      shortcut={getShortcut(context.shortcutReferences?.[name].keyCombinations)}
+      align="center"
+      delayDuration={100}
+    >
       {#snippet trigger()}
         <Button variant="ghost" size="icon-sm" {disabled} onclick={handleClick}>
           <Icon />
         </Button>
       {/snippet}
-
-      {#snippet content()}
-        {label}
-      {/snippet}
-    </Tooltips>
+    </ToolTooltip>
   {/each}
 </div>
