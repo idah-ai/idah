@@ -22,7 +22,10 @@
 
   import { truncate } from "$lib/utils/string";
 
-  import { IDAH_VIDEO_BOUNDING_BOX } from "$lib/plugin/type";
+  import {
+    IDAH_VIDEO_BOUNDING_BOX,
+    IDAH_VIDEO_POLYGON,
+  } from "$lib/plugin/type";
   import { visibilityFullfilled } from "$lib/plugin/video-annotation-activity/category-properties";
   import {
     currentMode,
@@ -137,6 +140,23 @@
     });
     onReSelectCategory?.(reselectedCategoryId);
   }
+
+  function categoryValueToLabel(value?: string, replaceLabel?: string) {
+    if (!value) return "";
+
+    const label = value
+      .split("/")
+      .map((s) => [s.slice(0, 1).toUpperCase(), s.slice(1)].join(""));
+
+    if (replaceLabel) {
+      label[label.length - 1] = replaceLabel;
+    } else {
+      // remove the last part of array
+      label.pop();
+    }
+
+    return label.join(" / ");
+  }
 </script>
 
 {#snippet SelectCategory()}
@@ -149,32 +169,48 @@
 
       <Select type="single" onValueChange={onSelectCategory} {disabled}>
         <SelectTrigger
-          class="data-placeholder:text-secondary-foreground bg-secondary w-full truncate text-xs"
+          class="data-placeholder:text-secondary-foreground bg-secondary w-full truncate text-xs h-auto! py-2"
         >
-          <div class="flex gap-1">
-            {#if category?.label}
-              {#if firstAnnotationInGroup?.shape.type === IDAH_VIDEO_BOUNDING_BOX}
-                <VectorSquareIcon color={category.color} />
-              {:else}
-                <PolygonCircleIcon color={category.color} />
+          {#if category?.label}
+            {@const parentLabel = categoryValueToLabel(category.id)}
+
+            <div class="flex gap-1 flex-col text-left">
+              {#if parentLabel.length > 0}
+                <div class="whitespace-break-spaces">
+                  {parentLabel}
+                </div>
               {/if}
-              {truncate(category.label)}
-            {:else}
-              Select category
-            {/if}
-          </div>
+              <div class="flex gap-1 items-center justify-start">
+                <!-- TO FIX: firstAnnotationInGroup does not have value -->
+                {#if firstAnnotationInGroup?.shape.type === IDAH_VIDEO_POLYGON}
+                  <PolygonCircleIcon color={category.color} />
+                {:else}
+                  <VectorSquareIcon color={category.color} />
+                {/if}
+                <b>{category.label}</b>
+              </div>
+            </div>
+          {/if}
         </SelectTrigger>
 
         <SelectContent>
           <SelectGroup>
             {#each configByMode.values as { id: value, label, color }, index (`${value}-${index}`)}
-              <SelectItem class="text-xs" {label} {value}>
-                {#if firstAnnotationInGroup?.shape.type === IDAH_VIDEO_BOUNDING_BOX}
-                  <VectorSquareIcon {color} />
-                {:else}
+              {@const valueLabel = categoryValueToLabel(value, label)}
+              <SelectItem
+                label={valueLabel}
+                {value}
+                class={"text-xs " +
+                  (category?.id == value ? "bg-primary/20 opacity-100!" : "")}
+                disabled={category?.id == value}
+              >
+                <!-- TO FIX: firstAnnotationInGroup does not have value -->
+                {#if firstAnnotationInGroup?.shape.type === IDAH_VIDEO_POLYGON}
                   <PolygonCircleIcon {color} />
+                {:else}
+                  <VectorSquareIcon {color} />
                 {/if}
-                {label}
+                {valueLabel}
               </SelectItem>
             {/each}
           </SelectGroup>
@@ -193,28 +229,47 @@
 
     <Select type="single" onValueChange={reselectCategory} {disabled}>
       <SelectTrigger
-        class="data-placeholder:text-secondary-foreground bg-secondary w-full truncate text-xs"
+        class="data-placeholder:text-secondary-foreground bg-secondary w-full truncate text-xs h-auto! py-2"
       >
-        <div class="flex gap-1">
-          {#if foundAnnotationInGroupCategory?.label}
-            {#if firstAnnotationInGroup?.shape.type === IDAH_VIDEO_BOUNDING_BOX}
-              <VectorSquareIcon color={foundAnnotationInGroupCategory.color} />
-            {:else}
-              <PolygonCircleIcon color={foundAnnotationInGroupCategory.color} />
+        {#if foundAnnotationInGroupCategory?.label}
+          {@const parentLabel = categoryValueToLabel(
+            foundAnnotationInGroupCategory.id,
+          )}
+
+          <div class="flex gap-1 flex-col text-left">
+            {#if parentLabel.length > 0}
+              <div class="whitespace-break-spaces">
+                {parentLabel}
+              </div>
             {/if}
-            {truncate(foundAnnotationInGroupCategory.label)}
-          {:else}
-            Select category
-          {/if}
-        </div>
+            <div class="flex gap-1 items-center justify-start">
+              {#if firstAnnotationInGroup?.shape.type === IDAH_VIDEO_BOUNDING_BOX}
+                <VectorSquareIcon
+                  color={foundAnnotationInGroupCategory.color}
+                />
+              {:else}
+                <PolygonCircleIcon
+                  color={foundAnnotationInGroupCategory.color}
+                />
+              {/if}
+              <b>{foundAnnotationInGroupCategory.label}</b>
+            </div>
+          </div>
+        {:else}
+          Select category
+        {/if}
       </SelectTrigger>
 
       <SelectContent>
         <SelectGroup>
           {#each configByGroup.values as { id: value, label, color }, index (`${value}-${index}`)}
+            {@const valueLabel = categoryValueToLabel(value, label)}
             <SelectItem
-              class="text-xs"
-              {label}
+              class={"text-xs " +
+                (firstAnnotationInGroupCategory == value
+                  ? "bg-primary/20 opacity-100!"
+                  : "")}
+              label={valueLabel}
               {value}
               disabled={firstAnnotationInGroupCategory == value}
             >
@@ -223,7 +278,7 @@
               {:else}
                 <PolygonCircleIcon {color} />
               {/if}
-              {label}
+              {valueLabel}
             </SelectItem>
           {/each}
         </SelectGroup>
