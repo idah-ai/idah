@@ -64,7 +64,7 @@
 <div
   role="button"
   tabindex="0"
-  class="h-3 bg-secondary absolute bottom-0 border-t"
+  class="h-3 bg-secondary absolute border-t"
   style:width="{$timelineRulerWidth}px"
   style:left="{TIMELINE_ROW_HEADER_WIDTH}px"
   onkeypress={() => {}}

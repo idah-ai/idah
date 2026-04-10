@@ -48,18 +48,19 @@
   // Props
   interface Props {
     annotations: VideoAnnotationObject[];
-    timelineHeight: number;
+    annotationFooterHeight: number;
 
     onSeekFrame: (frame: number) => void;
     onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<VideoAnnotationObject>, selectedFrame?: number) => void;
   }
-  let { annotations, timelineHeight, onSeekFrame, onSelectAnnotationGroup }: Props = $props();
+  let { annotations, annotationFooterHeight, onSeekFrame, onSelectAnnotationGroup }: Props = $props();
 
   // Context
   let context: IActivityContext = getContext("context");
 
   // Variables
-  let timeline: HTMLDivElement;
+  let timelineEl: HTMLDivElement;
+  let timelineScrollAreaHeight = $derived(annotationFooterHeight - 100);
   let clientMouseX: number = $state(0);
   let annotationGroups = $derived(groupAnnotations(annotations));
   let showVerticalLine = $derived(clientMouseX >= TIMELINE_ROW_HEADER_WIDTH);
@@ -103,7 +104,7 @@
   }
 
   function handleMouseMove(event: MouseEvent) {
-    const rect = timeline.getBoundingClientRect();
+    const rect = timelineEl.getBoundingClientRect();
     clientMouseX = event.clientX - rect.left;
   }
 
@@ -128,7 +129,6 @@
   }
 
   function scrollLeft(shiftRangeSpan: number) {
-    // TODO: I think this function is not working as expected
     const [start, end] = $currentFrameRange;
 
     let newStart = start - shiftRangeSpan;
@@ -323,7 +323,7 @@
   onmouseenter={() => (showHorizontalScrollbar = true)}
   onmouseleave={handleMouseLeave}
 >
-  <div id="timeline" bind:this={timeline} class="relative w-full max-w-screen">
+  <div id="timeline" bind:this={timelineEl} class="relative w-full max-w-screen">
     <TimelineHeaderRow>
       <TimelineRowHeader>
         <TimelineRowHeading class="font-semibold">Annotations</TimelineRowHeading>
@@ -350,7 +350,7 @@
     </TimelineHeaderRow>
 
     <ScrollArea id="timeline-scroll-area">
-      <div style:height="{timelineHeight - 96}px" onwheel={handleTimelineWheel}>
+      <section style:height="{timelineScrollAreaHeight}px" onwheel={handleTimelineWheel}>
         {#each annotationGroups as annotationGroup (annotationGroup.groupId)}
           {@const allAnnotationsInGroupHidden = annotationGroup.annotations.every((annotation) => annotation.hidden)}
           {@const allAnnotationsInGroupLocked = annotationGroup.annotations.every((annotation) => annotation.locked)}
@@ -384,7 +384,13 @@
         {:else}
           <TimelineEmptyAnnotations />
         {/each}
-      </div>
+      </section>
+
+      <section id="timeline-horizontal-scrollbar-container">
+        {#if showHorizontalScrollbar}
+          <TimelineHorizontalScrollbar />
+        {/if}
+      </section>
     </ScrollArea>
 
     <!-- Draw a vertical line when mouse move -->
@@ -394,12 +400,6 @@
 
     {#if showSelectedVerticalLine}
       <TimelineVerticalLine color="primary" positionX={$selectedFrameX} />
-    {/if}
-  </div>
-
-  <div id="timeline-horizontal-scrollbar-container">
-    {#if showHorizontalScrollbar}
-      <TimelineHorizontalScrollbar />
     {/if}
   </div>
 </div>
