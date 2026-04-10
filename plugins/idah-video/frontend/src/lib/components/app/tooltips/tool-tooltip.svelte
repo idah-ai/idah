@@ -1,10 +1,9 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import Kbd from "$lib/components/ui/kbd/kbd.svelte";
+  import Tooltips from "$lib/components/app/tooltips/tooltips.svelte";
   import KbdGroup from "$lib/components/ui/kbd/kbd-group.svelte";
-
-  import Tooltips from "./tooltips.svelte";
+  import Kbd from "$lib/components/ui/kbd/kbd.svelte";
 
   // Props
   interface Props {
