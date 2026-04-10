@@ -64,7 +64,7 @@ export function getKeySymbols(keys: string[]): string[] {
 
 // humanize the key combination (e.g., ["Meta", "A"] -> "⌘+A")
 export function getHunamizedKeyCombination(keys: string[]): string {
-  return keys.map(getKeySymbol).join("+");
+  return keys.map(getKeySymbol).join(" + ");
 }
 
 /**
