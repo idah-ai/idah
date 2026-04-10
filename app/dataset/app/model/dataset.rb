@@ -10,6 +10,7 @@ module Dataset
     field :name, type: String
     field :labels, type: Array
     field :modality, type: String, readonly: true
+    field :workflow_name, type: String
 
     field :labeling_configuration, type: Hash
     field :workflow_configuration, type: Hash
@@ -31,7 +32,13 @@ module Dataset
     has_many :note_feeds, repository: "NoteFeed::Repository", foreign_key: :dataset_id
 
     def entry_workflow
-      Workflow::SimpleReviewAnnotationWorkflow
+      # Get workflow by workflow_name from the dataset
+      # Falls back to default workflow if no workflow_name or workflow not found
+      if workflow_name.nil? || workflow_name == "default"
+        return Workflow::SimpleReviewAnnotationWorkflow
+      end
+
+      Workflow::Registry.get(workflow_name)
     end
   end
 

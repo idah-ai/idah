@@ -96,6 +96,81 @@ module Plugins
       { shapes: }
     end
 
+    def get_workflows
+      workflows = []
+
+      # Add the default workflow first
+      workflows << {
+        name: "default",
+        label: "Default Workflow",
+        description: "Default workflow with annotation and review steps",
+        plugin: "core",
+        default: true,
+        steps: [
+          {
+            name: "review",
+            label: "Review",
+            description: "Review the annotations",
+            actions: [
+              {
+                name: "approved",
+                label: "Approve",
+                type: "boolean",
+                icon: "SquareCheckIcon",
+                required: true
+              }
+            ]
+          }
+        ]
+      }
+
+      # Add workflows from plugins
+      PluginSystem.registry.plugins.each do |plugin_name, plugin|
+        next unless plugin.workflows
+
+        plugin.workflows.each do |workflow|
+          workflow_data = {
+            name: workflow.name,
+            label: workflow.label,
+            description: workflow.description,
+            plugin: plugin_name,
+            default: false
+          }
+
+          if workflow.respond_to?(:steps) && workflow.steps
+            workflow_data[:steps] = workflow.steps.map do |step|
+              step_data = {
+                name: step.name,
+                label: step.label,
+                description: step.description
+              }
+
+              if step.respond_to?(:actions) && step.actions
+                step_data[:actions] = step.actions.map do |action|
+                  action_data = {
+                    name: action.name,
+                    label: action.label,
+                    type: action.type
+                  }
+                  action_data[:icon] = action.icon if action.respond_to?(:icon) && action.icon
+                  action_data[:options] = action.options if action.respond_to?(:options) && action.options
+                  action_data[:required] = action.required if action.respond_to?(:required)
+                  action_data[:default_value] = action.default_value if action.respond_to?(:default_value) && action.default_value
+                  action_data
+                end
+              end
+
+              step_data
+            end
+          end
+
+          workflows << workflow_data
+        end
+      end
+
+      { workflows: }
+    end
+
     def serve_file(plugin_name, filename)
       plugin = find(plugin_name)
 
@@ -109,7 +184,7 @@ module Plugins
           return nil unless entry_plugin
 
           is_style = filename.end_with?(".css")
-
+          # binding.pry
           if is_style
             entry_plugin.style
           else
@@ -135,7 +210,7 @@ module Plugins
       return nil if file_path.nil?
 
       return unless file_path
-
+      # binding.pry
       File.read(
         File.join(plugin.path, file_path)
       )

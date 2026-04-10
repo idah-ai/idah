@@ -1,0 +1,71 @@
+{
+  "type": "idah-plugin",
+  "name": "example-workflow",
+  "version": "1.0.0",
+
+  "title": "Example Custom Workflow",
+  "description": "An example plugin demonstrating custom workflow registration for a modality.",
+
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+
+  "modalities": [
+    {
+      "id": "example-modality",
+      "label": "Example Modality",
+      "description": "An example modality with custom workflow",
+      "shapes": {
+        "bounding-box": {
+          "label": "Bounding Box"
+        }
+      }
+    }
+  ],
+
+  "workflows": [
+    {
+      "name": "custom-annotation-workflow",
+      "label": "Custom Annotation Workflow",
+      "description": "A custom annotation workflow with multiple states",
+      "steps": [
+        {
+          "name": "review",
+          "label": "Review",
+          "description": "Review the annotations",
+          "actions": [
+            {
+              "name": "approved",
+              "label": "Approve",
+              "type": "boolean",
+              "icon": "SquareCheckIcon",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "final_check",
+          "label": "Final Check",
+          "description": "Final quality check before completion",
+          "actions": [
+            {
+              "name": "final_approved",
+              "label": "Final Approve",
+              "type": "boolean",
+              "icon": "SquareCheckIcon",
+              "required": true
+            }
+          ]
+        }
+      ]
+    }
+  ],
+
+  "entryPoints": {
+    "backend": {
+      "module": "ExampleWorkflow",
+      "path": "backends"
+    }
+  }
+}
