@@ -28,8 +28,7 @@ function createCommandsInterface() {
       const { manager, builder } = entry;
       const command = await builder(props);
 
-      if (!command)
-        return console.error("builder error on command:", name);
+      if (!command) return console.error("builder error on command:", name);
 
       console.debug({ command_run: name, props, command });
       if (manager) CommandManager.add(command);
@@ -65,7 +64,9 @@ function createToolsInterface(): ITools {
 }
 
 export function activityContextForEntry(entry: EntryRecord): IActivityContext {
-  let shortcutReferencesList = $state<Record<string, { label: string; description: string; keyCombinations: string[] }>>({});
+  let shortcutReferencesList = $state<
+    Record<string, { label: string; description: string; keyCombinations: string[] }>
+  >({});
 
   const context: IActivityContext = {
     id: entry.id,
@@ -129,7 +130,9 @@ export function activityContextForEntry(entry: EntryRecord): IActivityContext {
     get shortcutReferences() {
       return shortcutReferencesList;
     },
-    registerShortcutReferences(refs: Record<string, { label: string; description: string; keyCombinations: string[] }>) {
+    registerShortcutReferences(
+      refs: Record<string, { label: string; description: string; keyCombinations: string[] }>,
+    ) {
       shortcutReferencesList = refs;
     },
   };

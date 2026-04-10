@@ -29,7 +29,9 @@ class ShortcutManagerClass {
   keyMapExtension = $state({} as KeyMapList);
 
   /** A dictionary of all shortcuts for reference: Record<name, { label, description, keyCombinations }> */
-  shortcutReferenceList = $state({} as Record<string, { label: string; description: string; keyCombinations: string[] }>);
+  shortcutReferenceList = $state(
+    {} as Record<string, { label: string; description: string; keyCombinations: string[] }>,
+  );
 
   enterMode(mode: string, replace: boolean = false) {
     if (replace) {
