@@ -1,10 +1,9 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import Kbd from "$lib/components/ui/kbd/kbd.svelte";
+  import Tooltips from "$lib/components/app/tooltips/tooltips.svelte";
   import KbdGroup from "$lib/components/ui/kbd/kbd-group.svelte";
-
-  import Tooltips from "./tooltips.svelte";
+  import Kbd from "$lib/components/ui/kbd/kbd.svelte";
 
   // Props
   interface Props {
@@ -14,6 +13,7 @@
     align?: "start" | "center" | "end";
     side?: "top" | "right" | "bottom" | "left";
     delayDuration?: number;
+    onOpenChange?: (open: boolean) => void;
   }
 
   let {
@@ -23,10 +23,11 @@
     align = "center",
     side = "top",
     delayDuration = 200,
+    onOpenChange,
   }: Props = $props();
 </script>
 
-<Tooltips {align} {side} {delayDuration} trigger={triggerSnippet}>
+<Tooltips {align} {side} {delayDuration} trigger={triggerSnippet} {onOpenChange}>
   {#snippet content()}
     <div class="flex items-center gap-4">
       <span>{label}</span>

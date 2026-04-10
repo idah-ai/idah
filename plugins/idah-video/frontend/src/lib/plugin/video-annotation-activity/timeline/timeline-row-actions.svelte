@@ -1,10 +1,11 @@
 <script lang="ts">
-  import { getContext } from "svelte";
   import { EyeIcon, EyeOffIcon, LockIcon, LockOpenIcon, Trash2Icon } from "@lucide/svelte";
+  import { getContext } from "svelte";
 
-  import Button from "$lib/components/ui/button/button.svelte";
-  import { getShortcut } from "$lib/components/ui/kbd/utils";
   import ToolTooltip from "$lib/components/app/tooltips/tool-tooltip.svelte";
+  import Button from "$lib/components/ui/button/button.svelte";
+
+  import { getShortcut } from "$lib/components/ui/kbd/utils";
   import { cn } from "$lib/utils";
 
   import type { IActivityContext } from "$idah/context/activity-context";
@@ -99,7 +100,9 @@
   <ToolTooltip
     align="center"
     label={getVisibilityTooltipContent()}
-    shortcut={mode === "single" ? getShortcut(context.shortcutReferences?.["selected.toggle_group_visibility"]?.keyCombinations) : undefined}
+    shortcut={mode === "single"
+      ? getShortcut(context.shortcutReferences?.["selected.toggle_group_visibility"]?.keyCombinations)
+      : undefined}
   >
     {#snippet trigger()}
       <Button variant="ghost" size="icon-sm" onclick={handleClickVisibility}>
@@ -113,7 +116,9 @@
   <ToolTooltip
     align="center"
     label={getEditabilityTooltipContent()}
-    shortcut={mode === "single" ? getShortcut(context.shortcutReferences?.["selected.toggle_group_editability"]?.keyCombinations) : undefined}
+    shortcut={mode === "single"
+      ? getShortcut(context.shortcutReferences?.["selected.toggle_group_editability"]?.keyCombinations)
+      : undefined}
   >
     {#snippet trigger()}
       <Button variant="ghost" size="icon-sm" onclick={handleClickEditability}>
@@ -127,7 +132,9 @@
   <ToolTooltip
     align="center"
     label={getDeleteTooltipContent()}
-    shortcut={mode === "single" ? getShortcut(context.shortcutReferences?.["selected.delete"]?.keyCombinations) : undefined}
+    shortcut={mode === "single"
+      ? getShortcut(context.shortcutReferences?.["selected.delete"]?.keyCombinations)
+      : undefined}
   >
     {#snippet trigger()}
       <Button variant="ghost" size="icon-sm" disabled={allAnnotationsLocked} onclick={handleClickDelete}>

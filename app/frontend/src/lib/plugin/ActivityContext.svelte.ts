@@ -1,17 +1,17 @@
 import { goto } from "$app/navigation";
 import { resolve } from "$app/paths";
+import { SvelteMap } from "svelte/reactivity";
 
 import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
 import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
 
-import type { Command } from "@/command/Command";
 import CommandManager from "@/command/CommandManager";
 
-import { createAnnotationDriver } from "./AnnotationDriver";
-import { createNoteDriver } from "./NoteDriver";
+import { createAnnotationDriver } from "@/plugin/AnnotationDriver";
+import { createNoteDriver } from "@/plugin/NoteDriver";
 
-import type { HeaderBarModeTool, IActivityContext, ITools } from "./interface/Activity";
-import { SvelteMap } from "svelte/reactivity";
+import type { Command } from "@/command/Command";
+import type { HeaderBarModeTool, IActivityContext, ITools } from "@/plugin/interface/Activity";
 
 function createCommandsInterface() {
   const commands = new SvelteMap<string, { manager: boolean; builder: (props?: object) => Command }>();

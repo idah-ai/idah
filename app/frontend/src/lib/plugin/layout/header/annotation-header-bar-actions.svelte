@@ -16,7 +16,6 @@
   import { mode, resetMode, setMode } from "mode-watcher";
   import { onMount } from "svelte";
 
-  import { getShortcut } from "@/components/ui/kbd/utils";
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import NumberField from "@/components/app/forms/fields/input/number-field.svelte";
   import ToolTooltip from "@/components/app/tooltips/tool-tooltip.svelte";
@@ -32,6 +31,7 @@
     DropdownMenuSubTrigger,
     DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu";
+  import { getShortcut } from "@/components/ui/kbd/utils";
 
   import NoteSidebar from "@/plugin/layout/sidebar/notes/note-sidebar.svelte";
   import NoteOverlay from "@/plugin/layout/sidebar/notes/overlays/note-overlay.svelte";
@@ -125,6 +125,7 @@
     frameStep = stepToSet;
     localStorage.setItem(IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP, stepToSet.toString());
   }
+
   function toggleCommand() {
     context.commands.run("command_dialog");
   }

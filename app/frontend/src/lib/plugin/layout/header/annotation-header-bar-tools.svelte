@@ -5,10 +5,11 @@
   import Button from "@/components/ui/button/button.svelte";
   import Separator from "@/components/ui/separator/separator.svelte";
 
+  import { getShortcut } from "@/components/ui/kbd/utils";
   import { pluginsBackendDataSource } from "@/data/model/setting/plugin/record";
+
   import type { IActivityContext } from "@/plugin/interface/Activity";
   import type { AnnotationHeaderBarBaseTool } from "./annotation-header-bar.types";
-  import { getShortcut } from "@/components/ui/kbd/utils";
 
   // Props
   interface Props {
