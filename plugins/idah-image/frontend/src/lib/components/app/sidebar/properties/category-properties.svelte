@@ -1,27 +1,28 @@
 <script lang="ts">
   import { getContext } from "svelte";
 
-  import BooleanProperty from "$lib/components/app/sidebar/properties/boolean-property.svelte";
-  import IntegerProperty from "$lib/components/app/sidebar/properties/integer-property.svelte";
-  import MultiSelectProperty from "$lib/components/app/sidebar/properties/multi-select-property.svelte";
   import { visibilityFullfilled } from "$lib/components/app/sidebar/properties/property.utils";
-  import SingleSelectProperty from "$lib/components/app/sidebar/properties/single-select-property.svelte";
-  import TextProperty from "$lib/components/app/sidebar/properties/text-property.svelte";
   import Label from "$lib/components/ui/label/label.svelte";
   import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger } from "$lib/components/ui/select";
   import Separator from "$lib/components/ui/separator/separator.svelte";
+
+  import BooleanProperty from "$lib/components/app/sidebar/properties/boolean-property.svelte";
+  import IntegerProperty from "$lib/components/app/sidebar/properties/integer-property.svelte";
+  import MultiSelectProperty from "$lib/components/app/sidebar/properties/multi-select-property.svelte";
+  import SingleSelectProperty from "$lib/components/app/sidebar/properties/single-select-property.svelte";
+  import TextProperty from "$lib/components/app/sidebar/properties/text-property.svelte";
 
   import PolygonCircleIcon from "$lib/plugin/icon/polygon-circle-icon.svelte";
   import VectorSquareIcon from "$lib/plugin/icon/vector-square-icon.svelte";
 
   import { idbUpdatedAt } from "$lib/plugin/store/idb-store.svelte";
   import { currentMode, selectedAnnotationGroup } from "$lib/plugin/store/store";
+  import { IMAGE_BOUNDING_BOX } from "$lib/plugin/types";
   import { truncate } from "$lib/utils/string";
 
   import type { PropertyComponent } from "$lib/components/app/sidebar/properties/property.types";
   import type { AnnotationValue } from "$lib/context/annotation-context";
   import type { IActivityContext, IConfigProperty } from "$lib/context/context";
-  import { IMAGE_BOUNDING_BOX } from "$lib/plugin/types";
 
   // Props
   type Props = {

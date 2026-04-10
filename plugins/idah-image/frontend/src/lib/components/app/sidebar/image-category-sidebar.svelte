@@ -56,20 +56,18 @@
   // Automatically expand all categories when categories prop changes, but allow manual toggles
   let manualToggleStates = $state<Record<string, boolean>>({});
   let openStates = $derived.by(() => {
-    const autoExpanded = ([] as IConfigValue[])
-      .concat(...Array.from(categories.values()))
-      .reduce<Record<string, boolean>>((acc, category) => {
-        if (category.id.includes("/")) {
-          const parts = category.id.split("/");
-          for (let i = 0; i < parts.length - 1; i++) {
-            const parentPath = parts.slice(0, i + 1).join("/");
-            acc[parentPath] = true;
-          }
+    const autoExpanded = categories.reduce<Record<string, boolean>>((acc, category) => {
+      if (category.id.includes("/")) {
+        const parts = category.id.split("/");
+
+        for (let i = 0; i < parts.length - 1; i++) {
+          const parentPath = parts.slice(0, i + 1).join("/");
+          acc[parentPath] = true;
         }
-        // Always set the category itself to true
-        acc[category.id] = true;
-        return acc;
-      }, {});
+      }
+
+      return acc;
+    }, {});
 
     // Merge with manual toggles (manual toggles take precedence)
     return { ...autoExpanded, ...manualToggleStates };
@@ -170,7 +168,7 @@
 <SidebarGroup>
   <SidebarGroupContent>
     <Collapsible bind:open={openCategory}>
-      <CollapsibleTrigger class="w-full">
+      <CollapsibleTrigger>
         {#snippet child({ props })}
           <Button variant="ghost" class="w-full justify-between" {...props}>
             {formatShapeName(modalityShape)}
