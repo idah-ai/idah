@@ -36,7 +36,7 @@
   import NoteSidebar from "@/plugin/layout/sidebar/notes/note-sidebar.svelte";
   import NoteOverlay from "@/plugin/layout/sidebar/notes/overlays/note-overlay.svelte";
 
-  import { idahVideolocalStorageFrameStep } from "@/plugin/layout/header/annotation-header-bar.constants";
+  import { IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP } from "@/plugin/layout/header/annotation-header-bar.constants";
 
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
   import type { IActivityContext } from "@/plugin/interface/Activity";
@@ -50,7 +50,7 @@
   let { context, pluginContainerElement }: Props = $props();
 
   // Variables
-  let frameStep: number = $state(Number(localStorage.getItem(idahVideolocalStorageFrameStep)) || 10);
+  let frameStep: number = $state(Number(localStorage.getItem(IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP)) || 10);
   let loading = $state(false);
   let openNoteSidebar = $state(false);
   let openSettingsPopover = $state(false);
@@ -90,11 +90,11 @@
   // Lifecycle
   onMount(() => {
     /** If frame step is not set in localStorage, set it to 10 as default */
-    if (!localStorage.getItem(idahVideolocalStorageFrameStep)) {
-      localStorage.setItem(idahVideolocalStorageFrameStep, "10");
+    if (!localStorage.getItem(IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP)) {
+      localStorage.setItem(IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP, "10");
     }
 
-    frameStep = Number(localStorage.getItem(idahVideolocalStorageFrameStep));
+    frameStep = Number(localStorage.getItem(IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP));
   });
 
   // Functions
@@ -123,7 +123,7 @@
     if (isNaN(inputValue)) stepToSet = minStep;
     if (stepToSet < minStep) stepToSet = minStep;
     frameStep = stepToSet;
-    localStorage.setItem(idahVideolocalStorageFrameStep, stepToSet.toString());
+    localStorage.setItem(IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP, stepToSet.toString());
   }
   function toggleCommand() {
     context.commands.run("command_dialog");
