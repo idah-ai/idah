@@ -13,6 +13,7 @@
     align?: "start" | "center" | "end";
     side?: "top" | "right" | "bottom" | "left";
     delayDuration?: number;
+    onOpenChange?: (open: boolean) => void;
   }
 
   let {
@@ -22,10 +23,11 @@
     align = "center",
     side = "top",
     delayDuration = 200,
+    onOpenChange,
   }: Props = $props();
 </script>
 
-<Tooltips {align} {side} {delayDuration} trigger={triggerSnippet}>
+<Tooltips {align} {side} {delayDuration} trigger={triggerSnippet} {onOpenChange}>
   {#snippet content()}
     <div class="flex items-center gap-4">
       <span>{label}</span>
