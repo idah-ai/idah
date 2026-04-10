@@ -1,19 +1,20 @@
 import { goto } from "$app/navigation";
 import { resolve } from "$app/paths";
+import { SvelteMap } from "svelte/reactivity";
 
 import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
 import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
 
-import type { Command } from "@/command/Command";
 import CommandManager from "@/command/CommandManager";
 
-import { createAnnotationDriver } from "./AnnotationDriver";
-import { createNoteDriver } from "./NoteDriver";
+import { createAnnotationDriver } from "@/plugin/AnnotationDriver";
+import { createNoteDriver } from "@/plugin/NoteDriver";
 
-import type { HeaderBarModeTool, IActivityContext, ITools } from "./interface/Activity";
+import type { Command } from "@/command/Command";
+import type { HeaderBarModeTool, IActivityContext, ITools } from "@/plugin/interface/Activity";
 
 function createCommandsInterface() {
-  const commands = new Map();
+  const commands = new SvelteMap<string, { manager: boolean; builder: (props?: object) => Command }>();
 
   return {
     on: (name: string, builder: (props?: object) => Command, manager = true) => {
@@ -21,15 +22,13 @@ function createCommandsInterface() {
       console.debug({ command_on: name, manager });
     },
     async run(name: string, props?: object) {
-      const { manager, builder }: { manager: boolean; builder: (props?: object) => Command } = commands.get(name);
+      const entry = commands.get(name);
+      if (!entry) return console.error("builder not found command:", name);
 
-      if (!builder) return console.error("builder not found command:", name);
-
+      const { manager, builder } = entry;
       const command = await builder(props);
 
-      if (!commands)
-        // properly extract and we shouldnt have to await ?
-        return console.error("builder error on command:", name);
+      if (!command) return console.error("builder error on command:", name);
 
       console.debug({ command_run: name, props, command });
       if (manager) CommandManager.add(command);
@@ -65,7 +64,11 @@ function createToolsInterface(): ITools {
 }
 
 export function activityContextForEntry(entry: EntryRecord): IActivityContext {
-  return {
+  let shortcutReferencesList = $state<
+    Record<string, { label: string; description: string; keyCombinations: string[] }>
+  >({});
+
+  const context: IActivityContext = {
     id: entry.id,
     type: entry.dataset.modality,
     workflowStep: entry.wf_step,
@@ -97,14 +100,6 @@ export function activityContextForEntry(entry: EntryRecord): IActivityContext {
           .submit(entry.id, opts)
           .then(async () => {
             try {
-              /**
-               * After submission successfully,
-               * We need to check if there are more entries to do or not
-               * by fetching the datasets without cache
-               *
-               * If there are more entries, redirect to the entries list page
-               * If there are no more entries, redirect to the datasets list page
-               */
               const datasetsRes = await datasetsBackendDataSource.list({
                 fields: {
                   [DatasetRecord.type]: ["id"],
@@ -132,5 +127,15 @@ export function activityContextForEntry(entry: EntryRecord): IActivityContext {
         reject(message); // ?
       });
     },
+    get shortcutReferences() {
+      return shortcutReferencesList;
+    },
+    registerShortcutReferences(
+      refs: Record<string, { label: string; description: string; keyCombinations: string[] }>,
+    ) {
+      shortcutReferencesList = refs;
+    },
   };
+
+  return context;
 }

@@ -1,5 +1,5 @@
 import { BuildKeymap } from "./KeyMapBuilder";
-import { ShortcutManager } from "./ShortcutManager";
+import { ShortcutManager } from "./ShortcutManager.svelte";
 
 // Example of creating a key map for a "visual" mode
 const createVisualModeKeyMap = () => {
@@ -27,16 +27,16 @@ const createVisualModeKeyMap = () => {
   // Create a key map using the KeyMapBuilder DSL
   const keyMap = BuildKeymap((b) => {
     // Copy: Ctrl+C
-    b.on([b.Ctrl], "C", copyAction, "Copy", "Copy selected content");
+    b.on([b.Ctrl], "C", copyAction, "copy", "Copy", "Copy selected content");
 
     // Paste: Ctrl+V
-    b.on([b.Ctrl], "V", pasteAction, "Paste", "Paste content from clipboard");
+    b.on([b.Ctrl], "V", pasteAction, "paste", "Paste", "Paste content from clipboard");
 
     // Save: Ctrl+S
-    b.on([b.Ctrl], "S", saveAction, "Save", "Save current document");
+    b.on([b.Ctrl], "S", saveAction, "save", "Save", "Save current document");
 
     // Undo: Ctrl+Z
-    b.on([b.Ctrl], "Z", undoAction, "Undo", "Undo last action");
+    b.on([b.Ctrl], "Z", undoAction, "undo", "Undo", "Undo last action");
 
     // Example with multiple modifiers: Ctrl+Shift+S (Save As)
     b.on(
@@ -45,6 +45,7 @@ const createVisualModeKeyMap = () => {
       () => {
         console.log("Save As action executed");
       },
+      "save_as",
       "Save As",
       "Save document with a new name",
     );

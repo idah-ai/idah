@@ -171,4 +171,12 @@ export const activityContextExample: IActivityContext = {
   error: async (message) => {
     console.log("error called", message);
   },
+
+  get shortcutReferences(): Record<string, { label: string; description: string; keyCombinations: string[] }> | undefined {
+    return undefined;
+  },
+
+  registerShortcutReferences(refs: Record<string, { label: string; description: string; keyCombinations: string[] }>): void {
+    console.log("registerShortcutReferences called", refs);
+  },
 };

@@ -30,6 +30,7 @@ import {
   setCurrentModeTo,
   setSelectedAnnotation,
 } from "$lib/plugin/video-annotation-activity/store/store";
+import { uiStore } from "$lib/plugin/video-annotation-activity/store/ui-store.svelte";
 import { showErrorToast } from "$lib/utils/error/error.toasts";
 
 import type { IActivityContext } from "$idah/context/activity-context";
@@ -1071,4 +1072,20 @@ export function registerCommands(params: CommandContext) {
       combine: (prevCmd) => prevCmd,
     };
   });
+
+  context.commands.on(
+    "command_dialog",
+    () => {
+      return {
+        name: "Toggle shortcut guide",
+        apply: () => {
+          uiStore.toggleCommandDialog();
+        },
+        undo: () => {},
+        isCombinable: () => true,
+        combine: (c) => c,
+      };
+    },
+    false,
+  );
 }
