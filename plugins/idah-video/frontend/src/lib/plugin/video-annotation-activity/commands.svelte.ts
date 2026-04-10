@@ -932,6 +932,7 @@ export function registerCommands(params: CommandContext) {
         annotationToApply.metadata.updatedAt = applyUpdatedAt;
         annotationToApply.synced = false;
 
+        await db?.addKeyFrame(annotationToApply, selection);
         await updateAnnotationIndexedDB({
           annotationToUpdate: annotationToApply,
         });
@@ -1025,6 +1026,7 @@ export function registerCommands(params: CommandContext) {
           frames: newframes,
         };
 
+        await db?.deleteKeyFrame(annotationToApply, selection.frame);
         await updateAnnotationIndexedDB({
           annotationToUpdate: annotationToApply,
         });
@@ -1055,8 +1057,10 @@ export function registerCommands(params: CommandContext) {
         annotationToUndo.synced = false;
 
         await db?.addKeyFrame(annotationToUndo, selection);
-        setSelectedAnnotation(annotationToUndo);
-        setIndexedDBUpdatedAt();
+        await updateAnnotationIndexedDB({
+          annotationToUpdate: annotationToUndo,
+        });
+
         await syncUpdatedAnnotation({
           annotationId,
           annotationToUpdate: annotationToUndo,
