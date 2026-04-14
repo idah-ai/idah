@@ -6,9 +6,10 @@ This is an example plugin that demonstrates how to create custom workflows for t
 
 This plugin shows how to:
 
-1. Define a workflow in the plugin manifest for a specific modality
-2. Register the workflow in the dataset service
+1. Define a workflow in the plugin manifest's `workflows` array
+2. Register the workflow in the dataset service backend
 3. Implement a custom workflow class with different annotation steps
+4. Select the workflow explicitly when creating a dataset
 
 ## Structure
 
@@ -28,7 +29,7 @@ plugins/example-workflow/
 
 ### 1. Manifest Definition (manifest.json)
 
-The manifest defines a modality with an associated workflow:
+The manifest defines workflows in the `workflows` array:
 
 ```json
 {
@@ -36,7 +37,18 @@ The manifest defines a modality with an associated workflow:
     {
       "id": "example-modality",
       "label": "Example Modality",
-      "workflow": "custom-annotation-workflow"
+      "shapes": {
+        "bounding-box": {
+          "label": "Bounding Box"
+        }
+      }
+    }
+  ],
+  "workflows": [
+    {
+      "name": "custom-annotation-workflow",
+      "label": "Custom Annotation Workflow",
+      "description": "A custom annotation workflow with multiple states"
     }
   ],
   "entryPoints": {
@@ -78,19 +90,57 @@ class CustomAnnotationWorkflow < ::Workflow::Base
 end
 ```
 
-### 4. Usage in Dataset
+### 4. Frontend Workflow Discovery
 
-When a dataset is created with `modality: "example-modality"`, the workflow is automatically selected:
+The frontend can query available workflows from all loaded plugins:
+
+```
+GET /plugins/workflows
+```
+
+Response:
+
+```json
+{
+  "workflows": [
+    {
+      "name": "custom-annotation-workflow",
+      "label": "Custom Annotation Workflow",
+      "description": "A custom annotation workflow with multiple states",
+      "plugin": "example-workflow"
+    }
+  ]
+}
+```
+
+### 5. Dataset Creation with Workflow Selection
+
+When creating a dataset, the `workflow_name` is explicitly specified:
+
+```ruby
+datasets.create({
+  name: "My Dataset",
+  modality: "example-modality",
+  workflow_name: "custom-annotation-workflow",
+  # ... other fields
+})
+```
+
+**Important**: The user must explicitly choose a workflow when creating the dataset.
+
+### 6. Workflow Lookup at Runtime
+
+When an entry is submitted, the dataset's workflow_name determines which workflow to use:
 
 ```ruby
 # In Dataset model (app/dataset/app/model/dataset.rb)
 def entry_workflow
-  # Looks up workflow by modality from plugin manifest
-  Workflow::Registry.get_by_modality_or_default(modality)
+  # Looks up workflow by the dataset's workflow_name field
+  Workflow::Registry.get_or_default(workflow_name)
 end
 ```
 
-If no plugin provides a workflow for the modality, it falls back to `Workflow::SimpleReviewAnnotationWorkflow`.
+If no `workflow_name` is specified or the workflow is not found, it falls back to `Workflow::SimpleReviewAnnotationWorkflow`.
 
 ## Workflow States
 
@@ -128,9 +178,10 @@ end
 The registry manages all registered workflows:
 
 - `register(plugin_name, workflow_name, class_name:)` - Register a workflow
-- `get(name)` - Get workflow by name
-- `get_by_modality(modality)` - Get workflow by modality (from manifest)
-- `get_by_modality_or_default(modality)` - Get workflow or default
+- `get(name)` - Get workflow class by name
+- `get_or_default(name)` - Get workflow class by name or return default
+- `list()` - List all registered workflow names
+- `clear(plugin_name)` - Clear workflows registered by a plugin
 
 ## Testing
 
@@ -139,14 +190,28 @@ To use this plugin:
 1. Place the plugin in the `plugins/` directory
 2. Configure the plugin path in your dataset service configuration
 3. Restart the dataset service
-4. Create a dataset with `modality: "example-modality"`
-5. The custom workflow will be automatically used for that dataset's entries
+4. Query available workflows: `GET /plugins/workflows`
+5. Create a dataset with `workflow_name: "custom-annotation-workflow"`
+6. The custom workflow will be used for that dataset's entries
 
 ## Creating Your Own Workflow Plugin
 
 1. Copy this example plugin structure
-2. Update the manifest.json with your plugin name and modality
+2. Update the manifest.json:
+   - Set your plugin name, version, and description
+   - Define workflows in the `workflows` array
+   - Optionally define modalities if providing new annotation types
 3. Implement your custom workflow class extending `Workflow::Base`
 4. Define your states and transitions using AASM
-5. Register your workflow in the init method
+5. Register your workflow in the `init` method using `context.register_workflow`
 6. Deploy the plugin to the plugins directory
+7. Restart the dataset service
+8. Workflows will be available via `GET /plugins/workflows`
+
+## Key Points
+
+- **Workflows are independent**: They are declared in the manifest's `workflows` array, not tied to modalities
+- **Explicit selection**: Users must explicitly select a `workflow_name` when creating a dataset
+- **Discoverable**: Frontend can query available workflows from all plugins via the API
+- **Flexible**: The same modality can be used with different workflows, and vice versa
+- **Backward compatible**: Datasets without a `workflow_name` use the default workflow
