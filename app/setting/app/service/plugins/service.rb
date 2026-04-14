@@ -154,7 +154,8 @@ module Plugins
                   }
                   action_data[:icon] = action.icon if action.respond_to?(:icon) && action.icon
                   action_data[:options] = action.options if action.respond_to?(:options) && action.options
-                  action_data[:required] = action.required if action.respond_to?(:required)
+
+                  action_data[:required] = action&.required ? action.required : false
                   if action.respond_to?(:default_value) && action.default_value
                     action_data[:default_value] = action.default_value
                   end
