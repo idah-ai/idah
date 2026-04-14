@@ -42,7 +42,7 @@ module Workflow
       Object.const_get(entry.class_name)
     end
 
-    def set_default(workflow_class)
+    def register_default(workflow_class)
       @default_workflow = workflow_class
     end
 

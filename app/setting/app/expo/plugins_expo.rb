@@ -63,7 +63,7 @@ class PluginsExpo < BaseExpo
     end
   end
   def workflows
-    service.get_workflows
+    service.show_workflows
   end
 
   expose on_http(

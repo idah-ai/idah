@@ -96,7 +96,7 @@ module Plugins
       { shapes: }
     end
 
-    def get_workflows
+    def show_workflows
       workflows = []
 
       # Add the default workflow first
@@ -155,7 +155,9 @@ module Plugins
                   action_data[:icon] = action.icon if action.respond_to?(:icon) && action.icon
                   action_data[:options] = action.options if action.respond_to?(:options) && action.options
                   action_data[:required] = action.required if action.respond_to?(:required)
-                  action_data[:default_value] = action.default_value if action.respond_to?(:default_value) && action.default_value
+                  if action.respond_to?(:default_value) && action.default_value
+                    action_data[:default_value] = action.default_value
+                  end
                   action_data
                 end
               end
@@ -210,6 +212,7 @@ module Plugins
       return nil if file_path.nil?
 
       return unless file_path
+
       # binding.pry
       File.read(
         File.join(plugin.path, file_path)
