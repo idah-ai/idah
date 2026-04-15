@@ -132,14 +132,12 @@ export const entriesBackendDataSource = createBackendDataSource(EntryRecord, ent
 
     throw "No data returned";
   },
-  submit: async (entryId: string, opts?: { approved: boolean }) => {
+  submit: async (entryId: string, opts?: { [key: string]: any }) => {
     const res = await fetch(`${entriesBasePath}/${entryId}/submit`, {
       method: "POST",
       body: JSON.stringify({
         data: {
-          attributes: {
-            approved: opts?.approved || false,
-          },
+          attributes: opts || {},
         },
       }),
       headers: { "Content-Type": "application/vnd.api+json" },

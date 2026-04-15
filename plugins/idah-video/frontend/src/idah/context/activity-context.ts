@@ -215,7 +215,7 @@ export interface IActivityContext {
   back(): void;
 
   // Submit to the next step of the workflow
-  submit(opts?: { approved: boolean }): Promise<void>;
+  submit(opts?: any): Promise<void>;
 
   // Mark this activity as errored
   error(message: string): Promise<void>;

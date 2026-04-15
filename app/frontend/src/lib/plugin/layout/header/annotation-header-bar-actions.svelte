@@ -32,6 +32,7 @@
     DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu";
   import { getShortcut } from "@/components/ui/kbd/utils";
+  import WorkflowStepActions from "@/plugin/layout/header/workflow-step-actions.svelte";
 
   import NoteSidebar from "@/plugin/layout/sidebar/notes/note-sidebar.svelte";
   import NoteOverlay from "@/plugin/layout/sidebar/notes/overlays/note-overlay.svelte";
@@ -49,11 +50,35 @@
   }
   let { context, pluginContainerElement }: Props = $props();
 
+  // Workflow step configuration interface
+  interface WorkflowStepAction {
+    name: string;
+    label: string;
+    icon?: string;
+  }
+
+  interface WorkflowStepConfig {
+    name: string;
+    label: string;
+    description?: string;
+    actions?: WorkflowStepAction[];
+  }
+
+  interface WorkflowConfig {
+    name: string;
+    label: string;
+    description?: string;
+    plugin: string;
+    steps?: WorkflowStepConfig[];
+  }
+
   // Variables
   let frameStep: number = $state(Number(localStorage.getItem(IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP)) || 10);
   let loading = $state(false);
   let openNoteSidebar = $state(false);
   let openSettingsPopover = $state(false);
+  let workflowConfig: WorkflowConfig | null = $state(null);
+  let currentStepConfig: WorkflowStepConfig | undefined = $state(undefined);
   let menus: AnnotationHeaderBarBaseTool[] = $derived([
     {
       name: "notes",
@@ -88,13 +113,34 @@
   };
 
   // Lifecycle
-  onMount(() => {
+  onMount(async () => {
     /** If frame step is not set in localStorage, set it to 10 as default */
     if (!localStorage.getItem(IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP)) {
       localStorage.setItem(IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP, "10");
     }
 
     frameStep = Number(localStorage.getItem(IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP));
+    // Fetch workflow configuration from backend
+    try {
+      const response = await fetch(`${import.meta.env.VITE_IDAH_HOST}/api/v1/setting/plugins/workflows`);
+      const data = await response.json();
+      console.log("eeee", data.data.workflows);
+
+      // Find the workflow configuration for the current dataset's workflow
+      if (data.data.workflows && context.workflowName) {
+        const workflow = data.data.workflows.find((w: WorkflowConfig) => w.name === context.workflowName);
+        console.log("Found workflow by name:", workflow);
+        if (workflow) {
+          workflowConfig = workflow;
+
+          // Find current step config by matching context.workflowStep
+          currentStepConfig = workflow.steps?.find((s: WorkflowStepConfig) => s.name === context.workflowStep);
+          console.log("Current step config:", currentStepConfig);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch workflow configuration:", error);
+    }
   });
 
   // Functions
@@ -117,6 +163,8 @@
   }
 
   function setFrameStep(inputValue: number) {
+    console.log("fsdklfjsdjfdsjfkl");
+
     const minStep: number = 1;
     let stepToSet: number = inputValue;
 
@@ -124,6 +172,27 @@
     if (stepToSet < minStep) stepToSet = minStep;
     frameStep = stepToSet;
     localStorage.setItem(IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP, stepToSet.toString());
+  }
+
+  // Determine the current workflow step type
+  const isReviewStep = $derived(context.workflowStep === "review");
+  const isDoneStep = $derived(context.workflowStep === "done");
+  const isAnnotateStep = $derived(context.workflowStep === "annotate");
+
+  // For custom workflow steps (not standard review/annotate/done)
+  const isCustomStep = $derived(!isReviewStep && !isDoneStep && !isAnnotateStep && context.workflowStep !== "start");
+
+  // Log changes to isCustomStep reactively
+  $effect(() => {
+    console.log("isCustomStep", isCustomStep, context.workflowStep);
+  });
+
+  // Get a human-readable label for the current step
+  function getStepLabel(step: string): string {
+    return step
+      .split("_")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
   }
 
   function toggleCommand() {
@@ -233,8 +302,8 @@
     {/each}
   </div>
 
-  {#if context.workflowStep === "done"}
-    <!-- TODO: What to show? -->
+  <!-- {#if context.workflowStep === "done"}
+    TODO: What to show?
   {:else if context.workflowStep === "review"}
     <DropdownMenus menus={reviewMenus}>
       {#snippet trigger({ props })}
@@ -245,6 +314,59 @@
       {/snippet}
     </DropdownMenus>
   {:else}
+    <Button {loading} loadingLabel="Submitting" size="sm" onclick={submitAnnotation}>Submit</Button>
+  {/if} -->
+
+  {#if isDoneStep}
+    <!-- TODO: What to show? -->
+  {:else if isReviewStep}
+    {#if currentStepConfig}
+      <!-- Use dynamic workflow step component for review with config -->
+      <WorkflowStepActions
+        {context}
+        {loading}
+        stepConfig={currentStepConfig}
+        onSubmit={async (opts) => {
+          loading = true;
+          await context.submit(opts);
+        }}
+      />
+    {:else}
+      <!-- Fallback to default review menus -->
+      <DropdownMenus menus={reviewMenus}>
+        {#snippet trigger({ props })}
+          <Button {...props} size="sm" {loading} loadingLabel="Reviewing">
+            Submit Review
+            <ChevronDownIcon />
+          </Button>
+        {/snippet}
+      </DropdownMenus>
+    {/if}
+  {:else if isCustomStep}
+    <!-- Custom workflow step - use dynamic component if config available -->
+    {#if currentStepConfig}
+      <WorkflowStepActions
+        {context}
+        {loading}
+        stepConfig={currentStepConfig}
+        onSubmit={async (opts) => {
+          loading = true;
+          await context.submit(opts);
+        }}
+      />
+    {:else}
+      <!-- Fallback: simple submit button with step name -->
+      <Button
+        {loading}
+        loadingLabel="Submitting {getStepLabel(context.workflowStep)}"
+        size="sm"
+        onclick={submitAnnotation}
+      >
+        Submit {getStepLabel(context.workflowStep)}
+      </Button>
+    {/if}
+  {:else}
+    <!-- Default annotation step or other standard steps -->
     <Button {loading} loadingLabel="Submitting" size="sm" onclick={submitAnnotation}>Submit</Button>
   {/if}
 </div>
