@@ -224,9 +224,7 @@ RSpec.describe Plugins::Service, type: :service, as: :system do
                 {
                   name: "approved",
                   label: "Approve",
-                  type: "boolean",
                   icon: "SquareCheckIcon",
-                  required: true
                 }
               ],
               description: "Review the annotations"
@@ -260,11 +258,8 @@ RSpec.describe Plugins::Service, type: :service, as: :system do
                   actions: [
                     {
                       name: "quality",
-                      label: "Quality Score",
-                      type: "select",
+                      label: "Quality Approved",
                       icon: "StarIcon",
-                      options: ["high", "medium", "low"],
-                      required: true
                     }
                   ]
                 }
@@ -297,14 +292,10 @@ RSpec.describe Plugins::Service, type: :service, as: :system do
                     {
                       name: "verified",
                       label: "Verified",
-                      type: "boolean",
-                      required: false
                     },
                     {
                       name: "comments",
-                      label: "Comments",
-                      type: "text",
-                      defaultValue: "No issues found"
+                      label: "Comments"
                     }
                   ]
                 }
@@ -352,11 +343,8 @@ RSpec.describe Plugins::Service, type: :service, as: :system do
       expect(annotate_step[:actions].first).to eq(
         {
           name: "quality",
-          label: "Quality Score",
-          type: "select",
+          label: "Quality Approved",
           icon: "StarIcon",
-          options: ["high", "medium", "low"],
-          required: true
         }
       )
 
@@ -376,129 +364,16 @@ RSpec.describe Plugins::Service, type: :service, as: :system do
       expect(verify_step[:actions].find { |a| a[:name] == "verified" }).to eq(
         {
           name: "verified",
-          label: "Verified",
-          type: "boolean",
-          required: false
+          label: "Verified"
         }
       )
 
       expect(verify_step[:actions].find { |a| a[:name] == "comments" }).to eq(
         {
           name: "comments",
-          label: "Comments",
-          type: "text",
-          required: false,
-          default_value: "No issues found"
+          label: "Comments"
         }
       )
     end
-
-    # it "handles plugins without workflows gracefully" do
-    #   registry = double("PluginSystem.registry")
-
-    #   plugin_without_workflows = PluginSystem::Plugin.new(
-    #     "path_to_plugin",
-    #     PluginSystem::Manifest.new(
-    #       type: "idah-plugin",
-    #       name: "no-workflow-plugin",
-    #       version: "1.0.0",
-    #       title: "Plugin without workflows",
-    #       description: "This plugin has no workflows",
-    #       entryPoints: {}
-    #     )
-    #   )
-
-    #   plugin_with_workflow = PluginSystem::Plugin.new(
-    #     "path_to_plugin2",
-    #     PluginSystem::Manifest.new(
-    #       type: "idah-plugin",
-    #       name: "with-workflow-plugin",
-    #       version: "1.0.0",
-    #       title: "Plugin with workflows",
-    #       description: "This plugin has workflows",
-    #       workflows: [
-    #         {
-    #           name: "simple_workflow",
-    #           label: "Simple Workflow",
-    #           description: "A simple workflow"
-    #         }
-    #       ],
-    #       entryPoints: {}
-    #     )
-    #   )
-
-    #   allow(registry).to receive(:plugins).and_return(
-    #     {
-    #       "no-workflow-plugin" => plugin_without_workflows,
-    #       "with-workflow-plugin" => plugin_with_workflow
-    #     }
-    #   )
-
-    #   allow(PluginSystem).to receive(:registry).and_return(registry)
-
-    #   output = service.show_workflows
-
-    #   expect(output[:workflows].length).to eq(2) # default + one from plugin
-    #   workflow_names = output[:workflows].map { |w| w[:name] }
-    #   expect(workflow_names).to include("default", "simple_workflow")
-    #   expect(workflow_names).not_to include("no-workflow-plugin")
-    # end
-
-    # it "handles workflows with minimal step and action definitions" do
-    #   registry = double("PluginSystem.registry")
-
-    #   minimal_plugin = PluginSystem::Plugin.new(
-    #     "path_to_minimal",
-    #     PluginSystem::Manifest.new(
-    #       type: "idah-plugin",
-    #       name: "minimal",
-    #       version: "1.0.0",
-    #       title: "Minimal plugin",
-    #       description: "Minimal workflow definition",
-    #       workflows: [
-    #         {
-    #           name: "minimal_workflow",
-    #           label: "Minimal Workflow",
-    #           steps: [
-    #             {
-    #               name: "step1",
-    #               label: "Step 1",
-    #               actions: [
-    #                 {
-    #                   name: "action1",
-    #                   label: "Action 1",
-    #                   type: "boolean"
-    #                 }
-    #               ]
-    #             }
-    #           ]
-    #         }
-    #       ],
-    #       entryPoints: {}
-    #     )
-    #   )
-
-    #   allow(registry).to receive(:plugins).and_return(
-    #     { "minimal" => minimal_plugin }
-    #   )
-
-    #   allow(PluginSystem).to receive(:registry).and_return(registry)
-
-    #   output = service.show_workflows
-
-    #   minimal_workflow = output[:workflows].find { |w| w[:name] == "minimal_workflow" }
-    #   expect(minimal_workflow).not_to be_nil
-    #   expect(minimal_workflow[:description]).to be_nil
-    #   expect(minimal_workflow[:plugin]).to eq("minimal")
-
-    #   step = minimal_workflow[:steps].first
-    #   expect(step[:description]).to be_nil
-
-    #   action = step[:actions].first
-    #   expect(action[:icon]).to be_nil
-    #   expect(action[:options]).to be_nil
-    #   expect(action.key?(:required)).to be false
-    #   expect(action.key?(:default_value)).to be false
-    # end
   end
 end

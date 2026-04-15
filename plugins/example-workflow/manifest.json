@@ -38,9 +38,7 @@
             {
               "name": "approved",
               "label": "Approve",
-              "type": "boolean",
-              "icon": "SquareCheckIcon",
-              "required": true
+              "icon": "SquareCheckIcon"
             }
           ]
         },
@@ -52,9 +50,7 @@
             {
               "name": "final_approved",
               "label": "Final Approve",
-              "type": "boolean",
-              "icon": "SquareCheckIcon",
-              "required": true
+              "icon": "SquareCheckIcon"
             }
           ]
         }

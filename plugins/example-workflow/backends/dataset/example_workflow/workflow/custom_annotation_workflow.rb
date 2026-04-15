@@ -71,24 +71,11 @@ module ExampleWorkflow
           when :start
             account_id
           when :annotate
-            # Moving to review step, assign to reviewer
             @entry.reviewed_by_id
           when :review
-            if to_state == :annotate
-              # Going back to annotation
-              @entry.submitted_by_id
-            else
-              # Moving to final check, keep reviewer or assign to final checker
-              @entry.reviewed_by_id
-            end
+            to_state == :annotate ? @entry.submitted_by_id : @entry.reviewed_by_id
           when :final_check
-            if to_state == :review
-              # Going back to review
-              @entry.reviewed_by_id
-            else
-              # Done, no assignment needed
-              nil
-            end
+            @entry.reviewed_by_id if to_state == :review
           end
 
         # Set submitted_by_id when coming from annotation step
@@ -96,7 +83,7 @@ module ExampleWorkflow
 
         # Set reviewed_by_id when coming from review or final_check
         reviewed_by_id =
-          if from_state == :review || from_state == :final_check
+          if [:review, :final_check].include?(from_state)
             account_id
           else
             @entry.reviewed_by_id

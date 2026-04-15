@@ -115,9 +115,7 @@ module Plugins
               {
                 name: "approved",
                 label: "Approve",
-                type: "boolean",
-                icon: "SquareCheckIcon",
-                required: true
+                icon: "SquareCheckIcon"
               }
             ]
           }
@@ -150,15 +148,8 @@ module Plugins
                   action_data = {
                     name: action.name,
                     label: action.label,
-                    type: action.type
                   }
                   action_data[:icon] = action.icon if action.respond_to?(:icon) && action.icon
-                  action_data[:options] = action.options if action.respond_to?(:options) && action.options
-
-                  action_data[:required] = action&.required ? action.required : false
-                  if action.respond_to?(:default_value) && action.default_value
-                    action_data[:default_value] = action.default_value
-                  end
                   action_data
                 end
               end
@@ -187,7 +178,6 @@ module Plugins
           return nil unless entry_plugin
 
           is_style = filename.end_with?(".css")
-          # binding.pry
           if is_style
             entry_plugin.style
           else

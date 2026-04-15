@@ -35,11 +35,7 @@ module PluginSystem
         field? :actions, Array do
           field :name, String
           field :label, String
-          field :type, String  # "boolean", "text", "select", etc.
           field? :icon, String
-          field? :options, Array  # for select type
-          field? :required, [TrueClass, FalseClass]
-          field? :default_value, key: :defaultValue
         end
       end
     end
