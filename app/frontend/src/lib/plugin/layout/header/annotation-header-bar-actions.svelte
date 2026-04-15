@@ -77,7 +77,6 @@
   let loading = $state(false);
   let openNoteSidebar = $state(false);
   let openSettingsPopover = $state(false);
-  let workflowConfig: WorkflowConfig | null = $state(null);
   let currentStepConfig: WorkflowStepConfig | undefined = $state(undefined);
   let menus: AnnotationHeaderBarBaseTool[] = $derived([
     {
@@ -124,18 +123,13 @@
     try {
       const response = await fetch(`${import.meta.env.VITE_IDAH_HOST}/api/v1/setting/plugins/workflows`);
       const data = await response.json();
-      console.log("eeee", data.data.workflows);
 
       // Find the workflow configuration for the current dataset's workflow
       if (data.data.workflows && context.workflowName) {
         const workflow = data.data.workflows.find((w: WorkflowConfig) => w.name === context.workflowName);
-        console.log("Found workflow by name:", workflow);
         if (workflow) {
-          workflowConfig = workflow;
-
           // Find current step config by matching context.workflowStep
           currentStepConfig = workflow.steps?.find((s: WorkflowStepConfig) => s.name === context.workflowStep);
-          console.log("Current step config:", currentStepConfig);
         }
       }
     } catch (error) {
@@ -301,21 +295,6 @@
       </ToolTooltip>
     {/each}
   </div>
-
-  <!-- {#if context.workflowStep === "done"}
-    TODO: What to show?
-  {:else if context.workflowStep === "review"}
-    <DropdownMenus menus={reviewMenus}>
-      {#snippet trigger({ props })}
-        <Button {...props} size="sm" {loading} loadingLabel="Reviewing">
-          Submit Review
-          <ChevronDownIcon />
-        </Button>
-      {/snippet}
-    </DropdownMenus>
-  {:else}
-    <Button {loading} loadingLabel="Submitting" size="sm" onclick={submitAnnotation}>Submit</Button>
-  {/if} -->
 
   {#if isDoneStep}
     <!-- TODO: What to show? -->

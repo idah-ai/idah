@@ -11,7 +11,7 @@
     context: IActivityContext;
     loading: boolean;
     stepConfig?: WorkflowStepConfig;
-    onSubmit: (opts: Record<string, any>) => Promise<void>;
+    onSubmit: (opts: Record<string, boolean>) => Promise<void>;
   }
   let { context, loading, stepConfig, onSubmit }: Props = $props();
 
@@ -29,6 +29,7 @@
     actions?: WorkflowStepAction[];
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const iconMap: Record<string, any> = {
     SquareCheckIcon,
     SquareXIcon,
@@ -49,7 +50,7 @@
   async function handleActionSubmit(action: WorkflowStepAction, value: boolean) {
     console.log("atooooooooo");
 
-    const opts: Record<string, any> = {
+    const opts: Record<string, boolean> = {
       [action.name]: value,
     };
 

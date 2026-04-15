@@ -132,7 +132,7 @@ export const entriesBackendDataSource = createBackendDataSource(EntryRecord, ent
 
     throw "No data returned";
   },
-  submit: async (entryId: string, opts?: { [key: string]: any }) => {
+  submit: async (entryId: string, opts?: { [key: string]: boolean }) => {
     const res = await fetch(`${entriesBasePath}/${entryId}/submit`, {
       method: "POST",
       body: JSON.stringify({

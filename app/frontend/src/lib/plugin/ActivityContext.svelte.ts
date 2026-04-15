@@ -95,7 +95,7 @@ export function activityContextForEntry(entry: EntryRecord): IActivityContext {
         }),
       );
     },
-    submit(opts?: { [key: string]: any }) {
+    submit(opts?: { [key: string]: boolean }) {
       return new Promise<void>((res, rej) => {
         entriesBackendDataSource
           .submit(entry.id, opts)
