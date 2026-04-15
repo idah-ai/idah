@@ -237,14 +237,14 @@ RSpec.describe Plugins::Service, type: :service, as: :system do
     it "returns workflows from plugins along with default workflow" do
       registry = double("PluginSystem.registry")
 
-      foo_plugin = PluginSystem::Plugin.new(
+      annotate_plugin = PluginSystem::Plugin.new(
         "path_to_foo",
         PluginSystem::Manifest.new(
           type: "idah-plugin",
-          name: "foo",
+          name: "annotate",
           version: "1.0.0",
-          title: "Foo plugin",
-          description: "Foo ipsum",
+          title: "Annotate plugin",
+          description: "Annotate test plugin",
           workflows: [
             {
               name: "custom_workflow",
@@ -270,14 +270,14 @@ RSpec.describe Plugins::Service, type: :service, as: :system do
         )
       )
 
-      bar_plugin = PluginSystem::Plugin.new(
+      verify_plugin = PluginSystem::Plugin.new(
         "path_to_bar",
         PluginSystem::Manifest.new(
           type: "idah-plugin",
-          name: "bar",
+          name: "verify",
           version: "1.0.0",
-          title: "Bar plugin",
-          description: "Bar ipsum",
+          title: "Verify plugin",
+          description: "Verify test plugin",
           workflows: [
             {
               name: "review_workflow",
@@ -308,8 +308,8 @@ RSpec.describe Plugins::Service, type: :service, as: :system do
 
       allow(registry).to receive(:plugins).and_return(
         {
-          "foo" => foo_plugin,
-          "bar" => bar_plugin
+          "annotate" => annotate_plugin,
+          "verify" => verify_plugin
         }
       )
 
@@ -325,16 +325,16 @@ RSpec.describe Plugins::Service, type: :service, as: :system do
       expect(output[:workflows][0][:default]).to be true
       expect(output[:workflows][0][:plugin]).to eq("core")
 
-      # Check foo plugin workflow
-      foo_workflow = output[:workflows].find { |w| w[:name] == "custom_workflow" }
-      expect(foo_workflow).not_to be_nil
-      expect(foo_workflow[:label]).to eq("Custom Workflow")
-      expect(foo_workflow[:description]).to eq("A custom annotation workflow")
-      expect(foo_workflow[:plugin]).to eq("foo")
-      expect(foo_workflow[:default]).to be false
-      expect(foo_workflow[:steps].length).to eq(1)
+      # Check annotate plugin workflow
+      annotate_workflow = output[:workflows].find { |w| w[:name] == "custom_workflow" }
+      expect(annotate_workflow).not_to be_nil
+      expect(annotate_workflow[:label]).to eq("Custom Workflow")
+      expect(annotate_workflow[:description]).to eq("A custom annotation workflow")
+      expect(annotate_workflow[:plugin]).to eq("annotate")
+      expect(annotate_workflow[:default]).to be false
+      expect(annotate_workflow[:steps].length).to eq(1)
 
-      annotate_step = foo_workflow[:steps].first
+      annotate_step = annotate_workflow[:steps].first
       expect(annotate_step[:name]).to eq("annotate")
       expect(annotate_step[:label]).to eq("Annotate")
       expect(annotate_step[:description]).to eq("Annotate the data")
@@ -348,16 +348,16 @@ RSpec.describe Plugins::Service, type: :service, as: :system do
         }
       )
 
-      # Check bar plugin workflow
-      bar_workflow = output[:workflows].find { |w| w[:name] == "review_workflow" }
-      expect(bar_workflow).not_to be_nil
-      expect(bar_workflow[:label]).to eq("Review Workflow")
-      expect(bar_workflow[:description]).to eq("A review-focused workflow")
-      expect(bar_workflow[:plugin]).to eq("bar")
-      expect(bar_workflow[:default]).to be false
-      expect(bar_workflow[:steps].length).to eq(1)
+      # Check verify plugin workflow
+      verify_workflow = output[:workflows].find { |w| w[:name] == "review_workflow" }
+      expect(verify_workflow).not_to be_nil
+      expect(verify_workflow[:label]).to eq("Review Workflow")
+      expect(verify_workflow[:description]).to eq("A review-focused workflow")
+      expect(verify_workflow[:plugin]).to eq("verify")
+      expect(verify_workflow[:default]).to be false
+      expect(verify_workflow[:steps].length).to eq(1)
 
-      verify_step = bar_workflow[:steps].first
+      verify_step = verify_workflow[:steps].first
       expect(verify_step[:name]).to eq("verify")
       expect(verify_step[:actions].length).to eq(2)
 

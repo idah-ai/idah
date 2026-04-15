@@ -39,6 +39,11 @@
               "name": "approved",
               "label": "Approve",
               "icon": "SquareCheckIcon"
+            },
+            {
+              "name": "approved",
+              "label": "Request changes",
+              "icon": "SquareXIcon"
             }
           ]
         },
@@ -51,6 +56,11 @@
               "name": "final_approved",
               "label": "Final Approve",
               "icon": "SquareCheckIcon"
+            },
+            {
+              "name": "final_approved",
+              "label": "Request changes",
+              "icon": "SquareXIcon"
             }
           ]
         }
