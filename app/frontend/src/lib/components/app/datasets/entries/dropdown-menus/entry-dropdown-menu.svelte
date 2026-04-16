@@ -80,7 +80,7 @@
       $refetches.entries.list = new Date();
       showToast.success({
         title: "Entry deleted",
-        description: `The entry "${entry.resource}" has been deleted.`,
+        description: `The entry "${entry.filename}" has been deleted.`,
       });
     } catch (error) {
       showToast.error({

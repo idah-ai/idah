@@ -90,6 +90,7 @@
           {
             attributes: {
               resource: createdMedia.data.resource,
+              filename: createdMedia.data.filename,
               status: "pending",
             },
             relationships: {

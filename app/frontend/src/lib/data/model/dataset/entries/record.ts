@@ -30,6 +30,8 @@ export class EntryRecord extends Record {
 
   @field() public resource!: string;
 
+  @field() public filename!: string;
+
   @field() public assigned_to_id!: number | null;
   @field() public submitted_by_id!: number | null;
   @field() public reviewed_by_id!: number | null;

@@ -290,13 +290,13 @@
             class="group-hover:text-primary justify-start px-0 group-hover:cursor-pointer group-hover:underline group-hover:underline-offset-4"
             onclick={selectEntry}
           >
-            <span class="-ml-3">{entry.resource}</span>
+            <span class="-ml-3">{entry.filename}</span>
 
             <ExternalLinkIcon class="opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
           </Button>
         {:else}
           <Text size="sm" weight="medium" class="text-muted-foreground">
-            {entry.resource}
+            {entry.filename}
           </Text>
         {/if}
 
