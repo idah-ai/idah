@@ -6,6 +6,7 @@
 
   import type { IConfigProperty } from "$lib/context/context";
 
+  // Props
   let {
     property,
     value,
@@ -18,6 +19,7 @@
     disabled: boolean;
   } = $props();
 
+  // Variables
   const invalid = $derived(!propertyFullfilled(value, property));
   const format = $derived(invalid ? formatConformity(value, property) : []);
   const formatters = new Map<string, ((v: boolean) => string) | ((v: number) => string)>([

@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { CircleXIcon } from "lucide-svelte";
-  import { SvelteMap } from "svelte/reactivity";
-  // import InputField from "$lib/components/app/forms/fields/input/input-field.svelte";
+  import InputField from "$lib/components/app/forms/fields/input-field.svelte";
   import SidebarContent from "$lib/components/ui/sidebar/sidebar-content.svelte";
   import SidebarHeader from "$lib/components/ui/sidebar/sidebar-header.svelte";
   import Sidebar from "$lib/components/ui/sidebar/sidebar.svelte";
+  import { CircleXIcon } from "lucide-svelte";
+  import { SvelteMap } from "svelte/reactivity";
 
   import { cn } from "$lib/utils";
 
@@ -13,8 +13,6 @@
   import { entryRoot } from "$lib/plugin/store/idb-store.svelte";
   import { currentMode } from "$lib/plugin/store/store";
   import { ENTRY_ROOT } from "$lib/plugin/types";
-
-  import InputField from "$lib/components/app/forms/fields/input-field.svelte";
 
   import type { SidebarView } from "$lib/components/app/sidebar/sidebar.types";
   import type { AnnotationGroup, AnnotationValue } from "$lib/context/annotation-context";
@@ -47,6 +45,7 @@
     class?: string | null;
   } = $props();
 
+  // Variables
   let tools = $derived(
     new Map<string, IConfigValue[]>(
       Object.entries(context.config)
@@ -81,12 +80,7 @@
     if (category) {
       if (shape_type != $currentMode) onSelectAnnotation();
       onEditValue({ category }, shape_type);
-    } // else {
-    //   onEditValue(
-    //     Object.fromEntries(Object.entries(annotationValue).filter(([type, _]) => type == "categories")),
-    //     mode,
-    //   );
-    // }
+    }
   }
 
   function searchCategory(e: Event) {
