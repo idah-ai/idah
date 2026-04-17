@@ -168,7 +168,7 @@
         </Text>
         <!-- Pill darker than bg-secondary to be visible, right side -->
         <span
-          class="text-xs bg-green-200 text-secondary-foreground rounded-full px-2 py-0.5"
+          class="text-xs bg-green-200 text-secondary-foreground rounded-full px-2 py-0.5 dark:bg-green-700"
         >
           CREATE
         </span>
@@ -242,7 +242,7 @@
         </Text>
         <!-- Pill darker than bg-secondary to be visible, right side -->
         <span
-          class="text-xs bg-primary/20 text-secondary-foreground rounded-full px-2 py-0.5"
+          class="text-xs bg-primary/20 text-secondary-foreground rounded-full px-2 py-0.5 dark:bg-primary"
         >
           EDIT
         </span>
