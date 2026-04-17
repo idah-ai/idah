@@ -111,6 +111,9 @@
   let itemsPerPage: number = $state(10);
   let selectedRows: string[] = $state([]);
   let selectedRowsCount: number = $derived(selectedRows.length);
+  let selectedUnAssignedRowsCount: number = $derived(
+    response.data.filter((entry) => selectedRows.includes(entry.id) && !entry.assigned_to_id).length,
+  );
   let openNewEntryModal: boolean = $state(false);
   let openAssignEntryFormModal: boolean = $state(false);
   let openSetPriorityModal: boolean = $state(false);
@@ -505,8 +508,8 @@
 
 <!-- MODAL::CONFIRM UNASSIGN -->
 <ConfirmModal
-  title="Unassign {selectedRowsCount} entries(s)"
-  description="Are you sure you want to unassign {selectedRowsCount} entries(s)? This action cannot be undone."
+  title="Unassign {selectedUnAssignedRowsCount} entries(s)"
+  description="Are you sure you want to unassign {selectedUnAssignedRowsCount} entries(s)? This action cannot be undone."
   onConfirm={unAssignEntries}
   bind:open={openConfirmUnassignEntriesModal}
 />
