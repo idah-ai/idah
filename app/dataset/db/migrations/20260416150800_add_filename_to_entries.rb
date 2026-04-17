@@ -3,7 +3,7 @@
 Sequel.migration do
   change do
     alter_table(:entries) do
-      add_column :filename, String, null: false, default: ""
+      add_column :name, String, null: true
     end
   end
 end

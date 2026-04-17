@@ -6,6 +6,7 @@
       "attributes": {
         "project_id": "019bba87-650e-74e8-a68a-bc49bfff2527",
         "dataset_id": "019bba87-7810-7935-a8ae-d2a6bacebecb",
+        "name": "video_1.mov",
         "priority": 0,
         "wf_step": "annotate",
         "status": "in_progress",
@@ -44,6 +45,7 @@
       "attributes": {
         "project_id": "019bba87-650e-74e8-a68a-bc49bfff2527",
         "dataset_id": "019bba87-7810-7935-a8ae-d2a6bacebecb",
+        "name": "video_2.mov",
         "priority": 0,
         "wf_step": "annotate",
         "status": "in_progress",
@@ -82,6 +84,7 @@
       "attributes": {
         "project_id": "019bba87-650e-74e8-a68a-bc49bfff2527",
         "dataset_id": "019bba87-7810-7935-a8ae-d2a6bacebecb",
+        "name": "video_3.mov",
         "priority": 0,
         "wf_step": "annotate",
         "status": "in_progress",

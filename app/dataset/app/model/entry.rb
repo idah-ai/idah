@@ -17,7 +17,7 @@ module Entry
 
     field :resource, type: String
 
-    field :filename, type: String
+    field :name, type: String
 
     field :assigned_to_id, type: [Integer, NilClass] # Add through assign method
     field :submitted_by_id, type: [Integer, NilClass] # Add through submit method
