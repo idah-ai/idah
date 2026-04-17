@@ -56,10 +56,13 @@
     open = false;
     $refetches.entries.list = new Date();
     selectedMemberAccountId = null;
+    const description = entryIds.length > 1 ? `${entryIds.length} entry(ies) have been assigned to "${projectMemberRecord?.email}".`:
+      `"${entryRecord?.resource}" has been assigned to "${projectMemberRecord?.email}".`;
+
     onAssigned?.();
     showToast.success({
       title: "Entry assigned",
-      description: `The entry "${entryRecord?.resource}" has been assigned to "${projectMemberRecord?.email}".`,
+      description,
     });
   }
 
