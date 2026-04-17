@@ -1,7 +1,9 @@
 <script lang="ts">
+  import type { AnnotationGroup } from "$idah/context/annotation-context";
   import { DEFAULT_MODE } from "$lib/plugin/type";
   import {
     currentFrame,
+    selectedAnnotationGroup,
     deselectAnnotation,
     isVideoPlaying,
     setCurrentModeTo,
@@ -17,26 +19,47 @@
     timelineRulerWidth,
   } from "$lib/plugin/video-annotation-activity/timeline/store";
   import { getSelectedFrameXFromCurrentFrame } from "$lib/plugin/video-annotation-activity/timeline/utils";
+  import type { VideoAnnotationObject } from "../context/video-annotation-context";
+  import { groupAnnotations } from "../utils/group-annotation.svelte";
 
   // Props
   interface Props {
+    annotations: VideoAnnotationObject[];
     onSelectFrameX: (frameX: number) => void;
+    onSelectAnnotationGroup: (
+      annotationGroup: AnnotationGroup<VideoAnnotationObject>,
+      selectedFrame?: number,
+    ) => void;
   }
-  let { onSelectFrameX }: Props = $props();
+  let { annotations, onSelectFrameX, onSelectAnnotationGroup }: Props =
+    $props();
+  let annotationGroups = $derived(groupAnnotations(annotations));
 
   // Variables::Current Frames Ranges
-  let [startFrameIndexOfCurrentFrameRange, endFrameIndexOfCurrentFrameRange] = $derived($currentFrameRange);
-  let currentRangeSpan = $derived(endFrameIndexOfCurrentFrameRange - startFrameIndexOfCurrentFrameRange);
+  let [startFrameIndexOfCurrentFrameRange, endFrameIndexOfCurrentFrameRange] =
+    $derived($currentFrameRange);
+  let currentRangeSpan = $derived(
+    endFrameIndexOfCurrentFrameRange - startFrameIndexOfCurrentFrameRange,
+  );
   let middleFrameIndexOfCurrentFrameRange = $derived(
-    Math.floor((startFrameIndexOfCurrentFrameRange + endFrameIndexOfCurrentFrameRange) / 2) * $framePerScale,
+    Math.floor(
+      (startFrameIndexOfCurrentFrameRange + endFrameIndexOfCurrentFrameRange) /
+        2,
+    ) * $framePerScale,
   );
 
   // Variables::Timeline Ruler
-  let rulerScale = $derived<number>(Math.floor($timelineRulerWidth / $timelineCellWidth));
-  let frameRanges = $derived(getFrameRange($currentFrameRange[0], $currentFrameRange[1]));
+  let rulerScale = $derived<number>(
+    Math.floor($timelineRulerWidth / $timelineCellWidth),
+  );
+  let frameRanges = $derived(
+    getFrameRange($currentFrameRange[0], $currentFrameRange[1]),
+  );
   let majorTicks = $derived.by<Array<number>>(() => {
     return Array.from({ length: rulerScale })
-      .map((_tick, tickIndex) => (tickIndex % $framePerScale === 0 ? tickIndex : null))
+      .map((_tick, tickIndex) =>
+        tickIndex % $framePerScale === 0 ? tickIndex : null,
+      )
       .filter((tick) => tick !== null);
   });
 
@@ -55,7 +78,9 @@
        * Set selected frame x to current frame when video is playing
        * This make timeline-vertical-line change every time current frame is changed.
        */
-      const mouseX = getSelectedFrameXFromCurrentFrame({ currentFrame: $currentFrame });
+      const mouseX = getSelectedFrameXFromCurrentFrame({
+        currentFrame: $currentFrame,
+      });
       setSelectedFrameX(mouseX);
 
       /**
@@ -69,14 +94,21 @@
       const maximumStartFrame = $totalFrames - currentRangeSpan;
 
       /** Don't shift the current frame range, if the scaled end frame of current range is greater than or equal to total frames */
-      if (endFrameIndexOfCurrentFrameRange * $framePerScale >= $totalFrames) return;
+      if (endFrameIndexOfCurrentFrameRange * $framePerScale >= $totalFrames)
+        return;
 
       if ($currentFrame === middleFrameIndexOfCurrentFrameRange) {
-        const newStart = Math.min(maximumStartFrame, startFrameIndexOfCurrentFrameRange + 1);
+        const newStart = Math.min(
+          maximumStartFrame,
+          startFrameIndexOfCurrentFrameRange + 1,
+        );
         const newEnd = newStart + currentRangeSpan;
         setCurrentFrameRange([newStart, newEnd]);
       } else if ($currentFrame > middleFrameIndexOfCurrentFrameRange) {
-        const newStart = Math.min(maximumStartFrame, startFrameIndexOfCurrentFrameRange + 1);
+        const newStart = Math.min(
+          maximumStartFrame,
+          startFrameIndexOfCurrentFrameRange + 1,
+        );
         const newEnd = newStart + currentRangeSpan;
         setCurrentFrameRange([newStart, newEnd]);
       }
@@ -85,7 +117,9 @@
        * Set selected frame x to current frame when video is not playing, but shortcut is pressed (ArrowRight/ArrowLeft)
        * This make timeline-vertical-line change every time current frame is changed.
        */
-      const mouseX = getSelectedFrameXFromCurrentFrame({ currentFrame: $currentFrame });
+      const mouseX = getSelectedFrameXFromCurrentFrame({
+        currentFrame: $currentFrame,
+      });
       setSelectedFrameX(mouseX);
 
       /**
@@ -97,9 +131,22 @@
 
   // Functions
   function selectFrameX(e: MouseEvent) {
-    setCurrentModeTo(DEFAULT_MODE);
-    deselectAnnotation();
+    // setCurrentModeTo(DEFAULT_MODE);
+    // deselectAnnotation();
     onSelectFrameX(e.clientX);
+
+    // If there is a selected annotation group,
+    // select the annotation group at current frame when click on timeline ruler
+    if ($selectedAnnotationGroup) {
+      // Find the annotation group to get all annotations in the group
+      const newSelectedAnnotationGroup = annotationGroups.find(
+        (group) => group.groupId === $selectedAnnotationGroup?.groupId,
+      );
+
+      if (newSelectedAnnotationGroup) {
+        onSelectAnnotationGroup(newSelectedAnnotationGroup, $currentFrame);
+      }
+    }
   }
 </script>
 
@@ -112,7 +159,8 @@
   {#each frameRanges as frame, frameIndex (frameIndex)}
     {@const isMajorTick = majorTicks.includes(frameIndex)}
     {@const frameNumber = Number(frame * $framePerScale) + 1}
-    {@const isInRangeOfTotalFrames = frameIndex * $framePerScale <= $totalFrames - 1}
+    {@const isInRangeOfTotalFrames =
+      frameIndex * $framePerScale <= $totalFrames - 1}
 
     {#if isInRangeOfTotalFrames}
       <div

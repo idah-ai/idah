@@ -1,7 +1,10 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import { currentFrame, selectedAnnotationGroup } from "$lib/plugin/video-annotation-activity/store/store";
+  import {
+    currentFrame,
+    selectedAnnotationGroup,
+  } from "$lib/plugin/video-annotation-activity/store/store";
   import { TIMELINE_ROW_HEADER_WIDTH } from "$lib/plugin/video-annotation-activity/timeline/store";
   import { cn } from "$lib/utils";
 
@@ -13,7 +16,10 @@
     annotationGroup: AnnotationGroup<VideoAnnotationObject>;
     onSelectFrameX: (frameX: number) => void;
     onContextMenu: (e: MouseEvent) => void;
-    onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<VideoAnnotationObject>, selectedFrame?: number) => void;
+    onSelectAnnotationGroup: (
+      annotationGroup: AnnotationGroup<VideoAnnotationObject>,
+      selectedFrame?: number,
+    ) => void;
 
     children: Snippet;
     class?: string | null;
@@ -41,18 +47,16 @@
 
       /** Select frame X if click on cells (not group header) */
       onSelectFrameX(e.clientX);
-
-      /** Select annotation group at specific frame (click on frames) */
-      onSelectAnnotationGroup(annotationGroup, $currentFrame);
-    } else {
-      /** Click on annotation group header */
-
-      /** Select annotation group without specific frame (click on header group) */
-      onSelectAnnotationGroup(annotationGroup, undefined);
     }
+
+    /** Select annotation group at specific frame at current frame */
+    onSelectAnnotationGroup(annotationGroup, $currentFrame);
   }
 
-  function jumpToRowWhenGroupSelected(node: HTMLElement, params: { id: string; isGroupSelected: boolean }) {
+  function jumpToRowWhenGroupSelected(
+    node: HTMLElement,
+    params: { id: string; isGroupSelected: boolean },
+  ) {
     rowElements[params.id] = node;
 
     return {
@@ -78,13 +82,9 @@
   id="timeline-row-group"
   role="button"
   tabindex="-1"
-  class={cn(
-    "relative flex w-full items-center font-light",
-    {
-      "bg-primary/10 font-medium dark:bg-primary/20": isGroupSelected,
-    },
-    className,
-  )}
+  class={cn("relative flex w-full items-center font-light", className, {
+    "bg-primary/10 dark:bg-primary/20 border-primary": isGroupSelected,
+  })}
   use:jumpToRowWhenGroupSelected={{ id: groupId, isGroupSelected }}
   onclick={onCellClick}
   oncontextmenu={onContextMenu}

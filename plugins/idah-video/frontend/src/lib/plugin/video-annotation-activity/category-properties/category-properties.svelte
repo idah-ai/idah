@@ -20,8 +20,6 @@
   import SingleSelectProperty from "$lib/plugin/video-annotation-activity/category-properties/properties/single-select-property.svelte";
   import TextProperty from "$lib/plugin/video-annotation-activity/category-properties/properties/text-property.svelte";
 
-  import { truncate } from "$lib/utils/string";
-
   import {
     IDAH_VIDEO_BOUNDING_BOX,
     IDAH_VIDEO_POLYGON,
@@ -217,7 +215,7 @@
         </SelectContent>
       </Select>
 
-      <Separator />
+      <Separator class="my-3" />
     </section>
   {/if}
 {/snippet}
@@ -285,19 +283,12 @@
       </SelectContent>
     </Select>
 
-    <Separator />
+    <Separator class="my-3" />
   </section>
 {/snippet}
 
 <!-- CATEGORIES -->
 {#if annotationId}
-  <!--
-      If annotationId provided (annotation already created)
-      - We don't allow to change the category when select annotation
-      - We only allow to edit the properties
-      - We only allow to edit the categories at group level
-    -->
-{:else if $selectedAnnotationGroup && !annotationId}
   {@render ReSelectCategory()}
 {:else}
   {@render SelectCategory()}
@@ -307,7 +298,19 @@
 <div class="flex flex-col gap-4">
   {#if category && properties?.length > 0}
     <section class="flex flex-col gap-2">
-      <Text class="mb-2" weight="semibold" size="sm">Properties</Text>
+      <div class="flex flex-row items-center gap-2 mb-2">
+        <Text weight="semibold" size="sm">Properties</Text>
+
+        <!-- Frame range -->
+        {#if firstAnnotationInGroup}
+          <Text size="xs" class="text-muted-foreground">
+            ( Frame :
+            {firstAnnotationInGroup.shape.start} - {firstAnnotationInGroup.shape
+              .end}
+            )
+          </Text>
+        {/if}
+      </div>
 
       {#each properties as property, index (`${property.id}-${index}`)}
         {@const foundPropertyComponent = propertyComponents.find(

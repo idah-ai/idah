@@ -1,5 +1,9 @@
 <script lang="ts">
-  import { SearchIcon, SquareSplitHorizontalIcon, Trash2Icon } from "@lucide/svelte";
+  import {
+    SearchIcon,
+    SquareSplitHorizontalIcon,
+    Trash2Icon,
+  } from "@lucide/svelte";
   import { getContext } from "svelte";
 
   import ConfirmModal from "$lib/components/app/overlays/modals/confirm-modal.svelte";
@@ -20,7 +24,10 @@
   import TimelineRuler from "$lib/plugin/video-annotation-activity/timeline/timeline-ruler.svelte";
   import TimelineVerticalLine from "$lib/plugin/video-annotation-activity/timeline/timeline-vertical-line.svelte";
 
-  import { setCurrentFrame, totalFrames } from "$lib/plugin/video-annotation-activity/store/store";
+  import {
+    setCurrentFrame,
+    totalFrames,
+  } from "$lib/plugin/video-annotation-activity/store/store";
   import {
     currentFrameRange,
     deselectFrameX,
@@ -39,6 +46,7 @@
   import type { IActivityContext } from "$idah/context/activity-context";
   import type { AnnotationGroup } from "$idah/context/annotation-context";
   import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
+  import TimelineRowTitle from "./timeline-row-title.svelte";
 
   // Props
   interface Props {
@@ -46,9 +54,17 @@
     annotationFooterHeight: number;
 
     onSeekFrame: (frame: number) => void;
-    onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<VideoAnnotationObject>, selectedFrame?: number) => void;
+    onSelectAnnotationGroup: (
+      annotationGroup: AnnotationGroup<VideoAnnotationObject>,
+      selectedFrame?: number,
+    ) => void;
   }
-  let { annotations, annotationFooterHeight, onSeekFrame, onSelectAnnotationGroup }: Props = $props();
+  let {
+    annotations,
+    annotationFooterHeight,
+    onSeekFrame,
+    onSelectAnnotationGroup,
+  }: Props = $props();
 
   // Context
   let context: IActivityContext = getContext("context");
@@ -59,7 +75,9 @@
   let clientMouseX: number = $state(0);
   let annotationGroups = $derived(groupAnnotations(annotations));
   let showVerticalLine = $derived(clientMouseX >= TIMELINE_ROW_HEADER_WIDTH);
-  let showSelectedVerticalLine = $derived(Number($selectedFrameX) >= TIMELINE_ROW_HEADER_WIDTH);
+  let showSelectedVerticalLine = $derived(
+    Number($selectedFrameX) >= TIMELINE_ROW_HEADER_WIDTH,
+  );
   let showHorizontalScrollbar = $state<boolean>(false);
   let contextMenu = $state<ITimelineContextMenu>({
     visible: false,
@@ -70,28 +88,6 @@
   let wheelThrottling = $state<boolean>(false);
   let openConfirmDeleteModal = $state<boolean>(false);
   let selectedGroupId = $state<string | undefined>(undefined);
-
-  // Functions
-  function getGroupTitle(props: { annotationGroup: AnnotationGroup<VideoAnnotationObject> }): string {
-    const { annotationGroup } = props;
-    const { groupId, annotations: anns } = annotationGroup;
-    const splittedGroupId = groupId.split("-");
-    const lastPartOfGroupId = splittedGroupId[splittedGroupId.length - 1];
-    const fallbackGroupTitle = `Group-${lastPartOfGroupId}`;
-
-    const firstAnnotationInGroup = anns[0];
-    const firstAnnotationCategoryId = firstAnnotationInGroup.value.category;
-    if (!firstAnnotationCategoryId) return fallbackGroupTitle;
-
-    const foundCategory = findCategory({
-      labelConfig: context.config,
-      categoryId: firstAnnotationCategoryId,
-      shapeType: firstAnnotationInGroup.shape.type,
-    });
-    if (!foundCategory) return fallbackGroupTitle;
-
-    return `${foundCategory.label}-${lastPartOfGroupId}`;
-  }
 
   function handleMouseLeave() {
     showHorizontalScrollbar = false;
@@ -166,7 +162,9 @@
   function selectFrameX(frameX: number) {
     const selectedFrame = getFrameFromMouseX({ clientX: frameX });
     const [startFrameIndexOfCurrentFrameRange, _] = $currentFrameRange;
-    const scaledStartFrameIndexOfCurrentFrameRange = Number(startFrameIndexOfCurrentFrameRange * $framePerScale);
+    const scaledStartFrameIndexOfCurrentFrameRange = Number(
+      startFrameIndexOfCurrentFrameRange * $framePerScale,
+    );
 
     setCurrentFrame(selectedFrame + scaledStartFrameIndexOfCurrentFrameRange);
     onSeekFrame(selectedFrame + scaledStartFrameIndexOfCurrentFrameRange);
@@ -183,7 +181,10 @@
     contextMenu = { visible: false, x: 0, y: 0, menus: {} };
   }
 
-  function showContextMenu(e: MouseEvent, selectAnnotationGroup: AnnotationGroup<VideoAnnotationObject>) {
+  function showContextMenu(
+    e: MouseEvent,
+    selectAnnotationGroup: AnnotationGroup<VideoAnnotationObject>,
+  ) {
     e.preventDefault();
 
     /** (If UX need to select annotation group & set selected vertical line on context menu) Select annotation group */
@@ -192,8 +193,11 @@
 
     const scaledFrame = getFrameFromMouseX({ clientX: e.clientX });
     const [startFrameIndexOfCurrentFrameRange, _] = $currentFrameRange;
-    const scaledStartFrameIndexOfCurrentFrameRange = Number(startFrameIndexOfCurrentFrameRange * $framePerScale);
-    const displayScaledFrame = scaledFrame + scaledStartFrameIndexOfCurrentFrameRange;
+    const scaledStartFrameIndexOfCurrentFrameRange = Number(
+      startFrameIndexOfCurrentFrameRange * $framePerScale,
+    );
+    const displayScaledFrame =
+      scaledFrame + scaledStartFrameIndexOfCurrentFrameRange;
 
     /** Closest annotation */
     const closestAnnotation = findClosestAnnotationInGroup({
@@ -264,22 +268,33 @@
     };
 
     /** Only show split menu, if selected frame is in the closest  */
-    const closestAnnotationKeyFrames = closestAnnotation.shape.frames.map((f) => f.frame);
-    const sortedClosestAnnotationKeyFrames = closestAnnotationKeyFrames.sort((a, b) => a - b);
+    const closestAnnotationKeyFrames = closestAnnotation.shape.frames.map(
+      (f) => f.frame,
+    );
+    const sortedClosestAnnotationKeyFrames = closestAnnotationKeyFrames.sort(
+      (a, b) => a - b,
+    );
 
-    const isSelectedFrameInKeyFrames = sortedClosestAnnotationKeyFrames.some((f, i) => {
-      if (i === sortedClosestAnnotationKeyFrames.length - 1) return false;
-      const next = sortedClosestAnnotationKeyFrames[i + 1];
+    const isSelectedFrameInKeyFrames = sortedClosestAnnotationKeyFrames.some(
+      (f, i) => {
+        if (i === sortedClosestAnnotationKeyFrames.length - 1) return false;
+        const next = sortedClosestAnnotationKeyFrames[i + 1];
 
-      return displayScaledFrame >= f && displayScaledFrame <= next;
-    });
-    if (isSelectedFrameInKeyFrames) contextMenu.menus.frameRelatedMenu.items.push(seekToFrameMenu, splitMenu);
-    if (isSelectedFrameInKeyFrames) contextMenu.menus.annotationMenu.items.push(deleteAnnotationMenu);
+        return displayScaledFrame >= f && displayScaledFrame <= next;
+      },
+    );
+    if (isSelectedFrameInKeyFrames)
+      contextMenu.menus.frameRelatedMenu.items.push(seekToFrameMenu, splitMenu);
+    if (isSelectedFrameInKeyFrames)
+      contextMenu.menus.annotationMenu.items.push(deleteAnnotationMenu);
 
     /** Only show delete interpolation menu, if selected annotations have keyframe at selected frame */
     const hasInterpolationAtFrame =
-      closestAnnotation.shape.frames.filter((f) => f.frame === displayScaledFrame).length > 0;
-    if (hasInterpolationAtFrame) contextMenu.menus.frameRelatedMenu.items.push(deleteInterpolationMenu);
+      closestAnnotation.shape.frames.filter(
+        (f) => f.frame === displayScaledFrame,
+      ).length > 0;
+    if (hasInterpolationAtFrame)
+      contextMenu.menus.frameRelatedMenu.items.push(deleteInterpolationMenu);
 
     const frameRelatedMenus = contextMenu.menus.frameRelatedMenu.items.length;
     const annotationMenus = contextMenu.menus.annotationMenu.items.length;
@@ -324,16 +339,28 @@
   onmouseenter={() => (showHorizontalScrollbar = true)}
   onmouseleave={handleMouseLeave}
 >
-  <div id="timeline" bind:this={timelineEl} class="relative w-full max-w-screen">
+  <div
+    id="timeline"
+    bind:this={timelineEl}
+    class="relative w-full max-w-screen"
+  >
     <TimelineHeaderRow>
       <TimelineRowHeader>
-        <TimelineRowHeading class="font-semibold">Annotations</TimelineRowHeading>
+        <TimelineRowHeading class="font-semibold"
+          >Annotations</TimelineRowHeading
+        >
 
-        {@const allAnnotationsHidden = annotationGroups.every((annotationGroup) =>
-          annotationGroup.annotations.every((annotation) => annotation.hidden),
+        {@const allAnnotationsHidden = annotationGroups.every(
+          (annotationGroup) =>
+            annotationGroup.annotations.every(
+              (annotation) => annotation.hidden,
+            ),
         )}
-        {@const allAnnotationsLocked = annotationGroups.every((annotationGroup) =>
-          annotationGroup.annotations.every((annotation) => annotation.locked),
+        {@const allAnnotationsLocked = annotationGroups.every(
+          (annotationGroup) =>
+            annotationGroup.annotations.every(
+              (annotation) => annotation.locked,
+            ),
         )}
 
         <TimelineRowActions
@@ -347,18 +374,31 @@
         />
       </TimelineRowHeader>
 
-      <TimelineRuler onSelectFrameX={selectFrameX} />
+      <TimelineRuler
+        {annotations}
+        onSelectFrameX={selectFrameX}
+        {onSelectAnnotationGroup}
+      />
     </TimelineHeaderRow>
 
     <ScrollArea id="timeline-scroll-area">
-      <section style:height="{timelineScrollAreaHeight}px" onwheel={handleTimelineWheel}>
+      <section
+        style:height="{timelineScrollAreaHeight}px"
+        onwheel={handleTimelineWheel}
+      >
         {#each annotationGroups as annotationGroup (annotationGroup.groupId)}
-          {@const allAnnotationsInGroupHidden = annotationGroup.annotations.every((annotation) => annotation.hidden)}
-          {@const allAnnotationsInGroupLocked = annotationGroup.annotations.every((annotation) => annotation.locked)}
+          {@const allAnnotationsInGroupHidden =
+            annotationGroup.annotations.every(
+              (annotation) => annotation.hidden,
+            )}
+          {@const allAnnotationsInGroupLocked =
+            annotationGroup.annotations.every(
+              (annotation) => annotation.locked,
+            )}
 
           <TimelineRow>
             <TimelineRowGroup
-              class="border-b"
+              class="border-b border-t"
               {annotationGroup}
               onSelectFrameX={selectFrameX}
               onContextMenu={(e) => showContextMenu(e, annotationGroup)}
@@ -366,16 +406,19 @@
             >
               <TimelineRowHeader>
                 <TimelineRowHeading>
-                  {getGroupTitle({ annotationGroup })}
+                  <TimelineRowTitle {annotationGroup}></TimelineRowTitle>
                 </TimelineRowHeading>
 
                 <TimelineRowActions
                   mode="single"
                   allAnnotationsHidden={allAnnotationsInGroupHidden}
                   allAnnotationsLocked={allAnnotationsInGroupLocked}
-                  onToggleVisibility={() => toggleAnnotationGroupVisibility(annotationGroup.groupId)}
-                  onToggleEditability={() => toggleAnnotationGroupEditability(annotationGroup.groupId)}
-                  onClickDelete={() => showConfirmDeleteModal(annotationGroup.groupId)}
+                  onToggleVisibility={() =>
+                    toggleAnnotationGroupVisibility(annotationGroup.groupId)}
+                  onToggleEditability={() =>
+                    toggleAnnotationGroupEditability(annotationGroup.groupId)}
+                  onClickDelete={() =>
+                    showConfirmDeleteModal(annotationGroup.groupId)}
                 />
               </TimelineRowHeader>
 
@@ -409,7 +452,9 @@
 
 <ConfirmModal
   title="Delete {selectedGroupId ? 'annotation group' : 'all annotations'}"
-  description="Are you sure you want to delete {selectedGroupId ? 'this annotation group' : 'all annotations'}?"
+  description="Are you sure you want to delete {selectedGroupId
+    ? 'this annotation group'
+    : 'all annotations'}?"
   onConfirm={() => {
     if (selectedGroupId) {
       deleteAnnotationGroup(selectedGroupId);

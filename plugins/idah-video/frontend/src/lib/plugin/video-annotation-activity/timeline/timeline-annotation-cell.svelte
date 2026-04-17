@@ -9,7 +9,10 @@
   } from "$lib/plugin/video-annotation-activity/timeline/store";
   import { findCategory } from "$lib/plugin/video-annotation-activity/utils/category";
 
-  import type { IActivityContext, IConfigValue } from "$idah/context/activity-context";
+  import type {
+    IActivityContext,
+    IConfigValue,
+  } from "$idah/context/activity-context";
   import type { AnnotationGroup } from "$idah/context/annotation-context";
   import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
 
@@ -36,10 +39,14 @@
   let endFrameIndexOfCurrentFrameRange = $derived($currentFrameRange[1]);
 
   /** The first frame of current frame range (1-based), e.g. [0, 48] will return 1 */
-  let startFrameOfCurrentFrameRange = $derived(startFrameIndexOfCurrentFrameRange + 1);
+  let startFrameOfCurrentFrameRange = $derived(
+    startFrameIndexOfCurrentFrameRange + 1,
+  );
 
   /** The last frame of current frame range (1-based), e.g. [0, 48] will return 49 */
-  let endFrameOfCurrentFrameRange = $derived(endFrameIndexOfCurrentFrameRange + 1);
+  let endFrameOfCurrentFrameRange = $derived(
+    endFrameIndexOfCurrentFrameRange + 1,
+  );
 
   /** The count of frame ranges */
   let rangeLength = $derived(frameRanges.length);
@@ -100,10 +107,16 @@
       return Math.max(1, Math.floor(frame / $framePerScale));
     });
   });
-  let notNullScaledTransformedFrameRanges = $derived(scaledTransformedFrameRanges.filter((frame) => frame !== null));
-  let scaledTransformedRangeLength = $derived(scaledTransformedFrameRanges.length);
+  let notNullScaledTransformedFrameRanges = $derived(
+    scaledTransformedFrameRanges.filter((frame) => frame !== null),
+  );
+  let scaledTransformedRangeLength = $derived(
+    scaledTransformedFrameRanges.length,
+  );
   let startOfScaledTransformedRange = $derived(scaledTransformedFrameRanges[0]);
-  let endOfScaledTransformedRange = $derived(scaledTransformedFrameRanges[scaledTransformedRangeLength - 1]);
+  let endOfScaledTransformedRange = $derived(
+    scaledTransformedFrameRanges[scaledTransformedRangeLength - 1],
+  );
   let scaledTransformedRangeStyle = $derived.by(() => {
     let width: number = 0;
     let left: number = 0;
@@ -114,7 +127,14 @@
 
     /** No frame to display in current frame span */
     if (!startOfScaledTransformedRange && !endOfScaledTransformedRange) {
-      return { width, left, showBorderLeft, showBorderRight, borderRadiusLeft, borderRadiusRight };
+      return {
+        width,
+        left,
+        showBorderLeft,
+        showBorderRight,
+        borderRadiusLeft,
+        borderRadiusRight,
+      };
     }
 
     /** Have start frame in current frame span, but no end frame in current frame span */
@@ -150,7 +170,10 @@
     /** Have both start and end frame in current frame span */
     if (startOfScaledTransformedRange && endOfScaledTransformedRange) {
       width = endOfScaledTransformedRange - startOfScaledTransformedRange;
-      left = Math.max(startOfScaledTransformedRange - startFrameOfCurrentFrameRange, 0);
+      left = Math.max(
+        startOfScaledTransformedRange - startFrameOfCurrentFrameRange,
+        0,
+      );
       return {
         width: (width + 1) * $timelineCellWidth,
         left: left * $timelineCellWidth,
@@ -162,13 +185,22 @@
       };
     }
 
-    return { width, left, showBorderLeft, showBorderRight, borderRadiusLeft, borderRadiusRight, debug: 4 };
+    return {
+      width,
+      left,
+      showBorderLeft,
+      showBorderRight,
+      borderRadiusLeft,
+      borderRadiusRight,
+      debug: 4,
+    };
   });
 
   // Variables::Selected and Hovered
   let isSelected = $derived.by<boolean>(() => {
     const selectedAnnotationId = $selectedAnnotation?.metadata.id;
-    const selectedAnnotationGroupId = $selectedAnnotation?.metadata?.metadata?.group_id;
+    const selectedAnnotationGroupId =
+      $selectedAnnotation?.metadata?.metadata?.group_id;
     let selectedAnnotationIsInThisAnnotationGroup: boolean;
 
     /** Check if selected annotation is in this annotation group or not*/
@@ -207,7 +239,9 @@
   let groupTextColor = $derived(groupCategory.text_color);
 
   // Functions
-  function getGroupCategory(annGroup: AnnotationGroup<VideoAnnotationObject>): IConfigValue {
+  function getGroupCategory(
+    annGroup: AnnotationGroup<VideoAnnotationObject>,
+  ): IConfigValue {
     const { annotations } = annGroup;
     const fallbackGroupCategory = {
       id: "",
@@ -231,7 +265,7 @@
   }
 </script>
 
-<!-- NOTE:: 
+<!-- NOTE::
   - This component is for rendering annotations / interpolation only
   - If you need to add more interactive features like onclick, oncontextmenu, etc.
   - Add it to TimelineRowGroup.svelte component instead.
@@ -275,7 +309,10 @@
       style:background-color={groupColor}
       style:height="{annotationHeight * 0.6}px"
       style:width="{$timelineCellWidth * 0.8}px"
-      style:left="{Math.max(interpolationAtFrame - startFrameIndexOfCurrentFrameRange - 1, 0) * $timelineCellWidth}px"
+      style:left="{Math.max(
+        interpolationAtFrame - startFrameIndexOfCurrentFrameRange - 1,
+        0,
+      ) * $timelineCellWidth}px"
     ></div>
   {/each}
 {/if}
