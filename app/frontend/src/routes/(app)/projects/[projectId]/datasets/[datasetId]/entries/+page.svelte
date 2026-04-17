@@ -158,23 +158,28 @@
   );
   let isRowSelected: boolean = $derived(selectedRowsCount > 0);
 
-  const bulkActions = $derived(getEntryDropdownMenuActions({
-    onAssign: () => {
-      openAssignEntryFormModal = true;
-    },
-    onUnAssign: () => {
-      openConfirmUnassignEntriesModal = true;
-    },
-    onSetPriority: () => {
-      openSetPriorityModal = true;
-    },
-    onDelete: () => {
-      openConfirmDeleteEntriesModal = true;
-    },
-  }, checkEntriesAssignedToAnyone(selectedRows)));
+  const bulkActions = $derived(
+    getEntryDropdownMenuActions(
+      {
+        onAssign: () => {
+          openAssignEntryFormModal = true;
+        },
+        onUnAssign: () => {
+          openConfirmUnassignEntriesModal = true;
+        },
+        onSetPriority: () => {
+          openSetPriorityModal = true;
+        },
+        onDelete: () => {
+          openConfirmDeleteEntriesModal = true;
+        },
+      },
+      checkEntriesAssignedToAnyone(selectedRows),
+    ),
+  );
 
   // Functions
-  function checkEntriesAssignedToAnyone(entryIds: string[]): boolean {    
+  function checkEntriesAssignedToAnyone(entryIds: string[]): boolean {
     return response.data.some((entry) => entryIds.includes(entry.id) && !!entry.assigned_to_id);
   }
 
