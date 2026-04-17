@@ -68,7 +68,9 @@
 
   // Variables
   let openCategory = $state(true);
-  let currentModeIsSameAsShape = $derived($currentMode == modalityShape);
+  let currentModeIsSameAsShape = $derived(
+    $currentMode == modalityShape && !$selectedAnnotation,
+  );
 
   // Automatically expand all categories when categories prop changes, but allow manual toggles
   let manualToggleStates = $state<Record<string, boolean>>({});
@@ -248,7 +250,8 @@
 
       <CollapsibleTrigger
         class={cn("text-secondary-foreground flex w-full rounded-md text-xs", {
-          "bg-secondary border-primary border": selectedCategory == category.id,
+          "bg-secondary border-primary border":
+            !$selectedAnnotation && selectedCategory == category.id,
           "hover:bg-primary-foreground hover:dark:bg-accent cursor-pointer":
             !category.requiredNested,
           "hover:bg-accent cursor-pointer": !currentModeIsSameAsShape,
@@ -269,8 +272,7 @@
               size="icon-sm"
               disabled={currentModeIsSameAsShape}
               class={cn("p-0", {
-                "opacity-0":
-                  !showChevronRightIcon || $selectedAnnotation?.metadata.id,
+                "opacity-0": !showChevronRightIcon,
               })}
               onclick={(e) => {
                 e.stopPropagation();
@@ -284,7 +286,7 @@
               }}
             >
               {#if view === "sidebar"}
-                {#if currentModeIsSameAsShape}
+                {#if currentModeIsSameAsShape && !$selectedAnnotation}
                   <!-- TOOLS::BOUNDING BOX / POLYGON / OTHER SHAPES -->
                   {#if isSelectingCategory}
                     <PlusIcon class="text-primary" strokeWidth={4} />
@@ -303,10 +305,13 @@
                   <!-- TOOLS::VISUAL -->
                   <ChevronRightIcon
                     class={cn({
-                      "opacity-0": !showChevronRightIcon,
+                      "opacity-0":
+                        !showChevronRightIcon && !$selectedAnnotation,
                       "rotate-90": openStates[category.id],
-                      "stroke-blue-300": isSelectingCategory,
-                      "stroke-gray-500": !isSelectingCategory,
+                      "stroke-blue-300":
+                        isSelectingCategory && !$selectedAnnotation,
+                      "stroke-gray-500":
+                        !isSelectingCategory || $selectedAnnotation,
                     })}
                   />
                 {/if}

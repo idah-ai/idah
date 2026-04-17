@@ -12,7 +12,11 @@
 
   import { ENTRY_ROOT } from "$lib/plugin/type";
   import { entryRoot } from "$lib/plugin/video-annotation-activity/store/idb-store.svelte";
-  import { currentMode, deselectAnnotationGroup } from "$lib/plugin/video-annotation-activity/store/store";
+  import {
+    currentMode,
+    deselectAnnotationGroup,
+    selectedAnnotation,
+  } from "$lib/plugin/video-annotation-activity/store/store";
 
   import type {
     IActivityContext,
@@ -84,8 +88,8 @@
   // Functions
   function categorySelection(shape_type: string, category?: string) {
     if (category) {
-      if (shape_type != $currentMode) onSelectAnnotation();
       deselectAnnotationGroup();
+      onSelectAnnotation();
       onEditValue({ category }, shape_type);
     } // else {
     //   onEditValue(
@@ -120,7 +124,7 @@
   class={cn(className)}
   style="width: ${sidebarWidthRem}rem"
 >
-  {#if !tools.has($currentMode)}
+  {#if !tools.has($currentMode) || $selectedAnnotation}
     <SidebarHeader>
       <InputField
         name="input/plugin/search"
