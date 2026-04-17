@@ -4,17 +4,24 @@ import type { IDropdownMenuItem } from "@/components/app/dropdown-menus/types";
 
 interface Params {
   onAssign: () => Promise<void> | void;
+  onUnAssign: () => Promise<void> | void;
   onSetPriority: () => Promise<void> | void;
   onDelete: () => Promise<void> | void;
 }
-export function getEntryDropdownMenuActions(params: Params): IDropdownMenuItem[] {
-  const { onAssign, onSetPriority, onDelete } = params;
+export function getEntryDropdownMenuActions(params: Params, isAssigned: boolean = false): IDropdownMenuItem[] {
+  const { onAssign, onUnAssign, onSetPriority, onDelete } = params;
 
   return [
     {
       label: "Assign to",
       icon: UserRoundPlusIcon,
       action: onAssign,
+    },
+    {
+      label: "Unassign",
+      icon: UserRoundPlusIcon,
+      action: onUnAssign,
+      hidden: !isAssigned,
     },
     {
       label: "Set Priority",

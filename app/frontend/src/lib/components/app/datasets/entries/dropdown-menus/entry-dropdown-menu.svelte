@@ -33,18 +33,22 @@
   let entryRecord: EntryRecord | undefined = $state(undefined);
 
   // Variables
-  const menus = getEntryDropdownMenuActions({
+  let menus = $derived(getEntryDropdownMenuActions({
     onAssign: openAssignEntryModal,
+    onUnAssign: () => {
+      openConfirmUnassignEntryModal = true;
+    },
     onSetPriority: () => {},
     onDelete: () => {
       openConfirmDeleteEntryModal = true;
     },
-  }).filter((m) => m.label !== "Set Priority");
+  }, !!entry.assigned_to_id).filter((m) => m.label !== "Set Priority"));
 
   let currentAccount = $authStatus.authContext;
   let canUpdateEntry = $state(false);
   let canDeleteEntry = $state(false);
   let openAssignEntryFormModal: boolean = $state(false);
+  let openConfirmUnassignEntryModal: boolean = $state(false);
   let openConfirmDeleteEntryModal: boolean = $state(false);
 
   // Lifecycle
@@ -70,6 +74,29 @@
 
     entryRecord = entryRes.data;
     openAssignEntryFormModal = true;
+  }
+
+    async function unAssignEntry() {
+    try {
+      await entriesBackendDataSource.update(entry.id, {
+        attributes: {
+          assigned_to_id: null,
+        },
+      });
+
+
+      openConfirmUnassignEntryModal = false;
+      $refetches.entries.list = new Date();
+      showToast.success({
+        title: "Entry unassigned",
+        description: `The entry "${entry.resource}" has been unassigned.`,
+      });
+    } catch (error) {
+      showToast.error({
+        title: "Unable to unassign entry",
+        description: error?.errors[0]?.detail || "The action could not be completed, please try again later.",
+      });
+    }
   }
 
   async function deleteEntry() {
@@ -115,6 +142,14 @@
 
   <!-- MODAL::ASSIGN ANNOTATOR  -->
   <AssignEntryFormModal action="update" {entryRecord} entryIds={[entry.id]} bind:open={openAssignEntryFormModal} />
+
+   <!-- MODAL::CONFIRM UNASSIGN -->
+  <ConfirmModal
+    title="Unassign"
+    description="Are you sure you want to unassign this entry?"
+    onConfirm={unAssignEntry}
+    bind:open={openConfirmUnassignEntryModal}
+  />
 
   <!-- MODAL::CONFIRM DELETE -->
   <ConfirmModal

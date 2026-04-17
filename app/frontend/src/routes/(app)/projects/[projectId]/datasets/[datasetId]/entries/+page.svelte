@@ -114,6 +114,7 @@
   let openNewEntryModal: boolean = $state(false);
   let openAssignEntryFormModal: boolean = $state(false);
   let openSetPriorityModal: boolean = $state(false);
+  let openConfirmUnassignEntriesModal: boolean = $state(false);
   let openConfirmDeleteEntriesModal: boolean = $state(false);
   let openExportModal: boolean = $state(false);
 
@@ -157,9 +158,12 @@
   );
   let isRowSelected: boolean = $derived(selectedRowsCount > 0);
 
-  const bulkActions = getEntryDropdownMenuActions({
+  const bulkActions = $derived(getEntryDropdownMenuActions({
     onAssign: () => {
       openAssignEntryFormModal = true;
+    },
+    onUnAssign: () => {
+      openConfirmUnassignEntriesModal = true;
     },
     onSetPriority: () => {
       openSetPriorityModal = true;
@@ -167,12 +171,13 @@
     onDelete: () => {
       openConfirmDeleteEntriesModal = true;
     },
-    onExport: () => {
-      openExportModal = true;
-    },
-  });
+  }, checkEntriesAssignedToAnyone(selectedRows)));
 
   // Functions
+  function checkEntriesAssignedToAnyone(entryIds: string[]): boolean {    
+    return response.data.some((entry) => entryIds.includes(entry.id) && !!entry.assigned_to_id);
+  }
+
   function openNewEntryFormModal(): void {
     openNewEntryModal = true;
   }
@@ -292,6 +297,22 @@
     }
   }
 
+  async function unAssignEntries(): Promise<void> {
+    for (const entryId of selectedRows) {
+      await entriesBackendDataSource.update(entryId, {
+        attributes: {
+          assigned_to_id: null,
+        },
+      });
+    }
+
+    showToast.success({ title: `${selectedRowsCount} Entry(s) successfully unassigned.` });
+
+    selectedRows = [];
+    $refetches.entries.list = new Date();
+    openConfirmUnassignEntriesModal = false;
+  }
+
   async function deleteEntries(): Promise<void> {
     for (const entryId of selectedRows) {
       await entriesBackendDataSource.delete(entryId);
@@ -405,11 +426,13 @@
 
               <DropdownMenuContent>
                 <DropdownMenuGroup>
-                  {#each bulkActions as { label, icon: Icon, action }, index (index)}
-                    <DropdownMenuItem onclick={action}>
-                      <Icon class="mr-2 size-4" />
-                      {label}
-                    </DropdownMenuItem>
+                  {#each bulkActions as { label, icon: Icon, action, hidden }, index (index)}
+                    {#if !hidden}
+                      <DropdownMenuItem onclick={action}>
+                        <Icon class="mr-2 size-4" />
+                        {label}
+                      </DropdownMenuItem>
+                    {/if}
                   {/each}
                 </DropdownMenuGroup>
               </DropdownMenuContent>
@@ -474,6 +497,14 @@
 
 <!-- MODAL::SET PRIORITY -->
 <UpdateEntryPriorityFormModal action="update" entryIds={selectedRows} bind:open={openSetPriorityModal} />
+
+<!-- MODAL::CONFIRM UNASSIGN -->
+<ConfirmModal
+  title="Unassign {selectedRowsCount} entries(s)"
+  description="Are you sure you want to unassign {selectedRowsCount} entries(s)? This action cannot be undone."
+  onConfirm={unAssignEntries}
+  bind:open={openConfirmUnassignEntriesModal}
+/>
 
 <!-- MODAL::CONFIRM DELETE -->
 <ConfirmModal
