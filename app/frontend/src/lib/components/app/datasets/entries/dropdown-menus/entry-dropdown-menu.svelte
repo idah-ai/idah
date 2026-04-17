@@ -33,16 +33,21 @@
   let entryRecord: EntryRecord | undefined = $state(undefined);
 
   // Variables
-  let menus = $derived(getEntryDropdownMenuActions({
-    onAssign: openAssignEntryModal,
-    onUnAssign: () => {
-      openConfirmUnassignEntryModal = true;
-    },
-    onSetPriority: () => {},
-    onDelete: () => {
-      openConfirmDeleteEntryModal = true;
-    },
-  }, !!entry.assigned_to_id).filter((m) => m.label !== "Set Priority"));
+  let menus = $derived(
+    getEntryDropdownMenuActions(
+      {
+        onAssign: openAssignEntryModal,
+        onUnAssign: () => {
+          openConfirmUnassignEntryModal = true;
+        },
+        onSetPriority: () => {},
+        onDelete: () => {
+          openConfirmDeleteEntryModal = true;
+        },
+      },
+      !!entry.assigned_to_id,
+    ).filter((m) => m.label !== "Set Priority"),
+  );
 
   let currentAccount = $authStatus.authContext;
   let canUpdateEntry = $state(false);
@@ -76,14 +81,13 @@
     openAssignEntryFormModal = true;
   }
 
-    async function unAssignEntry() {
+  async function unAssignEntry() {
     try {
       await entriesBackendDataSource.update(entry.id, {
         attributes: {
           assigned_to_id: null,
         },
       });
-
 
       openConfirmUnassignEntryModal = false;
       $refetches.entries.list = new Date();
@@ -143,7 +147,7 @@
   <!-- MODAL::ASSIGN ANNOTATOR  -->
   <AssignEntryFormModal action="update" {entryRecord} entryIds={[entry.id]} bind:open={openAssignEntryFormModal} />
 
-   <!-- MODAL::CONFIRM UNASSIGN -->
+  <!-- MODAL::CONFIRM UNASSIGN -->
   <ConfirmModal
     title="Unassign"
     description="Are you sure you want to unassign this entry?"
