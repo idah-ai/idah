@@ -345,7 +345,15 @@
         });
       }
 
-      showToast.success({ title: `${selectedRowsCount} Entry(s) successfully deleted.` });
+      const description =
+        selectedRowsCount > 1
+          ? `${selectedRowsCount} entries have been deleted.`
+          : `The entry "${response.data.find((entry) => entry.id === selectedRows[0])?.resource}" has been deleted.`;
+
+      showToast.success({
+        title: "Entry deleted",
+        description,
+      });
 
       selectedRows = [];
       $refetches.entries.list = new Date();
