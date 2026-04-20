@@ -58,7 +58,7 @@
     selectedMemberAccountId = null;
     const description =
       entryIds.length > 1
-        ? `${entryIds.length} entry(ies) have been assigned to "${projectMemberRecord?.email}".`
+        ? `${entryIds.length} entryies have been assigned to "${projectMemberRecord?.email}".`
         : `"${entryRecord?.resource}" has been assigned to "${projectMemberRecord?.email}".`;
 
     onAssigned?.();

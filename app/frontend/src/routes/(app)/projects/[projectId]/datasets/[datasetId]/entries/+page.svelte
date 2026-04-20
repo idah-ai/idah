@@ -47,6 +47,7 @@
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
   import { authStatus } from "@/security/AuthContext";
   import { cn } from "@/utils";
+  import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
 
   import type {
@@ -306,19 +307,23 @@
   }
 
   async function unAssignEntries(): Promise<void> {
-    for (const entryId of selectedRows) {
-      await entriesBackendDataSource.update(entryId, {
-        attributes: {
-          assigned_to_id: null,
-        },
-      });
+    try {
+      for (const entryId of selectedRows) {
+        await entriesBackendDataSource.update(entryId, {
+          attributes: {
+            assigned_to_id: null,
+          },
+        });
+      }
+
+      showToast.success({ title: `${selectedUnAssignedRowsCount} Entry(s) successfully unassigned.` });
+
+      selectedRows = [];
+      $refetches.entries.list = new Date();
+      openConfirmUnassignEntriesModal = false;
+    } catch (error) {
+      showActionFailedToast(error);
     }
-
-    showToast.success({ title: `${selectedUnAssignedRowsCount} Entry(s) successfully unassigned.` });
-
-    selectedRows = [];
-    $refetches.entries.list = new Date();
-    openConfirmUnassignEntriesModal = false;
   }
 
   async function deleteEntries(): Promise<void> {
@@ -508,7 +513,7 @@
 
 <!-- MODAL::CONFIRM UNASSIGN -->
 <ConfirmModal
-  title="Entry unassigned"
+  title="Un-assign Entry"
   description="Are you sure you want to unassign {selectedUnAssignedRowsCount} entries(s)? This action cannot be undone."
   onConfirm={unAssignEntries}
   bind:open={openConfirmUnassignEntriesModal}
