@@ -316,7 +316,15 @@
         });
       }
 
-      showToast.success({ title: `${selectedToUnAssignedRowsCount} Entry(s) successfully unassigned.` });
+      const selectedToUnAssignedRows = response.data.filter((entry) => selectedRows.includes(entry.id) && entry.assigned_to_id);
+      const description = selectedToUnAssignedRowsCount > 1
+        ? `${selectedToUnAssignedRows.length} entries have been unassigned.`
+        : `The entry "${selectedToUnAssignedRows[0]?.resource}" has been unassigned.`;
+
+      showToast.success({
+        title: "Entry unassigned",
+        description,
+       });
 
       selectedRows = [];
       $refetches.entries.list = new Date();
