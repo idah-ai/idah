@@ -314,7 +314,7 @@
       });
     }
 
-    showToast.success({ title: `${selectedRowsCount} Entry(s) successfully unassigned.` });
+    showToast.success({ title: `${selectedUnAssignedRowsCount} Entry(s) successfully unassigned.` });
 
     selectedRows = [];
     $refetches.entries.list = new Date();

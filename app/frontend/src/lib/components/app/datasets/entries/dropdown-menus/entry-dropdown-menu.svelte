@@ -134,11 +134,13 @@
 
     <DropdownMenuContent align="end">
       <DropdownMenuGroup>
-        {#each menus as { label, icon: Icon, action }, index (index)}
-          <DropdownMenuItem onclick={action}>
-            <Icon class="size-4" />
-            {label}
-          </DropdownMenuItem>
+        {#each menus as { label, icon: Icon, action, hidden }, index (index)}
+          {#if !hidden}
+            <DropdownMenuItem onclick={action}>
+              <Icon class="size-4" />
+              {label}
+            </DropdownMenuItem>
+          {/if}
         {/each}
       </DropdownMenuGroup>
     </DropdownMenuContent>
