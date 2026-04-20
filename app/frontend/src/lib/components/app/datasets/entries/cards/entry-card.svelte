@@ -121,18 +121,9 @@
 
   async function loadThumbnail(): Promise<void> {
     try {
-      const { resource, dataset } = entry;
-
-      let key = "processed.webp";
-      if (dataset.modality === "idah-video") {
-        key = "thumbnail.jpg"; // TODO: recheck if we should also change idah-video's thumbnail to webp as well
-      } else if (dataset.modality === "idah-image") {
-        key = "thumbnail.webp";
-      }
-
       thumbnailUrl = await mediaBackendDataSource.getFiles({
-        resource,
-        key,
+        resource: entry.resource,
+        key: "thumbnail.jpg",
       });
 
       thumbnailImg.onload = () => {
