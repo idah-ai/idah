@@ -18,14 +18,8 @@
     selectedAnnotation,
   } from "$lib/plugin/video-annotation-activity/store/store";
 
-  import type {
-    IActivityContext,
-    IConfigValue,
-  } from "$idah/context/activity-context";
-  import type {
-    AnnotationGroup,
-    AnnotationValue,
-  } from "$idah/context/annotation-context";
+  import type { IActivityContext, IConfigValue } from "$idah/context/activity-context";
+  import type { AnnotationGroup, AnnotationValue } from "$idah/context/annotation-context";
   import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
   import type { AnnotationBackend } from "$lib/plugin/video-annotation-activity/data/annotation/annotaiton-backend.svelte";
 
@@ -47,9 +41,7 @@
     annotationValue: AnnotationValue;
     onEditValue: (annotationValue: AnnotationValue, mode: string) => void;
     onSelectAnnotation: (annotation?: VideoAnnotationObject) => void;
-    onSelectAnnotationGroup: (
-      annotationGroup: AnnotationGroup<VideoAnnotationObject>,
-    ) => void;
+    onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<VideoAnnotationObject>) => void;
     onDeleteAnnotation: (annotation: VideoAnnotationObject) => void;
     context: IActivityContext;
     db?: AnnotationBackend;
@@ -118,12 +110,7 @@
   }
 </script>
 
-<Sidebar
-  variant="inset"
-  collapsible="none"
-  class={cn(className)}
-  style="width: ${sidebarWidthRem}rem"
->
+<Sidebar variant="inset" collapsible="none" class={cn(className)} style="width: ${sidebarWidthRem}rem">
   {#if !tools.has($currentMode) || $selectedAnnotation}
     <SidebarHeader>
       <InputField

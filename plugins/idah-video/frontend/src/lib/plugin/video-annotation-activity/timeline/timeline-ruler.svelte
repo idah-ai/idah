@@ -26,40 +26,24 @@
   interface Props {
     annotations: VideoAnnotationObject[];
     onSelectFrameX: (frameX: number) => void;
-    onSelectAnnotationGroup: (
-      annotationGroup: AnnotationGroup<VideoAnnotationObject>,
-      selectedFrame?: number,
-    ) => void;
+    onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<VideoAnnotationObject>, selectedFrame?: number) => void;
   }
-  let { annotations, onSelectFrameX, onSelectAnnotationGroup }: Props =
-    $props();
+  let { annotations, onSelectFrameX, onSelectAnnotationGroup }: Props = $props();
   let annotationGroups = $derived(groupAnnotations(annotations));
 
   // Variables::Current Frames Ranges
-  let [startFrameIndexOfCurrentFrameRange, endFrameIndexOfCurrentFrameRange] =
-    $derived($currentFrameRange);
-  let currentRangeSpan = $derived(
-    endFrameIndexOfCurrentFrameRange - startFrameIndexOfCurrentFrameRange,
-  );
+  let [startFrameIndexOfCurrentFrameRange, endFrameIndexOfCurrentFrameRange] = $derived($currentFrameRange);
+  let currentRangeSpan = $derived(endFrameIndexOfCurrentFrameRange - startFrameIndexOfCurrentFrameRange);
   let middleFrameIndexOfCurrentFrameRange = $derived(
-    Math.floor(
-      (startFrameIndexOfCurrentFrameRange + endFrameIndexOfCurrentFrameRange) /
-        2,
-    ) * $framePerScale,
+    Math.floor((startFrameIndexOfCurrentFrameRange + endFrameIndexOfCurrentFrameRange) / 2) * $framePerScale,
   );
 
   // Variables::Timeline Ruler
-  let rulerScale = $derived<number>(
-    Math.floor($timelineRulerWidth / $timelineCellWidth),
-  );
-  let frameRanges = $derived(
-    getFrameRange($currentFrameRange[0], $currentFrameRange[1]),
-  );
+  let rulerScale = $derived<number>(Math.floor($timelineRulerWidth / $timelineCellWidth));
+  let frameRanges = $derived(getFrameRange($currentFrameRange[0], $currentFrameRange[1]));
   let majorTicks = $derived.by<Array<number>>(() => {
     return Array.from({ length: rulerScale })
-      .map((_tick, tickIndex) =>
-        tickIndex % $framePerScale === 0 ? tickIndex : null,
-      )
+      .map((_tick, tickIndex) => (tickIndex % $framePerScale === 0 ? tickIndex : null))
       .filter((tick) => tick !== null);
   });
 
@@ -94,21 +78,14 @@
       const maximumStartFrame = $totalFrames - currentRangeSpan;
 
       /** Don't shift the current frame range, if the scaled end frame of current range is greater than or equal to total frames */
-      if (endFrameIndexOfCurrentFrameRange * $framePerScale >= $totalFrames)
-        return;
+      if (endFrameIndexOfCurrentFrameRange * $framePerScale >= $totalFrames) return;
 
       if ($currentFrame === middleFrameIndexOfCurrentFrameRange) {
-        const newStart = Math.min(
-          maximumStartFrame,
-          startFrameIndexOfCurrentFrameRange + 1,
-        );
+        const newStart = Math.min(maximumStartFrame, startFrameIndexOfCurrentFrameRange + 1);
         const newEnd = newStart + currentRangeSpan;
         setCurrentFrameRange([newStart, newEnd]);
       } else if ($currentFrame > middleFrameIndexOfCurrentFrameRange) {
-        const newStart = Math.min(
-          maximumStartFrame,
-          startFrameIndexOfCurrentFrameRange + 1,
-        );
+        const newStart = Math.min(maximumStartFrame, startFrameIndexOfCurrentFrameRange + 1);
         const newEnd = newStart + currentRangeSpan;
         setCurrentFrameRange([newStart, newEnd]);
       }
@@ -146,8 +123,7 @@
   {#each frameRanges as frame, frameIndex (frameIndex)}
     {@const isMajorTick = majorTicks.includes(frameIndex)}
     {@const frameNumber = Number(frame * $framePerScale) + 1}
-    {@const isInRangeOfTotalFrames =
-      frameIndex * $framePerScale <= $totalFrames - 1}
+    {@const isInRangeOfTotalFrames = frameIndex * $framePerScale <= $totalFrames - 1}
 
     {#if isInRangeOfTotalFrames}
       <div

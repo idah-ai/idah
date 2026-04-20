@@ -9,10 +9,7 @@
   } from "$lib/plugin/video-annotation-activity/timeline/store";
   import { findCategory } from "$lib/plugin/video-annotation-activity/utils/category";
 
-  import type {
-    IActivityContext,
-    IConfigValue,
-  } from "$idah/context/activity-context";
+  import type { IActivityContext, IConfigValue } from "$idah/context/activity-context";
   import type { AnnotationGroup } from "$idah/context/annotation-context";
   import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
   import { cn } from "$lib/utils";
@@ -40,14 +37,10 @@
   let endFrameIndexOfCurrentFrameRange = $derived($currentFrameRange[1]);
 
   /** The first frame of current frame range (1-based), e.g. [0, 48] will return 1 */
-  let startFrameOfCurrentFrameRange = $derived(
-    startFrameIndexOfCurrentFrameRange + 1,
-  );
+  let startFrameOfCurrentFrameRange = $derived(startFrameIndexOfCurrentFrameRange + 1);
 
   /** The last frame of current frame range (1-based), e.g. [0, 48] will return 49 */
-  let endFrameOfCurrentFrameRange = $derived(
-    endFrameIndexOfCurrentFrameRange + 1,
-  );
+  let endFrameOfCurrentFrameRange = $derived(endFrameIndexOfCurrentFrameRange + 1);
 
   /** The count of frame ranges */
   let rangeLength = $derived(frameRanges.length);
@@ -108,16 +101,10 @@
       return Math.max(1, Math.floor(frame / $framePerScale));
     });
   });
-  let notNullScaledTransformedFrameRanges = $derived(
-    scaledTransformedFrameRanges.filter((frame) => frame !== null),
-  );
-  let scaledTransformedRangeLength = $derived(
-    scaledTransformedFrameRanges.length,
-  );
+  let notNullScaledTransformedFrameRanges = $derived(scaledTransformedFrameRanges.filter((frame) => frame !== null));
+  let scaledTransformedRangeLength = $derived(scaledTransformedFrameRanges.length);
   let startOfScaledTransformedRange = $derived(scaledTransformedFrameRanges[0]);
-  let endOfScaledTransformedRange = $derived(
-    scaledTransformedFrameRanges[scaledTransformedRangeLength - 1],
-  );
+  let endOfScaledTransformedRange = $derived(scaledTransformedFrameRanges[scaledTransformedRangeLength - 1]);
   let scaledTransformedRangeStyle = $derived.by(() => {
     let width: number = 0;
     let left: number = 0;
@@ -171,10 +158,7 @@
     /** Have both start and end frame in current frame span */
     if (startOfScaledTransformedRange && endOfScaledTransformedRange) {
       width = endOfScaledTransformedRange - startOfScaledTransformedRange;
-      left = Math.max(
-        startOfScaledTransformedRange - startFrameOfCurrentFrameRange,
-        0,
-      );
+      left = Math.max(startOfScaledTransformedRange - startFrameOfCurrentFrameRange, 0);
       return {
         width: (width + 1) * $timelineCellWidth,
         left: left * $timelineCellWidth,
@@ -200,8 +184,7 @@
   // Variables::Selected and Hovered
   let isSelected = $derived.by<boolean>(() => {
     const selectedAnnotationId = $selectedAnnotation?.metadata.id;
-    const selectedAnnotationGroupId =
-      $selectedAnnotation?.metadata?.metadata?.group_id;
+    const selectedAnnotationGroupId = $selectedAnnotation?.metadata?.metadata?.group_id;
     let selectedAnnotationIsInThisAnnotationGroup: boolean;
 
     /** Check if selected annotation is in this annotation group or not*/
@@ -240,9 +223,7 @@
   let groupTextColor = $derived(groupCategory.text_color);
 
   // Functions
-  function getGroupCategory(
-    annGroup: AnnotationGroup<VideoAnnotationObject>,
-  ): IConfigValue {
+  function getGroupCategory(annGroup: AnnotationGroup<VideoAnnotationObject>): IConfigValue {
     const { annotations } = annGroup;
     const fallbackGroupCategory = {
       id: "",
@@ -306,19 +287,13 @@
   <!-- ANNOTATION AT FRAME (INTERPOLATION) -->
   {#each notNullScaledTransformedFrameRanges as interpolationAtFrame, interpolationAtFrameIndex (interpolationAtFrameIndex)}
     <div
-      class={cn(
-        "absolute translate-x-[15%] -translate-y-[50%] rounded-sm text-white opacity-70",
-        {
-          "opacity-100": isSelectedOrHovered,
-        },
-      )}
+      class={cn("absolute translate-x-[15%] -translate-y-[50%] rounded-sm text-white opacity-70", {
+        "opacity-100": isSelectedOrHovered,
+      })}
       style:background-color={groupColor}
       style:height="{annotationHeight * 0.6}px"
       style:width="{$timelineCellWidth * 0.8}px"
-      style:left="{Math.max(
-        interpolationAtFrame - startFrameIndexOfCurrentFrameRange - 1,
-        0,
-      ) * $timelineCellWidth}px"
+      style:left="{Math.max(interpolationAtFrame - startFrameIndexOfCurrentFrameRange - 1, 0) * $timelineCellWidth}px"
     ></div>
   {/each}
 {/if}

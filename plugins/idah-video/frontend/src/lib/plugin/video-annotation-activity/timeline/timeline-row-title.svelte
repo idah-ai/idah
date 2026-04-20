@@ -20,14 +20,10 @@
   let { annotationGroup }: Props = $props();
   let { groupId } = $derived(annotationGroup);
   let isGroupSelected = $derived($selectedAnnotationGroup?.groupId == groupId);
-  let [groupTitle, groupTitleWithCategory] = $derived(
-    getGroupTitle({ annotationGroup }),
-  );
+  let [groupTitle, groupTitleWithCategory] = $derived(getGroupTitle({ annotationGroup }));
 
   // Functions
-  function getGroupTitle(props: {
-    annotationGroup: AnnotationGroup<VideoAnnotationObject>;
-  }): [string, string] {
+  function getGroupTitle(props: { annotationGroup: AnnotationGroup<VideoAnnotationObject> }): [string, string] {
     const { annotationGroup } = props;
     const { groupId, annotations: anns } = annotationGroup;
     const splittedGroupId = groupId.split("-");
@@ -46,18 +42,13 @@
 
     if (!foundCategory) return ["", fallbackGroupTitle];
 
-    return [
-      categoryValueToLabel(foundCategory.id),
-      `${foundCategory.label}-${lastPartOfGroupId}`,
-    ];
+    return [categoryValueToLabel(foundCategory.id), `${foundCategory.label}-${lastPartOfGroupId}`];
   }
 
   function categoryValueToLabel(value?: string) {
     if (!value) return "";
 
-    const label = value
-      .split("/")
-      .map((s) => [s.slice(0, 1).toUpperCase(), s.slice(1)].join(""));
+    const label = value.split("/").map((s) => [s.slice(0, 1).toUpperCase(), s.slice(1)].join(""));
 
     // remove the last part of array
     label.pop();
@@ -66,10 +57,10 @@
   }
 </script>
 
-<div class="grid grid-cols-1 auto-cols-max items-center">
+<div class="grid auto-cols-max grid-cols-1 items-center">
   <!-- Parent -->
   {#if groupTitle}
-    <div class="text-xs text-muted-foreground">
+    <div class="text-muted-foreground text-xs">
       {#if groupTitle.length > 35}
         <Tooltips side="top">
           {#snippet trigger()}
@@ -89,7 +80,7 @@
   <!-- Category -->
   <span
     class={{
-      "font-bold text-primary": isGroupSelected,
+      "text-primary font-bold": isGroupSelected,
     }}
   >
     {groupTitleWithCategory}

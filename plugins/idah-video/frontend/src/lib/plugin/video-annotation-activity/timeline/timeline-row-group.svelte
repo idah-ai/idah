@@ -1,10 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import {
-    currentFrame,
-    selectedAnnotationGroup,
-  } from "$lib/plugin/video-annotation-activity/store/store";
+  import { currentFrame, selectedAnnotationGroup } from "$lib/plugin/video-annotation-activity/store/store";
   import { TIMELINE_ROW_HEADER_WIDTH } from "$lib/plugin/video-annotation-activity/timeline/store";
   import { cn } from "$lib/utils";
 
@@ -16,10 +13,7 @@
     annotationGroup: AnnotationGroup<VideoAnnotationObject>;
     onSelectFrameX: (frameX: number) => void;
     onContextMenu: (e: MouseEvent) => void;
-    onSelectAnnotationGroup: (
-      annotationGroup: AnnotationGroup<VideoAnnotationObject>,
-      selectedFrame?: number,
-    ) => void;
+    onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<VideoAnnotationObject>, selectedFrame?: number) => void;
 
     children: Snippet;
     class?: string | null;
@@ -53,10 +47,7 @@
     onSelectAnnotationGroup(annotationGroup, $currentFrame);
   }
 
-  function jumpToRowWhenGroupSelected(
-    node: HTMLElement,
-    params: { id: string; isGroupSelected: boolean },
-  ) {
+  function jumpToRowWhenGroupSelected(node: HTMLElement, params: { id: string; isGroupSelected: boolean }) {
     rowElements[params.id] = node;
 
     return {
