@@ -5,6 +5,9 @@
   import type Player from "video.js/dist/types/player";
   import "video.js/dist/video-js.css";
 
+  import { PauseQualityUpgrade } from "./PauseQualityUpgrade";
+  import type { UpgradeStatus } from "./PauseQualityUpgrade";
+
   const DEFAULT_FPS = 30;
 
   type Props = {
@@ -12,11 +15,13 @@
     onFramesChange: (current: number, frames: number, isPlaying: boolean) => void;
     onVolumeChange: (volume: number, muted: boolean) => void;
     onResize?: () => void;
+    onUpgradeStatusChange?: (status: UpgradeStatus) => void;
   };
 
-  let { element = $bindable(), onFramesChange, onResize, onVolumeChange }: Props = $props();
+  let { element = $bindable(), onFramesChange, onResize, onVolumeChange, onUpgradeStatusChange }: Props = $props();
 
   let player: Player | undefined = $state();
+  let pauseQualityUpgrade: PauseQualityUpgrade | undefined = $state();
   let options = {
     controls: false,
     preload: "auto",
@@ -87,6 +92,15 @@
     volume = (player.volume() || 0) * 100;
     quality_check("onMount");
 
+    // Mount the pause quality upgrade module
+    pauseQualityUpgrade = new PauseQualityUpgrade(player, {
+      segmentDuration: 2.002,
+      onStatusChange(status: UpgradeStatus) {
+        onUpgradeStatusChange?.(status);
+      },
+    });
+    pauseQualityUpgrade.mount();
+
     player.on("durationchange", () => {
       duration = player?.duration() || 0;
     });
@@ -150,6 +164,7 @@
   }
 
   onDestroy(() => {
+    pauseQualityUpgrade?.unmount();
     player?.dispose();
   });
 </script>
