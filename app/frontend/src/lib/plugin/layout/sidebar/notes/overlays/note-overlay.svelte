@@ -220,8 +220,9 @@
         class="absolute z-40 cursor-auto"
         style:top
         style:left
-        style:transform="translate({sidebarLeftWidth + zoomOffsetX}px, {zoomOffsetY}px)"
+        style:transform="translate({sidebarLeftWidth + zoomOffsetX}px, {zoomOffsetY - 20}px)"
       />
+      <!-- Note: zoomOffsetY - 20 is the height need to shift down the svg icon to the tip of mouse arrow cursor -->
 
       <Dialog open={showNewNoteFeedPopup} onOpenChangeComplete={(open) => (showNewNoteFeedPopup = open)}>
         <NoteDialogContent
@@ -260,8 +261,9 @@
         class="absolute z-40 cursor-auto"
         style:top
         style:left
-        style:transform="translate({sidebarLeftWidth + zoomOffsetX}px, {zoomOffsetY}px)"
+        style:transform="translate({sidebarLeftWidth + zoomOffsetX}px, {zoomOffsetY - 20}px)"
       />
+      <!-- Note: zoomOffsetY - 20 is the height need to shift down the svg icon to the tip of mouse arrow cursor -->
 
       <Dialog open={!!selectedNoteFeed} onOpenChangeComplete={closeSelectedNoteFeedPopup}>
         <NoteDialogContent

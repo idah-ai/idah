@@ -250,6 +250,7 @@
           cursor: url(${dataUrl}) 0 20, auto;
         }
       `;
+      /** Note: 20 is the height need to shift the svg icon to the tip of mouse arrow cursor */
 
       document.head.appendChild(style);
     }
