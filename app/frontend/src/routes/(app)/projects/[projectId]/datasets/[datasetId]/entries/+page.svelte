@@ -508,7 +508,7 @@
 
 <!-- MODAL::CONFIRM UNASSIGN -->
 <ConfirmModal
-  title="Unassign {selectedUnAssignedRowsCount} entries(s)"
+  title="Entry unassigned"
   description="Are you sure you want to unassign {selectedUnAssignedRowsCount} entries(s)? This action cannot be undone."
   onConfirm={unAssignEntries}
   bind:open={openConfirmUnassignEntriesModal}
