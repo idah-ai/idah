@@ -17,23 +17,23 @@
   import { Card, CardContent } from "@/components/ui/card";
   import Checkbox from "@/components/ui/checkbox/checkbox.svelte";
   import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuGroup,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
+      DropdownMenu,
+      DropdownMenuContent,
+      DropdownMenuGroup,
+      DropdownMenuItem,
+      DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu";
   import Spinner from "@/components/ui/spinner/spinner.svelte";
   import Can from "@/security/can.svelte";
 
   import {
-    ArrowDownAZIcon,
-    ArrowDownZAIcon,
-    ArrowUpDownIcon,
-    ChevronsUpDownIcon,
-    FunnelIcon,
-    LayoutListIcon,
-    PlusIcon,
+      ArrowDownAZIcon,
+      ArrowDownZAIcon,
+      ArrowUpDownIcon,
+      ChevronsUpDownIcon,
+      FunnelIcon,
+      LayoutListIcon,
+      PlusIcon,
   } from "@lucide/svelte";
 
   import { entryColumns } from "@/components/app/datasets/entries/data-tables/entry-columns";
@@ -51,9 +51,9 @@
   import { refetches } from "@/utils/refetch";
 
   import type {
-    ColumnSettings,
-    FilterDataSourceParams,
-    SortDataSourceParams,
+      ColumnSettings,
+      FilterDataSourceParams,
+      SortDataSourceParams,
   } from "@/components/app/datasource-table/types";
   import type { ListOptions } from "@/data/DataSource";
   import type { CollectionResponse } from "@/data/model/types";
@@ -112,8 +112,8 @@
   let itemsPerPage: number = $state(10);
   let selectedRows: string[] = $state([]);
   let selectedRowsCount: number = $derived(selectedRows.length);
-  let selectedUnAssignedRowsCount: number = $derived(
-    response.data.filter((entry) => selectedRows.includes(entry.id) && !entry.assigned_to_id).length,
+  let selectedToUnAssignedRowsCount: number = $derived(
+    response.data.filter((entry) => selectedRows.includes(entry.id) && entry.assigned_to_id).length,
   );
   let openNewEntryModal: boolean = $state(false);
   let openAssignEntryFormModal: boolean = $state(false);
@@ -316,7 +316,7 @@
         });
       }
 
-      showToast.success({ title: `${selectedUnAssignedRowsCount} Entry(s) successfully unassigned.` });
+      showToast.success({ title: `${selectedToUnAssignedRowsCount} Entry(s) successfully unassigned.` });
 
       selectedRows = [];
       $refetches.entries.list = new Date();
@@ -513,8 +513,8 @@
 
 <!-- MODAL::CONFIRM UNASSIGN -->
 <ConfirmModal
-  title="Un-assign Entry"
-  description="Are you sure you want to unassign {selectedUnAssignedRowsCount} entries(s)? This action cannot be undone."
+  title="Unassign entry"
+  description="Are you sure you want to unassign {selectedToUnAssignedRowsCount} entries(s)? This action cannot be undone."
   onConfirm={unAssignEntries}
   bind:open={openConfirmUnassignEntriesModal}
 />

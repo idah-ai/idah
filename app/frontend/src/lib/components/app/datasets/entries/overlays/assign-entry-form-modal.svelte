@@ -58,8 +58,8 @@
     selectedMemberAccountId = null;
     const description =
       entryIds.length > 1
-        ? `${entryIds.length} entryies have been assigned to "${projectMemberRecord?.email}".`
-        : `"${entryRecord?.resource}" has been assigned to "${projectMemberRecord?.email}".`;
+        ? `${entryIds.length} entries have been assigned to "${projectMemberRecord?.email}".`
+        : `The entry "${entryRecord?.resource}" has been assigned to "${projectMemberRecord?.email}".`;
 
     onAssigned?.();
     showToast.success({

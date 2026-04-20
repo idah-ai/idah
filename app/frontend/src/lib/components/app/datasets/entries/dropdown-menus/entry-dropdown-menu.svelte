@@ -7,11 +7,11 @@
   import ConfirmModal from "@/components/app/overlays/modals/confirm-modal.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuGroup,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
+      DropdownMenu,
+      DropdownMenuContent,
+      DropdownMenuGroup,
+      DropdownMenuItem,
+      DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu";
 
   import { getEntryDropdownMenuActions } from "@/components/app/datasets/entries/dropdown-menus/entry-dropdown-menu";
@@ -151,7 +151,7 @@
 
   <!-- MODAL::CONFIRM UNASSIGN -->
   <ConfirmModal
-    title="Unassign"
+    title="Unassign entry"
     description="Are you sure you want to unassign this entry?"
     onConfirm={unAssignEntry}
     bind:open={openConfirmUnassignEntryModal}
