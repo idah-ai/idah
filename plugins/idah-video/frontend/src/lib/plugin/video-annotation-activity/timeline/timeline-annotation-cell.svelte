@@ -15,6 +15,7 @@
   } from "$idah/context/activity-context";
   import type { AnnotationGroup } from "$idah/context/annotation-context";
   import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
+  import { cn } from "$lib/utils";
 
   // Props
   interface Props {
@@ -293,7 +294,7 @@
     style:border-bottom-left-radius="{scaledTransformedRangeStyle.borderRadiusLeft}px"
     style:border-top-right-radius="{scaledTransformedRangeStyle.borderRadiusRight}px"
     style:border-bottom-right-radius="{scaledTransformedRangeStyle.borderRadiusRight}px"
-    style:background-color="{groupColor}{isSelectedOrHovered ? 60 : 30}"
+    style:background-color="{groupColor}{isSelectedOrHovered ? 70 : 30}"
     style:color={groupTextColor}
     style:width="{scaledTransformedRangeStyle.width}px"
     style:height="{annotationHeight}px"
@@ -305,7 +306,12 @@
   <!-- ANNOTATION AT FRAME (INTERPOLATION) -->
   {#each notNullScaledTransformedFrameRanges as interpolationAtFrame, interpolationAtFrameIndex (interpolationAtFrameIndex)}
     <div
-      class="absolute translate-x-[15%] -translate-y-[50%] rounded-sm text-white"
+      class={cn(
+        "absolute translate-x-[15%] -translate-y-[50%] rounded-sm text-white opacity-70",
+        {
+          "opacity-100": isSelectedOrHovered,
+        },
+      )}
       style:background-color={groupColor}
       style:height="{annotationHeight * 0.6}px"
       style:width="{$timelineCellWidth * 0.8}px"
