@@ -258,8 +258,6 @@
           : ""}
         {@const fallbackGroupTitle = `Group-${lastPartOfGroupId}`}
 
-        {console.log(firstAnnotationInGroup.value.category)}
-
         <Text size="sm" class="text-muted-foreground">
           {#if firstAnnotationInGroup.value.category}
             {@const foundCategory = configByGroup.values.find(

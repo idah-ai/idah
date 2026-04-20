@@ -63,7 +63,10 @@
     setTotalFrames,
     setVideoIsPlaying,
   } from "$lib/plugin/video-annotation-activity/store/store";
-  import { findClosestAnnotationInGroup } from "$lib/plugin/video-annotation-activity/utils/group-annotation.svelte";
+  import {
+    findClosestAnnotationInGroup,
+    groupAnnotations,
+  } from "$lib/plugin/video-annotation-activity/utils/group-annotation.svelte";
   import { uiStore } from "$lib/plugin/video-annotation-activity/store/ui-store.svelte";
 
   import AnnotationFooterToolbar from "$lib/plugin/layout/footer/annotation-footer-toolbar.svelte";
@@ -654,6 +657,30 @@
     return closestAnnotation;
   }
 
+  function setAnnotationFrame(frame: number) {
+    if (!$selectedAnnotationGroup || !annotationsIDB) return;
+
+    const annotationGroups = groupAnnotations(annotationsIDB.annotations);
+
+    // Find the annotation group to get all annotations in the group
+    const newSelectedAnnotationGroup = annotationGroups.find(
+      (group) => group.groupId === $selectedAnnotationGroup?.groupId,
+    );
+
+    if (newSelectedAnnotationGroup) {
+      const closestAnnotation = findClosestAnnotationInGroup({
+        annotationGroup: newSelectedAnnotationGroup,
+        frame: frame,
+      });
+
+      setSelectedAnnotation(closestAnnotation);
+      setSelectedAnnotationGroup({
+        groupId: newSelectedAnnotationGroup.groupId,
+        annotations: [closestAnnotation],
+      });
+    }
+  }
+
   // Sync annotations to boundingBoxes whenever they change
   $effect(() => {
     if (annotationsIDB) {
@@ -854,6 +881,9 @@
                     setCurrentFrame(current);
                     setTotalFrames(total);
                     setVideoIsPlaying(playing);
+                  }}
+                  onTimeUpdate={(currentFrame) => {
+                    setAnnotationFrame(currentFrame);
                   }}
                   onVolumeChange={(level, muted) => (volume = { level, muted })}
                 />

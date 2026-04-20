@@ -134,19 +134,6 @@
     // setCurrentModeTo(DEFAULT_MODE);
     // deselectAnnotation();
     onSelectFrameX(e.clientX);
-
-    // If there is a selected annotation group,
-    // select the annotation group at current frame when click on timeline ruler
-    if ($selectedAnnotationGroup) {
-      // Find the annotation group to get all annotations in the group
-      const newSelectedAnnotationGroup = annotationGroups.find(
-        (group) => group.groupId === $selectedAnnotationGroup?.groupId,
-      );
-
-      if (newSelectedAnnotationGroup) {
-        onSelectAnnotationGroup(newSelectedAnnotationGroup, $currentFrame);
-      }
-    }
   }
 </script>
 
