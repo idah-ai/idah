@@ -2,6 +2,6 @@
 
 module Resource
   module Audit
-    Logs = 'audit:logs'
+    Logs = "audit:logs"
   end
 end

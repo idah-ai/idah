@@ -3,21 +3,21 @@
  *
  * Example usage:
  * ```
- * const keyMap = KeyMapBuilder((b) => {
+ * const keyMap = BuildKeymap((b) => {
  *   b.on([b.Shift, b.Ctrl], "A", action, "Ctrl+Shift+A", "Performs action A with Ctrl+Shift");
  *   b.on(null, "B", action, "B", "Performs action B");
  * });
  * ```
  */
 
-import type { KeyMap } from "./ShortcutManager";
+import type { KeyMap } from "./ShortcutManager.svelte";
 
 type ModifierKey = string;
 type ActionKey = string;
 type KeyCombination = string;
 type Action = () => void;
 
-class Builder {
+export class KeyMapBuilder {
   // Modifier key constants
   readonly Shift: ModifierKey = "Shift";
   readonly Ctrl: ModifierKey = "Control";
@@ -32,13 +32,22 @@ class Builder {
    * @param key The main key of the shortcut
    * @param action The action to execute when the shortcut is triggered
    * @param name Name for the shortcut
+   * @param label Label for the shortcut
    * @param description Description for the shortcut
    */
-  on(modifiers: ModifierKey[] | null, key: ActionKey, action: Action, name: string, description: string): Builder {
+  on(
+    modifiers: ModifierKey[] | null,
+    key: ActionKey,
+    action: Action,
+    name: string,
+    label: string,
+    description: string,
+  ): KeyMapBuilder {
     const keyCombination = this.buildKeyCombination(modifiers, key);
 
     this.keyMap[keyCombination] = {
       name,
+      label,
       description,
       action,
     };
@@ -76,8 +85,8 @@ class Builder {
  * @param builderFn Function that uses the builder to define shortcuts
  * @returns The built key map
  */
-export function KeyMapBuilder(builderFn: (builder: Builder) => void): KeyMap {
-  const builder = new Builder();
+export function BuildKeymap(builderFn: (builder: KeyMapBuilder) => void): KeyMap {
+  const builder = new KeyMapBuilder();
   builderFn(builder);
   return builder.getKeyMap();
 }

@@ -21,14 +21,18 @@ module PluginSystem
       context_class
     )
 
-    config.manual&.each do |plugin_name|
-      @registry.register(
-        plugin_name,
-        File.join(
-          @config.path, plugin_name
-        ),
-        manual: true
-      )
+    @config.path.split(";").each do |path|
+      Dir.glob(path).each do |dir|
+        next unless File.directory?(dir)
+
+        manifest = File.join(dir, "manifest.json")
+
+        next unless File.exist?(manifest)
+
+        plugin = Plugin.from_manifest(manifest)
+
+        @registry.register(plugin.name, dir)
+      end
     end
 
     # watch_sources if config.watch
