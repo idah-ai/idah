@@ -673,6 +673,10 @@
         frame: frame,
       });
 
+      if (closestAnnotation.metadata.id === $selectedAnnotation?.metadata.id) {
+        return;
+      }
+
       setSelectedAnnotation(closestAnnotation);
       setSelectedAnnotationGroup({
         groupId: newSelectedAnnotationGroup.groupId,
