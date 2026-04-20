@@ -338,15 +338,24 @@
   }
 
   async function deleteEntries(): Promise<void> {
-    for (const entryId of selectedRows) {
-      await entriesBackendDataSource.delete(entryId);
+    try {
+      for (const entryId of selectedRows) {
+        await entriesBackendDataSource.delete(entryId, {
+          showErrorToast: false,
+        });
+      }
+
+      showToast.success({ title: `${selectedRowsCount} Entry(s) successfully deleted.` });
+
+      selectedRows = [];
+      $refetches.entries.list = new Date();
+      openConfirmDeleteEntriesModal = false;
+    } catch (error) {
+      showToast.error({
+        title: "Unable to delete entry",
+        description: error?.errors[0]?.detail || "The action could not be completed, please try again later.",
+      });
     }
-
-    showToast.success({ title: `${selectedRowsCount} Entry(s) successfully deleted.` });
-
-    selectedRows = [];
-    $refetches.entries.list = new Date();
-    openConfirmDeleteEntriesModal = false;
   }
 
   async function exportEntries(): Promise<void> {
@@ -516,6 +525,7 @@
   action="update"
   entryIds={selectedRows}
   onAssigned={resetSelectedRows}
+  entryRecord={selectedRowsCount === 1 ? response.data.find((entry) => entry.id === selectedRows[0]) : undefined}
   bind:open={openAssignEntryFormModal}
 />
 
