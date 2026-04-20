@@ -113,7 +113,7 @@
   let selectedRows: string[] = $state([]);
   let selectedRowsCount: number = $derived(selectedRows.length);
   let selectedToUnAssignedRowsCount: number = $derived(
-    response.data.filter((entry) => selectedRows.includes(entry.id) && entry.assigned_to_id).length,
+    response.data.filter((entry) => selectedRows.includes(entry.id) && entry.assigned_to?.id).length,
   );
   let openNewEntryModal: boolean = $state(false);
   let openAssignEntryFormModal: boolean = $state(false);
