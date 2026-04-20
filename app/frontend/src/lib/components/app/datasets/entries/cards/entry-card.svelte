@@ -133,10 +133,10 @@
         default:
           key = "processed.webp"; // default fallback image for thumbnail
       }
-      
+
       thumbnailUrl = await mediaBackendDataSource.getFiles({
         resource,
-        key
+        key,
       });
 
       thumbnailImg.onload = () => {
