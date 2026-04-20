@@ -10,17 +10,16 @@
   import Button from "@/components/ui/button/button.svelte";
   import Can from "@/security/can.svelte";
 
+  import { getTextColor, randomHex } from "@/components/app/color-picker/utils";
   import { projectBreadcrumb } from "@/components/app/page/breadcrumbs/constants";
   import { pageBreadcrumbsStore } from "@/components/app/page/breadcrumbs/stores";
+  import { showToast } from "@/components/ui/toast/index.svelte";
   import { DatasetRecord, datasetsBackendDataSource } from "@/data/model/dataset/dataset-record";
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
-  import { humanize, slugify } from "@/utils/string";
-
-  import { labelColors } from "@/data/model/dataset/labels";
   import { pluginsBackendDataSource } from "@/data/model/setting/plugin/record";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
+  import { humanize, slugify } from "@/utils/string";
 
-  import { showToast } from "@/components/ui/toast/index.svelte";
   import type { ModalityShapes } from "@/data/model/setting/plugin/types";
   import type { IConfig, IConfigProperty, IConfigValue } from "@/plugin/interface/Activity";
   import type { ProjectMemberScope } from "@/security/types";
@@ -143,16 +142,19 @@
     const newId = slugify(currentTime);
     const selectedLabelConfig = labelConfig[labelConfigKey];
     const usedColors = selectedLabelConfig.values.map((cat) => cat.color);
-    const availableColors = labelColors.filter((color) => !usedColors.includes(color.color));
-    const firstAvailableColor = availableColors[0] ?? labelColors[0];
+    let randomColor = randomHex();
+    while (usedColors.includes(randomColor)) {
+      randomColor = randomHex();
+    }
+    let textColor = getTextColor(randomColor);
 
     /** Add a new root category, if nodeId is not provided */
     if (!nodeId) {
       selectedLabelConfig.values.push({
         id: newId,
         label: newLabel,
-        color: firstAvailableColor.color,
-        text_color: firstAvailableColor.text_color,
+        color: randomColor,
+        text_color: textColor,
       });
       return;
     }
@@ -163,8 +165,8 @@
       selectedLabelConfig.values.push({
         id: `${nodeId}/${currentTime}`,
         label: newLabel,
-        color: firstAvailableColor.color,
-        text_color: firstAvailableColor.text_color,
+        color: randomColor,
+        text_color: textColor,
       });
       return;
     }
@@ -184,8 +186,8 @@
         selectedLabelConfig.values.push({
           id: `${nodeId}/${currentTime}`,
           label: newLabel,
-          color: firstAvailableColor.color,
-          text_color: firstAvailableColor.text_color,
+          color: randomColor,
+          text_color: textColor,
         });
       }
 
@@ -196,8 +198,8 @@
     selectedLabelConfig.values.push({
       id: `${nodeId}/${currentTime}`,
       label: newLabel,
-      color: firstAvailableColor.color,
-      text_color: firstAvailableColor.text_color,
+      color: randomColor,
+      text_color: textColor,
     });
   }
 
@@ -261,15 +263,18 @@
 
     const selectedLabelConfig = labelConfig[labelConfigKey];
     const usedColors = selectedLabelConfig.values.map((cat) => cat.color);
-    const availableColors = labelColors.filter((color) => !usedColors.includes(color.color));
-    const firstAvailableColor = availableColors[0] ?? labelColors[0];
+    let randomColor = randomHex();
+    while (usedColors.includes(randomColor)) {
+      randomColor = randomHex();
+    }
+    let textColor = getTextColor(randomColor);
 
     if (selectable) {
       selectedLabelConfig.values.push({
         id: editedCategory.id,
         label: editedCategory.label,
-        color: firstAvailableColor.color,
-        text_color: firstAvailableColor.text_color,
+        color: randomColor,
+        text_color: textColor,
       });
     } else {
       selectedLabelConfig.values = selectedLabelConfig.values.filter((cat) => cat.id !== editedCategory.id);
@@ -282,8 +287,11 @@
     // This will only remove the exact match, keeping any parent categories
     const selectedLabelConfig = labelConfig[labelConfigKey];
     const usedColors = selectedLabelConfig.values.map((cat) => cat.color);
-    const availableColors = labelColors.filter((color) => !usedColors.includes(color.color));
-    const firstAvailableColor = availableColors[0] ?? labelColors[0];
+    let randomColor = randomHex();
+    while (usedColors.includes(randomColor)) {
+      randomColor = randomHex();
+    }
+    let textColor = getTextColor(randomColor);
 
     selectedLabelConfig.values = selectedLabelConfig.values.filter((cat) => !cat.id.includes(categoryId));
 
@@ -302,8 +310,8 @@
         selectedLabelConfig.values.push({
           id: parentPath,
           label: humanize(parentPath),
-          color: firstAvailableColor.color,
-          text_color: firstAvailableColor.text_color,
+          color: randomColor,
+          text_color: textColor,
         });
       }
     }
