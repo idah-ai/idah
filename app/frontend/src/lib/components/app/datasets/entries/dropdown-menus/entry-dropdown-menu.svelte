@@ -34,19 +34,17 @@
 
   // Variables
   let menus = $derived(
-    getEntryDropdownMenuActions(
-      {
-        onAssign: openAssignEntryModal,
-        onUnAssign: () => {
-          openConfirmUnassignEntryModal = true;
-        },
-        onSetPriority: () => {},
-        onDelete: () => {
-          openConfirmDeleteEntryModal = true;
-        },
+    getEntryDropdownMenuActions({
+      onAssign: openAssignEntryModal,
+      onUnAssign: () => {
+        openConfirmUnassignEntryModal = true;
       },
-      !!entry.assigned_to_id,
-    ).filter((m) => m.label !== "Set Priority"),
+      onSetPriority: () => {},
+      onDelete: () => {
+        openConfirmDeleteEntryModal = true;
+      },
+      isAssigned: !!entry.assigned_to_id,
+    }).filter((m) => m.label !== "Set Priority"),
   );
 
   let currentAccount = $authStatus.authContext;
@@ -160,7 +158,7 @@
   <!-- MODAL::CONFIRM DELETE -->
   <ConfirmModal
     title="Delete entry"
-    description="Are you sure you want to delete this entry?"
+    description="Are you sure you want to delete this entry? This action cannot be undone."
     onConfirm={deleteEntry}
     bind:open={openConfirmDeleteEntryModal}
   />

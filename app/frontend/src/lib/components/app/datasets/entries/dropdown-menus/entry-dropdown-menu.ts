@@ -7,9 +7,10 @@ interface Params {
   onUnAssign: () => Promise<void> | void;
   onSetPriority: () => Promise<void> | void;
   onDelete: () => Promise<void> | void;
+  isAssigned?: boolean;
 }
-export function getEntryDropdownMenuActions(params: Params, isAssigned: boolean = false): IDropdownMenuItem[] {
-  const { onAssign, onUnAssign, onSetPriority, onDelete } = params;
+export function getEntryDropdownMenuActions(params: Params): IDropdownMenuItem[] {
+  const { onAssign, onUnAssign, onSetPriority, onDelete, isAssigned } = params;
 
   return [
     {
