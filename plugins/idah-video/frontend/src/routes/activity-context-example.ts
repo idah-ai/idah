@@ -102,6 +102,12 @@ export const activityContextExample: IActivityContext = {
             label: "Van",
             text_color: "#FFFFFF",
           },
+          {
+            id: "person",
+            color: "#1464EB",
+            label: "Person",
+            text_color: "#FFFFFF",
+          }
         ],
         properties: [
           {
@@ -164,5 +170,13 @@ export const activityContextExample: IActivityContext = {
   },
   error: async (message) => {
     console.log("error called", message);
+  },
+
+  get shortcutReferences(): Record<string, { label: string; description: string; keyCombinations: string[] }> | undefined {
+    return undefined;
+  },
+
+  registerShortcutReferences(refs: Record<string, { label: string; description: string; keyCombinations: string[] }>): void {
+    console.log("registerShortcutReferences called", refs);
   },
 };

@@ -11,11 +11,11 @@
     Volume2Icon,
     VolumeXIcon,
   } from "@lucide/svelte";
-  import { getContext } from "svelte";
+  import { getContext, onMount } from "svelte";
   import type { ChangeEventHandler } from "svelte/elements";
 
   import NumberField from "$lib/components/app/forms/fields/input/number-field.svelte";
-  import Tooltips from "$lib/components/app/tooltips/tooltips.svelte";
+  import ToolTooltip from "$lib/components/app/tooltips/tool-tooltip.svelte";
   import Button from "$lib/components/ui/button/button.svelte";
   import {
     DropdownMenu,
@@ -25,6 +25,7 @@
     DropdownMenuLabel,
     DropdownMenuTrigger,
   } from "$lib/components/ui/dropdown-menu";
+  import { getShortcut } from "$lib/components/ui/kbd/utils";
   import { Popover, PopoverContent, PopoverTrigger } from "$lib/components/ui/popover";
   import Slider from "$lib/components/ui/slider/slider.svelte";
   import Video from "$lib/plugin/video-annotation-activity/video/video.svelte";
@@ -77,6 +78,7 @@
   const max = 150;
 
   let currentSpeed: number = $state(1);
+  let frameStep = $state<number>(10);
   let sliderValue: number = $derived(max - (zoom - min));
   let disabledSplitButton = $derived.by(() => {
     if (!$selectedAnnotation) return true;
@@ -84,6 +86,9 @@
     if ($selectedAnnotation.shape.end < $currentFrame) return true;
   });
 
+  // TODO: @audi ideally, these should call commands ?
+
+  // Functions
   const seekToFrame: ChangeEventHandler<HTMLInputElement> = (event) => {
     const target = event.target as HTMLInputElement;
     const { value } = target;
@@ -123,8 +128,6 @@
   // }
 
   function gotoFrameStep(direction: "prev" | "next") {
-    let frameStep = Number(localStorage.getItem(IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP) || 10);
-
     switch (direction) {
       case "prev": {
         video.previousFrame(frameStep);
@@ -136,45 +139,98 @@
       }
     }
   }
+
+  function getFrameStepFromLocalStorage() {
+    const localStorageFrameStep = localStorage.getItem(IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP);
+
+    if (localStorageFrameStep) {
+      frameStep = Number(localStorageFrameStep);
+    }
+  }
+
+  function fetchFrameStepFromLocalStorage(open: boolean) {
+    if (!open) return;
+    getFrameStepFromLocalStorage();
+  }
+
+  // Lifecycles
+  onMount(getFrameStepFromLocalStorage);
 </script>
 
 <div id="video-controller" class="flex w-full items-center justify-between gap-4">
   <!-- CONTAINER::LEFT -->
   <div class="flex items-center gap-2">
     <!-- VIDEO::PREVIOUS FRAME STEP -->
-    <Button variant="outline" size="icon-sm" onclick={() => gotoFrameStep("prev")}>
-      <ChevronsLeftIcon />
-    </Button>
+    <ToolTooltip
+      label={`Previous ${frameStep} frames`}
+      shortcut={getShortcut(context.shortcutReferences?.["player.previous_multiple_frames"].keyCombinations)}
+      onOpenChange={fetchFrameStepFromLocalStorage}
+    >
+      {#snippet trigger()}
+        <Button variant="outline" size="icon-sm" onclick={() => gotoFrameStep("prev")}>
+          <ChevronsLeftIcon />
+        </Button>
+      {/snippet}
+    </ToolTooltip>
 
     <!-- VIDEO::PREVIOUS FRAME -->
-    <Button variant="outline" size="icon-sm" onclick={() => video.previousFrame()}>
-      <ChevronLeftIcon />
-    </Button>
+    <ToolTooltip
+      label="Previous frame"
+      shortcut={getShortcut(context.shortcutReferences?.["player.previous_frame"].keyCombinations)}
+    >
+      {#snippet trigger()}
+        <Button variant="outline" size="icon-sm" onclick={() => video.previousFrame()}>
+          <ChevronLeftIcon />
+        </Button>
+      {/snippet}
+    </ToolTooltip>
 
     <!-- VIDEO::PLAY / PAUSE -->
-    <Button
-      variant="outline"
-      size="icon-sm"
-      onclick={() => {
-        video.togglePlay();
-      }}
+    <ToolTooltip
+      label={$isVideoPlaying ? "Pause" : "Play"}
+      shortcut={getShortcut(context.shortcutReferences?.["player.toggle_play"].keyCombinations)}
     >
-      {#if $isVideoPlaying}
-        <PauseIcon />
-      {:else}
-        <PlayIcon />
-      {/if}
-    </Button>
+      {#snippet trigger()}
+        <Button
+          variant="outline"
+          size="icon-sm"
+          onclick={() => {
+            video.togglePlay();
+          }}
+        >
+          {#if $isVideoPlaying}
+            <PauseIcon />
+          {:else}
+            <PlayIcon />
+          {/if}
+        </Button>
+      {/snippet}
+    </ToolTooltip>
 
     <!-- VIDEO::NEXT FRAME -->
-    <Button variant="outline" size="icon-sm" onclick={() => video.nextFrame()}>
-      <ChevronRightIcon />
-    </Button>
+    <ToolTooltip
+      label="Next frame"
+      shortcut={getShortcut(context.shortcutReferences?.["player.next_frame"].keyCombinations)}
+    >
+      {#snippet trigger()}
+        <Button variant="outline" size="icon-sm" onclick={() => video.nextFrame()}>
+          <ChevronRightIcon />
+        </Button>
+      {/snippet}
+    </ToolTooltip>
 
     <!-- VIDEO::NEXT FRAME STEP -->
-    <Button variant="outline" size="icon-sm" onclick={() => gotoFrameStep("next")}>
-      <ChevronsRightIcon />
-    </Button>
+    <ToolTooltip
+      label={`Next ${frameStep} frames`}
+      shortcut={getShortcut(context.shortcutReferences?.["player.next_multiple_frames"].keyCombinations)}
+      onOpenChange={fetchFrameStepFromLocalStorage}
+    >
+      {#snippet trigger()}
+        <Button variant="outline" size="icon-sm" onclick={() => gotoFrameStep("next")}>
+          <ChevronsRightIcon />
+        </Button>
+      {/snippet}
+    </ToolTooltip>
 
     <!-- VIDEO::VOLUME -->
     <Popover>
@@ -236,7 +292,10 @@
     </div>
 
     <!-- ANNOTATION::SPLIT -->
-    <Tooltips>
+    <ToolTooltip
+      label="Split annotation"
+      shortcut={getShortcut(context.shortcutReferences?.["selected.split"].keyCombinations)}
+    >
       {#snippet trigger()}
         <Button
           variant="outline"
@@ -252,10 +311,7 @@
           <SquareSplitHorizontalIcon />
         </Button>
       {/snippet}
-      {#snippet content()}
-        Split annotation
-      {/snippet}
-    </Tooltips>
+    </ToolTooltip>
   </div>
 
   <!-- CONTAINER::CENTER -->
