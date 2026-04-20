@@ -154,6 +154,7 @@ export interface ICommands {
 }
 
 export interface AnnotationHeaderBarBaseTool {
+  name: string;
   label: string;
   icon?: Component;
   iconName?: string;
@@ -218,6 +219,10 @@ export interface IActivityContext {
 
   // Mark this activity as errored
   error(message: string): Promise<void>;
+
+  get shortcutReferences(): Record<string, { label: string; description: string; keyCombinations: string[] }> | undefined;
+
+  registerShortcutReferences(refs: Record<string, { label: string; description: string; keyCombinations: string[] }>): void;
 }
 
 export interface IActivityView {

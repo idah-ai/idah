@@ -11,7 +11,7 @@
   } from "$lib/plugin/video-annotation-activity/timeline/timeline-context-menu.svelte";
   import TimelineEmptyAnnotations from "$lib/plugin/video-annotation-activity/timeline/timeline-empty-annotations.svelte";
   import TimelineHeaderRow from "$lib/plugin/video-annotation-activity/timeline/timeline-header-row.svelte";
-  // import TimelineHorizontalScrollbar from "$lib/plugin/video-annotation-activity/timeline/timeline-horizontal-scrollbar.svelte";
+  import TimelineHorizontalScrollbar from "$lib/plugin/video-annotation-activity/timeline/timeline-horizontal-scrollbar.svelte";
   import TimelineRowActions from "$lib/plugin/video-annotation-activity/timeline/timeline-row-actions.svelte";
   import TimelineRowGroup from "$lib/plugin/video-annotation-activity/timeline/timeline-row-group.svelte";
   import TimelineRowHeader from "$lib/plugin/video-annotation-activity/timeline/timeline-row-header.svelte";
@@ -20,18 +20,13 @@
   import TimelineRuler from "$lib/plugin/video-annotation-activity/timeline/timeline-ruler.svelte";
   import TimelineVerticalLine from "$lib/plugin/video-annotation-activity/timeline/timeline-vertical-line.svelte";
 
-  import {
-    setCurrentFrame,
-    setSelectedAnnotationGroup,
-    totalFrames,
-  } from "$lib/plugin/video-annotation-activity/store/store";
+  import { setCurrentFrame, totalFrames } from "$lib/plugin/video-annotation-activity/store/store";
   import {
     currentFrameRange,
     deselectFrameX,
     framePerScale,
     selectedFrameX,
     setCurrentFrameRange,
-    setSelectedFrameX,
     TIMELINE_ROW_HEADER_WIDTH,
   } from "$lib/plugin/video-annotation-activity/timeline/store";
   import { getFrameFromMouseX } from "$lib/plugin/video-annotation-activity/timeline/utils";
@@ -48,18 +43,19 @@
   // Props
   interface Props {
     annotations: VideoAnnotationObject[];
-    timelineHeight: number;
+    annotationFooterHeight: number;
 
     onSeekFrame: (frame: number) => void;
     onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<VideoAnnotationObject>, selectedFrame?: number) => void;
   }
-  let { annotations, timelineHeight, onSeekFrame, onSelectAnnotationGroup }: Props = $props();
+  let { annotations, annotationFooterHeight, onSeekFrame, onSelectAnnotationGroup }: Props = $props();
 
   // Context
   let context: IActivityContext = getContext("context");
 
   // Variables
-  let timeline: HTMLDivElement;
+  let timelineEl: HTMLDivElement;
+  let timelineScrollAreaHeight = $derived(annotationFooterHeight - 100);
   let clientMouseX: number = $state(0);
   let annotationGroups = $derived(groupAnnotations(annotations));
   let showVerticalLine = $derived(clientMouseX >= TIMELINE_ROW_HEADER_WIDTH);
@@ -103,7 +99,7 @@
   }
 
   function handleMouseMove(event: MouseEvent) {
-    const rect = timeline.getBoundingClientRect();
+    const rect = timelineEl.getBoundingClientRect();
     clientMouseX = event.clientX - rect.left;
   }
 
@@ -128,7 +124,6 @@
   }
 
   function scrollLeft(shiftRangeSpan: number) {
-    // TODO: I think this function is not working as expected
     const [start, end] = $currentFrameRange;
 
     let newStart = start - shiftRangeSpan;
@@ -169,9 +164,12 @@
   }
 
   function selectFrameX(frameX: number) {
-    const selectedFrame = getFrameFromMouseX({ clientX: frameX }) + $currentFrameRange[0];
-    setCurrentFrame(selectedFrame);
-    onSeekFrame(selectedFrame);
+    const selectedFrame = getFrameFromMouseX({ clientX: frameX });
+    const [startFrameIndexOfCurrentFrameRange, _] = $currentFrameRange;
+    const scaledStartFrameIndexOfCurrentFrameRange = Number(startFrameIndexOfCurrentFrameRange * $framePerScale);
+
+    setCurrentFrame(selectedFrame + scaledStartFrameIndexOfCurrentFrameRange);
+    onSeekFrame(selectedFrame + scaledStartFrameIndexOfCurrentFrameRange);
 
     /**
      * Note: Do not setSelectedFrameX here
@@ -185,53 +183,55 @@
     contextMenu = { visible: false, x: 0, y: 0, menus: {} };
   }
 
-  function showContextMenu(e: MouseEvent, selectAnnotationGroup?: AnnotationGroup<VideoAnnotationObject>) {
+  function showContextMenu(e: MouseEvent, selectAnnotationGroup: AnnotationGroup<VideoAnnotationObject>) {
     e.preventDefault();
 
-    setSelectedFrameX(e.clientX);
+    /** (If UX need to select annotation group & set selected vertical line on context menu) Select annotation group */
+    // setSelectedFrameX(e.clientX);
+    // setSelectedAnnotationGroup(selectAnnotationGroup);
 
-    /** Select annotation group */
-    setSelectedAnnotationGroup(selectAnnotationGroup);
-
-    const frame = getFrameFromMouseX({ clientX: e.clientX });
+    const scaledFrame = getFrameFromMouseX({ clientX: e.clientX });
+    const [startFrameIndexOfCurrentFrameRange, _] = $currentFrameRange;
+    const scaledStartFrameIndexOfCurrentFrameRange = Number(startFrameIndexOfCurrentFrameRange * $framePerScale);
+    const displayScaledFrame = scaledFrame + scaledStartFrameIndexOfCurrentFrameRange;
 
     /** Closest annotation */
     const closestAnnotation = findClosestAnnotationInGroup({
       annotationGroup: selectAnnotationGroup,
-      frame,
+      frame: displayScaledFrame,
     });
 
     /** Menus */
     const seekToFrameMenu: TimelineContextMenuMenu = {
-      label: `Seek to frame ${frame}`,
+      label: `Seek to frame ${displayScaledFrame}`,
       icon: SearchIcon,
       onClick: () => {
-        onSeekFrame(frame);
+        onSeekFrame(displayScaledFrame);
         closeContextMenu();
       },
     };
 
     const splitMenu: TimelineContextMenuMenu = {
-      label: `Split at frame ${frame}`,
+      label: `Split at frame ${displayScaledFrame}`,
       icon: SquareSplitHorizontalIcon,
       disabled: closestAnnotation.locked,
       onClick: () => {
         context.commands.run("annotation.split", {
           id: closestAnnotation.metadata.id,
-          at: frame,
+          at: displayScaledFrame,
         });
         closeContextMenu();
       },
     };
 
     const deleteInterpolationMenu: TimelineContextMenuMenu = {
-      label: `Delete frame ${frame}`,
+      label: `Delete frame ${displayScaledFrame}`,
       icon: Trash2Icon,
       disabled: closestAnnotation.locked,
       onClick: () => {
         context.commands.run("keyframe.delete", {
           annotationId: closestAnnotation.metadata.id,
-          frame,
+          frame: displayScaledFrame,
         });
         closeContextMenu();
       },
@@ -271,13 +271,14 @@
       if (i === sortedClosestAnnotationKeyFrames.length - 1) return false;
       const next = sortedClosestAnnotationKeyFrames[i + 1];
 
-      return frame >= f && frame <= next;
+      return displayScaledFrame >= f && displayScaledFrame <= next;
     });
     if (isSelectedFrameInKeyFrames) contextMenu.menus.frameRelatedMenu.items.push(seekToFrameMenu, splitMenu);
     if (isSelectedFrameInKeyFrames) contextMenu.menus.annotationMenu.items.push(deleteAnnotationMenu);
 
     /** Only show delete interpolation menu, if selected annotations have keyframe at selected frame */
-    const hasInterpolationAtFrame = closestAnnotation.shape.frames.filter((f) => f.frame === frame).length > 0;
+    const hasInterpolationAtFrame =
+      closestAnnotation.shape.frames.filter((f) => f.frame === displayScaledFrame).length > 0;
     if (hasInterpolationAtFrame) contextMenu.menus.frameRelatedMenu.items.push(deleteInterpolationMenu);
 
     const frameRelatedMenus = contextMenu.menus.frameRelatedMenu.items.length;
@@ -317,89 +318,91 @@
 </script>
 
 <div
-  id="timeline"
+  class="timeline-container"
   role="document"
-  bind:this={timeline}
-  class="relative w-full max-w-screen"
   onmousemove={handleMouseMove}
   onmouseenter={() => (showHorizontalScrollbar = true)}
   onmouseleave={handleMouseLeave}
 >
-  <TimelineHeaderRow>
-    <TimelineRowHeader>
-      <TimelineRowHeading class="font-semibold">Annotations</TimelineRowHeading>
+  <div id="timeline" bind:this={timelineEl} class="relative w-full max-w-screen">
+    <TimelineHeaderRow>
+      <TimelineRowHeader>
+        <TimelineRowHeading class="font-semibold">Annotations</TimelineRowHeading>
 
-      {@const allAnnotationsHidden = annotationGroups.every((annotationGroup) =>
-        annotationGroup.annotations.every((annotation) => annotation.hidden),
-      )}
-      {@const allAnnotationsLocked = annotationGroups.every((annotationGroup) =>
-        annotationGroup.annotations.every((annotation) => annotation.locked),
-      )}
+        {@const allAnnotationsHidden = annotationGroups.every((annotationGroup) =>
+          annotationGroup.annotations.every((annotation) => annotation.hidden),
+        )}
+        {@const allAnnotationsLocked = annotationGroups.every((annotationGroup) =>
+          annotationGroup.annotations.every((annotation) => annotation.locked),
+        )}
 
-      <TimelineRowActions
-        mode="multiple"
-        alwaysShow
-        {allAnnotationsHidden}
-        {allAnnotationsLocked}
-        onToggleVisibility={toggleAllAnnotationsVisibility}
-        onToggleEditability={toggleAllAnnotationsEditability}
-        onClickDelete={showConfirmDeleteModal}
-      />
-    </TimelineRowHeader>
+        <TimelineRowActions
+          mode="multiple"
+          alwaysShow
+          {allAnnotationsHidden}
+          {allAnnotationsLocked}
+          onToggleVisibility={toggleAllAnnotationsVisibility}
+          onToggleEditability={toggleAllAnnotationsEditability}
+          onClickDelete={showConfirmDeleteModal}
+        />
+      </TimelineRowHeader>
 
-    <TimelineRuler onSelectFrameX={selectFrameX} />
-  </TimelineHeaderRow>
+      <TimelineRuler onSelectFrameX={selectFrameX} />
+    </TimelineHeaderRow>
 
-  <ScrollArea id="timeline-scroll-area">
-    <div style:height="{timelineHeight - 96}px" onwheel={handleTimelineWheel}>
-      {#each annotationGroups as annotationGroup (annotationGroup.groupId)}
-        {@const allAnnotationsInGroupHidden = annotationGroup.annotations.every((annotation) => annotation.hidden)}
-        {@const allAnnotationsInGroupLocked = annotationGroup.annotations.every((annotation) => annotation.locked)}
+    <ScrollArea id="timeline-scroll-area">
+      <section style:height="{timelineScrollAreaHeight}px" onwheel={handleTimelineWheel}>
+        {#each annotationGroups as annotationGroup (annotationGroup.groupId)}
+          {@const allAnnotationsInGroupHidden = annotationGroup.annotations.every((annotation) => annotation.hidden)}
+          {@const allAnnotationsInGroupLocked = annotationGroup.annotations.every((annotation) => annotation.locked)}
 
-        <TimelineRow>
-          <TimelineRowGroup
-            class="border-b"
-            {annotationGroup}
-            onSelectFrameX={selectFrameX}
-            onContextMenu={(e) => showContextMenu(e, annotationGroup)}
-            {onSelectAnnotationGroup}
-          >
-            <TimelineRowHeader>
-              <TimelineRowHeading>
-                {getGroupTitle({ annotationGroup })}
-              </TimelineRowHeading>
+          <TimelineRow>
+            <TimelineRowGroup
+              class="border-b"
+              {annotationGroup}
+              onSelectFrameX={selectFrameX}
+              onContextMenu={(e) => showContextMenu(e, annotationGroup)}
+              {onSelectAnnotationGroup}
+            >
+              <TimelineRowHeader>
+                <TimelineRowHeading>
+                  {getGroupTitle({ annotationGroup })}
+                </TimelineRowHeading>
 
-              <TimelineRowActions
-                mode="single"
-                allAnnotationsHidden={allAnnotationsInGroupHidden}
-                allAnnotationsLocked={allAnnotationsInGroupLocked}
-                onToggleVisibility={() => toggleAnnotationGroupVisibility(annotationGroup.groupId)}
-                onToggleEditability={() => toggleAnnotationGroupEditability(annotationGroup.groupId)}
-                onClickDelete={() => showConfirmDeleteModal(annotationGroup.groupId)}
-              />
-            </TimelineRowHeader>
+                <TimelineRowActions
+                  mode="single"
+                  allAnnotationsHidden={allAnnotationsInGroupHidden}
+                  allAnnotationsLocked={allAnnotationsInGroupLocked}
+                  onToggleVisibility={() => toggleAnnotationGroupVisibility(annotationGroup.groupId)}
+                  onToggleEditability={() => toggleAnnotationGroupEditability(annotationGroup.groupId)}
+                  onClickDelete={() => showConfirmDeleteModal(annotationGroup.groupId)}
+                />
+              </TimelineRowHeader>
 
-            <TimelineCells {annotationGroup} />
-          </TimelineRowGroup>
-        </TimelineRow>
-      {:else}
-        <TimelineEmptyAnnotations />
-      {/each}
-    </div>
-  </ScrollArea>
+              <TimelineCells {annotationGroup} />
+            </TimelineRowGroup>
+          </TimelineRow>
+        {:else}
+          <TimelineEmptyAnnotations />
+        {/each}
+      </section>
 
-  <!-- Draw a vertical line when mouse move -->
-  {#if showVerticalLine}
-    <TimelineVerticalLine positionX={clientMouseX} />
-  {/if}
+      <section id="timeline-horizontal-scrollbar-container">
+        {#if showHorizontalScrollbar}
+          <TimelineHorizontalScrollbar />
+        {/if}
+      </section>
+    </ScrollArea>
 
-  {#if showSelectedVerticalLine}
-    <TimelineVerticalLine color="primary" positionX={$selectedFrameX} />
-  {/if}
+    <!-- Draw a vertical line when mouse move -->
+    {#if showVerticalLine}
+      <TimelineVerticalLine positionX={clientMouseX} />
+    {/if}
 
-  {#if showHorizontalScrollbar}
-    <!-- <TimelineHorizontalScrollbar /> -->
-  {/if}
+    {#if showSelectedVerticalLine}
+      <TimelineVerticalLine color="primary" positionX={$selectedFrameX} />
+    {/if}
+  </div>
 </div>
 
 <TimelineContextMenu {contextMenu} onCloseContextMenu={closeContextMenu} />

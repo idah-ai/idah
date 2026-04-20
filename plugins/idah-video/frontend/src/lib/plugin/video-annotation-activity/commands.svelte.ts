@@ -30,6 +30,7 @@ import {
   setCurrentModeTo,
   setSelectedAnnotation,
 } from "$lib/plugin/video-annotation-activity/store/store";
+import { uiStore } from "$lib/plugin/video-annotation-activity/store/ui-store.svelte";
 import { showErrorToast } from "$lib/utils/error/error.toasts";
 
 import type { IActivityContext } from "$idah/context/activity-context";
@@ -931,6 +932,7 @@ export function registerCommands(params: CommandContext) {
         annotationToApply.metadata.updatedAt = applyUpdatedAt;
         annotationToApply.synced = false;
 
+        await db?.addKeyFrame(annotationToApply, selection);
         await updateAnnotationIndexedDB({
           annotationToUpdate: annotationToApply,
         });
@@ -1024,6 +1026,7 @@ export function registerCommands(params: CommandContext) {
           frames: newframes,
         };
 
+        await db?.deleteKeyFrame(annotationToApply, selection.frame);
         await updateAnnotationIndexedDB({
           annotationToUpdate: annotationToApply,
         });
@@ -1054,8 +1057,10 @@ export function registerCommands(params: CommandContext) {
         annotationToUndo.synced = false;
 
         await db?.addKeyFrame(annotationToUndo, selection);
-        setSelectedAnnotation(annotationToUndo);
-        setIndexedDBUpdatedAt();
+        await updateAnnotationIndexedDB({
+          annotationToUpdate: annotationToUndo,
+        });
+
         await syncUpdatedAnnotation({
           annotationId,
           annotationToUpdate: annotationToUndo,
@@ -1067,4 +1072,20 @@ export function registerCommands(params: CommandContext) {
       combine: (prevCmd) => prevCmd,
     };
   });
+
+  context.commands.on(
+    "command_dialog",
+    () => {
+      return {
+        name: "Toggle shortcut guide",
+        apply: () => {
+          uiStore.toggleCommandDialog();
+        },
+        undo: () => {},
+        isCombinable: () => true,
+        combine: (c) => c,
+      };
+    },
+    false,
+  );
 }

@@ -3,6 +3,7 @@
     ChevronDownIcon,
     ChevronsLeft,
     ChevronsRight,
+    KeyboardIcon,
     MessageCircleIcon,
     MoonIcon,
     Settings2Icon,
@@ -17,7 +18,7 @@
 
   import DropdownMenus from "@/components/app/dropdown-menus/dropdown-menus.svelte";
   import NumberField from "@/components/app/forms/fields/input/number-field.svelte";
-  import Tooltips from "@/components/app/tooltips/tooltips.svelte";
+  import ToolTooltip from "@/components/app/tooltips/tool-tooltip.svelte";
   import Button from "@/components/ui/button/button.svelte";
   import {
     DropdownMenu,
@@ -30,11 +31,12 @@
     DropdownMenuSubTrigger,
     DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu";
+  import { getShortcut } from "@/components/ui/kbd/utils";
 
   import NoteSidebar from "@/plugin/layout/sidebar/notes/note-sidebar.svelte";
   import NoteOverlay from "@/plugin/layout/sidebar/notes/overlays/note-overlay.svelte";
 
-  import { idahVideolocalStorageFrameStep } from "@/plugin/layout/header/annotation-header-bar.constants";
+  import { IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP } from "@/plugin/layout/header/annotation-header-bar.constants";
 
   import type { IDropdownMenus } from "@/components/app/dropdown-menus/types";
   import type { IActivityContext } from "@/plugin/interface/Activity";
@@ -48,13 +50,14 @@
   let { context, pluginContainerElement }: Props = $props();
 
   // Variables
-  let frameStep: number = $state(Number(localStorage.getItem(idahVideolocalStorageFrameStep)) || 10);
+  let frameStep: number = $state(Number(localStorage.getItem(IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP)) || 10);
   let loading = $state(false);
   let openNoteSidebar = $state(false);
   let openSettingsPopover = $state(false);
   let menus: AnnotationHeaderBarBaseTool[] = $derived([
     {
-      label: "Notes Sidebar",
+      name: "notes",
+      label: "All Notes",
       icon: MessageCircleIcon,
       isActive: openNoteSidebar,
       handleClick: () => {
@@ -87,11 +90,11 @@
   // Lifecycle
   onMount(() => {
     /** If frame step is not set in localStorage, set it to 10 as default */
-    if (!localStorage.getItem(idahVideolocalStorageFrameStep)) {
-      localStorage.setItem(idahVideolocalStorageFrameStep, "10");
+    if (!localStorage.getItem(IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP)) {
+      localStorage.setItem(IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP, "10");
     }
 
-    frameStep = Number(localStorage.getItem(idahVideolocalStorageFrameStep));
+    frameStep = Number(localStorage.getItem(IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP));
   });
 
   // Functions
@@ -120,15 +123,32 @@
     if (isNaN(inputValue)) stepToSet = minStep;
     if (stepToSet < minStep) stepToSet = minStep;
     frameStep = stepToSet;
-    localStorage.setItem(idahVideolocalStorageFrameStep, stepToSet.toString());
+    localStorage.setItem(IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP, stepToSet.toString());
+  }
+
+  function toggleCommand() {
+    context.commands.run("command_dialog");
   }
 </script>
 
 <div id="annotation-header-bar-actions" class="flex h-full items-center justify-end gap-2">
   <div id="annotation-header-bar-actions-menu" class="flex items-center gap-1">
+    <ToolTooltip
+      label="Shortcuts"
+      shortcut={getShortcut(context.shortcutReferences?.["command_dialog"].keyCombinations)}
+      align="center"
+      delayDuration={100}
+    >
+      {#snippet trigger()}
+        <Button variant="ghost" size="icon-sm" onclick={toggleCommand}>
+          <KeyboardIcon />
+        </Button>
+      {/snippet}
+    </ToolTooltip>
+
     <DropdownMenu bind:open={openSettingsPopover}>
       <DropdownMenuTrigger>
-        <Tooltips align="center" delayDuration={100}>
+        <ToolTooltip label="Settings" align="center" delayDuration={100}>
           {#snippet trigger()}
             <Button
               variant={openSettingsPopover ? "default" : "ghost"}
@@ -138,11 +158,7 @@
               <Settings2Icon />
             </Button>
           {/snippet}
-
-          {#snippet content()}
-            Settings
-          {/snippet}
-        </Tooltips>
+        </ToolTooltip>
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="end" side="bottom" class="min-w-64">
@@ -207,17 +223,13 @@
     </DropdownMenu>
 
     {#each menus as { label, icon: Icon, isActive, handleClick }, menuIndex (menuIndex)}
-      <Tooltips align="center" delayDuration={100}>
+      <ToolTooltip {label} align="center" delayDuration={100}>
         {#snippet trigger()}
           <Button variant={isActive ? "default" : "ghost"} size="icon-sm" onclick={handleClick}>
             <Icon />
           </Button>
         {/snippet}
-
-        {#snippet content()}
-          {label}
-        {/snippet}
-      </Tooltips>
+      </ToolTooltip>
     {/each}
   </div>
 

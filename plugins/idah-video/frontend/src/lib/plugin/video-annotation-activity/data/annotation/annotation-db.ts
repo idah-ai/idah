@@ -213,31 +213,14 @@ export class AnnotationsIndexedDB {
    * Add a keyframe to an annotation
    */
   async addKeyFrame(annotation_id: string, keyFrame: VideoFrameSelection): Promise<void> {
-    // First transaction: add the keyframe
-    const keyframesTransaction = this.db.transaction(["keyframes"], "readwrite");
-    const kstore = keyframesTransaction.objectStore("keyframes");
-    kstore.put({ annotation: annotation_id, ...keyFrame }, [annotation_id, keyFrame.frame]);
-
     return new Promise<void>((resolve, reject) => {
-      keyframesTransaction.oncomplete = async () => {
-        try {
-          // Fetch and update the annotation with all keyframes
-          const annotation = (await this.get("annotations", annotation_id)) as VideoAnnotationObject;
-          const keyframes = await this.getKeyFrames(annotation_id);
-          annotation.shape.frames = keyframes;
+      // Now start the transaction and perform all operations synchronously
+      const transaction = this.db.transaction(["keyframes"], "readwrite");
+      const kstore = transaction.objectStore("keyframes");
+      const request = kstore.put({ annotation: annotation_id, ...keyFrame }, [annotation_id, keyFrame.frame]);
 
-          // Second transaction: update the annotation
-          const annotationsTransaction = this.db.transaction(["annotations"], "readwrite");
-          const astore = annotationsTransaction.objectStore("annotations");
-          astore.put(annotation, annotation_id);
-
-          annotationsTransaction.oncomplete = () => resolve();
-          annotationsTransaction.onerror = () => reject(annotationsTransaction.error);
-        } catch (error) {
-          reject(error);
-        }
-      };
-      keyframesTransaction.onerror = (e) => reject(e);
+      request.onsuccess = () => resolve();
+      request.onerror = (e) => reject(e);
     });
   }
 
@@ -251,7 +234,7 @@ export class AnnotationsIndexedDB {
 
     return new Promise<void>((resolve, reject) => {
       request.onsuccess = () => resolve();
-      request.onerror = (r) => reject(r);
+      request.onerror = (e) => reject(e);
     });
   }
 
