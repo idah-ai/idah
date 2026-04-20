@@ -522,7 +522,7 @@
 <!-- MODAL::CONFIRM UNASSIGN -->
 <ConfirmModal
   title="Unassign entry"
-  description="Are you sure you want to unassign {selectedToUnAssignedRowsCount} entries(s)? This action cannot be undone."
+  description="Are you sure you want to unassign {selectedToUnAssignedRowsCount} entries?"
   onConfirm={unAssignEntries}
   bind:open={openConfirmUnassignEntriesModal}
 />
@@ -530,7 +530,7 @@
 <!-- MODAL::CONFIRM DELETE -->
 <ConfirmModal
   title="Delete {selectedRowsCount} entries(s)"
-  description="Are you sure you want to delete {selectedRowsCount} entries(s)? This action cannot be undone."
+  description="Are you sure you want to delete {selectedRowsCount} entries?"
   onConfirm={deleteEntries}
   bind:open={openConfirmDeleteEntriesModal}
 />
