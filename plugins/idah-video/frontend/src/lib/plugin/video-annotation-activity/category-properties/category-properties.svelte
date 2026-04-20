@@ -130,7 +130,7 @@
         <Text weight="semibold">
           {getModeTitle()}
         </Text>
-        <Badge variant="success-pastel">CREATE</Badge>
+        <Badge variant="success-200">CREATE</Badge>
       </div>
 
       <div class="flex flex-col gap-1">
