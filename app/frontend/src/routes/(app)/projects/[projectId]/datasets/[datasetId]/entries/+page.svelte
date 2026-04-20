@@ -17,23 +17,23 @@
   import { Card, CardContent } from "@/components/ui/card";
   import Checkbox from "@/components/ui/checkbox/checkbox.svelte";
   import {
-      DropdownMenu,
-      DropdownMenuContent,
-      DropdownMenuGroup,
-      DropdownMenuItem,
-      DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu";
   import Spinner from "@/components/ui/spinner/spinner.svelte";
   import Can from "@/security/can.svelte";
 
   import {
-      ArrowDownAZIcon,
-      ArrowDownZAIcon,
-      ArrowUpDownIcon,
-      ChevronsUpDownIcon,
-      FunnelIcon,
-      LayoutListIcon,
-      PlusIcon,
+    ArrowDownAZIcon,
+    ArrowDownZAIcon,
+    ArrowUpDownIcon,
+    ChevronsUpDownIcon,
+    FunnelIcon,
+    LayoutListIcon,
+    PlusIcon,
   } from "@lucide/svelte";
 
   import { entryColumns } from "@/components/app/datasets/entries/data-tables/entry-columns";
@@ -51,9 +51,9 @@
   import { refetches } from "@/utils/refetch";
 
   import type {
-      ColumnSettings,
-      FilterDataSourceParams,
-      SortDataSourceParams,
+    ColumnSettings,
+    FilterDataSourceParams,
+    SortDataSourceParams,
   } from "@/components/app/datasource-table/types";
   import type { ListOptions } from "@/data/DataSource";
   import type { CollectionResponse } from "@/data/model/types";
@@ -316,15 +316,18 @@
         });
       }
 
-      const selectedToUnAssignedRows = response.data.filter((entry) => selectedRows.includes(entry.id) && entry.assigned_to_id);
-      const description = selectedToUnAssignedRowsCount > 1
-        ? `${selectedToUnAssignedRows.length} entries have been unassigned.`
-        : `The entry "${selectedToUnAssignedRows[0]?.resource}" has been unassigned.`;
+      const selectedToUnAssignedRows = response.data.filter(
+        (entry) => selectedRows.includes(entry.id) && entry.assigned_to_id,
+      );
+      const description =
+        selectedToUnAssignedRowsCount > 1
+          ? `${selectedToUnAssignedRows.length} entries have been unassigned.`
+          : `The entry "${selectedToUnAssignedRows[0]?.resource}" has been unassigned.`;
 
       showToast.success({
         title: "Entry unassigned",
         description,
-       });
+      });
 
       selectedRows = [];
       $refetches.entries.list = new Date();
