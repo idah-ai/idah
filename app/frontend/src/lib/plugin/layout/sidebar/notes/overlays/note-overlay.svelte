@@ -265,7 +265,7 @@
 
       <Dialog open={!!selectedNoteFeed} onOpenChangeComplete={closeSelectedNoteFeedPopup}>
         <NoteDialogContent
-          class="w-80 gap-1 px-0 py-2"
+          class="w-80 gap-1 p-2"
           style="
             top: {top};
             left: {left};
@@ -309,7 +309,7 @@
             </ScrollArea>
           {/key}
 
-          <DialogFooter class="px-2">
+          <DialogFooter>
             <NoteInputField
               value={contentMd}
               placeholder="Reply to this note"
