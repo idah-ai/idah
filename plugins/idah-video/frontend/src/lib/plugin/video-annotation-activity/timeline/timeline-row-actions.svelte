@@ -1,10 +1,17 @@
 <script lang="ts">
   import { EyeIcon, EyeOffIcon, LockIcon, LockOpenIcon, Trash2Icon } from "@lucide/svelte";
+  import { getContext } from "svelte";
 
-  import Tooltips from "$lib/components/app/tooltips/tooltips.svelte";
+  import ToolTooltip from "$lib/components/app/tooltips/tool-tooltip.svelte";
   import Button from "$lib/components/ui/button/button.svelte";
 
+  import { getShortcut } from "$lib/components/ui/kbd/utils";
   import { cn } from "$lib/utils";
+
+  import type { IActivityContext } from "$idah/context/activity-context";
+
+  // Context
+  const context: IActivityContext = getContext("context");
 
   // Props
   interface Props {
@@ -90,43 +97,49 @@
   )}
 >
   <!-- BUTTON::VISIBILITY (SHOW / HIDE) -->
-  <Tooltips align="center">
+  <ToolTooltip
+    align="center"
+    label={getVisibilityTooltipContent()}
+    shortcut={mode === "single"
+      ? getShortcut(context.shortcutReferences?.["selected.toggle_group_visibility"]?.keyCombinations)
+      : undefined}
+  >
     {#snippet trigger()}
       <Button variant="ghost" size="icon-sm" onclick={handleClickVisibility}>
         {@const VisibilityIcon = allAnnotationsHidden ? EyeOffIcon : EyeIcon}
         <VisibilityIcon />
       </Button>
     {/snippet}
-
-    {#snippet content()}
-      {getVisibilityTooltipContent()}
-    {/snippet}
-  </Tooltips>
+  </ToolTooltip>
 
   <!-- BUTTON::EDITABILITY (LOCK / UNLOCK) -->
-  <Tooltips align="center">
+  <ToolTooltip
+    align="center"
+    label={getEditabilityTooltipContent()}
+    shortcut={mode === "single"
+      ? getShortcut(context.shortcutReferences?.["selected.toggle_group_editability"]?.keyCombinations)
+      : undefined}
+  >
     {#snippet trigger()}
       <Button variant="ghost" size="icon-sm" onclick={handleClickEditability}>
         {@const EditibilityIcon = allAnnotationsLocked ? LockIcon : LockOpenIcon}
         <EditibilityIcon />
       </Button>
     {/snippet}
-
-    {#snippet content()}
-      {getEditabilityTooltipContent()}
-    {/snippet}
-  </Tooltips>
+  </ToolTooltip>
 
   <!-- BUTTON::DELETE -->
-  <Tooltips align="center">
+  <ToolTooltip
+    align="center"
+    label={getDeleteTooltipContent()}
+    shortcut={mode === "single"
+      ? getShortcut(context.shortcutReferences?.["selected.delete"]?.keyCombinations)
+      : undefined}
+  >
     {#snippet trigger()}
       <Button variant="ghost" size="icon-sm" disabled={allAnnotationsLocked} onclick={handleClickDelete}>
         <Trash2Icon />
       </Button>
     {/snippet}
-
-    {#snippet content()}
-      {getDeleteTooltipContent()}
-    {/snippet}
-  </Tooltips>
+  </ToolTooltip>
 </div>

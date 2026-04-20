@@ -12,9 +12,10 @@
   let { positionX, color = "default" }: Props = $props();
 
   // Variables
-  let startOfCurrentFrameRange = $derived($currentFrameRange[0]);
-  let frame = $derived(getFrameFromMouseX({ clientX: positionX }));
-  let isFrameInRangeOfTotalFrames = $derived(frame <= $totalFrames);
+  let [startFrameIndexOfCurrentFrameRange, _] = $derived($currentFrameRange);
+  let scaledFrame = $derived(getFrameFromMouseX({ clientX: positionX }));
+  let isFrameInRangeOfTotalFrames = $derived(scaledFrame <= $totalFrames);
+  let scaledStartFrameIndexOfCurrentFrameRange = $derived(startFrameIndexOfCurrentFrameRange * $framePerScale);
 
   let colorClass = $derived.by(() => {
     switch (color) {
@@ -37,7 +38,7 @@
     )}
     style="transform: translateX({positionX}px)"
   >
-    {frame + Number(startOfCurrentFrameRange * $framePerScale)}
+    {scaledFrame + scaledStartFrameIndexOfCurrentFrameRange}
 
     <div class={cn("absolute top-full left-1/2 -mt-1 size-1.5 -translate-x-1/2 rotate-45", colorClass)}></div>
   </div>

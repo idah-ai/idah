@@ -11,6 +11,7 @@
     align?: "start" | "center" | "end";
     side?: "top" | "right" | "bottom" | "left";
     ignoreNonKeyboardFocus?: boolean;
+    onOpenChange?: (open: boolean) => void;
     class?: string | null;
     trigger: Snippet;
     content: Snippet;
@@ -20,6 +21,7 @@
     align = "start",
     side = undefined,
     ignoreNonKeyboardFocus = false,
+    onOpenChange,
     class: className,
     trigger,
     content,
@@ -27,7 +29,7 @@
 </script>
 
 <TooltipProvider {ignoreNonKeyboardFocus}>
-  <Tooltip {delayDuration} {ignoreNonKeyboardFocus}>
+  <Tooltip {delayDuration} {ignoreNonKeyboardFocus} {onOpenChange}>
     <TooltipTrigger class={cn("", className)}>
       {@render trigger()}
     </TooltipTrigger>
