@@ -56,14 +56,19 @@ module IdahImage
       end
 
       def generate_thumbnail(img)
+        format = context.config.thumbnail_format
         size = context.config.thumbnail_size
         thumb = img.resize_to_fit(size, size)
 
-        tmp_path = File.join(Dir.tmpdir, "thumbnail.jpg")
+        tmp_path = File.join(Dir.tmpdir, "thumbnail.#{format}")
         thumb.write(tmp_path) { |i| i.quality = context.config.processed_quality }
 
         File.open(tmp_path, "rb") do |file|
-          context.upload_media(file, "thumbnail.jpg", "image/jpeg")
+          context.upload_media(
+            file,
+            "thumbnail.#{format}",
+            "image/#{format == "jpg" ? "jpeg" : format}"
+          )
         end
       ensure
         File.delete(tmp_path) if tmp_path && File.exist?(tmp_path)
