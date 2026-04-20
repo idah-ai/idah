@@ -139,6 +139,10 @@ export interface ITools {
   onToolChange: (cb: (tool: string) => void) => void;
 }
 
+export interface IIconDriver {
+  get(iconName: string): Promise<string>;
+}
+
 export interface IActivityContext {
   // Id of the current entry
   get id(): string;
@@ -173,6 +177,8 @@ export interface IActivityContext {
   get commands(): ICommands;
 
   get tools(): ITools;
+
+  get icons(): IIconDriver;
 
   // Return to previous step of the workflow
   back(): void;

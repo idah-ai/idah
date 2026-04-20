@@ -238,6 +238,23 @@
 
       // 4. Return the absolute position for the top left corner of the note feed.
     });
+
+    async function setNoteModeCursor() {
+      const cursorNoteSvgText = await context.icons.get("cursor-note");
+      const encoded = encodeURIComponent(cursorNoteSvgText);
+      const dataUrl = `data:image/svg+xml,${encoded}`;
+
+      const style = document.createElement("style");
+      style.textContent = `
+        .cursor-note {
+          cursor: url(${dataUrl}) 0 20, auto;
+        }
+      `;
+
+      document.head.appendChild(style);
+    }
+
+    setNoteModeCursor();
   });
 
   let isEditing = $state(false);
@@ -545,10 +562,6 @@
 <style>
   .svg-overlay {
     position: relative;
-  }
-
-  .cursor-note {
-    cursor: url("/app/frontend/src/plugins/assets/icons/message-circle.svg"), auto;
   }
 
   .svg-overlay > div {
