@@ -1,0 +1,694 @@
+---
+import PageLayout from "@layouts/PageLayout.astro";
+import Pagination from "@components/app/page/Pagination.astro";
+import PageContainer from "@components/app/page/PageContainer.astro";
+import PageTitle from "@components/app/page/PageTitle.astro";
+import FolderBlock from "@components/app/FolderBlock.astro";
+import { Monitor, Shield, Database, Image, RefreshCw, Settings, FileText, Bell, BookOpen } from "@lucide/astro";
+---
+
+<PageLayout>
+  <PageContainer>
+    <PageTitle>
+      <div class="rounded-xl bg-blue-50 p-3 text-blue-400 dark:bg-blue-900/20 dark:text-blue-600">
+        <BookOpen class="h-9 w-9" stroke-width={2} />
+      </div>
+      What is IDAH?
+    </PageTitle>
+
+    <div class="prose prose-lg dark:prose-invert max-w-none">
+      <p class="mb-8 text-lg leading-relaxed text-gray-700 dark:text-gray-300">
+        IDAH (Ingedata Annotation Hub) is an open-source platform for collaborative data annotation, designed to
+        streamline the creation of high-quality training datasets for machine learning models.
+      </p>
+
+      <h2
+        id="overview"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
+        <a href="#overview" class="hover:underline">Overview</a>
+      </h2>
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
+        IDAH provides a comprehensive solution for managing annotation projects across various data modalities including
+        images, videos, audio, text, and more. Built with modern web technologies and a microservices architecture, IDAH
+        offers flexibility, scalability, and extensibility through its powerful plugin system.
+      </p>
+
+      <div class="mb-8 rounded-lg border-l-4 border-blue-500 bg-blue-50 p-6 dark:bg-blue-900/20">
+        <p class="leading-relaxed text-gray-800 dark:text-gray-200">
+          Explore <a
+            href="/getting-started/key-features/"
+            class="font-semibold text-blue-600 hover:underline dark:text-blue-400">Key Features</a
+          > to learn what IDAH can do, or check out <a
+            href="/getting-started/use-cases/"
+            class="font-semibold text-blue-600 hover:underline dark:text-blue-400">Use Cases</a
+          > to see how IDAH can be applied to your projects.
+        </p>
+      </div>
+
+      <h2
+        id="architecture"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
+        <a href="#architecture" class="hover:underline">Architecture</a>
+      </h2>
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
+        IDAH follows a microservices architecture, with each service responsible for a specific domain:
+      </p>
+
+      <FolderBlock
+        title="IDAH Project Structure"
+        structure={[
+          {
+            name: "idah/",
+            type: "folder",
+            children: [
+              {
+                name: "app/",
+                type: "folder",
+                comment: "Microservices",
+                children: [
+                  { name: "frontend/", type: "folder", comment: "Web UI (SvelteKit)" },
+                  { name: "iam/", type: "folder", comment: "Identity & Access Management" },
+                  { name: "dataset/", type: "folder", comment: "Dataset management service" },
+                  { name: "media/", type: "folder", comment: "Media processing service" },
+                  { name: "sync/", type: "folder", comment: "Data export & sync service" },
+                  { name: "notification/", type: "folder", comment: "Notification service" },
+                  { name: "setting/", type: "folder", comment: "Settings management" },
+                  { name: "audit/", type: "folder", comment: "Audit logging service" },
+                ],
+              },
+              { name: "common/", type: "folder", comment: "Shared code & utilities" },
+              { name: "plugins/", type: "folder", comment: "Production plugins" },
+              { name: "plugins_dev/", type: "folder", comment: "Development plugins & CLI" },
+              { name: "dev/", type: "folder", comment: "Development configuration" },
+              { name: "doc/", type: "folder", comment: "Documentation site" },
+            ],
+          },
+        ]}
+      />
+
+      <h2
+        id="microservices"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
+        <a href="#microservices" class="hover:underline">Microservices</a>
+      </h2>
+
+      <div class="mb-8 grid grid-cols-1 gap-4 space-y-4 lg:grid-cols-2">
+        <div class="h-full rounded-r border-l-4 border-blue-500 bg-gray-50 py-3 pl-4 dark:bg-gray-800">
+          <div class="flex items-start gap-3">
+            <Monitor class="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600 dark:text-blue-400" stroke-width={2} />
+            <div class="flex-1">
+              <h4 class="mb-2 font-semibold text-gray-900 dark:text-white">Frontend</h4>
+              <p class="mb-2 text-sm text-gray-700 dark:text-gray-300">
+                Web application built with SvelteKit. Provides the user interface for dataset management, annotation,
+                and collaboration.
+              </p>
+              <p class="text-xs text-gray-600 dark:text-gray-400">
+                <strong>Technologies:</strong>
+                <a
+                  href="https://kit.svelte.dev/"
+                  class="text-blue-600 hover:underline dark:text-blue-400"
+                  target="_blank"
+                  rel="noopener noreferrer">SvelteKit</a
+                >,
+                <a
+                  href="https://www.typescriptlang.org/"
+                  class="text-blue-600 hover:underline dark:text-blue-400"
+                  target="_blank"
+                  rel="noopener noreferrer">TypeScript</a
+                >,
+                <a
+                  href="https://tailwindcss.com/"
+                  class="text-blue-600 hover:underline dark:text-blue-400"
+                  target="_blank"
+                  rel="noopener noreferrer">Tailwind CSS</a
+                >
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="h-full rounded-r border-l-4 border-green-500 bg-gray-50 py-3 pl-4 dark:bg-gray-800">
+          <div class="flex items-start gap-3">
+            <Shield class="mt-0.5 h-5 w-5 flex-shrink-0 text-green-600 dark:text-green-400" stroke-width={2} />
+            <div class="flex-1">
+              <h4 class="mb-2 font-semibold text-gray-900 dark:text-white">IAM (Identity & Access Management)</h4>
+              <p class="mb-2 text-sm text-gray-700 dark:text-gray-300">
+                Handles user authentication, authorization, and access control. Manages user accounts, roles,
+                permissions, and session management.
+              </p>
+              <p class="text-xs text-gray-600 dark:text-gray-400">
+                <strong>Technologies:</strong>
+                <a
+                  href="https://www.ruby-lang.org/"
+                  class="text-blue-600 hover:underline dark:text-blue-400"
+                  target="_blank"
+                  rel="noopener noreferrer">Ruby</a
+                >,
+                <a
+                  href="https://github.com/verse-rb"
+                  class="text-blue-600 hover:underline dark:text-blue-400"
+                  target="_blank"
+                  rel="noopener noreferrer">Verse Framework</a
+                >,
+                <a
+                  href="https://www.postgresql.org/"
+                  class="text-blue-600 hover:underline dark:text-blue-400"
+                  target="_blank"
+                  rel="noopener noreferrer">PostgreSQL</a
+                >,
+                <a
+                  href="https://redis.io/"
+                  class="text-blue-600 hover:underline dark:text-blue-400"
+                  target="_blank"
+                  rel="noopener noreferrer">Redis</a
+                >
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="h-full rounded-r border-l-4 border-purple-500 bg-gray-50 py-3 pl-4 dark:bg-gray-800">
+          <div class="flex items-start gap-3">
+            <Database class="mt-0.5 h-5 w-5 flex-shrink-0 text-purple-600 dark:text-purple-400" stroke-width={2} />
+            <div class="flex-1">
+              <h4 class="mb-2 font-semibold text-gray-900 dark:text-white">Dataset</h4>
+              <p class="mb-2 text-sm text-gray-700 dark:text-gray-300">
+                Core service for managing datasets, entries, annotations, and workflow states. Handles annotation
+                storage, version control, and query operations.
+              </p>
+              <p class="text-xs text-gray-600 dark:text-gray-400">
+                <strong>Technologies:</strong>
+                <a
+                  href="https://www.ruby-lang.org/"
+                  class="text-blue-600 hover:underline dark:text-blue-400"
+                  target="_blank"
+                  rel="noopener noreferrer">Ruby</a
+                >,
+                <a
+                  href="https://github.com/verse-rb"
+                  class="text-blue-600 hover:underline dark:text-blue-400"
+                  target="_blank"
+                  rel="noopener noreferrer">Verse Framework</a
+                >,
+                <a
+                  href="https://www.postgresql.org/"
+                  class="text-blue-600 hover:underline dark:text-blue-400"
+                  target="_blank"
+                  rel="noopener noreferrer">PostgreSQL</a
+                >,
+                <a
+                  href="https://redis.io/"
+                  class="text-blue-600 hover:underline dark:text-blue-400"
+                  target="_blank"
+                  rel="noopener noreferrer">Redis</a
+                >
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="h-full rounded-r border-l-4 border-orange-500 bg-gray-50 py-3 pl-4 dark:bg-gray-800">
+          <div class="flex items-start gap-3">
+            <Image class="mt-0.5 h-5 w-5 flex-shrink-0 text-orange-600 dark:text-orange-400" stroke-width={2} />
+            <div class="flex-1">
+              <h4 class="mb-2 font-semibold text-gray-900 dark:text-white">Media</h4>
+              <p class="mb-2 text-sm text-gray-700 dark:text-gray-300">
+                Processes and stores media files (images, videos, audio). Handles thumbnails, format conversions, and
+                media optimization through plugin-based processors.
+              </p>
+              <p class="text-xs text-gray-600 dark:text-gray-400">
+                <strong>Technologies:</strong>
+                <a
+                  href="https://www.ruby-lang.org/"
+                  class="text-blue-600 hover:underline dark:text-blue-400"
+                  target="_blank"
+                  rel="noopener noreferrer">Ruby</a
+                >,
+                <a
+                  href="https://github.com/verse-rb"
+                  class="text-blue-600 hover:underline dark:text-blue-400"
+                  target="_blank"
+                  rel="noopener noreferrer">Verse Framework</a
+                >,
+                <a
+                  href="https://www.postgresql.org/"
+                  class="text-blue-600 hover:underline dark:text-blue-400"
+                  target="_blank"
+                  rel="noopener noreferrer">PostgreSQL</a
+                >,
+                <a
+                  href="https://redis.io/"
+                  class="text-blue-600 hover:underline dark:text-blue-400"
+                  target="_blank"
+                  rel="noopener noreferrer">Redis</a
+                >
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="h-full rounded-r border-l-4 border-red-500 bg-gray-50 py-3 pl-4 dark:bg-gray-800">
+          <div class="flex items-start gap-3">
+            <RefreshCw class="mt-0.5 h-5 w-5 flex-shrink-0 text-red-600 dark:text-red-400" stroke-width={2} />
+            <div class="flex-1">
+              <h4 class="mb-2 font-semibold text-gray-900 dark:text-white">Sync</h4>
+              <p class="mb-2 text-sm text-gray-700 dark:text-gray-300">
+                Handles data export and synchronization with external systems. Supports multiple export formats and
+                custom exporters through plugins.
+              </p>
+              <p class="text-xs text-gray-600 dark:text-gray-400">
+                <strong>Technologies:</strong>
+                <a
+                  href="https://www.ruby-lang.org/"
+                  class="text-blue-600 hover:underline dark:text-blue-400"
+                  target="_blank"
+                  rel="noopener noreferrer">Ruby</a
+                >,
+                <a
+                  href="https://github.com/verse-rb"
+                  class="text-blue-600 hover:underline dark:text-blue-400"
+                  target="_blank"
+                  rel="noopener noreferrer">Verse Framework</a
+                >,
+                <a
+                  href="https://www.postgresql.org/"
+                  class="text-blue-600 hover:underline dark:text-blue-400"
+                  target="_blank"
+                  rel="noopener noreferrer">PostgreSQL</a
+                >,
+                <a
+                  href="https://redis.io/"
+                  class="text-blue-600 hover:underline dark:text-blue-400"
+                  target="_blank"
+                  rel="noopener noreferrer">Redis</a
+                >
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="h-full rounded-r border-l-4 border-yellow-500 bg-gray-50 py-3 pl-4 dark:bg-gray-800">
+          <div class="flex items-start gap-3">
+            <Settings class="mt-0.5 h-5 w-5 flex-shrink-0 text-yellow-600 dark:text-yellow-400" stroke-width={2} />
+            <div class="flex-1">
+              <h4 class="mb-2 font-semibold text-gray-900 dark:text-white">Setting</h4>
+              <p class="mb-2 text-sm text-gray-700 dark:text-gray-300">
+                Manages application settings, configuration, and preferences at system, organization, and user levels.
+              </p>
+              <p class="text-xs text-gray-600 dark:text-gray-400">
+                <strong>Technologies:</strong>
+                <a
+                  href="https://www.ruby-lang.org/"
+                  class="text-blue-600 hover:underline dark:text-blue-400"
+                  target="_blank"
+                  rel="noopener noreferrer">Ruby</a
+                >,
+                <a
+                  href="https://github.com/verse-rb"
+                  class="text-blue-600 hover:underline dark:text-blue-400"
+                  target="_blank"
+                  rel="noopener noreferrer">Verse Framework</a
+                >,
+                <a
+                  href="https://www.postgresql.org/"
+                  class="text-blue-600 hover:underline dark:text-blue-400"
+                  target="_blank"
+                  rel="noopener noreferrer">PostgreSQL</a
+                >,
+                <a
+                  href="https://redis.io/"
+                  class="text-blue-600 hover:underline dark:text-blue-400"
+                  target="_blank"
+                  rel="noopener noreferrer">Redis</a
+                >
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="h-full rounded-r border-l-4 border-pink-500 bg-gray-50 py-3 pl-4 dark:bg-gray-800">
+          <div class="flex items-start gap-3">
+            <FileText class="mt-0.5 h-5 w-5 flex-shrink-0 text-pink-600 dark:text-pink-400" stroke-width={2} />
+            <div class="flex-1">
+              <h4 class="mb-2 font-semibold text-gray-900 dark:text-white">Audit</h4>
+              <p class="mb-2 text-sm text-gray-700 dark:text-gray-300">
+                Tracks and logs user actions, system events, and data changes for auditing, compliance, and
+                troubleshooting.
+              </p>
+              <p class="text-xs text-gray-600 dark:text-gray-400">
+                <strong>Technologies:</strong>
+                <a
+                  href="https://www.ruby-lang.org/"
+                  class="text-blue-600 hover:underline dark:text-blue-400"
+                  target="_blank"
+                  rel="noopener noreferrer">Ruby</a
+                >,
+                <a
+                  href="https://github.com/verse-rb"
+                  class="text-blue-600 hover:underline dark:text-blue-400"
+                  target="_blank"
+                  rel="noopener noreferrer">Verse Framework</a
+                >,
+                <a
+                  href="https://www.postgresql.org/"
+                  class="text-blue-600 hover:underline dark:text-blue-400"
+                  target="_blank"
+                  rel="noopener noreferrer">PostgreSQL</a
+                >,
+                <a
+                  href="https://redis.io/"
+                  class="text-blue-600 hover:underline dark:text-blue-400"
+                  target="_blank"
+                  rel="noopener noreferrer">Redis</a
+                >
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="h-full rounded-r border-l-4 border-indigo-500 bg-gray-50 py-3 pl-4 dark:bg-gray-800">
+          <div class="flex items-start gap-3">
+            <Bell class="mt-0.5 h-5 w-5 flex-shrink-0 text-indigo-600 dark:text-indigo-400" stroke-width={2} />
+            <div class="flex-1">
+              <h4 class="mb-2 font-semibold text-gray-900 dark:text-white">Notification</h4>
+              <p class="mb-2 text-sm text-gray-700 dark:text-gray-300">
+                Sends notifications and manages email communications for user alerts, task assignments, and system
+                updates.
+              </p>
+              <p class="text-xs text-gray-600 dark:text-gray-400">
+                <strong>Technologies:</strong>
+                <a
+                  href="https://www.ruby-lang.org/"
+                  class="text-blue-600 hover:underline dark:text-blue-400"
+                  target="_blank"
+                  rel="noopener noreferrer">Ruby</a
+                >,
+                <a
+                  href="https://github.com/verse-rb"
+                  class="text-blue-600 hover:underline dark:text-blue-400"
+                  target="_blank"
+                  rel="noopener noreferrer">Verse Framework</a
+                >,
+                <a
+                  href="https://www.postgresql.org/"
+                  class="text-blue-600 hover:underline dark:text-blue-400"
+                  target="_blank"
+                  rel="noopener noreferrer">PostgreSQL</a
+                >,
+                <a
+                  href="https://redis.io/"
+                  class="text-blue-600 hover:underline dark:text-blue-400"
+                  target="_blank"
+                  rel="noopener noreferrer">Redis</a
+                >
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h2
+        id="technology-stack"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
+        <a href="#technology-stack" class="hover:underline">Technology Stack</a>
+      </h2>
+
+      <h3 id="frontend-tech" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
+        <a href="#frontend-tech" class="hover:underline">Frontend</a>
+      </h3>
+      <ul class="mb-6 list-inside list-disc space-y-2 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed">
+          <strong class="font-semibold text-gray-900 dark:text-white"
+            ><a
+              href="https://kit.svelte.dev/"
+              class="text-blue-600 hover:underline dark:text-blue-400"
+              target="_blank"
+              rel="noopener noreferrer">SvelteKit</a
+            >:</strong
+          > Modern frontend framework with server-side rendering
+        </li>
+        <li class="leading-relaxed">
+          <strong class="font-semibold text-gray-900 dark:text-white"
+            ><a
+              href="https://www.typescriptlang.org/"
+              class="text-blue-600 hover:underline dark:text-blue-400"
+              target="_blank"
+              rel="noopener noreferrer">TypeScript</a
+            >:</strong
+          > Type-safe JavaScript for robust development
+        </li>
+        <li class="leading-relaxed">
+          <strong class="font-semibold text-gray-900 dark:text-white"
+            ><a
+              href="https://tailwindcss.com/"
+              class="text-blue-600 hover:underline dark:text-blue-400"
+              target="_blank"
+              rel="noopener noreferrer">Tailwind CSS</a
+            >:</strong
+          > Utility-first CSS framework for rapid UI development
+        </li>
+      </ul>
+
+      <h3 id="backend-tech" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
+        <a href="#backend-tech" class="hover:underline">Backend</a>
+      </h3>
+      <ul class="mb-6 list-inside list-disc space-y-2 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed">
+          <strong class="font-semibold text-gray-900 dark:text-white"
+            ><a
+              href="https://www.ruby-lang.org/"
+              class="text-blue-600 hover:underline dark:text-blue-400"
+              target="_blank"
+              rel="noopener noreferrer">Ruby</a
+            >:</strong
+          > Backend programming language
+        </li>
+        <li class="leading-relaxed">
+          <strong class="font-semibold text-gray-900 dark:text-white"
+            ><a
+              href="https://github.com/verse-rb"
+              class="text-blue-600 hover:underline dark:text-blue-400"
+              target="_blank"
+              rel="noopener noreferrer">Verse Framework</a
+            >:</strong
+          > Lightweight micro-framework for Ruby microservices
+        </li>
+        <li class="leading-relaxed">
+          <strong class="font-semibold text-gray-900 dark:text-white"
+            ><a
+              href="https://www.postgresql.org/"
+              class="text-blue-600 hover:underline dark:text-blue-400"
+              target="_blank"
+              rel="noopener noreferrer">PostgreSQL</a
+            >:</strong
+          > Relational database for persistent data
+        </li>
+        <li class="leading-relaxed">
+          <strong class="font-semibold text-gray-900 dark:text-white"
+            ><a
+              href="https://redis.io/"
+              class="text-blue-600 hover:underline dark:text-blue-400"
+              target="_blank"
+              rel="noopener noreferrer">Redis</a
+            >:</strong
+          > In-memory store for caching and background jobs
+        </li>
+      </ul>
+
+      <div class="mb-8 rounded-lg border-l-4 border-purple-500 bg-purple-50 p-6 dark:bg-purple-900/20">
+        <h4 class="mb-3 text-xl font-semibold text-gray-900 dark:text-white">Verse Framework Ecosystem</h4>
+        <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
+          IDAH's backend services are built on <a
+            href="https://github.com/verse-rb"
+            class="font-semibold text-purple-600 hover:underline dark:text-purple-400"
+            target="_blank"
+            rel="noopener noreferrer">Verse Framework</a
+          >, a modular Ruby micro-framework for building lightweight microservices. Key modules used:
+        </p>
+        <ul class="mb-4 ml-4 grid grid-cols-1 space-y-1.5 text-sm text-gray-700 lg:grid-cols-2 dark:text-gray-300">
+          <li>
+            <a
+              href="https://github.com/verse-rb/verse-core"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="font-medium text-purple-700 hover:underline dark:text-purple-300">verse-core</a
+            > — Core framework foundation
+          </li>
+          <li>
+            <a
+              href="https://github.com/verse-rb/verse-http"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="font-medium text-purple-700 hover:underline dark:text-purple-300">verse-http</a
+            > — HTTP server with middleware
+          </li>
+          <li>
+            <a
+              href="https://github.com/verse-rb/verse-schema"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="font-medium text-purple-700 hover:underline dark:text-purple-300">verse-schema</a
+            > — Request validation
+          </li>
+          <li>
+            <a
+              href="https://github.com/verse-rb/verse-jsonapi"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="font-medium text-purple-700 hover:underline dark:text-purple-300">verse-jsonapi</a
+            > — JSON:API responses
+          </li>
+          <li>
+            <a
+              href="https://github.com/verse-rb/verse-sequel"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="font-medium text-purple-700 hover:underline dark:text-purple-300">verse-sequel</a
+            > — PostgreSQL integration
+          </li>
+          <li>
+            <a
+              href="https://github.com/verse-rb/verse-jsonrpc"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="font-medium text-purple-700 hover:underline dark:text-purple-300">verse-jsonrpc</a
+            > — Service communication
+          </li>
+          <li>
+            <a
+              href="https://github.com/verse-rb/verse-redis"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="font-medium text-purple-700 hover:underline dark:text-purple-300">verse-redis</a
+            > — Redis caching & pub/sub
+          </li>
+          <li>
+            <a
+              href="https://github.com/verse-rb/verse-periodic"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="font-medium text-purple-700 hover:underline dark:text-purple-300">verse-periodic</a
+            > — Scheduled tasks
+          </li>
+          <li>
+            <a
+              href="https://github.com/verse-rb/verse-shrine"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="font-medium text-purple-700 hover:underline dark:text-purple-300">verse-shrine</a
+            > — File uploads & storage
+          </li>
+        </ul>
+        <p class="text-xs text-gray-600 italic dark:text-gray-400">
+          Created by <a
+            href="https://github.com/anykeyh"
+            class="font-semibold text-purple-600 hover:underline dark:text-purple-400"
+            target="_blank"
+            rel="noopener noreferrer">Yacine Petitprez</a
+          >
+        </p>
+      </div>
+
+      <h3 id="infrastructure" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
+        <a href="#infrastructure" class="hover:underline">Infrastructure</a>
+      </h3>
+      <ul class="mb-6 list-inside list-disc space-y-2 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed">
+          <strong class="font-semibold text-gray-900 dark:text-white"
+            ><a
+              href="https://www.docker.com/"
+              class="text-blue-600 hover:underline dark:text-blue-400"
+              target="_blank"
+              rel="noopener noreferrer">Docker</a
+            >:</strong
+          > Containerization for consistent environments
+        </li>
+        <li class="leading-relaxed">
+          <strong class="font-semibold text-gray-900 dark:text-white"
+            ><a
+              href="https://docs.docker.com/compose/"
+              class="text-blue-600 hover:underline dark:text-blue-400"
+              target="_blank"
+              rel="noopener noreferrer">Docker Compose</a
+            >:</strong
+          > Multi-container orchestration for development
+        </li>
+        <li class="leading-relaxed">
+          <strong class="font-semibold text-gray-900 dark:text-white"
+            ><a
+              href="https://nginx.org/"
+              class="text-blue-600 hover:underline dark:text-blue-400"
+              target="_blank"
+              rel="noopener noreferrer">Nginx</a
+            >:</strong
+          > Reverse proxy and load balancer
+        </li>
+        <li class="leading-relaxed">
+          <strong class="font-semibold text-gray-900 dark:text-white"
+            ><a
+              href="https://aws.amazon.com/s3/"
+              class="text-blue-600 hover:underline dark:text-blue-400"
+              target="_blank"
+              rel="noopener noreferrer">S3-compatible storage</a
+            >:</strong
+          > Object storage for media files
+        </li>
+      </ul>
+
+      <h2
+        id="open-source"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
+        <a href="#open-source" class="hover:underline">Open Source</a>
+      </h2>
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
+        IDAH is open-source software, freely available for use, modification, and distribution. We welcome contributions
+        from the community!
+      </p>
+      <ul class="mb-6 list-inside list-disc space-y-2 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed">
+          <strong class="font-semibold text-gray-900 dark:text-white">License:</strong>
+          <a
+            href="https://github.com/idah-ai/idah/blob/main/LICENSE.md"
+            class="text-blue-600 hover:underline dark:text-blue-400"
+            target="_blank"
+            rel="noopener noreferrer">Functional Source License (FSL)</a
+          >
+        </li>
+        <li class="leading-relaxed">
+          <strong class="font-semibold text-gray-900 dark:text-white">Repository:</strong>
+          <a
+            href="https://github.com/idah-ai/idah"
+            class="text-blue-600 hover:underline dark:text-blue-400"
+            target="_blank"
+            rel="noopener noreferrer">github.com/idah-ai/idah</a
+          >
+        </li>
+        <li class="leading-relaxed">
+          <strong class="font-semibold text-gray-900 dark:text-white">Contributing:</strong> See our <a
+            href="https://github.com/idah-ai/idah/blob/main/CONTRIBUTING.md"
+            class="text-blue-600 hover:underline dark:text-blue-400"
+            target="_blank"
+            rel="noopener noreferrer">Contributing Guide</a
+          >
+        </li>
+      </ul>
+
+      <div
+        class="mb-6 rounded-lg border-l-4 border-blue-500 bg-gradient-to-r from-blue-50 to-purple-50 p-6 dark:from-blue-900/20 dark:to-purple-900/20"
+      >
+        <p class="text-lg leading-relaxed font-medium text-gray-800 dark:text-gray-200">
+          🚀 Ready to get started? Head over to the <a
+            href="/install/"
+            class="font-semibold text-blue-600 hover:underline dark:text-blue-400">Installation Guide</a
+          > to set up IDAH on your machine.
+        </p>
+      </div>
+    </div>
+  </PageContainer>
+  <Pagination />
+</PageLayout>

@@ -1,6 +1,7 @@
 import type { Component } from "svelte";
 
 export interface AnnotationHeaderBarBaseTool {
+  name: string;
   label: string;
   icon?: Component;
   iconName?: string;

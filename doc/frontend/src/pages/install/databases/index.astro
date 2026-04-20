@@ -1,0 +1,162 @@
+---
+import PageLayout from "@layouts/PageLayout.astro";
+import Pagination from "@components/app/page/Pagination.astro";
+import PageContainer from "@components/app/page/PageContainer.astro";
+import PageTitle from "@components/app/page/PageTitle.astro";
+import CodeBlock from "@components/app/CodeBlock.astro";
+import { Database } from "@lucide/astro";
+---
+
+<PageLayout>
+  <PageContainer>
+    <PageTitle>
+      <div class="rounded-xl bg-green-50 p-3 text-green-500 dark:bg-green-900/20 dark:text-green-700">
+        <Database class="h-9 w-9" stroke-width={2} />
+      </div>
+      Databases
+    </PageTitle>
+
+    <div class="prose prose-lg dark:prose-invert max-w-none">
+      <p class="mb-8 text-lg leading-relaxed text-gray-700 dark:text-gray-300">
+        IDAH requires PostgreSQL and Redis to function. Choose one of the setup options below.
+      </p>
+
+      <h2
+        id="required-services"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
+        <a href="#required-services" class="hover:underline">Required Services</a>
+      </h2>
+      <ul class="mb-6 list-inside list-disc space-y-2 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed">
+          <strong class="font-semibold text-gray-900 dark:text-white">PostgreSQL 17</strong> - Primary database
+        </li>
+        <li class="leading-relaxed">
+          <strong class="font-semibold text-gray-900 dark:text-white">Redis</strong> - Stream processing and caching
+        </li>
+      </ul>
+
+      <h2
+        id="setup-options"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
+        <a href="#setup-options" class="hover:underline">Setup Options</a>
+      </h2>
+
+      <h3 id="option-1-local" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
+        <a href="#option-1-local" class="hover:underline">Option 1: Use Local PostgreSQL and Redis</a>
+      </h3>
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
+        If you already have PostgreSQL and Redis installed on your local machine, IDAH will connect to them using the
+        default configuration.
+      </p>
+
+      <div class="mb-6 rounded-r border-l-4 border-blue-500 bg-blue-50 p-4 dark:bg-blue-900/20">
+        <p class="mb-2 text-sm font-semibold text-gray-800 dark:text-gray-200">Default Configuration</p>
+        <ul class="space-y-1 text-sm text-gray-700 dark:text-gray-300">
+          <li>
+            <strong>PostgreSQL:</strong>
+            <code class="rounded bg-gray-100 px-2 py-0.5 dark:bg-gray-800">host.docker.internal:5432</code>
+          </li>
+          <li>
+            <strong>Credentials:</strong>
+            <code class="rounded bg-gray-100 px-2 py-0.5 dark:bg-gray-800">postgres:postgres</code>
+          </li>
+          <li>
+            <strong>Redis:</strong>
+            <code class="rounded bg-gray-100 px-2 py-0.5 dark:bg-gray-800">redis://host.docker.internal:6379/0</code>
+          </li>
+        </ul>
+      </div>
+
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
+        Make sure both services are running on the default ports before starting IDAH.
+      </p>
+
+      <div class="mb-6 rounded-r border-l-4 border-yellow-500 bg-yellow-50 p-4 dark:bg-yellow-900/20">
+        <p class="mb-2 text-sm font-semibold text-gray-800 dark:text-gray-200">Custom Configuration</p>
+        <p class="text-sm text-gray-700 dark:text-gray-300">
+          If your database credentials are different, edit <code
+            class="rounded bg-gray-100 px-2 py-0.5 dark:bg-gray-800">.env.docker</code
+          > to match your setup.
+        </p>
+      </div>
+
+      <CodeBlock
+        language="bash"
+        path=".env.docker"
+        code={`# PostgreSQL configuration
+POSTGRES_HOST=host.docker.internal
+POSTGRES_CREDENTIALS=postgres:postgres
+POSTGRES_PORT=5432
+
+# Redis configuration
+REDIS_STREAM_URL=redis://host.docker.internal:6379/0`}
+      />
+
+      <h4 class="mt-6 mb-3 text-xl font-semibold text-gray-800 dark:text-gray-200">Verify Local Services</h4>
+      <p class="mb-4 text-sm leading-relaxed text-gray-700 dark:text-gray-300">Check that both services are running:</p>
+      <CodeBlock
+        language="bash"
+        code={`# Check PostgreSQL connection
+psql -h localhost -U postgres -c "SELECT version();"
+
+# Check Redis connection
+redis-cli ping`}
+      />
+
+      <h3 id="option-2-docker" class="mt-8 mb-4 text-2xl font-semibold text-gray-800 dark:text-gray-200">
+        <a href="#option-2-docker" class="hover:underline">Option 2: Use Docker Containers</a>
+      </h3>
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">
+        If you don't have PostgreSQL and Redis installed, use Docker containers:
+      </p>
+      <CodeBlock language="bash" code={`docker compose -f docker-compose-db.yml up -d`} />
+      <p class="mb-4 text-sm leading-relaxed text-gray-700 dark:text-gray-300">
+        This starts PostgreSQL and Redis containers with the required configuration.
+      </p>
+
+      <h4 class="mt-6 mb-3 text-xl font-semibold text-gray-800 dark:text-gray-200">Verify Docker Containers</h4>
+      <p class="mb-4 text-sm leading-relaxed text-gray-700 dark:text-gray-300">Check that containers are running:</p>
+      <CodeBlock
+        language="bash"
+        code={`# Check container status
+docker compose -f docker-compose-db.yml ps
+
+# Test PostgreSQL connection
+docker compose -f docker-compose-db.yml exec postgres psql -U postgres -c "SELECT version();"
+
+# Test Redis connection
+docker compose -f docker-compose-db.yml exec redis redis-cli ping`}
+      />
+      <h2
+        id="next-steps"
+        class="mt-12 mb-6 border-b-2 border-gray-200 pb-3 text-3xl font-bold text-gray-900 dark:border-gray-700 dark:text-white"
+      >
+        <a href="#next-steps" class="hover:underline">Next Steps</a>
+      </h2>
+      <p class="mb-4 leading-relaxed text-gray-700 dark:text-gray-300">Once your databases are running, proceed to:</p>
+      <ol class="mb-6 list-inside list-decimal space-y-2 text-gray-700 dark:text-gray-300">
+        <li class="leading-relaxed">
+          <a href="/install/storage/" class="font-semibold text-blue-600 hover:underline dark:text-blue-400"
+            >Persistent Storage</a
+          > - Configure file storage for media and exports
+        </li>
+        <li class="leading-relaxed">
+          <a href="/install/start/" class="font-semibold text-blue-600 hover:underline dark:text-blue-400"
+            >Starting IDAH</a
+          > - Build and run the IDAH services
+        </li>
+      </ol>
+
+      <div
+        class="mb-6 rounded-lg border-l-4 border-blue-500 bg-gradient-to-r from-blue-50 to-purple-50 p-6 dark:from-blue-900/20 dark:to-purple-900/20"
+      >
+        <p class="text-lg leading-relaxed font-medium text-gray-800 dark:text-gray-200">
+          💾 Databases are ready! Continue with storage configuration and then start the services.
+        </p>
+      </div>
+    </div>
+  </PageContainer>
+  <Pagination />
+</PageLayout>

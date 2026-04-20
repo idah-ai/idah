@@ -16,8 +16,8 @@
   import type { IConfigProperty } from "@/plugin/interface/Activity";
   import type { Hash } from "@/utils/types";
 
+  import { ASTNodeToFunctionString } from "@/utils/ast_resolution";
   import * as parser from "@build/parser.js";
-  import { ASTNodeToFunctionString } from "../../../../../../plugins/idah-video/test_ast_resolution";
 
   // Props
   interface Props {
@@ -28,7 +28,6 @@
 
   // Variables
   let { id, description, type, format, required, visibility } = $derived(property);
-
   let visibilityError: string | undefined = $state();
 </script>
 
@@ -265,10 +264,18 @@
       placeholder="e.g. task_name match '...' and status = '...'"
       value={visibility == true ? "" : ASTNodeToFunctionString(visibility)}
       oninput={(e) => {
-        try {
-          const visibility = parser.parse(e.currentTarget.value);
+        const value = e.currentTarget.value.trim();
+
+        if (!value) {
           visibilityError = undefined;
-          onSetValue({ visibility: visibility.length ? visibility : true });
+          onSetValue({ visibility: true });
+          return;
+        }
+
+        try {
+          const visibility = parser.parse(value);
+          visibilityError = undefined;
+          if (visibility.length) onSetValue({ visibility: visibility });
         } catch (error) {
           if (error instanceof Error) {
             visibilityError = error.message;

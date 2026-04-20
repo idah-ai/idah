@@ -6,7 +6,7 @@
   import IdahPlugin from "@/plugin/IdahPlugin.svelte";
 
   import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entries/record";
-  import { activityContextForEntry } from "@/plugin/ActivityContext";
+  import { activityContextForEntry } from "@/plugin/ActivityContext.svelte";
 
   import type { IActivityContext } from "@/plugin/interface/Activity";
 
