@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { CircleQuestionMarkIcon, PlusIcon, Trash2Icon } from "@lucide/svelte";
+  import { InfoIcon, PlusIcon, Trash2Icon } from "@lucide/svelte";
 
   import CheckboxField from "@/components/app/forms/fields/input/checkbox-field.svelte";
   import InputField from "@/components/app/forms/fields/input/input-field.svelte";
@@ -289,7 +289,7 @@
           <Text size="sm" class="text-accent-foreground/70">Visibility</Text>
           <Tooltips align="center">
             {#snippet trigger()}
-              <CircleQuestionMarkIcon class="text-muted-foreground h-4 w-4" />
+              <InfoIcon class="text-muted-foreground size-4" />
             {/snippet}
 
             {#snippet content()}
