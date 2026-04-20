@@ -113,7 +113,7 @@
   let itemsPerPage: number = $state(10);
   let selectedEntryIds: string[] = $state([]);
   let selectedRowsCount: number = $derived(selectedEntryIds.length);
-  let selectedToUnAssignedEntryIdsCount: number = $derived(
+  let selectedToUnassignedEntryIdsCount: number = $derived(
     response.data.filter((entry) => selectedEntryIds.includes(entry.id) && entry.assigned_to?.id).length,
   );
   let openNewEntryModal: boolean = $state(false);
@@ -168,7 +168,7 @@
       onAssign: () => {
         openAssignEntryFormModal = true;
       },
-      onUnAssign: () => {
+      onUnassign: () => {
         openConfirmUnassignEntriesModal = true;
       },
       onSetPriority: () => {
@@ -315,13 +315,13 @@
         });
       }
 
-      const selectedToUnAssignedRows = response.data.filter(
+      const selectedToUnassignedRows = response.data.filter(
         (entry) => selectedEntryIds.includes(entry.id) && entry.assigned_to_id,
       );
       const description =
-        selectedToUnAssignedEntryIdsCount > 1
-          ? `${selectedToUnAssignedRows.length} entries have been unassigned.`
-          : `The entry "${selectedToUnAssignedRows[0]?.resource}" has been unassigned.`;
+        selectedToUnassignedEntryIdsCount > 1
+          ? `${selectedToUnassignedRows.length} entries have been unassigned.`
+          : `The entry "${selectedToUnassignedRows[0]?.resource}" has been unassigned.`;
 
       showToast.success({
         title: "Entry unassigned",
@@ -542,7 +542,7 @@
 <!-- MODAL::CONFIRM UNASSIGN -->
 <ConfirmModal
   title="Unassign entry"
-  description={`Are you sure you want to unassign ${selectedToUnAssignedEntryIdsCount} ${pluralizeUnit(selectedToUnAssignedEntryIdsCount, "entry", "entries")}?`}
+  description={`Are you sure you want to unassign ${selectedToUnassignedEntryIdsCount} ${pluralizeUnit(selectedToUnassignedEntryIdsCount, "entry", "entries")}?`}
   onConfirm={unAssignEntries}
   bind:open={openConfirmUnassignEntriesModal}
 />

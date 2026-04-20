@@ -36,7 +36,7 @@
   let menus = $derived(
     getEntryDropdownMenuActions({
       onAssign: openAssignEntryModal,
-      onUnAssign: () => {
+      onUnassign: () => {
         openConfirmUnassignEntryModal = true;
       },
       onSetPriority: () => {},
