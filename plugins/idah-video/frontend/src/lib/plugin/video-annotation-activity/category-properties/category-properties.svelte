@@ -1,12 +1,7 @@
 <script lang="ts">
   import { getContext } from "svelte";
 
-  import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-  } from "$lib/components/ui/select";
+  import { Select, SelectContent, SelectItem, SelectTrigger } from "$lib/components/ui/select";
   import SelectGroup from "$lib/components/ui/select/select-group.svelte";
   import { Separator } from "$lib/components/ui/separator";
   import Text from "$lib/components/ui/text/Text.svelte";
@@ -20,22 +15,13 @@
   import SingleSelectProperty from "$lib/plugin/video-annotation-activity/category-properties/properties/single-select-property.svelte";
   import TextProperty from "$lib/plugin/video-annotation-activity/category-properties/properties/text-property.svelte";
 
-  import {
-    IDAH_VIDEO_BOUNDING_BOX,
-    IDAH_VIDEO_POLYGON,
-  } from "$lib/plugin/type";
+  import { IDAH_VIDEO_BOUNDING_BOX, IDAH_VIDEO_POLYGON } from "$lib/plugin/type";
   import { visibilityFullfilled } from "$lib/plugin/video-annotation-activity/category-properties";
-  import {
-    currentMode,
-    selectedAnnotation,
-    selectedAnnotationGroup,
-  } from "$lib/plugin/video-annotation-activity/store/store";
+  import { currentMode, selectedAnnotationGroup } from "$lib/plugin/video-annotation-activity/store/store";
 
-  import type {
-    IActivityContext,
-    IConfigProperty,
-  } from "$idah/context/activity-context";
+  import type { IActivityContext, IConfigProperty } from "$idah/context/activity-context";
   import type { AnnotationValue } from "$idah/context/annotation-context";
+  import Badge from "$lib/components/ui/badge/badge.svelte";
 
   type Props = {
     selectedCategory: string;
@@ -62,30 +48,16 @@
 
   // Variables
   let configByMode = $derived(context.config[$currentMode]);
-  let category = $derived(
-    configByMode?.values?.find((c) => c.id == selectedCategory),
-  );
-  let properties = $derived(
-    configByMode?.properties?.filter((p) =>
-      visibilityFullfilled(annotationValue, p),
-    ),
-  );
+  let category = $derived(configByMode?.values?.find((c) => c.id == selectedCategory));
+  let properties = $derived(configByMode?.properties?.filter((p) => visibilityFullfilled(annotationValue, p)));
 
-  let firstAnnotationInGroup = $derived(
-    $selectedAnnotationGroup?.annotations[0],
-  );
+  let firstAnnotationInGroup = $derived($selectedAnnotationGroup?.annotations[0]);
   let configByGroup = $derived(
-    firstAnnotationInGroup
-      ? context.config[firstAnnotationInGroup.shape.type]
-      : { values: [], properties: [] },
+    firstAnnotationInGroup ? context.config[firstAnnotationInGroup.shape.type] : { values: [], properties: [] },
   );
-  let firstAnnotationInGroupCategory = $derived(
-    firstAnnotationInGroup?.value.category,
-  );
+  let firstAnnotationInGroupCategory = $derived(firstAnnotationInGroup?.value.category);
   let foundAnnotationInGroupCategory = $derived(
-    configByGroup.values.find(
-      (c) => c.id == firstAnnotationInGroup?.value.category,
-    ),
+    configByGroup.values.find((c) => c.id == firstAnnotationInGroup?.value.category),
   );
 
   const propertyComponents: {
@@ -110,10 +82,7 @@
     );
   }
 
-  function onValueChange(
-    property: IConfigProperty,
-    v: string | number | string[] | undefined | boolean,
-  ) {
+  function onValueChange(property: IConfigProperty, v: string | number | string[] | undefined | boolean) {
     const newValue = {
       ...annotationValue,
       attributes: {
@@ -124,12 +93,9 @@
     const new_visible_properties = configByMode?.properties
       .filter((p) => visibilityFullfilled(newValue, p))
       .map((p) => p.id);
-    const visibilityDiff = Object.keys(newValue.attributes).filter(
-      (k) => !new_visible_properties.includes(k),
-    );
+    const visibilityDiff = Object.keys(newValue.attributes).filter((k) => !new_visible_properties.includes(k));
     // remove visibility false properties
-    if (visibilityDiff.length)
-      visibilityDiff.forEach((p) => delete newValue.attributes?.[p]);
+    if (visibilityDiff.length) visibilityDiff.forEach((p) => delete newValue.attributes?.[p]);
     onEditValue(newValue);
   }
 
@@ -143,9 +109,7 @@
   function categoryValueToLabel(value?: string, replaceLabel?: string) {
     if (!value) return "";
 
-    const label = value
-      .split("/")
-      .map((s) => [s.slice(0, 1).toUpperCase(), s.slice(1)].join(""));
+    const label = value.split("/").map((s) => [s.slice(0, 1).toUpperCase(), s.slice(1)].join(""));
 
     if (replaceLabel) {
       label[label.length - 1] = replaceLabel;
@@ -166,30 +130,25 @@
         <Text weight="semibold">
           {getModeTitle()}
         </Text>
-        <!-- Pill darker than bg-secondary to be visible, right side -->
-        <span
-          class="text-xs bg-green-200 text-secondary-foreground rounded-full px-2 py-0.5 dark:bg-green-700"
-        >
-          CREATE
-        </span>
+        <Badge variant="success-pastel">CREATE</Badge>
       </div>
 
       <div class="flex flex-col gap-1">
         <Text size="sm" weight="semibold">Category</Text>
         <Select type="single" onValueChange={onSelectCategory} {disabled}>
           <SelectTrigger
-            class="data-placeholder:text-secondary-foreground bg-secondary w-full truncate text-xs h-auto! py-2"
+            class="data-placeholder:text-secondary-foreground bg-secondary h-auto! w-full truncate py-2 text-xs"
           >
             {#if category?.label}
               {@const parentLabel = categoryValueToLabel(category.id)}
 
-              <div class="flex gap-1 flex-col text-left">
+              <div class="flex flex-col gap-1 text-left">
                 {#if parentLabel.length > 0}
                   <div class="whitespace-break-spaces">
                     {parentLabel}
                   </div>
                 {/if}
-                <div class="flex gap-1 items-center justify-start">
+                <div class="flex items-center justify-start gap-1">
                   <!-- TO FIX: firstAnnotationInGroup does not have value -->
                   {#if firstAnnotationInGroup?.shape.type === IDAH_VIDEO_POLYGON}
                     <PolygonCircleIcon color={category.color} />
@@ -209,8 +168,7 @@
                 <SelectItem
                   label={valueLabel}
                   {value}
-                  class={"text-xs " +
-                    (category?.id == value ? "bg-primary/20 opacity-100!" : "")}
+                  class={"text-xs " + (category?.id == value ? "bg-primary/20 opacity-100!" : "")}
                   disabled={category?.id == value}
                 >
                   <!-- TO FIX: firstAnnotationInGroup does not have value -->
@@ -240,29 +198,18 @@
         <Text weight="semibold">
           {getModeTitle()}
         </Text>
-        <!-- Pill darker than bg-secondary to be visible, right side -->
-        <span
-          class="text-xs bg-primary/20 text-secondary-foreground rounded-full px-2 py-0.5 dark:bg-primary"
-        >
-          EDIT
-        </span>
+        <Badge variant="info">EDIT</Badge>
       </div>
 
       {#if firstAnnotationInGroup}
-        {@const groupId =
-          firstAnnotationInGroup.metadata.metadata?.group_id ??
-          firstAnnotationInGroup.metadata.id}
+        {@const groupId = firstAnnotationInGroup.metadata.metadata?.group_id ?? firstAnnotationInGroup.metadata.id}
         {@const splittedGroupId = groupId?.split("-")}
-        {@const lastPartOfGroupId = splittedGroupId
-          ? splittedGroupId[splittedGroupId.length - 1]
-          : ""}
+        {@const lastPartOfGroupId = splittedGroupId ? splittedGroupId[splittedGroupId.length - 1] : ""}
         {@const fallbackGroupTitle = `Group-${lastPartOfGroupId}`}
 
         <Text size="sm" class="text-muted-foreground">
           {#if firstAnnotationInGroup.value.category}
-            {@const foundCategory = configByGroup.values.find(
-              (c) => c.id == firstAnnotationInGroup.value.category,
-            )}
+            {@const foundCategory = configByGroup.values.find((c) => c.id == firstAnnotationInGroup.value.category)}
             {#if foundCategory}
               {foundCategory.label}-{lastPartOfGroupId}
             {:else}
@@ -279,28 +226,22 @@
       <Text size="sm" weight="semibold">Category</Text>
       <Select type="single" onValueChange={reselectCategory} {disabled}>
         <SelectTrigger
-          class="data-placeholder:text-secondary-foreground bg-secondary w-full truncate text-xs h-auto! py-2"
+          class="data-placeholder:text-secondary-foreground bg-secondary h-auto! w-full truncate py-2 text-xs"
         >
           {#if foundAnnotationInGroupCategory?.label}
-            {@const parentLabel = categoryValueToLabel(
-              foundAnnotationInGroupCategory.id,
-            )}
+            {@const parentLabel = categoryValueToLabel(foundAnnotationInGroupCategory.id)}
 
-            <div class="flex gap-1 flex-col text-left">
+            <div class="flex flex-col gap-1 text-left">
               {#if parentLabel.length > 0}
                 <div class="whitespace-break-spaces">
                   {parentLabel}
                 </div>
               {/if}
-              <div class="flex gap-1 items-center justify-start">
+              <div class="flex items-center justify-start gap-1">
                 {#if firstAnnotationInGroup?.shape.type === IDAH_VIDEO_BOUNDING_BOX}
-                  <VectorSquareIcon
-                    color={foundAnnotationInGroupCategory.color}
-                  />
+                  <VectorSquareIcon color={foundAnnotationInGroupCategory.color} />
                 {:else}
-                  <PolygonCircleIcon
-                    color={foundAnnotationInGroupCategory.color}
-                  />
+                  <PolygonCircleIcon color={foundAnnotationInGroupCategory.color} />
                 {/if}
                 <b>{foundAnnotationInGroupCategory.label}</b>
               </div>
@@ -315,10 +256,7 @@
             {#each configByGroup.values as { id: value, label, color }, index (`${value}-${index}`)}
               {@const valueLabel = categoryValueToLabel(value, label)}
               <SelectItem
-                class={"text-xs " +
-                  (firstAnnotationInGroupCategory == value
-                    ? "bg-primary/20 opacity-100!"
-                    : "")}
+                class={"text-xs " + (firstAnnotationInGroupCategory == value ? "bg-primary/20 opacity-100!" : "")}
                 label={valueLabel}
                 {value}
                 disabled={firstAnnotationInGroupCategory == value}
@@ -358,17 +296,14 @@
         {#if firstAnnotationInGroup}
           <Text size="xs" class="text-muted-foreground">
             ( Frame :
-            {firstAnnotationInGroup.shape.start} - {firstAnnotationInGroup.shape
-              .end}
+            {firstAnnotationInGroup.shape.start} - {firstAnnotationInGroup.shape.end}
             )
           </Text>
         {/if}
       </div>
 
       {#each properties as property, index (`${property.id}-${index}`)}
-        {@const foundPropertyComponent = propertyComponents.find(
-          (p) => p.type == property.type,
-        )}
+        {@const foundPropertyComponent = propertyComponents.find((p) => p.type == property.type)}
 
         {#if foundPropertyComponent}
           <div class="flex flex-col gap-1">
@@ -376,9 +311,7 @@
               {...{
                 property,
                 value: annotationValue.attributes?.[property.id],
-                onValueChange: (
-                  v: string | number | boolean | string[] | undefined,
-                ) => onValueChange(property, v),
+                onValueChange: (v: string | number | boolean | string[] | undefined) => onValueChange(property, v),
                 disabled,
               }}
             />
