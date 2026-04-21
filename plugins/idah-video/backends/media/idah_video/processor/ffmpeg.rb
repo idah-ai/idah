@@ -11,24 +11,20 @@ module IdahVideo
         :name, :width, :height, :bitrate, :audiobitrate
       )
 
-      DECODING_THREADS = (
-        Verse.config.extra_fields.dig(
-          :idah,
-          :plugins,
-          :config,
-          :idah_video,
-          :decoding_threads
-        ) || 1
-      ).to_s
-      ENCODING_THREADS = (
-        Verse.config.extra_fields.dig(
-          :idah,
-          :plugins,
-          :config,
-          :idah_video,
-          :encoding_threads
-        ) || 1
-      ).to_s
+      DECODING_THREADS = Verse.config.extra_fields.dig(
+        :idah,
+        :plugins,
+        :config,
+        :idah_video,
+        :decoding_threads
+      )&.to_s
+      ENCODING_THREADS = Verse.config.extra_fields.dig(
+        :idah,
+        :plugins,
+        :config,
+        :idah_video,
+        :encoding_threads
+      )&.to_s
 
       def gen_stream(
         dir:,
@@ -38,12 +34,15 @@ module IdahVideo
         &
       )
         args = []
-        args += ["-v", "quiet", "-progress", "pipe:1", "-threads", DECODING_THREADS, "-i", file]
+        args += ["-v", "quiet", "-progress", "pipe:1"]
+        args += ["-threads", DECODING_THREADS] if DECODING_THREADS
+        args += ["-i", file]
 
         variants.each do |variant|
           args += [
             "-vf", "scale=#{variant.width}:#{variant.height}",
-            "-c:v", "libx264", "-b:v", variant.bitrate.to_s
+            "-c:v", "libx264", "-b:v", variant.bitrate.to_s,
+            "-x264-params", "keyint=48:min-keyint=48:scenecut=0"
           ]
 
           args += if variant.audiobitrate
@@ -58,9 +57,10 @@ module IdahVideo
             "-hls_time", streaming_time_per_segment.to_s,
             "-hls_playlist_type", "vod",
             "-hls_segment_filename", "#{variant.name}_%04d.ts",
-            "-threads", ENCODING_THREADS,
-            "#{variant.name}.m3u8"
+            "-hls_flags", "independent_segments",
           ]
+          args += ["-threads", ENCODING_THREADS] if ENCODING_THREADS
+          args += ["#{variant.name}.m3u8"]
         end
 
         call(*args, chdir: dir) do |stdout|
@@ -81,9 +81,9 @@ module IdahVideo
         scale: "240:-1",
         output: "thumb_%02d.jpg"
       )
-        call(
-          "-threads",
-          DECODING_THREADS,
+        args = []
+        args += ["-threads", DECODING_THREADS] if DECODING_THREADS
+        args += [
           "-i",
           file,
           "-vf",
@@ -93,13 +93,12 @@ module IdahVideo
           "-frames:v",
           images.to_s,
           "-q:v",
-          "2",
-          "-threads",
-          ENCODING_THREADS,
-          output,
-          "-y",
-          chdir:
-        )
+          "2"
+        ]
+        args += ["-threads", ENCODING_THREADS] if ENCODING_THREADS
+        args += [output, "-y"]
+
+        call(*args, chdir:)
       end
 
       def call(*args, **kv, &)
