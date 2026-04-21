@@ -73,6 +73,12 @@ export interface INotes {
 
   gotoFeed: (noteFeedId: string | null, noteCommentId?: string) => void;
   onNoteSelected: (cb: (noteFeedId: string | null, noteCommentId?: string) => Promise<void> | void) => void;
+
+  setTargetDomRect: (rect: DOMRect) => void;
+  onTargetDomRectChange: (cb: (rect: DOMRect) => void) => void;
+
+  setZoomInfo: (zoomInfo: { scale: number; offset: [number, number] }) => void;
+  onZoomInfoChange: (cb: (zoomInfo: { scale: number; offset: [number, number] }) => void) => void;
 }
 
 export type IConfigPropertyType = "text" | "integer" | "boolean" | "single-select" | "multi-select";

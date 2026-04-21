@@ -38,6 +38,8 @@ export function createNoteDriver(): INotes {
     | ((data: Pick<INoteFeed, "anchor_type" | "position" | "annotation_id">) => void)
     | undefined;
   let _onRequireNoteFeedPosition: ((noteFeed: INoteFeed) => void) | undefined;
+  let _onTargetDomRectChange: ((rect: DOMRect) => void) | undefined;
+  let _onZoomInfoChange: ((zoomInfo: { scale: number; offset: [number, number] }) => void) | undefined;
 
   return {
     showNewNoteFeedPopup: (data: Pick<INoteFeed, "anchor_type" | "position" | "annotation_id">) => {
@@ -54,5 +56,15 @@ export function createNoteDriver(): INotes {
       _onNoteSelected?.(noteFeedId, noteCommentId);
     },
     onNoteSelected: (cb) => (_onNoteSelected = cb),
+
+    setTargetDomRect: (rect: DOMRect) => {
+      _onTargetDomRectChange?.(rect);
+    },
+    onTargetDomRectChange: (cb) => (_onTargetDomRectChange = cb),
+
+    setZoomInfo: (zoomInfo: { scale: number; offset: [number, number] }) => {
+      _onZoomInfoChange?.(zoomInfo);
+    },
+    onZoomInfoChange: (cb) => (_onZoomInfoChange = cb),
   };
 }

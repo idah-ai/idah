@@ -186,6 +186,10 @@ export const activityContextExample: IActivityContext = {
       onRequireNoteFeedPosition: (cb) => {},
       gotoFeed: (noteFeedId, noteCommentId) => {},
       onNoteSelected: (cb) => {},
+      setTargetDomRect: (rect) => {},
+      onTargetDomRectChange: (cb) => {},
+      setZoomInfo: (zoomInfo) => {},
+      onZoomInfoChange: (cb) => {},
     };
   },
   commands: createCommandsInterface(),

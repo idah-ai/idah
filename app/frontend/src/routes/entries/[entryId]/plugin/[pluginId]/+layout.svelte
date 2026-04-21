@@ -23,7 +23,7 @@
   ></script>
 </svelte:head>
 
-<div>
+<div class="overflow-x-hidden overflow-y-hidden">
   {#if loaded}
     {@render children?.()}
   {/if}

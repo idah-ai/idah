@@ -5,16 +5,14 @@
   import { SvelteURL } from "svelte/reactivity";
 
   import Button from "@/components/ui/button/button.svelte";
-  import { Dialog, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+  import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
   import ScrollArea from "@/components/ui/scroll-area/scroll-area.svelte";
-  import Text from "@/components/ui/text/Text.svelte";
   import messageCircleIcon from "@/plugin/layout/sidebar/notes/assets/message-circle.svg";
   import ResolveNoteFeedButton from "@/plugin/layout/sidebar/notes/buttons/resolve-note-feed-button.svelte";
   import NoteCommentCard from "@/plugin/layout/sidebar/notes/cards/note-comment-card.svelte";
   import NoteFeedCard from "@/plugin/layout/sidebar/notes/cards/note-feed-card.svelte";
   import NoteDropdownMenus from "@/plugin/layout/sidebar/notes/dropdown-menus/note-dropdown-menus.svelte";
   import NoteInputField from "@/plugin/layout/sidebar/notes/inputs/note-input-field.svelte";
-  import NoteDialogContent from "@/plugin/layout/sidebar/notes/overlays/note-dialog-content.svelte";
 
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { NoteCommentRecord, noteCommentsBackendDataSource } from "@/data/model/dataset/notes/comments/record";
@@ -28,9 +26,8 @@
   // Props
   interface Props {
     context: IActivityContext;
-    pluginContainerElement: HTMLElement | null;
   }
-  let { context, pluginContainerElement }: Props = $props();
+  let { context }: Props = $props();
 
   // Interfaces
   interface ZoomInfo {
@@ -38,13 +35,28 @@
     offset: [number, number];
   }
 
-  // Elements
-  let NoteOverlayElement = $state<HTMLButtonElement | null>(null);
-
   // Variables
-  let pluginContainerRect = $derived(pluginContainerElement?.getBoundingClientRect() ?? new DOMRect(0, 0, 0, 0));
-  let containerWidth = $derived(pluginContainerRect.width);
-  let containerHeight = $derived(pluginContainerRect.height);
+  const [X, Y] = [0, 1];
+  const NOTE_POPUP_OFFSET = [32, -32];
+
+  /**
+   * targetDomRect is a DOMRect of the target element from plugin,
+   * where the note is attached to.
+   *
+   * It is used to calculate position the note popup relative to the target element.
+   */
+  let targetDomRect = $state<DOMRect | null>(null);
+  let zoomInfo = $state<ZoomInfo>({ scale: 1, offset: [0, 0] });
+  let scaledTargetDomRect = $derived.by(() => {
+    if (!targetDomRect) return null;
+
+    return {
+      top: targetDomRect.top + zoomInfo.offset[Y],
+      left: targetDomRect.left + zoomInfo.offset[X],
+      width: targetDomRect.width * zoomInfo.scale,
+      height: targetDomRect.height * zoomInfo.scale,
+    };
+  });
 
   let showNewNoteFeedPopup: boolean = $state(false);
   let newNoteFeed: NoteFeedRecord = $state(new NoteFeedRecord());
@@ -90,6 +102,15 @@
       newNoteFeed.anchor_type = data.anchor_type;
       newNoteFeed.position = data.position || {};
       newNoteFeed.annotation_id = data.annotation_id || null;
+    });
+
+    context.notes.onTargetDomRectChange((rect: DOMRect) => {
+      if (!rect) return;
+      targetDomRect = rect;
+    });
+
+    context.notes.onZoomInfoChange((zi) => {
+      zoomInfo = zi;
     });
   });
 
@@ -191,28 +212,29 @@
     $refetches.noteFeeds.list = new Date();
     selectedNoteFeed = null;
   }
+
+  function closeNoteFeedPopup() {
+    showNewNoteFeedPopup = false;
+  }
 </script>
 
-{#if selectedNoteFeed || showNewNoteFeedPopup}
+{#if (selectedNoteFeed || showNewNoteFeedPopup) && scaledTargetDomRect}
   <button
-    bind:this={NoteOverlayElement}
-    class="absolute left-0 z-40"
-    style:top="{pluginContainerRect.top}px"
-    style:width="{containerWidth}px"
-    style:height="{containerHeight}px"
+    class="absolute left-0 z-50 bg-transparent"
+    style:top="{scaledTargetDomRect.top}px"
+    style:left="{scaledTargetDomRect.left}px"
+    style:width="{scaledTargetDomRect.width}px"
+    style:height="{scaledTargetDomRect.height}px"
   >
     <!-- NOTE FEED POPUP::NEW -->
     {#if showNewNoteFeedPopup}
       {@const posX = newNoteFeed.position.x || 0}
       {@const posY = newNoteFeed.position.y || 0}
-      {@const targetSizeX = newNoteFeed.position.target_size[0] || containerWidth || 0}
-      {@const targetSizeY = newNoteFeed.position.target_size[1] || containerHeight || 0}
-      {@const top = `${(Number(posY * targetSizeY) / containerHeight) * 100}%`}
-      {@const left = `${(Number(posX * targetSizeX) / containerWidth) * 100}%`}
-      {@const sidebarLeftWidth = newNoteFeed.position.sidebar_width || 0}
-      {@const zoomInfo = (newNoteFeed.position.zoom_info || { scale: 1, offset: [0, 0] }) as ZoomInfo}
-      {@const zoomOffsetX = zoomInfo.offset[0] || 0}
-      {@const zoomOffsetY = zoomInfo.offset[1] || 0}
+      {@const targetDOMHeight = scaledTargetDomRect.height}
+      {@const targetDOMWidth = scaledTargetDomRect.width}
+      {@const top = `${Number(posY * targetDOMHeight)}px`}
+      {@const left = `${Number(posX * targetDOMWidth)}px`}
+      {@const cursorNoteCoordinates = [0, -20]}
 
       <img
         src={messageCircleIcon}
@@ -220,40 +242,46 @@
         class="absolute z-40 cursor-auto"
         style:top
         style:left
-        style:transform="translate({sidebarLeftWidth + zoomOffsetX}px, {zoomOffsetY - 20}px)"
+        style:transform="translate({cursorNoteCoordinates[X]}px, {cursorNoteCoordinates[Y]}px)"
       />
-      <!-- Note: zoomOffsetY - 20 is the height need to shift down the svg icon to the tip of mouse arrow cursor -->
 
-      <Dialog open={showNewNoteFeedPopup} onOpenChangeComplete={(open) => (showNewNoteFeedPopup = open)}>
-        <NoteDialogContent
-          class="w-80 p-0"
-          style="
-            top: {top};
-            left: {left};
-            transform: translate({sidebarLeftWidth + zoomOffsetX + 32}px, {zoomOffsetY}px);
-          "
-        >
-          <NoteInputField
-            value={contentMd}
-            onInput={(e) => (contentMd = e.currentTarget.value)}
-            onSubmit={createNoteFeed}
-          />
-        </NoteDialogContent>
-      </Dialog>
+      <div
+        class="absolute w-80 p-0"
+        style:top
+        style:left
+        style:transform="translate({NOTE_POPUP_OFFSET[X]}px, {NOTE_POPUP_OFFSET[Y]}px)"
+      >
+        <Card class="gap-0 p-1">
+          <CardHeader class="flex flex-row items-center p-1">
+            <CardTitle>New Note</CardTitle>
+
+            <div class="ml-auto flex items-center gap-1">
+              <Button variant="ghost" size="icon-sm" onclick={closeNoteFeedPopup}>
+                <XIcon />
+              </Button>
+            </div>
+          </CardHeader>
+
+          <CardContent class="p-1">
+            <NoteInputField
+              value={contentMd}
+              onInput={(e) => (contentMd = e.currentTarget.value)}
+              onSubmit={createNoteFeed}
+            />
+          </CardContent>
+        </Card>
+      </div>
     {/if}
 
     <!-- NOTE FEED POPUP::SELECTED -->
     {#if selectedNoteFeed && selectedNoteFeed.position && Object.keys(selectedNoteFeed.position || {}).length > 0}
       {@const posX = selectedNoteFeed.position.x || 0}
       {@const posY = selectedNoteFeed.position.y || 0}
-      {@const targetSizeX = selectedNoteFeed.position.target_size[0] || containerWidth || 0}
-      {@const targetSizeY = selectedNoteFeed.position.target_size[1] || containerHeight || 0}
-      {@const top = `${(Number(posY * targetSizeY) / containerHeight) * 100}%`}
-      {@const left = `${(Number(posX * targetSizeX) / containerWidth) * 100}%`}
-      {@const sidebarLeftWidth = selectedNoteFeed.position.sidebar_width || 0}
-      {@const zoomInfo = (selectedNoteFeed.position.zoom_info || { scale: 1, offset: [0, 0] }) as ZoomInfo}
-      {@const zoomOffsetX = zoomInfo.offset[0] || 0}
-      {@const zoomOffsetY = zoomInfo.offset[1] || 0}
+      {@const targetDOMHeight = scaledTargetDomRect.height}
+      {@const targetDOMWidth = scaledTargetDomRect.width}
+      {@const top = `${Number(posY * targetDOMHeight)}px`}
+      {@const left = `${Number(posX * targetDOMWidth)}px`}
+      {@const cursorNoteCoordinates = [0, -20]}
 
       <img
         src={messageCircleIcon}
@@ -261,66 +289,60 @@
         class="absolute z-40 cursor-auto"
         style:top
         style:left
-        style:transform="translate({sidebarLeftWidth + zoomOffsetX}px, {zoomOffsetY - 20}px)"
+        style:transform="translate({cursorNoteCoordinates[X]}px, {cursorNoteCoordinates[Y]}px)"
       />
-      <!-- Note: zoomOffsetY - 20 is the height need to shift down the svg icon to the tip of mouse arrow cursor -->
 
-      <Dialog open={!!selectedNoteFeed} onOpenChangeComplete={closeSelectedNoteFeedPopup}>
-        <NoteDialogContent
-          class="w-80 gap-1 p-2"
-          style="
-            top: {top};
-            left: {left};
-            transform: translate({sidebarLeftWidth + zoomOffsetX + 32}px, {zoomOffsetY}px);
-          "
-        >
-          <DialogHeader class="flex flex-row items-center px-2">
-            <DialogTitle>
-              <Text size="sm" weight="semibold">Notes</Text>
-            </DialogTitle>
-
-            <!-- ACTIONS -->
+      <div
+        class="absolute w-80 p-0"
+        style:top
+        style:left
+        style:transform="translate({NOTE_POPUP_OFFSET[X]}px, {NOTE_POPUP_OFFSET[Y]}px)"
+      >
+        <Card class="gap-0 p-1">
+          <CardHeader class="flex flex-row items-center p-1">
+            <CardTitle>Notes</CardTitle>
             <div class="ml-auto flex items-center gap-1">
-              <span class="sr-only" role="button" tabindex="0" aria-hidden="true">
-                <!-- Note: This span is to prevent resolve note feed button being open unintentionally -->
-              </span>
+              <!-- Note: This span is to prevent resolve note feed button being open unintentionally -->
+              <span class="sr-only" role="button" tabindex="0" aria-hidden="true"> </span>
               <ResolveNoteFeedButton noteFeed={selectedNoteFeed} onNoteResolved={closeSelectedNoteFeedPopup} />
               <NoteDropdownMenus noteFeedId={selectedNoteFeed.id} deletable onDelete={deleteNote} />
               <Button variant="ghost" size="icon-sm" onclick={closeSelectedNoteFeedPopup}>
                 <XIcon />
               </Button>
             </div>
-          </DialogHeader>
+          </CardHeader>
 
-          {#key $refetches.noteFeeds.list}
-            <ScrollArea class="max-h-64">
-              <div class="flex flex-col">
-                <NoteFeedCard noteFeedRecord={selectedNoteFeed} editable {onNoteFeedUpdated} />
+          <CardContent class="p-1">
+            {#key $refetches.noteFeeds.list}
+              <ScrollArea class="max-h-64">
+                <div class="flex flex-col">
+                  <NoteFeedCard noteFeedRecord={selectedNoteFeed} editable {onNoteFeedUpdated} />
 
-                {#key $refetches.noteComments.list}
-                  {#await loadNoteComments(selectedNoteFeed.id) then}
-                    {#each noteComments as noteComment (noteComment.id)}
-                      <NoteCommentCard
-                        noteCommentRecord={noteComment}
-                        highlighted={selectedNoteCommentId === noteComment.id}
-                      />
-                    {/each}
-                  {/await}
-                {/key}
-              </div>
-            </ScrollArea>
-          {/key}
+                  {#key $refetches.noteComments.list}
+                    {#await loadNoteComments(selectedNoteFeed.id) then}
+                      {#each noteComments as noteComment (noteComment.id)}
+                        <NoteCommentCard
+                          noteCommentRecord={noteComment}
+                          highlighted={selectedNoteCommentId === noteComment.id}
+                        />
+                      {/each}
+                    {/await}
+                  {/key}
+                </div>
+              </ScrollArea>
+            {/key}
+          </CardContent>
 
-          <DialogFooter>
+          <CardFooter class="p-1">
             <NoteInputField
               value={contentMd}
               placeholder="Reply to this note"
               onInput={(e) => (contentMd = e.currentTarget.value)}
               onSubmit={createNoteComment}
             />
-          </DialogFooter>
-        </NoteDialogContent>
-      </Dialog>
+          </CardFooter>
+        </Card>
+      </div>
     {/if}
   </button>
 {/if}

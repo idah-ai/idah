@@ -13,16 +13,8 @@
     CommandShortcut,
   } from "$lib/components/ui/command";
   import { getShortcuts } from "$lib/components/ui/kbd/utils";
-  import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-  } from "$lib/components/ui/popover";
-  import {
-    ResizableHandle,
-    ResizablePane,
-    ResizablePaneGroup,
-  } from "$lib/components/ui/resizable";
+  import { Popover, PopoverContent, PopoverTrigger } from "$lib/components/ui/popover";
+  import { ResizableHandle, ResizablePane, ResizablePaneGroup } from "$lib/components/ui/resizable";
 
   import { ShortcutManager } from "$idah/shortcut/shortcut-manager.svelte";
 
@@ -45,10 +37,7 @@
     registerShortcuts,
     registerShortcutsReference,
   } from "$lib/plugin/video-annotation-activity/shortcut";
-  import {
-    boundingBoxes,
-    entryRoot,
-  } from "$lib/plugin/video-annotation-activity/store/idb-store.svelte";
+  import { boundingBoxes, entryRoot } from "$lib/plugin/video-annotation-activity/store/idb-store.svelte";
   import {
     currentFrame,
     currentMode,
@@ -63,8 +52,8 @@
     setTotalFrames,
     setVideoIsPlaying,
   } from "$lib/plugin/video-annotation-activity/store/store";
-  import { findClosestAnnotationInGroup } from "$lib/plugin/video-annotation-activity/utils/group-annotation.svelte";
   import { uiStore } from "$lib/plugin/video-annotation-activity/store/ui-store.svelte";
+  import { findClosestAnnotationInGroup } from "$lib/plugin/video-annotation-activity/utils/group-annotation.svelte";
 
   import AnnotationFooterToolbar from "$lib/plugin/layout/footer/annotation-footer-toolbar.svelte";
   import AnnotationFooter from "$lib/plugin/layout/footer/annotation-footer.svelte";
@@ -106,7 +95,8 @@
   let isNoteMode = $derived($currentMode === IDAH_NOTE);
 
   let player: Video | undefined = $state();
-  let player_container: HTMLDivElement | undefined = $state();
+  let playerContainerEl: HTMLDivElement | undefined = $state();
+  let playerContainerElRect: DOMRect | null = $state(null);
 
   let annotationSidebarResizablePercentage = $state<number>(16);
   let annotationSidebarWidthRem = $derived<number>(annotationSidebarResizablePercentage + 3);
@@ -192,6 +182,33 @@
 
   $effect(() => {
     context.tools.setTool($currentMode);
+  });
+
+  /** Reactive track changes of video player size (e.g. window resize, dynamic content) */
+  $effect(() => {
+    if (!playerContainerEl) return;
+
+    const updateRect = () => {
+      if (!playerContainerEl) return undefined;
+      const playerContainerDomRect: DOMRect = playerContainerEl.getBoundingClientRect();
+      playerContainerElRect = playerContainerDomRect;
+      context.notes.setTargetDomRect(playerContainerDomRect);
+    };
+
+    // Initial measurement
+    updateRect();
+
+    // Watch for size changes
+    const observer = new ResizeObserver(updateRect);
+    observer.observe(playerContainerEl);
+
+    // Also update on scroll (x/y changes on scroll)
+    window.addEventListener("scroll", updateRect);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("scroll", updateRect);
+    };
   });
 
   onMount(async () => {
@@ -599,7 +616,6 @@
          * Need to be sent the sidebar width to position the note correctly
          * Otherwise the note will be positioned left to the sidebar
          */
-        sidebar_width: annotationSidebarWidthRem * 16,
       },
       annotation_id: annotationId,
     });
@@ -619,10 +635,7 @@
 <div class="relative flex h-full w-full flex-col">
   {#key [ShortcutManager, ShortcutManager.currentMode, ShortcutManager.getCurrentMode(), $selectedAnnotation]}
     <!-- All available shortcuts list -->
-    <CommandDialog
-      bind:open={uiStore.isCommandDialogOpen}
-      accesskey={ShortcutManager.getCurrentMode()}
-    >
+    <CommandDialog bind:open={uiStore.isCommandDialogOpen} accesskey={ShortcutManager.getCurrentMode()}>
       <CommandInput placeholder="Type a command or search..." />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
@@ -751,14 +764,14 @@
                 onSelection={onShapeSelection}
                 onAddNewNote={showNewNotePopup}
                 onChangeFrame={seekToFrame}
-                target_container={() => player_container}
+                target_container={() => playerContainerEl}
                 {videoResizedAt}
                 isPlaying={$isVideoPlaying}
               >
                 <!-- container context ?-->
                 <Video
                   bind:this={player}
-                  bind:element={player_container}
+                  bind:element={playerContainerEl}
                   onResize={() => {
                     videoResizedAt = new Date();
                   }}
