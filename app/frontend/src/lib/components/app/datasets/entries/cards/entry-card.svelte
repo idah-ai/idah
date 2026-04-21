@@ -32,10 +32,10 @@
   // Props
   interface Props {
     entry: EntryRecord;
-    selectedRows: string[];
+    selectedEntryIds: string[];
     onRowSelect: (selectedId: string) => void;
   }
-  let { entry, selectedRows, onRowSelect }: Props = $props();
+  let { entry, selectedEntryIds, onRowSelect }: Props = $props();
 
   // Variables
   const currentAccount = $authStatus.authContext;
@@ -244,7 +244,7 @@
       <!-- CHECKBOX -->
       {#if canUpdateEntry || canDeleteEntry}
         <div class="my-auto">
-          <Checkbox checked={selectedRows.includes(entryId)} onCheckedChange={() => onRowSelect(entryId)} />
+          <Checkbox checked={selectedEntryIds.includes(entryId)} onCheckedChange={() => onRowSelect(entryId)} />
         </div>
       {/if}
 
