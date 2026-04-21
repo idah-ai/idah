@@ -13,7 +13,7 @@
   import Checkbox from "@/components/ui/checkbox/checkbox.svelte";
   import EntrySelectionCard from "@/components/app/datasets/entries/cards/entry-selection-card.svelte";
   import FormModal from "@/components/app/overlays/modals/form-modal.svelte";
-  import InputField from "../../forms/fields/input/input-field.svelte";
+  import InputField from "@/components/app/forms/fields/input/input-field.svelte";
   import Label from "@/components/ui/label/label.svelte";
   import Switch from "@/components/ui/switch/switch.svelte";
   import Tooltips from "@/components/app/tooltips/tooltips.svelte";
@@ -38,7 +38,6 @@
   }: Props = $props();
 
   let submitting = $state(false);
-  let newDatasetName = $state("");
   let selectedEntryIds = $state<string[] | undefined>([]);
   let selectAll = $state(true);
   let withAnnotations = $state(false);
@@ -47,12 +46,7 @@
   let isDatasetEmpty = $derived(datasetEntryRecords.length === 0);
   let isSubmitDisabled = $derived(isDatasetEmpty || selectedEntryIds?.length === 0);
 
-  // set default name when modal opens
-  $effect(() => {
-    if (open) {
-      newDatasetName = `${datasetName} - duplicated`;
-    }
-  });
+  let newDatasetName = $derived(open ? `${datasetName} - duplicated` : "");
 
   // set entries selected by default
   $effect(() => {
@@ -245,13 +239,11 @@
           selected={selectedEntryIds?.includes(entry.id) ?? false}
           onToggle={handleEntryToggle}
         />
-      {/each}
-
-      {#if datasetEntryRecords.length === 0}
+      {:else}
         <div class="text-muted-foreground col-span-full rounded-md border py-4 text-center text-sm">
           No entries found in this dataset.
         </div>
-      {/if}
+      {/each}
     </div>
   </div>
 </FormModal>
