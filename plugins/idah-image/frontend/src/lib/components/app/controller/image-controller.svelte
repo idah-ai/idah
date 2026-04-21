@@ -312,20 +312,10 @@
     context.commands.run("keyframe.add", { id, selection });
   }
 
-  async function deleteSelection(annotationId: string, frame: number) {
+  function deleteAnnotation(annotation: ImageAnnotationObject) {
     if (!editable) return;
 
-    context.commands.run("keyframe.delete", { annotationId, frame });
-  }
-
-  function deleteAnnotation(annotation: ImageAnnotationObject, frame?: number) {
-    if (!editable) return;
-
-    if (frame != undefined) {
-      deleteSelection(annotation.metadata.id, frame);
-    } else {
-      removeAnnotation(annotation.metadata.id);
-    }
+    removeAnnotation(annotation.metadata.id);
   }
 
   function onEditValue(value: AnnotationValue, valueMode: string) {
@@ -381,16 +371,6 @@
 
     let points = $state.snapshot(_points) as Point[];
     if (!selectedId) {
-      /**
-       * If no selectedId, check if we have an active group selection.
-       * If yes, we try to find the closest annotation in that group to add a keyframe to.
-       */
-      if ($selectedAnnotationGroup) {
-        const closest = selectClosestAnnotation($selectedAnnotationGroup, frame);
-        addSelection(closest.metadata.id, { frame, angle, points });
-        return;
-      }
-
       let annotation_value_from = $state.snapshot(annotationValue) as AnnotationValue;
 
       // todo proper validation
@@ -483,60 +463,11 @@
     });
   }
 
-  function selectClosestAnnotation(annotationGroup: AnnotationGroup<ImageAnnotationObject>, frame: number) {
-    let closestAnnotation = annotationGroup.annotations[0];
-
-    if (annotationGroup.annotations.length === 1) {
-      selectAnnotation(closestAnnotation);
-      return closestAnnotation;
-    }
-
-    let minDiff = Infinity;
-
-    for (const annotation of annotationGroup.annotations) {
-      const start = annotation.shape.start;
-      const end = annotation.shape.end;
-
-      // If frame is within an annotation, that's the one
-      if (frame >= start && frame <= end) {
-        closestAnnotation = annotation;
-        minDiff = 0;
-        break;
-      }
-
-      // Calculate distance to nearest edge
-      const diff = Math.min(Math.abs(frame - start), Math.abs(frame - end));
-
-      if (diff < minDiff) {
-        minDiff = diff;
-        closestAnnotation = annotation;
-      }
-    }
-
-    if (closestAnnotation) {
-      setCurrentModeTo(closestAnnotation.shape.type);
-      selectAnnotation(closestAnnotation);
-    }
-
-    return closestAnnotation;
-  }
-
-  function selectAnnotationGroup(annotationGroup: AnnotationGroup<ImageAnnotationObject>, selectedFrame?: number) {
+  function selectAnnotationGroup(annotationGroup: AnnotationGroup<ImageAnnotationObject>) {
     $selectedAnnotationGroup = annotationGroup;
 
-    const firstAnnotation = annotationGroup.annotations[0];
-    /**
-     * Set mode to the annotation shape type when selecting an annotation
-     */
     if (isNoteMode) {
       return;
-    } else if (selectedFrame && firstAnnotation.shape.type && editable) {
-      /**
-       * If user select timeline row at specific frame (selectedFrame is exists)
-       * and workflow step is in review or annotation
-       */
-      setCurrentModeTo(firstAnnotation.shape.type);
-      selectClosestAnnotation(annotationGroup, selectedFrame);
     } else {
       selectAnnotation(undefined);
       setCurrentModeTo(DEFAULT_MODE);
