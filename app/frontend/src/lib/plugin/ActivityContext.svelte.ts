@@ -8,6 +8,7 @@ import { entriesBackendDataSource, EntryRecord } from "@/data/model/dataset/entr
 import CommandManager from "@/command/CommandManager";
 
 import { createAnnotationDriver } from "@/plugin/AnnotationDriver";
+import { createIconDriver } from "@/plugin/IconDriver";
 import { createNoteDriver } from "@/plugin/NoteDriver";
 
 import type { Command } from "@/command/Command";
@@ -86,6 +87,7 @@ export function activityContextForEntry(entry: EntryRecord): IActivityContext {
     notes: createNoteDriver(),
     commands: createCommandsInterface(),
     tools: createToolsInterface(),
+    icons: createIconDriver(),
     back() {
       goto(
         resolve("/(app)/projects/[projectId]/datasets/[datasetId]/entries", {
