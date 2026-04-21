@@ -29,6 +29,9 @@ export interface PauseQualityUpgradeOptions {
   keepAliveInterval?: number;
   /** Called when the upgrade status changes */
   onStatusChange?: (status: UpgradeStatus) => void;
+  getCurrentFrame?: () => number;
+  getCurrentTime?: () => number;
+  onSeekToFrame?: (frame: number) => void;
 }
 
 export type UpgradeStatus =
@@ -39,7 +42,6 @@ export type UpgradeStatus =
 
 interface InternalState {
   active: boolean;
-  pauseTime: number;
   originalSelectPlaylist: (() => any) | null;
   keepAliveTimer: ReturnType<typeof setInterval> | null;
   appendHandler: (() => void) | null;
@@ -56,7 +58,6 @@ export class PauseQualityUpgrade {
 
   private state: InternalState = {
     active: false,
-    pauseTime: 0,
     originalSelectPlaylist: null,
     keepAliveTimer: null,
     appendHandler: null,
@@ -76,6 +77,9 @@ export class PauseQualityUpgrade {
       pauseDelay: options.pauseDelay ?? 200,
       keepAliveInterval: options.keepAliveInterval ?? 1000,
       onStatusChange: options.onStatusChange ?? (() => {}),
+      getCurrentFrame: options.getCurrentFrame ?? (() => 0),
+      getCurrentTime: options.getCurrentTime ?? (() => 0),
+      onSeekToFrame: options.onSeekToFrame ?? (() => {}),
     };
 
     this.onPause = this.handlePause.bind(this);
@@ -170,10 +174,9 @@ export class PauseQualityUpgrade {
     const mainLoader = pc.mainSegmentLoader_;
     const current = vhs.playlists.media();
 
-    const savedTime = this.player.currentTime() || 0;
+    const savedTime = this.opts.getCurrentTime();
 
     this.state.active = true;
-    this.state.pauseTime = savedTime;
     this.state.segmentsLoaded = 0;
 
     const cRes = current?.attributes?.RESOLUTION;
@@ -207,7 +210,7 @@ export class PauseQualityUpgrade {
       if (this.state.segmentsLoaded === 1) {
         const videoEl = tech.el() as HTMLVideoElement;
         if (videoEl) {
-          videoEl.currentTime = this.state.pauseTime;
+          this.opts.onSeekToFrame?.(this.opts.getCurrentFrame());
         }
       }
     };
@@ -272,7 +275,6 @@ export class PauseQualityUpgrade {
 
     this.state = {
       active: false,
-      pauseTime: 0,
       originalSelectPlaylist: null,
       keepAliveTimer: null,
       appendHandler: null,

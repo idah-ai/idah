@@ -74,12 +74,20 @@
     return player?.volume(percent / 100);
   }
 
+  export function frameToTime(frame: number) {
+    return (frame - 1 + 0.001) / fps;
+  }
+
+  export function currentTime() {
+    return frameToTime(currentFrame);
+  }
+
   export function seekToFrame(frame: number) {
     if (!player?.paused()) player?.pause();
     if (!fps) return console.error({ seekToFrame, fps, frame });
 
     // + 0.001 to account for browser rounding difference
-    player?.currentTime((frame - 1 + 0.001) / fps);
+    player?.currentTime(frameToTime(frame));
   }
 
   export function playbackRate(value: number) {
@@ -95,9 +103,18 @@
 
     // Mount the pause quality upgrade module
     pauseQualityUpgrade = new PauseQualityUpgrade(player, {
-      segmentDuration: 2.002,
+      segmentDuration: 2.0,
       onStatusChange(status: UpgradeStatus) {
         onUpgradeStatusChange?.(status);
+      },
+      getCurrentFrame() {
+        return currentFrame;
+      },
+      getCurrentTime() {
+        return currentTime();
+      },
+      onSeekToFrame(frame: number) {
+        seekToFrame(frame);
       },
     });
     pauseQualityUpgrade.mount();
