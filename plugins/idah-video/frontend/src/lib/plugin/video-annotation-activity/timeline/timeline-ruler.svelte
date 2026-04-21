@@ -1,12 +1,6 @@
 <script lang="ts">
-  import { DEFAULT_MODE } from "$lib/plugin/type";
-  import {
-    currentFrame,
-    deselectAnnotation,
-    isVideoPlaying,
-    setCurrentModeTo,
-    totalFrames,
-  } from "$lib/plugin/video-annotation-activity/store/store";
+  import type { AnnotationGroup } from "$idah/context/annotation-context";
+  import { currentFrame, isVideoPlaying, totalFrames } from "$lib/plugin/video-annotation-activity/store/store";
   import {
     currentFrameRange,
     framePerScale,
@@ -17,12 +11,17 @@
     timelineRulerWidth,
   } from "$lib/plugin/video-annotation-activity/timeline/store";
   import { getSelectedFrameXFromCurrentFrame } from "$lib/plugin/video-annotation-activity/timeline/utils";
+  import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
+  import { groupAnnotations } from "$lib/plugin/video-annotation-activity/utils/group-annotation.svelte";
 
   // Props
   interface Props {
+    annotations: VideoAnnotationObject[];
     onSelectFrameX: (frameX: number) => void;
+    onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<VideoAnnotationObject>, selectedFrame?: number) => void;
   }
-  let { onSelectFrameX }: Props = $props();
+  let { annotations, onSelectFrameX, onSelectAnnotationGroup }: Props = $props();
+  let annotationGroups = $derived(groupAnnotations(annotations));
 
   // Variables::Current Frames Ranges
   let [startFrameIndexOfCurrentFrameRange, endFrameIndexOfCurrentFrameRange] = $derived($currentFrameRange);
@@ -55,7 +54,9 @@
        * Set selected frame x to current frame when video is playing
        * This make timeline-vertical-line change every time current frame is changed.
        */
-      const mouseX = getSelectedFrameXFromCurrentFrame({ currentFrame: $currentFrame });
+      const mouseX = getSelectedFrameXFromCurrentFrame({
+        currentFrame: $currentFrame,
+      });
       setSelectedFrameX(mouseX);
 
       /**
@@ -85,7 +86,9 @@
        * Set selected frame x to current frame when video is not playing, but shortcut is pressed (ArrowRight/ArrowLeft)
        * This make timeline-vertical-line change every time current frame is changed.
        */
-      const mouseX = getSelectedFrameXFromCurrentFrame({ currentFrame: $currentFrame });
+      const mouseX = getSelectedFrameXFromCurrentFrame({
+        currentFrame: $currentFrame,
+      });
       setSelectedFrameX(mouseX);
 
       /**
@@ -97,8 +100,8 @@
 
   // Functions
   function selectFrameX(e: MouseEvent) {
-    setCurrentModeTo(DEFAULT_MODE);
-    deselectAnnotation();
+    // setCurrentModeTo(DEFAULT_MODE);
+    // deselectAnnotation();
     onSelectFrameX(e.clientX);
   }
 </script>

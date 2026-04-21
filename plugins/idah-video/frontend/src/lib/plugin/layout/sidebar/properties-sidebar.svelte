@@ -45,7 +45,7 @@
 
 <Sidebar variant="inset" collapsible="none" style="width: {sidebarWidthRem}rem;" side="right">
   <SidebarContent>
-    <SidebarGroup>
+    <SidebarGroup class="p-3">
       <SidebarGroupContent>
         {#key [annotationValue, $currentMode, $entryRoot?.value.category]}
           <CategoryProperties
