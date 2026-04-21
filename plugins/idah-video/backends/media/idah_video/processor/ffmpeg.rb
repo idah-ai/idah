@@ -102,6 +102,9 @@ module IdahVideo
       end
 
       def call(*args, **kv, &)
+        Verse.logger&.info { "Running ffmpeg" }
+        Verse.logger&.debug { "ffmpeg #{args.join(" ")} #{kv.map{ |k, v| "#{k}=#{v}" }.join(" ")}" }
+
         Open3.popen3("ffmpeg", *args, **kv) do |_, stdout, stderr, wait_thr|
           captured_stderr = nil
 

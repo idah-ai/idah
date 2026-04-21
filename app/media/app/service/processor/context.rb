@@ -34,7 +34,7 @@ module Processor
       end
     end
 
-    def upload_media(io, key, mime_type)
+    def upload_media(io, key, mime_type, metadata = {})
       io = StringIO.new(io) if io.is_a?(String)
 
       medias.transaction do
@@ -78,7 +78,8 @@ module Processor
               mime_type: mime_type || file.mime_type,
               created_by: nil,
               created_role: "processor",
-              project_id: medias.find_by({ resource: })&.project_id
+              project_id: medias.find_by({ resource: })&.project_id,
+              meta: metadata
             }
           )
         end
