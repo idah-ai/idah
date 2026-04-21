@@ -11,18 +11,18 @@ module Plugins
     end
 
     def find(plugin_name)
-      # 1. check for manual plugins
-      manual_plugins = Verse.config.extra_fields.dig(
-        :idah, :plugins, :manual
-      ) || []
       plugin_path = Verse.config.extra_fields.dig(
         :idah, :plugins, :path
-      ) || "plugins"
+      ) || "plugins/**"
 
-      manual_plugins.find{ |p| p == plugin_name }&.then do
-        return Plugin::Record.from_path(
-          File.join(plugin_path, plugin_name)
-        )
+      plugin_path.split(";").each do |path|
+        Dir.glob(path).each do |dir|
+          name = dir.split("/").last
+
+          next unless name == plugin_name
+
+          return Plugin::Record.from_path(dir)
+        end
       end
 
       # 2. if manual plugin not found, check in the database
@@ -127,11 +127,9 @@ module Plugins
             entry_details.script
           end
         when "dataset_config.json"
-          return manifest.entry_points.dataset_config if
-            manifest.entry_points&.dataset_config
+          manifest.entry_points&.dataset_config
         when "plugin_shortcut.json"
-          return manifest.entry_points.plugin_shortcut if
-            manifest.entry_points&.plugin_shortcut
+          manifest.entry_points&.plugin_shortcut
         end
 
       return nil if file_path.nil?

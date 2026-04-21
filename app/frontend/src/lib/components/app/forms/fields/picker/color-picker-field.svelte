@@ -75,11 +75,12 @@
       {#snippet child({ props })}
         <div class="flex w-full items-center gap-2">
           <Button
-            variant="outline"
+            variant="ghost"
             class={cn("justify-start text-left font-normal", {
               "text-muted-foreground": !value,
             })}
             style="background-color: {value || 'transparent'};"
+            size="icon-sm"
             {disabled}
             {...props}
           ></Button>

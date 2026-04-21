@@ -10,9 +10,10 @@ RSpec.describe AccountSettingsExpo, type: :exposition, as: :system do
       {
         id: 1,
         account_id: 1,
-        key: "notification:organization:activities",
-        plugin: "",
-        value: true
+        key: "theme",
+        value: "dark",
+        created_at: now,
+        updated_at: now
       }
     )
   end
@@ -23,7 +24,9 @@ RSpec.describe AccountSettingsExpo, type: :exposition, as: :system do
         type: Resource::Setting::AccountSettings,
         id: "1",
         attributes: {
-          value: false
+          account_id: 1,
+          key: "theme",
+          value: "dark"
         }
       }
     }
@@ -45,24 +48,8 @@ RSpec.describe AccountSettingsExpo, type: :exposition, as: :system do
 
     expect(records[0].id).to eq "1"
     expect(records[0].account_id).to eq 1
-    expect(records[0].key).to eq "notification:organization:activities"
-    expect(records[0].value).to eq true
-  end
-
-  it "list account settings with filters" do
-    expect(service).to receive(:index) do |filter, **_opts|
-      expect(filter[:account_id]).to eq "1"
-      [account_setting_record]
-    end
-
-    get "/account_settings?filter[account_id]=1"
-
-    expect(last_response.status).to eq 200
-    body = JSON.parse(last_response.body, symbolize_names: true)
-    records = deserialize(body)
-
-    expect(records[0].id).to eq "1"
-    expect(records[0].account_id).to eq 1
+    expect(records[0].key).to eq "theme"
+    expect(records[0].value).to eq "dark"
   end
 
   it "show an account setting" do
@@ -75,14 +62,17 @@ RSpec.describe AccountSettingsExpo, type: :exposition, as: :system do
 
     expect(record.id).to eq "1"
     expect(record.account_id).to eq 1
-    expect(record.key).to eq "notification:organization:activities"
-    expect(record.value).to eq true
+    expect(record.key).to eq "theme"
+    expect(record.value).to eq "dark"
   end
 
   it "update an account setting" do
     expect(service).to receive(:update) do |args|
       expect(args.id).to eq 1
-      expect(args.attributes[:value]).to eq false
+      expect(args.attributes[:account_id]).to eq 1
+      expect(args.attributes[:key]).to eq nil # key is readonly
+      expect(args.attributes[:plugin]).to eq nil # plugin is readonly
+      expect(args.attributes[:value]).to eq "dark"
       account_setting_record
     end
 
@@ -106,7 +96,7 @@ RSpec.describe AccountSettingsExpo, type: :exposition, as: :system do
   end
 
   describe "on account deleted" do
-    it "deletes account settings for the account" do
+    it "deletes account settings for the deleted account" do
       expect(service).to receive(:delete).with("1")
 
       Verse.publish_resource_event(

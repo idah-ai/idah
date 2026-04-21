@@ -59,17 +59,18 @@
             style:background-color={color || "#000000"}
             style:color={text_color || "#FFFFFF"}
           >
-            <SquareDashedMousePointerIcon class="size-3 text-white" />
+            <!-- NOTE: Don't change the icon color directly here, use `text_color` instead which auto-calculate luminance based on `color` -->
+            <SquareDashedMousePointerIcon class="size-3" />
           </div>
         {/if}
 
         <!-- KBD -->
         <KbdGroup>
-          <Kbd>⌘ {treeItem.label.charAt(0)}</Kbd>
+          <Kbd>⌘ {label.charAt(0)}</Kbd>
         </KbdGroup>
 
         <!-- LABEL -->
-        {treeItem.label}
+        {label}
       </Button>
     {/snippet}
   </PopoverTrigger>
