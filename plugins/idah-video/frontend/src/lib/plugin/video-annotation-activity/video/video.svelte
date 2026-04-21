@@ -9,12 +9,13 @@
 
   type Props = {
     element?: HTMLDivElement;
+    onTimeUpdate?: (currentFrame: number) => void;
     onFramesChange: (current: number, frames: number, isPlaying: boolean) => void;
     onVolumeChange: (volume: number, muted: boolean) => void;
     onResize?: () => void;
   };
 
-  let { element = $bindable(), onFramesChange, onResize, onVolumeChange }: Props = $props();
+  let { element = $bindable(), onTimeUpdate, onFramesChange, onResize, onVolumeChange }: Props = $props();
 
   let player: Player | undefined = $state();
   let options = {
@@ -103,6 +104,7 @@
     });
     player.on("timeupdate", () => {
       mediaTime = player?.currentTime() || 0;
+      onTimeUpdate?.(currentFrame);
     });
 
     player.on("play", () => {

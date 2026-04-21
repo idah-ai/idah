@@ -30,7 +30,6 @@
     TIMELINE_ROW_HEADER_WIDTH,
   } from "$lib/plugin/video-annotation-activity/timeline/store";
   import { getFrameFromMouseX } from "$lib/plugin/video-annotation-activity/timeline/utils";
-  import { findCategory } from "$lib/plugin/video-annotation-activity/utils/category";
   import {
     findClosestAnnotationInGroup,
     groupAnnotations,
@@ -39,6 +38,7 @@
   import type { IActivityContext } from "$idah/context/activity-context";
   import type { AnnotationGroup } from "$idah/context/annotation-context";
   import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
+  import TimelineRowTitle from "$lib/plugin/video-annotation-activity/timeline/timeline-row-title.svelte";
 
   // Props
   interface Props {
@@ -70,28 +70,6 @@
   let wheelThrottling = $state<boolean>(false);
   let openConfirmDeleteModal = $state<boolean>(false);
   let selectedGroupId = $state<string | undefined>(undefined);
-
-  // Functions
-  function getGroupTitle(props: { annotationGroup: AnnotationGroup<VideoAnnotationObject> }): string {
-    const { annotationGroup } = props;
-    const { groupId, annotations: anns } = annotationGroup;
-    const splittedGroupId = groupId.split("-");
-    const lastPartOfGroupId = splittedGroupId[splittedGroupId.length - 1];
-    const fallbackGroupTitle = `Group-${lastPartOfGroupId}`;
-
-    const firstAnnotationInGroup = anns[0];
-    const firstAnnotationCategoryId = firstAnnotationInGroup.value.category;
-    if (!firstAnnotationCategoryId) return fallbackGroupTitle;
-
-    const foundCategory = findCategory({
-      labelConfig: context.config,
-      categoryId: firstAnnotationCategoryId,
-      shapeType: firstAnnotationInGroup.shape.type,
-    });
-    if (!foundCategory) return fallbackGroupTitle;
-
-    return `${foundCategory.label}-${lastPartOfGroupId}`;
-  }
 
   function handleMouseLeave() {
     showHorizontalScrollbar = false;
@@ -347,7 +325,7 @@
         />
       </TimelineRowHeader>
 
-      <TimelineRuler onSelectFrameX={selectFrameX} />
+      <TimelineRuler {annotations} onSelectFrameX={selectFrameX} {onSelectAnnotationGroup} />
     </TimelineHeaderRow>
 
     <ScrollArea id="timeline-scroll-area">
@@ -358,7 +336,7 @@
 
           <TimelineRow>
             <TimelineRowGroup
-              class="border-b"
+              class="border-t border-b"
               {annotationGroup}
               onSelectFrameX={selectFrameX}
               onContextMenu={(e) => showContextMenu(e, annotationGroup)}
@@ -366,7 +344,7 @@
             >
               <TimelineRowHeader>
                 <TimelineRowHeading>
-                  {getGroupTitle({ annotationGroup })}
+                  <TimelineRowTitle {annotationGroup}></TimelineRowTitle>
                 </TimelineRowHeading>
 
                 <TimelineRowActions
