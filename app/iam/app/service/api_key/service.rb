@@ -141,9 +141,7 @@ module ApiKey
     end
 
     def expire_api_keys
-      expired_keys = api_keys.chunked_index({ expires_at__lte: Time.now, status: "active" }).to_a
-
-      expired_keys.each do |key|
+      api_keys.chunked_index({ expires_at__lte: Time.now, status: "active" }).each do |key|
         api_keys.update!(key.id, { status: "expired" })
       end
     end
