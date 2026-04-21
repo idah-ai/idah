@@ -1,11 +1,10 @@
 <script lang="ts">
   import { selectedAnnotationGroup } from "$lib/plugin/video-annotation-activity/store/store";
   import type { AnnotationGroup } from "$idah/context/annotation-context";
-  import type { VideoAnnotationObject } from "../context/video-annotation-context";
-  import { findCategory } from "../utils/category";
+  import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
+  import { findCategory } from "$lib/plugin/video-annotation-activity/utils/category";
   import type { IActivityContext } from "$idah/context/activity-context";
   import { getContext } from "svelte";
-  import { cn } from "$lib/utils";
   import { truncate } from "$lib/utils/string";
   import Tooltips from "$lib/components/app/tooltips/tooltips.svelte";
 

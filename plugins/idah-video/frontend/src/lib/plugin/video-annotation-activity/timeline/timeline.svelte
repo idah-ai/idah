@@ -30,7 +30,6 @@
     TIMELINE_ROW_HEADER_WIDTH,
   } from "$lib/plugin/video-annotation-activity/timeline/store";
   import { getFrameFromMouseX } from "$lib/plugin/video-annotation-activity/timeline/utils";
-  import { findCategory } from "$lib/plugin/video-annotation-activity/utils/category";
   import {
     findClosestAnnotationInGroup,
     groupAnnotations,
@@ -39,7 +38,7 @@
   import type { IActivityContext } from "$idah/context/activity-context";
   import type { AnnotationGroup } from "$idah/context/annotation-context";
   import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
-  import TimelineRowTitle from "./timeline-row-title.svelte";
+  import TimelineRowTitle from "$lib/plugin/video-annotation-activity/timeline/timeline-row-title.svelte";
 
   // Props
   interface Props {

@@ -1,14 +1,6 @@
 <script lang="ts">
   import type { AnnotationGroup } from "$idah/context/annotation-context";
-  import { DEFAULT_MODE } from "$lib/plugin/type";
-  import {
-    currentFrame,
-    selectedAnnotationGroup,
-    deselectAnnotation,
-    isVideoPlaying,
-    setCurrentModeTo,
-    totalFrames,
-  } from "$lib/plugin/video-annotation-activity/store/store";
+  import { currentFrame, isVideoPlaying, totalFrames } from "$lib/plugin/video-annotation-activity/store/store";
   import {
     currentFrameRange,
     framePerScale,
@@ -19,8 +11,8 @@
     timelineRulerWidth,
   } from "$lib/plugin/video-annotation-activity/timeline/store";
   import { getSelectedFrameXFromCurrentFrame } from "$lib/plugin/video-annotation-activity/timeline/utils";
-  import type { VideoAnnotationObject } from "../context/video-annotation-context";
-  import { groupAnnotations } from "../utils/group-annotation.svelte";
+  import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
+  import { groupAnnotations } from "$lib/plugin/video-annotation-activity/utils/group-annotation.svelte";
 
   // Props
   interface Props {
