@@ -52,6 +52,10 @@
     setTotalFrames,
     setVideoIsPlaying,
   } from "$lib/plugin/video-annotation-activity/store/store";
+  import {
+    findClosestAnnotationInGroup,
+    groupAnnotations,
+  } from "$lib/plugin/video-annotation-activity/utils/group-annotation.svelte";
   import { uiStore } from "$lib/plugin/video-annotation-activity/store/ui-store.svelte";
   import { findClosestAnnotationInGroup } from "$lib/plugin/video-annotation-activity/utils/group-annotation.svelte";
 
@@ -235,6 +239,8 @@
       });
 
       fetchAnnotations(annotationsIDB).then(() => {
+        if (!annotationsIDB) return;
+
         // quick fix if unsynced data, though we dont have way to send it anyway for now if so
         const entryRootAnnotation = annotationsIDB.annotations.find((a) => a.shape.type === ENTRY_ROOT);
         if (entryRootAnnotation) $entryRoot = entryRootAnnotation;
@@ -590,6 +596,34 @@
     return closestAnnotation;
   }
 
+  function setAnnotationFrame(frame: number) {
+    if (!$selectedAnnotationGroup || !annotationsIDB) return;
+
+    const annotationGroups = groupAnnotations(annotationsIDB.annotations);
+
+    // Find the annotation group to get all annotations in the group
+    const newSelectedAnnotationGroup = annotationGroups.find(
+      (group) => group.groupId === $selectedAnnotationGroup?.groupId,
+    );
+
+    if (newSelectedAnnotationGroup) {
+      const closestAnnotation = findClosestAnnotationInGroup({
+        annotationGroup: newSelectedAnnotationGroup,
+        frame: frame,
+      });
+
+      if (closestAnnotation.metadata.id === $selectedAnnotation?.metadata.id) {
+        return;
+      }
+
+      setSelectedAnnotation(closestAnnotation);
+      setSelectedAnnotationGroup({
+        groupId: newSelectedAnnotationGroup.groupId,
+        annotations: [closestAnnotation],
+      });
+    }
+  }
+
   // Sync annotations to boundingBoxes whenever they change
   $effect(() => {
     if (annotationsIDB) {
@@ -779,6 +813,9 @@
                     setCurrentFrame(current);
                     setTotalFrames(total);
                     setVideoIsPlaying(playing);
+                  }}
+                  onTimeUpdate={(currentFrame) => {
+                    setAnnotationFrame(currentFrame);
                   }}
                   onVolumeChange={(level, muted) => (volume = { level, muted })}
                 />
