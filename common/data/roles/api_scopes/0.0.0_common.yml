@@ -1,0 +1,8 @@
+api: # common rights
+  description: |
+    API Access to the platform. Common rights
+  assignable: false
+  mask: "0.0.0"
+  rights:
+    #empty
+    - "iam:accounts.read.own"
