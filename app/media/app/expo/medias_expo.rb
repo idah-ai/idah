@@ -76,7 +76,7 @@ class MediasExpo < BaseExpo
         desc: "The key of the media; optional, default to empty string"
       )
     end
-    output Verse::JsonApi::Util.jsonapi_record(
+    output Verse::JsonApi::Util.jsonapi_collection(
       Medias::Record
     )
   end
