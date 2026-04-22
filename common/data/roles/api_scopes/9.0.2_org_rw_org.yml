@@ -1,0 +1,11 @@
+api/org_rw_org:
+  title: "API - Organization Read Write"
+  mask: "9.0.2"
+  description: |
+    Allow access to read and write organization resources.
+  assignable: false
+  rights:
+    # Organizations
+    - "iam:organizations.read.as_org_owner"
+    - "iam:organizations.update.as_org_owner"
+    - "iam:accounts.create.as_org_owner"

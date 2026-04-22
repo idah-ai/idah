@@ -1,0 +1,24 @@
+api/project_rw_all:
+  title: "API - Project Read Write"
+  mask: "8.9.9"
+  description: |
+    Allow access to read and write project resources.
+  assignable: false
+  rights:
+    # Dataset Service - Read Write (Project level)
+    - "dataset:projects.*.*"
+    - "dataset:project_members.*.*"
+    - "dataset:datasets.*.*"
+    - "dataset:entries.*.*"
+    - "dataset:annotations.*.*"
+    - "dataset:note_feeds.*.*"
+    - "dataset:note_comments.*.*"
+
+    # Media Service - Read Write (Project level)
+    - "media:medias.*.*"
+    - "media:jobs.read.*"
+
+    # Sync Service - Read Write (Project level)
+    - "sync:jobs.read.*"
+    - "sync:exports.create.*"
+    - "sync:exports.read.*"

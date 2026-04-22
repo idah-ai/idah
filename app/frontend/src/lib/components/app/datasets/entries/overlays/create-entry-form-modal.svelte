@@ -96,21 +96,18 @@
           throw new Error("Media upload failed");
         }
 
-        // upload always returns an array — one record for regular files,
-        // multiple records when a zip archive was uploaded.
-        for (const createdMedia of createdMedias.data) {
-          await entriesBackendDataSource.create(
-            {
-              attributes: {
-                resource: createdMedia.resource,
-                status: "pending",
-              },
-              relationships: {
-                dataset: {
-                  data: {
-                    type: "datasets:datasets",
-                    id: datasetId,
-                  },
+        await entriesBackendDataSource.create(
+          {
+            attributes: {
+              resource: createdMedia.data.resource,
+              name: createdMedia.data.filename,
+              status: "pending",
+            },
+            relationships: {
+              dataset: {
+                data: {
+                  type: "datasets:datasets",
+                  id: datasetId,
                 },
               },
             },

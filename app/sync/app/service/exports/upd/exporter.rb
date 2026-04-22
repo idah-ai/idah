@@ -98,6 +98,7 @@ module Exports
 
         metadata = capitalized_dashed_keys(
           entry.record.data[:attributes].slice(
+            :name,
             :priority,
             :wf_step,
             :status,
