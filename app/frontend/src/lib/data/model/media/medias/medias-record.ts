@@ -50,7 +50,7 @@ export const mediaBackendDataSource = createBackendDataSource(MediaRecord, media
     const blobUrl = URL.createObjectURL(blob);
     return blobUrl;
   },
-  
+
   // Upload always returns a collection — a single-element array for regular files,
   // or a multi-element array when the uploaded file is a zip archive.
   upload: async (
