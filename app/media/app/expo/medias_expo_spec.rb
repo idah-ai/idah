@@ -125,7 +125,7 @@ RSpec.describe MediasExpo, type: :exposition, as: :system do
         expect(key).to eq("")
         expect(project_id).to eq("mocked_project_id")
 
-        media
+        [media]
       end
 
       post "/medias/files/some-resource", { file: file, project_id: "mocked_project_id" }
@@ -142,8 +142,8 @@ RSpec.describe MediasExpo, type: :exposition, as: :system do
         expect(key).to eq("some-key")
         expect(project_id).to eq("mocked_project_id")
 
-        media
-      end.and_return(media)
+        [media]
+      end
 
       post "/medias/files/some-resource/some-key", { file: file, project_id: "mocked_project_id" }
 
