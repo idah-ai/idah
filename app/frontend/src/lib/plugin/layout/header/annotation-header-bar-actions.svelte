@@ -121,12 +121,14 @@
     frameStep = Number(localStorage.getItem(IDAH_VIDEO_LOCALSTORAGE_FRAME_STEP));
     // Fetch workflow configuration from backend
     try {
-      const response = await fetch(`${import.meta.env.VITE_IDAH_HOST}/api/v1/setting/plugins/workflows`);
-      const data = await response.json();
+      const workflowsList = await fetch(`${import.meta.env.VITE_IDAH_HOST}/api/v1/dataset/workflows`);
+      const jsonData = await workflowsList.json();
 
-      // Find the workflow configuration for the current dataset's workflow
-      if (data.data.workflows && context.workflowName) {
-        const workflow = data.data.workflows.find((w: WorkflowConfig) => w.name === context.workflowName);
+      const workflows: WorkflowConfig[] = jsonData.data.workflows;
+
+      // Find the workflow configuration for the current dataset
+      if (workflows && context.workflowName) {
+        const workflow = workflows.find((w: WorkflowConfig) => w.name === context.workflowName);
         if (workflow) {
           // Find current step config by matching context.workflowStep
           currentStepConfig = workflow.steps?.find((s: WorkflowStepConfig) => s.name === context.workflowStep);

@@ -9,6 +9,7 @@ Verse.on_boot do
     EntriesExpo,
     AnnotationsExpo,
     NoteFeedsExpo,
-    NoteCommentsExpo
+    NoteCommentsExpo,
+    WorkflowsExpo,
   ].each(&:register)
 end

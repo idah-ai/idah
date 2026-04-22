@@ -53,21 +53,6 @@ class PluginsExpo < BaseExpo
 
   expose on_http(
     :get,
-    "workflows",
-    auth: nil
-  ) do
-    output do
-      field :data, Hash do
-        field(:workflows, Array).meta(description: "List of available workflows from plugins")
-      end
-    end
-  end
-  def workflows
-    service.show_workflows
-  end
-
-  expose on_http(
-    :get,
     ":plugin/assets/*",
     auth: nil,
     renderer: Verse::Http::Renderer::Binary

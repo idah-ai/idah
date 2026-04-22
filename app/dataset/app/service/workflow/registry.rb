@@ -5,7 +5,6 @@ module Workflow
     extend self
 
     @workflows = {}
-    @default_workflow = nil
 
     Entry = Data.define(:plugin, :class_name)
 
@@ -28,26 +27,17 @@ module Workflow
 
     def clear_all
       @workflows.clear
-      @default_workflow = nil
     end
 
     def get(name)
-      return default_workflow if name.nil?
+      return nil if name.nil?
 
       name = name.to_sym
       entries = @workflows[name]
-      return default_workflow if entries.nil? || entries.empty?
+      return nil if entries.nil?
 
       entry = entries.first
       Object.const_get(entry.class_name)
-    end
-
-    def register_default(workflow_class)
-      @default_workflow = workflow_class
-    end
-
-    def default_workflow
-      @default_workflow || Workflow::SimpleReviewAnnotationWorkflow
     end
 
     def list
