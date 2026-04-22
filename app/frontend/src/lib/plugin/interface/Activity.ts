@@ -104,7 +104,7 @@ export interface IConfigValue {
   label: string;
   color: string | null;
   text_color: string | null;
-  description: string | undefined;
+  description?: string;
 }
 
 export interface IConfigProperty {
@@ -137,6 +137,10 @@ export interface ITools {
   setTool: (tool: string) => void;
   onToolsChange: (cb: (tools: HeaderBarModeTool[]) => void) => void;
   onToolChange: (cb: (tool: string) => void) => void;
+}
+
+export interface IIconDriver {
+  get(iconName: string): Promise<string>;
 }
 
 export interface IActivityContext {
@@ -173,6 +177,8 @@ export interface IActivityContext {
   get commands(): ICommands;
 
   get tools(): ITools;
+
+  get icons(): IIconDriver;
 
   // Return to previous step of the workflow
   back(): void;

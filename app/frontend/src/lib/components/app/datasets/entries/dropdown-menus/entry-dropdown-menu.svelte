@@ -33,18 +33,25 @@
   let entryRecord: EntryRecord | undefined = $state(undefined);
 
   // Variables
-  const menus = getEntryDropdownMenuActions({
-    onAssign: openAssignEntryModal,
-    onSetPriority: () => {},
-    onDelete: () => {
-      openConfirmDeleteEntryModal = true;
-    },
-  }).filter((m) => m.label !== "Set Priority");
+  let menus = $derived(
+    getEntryDropdownMenuActions({
+      onAssign: openAssignEntryModal,
+      onUnassign: () => {
+        openConfirmUnassignEntryModal = true;
+      },
+      onSetPriority: () => {},
+      onDelete: () => {
+        openConfirmDeleteEntryModal = true;
+      },
+      isAssigned: !!entry.assigned_to_id,
+    }).filter((m) => m.label !== "Set Priority"),
+  );
 
   let currentAccount = $authStatus.authContext;
   let canUpdateEntry = $state(false);
   let canDeleteEntry = $state(false);
   let openAssignEntryFormModal: boolean = $state(false);
+  let openConfirmUnassignEntryModal: boolean = $state(false);
   let openConfirmDeleteEntryModal: boolean = $state(false);
 
   // Lifecycle
@@ -72,6 +79,28 @@
     openAssignEntryFormModal = true;
   }
 
+  async function unAssignEntry() {
+    try {
+      await entriesBackendDataSource.update(entry.id, {
+        attributes: {
+          assigned_to_id: null,
+        },
+      });
+
+      openConfirmUnassignEntryModal = false;
+      $refetches.entries.list = new Date();
+      showToast.success({
+        title: "Entry unassigned",
+        description: `The entry "${entry.resource}" has been unassigned.`,
+      });
+    } catch (error) {
+      showToast.error({
+        title: "Unable to unassign entry",
+        description: error?.errors[0]?.detail || "The action could not be completed, please try again later.",
+      });
+    }
+  }
+
   async function deleteEntry() {
     try {
       await entriesBackendDataSource.delete(entry.id, { showErrorToast: false });
@@ -80,7 +109,7 @@
       $refetches.entries.list = new Date();
       showToast.success({
         title: "Entry deleted",
-        description: `The entry "${entry.resource}" has been deleted.`,
+        description: `The entry "${entry.name || entry.id}" has been deleted.`,
       });
     } catch (error) {
       showToast.error({
@@ -103,11 +132,13 @@
 
     <DropdownMenuContent align="end">
       <DropdownMenuGroup>
-        {#each menus as { label, icon: Icon, action }, index (index)}
-          <DropdownMenuItem onclick={action}>
-            <Icon class="size-4" />
-            {label}
-          </DropdownMenuItem>
+        {#each menus as { label, icon: Icon, action, hidden }, index (index)}
+          {#if !hidden}
+            <DropdownMenuItem onclick={action}>
+              <Icon class="size-4" />
+              {label}
+            </DropdownMenuItem>
+          {/if}
         {/each}
       </DropdownMenuGroup>
     </DropdownMenuContent>
@@ -116,10 +147,18 @@
   <!-- MODAL::ASSIGN ANNOTATOR  -->
   <AssignEntryFormModal action="update" {entryRecord} entryIds={[entry.id]} bind:open={openAssignEntryFormModal} />
 
+  <!-- MODAL::CONFIRM UNASSIGN -->
+  <ConfirmModal
+    title="Unassign entry"
+    description="Are you sure you want to unassign this entry?"
+    onConfirm={unAssignEntry}
+    bind:open={openConfirmUnassignEntryModal}
+  />
+
   <!-- MODAL::CONFIRM DELETE -->
   <ConfirmModal
     title="Delete entry"
-    description="Are you sure you want to delete this entry?"
+    description="Are you sure you want to delete this entry? This action cannot be undone."
     onConfirm={deleteEntry}
     bind:open={openConfirmDeleteEntryModal}
   />

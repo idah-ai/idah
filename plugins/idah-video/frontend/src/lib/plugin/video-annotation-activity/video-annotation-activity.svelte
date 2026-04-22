@@ -13,16 +13,8 @@
     CommandShortcut,
   } from "$lib/components/ui/command";
   import { getShortcuts } from "$lib/components/ui/kbd/utils";
-  import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-  } from "$lib/components/ui/popover";
-  import {
-    ResizableHandle,
-    ResizablePane,
-    ResizablePaneGroup,
-  } from "$lib/components/ui/resizable";
+  import { Popover, PopoverContent, PopoverTrigger } from "$lib/components/ui/popover";
+  import { ResizableHandle, ResizablePane, ResizablePaneGroup } from "$lib/components/ui/resizable";
 
   import { ShortcutManager } from "$idah/shortcut/shortcut-manager.svelte";
 
@@ -45,10 +37,7 @@
     registerShortcuts,
     registerShortcutsReference,
   } from "$lib/plugin/video-annotation-activity/shortcut";
-  import {
-    boundingBoxes,
-    entryRoot,
-  } from "$lib/plugin/video-annotation-activity/store/idb-store.svelte";
+  import { boundingBoxes, entryRoot } from "$lib/plugin/video-annotation-activity/store/idb-store.svelte";
   import {
     currentFrame,
     currentMode,
@@ -63,7 +52,10 @@
     setTotalFrames,
     setVideoIsPlaying,
   } from "$lib/plugin/video-annotation-activity/store/store";
-  import { findClosestAnnotationInGroup } from "$lib/plugin/video-annotation-activity/utils/group-annotation.svelte";
+  import {
+    findClosestAnnotationInGroup,
+    groupAnnotations,
+  } from "$lib/plugin/video-annotation-activity/utils/group-annotation.svelte";
   import { uiStore } from "$lib/plugin/video-annotation-activity/store/ui-store.svelte";
 
   import AnnotationFooterToolbar from "$lib/plugin/layout/footer/annotation-footer-toolbar.svelte";
@@ -218,6 +210,8 @@
       });
 
       fetchAnnotations(annotationsIDB).then(() => {
+        if (!annotationsIDB) return;
+
         // quick fix if unsynced data, though we dont have way to send it anyway for now if so
         const entryRootAnnotation = annotationsIDB.annotations.find((a) => a.shape.type === ENTRY_ROOT);
         if (entryRootAnnotation) $entryRoot = entryRootAnnotation;
@@ -573,6 +567,34 @@
     return closestAnnotation;
   }
 
+  function setAnnotationFrame(frame: number) {
+    if (!$selectedAnnotationGroup || !annotationsIDB) return;
+
+    const annotationGroups = groupAnnotations(annotationsIDB.annotations);
+
+    // Find the annotation group to get all annotations in the group
+    const newSelectedAnnotationGroup = annotationGroups.find(
+      (group) => group.groupId === $selectedAnnotationGroup?.groupId,
+    );
+
+    if (newSelectedAnnotationGroup) {
+      const closestAnnotation = findClosestAnnotationInGroup({
+        annotationGroup: newSelectedAnnotationGroup,
+        frame: frame,
+      });
+
+      if (closestAnnotation.metadata.id === $selectedAnnotation?.metadata.id) {
+        return;
+      }
+
+      setSelectedAnnotation(closestAnnotation);
+      setSelectedAnnotationGroup({
+        groupId: newSelectedAnnotationGroup.groupId,
+        annotations: [closestAnnotation],
+      });
+    }
+  }
+
   // Sync annotations to boundingBoxes whenever they change
   $effect(() => {
     if (annotationsIDB) {
@@ -619,10 +641,7 @@
 <div class="relative flex h-full w-full flex-col">
   {#key [ShortcutManager, ShortcutManager.currentMode, ShortcutManager.getCurrentMode(), $selectedAnnotation]}
     <!-- All available shortcuts list -->
-    <CommandDialog
-      bind:open={uiStore.isCommandDialogOpen}
-      accesskey={ShortcutManager.getCurrentMode()}
-    >
+    <CommandDialog bind:open={uiStore.isCommandDialogOpen} accesskey={ShortcutManager.getCurrentMode()}>
       <CommandInput placeholder="Type a command or search..." />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
@@ -766,6 +785,9 @@
                     setCurrentFrame(current);
                     setTotalFrames(total);
                     setVideoIsPlaying(playing);
+                  }}
+                  onTimeUpdate={(currentFrame) => {
+                    setAnnotationFrame(currentFrame);
                   }}
                   onVolumeChange={(level, muted) => (volume = { level, muted })}
                 />

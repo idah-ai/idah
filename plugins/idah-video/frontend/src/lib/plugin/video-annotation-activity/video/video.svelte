@@ -12,13 +12,14 @@
 
   type Props = {
     element?: HTMLDivElement;
+    onTimeUpdate?: (currentFrame: number) => void;
     onFramesChange: (current: number, frames: number, isPlaying: boolean) => void;
     onVolumeChange: (volume: number, muted: boolean) => void;
     onResize?: () => void;
     onUpgradeStatusChange?: (status: UpgradeStatus) => void;
   };
 
-  let { element = $bindable(), onFramesChange, onResize, onVolumeChange, onUpgradeStatusChange }: Props = $props();
+  let { element = $bindable(), onTimeUpdate, onFramesChange, onResize, onVolumeChange, onUpgradeStatusChange }: Props = $props();
 
   let player: Player | undefined = $state();
   let pauseQualityUpgrade: PauseQualityUpgrade | undefined = $state();
@@ -117,6 +118,7 @@
     });
     player.on("timeupdate", () => {
       mediaTime = player?.currentTime() || 0;
+      onTimeUpdate?.(currentFrame);
     });
 
     player.on("play", () => {

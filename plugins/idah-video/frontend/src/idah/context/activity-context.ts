@@ -173,6 +173,10 @@ export interface ITools {
   onToolChange: (cb: (tool: string) => void) => void;
 }
 
+export interface IIconDriver {
+  get(iconName: string): Promise<string>;
+}
+
 export type IWorkflowStep = "start" | "annotate" | "review" | "done" | "export";
 export type IEntryStatus = "processing" | "ready" | "assigned" | "in_progress" | "pending" | "completed" | "errored";
 
@@ -211,6 +215,8 @@ export interface IActivityContext {
 
   get tools(): ITools;
 
+  get icons(): IIconDriver;
+
   // Return to previous step of the workflow
   back(): void;
 
@@ -220,9 +226,13 @@ export interface IActivityContext {
   // Mark this activity as errored
   error(message: string): Promise<void>;
 
-  get shortcutReferences(): Record<string, { label: string; description: string; keyCombinations: string[] }> | undefined;
+  get shortcutReferences():
+    | Record<string, { label: string; description: string; keyCombinations: string[] }>
+    | undefined;
 
-  registerShortcutReferences(refs: Record<string, { label: string; description: string; keyCombinations: string[] }>): void;
+  registerShortcutReferences(
+    refs: Record<string, { label: string; description: string; keyCombinations: string[] }>,
+  ): void;
 }
 
 export interface IActivityView {

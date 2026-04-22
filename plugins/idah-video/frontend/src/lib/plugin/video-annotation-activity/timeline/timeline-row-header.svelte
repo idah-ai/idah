@@ -12,7 +12,7 @@
 
 <div
   id="timeline-row-header"
-  class="group/timeline-row-header flex h-9 items-center border-r px-2 py-1"
+  class="group/timeline-row-header flex h-11 items-center border-r px-2 py-1"
   style:width="{TIMELINE_ROW_HEADER_WIDTH}px"
   style:min-width="{TIMELINE_ROW_HEADER_WIDTH}px"
   style:max-width="{TIMELINE_ROW_HEADER_WIDTH}px"
