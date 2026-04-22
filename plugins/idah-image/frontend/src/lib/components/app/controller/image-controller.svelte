@@ -473,7 +473,7 @@
     if (isNoteMode) {
       return;
     } else {
-      selectAnnotation(undefined);
+      selectAnnotation($selectedAnnotationGroup.annotations[0]);
       setCurrentModeTo(DEFAULT_MODE);
     }
   }

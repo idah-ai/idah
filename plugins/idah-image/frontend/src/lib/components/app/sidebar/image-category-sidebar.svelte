@@ -28,13 +28,10 @@
   interface Props {
     view: SidebarView;
     db?: AnnotationBackend;
-
     modalityShape: string;
     categories: IConfigValue[];
-
     onSelectCategory: (category?: string) => void;
     selectedCategory: string | undefined;
-
     onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<ImageAnnotationObject>) => void;
     onDeleteAnnotation: (annotation: ImageAnnotationObject) => void;
   }
