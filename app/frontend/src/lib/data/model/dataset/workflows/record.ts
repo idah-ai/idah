@@ -29,7 +29,7 @@ export const workflowsBackendDataSource = createBackendDataSource(WorkflowRecord
     // Add "default" as the first option
     const workflows: WorkflowRecord[] = [
       { name: "default", label: "Default", description: "Default workflow", default: true } as WorkflowRecord,
-      ...(data.data?.workflows || [])
+      ...(data.data?.workflows || []),
     ];
 
     return workflows;
