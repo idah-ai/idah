@@ -11,19 +11,6 @@
     "url": ""
   },
 
-  "modalities": [
-    {
-      "id": "example-modality",
-      "label": "Example Modality",
-      "description": "An example modality with custom workflow",
-      "shapes": {
-        "bounding-box": {
-          "label": "Bounding Box"
-        }
-      }
-    }
-  ],
-
   "workflows": [
     {
       "name": "custom-annotation-workflow",

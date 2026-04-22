@@ -33,17 +33,6 @@ The manifest defines workflows in the `workflows` array:
 
 ```json
 {
-  "modalities": [
-    {
-      "id": "example-modality",
-      "label": "Example Modality",
-      "shapes": {
-        "bounding-box": {
-          "label": "Bounding Box"
-        }
-      }
-    }
-  ],
   "workflows": [
     {
       "name": "custom-annotation-workflow",
