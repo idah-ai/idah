@@ -7,6 +7,7 @@ module Resource
     AccountSessions = "iam:account_sessions"
     AccountAuths = "iam:account_auths"
     Organizations = "iam:organizations"
+    ApiKeys = "iam:api_keys"
     # rubocop:enable Naming/ConstantName
   end
 end

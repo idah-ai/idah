@@ -1,5 +1,6 @@
 service_name: audit
 description: Audit logs Management service
+
 em:
   adapter: redis
 plugins:
