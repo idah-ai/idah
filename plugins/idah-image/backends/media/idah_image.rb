@@ -6,7 +6,8 @@ module IdahImage
       context.register_processor(
         "idah-image",
         class_name: "IdahImage::Processor::Image",
-        options_class_name: "IdahImage::Processor::Options"
+        options_class_name: "IdahImage::Processor::Options",
+        mime_types: ["^image/.*$"]
       )
     end
   end

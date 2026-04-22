@@ -85,15 +85,21 @@
       status: "uploading" as const,
     }));
 
+    const allSkippedFiles: string[] = [];
+
     for (const media of uploadStatuses) {
       try {
         const fileExtension = getFileExtension(media.media.name);
         const resourceKey = `${media.uuid}${fileExtension}`;
 
-        const createdMedias = await mediaBackendDataSource.upload(media.media, resourceKey, projectId);
+        const createdMedias = await mediaBackendDataSource.upload(media.media, resourceKey, projectId, "", modality);
 
         if (!("data" in createdMedias)) {
           throw new Error("Media upload failed");
+        }
+
+        if (createdMedias.meta?.skipped) {
+          allSkippedFiles.push(...(createdMedias.meta.skipped as string[]));
         }
 
         // upload always returns an array — one record for regular files,
@@ -127,10 +133,18 @@
       }
     }
 
-    showToast.success({
-      title: "Entry uploaded",
-      description: "The entries has been uploaded successfully.",
-    });
+    if (allSkippedFiles.length > 0) {
+      showToast.success({
+        title: "Entries uploaded with skips",
+        description: `Successfully uploaded entries. ${allSkippedFiles.length} files were skipped due to mismatched types: ${allSkippedFiles.join(", ")}`,
+      });
+    } else {
+      showToast.success({
+        title: "Entries uploaded",
+        description: "All entries have been uploaded successfully.",
+      });
+    }
+
     $refetches.entries.list = new Date();
   }
 

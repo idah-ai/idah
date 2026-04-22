@@ -58,10 +58,12 @@ export const mediaBackendDataSource = createBackendDataSource(MediaRecord, media
     resource: string,
     project_id: string,
     key: string = "",
+    modality?: string,
   ): Promise<CollectionResponse<MediaRecord> | JsonApiErrorResponse> => {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("project_id", project_id);
+    if (modality) formData.append("modality", modality);
 
     const uploadPath = key ? `${mediaBasePath}/files/${resource}/${key}` : `${mediaBasePath}/files/${resource}`;
 

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "zip"
+require "rack/mime"
 
 module Medias
   class Service < Verse::Service::Base
@@ -35,46 +36,59 @@ module Medias
       end
     end
 
-    def upload(file, resource:, project_id:, key: "")
+    def upload(file, resource:, project_id:, key: "", modality: nil)
+      # satisfy the mandatory context check, in case the repository is never hit, avoid throwing an error
+      medias.scoped(:create)
+
       results = []
+      skipped = []
+
       if zip_file?(file)
         Zip::File.open(file.tempfile.path) do |zip|
           zip.each do |zip_entry|
             next if system_artifact?(zip_entry)
 
             ext = File.extname(zip_entry.name).downcase
-
             new_resource = "#{SecureRandom.hex(8)}#{ext}"
 
             Tempfile.create(["zip_extract", ext], binmode: true) do |tmp|
-              # zip_entry.extract(tmp.path) { true }
               zip_entry.get_input_stream { |stream| IO.copy_stream(stream, tmp) }
               tmp.rewind
+
+              # identify a mime_type from extension, as this file is extracted
+              mime_type = Rack::Mime.mime_type(ext, "application/octet-stream")
+
               extracted_file = Verse::Http::UploadedFileStruct.new(
                 {
                   filename: File.basename(zip_entry.name),
-                  tempfile: tmp
+                  type: mime_type,
+                  tempfile: tmp,
                 }
               )
 
-              results << store_media(file: extracted_file, resource: new_resource, key:, project_id:)
+              if (res = store_media(file: extracted_file, resource: new_resource, key:, project_id:, modality:))
+                results << res
+              else
+                skipped << zip_entry.name
+              end
             end
           end
         end
       else
-        # Verify that the resource/key combination is not already used:
-        existing = medias.find_by({ resource:, key: })
-
-        # TODO: consider regenerating the resource ?
-        if existing
+        # Verify that the resource/key combination is not already used
+        if medias.find_by({ resource:, key: })
           raise Verse::Error::ValidationFailed,
                 "Resource #{resource} with key #{key} already exists"
         end
 
-        results << store_media(file:, resource:, key:, project_id:)
+        if (res = store_media(file:, resource:, key:, project_id:, modality:))
+          results << res
+        else
+          skipped << file.filename
+        end
       end
 
-      results
+      { processed: results, skipped: skipped }
     end
 
     private
@@ -101,9 +115,16 @@ module Medias
       SYSTEM_ARTIFACT_PATHS.any? { |pattern| entry.name.include?(pattern) }
     end
 
-    def store_media(file:, resource:, key:, project_id:)
+    def store_media(file:, resource:, key:, project_id:, modality: nil)
+      # Check if the modality allows this mime type BEFORE uploading
+      if modality &&
+         (allowed = Processor::Registry.allowed_mime_types(modality)) &&
+         allowed.none? { |pattern| file.type =~ Regexp.new(pattern) }
+        return nil
+      end
+
       Verse::Plugin[:shrine].with_storage do |storage|
-        # Upload the file to the storage:
+        # Upload the file to the storage ONLY AFTER passing validation:
         output = storage.upload(file.tempfile)
 
         medias.create(
@@ -113,7 +134,7 @@ module Medias
             filename: file.filename || resource,
             key:,
             size: output.size,
-            mime_type: output.mime_type || "application/octet-stream",
+            mime_type: file.type,
             created_by: auth_context.metadata[:id],
             created_role: auth_context.metadata[:role]&.to_s,
             project_id:
