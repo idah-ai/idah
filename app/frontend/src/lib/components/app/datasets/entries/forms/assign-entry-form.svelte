@@ -47,6 +47,7 @@
           role__in: wfStep === "review" ? ["reviewer", "project_owner"] : ["annotator", "project_owner"],
         },
       }}
+      searchable
       searchKeyWithOperation="email__match"
       value={assignedToAccountId}
       onSelected={(value: string | number) => {
