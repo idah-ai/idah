@@ -1,22 +1,17 @@
 <script lang="ts">
-  import { type Snippet } from "svelte";
+  import { onMount, type Snippet } from "svelte";
 
-  import {
-      HEIGHT,
-      WIDTH,
-      X,
-      Y,
-      type Point,
-  } from "$lib/context/image-annotation-context";
+  import { HEIGHT, WIDTH, X, Y, type Point } from "$lib/context/image-annotation-context";
   import { currentMode } from "$lib/plugin/store/store";
   import { DEFAULT_MODE, IMAGE_BOUNDING_BOX, IMAGE_NOTE } from "$lib/plugin/types";
-  
+
   // Props
   interface Props {
     children: Snippet;
+    target_container: () => HTMLImageElement | undefined;
     onZoomChange: (scale: number, offset: Point) => void;
   }
-  let { children, onZoomChange }: Props = $props();
+  let { children, target_container, onZoomChange }: Props = $props();
 
   // Variables
   let offset: Point = $state([0, 0]);
@@ -146,6 +141,41 @@
       }
     }
   }
+
+  // set image center
+  function setCenterOffset(imgEl: HTMLImageElement | undefined) {
+    if (!imgEl) return;
+    const containerWidth = size[WIDTH];
+    const containerHeight = size[HEIGHT];
+
+    const imageWidth = imgEl.clientWidth;
+    const imageHeight = imgEl.clientHeight;
+
+    const offsetX = (containerWidth - imageWidth) / 2;
+    const offsetY = (containerHeight - imageHeight) / 2;
+
+    setOffset([offsetX, offsetY]);
+  }
+
+  // Lifecycle
+  onMount(() => {
+    const imgEl = target_container?.();
+    if (!imgEl) return;
+
+    function onElementLoaded() {
+      setCenterOffset(imgEl);
+    }
+
+    if (imgEl.complete) {
+      onElementLoaded();
+    } else {
+      imgEl.addEventListener("load", onElementLoaded, { once: true });
+    }
+
+    return () => {
+      imgEl.removeEventListener("load", onElementLoaded);
+    };
+  });
 </script>
 
 <div

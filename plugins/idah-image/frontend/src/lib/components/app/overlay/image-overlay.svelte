@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getContext, onMount } from "svelte";
+  import { getContext, onMount, type Snippet } from "svelte";
 
   import { cn } from "$lib/utils";
 
@@ -14,6 +14,7 @@
     type ImageShape,
     type InterpolatedVertex,
     type Point,
+    type ZoomInfo,
   } from "$lib/context/image-annotation-context";
   import { boundingBoxes } from "$lib/plugin/store/idb-store.svelte";
   import { currentMode, deselectAnnotationGroup, selectedAnnotation } from "$lib/plugin/store/store";
@@ -44,7 +45,9 @@
   // Props
   type Props = {
     frame: number;
+    target_container: () => HTMLImageElement | undefined;
     annotations_promise: Promise<ImageAnnotationObject[]>;
+    children: Snippet;
     onSelectAnnotation: (annotation?: ImageAnnotationObject) => void;
     onmouseup?: (e: MouseEvent) => void;
     onmousedown?: (e: MouseEvent) => void;
@@ -52,15 +55,17 @@
     onwheel?: (e: WheelEvent) => void;
     onSelection: (type: string, frame: number, points?: Point[], angle?: number, id?: string) => void;
     onAddNewNote: (params: OnAddNewNoteParams) => void;
-    src: string;
+    imageResizedAt: Date;
   };
   let {
     frame,
+    target_container,
     annotations_promise,
+    children,
     onSelectAnnotation,
     onSelection, // valid shape output
     onAddNewNote,
-    src,
+    imageResizedAt,
     ...restProps
   }: Props = $props();
 
@@ -68,17 +73,10 @@
   let context = getContext<IActivityContext>("context");
 
   // Variables
-  interface ZoomInfo {
-    scale: number;
-    offset: Point;
-  }
   let zoomInfo: ZoomInfo = $state({
     scale: 1,
     offset: [0, 0],
   });
-
-  let target_container: HTMLImageElement | undefined = $state();
-
   let height = $state(0);
   let width = $state(0);
   let mouse: Point = $state([0, 0]);
@@ -108,15 +106,13 @@
   let angle: number = $derived.by(() => {
     return current_shape?.angle || 0;
   });
-  let imageResizedAt = $state(new Date());
 
   // Functions
   function updatedSize(): Point {
-    if (!target_container) return ORIGIN;
     imageResizedAt; // eslint-disable-line @typescript-eslint/no-unused-expressions
     zoomInfo; // eslint-disable-line @typescript-eslint/no-unused-expressions
 
-    let target_dom_rect = target_container.getBoundingClientRect();
+    let target_dom_rect = target_container()?.getBoundingClientRect();
 
     return !target_dom_rect ? ORIGIN : [target_dom_rect.width, target_dom_rect.height];
   }
@@ -285,16 +281,12 @@
 
 <div class={cn("svg-overlay flex-1", pointer)}>
   <div>
-    <Zoomable bind:this={zoomableElement} onZoomChange={(scale, offset) => (zoomInfo = { scale, offset })}>
-      <img
-        id="idah-image"
-        bind:this={target_container}
-        {src}
-        alt=""
-        onload={() => {
-          imageResizedAt = new Date();
-        }}
-      />
+    <Zoomable
+      bind:this={zoomableElement}
+      target_container={() => target_container()}
+      onZoomChange={(scale, offset) => (zoomInfo = { scale, offset })}
+    >
+      {@render children?.()}
     </Zoomable>
   </div>
 
