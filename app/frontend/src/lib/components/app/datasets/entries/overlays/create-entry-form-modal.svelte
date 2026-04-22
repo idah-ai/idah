@@ -52,7 +52,9 @@
   });
 
   const acceptedFileTypes =
-    modality === "idah-video" ? [".mp4", ".mkv", ".3gp", ".avi", ".m4v", ".mov", ".webm"] : [".jpg", ".jpeg", ".png"];
+    modality === "idah-video"
+      ? [".mp4", ".mkv", ".3gp", ".avi", ".m4v", ".mov", ".webm", ".zip"]
+      : [".jpg", ".jpeg", ".png", ".zip"];
 
   // Functions
   function resetForm(): void {
@@ -88,31 +90,35 @@
         const fileExtension = getFileExtension(media.media.name);
         const resourceKey = `${media.uuid}${fileExtension}`;
 
-        const createdMedia = await mediaBackendDataSource.upload(media.media, resourceKey, projectId);
+        const createdMedias = await mediaBackendDataSource.upload(media.media, resourceKey, projectId);
 
-        if (!("data" in createdMedia)) {
+        if (!("data" in createdMedias)) {
           throw new Error("Media upload failed");
         }
 
-        await entriesBackendDataSource.create(
-          {
-            attributes: {
-              resource: createdMedia.data.resource,
-              status: "pending",
-            },
-            relationships: {
-              dataset: {
-                data: {
-                  type: "datasets:datasets",
-                  id: datasetId,
+        // upload always returns an array — one record for regular files,
+        // multiple records when a zip archive was uploaded.
+        for (const createdMedia of createdMedias.data) {
+          await entriesBackendDataSource.create(
+            {
+              attributes: {
+                resource: createdMedia.resource,
+                status: "pending",
+              },
+              relationships: {
+                dataset: {
+                  data: {
+                    type: "datasets:datasets",
+                    id: datasetId,
+                  },
                 },
               },
             },
-          },
-          {
-            showErrorToast: false,
-          },
-        );
+            {
+              showErrorToast: false,
+            },
+          );
+        }
 
         media.status = "success";
       } catch (error) {
