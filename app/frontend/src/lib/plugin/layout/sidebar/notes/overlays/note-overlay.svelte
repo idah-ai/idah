@@ -112,6 +112,19 @@
     context.notes.onZoomInfoChange((zi) => {
       zoomInfo = zi;
     });
+
+    /** Handle ESC Press to close popup */
+    const handleKeydown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        closeNoteFeedPopup();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeydown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeydown);
+    };
   });
 
   function closeSelectedNoteFeedPopup() {
@@ -220,7 +233,7 @@
 
 {#if (selectedNoteFeed || showNewNoteFeedPopup) && scaledTargetDomRect}
   <button
-    class="absolute left-0 z-50 bg-transparent"
+    class="bg-primary/20 absolute left-0 z-50"
     style:top="{scaledTargetDomRect.top}px"
     style:left="{scaledTargetDomRect.left}px"
     style:width="{scaledTargetDomRect.width}px"
@@ -232,24 +245,28 @@
       {@const posY = newNoteFeed.position.y || 0}
       {@const targetDOMHeight = scaledTargetDomRect.height}
       {@const targetDOMWidth = scaledTargetDomRect.width}
-      {@const top = `${Number(posY * targetDOMHeight)}px`}
-      {@const left = `${Number(posX * targetDOMWidth)}px`}
+      {@const top = posY * targetDOMHeight}
+      {@const left = posX * targetDOMWidth}
       {@const cursorNoteCoordinates = [0, -20]}
 
       <img
         src={messageCircleIcon}
         alt="Message circle icon"
         class="absolute z-40 cursor-auto"
-        style:top
-        style:left
+        style:top="{top}px"
+        style:left="{left}px"
         style:transform="translate({cursorNoteCoordinates[X]}px, {cursorNoteCoordinates[Y]}px)"
       />
 
+      {@const notePopupWidth = 320}
+      {@const canDisplayNotePopupOnRight = left + notePopupWidth < window.innerWidth * 0.75}
       <div
         class="absolute w-80 p-0"
-        style:top
-        style:left
-        style:transform="translate({NOTE_POPUP_OFFSET[X]}px, {NOTE_POPUP_OFFSET[Y]}px)"
+        style:top="{top}px"
+        style:left="{left}px"
+        style:transform="translate({canDisplayNotePopupOnRight
+          ? NOTE_POPUP_OFFSET[X]
+          : -notePopupWidth - Number(NOTE_POPUP_OFFSET[X] / 2)}px, {NOTE_POPUP_OFFSET[Y]}px)"
       >
         <Card class="gap-0 p-1">
           <CardHeader class="flex flex-row items-center p-1">
@@ -279,23 +296,23 @@
       {@const posY = selectedNoteFeed.position.y || 0}
       {@const targetDOMHeight = scaledTargetDomRect.height}
       {@const targetDOMWidth = scaledTargetDomRect.width}
-      {@const top = `${Number(posY * targetDOMHeight)}px`}
-      {@const left = `${Number(posX * targetDOMWidth)}px`}
+      {@const top = posY * targetDOMHeight}
+      {@const left = posX * targetDOMWidth}
       {@const cursorNoteCoordinates = [0, -20]}
 
       <img
         src={messageCircleIcon}
         alt="Message circle icon"
         class="absolute z-40 cursor-auto"
-        style:top
-        style:left
+        style:top="{top}px"
+        style:left="{left}px"
         style:transform="translate({cursorNoteCoordinates[X]}px, {cursorNoteCoordinates[Y]}px)"
       />
 
       <div
         class="absolute w-80 p-0"
-        style:top
-        style:left
+        style:top="{top}px"
+        style:left="{left}px"
         style:transform="translate({NOTE_POPUP_OFFSET[X]}px, {NOTE_POPUP_OFFSET[Y]}px)"
       >
         <Card class="gap-0 p-1">
