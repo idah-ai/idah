@@ -32,10 +32,10 @@
   // Props
   interface Props {
     entry: EntryRecord;
-    selectedRows: string[];
+    selectedEntryIds: string[];
     onRowSelect: (selectedId: string) => void;
   }
-  let { entry, selectedRows, onRowSelect }: Props = $props();
+  let { entry, selectedEntryIds, onRowSelect }: Props = $props();
 
   // Variables
   const currentAccount = $authStatus.authContext;
@@ -175,7 +175,7 @@
            */
           if (!jobId) {
             /** Fetch the entry again to get the job_id and update the entry state (to prevent index cache) */
-            const entryRes = await entriesBackendDataSource.get(entryId, { noCache: true });
+            const entryRes = await entriesBackendDataSource.get(entryId, { included: ["dataset"], noCache: true });
             entry = entryRes.data;
             jobId = entryRes.data.job_id;
           }
@@ -263,7 +263,7 @@
       <!-- CHECKBOX -->
       {#if canUpdateEntry || canDeleteEntry}
         <div class="my-auto">
-          <Checkbox checked={selectedRows.includes(entryId)} onCheckedChange={() => onRowSelect(entryId)} />
+          <Checkbox checked={selectedEntryIds.includes(entryId)} onCheckedChange={() => onRowSelect(entryId)} />
         </div>
       {/if}
 

@@ -47,7 +47,9 @@
   import { ProjectRecord } from "@/data/model/dataset/projects/project-record";
   import { authStatus } from "@/security/AuthContext";
   import { cn } from "@/utils";
+  import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
+  import { pluralizeUnit } from "@/utils/unit";
 
   import type {
     ColumnSettings,
@@ -109,11 +111,15 @@
   let canDeleteEntry = $state(false);
   let currentPage: number = $state(1);
   let itemsPerPage: number = $state(10);
-  let selectedRows: string[] = $state([]);
-  let selectedRowsCount: number = $derived(selectedRows.length);
+  let selectedEntryIds: string[] = $state([]);
+  let selectedRowsCount: number = $derived(selectedEntryIds.length);
+  let selectedToUnassignedEntryIdsCount: number = $derived(
+    response.data.filter((entry) => selectedEntryIds.includes(entry.id) && entry.assigned_to?.id).length,
+  );
   let openNewEntryModal: boolean = $state(false);
   let openAssignEntryFormModal: boolean = $state(false);
   let openSetPriorityModal: boolean = $state(false);
+  let openConfirmUnassignEntriesModal: boolean = $state(false);
   let openConfirmDeleteEntriesModal: boolean = $state(false);
   let openExportModal: boolean = $state(false);
 
@@ -160,22 +166,29 @@
   );
   let isRowSelected: boolean = $derived(selectedRowsCount > 0);
 
-  const bulkActions = getEntryDropdownMenuActions({
-    onAssign: () => {
-      openAssignEntryFormModal = true;
-    },
-    onSetPriority: () => {
-      openSetPriorityModal = true;
-    },
-    onDelete: () => {
-      openConfirmDeleteEntriesModal = true;
-    },
-    onExport: () => {
-      openExportModal = true;
-    },
-  });
+  const bulkActions = $derived(
+    getEntryDropdownMenuActions({
+      onAssign: () => {
+        openAssignEntryFormModal = true;
+      },
+      onUnassign: () => {
+        openConfirmUnassignEntriesModal = true;
+      },
+      onSetPriority: () => {
+        openSetPriorityModal = true;
+      },
+      onDelete: () => {
+        openConfirmDeleteEntriesModal = true;
+      },
+      isAssigned: checkEntriesAssignedToAnyone(selectedEntryIds),
+    }),
+  );
 
   // Functions
+  function checkEntriesAssignedToAnyone(entryIds: string[]): boolean {
+    return response.data.some((entry) => entryIds.includes(entry.id) && !!entry.assigned_to_id);
+  }
+
   function openNewEntryFormModal(): void {
     openNewEntryModal = true;
   }
@@ -288,44 +301,92 @@
   }
 
   function selectRow(selectedId: string): void {
-    if (selectedRows.includes(selectedId)) {
-      selectedRows = selectedRows.filter((id) => id !== selectedId);
+    if (selectedEntryIds.includes(selectedId)) {
+      selectedEntryIds = selectedEntryIds.filter((id) => id !== selectedId);
     } else {
-      selectedRows = [...selectedRows, selectedId];
+      selectedEntryIds = [...selectedEntryIds, selectedId];
+    }
+  }
+
+  async function unAssignEntries(): Promise<void> {
+    try {
+      for (const entryId of selectedEntryIds) {
+        await entriesBackendDataSource.update(entryId, {
+          attributes: {
+            assigned_to_id: null,
+          },
+        });
+      }
+
+      const selectedToUnassignedRows = response.data.filter(
+        (entry) => selectedEntryIds.includes(entry.id) && entry.assigned_to_id,
+      );
+      const description =
+        selectedToUnassignedEntryIdsCount > 1
+          ? `${selectedToUnassignedRows.length} entries have been unassigned.`
+          : `The entry "${selectedToUnassignedRows[0]?.resource}" has been unassigned.`;
+
+      showToast.success({
+        title: "Entry unassigned",
+        description,
+      });
+
+      selectedEntryIds = [];
+      $refetches.entries.list = new Date();
+      openConfirmUnassignEntriesModal = false;
+    } catch (error) {
+      showActionFailedToast(error);
     }
   }
 
   async function deleteEntries(): Promise<void> {
-    for (const entryId of selectedRows) {
-      await entriesBackendDataSource.delete(entryId);
+    try {
+      for (const entryId of selectedEntryIds) {
+        await entriesBackendDataSource.delete(entryId, {
+          showErrorToast: false,
+        });
+      }
+
+      const description =
+        selectedRowsCount > 1
+          ? `${selectedRowsCount} entries have been deleted.`
+          : `The entry "${response.data.find((entry) => entry.id === selectedEntryIds[0])?.resource}" has been deleted.`;
+
+      showToast.success({
+        title: "Entry deleted",
+        description,
+      });
+
+      selectedEntryIds = [];
+      $refetches.entries.list = new Date();
+      openConfirmDeleteEntriesModal = false;
+    } catch (error) {
+      showToast.error({
+        title: "Unable to delete entry",
+        description: error?.errors[0]?.detail || "The action could not be completed, please try again later.",
+      });
     }
-
-    showToast.success({ title: `${selectedRowsCount} Entry(s) successfully deleted.` });
-
-    selectedRows = [];
-    $refetches.entries.list = new Date();
-    openConfirmDeleteEntriesModal = false;
   }
 
   async function exportEntries(): Promise<void> {
     await ExportsBackendDataSource.export({
       datasets: { id: datasetId },
-      entries: { id__in: selectedRows },
+      entries: { id__in: selectedEntryIds },
     });
-    selectedRows = [];
+    selectedEntryIds = [];
     openExportModal = false;
   }
 
   function toggleSelectAll(checked: boolean): void {
     if (checked) {
-      selectedRows = response.data.map((entry) => entry.id);
+      selectedEntryIds = response.data.map((entry) => entry.id);
     } else {
-      selectedRows = [];
+      selectedEntryIds = [];
     }
   }
 
   function resetSelectedRows(): void {
-    selectedRows = [];
+    selectedEntryIds = [];
   }
 </script>
 
@@ -346,7 +407,7 @@
           <!-- SELECT ALL -->
           {#if canUpdateEntry || canDeleteEntry}
             <div class="pl-6">
-              <Checkbox checked={selectedRows.length > 0} onCheckedChange={toggleSelectAll} />
+              <Checkbox checked={selectedEntryIds.length > 0} onCheckedChange={toggleSelectAll} />
             </div>
           {/if}
 
@@ -408,11 +469,13 @@
 
               <DropdownMenuContent>
                 <DropdownMenuGroup>
-                  {#each bulkActions as { label, icon: Icon, action }, index (index)}
-                    <DropdownMenuItem onclick={action}>
-                      <Icon class="mr-2 size-4" />
-                      {label}
-                    </DropdownMenuItem>
+                  {#each bulkActions as { label, icon: Icon, action, hidden }, index (index)}
+                    {#if !hidden}
+                      <DropdownMenuItem onclick={action}>
+                        <Icon class="mr-2 size-4" />
+                        {label}
+                      </DropdownMenuItem>
+                    {/if}
                   {/each}
                 </DropdownMenuGroup>
               </DropdownMenuContent>
@@ -433,7 +496,7 @@
   {:then _}
     <div class="flex flex-col gap-4">
       {#each response.data as entry (entry.id)}
-        <EntryCard {entry} {selectedRows} onRowSelect={selectRow} />
+        <EntryCard {entry} {selectedEntryIds} onRowSelect={selectRow} />
       {:else}
         <Card>
           <CardContent class="min-h-64 flex items-center justify-center">
@@ -470,18 +533,27 @@
 <!-- MODAL::ASSIGN ANNOTATOR  -->
 <AssignEntryFormModal
   action="update"
-  entryIds={selectedRows}
+  entryIds={selectedEntryIds}
   onAssigned={resetSelectedRows}
+  entryRecord={selectedRowsCount === 1 ? response.data.find((entry) => entry.id === selectedEntryIds[0]) : undefined}
   bind:open={openAssignEntryFormModal}
 />
 
 <!-- MODAL::SET PRIORITY -->
-<UpdateEntryPriorityFormModal action="update" entryIds={selectedRows} bind:open={openSetPriorityModal} />
+<UpdateEntryPriorityFormModal action="update" entryIds={selectedEntryIds} bind:open={openSetPriorityModal} />
+
+<!-- MODAL::CONFIRM UNASSIGN -->
+<ConfirmModal
+  title="Unassign entry"
+  description={`Are you sure you want to unassign ${selectedToUnassignedEntryIdsCount} ${pluralizeUnit(selectedToUnassignedEntryIdsCount, "entry", "entries")}?`}
+  onConfirm={unAssignEntries}
+  bind:open={openConfirmUnassignEntriesModal}
+/>
 
 <!-- MODAL::CONFIRM DELETE -->
 <ConfirmModal
-  title="Delete {selectedRowsCount} entries(s)"
-  description="Are you sure you want to delete {selectedRowsCount} entries(s)? This action cannot be undone."
+  title="Delete entry"
+  description={`Are you sure you want to delete ${selectedRowsCount} ${pluralizeUnit(selectedRowsCount, "entry", "entries")}? This action cannot be undone.`}
   onConfirm={deleteEntries}
   bind:open={openConfirmDeleteEntriesModal}
 />

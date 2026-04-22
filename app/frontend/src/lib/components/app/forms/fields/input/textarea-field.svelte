@@ -37,13 +37,18 @@
     info,
     errors,
     class: className,
+    slotLabel,
     slotDescription,
     slotErrors,
   }: Props = $props();
 </script>
 
 <Field class={cn("", className)}>
-  <FieldLabel for={name} {required}>{label}</FieldLabel>
+  {#if slotLabel}
+    {@render slotLabel()}
+  {:else}
+    <FieldLabel {required}>{label}</FieldLabel>
+  {/if}
 
   <InputGroup>
     {#if PrefixIcon}

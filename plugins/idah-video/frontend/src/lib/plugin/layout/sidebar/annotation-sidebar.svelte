@@ -12,16 +12,14 @@
 
   import { ENTRY_ROOT } from "$lib/plugin/type";
   import { entryRoot } from "$lib/plugin/video-annotation-activity/store/idb-store.svelte";
-  import { currentMode, deselectAnnotationGroup } from "$lib/plugin/video-annotation-activity/store/store";
+  import {
+    currentMode,
+    deselectAnnotationGroup,
+    selectedAnnotation,
+  } from "$lib/plugin/video-annotation-activity/store/store";
 
-  import type {
-    IActivityContext,
-    IConfigValue,
-  } from "$idah/context/activity-context";
-  import type {
-    AnnotationGroup,
-    AnnotationValue,
-  } from "$idah/context/annotation-context";
+  import type { IActivityContext, IConfigValue } from "$idah/context/activity-context";
+  import type { AnnotationGroup, AnnotationValue } from "$idah/context/annotation-context";
   import type { VideoAnnotationObject } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
   import type { AnnotationBackend } from "$lib/plugin/video-annotation-activity/data/annotation/annotaiton-backend.svelte";
 
@@ -43,9 +41,7 @@
     annotationValue: AnnotationValue;
     onEditValue: (annotationValue: AnnotationValue, mode: string) => void;
     onSelectAnnotation: (annotation?: VideoAnnotationObject) => void;
-    onSelectAnnotationGroup: (
-      annotationGroup: AnnotationGroup<VideoAnnotationObject>,
-    ) => void;
+    onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<VideoAnnotationObject>) => void;
     onDeleteAnnotation: (annotation: VideoAnnotationObject) => void;
     context: IActivityContext;
     db?: AnnotationBackend;
@@ -84,8 +80,8 @@
   // Functions
   function categorySelection(shape_type: string, category?: string) {
     if (category) {
-      if (shape_type != $currentMode) onSelectAnnotation();
       deselectAnnotationGroup();
+      onSelectAnnotation();
       onEditValue({ category }, shape_type);
     } // else {
     //   onEditValue(
@@ -114,13 +110,8 @@
   }
 </script>
 
-<Sidebar
-  variant="inset"
-  collapsible="none"
-  class={cn(className)}
-  style="width: ${sidebarWidthRem}rem"
->
-  {#if !tools.has($currentMode)}
+<Sidebar variant="inset" collapsible="none" class={cn(className)} style="width: ${sidebarWidthRem}rem">
+  {#if !tools.has($currentMode) || $selectedAnnotation}
     <SidebarHeader>
       <InputField
         name="input/plugin/search"

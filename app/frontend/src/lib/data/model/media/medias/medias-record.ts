@@ -1,10 +1,10 @@
 import { createBackendDataSource, resourcePath } from "@/data/BackendDataSource";
 import { clearCache } from "@/data/Cache";
-import { parseSingleElementError, parseSingleElementReturn } from "@/data/model/json_api";
+import { parseSingleElementError, parseCollectionReturn } from "@/data/model/json_api";
 import { field, Record, RecordFactory, type } from "@/data/model/Record";
 import { showErrorToast } from "@/utils/error/error.toasts";
 
-import type { JsonApiErrorResponse, RecordResponse } from "@/data/model/types";
+import type { CollectionResponse, JsonApiErrorResponse } from "@/data/model/types";
 import type { Hash } from "@/utils/types";
 
 @type("media:medias")
@@ -50,12 +50,15 @@ export const mediaBackendDataSource = createBackendDataSource(MediaRecord, media
     const blobUrl = URL.createObjectURL(blob);
     return blobUrl;
   },
+
+  // Upload always returns a collection — a single-element array for regular files,
+  // or a multi-element array when the uploaded file is a zip archive.
   upload: async (
     file: File,
     resource: string,
     project_id: string,
     key: string = "",
-  ): Promise<RecordResponse<MediaRecord> | JsonApiErrorResponse> => {
+  ): Promise<CollectionResponse<MediaRecord> | JsonApiErrorResponse> => {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("project_id", project_id);
@@ -83,7 +86,7 @@ export const mediaBackendDataSource = createBackendDataSource(MediaRecord, media
       return Promise.reject(parseSingleElementError({ status: out.status, errors: body.errors }));
     }
 
-    if (body && body.data) return Promise.resolve(parseSingleElementReturn<MediaRecord>(body));
+    if (body && body.data) return Promise.resolve(parseCollectionReturn<MediaRecord>(body));
 
     throw "No data returned";
   },
