@@ -1,6 +1,6 @@
 import type { Command } from "@/command/Command";
 import type { AnnotationHeaderBarBaseTool } from "@/plugin/layout/header/annotation-header-bar.types";
-import type { ASTNode } from "../../../plugins/idah-video/test_ast_resolution";
+import type { ASTNode } from "@/utils/ast_resolution";
 
 interface IUser {
   id: number;
@@ -104,7 +104,7 @@ export interface IConfigValue {
   label: string;
   color: string | null;
   text_color: string | null;
-  description: string | undefined;
+  description?: string;
 }
 
 export interface IConfigProperty {
@@ -137,6 +137,10 @@ export interface ITools {
   setTool: (tool: string) => void;
   onToolsChange: (cb: (tools: HeaderBarModeTool[]) => void) => void;
   onToolChange: (cb: (tool: string) => void) => void;
+}
+
+export interface IIconDriver {
+  get(iconName: string): Promise<string>;
 }
 
 export interface IActivityContext {
@@ -174,6 +178,8 @@ export interface IActivityContext {
 
   get tools(): ITools;
 
+  get icons(): IIconDriver;
+
   // Return to previous step of the workflow
   back(): void;
 
@@ -182,6 +188,14 @@ export interface IActivityContext {
 
   // Mark this activity as errored
   error(message: string): Promise<void>;
+
+  get shortcutReferences():
+    | Record<string, { label: string; description: string; keyCombinations: string[] }>
+    | undefined;
+
+  registerShortcutReferences(
+    refs: Record<string, { label: string; description: string; keyCombinations: string[] }>,
+  ): void;
 }
 
 export interface IActivityView {
