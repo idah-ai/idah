@@ -34,6 +34,7 @@ RSpec.describe Entry::Service, database: true do
     {
       priority: 1,
       resource: "http://example.com/video.mp4",
+      name: "video.mp4",
       wf_step: "start",
       status: "pending",
       assigned_to_id: 1,
@@ -67,6 +68,7 @@ RSpec.describe Entry::Service, database: true do
         body = {
           data: {
             resource: "http://example.com/video.mp4",
+            name: "video.mp4",
             sizes: ["240p", "360p", "480p", "720p", "1080p", "1440p", "2160p"],
             generate_frames: false,
             generate_thumbnail: true,
@@ -95,6 +97,7 @@ RSpec.describe Entry::Service, database: true do
             data: {
               type: "dataset:entries",
               attributes: {
+                name: "video.mp4",
                 resource: "http://example.com/video.mp4",
                 status: "pending"
               },
