@@ -16,6 +16,7 @@ export class MediaRecord extends Record {
   @field() public mime_type!: string;
 
   @field() public filename!: string;
+  @field() public meta!: { [key: string]: unknown; };
 
   @field() public created_by!: number;
   @field() public created_at!: Date;
@@ -27,7 +28,43 @@ RecordFactory.registerTypes(MediaRecord);
 export const mediaBasePath = `${import.meta.env.VITE_IDAH_HOST}/api/v1/media/medias`;
 
 export const mediaBackendDataSource = createBackendDataSource(MediaRecord, mediaBasePath, {
-  // getInfo: async() => {},
+  getInfo: async (param: {
+    resource: string;
+    key?: string;
+  }): Promise<RecordResponse<MediaRecord> | JsonApiErrorResponse> => {
+    const { resource, key } = param;
+    let mediaInfoUrl = `${mediaBasePath}/info/${resource}`;
+
+    if (key) {
+      mediaInfoUrl = `${mediaInfoUrl}/${key}`;
+    }
+
+    return await fetch(mediaInfoUrl, {
+      method: "GET",
+    })
+      .then(
+        (res) => res.json(),
+        (err) => {
+          console.error("Failed to fetch media info:", err);
+          throw err;
+        },
+      )
+      .then((body) => {
+        if (body && body.errors) {
+          if (body.errors.length > 0) {
+            body.errors.forEach((err: Hash<string>) => {
+              showErrorToast({ title: err.title, message: err.detail, error: err });
+            });
+          }
+
+          throw parseSingleElementError({ status: 500, errors: body.errors });
+        }
+
+        if (body && body.data) return Promise.resolve(parseSingleElementReturn<MediaRecord>(body));
+
+        throw new Error("No data returned");
+      });
+  },
   getFiles: async (params: { resource: string; key?: string }): Promise<string> => {
     const { resource, key } = params;
     const getFilesPath = key ? `${mediaBasePath}/files/${resource}/${key}` : `${mediaBasePath}/files/${resource}`;

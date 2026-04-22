@@ -21,8 +21,6 @@ import type Player from "video.js/dist/types/player";
 export interface PauseQualityUpgradeOptions {
   /** Duration of each HLS segment in seconds (from manifest). Default: 2.002 */
   segmentDuration?: number;
-  /** Minimum resolution height to consider "high quality". Default: 1080 */
-  minHighResHeight?: number;
   /** Delay (ms) after pause event before starting upgrade (filters seek-pauses). Default: 200 */
   pauseDelay?: number;
   /** Interval (ms) to keep the segment loader alive while paused. Default: 1000 */
@@ -73,7 +71,6 @@ export class PauseQualityUpgrade {
     this.player = player;
     this.opts = {
       segmentDuration: options.segmentDuration ?? 2.002,
-      minHighResHeight: options.minHighResHeight ?? 1080,
       pauseDelay: options.pauseDelay ?? 200,
       keepAliveInterval: options.keepAliveInterval ?? 1000,
       onStatusChange: options.onStatusChange ?? (() => {}),
@@ -152,8 +149,7 @@ export class PauseQualityUpgrade {
 
   private getHighestPlaylist(playlists: any[]): any {
     return playlists.reduce(
-      (best: any, pl: any) =>
-        (pl.attributes?.BANDWIDTH || 0) > (best.attributes?.BANDWIDTH || 0) ? pl : best,
+      (best: any, pl: any) => ((pl.attributes?.BANDWIDTH || 0) > (best.attributes?.BANDWIDTH || 0) ? pl : best),
       playlists[0],
     );
   }
@@ -191,12 +187,15 @@ export class PauseQualityUpgrade {
     pc.selectPlaylist = () => highest;
 
     // 2. Disable lower quality levels
+    // Use the highest level height as the cutoff for "high quality"
     const ql = (this.player as any).qualityLevels?.();
+    const maxHeightfromQl = Math.max(...(ql?.levels_.map((l: any) => l.height) || []));
+
     this.state.savedEnabled = [];
     if (ql) {
       for (let i = 0; i < ql.length; i++) {
         this.state.savedEnabled.push(ql[i].enabled);
-        ql[i].enabled = ql[i].height >= this.opts.minHighResHeight;
+        ql[i].enabled = ql[i].height >= maxHeightfromQl;
       }
     }
 
@@ -204,10 +203,12 @@ export class PauseQualityUpgrade {
     this.state.appendHandler = () => {
       if (!this.state.active) return;
       this.state.segmentsLoaded++;
+
       console.log(`[PauseQualityUpgrade] 1080p segment #${this.state.segmentsLoaded} appended`);
-      this.emitStatus({ state: "ready", segmentsLoaded: this.state.segmentsLoaded });
 
       if (this.state.segmentsLoaded === 1) {
+        this.emitStatus({ state: "ready", segmentsLoaded: this.state.segmentsLoaded });
+
         const videoEl = tech.el() as HTMLVideoElement;
         if (videoEl) {
           this.opts.onSeekToFrame?.(this.opts.getCurrentFrame());

@@ -34,6 +34,16 @@ module Processor
       end
     end
 
+    def update_original_metadata(metadata)
+      media = medias.find_by(
+        { resource: @resource, key: "" }
+      )
+
+      raise "media not found" unless media
+
+      medias.update(media.id, { meta: metadata })
+    end
+
     def upload_media(io, key, mime_type, metadata = {})
       io = StringIO.new(io) if io.is_a?(String)
 

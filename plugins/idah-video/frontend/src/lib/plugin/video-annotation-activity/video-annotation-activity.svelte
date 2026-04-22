@@ -76,7 +76,7 @@
     type VideoShape,
   } from "$lib/plugin/video-annotation-activity/context/video-annotation-context";
 
-  import type { IActivityContext } from "$idah/context/activity-context";
+  import type { IActivityContext, IMedia } from "$idah/context/activity-context";
   import type { AnnotationGroup, AnnotationShape, AnnotationValue } from "$idah/context/annotation-context";
 
   // Props
@@ -93,6 +93,8 @@
   const notableWorkflowSteps = ["annotate", "review", "done"];
 
   let { id: entryId, mediaUrl, workflowStep } = $derived(context);
+  let mediaInfo: IMedia | undefined = $state(undefined);
+  let mediaMasterInfo: IMedia | undefined = $state(undefined);
   let editable = $derived<boolean>(editableWorkflowSteps.includes(workflowStep));
   let notable = $derived<boolean>(notableWorkflowSteps.includes(workflowStep));
   let isNoteMode = $derived($currentMode === IDAH_NOTE);
@@ -187,6 +189,9 @@
   });
 
   onMount(async () => {
+    mediaInfo = await context.mediaInfo();
+    mediaMasterInfo = await context.mediaInfo("master.m3u8");
+
     // Generate the full static reference list of shortcuts and register them to the shared context
     registerShortcutsReference(context);
 
@@ -775,22 +780,27 @@
                 isPlaying={$isVideoPlaying}
               >
                 <!-- container context ?-->
-                <Video
-                  bind:this={player}
-                  bind:element={player_container}
-                  onResize={() => {
-                    videoResizedAt = new Date();
-                  }}
-                  onFramesChange={(current, total, playing) => {
-                    setCurrentFrame(current);
-                    setTotalFrames(total);
-                    setVideoIsPlaying(playing);
-                  }}
-                  onTimeUpdate={(currentFrame) => {
-                    setAnnotationFrame(currentFrame);
-                  }}
-                  onVolumeChange={(level, muted) => (volume = { level, muted })}
-                />
+                {#if mediaInfo && mediaMasterInfo}
+                  <Video
+                    // fps={mediaInfo.meta.fps as number}
+                    // duration={mediaInfo.meta.duration as number}
+                    segmentDuration={mediaMasterInfo.meta.streaming_time_per_segment as number}
+                    bind:this={player}
+                    bind:element={player_container}
+                    onResize={() => {
+                      videoResizedAt = new Date();
+                    }}
+                    onFramesChange={(current, total, playing) => {
+                      setCurrentFrame(current);
+                      setTotalFrames(total);
+                      setVideoIsPlaying(playing);
+                    }}
+                    onTimeUpdate={(currentFrame) => {
+                      setAnnotationFrame(currentFrame);
+                    }}
+                    onVolumeChange={(level, muted) => (volume = { level, muted })}
+                  />
+                {/if}
               </SvgOverlay>
 
               <PropertiesSidebar

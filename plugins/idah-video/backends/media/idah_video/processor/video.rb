@@ -14,6 +14,8 @@ module IdahVideo
 
         video_info = VideoInfo.from_file(file_path)
 
+        context.update_original_metadata(video_info.to_h)
+
         process_media(file_path, video_info) do |output|
           # Upload the master manifest with metadata
           context.upload_media(

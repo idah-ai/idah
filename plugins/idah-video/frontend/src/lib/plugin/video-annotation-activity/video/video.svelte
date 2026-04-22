@@ -5,12 +5,14 @@
   import type Player from "video.js/dist/types/player";
   import "video.js/dist/video-js.css";
 
-  import { PauseQualityUpgrade } from "./PauseQualityUpgrade";
-  import type { UpgradeStatus } from "./PauseQualityUpgrade";
+  import { PauseQualityUpgrade, type UpgradeStatus } from "./PauseQualityUpgrade";
 
   const DEFAULT_FPS = 30;
 
   type Props = {
+    // fps: number;
+    // duration: number;
+    segmentDuration: number;
     element?: HTMLDivElement;
     onTimeUpdate?: (currentFrame: number) => void;
     onFramesChange: (current: number, frames: number, isPlaying: boolean) => void;
@@ -19,7 +21,17 @@
     onUpgradeStatusChange?: (status: UpgradeStatus) => void;
   };
 
-  let { element = $bindable(), onTimeUpdate, onFramesChange, onResize, onVolumeChange, onUpgradeStatusChange }: Props = $props();
+  let {
+    // fps,
+    // duration,
+    segmentDuration,
+    element = $bindable(),
+    onTimeUpdate,
+    onFramesChange,
+    onResize,
+    onVolumeChange,
+    onUpgradeStatusChange,
+  }: Props = $props();
 
   let player: Player | undefined = $state();
   let pauseQualityUpgrade: PauseQualityUpgrade | undefined = $state();
@@ -46,6 +58,7 @@
 
   $effect(() => onFramesChange?.(currentFrame, frames, isPlaying));
   $effect(() => onVolumeChange?.(volume, muted));
+  $effect(() => console.log({ duration, fps }));
 
   export const getFrames = () => frames;
 
@@ -103,9 +116,19 @@
 
     // Mount the pause quality upgrade module
     pauseQualityUpgrade = new PauseQualityUpgrade(player, {
-      segmentDuration: 2.0,
+      segmentDuration: segmentDuration,
       onStatusChange(status: UpgradeStatus) {
         onUpgradeStatusChange?.(status);
+
+        // Control the player's loading spinner based on the upgrade status
+        switch (status.state) {
+          case "loading":
+            player?.addClass("vjs-seeking");
+            break;
+          case "ready":
+            player?.removeClass("vjs-seeking");
+            break;
+        }
       },
       getCurrentFrame() {
         return currentFrame;
@@ -175,7 +198,7 @@
   }
 
   function quality_check(from?: string) {
-    let qualityLevel = player?.qualityLevels()[player?.qualityLevels().selectedIndex];
+    let qualityLevel = (player as any)?.qualityLevels()[(player as any)?.qualityLevels().selectedIndex];
 
     duration = player?.duration() || 0;
     fps = qualityLevel?.frameRate || DEFAULT_FPS; // ....
