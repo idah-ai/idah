@@ -38,7 +38,7 @@
   ];
 
   // Functions
-  function handleFilter(value: string | number): void {
+  function handleFilter(value: string | number | null): void {
     onFilter({
       filters: {
         [filterKeyWithOperation]: value === "null" ? null : value,
