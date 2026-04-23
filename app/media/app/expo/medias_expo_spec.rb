@@ -116,9 +116,10 @@ RSpec.describe MediasExpo, type: :exposition, as: :system do
         original_filename: "sample.mp4"
       )
     end
-    
+
     it "without key" do
-      expect_any_instance_of(Medias::Service).to receive(:upload) do |_service, file, resource:, key:, project_id:, **_opts|
+      expect_any_instance_of(Medias::Service)
+        .to receive(:upload) do |_service, file, resource:, key:, project_id:, **_opts|
         expect(file.filename).to eq("sample.mp4")
         expect(file.type).to eq("video/mp4")
         expect(file.name).to eq("file")
@@ -135,7 +136,8 @@ RSpec.describe MediasExpo, type: :exposition, as: :system do
     end
 
     it "with key" do
-      expect_any_instance_of(Medias::Service).to receive(:upload) do |_service, file, resource:, key:, project_id:, **_opts|
+      expect_any_instance_of(Medias::Service)
+        .to receive(:upload) do |_service, file, resource:, key:, project_id:, **_opts|
         expect(file.filename).to eq("sample.mp4")
         expect(file.type).to eq("video/mp4")
         expect(file.name).to eq("file")

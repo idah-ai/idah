@@ -37,11 +37,11 @@ RSpec.describe Medias::Service, as: :system, database: true do
         project_id: "mocked_project_id"
       )
 
-      expect(result).to be_an(Array)
-      expect(result.length).to eq(1)
-      expect(result.first.resource).to eq("test_resource")
-      expect(result.first.key).to eq("test_key")
-      expect(result.first.filename).to eq("test.mp4")
+      expect(result).to be_a(Hash)
+      expect(result[:processed].length).to eq(1)
+      expect(result[:processed].first.resource).to eq("test_resource")
+      expect(result[:processed].first.key).to eq("test_key")
+      expect(result[:processed].first.filename).to eq("test.mp4")
     ensure
       file&.close
     end
@@ -97,10 +97,10 @@ RSpec.describe Medias::Service, as: :system, database: true do
         project_id: "mocked_project_id"
       )
 
-      expect(result).to be_an(Array)
-      expect(result.length).to eq(1)
-      expect(result.first.resource).to eq("test_resource_no_key")
-      expect(result.first.key).to eq("")
+      expect(result).to be_a(Hash)
+      expect(result[:processed].length).to eq(1)
+      expect(result[:processed].first.resource).to eq("test_resource_no_key")
+      expect(result[:processed].first.key).to eq("")
     ensure
       file&.close
     end
@@ -128,11 +128,11 @@ RSpec.describe Medias::Service, as: :system, database: true do
 
       result = subject.upload(zip_file, resource: "ignored_for_zip", project_id: "mocked_project_id")
 
-      expect(result).to be_an(Array)
-      expect(result.length).to eq(2)
-      expect(result.map(&:filename)).to contain_exactly("photo1.jpg", "photo2.jpg")
-      expect(result.map(&:key).uniq).to eq([""])
-      expect(result.map(&:resource).uniq.length).to eq(2) # each image gets its own resource
+      expect(result).to be_a(Hash)
+      expect(result[:processed].length).to eq(2)
+      expect(result[:processed].map(&:filename)).to contain_exactly("photo1.jpg", "photo2.jpg")
+      expect(result[:processed].map(&:key).uniq).to eq([""])
+      expect(result[:processed].map(&:resource).uniq.length).to eq(2) # each image gets its own resource
     ensure
       FileUtils.rm_f(zip_path) if zip_path && File.exist?(zip_path)
     end
