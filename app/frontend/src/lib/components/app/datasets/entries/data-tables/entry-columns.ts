@@ -1,4 +1,4 @@
-import FilterByProjectMember from "@/components/app/datasource-table/filters/filter-by-project-member.svelte";
+import FilterByProjectMemberWithUnassigned from "@/components/app/datasets/entries/data-tables/filters/filter-by-project-member-with-unassigned.svelte";
 
 import { entryPriorities, entryStatuses, entryWorkflowSteps } from "@/data/model/dataset/entries/constants";
 
@@ -63,7 +63,7 @@ export const entryColumns: ColumnsSettings<EntryRecord> = {
     },
     visible: true,
     hidable: false,
-    filterComponent: FilterByProjectMember,
+    filterComponent: FilterByProjectMemberWithUnassigned,
   },
   wf_step: {
     label: "Stage",
