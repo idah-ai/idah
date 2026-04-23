@@ -91,7 +91,7 @@
           {isSelected}
         />
       {:else}
-        <UnassignedAvartar {isSelected} />
+        <UnassignedAvartar isSelected={isSelected || filters[filterKeyWithOperation] === null} />
       {/if}
     </CommandItem>
   {/snippet}
