@@ -1,6 +1,10 @@
 <script lang="ts">
   import { totalFrames } from "$lib/plugin/video-annotation-activity/store/store";
-  import { currentFrameRange, framePerScale } from "$lib/plugin/video-annotation-activity/timeline/store";
+  import {
+    currentFrameRange,
+    framePerScale,
+    TIMELINE_ROW_HEADER_WIDTH,
+  } from "$lib/plugin/video-annotation-activity/timeline/store";
   import { getFrameFromMouseX } from "$lib/plugin/video-annotation-activity/timeline/utils";
   import { cn } from "$lib/utils";
 
@@ -15,7 +19,12 @@
   let [startFrameIndexOfCurrentFrameRange, _] = $derived($currentFrameRange);
   let scaledFrame = $derived(getFrameFromMouseX({ clientX: positionX }));
   let isFrameInRangeOfTotalFrames = $derived(scaledFrame <= $totalFrames);
-  let scaledStartFrameIndexOfCurrentFrameRange = $derived(startFrameIndexOfCurrentFrameRange * $framePerScale);
+  let scaledStartFrameIndexOfCurrentFrameRange = $derived(
+    startFrameIndexOfCurrentFrameRange > 1
+      ? startFrameIndexOfCurrentFrameRange * $framePerScale
+      : startFrameIndexOfCurrentFrameRange * $framePerScale,
+  );
+  let visible = $derived(positionX > TIMELINE_ROW_HEADER_WIDTH);
 
   let colorClass = $derived.by(() => {
     switch (color) {
@@ -30,7 +39,7 @@
 </script>
 
 <!-- HIGHLIGHTED FRAME LABEL -->
-{#if isFrameInRangeOfTotalFrames}
+{#if isFrameInRangeOfTotalFrames && visible}
   <div
     class={cn(
       "pointer-events-none absolute top-[9px] z-50 min-w-6 -translate-x-1/2 rounded-md px-2 py-1 text-center text-xs font-medium",
