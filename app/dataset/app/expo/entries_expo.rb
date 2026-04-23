@@ -20,6 +20,7 @@ class EntriesExpo < BaseExpo
                       :assigned_to_id,
                       :assigned_to_id__eq,
                       :assigned_to_id__in,
+                      :unassigned,
                       :wf_step__in,
                       :participated
     end

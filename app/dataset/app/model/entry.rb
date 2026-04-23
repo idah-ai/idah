@@ -59,6 +59,10 @@ module Entry
       collection.where(Sequel.lit(where_fragment, account_id: value))
     end
 
+    custom_filter :unassigned do |collection, _|
+      collection.where(assigned_to_id: nil)
+    end
+
     def scoped(action)
       auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }
