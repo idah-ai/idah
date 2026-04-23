@@ -59,8 +59,12 @@ module Entry
       collection.where(Sequel.lit(where_fragment, account_id: value))
     end
 
-    custom_filter :unassigned do |collection, _|
-      collection.where(assigned_to_id: nil)
+    custom_filter :assigned do |collection, value|
+      if value
+        collection.where(assigned_to_id: :not_nil)
+      else
+        collection.where(assigned_to_id: nil)
+      end
     end
 
     def scoped(action)
