@@ -15,8 +15,6 @@ module AccountAuth
     field :role_name, type: String
     field :role_scope, type: Hash
 
-    field :auth_token, type: String
-
     field :role_rights, type: Array
 
     field :auth_token, type: String, visible: false

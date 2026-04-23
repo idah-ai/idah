@@ -103,6 +103,9 @@
     | [type: string, frame: number, _points: Point[], angle: number, selectedId?: string]
     | undefined = $state();
 
+  let imageResizedAt = $state(new Date());
+  let image_container: HTMLImageElement | undefined = $state();
+
   // Sync annotations to boundingBoxes whenever they change
   $effect(() => {
     if (annotationsIDB) {
@@ -291,6 +294,7 @@
     }
   });
 
+  // Functions
   async function addAnnotation(shape: AnnotationShape, value: AnnotationValue = {}) {
     if (!editable) return;
 
@@ -469,7 +473,7 @@
     if (isNoteMode) {
       return;
     } else {
-      selectAnnotation(undefined);
+      selectAnnotation($selectedAnnotationGroup.annotations[0]);
       setCurrentModeTo(DEFAULT_MODE);
     }
   }
@@ -594,12 +598,23 @@
               <ImageOverlay
                 bind:this={overlay}
                 {annotations_promise}
+                target_container={() => image_container}
                 frame={$currentFrame}
                 onSelectAnnotation={selectAnnotation}
                 onSelection={onShapeSelection}
                 onAddNewNote={showNewNotePopup}
-                src={context.mediaUrl}
-              ></ImageOverlay>
+                {imageResizedAt}
+              >
+                <img
+                  id="idah-image"
+                  bind:this={image_container}
+                  src={context.mediaUrl}
+                  alt=""
+                  onload={() => {
+                    imageResizedAt = new Date();
+                  }}
+                />
+              </ImageOverlay>
             </section>
           </ResizablePane>
 

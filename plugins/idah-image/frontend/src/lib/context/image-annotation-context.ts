@@ -16,6 +16,11 @@ export type InterpolatedVertex = {
   matched: boolean | null;
 };
 
+export interface ZoomInfo {
+  scale: number;
+  offset: Point;
+}
+
 export type ImageShapeType = ImageBoundingBox | ImagePolygon;
 export type ImageMode = DefaultMode | ImageShapeType;
 

@@ -14,6 +14,29 @@ namespace :dev do
       sync
     ].join(",")
     Rake::Task["service_accounts:create"].invoke
+
+    Rake::Task["api_key_service_account:create"].invoke
+
+    # admin account
+    default_password = "P@ssword01" # default admin password
+    admin_data = {
+      name: "Admin User",
+      email: "admin@idah.ai",
+      hashed_password: BCrypt::Password.create(default_password),
+      enabled: true,
+      joined_at: Time.now,
+      role_name: "admin"
+    }
+
+    account_repo = Account::Repository.new(Verse::Auth::Context[:system])
+    account = account_repo.find_by({ email: admin_data[:email] })
+    if account.nil?
+      account_repo.create(admin_data)
+      puts "Admin account is created with email: #{admin_data[:email]}, password = #{default_password}"
+    else
+      account_repo.update(account.id, admin_data)
+      puts "Admin account is updated with email: #{admin_data[:email]}, password = #{default_password}"
+    end
   end
 
   # create role users for development
