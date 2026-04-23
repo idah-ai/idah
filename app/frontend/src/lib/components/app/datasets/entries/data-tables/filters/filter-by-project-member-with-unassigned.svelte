@@ -39,10 +39,9 @@
 
   // Functions
   function handleFilter(value: string | number | null): void {
+    filters = value !== "null" ? { [filterKeyWithOperation]: value } : { ["assigned"]: false };
     onFilter({
-      filters: {
-        [filterKeyWithOperation]: value === "null" ? null : value,
-      },
+      filters,
     });
   }
 </script>
