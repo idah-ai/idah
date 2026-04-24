@@ -60,10 +60,12 @@ module Entry
     end
 
     custom_filter :assigned do |collection, value|
-      if value
-        collection.where(assigned_to_id: :not_nil)
+      assigned = value.to_s.downcase == "true"
+
+      if assigned
+        collection.where(Sequel.lit("assigned_to_id IS NOT NULL"))
       else
-        collection.where(assigned_to_id: nil)
+        collection.where(Sequel.lit("assigned_to_id IS NULL"))
       end
     end
 
