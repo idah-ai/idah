@@ -474,7 +474,7 @@
       return;
     } else {
       selectAnnotation($selectedAnnotationGroup.annotations[0]);
-      setCurrentModeTo(DEFAULT_MODE);
+      setCurrentModeTo($selectedAnnotationGroup.annotations[0].shape.type);
     }
   }
 </script>

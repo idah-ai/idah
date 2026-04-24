@@ -476,7 +476,7 @@
               ? Object.entries(context.config)
                   .find(([k, _]) => k == $currentMode)?.[1]
                   .values.find((c) => c.id == $selectedAnnotation?.value?.category)?.color || "grey"
-              : "gray"}
+              : "grey"}
             styles={propertyStyle}
             onChange={(bb, newAngle) => {
               onSelection(IMAGE_BOUNDING_BOX, frame, bb, newAngle, $selectedAnnotation?.metadata.id);
