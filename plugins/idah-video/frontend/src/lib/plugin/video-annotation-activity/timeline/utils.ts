@@ -5,9 +5,10 @@ import {
   currentFrameRange,
   framePerScale,
   setCurrentFrameRange,
+  setSelectedFrameX,
   TIMELINE_ROW_HEADER_WIDTH,
   timelineCellWidth,
-  timelineRulerWidth,
+  timelineRulerWidth
 } from "$lib/plugin/video-annotation-activity/timeline/store";
 
 import type { AnnotationGroup } from "$idah/context/annotation-context";
@@ -39,11 +40,11 @@ export function getMouseXFromFrame(props: { frame: number }) {
 
   const timelineCellWidthStore = get(timelineCellWidth);
   const framePerScaleStore = get(framePerScale);
-  const startOfCurrentFrameRange = get(currentFrameRange)[0];
-  const frameFloat = (frame - startOfCurrentFrameRange) / framePerScaleStore;
+  const [startFrameIndexOfCurrentFrameRange] = get(currentFrameRange);
 
-  const actualMouseX = Math.ceil(frameFloat * timelineCellWidthStore) + TIMELINE_ROW_HEADER_WIDTH;
-  const displayMouseX = Number(actualMouseX - timelineCellWidthStore) + 1;
+  const shiftedFrame = (frame - Number((startFrameIndexOfCurrentFrameRange - 1) * framePerScaleStore)) / framePerScaleStore;
+  const actualMouseX = (shiftedFrame * timelineCellWidthStore) + TIMELINE_ROW_HEADER_WIDTH;
+  const displayMouseX = Math.floor(actualMouseX - timelineCellWidthStore);
 
   return Math.max(displayMouseX, TIMELINE_ROW_HEADER_WIDTH);
 }
@@ -91,8 +92,14 @@ export function paginateCurrentFrameRange(props: { frameStep: number }) {
   if (currentFrameAfterPress <= startFrameIndexOfCurrentFrameRange && shiftLeft) {
     const newStart = Math.max(startFrameIndexOfCurrentFrameRange + frameStep, 0);
     const newEnd = Math.max(endFrameIndexOfCurrentFrameRange + frameStep, rulerScale);
-    console.log(newStart, newEnd);
 
     setCurrentFrameRange([newStart, newEnd]);
   }
 }
+
+export function recalculateSelectedFrameXFromCurrentFrame() {
+  const currentFrameStore = get(currentFrame);
+  const nexSelectedFrameX = getMouseXFromFrame({ frame: currentFrameStore});
+  setSelectedFrameX(nexSelectedFrameX);
+}
+  
