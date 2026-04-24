@@ -54,7 +54,9 @@
   });
 
   const acceptedFileTypes =
-    modality === "idah-video" ? [".mp4", ".mkv", ".3gp", ".avi", ".m4v", ".mov", ".webm"] : [".jpg", ".jpeg", ".png"];
+    modality === "idah-video"
+      ? [".mp4", ".mkv", ".3gp", ".avi", ".m4v", ".mov", ".webm", ".zip"]
+      : [".jpg", ".jpeg", ".png", ".zip"];
 
   // Functions
   function resetForm(): void {
@@ -94,7 +96,7 @@
       try {
         const createdMedias = await mediaBackendDataSource.upload(media, resourceKey, projectId, "", modality);
 
-        if (!("data" in createdMedia)) {
+        if (!("data" in createdMedias)) {
           throw new Error("Media upload failed");
         }
 
