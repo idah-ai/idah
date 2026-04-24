@@ -97,6 +97,10 @@ export function truncate(str: string, length: number = 20): string {
   return str.length > length ? str.slice(0, length) + "..." : str;
 }
 
+export function truncateFront(str: string, length: number = 20): string {
+  return str.length > length ? "..." + str.slice(-length) : str;
+}
+
 export function truncateEmail(email: string): string {
   /** Return truncate name and whole domain */
   const [name, domain] = email.split("@");

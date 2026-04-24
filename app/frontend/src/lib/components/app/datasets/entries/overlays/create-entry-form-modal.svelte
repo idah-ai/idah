@@ -9,13 +9,14 @@
   import Spinner from "@/components/ui/spinner/spinner.svelte";
   import Text from "@/components/ui/text/Text.svelte";
 
-  import EllipsisVerticalIcon from "@lucide/svelte/icons/ellipsis-vertical";
+  import ChevronRightIcon from "@lucide/svelte/icons/chevron-right";
 
   import { showToast } from "@/components/ui/toast/index.svelte";
   import { entriesBackendDataSource } from "@/data/model/dataset/entries/record";
   import { mediaBackendDataSource } from "@/data/model/media/medias/medias-record";
   import { showActionFailedToast } from "@/utils/error/error.toasts";
   import { refetches } from "@/utils/refetch";
+  import { truncateFront } from "@/utils/string";
 
   import type { FormModalBaseProps } from "@/components/app/overlays/modals/form-modal.types";
 
@@ -172,15 +173,19 @@
   {#if showUploadStatus}
     <div class="flex w-full flex-col gap-4">
       {#each uploadStatuses as { name, compressedName, status }, i (i)}
+        {@const displayName = truncateFront(name, 35)}
         <div class="flex w-full items-center gap-4">
-          {#if status === "archive"}
-            <Text size="sm"><strong>{name}</strong></Text>
-          {:else if compressedName !== null}
-            <EllipsisVerticalIcon class="text-muted-foreground size-4 shrink-0" />
-            <Text size="sm">{name}</Text>
-          {:else}
-            <Text size="sm">{name}</Text>
+          {#if compressedName !== null}
+            <ChevronRightIcon class="text-muted-foreground size-4 shrink-0" />
           {/if}
+
+          <Text size="sm">
+            {#if status === "archive"}
+              <strong>{displayName}</strong>
+            {:else}
+              {displayName}
+            {/if}
+          </Text>
           <div class="ml-auto">
             {#if status === "uploading"}
               <Spinner size="sm" />
