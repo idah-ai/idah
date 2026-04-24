@@ -36,13 +36,22 @@ module Exports
         scope.all? { table }
         scope.as_org_owner? {
           org_ids = auth_context.custom_scopes[:org]
+          project_id_scope = auth_context.custom_scopes[:project]
 
-          # Get project IDs for the organizations the user has access to.
-          # This ensures that org owners can access exports for projects within their organizations.
-          project_ids = Api[:idah].dataset.projects.index_all(
-            filter: { organization_id: org_ids },
-            fields: { "dataset:projects": ["id"] }
-          ).map(&:id)
+          project_ids = if org_ids
+                          # Get project IDs for the organizations the user has access to.
+                          # This ensures that org owners can access exports for projects within their organizations.
+                          Api[:idah].dataset.projects.index_all(
+                            filter: { organization_id: org_ids },
+                            fields: { "dataset:projects": ["id"] }
+                          ).map(&:id)
+                        elsif project_id_scope
+                          # If the user has a project scope, use that to filter projects.
+                          [project_id_scope].flatten
+                        else
+                          # If no specific scope is provided, return an empty set to prevent access.
+                          []
+                        end
 
           table.where(project_id: project_ids)
         }
