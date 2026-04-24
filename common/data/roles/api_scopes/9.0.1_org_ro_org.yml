@@ -1,0 +1,9 @@
+api/org_ro_org:
+  title: "API - Organization Read Only"
+  mask: "9.0.1"
+  description: |
+    Allow access to read organization resources.
+  assignable: false
+  rights:
+    # Organizations
+    - "iam:organizations.read.as_org_owner"

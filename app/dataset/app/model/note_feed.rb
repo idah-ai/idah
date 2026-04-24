@@ -47,16 +47,23 @@ module NoteFeed
       return table if action == :create
 
       org_ids = auth_context.custom_scopes[:org]
+      project_ids = auth_context.custom_scopes[:project]
       email = auth_context.metadata[:email]
 
       case action
       when :read
-        table.where(
-          table.db[:projects]
-            .where(organization_id: org_ids)
-            .where(id: Sequel[:note_feeds][:project_id])
-            .select(1).exists
-        )
+        if org_ids
+          table.where(
+            table.db[:projects]
+              .where(organization_id: org_ids)
+              .where(id: Sequel[:note_feeds][:project_id])
+              .select(1).exists
+          )
+        elsif project_ids
+          table.where(project_id: project_ids)
+        else
+          table.where(Sequel.lit("false"))
+        end
       when :update, :delete
         table.where(created_by_email: email)
       else

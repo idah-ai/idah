@@ -1,0 +1,27 @@
+api/project_rw_org:
+  title: "API - Project Read Write"
+  mask: "8.1.9"
+  description: |
+    Allow access to read and write project resources with scope.
+  assignable: false
+  rights:
+    # IAM
+    - "iam:accounts.create.as_org_owner"
+
+    # Dataset Service - Read Write (Project level)
+    - "dataset:projects.*.as_org_owner"
+    - "dataset:project_members.*.as_org_owner"
+    - "dataset:datasets.*.as_org_owner"
+    - "dataset:entries.*.as_org_owner"
+    - "dataset:annotations.*.as_org_owner"
+    - "dataset:note_feeds.read.as_org_owner"
+    - "dataset:note_comments.read.as_org_owner"
+
+    # Media Service - Read Write (Project level)
+    - "media:medias.*.as_org_owner"
+    - "media:jobs.read.as_org_owner"
+
+    # Sync Service - Read Write (Project level)
+    - "sync:jobs.read.as_org_owner"
+    - "sync:exports.create.as_org_owner"
+    - "sync:exports.read.as_org_owner"

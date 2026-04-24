@@ -1,0 +1,9 @@
+api/account_rw_all:
+  title: "API - Account Read Write"
+  mask: "1.9.9"
+  description: |
+    Allow access to  read and write account resources.
+  assignable: false
+  rights:
+    # Accounts
+    - "iam:accounts.*.*"
