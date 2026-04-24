@@ -90,9 +90,9 @@
         const fileExtension = getFileExtension(media.media.name);
         const resourceKey = `${media.uuid}${fileExtension}`;
 
-        const createdMedias = await mediaBackendDataSource.upload(media.media, resourceKey, projectId);
+        const createdMedia = await mediaBackendDataSource.upload(media.media, resourceKey, projectId);
 
-        if (!("data" in createdMedias)) {
+        if (!("data" in createdMedia)) {
           throw new Error("Media upload failed");
         }
 
@@ -111,11 +111,11 @@
                 },
               },
             },
-            {
-              showErrorToast: false,
-            },
-          );
-        }
+          },
+          {
+            showErrorToast: false,
+          },
+        );
 
         media.status = "success";
       } catch (error) {
