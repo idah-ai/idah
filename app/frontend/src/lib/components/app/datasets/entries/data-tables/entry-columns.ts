@@ -58,6 +58,7 @@ export const entryColumns: ColumnsSettings<EntryRecord> = {
     filterable: true,
     filterOptions: {
       filterKey: "assigned_to_id",
+      filterKeys: ["assigned_to_id", "assigned"],
       filterBy: "datasource",
       filterOperation: "eq",
     },

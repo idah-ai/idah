@@ -107,13 +107,16 @@
   // let isFiltering = $derived(Object.keys(filters).some((key) => key.startsWith(filterKey)));
   // let isSorting = $derived(sort.some((s) => s.endsWith(columnKey)));
   let hideFilterSortKeys = $derived(Array.from(new Set(disabledActiveStateFilterSortKeys ?? [])));
+
   let isFiltering = $derived.by(() => {
     const filterKeys = Array.from(new Set(Object.keys(filters)));
+    const filterOptionKeys = filterOptions?.filterKeys || [filterKey];
     const symmetricDifferenceFilterKeys = [
       ...filterKeys.filter((item) => !hideFilterSortKeys.includes(item)),
       ...hideFilterSortKeys.filter((item) => !filterKeys.includes(item)),
     ];
-    return symmetricDifferenceFilterKeys.some((key) => key.startsWith(filterKey));
+
+    return filterOptionKeys.some((filterKey) => symmetricDifferenceFilterKeys.some((key) => key.startsWith(filterKey)));
   });
 
   let isSorting = $derived.by(() => {
@@ -337,12 +340,15 @@
     const filterKeyLte = `${filterKey}__lte`;
     const filterKeyWithOperation = `${filterKey}__${filterOptions?.filterOperation || "in"}`;
 
+    const filterKeys = Object.fromEntries((filterOptions?.filterKeys ?? []).map((key) => [key, undefined]));
+
     onFilter({
       filters: {
         [filterKey]: undefined,
         [filterKeyGte]: undefined,
         [filterKeyLte]: undefined,
         [filterKeyWithOperation]: undefined,
+        ...filterKeys,
       },
     });
   }
