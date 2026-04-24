@@ -44,5 +44,20 @@ module Workflow
     def list
       @workflows
     end
+
+    def definitions
+      @workflows.map do |name, entries|
+        entry = entries.first
+        next unless entry
+
+        definition = entry.klass.definition
+
+        {
+          name: name,
+          plugin: entry.plugin,
+          definition: definition
+        }
+      end.compact
+    end
   end
 end
