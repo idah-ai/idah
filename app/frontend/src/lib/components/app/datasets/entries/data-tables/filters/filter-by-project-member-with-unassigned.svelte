@@ -30,6 +30,10 @@
   const filterOperation: DataTableColumnFilterOperation = columnSetting.filterOptions?.filterOperation || "eq";
   const filterKeyWithOperation: string = `${filterKey}__${filterOperation}`;
 
+  let filtersValue: string | number | null = $derived(
+    filters[filterKeyWithOperation] || (filters["assigned"] === false ? "null" : null),
+  );
+
   let additionalChoices: LabelValue<string | number>[] = [
     {
       label: "Unassigned",
@@ -40,6 +44,7 @@
   // Functions
   function handleFilter(value: string | number | null): void {
     filters = value !== "null" ? { [filterKeyWithOperation]: value } : { ["assigned"]: false };
+    filtersValue = value;
     onFilter({
       filters,
     });
@@ -58,7 +63,7 @@
   displayKey="email"
   searchable
   searchKeyWithOperation="email__match"
-  value={filters[filterKeyWithOperation] === null ? "null" : filters[filterKeyWithOperation]}
+  value={filtersValue}
   {additionalChoices}
   onSelected={handleFilter}
 >
@@ -68,12 +73,12 @@
     {:else if selectedChoice && selectedChoice.value === "null"}
       <UnassignedAvartar class="size-6" />
     {:else}
-      <span class="truncate">{selectedChoice?.label || filters[filterKeyWithOperation]}</span>
+      <span class="truncate">{selectedChoice?.label || filtersValue}</span>
     {/if}
   {/snippet}
 
   {#snippet slotChoice({ choice, select })}
-    {@const isSelected = filters[filterKeyWithOperation] === choice.value}
+    {@const isSelected = filtersValue === choice.value}
     <CommandItem
       class={cn("group cursor-pointer", {
         "bg-primary/10": isSelected,
@@ -90,7 +95,7 @@
           {isSelected}
         />
       {:else}
-        <UnassignedAvartar isSelected={isSelected || filters[filterKeyWithOperation] === null} />
+        <UnassignedAvartar isSelected={isSelected || filtersValue === "null"} />
       {/if}
     </CommandItem>
   {/snippet}
