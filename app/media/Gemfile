@@ -28,7 +28,6 @@ gem "sinatra-contrib"
 gem "bootsnap", "~> 1.16"
 
 gem "rmagick", "~> 6.0.1"
-gem "rubyzip", "~> 3.2"
 
 group :test, :development do
   gem "relaxed-rubocop"

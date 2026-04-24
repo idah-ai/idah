@@ -80,7 +80,7 @@ class MediasExpo < BaseExpo
         desc: "The modality of the media; optional"
       )
     end
-    output Verse::JsonApi::Util.jsonapi_collection(
+    output Verse::JsonApi::Util.jsonapi_record(
       Medias::Record
     )
   end

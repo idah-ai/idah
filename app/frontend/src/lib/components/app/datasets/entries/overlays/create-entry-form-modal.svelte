@@ -96,7 +96,7 @@
       try {
         const createdMedias = await mediaBackendDataSource.upload(media, resourceKey, projectId, "", modality);
 
-        if (!("data" in createdMedias)) {
+        if (!("data" in createdMedia)) {
           throw new Error("Media upload failed");
         }
 
