@@ -54,9 +54,7 @@
   });
 
   const acceptedFileTypes =
-    modality === "idah-video"
-      ? [".mp4", ".mkv", ".3gp", ".avi", ".m4v", ".mov", ".webm", ".zip"]
-      : [".jpg", ".jpeg", ".png", ".zip"];
+    modality === "idah-video" ? [".mp4", ".mkv", ".3gp", ".avi", ".m4v", ".mov", ".webm"] : [".jpg", ".jpeg", ".png"];
 
   // Functions
   function resetForm(): void {
