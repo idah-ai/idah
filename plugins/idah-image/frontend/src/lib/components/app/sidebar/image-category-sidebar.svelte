@@ -305,7 +305,7 @@
       </CollapsibleTrigger>
 
       <CollapsibleContent hidden={!openStates[category.id]}>
-        {#if !currentModeIsSameAsShape && db && category}
+        {#if db && category}
           {@const categoryAnnotations = db.annotationsByCategory(category.id)}
           {@const { groups: filteredAnnotationGroups } = groupFilteredAnnotations(categoryAnnotations)}
           {#each filteredAnnotationGroups as annotationGroup (annotationGroup.groupId)}

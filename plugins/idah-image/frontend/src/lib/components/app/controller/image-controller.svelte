@@ -170,6 +170,26 @@
   onMount(async () => {
     $boundingBoxes = [];
 
+    // Watch for image container resize events
+    let resizeObserver: ResizeObserver | undefined;
+    const checkAndObserve = () => {
+      if (image_container && !resizeObserver) {
+        resizeObserver = new ResizeObserver(() => {
+          imageResizedAt = new Date();
+        });
+        resizeObserver.observe(image_container);
+      }
+    };
+
+    // Check immediately and periodically until container is ready
+    checkAndObserve();
+    const intervalId = setInterval(checkAndObserve, 100);
+
+    // Cleanup after 2 seconds or when found
+    setTimeout(() => {
+      clearInterval(intervalId);
+    }, 1000);
+
     try {
       annotationsIDB = await annotationsIndexedDB(["idah-image", "entry", entryId].join(":"));
 
