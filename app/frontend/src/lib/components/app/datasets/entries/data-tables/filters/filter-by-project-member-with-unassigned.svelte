@@ -43,7 +43,16 @@
 
   // Functions
   function handleFilter(value: string | number | null): void {
-    filters = value !== "null" ? { [filterKeyWithOperation]: value } : { ["assigned"]: false };
+    switch (value) {
+      case "null":
+        delete filters[filterKeyWithOperation];
+        filters = { ...filters, assigned: false };
+        break;
+      default:
+        delete filters["assigned"];
+        filters = { ...filters, [filterKeyWithOperation]: value };
+    }
+
     filtersValue = value;
     onFilter({
       filters,
