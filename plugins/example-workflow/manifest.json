@@ -15,43 +15,7 @@
     {
       "name": "custom-annotation-workflow",
       "label": "Custom Annotation Workflow",
-      "description": "A custom annotation workflow with multiple states",
-      "steps": [
-        {
-          "name": "review",
-          "label": "Review",
-          "description": "Review the annotations",
-          "actions": [
-            {
-              "name": "approved",
-              "label": "Approve",
-              "icon": "SquareCheckIcon"
-            },
-            {
-              "name": "approved",
-              "label": "Request changes",
-              "icon": "SquareXIcon"
-            }
-          ]
-        },
-        {
-          "name": "final_check",
-          "label": "Final Check",
-          "description": "Final quality check before completion",
-          "actions": [
-            {
-              "name": "final_approved",
-              "label": "Final Approve",
-              "icon": "SquareCheckIcon"
-            },
-            {
-              "name": "final_approved",
-              "label": "Request changes",
-              "icon": "SquareXIcon"
-            }
-          ]
-        }
-      ]
+      "description": "A custom annotation workflow with multiple states"
     }
   ],
 

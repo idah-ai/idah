@@ -7,11 +7,11 @@ class PluginLifecycleContext
     @plugin_name = plugin_name.to_sym
   end
 
-  def register_workflow(name, class_name:)
+  def register_workflow(name, klass:)
     Workflow::Registry.register(
       @plugin_name,
       name,
-      class_name:
+      klass:
     )
   end
 

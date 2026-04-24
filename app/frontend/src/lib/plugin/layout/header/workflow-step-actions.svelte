@@ -17,7 +17,7 @@
 
   // Workflow step configuration from manifest
   interface WorkflowStepAction {
-    name: string;
+    key: string;
     label: string;
     icon?: string;
   }
@@ -48,10 +48,8 @@
 
   // Handle submit with action data
   async function handleActionSubmit(action: WorkflowStepAction, value: boolean) {
-    console.log("atooooooooo");
-
     const opts: Record<string, boolean> = {
-      [action.name]: value,
+      [action.key]: value,
     };
 
     await onSubmit(opts);

@@ -6,15 +6,15 @@ module Workflow
 
     @workflows = {}
 
-    Entry = Data.define(:plugin, :class_name)
+    Entry = Data.define(:plugin, :klass)
 
-    def register(plugin_name, workflow_name, class_name:)
+    def register(plugin_name, workflow_name, klass:)
       workflow_name = workflow_name.to_sym
       @workflows[workflow_name] ||= []
       @workflows[workflow_name] <<
         Entry.new(
           plugin: plugin_name.to_sym,
-          class_name:
+          klass: klass
         )
     end
 
@@ -30,18 +30,19 @@ module Workflow
     end
 
     def get(name)
-      return nil if name.nil?
+      # return default workflow if name is nil
+      return Workflow::SimpleReviewAnnotationWorkflow if name.nil? || name == "default"
 
       name = name.to_sym
       entries = @workflows[name]
-      return nil if entries.nil?
+      return Workflow::SimpleReviewAnnotationWorkflow if entries.nil?
 
       entry = entries.first
-      Object.const_get(entry.class_name)
+      entry.klass
     end
 
     def list
-      @workflows.keys
+      @workflows
     end
   end
 end

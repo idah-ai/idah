@@ -34,10 +34,6 @@ module Dataset
     def entry_workflow
       # Get workflow by workflow_name from the dataset
       # Falls back to default workflow if no workflow_name or workflow not found
-      if workflow_name.nil? || workflow_name == "default"
-        return Workflow::SimpleReviewAnnotationWorkflow
-      end
-
       Workflow::Registry.get(workflow_name)
     end
   end

@@ -5,44 +5,21 @@ module Workflow
     def list_workflows
       workflows = []
 
-      # Add workflows from plugins
-      PluginSystem.registry.plugins.each do |plugin_name, plugin|
-        next unless plugin.workflows
+      # Get all workflows from the registry
+      Registry.list.each do |workflow_name, entries|
+        # Get the first entry for this workflow
+        workflow_entry = entries&.first
+        next unless workflow_entry
 
-        plugin.workflows.each do |workflow|
-          workflow_data = {
-            name: workflow.name,
-            label: workflow.label,
-            description: workflow.description,
-            plugin: plugin_name,
-            default: false
-          }
+        workflow_data = {
+          name: workflow_name,
+          plugin: workflow_entry.plugin,
+          label: workflow_entry.klass.definition.label,
+          description: workflow_entry.klass.definition.description,
+          steps: workflow_entry.klass.definition.steps
+        }
 
-          if workflow.respond_to?(:steps) && workflow.steps
-            workflow_data[:steps] = workflow.steps.map do |step|
-              step_data = {
-                name: step.name,
-                label: step.label,
-                description: step.description
-              }
-
-              if step.respond_to?(:actions) && step.actions
-                step_data[:actions] = step.actions.map do |action|
-                  action_data = {
-                    name: action.name,
-                    label: action.label,
-                  }
-                  action_data[:icon] = action.icon if action.respond_to?(:icon) && action.icon
-                  action_data
-                end
-              end
-
-              step_data
-            end
-          end
-
-          workflows << workflow_data
-        end
+        workflows << workflow_data
       end
 
       { workflows: workflows }

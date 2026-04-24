@@ -6,7 +6,7 @@ module ExampleWorkflow
       # Register the custom workflow for this plugin
       context.register_workflow(
         "custom-annotation-workflow",
-        class_name: "ExampleWorkflow::Workflow::CustomAnnotationWorkflow"
+        klass: ExampleWorkflow::Workflow::CustomAnnotationWorkflow
       )
     end
   end

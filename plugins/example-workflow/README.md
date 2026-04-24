@@ -168,7 +168,6 @@ The registry manages all registered workflows:
 
 - `register(plugin_name, workflow_name, class_name:)` - Register a workflow
 - `get(name)` - Get workflow class by name
-- `get_or_default(name)` - Get workflow class by name or return default
 - `list()` - List all registered workflow names
 - `clear(plugin_name)` - Clear workflows registered by a plugin
 
@@ -179,7 +178,7 @@ To use this plugin:
 1. Place the plugin in the `plugins/` directory
 2. Configure the plugin path in your dataset service configuration
 3. Restart the dataset service
-4. Query available workflows: `GET /plugins/workflows`
+4. Query available workflows: `GET /dataset/workflows`
 5. Create a dataset with `workflow_name: "custom-annotation-workflow"`
 6. The custom workflow will be used for that dataset's entries
 
@@ -195,7 +194,7 @@ To use this plugin:
 5. Register your workflow in the `init` method using `context.register_workflow`
 6. Deploy the plugin to the plugins directory
 7. Restart the dataset service
-8. Workflows will be available via `GET /plugins/workflows`
+8. Workflows will be available via `GET /dataset/workflows`
 
 ## Key Points
 

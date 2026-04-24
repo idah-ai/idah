@@ -58,6 +58,10 @@ module ExampleWorkflow
         ["annotate", "review", "final_check"].include?(@entry.wf_step)
       end
 
+      def self.definition
+        CustomAnnotationDefinition
+      end
+
       private
 
       def on_submit
