@@ -210,22 +210,6 @@ export class AnnotationBackend {
   }
 
   /**
-   * Add a keyframe to an annotation
-   */
-  async addKeyFrame(annotation: ImageAnnotationObject, keyFrame: ImageFrameSelection): Promise<void> {
-    await this.db.addKeyFrame(annotation.metadata.id, keyFrame);
-    await this.reload();
-  }
-
-  /**
-   * Delete a keyframe from an annotation
-   */
-  async deleteKeyFrame(annotation: ImageAnnotationObject, frame: number): Promise<void> {
-    await this.db.deleteKeyFrame(annotation.metadata.id, frame);
-    await this.reload();
-  }
-
-  /**
    * Get all annotations in a group
    */
   async getGroupAnnotations(groupId: string): Promise<ImageAnnotationObject[]> {

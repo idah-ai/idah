@@ -1,4 +1,4 @@
-import type { ImageAnnotationObject, ImageFrameSelection } from "$lib/context/image-annotation-context";
+import type { ImageAnnotationObject } from "$lib/context/image-annotation-context";
 
 export const storeDefinition: StoresDefinition = {
   annotations: [
@@ -7,13 +7,10 @@ export const storeDefinition: StoresDefinition = {
     { index: "range", path: "shape.range", opts: { unique: false } },
     { index: "type", path: "shape.type", opts: { unique: false } },
     { index: "category", path: "value.category", opts: { unique: false } },
+    { index: "color", path: "value.color", opts: { unique: false } },
     { index: "created_at", path: "metadata.createdAt", opts: { unique: false } },
     { index: "updated_at", path: "metadata.updatedAt", opts: { unique: false } },
     { index: "groupIdIndex", path: "metadata.metadata.group_id", opts: { unique: false } },
-  ],
-  keyframes: [
-    { index: "frame", path: "frame", opts: { unique: false } },
-    { index: "annotation", path: "annotation", opts: { unique: false } },
   ],
 };
 
@@ -126,9 +123,8 @@ export class AnnotationsIndexedDB {
    * Put (upsert) an annotation
    */
   async putAnnotation(annotation: ImageAnnotationObject): Promise<void> {
-    const transaction = this.db.transaction(["annotations", "keyframes"], "readwrite");
+    const transaction = this.db.transaction(["annotations"], "readwrite");
     const astore = transaction.objectStore("annotations");
-    const kstore = transaction.objectStore("keyframes");
 
     astore.put(
       {
@@ -136,14 +132,11 @@ export class AnnotationsIndexedDB {
         value: {
           ...annotation.value,
           category: annotation.value.category || "null",
+          color: annotation.value.color || "var(--color-gray-500)",
         },
       },
       annotation.metadata.id,
     );
-
-    annotation.shape.frames?.forEach((k: ImageFrameSelection) => {
-      kstore.put({ annotation: annotation.metadata.id, ...k }, [annotation.metadata.id, k.frame]);
-    });
 
     return new Promise<void>((resolve, reject) => {
       transaction.oncomplete = () => resolve();
@@ -155,9 +148,8 @@ export class AnnotationsIndexedDB {
    * Put (upsert) multiple annotations
    */
   async putAnnotations(annotations: ImageAnnotationObject[]): Promise<void> {
-    const transaction = this.db.transaction(["annotations", "keyframes"], "readwrite");
+    const transaction = this.db.transaction(["annotations"], "readwrite");
     const astore = transaction.objectStore("annotations");
-    const kstore = transaction.objectStore("keyframes");
 
     annotations.forEach((annotation) => {
       console.debug({ IDBtype: "put", annotation });
@@ -167,14 +159,11 @@ export class AnnotationsIndexedDB {
           value: {
             ...annotation.value,
             category: annotation.value.category || "null",
+            color: annotation.value.color || "var(--color-gray-500)",
           },
         },
         annotation.metadata.id,
       );
-
-      annotation.shape.frames?.forEach((k: ImageFrameSelection) => {
-        kstore.put({ annotation: annotation.metadata.id, ...k }, [annotation.metadata.id, k.frame]);
-      });
     });
 
     return new Promise<void>((resolve, reject) => {
@@ -188,71 +177,12 @@ export class AnnotationsIndexedDB {
    */
   async deleteAnnotation(annotation_id: string): Promise<void> {
     return new Promise<void>((resolve, reject) => {
-      const ktransaction = this.db.transaction("keyframes", "readwrite");
-      const kstore = ktransaction.objectStore("keyframes");
-      const range = IDBKeyRange.bound([annotation_id, 0], [annotation_id + " ", 0]);
-      const request = kstore.delete(range);
+      const atransaction = this.db.transaction("annotations", "readwrite");
+      const astore = atransaction.objectStore("annotations");
+      const deleteRequest = astore.delete(annotation_id);
 
-      request.onsuccess = (_) => {
-        const atransaction = this.db.transaction("annotations", "readwrite");
-        const astore = atransaction.objectStore("annotations");
-        const deleteRequest = astore.delete(annotation_id);
-
-        deleteRequest.onsuccess = () => resolve();
-        deleteRequest.onerror = () => reject(deleteRequest.error);
-      };
-      request.onerror = (_) => reject(request.error);
-    });
-  }
-
-  /**
-   * Add a keyframe to an annotation
-   */
-  async addKeyFrame(annotation_id: string, keyFrame: ImageFrameSelection): Promise<void> {
-    const transaction = this.db.transaction(["annotations", "keyframes"], "readwrite");
-    const kstore = transaction.objectStore("keyframes");
-    const astore = transaction.objectStore("annotations");
-
-    kstore.put({ annotation: annotation_id, ...keyFrame }, [annotation_id, keyFrame.frame]);
-
-    return new Promise<void>((resolve, reject) => {
-      transaction.oncomplete = async () => {
-        // Fetch and update the annotation with all keyframes
-        const annotation = (await this.get("annotations", annotation_id)) as ImageAnnotationObject;
-        const keyframes = await this.getKeyFrames(annotation_id);
-        annotation.shape.frames = keyframes;
-        await astore.put(annotation, annotation_id);
-        resolve();
-      };
-      transaction.onerror = (e) => reject(e);
-    });
-  }
-
-  /**
-   * Delete a keyframe from an annotation
-   */
-  async deleteKeyFrame(annotation_id: string, frame: number): Promise<void> {
-    const transaction = this.db.transaction("keyframes", "readwrite");
-    const store = transaction.objectStore("keyframes");
-    const request = store.delete([annotation_id, frame]);
-
-    return new Promise<void>((resolve, reject) => {
-      request.onsuccess = () => resolve();
-      request.onerror = (r) => reject(r);
-    });
-  }
-
-  /**
-   * Get all keyframes for an annotation
-   */
-  async getKeyFrames(annotation_id: string): Promise<ImageFrameSelection[]> {
-    return new Promise<ImageFrameSelection[]>((resolve, reject) => {
-      const transaction = this.db.transaction("keyframes", "readonly");
-      const index = transaction.objectStore("keyframes").index("annotation");
-      const request = index.getAll(IDBKeyRange.only(annotation_id));
-
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
+      deleteRequest.onsuccess = () => resolve();
+      deleteRequest.onerror = () => reject(deleteRequest.error);
     });
   }
 
