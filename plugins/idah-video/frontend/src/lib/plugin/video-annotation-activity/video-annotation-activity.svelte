@@ -52,11 +52,11 @@
     setTotalFrames,
     setVideoIsPlaying,
   } from "$lib/plugin/video-annotation-activity/store/store";
+  import { uiStore } from "$lib/plugin/video-annotation-activity/store/ui-store.svelte";
   import {
     findClosestAnnotationInGroup,
     groupAnnotations,
   } from "$lib/plugin/video-annotation-activity/utils/group-annotation.svelte";
-  import { uiStore } from "$lib/plugin/video-annotation-activity/store/ui-store.svelte";
 
   import AnnotationFooterToolbar from "$lib/plugin/layout/footer/annotation-footer-toolbar.svelte";
   import AnnotationFooter from "$lib/plugin/layout/footer/annotation-footer.svelte";
@@ -346,7 +346,7 @@
         // scroll to bottom most
         scrollContainer.scrollTo({
           top: scrollContainer.scrollHeight,
-          behavior: "smooth",
+          behavior: "instant",
         });
       }, 100);
     }
@@ -812,7 +812,7 @@
           <AnnotationFooterToolbar>
             <VideoController {zoom} {volume} bind:video={player} />
 
-            <TimelineController onSeekFrame={seekToFrame} />
+            <TimelineController />
           </AnnotationFooterToolbar>
 
           {#if annotationsIDB}

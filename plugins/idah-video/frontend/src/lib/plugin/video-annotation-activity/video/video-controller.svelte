@@ -97,11 +97,17 @@
     const [startFrameIndexOfCurrentFrameRange, endFrameIndexOfCurrentFrameRange] = $currentFrameRange;
     const rulerScale = Math.floor($timelineRulerWidth / $timelineCellWidth);
     const halfOfRulerScale = Math.floor(rulerScale / 2) * $framePerScale;
+    const newStart = Math.max((Number(value) - halfOfRulerScale) / $framePerScale, 0);
+    const newEnd = Math.max((Number(value) + halfOfRulerScale) / $framePerScale, rulerScale);
 
-    if (Number(value) >= endFrameIndexOfCurrentFrameRange || Number(value) <= startFrameIndexOfCurrentFrameRange) {
-      const newStart = Math.max((Number(value) - halfOfRulerScale) / $framePerScale, 0);
-      const newEnd = Math.max((Number(value) + halfOfRulerScale) / $framePerScale, rulerScale);
-      setCurrentFrameRange([newStart, newEnd]);
+    if (newEnd * $framePerScale > $totalFrames) {
+      /** Note:: if new end is greater than total frames, set new end to total frames */
+      setCurrentFrameRange([Number(value) / $framePerScale - rulerScale, Number(value) / $framePerScale]);
+    } else {
+      if (Number(value) >= endFrameIndexOfCurrentFrameRange || Number(value) <= startFrameIndexOfCurrentFrameRange) {
+        /** Note:: if new end is greater than total frames, set new end to total frames */
+        setCurrentFrameRange([newStart, newEnd]);
+      }
     }
 
     video.seekToFrame(Number(value));
