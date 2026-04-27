@@ -153,7 +153,7 @@ export const activityContextExample: IActivityContext = {
     };
   },
   get mediaUrl() {
-    return "http://localhost:5173/segments/master.m3u8";
+    return "http://localhost:5173/medias/video.mp4";
   },
 
   mediaInfo(key?: string): Promise<IMedia> {
@@ -165,8 +165,8 @@ export const activityContextExample: IActivityContext = {
       mime_type: "video/mp4",
       filename: "video.mp4",
       meta: {
-        duration: 183.126,
-        fps: 23.976023976023978,
+        duration: 37.375000,
+        fps: 24,
       },
       created_by: 1,
       created_at: new Date(),
