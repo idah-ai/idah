@@ -50,8 +50,10 @@
 
     onSeekFrame: (frame: number) => void;
     onSelectAnnotationGroup: (annotationGroup: AnnotationGroup<VideoAnnotationObject>, selectedFrame?: number) => void;
+    selectClosestAnnotation: (annotationGroup: AnnotationGroup<VideoAnnotationObject>, frame: number) => void;
   }
-  let { annotations, annotationFooterHeight, onSeekFrame, onSelectAnnotationGroup }: Props = $props();
+  let { annotations, annotationFooterHeight, onSeekFrame, onSelectAnnotationGroup, selectClosestAnnotation }: Props =
+    $props();
 
   // Context
   let context: IActivityContext = getContext("context");
@@ -239,6 +241,12 @@
         context.commands.run("annotation.delete", {
           annotationId: closestAnnotation.metadata.id,
         });
+
+        selectAnnotationGroup.annotations = selectAnnotationGroup.annotations.filter(
+          (annotation) => annotation.metadata.id !== closestAnnotation.metadata.id,
+        );
+
+        selectClosestAnnotation(selectAnnotationGroup, displayScaledFrame);
         closeContextMenu();
       },
     };
