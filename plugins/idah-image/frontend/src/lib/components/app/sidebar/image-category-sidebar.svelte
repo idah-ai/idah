@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ChevronRightIcon, CircleSmallIcon, PlusIcon } from "lucide-svelte";
 
-  import { currentFrame, currentMode } from "$lib/plugin/store/store";
+  import { currentFrame, currentMode, selectedAnnotation, selectedAnnotationGroup } from "$lib/plugin/store/store";
   import { IMAGE_BOUNDING_BOX, IMAGE_POLYGON } from "$lib/plugin/types";
   import { cn } from "$lib/utils";
   import { groupAnnotations } from "$lib/utils/group-annotation.svelte";
@@ -49,6 +49,9 @@
   // Variables
   let openCategory = $state(true);
   let currentModeIsSameAsShape = $derived($currentMode == modalityShape);
+  $effect(() => {
+    console.log($selectedAnnotation, $selectedAnnotationGroup);
+  });
 
   // Automatically expand all categories when categories prop changes, but allow manual toggles
   let manualToggleStates = $state<Record<string, boolean>>({});
@@ -65,6 +68,14 @@
 
       return acc;
     }, {});
+
+    // If there's a selected annotation, expand its category path
+    if ($selectedAnnotation) {
+      const categoryId = $selectedAnnotation.value.category;
+      if (categoryId) {
+        autoExpanded[categoryId] = true;
+      }
+    }
 
     // Merge with manual toggles (manual toggles take precedence)
     return { ...autoExpanded, ...manualToggleStates };
