@@ -2,6 +2,7 @@
   import SingleSelectDatasourceField from "@/components/app/forms/fields/select/single/single-select-datasource-field.svelte";
   import AccountAvatar from "@/components/app/iam/accounts/avatars/account-avatar.svelte";
   import { CommandItem } from "@/components/ui/command";
+  import UnassignedAvartar from "@/components/app/datasets/entries/data-tables/filters/unassigned-avartar.svelte";
 
   import { ProjectMemberRecord, projectMembersBackendDataSource } from "@/data/model/dataset/projects/members/record";
   import { Record } from "@/data/model/Record";
@@ -12,7 +13,6 @@
     DataTableFilterBaseProps,
   } from "@/components/app/datasource-table/types";
   import type { LabelValue } from "@/utils/types";
-  import UnassignedAvartar from "./unassigned-avartar.svelte";
 
   // Props
   let { columnSetting, contexts, filters, onFilter }: DataTableFilterBaseProps<T> = $props();
