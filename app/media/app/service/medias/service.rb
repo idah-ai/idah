@@ -44,33 +44,30 @@ module Medias
       skipped = []
 
       if zip_file?(file)
-        Zip::File.open(file.tempfile.path) do |zip|
+        Zip::File.open_buffer(file.tempfile) do |zip|
           zip.each do |zip_entry|
-            next if system_artifact?(zip_entry)
+            next if system_artifact?(zip_entry) # skip unrelated artifacts in compressed
 
             ext = File.extname(zip_entry.name).downcase
-            new_resource = "#{SecureRandom.hex(8)}#{ext}"
 
-            Tempfile.create(["zip_extract", ext], binmode: true) do |tmp|
-              zip_entry.get_input_stream { |stream| IO.copy_stream(stream, tmp) }
-              tmp.rewind
+            entry_io = StreamWithPath.new(
+              zip_entry.get_input_stream,
+              File.basename(zip_entry.name)
+            )
 
-              # identify a mime_type from extension, as this file is extracted
-              mime_type = Rack::Mime.mime_type(ext, "application/octet-stream")
-
-              extracted_file = Verse::Http::UploadedFileStruct.new(
-                {
-                  filename: File.basename(zip_entry.name),
-                  type: mime_type,
-                  tempfile: tmp,
-                }
-              )
-
-              if (res = store_media(file: extracted_file, resource: new_resource, key:, project_id:, modality:))
-                results << res
-              else
-                skipped << zip_entry.name
-              end
+            if (res = store_media(
+              io: entry_io, # Stream directly from zip entry to storage - no tempfiles
+              filename: File.basename(zip_entry.name),
+              size: zip_entry.size,
+              mime_type: Rack::Mime.mime_type(ext, "application/octet-stream"),
+              resource: "#{SecureRandom.hex(8)}#{ext}",
+              key:,
+              project_id:,
+              modality:
+            ))
+              results << res
+            else
+              skipped << zip_entry.name
             end
           end
         end
@@ -81,7 +78,15 @@ module Medias
                 "Resource #{resource} with key #{key} already exists"
         end
 
-        if (res = store_media(file:, resource:, key:, project_id:, modality:))
+        if (res = store_media(
+          io: file.tempfile,
+          filename: file.filename,
+          mime_type: file.type,
+          resource:,
+          key:,
+          project_id:,
+          modality:
+        ))
           results << res
         else
           skipped << file.filename
@@ -115,32 +120,46 @@ module Medias
       SYSTEM_ARTIFACT_PATHS.any? { |pattern| entry.name.include?(pattern) }
     end
 
-    def store_media(file:, resource:, key:, project_id:, modality: nil)
+    def store_media(io:, filename:, mime_type:, resource:, key:, project_id:, size: nil, modality: nil)
       # Check if the modality allows this mime type BEFORE uploading
       if modality &&
          (allowed = Processor::Registry.allowed_mime_types(modality)) &&
-         allowed.none? { |pattern| file.type =~ Regexp.new(pattern) }
+         allowed.none? { |pattern| mime_type =~ Regexp.new(pattern) }
         return nil
       end
 
       Verse::Plugin[:shrine].with_storage do |storage|
-        # Upload the file to the storage ONLY AFTER passing validation:
-        output = storage.upload(file.tempfile)
+        output = storage.upload(io)
 
         medias.create(
           {
             id: output.id,
             resource:,
-            filename: file.filename || resource,
+            filename: filename || resource,
             key:,
-            size: output.size,
-            mime_type: file.type,
+            size: size || output.size,
+            mime_type:,
             created_by: auth_context.metadata[:id],
             created_role: auth_context.metadata[:role]&.to_s,
             project_id:
           }
         )
         medias.find!(output.id)
+      end
+    end
+  end
+
+  # Wrapper to provide path metadata for streams (Shrine needs this to determine file extension)
+  StreamWithPath = Struct.new(:io, :path) do
+    def respond_to_missing?(method, include_all = false)
+      io.respond_to?(method, include_all) || super
+    end
+
+    def method_missing(method, *args, &block)
+      if io.respond_to?(method)
+        io.send(method, *args, &block)
+      else
+        super
       end
     end
   end
