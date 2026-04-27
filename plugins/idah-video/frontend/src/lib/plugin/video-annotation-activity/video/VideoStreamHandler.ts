@@ -227,13 +227,19 @@ export class VideoStreamHandler {
 
     // Save current time
     const currentTime = this.videoElement.currentTime;
-    console.log(`Rendering quality frame at time: ${currentTime}s (level: ${level})`);
+    const currentLevel = this.hls.currentLevel;
+    console.log(`Rendering quality frame at time: ${currentTime}s (level: ${level}, current: ${currentLevel})`);
 
     // Get the quality level info
     const qualityInfo = this.getQualityInfo(level);
 
-    // Notify that loading has started
-    this.onLoadingChange(true, qualityInfo);
+    // Check if we're already at the target quality level
+    const shouldShowLoader = currentLevel !== level;
+
+    // Only notify loading if quality is actually changing
+    if (shouldShowLoader) {
+      this.onLoadingChange(true, qualityInfo);
+    }
 
     // Force HLS to reload from current position with specified quality
     this.hls.startLoad(currentTime);
@@ -264,8 +270,10 @@ export class VideoStreamHandler {
 
             console.log(`Quality level ${level} frame rendered after 2 fragments`);
 
-            // Hide loader immediately
-            this.onLoadingChange(false);
+            // Hide loader only if we showed it
+            if (shouldShowLoader) {
+              this.onLoadingChange(false);
+            }
           }, 50);
         }
       }

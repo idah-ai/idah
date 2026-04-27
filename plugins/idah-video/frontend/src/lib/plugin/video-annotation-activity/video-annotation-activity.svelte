@@ -823,6 +823,7 @@
               {annotationFooterHeight}
               onSeekFrame={seekToFrame}
               onSelectAnnotationGroup={selectAnnotationGroup}
+              {selectClosestAnnotation}
             />
           {/if}
         </AnnotationFooter>
