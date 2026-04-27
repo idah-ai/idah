@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ChevronRightIcon, CircleSmallIcon, PlusIcon } from "lucide-svelte";
 
-  import { currentFrame, currentMode, selectedAnnotation } from "$lib/plugin/store/store";
+  import { currentFrame, currentMode } from "$lib/plugin/store/store";
   import { IMAGE_BOUNDING_BOX, IMAGE_POLYGON } from "$lib/plugin/types";
   import { cn } from "$lib/utils";
   import { groupAnnotations } from "$lib/utils/group-annotation.svelte";
@@ -224,7 +224,7 @@
               size="icon-sm"
               disabled={currentModeIsSameAsShape}
               class={cn("p-0", {
-                "opacity-0": !showChevronRightIcon || $selectedAnnotation?.metadata.id,
+                "opacity-0": !showChevronRightIcon,
               })}
               onclick={(e) => {
                 e.stopPropagation();

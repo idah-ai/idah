@@ -11,8 +11,8 @@
   import PolygonCircleIcon from "$lib/plugin/icon/polygon-circle-icon.svelte";
   import VectorSquareIcon from "$lib/plugin/icon/vector-square-icon.svelte";
 
-  import { selectedAnnotationGroup } from "$lib/plugin/store/store";
-  import { IMAGE_BOUNDING_BOX } from "$lib/plugin/types";
+  import { selectedAnnotationGroup, setCurrentModeTo } from "$lib/plugin/store/store";
+  import { IMAGE_BOUNDING_BOX, IMAGE_VISUAL } from "$lib/plugin/types";
 
   import type { AnnotationGroup } from "$lib/context/annotation-context";
   import type { CategoryDefinition } from "$lib/context/category-context";
@@ -55,6 +55,7 @@
 
   function deleteAnnotationGroup() {
     context.commands.run("annotation.deleteGroup", { groupId });
+    setCurrentModeTo(IMAGE_VISUAL);
   }
 </script>
 

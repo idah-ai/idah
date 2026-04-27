@@ -280,7 +280,6 @@
         - We only allow to edit the properties
         - We only allow to edit the categories at group level
       -->
-{:else if $selectedAnnotationGroup && !annotationId}
   {@render ReSelectCategory()}
 {:else}
   {@render SelectCategory()}

@@ -78,7 +78,7 @@
   // Functions
   function categorySelection(shape_type: string, category?: string) {
     if (category) {
-      if (shape_type != $currentMode) onSelectAnnotation();
+      onSelectAnnotation();
       onEditValue({ category }, shape_type);
     }
   }
