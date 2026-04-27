@@ -1,7 +1,7 @@
 <script lang="ts">
   import "./plugin.css";
 
-  import ImageController from "$lib/components/app/controller/image-controller.svelte";
+  import ImageAnnotationActivity from "$lib/plugin/image-annotation-activity/image-annotation-activity.svelte";
 
   import type { IActivityContext } from "$lib/context/context";
 
@@ -13,5 +13,5 @@
 </script>
 
 <div class="relative flex h-full w-full flex-col">
-  <ImageController {context} />
+  <ImageAnnotationActivity {context} />
 </div>
