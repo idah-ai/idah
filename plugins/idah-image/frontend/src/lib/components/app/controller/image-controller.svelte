@@ -382,6 +382,13 @@
       groupId: $selectedAnnotationGroup.groupId,
       categoryIdToBeUpdate: reselectedCategoryId,
     });
+
+    context.commands.run("annotation.update", {
+      annotation: $selectedAnnotationGroup.annotations[0],
+      value: {
+        category: reselectedCategoryId,
+      },
+    });
   }
 
   function onShapeSelection(
@@ -624,6 +631,7 @@
                 onSelection={onShapeSelection}
                 onAddNewNote={showNewNotePopup}
                 {imageResizedAt}
+                {annotationValue}
               >
                 <img
                   id="idah-image"

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { getContext } from "svelte";
 
-  import { visibilityFullfilled } from "$lib/components/app/sidebar/properties/property.utils";
+  import { visibilityFullfilled } from "$lib/components/app/sidebar/properties/properties.index";
   import Label from "$lib/components/ui/label/label.svelte";
   import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger } from "$lib/components/ui/select";
   import Separator from "$lib/components/ui/separator/separator.svelte";
@@ -291,15 +291,6 @@
     <section class="flex flex-col gap-2">
       <div class="flex flex-row items-center gap-2">
         <Label class="text-sm font-semibold">Properties</Label>
-
-        <!-- Frame range -->
-        {#if firstAnnotationInGroup}
-          <Label class="text-muted-foreground text-xs">
-            ( Frame :
-            {firstAnnotationInGroup.shape.start} - {firstAnnotationInGroup.shape.end}
-            )
-          </Label>
-        {/if}
       </div>
 
       {#each properties as property, index (`${property.id}-${index}`)}

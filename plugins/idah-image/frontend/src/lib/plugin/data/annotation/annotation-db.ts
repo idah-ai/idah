@@ -173,7 +173,7 @@ export class AnnotationsIndexedDB {
   }
 
   /**
-   * Delete an annotation and its keyframes
+   * Delete an annotation and
    */
   async deleteAnnotation(annotation_id: string): Promise<void> {
     return new Promise<void>((resolve, reject) => {
@@ -183,6 +183,35 @@ export class AnnotationsIndexedDB {
 
       deleteRequest.onsuccess = () => resolve();
       deleteRequest.onerror = () => reject(deleteRequest.error);
+    });
+  }
+
+  /**
+   * Add a keyframe to an annotation
+   */
+  async addKeyFrame(annotation_id: string, keyFrame: VideoFrameSelection): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      // Now start the transaction and perform all operations synchronously
+      const transaction = this.db.transaction(["keyframes"], "readwrite");
+      const kstore = transaction.objectStore("keyframes");
+      const request = kstore.put({ annotation: annotation_id, ...keyFrame }, [annotation_id, keyFrame.frame]);
+
+      request.onsuccess = () => resolve();
+      request.onerror = (e) => reject(e);
+    });
+  }
+
+  /**
+   * Delete a keyframe from an annotation
+   */
+  async deleteKeyFrame(annotation_id: string, frame: number): Promise<void> {
+    const transaction = this.db.transaction("keyframes", "readwrite");
+    const store = transaction.objectStore("keyframes");
+    const request = store.delete([annotation_id, frame]);
+
+    return new Promise<void>((resolve, reject) => {
+      request.onsuccess = () => resolve();
+      request.onerror = (e) => reject(e);
     });
   }
 
