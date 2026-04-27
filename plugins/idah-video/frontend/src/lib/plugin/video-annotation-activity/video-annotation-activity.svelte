@@ -750,7 +750,7 @@
               {annotationValue}
               {onEditValue}
               onSelectAnnotation={selectAnnotation}
-              onSelectAnnotationGroup={selectAnnotationGroup}
+              onSelectAnnotationGroup={(annotationGroup) => selectClosestAnnotation(annotationGroup, $currentFrame)}
               onDeleteAnnotation={deleteAnnotation}
               {context}
             />
