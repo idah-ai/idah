@@ -94,7 +94,6 @@
 
   let { id: entryId, mediaUrl, workflowStep } = $derived(context);
   let mediaInfo: IMedia | undefined = $state(undefined);
-  let mediaMasterInfo: IMedia | undefined = $state(undefined);
   let editable = $derived<boolean>(editableWorkflowSteps.includes(workflowStep));
   let notable = $derived<boolean>(notableWorkflowSteps.includes(workflowStep));
   let isNoteMode = $derived($currentMode === IDAH_NOTE);
@@ -183,7 +182,6 @@
 
   onMount(async () => {
     mediaInfo = await context.mediaInfo();
-    mediaMasterInfo = await context.mediaInfo("master.m3u8");
 
     setTotalFrames(Math.round((mediaInfo.meta.duration as number) * (mediaInfo.meta.fps as number)));
     // setAnnotationFrame(1);
@@ -763,7 +761,7 @@
 
           <ResizablePane defaultSize={75}>
             <section id="video-section" class="flex h-full w-full flex-1">
-              {#if mediaInfo && mediaMasterInfo}
+              {#if mediaInfo}
                 <SvgOverlay
                   bind:this={overlay}
                   {annotations_promise}

@@ -21,6 +21,8 @@ export class VideoStreamHandler {
   private initialFragmentCount: number;
   private maxQualityLevel: number;
   private onLoadingChange: (loading: boolean, qualityInfo?: QualityInfo) => void;
+  private currentLoadingLevel: number;
+  private isLoadingQuality: boolean;
 
   constructor(
     videoElement: HTMLVideoElement,
@@ -38,6 +40,8 @@ export class VideoStreamHandler {
     this.initialFragmentCount = options.initialFragmentCount || 1;
     this.maxQualityLevel = -1; // Will be set after manifest is parsed
     this.onLoadingChange = options.onLoadingChange || (() => {}); // Callback for loading state
+    this.currentLoadingLevel = -1; // Track the level being loaded
+    this.isLoadingQuality = false; // Track if we're in a quality loading state
 
     this.init();
   }
@@ -82,12 +86,37 @@ export class VideoStreamHandler {
       }
     });
 
+    // Track level switching - show loading when quality changes
+    this.hls.on(Hls.Events.LEVEL_SWITCHING, (event, data) => {
+      const newLevel = data.level;
+      console.log(`Level switching to: ${newLevel}`);
+
+      // Only show loading if we're not in initial load and quality is actually changing
+      if (!this.isInitialLoad && this.currentLoadingLevel !== newLevel) {
+        this.currentLoadingLevel = newLevel;
+        this.isLoadingQuality = true;
+
+        const qualityInfo = this.getQualityInfo(newLevel);
+        this.onLoadingChange(true, qualityInfo);
+        console.log(`Showing loading state for quality level: ${newLevel}`);
+      }
+    });
+
     // Track fragment loading
     this.hls.on(Hls.Events.FRAG_LOADED, (event, data) => {
       this.fragmentsLoaded++;
+      const fragmentLevel = data.frag.level;
+
       console.log(
-        `Fragment ${this.fragmentsLoaded} loaded (segment #${data.frag.sn}, level: ${data.frag.level})`
+        `Fragment ${this.fragmentsLoaded} loaded (segment #${data.frag.sn}, level: ${fragmentLevel})`
       );
+
+      // Hide loading state when the new quality fragment is loaded
+      if (this.isLoadingQuality && this.currentLoadingLevel === fragmentLevel) {
+        console.log(`First fragment of new quality level ${fragmentLevel} loaded, hiding loader`);
+        this.isLoadingQuality = false;
+        this.onLoadingChange(false);
+      }
 
       // Stop after initial fragments during initial load
       if (this.isInitialLoad && this.fragmentsLoaded >= this.initialFragmentCount) {
@@ -127,6 +156,14 @@ export class VideoStreamHandler {
 
       // Switch to highest quality level
       if (this.maxQualityLevel >= 0 && this.hls) {
+        const currentLevel = this.hls.currentLevel;
+
+        // Check if we're already at the best quality
+        if (currentLevel === this.maxQualityLevel) {
+          console.log(`Already at max quality level (${this.maxQualityLevel}), skipping reload`);
+          return;
+        }
+
         console.log(`Switching to max quality level: ${this.maxQualityLevel}`);
         this.hls.currentLevel = this.maxQualityLevel;
 
@@ -176,12 +213,28 @@ export class VideoStreamHandler {
     return false;
   }
 
-  private getQualityInfo(): QualityInfo | undefined {
+  private getQualityInfo(levelIndex?: number): QualityInfo | undefined {
     if (!this.hls || this.maxQualityLevel < 0) {
       return undefined;
     }
 
-    const level = this.hls.levels[this.maxQualityLevel];
+    // Use provided level index or default to max quality
+    const targetLevel = levelIndex !== undefined ? levelIndex : this.maxQualityLevel;
+
+    // Handle adaptive quality (-1)
+    if (targetLevel === -1) {
+      return {
+        height: 0,
+        width: 0,
+        label: "Auto",
+      };
+    }
+
+    if (targetLevel < 0 || targetLevel >= this.hls.levels.length) {
+      return undefined;
+    }
+
+    const level = this.hls.levels[targetLevel];
     return {
       height: level.height,
       width: level.width,
@@ -189,25 +242,26 @@ export class VideoStreamHandler {
     };
   }
 
-  private renderHighQualityFrame(): void {
+
+  private renderQualityFrame(level: number): void {
     if (!this.hls) return;
 
     // Save current time
     const currentTime = this.videoElement.currentTime;
-    console.log(`Rendering high quality frame at time: ${currentTime}s`);
+    console.log(`Rendering quality frame at time: ${currentTime}s (level: ${level})`);
 
     // Get the quality level info
-    const qualityInfo = this.getQualityInfo();
+    const qualityInfo = this.getQualityInfo(level);
 
     // Notify that loading has started
     this.onLoadingChange(true, qualityInfo);
 
-    // Force HLS to reload from current position with highest quality
+    // Force HLS to reload from current position with specified quality
     this.hls.startLoad(currentTime);
 
     // Listen for buffer append completion which means data is ready
     const onBufferAppended = () => {
-      console.log("High quality buffer appended");
+      console.log(`Quality level ${level} buffer appended`);
 
       // Remove listener
       if (this.hls) {
@@ -220,7 +274,7 @@ export class VideoStreamHandler {
         const oldTime = this.videoElement.currentTime;
         this.videoElement.currentTime = oldTime + 0.001;
 
-        console.log("High quality frame rendered");
+        console.log(`Quality level ${level} frame rendered`);
 
         // Hide loader immediately
         this.onLoadingChange(false);
@@ -228,6 +282,10 @@ export class VideoStreamHandler {
     };
 
     this.hls.on(Hls.Events.BUFFER_APPENDED, onBufferAppended);
+  }
+
+  private renderHighQualityFrame(): void {
+    this.renderQualityFrame(this.maxQualityLevel);
   }
 
   public destroy(): void {
@@ -247,8 +305,41 @@ export class VideoStreamHandler {
   }
 
   public setQualityLevel(level: number): void {
-    if (this.hls) {
-      this.hls.currentLevel = level;
+    if (!this.hls) return;
+
+    const currentLevel = this.hls.currentLevel;
+
+    // Check if we're actually changing quality
+    if (currentLevel === level) {
+      console.log(`Already at quality level ${level}, no change needed`);
+      return;
+    }
+
+    console.log(`Changing quality level from ${currentLevel} to ${level}`);
+
+    // Set the new quality level - LEVEL_SWITCHING event will handle loading state
+    this.hls.currentLevel = level;
+
+    // If video is paused and switching to a specific quality (not auto), render the frame
+    if (this.isPaused && level !== -1) {
+      this.renderQualityFrame(level);
+    }
+  }
+
+  public reloadCurrentQuality(): void {
+    if (!this.hls || !this.isPaused || this.maxQualityLevel < 0) return;
+
+    const currentLevel = this.hls.currentLevel;
+
+    // If on auto quality (-1), switch to max quality
+    if (currentLevel === -1) {
+      console.log(`Currently on auto quality, switching to max quality: ${this.maxQualityLevel}`);
+      this.hls.currentLevel = this.maxQualityLevel;
+      this.renderQualityFrame(this.maxQualityLevel);
+    } else {
+      // Reload the current specific quality level
+      console.log(`Reloading current quality level: ${currentLevel}`);
+      this.renderQualityFrame(currentLevel);
     }
   }
 }

@@ -4,10 +4,10 @@
 
   let {
     src = undefined,
+    fps,
     initialFragments = 3,
     bind: videoRef = undefined,
     element = $bindable(),
-    fps = 23.976,
     onFrameUpdate = (currentFrame: number) => {},
     onTogglePlay = (playing: boolean) => {},
     onResize = () => {},
@@ -71,6 +71,8 @@
   export function seekToFrame(frame: number) {
     if (!videoElement) return;
 
+    const wasPaused = videoElement.paused;
+
     // Pause if playing
     if (!videoElement.paused) {
       videoElement.pause();
@@ -82,6 +84,8 @@
         videoElement.currentTime = frameToTime(frame);
         videoElement.pause();
       });
+
+      console.log("Video not ready, playing briefly to seek to frame:", frame);
       return;
     }
 
@@ -89,6 +93,11 @@
     videoElement.currentTime = frameToTime(frame);
 
     console.log("Seeking to frame:", frame);
+
+    // If video was already paused, reload the current quality at the new position
+    if (wasPaused && streamHandler) {
+      streamHandler.reloadCurrentQuality();
+    }
   }
 
   export function nextFrame(step: number = 1) {
@@ -188,9 +197,6 @@
       <div class="quality-badge">
         <span class="quality-label">Loading: {qualityLabel}</span>
       </div>
-      <div class="loader-center">
-        <div class="loader-spinner"></div>
-      </div>
     </div>
   {/if}
 </div>
@@ -243,28 +249,6 @@
     color: rgba(255, 255, 255, 0.9);
     font-size: 8px;
     animation: pulse 2s ease-in-out infinite;
-  }
-
-  .loader-center {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-  }
-
-  .loader-spinner {
-    width: 60px;
-    height: 60px;
-    border: 5px solid rgba(128, 128, 128, 0.3);
-    border-top-color: rgba(180, 180, 180, 0.9);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
   }
 
   @keyframes slideIn {
