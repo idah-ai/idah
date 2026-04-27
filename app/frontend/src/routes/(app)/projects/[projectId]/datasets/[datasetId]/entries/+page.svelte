@@ -199,13 +199,14 @@
   }
 
   async function filterEntries(params: FilterDataSourceParams): Promise<void> {
-    const { filters } = params;
     const newUrl = new URL(page.url);
 
-    for (const [key, value] of Object.entries(filters)) {
+    let updatedFilters = { ...listOptions.filters };
+
+    for (const [key, value] of Object.entries(params.filters)) {
       if (value === undefined) {
         /** Remove filter */
-        delete listOptions.filters?.[key];
+        delete updatedFilters[key];
 
         /** Manage filters[key] from URL if exists */
         if (key in urlFilters) {
@@ -215,20 +216,23 @@
           /* eslint-disable svelte/no-navigation-without-resolve */
           goto(newUrl.href, { replaceState: true });
           /* eslint-enable svelte/no-navigation-without-resolve */
-          /** 3. Update urlFilters, to force the re-render of filters */
-          urlFilters = Object.fromEntries(newUrl.searchParams.entries());
         }
       } else {
-        /** Add or update filter */
-        listOptions = {
-          ...listOptions,
-          filters: {
-            ...listOptions.filters,
-            [key]: value,
-          },
-        };
+        updatedFilters[key] = value;
       }
+
+      urlFilters = Object.fromEntries(newUrl.searchParams.entries());
     }
+
+    filters = updatedFilters;
+
+    /** Add or update filter */
+    listOptions = {
+      ...listOptions,
+      filters: {
+        ...filters,
+      },
+    };
 
     resetToFirstPage();
 
@@ -271,28 +275,12 @@
   async function changePage(changeToPage: number): Promise<void> {
     currentPage = changeToPage;
 
-    listOptions = {
-      ...listOptions,
-      pagination: {
-        page: currentPage,
-        itemsPerPage,
-      },
-    };
-
     await fetchEntries();
   }
 
   async function setItemsPerPage(selectedItemsPerPage: number): Promise<void> {
     resetToFirstPage();
     itemsPerPage = selectedItemsPerPage;
-
-    listOptions = {
-      ...listOptions,
-      pagination: {
-        page: currentPage,
-        itemsPerPage,
-      },
-    };
 
     await fetchEntries();
   }
@@ -321,7 +309,7 @@
       const description =
         selectedToUnassignedEntryIdsCount > 1
           ? `${selectedToUnassignedRows.length} entries have been unassigned.`
-          : `The entry "${selectedToUnassignedRows[0]?.resource}" has been unassigned.`;
+          : `The entry "${selectedToUnassignedRows[0]?.name}" has been unassigned.`;
 
       showToast.success({
         title: "Entry unassigned",
