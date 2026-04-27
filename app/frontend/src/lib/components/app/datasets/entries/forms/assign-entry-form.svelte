@@ -50,7 +50,7 @@
       searchable
       searchKeyWithOperation="email__match"
       value={assignedToAccountId}
-      onSelected={(value: string | number) => {
+      onSelected={(value: string | number | null) => {
         assignedToAccountId = value as number;
       }}
     ></SingleSelectDatasourceField>

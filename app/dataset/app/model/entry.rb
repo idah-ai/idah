@@ -59,6 +59,16 @@ module Entry
       collection.where(Sequel.lit(where_fragment, account_id: value))
     end
 
+    custom_filter :assigned do |collection, value|
+      assigned = value.to_s.downcase == "true"
+
+      if assigned
+        collection.where(Sequel.lit("assigned_to_id IS NOT NULL"))
+      else
+        collection.where(Sequel.lit("assigned_to_id IS NULL"))
+      end
+    end
+
     def scoped(action)
       auth_context.can!(action, self.class.resource) do |scope|
         scope.all? { table }
