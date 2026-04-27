@@ -16,7 +16,7 @@ export class MediaRecord extends Record {
   @field() public mime_type!: string;
 
   @field() public filename!: string;
-  @field() public meta!: { [key: string]: unknown; };
+  @field() public meta!: { [key: string]: unknown };
 
   @field() public created_by!: number;
   @field() public created_at!: Date;
