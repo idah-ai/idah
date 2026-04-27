@@ -13,7 +13,7 @@ import {
   deselectAnnotationGroup,
   selectedAnnotation,
   setCurrentModeTo,
-  setSelectedAnnotation,
+  setSelectedAnnotation
 } from "$lib/plugin/store/store";
 import {
   DEFAULT_MODE,
