@@ -21,7 +21,12 @@
   import TimelineRuler from "$lib/plugin/video-annotation-activity/timeline/timeline-ruler.svelte";
   import TimelineVerticalLine from "$lib/plugin/video-annotation-activity/timeline/timeline-vertical-line.svelte";
 
-  import { setCurrentFrame, setCurrentModeTo, totalFrames } from "$lib/plugin/video-annotation-activity/store/store";
+  import {
+    currentFrame,
+    setCurrentFrame,
+    setCurrentModeTo,
+    totalFrames,
+  } from "$lib/plugin/video-annotation-activity/store/store";
   import {
     currentFrameRange,
     framePerScale,
@@ -246,7 +251,7 @@
           (annotation) => annotation.metadata.id !== closestAnnotation.metadata.id,
         );
 
-        selectClosestAnnotation(selectAnnotationGroup, displayScaledFrame);
+        selectClosestAnnotation(selectAnnotationGroup, $currentFrame);
         closeContextMenu();
       },
     };
