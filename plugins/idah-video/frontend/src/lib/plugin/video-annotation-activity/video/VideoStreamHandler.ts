@@ -338,7 +338,6 @@ export class VideoStreamHandler {
       this.renderQualityFrame(this.maxQualityLevel);
     } else {
       // Reload the current specific quality level
-      console.log(`Reloading current quality level: ${currentLevel}`);
       this.renderQualityFrame(currentLevel);
     }
   }
